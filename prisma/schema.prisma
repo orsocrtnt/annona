@@ -1,0 +1,531 @@
+// =============================================================================
+// TUTELLIV — Schéma de base de données fondamental
+// =============================================================================
+// Ce schéma définit les entités fondamentales du système.
+// Les modules métier futurs (Deliveries, Orders, Drivers, etc.) sont anticipés
+// via les relations et commentaires documentés ci-dessous.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+/// Rôles système prédéfinis — utilisés pour le RBAC
+enum SystemRole {
+  SUPER_ADMIN
+  COMPANY_ADMIN
+  DISPATCHER
+  DRIVER
+  CLIENT
+}
+
+/// Statut d'un compte utilisateur
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+/// Statut d'une entreprise
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  TRIAL
+}
+
+enum OrderStatus {
+  QUOTE_REQUESTED
+  PENDING
+  ASSIGNED
+  PURCHASING
+  IN_DELIVERY
+  DELIVERED
+  INVOICED
+  PAID
+  CANCELLED
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PURCHASING
+  IN_DELIVERY
+  DELIVERED
+  INVOICED
+  PAID
+  CANCELLED
+}
+
+enum DeliveryCategory {
+  STANDARD
+  COURIER
+  SPECIAL_MISSION
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum OrderSource {
+  ADMIN
+  CLIENT
+  RECURRING
+}
+
+enum RecurrenceFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum RecurrenceUnit {
+  DAYS
+  WEEKS
+  MONTHS
+}
+
+enum RecurrenceStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum SupportContactType {
+  ADMIN
+  DRIVER
+}
+
+// -----------------------------------------------------------------------------
+// CORE ENTITIES
+// -----------------------------------------------------------------------------
+
+/// Utilisateur du système — lié à Supabase Auth via authId
+model User {
+  id        String     @id @default(cuid())
+  authId    String     @unique @map("auth_id")
+  email     String     @unique
+  firstName String     @map("first_name")
+  lastName  String     @map("last_name")
+  phone     String?
+  avatarUrl String?    @map("avatar_url")
+  settings  Json?      @default("{}")
+  status    UserStatus @default(PENDING_VERIFICATION)
+
+  // Relations
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  roleId String @map("role_id")
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  ordersAsCustomer     Order[]           @relation("CustomerOrders")
+  deliveriesAsCustomer Delivery[]        @relation("CustomerDeliveries")
+  deliveriesAsDriver   Delivery[]        @relation("DriverDeliveries")
+  invoicesAsCustomer   Invoice[]         @relation("CustomerInvoices")
+  supportTickets       SupportTicket[]   @relation("CustomerTickets")
+  addresses            CustomerAddress[]
+  recurringOrders      RecurringOrder[]
+  driverLocation       DriverLocation?
+
+  @@index([companyId])
+  @@index([roleId])
+  @@index([email])
+  @@map("users")
+}
+
+/// Entreprise cliente — unité d'organisation principale (multi-tenant)
+model Company {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  logoUrl     String?       @map("logo_url")
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  country     String?       @default("FR")
+  status      CompanyStatus @default(TRIAL)
+  isDemo      Boolean       @default(false) @map("is_demo")
+  settings    Json?         @default("{}")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users           User[]
+  orders          Order[]
+  deliveries      Delivery[]
+  invoices        Invoice[]
+  recurringOrders RecurringOrder[]
+  supportTickets  SupportTicket[]
+
+  @@index([slug])
+  @@index([status])
+  @@map("companies")
+}
+
+/// Rôle — définit un ensemble de permissions
+model Role {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  systemRole  SystemRole @map("system_role")
+  isSystem    Boolean    @default(false) @map("is_system")
+
+  // Relations
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([systemRole])
+  @@map("roles")
+}
+
+/// Permission — action granulaire sur une ressource
+model Permission {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  resource    String
+  action      String
+
+  // Relations
+  roles RolePermission[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@map("permissions")
+}
+
+/// Table de liaison Role ↔ Permission (many-to-many)
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// -----------------------------------------------------------------------------
+// CLIENT PORTAL — Commandes, livraisons, factures
+// -----------------------------------------------------------------------------
+
+model Order {
+  id            String      @id @default(cuid())
+  reference     String      @unique
+  status        OrderStatus @default(PENDING)
+  source        OrderSource @default(ADMIN)
+  totalAmount   Decimal     @map("total_amount") @db.Decimal(10, 2)
+  itemCount     Int         @default(1) @map("item_count")
+  notes         String?
+
+  deliveryCategory     DeliveryCategory @default(STANDARD) @map("delivery_category")
+  pickupAddress        String?          @map("pickup_address")
+  pickupCity           String?          @map("pickup_city")
+  pickupPostalCode     String?          @map("pickup_postal_code")
+  pickupInstructions   String?          @map("pickup_instructions")
+
+  shippingAddress      String?   @map("shipping_address")
+  shippingCity         String?   @map("shipping_city")
+  shippingPostalCode   String?   @map("shipping_postal_code")
+  deliveryInstructions String?   @map("delivery_instructions")
+  requestedDeliveryDate DateTime? @map("requested_delivery_date")
+  missionDescription   String?   @map("mission_description")
+
+  companyId     String  @map("company_id")
+  company       Company @relation(fields: [companyId], references: [id])
+  customerId    String? @map("customer_id")
+  customer      User?   @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: SetNull)
+  customerEmail String? @map("customer_email")
+
+  recurringOrderId String?         @map("recurring_order_id")
+  recurringOrder   RecurringOrder? @relation(fields: [recurringOrderId], references: [id], onDelete: SetNull)
+
+  items      OrderItem[]
+  stops      OrderStop[]
+  deliveries Delivery[]
+  invoices   Invoice[]
+  tickets    SupportTicket[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([customerEmail])
+  @@index([status])
+  @@index([recurringOrderId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String     @id @default(cuid())
+  name        String
+  quantity    Int        @default(1)
+  unitPrice   Decimal    @map("unit_price") @db.Decimal(10, 2)
+  orderId     String     @map("order_id")
+  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderStopId String?    @map("order_stop_id")
+  orderStop   OrderStop? @relation(fields: [orderStopId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([orderStopId])
+  @@map("order_items")
+}
+
+model OrderStop {
+  id           String      @id @default(cuid())
+  orderId      String      @map("order_id")
+  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sequence     Int
+  label        String?
+  address      String
+  city         String?
+  postalCode   String?     @map("postal_code")
+  instructions String?
+  items        OrderItem[]
+
+  @@index([orderId])
+  @@map("order_stops")
+}
+
+model Delivery {
+  id          String         @id @default(cuid())
+  reference   String         @unique
+  status      DeliveryStatus @default(PENDING)
+  deliveryCategory DeliveryCategory @default(STANDARD) @map("delivery_category")
+  pickupAddress    String?          @map("pickup_address")
+  pickupCity       String?          @map("pickup_city")
+  pickupPostalCode String?          @map("pickup_postal_code")
+  address     String
+  city        String?
+  postalCode  String?        @map("postal_code")
+  driverName  String?        @map("driver_name")
+  driverId    String?        @map("driver_id")
+  driver      User?          @relation("DriverDeliveries", fields: [driverId], references: [id], onDelete: SetNull)
+  scheduledAt DateTime?      @map("scheduled_at")
+  estimatedArrival DateTime? @map("estimated_arrival")
+  completedAt DateTime?      @map("completed_at")
+  missionStartedAt DateTime? @map("mission_started_at")
+
+  companyId  String  @map("company_id")
+  company    Company @relation(fields: [companyId], references: [id])
+  orderId    String  @map("order_id")
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId String? @map("customer_id")
+  customer   User?   @relation("CustomerDeliveries", fields: [customerId], references: [id], onDelete: SetNull)
+
+  trackingEvents TrackingEvent[]
+  tickets        SupportTicket[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([orderId])
+  @@index([driverId])
+  @@index([status])
+  @@map("deliveries")
+}
+
+/// Dernière position GPS connue d'un chauffeur (fréquence configurable par entreprise)
+model DriverLocation {
+  driverId  String   @id @map("driver_id")
+  driver    User     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  accuracy  Float?
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("driver_locations")
+}
+
+model TrackingEvent {
+  id          String   @id @default(cuid())
+  label       String
+  description String?
+  latitude    Float?
+  longitude   Float?
+  occurredAt  DateTime @default(now()) @map("occurred_at")
+
+  deliveryId String   @map("delivery_id")
+  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId])
+  @@map("tracking_events")
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  reference String        @unique
+  status    InvoiceStatus @default(PENDING)
+  amount    Decimal       @db.Decimal(10, 2)
+  lineItems Json          @default("[]") @map("line_items")
+  notes     String?
+  dueDate   DateTime?     @map("due_date")
+  paidAt    DateTime?     @map("paid_at")
+  pdfUrl    String?       @map("pdf_url")
+
+  companyId  String  @map("company_id")
+  company    Company @relation(fields: [companyId], references: [id])
+  orderId    String? @map("order_id")
+  order      Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  customerId String? @map("customer_id")
+  customer   User?   @relation("CustomerInvoices", fields: [customerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@index([customerId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model SupportTicket {
+  id          String                @id @default(cuid())
+  subject     String
+  message     String
+  status      SupportTicketStatus   @default(OPEN)
+  priority    SupportTicketPriority @default(NORMAL)
+  contactType SupportContactType?   @map("contact_type")
+
+  companyId  String  @map("company_id")
+  company    Company @relation(fields: [companyId], references: [id])
+
+  customerId String @map("customer_id")
+  customer   User   @relation("CustomerTickets", fields: [customerId], references: [id], onDelete: Cascade)
+
+  relatedOrderId    String?  @map("related_order_id")
+  relatedOrder      Order?   @relation(fields: [relatedOrderId], references: [id], onDelete: SetNull)
+  relatedDeliveryId String?  @map("related_delivery_id")
+  relatedDelivery   Delivery? @relation(fields: [relatedDeliveryId], references: [id], onDelete: SetNull)
+
+  messages SupportTicketMessage[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([customerId])
+  @@index([companyId])
+  @@index([status])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id      String @id @default(cuid())
+  body    String
+  isStaff Boolean @default(false) @map("is_staff")
+
+  ticketId String        @map("ticket_id")
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId String        @map("author_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@map("support_ticket_messages")
+}
+
+model CustomerAddress {
+  id         String  @id @default(cuid())
+  label      String
+  address    String
+  city       String?
+  postalCode String? @map("postal_code")
+  isDefault  Boolean @default(false) @map("is_default")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("customer_addresses")
+}
+
+model RecurringOrder {
+  id                   String              @id @default(cuid())
+  label                String
+  frequency            RecurrenceFrequency
+  intervalValue        Int                 @default(1) @map("interval_value")
+  intervalUnit         RecurrenceUnit      @default(WEEKS) @map("interval_unit")
+  status               RecurrenceStatus    @default(ACTIVE)
+  startAt              DateTime            @default(now()) @map("start_at")
+  nextRunAt            DateTime            @map("next_run_at")
+  endAt                DateTime?           @map("end_at")
+  deliveryCategory     DeliveryCategory    @default(STANDARD) @map("delivery_category")
+  pickupAddress        String?             @map("pickup_address")
+  pickupCity           String?             @map("pickup_city")
+  pickupPostalCode     String?             @map("pickup_postal_code")
+  pickupInstructions   String?             @map("pickup_instructions")
+  pickupStops          Json?               @map("pickup_stops")
+  shippingAddress      String              @map("shipping_address")
+  shippingCity         String?             @map("shipping_city")
+  shippingPostalCode   String?             @map("shipping_postal_code")
+  deliveryInstructions String?             @map("delivery_instructions")
+  notes                String?
+  items                Json
+
+  companyId  String @map("company_id")
+  company    Company @relation(fields: [companyId], references: [id])
+  customerId String @map("customer_id")
+  customer   User   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  orders Order[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([customerId])
+  @@index([companyId])
+  @@index([status])
+  @@map("recurring_orders")
+}

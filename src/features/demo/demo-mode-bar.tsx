@@ -1,0 +1,186 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  Building2,
+  RotateCcw,
+  Sparkles,
+  Truck,
+  UserRound,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAuthStore } from "@/stores/auth.store";
+import {
+  DEMO_PERSONA_LABELS,
+  type DemoPersona,
+} from "@/lib/demo/constants";
+import { AUTH_ROUTES } from "@/lib/constants";
+
+const PERSONA_ICONS: Record<DemoPersona, typeof Building2> = {
+  admin: Building2,
+  client: UserRound,
+  driver: Truck,
+};
+
+export function DemoModeBar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { demo, setUser, setPermissions, setDemo } = useAuthStore();
+  const [switching, setSwitching] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+
+  const isAuthPage = AUTH_ROUTES.some((route) => pathname === route);
+  const visible = Boolean(demo?.isDemo) && !isAuthPage;
+
+  const switchPersona = useCallback(
+    async (persona: DemoPersona) => {
+      if (!demo || persona === demo.persona) return;
+      setSwitching(true);
+      try {
+        const res = await fetch("/api/demo/persona", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ persona }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json.error ?? "Impossible de changer de vue");
+        }
+        setUser(json.user);
+        setPermissions(json.permissions ?? []);
+        setDemo(json.demo ?? null);
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        router.push(json.redirectTo);
+        toast.success(`Vue ${DEMO_PERSONA_LABELS[persona]} activée`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erreur de changement de vue");
+      } finally {
+        setSwitching(false);
+      }
+    },
+    [demo, queryClient, router, setDemo, setPermissions, setUser]
+  );
+
+  const resetDemo = useCallback(async () => {
+    setResetting(true);
+    try {
+      const res = await fetch("/api/demo/reset", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error ?? "Impossible de réinitialiser la démo");
+      }
+      setUser(json.user);
+      setPermissions(json.permissions ?? []);
+      setDemo(json.demo ?? null);
+      await queryClient.invalidateQueries({ queryKey: ["session"] });
+      setResetOpen(false);
+      router.push(json.redirectTo ?? "/dashboard");
+      toast.success("Démo réinitialisée — scénario de base restauré");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la réinitialisation");
+    } finally {
+      setResetting(false);
+    }
+  }, [queryClient, router, setDemo, setPermissions, setUser]);
+
+  if (!visible || !demo) return null;
+
+  const ActiveIcon = PERSONA_ICONS[demo.persona];
+
+  return (
+    <>
+      <div className="sticky top-0 z-50 border-b border-amber-200/80 bg-amber-50/95 px-3 py-2 backdrop-blur-md dark:border-amber-900/50 dark:bg-amber-950/90">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2 text-sm text-amber-950 dark:text-amber-100">
+            <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span className="font-medium">Environnement de démonstration</span>
+            <span className="hidden text-amber-800/80 sm:inline dark:text-amber-200/80">
+              — données fictives, même interface que la production
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
+              <ActiveIcon className="hidden h-4 w-4 text-amber-700 sm:block dark:text-amber-300" />
+              <Select
+                value={demo.persona}
+                onValueChange={(value) => void switchPersona(value as DemoPersona)}
+                disabled={switching || resetting}
+              >
+                <SelectTrigger className="h-9 w-[180px] border-amber-200 bg-white/90 dark:border-amber-800 dark:bg-amber-950">
+                  <SelectValue placeholder="Changer de vue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(DEMO_PERSONA_LABELS) as DemoPersona[]).map((persona) => {
+                    const Icon = PERSONA_ICONS[persona];
+                    return (
+                      <SelectItem key={persona} value={persona}>
+                        <span className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {DEMO_PERSONA_LABELS[persona]}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-amber-300 bg-white/90 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:hover:bg-amber-900"
+              onClick={() => setResetOpen(true)}
+              disabled={switching || resetting}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Réinitialiser la démo
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Réinitialiser la démonstration ?</DialogTitle>
+            <DialogDescription>
+              Toutes les commandes, livraisons, factures et tickets créés pendant la session seront
+              supprimés. Le scénario de base (8 livraisons, récurrence, support) sera recréé à
+              l&apos;identique.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetOpen(false)} disabled={resetting}>
+              Annuler
+            </Button>
+            <Button variant="brand" onClick={() => void resetDemo()} loading={resetting}>
+              Réinitialiser
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

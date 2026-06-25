@@ -1,0 +1,165 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  DeliveriesLiveMap,
+  type DeliveriesMapApi,
+} from "@/components/maps/deliveries-live-map";
+import { mapGlassButtonStyle, mapGlassCardStyle } from "@/components/maps/map-glass-styles";
+import { PageLoader } from "@/components/ui/loader";
+import { PortalDeliveriesMapPanel } from "@/features/client-portal/portal-deliveries-map-panel";
+import { usePortalDeliveriesMap } from "@/features/client-portal/hooks";
+import { DeliveryMapStatusBar } from "@/components/maps/delivery-map-status-bar";
+import { cn } from "@/lib/utils";
+
+interface PortalDeliveriesMapProps {
+  fullscreen?: boolean;
+  height?: number;
+}
+
+export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalDeliveriesMapProps) {
+  const { data, isLoading, isError, error } = usePortalDeliveriesMap();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapApi, setMapApi] = useState<DeliveriesMapApi | null>(null);
+
+  const activeDeliveries = data?.active ?? [];
+  const historyDeliveries = data?.history ?? [];
+  const allDeliveries = useMemo(
+    () => [...activeDeliveries, ...historyDeliveries],
+    [activeDeliveries, historyDeliveries]
+  );
+
+  const selectedDelivery = useMemo(
+    () => allDeliveries.find((delivery) => delivery.id === selectedId) ?? null,
+    [allDeliveries, selectedId]
+  );
+
+  useEffect(() => {
+    if (allDeliveries.length === 0) {
+      setSelectedId(null);
+      return;
+    }
+    if (!selectedId || !allDeliveries.some((delivery) => delivery.id === selectedId)) {
+      setSelectedId(activeDeliveries[0]?.id ?? historyDeliveries[0]?.id ?? null);
+    }
+  }, [allDeliveries, activeDeliveries, historyDeliveries, selectedId]);
+
+  if (isLoading) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-center overflow-hidden bg-[#f0f0f0]",
+          fullscreen ? "h-full w-full" : "rounded-2xl"
+        )}
+        style={fullscreen ? undefined : { height }}
+      >
+        <PageLoader />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden bg-[#f0f0f0]",
+        fullscreen ? "h-full w-full" : "rounded-2xl shadow-md"
+      )}
+      style={fullscreen ? undefined : { height }}
+      data-dispatch-map-page
+    >
+      <div className="absolute inset-0">
+        <DeliveriesLiveMap delivery={selectedDelivery} onMapReady={setMapApi} />
+      </div>
+
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 z-[1000] p-4",
+          fullscreen &&
+            "pt-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+1rem)]"
+        )}
+      >
+        <PortalDeliveriesMapPanel
+          activeDeliveries={activeDeliveries}
+          historyDeliveries={historyDeliveries}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
+      </div>
+
+      {selectedDelivery && !selectedDelivery.isHistorical && (
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 z-[1000] flex justify-center px-4",
+            fullscreen
+              ? "top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+4.75rem)] sm:top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+1rem)] sm:pl-[min(296px,calc(100vw-32px))]"
+              : "top-16 sm:top-4 sm:pl-[min(296px,calc(100vw-32px))]"
+          )}
+        >
+          <DeliveryMapStatusBar
+            status={selectedDelivery.status}
+            deliveryCategory={selectedDelivery.deliveryCategory}
+          />
+        </div>
+      )}
+
+      {selectedDelivery?.isHistorical && (
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 z-[1000] flex justify-center px-4",
+            fullscreen
+              ? "top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+4.75rem)] sm:top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+1rem)] sm:pl-[min(320px,calc(100vw-32px))]"
+              : "top-16 sm:top-4 sm:pl-[min(320px,calc(100vw-32px))]"
+          )}
+        >
+          <p className="rounded-full px-4 py-2 text-sm text-muted-foreground" style={mapGlassCardStyle}>
+            Livraison terminée · {selectedDelivery.statusLabel}
+          </p>
+        </div>
+      )}
+
+      {isError && (
+        <div
+          className={cn(
+            "pointer-events-none absolute left-4 right-4 z-[1000]",
+            fullscreen
+              ? "top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+1.75rem)]"
+              : "top-20"
+          )}
+        >
+          <div className="rounded-2xl bg-red-500 px-4 py-2.5 text-center text-sm text-white shadow-lg">
+            {error instanceof Error ? error.message : "Erreur de chargement"}
+          </div>
+        </div>
+      )}
+
+      {!selectedDelivery && allDeliveries.length === 0 && !isError && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-20 z-[1000] flex justify-center px-4">
+          <p className="rounded-full px-4 py-2 text-sm text-muted-foreground" style={mapGlassCardStyle}>
+            Aucune livraison à afficher
+          </p>
+        </div>
+      )}
+
+      <div className="absolute bottom-5 right-5 z-[1100] flex flex-col gap-2 max-md:bottom-4 max-md:right-3">
+        <button
+          type="button"
+          aria-label="Zoomer"
+          className="shrink-0 transition-opacity hover:opacity-80"
+          style={mapGlassButtonStyle}
+          onClick={() => mapApi?.zoomIn()}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          aria-label="Dézoomer"
+          className="shrink-0 transition-opacity hover:opacity-80"
+          style={mapGlassButtonStyle}
+          onClick={() => mapApi?.zoomOut()}
+        >
+          −
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,142 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataGrid } from "@/components/ui/data-grid";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { usePortalInvoices } from "@/features/client-portal/hooks";
+import { InvoiceStatusBadge } from "@/features/client-portal/status-badges";
+import {
+  canReorderPortalOrder,
+  ReorderOrderButton,
+} from "@/features/client-portal/reorder-order-button";
+import { formatCurrency } from "@/features/client-portal/utils";
+import { formatDate } from "@/lib/utils";
+import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
+import { FileText } from "lucide-react";
+import type { TableColumn } from "@/types";
+import type { PortalInvoice } from "@/features/client-portal/types";
+
+function InvoiceReorderAction({ invoice }: { invoice: PortalInvoice }) {
+  if (!canReorderPortalOrder(invoice.order)) return null;
+
+  return (
+    <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>
+      <ReorderOrderButton orderId={invoice.order?.id} compact />
+    </div>
+  );
+}
+
+interface ClientInvoicesContentProps {
+  initialInvoices?: PortalInvoice[];
+}
+
+export function ClientInvoicesContent({ initialInvoices }: ClientInvoicesContentProps) {
+  const router = useRouter();
+  const { data: invoices, isLoading, error, refetch } = usePortalInvoices(initialInvoices);
+
+  const columns: TableColumn<PortalInvoice>[] = [
+    {
+      key: "reference",
+      header: "Référence",
+      sortable: true,
+      className: "min-w-[8.5rem]",
+      cell: (row) => (
+        <Link
+          href={`/portal/invoices/${row.id}`}
+          className="font-medium text-brand hover:underline"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {row.reference}
+        </Link>
+      ),
+    },
+  {
+    key: "createdAt",
+    header: "Date",
+    sortable: true,
+    hideOnMobile: true,
+    className: "whitespace-nowrap",
+    cell: (row) => formatDate(row.createdAt),
+  },
+    {
+      key: "amount",
+      header: "Montant",
+      className: "whitespace-nowrap",
+      cell: (row) => formatCurrency(row.amount),
+    },
+    {
+      key: "status",
+      header: "Statut",
+      className: "min-w-[6.5rem]",
+      cell: (row) => <InvoiceStatusBadge status={row.status} />,
+    },
+    {
+      key: "order",
+      header: "Commande",
+      hideOnMobile: true,
+      className: "min-w-[7rem]",
+      cell: (row) =>
+        row.order?.id ? (
+          <Link
+            href={`/portal/orders/${row.order.id}`}
+            className="font-medium text-brand hover:underline"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {row.order.reference}
+          </Link>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "actions",
+      header: "Action",
+      className: "w-[1%] min-w-[11.5rem] overflow-visible whitespace-nowrap pl-3 text-right",
+      cell: (row) => <InvoiceReorderAction invoice={row} />,
+    },
+  ];
+
+  if (isInitialQueryLoading(isLoading, invoices)) return <PageSkeleton />;
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="Factures indisponibles"
+        description="Impossible de charger vos factures pour le moment."
+        action={{ label: "Réessayer", onClick: () => void refetch() }}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Factures</h1>
+        <p className="mt-1 text-muted-foreground">Consultez l&apos;historique de vos factures</p>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Historique des factures</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DataGrid
+            data={(invoices ?? []) as unknown as Record<string, unknown>[]}
+            columns={columns as unknown as TableColumn<Record<string, unknown>>[]}
+            searchKey="reference"
+            tableClassName="table-auto min-w-[52rem] max-md:min-w-[24rem]"
+            emptyTitle="Aucune facture"
+            emptyDescription="Vos factures apparaîtront ici."
+            onRowClick={(row) => {
+              const invoice = row as unknown as PortalInvoice;
+              router.push(`/portal/invoices/${invoice.id}`);
+            }}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
