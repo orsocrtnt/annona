@@ -11,6 +11,30 @@ const PATCHES: Array<{ name: string; sql: string }> = [
     name: "companies.is_demo",
     sql: `ALTER TABLE "companies" ADD COLUMN IF NOT EXISTS "is_demo" BOOLEAN NOT NULL DEFAULT false`,
   },
+  {
+    name: "order_stops.latitude",
+    sql: `ALTER TABLE "order_stops" ADD COLUMN IF NOT EXISTS "latitude" DOUBLE PRECISION`,
+  },
+  {
+    name: "order_stops.longitude",
+    sql: `ALTER TABLE "order_stops" ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION`,
+  },
+  {
+    name: "deliveries.latitude",
+    sql: `ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "latitude" DOUBLE PRECISION`,
+  },
+  {
+    name: "deliveries.longitude",
+    sql: `ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "longitude" DOUBLE PRECISION`,
+  },
+  {
+    name: "deliveries.pickup_latitude",
+    sql: `ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "pickup_latitude" DOUBLE PRECISION`,
+  },
+  {
+    name: "deliveries.pickup_longitude",
+    sql: `ALTER TABLE "deliveries" ADD COLUMN IF NOT EXISTS "pickup_longitude" DOUBLE PRECISION`,
+  },
 ];
 
 async function main() {

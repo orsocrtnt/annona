@@ -55,8 +55,8 @@ interface ScenarioItem {
   supportTicket?: { subject: string; message: string };
 }
 
-function hoursFromNow(hours: number): Date {
-  return new Date(Date.now() + hours * 60 * 60 * 1000);
+function hoursFromNow(hours: number, referenceDate: Date = new Date()): Date {
+  return new Date(referenceDate.getTime() + hours * 60 * 60 * 1000);
 }
 
 function buildScenario(): ScenarioItem[] {
@@ -314,7 +314,10 @@ async function purgeDemoTransactionalData(companyId: string) {
   ]);
 }
 
-async function ensureRecurringOrder(actors: DemoActors) {
+async function ensureRecurringOrder(
+  actors: DemoActors,
+  referenceDate: Date = new Date()
+) {
   const existing = await prisma.recurringOrder.findFirst({
     where: { companyId: actors.companyId, customerId: actors.clientId },
   });
@@ -325,8 +328,8 @@ async function ensureRecurringOrder(actors: DemoActors) {
     intervalValue: 1,
     intervalUnit: "WEEKS" as const,
     status: "ACTIVE" as const,
-    startAt: hoursFromNow(-168),
-    nextRunAt: hoursFromNow(120),
+    startAt: hoursFromNow(-168, referenceDate),
+    nextRunAt: hoursFromNow(120, referenceDate),
     deliveryCategory: "STANDARD" as const,
     shippingAddress: "11 Rue de la Paix",
     shippingCity: "Neuilly-sur-Seine",
@@ -356,7 +359,8 @@ async function ensureRecurringOrder(actors: DemoActors) {
 
 async function createScenarioDelivery(
   actors: DemoActors,
-  scenario: ScenarioItem
+  scenario: ScenarioItem,
+  referenceDate: Date = new Date()
 ): Promise<{ orderId: string; deliveryId: string }> {
   const isCourier = scenario.deliveryCategory === "COURIER";
   const pickupStops = scenario.pickupStops ?? [];
@@ -402,7 +406,7 @@ async function createScenarioDelivery(
       shippingCity: scenario.shipping.city,
       shippingPostalCode: scenario.shipping.postalCode,
       deliveryInstructions: scenario.deliveryInstructions ?? null,
-      requestedDeliveryDate: hoursFromNow(scenario.requestedDeliveryDateOffsetHours),
+      requestedDeliveryDate: hoursFromNow(scenario.requestedDeliveryDateOffsetHours, referenceDate),
       companyId: actors.companyId,
       customerId: actors.clientId,
       customerEmail: actors.clientEmail,
@@ -467,19 +471,19 @@ async function createScenarioDelivery(
       customerId: actors.clientId,
       scheduledAt:
         scenario.scheduledAtOffsetHours != null
-          ? hoursFromNow(scenario.scheduledAtOffsetHours)
-          : hoursFromNow(scenario.requestedDeliveryDateOffsetHours),
+          ? hoursFromNow(scenario.scheduledAtOffsetHours, referenceDate)
+          : hoursFromNow(scenario.requestedDeliveryDateOffsetHours, referenceDate),
       estimatedArrival:
         scenario.estimatedArrivalOffsetHours != null
-          ? hoursFromNow(scenario.estimatedArrivalOffsetHours)
+          ? hoursFromNow(scenario.estimatedArrivalOffsetHours, referenceDate)
           : null,
       completedAt:
         scenario.completedAtOffsetHours != null
-          ? hoursFromNow(scenario.completedAtOffsetHours)
+          ? hoursFromNow(scenario.completedAtOffsetHours, referenceDate)
           : null,
       missionStartedAt:
         scenario.missionStartedAtOffsetHours != null
-          ? hoursFromNow(scenario.missionStartedAtOffsetHours)
+          ? hoursFromNow(scenario.missionStartedAtOffsetHours, referenceDate)
           : null,
       trackingEvents: {
         create: scenario.tracking.map((event) => ({
@@ -487,14 +491,15 @@ async function createScenarioDelivery(
           description: event.description ?? null,
           latitude: event.latitude ?? null,
           longitude: event.longitude ?? null,
-          occurredAt: hoursFromNow(event.offsetHours),
+          occurredAt: hoursFromNow(event.offsetHours, referenceDate),
         })),
       },
     },
   });
 
   if (scenario.invoice) {
-    const invoiceRef = `FAC-DEMO-${deliveryReference.slice(-6)}`;
+    // Full delivery ref keeps global uniqueness (slice(-6) can collide).
+    const invoiceRef = `FAC-DEMO-${deliveryReference.replace(/^LIV-/, "")}`;
     await prisma.invoice.create({
       data: {
         reference: invoiceRef,
@@ -517,10 +522,10 @@ async function createScenarioDelivery(
         orderId: order.id,
         customerId: actors.clientId,
         dueDate: scenario.invoice.dueInDays
-          ? new Date(Date.now() + scenario.invoice.dueInDays * 24 * 60 * 60 * 1000)
+          ? hoursFromNow(scenario.invoice.dueInDays * 24, referenceDate)
           : null,
         paidAt: scenario.invoice.paidDaysAgo
-          ? new Date(Date.now() - scenario.invoice.paidDaysAgo * 24 * 60 * 60 * 1000)
+          ? hoursFromNow(-scenario.invoice.paidDaysAgo * 24, referenceDate)
           : null,
       },
     });
@@ -552,7 +557,10 @@ async function createScenarioDelivery(
   return { orderId: order.id, deliveryId: delivery.id };
 }
 
-export async function resetDemoScenario(companyId: string): Promise<{ deliveries: number }> {
+export async function resetDemoScenario(
+  companyId: string,
+  referenceDate: Date = new Date()
+): Promise<{ deliveries: number }> {
   const personas = await prisma.user.findMany({
     where: { companyId },
     include: { role: true },
@@ -574,11 +582,11 @@ export async function resetDemoScenario(companyId: string): Promise<{ deliveries
   };
 
   await purgeDemoTransactionalData(companyId);
-  await ensureRecurringOrder(actors);
+  await ensureRecurringOrder(actors, referenceDate);
 
   const scenarios = buildScenario();
   for (const scenario of scenarios) {
-    await createScenarioDelivery(actors, scenario);
+    await createScenarioDelivery(actors, scenario, referenceDate);
   }
 
   await prisma.driverLocation.upsert({

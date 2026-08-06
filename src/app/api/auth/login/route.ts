@@ -9,10 +9,19 @@ import {
   UserNotProvisionedError,
 } from "@/domains/auth/auth.service";
 import type { AccountType } from "@/domains/auth/auth.service";
-import { extractPermissionSlugs } from "@/domains/user/user.service";
+import {
+  extractPermissionSlugs,
+  getUserByAuthId,
+} from "@/domains/user/user.service";
 import { isDemoLoginEmail, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { setDemoPersonaCookie } from "@/lib/demo/persona-cookie";
 import { resolveDemoActiveUser } from "@/domains/demo/demo-auth.service";
+import { resetDemoScenario } from "@/domains/demo/demo-scenario.service";
+import { provisionDemoEnvironment } from "@/domains/demo/demo-provision.service";
+
+function isDemoPersonasMissing(error: unknown): boolean {
+  return error instanceof Error && error.message === "DEMO_PERSONAS_MISSING";
+}
 
 export async function POST(request: Request) {
   try {
@@ -85,6 +94,71 @@ export async function POST(request: Request) {
     const isDemoAccount = isDemoLoginEmail(authUser.email!);
 
     if (isDemoAccount) {
+      let companyId = user.companyId;
+      let isDemoCompany = user.company?.isDemo === true;
+
+      // Demo email on a non-demo / incomplete company → (re)provision then reload user.
+      if (!companyId || !isDemoCompany) {
+        console.warn(
+          "Demo login missing demo company; provisioning environment",
+          { companyId, isDemoCompany }
+        );
+        try {
+          await provisionDemoEnvironment();
+          const refreshed = await getUserByAuthId(authUser.id);
+          if (refreshed) user = refreshed;
+          companyId = user.companyId;
+          isDemoCompany = user.company?.isDemo === true;
+        } catch (provisionError) {
+          console.error("Demo provision on login failed:", provisionError);
+          return NextResponse.json(
+            {
+              error:
+                "Environnement de démo incomplet. Lancez `npm run db:seed-demo` puis réessayez.",
+            },
+            { status: 500 }
+          );
+        }
+      }
+
+      if (companyId && isDemoCompany) {
+        try {
+          const loginAt = new Date();
+          await resetDemoScenario(companyId, loginAt);
+        } catch (resetError) {
+          if (isDemoPersonasMissing(resetError)) {
+            try {
+              console.warn("Demo personas missing on login; re-provisioning");
+              await provisionDemoEnvironment();
+              const refreshed = await getUserByAuthId(authUser.id);
+              if (refreshed) user = refreshed;
+              companyId = user.companyId ?? companyId;
+              if (companyId) {
+                await resetDemoScenario(companyId, new Date());
+              }
+            } catch (retryError) {
+              console.error("Demo reset retry after provision failed:", retryError);
+              return NextResponse.json(
+                {
+                  error:
+                    "Environnement de démo incomplet. Lancez `npm run db:seed-demo` puis réessayez.",
+                },
+                { status: 500 }
+              );
+            }
+          } else {
+            console.error("Demo reset on login failed:", resetError);
+            return NextResponse.json(
+              {
+                error:
+                  "Impossible de réinitialiser l'environnement de démo. Réessayez dans un instant.",
+              },
+              { status: 500 }
+            );
+          }
+        }
+      }
+
       await setDemoPersonaCookie("admin");
       const personaUser = await resolveDemoActiveUser(user, "admin");
       if (personaUser) user = personaUser;
