@@ -134,7 +134,22 @@ function resolveDriverName(driverName: string | null | undefined) {
   return driverName ? formatDriverDisplayName(driverName) : null;
 }
 
-const MAP_DELIVERY_SELECT = {
+function isMissingColumnError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "P2022"
+  );
+}
+
+/**
+ * Schema may include Delivery/OrderStop lat/lng before `db:push` lands them.
+ * After the first P2022, prefer the legacy select until process restart.
+ */
+let preferLegacyMapSelect = false;
+
+const MAP_DELIVERY_SELECT_LEGACY = {
   id: true,
   reference: true,
   status: true,
@@ -169,7 +184,82 @@ const MAP_DELIVERY_SELECT = {
         select: { id: true, name: true, quantity: true },
         orderBy: { name: "asc" as const },
       },
-      stops: { orderBy: { sequence: "asc" as const } },
+      stops: {
+        orderBy: { sequence: "asc" as const },
+        select: {
+          id: true,
+          label: true,
+          address: true,
+          city: true,
+          postalCode: true,
+        },
+      },
+    },
+  },
+  trackingEvents: {
+    orderBy: { occurredAt: "asc" as const },
+    select: {
+      id: true,
+      label: true,
+      description: true,
+      latitude: true,
+      longitude: true,
+      occurredAt: true,
+    },
+  },
+} as const;
+
+const MAP_DELIVERY_SELECT = {
+  id: true,
+  reference: true,
+  status: true,
+  deliveryCategory: true,
+  address: true,
+  city: true,
+  postalCode: true,
+  latitude: true,
+  longitude: true,
+  pickupAddress: true,
+  pickupCity: true,
+  pickupPostalCode: true,
+  pickupLatitude: true,
+  pickupLongitude: true,
+  driverId: true,
+  driverName: true,
+  missionStartedAt: true,
+  completedAt: true,
+  createdAt: true,
+  customer: {
+    select: { firstName: true, lastName: true },
+  },
+  driver: {
+    select: {
+      driverLocation: {
+        select: { latitude: true, longitude: true, updatedAt: true },
+      },
+    },
+  },
+  order: {
+    select: {
+      id: true,
+      customerEmail: true,
+      customer: { select: { firstName: true, lastName: true } },
+      items: {
+        select: { id: true, name: true, quantity: true },
+        orderBy: { name: "asc" as const },
+      },
+      stops: {
+        orderBy: { sequence: "asc" as const },
+        select: {
+          id: true,
+          label: true,
+          address: true,
+          city: true,
+          postalCode: true,
+          latitude: true,
+          longitude: true,
+        },
+      },
     },
   },
   trackingEvents: {
@@ -191,15 +281,71 @@ type MapDeliveryRecord = Awaited<
   >
 >[number];
 
+type MapDeliveryLegacyRecord = Awaited<
+  ReturnType<
+    typeof prisma.delivery.findMany<{ select: typeof MAP_DELIVERY_SELECT_LEGACY; take: 1 }>
+  >
+>[number];
+
+function normalizeLegacyMapDelivery(delivery: MapDeliveryLegacyRecord): MapDeliveryRecord {
+  return {
+    ...delivery,
+    latitude: null,
+    longitude: null,
+    pickupLatitude: null,
+    pickupLongitude: null,
+    order: {
+      ...delivery.order,
+      stops: delivery.order.stops.map((stop) => ({
+        ...stop,
+        latitude: null,
+        longitude: null,
+      })),
+    },
+  } as MapDeliveryRecord;
+}
+
+async function findManyMapDeliveries(args: {
+  where: {
+    companyId?: string;
+    customerId?: string;
+    status?: { in: DeliveryStatus[] };
+  };
+  orderBy:
+    | { createdAt: "desc" | "asc" }
+    | Array<{ completedAt: "desc" | "asc" } | { createdAt: "desc" | "asc" }>;
+  take?: number;
+}): Promise<MapDeliveryRecord[]> {
+  if (!preferLegacyMapSelect) {
+    try {
+      return await prisma.delivery.findMany({
+        ...args,
+        select: MAP_DELIVERY_SELECT,
+      });
+    } catch (error) {
+      if (!isMissingColumnError(error)) throw error;
+      preferLegacyMapSelect = true;
+      console.warn(
+        "[dispatch-map] Delivery/OrderStop coordinate columns missing in DB; falling back to geocode path"
+      );
+    }
+  }
+
+  const rows = await prisma.delivery.findMany({
+    ...args,
+    select: MAP_DELIVERY_SELECT_LEGACY,
+  });
+  return rows.map(normalizeLegacyMapDelivery);
+}
+
 async function fetchActiveMapDeliveries(
   where: { companyId: string } | { customerId: string }
 ): Promise<MapDeliveryRecord[]> {
-  const deliveries = await prisma.delivery.findMany({
+  const deliveries = await findManyMapDeliveries({
     where: {
       ...where,
       status: { in: MAP_ACTIVE_STATUSES },
     },
-    select: MAP_DELIVERY_SELECT,
     orderBy: { createdAt: "desc" },
   });
 
@@ -226,12 +372,11 @@ async function fetchActiveMapDeliveries(
             !delivery.trackingEvents.some((event) => event.label === "Livraison"))
       )
     ) {
-      return prisma.delivery.findMany({
+      return findManyMapDeliveries({
         where: {
           ...where,
           status: { in: MAP_ACTIVE_STATUSES },
         },
-        select: MAP_DELIVERY_SELECT,
         orderBy: { createdAt: "desc" },
       });
     }
@@ -249,23 +394,30 @@ async function buildDeliveriesMapPayload(
   const onlineThresholdMs = onlineThresholdSeconds * 1000;
   const now = Date.now();
 
-  const geocodeEntries = deliveries.flatMap((delivery) => {
-    const entries: { key: string; parts: { address?: string | null; postalCode?: string | null; city?: string | null } }[] = [
-      {
+  const geocodeEntries: {
+    key: string;
+    parts: { address?: string | null; postalCode?: string | null; city?: string | null };
+  }[] = [];
+
+  for (const delivery of deliveries) {
+    if (delivery.latitude == null || delivery.longitude == null) {
+      geocodeEntries.push({
         key: `${delivery.id}-dest`,
         parts: {
           address: delivery.address,
           postalCode: delivery.postalCode,
           city: delivery.city,
         },
-      },
-    ];
+      });
+    }
 
-    if (delivery.deliveryCategory === "COURIER") {
-      const stops = delivery.order.stops;
-      if (stops.length > 0) {
-        for (const stop of stops) {
-          entries.push({
+    if (delivery.deliveryCategory !== "COURIER") continue;
+
+    const stops = delivery.order.stops;
+    if (stops.length > 0) {
+      for (const stop of stops) {
+        if (stop.latitude == null || stop.longitude == null) {
+          geocodeEntries.push({
             key: `${delivery.id}-pickup-${stop.id}`,
             parts: {
               address: stop.address,
@@ -274,28 +426,93 @@ async function buildDeliveriesMapPayload(
             },
           });
         }
-      } else {
-        entries.push({
-          key: `${delivery.id}-pickup`,
-          parts: {
-            address: delivery.pickupAddress,
-            postalCode: delivery.pickupPostalCode,
-            city: delivery.pickupCity,
-          },
-        });
+      }
+    } else if (
+      delivery.pickupAddress?.trim() &&
+      (delivery.pickupLatitude == null || delivery.pickupLongitude == null)
+    ) {
+      geocodeEntries.push({
+        key: `${delivery.id}-pickup`,
+        parts: {
+          address: delivery.pickupAddress,
+          postalCode: delivery.pickupPostalCode,
+          city: delivery.pickupCity,
+        },
+      });
+    }
+  }
+
+  const coordsByKey =
+    geocodeEntries.length > 0 ? await geocodeMany(geocodeEntries) : new Map<string, { lat: number; lng: number }>();
+
+  // Persiste les coords manquantes pour que les prochains polls serverless soient gratuits
+  // Skip when DB lacks the columns (legacy fallback path).
+  if (coordsByKey.size > 0 && !preferLegacyMapSelect) {
+    const persistTasks: Promise<unknown>[] = [];
+
+    for (const delivery of deliveries) {
+      const destCoords = coordsByKey.get(`${delivery.id}-dest`);
+      const pickupCoords = coordsByKey.get(`${delivery.id}-pickup`);
+      const deliveryUpdate: {
+        latitude?: number;
+        longitude?: number;
+        pickupLatitude?: number;
+        pickupLongitude?: number;
+      } = {};
+
+      if (destCoords && (delivery.latitude == null || delivery.longitude == null)) {
+        deliveryUpdate.latitude = destCoords.lat;
+        deliveryUpdate.longitude = destCoords.lng;
+      }
+      if (
+        pickupCoords &&
+        (delivery.pickupLatitude == null || delivery.pickupLongitude == null)
+      ) {
+        deliveryUpdate.pickupLatitude = pickupCoords.lat;
+        deliveryUpdate.pickupLongitude = pickupCoords.lng;
+      }
+
+      if (Object.keys(deliveryUpdate).length > 0) {
+        persistTasks.push(
+          prisma.delivery.update({
+            where: { id: delivery.id },
+            data: deliveryUpdate,
+          })
+        );
+      }
+
+      for (const stop of delivery.order.stops) {
+        const stopCoords = coordsByKey.get(`${delivery.id}-pickup-${stop.id}`);
+        if (!stopCoords || (stop.latitude != null && stop.longitude != null)) continue;
+        persistTasks.push(
+          prisma.orderStop.update({
+            where: { id: stop.id },
+            data: { latitude: stopCoords.lat, longitude: stopCoords.lng },
+          })
+        );
       }
     }
 
-    return entries;
-  });
-
-  const coordsByKey = await geocodeMany(geocodeEntries);
+    void Promise.all(persistTasks).catch((error) => {
+      if (isMissingColumnError(error)) {
+        preferLegacyMapSelect = true;
+        console.warn(
+          "[dispatch-map] Coordinate columns missing while persisting; switching to legacy path"
+        );
+        return;
+      }
+      console.warn("[dispatch-map] Failed to persist geocoded coordinates", error);
+    });
+  }
 
   const result: DispatchMapDelivery[] = [];
   const points: DispatchMapPoint[] = [];
 
   for (const delivery of deliveries) {
-    const destCoords = coordsByKey.get(`${delivery.id}-dest`)!;
+    const destCoords =
+      delivery.latitude != null && delivery.longitude != null
+        ? { lat: delivery.latitude, lng: delivery.longitude }
+        : coordsByKey.get(`${delivery.id}-dest`)!;
     const destAddress = formatAddress([delivery.address, delivery.postalCode, delivery.city]);
     const driverName = resolveDriverName(delivery.driverName);
     const customerName = resolveCustomerName(delivery);
@@ -319,7 +536,10 @@ async function buildDeliveriesMapPayload(
       const stops = delivery.order.stops;
       if (stops.length > 0) {
         for (const stop of stops) {
-          const coords = coordsByKey.get(`${delivery.id}-pickup-${stop.id}`);
+          const coords =
+            stop.latitude != null && stop.longitude != null
+              ? { lat: stop.latitude, lng: stop.longitude }
+              : coordsByKey.get(`${delivery.id}-pickup-${stop.id}`);
           const address = formatAddress([stop.address, stop.postalCode, stop.city]);
           if (!coords) continue;
           pickups.push({
@@ -333,7 +553,10 @@ async function buildDeliveriesMapPayload(
         pickupCoords = pickups[0] ? { lat: pickups[0].latitude, lng: pickups[0].longitude } : null;
         pickupAddress = pickups[0]?.address ?? null;
       } else {
-        pickupCoords = coordsByKey.get(`${delivery.id}-pickup`) ?? null;
+        pickupCoords =
+          delivery.pickupLatitude != null && delivery.pickupLongitude != null
+            ? { lat: delivery.pickupLatitude, lng: delivery.pickupLongitude }
+            : (coordsByKey.get(`${delivery.id}-pickup`) ?? null);
         pickupAddress = formatAddress([
           delivery.pickupAddress,
           delivery.pickupPostalCode,
@@ -461,12 +684,11 @@ export async function getClientDeliveriesMap(
 ): Promise<{ active: DispatchMapDelivery[]; history: DispatchMapDelivery[] }> {
   const [activeRecords, historyRecords] = await Promise.all([
     fetchActiveMapDeliveries({ customerId }),
-    prisma.delivery.findMany({
+    findManyMapDeliveries({
       where: {
         customerId,
         status: { in: MAP_HISTORY_STATUSES },
       },
-      select: MAP_DELIVERY_SELECT,
       orderBy: [{ completedAt: "desc" }, { createdAt: "desc" }],
       take: CLIENT_MAP_HISTORY_LIMIT,
     }),
@@ -495,42 +717,138 @@ export async function getDispatchDriversMap(
   if (drivers.length === 0) return { drivers: [], points: [] };
 
   const driverIds = drivers.map((d) => d.id);
-  const deliveries = await prisma.delivery.findMany({
-    where: {
-      companyId,
-      driverId: { in: driverIds },
-      status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
-    },
-    select: {
-      id: true,
-      reference: true,
-      status: true,
-      deliveryCategory: true,
-      address: true,
-      city: true,
-      postalCode: true,
-      driverId: true,
-      driverName: true,
-    },
-  });
+  type DriverMapDelivery = {
+    id: string;
+    reference: string;
+    status: DeliveryStatus;
+    deliveryCategory: DeliveryCategory;
+    address: string;
+    city: string | null;
+    postalCode: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    driverId: string | null;
+    driverName: string | null;
+  };
 
-  const byDriver = new Map<string, typeof deliveries>();
+  const driverMapSelectWithCoords = {
+    id: true,
+    reference: true,
+    status: true,
+    deliveryCategory: true,
+    address: true,
+    city: true,
+    postalCode: true,
+    latitude: true,
+    longitude: true,
+    driverId: true,
+    driverName: true,
+  } as const;
+
+  const driverMapSelectLegacy = {
+    id: true,
+    reference: true,
+    status: true,
+    deliveryCategory: true,
+    address: true,
+    city: true,
+    postalCode: true,
+    driverId: true,
+    driverName: true,
+  } as const;
+
+  let deliveries: DriverMapDelivery[];
+  if (!preferLegacyMapSelect) {
+    try {
+      deliveries = await prisma.delivery.findMany({
+        where: {
+          companyId,
+          driverId: { in: driverIds },
+          status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
+        },
+        select: driverMapSelectWithCoords,
+      });
+    } catch (error) {
+      if (!isMissingColumnError(error)) throw error;
+      preferLegacyMapSelect = true;
+      console.warn(
+        "[dispatch-map] Delivery coordinate columns missing on drivers map; falling back to geocode path"
+      );
+      const legacyRows = await prisma.delivery.findMany({
+        where: {
+          companyId,
+          driverId: { in: driverIds },
+          status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
+        },
+        select: driverMapSelectLegacy,
+      });
+      deliveries = legacyRows.map((row) => ({
+        ...row,
+        latitude: null,
+        longitude: null,
+      }));
+    }
+  } else {
+    const legacyRows = await prisma.delivery.findMany({
+      where: {
+        companyId,
+        driverId: { in: driverIds },
+        status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
+      },
+      select: driverMapSelectLegacy,
+    });
+    deliveries = legacyRows.map((row) => ({
+      ...row,
+      latitude: null,
+      longitude: null,
+    }));
+  }
+
+  const byDriver = new Map<string, DriverMapDelivery[]>();
   for (const id of driverIds) byDriver.set(id, []);
   for (const d of deliveries) {
     if (!d.driverId) continue;
     byDriver.get(d.driverId)?.push(d);
   }
 
-  const coordsByKey = await geocodeMany(
-    deliveries.map((delivery) => ({
-      key: delivery.id,
-      parts: {
-        address: delivery.address,
-        postalCode: delivery.postalCode,
-        city: delivery.city,
-      },
-    }))
+  const missingGeocode = deliveries.filter(
+    (delivery) => delivery.latitude == null || delivery.longitude == null
   );
+  const coordsByKey =
+    missingGeocode.length > 0
+      ? await geocodeMany(
+          missingGeocode.map((delivery) => ({
+            key: delivery.id,
+            parts: {
+              address: delivery.address,
+              postalCode: delivery.postalCode,
+              city: delivery.city,
+            },
+          }))
+        )
+      : new Map<string, { lat: number; lng: number }>();
+
+  if (coordsByKey.size > 0 && !preferLegacyMapSelect) {
+    void Promise.all(
+      missingGeocode.map((delivery) => {
+        const coords = coordsByKey.get(delivery.id);
+        if (!coords) return Promise.resolve();
+        return prisma.delivery.update({
+          where: { id: delivery.id },
+          data: { latitude: coords.lat, longitude: coords.lng },
+        });
+      })
+    ).catch((error) => {
+      if (isMissingColumnError(error)) {
+        preferLegacyMapSelect = true;
+        console.warn(
+          "[dispatch-map] Coordinate columns missing while persisting driver-map coords"
+        );
+        return;
+      }
+      console.warn("[dispatch-map] Failed to persist driver-map coordinates", error);
+    });
+  }
 
   const entries: DispatchDriverMapEntry[] = [];
   const points: DispatchMapPoint[] = [];
@@ -538,7 +856,10 @@ export async function getDispatchDriversMap(
   for (const driver of drivers) {
     const missions = byDriver.get(driver.id) ?? [];
     const missionPoints = missions.map((m) => {
-      const coords = coordsByKey.get(m.id)!;
+      const coords =
+        m.latitude != null && m.longitude != null
+          ? { lat: m.latitude, lng: m.longitude }
+          : coordsByKey.get(m.id)!;
       const address = formatAddress([m.address, m.postalCode, m.city]);
       return {
         deliveryId: m.id,

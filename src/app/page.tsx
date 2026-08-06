@@ -1,9 +1,13 @@
-import { redirect } from "next/navigation";
-import { getServerAuth } from "@/lib/api/server-auth";
-import { getDashboardPathForRole } from "@/domains/auth/auth.service";
+import type { Metadata } from "next";
+import { HomeLanding } from "@/features/landing/home-landing";
+import { APP_NAME } from "@/lib/constants";
 
-export default async function HomePage() {
-  const auth = await getServerAuth();
-  if (!auth) redirect("/login");
-  redirect(getDashboardPathForRole(auth.user.role.systemRole));
+export const metadata: Metadata = {
+  title: `${APP_NAME} — Plateforme de pilotage des livraisons`,
+  description:
+    "Tutelliv relie entreprise, clients et chauffeurs pour piloter commandes, dispatch et livraisons.",
+};
+
+export default function HomePage() {
+  return <HomeLanding />;
 }

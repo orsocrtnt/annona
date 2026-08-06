@@ -1,4 +1,6 @@
 import "server-only";
+import { cache } from "react";
+import { headers } from "next/headers";
 import { createClient } from "@/services/supabase/server";
 import { extractPermissionSlugs, getUserByAuthId } from "@/domains/user/user.service";
 import { syncUserFromSupabase, UserNotProvisionedError } from "@/domains/auth/auth.service";
@@ -8,6 +10,7 @@ import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 import { resolveAuthUserWithDemoPersona } from "@/domains/demo/demo-auth.service";
 import { getCachedAuth, setCachedAuth } from "./auth-cache";
+import { TUTELLIV_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
 
 export interface ServerAuthContext {
   authId: string;
@@ -15,44 +18,36 @@ export interface ServerAuthContext {
   permissions: string[];
 }
 
-export async function getServerAuth(
-  permissions?: PermissionSlug | PermissionSlug[]
+async function resolveUserFromAuthId(
+  authId: string,
+  metadata?: Record<string, string>,
+  email?: string
 ): Promise<ServerAuthContext | null> {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-
-  if (!authUser) return null;
-
-  const cached = getCachedAuth(authUser.id);
+  const cached = getCachedAuth(authId);
   if (cached) {
-    const resolved = await resolveAuthUserWithDemoPersona(authUser.id, cached.user);
-    if (permissions && !hasPermission(resolved.permissions, permissions)) {
-      return null;
-    }
+    const resolved = await resolveAuthUserWithDemoPersona(authId, cached.user);
     return {
-      authId: authUser.id,
+      authId,
       user: resolved.user,
       permissions: resolved.permissions,
     };
   }
 
-  let user = await getUserByAuthId(authUser.id);
+  let user = await getUserByAuthId(authId);
 
-  if (!user) {
-    const metadata = authUser.user_metadata as Record<string, string>;
+  if (!user && email) {
+    const meta = metadata ?? {};
     const isCompanyAccount =
-      metadata.account_type === "company" || Boolean(metadata.company_name);
+      meta.account_type === "company" || Boolean(meta.company_name);
 
     try {
       user = await syncUserFromSupabase({
-        authId: authUser.id,
-        email: authUser.email!,
-        firstName: metadata.first_name ?? metadata.firstName ?? "Utilisateur",
-        lastName: metadata.last_name ?? metadata.lastName ?? "",
+        authId,
+        email,
+        firstName: meta.first_name ?? meta.firstName ?? "Utilisateur",
+        lastName: meta.last_name ?? meta.lastName ?? "",
         accountType: isCompanyAccount ? "company" : undefined,
-        companyName: metadata.company_name,
+        companyName: meta.company_name,
       });
     } catch (error) {
       if (error instanceof UserNotProvisionedError) return null;
@@ -60,18 +55,56 @@ export async function getServerAuth(
     }
   }
 
-  const resolved = await resolveAuthUserWithDemoPersona(authUser.id, user);
-  setCachedAuth(authUser.id, user, extractPermissionSlugs(user));
+  if (!user) return null;
 
-  if (permissions && !hasPermission(resolved.permissions, permissions)) {
-    return null;
-  }
+  const resolved = await resolveAuthUserWithDemoPersona(authId, user);
+  setCachedAuth(authId, user, extractPermissionSlugs(user));
 
   return {
-    authId: authUser.id,
+    authId,
     user: resolved.user,
     permissions: resolved.permissions,
   };
+}
+
+/**
+ * Charge le contexte auth une fois par requête RSC.
+ * Si le middleware a déjà validé l'utilisateur (header), on saute getUser() → 1 seul RTT Auth / navigation.
+ * Les routes API (hors middleware) passent toujours par getUser().
+ */
+const loadAuthContext = cache(async (): Promise<ServerAuthContext | null> => {
+  const headerList = await headers();
+  const authIdFromMiddleware = headerList.get(TUTELLIV_AUTH_ID_HEADER);
+
+  if (authIdFromMiddleware) {
+    return resolveUserFromAuthId(authIdFromMiddleware);
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) return null;
+
+  return resolveUserFromAuthId(
+    authUser.id,
+    authUser.user_metadata as Record<string, string>,
+    authUser.email ?? undefined
+  );
+});
+
+export async function getServerAuth(
+  permissions?: PermissionSlug | PermissionSlug[]
+): Promise<ServerAuthContext | null> {
+  const auth = await loadAuthContext();
+  if (!auth) return null;
+
+  if (permissions && !hasPermission(auth.permissions, permissions)) {
+    return null;
+  }
+
+  return auth;
 }
 
 export async function requireServerRole(role: SystemRole): Promise<ServerAuthContext | null> {

@@ -33,6 +33,8 @@ export async function getCompanyClients(companyId: string) {
       },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    // Cap temporaire — pagination à suivre
+    take: 100,
   });
 
   const clientIds = clients.map((client) => client.id);

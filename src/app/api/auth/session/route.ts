@@ -14,7 +14,8 @@ export async function GET() {
       return NextResponse.json({ user: null, permissions: [], demo: null });
     }
 
-    const baseUser = await getDemoBaseAuthUser();
+    // auth.authId déjà résolu par getServerAuth — pas de 2e getUser()
+    const baseUser = await getDemoBaseAuthUser(auth.authId);
     const demo = baseUser
       ? {
           isDemo: true as const,

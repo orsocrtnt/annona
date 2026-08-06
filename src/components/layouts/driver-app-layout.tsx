@@ -9,12 +9,39 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { Home, MapPin, User } from "lucide-react";
+import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 
 const bottomNav = [
   { title: "Accueil", href: "/driver", icon: Home },
   { title: "Missions", href: "/driver/missions", icon: MapPin },
   { title: "Profil", href: "/driver/profile", icon: User },
 ];
+
+function DriverBottomNavLink({
+  item,
+  isActive,
+}: {
+  item: (typeof bottomNav)[number];
+  isActive: boolean;
+}) {
+  const prefetchHandlers = useNavQueryPrefetch(item.href);
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={isActive ? "page" : undefined}
+      {...prefetchHandlers}
+      className={cn(
+        "flex min-h-[56px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 transition-all active:bg-muted",
+        isActive ? "text-brand" : "text-muted-foreground"
+      )}
+    >
+      <Icon className={cn("h-6 w-6", isActive && "scale-110")} />
+      <span className="text-xs font-medium">{item.title}</span>
+    </Link>
+  );
+}
 
 interface DriverAppLayoutProps {
   children: React.ReactNode;
@@ -62,20 +89,8 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
         <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1.5">
           {bottomNav.map((item) => {
             const isActive = pathname === item.href;
-            const Icon = item.icon;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "flex min-h-[56px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 transition-all active:bg-muted",
-                  isActive ? "text-brand" : "text-muted-foreground"
-                )}
-              >
-                <Icon className={cn("h-6 w-6", isActive && "scale-110")} />
-                <span className="text-xs font-medium">{item.title}</span>
-              </Link>
+              <DriverBottomNavLink key={item.href} item={item} isActive={isActive} />
             );
           })}
         </div>

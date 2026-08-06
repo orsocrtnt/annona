@@ -327,6 +327,8 @@ model OrderStop {
   address      String
   city         String?
   postalCode   String?     @map("postal_code")
+  latitude     Float?
+  longitude    Float?
   instructions String?
   items        OrderItem[]
 
@@ -342,9 +344,13 @@ model Delivery {
   pickupAddress    String?          @map("pickup_address")
   pickupCity       String?          @map("pickup_city")
   pickupPostalCode String?          @map("pickup_postal_code")
+  pickupLatitude   Float?           @map("pickup_latitude")
+  pickupLongitude  Float?           @map("pickup_longitude")
   address     String
   city        String?
   postalCode  String?        @map("postal_code")
+  latitude    Float?
+  longitude   Float?
   driverName  String?        @map("driver_name")
   driverId    String?        @map("driver_id")
   driver      User?          @relation("DriverDeliveries", fields: [driverId], references: [id], onDelete: SetNull)

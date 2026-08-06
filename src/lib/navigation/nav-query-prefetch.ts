@@ -1,14 +1,37 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { portalApi } from "@/features/client-portal/api";
 import { backOfficeApi } from "@/features/back-office/api";
+import { companySettingsApi } from "@/features/back-office/company-settings-api";
+import { billingSettingsApi } from "@/features/back-office/billing-settings-api";
 import { driverApi } from "@/features/driver/api";
-
-const LIST_STALE_MS = 5 * 60 * 1000;
+import { fetchAdminOverview } from "@/features/admin/api";
+import { QUERY_STALE_MS } from "@/lib/query/defaults";
 
 type RoutePrefetch = {
   queryKey: readonly unknown[];
   queryFn: () => Promise<unknown>;
 };
+
+async function fetchUsers() {
+  const res = await fetch("/api/users");
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+  return json.data;
+}
+
+async function fetchDispatchMap() {
+  const res = await fetch("/api/dispatch/map");
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+  return json.data;
+}
+
+async function fetchDriversLocations() {
+  const res = await fetch("/api/dispatch/drivers-locations");
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+  return json.data;
+}
 
 const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
   "/portal": {
@@ -63,6 +86,34 @@ const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
     queryKey: ["company", "deliveries", "all"],
     queryFn: () => backOfficeApi.getDeliveries(false),
   },
+  "/dispatch/map": {
+    queryKey: ["company", "dispatch", "map"],
+    queryFn: fetchDispatchMap,
+  },
+  "/dispatch/drivers": {
+    queryKey: ["company", "dispatch", "drivers-locations"],
+    queryFn: fetchDriversLocations,
+  },
+  "/admin": {
+    queryKey: ["admin", "overview"],
+    queryFn: fetchAdminOverview,
+  },
+  "/companies": {
+    queryKey: ["admin", "overview"],
+    queryFn: fetchAdminOverview,
+  },
+  "/users": {
+    queryKey: ["users"],
+    queryFn: fetchUsers,
+  },
+  "/settings": {
+    queryKey: ["company", "settings", "delivery-options"],
+    queryFn: companySettingsApi.getDeliveryOptions,
+  },
+  "/settings/billing": {
+    queryKey: ["company", "settings", "billing"],
+    queryFn: billingSettingsApi.get,
+  },
   "/driver": {
     queryKey: ["driver", "missions"],
     queryFn: driverApi.getMissions,
@@ -81,6 +132,6 @@ export function prefetchRouteQueries(queryClient: QueryClient, href: string) {
   void queryClient.prefetchQuery({
     queryKey: config.queryKey,
     queryFn: config.queryFn,
-    staleTime: LIST_STALE_MS,
+    staleTime: QUERY_STALE_MS,
   });
 }

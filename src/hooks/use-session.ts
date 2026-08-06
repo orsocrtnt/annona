@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth.store";
 import { useEffect } from "react";
+import { QUERY_GC_MS, QUERY_STALE_MS } from "@/lib/query/defaults";
 
 async function fetchSession() {
   const res = await fetch("/api/auth/session");
@@ -10,19 +11,32 @@ async function fetchSession() {
   return res.json();
 }
 
+/**
+ * Ne rappelle /api/auth/session que si le store n'a pas encore d'utilisateur
+ * (évite un 3e getUser après login / entre navigations client).
+ */
 export function useSession() {
+  const user = useAuthStore((s) => s.user);
   const { setUser, setPermissions, setDemo, setLoading } = useAuthStore();
 
   const query = useQuery({
     queryKey: ["session"],
     queryFn: fetchSession,
+    enabled: !user,
     retry: false,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: QUERY_STALE_MS,
+    gcTime: QUERY_GC_MS,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
-    if (query.isLoading) return;
+    if (user) {
+      setLoading(false);
+      return;
+    }
+
+    if (query.isLoading || query.isFetching) return;
 
     if (query.data) {
       setUser(query.data.user ?? null);
@@ -34,7 +48,17 @@ export function useSession() {
       setDemo(null);
     }
     setLoading(false);
-  }, [query.data, query.isLoading, query.isError, setUser, setPermissions, setDemo, setLoading]);
+  }, [
+    user,
+    query.data,
+    query.isLoading,
+    query.isFetching,
+    query.isError,
+    setUser,
+    setPermissions,
+    setDemo,
+    setLoading,
+  ]);
 
   return query;
 }

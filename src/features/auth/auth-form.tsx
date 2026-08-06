@@ -183,12 +183,12 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   return (
     <div className="flex min-h-screen">
       <div className="hidden w-1/2 flex-col justify-between bg-foreground p-12 lg:flex">
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex w-fit items-center gap-3 transition-opacity hover:opacity-90">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand">
             <Package2 className="h-5 w-5 text-white" />
           </div>
           <span className="text-xl font-semibold text-white">{APP_NAME}</span>
-        </div>
+        </Link>
         <div>
           <h2 className="text-4xl font-semibold leading-tight text-white text-balance">
             {isInvitedUser
@@ -206,17 +206,19 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
         </p>
       </div>
 
-      <div className="flex flex-1 items-center justify-center p-6">
-        <div className="w-full max-w-md animate-slide-up">
-          <div className="mb-8 lg:hidden">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
-                <Package2 className="h-4 w-4" />
-              </div>
-              <span className="text-lg font-semibold">{APP_NAME}</span>
-            </div>
+      <div className="relative flex flex-1 items-center justify-center p-6">
+        <Link
+          href="/"
+          className="absolute right-6 top-6 z-10 flex items-center gap-2.5 transition-opacity hover:opacity-80"
+          aria-label={`Retour à l'accueil ${APP_NAME}`}
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
+            <Package2 className="h-4 w-4" />
           </div>
+          <span className="text-lg font-semibold">{APP_NAME}</span>
+        </Link>
 
+        <div className="w-full max-w-md animate-slide-up pt-12 lg:pt-0">
           <h1 className="text-2xl font-semibold tracking-tight">{titles[mode].title}</h1>
           <p className="mt-1 text-muted-foreground">{titles[mode].subtitle}</p>
 

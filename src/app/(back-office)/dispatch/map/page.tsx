@@ -14,7 +14,7 @@ import { useDispatchDeliveriesMap } from "@/features/back-office/dispatch-map-ho
 import { PageLoader } from "@/components/ui/loader";
 
 export default function DispatchMapPage() {
-  const { data, isLoading, error, isError } = useDispatchDeliveriesMap();
+  const { data, isPending, error, isError } = useDispatchDeliveriesMap();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapApi, setMapApi] = useState<DeliveriesMapApi | null>(null);
 
@@ -25,7 +25,7 @@ export default function DispatchMapPage() {
     [deliveries, selectedId]
   );
 
-  if (isLoading) {
+  if (isPending && !data && !isError) {
     return (
       <div className="flex h-full items-center justify-center bg-[#f0f0f0]">
         <PageLoader />

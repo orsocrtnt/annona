@@ -15,6 +15,10 @@ import {
 } from "@/lib/order-reference";
 import { formatStopAddress, getPrimaryCourierPickupFields } from "@/lib/order/courier-pickups";
 import { buildReorderFormValues } from "@/lib/order/reorder-template";
+import {
+  resolveDeliveryCoordinateFields,
+  resolveStopCoordinates,
+} from "@/domains/delivery/delivery-coordinates";
 
 type CreateOrderOptions = CreateClientOrderInput & {
   recurringOrderId?: string;
@@ -48,6 +52,8 @@ export async function getClientOrders(
       deliveries: { select: { id: true, reference: true, status: true } },
     },
     orderBy: { createdAt: "desc" },
+    // Cap temporaire — pagination à suivre
+    take: 100,
   });
 }
 
@@ -162,6 +168,16 @@ export async function createClientOrder(
     const firstStop = stops[0];
     const orderReference = await generateOrderReference("SPECIAL_MISSION");
 
+    const stopCoords = await Promise.all(
+      stops.map((stop) =>
+        resolveStopCoordinates({
+          address: stop.address,
+          city: stop.city,
+          postalCode: stop.postalCode,
+        })
+      )
+    );
+
     const order = await prisma.order.create({
       data: {
         reference: orderReference,
@@ -189,6 +205,8 @@ export async function createClientOrder(
             city: stop.city ?? null,
             postalCode: stop.postalCode ?? null,
             instructions: stop.instructions ?? null,
+            latitude: stopCoords[index]?.latitude ?? null,
+            longitude: stopCoords[index]?.longitude ?? null,
           })),
         },
       },
@@ -216,6 +234,19 @@ export async function createClientOrder(
     : input.items.reduce((sum, item) => sum + item.quantity, 0);
   const orderReference = await generateOrderReference(deliveryCategory);
   const deliveryReference = await generateDeliveryReference();
+
+  const pickupStopCoords =
+    isCourier && pickupStops.length > 0
+      ? await Promise.all(
+          pickupStops.map((stop) =>
+            resolveStopCoordinates({
+              address: stop.address,
+              city: stop.city,
+              postalCode: stop.postalCode,
+            })
+          )
+        )
+      : [];
 
   const order = await prisma.order.create({
     data: {
@@ -268,6 +299,8 @@ export async function createClientOrder(
                 city: stop.city ?? null,
                 postalCode: stop.postalCode ?? null,
                 instructions: stop.instructions ?? null,
+                latitude: pickupStopCoords[index]?.latitude ?? null,
+                longitude: pickupStopCoords[index]?.longitude ?? null,
               })),
             }
           : undefined,
@@ -299,6 +332,22 @@ export async function createClientOrder(
   const isCourierDelivery = isCourier;
   const primaryPickup = isCourier ? getPrimaryCourierPickupFields(pickupStops) : null;
 
+  const deliveryCoords = await resolveDeliveryCoordinateFields({
+    address: input.shippingAddress,
+    city: input.shippingCity,
+    postalCode: input.shippingPostalCode,
+    pickupAddress: isCourier
+      ? primaryPickup?.pickupAddress ?? null
+      : (input.pickupAddress ?? null),
+    pickupCity: isCourier
+      ? primaryPickup?.pickupCity ?? null
+      : (input.pickupCity ?? null),
+    pickupPostalCode: isCourier
+      ? primaryPickup?.pickupPostalCode ?? null
+      : (input.pickupPostalCode ?? null),
+    includePickup: isCourier,
+  });
+
   const delivery = await prisma.delivery.create({
     data: {
       reference: deliveryReference,
@@ -313,9 +362,13 @@ export async function createClientOrder(
       pickupPostalCode: isCourier
         ? primaryPickup?.pickupPostalCode ?? null
         : (input.pickupPostalCode ?? null),
+      pickupLatitude: deliveryCoords.pickupLatitude,
+      pickupLongitude: deliveryCoords.pickupLongitude,
       address: input.shippingAddress!,
       city: input.shippingCity!,
       postalCode: input.shippingPostalCode!,
+      latitude: deliveryCoords.latitude,
+      longitude: deliveryCoords.longitude,
       companyId,
       orderId: order.id,
       customerId,
@@ -409,6 +462,8 @@ export async function getCompanyOrders(companyId: string) {
       },
     },
     orderBy: { createdAt: "desc" },
+    // Cap temporaire — pagination à suivre
+    take: 150,
   });
 
   return resolveCustomersByEmail(orders);
@@ -514,6 +569,16 @@ export async function updateCompanyOrderStatus(
       const lastStop = stops[stops.length - 1] ?? firstStop;
       const deliveryReference = await generateDeliveryReference();
 
+      const deliveryCoords = await resolveDeliveryCoordinateFields({
+        address: lastStop?.address ?? order.shippingAddress ?? "",
+        city: lastStop?.city ?? order.shippingCity,
+        postalCode: lastStop?.postalCode ?? order.shippingPostalCode,
+        pickupAddress: stops.length > 1 ? firstStop?.address ?? null : null,
+        pickupCity: stops.length > 1 ? firstStop?.city ?? null : null,
+        pickupPostalCode: stops.length > 1 ? firstStop?.postalCode ?? null : null,
+        includePickup: stops.length > 1,
+      });
+
       const delivery = await tx.delivery.create({
         data: {
           reference: deliveryReference,
@@ -522,9 +587,13 @@ export async function updateCompanyOrderStatus(
           pickupAddress: stops.length > 1 ? firstStop?.address ?? null : null,
           pickupCity: stops.length > 1 ? firstStop?.city ?? null : null,
           pickupPostalCode: stops.length > 1 ? firstStop?.postalCode ?? null : null,
+          pickupLatitude: deliveryCoords.pickupLatitude,
+          pickupLongitude: deliveryCoords.pickupLongitude,
           address: lastStop?.address ?? order.shippingAddress ?? "",
           city: lastStop?.city ?? order.shippingCity,
           postalCode: lastStop?.postalCode ?? order.shippingPostalCode,
+          latitude: deliveryCoords.latitude,
+          longitude: deliveryCoords.longitude,
           companyId,
           orderId: order.id,
           customerId: order.customerId,

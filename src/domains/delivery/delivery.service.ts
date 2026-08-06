@@ -18,6 +18,7 @@ import {
   statusNeedsProximityCheck,
 } from "@/domains/delivery/driver-proximity.service";
 import { resolveCustomersByEmail } from "@/domains/order/resolve-customer";
+import { resolveDeliveryCoordinateFields } from "@/domains/delivery/delivery-coordinates";
 
 function startOfToday() {
   const d = new Date();
@@ -90,6 +91,12 @@ export async function repairCourierDeliveryIfNeeded(deliveryId: string, customer
           pickupAddress: firstStop.address,
           pickupCity: firstStop.city,
           pickupPostalCode: firstStop.postalCode,
+          ...(firstStop.latitude != null && firstStop.longitude != null
+            ? {
+                pickupLatitude: firstStop.latitude,
+                pickupLongitude: firstStop.longitude,
+              }
+            : {}),
         }
       : null;
 
@@ -741,6 +748,42 @@ export async function adminUpdateDelivery(
     if (input.address) orderData.shippingAddress = input.address;
     if (input.city) orderData.shippingCity = input.city;
     if (input.postalCode) orderData.shippingPostalCode = input.postalCode;
+
+    const addressChanged = Boolean(
+      input.address ||
+        input.city ||
+        input.postalCode ||
+        input.pickupAddress !== undefined ||
+        input.pickupCity !== undefined ||
+        input.pickupPostalCode !== undefined
+    );
+
+    if (addressChanged) {
+      const coords = await resolveDeliveryCoordinateFields({
+        address: (deliveryData.address as string | undefined) ?? delivery.address,
+        city: (deliveryData.city as string | null | undefined) ?? delivery.city,
+        postalCode:
+          (deliveryData.postalCode as string | null | undefined) ?? delivery.postalCode,
+        pickupAddress:
+          (deliveryData.pickupAddress as string | null | undefined) ??
+          delivery.pickupAddress,
+        pickupCity:
+          (deliveryData.pickupCity as string | null | undefined) ?? delivery.pickupCity,
+        pickupPostalCode:
+          (deliveryData.pickupPostalCode as string | null | undefined) ??
+          delivery.pickupPostalCode,
+        includePickup: Boolean(
+          (
+            (deliveryData.pickupAddress as string | null | undefined) ??
+            delivery.pickupAddress
+          )?.trim()
+        ),
+      });
+      deliveryData.latitude = coords.latitude;
+      deliveryData.longitude = coords.longitude;
+      deliveryData.pickupLatitude = coords.pickupLatitude;
+      deliveryData.pickupLongitude = coords.pickupLongitude;
+    }
 
     const updated = await tx.delivery.update({
       where: { id: deliveryId },

@@ -9,6 +9,7 @@ import {
 } from "@/lib/demo/constants";
 import { getDemoPersonaCookie } from "@/lib/demo/persona-cookie";
 import { getDemoPersonaUser } from "@/domains/demo/demo-users.service";
+import { getCachedAuth } from "@/lib/api/auth-cache";
 
 export interface DemoSessionInfo {
   isDemo: true;
@@ -16,14 +17,25 @@ export interface DemoSessionInfo {
   loginEmail: string;
 }
 
-export async function getDemoBaseAuthUser(): Promise<UserWithRole | null> {
-  const supabase = await createClient();
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser();
-  if (!authUser) return null;
+/**
+ * @param knownAuthId — si déjà connu (ex. après getServerAuth), évite un 2e getUser()
+ */
+export async function getDemoBaseAuthUser(
+  knownAuthId?: string
+): Promise<UserWithRole | null> {
+  let authId = knownAuthId;
+  if (!authId) {
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser) return null;
+    authId = authUser.id;
+  }
 
-  const user = await getUserByAuthId(authUser.id);
+  // Réutilise le cache posé par getServerAuth dans la même requête
+  const cached = getCachedAuth(authId);
+  const user = cached?.user ?? (await getUserByAuthId(authId));
   if (!user?.company?.isDemo || !isDemoLoginEmail(user.email)) return null;
   return user;
 }

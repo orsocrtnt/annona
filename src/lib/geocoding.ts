@@ -58,7 +58,6 @@ export async function geocodeAddress(parts: AddressParts): Promise<{ lat: number
 
     const response = await fetch(url.toString(), {
       headers: { Accept: "application/json" },
-      next: { revalidate: 86_400 },
     });
 
     if (response.ok) {

@@ -32,13 +32,30 @@ import {
   DEMO_PERSONA_LABELS,
   type DemoPersona,
 } from "@/lib/demo/constants";
-import { AUTH_ROUTES } from "@/lib/constants";
+
+/** Aligné sur les préfixes protégés du middleware — pas la landing / pages publiques. */
+const DEMO_BANNER_APP_PREFIXES = [
+  "/admin",
+  "/dashboard",
+  "/dispatch",
+  "/driver",
+  "/portal",
+  "/settings",
+  "/users",
+  "/companies",
+] as const;
 
 const PERSONA_ICONS: Record<DemoPersona, typeof Building2> = {
   admin: Building2,
   client: UserRound,
   driver: Truck,
 };
+
+function isDemoAppArea(pathname: string): boolean {
+  return DEMO_BANNER_APP_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
 
 export function DemoModeBar() {
   const pathname = usePathname();
@@ -49,8 +66,8 @@ export function DemoModeBar() {
   const [resetting, setResetting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
 
-  const isAuthPage = AUTH_ROUTES.some((route) => pathname === route);
-  const visible = Boolean(demo?.isDemo) && !isAuthPage;
+  // Session démo (email + company.isDemo via /api/auth/session) ET zone app authentifiée
+  const visible = Boolean(demo?.isDemo) && isDemoAppArea(pathname);
 
   const switchPersona = useCallback(
     async (persona: DemoPersona) => {
@@ -69,7 +86,7 @@ export function DemoModeBar() {
         setUser(json.user);
         setPermissions(json.permissions ?? []);
         setDemo(json.demo ?? null);
-        await queryClient.invalidateQueries({ queryKey: ["session"] });
+        await queryClient.clear();
         router.push(json.redirectTo);
         toast.success(`Vue ${DEMO_PERSONA_LABELS[persona]} activée`);
       } catch (error) {
@@ -92,7 +109,7 @@ export function DemoModeBar() {
       setUser(json.user);
       setPermissions(json.permissions ?? []);
       setDemo(json.demo ?? null);
-      await queryClient.invalidateQueries({ queryKey: ["session"] });
+      await queryClient.clear();
       setResetOpen(false);
       router.push(json.redirectTo ?? "/dashboard");
       toast.success("Démo réinitialisée — scénario de base restauré");

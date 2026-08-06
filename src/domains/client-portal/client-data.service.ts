@@ -65,6 +65,8 @@ export async function provisionClientTestData(
       address: "15 rue de la Paix",
       city: "Paris",
       postalCode: "75002",
+      latitude: 48.8698,
+      longitude: 2.3311,
       driverName: "Jean Test",
       estimatedArrival: new Date(Date.now() + 2 * 60 * 60 * 1000),
       companyId,

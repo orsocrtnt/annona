@@ -43,14 +43,9 @@ export async function middleware(request: NextRequest) {
     } else if (pathname === "/login/driver") {
       url.pathname = "/driver";
     } else {
-      url.pathname = "/";
+      // Staff déjà connecté : aller au dashboard, pas à l'accueil public
+      url.pathname = "/dashboard";
     }
-    return NextResponse.redirect(url);
-  }
-
-  if (pathname === "/" && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
@@ -58,9 +53,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // N'inclut pas /api : les routes API gèrent leur propre auth (évite un appel Supabase par fetch)
+  // N'inclut pas /api ni / : landing publique sans middleware ; routes API gèrent leur auth
   matcher: [
-    "/",
     "/login",
     "/login/:path*",
     "/admin/:path*",

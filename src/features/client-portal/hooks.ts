@@ -12,11 +12,14 @@ import type {
 } from "@/domains/delivery/dispatch-map.service";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "@/lib/validations/driver-location-settings";
 import type { PortalInvoice, PortalOrder } from "./types";
-
-const LIST_STALE_MS = 5 * 60 * 1000;
+import { QUERY_STALE_MS } from "@/lib/query/defaults";
 
 export function usePortalDashboard() {
-  return useQuery({ queryKey: ["portal", "dashboard"], queryFn: portalApi.getDashboard });
+  return useQuery({
+    queryKey: ["portal", "dashboard"],
+    queryFn: portalApi.getDashboard,
+    staleTime: QUERY_STALE_MS,
+  });
 }
 
 export function usePortalOrders(history = false, initialData?: PortalOrder[]) {
@@ -24,7 +27,7 @@ export function usePortalOrders(history = false, initialData?: PortalOrder[]) {
     queryKey: ["portal", "orders", history ? "history" : "active"],
     queryFn: () => portalApi.getOrders(history),
     initialData,
-    staleTime: LIST_STALE_MS,
+    staleTime: QUERY_STALE_MS,
   });
 }
 
@@ -47,7 +50,11 @@ export function useCreateOrder() {
 }
 
 export function usePortalDeliveries() {
-  return useQuery({ queryKey: ["portal", "deliveries"], queryFn: portalApi.getDeliveries });
+  return useQuery({
+    queryKey: ["portal", "deliveries"],
+    queryFn: portalApi.getDeliveries,
+    staleTime: QUERY_STALE_MS,
+  });
 }
 
 export function usePortalDeliveriesMap() {
@@ -62,7 +69,9 @@ export function usePortalDeliveriesMap() {
           if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
           return json.data as { active: DispatchMapDelivery[]; history: DispatchMapDelivery[] };
         }),
-    refetchInterval: refreshMs,
+    retry: 1,
+    refetchInterval: (query) =>
+      query.state.status === "error" ? false : refreshMs,
   });
 }
 
@@ -117,7 +126,7 @@ export function usePortalInvoices(initialData?: PortalInvoice[]) {
     queryKey: ["portal", "invoices"],
     queryFn: portalApi.getInvoices,
     initialData,
-    staleTime: LIST_STALE_MS,
+    staleTime: QUERY_STALE_MS,
   });
 }
 
@@ -130,7 +139,11 @@ export function usePortalInvoice(id: string) {
 }
 
 export function usePortalRecurringOrders() {
-  return useQuery({ queryKey: ["portal", "recurring"], queryFn: portalApi.getRecurringOrders });
+  return useQuery({
+    queryKey: ["portal", "recurring"],
+    queryFn: portalApi.getRecurringOrders,
+    staleTime: QUERY_STALE_MS,
+  });
 }
 
 export function useCreateRecurringOrder() {
@@ -200,7 +213,11 @@ export function useUpdatePortalSettings() {
 }
 
 export function usePortalSupportTickets() {
-  return useQuery({ queryKey: ["portal", "support"], queryFn: portalApi.getSupportTickets });
+  return useQuery({
+    queryKey: ["portal", "support"],
+    queryFn: portalApi.getSupportTickets,
+    staleTime: QUERY_STALE_MS,
+  });
 }
 
 export function usePortalSupportContacts(deliveryId?: string) {

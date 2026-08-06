@@ -4,13 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { UpdateOrderStatusInput } from "@/lib/validations/order";
 import { backOfficeApi } from "./api";
 import type { CompanyClient, CompanyOrder } from "./types";
-
-const LIST_STALE_MS = 5 * 60 * 1000;
+import { QUERY_STALE_MS } from "@/lib/query/defaults";
 
 export function useCompanyDashboard() {
   return useQuery({
     queryKey: ["company", "dashboard"],
     queryFn: backOfficeApi.getDashboard,
+    staleTime: QUERY_STALE_MS,
   });
 }
 
@@ -19,7 +19,7 @@ export function useCompanyOrders(initialData?: CompanyOrder[]) {
     queryKey: ["company", "orders"],
     queryFn: backOfficeApi.getOrders,
     initialData,
-    staleTime: LIST_STALE_MS,
+    staleTime: QUERY_STALE_MS,
   });
 }
 
@@ -39,11 +39,16 @@ export function useCompanyDeliveries(unassignedOnly = false) {
   return useQuery({
     queryKey: ["company", "deliveries", unassignedOnly ? "unassigned" : "all"],
     queryFn: () => backOfficeApi.getDeliveries(unassignedOnly),
+    staleTime: QUERY_STALE_MS,
   });
 }
 
 export function useCompanyDrivers() {
-  return useQuery({ queryKey: ["company", "drivers"], queryFn: backOfficeApi.getDrivers });
+  return useQuery({
+    queryKey: ["company", "drivers"],
+    queryFn: backOfficeApi.getDrivers,
+    staleTime: QUERY_STALE_MS,
+  });
 }
 
 export function useDriverDispatchWorkload() {
@@ -124,7 +129,7 @@ export function useCompanyClients(initialData?: CompanyClient[]) {
     queryKey: ["company", "clients"],
     queryFn: backOfficeApi.getClients,
     initialData,
-    staleTime: LIST_STALE_MS,
+    staleTime: QUERY_STALE_MS,
   });
 }
 

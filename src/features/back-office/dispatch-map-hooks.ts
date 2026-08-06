@@ -28,7 +28,9 @@ export function useDispatchDeliveriesMap() {
       fetchJson<{ deliveries: DispatchMapDelivery[]; points: DispatchMapPoint[] }>(
         "/api/dispatch/map"
       ),
-    refetchInterval: refreshMs,
+    retry: 1,
+    refetchInterval: (query) =>
+      query.state.status === "error" ? false : refreshMs,
   });
 }
 
@@ -41,6 +43,8 @@ export function useDriverLiveLocations() {
   return useQuery({
     queryKey: ["company", "dispatch", "drivers-locations"],
     queryFn: () => fetchJson<LiveDriverLocation[]>("/api/dispatch/drivers-locations"),
-    refetchInterval: refreshMs,
+    retry: 1,
+    refetchInterval: (query) =>
+      query.state.status === "error" ? false : refreshMs,
   });
 }

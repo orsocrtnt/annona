@@ -18,7 +18,7 @@ interface PortalDeliveriesMapProps {
 }
 
 export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalDeliveriesMapProps) {
-  const { data, isLoading, isError, error } = usePortalDeliveriesMap();
+  const { data, isPending, isError, error } = usePortalDeliveriesMap();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapApi, setMapApi] = useState<DeliveriesMapApi | null>(null);
 
@@ -44,7 +44,7 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
     }
   }, [allDeliveries, activeDeliveries, historyDeliveries, selectedId]);
 
-  if (isLoading) {
+  if (isPending && !isError) {
     return (
       <div
         className={cn(

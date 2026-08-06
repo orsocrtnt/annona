@@ -20,6 +20,7 @@ import {
   USER_TABLE_COL,
 } from "@/features/users/users-table-ui";
 import { formatPersonNameByRole } from "@/lib/format/person-labels";
+import { QUERY_STALE_MS } from "@/lib/query/defaults";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "@/types";
 import type { SystemRole } from "@prisma/client";
@@ -66,6 +67,7 @@ export default function UsersPage() {
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
+    staleTime: QUERY_STALE_MS,
   });
 
   const columns = useMemo((): TableColumn<UserRow & { name: string }>[] => [

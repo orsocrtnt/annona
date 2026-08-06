@@ -188,3 +188,41 @@
   overflow: visible !important;
 }
 
+/* Landing publique — sobre, textuelle */
+.home-landing-brand {
+  font-size: clamp(2.75rem, 9vw, 4.5rem);
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+.home-landing-reveal {
+  animation: homeLandingReveal 0.5s ease-out both;
+}
+
+.home-landing-reveal-1 {
+  animation-delay: 0.04s;
+}
+.home-landing-reveal-2 {
+  animation-delay: 0.12s;
+}
+.home-landing-reveal-3 {
+  animation-delay: 0.22s;
+}
+
+@keyframes homeLandingReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-landing-reveal {
+    animation: none;
+  }
+}
+

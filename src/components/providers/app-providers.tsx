@@ -7,6 +7,7 @@ import { SessionProvider } from "./session-provider";
 import { DemoModeBar } from "@/features/demo/demo-mode-bar";
 import { NavigationProgress } from "@/components/navigation/navigation-progress";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { QUERY_GC_MS, QUERY_STALE_MS } from "@/lib/query/defaults";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -15,10 +16,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 3 * 60 * 1000,
-            gcTime: 15 * 60 * 1000,
+            // Données fraîches 5 min → retour sur une page = instantané (cache)
+            staleTime: QUERY_STALE_MS,
+            gcTime: QUERY_GC_MS,
             refetchOnWindowFocus: false,
-            refetchOnMount: false,
+            // true = refetch seulement si stale (après invalidation / expiration)
+            refetchOnMount: true,
           },
         },
       })
