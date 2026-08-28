@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
-import { getClientOrders, getClientOrderStats } from "@/domains/order/order.service";
+import { getClientOrderCount, getClientOrderStats } from "@/domains/order/order.service";
 import { getClientDeliveries } from "@/domains/delivery/delivery.service";
+import { PORTAL_RECENT_DELIVERIES_TAKE } from "@/lib/query/list-limits";
 
 export async function GET() {
   return withApiHandler(async () => {
@@ -11,10 +12,10 @@ export async function GET() {
 
     const customerId = auth.context.user.id;
 
-    const [stats, orders, deliveries] = await Promise.all([
+    const [stats, orderCount, deliveries] = await Promise.all([
       getClientOrderStats(customerId),
-      getClientOrders(customerId),
-      getClientDeliveries(customerId),
+      getClientOrderCount(customerId),
+      getClientDeliveries(customerId, { take: PORTAL_RECENT_DELIVERIES_TAKE }),
     ]);
 
     return NextResponse.json({
@@ -23,8 +24,8 @@ export async function GET() {
         inDelivery: stats.inDelivery,
         deliveredThisMonth: stats.deliveredThisMonth,
         nextDeliveryEta: stats.nextDeliveryEta,
-        orderCount: orders.length,
-        recentDeliveries: deliveries.slice(0, 3).map((d) => ({
+        orderCount,
+        recentDeliveries: deliveries.map((d) => ({
           id: d.id,
           reference: d.reference,
           status: d.status,

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { DashboardLayoutSettings } from "@/lib/dashboard/dashboard-layout";
+import { DEFAULT_DASHBOARD_LAYOUT, type DashboardLayoutSettings } from "@/lib/dashboard/dashboard-layout";
+import { QUERY_STALE_MS } from "@/lib/query/defaults";
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -10,11 +11,12 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return json.data as T;
 }
 
-export function useDashboardLayout(initialData?: DashboardLayoutSettings) {
+export function useDashboardLayout() {
   return useQuery({
     queryKey: ["back-office", "dashboard-layout"],
     queryFn: () => fetchJson<DashboardLayoutSettings>("/api/back-office/dashboard-layout"),
-    initialData,
+    placeholderData: DEFAULT_DASHBOARD_LAYOUT,
+    staleTime: QUERY_STALE_MS,
   });
 }
 

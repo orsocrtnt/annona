@@ -9,9 +9,16 @@ import { useUIStore } from "@/stores/ui.store";
 import type { LeafletBaseMapProps } from "./leaflet-base-map";
 import { PARIS_CENTER } from "./leaflet-base-map";
 
+const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+/** Fond clair type Positron/Uber, sans clé Carto (évite « API key required »). */
+const LIGHT_TILES = {
+  url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+  attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
+} as const;
+
 const TILES = {
-  default: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  uber: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  default: OSM_TILES,
+  uber: LIGHT_TILES.url,
 } as const;
 
 function getMapHost(el: HTMLElement | null) {
@@ -178,7 +185,7 @@ export function LeafletBaseMapInner({
         <TileLayer
           attribution={
             variant === "uber"
-              ? ""
+              ? LIGHT_TILES.attribution
               : '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           }
           url={TILES[variant]}

@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerAuth } from "@/lib/api/server-auth";
 import { getDemoBaseAuthUser } from "@/domains/demo/demo-auth.service";
-import {
-  demoPersonaForRole,
-  DEMO_LOGIN_EMAIL,
-} from "@/lib/demo/constants";
+import { demoPersonaForRole, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 
 export async function GET() {
   try {
@@ -14,7 +11,6 @@ export async function GET() {
       return NextResponse.json({ user: null, permissions: [], demo: null });
     }
 
-    // auth.authId déjà résolu par getServerAuth — pas de 2e getUser()
     const baseUser = await getDemoBaseAuthUser(auth.authId);
     const demo = baseUser
       ? {

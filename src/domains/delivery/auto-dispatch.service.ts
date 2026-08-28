@@ -20,6 +20,7 @@ import type {
   CompanyDispatchSettings,
   DispatchDriverRule,
 } from "@/lib/validations/dispatch-settings";
+import { AUTO_DISPATCH_QUEUE_TAKE } from "@/lib/query/list-limits";
 import { getDispatchDriverRule } from "@/lib/validations/dispatch-settings";
 
 type DriverActivity = Awaited<ReturnType<typeof getCompanyDriversWithActivity>>[number];
@@ -327,6 +328,7 @@ export async function runAutoDispatchQueue(companyId: string) {
       createdAt: true,
     },
     orderBy: { createdAt: "asc" },
+    take: AUTO_DISPATCH_QUEUE_TAKE,
   });
 
   const sorted = [...pending].sort((a, b) => {

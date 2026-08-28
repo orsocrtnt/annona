@@ -1,6 +1,6 @@
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
-import { averageCoordinates, geocodeMany, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
+import { averageCoordinates, geocodeManyCapped, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
 import { getFulfillmentStatusLabel } from "@/lib/constants/order-status";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "@/lib/validations/driver-location-settings";
 import {
@@ -443,7 +443,9 @@ async function buildDeliveriesMapPayload(
   }
 
   const coordsByKey =
-    geocodeEntries.length > 0 ? await geocodeMany(geocodeEntries) : new Map<string, { lat: number; lng: number }>();
+    geocodeEntries.length > 0
+      ? await geocodeManyCapped(geocodeEntries)
+      : new Map<string, { lat: number; lng: number }>();
 
   // Persiste les coords manquantes pour que les prochains polls serverless soient gratuits
   // Skip when DB lacks the columns (legacy fallback path).
@@ -816,7 +818,7 @@ export async function getDispatchDriversMap(
   );
   const coordsByKey =
     missingGeocode.length > 0
-      ? await geocodeMany(
+      ? await geocodeManyCapped(
           missingGeocode.map((delivery) => ({
             key: delivery.id,
             parts: {

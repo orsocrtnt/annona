@@ -7,6 +7,7 @@ import {
 } from "@/domains/company/tariff-settings.service";
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
 import { FULFILLMENT_STATUS_LABELS } from "@/lib/constants/order-status";
+import { CLIENT_INVOICES_TAKE } from "@/lib/query/list-limits";
 
 function generateInvoiceReference(prefix: string) {
   return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
@@ -227,6 +228,7 @@ export async function getClientInvoices(customerId: string) {
       },
     },
     orderBy: { createdAt: "desc" },
+    take: CLIENT_INVOICES_TAKE,
   });
 }
 

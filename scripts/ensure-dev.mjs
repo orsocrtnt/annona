@@ -1,8 +1,7 @@
-import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 
-// Évite le mélange build (production) + dev qui corrompt le cache webpack.
 const nextDir = ".next";
 const prismaHashFile = ".prisma-schema-hash";
 
@@ -20,31 +19,34 @@ function isPortInUse(port) {
   }
 }
 
-try {
-  execSync("npx prisma generate", { stdio: "inherit" });
-} catch {
-  console.warn("[tutelliv] prisma generate a échoué — vérifiez DATABASE_URL / DIRECT_URL.");
-}
-
-try {
-  execSync("npm run db:sync-schema", { stdio: "inherit" });
-} catch {
-  console.warn(
-    "[tutelliv] db:sync-schema a échoué — lancez `npm run db:sync-schema` si des colonnes manquent."
-  );
-}
-
 const currentPrismaHash = prismaSchemaHash();
 const previousPrismaHash = existsSync(prismaHashFile)
   ? readFileSync(prismaHashFile, "utf8").trim()
   : null;
+const schemaChanged = previousPrismaHash !== currentPrismaHash;
 
-if (previousPrismaHash && previousPrismaHash !== currentPrismaHash && existsSync(nextDir)) {
-  console.log("[tutelliv] Schéma Prisma modifié — nettoyage du cache Next.js...");
-  rmSync(nextDir, { recursive: true, force: true });
+if (schemaChanged) {
+  try {
+    execSync("npx prisma generate", { stdio: "inherit" });
+  } catch {
+    console.warn("[tutelliv] prisma generate a échoué — vérifiez DATABASE_URL / DIRECT_URL.");
+  }
+
+  try {
+    execSync("npm run db:sync-schema", { stdio: "inherit" });
+  } catch {
+    console.warn(
+      "[tutelliv] db:sync-schema a échoué — lancez `npm run db:sync-schema` si des colonnes manquent."
+    );
+  }
+
+  if (previousPrismaHash && existsSync(nextDir)) {
+    console.log("[tutelliv] Schéma Prisma modifié — nettoyage du cache Next.js...");
+    rmSync(nextDir, { recursive: true, force: true });
+  }
+
+  writeFileSync(prismaHashFile, currentPrismaHash);
 }
-
-writeFileSync(prismaHashFile, currentPrismaHash);
 
 if (existsSync(nextDir)) {
   const hasProductionBuild = existsSync(`${nextDir}/BUILD_ID`);

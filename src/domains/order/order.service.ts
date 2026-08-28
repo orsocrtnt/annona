@@ -19,6 +19,7 @@ import {
   resolveDeliveryCoordinateFields,
   resolveStopCoordinates,
 } from "@/domains/delivery/delivery-coordinates";
+import { CLIENT_ORDERS_TAKE, COMPANY_ORDERS_TAKE } from "@/lib/query/list-limits";
 
 type CreateOrderOptions = CreateClientOrderInput & {
   recurringOrderId?: string;
@@ -52,8 +53,7 @@ export async function getClientOrders(
       deliveries: { select: { id: true, reference: true, status: true } },
     },
     orderBy: { createdAt: "desc" },
-    // Cap temporaire — pagination à suivre
-    take: 100,
+    take: CLIENT_ORDERS_TAKE,
   });
 }
 
@@ -153,6 +153,10 @@ export async function getClientOrderStats(customerId: string) {
     deliveredThisMonth,
     nextDeliveryEta: nextDelivery?.estimatedArrival ?? null,
   };
+}
+
+export async function getClientOrderCount(customerId: string) {
+  return prisma.order.count({ where: { customerId } });
 }
 
 export async function createClientOrder(
@@ -462,8 +466,7 @@ export async function getCompanyOrders(companyId: string) {
       },
     },
     orderBy: { createdAt: "desc" },
-    // Cap temporaire — pagination à suivre
-    take: 150,
+    take: COMPANY_ORDERS_TAKE,
   });
 
   return resolveCustomersByEmail(orders);

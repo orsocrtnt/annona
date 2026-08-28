@@ -26,13 +26,23 @@ function appendQueryParam(url: string, key: string, value: string) {
   return `${url}${separator}${key}=${encodeURIComponent(value)}`;
 }
 
+function setQueryParam(url: string, key: string, value: string) {
+  const encoded = encodeURIComponent(value);
+  const re = new RegExp(`([?&])${key}=[^&]*`);
+  if (re.test(url)) return url.replace(re, `$1${key}=${encoded}`);
+  return appendQueryParam(url, key, value);
+}
+
 function resolveDatabaseUrl(): string | undefined {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) return undefined;
 
-  // Runtime (app) : pooler transactionnel Supabase (6543) — évite la limite
-  // "max clients" du mode session (5432). DIRECT_URL reste réservé à prisma db push / migrate.
-  return appendQueryParam(databaseUrl, "connection_limit", "1");
+  // Pooler transactionnel (6543) : 1 connexion Prisma par instance serverless.
+  // Session / local : 5 pour que Promise.all ne s'aligne pas.
+  const transactionPooler = /:6543(?:\/|\?|$)/.test(databaseUrl);
+  const limit =
+    process.env.NODE_ENV === "production" && transactionPooler ? "1" : "5";
+  return setQueryParam(databaseUrl, "connection_limit", limit);
 }
 
 function createPrismaClient() {

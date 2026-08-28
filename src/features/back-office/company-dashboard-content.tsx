@@ -4,9 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Package, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DashboardDeliveryListDialog } from "@/features/back-office/dashboard-delivery-list-dialog";
-import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
-import type { DashboardLayoutSettings } from "@/lib/dashboard/dashboard-layout";
+import { useCompanyDashboard } from "@/features/back-office/hooks";
+import { useDashboardLayout } from "@/features/back-office/dashboard-layout-hooks";
+import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/dashboard/dashboard-layout";
 import {
   getVisibleDashboardWidgets,
   groupDashboardWidgets,
@@ -20,18 +23,26 @@ import {
   DashboardCustomizeButton,
   DashboardCustomizeDrawer,
 } from "@/features/back-office/dashboard-customize-drawer";
+import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
-interface CompanyDashboardContentProps {
-  dashboard: CompanyDashboardStats;
-  initialLayout: DashboardLayoutSettings;
-}
+export function CompanyDashboardContent() {
+  const { data: dashboard, isLoading, error } = useCompanyDashboard();
+  const { data: layout } = useDashboardLayout();
 
-export function CompanyDashboardContent({
-  dashboard,
-  initialLayout,
-}: CompanyDashboardContentProps) {
+  if (isInitialQueryLoading(isLoading, dashboard)) return <PageSkeleton />;
+
+  if (error || !dashboard) {
+    return (
+      <EmptyState
+        icon={Package}
+        title="Impossible de charger le tableau de bord"
+        description="Réessayez dans quelques instants."
+      />
+    );
+  }
+
   return (
-    <DashboardProvider dashboard={dashboard} initialLayout={initialLayout}>
+    <DashboardProvider dashboard={dashboard} initialLayout={layout ?? DEFAULT_DASHBOARD_LAYOUT}>
       <CompanyDashboardView />
     </DashboardProvider>
   );
@@ -39,12 +50,7 @@ export function CompanyDashboardContent({
 
 function CompanyDashboardView() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const {
-    layout,
-    drillDown,
-    closeDrillDown,
-    drillDownItems,
-  } = useDashboardContext();
+  const { layout, drillDown, closeDrillDown, drillDownItems } = useDashboardContext();
 
   const widgetGroups = useMemo(() => {
     const visible = getVisibleDashboardWidgets(layout);

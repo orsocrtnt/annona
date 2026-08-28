@@ -14,8 +14,14 @@ const PROTECTED_PREFIXES = [
 ];
 
 export async function middleware(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request);
   const { pathname } = request.nextUrl;
+  const isCronRoute = pathname.startsWith("/api/cron/");
+
+  if (isCronRoute) {
+    return NextResponse.next();
+  }
+
+  const { supabaseResponse, user } = await updateSession(request);
 
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route);
   const isProtectedRoute = PROTECTED_PREFIXES.some((prefix) =>
@@ -23,6 +29,7 @@ export async function middleware(request: NextRequest) {
   );
   const isApiRoute = pathname.startsWith("/api");
 
+  // API : header auth-id déjà posé (cache JWT / getClaims, pas de getUser par appel).
   if (isApiRoute) return supabaseResponse;
 
   if (isProtectedRoute && !user) {
@@ -43,7 +50,6 @@ export async function middleware(request: NextRequest) {
     } else if (pathname === "/login/driver") {
       url.pathname = "/driver";
     } else {
-      // Staff déjà connecté : aller au dashboard, pas à l'accueil public
       url.pathname = "/dashboard";
     }
     return NextResponse.redirect(url);
@@ -53,7 +59,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // N'inclut pas /api ni / : landing publique sans middleware ; routes API gèrent leur auth
   matcher: [
     "/login",
     "/login/:path*",
@@ -65,5 +70,6 @@ export const config = {
     "/settings/:path*",
     "/users/:path*",
     "/companies/:path*",
+    "/api/:path*",
   ],
 };

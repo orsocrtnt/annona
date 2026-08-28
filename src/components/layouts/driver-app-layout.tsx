@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { Home, MapPin, User } from "lucide-react";
-import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
+import { useNavQueryPrefetch, usePrefetchNavHrefs } from "@/hooks/use-nav-query-prefetch";
 
 const bottomNav = [
   { title: "Accueil", href: "/driver", icon: Home },
@@ -52,6 +52,7 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
   const isNavigationPage = pathname.startsWith("/driver/navigate");
   const { user } = useAuth();
   const geoGranted = useDriverTrackingStatus();
+  usePrefetchNavHrefs(bottomNav.map((item) => item.href));
 
   if (isNavigationPage) {
     return <div className="min-h-screen bg-background">{children}</div>;
@@ -83,7 +84,7 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
         </div>
       </header>
 
-      <main className="animate-fade-in">{children}</main>
+      <main>{children}</main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1.5">

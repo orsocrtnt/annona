@@ -58,6 +58,7 @@ export async function geocodeAddress(parts: AddressParts): Promise<{ lat: number
 
     const response = await fetch(url.toString(), {
       headers: { Accept: "application/json" },
+      next: { revalidate: 86_400 },
     });
 
     if (response.ok) {
@@ -125,4 +126,15 @@ export function averageCoordinates(points: { lat: number; lng: number }[]): { la
     { lat: 0, lng: 0 }
   );
   return { lat: sum.lat / points.length, lng: sum.lng / points.length };
+}
+
+/** Plafond d'appels BAN par requête carte (le reste attend le poll suivant). */
+const GEOCODE_BATCH_SIZE = 8;
+
+export async function geocodeManyCapped(
+  entries: { key: string; parts: AddressParts }[],
+  limit = GEOCODE_BATCH_SIZE
+): Promise<Map<string, { lat: number; lng: number }>> {
+  if (entries.length === 0) return new Map();
+  return geocodeMany(entries.slice(0, limit));
 }

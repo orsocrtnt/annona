@@ -6,6 +6,7 @@ import type {
 } from "@/lib/validations/order";
 import { createClientOrder } from "@/domains/order/order.service";
 import { assertDeliveryCategoryEnabled } from "@/domains/company/company-settings.service";
+import { CLIENT_RECURRING_TAKE, RECURRING_DUE_TAKE } from "@/lib/query/list-limits";
 import {
   firstPickupFields,
   resolveRecurringPickupStops,
@@ -141,6 +142,7 @@ export async function getClientRecurringOrders(customerId: string) {
   return prisma.recurringOrder.findMany({
     where: { customerId },
     orderBy: { createdAt: "desc" },
+    take: CLIENT_RECURRING_TAKE,
   });
 }
 
@@ -285,6 +287,7 @@ export async function processDueRecurringOrders() {
       OR: [{ endAt: null }, { endAt: { gte: now } }],
     },
     include: { customer: true },
+    take: RECURRING_DUE_TAKE,
   });
 
   let processed = 0;

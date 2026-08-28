@@ -51,7 +51,7 @@ export function BackOfficeLayout({
           </main>
         ) : (
           <main className="flex-1 p-4 max-md:px-3 max-md:py-4 lg:p-6">
-            <div className="mx-auto max-w-7xl animate-fade-in">{children}</div>
+            <div className="mx-auto max-w-7xl">{children}</div>
           </main>
         )}
       </div>

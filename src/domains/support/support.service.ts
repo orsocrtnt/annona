@@ -1,5 +1,6 @@
 import { prisma } from "@/services/prisma/client";
 import type { CreateSupportTicketInput } from "@/lib/validations/support";
+import { CLIENT_TICKETS_TAKE } from "@/lib/query/list-limits";
 
 export async function getClientTickets(customerId: string) {
   return prisma.supportTicket.findMany({
@@ -10,6 +11,7 @@ export async function getClientTickets(customerId: string) {
       relatedDelivery: { select: { reference: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: CLIENT_TICKETS_TAKE,
   });
 }
 

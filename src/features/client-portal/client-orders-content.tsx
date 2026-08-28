@@ -72,7 +72,7 @@ export function ClientOrdersContent({ initialOrders }: ClientOrdersContentProps)
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mes commandes</h1>
-          <p className="mt-1 text-muted-foreground">Commandes en cours et suivi</p>
+          <p className="mt-1 text-muted-foreground">Commandes en cours — 50 plus récentes</p>
         </div>
         <div className="flex flex-wrap gap-2 max-md:w-full">
           <Link href="/portal/orders/history">

@@ -116,7 +116,7 @@ export function ClientInvoicesContent({ initialInvoices }: ClientInvoicesContent
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Factures</h1>
-        <p className="mt-1 text-muted-foreground">Consultez l&apos;historique de vos factures</p>
+        <p className="mt-1 text-muted-foreground">Les 50 factures les plus récentes</p>
       </div>
       <Card>
         <CardHeader>

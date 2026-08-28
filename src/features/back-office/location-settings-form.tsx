@@ -102,13 +102,13 @@ export function LocationSettingsForm() {
             <Input
               id="loc-admin"
               type="number"
-              min={2}
+              min={5}
               max={60}
               value={local.adminMapRefreshSeconds}
               onChange={(e) =>
                 setLocal({
                   ...local,
-                  adminMapRefreshSeconds: clampInt(Number(e.target.value), 2, 60),
+                  adminMapRefreshSeconds: clampInt(Number(e.target.value), 5, 60),
                 })
               }
             />

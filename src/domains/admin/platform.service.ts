@@ -1,4 +1,5 @@
 import { prisma } from "@/services/prisma/client";
+import { PLATFORM_COMPANIES_TAKE } from "@/lib/query/list-limits";
 
 export interface PlatformCompany {
   id: string;
@@ -38,6 +39,7 @@ export async function getPlatformOverview(): Promise<PlatformOverview> {
       }),
       prisma.company.findMany({
         orderBy: { createdAt: "desc" },
+        take: PLATFORM_COMPANIES_TAKE,
         select: {
           id: true,
           name: true,

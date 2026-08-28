@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
+import { useNavQueryPrefetch, usePrefetchNavHrefs } from "@/hooks/use-nav-query-prefetch";
 import { getInitials } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import {
@@ -94,6 +94,7 @@ function PortalNavLink({
 
 function PortalNav({ compact = false, overlay = false }: { compact?: boolean; overlay?: boolean }) {
   const pathname = usePathname();
+  usePrefetchNavHrefs(navItems.map((item) => item.href));
 
   return (
     <nav
@@ -151,7 +152,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
 
       <div className="mx-auto max-w-6xl px-4 py-6 max-md:px-3 max-md:py-4 lg:px-6">
         <PortalNav />
-        <div className="animate-fade-in">{children}</div>
+        <div>{children}</div>
       </div>
     </div>
   );

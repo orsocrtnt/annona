@@ -19,9 +19,9 @@ export const driverLocationSettingsSchema = z.object({
   adminMapRefreshSeconds: z
     .number()
     .int()
-    .min(2, "Minimum 2 secondes")
+    .min(5, "Minimum 5 secondes")
     .max(60, "Maximum 60 secondes")
-    .default(15),
+    .default(20),
   /** Délai sans signal avant de marquer un chauffeur hors ligne */
   onlineThresholdSeconds: z
     .number()
@@ -36,6 +36,6 @@ export type DriverLocationSettings = z.infer<typeof driverLocationSettingsSchema
 export const DEFAULT_DRIVER_LOCATION_SETTINGS: DriverLocationSettings = {
   activeMissionIntervalSeconds: 5,
   idleIntervalSeconds: 15,
-  adminMapRefreshSeconds: 15,
+  adminMapRefreshSeconds: 20,
   onlineThresholdSeconds: 45,
 };

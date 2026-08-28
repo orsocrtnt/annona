@@ -1,0 +1,20 @@
+/** Caps listes (T3 + T6). Pagination curseur à suivre. */
+export const COMPANY_ORDERS_TAKE = 80;
+export const COMPANY_CLIENTS_TAKE = 80;
+export const COMPANY_DELIVERIES_TAKE = 80;
+export const COMPANY_USERS_TAKE = 100;
+export const CLIENT_ORDERS_TAKE = 50;
+export const CLIENT_DELIVERIES_TAKE = 50;
+export const CLIENT_INVOICES_TAKE = 50;
+export const CLIENT_TICKETS_TAKE = 50;
+export const CLIENT_RECURRING_TAKE = 50;
+export const CLIENT_ADDRESSES_TAKE = 40;
+export const DASHBOARD_DELIVERIES_TAKE = 200;
+export const PORTAL_RECENT_DELIVERIES_TAKE = 3;
+export const DRIVER_AVAILABLE_TAKE = 50;
+export const DRIVER_ACTIVE_MISSIONS_TAKE = 40;
+export const DRIVER_DELIVERED_MISSIONS_TAKE = 20;
+export const DRIVER_TODAY_EVENTS_TAKE = 50;
+export const AUTO_DISPATCH_QUEUE_TAKE = 40;
+export const RECURRING_DUE_TAKE = 25;
+export const PLATFORM_COMPANIES_TAKE = 50;

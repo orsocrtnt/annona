@@ -9,7 +9,7 @@ import type { PermissionSlug } from "@/lib/permissions/rbac";
 import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 import { resolveAuthUserWithDemoPersona } from "@/domains/demo/demo-auth.service";
-import { getCachedAuth, setCachedAuth } from "./auth-cache";
+import { getCachedAuth, loadAuthOnce } from "./auth-cache";
 import { TUTELLIV_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
 
 export interface ServerAuthContext {
@@ -25,6 +25,13 @@ async function resolveUserFromAuthId(
 ): Promise<ServerAuthContext | null> {
   const cached = getCachedAuth(authId);
   if (cached) {
+    if (!cached.user.company?.isDemo) {
+      return {
+        authId,
+        user: cached.user,
+        permissions: cached.permissions,
+      };
+    }
     const resolved = await resolveAuthUserWithDemoPersona(authId, cached.user);
     return {
       authId,
@@ -33,33 +40,36 @@ async function resolveUserFromAuthId(
     };
   }
 
-  let user = await getUserByAuthId(authId);
+  const loaded = await loadAuthOnce(authId, async () => {
+    let user = await getUserByAuthId(authId);
 
-  if (!user && email) {
-    const meta = metadata ?? {};
-    const isCompanyAccount =
-      meta.account_type === "company" || Boolean(meta.company_name);
+    if (!user && email) {
+      const meta = metadata ?? {};
+      const isCompanyAccount =
+        meta.account_type === "company" || Boolean(meta.company_name);
 
-    try {
-      user = await syncUserFromSupabase({
-        authId,
-        email,
-        firstName: meta.first_name ?? meta.firstName ?? "Utilisateur",
-        lastName: meta.last_name ?? meta.lastName ?? "",
-        accountType: isCompanyAccount ? "company" : undefined,
-        companyName: meta.company_name,
-      });
-    } catch (error) {
-      if (error instanceof UserNotProvisionedError) return null;
-      throw error;
+      try {
+        user = await syncUserFromSupabase({
+          authId,
+          email,
+          firstName: meta.first_name ?? meta.firstName ?? "Utilisateur",
+          lastName: meta.last_name ?? meta.lastName ?? "",
+          accountType: isCompanyAccount ? "company" : undefined,
+          companyName: meta.company_name,
+        });
+      } catch (error) {
+        if (error instanceof UserNotProvisionedError) return null;
+        throw error;
+      }
     }
-  }
 
-  if (!user) return null;
+    if (!user) return null;
+    return { user, permissions: extractPermissionSlugs(user) };
+  });
 
-  const resolved = await resolveAuthUserWithDemoPersona(authId, user);
-  setCachedAuth(authId, user, extractPermissionSlugs(user));
+  if (!loaded) return null;
 
+  const resolved = await resolveAuthUserWithDemoPersona(authId, loaded.user);
   return {
     authId,
     user: resolved.user,
@@ -68,9 +78,8 @@ async function resolveUserFromAuthId(
 }
 
 /**
- * Charge le contexte auth une fois par requête RSC.
- * Si le middleware a déjà validé l'utilisateur (header), on saute getUser() → 1 seul RTT Auth / navigation.
- * Les routes API (hors middleware) passent toujours par getUser().
+ * Charge le contexte auth une fois par requête.
+ * Si le middleware a déjà validé l'utilisateur (header), on saute getUser().
  */
 const loadAuthContext = cache(async (): Promise<ServerAuthContext | null> => {
   const headerList = await headers();

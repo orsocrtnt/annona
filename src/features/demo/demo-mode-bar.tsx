@@ -33,7 +33,6 @@ import {
   type DemoPersona,
 } from "@/lib/demo/constants";
 
-/** Aligné sur les préfixes protégés du middleware — pas la landing / pages publiques. */
 const DEMO_BANNER_APP_PREFIXES = [
   "/admin",
   "/dashboard",
@@ -66,7 +65,6 @@ export function DemoModeBar() {
   const [resetting, setResetting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
 
-  // Session démo (email + company.isDemo via /api/auth/session) ET zone app authentifiée
   const visible = Boolean(demo?.isDemo) && isDemoAppArea(pathname);
 
   const switchPersona = useCallback(
@@ -87,6 +85,11 @@ export function DemoModeBar() {
         setPermissions(json.permissions ?? []);
         setDemo(json.demo ?? null);
         await queryClient.clear();
+        queryClient.setQueryData(["session"], {
+          user: json.user,
+          permissions: json.permissions ?? [],
+          demo: json.demo ?? null,
+        });
         router.push(json.redirectTo);
         toast.success(`Vue ${DEMO_PERSONA_LABELS[persona]} activée`);
       } catch (error) {
@@ -110,6 +113,11 @@ export function DemoModeBar() {
       setPermissions(json.permissions ?? []);
       setDemo(json.demo ?? null);
       await queryClient.clear();
+      queryClient.setQueryData(["session"], {
+        user: json.user,
+        permissions: json.permissions ?? [],
+        demo: json.demo ?? null,
+      });
       setResetOpen(false);
       router.push(json.redirectTo ?? "/dashboard");
       toast.success("Démo réinitialisée — scénario de base restauré");

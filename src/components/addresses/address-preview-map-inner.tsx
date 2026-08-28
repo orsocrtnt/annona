@@ -30,7 +30,10 @@ export function AddressPreviewMapInner({
       attributionControl={false}
       style={{ height: "100%", width: "100%" }}
     >
-      <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+      <TileLayer
+        attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+      />
       <RecenterMap latitude={latitude} longitude={longitude} />
       <CircleMarker
         center={[latitude, longitude]}

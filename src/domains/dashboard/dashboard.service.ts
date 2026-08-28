@@ -30,6 +30,7 @@ import type {
   DashboardPeriodLists,
   DashboardTodayStats,
 } from "@/lib/dashboard/dashboard-types";
+import { DASHBOARD_DELIVERIES_TAKE } from "@/lib/query/list-limits";
 
 type DeliveryRow = {
   id: string;
@@ -288,6 +289,7 @@ export async function getCompanyDashboardStats(
         ],
       },
       select: deliverySelect,
+      take: DASHBOARD_DELIVERIES_TAKE,
     }),
     prisma.delivery.findMany({
       where: {
@@ -296,6 +298,7 @@ export async function getCompanyDashboardStats(
       },
       select: deliverySelect,
       orderBy: { createdAt: "asc" },
+      take: DASHBOARD_DELIVERIES_TAKE,
     }),
     prisma.delivery.findMany({
       where: {
@@ -313,6 +316,7 @@ export async function getCompanyDashboardStats(
         ],
       },
       select: deliverySelect,
+      take: DASHBOARD_DELIVERIES_TAKE,
     }),
   ]);
 

@@ -1,7 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PortalDashboardLayoutSettings } from "@/lib/dashboard/portal-dashboard-layout";
+import {
+  DEFAULT_PORTAL_DASHBOARD_LAYOUT,
+  type PortalDashboardLayoutSettings,
+} from "@/lib/dashboard/portal-dashboard-layout";
+import { QUERY_STALE_MS } from "@/lib/query/defaults";
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -10,11 +14,12 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return json.data as T;
 }
 
-export function usePortalDashboardLayout(initialData?: PortalDashboardLayoutSettings) {
+export function usePortalDashboardLayout() {
   return useQuery({
     queryKey: ["portal", "dashboard-layout"],
     queryFn: () => fetchJson<PortalDashboardLayoutSettings>("/api/portal/dashboard-layout"),
-    initialData,
+    placeholderData: DEFAULT_PORTAL_DASHBOARD_LAYOUT,
+    staleTime: QUERY_STALE_MS,
   });
 }
 

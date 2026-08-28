@@ -19,6 +19,21 @@ import {
 } from "@/domains/delivery/driver-proximity.service";
 import { resolveCustomersByEmail } from "@/domains/order/resolve-customer";
 import { resolveDeliveryCoordinateFields } from "@/domains/delivery/delivery-coordinates";
+import {
+  CLIENT_DELIVERIES_TAKE,
+  COMPANY_DELIVERIES_TAKE,
+  DRIVER_ACTIVE_MISSIONS_TAKE,
+  DRIVER_AVAILABLE_TAKE,
+  DRIVER_DELIVERED_MISSIONS_TAKE,
+  DRIVER_TODAY_EVENTS_TAKE,
+} from "@/lib/query/list-limits";
+
+const LIVE_DELIVERY_STATUSES: DeliveryStatus[] = [
+  "PENDING",
+  "ASSIGNED",
+  "PURCHASING",
+  "IN_DELIVERY",
+];
 
 function startOfToday() {
   const d = new Date();
@@ -38,12 +53,15 @@ function emptyCategoryCounts(): CategoryCounts {
   return { standard: 0, courier: 0 };
 }
 
-function bumpCategory(counts: CategoryCounts, category: DeliveryCategory) {
-  if (category === "COURIER") counts.courier += 1;
-  else counts.standard += 1;
+function bumpCategory(counts: CategoryCounts, category: DeliveryCategory, n = 1) {
+  if (category === "COURIER") counts.courier += n;
+  else counts.standard += n;
 }
 
-export async function getClientDeliveries(customerId: string) {
+export async function getClientDeliveries(
+  customerId: string,
+  options?: { take?: number }
+) {
   return prisma.delivery.findMany({
     where: { customerId },
     select: {
@@ -62,6 +80,7 @@ export async function getClientDeliveries(customerId: string) {
       order: { select: { reference: true, status: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: options?.take ?? CLIENT_DELIVERIES_TAKE,
   });
 }
 
@@ -184,7 +203,9 @@ export async function getCompanyDeliveries(
   const deliveries = await prisma.delivery.findMany({
     where: {
       companyId,
-      ...(options?.unassignedOnly ? { status: "PENDING" } : {}),
+      status: options?.unassignedOnly
+        ? "PENDING"
+        : { in: LIVE_DELIVERY_STATUSES },
     },
     include: {
       order: {
@@ -209,6 +230,7 @@ export async function getCompanyDeliveries(
       driver: { select: { id: true, firstName: true, lastName: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: COMPANY_DELIVERIES_TAKE,
   });
 
   const orders = await resolveCustomersByEmail(
@@ -431,6 +453,7 @@ export async function getAvailableDeliveriesForDriver(companyId: string) {
       },
     },
     orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
+    take: DRIVER_AVAILABLE_TAKE,
   });
 }
 
@@ -460,42 +483,49 @@ export async function claimDeliveryByDriver(
   });
 }
 
-export async function getDriverMissions(driverId: string) {
-  const driverMissionStatuses: DeliveryStatus[] = [
-    "ASSIGNED",
-    "PURCHASING",
-    "IN_DELIVERY",
-    "DELIVERED",
-  ];
-  return prisma.delivery.findMany({
-    where: {
-      driverId,
-      status: { in: driverMissionStatuses },
-    },
-    include: {
-      order: {
+const DRIVER_MISSION_ORDER_INCLUDE = {
+  order: {
+    select: {
+      reference: true,
+      itemCount: true,
+      notes: true,
+      deliveryInstructions: true,
+      customerEmail: true,
+      customer: { select: { firstName: true, lastName: true, phone: true } },
+      items: {
         select: {
-          reference: true,
-          itemCount: true,
-          notes: true,
-          deliveryInstructions: true,
-          customerEmail: true,
-          customer: { select: { firstName: true, lastName: true, phone: true } },
-          items: {
-            select: {
-              id: true,
-              name: true,
-              quantity: true,
-              unitPrice: true,
-              orderStopId: true,
-            },
-          },
-          stops: { orderBy: { sequence: "asc" }, include: { items: true } },
+          id: true,
+          name: true,
+          quantity: true,
+          unitPrice: true,
+          orderStopId: true,
         },
       },
+      stops: { orderBy: { sequence: "asc" as const }, include: { items: true } },
     },
-    orderBy: [{ status: "asc" }, { scheduledAt: "asc" }],
-  });
+  },
+};
+
+export async function getDriverMissions(driverId: string) {
+  const [active, delivered] = await Promise.all([
+    prisma.delivery.findMany({
+      where: {
+        driverId,
+        status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
+      },
+      include: DRIVER_MISSION_ORDER_INCLUDE,
+      orderBy: [{ scheduledAt: "asc" }, { createdAt: "asc" }],
+      take: DRIVER_ACTIVE_MISSIONS_TAKE,
+    }),
+    prisma.delivery.findMany({
+      where: { driverId, status: "DELIVERED" },
+      include: DRIVER_MISSION_ORDER_INCLUDE,
+      orderBy: { completedAt: "desc" },
+      take: DRIVER_DELIVERED_MISSIONS_TAKE,
+    }),
+  ]);
+
+  return [...active, ...delivered];
 }
 
 export async function getDriverMissionById(driverId: string, deliveryId: string) {
@@ -890,45 +920,65 @@ export async function getCompanyDriversWithActivity(companyId: string) {
   const driverIds = drivers.map((driver) => driver.id);
   const statsMap = new Map(driverIds.map((id) => [id, emptyDriverStats()]));
 
-  const deliveries = await prisma.delivery.findMany({
-    where: { companyId, driverId: { in: driverIds } },
-    select: {
-      driverId: true,
-      status: true,
-      deliveryCategory: true,
-      completedAt: true,
-      trackingEvents: {
-        where: { occurredAt: { gte: today } },
-        select: { id: true },
+  const [activeGroups, deliveredTodayGroups, activityRows] = await Promise.all([
+    prisma.delivery.groupBy({
+      by: ["driverId", "status", "deliveryCategory"],
+      where: {
+        companyId,
+        driverId: { in: driverIds },
+        status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
       },
-    },
-  });
+      _count: { _all: true },
+    }),
+    prisma.delivery.groupBy({
+      by: ["driverId"],
+      where: {
+        companyId,
+        driverId: { in: driverIds },
+        status: "DELIVERED",
+        completedAt: { gte: today },
+      },
+      _count: { _all: true },
+    }),
+    prisma.delivery.findMany({
+      where: {
+        companyId,
+        driverId: { in: driverIds },
+        trackingEvents: { some: { occurredAt: { gte: today } } },
+      },
+      select: {
+        driverId: true,
+        _count: {
+          select: { trackingEvents: { where: { occurredAt: { gte: today } } } },
+        },
+      },
+    }),
+  ]);
 
-  for (const delivery of deliveries) {
-    if (!delivery.driverId) continue;
-    const stats = statsMap.get(delivery.driverId);
+  for (const row of activeGroups) {
+    if (!row.driverId) continue;
+    const stats = statsMap.get(row.driverId);
     if (!stats) continue;
+    const n = row._count._all;
+    if (row.status === "ASSIGNED") stats.assigned += n;
+    if (row.status === "PURCHASING" || row.status === "IN_DELIVERY") {
+      stats.inTransit += n;
+    }
+    stats.activeByCategory[row.deliveryCategory] += n;
+  }
 
-    const isActive =
-      delivery.status === "ASSIGNED" ||
-      delivery.status === "PURCHASING" ||
-      delivery.status === "IN_DELIVERY";
+  for (const row of deliveredTodayGroups) {
+    if (!row.driverId) continue;
+    const stats = statsMap.get(row.driverId);
+    if (!stats) continue;
+    stats.deliveredToday += row._count._all;
+  }
 
-    if (delivery.status === "ASSIGNED") stats.assigned += 1;
-    if (delivery.status === "PURCHASING" || delivery.status === "IN_DELIVERY") {
-      stats.inTransit += 1;
-    }
-    if (isActive) {
-      stats.activeByCategory[delivery.deliveryCategory] += 1;
-    }
-    if (
-      delivery.status === "DELIVERED" &&
-      delivery.completedAt &&
-      delivery.completedAt >= today
-    ) {
-      stats.deliveredToday += 1;
-    }
-    stats.activityToday += delivery.trackingEvents.length;
+  for (const row of activityRows) {
+    if (!row.driverId) continue;
+    const stats = statsMap.get(row.driverId);
+    if (!stats) continue;
+    stats.activityToday += row._count.trackingEvents;
   }
 
   return drivers.map((driver) => ({
@@ -975,61 +1025,60 @@ export async function getDriverDispatchWorkload(
     ])
   );
 
-  const [activeDeliveries, plannedDeliveries] = await Promise.all([
-    prisma.delivery.findMany({
+  const plannedWindow = (from: Date, to: Date) => ({
+    companyId,
+    driverId: { in: driverIds },
+    status: { not: "CANCELLED" as const },
+    OR: [
+      { scheduledAt: { gte: from, lt: to } },
+      { scheduledAt: null, createdAt: { gte: from, lt: to } },
+    ],
+  });
+
+  const [activeGroups, todayGroups, weekGroups] = await Promise.all([
+    prisma.delivery.groupBy({
+      by: ["driverId", "status"],
       where: {
         companyId,
         driverId: { in: driverIds },
         status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
       },
-      select: { driverId: true, status: true },
+      _count: { _all: true },
     }),
-    prisma.delivery.findMany({
-      where: {
-        companyId,
-        driverId: { in: driverIds },
-        status: { not: "CANCELLED" },
-        OR: [
-          { scheduledAt: { gte: todayStart, lt: weekEnd } },
-          {
-            scheduledAt: null,
-            createdAt: { gte: todayStart, lt: weekEnd },
-          },
-        ],
-      },
-      select: {
-        driverId: true,
-        deliveryCategory: true,
-        scheduledAt: true,
-        createdAt: true,
-      },
+    prisma.delivery.groupBy({
+      by: ["driverId", "deliveryCategory"],
+      where: plannedWindow(todayStart, tomorrowStart),
+      _count: { _all: true },
+    }),
+    prisma.delivery.groupBy({
+      by: ["driverId", "deliveryCategory"],
+      where: plannedWindow(todayStart, weekEnd),
+      _count: { _all: true },
     }),
   ]);
 
-  for (const delivery of activeDeliveries) {
-    if (!delivery.driverId) continue;
-    const bucket = workloadMap.get(delivery.driverId);
+  for (const row of activeGroups) {
+    if (!row.driverId) continue;
+    const bucket = workloadMap.get(row.driverId);
     if (!bucket) continue;
-    if (delivery.status === "ASSIGNED") bucket.assigned += 1;
-    if (delivery.status === "PURCHASING" || delivery.status === "IN_DELIVERY") {
-      bucket.inTransit += 1;
+    if (row.status === "ASSIGNED") bucket.assigned += row._count._all;
+    if (row.status === "PURCHASING" || row.status === "IN_DELIVERY") {
+      bucket.inTransit += row._count._all;
     }
   }
 
-  for (const delivery of plannedDeliveries) {
-    if (!delivery.driverId) continue;
-    const bucket = workloadMap.get(delivery.driverId);
+  for (const row of todayGroups) {
+    if (!row.driverId) continue;
+    const bucket = workloadMap.get(row.driverId);
     if (!bucket) continue;
+    bumpCategory(bucket.today, row.deliveryCategory, row._count._all);
+  }
 
-    const plannedAt = delivery.scheduledAt ?? delivery.createdAt;
-    const category = delivery.deliveryCategory;
-
-    if (plannedAt >= todayStart && plannedAt < tomorrowStart) {
-      bumpCategory(bucket.today, category);
-    }
-    if (plannedAt >= todayStart && plannedAt < weekEnd) {
-      bumpCategory(bucket.next7Days, category);
-    }
+  for (const row of weekGroups) {
+    if (!row.driverId) continue;
+    const bucket = workloadMap.get(row.driverId);
+    if (!bucket) continue;
+    bumpCategory(bucket.next7Days, row.deliveryCategory, row._count._all);
   }
 
   return drivers.map((driver) => {
@@ -1090,6 +1139,7 @@ export async function getCompanyDriverDetail(companyId: string, driverId: string
         delivery: { select: { reference: true, status: true } },
       },
       orderBy: { occurredAt: "desc" },
+      take: DRIVER_TODAY_EVENTS_TAKE,
     }),
   ]);
 

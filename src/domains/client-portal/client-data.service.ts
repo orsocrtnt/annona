@@ -10,21 +10,12 @@ export async function linkPortalDataToClient(userId: string, email: string) {
     data: { customerId: userId },
   });
 
-  const orderIds = (
-    await prisma.order.findMany({
-      where: { customerId: userId },
-      select: { id: true },
-    })
-  ).map((o) => o.id);
-
-  if (orderIds.length === 0) return;
-
   await prisma.delivery.updateMany({
-    where: { orderId: { in: orderIds }, customerId: null },
+    where: { customerId: null, order: { customerId: userId } },
     data: { customerId: userId },
   });
   await prisma.invoice.updateMany({
-    where: { orderId: { in: orderIds }, customerId: null },
+    where: { customerId: null, order: { customerId: userId } },
     data: { customerId: userId },
   });
 }

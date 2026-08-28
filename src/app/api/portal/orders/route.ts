@@ -3,13 +3,10 @@ import { requireClientRole } from "@/lib/api/auth-guard";
 import { getClientOrders, createClientOrder } from "@/domains/order/order.service";
 import { createClientOrderSchema } from "@/lib/validations/order";
 import { assertDeliveryCategoryEnabled } from "@/domains/company/company-settings.service";
-import { processDueRecurringOrders } from "@/domains/client-portal/recurring-order.service";
 
 export async function GET(request: Request) {
   const auth = await requireClientRole();
   if ("error" in auth) return auth.error;
-
-  await processDueRecurringOrders();
 
   const { searchParams } = new URL(request.url);
   const history = searchParams.get("history") === "true";

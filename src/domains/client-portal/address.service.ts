@@ -1,10 +1,12 @@
 import { prisma } from "@/services/prisma/client";
 import type { CustomerAddressInput } from "@/lib/validations/address";
+import { CLIENT_ADDRESSES_TAKE } from "@/lib/query/list-limits";
 
 export async function getClientAddresses(userId: string) {
   return prisma.customerAddress.findMany({
     where: { userId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+    take: CLIENT_ADDRESSES_TAKE,
   });
 }
 

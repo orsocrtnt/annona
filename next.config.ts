@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@tanstack/react-query", "leaflet", "react-leaflet"],
+  transpilePackages: ["leaflet", "react-leaflet"],
+  experimental: {
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+    optimizePackageImports: ["lucide-react"],
+  },
   images: {
     remotePatterns: [
       {

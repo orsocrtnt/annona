@@ -2,6 +2,7 @@ import { prisma } from "@/services/prisma/client";
 import { createAdminClient } from "@/services/supabase/admin";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import type { UserWithRole } from "@/types";
+import { COMPANY_USERS_TAKE } from "@/lib/query/list-limits";
 import type { CreateUserInput, UpdateProfileInput } from "@/lib/validations/user";
 
 export async function getUserByAuthId(authId: string): Promise<UserWithRole | null> {
@@ -51,6 +52,7 @@ export async function listUsersForCompany(companyId: string) {
     where: { companyId },
     include: { role: true },
     orderBy: { createdAt: "desc" },
+    take: COMPANY_USERS_TAKE,
   });
 }
 
@@ -76,6 +78,7 @@ export async function listAllUsers() {
   return prisma.user.findMany({
     include: { role: true, company: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
+    take: COMPANY_USERS_TAKE,
   });
 }
 

@@ -2,10 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { PortalDashboardStats } from "./types";
-import type { PortalDashboardLayoutSettings } from "@/lib/dashboard/portal-dashboard-layout";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { usePortalDashboard } from "./hooks";
+import { usePortalDashboardLayout } from "./portal-dashboard-layout-hooks";
+import { DEFAULT_PORTAL_DASHBOARD_LAYOUT } from "@/lib/dashboard/portal-dashboard-layout";
 import {
   getVisiblePortalDashboardWidgets,
   groupPortalDashboardWidgets,
@@ -19,15 +22,26 @@ import {
   PortalDashboardCustomizeButton,
   PortalDashboardCustomizeDrawer,
 } from "./portal-dashboard-customize-drawer";
+import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
-interface PortalDashboardContentProps {
-  stats: PortalDashboardStats;
-  initialLayout: PortalDashboardLayoutSettings;
-}
+export function PortalDashboardContent() {
+  const { data: stats, isLoading, error } = usePortalDashboard();
+  const { data: layout } = usePortalDashboardLayout();
 
-export function PortalDashboardContent({ stats, initialLayout }: PortalDashboardContentProps) {
+  if (isInitialQueryLoading(isLoading, stats)) return <PageSkeleton />;
+
+  if (error || !stats) {
+    return (
+      <EmptyState
+        icon={ShoppingBag}
+        title="Impossible de charger l'espace"
+        description="Réessayez dans quelques instants."
+      />
+    );
+  }
+
   return (
-    <PortalDashboardProvider stats={stats} initialLayout={initialLayout}>
+    <PortalDashboardProvider stats={stats} initialLayout={layout ?? DEFAULT_PORTAL_DASHBOARD_LAYOUT}>
       <PortalDashboardView />
     </PortalDashboardProvider>
   );

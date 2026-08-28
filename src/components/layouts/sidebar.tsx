@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUIStore } from "@/stores/ui.store";
 import { APP_NAME } from "@/lib/constants";
 import { isNavItemActive } from "@/lib/navigation/is-nav-item-active";
-import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
+import { useNavQueryPrefetch, usePrefetchNavHrefs } from "@/hooks/use-nav-query-prefetch";
 import { ChevronLeft, Package2 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -58,6 +58,7 @@ export function Sidebar({ items, footer }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const allHrefs = items.map((item) => item.href);
+  usePrefetchNavHrefs(items.filter((item) => !item.disabled).map((item) => item.href));
 
   return (
     <aside

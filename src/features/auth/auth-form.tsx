@@ -25,6 +25,7 @@ import type {
 } from "@/lib/validations/auth";
 import { createClient } from "@/services/supabase/client";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Package2 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
@@ -52,6 +53,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const supabase = createClient();
   const { setUser, setPermissions, setDemo } = useAuthStore();
 
@@ -101,6 +103,11 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
     setUser(json.user);
     setPermissions(json.permissions);
     setDemo(json.demo ?? null);
+    queryClient.setQueryData(["session"], {
+      user: json.user,
+      permissions: json.permissions,
+      demo: json.demo ?? null,
+    });
     router.push(json.redirectTo);
   };
 
@@ -122,6 +129,11 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
 
     setUser(json.user);
     setPermissions(json.permissions);
+    queryClient.setQueryData(["session"], {
+      user: json.user,
+      permissions: json.permissions,
+      demo: null,
+    });
     router.push(json.redirectTo);
   };
 

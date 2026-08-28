@@ -84,9 +84,9 @@ export function CompanyClientsContent({ initialClients }: CompanyClientsContentP
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Clients</h1>
-        <p className="mt-1 text-muted-foreground">
-          Vue complète sur vos clients et leur activité du jour
-        </p>
+          <p className="mt-1 text-muted-foreground">
+            Vue complète sur vos clients et leur activité du jour. 80 comptes max.
+          </p>
       </div>
       <DataGrid
         data={(clients ?? []) as unknown as Record<string, unknown>[]}

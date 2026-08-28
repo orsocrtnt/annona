@@ -27,7 +27,7 @@ export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProp
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Commandes</h1>
         <p className="mt-1 text-muted-foreground">
-          Recevez les commandes et assignez-les à vos chauffeurs
+          Recevez les commandes et assignez-les à vos chauffeurs. Les 80 plus récentes.
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/services/prisma/client";
+import { COMPANY_CLIENTS_TAKE, DRIVER_TODAY_EVENTS_TAKE } from "@/lib/query/list-limits";
 
 function startOfToday() {
   const d = new Date();
@@ -33,26 +34,31 @@ export async function getCompanyClients(companyId: string) {
       },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-    // Cap temporaire — pagination à suivre
-    take: 100,
+    take: COMPANY_CLIENTS_TAKE,
   });
 
   const clientIds = clients.map((client) => client.id);
   const eventsMap = new Map(clientIds.map((id) => [id, 0]));
 
   if (clientIds.length > 0) {
-    const eventsToday = await prisma.trackingEvent.findMany({
+    const eventsToday = await prisma.delivery.findMany({
       where: {
-        occurredAt: { gte: today },
-        delivery: { companyId, customerId: { in: clientIds } },
+        companyId,
+        customerId: { in: clientIds },
+        trackingEvents: { some: { occurredAt: { gte: today } } },
       },
-      select: { delivery: { select: { customerId: true } } },
+      select: {
+        customerId: true,
+        _count: {
+          select: { trackingEvents: { where: { occurredAt: { gte: today } } } },
+        },
+      },
     });
 
-    for (const event of eventsToday) {
-      const customerId = event.delivery.customerId;
+    for (const row of eventsToday) {
+      const customerId = row.customerId;
       if (!customerId) continue;
-      eventsMap.set(customerId, (eventsMap.get(customerId) ?? 0) + 1);
+      eventsMap.set(customerId, (eventsMap.get(customerId) ?? 0) + row._count.trackingEvents);
     }
   }
 
@@ -130,6 +136,7 @@ export async function getCompanyClientDetail(companyId: string, clientId: string
           nextRunAt: true,
         },
         orderBy: { createdAt: "desc" },
+        take: 20,
       },
       tickets: {
         where: { companyId },
@@ -156,6 +163,7 @@ export async function getCompanyClientDetail(companyId: string, clientId: string
       delivery: { select: { reference: true, status: true } },
     },
     orderBy: { occurredAt: "desc" },
+    take: DRIVER_TODAY_EVENTS_TAKE,
   });
 
   const ordersToday = client.ordersAsCustomer.filter(
