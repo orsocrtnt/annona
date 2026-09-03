@@ -21,7 +21,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             gcTime: QUERY_GC_MS,
             refetchOnWindowFocus: false,
             // true = refetch seulement si stale (après invalidation / expiration)
-            refetchOnMount: true,
+            refetchOnMount: false,
           },
         },
       })

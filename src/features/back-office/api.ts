@@ -8,6 +8,7 @@ import type {
   CompanyDriver,
   CompanyOrder,
   CompanyOrderStats,
+  DispatchOverview,
   DriverDispatchWorkload,
 } from "./types";
 
@@ -31,6 +32,7 @@ export const backOfficeApi = {
   getOrderStats: () => fetchJson<CompanyOrderStats>("/api/orders/stats"),
   getDeliveries: (unassignedOnly = false) =>
     fetchJson<CompanyDelivery[]>(`/api/deliveries${unassignedOnly ? "?unassigned=true" : ""}`),
+  getDispatchOverview: () => fetchJson<DispatchOverview>("/api/dispatch/overview"),
   getDrivers: () => fetchJson<CompanyDriver[]>("/api/drivers"),
   getDriverDispatchWorkload: () =>
     fetchJson<DriverDispatchWorkload[]>("/api/dispatch/drivers-workload"),

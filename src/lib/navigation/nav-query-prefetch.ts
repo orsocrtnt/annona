@@ -83,8 +83,8 @@ const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
     queryFn: backOfficeApi.getDrivers,
   },
   "/dispatch": {
-    queryKey: ["company", "deliveries", "all"],
-    queryFn: () => backOfficeApi.getDeliveries(false),
+    queryKey: ["company", "dispatch", "overview"],
+    queryFn: backOfficeApi.getDispatchOverview,
   },
   "/dispatch/map": {
     queryKey: ["company", "dispatch", "map"],

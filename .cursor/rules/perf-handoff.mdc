@@ -1,31 +1,23 @@
 ---
-description: Audit perf Tutelliv — sources classées à tester une par une
+description: Relais Tutelliv — reste à faire
 alwaysApply: true
 ---
 
-# Audit perf Tutelliv (à tester une par une)
+# Relais Tutelliv
 
 ## État
 - Projet : `/Users/orso/Developer/tutelliv`
-- T2–T7 **faits en local** (T4/T5 renforcés : géocode capé + poll carte 20 s)
-- Prod : push Vercel seulement sur demande ; T8–T9 surtout utiles **en production**
+- Perf T2–T12 poussées (GitHub / Vercel). Plus de backlog T1–T12.
 
-## Ordre de test (impact)
+## Reste
 
-| ID | Source | Impact | Où | Comment tester |
-|----|--------|--------|-----|----------------|
-| T1 | Fixes pas en prod / DB incomplete | High | git vs Vercel, schema DB | Vérifier SHA Vercel ≠ dirty local ; colonnes deliveries.latitude absentes |
-| T2 | Auth waterfall | High | **FAIT local** : matcher `/api` + header auth-id ; **nav** : `getClaims` + cache ~45s (pas de `getUser` à chaque clic / API) ; crons exclus ; session hydratée au login | Network : 0 appel Auth/session sur soft-nav tant que le JWT est en cache |
-| T3 | Pages RSC bloquantes (dashboard/orders/clients/portal) | High | **FAIT local** : pages listes sans Prisma au 1er HTML ; stats dashboard via `/api/back-office/dashboard` + `/api/portal/dashboard` allégé ; caps listes | Ouvrir /dashboard puis /portal : HTML + skeleton immédiat, data ensuite |
-| T4 | Géocode carte chaque poll + colonnes manquantes | High | **FAIT local** : coords en DB si présentes ; persist async ; max 8 géocodes BAN / poll ; colonnes lat/lng via `db:sync-schema` au `dev` | Network `/api/dispatch/map` : 1er poll peut géocoder, suivants lisent DB |
-| T5 | Polling carte trop fréquent | High map | **FAIT local** : défaut `adminMapRefreshSeconds` 15 → 20 s (min 5) | Compter appels `/api/dispatch/map` / min (~3) |
-| T6 | Listes trop larges (peu de take) | Med→High | **FAIT local** : caps livraisons dispatch (80, statuts live) ; stats chauffeurs en groupBy ; missions / tickets / users / auto-dispatch / cron récurrence plafonnés | Seed beaucoup de lignes : `/api/deliveries` et `/api/drivers` restent bornés |
-| T7 | Layouts client + PortalGuard loader | Med | **FAIT local** : layout hors guard ; RoleGuard skeleton seulement si session pending ; plus de loading.tsx groupe ni fade-in layout | Naviguer /portal et /dashboard : menu reste, pas de plein écran « Chargement de votre espace » |
-| T8 | Prisma connection_limit | Med prod | **FAIT** : 5 hors pooler 6543 ; **1** seulement prod + transaction pooler | Bench dashboard |
-| T9 | Caches mémoire / Vercel | Med prod | **FAIT** : auth inflight + cache isolate ; géocode BAN `revalidate` 24h (cache Next/Vercel) | 2 cold curls carte |
-| T10 | `/` encore redirect auth | Low perf | **FAIT** : landing `HomeLanding`, plus de redirect auth | Incognito GET / |
-| T11 | transpilePackages / bundle | Low–Med | **FAIT** : plus de transpile `react-query` ; `optimizePackageImports` lucide | Bundle analyzer |
-| T12 | ensure-dev au démarrage | Local only | **FAIT** : `prisma generate` + `db:sync-schema` seulement si le schéma a changé | Time npm run dev |
+| ID | Quoi | Où |
+|----|------|-----|
+| NAV | **Poussé** : 1 appel dispatch overview ; prefetch idle = RSC only ; pas de refetch au mount ; cache route 60s | Hard refresh prod après deploy |
+| UI-1 | Recentrer les barres de suivi en haut (portail client) | `delivery-map-status-bar` |
+| F-1 | Mini-admins | users / rôles |
+
+Optionnel : confirmer en prod que le déploiement Vercel est bien le dernier SHA + colonnes lat/lng en DB.
 
 ## Ne pas lancer serveur sans demande
 ## Ne pas push sans demande explicite

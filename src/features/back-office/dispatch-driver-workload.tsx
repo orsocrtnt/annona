@@ -4,12 +4,10 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useDriverDispatchWorkload } from "./hooks";
-import { useCompanyDispatchSettings } from "./dispatch-settings-hooks";
-import { formatDriverFromParts } from "@/lib/format/person-labels";
+import type { CompanyDispatchSettings } from "@/lib/validations/dispatch-settings";
 import { getDispatchDriverRule, getDriverCategoryLabels } from "@/lib/validations/dispatch-settings";
+import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { Users } from "lucide-react";
 import type { DriverDispatchWorkload } from "./types";
 
@@ -25,7 +23,7 @@ function DriverRow({
   settings,
 }: {
   driver: DriverDispatchWorkload;
-  settings: ReturnType<typeof useCompanyDispatchSettings>["data"];
+  settings: CompanyDispatchSettings | undefined;
 }) {
   const name = formatDriverFromParts(driver, null);
   const todayTotal = driver.today.standard + driver.today.courier;
@@ -76,21 +74,14 @@ function DriverRow({
   );
 }
 
-export function DispatchDriverWorkload() {
-  const { data: drivers, isLoading, error } = useDriverDispatchWorkload();
-  const { data: settings } = useCompanyDispatchSettings();
-
-  if (isInitialQueryLoading(isLoading, drivers)) return <PageSkeleton />;
-
-  if (error) {
-    return (
-      <EmptyState
-        icon={Users}
-        title="Charge chauffeurs indisponible"
-        description="Réessayez dans quelques instants."
-      />
-    );
-  }
+export function DispatchDriverWorkload({
+  drivers,
+  settings,
+}: {
+  drivers: DriverDispatchWorkload[] | undefined;
+  settings: CompanyDispatchSettings | undefined;
+}) {
+  if (drivers === undefined) return <PageSkeleton />;
 
   if (!drivers?.length) {
     return (

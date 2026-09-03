@@ -9,11 +9,8 @@ import { StatCard } from "@/components/ui/stat-card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useCompanyDeliveries, useCompanyOrderStats } from "@/features/back-office/hooks";
-import {
-  useCompanyDispatchSettings,
-  useRunAutoDispatch,
-} from "@/features/back-office/dispatch-settings-hooks";
+import { useDispatchOverview } from "@/features/back-office/hooks";
+import { useRunAutoDispatch } from "@/features/back-office/dispatch-settings-hooks";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
 import { getDispatchColumns } from "@/features/back-office/dispatch-columns";
@@ -31,9 +28,10 @@ const columns = getDispatchColumns();
 export default function DispatcherDashboardPage() {
   const [view, setView] = useState<DispatchView>("queue");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("ALL");
-  const { data: deliveries, isLoading, error } = useCompanyDeliveries();
-  const { data: stats } = useCompanyOrderStats();
-  const { data: dispatchSettings } = useCompanyDispatchSettings();
+  const { data: overview, isLoading, error } = useDispatchOverview();
+  const deliveries = overview?.deliveries;
+  const stats = overview?.stats;
+  const dispatchSettings = overview?.settings;
   const runAutoDispatch = useRunAutoDispatch();
 
   const queue = useMemo(() => {
@@ -79,7 +77,7 @@ export default function DispatcherDashboardPage() {
     }
   };
 
-  if (isInitialQueryLoading(isLoading, deliveries)) return <PageSkeleton />;
+  if (isInitialQueryLoading(isLoading, overview)) return <PageSkeleton />;
 
   return (
     <div className="space-y-8">
@@ -181,7 +179,10 @@ export default function DispatcherDashboardPage() {
             />
           </div>
 
-          <DispatchDriverWorkload />
+          <DispatchDriverWorkload
+            drivers={overview?.workload}
+            settings={dispatchSettings}
+          />
 
           {error ? (
             <EmptyState

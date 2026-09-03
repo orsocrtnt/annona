@@ -31,6 +31,14 @@ export function useCompanyOrder(id: string) {
   });
 }
 
+export function useDispatchOverview() {
+  return useQuery({
+    queryKey: ["company", "dispatch", "overview"],
+    queryFn: backOfficeApi.getDispatchOverview,
+    staleTime: QUERY_STALE_MS,
+  });
+}
+
 export function useCompanyOrderStats() {
   return useQuery({ queryKey: ["company", "orders", "stats"], queryFn: backOfficeApi.getOrderStats });
 }

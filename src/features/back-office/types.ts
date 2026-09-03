@@ -159,6 +159,13 @@ export interface CompanyOrderStats {
   unassigned: number;
 }
 
+export interface DispatchOverview {
+  deliveries: CompanyDelivery[];
+  stats: CompanyOrderStats;
+  settings: import("@/lib/validations/dispatch-settings").CompanyDispatchSettings;
+  workload: DriverDispatchWorkload[];
+}
+
 export type {
   CompanyDashboardStats,
   DashboardAlerts,

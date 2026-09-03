@@ -30,7 +30,6 @@ export function useNavQueryPrefetch(href: string) {
 /** Précharge le menu dès que le layout est affiché (idle). */
 export function usePrefetchNavHrefs(hrefs: readonly string[]) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const key = hrefs.join("|");
 
   useEffect(() => {
@@ -41,9 +40,6 @@ export function usePrefetchNavHrefs(hrefs: readonly string[]) {
       if (cancelled) return;
       for (const href of routes) {
         router.prefetch(href);
-        if (!SKIP_DATA_PREFETCH.has(href)) {
-          prefetchRouteQueries(queryClient, href);
-        }
       }
     };
 
@@ -60,5 +56,5 @@ export function usePrefetchNavHrefs(hrefs: readonly string[]) {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [key, queryClient, router]);
+  }, [key, router]);
 }
