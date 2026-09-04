@@ -169,7 +169,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       user,
       permissions,
-      redirectTo: getDashboardPathForRole(user.role.systemRole),
+      redirectTo: getDashboardPathForRole(user.role.systemRole, user.settings),
       demo: isDemoAccount
         ? {
             isDemo: true as const,

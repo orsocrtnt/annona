@@ -44,8 +44,11 @@ export function BackOfficeLayout({
         {mapFullscreen ? (
           <main
             data-map-main=""
-            className="fixed top-0 right-0 bottom-0 z-0 overflow-hidden transition-[left] duration-300 ease-in-out"
-            style={{ left: isLg ? mapSidebarWidth : 0 }}
+            className="fixed right-0 bottom-0 z-0 overflow-hidden transition-[left,top] duration-300 ease-in-out"
+            style={{
+              left: isLg ? mapSidebarWidth : 0,
+              top: "var(--demo-banner-height, 0px)",
+            }}
           >
             {children}
           </main>

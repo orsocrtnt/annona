@@ -54,12 +54,12 @@ export function canAccessRoute(
 ): boolean {
   const routeAccess: Record<string, SystemRole[]> = {
     "/admin": ["SUPER_ADMIN"],
-    "/dashboard": ["SUPER_ADMIN", "COMPANY_ADMIN"],
-    "/dispatch": ["SUPER_ADMIN", "COMPANY_ADMIN", "DISPATCHER"],
+    "/dashboard": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
+    "/dispatch": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
     "/driver": ["SUPER_ADMIN", "DRIVER"],
     "/portal": ["SUPER_ADMIN", "CLIENT"],
-    "/settings": ["SUPER_ADMIN", "COMPANY_ADMIN"],
-    "/users": ["SUPER_ADMIN", "COMPANY_ADMIN"],
+    "/settings": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
+    "/users": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
     "/companies": ["SUPER_ADMIN"],
   };
 
@@ -72,6 +72,7 @@ export function getRoleLabel(role: SystemRole): string {
   const labels: Record<SystemRole, string> = {
     SUPER_ADMIN: "Super Admin",
     COMPANY_ADMIN: "Administrateur",
+    MINI_ADMIN: "Mini-admin",
     DISPATCHER: "Dispatcher",
     DRIVER: "Chauffeur",
     CLIENT: "Client",
@@ -83,6 +84,7 @@ export function getRoleColor(role: SystemRole): string {
   const colors: Record<SystemRole, string> = {
     SUPER_ADMIN: "border-transparent bg-red-100 text-red-800",
     COMPANY_ADMIN: "border-transparent bg-red-100 text-red-800",
+    MINI_ADMIN: "border-transparent bg-indigo-100 text-indigo-800",
     DISPATCHER: "border-transparent bg-slate-100 text-slate-800",
     DRIVER: "border-transparent bg-orange-100 text-orange-800",
     CLIENT: "border-transparent bg-blue-100 text-blue-800",

@@ -13,7 +13,7 @@ export default function BackOfficeRootLayout({ children }: { children: React.Rea
 
   const navItems = useMemo(() => {
     if (user?.role.systemRole) {
-      return getNavItemsForRole(user.role.systemRole);
+      return getNavItemsForRole(user.role.systemRole, user.settings);
     }
     if (pathname.startsWith("/admin") || pathname.startsWith("/companies")) {
       return adminNavItems;

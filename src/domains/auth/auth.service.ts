@@ -1,9 +1,11 @@
 import { prisma } from "@/services/prisma/client";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
+import { hydrateUserWithRole } from "@/domains/user/user.service";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { slugify } from "@/lib/utils";
 import type { SystemRole, UserStatus } from "@prisma/client";
 import type { UserWithRole } from "@/types";
+import { getMiniAdminHomePath } from "@/lib/permissions/mini-admin";
 
 export type AccountType = "company";
 
@@ -27,14 +29,10 @@ export async function syncUserFromSupabase(
   input: SyncUserInput
 ): Promise<UserWithRole> {
   const email = normalizeEmail(input.email);
-  const userInclude = {
-    role: { include: { permissions: { include: { permission: true } } } },
-    company: true,
-  } as const;
 
   const existing = await prisma.user.findUnique({
     where: { authId: input.authId },
-    include: userInclude,
+    include: { company: true },
   });
 
   if (existing) {
@@ -43,12 +41,12 @@ export async function syncUserFromSupabase(
       data: { lastLoginAt: new Date() },
     });
     await linkPortalDataToClient(existing.id, email);
-    return toUserWithRole(existing);
+    return hydrateUserWithRole(existing);
   }
 
   const existingByEmail = await prisma.user.findFirst({
     where: { email: { equals: email, mode: "insensitive" } },
-    include: userInclude,
+    include: { company: true },
   });
 
   if (existingByEmail) {
@@ -61,10 +59,10 @@ export async function syncUserFromSupabase(
         lastName: input.lastName,
         lastLoginAt: new Date(),
       },
-      include: userInclude,
+      include: { company: true },
     });
     await linkPortalDataToClient(user.id, email);
-    return toUserWithRole(user);
+    return hydrateUserWithRole(user);
   }
 
   // Seuls les administrateurs d'entreprise peuvent s'inscrire eux-mêmes
@@ -108,36 +106,17 @@ export async function syncUserFromSupabase(
       companyId: company.id,
       lastLoginAt: new Date(),
     },
-    include: {
-      role: { include: { permissions: { include: { permission: true } } } },
-      company: true,
-    },
+    include: { company: true },
   });
 
-  return toUserWithRole(user);
+  return hydrateUserWithRole(user);
 }
 
-function toUserWithRole(
-  user: NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>> & {
-    role: {
-      permissions: { permission: { id: string; name: string; slug: string; description: string | null; resource: string; action: string } }[];
-    } & Record<string, unknown>;
-    company: unknown;
-  }
-): UserWithRole {
-  return {
-    ...user,
-    role: {
-      ...user.role,
-      permissions: user.role.permissions.map((rp) => rp.permission),
-    },
-  } as unknown as UserWithRole;
-}
-
-export function getDashboardPathForRole(role: SystemRole): string {
+export function getDashboardPathForRole(role: SystemRole, settings?: unknown): string {
   const map: Record<SystemRole, string> = {
     SUPER_ADMIN: "/admin",
     COMPANY_ADMIN: "/dashboard",
+    MINI_ADMIN: getMiniAdminHomePath(settings),
     DISPATCHER: "/dispatch",
     DRIVER: "/driver",
     CLIENT: "/portal",

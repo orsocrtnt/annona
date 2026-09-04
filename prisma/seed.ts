@@ -70,6 +70,20 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
     "vehicles:read",
     "dashboard:dispatcher",
   ],
+  MINI_ADMIN: [
+    "users:read", "users:create", "users:update", "users:delete",
+    "companies:read", "companies:update",
+    "deliveries:read", "deliveries:create", "deliveries:update", "deliveries:delete", "deliveries:dispatch",
+    "orders:read", "orders:create", "orders:update",
+    "drivers:read", "drivers:manage",
+    "vehicles:read", "vehicles:manage",
+    "analytics:read",
+    "settings:read", "settings:update",
+    "invoices:read", "invoices:create", "invoices:update",
+    "support:read",
+    "dashboard:company",
+    "dashboard:dispatcher",
+  ],
   DRIVER: [
     "deliveries:read", "deliveries:update",
     "dashboard:driver",
@@ -90,6 +104,7 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
 const ROLES = [
   { slug: "super-admin", name: "Super Admin", systemRole: SystemRole.SUPER_ADMIN, description: "Accès complet à la plateforme" },
   { slug: "company-admin", name: "Administrateur", systemRole: SystemRole.COMPANY_ADMIN, description: "Gestion complète de l'entreprise" },
+  { slug: "mini-admin", name: "Mini-admin", systemRole: SystemRole.MINI_ADMIN, description: "Ops quotidien sans paramètres ni gestion des comptes" },
   { slug: "dispatcher", name: "Dispatcher", systemRole: SystemRole.DISPATCHER, description: "Gestion des livraisons et dispatch" },
   { slug: "driver", name: "Chauffeur", systemRole: SystemRole.DRIVER, description: "Exécution des livraisons" },
   { slug: "client", name: "Client", systemRole: SystemRole.CLIENT, description: "Suivi des commandes et livraisons" },
@@ -112,21 +127,28 @@ async function main() {
       where: { slug: { in: permissionSlugs } },
     });
 
-    await prisma.role.upsert({
+    const upserted = await prisma.role.upsert({
       where: { slug: role.slug },
-      update: {},
+      update: {
+        name: role.name,
+        description: role.description,
+        systemRole: role.systemRole,
+      },
       create: {
         name: role.name,
         slug: role.slug,
         description: role.description,
         systemRole: role.systemRole,
         isSystem: true,
-        permissions: {
-          create: permissions.map((p) => ({
-            permissionId: p.id,
-          })),
-        },
       },
+    });
+
+    await prisma.rolePermission.createMany({
+      data: permissions.map((p) => ({
+        roleId: upserted.id,
+        permissionId: p.id,
+      })),
+      skipDuplicates: true,
     });
   }
 

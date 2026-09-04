@@ -125,12 +125,12 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
   if (mapFullscreen) {
     return (
       <div
-        className="relative h-[100dvh] overflow-hidden bg-[#f0f0f0] [--portal-chrome:calc(4rem+1.5rem+2.875rem)] max-md:[--portal-chrome:calc(3.5rem+0.75rem+2.25rem)]"
+        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:calc(4rem+1.5rem+2.875rem)] max-md:[--portal-chrome:calc(3.5rem+0.75rem+2.25rem)]"
         data-portal-map-page
       >
         <main className="absolute inset-0 z-0">{children}</main>
 
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1200]">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
           <div className="pointer-events-auto">
             <PortalHeader overlay />
           </div>
@@ -146,7 +146,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
 
   return (
     <div className="min-h-screen bg-surface-subtle">
-      <div className="sticky top-0 z-30">
+      <div className="sticky top-[var(--demo-banner-height,0px)] z-30">
         <PortalHeader />
       </div>
 

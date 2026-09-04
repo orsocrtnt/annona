@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   return withApiHandler(async () => {
-    const auth = await requireStaffRole("users:read");
+    const auth = await requireStaffRole("orders:read");
     if ("error" in auth) return auth.error;
 
     const companyId = getCompanyId(auth.context);

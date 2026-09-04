@@ -15,12 +15,13 @@ import type { SystemRole } from "@prisma/client";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-const DELETABLE_ROLES: SystemRole[] = ["CLIENT", "DRIVER", "DISPATCHER"];
+const DELETABLE_ROLES: SystemRole[] = ["CLIENT", "DRIVER", "DISPATCHER", "MINI_ADMIN"];
 
 interface DeleteUserButtonProps {
   userId: string;
   userName: string;
   role: SystemRole;
+  locked?: boolean;
   onDeleted?: () => void;
 }
 
@@ -28,6 +29,7 @@ export function DeleteUserButton({
   userId,
   userName,
   role,
+  locked = false,
   onDeleted,
 }: DeleteUserButtonProps) {
   const [open, setOpen] = useState(false);
@@ -55,7 +57,7 @@ export function DeleteUserButton({
     },
   });
 
-  if (!DELETABLE_ROLES.includes(role)) {
+  if (locked || !DELETABLE_ROLES.includes(role)) {
     return null;
   }
 

@@ -6,7 +6,11 @@ import { PrismaClient } from "@prisma/client";
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
   prismaSchemaHash: string | undefined;
+  prismaClientEpoch: string | undefined;
 };
+
+/** Incrémenter après un `prisma generate` si le serveur de dev garde un client périmé. */
+const PRISMA_CLIENT_EPOCH = "mini-admin-enum-sql-roles";
 
 /** Hash live du schéma — évite un singleton Prisma obsolète après db push / generate. */
 function readPrismaSchemaHash() {
@@ -59,19 +63,21 @@ function getPrismaClient() {
   if (
     process.env.NODE_ENV !== "production" &&
     globalForPrisma.prisma &&
-    schemaHash &&
-    globalForPrisma.prismaSchemaHash !== schemaHash
+    ((schemaHash && globalForPrisma.prismaSchemaHash !== schemaHash) ||
+      globalForPrisma.prismaClientEpoch !== PRISMA_CLIENT_EPOCH)
   ) {
     const staleClient = globalForPrisma.prisma;
     globalForPrisma.prisma = undefined;
     globalForPrisma.prismaSchemaHash = undefined;
+    globalForPrisma.prismaClientEpoch = undefined;
     void staleClient.$disconnect().catch(() => undefined);
   }
 
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = createPrismaClient();
-    if (process.env.NODE_ENV !== "production" && schemaHash) {
-      globalForPrisma.prismaSchemaHash = schemaHash;
+    if (process.env.NODE_ENV !== "production") {
+      if (schemaHash) globalForPrisma.prismaSchemaHash = schemaHash;
+      globalForPrisma.prismaClientEpoch = PRISMA_CLIENT_EPOCH;
     }
   }
 

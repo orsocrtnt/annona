@@ -4,7 +4,10 @@ import type { UserWithRole } from "@/types";
 import {
   DEMO_CLIENT_EMAIL,
   DEMO_DRIVER_EMAIL,
+  DEMO_FIXTURE_CLIENTS,
+  DEMO_FIXTURE_DRIVERS,
   DEMO_LOGIN_EMAIL,
+  demoFixtureAuthId,
   demoPersonaAuthId,
   type DemoPersona,
   systemRoleForDemoPersona,
@@ -99,6 +102,14 @@ export function personaAuthIdForRole(
   return null;
 }
 
+export function demoKeepEmails(): string[] {
+  return [
+    DEMO_LOGIN_EMAIL,
+    ...DEMO_FIXTURE_CLIENTS.map((client) => client.email),
+    ...DEMO_FIXTURE_DRIVERS.map((driver) => driver.email),
+  ].map((email) => email.toLowerCase());
+}
+
 export function demoPersonaSeedUsers(companyId: string) {
   return [
     {
@@ -110,25 +121,66 @@ export function demoPersonaSeedUsers(companyId: string) {
       authId: null as string | null,
       phone: "0600000001",
     },
-    {
-      persona: "client" as const,
-      email: DEMO_CLIENT_EMAIL,
-      firstName: "Marie",
-      lastName: "Client Démo",
+    ...DEMO_FIXTURE_CLIENTS.map((client, index) => ({
+      persona: index === 0 ? ("client" as const) : null,
+      email: client.email,
+      firstName: client.firstName,
+      lastName: client.lastName,
       roleSlug: "client" as const,
-      authId: demoPersonaAuthId("client", companyId),
+      authId: demoFixtureAuthId(index === 0 ? "client" : `client-${index + 1}`, companyId),
       phone: null as string | null,
-    },
-    {
-      persona: "driver" as const,
-      email: DEMO_DRIVER_EMAIL,
-      firstName: "Marc",
-      lastName: "Chauffeur Démo",
+    })),
+    ...DEMO_FIXTURE_DRIVERS.map((driver, index) => ({
+      persona: index === 0 ? ("driver" as const) : null,
+      email: driver.email,
+      firstName: driver.firstName,
+      lastName: driver.lastName,
       roleSlug: "driver" as const,
-      authId: demoPersonaAuthId("driver", companyId),
-      phone: "0600000002",
-    },
+      authId: demoFixtureAuthId(index === 0 ? "driver" : `driver-${index + 1}`, companyId),
+      phone: `060000000${index + 2}`,
+    })),
   ];
+}
+
+export async function ensureDemoRosterUsers(companyId: string, adminAuthId?: string) {
+  const seedUsers = demoPersonaSeedUsers(companyId);
+  const roleSlugs = [...new Set(seedUsers.map((user) => user.roleSlug))];
+  const roles = await prisma.role.findMany({
+    where: { slug: { in: roleSlugs } },
+  });
+  const roleBySlug = new Map(roles.map((role) => [role.slug, role]));
+
+  for (const seed of seedUsers) {
+    const role = roleBySlug.get(seed.roleSlug);
+    if (!role) throw new Error(`Rôle ${seed.roleSlug} introuvable — lancez npm run db:seed`);
+
+    const resolvedAuthId =
+      seed.persona === "admin" ? (adminAuthId ?? seed.authId) : seed.authId;
+    if (!resolvedAuthId) continue;
+
+    await prisma.user.upsert({
+      where: { email: seed.email },
+      update: {
+        authId: resolvedAuthId,
+        firstName: seed.firstName,
+        lastName: seed.lastName,
+        phone: seed.phone,
+        roleId: role.id,
+        companyId,
+        status: "ACTIVE",
+      },
+      create: {
+        authId: resolvedAuthId,
+        email: seed.email,
+        firstName: seed.firstName,
+        lastName: seed.lastName,
+        phone: seed.phone,
+        roleId: role.id,
+        companyId,
+        status: "ACTIVE",
+      },
+    });
+  }
 }
 
 export function roleSlugForPersona(persona: DemoPersona): string {

@@ -31,11 +31,13 @@ export async function DELETE(
       USER_NOT_FOUND: 404,
       CANNOT_DELETE_SELF: 400,
       ROLE_NOT_DELETABLE: 403,
+      DEMO_ACCOUNT_LOCKED: 403,
     };
     const labels: Record<string, string> = {
       USER_NOT_FOUND: "Utilisateur introuvable.",
       CANNOT_DELETE_SELF: "Vous ne pouvez pas supprimer votre propre compte.",
       ROLE_NOT_DELETABLE: "Ce rôle ne peut pas être supprimé depuis cette page.",
+      DEMO_ACCOUNT_LOCKED: "Ce compte fait partie de la démo et ne peut pas être supprimé.",
     };
 
     return NextResponse.json(

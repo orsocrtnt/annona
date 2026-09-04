@@ -5,7 +5,7 @@ import { getCompanyClients } from "@/domains/client-portal/client-admin.service"
 
 export async function GET() {
   return withApiHandler(async () => {
-    const auth = await requireStaffRole("users:read");
+    const auth = await requireStaffRole("orders:read");
     if ("error" in auth) return auth.error;
 
     const companyId = getCompanyId(auth.context);

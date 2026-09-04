@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       user,
       permissions,
-      redirectTo: getDashboardPathForRole(user.role.systemRole),
+      redirectTo: getDashboardPathForRole(user.role.systemRole, user.settings),
     });
   } catch (error) {
     if (error instanceof UserNotProvisionedError) {

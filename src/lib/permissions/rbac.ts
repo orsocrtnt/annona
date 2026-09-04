@@ -37,6 +37,7 @@ export type PermissionSlug = `${Resource}:${Action}`;
 export const ROLE_HIERARCHY: Record<SystemRole, number> = {
   SUPER_ADMIN: 100,
   COMPANY_ADMIN: 80,
+  MINI_ADMIN: 70,
   DISPATCHER: 60,
   DRIVER: 40,
   CLIENT: 20,
@@ -45,10 +46,32 @@ export const ROLE_HIERARCHY: Record<SystemRole, number> = {
 export const ROLE_LABELS: Record<SystemRole, string> = {
   SUPER_ADMIN: "Super Admin",
   COMPANY_ADMIN: "Administrateur",
+  MINI_ADMIN: "Mini-admin",
   DISPATCHER: "Dispatcher",
   DRIVER: "Chauffeur",
   CLIENT: "Client",
 };
+
+/** Personnel interne (back-office), hors client et chauffeur. */
+export const STAFF_ROLES: SystemRole[] = [
+  "SUPER_ADMIN",
+  "COMPANY_ADMIN",
+  "MINI_ADMIN",
+  "DISPATCHER",
+];
+
+const COMPANY_OPS_ROLES: SystemRole[] = [
+  "SUPER_ADMIN",
+  "COMPANY_ADMIN",
+  "MINI_ADMIN",
+];
+
+const DISPATCH_ROLES: SystemRole[] = [
+  "SUPER_ADMIN",
+  "COMPANY_ADMIN",
+  "MINI_ADMIN",
+  "DISPATCHER",
+];
 
 export function hasPermission(
   userPermissions: string[],
@@ -79,12 +102,12 @@ export function canAccessRoute(
 ): boolean {
   const routeRoleMap: Record<string, SystemRole[]> = {
     "/admin": ["SUPER_ADMIN"],
-    "/dashboard": ["SUPER_ADMIN", "COMPANY_ADMIN"],
-    "/dispatch": ["SUPER_ADMIN", "COMPANY_ADMIN", "DISPATCHER"],
+    "/dashboard": COMPANY_OPS_ROLES,
+    "/dispatch": DISPATCH_ROLES,
     "/driver": ["DRIVER"],
     "/portal": ["CLIENT"],
-    "/settings": ["SUPER_ADMIN", "COMPANY_ADMIN"],
-    "/users": ["SUPER_ADMIN", "COMPANY_ADMIN"],
+    "/settings": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
+    "/users": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
     "/companies": ["SUPER_ADMIN"],
   };
 
@@ -99,12 +122,12 @@ export function canAccessRoute(
 
 export function getAllowedRolesForPath(path: string): SystemRole[] {
   if (path.startsWith("/admin")) return ["SUPER_ADMIN"];
-  if (path.startsWith("/dashboard")) return ["SUPER_ADMIN", "COMPANY_ADMIN"];
-  if (path.startsWith("/dispatch")) return ["SUPER_ADMIN", "COMPANY_ADMIN", "DISPATCHER"];
+  if (path.startsWith("/dashboard")) return COMPANY_OPS_ROLES;
+  if (path.startsWith("/dispatch")) return DISPATCH_ROLES;
   if (path.startsWith("/driver")) return ["DRIVER"];
   if (path.startsWith("/portal")) return ["CLIENT"];
-  if (path.startsWith("/settings")) return ["SUPER_ADMIN", "COMPANY_ADMIN"];
-  if (path.startsWith("/users")) return ["SUPER_ADMIN", "COMPANY_ADMIN"];
+  if (path.startsWith("/settings")) return ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"];
+  if (path.startsWith("/users")) return ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"];
   if (path.startsWith("/companies")) return ["SUPER_ADMIN"];
   return [];
 }

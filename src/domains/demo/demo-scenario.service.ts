@@ -4,7 +4,16 @@ import type {
   DeliveryStatus,
   InvoiceStatus,
   OrderStatus,
+  Prisma,
 } from "@prisma/client";
+import { attachRolesById } from "@/domains/user/user.service";
+import { demoKeepEmails, ensureDemoRosterUsers } from "@/domains/demo/demo-users.service";
+import {
+  DEMO_FIXTURE_CLIENTS,
+  DEMO_FIXTURE_DRIVERS,
+} from "@/lib/demo/constants";
+import { createAdminClient } from "@/services/supabase/admin";
+import { formatDriverDisplayName } from "@/lib/format/person-labels";
 import {
   generateDeliveryReference,
   generateOrderReference,
@@ -297,6 +306,150 @@ function buildScenario(): ScenarioItem[] {
   ];
 }
 
+const CLIENT_ADDRESS_SEEDS = [
+  [
+    {
+      label: "Siège",
+      address: "12 Rue de Rivoli",
+      city: "Paris",
+      postalCode: "75001",
+    },
+    {
+      label: "Entrepôt",
+      address: "9 Rue de la Gare",
+      city: "Montreuil",
+      postalCode: "93100",
+    },
+  ],
+  [
+    {
+      label: "Bureau",
+      address: "45 Avenue des Champs-Élysées",
+      city: "Paris",
+      postalCode: "75008",
+    },
+  ],
+  [
+    {
+      label: "Boutique",
+      address: "8 Boulevard Haussmann",
+      city: "Paris",
+      postalCode: "75009",
+    },
+  ],
+  [
+    {
+      label: "Atelier",
+      address: "22 Rue de la Roquette",
+      city: "Paris",
+      postalCode: "75011",
+    },
+  ],
+  [
+    {
+      label: "Agence",
+      address: "27 Rue Gabriel Péri",
+      city: "Levallois-Perret",
+      postalCode: "92300",
+    },
+  ],
+] as const;
+
+const DRIVER_LOCATION_SEEDS = [
+  { latitude: 48.8698, longitude: 2.3078 },
+  { latitude: 48.8532, longitude: 2.3691 },
+] as const;
+
+function pickRosterUser<T extends { email: string }>(
+  users: T[],
+  email: string
+): T | undefined {
+  return users.find((user) => user.email.toLowerCase() === email.toLowerCase());
+}
+
+async function applyDemoDispatchDrivers(companyId: string, driverIds: string[]) {
+  if (driverIds.length === 0) return;
+
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { settings: true },
+  });
+  const settings =
+    company?.settings && typeof company.settings === "object"
+      ? { ...(company.settings as Record<string, unknown>) }
+      : {};
+  const previousDispatch =
+    settings.dispatch && typeof settings.dispatch === "object"
+      ? { ...(settings.dispatch as Record<string, unknown>) }
+      : {};
+
+  settings.dispatch = {
+    ...previousDispatch,
+    enabled: true,
+    defaultDriverId: driverIds[0],
+    driverRules: driverIds.map((driverId, index) => ({
+      driverId,
+      priority: index + 1,
+      allowedCategories: {
+        STANDARD: true,
+        COURIER: true,
+        SPECIAL_MISSION: false,
+      },
+      zoneIds: [],
+      postalCodePrefixes: ["75", "92", "93", "94"],
+      dispatchStatus: "ACTIVE",
+    })),
+  };
+
+  await prisma.company.update({
+    where: { id: companyId },
+    data: { settings: settings as Prisma.InputJsonValue },
+  });
+}
+
+async function ensureDemoClientAddresses(
+  clients: Array<{ id: string }>
+) {
+  for (const [index, client] of clients.entries()) {
+    const seeds = CLIENT_ADDRESS_SEEDS[index] ?? CLIENT_ADDRESS_SEEDS[0];
+    const addressCount = await prisma.customerAddress.count({
+      where: { userId: client.id },
+    });
+    if (addressCount > 0) continue;
+
+    await prisma.customerAddress.createMany({
+      data: seeds.map((seed, seedIndex) => ({
+        userId: client.id,
+        label: seed.label,
+        address: seed.address,
+        city: seed.city,
+        postalCode: seed.postalCode,
+        isDefault: seedIndex === 0,
+      })),
+    });
+  }
+}
+
+async function ensureDemoDriverLocations(drivers: Array<{ id: string }>) {
+  for (const [index, driver] of drivers.entries()) {
+    const coords = DRIVER_LOCATION_SEEDS[index] ?? DRIVER_LOCATION_SEEDS[0];
+    await prisma.driverLocation.upsert({
+      where: { driverId: driver.id },
+      create: {
+        driverId: driver.id,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: 12,
+      },
+      update: {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: 12,
+      },
+    });
+  }
+}
+
 async function purgeDemoTransactionalData(companyId: string) {
   const drivers = await prisma.user.findMany({
     where: { companyId, role: { systemRole: "DRIVER" } },
@@ -314,16 +467,46 @@ async function purgeDemoTransactionalData(companyId: string) {
   ]);
 }
 
+/** Comptes créés pendant la démo (mini-admin, etc.) — le roster figé reste. */
+async function purgeDemoExtraAccounts(companyId: string) {
+  const keep = new Set(demoKeepEmails());
+  const extras = (
+    await prisma.user.findMany({
+      where: { companyId },
+      select: { id: true, authId: true, email: true },
+    })
+  ).filter((user) => !keep.has(user.email.toLowerCase()));
+
+  if (extras.length === 0) return;
+
+  await prisma.user.deleteMany({
+    where: { id: { in: extras.map((user) => user.id) } },
+  });
+
+  const supabase = createAdminClient();
+  await Promise.all(
+    extras
+      .filter((user) => !user.authId.startsWith("demo-persona-"))
+      .map(async (user) => {
+        const { error } = await supabase.auth.admin.deleteUser(user.authId);
+        if (error) {
+          console.error("Demo reset: suppression auth échouée:", user.email, error.message);
+        }
+      })
+  );
+}
+
 async function ensureRecurringOrder(
   actors: DemoActors,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  label = "Livraison hebdomadaire fournitures"
 ) {
   const existing = await prisma.recurringOrder.findFirst({
     where: { companyId: actors.companyId, customerId: actors.clientId },
   });
 
   const payload = {
-    label: "Livraison hebdomadaire fournitures",
+    label,
     frequency: "WEEKLY" as const,
     intervalValue: 1,
     intervalUnit: "WEEKS" as const,
@@ -465,7 +648,9 @@ async function createScenarioDelivery(
       city: scenario.shipping.city,
       postalCode: scenario.shipping.postalCode,
       driverId: scenario.assignDriver ? actors.driverId : null,
-      driverName: scenario.assignDriver ? actors.driverName : null,
+      driverName: scenario.assignDriver
+        ? formatDriverDisplayName(actors.driverName)
+        : null,
       companyId: actors.companyId,
       orderId: order.id,
       customerId: actors.clientId,
@@ -561,74 +746,75 @@ export async function resetDemoScenario(
   companyId: string,
   referenceDate: Date = new Date()
 ): Promise<{ deliveries: number }> {
-  const personas = await prisma.user.findMany({
-    where: { companyId },
-    include: { role: true },
-  });
+  await purgeDemoTransactionalData(companyId);
+  await purgeDemoExtraAccounts(companyId);
+  await ensureDemoRosterUsers(companyId);
 
-  const client = personas.find((u) => u.role.systemRole === "CLIENT");
-  const driver = personas.find((u) => u.role.systemRole === "DRIVER");
+  const roster = await attachRolesById(
+    await prisma.user.findMany({ where: { companyId } })
+  );
 
-  if (!client || !driver) {
+  const clients = DEMO_FIXTURE_CLIENTS.map((fixture) =>
+    pickRosterUser(roster, fixture.email)
+  ).filter((user): user is NonNullable<typeof user> => Boolean(user));
+  const drivers = DEMO_FIXTURE_DRIVERS.map((fixture) =>
+    pickRosterUser(roster, fixture.email)
+  ).filter((user): user is NonNullable<typeof user> => Boolean(user));
+
+  const firstClient = clients[0];
+  const firstDriver = drivers[0];
+  const secondClient = clients[1];
+  if (!firstClient || !firstDriver) {
     throw new Error("DEMO_PERSONAS_MISSING");
   }
 
-  const actors: DemoActors = {
-    companyId,
-    clientId: client.id,
-    clientEmail: client.email,
-    driverId: driver.id,
-    driverName: `${driver.firstName} ${driver.lastName}`,
-  };
-
-  await purgeDemoTransactionalData(companyId);
-  await ensureRecurringOrder(actors, referenceDate);
-
   const scenarios = buildScenario();
-  for (const scenario of scenarios) {
-    await createScenarioDelivery(actors, scenario, referenceDate);
+  for (const [index, scenario] of scenarios.entries()) {
+    const client = clients[index % clients.length] ?? firstClient;
+    const driver = drivers[index % drivers.length] ?? firstDriver;
+    await createScenarioDelivery(
+      {
+        companyId,
+        clientId: client.id,
+        clientEmail: client.email,
+        driverId: driver.id,
+        driverName: `${driver.firstName} ${driver.lastName}`,
+      },
+      scenario,
+      referenceDate
+    );
   }
 
-  await prisma.driverLocation.upsert({
-    where: { driverId: driver.id },
-    create: {
-      driverId: driver.id,
-      latitude: 48.8698,
-      longitude: 2.3078,
-      accuracy: 12,
+  await ensureRecurringOrder(
+    {
+      companyId,
+      clientId: firstClient.id,
+      clientEmail: firstClient.email,
+      driverId: firstDriver.id,
+      driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
     },
-    update: {
-      latitude: 48.8698,
-      longitude: 2.3078,
-      accuracy: 12,
-    },
-  });
-
-  const addressCount = await prisma.customerAddress.count({
-    where: { userId: client.id },
-  });
-  if (addressCount === 0) {
-    await prisma.customerAddress.createMany({
-      data: [
-        {
-          userId: client.id,
-          label: "Siège",
-          address: "12 Rue de Rivoli",
-          city: "Paris",
-          postalCode: "75001",
-          isDefault: true,
-        },
-        {
-          userId: client.id,
-          label: "Entrepôt",
-          address: "9 Rue de la Gare",
-          city: "Montreuil",
-          postalCode: "93100",
-          isDefault: false,
-        },
-      ],
-    });
+    referenceDate
+  );
+  if (secondClient) {
+    await ensureRecurringOrder(
+      {
+        companyId,
+        clientId: secondClient.id,
+        clientEmail: secondClient.email,
+        driverId: firstDriver.id,
+        driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
+      },
+      referenceDate,
+      "Collecte documents chaque semaine"
+    );
   }
+
+  await ensureDemoDriverLocations(drivers);
+  await ensureDemoClientAddresses(clients);
+  await applyDemoDispatchDrivers(
+    companyId,
+    drivers.map((driver) => driver.id)
+  );
 
   return { deliveries: scenarios.length };
 }

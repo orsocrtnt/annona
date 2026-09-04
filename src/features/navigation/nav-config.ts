@@ -40,6 +40,20 @@ export const dispatcherNavItems: NavItem[] = [
   { title: "Gestion des comptes", href: "/users", icon: Users },
 ];
 
+/** Tous les écrans back-office, filtrés ensuite par les accès du mini-admin. */
+export const miniAdminNavItems: NavItem[] = [
+  { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Commandes", href: "/dashboard/orders", icon: Package },
+  { title: "Dispatch", href: "/dispatch", icon: Radio },
+  ...dispatchMapItems,
+  { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
+  { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
+  { title: "Gestion des comptes", href: "/users", icon: Users },
+  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3, disabled: true, badge: "Bientôt" },
+  { title: "Facturation", href: "/settings/billing", icon: Receipt },
+  { title: "Paramètres", href: "/settings", icon: Settings },
+];
+
 export const driverNavItems: NavItem[] = [
   { title: "Accueil", href: "/driver", icon: LayoutDashboard },
   { title: "Missions", href: "/driver/missions", icon: Truck },

@@ -100,6 +100,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       setError(json.error ?? "Email ou mot de passe incorrect.");
       return;
     }
+    await queryClient.clear();
     setUser(json.user);
     setPermissions(json.permissions);
     setDemo(json.demo ?? null);

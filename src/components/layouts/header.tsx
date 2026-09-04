@@ -26,7 +26,7 @@ export function Header({ breadcrumbs, className }: HeaderProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-xl lg:px-6",
+        "sticky top-[var(--demo-banner-height,0px)] z-30 flex h-16 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-xl lg:px-6",
         className
       )}
     >

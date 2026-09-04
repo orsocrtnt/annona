@@ -1,38 +1,104 @@
+import { Prisma, type SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { createAdminClient } from "@/services/supabase/admin";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import type { UserWithRole } from "@/types";
 import { COMPANY_USERS_TAKE } from "@/lib/query/list-limits";
 import type { CreateUserInput, UpdateProfileInput } from "@/lib/validations/user";
+import { filterMiniAdminPermissions, buildMiniAdminSettings } from "@/lib/permissions/mini-admin";
+import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
 
-export async function getUserByAuthId(authId: string): Promise<UserWithRole | null> {
-  const user = await prisma.user.findUnique({
-    where: { authId },
-    include: {
-      role: {
-        include: {
-          permissions: {
-            include: { permission: true },
-          },
-        },
+type RoleRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  systemRole: SystemRole;
+  isSystem: boolean;
+};
+
+/** Lit les rôles en SQL pour éviter le décodage Prisma d’un enum SystemRole trop ancien en mémoire. */
+async function fetchRolesByIds(ids: string[]): Promise<Map<string, RoleRecord>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Map();
+
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      name: string;
+      slug: string;
+      description: string | null;
+      system_role: string;
+      is_system: boolean;
+    }>
+  >`
+    SELECT id, name, slug, description, system_role, is_system
+    FROM roles
+    WHERE id IN (${Prisma.join(unique)})
+  `;
+
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description,
+        systemRole: row.system_role as SystemRole,
+        isSystem: row.is_system,
       },
-      company: true,
-    },
-  });
+    ])
+  );
+}
 
-  if (!user) return null;
+export async function hydrateUserWithRole<T extends { roleId: string }>(
+  user: T
+): Promise<T & { role: UserWithRole["role"] }> {
+  const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
+  if (!role) {
+    throw new Error("ROLE_NOT_FOUND");
+  }
+
+  const rolePermissions = await prisma.rolePermission.findMany({
+    where: { roleId: user.roleId },
+    include: { permission: true },
+  });
 
   return {
     ...user,
     role: {
-      ...user.role,
-      permissions: user.role.permissions.map((rp) => rp.permission),
+      ...role,
+      permissions: rolePermissions.map((rp) => rp.permission),
     },
   };
 }
 
+export async function attachRolesById<T extends { roleId: string }>(
+  users: T[]
+): Promise<Array<T & { role: RoleRecord }>> {
+  const roles = await fetchRolesByIds(users.map((user) => user.roleId));
+  return users.map((user) => {
+    const role = roles.get(user.roleId);
+    if (!role) throw new Error("ROLE_NOT_FOUND");
+    return { ...user, role };
+  });
+}
+
+export async function getUserByAuthId(authId: string): Promise<UserWithRole | null> {
+  const user = await prisma.user.findUnique({
+    where: { authId },
+    include: { company: true },
+  });
+
+  if (!user) return null;
+  return hydrateUserWithRole(user);
+}
+
 export function extractPermissionSlugs(user: UserWithRole): string[] {
-  return user.role.permissions.map((p) => p.slug);
+  const slugs = user.role.permissions.map((p) => p.slug);
+  if (user.role.systemRole !== "MINI_ADMIN") return slugs;
+  return filterMiniAdminPermissions(slugs, user.settings);
 }
 
 export async function getUserPermissions(authId: string): Promise<string[]> {
@@ -48,11 +114,16 @@ export async function updateLastLogin(userId: string): Promise<void> {
 }
 
 export async function listUsersForCompany(companyId: string) {
-  return prisma.user.findMany({
+  const users = await prisma.user.findMany({
     where: { companyId },
-    include: { role: true },
     orderBy: { createdAt: "desc" },
     take: COMPANY_USERS_TAKE,
+  });
+  const roles = await fetchRolesByIds(users.map((user) => user.roleId));
+  return users.map((user) => {
+    const role = roles.get(user.roleId);
+    if (!role) throw new Error("ROLE_NOT_FOUND");
+    return { ...user, role };
   });
 }
 
@@ -75,11 +146,40 @@ export async function listCompanyDrivers(companyId: string) {
 }
 
 export async function listAllUsers() {
-  return prisma.user.findMany({
-    include: { role: true, company: { select: { name: true } } },
+  const users = await prisma.user.findMany({
+    include: { company: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
     take: COMPANY_USERS_TAKE,
   });
+  const roles = await fetchRolesByIds(users.map((user) => user.roleId));
+  return users.map((user) => {
+    const role = roles.get(user.roleId);
+    if (!role) throw new Error("ROLE_NOT_FOUND");
+    return { ...user, role };
+  });
+}
+
+const CREATABLE_SYSTEM_ROLES = ["CLIENT", "DRIVER", "MINI_ADMIN"] as const;
+
+async function findCreatableRoleBySlug(slug: string) {
+  const rows = await prisma.$queryRaw<
+    Array<{ id: string; name: string; slug: string; system_role: string }>
+  >`
+    SELECT id, name, slug, system_role FROM roles WHERE slug = ${slug} LIMIT 1
+  `;
+  const row = rows[0];
+  if (
+    !row ||
+    !CREATABLE_SYSTEM_ROLES.includes(row.system_role as (typeof CREATABLE_SYSTEM_ROLES)[number])
+  ) {
+    return null;
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    systemRole: row.system_role as (typeof CREATABLE_SYSTEM_ROLES)[number],
+  };
 }
 
 function generateTempPassword(): string {
@@ -110,8 +210,8 @@ export async function createUserByAdmin(
     throw new Error("COMPANY_REQUIRED");
   }
 
-  const role = await prisma.role.findUnique({ where: { slug: input.roleSlug } });
-  if (!role || !["CLIENT", "DRIVER", "DISPATCHER"].includes(role.systemRole)) {
+  const role = await findCreatableRoleBySlug(input.roleSlug);
+  if (!role) {
     throw new Error("INVALID_ROLE");
   }
 
@@ -150,8 +250,16 @@ export async function createUserByAdmin(
         roleId: role.id,
         companyId,
         status: "ACTIVE",
+        ...(input.roleSlug === "mini-admin"
+          ? {
+              settings: buildMiniAdminSettings(
+                input.miniAdminTitle ?? "",
+                input.miniAdminModules ?? []
+              ),
+            }
+          : {}),
       },
-      include: { role: true, company: true },
+      include: { company: true },
     });
   } catch (prismaError) {
     await supabase.auth.admin.deleteUser(authData.user.id);
@@ -162,10 +270,21 @@ export async function createUserByAdmin(
     await linkPortalDataToClient(user.id, input.email);
   }
 
-  return { user, temporaryPassword: password };
+  return {
+    user: {
+      ...user,
+      role: {
+        id: role.id,
+        name: role.name,
+        slug: role.slug,
+        systemRole: role.systemRole,
+      },
+    },
+    temporaryPassword: password,
+  };
 }
 
-const DELETABLE_ROLES = ["CLIENT", "DRIVER", "DISPATCHER"] as const;
+const DELETABLE_ROLES = ["CLIENT", "DRIVER", "DISPATCHER", "MINI_ADMIN"] as const;
 
 export async function deleteUserByAdmin(
   targetUserId: string,
@@ -179,7 +298,6 @@ export async function deleteUserByAdmin(
 
   const user = await prisma.user.findUnique({
     where: { id: targetUserId },
-    include: { role: true },
   });
 
   if (!user) throw new Error("USER_NOT_FOUND");
@@ -188,14 +306,21 @@ export async function deleteUserByAdmin(
     throw new Error("USER_NOT_FOUND");
   }
 
-  if (!DELETABLE_ROLES.includes(user.role.systemRole as (typeof DELETABLE_ROLES)[number])) {
+  const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
+  if (!role) throw new Error("USER_NOT_FOUND");
+
+  if (isDemoLockedAccountEmail(user.email)) {
+    throw new Error("DEMO_ACCOUNT_LOCKED");
+  }
+
+  if (!DELETABLE_ROLES.includes(role.systemRole as (typeof DELETABLE_ROLES)[number])) {
     throw new Error("ROLE_NOT_DELETABLE");
   }
 
   const supabase = createAdminClient();
 
   await prisma.$transaction(async (tx) => {
-    if (user.role.systemRole === "DRIVER") {
+    if (role.systemRole === "DRIVER") {
       await tx.delivery.updateMany({
         where: { driverId: user.id },
         data: { driverId: null, driverName: null },

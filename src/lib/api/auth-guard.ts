@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { hasPermission } from "@/lib/permissions/rbac";
+import { hasPermission, STAFF_ROLES } from "@/lib/permissions/rbac";
 import type { PermissionSlug } from "@/lib/permissions/rbac";
 import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
@@ -62,14 +62,6 @@ export async function requireDriverRole(): Promise<
   return result;
 }
 
-/** Rôles internes à une entreprise (back-office). Exclut CLIENT et DRIVER. */
-const STAFF_ROLES: SystemRole[] = ["SUPER_ADMIN", "COMPANY_ADMIN", "DISPATCHER"];
-
-/**
- * Garde des routes back-office : exige la permission ET un rôle personnel
- * (SUPER_ADMIN / COMPANY_ADMIN / DISPATCHER). Empêche un CLIENT ou un DRIVER
- * d'atteindre les routes d'administration même s'il partage une permission.
- */
 export async function requireStaffRole(
   permissions?: PermissionSlug | PermissionSlug[]
 ): Promise<{ context: AuthContext } | { error: NextResponse }> {

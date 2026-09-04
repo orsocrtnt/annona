@@ -17,13 +17,13 @@ export const ROUTE_GUARDS: RouteGuardConfig[] = [
   },
   {
     path: "/dashboard",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN"],
+    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
     requiredPermissions: ["dashboard:company"],
     redirectTo: "/login",
   },
   {
     path: "/dispatch",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "DISPATCHER"],
+    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
     requiredPermissions: ["dashboard:dispatcher"],
     redirectTo: "/login",
   },
@@ -41,13 +41,13 @@ export const ROUTE_GUARDS: RouteGuardConfig[] = [
   },
   {
     path: "/settings",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN"],
+    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
     requiredPermissions: ["settings:read"],
     redirectTo: "/login",
   },
   {
     path: "/users",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN"],
+    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
     requiredPermissions: ["users:read"],
     redirectTo: "/login",
   },
@@ -100,6 +100,7 @@ export function getDashboardForRole(role: SystemRole): string {
   const map: Record<SystemRole, string> = {
     SUPER_ADMIN: "/admin",
     COMPANY_ADMIN: "/dashboard",
+    MINI_ADMIN: "/dashboard",
     DISPATCHER: "/dispatch",
     DRIVER: "/driver",
     CLIENT: "/portal",

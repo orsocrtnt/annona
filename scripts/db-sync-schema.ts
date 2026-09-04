@@ -8,6 +8,10 @@ const prisma = new PrismaClient();
 
 const PATCHES: Array<{ name: string; sql: string }> = [
   {
+    name: "SystemRole.MINI_ADMIN",
+    sql: `ALTER TYPE "SystemRole" ADD VALUE IF NOT EXISTS 'MINI_ADMIN'`,
+  },
+  {
     name: "companies.is_demo",
     sql: `ALTER TABLE "companies" ADD COLUMN IF NOT EXISTS "is_demo" BOOLEAN NOT NULL DEFAULT false`,
   },

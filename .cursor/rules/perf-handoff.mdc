@@ -14,8 +14,8 @@ alwaysApply: true
 | ID | Quoi | Où |
 |----|------|-----|
 | NAV | **Poussé** : 1 appel dispatch overview ; prefetch idle = RSC only ; pas de refetch au mount ; cache route 60s | Hard refresh prod après deploy |
-| UI-1 | Recentrer les barres de suivi en haut (portail client) | `delivery-map-status-bar` |
-| F-1 | Mini-admins | users / rôles |
+| UI-1 | **Fait local** : barre de suivi centrée sous le chrome ; panneau sous la barre | `portal-deliveries-map` |
+| F-1 | **Fait local** : rôle Mini-admin (ops sans settings/users) ; création depuis Gestion des comptes | users / rôles |
 
 Optionnel : confirmer en prod que le déploiement Vercel est bien le dernier SHA + colonnes lat/lng en DB.
 

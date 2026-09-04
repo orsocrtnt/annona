@@ -20,7 +20,8 @@ import {
   USER_TABLE_COL,
 } from "@/features/users/users-table-ui";
 import { formatPersonNameByRole } from "@/lib/format/person-labels";
-import { QUERY_STALE_MS } from "@/lib/query/defaults";
+import { parseMiniAdminSettings } from "@/lib/permissions/mini-admin";
+import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "@/types";
 import type { SystemRole } from "@prisma/client";
@@ -31,25 +32,28 @@ interface UserRow {
   lastName: string;
   email: string;
   status: string;
+  settings?: unknown;
+  miniAdminTitle?: string;
   role: { name: string; systemRole: SystemRole };
   company?: { name: string } | null;
 }
 
-type RoleFilter = "all" | "DRIVER" | "CLIENT" | "DISPATCHER";
+type RoleFilter = "all" | "DRIVER" | "CLIENT" | "MINI_ADMIN";
 
 const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
   { value: "all", label: "Tous" },
   { value: "DRIVER", label: "Chauffeurs" },
   { value: "CLIENT", label: "Clients" },
-  { value: "DISPATCHER", label: "Dispatchers" },
+  { value: "MINI_ADMIN", label: "Mini-admins" },
 ];
 
 const ROLE_SORT_ORDER: Record<SystemRole, number> = {
   DRIVER: 0,
   DISPATCHER: 1,
-  CLIENT: 2,
-  COMPANY_ADMIN: 3,
-  SUPER_ADMIN: 4,
+  MINI_ADMIN: 2,
+  CLIENT: 3,
+  COMPANY_ADMIN: 4,
+  SUPER_ADMIN: 5,
 };
 
 async function fetchUsers() {
@@ -67,7 +71,8 @@ export default function UsersPage() {
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
-    staleTime: QUERY_STALE_MS,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const columns = useMemo((): TableColumn<UserRow & { name: string }>[] => [
@@ -90,7 +95,12 @@ export default function UsersPage() {
       key: "role",
       header: "Rôle",
       className: USER_TABLE_COL.role,
-      cell: (row) => <TableUserRole role={row.role.systemRole} />,
+      cell: (row) => (
+        <TableUserRole
+          role={row.role.systemRole}
+          title={row.miniAdminTitle}
+        />
+      ),
     },
     {
       key: "status",
@@ -123,6 +133,7 @@ export default function UsersPage() {
           userId={row.id}
           userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
           role={row.role.systemRole}
+          locked={isDemoLockedAccountEmail(row.email)}
           onDeleted={() => dismissCredentials(row.id)}
         />
       ),
@@ -133,6 +144,10 @@ export default function UsersPage() {
     const mapped = (users ?? []).map((u) => ({
       ...u,
       name: formatPersonNameByRole(u.firstName, u.lastName, u.role.systemRole),
+      miniAdminTitle:
+        u.role.systemRole === "MINI_ADMIN"
+          ? parseMiniAdminSettings(u.settings).title
+          : undefined,
     }));
 
     const filtered =
@@ -154,7 +169,7 @@ export default function UsersPage() {
       all: all.length,
       DRIVER: all.filter((u) => u.role.systemRole === "DRIVER").length,
       CLIENT: all.filter((u) => u.role.systemRole === "CLIENT").length,
-      DISPATCHER: all.filter((u) => u.role.systemRole === "DISPATCHER").length,
+      MINI_ADMIN: all.filter((u) => u.role.systemRole === "MINI_ADMIN").length,
     };
   }, [users]);
 
@@ -166,7 +181,7 @@ export default function UsersPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gestion des comptes</h1>
           <p className="mt-1 text-muted-foreground">
-            Clients, chauffeurs et dispatchers de votre entreprise
+            Clients, chauffeurs et mini-admins de votre entreprise
           </p>
         </div>
         <CreateUserDialog onUserCreated={addCredentials} />
@@ -213,7 +228,9 @@ export default function UsersPage() {
                 ? "Aucun chauffeur"
                 : roleFilter === "CLIENT"
                   ? "Aucun client"
-                  : "Aucun utilisateur"
+                  : roleFilter === "MINI_ADMIN"
+                    ? "Aucun mini-admin"
+                    : "Aucun utilisateur"
             }
             emptyDescription="Créez un compte avec le bouton « Nouvel utilisateur »."
           />

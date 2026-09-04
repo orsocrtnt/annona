@@ -68,7 +68,7 @@ export async function provisionCompanyAdmin(
   return {
     user,
     permissions,
-    redirectTo: getDashboardPathForRole(user.role.systemRole),
+    redirectTo: getDashboardPathForRole(user.role.systemRole, user.settings),
     authId: authUser.id,
   };
 }

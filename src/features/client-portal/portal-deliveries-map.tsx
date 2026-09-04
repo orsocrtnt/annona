@@ -73,49 +73,38 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
 
       <div
         className={cn(
-          "pointer-events-none absolute inset-0 z-[1000] p-4",
-          fullscreen &&
-            "pt-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+1rem)]"
+          "pointer-events-none absolute inset-0 z-[1000] flex flex-col items-stretch p-4",
+          fullscreen
+            ? "pt-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+0.75rem)]"
+            : "pt-4"
         )}
       >
-        <PortalDeliveriesMapPanel
-          activeDeliveries={activeDeliveries}
-          historyDeliveries={historyDeliveries}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
-      </div>
+        {selectedDelivery && !selectedDelivery.isHistorical ? (
+          <div className="flex justify-center">
+            <DeliveryMapStatusBar
+              status={selectedDelivery.status}
+              deliveryCategory={selectedDelivery.deliveryCategory}
+            />
+          </div>
+        ) : null}
 
-      {selectedDelivery && !selectedDelivery.isHistorical && (
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-x-0 z-[1000] flex justify-center px-4",
-            fullscreen
-              ? "top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+4.75rem)] sm:top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+1rem)] sm:pl-[min(296px,calc(100vw-32px))]"
-              : "top-16 sm:top-4 sm:pl-[min(296px,calc(100vw-32px))]"
-          )}
-        >
-          <DeliveryMapStatusBar
-            status={selectedDelivery.status}
-            deliveryCategory={selectedDelivery.deliveryCategory}
+        {selectedDelivery?.isHistorical ? (
+          <div className="flex justify-center">
+            <p className="rounded-full px-4 py-2 text-sm text-muted-foreground" style={mapGlassCardStyle}>
+              Livraison terminée · {selectedDelivery.statusLabel}
+            </p>
+          </div>
+        ) : null}
+
+        <div className={cn("flex justify-start", selectedDelivery && "mt-3")}>
+          <PortalDeliveriesMapPanel
+            activeDeliveries={activeDeliveries}
+            historyDeliveries={historyDeliveries}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
           />
         </div>
-      )}
-
-      {selectedDelivery?.isHistorical && (
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-x-0 z-[1000] flex justify-center px-4",
-            fullscreen
-              ? "top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+4.75rem)] sm:top-[calc(var(--portal-chrome,calc(4rem+1.5rem+2.875rem))+1rem)] sm:pl-[min(320px,calc(100vw-32px))]"
-              : "top-16 sm:top-4 sm:pl-[min(320px,calc(100vw-32px))]"
-          )}
-        >
-          <p className="rounded-full px-4 py-2 text-sm text-muted-foreground" style={mapGlassCardStyle}>
-            Livraison terminée · {selectedDelivery.statusLabel}
-          </p>
-        </div>
-      )}
+      </div>
 
       {isError && (
         <div

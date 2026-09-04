@@ -60,7 +60,7 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
 
   return (
     <div className="relative min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+      <header className="sticky top-[var(--demo-banner-height,0px)] z-30 flex h-14 items-center justify-between border-b border-border bg-card/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} />

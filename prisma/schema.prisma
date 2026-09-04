@@ -24,6 +24,7 @@ datasource db {
 enum SystemRole {
   SUPER_ADMIN
   COMPANY_ADMIN
+  MINI_ADMIN
   DISPATCHER
   DRIVER
   CLIENT

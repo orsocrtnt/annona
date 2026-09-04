@@ -7,7 +7,7 @@ import type { SystemRole } from "@prisma/client";
 export const USER_TABLE_COL = {
   name: "w-[7.5rem] max-w-[7.5rem]",
   email: "w-[9.5rem] max-w-[9.5rem]",
-  role: "w-[5.5rem]",
+  role: "w-[7.5rem] max-w-[7.5rem]",
   status: "w-[4.5rem]",
   credentials: "w-[5.5rem]",
   actions: "w-9 px-1",
@@ -29,12 +29,14 @@ export function TableUserEmail({ email }: { email: string }) {
   );
 }
 
-export function TableUserRole({ role }: { role: SystemRole }) {
-  const label = ROLE_LABELS[role] ?? role;
+export function TableUserRole({ role, title }: { role: SystemRole; title?: string | null }) {
+  const label =
+    role === "MINI_ADMIN" && title?.trim() ? title.trim() : (ROLE_LABELS[role] ?? role);
   return (
     <Badge
       variant="outline"
-      className={cn("whitespace-nowrap px-1.5 py-0 text-[10px]", getRoleColor(role))}
+      className={cn("max-w-full truncate whitespace-nowrap px-1.5 py-0 text-[10px]", getRoleColor(role))}
+      title={label}
     >
       {label}
     </Badge>

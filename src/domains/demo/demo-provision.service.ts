@@ -6,11 +6,12 @@ import {
   DEMO_COMPANY_NAME,
   DEMO_COMPANY_SLUG,
   DEMO_DEFAULT_PASSWORD,
+  DEMO_DRIVER_EMAIL,
   DEMO_LOGIN_EMAIL,
 } from "@/lib/demo/constants";
 import { DEFAULT_BILLING_SETTINGS } from "@/lib/validations/billing-settings";
 import { DEFAULT_DISPATCH_SETTINGS } from "@/lib/validations/dispatch-settings";
-import { demoPersonaSeedUsers } from "@/domains/demo/demo-users.service";
+import { ensureDemoRosterUsers } from "@/domains/demo/demo-users.service";
 import { resetDemoScenario } from "@/domains/demo/demo-scenario.service";
 
 function buildDemoCompanySettings(driverId: string): Prisma.InputJsonValue {
@@ -170,44 +171,10 @@ export async function provisionDemoEnvironment(): Promise<{
     },
   });
 
-  const seedUsers = demoPersonaSeedUsers(company.id);
-  const roleSlugs = [...new Set(seedUsers.map((u) => u.roleSlug))];
-  const roles = await prisma.role.findMany({
-    where: { slug: { in: roleSlugs } },
-  });
-  const roleBySlug = new Map(roles.map((role) => [role.slug, role]));
-
-  for (const seed of seedUsers) {
-    const role = roleBySlug.get(seed.roleSlug);
-    if (!role) throw new Error(`Rôle ${seed.roleSlug} introuvable — lancez npm run db:seed`);
-
-    const resolvedAuthId = seed.persona === "admin" ? authId : seed.authId!;
-    await prisma.user.upsert({
-      where: { email: seed.email },
-      update: {
-        authId: resolvedAuthId,
-        firstName: seed.firstName,
-        lastName: seed.lastName,
-        phone: seed.phone,
-        roleId: role.id,
-        companyId: company.id,
-        status: "ACTIVE",
-      },
-      create: {
-        authId: resolvedAuthId,
-        email: seed.email,
-        firstName: seed.firstName,
-        lastName: seed.lastName,
-        phone: seed.phone,
-        roleId: role.id,
-        companyId: company.id,
-        status: "ACTIVE",
-      },
-    });
-  }
+  await ensureDemoRosterUsers(company.id, authId);
 
   const driver = await prisma.user.findFirst({
-    where: { companyId: company.id, email: seedUsers.find((u) => u.persona === "driver")!.email },
+    where: { companyId: company.id, email: DEMO_DRIVER_EMAIL },
     select: { id: true },
   });
   if (!driver) throw new Error("DEMO_DRIVER_MISSING");

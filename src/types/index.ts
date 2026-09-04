@@ -16,6 +16,7 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date | null;
+  settings?: unknown;
 }
 
 export interface UserWithRole extends User {

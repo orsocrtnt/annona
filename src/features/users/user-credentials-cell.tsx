@@ -24,6 +24,7 @@ const LOGIN_URLS: Partial<Record<SystemRole, string>> = {
   CLIENT: "/login/client",
   DRIVER: "/login/driver",
   DISPATCHER: "/login",
+  MINI_ADMIN: "/login",
 };
 
 interface UserCredentialsCellProps {
