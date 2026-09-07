@@ -18,6 +18,8 @@ import {
   statusNeedsProximityCheck,
 } from "@/domains/delivery/driver-proximity.service";
 import { resolveCustomersByEmail } from "@/domains/order/resolve-customer";
+import { notifyDeliveryStatusChange } from "@/domains/client-portal/notify.service";
+import { POD_FAILURE_LABELS, type PodFailureCode, type PodOutcome } from "@/lib/pod/codes";
 import { resolveDeliveryCoordinateFields } from "@/domains/delivery/delivery-coordinates";
 import {
   CLIENT_DELIVERIES_TAKE,
@@ -341,7 +343,7 @@ export async function assignDeliveryToDriver(
 
   const driverName = `${driver.firstName} ${driver.lastName}`;
 
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const nextStatus =
       delivery.status === "PENDING" ? "ASSIGNED" : delivery.status;
 
@@ -418,6 +420,17 @@ export async function assignDeliveryToDriver(
 
     return updated;
   });
+
+  if (updated) {
+    notifyDeliveryStatusChange({
+      customerId: delivery.customerId,
+      status: updated.status,
+      reference: updated.reference,
+      deliveryId: updated.id,
+    });
+  }
+
+  return updated;
 }
 
 export async function getAvailableDeliveriesForDriver(companyId: string) {
@@ -518,7 +531,7 @@ export async function getDriverMissions(driverId: string) {
       take: DRIVER_ACTIVE_MISSIONS_TAKE,
     }),
     prisma.delivery.findMany({
-      where: { driverId, status: "DELIVERED" },
+      where: { driverId, status: { in: ["DELIVERED", "FAILED"] } },
       include: DRIVER_MISSION_ORDER_INCLUDE,
       orderBy: { completedAt: "desc" },
       take: DRIVER_DELIVERED_MISSIONS_TAKE,
@@ -595,13 +608,13 @@ function isValidDriverStatusTransition(
     STANDARD: {
       ASSIGNED: ["PURCHASING", "IN_DELIVERY"],
       PURCHASING: ["IN_DELIVERY"],
-      IN_DELIVERY: ["DELIVERED"],
+      IN_DELIVERY: ["DELIVERED", "FAILED"],
     },
     // Coursier : la collecte (PURCHASING) est obligatoire avant la livraison.
     COURIER: {
       ASSIGNED: ["PURCHASING"],
       PURCHASING: ["IN_DELIVERY"],
-      IN_DELIVERY: ["DELIVERED"],
+      IN_DELIVERY: ["DELIVERED", "FAILED"],
     },
   };
   const key = category === "COURIER" ? "COURIER" : "STANDARD";
@@ -611,12 +624,16 @@ function isValidDriverStatusTransition(
 export async function updateDeliveryStatusByDriver(
   driverId: string,
   deliveryId: string,
-  status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED",
+  status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED",
   options?: {
     purchaseItems?: { id: string; unitPrice: number }[];
     confirmOutOfRange?: boolean;
     latitude?: number;
     longitude?: number;
+    podOutcome?: PodOutcome;
+    podFailureCode?: PodFailureCode;
+    podNote?: string;
+    podPhotoPath?: string;
   }
 ) {
   const delivery = await prisma.delivery.findFirst({
@@ -635,6 +652,13 @@ export async function updateDeliveryStatusByDriver(
     )
   ) {
     throw new Error("INVALID_STATUS_TRANSITION");
+  }
+
+  if (status === "DELIVERED" && !options?.podPhotoPath) {
+    throw new Error("POD_PHOTO_REQUIRED");
+  }
+  if (status === "FAILED" && !options?.podFailureCode) {
+    throw new Error("POD_REASON_REQUIRED");
   }
 
   const proximityRule = statusNeedsProximityCheck(status, delivery.deliveryCategory);
@@ -671,7 +695,7 @@ export async function updateDeliveryStatusByDriver(
     }
   }
 
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     if (purchaseItems?.length) {
       await applyDriverPurchasePrices(tx, delivery.orderId, purchaseItems);
     }
@@ -680,7 +704,17 @@ export async function updateDeliveryStatusByDriver(
       where: { id: deliveryId },
       data: {
         status: deliveryStatus,
-        completedAt: status === "DELIVERED" ? new Date() : undefined,
+        completedAt: status === "DELIVERED" || status === "FAILED" ? new Date() : undefined,
+        ...(status === "DELIVERED" || status === "FAILED"
+          ? {
+              podOutcome: (options?.podOutcome ??
+                (status === "FAILED" ? "FAILED" : "SUCCESS")) as string,
+              podPhotoPath: options?.podPhotoPath ?? null,
+              podFailureCode: status === "FAILED" ? options?.podFailureCode ?? null : null,
+              podNote: options?.podNote?.trim() || null,
+              podCapturedAt: new Date(),
+            }
+          : {}),
       },
       include: {
         order: {
@@ -704,7 +738,17 @@ export async function updateDeliveryStatusByDriver(
       data: {
         deliveryId,
         label: getFulfillmentStatusLabel(orderStatus, delivery.deliveryCategory),
-        description: "Statut mis à jour par le chauffeur",
+        description:
+          status === "FAILED"
+            ? [
+                options?.podFailureCode
+                  ? POD_FAILURE_LABELS[options.podFailureCode]
+                  : "Échec de livraison",
+                options?.podNote?.trim(),
+              ]
+                .filter(Boolean)
+                .join(" — ")
+            : "Statut mis à jour par le chauffeur",
         latitude: eventLatitude,
         longitude: eventLongitude,
       },
@@ -712,6 +756,15 @@ export async function updateDeliveryStatusByDriver(
 
     return updated;
   });
+
+  notifyDeliveryStatusChange({
+    customerId: delivery.customerId,
+    status: updated.status,
+    reference: updated.reference,
+    deliveryId: updated.id,
+  });
+
+  return updated;
 }
 
 export async function adminUpdateDelivery(
@@ -725,7 +778,7 @@ export async function adminUpdateDelivery(
   });
   if (!delivery) return null;
 
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const deliveryData: Record<string, unknown> = {};
     const orderData: Record<string, unknown> = {};
 
@@ -758,7 +811,7 @@ export async function adminUpdateDelivery(
     if (input.unassignDriver) {
       deliveryData.driverId = null;
       deliveryData.driverName = null;
-      if (delivery.status !== "CANCELLED" && delivery.status !== "DELIVERED") {
+      if (delivery.status !== "CANCELLED" && delivery.status !== "DELIVERED" && delivery.status !== "FAILED") {
         deliveryData.status = "PENDING";
         orderData.status = "PENDING";
       }
@@ -766,7 +819,7 @@ export async function adminUpdateDelivery(
     if (input.status) {
       deliveryData.status = input.status;
       orderData.status = input.status;
-      if (input.status === "DELIVERED") {
+      if (input.status === "DELIVERED" || input.status === "FAILED") {
         deliveryData.completedAt = delivery.completedAt ?? new Date();
       }
       if (input.status === "CANCELLED") {
@@ -887,6 +940,17 @@ export async function adminUpdateDelivery(
 
     return updated;
   });
+
+  if (input.status) {
+    notifyDeliveryStatusChange({
+      customerId: delivery.customerId,
+      status: updated.status,
+      reference: updated.reference,
+      deliveryId: updated.id,
+    });
+  }
+
+  return updated;
 }
 
 function emptyDriverStats() {

@@ -81,7 +81,7 @@ export function isLateDelivery(input: {
   const now = input.now ?? new Date();
   if (!requestedDeliveryDate) return false;
 
-  if (isDeliveredStatus(status) || status === "CANCELLED") {
+  if (isDeliveredStatus(status) || status === "CANCELLED" || status === "FAILED") {
     if (!completedAt) return false;
     return completedAt.getTime() > requestedDeliveryDate.getTime();
   }

@@ -6,6 +6,7 @@ import {
   updateCompanyOrderStatus,
 } from "@/domains/order/order.service";
 import { updateOrderStatusSchema } from "@/lib/validations/order";
+import { getPodPhotoSignedUrl } from "@/lib/storage/pod";
 
 export async function GET(
   _request: Request,
@@ -26,7 +27,14 @@ export async function GET(
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json({ data: order, success: true });
+  const deliveries = await Promise.all(
+    order.deliveries.map(async (delivery) => ({
+      ...delivery,
+      podPhotoUrl: await getPodPhotoSignedUrl(delivery.podPhotoPath),
+    }))
+  );
+
+  return NextResponse.json({ data: { ...order, deliveries }, success: true });
 }
 
 export async function PATCH(

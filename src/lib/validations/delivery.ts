@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { POD_FAILURE_CODES } from "@/lib/pod/codes";
 
 export const assignDeliverySchema = z.object({
   driverId: z.string().min(1, "Chauffeur requis"),
@@ -14,11 +15,15 @@ const driverPurchaseItemSchema = z.object({
 });
 
 export const updateDriverDeliveryStatusSchema = z.object({
-  status: z.enum(["PURCHASING", "IN_DELIVERY", "DELIVERED"]),
+  status: z.enum(["PURCHASING", "IN_DELIVERY", "DELIVERED", "FAILED"]),
   purchaseItems: z.array(driverPurchaseItemSchema).optional(),
   confirmOutOfRange: z.boolean().optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
+  podOutcome: z.enum(["SUCCESS", "FAILED"]).optional(),
+  podFailureCode: z.enum(POD_FAILURE_CODES).optional(),
+  podNote: z.string().max(400).optional(),
+  podPhotoPath: z.string().min(1).optional(),
 });
 
 export const adminUpdateDeliverySchema = z.object({
@@ -32,6 +37,7 @@ export const adminUpdateDeliverySchema = z.object({
       "INVOICED",
       "PAID",
       "CANCELLED",
+      "FAILED",
     ])
     .optional(),
   address: z.string().min(5).optional(),

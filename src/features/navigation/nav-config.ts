@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, Users, Settings, Radio,
-  Truck, Package, BarChart3, MapPin, Shield, UserCircle, Receipt,
+  Truck, Package, MapPin, Shield, UserCircle, Receipt, BarChart3,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -8,7 +8,6 @@ export const adminNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/admin", icon: LayoutDashboard },
   { title: "Entreprises", href: "/companies", icon: Building2 },
   { title: "Utilisateurs", href: "/users", icon: Users },
-  { title: "Analytics", href: "/admin/analytics", icon: BarChart3, disabled: true },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
   { title: "Paramètres", href: "/settings", icon: Settings },
 ];
@@ -20,13 +19,13 @@ const dispatchMapItems: NavItem[] = [
 
 export const companyNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Analyse", href: "/dashboard/analytics", icon: BarChart3 },
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
   { title: "Dispatch", href: "/dispatch", icon: Radio },
   ...dispatchMapItems,
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
-  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3, disabled: true, badge: "Bientôt" },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
   { title: "Paramètres", href: "/settings", icon: Settings },
 ];
@@ -43,13 +42,13 @@ export const dispatcherNavItems: NavItem[] = [
 /** Tous les écrans back-office, filtrés ensuite par les accès du mini-admin. */
 export const miniAdminNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Analyse", href: "/dashboard/analytics", icon: BarChart3 },
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
   { title: "Dispatch", href: "/dispatch", icon: Radio },
   ...dispatchMapItems,
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
-  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3, disabled: true, badge: "Bientôt" },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
   { title: "Paramètres", href: "/settings", icon: Settings },
 ];

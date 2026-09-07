@@ -15,7 +15,7 @@ const MAP_ACTIVE_STATUSES: DeliveryStatus[] = [
   "IN_DELIVERY",
 ];
 
-const MAP_HISTORY_STATUSES: DeliveryStatus[] = ["DELIVERED", "INVOICED", "PAID", "CANCELLED"];
+const MAP_HISTORY_STATUSES: DeliveryStatus[] = ["DELIVERED", "INVOICED", "PAID", "CANCELLED", "FAILED"];
 
 const CLIENT_MAP_HISTORY_LIMIT = 40;
 

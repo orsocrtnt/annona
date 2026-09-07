@@ -36,7 +36,7 @@ export default function DispatcherDashboardPage() {
 
   const queue = useMemo(() => {
     const base = (deliveries ?? []).filter(
-      (d) => !["DELIVERED", "CANCELLED", "PAID", "INVOICED"].includes(d.status)
+      (d) => !["DELIVERED", "CANCELLED", "PAID", "INVOICED", "FAILED"].includes(d.status)
     );
     if (categoryFilter === "ALL") return base;
     return base.filter(

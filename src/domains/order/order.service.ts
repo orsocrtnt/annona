@@ -631,7 +631,7 @@ export async function updateCompanyOrderStatus(
       } = {
         status: syncDeliveryStatus(status),
         completedAt:
-          status === "DELIVERED"
+          status === "DELIVERED" || status === "FAILED"
             ? delivery.completedAt ?? new Date()
             : delivery.completedAt,
       };

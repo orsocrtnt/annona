@@ -3,6 +3,7 @@ import type {
   PortalRecurringOrder,
   PortalSettings,
   PortalSupportContacts,
+  PortalClientNotification,
 } from "./types";
 import type { CreateClientOrderInput, CreateRecurringOrderInput, UpdateRecurringOrderInput } from "@/lib/validations/order";
 import type { CustomerAddressInput } from "@/lib/validations/address";
@@ -91,6 +92,13 @@ export const portalApi = {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
+    }),
+  getNotifications: () => fetchPortal<PortalClientNotification[]>("/api/portal/notifications"),
+  markNotificationsRead: (ids?: string[]) =>
+    fetchPortal<PortalClientNotification[]>("/api/portal/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ids ? { ids } : {}),
     }),
   getSupportTickets: () => fetchPortal<import("./types").PortalSupportTicket[]>("/api/portal/support"),
   getSupportTicket: (id: string) =>

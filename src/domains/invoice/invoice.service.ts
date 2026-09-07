@@ -8,6 +8,7 @@ import {
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
 import { FULFILLMENT_STATUS_LABELS } from "@/lib/constants/order-status";
 import { CLIENT_INVOICES_TAKE } from "@/lib/query/list-limits";
+import { notifyInvoiceIssued } from "@/domains/client-portal/notify.service";
 
 function generateInvoiceReference(prefix: string) {
   return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
@@ -132,7 +133,7 @@ export async function createOrderInvoice(
     (inv) => inv.status === "DRAFT" || inv.status === "PENDING"
   );
 
-  return prisma.$transaction(async (tx) => {
+  const invoice = await prisma.$transaction(async (tx) => {
     let invoice;
 
     if (existingDraft) {
@@ -183,6 +184,15 @@ export async function createOrderInvoice(
 
     return invoice;
   });
+
+  notifyInvoiceIssued({
+    customerId: invoice.customerId,
+    reference: invoice.reference,
+    invoiceId: invoice.id,
+    amount: Number(invoice.amount),
+  });
+
+  return invoice;
 }
 
 export async function getOrderInvoicePreview(

@@ -29,10 +29,10 @@ export class DriverProximityError extends Error {
 }
 
 export function statusNeedsProximityCheck(
-  status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED",
+  status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED",
   deliveryCategory: DeliveryCategory
 ): { required: true; kind: ProximityTargetKind } | { required: false } {
-  if (status === "DELIVERED") {
+  if (status === "DELIVERED" || status === "FAILED") {
     return { required: true, kind: "delivery" };
   }
   if (status === "PURCHASING" && deliveryCategory === "COURIER") {

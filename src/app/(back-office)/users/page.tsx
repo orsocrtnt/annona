@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { CreateUserDialog } from "@/features/users/create-user-dialog";
+import { EditMiniAdminDialog } from "@/features/users/edit-mini-admin-dialog";
 import { DeleteUserButton } from "@/features/users/delete-user-button";
 import { UserCredentialsCell } from "@/features/users/user-credentials-cell";
 import { usePendingCredentials } from "@/features/users/use-pending-credentials";
@@ -129,13 +130,22 @@ export default function UsersPage() {
       header: "",
       className: USER_TABLE_COL.actions,
       cell: (row) => (
-        <DeleteUserButton
-          userId={row.id}
-          userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
-          role={row.role.systemRole}
-          locked={isDemoLockedAccountEmail(row.email)}
-          onDeleted={() => dismissCredentials(row.id)}
-        />
+        <div className="flex items-center justify-end gap-0.5">
+          {row.role.systemRole === "MINI_ADMIN" ? (
+            <EditMiniAdminDialog
+              userId={row.id}
+              userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
+              settings={row.settings}
+            />
+          ) : null}
+          <DeleteUserButton
+            userId={row.id}
+            userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
+            role={row.role.systemRole}
+            locked={isDemoLockedAccountEmail(row.email)}
+            onDeleted={() => dismissCredentials(row.id)}
+          />
+        </div>
       ),
     },
   ], [pendingCredentials, dismissCredentials]);

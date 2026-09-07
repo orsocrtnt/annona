@@ -9,9 +9,11 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useDriverMissions } from "@/features/driver/hooks";
 import { MissionCard } from "@/features/driver/mission-card";
+import { useAuth } from "@/hooks/use-auth";
 import { Package, Truck, CheckCircle } from "lucide-react";
 
 export default function DriverDashboardPage() {
+  const { user } = useAuth();
   const { data, isLoading, error } = useDriverMissions();
   const missions = data?.missions ?? [];
   const stats = data?.stats;
@@ -38,7 +40,9 @@ export default function DriverDashboardPage() {
   return (
     <div className="space-y-6 p-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Bonjour !</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          {user?.firstName?.trim() ? `Bonjour ${user.firstName.trim()}` : "Bonjour"}
+        </h1>
         <p className="text-sm text-muted-foreground">Vos missions assignées par le dispatch</p>
       </div>
 

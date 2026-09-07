@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavQueryPrefetch, usePrefetchNavHrefs } from "@/hooks/use-nav-query-prefetch";
 import { getInitials } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
+import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
 import {
   Package2, LayoutDashboard, ShoppingBag, Truck,
   FileText, HeadphonesIcon, LogOut, Settings, RefreshCw,
@@ -49,6 +50,7 @@ function PortalHeader({ overlay = false }: { overlay?: boolean }) {
         </Link>
 
         <div className="flex items-center gap-3">
+          <PortalNotificationsBell />
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
             <AvatarFallback className="bg-brand-subtle text-brand text-xs">

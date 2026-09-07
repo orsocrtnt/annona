@@ -13,6 +13,7 @@ import {
   missionNeedsPurchaseValidation,
 } from "./purchase-validation-dialog";
 import { LocationConfirmationDialog } from "./location-confirmation-dialog";
+import { ProofOfDeliveryDialog, type PodDialogValue } from "./proof-of-delivery-dialog";
 import { checkMissionLocationProximity } from "./mission-location-guard";
 import { DriverApiError } from "./api";
 import { getCurrentDriverPosition, type ProximityTargetKind } from "@/lib/maps/driver-proximity";
@@ -63,11 +64,13 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
     kind: ProximityTargetKind;
     distanceMeters: number | null;
     pending: {
-      status: "PURCHASING" | "DELIVERED";
+      status: "PURCHASING" | "DELIVERED" | "FAILED";
       purchaseItems?: { id: string; unitPrice: number }[];
+      pod?: PodDialogValue;
     };
   } | null>(null);
   const [locationChecking, setLocationChecking] = useState(false);
+  const [podDialog, setPodDialog] = useState<"SUCCESS" | "FAILED" | null>(null);
 
   const isCourier = mission.deliveryCategory === "COURIER";
   const courierPickups = getCourierPickupStops({
@@ -85,12 +88,14 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
     PURCHASING: isCourier ? "Collecté" : "Achat en cours",
     IN_DELIVERY: "En livraison",
     DELIVERED: "Livraison terminée",
+    FAILED: "Échec enregistré",
   } as const;
 
   const submitStatus = async (
-    status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED",
+    status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED",
     purchaseItems?: { id: string; unitPrice: number }[],
-    confirmOutOfRange = false
+    confirmOutOfRange = false,
+    pod?: PodDialogValue
   ) => {
     const position = await getCurrentDriverPosition();
 
@@ -102,19 +107,22 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
         confirmOutOfRange,
         latitude: position?.latitude,
         longitude: position?.longitude,
+        pod,
       });
       toast.success(statusLabels[status]);
       setPurchaseDialogOpen(false);
       setPendingStatus(null);
       setLocationConfirm(null);
+      setPodDialog(null);
     } catch (error) {
       if (error instanceof DriverApiError && error.code === "DRIVER_NOT_AT_LOCATION") {
         setLocationConfirm({
-          kind: error.kind ?? (status === "DELIVERED" ? "delivery" : "pickup"),
+          kind: error.kind ?? "delivery",
           distanceMeters: error.distanceMeters ?? null,
           pending: {
             status: status === "IN_DELIVERY" ? "DELIVERED" : status,
             purchaseItems,
+            pod,
           },
         });
         return;
@@ -155,21 +163,22 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
 
   const runWithLocationGuard = async (
     kind: ProximityTargetKind,
-    status: "PURCHASING" | "DELIVERED",
-    purchaseItems?: { id: string; unitPrice: number }[]
+    status: "PURCHASING" | "DELIVERED" | "FAILED",
+    purchaseItems?: { id: string; unitPrice: number }[],
+    pod?: PodDialogValue
   ) => {
     setLocationChecking(true);
     try {
       const result = await checkMissionLocationProximity(mission.id, kind);
       if (result.proceed) {
-        await submitStatus(status, purchaseItems);
+        await submitStatus(status, purchaseItems, false, pod);
         return;
       }
 
       setLocationConfirm({
         kind: result.block.kind,
         distanceMeters: result.block.distanceMeters,
-        pending: { status, purchaseItems },
+        pending: { status, purchaseItems, pod },
       });
     } catch (error) {
       toast.error("Impossible de vérifier votre position", {
@@ -183,7 +192,7 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
   const confirmLocationAction = async () => {
     if (!locationConfirm) return;
     const { pending } = locationConfirm;
-    await submitStatus(pending.status, pending.purchaseItems, true);
+    await submitStatus(pending.status, pending.purchaseItems, true, pending.pod);
   };
 
   const actionLoading = updateStatus.isPending || locationChecking;
@@ -340,10 +349,19 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                     size="lg"
                     className="w-full"
                     loading={actionLoading}
-                    onClick={() => void runWithLocationGuard("delivery", "DELIVERED")}
+                    onClick={() => setPodDialog("SUCCESS")}
                   >
                     <CheckCircle className="mr-1.5 h-4 w-4" />
                     Confirmer la livraison
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
+                    disabled={actionLoading}
+                    onClick={() => setPodDialog("FAILED")}
+                  >
+                    Échec de livraison
                   </Button>
                 </>
               )}
@@ -377,6 +395,24 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
           distanceMeters={locationConfirm.distanceMeters}
           loading={updateStatus.isPending}
           onConfirm={() => void confirmLocationAction()}
+        />
+      )}
+      {podDialog && (
+        <ProofOfDeliveryDialog
+          open={Boolean(podDialog)}
+          outcome={podDialog}
+          loading={updateStatus.isPending || locationChecking}
+          onOpenChange={(open) => {
+            if (!open) setPodDialog(null);
+          }}
+          onConfirm={(value) => {
+            void runWithLocationGuard(
+              "delivery",
+              value.outcome === "FAILED" ? "FAILED" : "DELIVERED",
+              undefined,
+              value
+            );
+          }}
         />
       )}
     </>

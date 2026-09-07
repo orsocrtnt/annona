@@ -44,3 +44,10 @@ export const createUserSchema = z
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+export const updateMiniAdminSchema = z.object({
+  miniAdminTitle: z.string().trim().min(2, "Donnez un nom au mini-admin (au moins 2 caractères)"),
+  miniAdminModules: z.array(miniAdminModuleSchema).min(1, "Choisissez au moins un accès"),
+});
+
+export type UpdateMiniAdminInput = z.infer<typeof updateMiniAdminSchema>;

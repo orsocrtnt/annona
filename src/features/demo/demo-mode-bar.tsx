@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Building2,
+  ChevronLeft,
   RotateCcw,
   Sparkles,
   Truck,
@@ -50,6 +51,8 @@ const PERSONA_ICONS: Record<DemoPersona, typeof Building2> = {
   driver: Truck,
 };
 
+const COLLAPSED_STORAGE_KEY = "tutelliv-demo-bar-collapsed";
+
 function isDemoAppArea(pathname: string): boolean {
   return DEMO_BANNER_APP_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -64,27 +67,48 @@ export function DemoModeBar() {
   const [switching, setSwitching] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
 
   const visible = Boolean(demo?.isDemo) && isDemoAppArea(pathname);
 
   useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(COLLAPSED_STORAGE_KEY) === "1");
+    } catch {
+      /* ignore */
+    }
+    setHydrated(true);
+  }, []);
+
+  const persistCollapsed = useCallback((next: boolean) => {
+    setCollapsed(next);
+    try {
+      localStorage.setItem(COLLAPSED_STORAGE_KEY, next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
     if (!visible) return;
     const root = document.documentElement;
     const applyHeight = () => {
-      const height = barRef.current?.offsetHeight ?? 0;
+      const height = collapsed ? 0 : (barRef.current?.offsetHeight ?? 0);
       root.style.setProperty("--demo-banner-height", `${height}px`);
-      root.setAttribute("data-demo-banner", "");
+      if (height > 0) root.setAttribute("data-demo-banner", "");
+      else root.removeAttribute("data-demo-banner");
     };
     applyHeight();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(applyHeight);
-    if (barRef.current) observer?.observe(barRef.current);
+    if (!collapsed && barRef.current) observer?.observe(barRef.current);
     return () => {
       observer?.disconnect();
       root.style.removeProperty("--demo-banner-height");
       root.removeAttribute("data-demo-banner");
     };
-  }, [visible]);
+  }, [visible, collapsed, hydrated]);
 
   const switchPersona = useCallback(
     async (persona: DemoPersona) => {
@@ -147,67 +171,97 @@ export function DemoModeBar() {
     }
   }, [queryClient, router, setDemo, setPermissions, setUser]);
 
-  if (!visible || !demo) return null;
+  if (!visible || !demo || !hydrated) return null;
 
   const ActiveIcon = PERSONA_ICONS[demo.persona];
 
   return (
     <>
-      <div
-        ref={barRef}
-        className="fixed inset-x-0 top-0 z-[2000] border-b border-amber-200/80 bg-amber-50/95 px-3 py-2 backdrop-blur-md dark:border-amber-900/50 dark:bg-amber-950/90"
-      >
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-2 text-sm text-amber-950 dark:text-amber-100">
-            <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            <span className="font-medium">Environnement de démonstration</span>
-            <span className="hidden text-amber-800/80 sm:inline dark:text-amber-200/80">
-              — données fictives, même interface que la production
-            </span>
-          </div>
+      {collapsed ? (
+        <button
+          type="button"
+          onClick={() => persistCollapsed(false)}
+          className="fixed left-0 top-[max(0.5rem,env(safe-area-inset-top))] z-[2000] flex items-center gap-1.5 rounded-r-xl border border-l-0 border-amber-200/80 bg-amber-50/95 px-1.5 py-3 shadow-md backdrop-blur-md transition-colors hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/90 dark:hover:bg-amber-900"
+          aria-label="Afficher la barre de démonstration"
+          title="Afficher la barre de démonstration"
+        >
+          <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span className="text-[11px] font-medium tracking-wide text-amber-950 [writing-mode:vertical-rl] rotate-180 dark:text-amber-100">
+            Démo
+          </span>
+        </button>
+      ) : (
+        <>
+          <div
+            ref={barRef}
+            className="fixed inset-x-0 top-0 z-[2000] border-b border-amber-200/80 bg-amber-50/95 px-3 py-2 backdrop-blur-md dark:border-amber-900/50 dark:bg-amber-950/90"
+          >
+            <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-2 text-sm text-amber-950 dark:text-amber-100">
+                <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <span className="font-medium">Environnement de démonstration</span>
+                <span className="hidden text-amber-800/80 sm:inline dark:text-amber-200/80">
+                  — données fictives, même interface que la production
+                </span>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2">
-              <ActiveIcon className="hidden h-4 w-4 text-amber-700 sm:block dark:text-amber-300" />
-              <Select
-                value={demo.persona}
-                onValueChange={(value) => void switchPersona(value as DemoPersona)}
-                disabled={switching || resetting}
-              >
-                <SelectTrigger className="h-9 w-[180px] border-amber-200 bg-white/90 dark:border-amber-800 dark:bg-amber-950">
-                  <SelectValue placeholder="Changer de vue" />
-                </SelectTrigger>
-                <SelectContent className="z-[2100]">
-                  {(Object.keys(DEMO_PERSONA_LABELS) as DemoPersona[]).map((persona) => {
-                    const Icon = PERSONA_ICONS[persona];
-                    return (
-                      <SelectItem key={persona} value={persona}>
-                        <span className="flex items-center gap-2">
-                          <Icon className="h-4 w-4" />
-                          {DEMO_PERSONA_LABELS[persona]}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <ActiveIcon className="hidden h-4 w-4 text-amber-700 sm:block dark:text-amber-300" />
+                  <Select
+                    value={demo.persona}
+                    onValueChange={(value) => void switchPersona(value as DemoPersona)}
+                    disabled={switching || resetting}
+                  >
+                    <SelectTrigger className="h-9 w-[180px] border-amber-200 bg-white/90 dark:border-amber-800 dark:bg-amber-950">
+                      <SelectValue placeholder="Changer de vue" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[2100]">
+                      {(Object.keys(DEMO_PERSONA_LABELS) as DemoPersona[]).map((persona) => {
+                        const Icon = PERSONA_ICONS[persona];
+                        return (
+                          <SelectItem key={persona} value={persona}>
+                            <span className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              {DEMO_PERSONA_LABELS[persona]}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-300 bg-white/90 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:hover:bg-amber-900"
+                  onClick={() => setResetOpen(true)}
+                  disabled={switching || resetting}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Réinitialiser la démo
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-900"
+                  onClick={() => persistCollapsed(true)}
+                  aria-label="Réduire la barre de démonstration"
+                  title="Réduire sur le côté"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Réduire</span>
+                </Button>
+              </div>
             </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-amber-300 bg-white/90 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:hover:bg-amber-900"
-              onClick={() => setResetOpen(true)}
-              disabled={switching || resetting}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Réinitialiser la démo
-            </Button>
           </div>
-        </div>
-      </div>
-      <div className="shrink-0" style={{ height: "var(--demo-banner-height, 0px)" }} aria-hidden />
+          <div className="shrink-0" style={{ height: "var(--demo-banner-height, 0px)" }} aria-hidden />
+        </>
+      )}
 
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
         <DialogContent>

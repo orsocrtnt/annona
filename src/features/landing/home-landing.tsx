@@ -142,7 +142,7 @@ export function HomeLanding() {
             </p>
             <p className="mt-4 max-w-2xl text-base leading-relaxed sm:text-lg" style={{ color: t.muted }}>
               {APP_NAME} centralise la prise de commande, l’affectation des
-              chauffeurs, le suivi en temps réel et la facturation. Chaque
+              chauffeurs, le suivi des livraisons et les factures. Chaque
               acteur voit ce dont il a besoin — sans tableurs ni appels à
               répéter.
             </p>

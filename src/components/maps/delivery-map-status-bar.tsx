@@ -42,12 +42,18 @@ function getStepIndex(status: DeliveryStatus): number {
     case "INVOICED":
     case "PAID":
       return 4;
+    case "FAILED":
+    case "CANCELLED":
+      return 4;
     default:
       return 0;
   }
 }
 
-function stepLabel(step: TrackingStep, deliveryCategory: DeliveryCategory) {
+function stepLabel(step: TrackingStep, deliveryCategory: DeliveryCategory, status?: DeliveryStatus) {
+  if (step.key === "DELIVERED" && (status === "FAILED" || status === "CANCELLED")) {
+    return status === "FAILED" ? "Échec" : "Annulé";
+  }
   if (step.key === "PURCHASING" && deliveryCategory === "COURIER" && step.courierLabel) {
     return step.courierLabel;
   }
@@ -140,11 +146,11 @@ export function DeliveryMapStatusBar({
       style={mapGlassCardStyle}
       role="status"
       aria-live="polite"
-      aria-label={`Statut : ${stepLabel(TRACKING_STEPS[currentIndex]!, deliveryCategory)}`}
+      aria-label={`Statut : ${stepLabel(TRACKING_STEPS[currentIndex]!, deliveryCategory, status)}`}
     >
       <ol className="flex items-start">
         {TRACKING_STEPS.map((step, index) => {
-          const label = stepLabel(step, deliveryCategory);
+          const label = stepLabel(step, deliveryCategory, status);
           const palette = STEP_PALETTE[index]!;
           const isCompleted = index < currentIndex;
           const isCurrent = index === currentIndex;

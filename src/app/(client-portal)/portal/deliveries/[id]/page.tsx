@@ -15,6 +15,7 @@ import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { isLegacyFakeTrackingCoord } from "@/lib/geocoding";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { ArrowLeft, Truck, Clock, Phone } from "lucide-react";
+import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
 
 const DeliveryMap = dynamic(
   () => import("@/components/maps/delivery-map").then((m) => m.DeliveryMap),
@@ -128,6 +129,16 @@ export default function ClientDeliveryDetailPage() {
               <div className="flex items-center gap-3 border-t border-border pt-4">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span>Arrivée estimée : {formatEta(delivery.estimatedArrival)}</span>
+              </div>
+            )}
+            {(delivery.status === "DELIVERED" || delivery.status === "FAILED") && (
+              <div className="border-t border-border pt-4">
+                <ProofOfDeliveryCard
+                  status={delivery.status}
+                  photoUrl={delivery.podPhotoUrl}
+                  failureCode={delivery.podFailureCode}
+                  note={delivery.podNote}
+                />
               </div>
             )}
           </CardContent>

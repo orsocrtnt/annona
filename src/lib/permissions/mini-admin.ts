@@ -1,5 +1,6 @@
 export const MINI_ADMIN_MODULE_IDS = [
   "dashboard",
+  "analytics",
   "orders",
   "dispatch",
   "driver-map",
@@ -7,7 +8,6 @@ export const MINI_ADMIN_MODULE_IDS = [
   "clients",
   "drivers",
   "accounts",
-  "analytics",
   "billing",
   "settings",
 ] as const;
@@ -30,7 +30,15 @@ export const MINI_ADMIN_MODULES: {
     group: "ops",
     hrefs: ["/dashboard"],
     match: "exact",
-    permissions: ["dashboard:company", "orders:read", "analytics:read"],
+    permissions: ["dashboard:company", "orders:read"],
+  },
+  {
+    id: "analytics",
+    label: "Analyse",
+    group: "ops",
+    hrefs: ["/dashboard/analytics"],
+    match: "prefix",
+    permissions: ["analytics:read", "orders:read", "invoices:read"],
   },
   {
     id: "orders",
@@ -85,7 +93,7 @@ export const MINI_ADMIN_MODULES: {
     group: "ops",
     hrefs: ["/dashboard/drivers"],
     match: "prefix",
-    permissions: ["drivers:read", "drivers:manage", "vehicles:read", "vehicles:manage"],
+    permissions: ["drivers:read", "drivers:manage"],
   },
   {
     id: "accounts",
@@ -94,14 +102,6 @@ export const MINI_ADMIN_MODULES: {
     hrefs: ["/users"],
     match: "prefix",
     permissions: ["users:read", "users:create", "users:update", "users:delete"],
-  },
-  {
-    id: "analytics",
-    label: "Analytics",
-    group: "admin",
-    hrefs: ["/dashboard/analytics"],
-    match: "prefix",
-    permissions: ["analytics:read"],
   },
   {
     id: "billing",

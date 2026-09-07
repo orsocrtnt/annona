@@ -135,7 +135,7 @@ export function AssignDriverSelect({
   );
 
   const assignedLabel = getDriverLabel(driverName, driver);
-  const isCancelled = status === "CANCELLED";
+  const isCancelled = status === "CANCELLED" || status === "FAILED";
   const isReassign = Boolean(assignedLabel);
 
   const findDriverOption = (id: string) =>

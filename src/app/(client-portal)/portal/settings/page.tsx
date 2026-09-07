@@ -20,11 +20,10 @@ import {
 import { customerAddressSchema, type CustomerAddressInput } from "@/lib/validations/address";
 import { clientSettingsSchema, type ClientSettingsInput } from "@/lib/validations/settings";
 import { toast } from "sonner";
-import { MapPin, Bell, Trash2, AlertCircle } from "lucide-react";
+import { MapPin, Trash2, AlertCircle, Bell } from "lucide-react";
 
 const DEFAULT_SETTINGS: ClientSettingsInput = {
   emailNotifications: true,
-  smsNotifications: false,
   deliveryAlerts: true,
   invoiceAlerts: true,
 };
@@ -58,7 +57,11 @@ export default function ClientSettingsPage() {
 
   const settingsForm = useForm<ClientSettingsInput>({
     resolver: zodResolver(clientSettingsSchema),
-    values: settings ?? DEFAULT_SETTINGS,
+    values: {
+      emailNotifications: settings?.emailNotifications ?? DEFAULT_SETTINGS.emailNotifications,
+      deliveryAlerts: settings?.deliveryAlerts ?? DEFAULT_SETTINGS.deliveryAlerts,
+      invoiceAlerts: settings?.invoiceAlerts ?? DEFAULT_SETTINGS.invoiceAlerts,
+    },
   });
 
   const onAddAddress = async (data: CustomerAddressInput) => {
@@ -74,7 +77,7 @@ export default function ClientSettingsPage() {
   const onSaveSettings = async (data: ClientSettingsInput) => {
     try {
       await updateSettings.mutateAsync(data);
-      toast.success("Préférences enregistrées");
+      toast.success("Alertes enregistrées");
     } catch {
       toast.error("Mise à jour impossible");
     }
@@ -88,7 +91,7 @@ export default function ClientSettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Paramètres</h1>
-        <p className="mt-1 text-muted-foreground">Gérez votre profil, vos adresses et vos préférences</p>
+        <p className="mt-1 text-muted-foreground">Gérez votre profil, vos adresses et vos alertes</p>
       </div>
 
       <ProfileForm title="Informations personnelles" description="Modifiez votre nom et téléphone" />
@@ -187,8 +190,12 @@ export default function ClientSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Bell className="h-4 w-4" />
-            Notifications
+            Alertes
           </CardTitle>
+          <CardDescription>
+            Les alertes apparaissent dans la cloche du portail. Un e-mail est envoyé seulement si
+            un service d’envoi est configuré sur le serveur.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {settingsError ? (
@@ -198,7 +205,7 @@ export default function ClientSettingsPage() {
                 <span>
                   {settingsErrorMsg instanceof Error
                     ? settingsErrorMsg.message
-                    : "Impossible de charger les préférences"}
+                    : "Impossible de charger les alertes"}
                 </span>
                 <Button variant="outline" size="sm" onClick={() => refetchSettings()}>
                   Réessayer
@@ -209,24 +216,31 @@ export default function ClientSettingsPage() {
             <form onSubmit={settingsForm.handleSubmit(onSaveSettings)} className="space-y-4">
               {(
                 [
-                  ["emailNotifications", "Notifications par email"],
-                  ["smsNotifications", "Notifications SMS"],
                   ["deliveryAlerts", "Alertes de livraison"],
                   ["invoiceAlerts", "Alertes de facturation"],
+                  ["emailNotifications", "Copie par e-mail"],
                 ] as const
               ).map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
                   <span className="text-sm">{label}</span>
                   <input
                     type="checkbox"
-                    checked={settingsForm.watch(key)}
+                    checked={Boolean(settingsForm.watch(key))}
                     onChange={(e) => settingsForm.setValue(key, e.target.checked)}
                     className="h-4 w-4 rounded border-input"
                   />
                 </div>
               ))}
+              <p className="text-xs text-muted-foreground">
+                {settings?.emailConfigured
+                  ? "Les e-mails seront envoyés à l’adresse de ce compte."
+                  : "Aucun service d’e-mail n’est branché pour l’instant : les alertes restent visibles dans la cloche."}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                SMS : pas encore disponible (il faut un opérateur type Twilio).
+              </p>
               <Button type="submit" variant="brand" loading={updateSettings.isPending}>
-                Enregistrer les préférences
+                Enregistrer les alertes
               </Button>
             </form>
           )}

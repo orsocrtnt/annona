@@ -10,7 +10,7 @@ export const USER_TABLE_COL = {
   role: "w-[7.5rem] max-w-[7.5rem]",
   status: "w-[4.5rem]",
   credentials: "w-[5.5rem]",
-  actions: "w-9 px-1",
+  actions: "w-16 px-1",
 } as const;
 
 export function TableUserName({ name }: { name: string }) {

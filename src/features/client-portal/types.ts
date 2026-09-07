@@ -119,6 +119,10 @@ export interface PortalDelivery {
     longitude: number | null;
     occurredAt: string;
   }[];
+  podPhotoUrl?: string | null;
+  podFailureCode?: string | null;
+  podNote?: string | null;
+  podOutcome?: string | null;
 }
 
 export interface PortalInvoiceLineItem {
@@ -217,4 +221,15 @@ export interface PortalSettings {
   smsNotifications: boolean;
   deliveryAlerts: boolean;
   invoiceAlerts: boolean;
+  emailConfigured?: boolean;
+}
+
+export interface PortalClientNotification {
+  id: string;
+  type: "DELIVERY" | "INVOICE";
+  title: string;
+  body: string;
+  href: string | null;
+  readAt: string | null;
+  createdAt: string;
 }

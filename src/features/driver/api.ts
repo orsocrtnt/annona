@@ -106,17 +106,48 @@ export const driverApi = {
     fetchJson<DriverMission>(`/api/driver/missions/${id}/start`, { method: "POST" }),
   updateMissionStatus: (
     id: string,
-    status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED",
+    status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED",
     options?: {
       purchaseItems?: { id: string; unitPrice: number }[];
       confirmOutOfRange?: boolean;
       latitude?: number;
       longitude?: number;
+      pod?: {
+        outcome: "SUCCESS" | "FAILED";
+        photo?: Blob | null;
+        failureCode?: string;
+        note?: string;
+      };
     }
-  ) =>
-    fetchJson<DriverMission>(`/api/driver/missions/${id}`, {
+  ) => {
+    if (options?.pod && (status === "DELIVERED" || status === "FAILED")) {
+      const form = new FormData();
+      form.set("status", status);
+      form.set("podOutcome", options.pod.outcome);
+      if (options.confirmOutOfRange) form.set("confirmOutOfRange", "true");
+      if (options.latitude != null) form.set("latitude", String(options.latitude));
+      if (options.longitude != null) form.set("longitude", String(options.longitude));
+      if (options.pod.failureCode) form.set("podFailureCode", options.pod.failureCode);
+      if (options.pod.note) form.set("podNote", options.pod.note);
+      if (options.pod.photo) {
+        form.set("photo", options.pod.photo, "proof.jpg");
+      }
+      return fetchJson<DriverMission>(`/api/driver/missions/${id}`, {
+        method: "PATCH",
+        body: form,
+      });
+    }
+
+    return fetchJson<DriverMission>(`/api/driver/missions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, ...options }),
-    }),
+      body: JSON.stringify({
+        status,
+        purchaseItems: options?.purchaseItems,
+        confirmOutOfRange: options?.confirmOutOfRange,
+        latitude: options?.latitude,
+        longitude: options?.longitude,
+      }),
+    });
+  },
 };

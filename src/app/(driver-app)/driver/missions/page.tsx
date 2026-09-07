@@ -13,7 +13,7 @@ export default function DriverMissionsPage() {
   const missions = data?.missions ?? [];
   const availableMissions = data?.available ?? [];
 
-  const activeMissions = missions.filter((m) => m.status !== "DELIVERED");
+  const activeMissions = missions.filter((m) => m.status !== "DELIVERED" && m.status !== "FAILED");
   const inProgressMissions = activeMissions.filter(
     (m) => m.status === "PURCHASING" || m.status === "IN_DELIVERY"
   );

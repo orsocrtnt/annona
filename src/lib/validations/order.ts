@@ -379,6 +379,7 @@ export const updateOrderStatusSchema = z.object({
     "INVOICED",
     "PAID",
     "CANCELLED",
+    "FAILED",
   ]),
 });
 

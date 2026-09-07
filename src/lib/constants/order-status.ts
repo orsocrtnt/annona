@@ -10,6 +10,7 @@ export const FULFILLMENT_STATUS_LABELS: Record<OrderStatus, string> = {
   INVOICED: "Facturé",
   PAID: "Payé",
   CANCELLED: "Annulé",
+  FAILED: "Échec de livraison",
 };
 
 /** Libellés courts pour les selects en tableau */
@@ -23,6 +24,7 @@ export const COMPACT_STATUS_LABELS: Record<OrderStatus, string> = {
   INVOICED: "Facturé",
   PAID: "Payé",
   CANCELLED: "Annulé",
+  FAILED: "Échec",
 };
 
 /** Tous les statuts modifiables par l'administrateur */
@@ -36,6 +38,7 @@ export const ADMIN_EDITABLE_STATUSES: OrderStatus[] = [
   "INVOICED",
   "PAID",
   "CANCELLED",
+  "FAILED",
 ];
 
 /** Statuts modifiables par le chauffeur */
@@ -44,6 +47,7 @@ export const DRIVER_EDITABLE_STATUSES: OrderStatus[] = [
   "PURCHASING",
   "IN_DELIVERY",
   "DELIVERED",
+  "FAILED",
 ];
 
 export const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
@@ -59,6 +63,7 @@ export const HISTORY_ORDER_STATUSES: OrderStatus[] = [
   "INVOICED",
   "PAID",
   "CANCELLED",
+  "FAILED",
 ];
 
 export const DRIVER_ACTIVE_STATUSES: OrderStatus[] = [
@@ -66,9 +71,10 @@ export const DRIVER_ACTIVE_STATUSES: OrderStatus[] = [
   "PURCHASING",
   "IN_DELIVERY",
   "DELIVERED",
+  "FAILED",
 ];
 
-export const TERMINAL_STATUSES: OrderStatus[] = ["PAID", "CANCELLED"];
+export const TERMINAL_STATUSES: OrderStatus[] = ["PAID", "CANCELLED", "FAILED"];
 
 export function getFulfillmentStatusLabel(
   status: OrderStatus | DeliveryStatus,

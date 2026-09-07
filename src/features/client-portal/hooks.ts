@@ -212,6 +212,22 @@ export function useUpdatePortalSettings() {
   });
 }
 
+export function usePortalNotifications() {
+  return useQuery({
+    queryKey: ["portal", "notifications"],
+    queryFn: portalApi.getNotifications,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids?: string[]) => portalApi.markNotificationsRead(ids),
+    onSuccess: (data) => qc.setQueryData(["portal", "notifications"], data),
+  });
+}
+
 export function usePortalSupportTickets() {
   return useQuery({
     queryKey: ["portal", "support"],

@@ -13,9 +13,13 @@ alwaysApply: true
 
 | ID | Quoi | Où |
 |----|------|-----|
+| PERF-LOGIN | **À faire** : continuer à comprendre pourquoi c’est lent, surtout à la connexion (waterfall auth, TTFB login → dashboard, roundtrips session/Prisma) | `/login`, middleware, `getServerAuth`, première page après login |
 | NAV | **Poussé** : 1 appel dispatch overview ; prefetch idle = RSC only ; pas de refetch au mount ; cache route 60s | Hard refresh prod après deploy |
 | UI-1 | **Fait local** : barre de suivi centrée sous le chrome ; panneau sous la barre | `portal-deliveries-map` |
-| F-1 | **Fait local** : rôle Mini-admin (ops sans settings/users) ; création depuis Gestion des comptes | users / rôles |
+| F-1 | **Fait local** : Mini-admin (modules + édition crayon) | users / rôles |
+| P0 | **Étendu local** : Analyse réelle + alertes portail (cloche). SMS toujours pas branché | analytics, portal notifications |
+| P1 | **En cours local** : preuve de livraison (photo) + échec avec motif. Puis e-mails Resend + file retards | chauffeur / portail / commande |
+| SMS | **À faire** : configurer l’envoi SMS (opérateur type Twilio + clés env), puis brancher la case portail pour de vrai | portal settings / notify |
 
 Optionnel : confirmer en prod que le déploiement Vercel est bien le dernier SHA + colonnes lat/lng en DB.
 

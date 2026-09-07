@@ -5,6 +5,7 @@ import {
   getCompanyDeliveryById,
 } from "@/domains/delivery/delivery.service";
 import { adminUpdateDeliverySchema } from "@/lib/validations/delivery";
+import { getPodPhotoSignedUrl } from "@/lib/storage/pod";
 
 export async function GET(
   _request: Request,
@@ -25,7 +26,13 @@ export async function GET(
     return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json({ data: delivery, success: true });
+  return NextResponse.json({
+    data: {
+      ...delivery,
+      podPhotoUrl: await getPodPhotoSignedUrl(delivery.podPhotoPath),
+    },
+    success: true,
+  });
 }
 
 export async function PATCH(

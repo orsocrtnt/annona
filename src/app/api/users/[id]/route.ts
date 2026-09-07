@@ -1,6 +1,51 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
-import { deleteUserByAdmin } from "@/domains/user/user.service";
+import { deleteUserByAdmin, updateMiniAdminByAdmin } from "@/domains/user/user.service";
+import { updateMiniAdminSchema } from "@/lib/validations/user";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireStaffRole("users:update");
+  if ("error" in auth) return auth.error;
+
+  const { id } = await params;
+  const isSuperAdmin = auth.context.user.role.systemRole === "SUPER_ADMIN";
+  const companyId = getCompanyId(auth.context);
+
+  if (!isSuperAdmin && !companyId) {
+    return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const parsed = updateMiniAdminSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Données invalides", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  try {
+    await updateMiniAdminByAdmin(id, parsed.data, companyId, isSuperAdmin);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "UNKNOWN";
+    const statusMap: Record<string, number> = {
+      USER_NOT_FOUND: 404,
+      ROLE_NOT_EDITABLE: 403,
+    };
+    const labels: Record<string, string> = {
+      USER_NOT_FOUND: "Utilisateur introuvable.",
+      ROLE_NOT_EDITABLE: "Seuls les mini-admins peuvent être modifiés ici.",
+    };
+    return NextResponse.json(
+      { error: labels[message] ?? "Erreur lors de la mise à jour" },
+      { status: statusMap[message] ?? 500 }
+    );
+  }
+}
 
 export async function DELETE(
   _request: Request,

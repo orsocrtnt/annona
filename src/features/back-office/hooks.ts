@@ -14,6 +14,14 @@ export function useCompanyDashboard() {
   });
 }
 
+export function useCompanyAnalytics(days: 7 | 30) {
+  return useQuery({
+    queryKey: ["company", "analytics", days],
+    queryFn: () => backOfficeApi.getAnalytics(days),
+    staleTime: QUERY_STALE_MS,
+  });
+}
+
 export function useCompanyOrders(initialData?: CompanyOrder[]) {
   return useQuery({
     queryKey: ["company", "orders"],

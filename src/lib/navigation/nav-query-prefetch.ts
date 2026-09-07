@@ -70,6 +70,10 @@ const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
     queryKey: ["company", "dashboard"],
     queryFn: backOfficeApi.getDashboard,
   },
+  "/dashboard/analytics": {
+    queryKey: ["company", "analytics", 30],
+    queryFn: () => backOfficeApi.getAnalytics(30),
+  },
   "/dashboard/orders": {
     queryKey: ["company", "orders"],
     queryFn: backOfficeApi.getOrders,

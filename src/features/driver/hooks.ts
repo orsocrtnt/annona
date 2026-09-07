@@ -63,19 +63,27 @@ export function useUpdateMissionStatus() {
       confirmOutOfRange,
       latitude,
       longitude,
+      pod,
     }: {
       id: string;
-      status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED";
+      status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED";
       purchaseItems?: { id: string; unitPrice: number }[];
       confirmOutOfRange?: boolean;
       latitude?: number;
       longitude?: number;
+      pod?: {
+        outcome: "SUCCESS" | "FAILED";
+        photo?: Blob | null;
+        failureCode?: string;
+        note?: string;
+      };
     }) =>
       driverApi.updateMissionStatus(id, status, {
         purchaseItems,
         confirmOutOfRange,
         latitude,
         longitude,
+        pod,
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["driver"] });

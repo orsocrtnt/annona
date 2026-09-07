@@ -56,6 +56,7 @@ enum OrderStatus {
   INVOICED
   PAID
   CANCELLED
+  FAILED
 }
 
 enum DeliveryStatus {
@@ -67,6 +68,7 @@ enum DeliveryStatus {
   INVOICED
   PAID
   CANCELLED
+  FAILED
 }
 
 enum DeliveryCategory {
@@ -162,11 +164,29 @@ model User {
   addresses            CustomerAddress[]
   recurringOrders      RecurringOrder[]
   driverLocation       DriverLocation?
+  notifications        ClientNotification[]
 
   @@index([companyId])
   @@index([roleId])
   @@index([email])
   @@map("users")
+}
+
+model ClientNotification {
+  id        String    @id @default(cuid())
+  type      String
+  title     String
+  body      String
+  href      String?
+  readAt    DateTime? @map("read_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@map("client_notifications")
 }
 
 /// Entreprise cliente — unité d'organisation principale (multi-tenant)
@@ -359,6 +379,11 @@ model Delivery {
   estimatedArrival DateTime? @map("estimated_arrival")
   completedAt DateTime?      @map("completed_at")
   missionStartedAt DateTime? @map("mission_started_at")
+  podOutcome       String?   @map("pod_outcome")
+  podPhotoPath     String?   @map("pod_photo_path")
+  podFailureCode   String?   @map("pod_failure_code")
+  podNote          String?   @map("pod_note")
+  podCapturedAt    DateTime? @map("pod_captured_at")
 
   companyId  String  @map("company_id")
   company    Company @relation(fields: [companyId], references: [id])

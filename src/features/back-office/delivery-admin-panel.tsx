@@ -12,6 +12,7 @@ import type { DeliveryCategory } from "@prisma/client";
 import { formatDate } from "@/lib/utils";
 import { useUpdateDelivery } from "./hooks";
 import { toast } from "sonner";
+import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
 
 interface TrackingEvent {
   id: string;
@@ -34,6 +35,9 @@ interface DeliveryAdminPanelProps {
     scheduledAt?: string | null;
     estimatedArrival?: string | null;
     trackingEvents?: TrackingEvent[];
+    podPhotoUrl?: string | null;
+    podFailureCode?: string | null;
+    podNote?: string | null;
   };
   deliveryCategory?: DeliveryCategory | null;
 }
@@ -103,13 +107,21 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
     }
   };
 
-  if (delivery.status === "CANCELLED") {
+  if (delivery.status === "CANCELLED" || delivery.status === "FAILED") {
     return (
       <Card className="border-destructive/30">
         <CardHeader>
-          <CardTitle className="text-base text-destructive">Livraison annulée</CardTitle>
+          <CardTitle className="text-base text-destructive">
+            {delivery.status === "FAILED" ? "Livraison en échec" : "Livraison annulée"}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <ProofOfDeliveryCard
+            status={delivery.status}
+            photoUrl={delivery.podPhotoUrl}
+            failureCode={delivery.podFailureCode}
+            note={delivery.podNote}
+          />
           {delivery.trackingEvents && delivery.trackingEvents.length > 0 && (
             <TrackingTimeline events={delivery.trackingEvents} />
           )}
@@ -182,6 +194,15 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
             <h4 className="mb-3 text-sm font-medium">Historique / activité</h4>
             <TrackingTimeline events={delivery.trackingEvents} />
           </div>
+        )}
+
+        {(delivery.status === "DELIVERED" || delivery.podPhotoUrl) && (
+          <ProofOfDeliveryCard
+            status={delivery.status}
+            photoUrl={delivery.podPhotoUrl}
+            failureCode={delivery.podFailureCode}
+            note={delivery.podNote}
+          />
         )}
       </CardContent>
     </Card>

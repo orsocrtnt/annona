@@ -19,6 +19,7 @@ const ORDER_VARIANTS: Record<OrderStatus, "success" | "brand" | "warning" | "sec
   INVOICED: "warning",
   PAID: "success",
   CANCELLED: "error",
+  FAILED: "error",
 };
 
 const DELIVERY_VARIANTS: Record<DeliveryStatus, "success" | "brand" | "warning" | "secondary" | "error"> = {
@@ -30,6 +31,7 @@ const DELIVERY_VARIANTS: Record<DeliveryStatus, "success" | "brand" | "warning" 
   INVOICED: "warning",
   PAID: "success",
   CANCELLED: "error",
+  FAILED: "error",
 };
 
 const INVOICE_VARIANTS: Record<InvoiceStatus, "success" | "brand" | "warning" | "secondary" | "error"> = {

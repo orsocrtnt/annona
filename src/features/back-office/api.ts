@@ -2,6 +2,7 @@ import type { UpdateOrderStatusInput } from "@/lib/validations/order";
 import type { CreateOrderInvoiceInput } from "@/lib/validations/invoice";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
+import type { CompanyAnalytics } from "@/domains/analytics/analytics.service";
 import type {
   CompanyClient,
   CompanyDelivery,
@@ -27,6 +28,8 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 export const backOfficeApi = {
   getDashboard: () =>
     fetchJson<CompanyDashboardStats>("/api/back-office/dashboard"),
+  getAnalytics: (days: 7 | 30 = 30) =>
+    fetchJson<CompanyAnalytics>(`/api/back-office/analytics?days=${days}`),
   getOrders: () => fetchJson<CompanyOrder[]>("/api/orders"),
   getOrder: (id: string) => fetchJson<CompanyOrder>(`/api/orders/${id}`),
   getOrderStats: () => fetchJson<CompanyOrderStats>("/api/orders/stats"),

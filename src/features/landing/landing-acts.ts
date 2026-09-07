@@ -33,7 +33,7 @@ export const WOW_ACTS = [
     id: "driver",
     label: "Chauffeur",
     headline: "Sur le terrain",
-    sub: "Missions · navigation · signature",
+    sub: "Missions · navigation",
     asset: LANDING_ASSETS.team,
     assetPosition: "65% 50%",
     dark: false,

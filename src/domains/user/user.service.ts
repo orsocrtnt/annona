@@ -4,7 +4,7 @@ import { createAdminClient } from "@/services/supabase/admin";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import type { UserWithRole } from "@/types";
 import { COMPANY_USERS_TAKE } from "@/lib/query/list-limits";
-import type { CreateUserInput, UpdateProfileInput } from "@/lib/validations/user";
+import type { CreateUserInput, UpdateMiniAdminInput, UpdateProfileInput } from "@/lib/validations/user";
 import { filterMiniAdminPermissions, buildMiniAdminSettings } from "@/lib/permissions/mini-admin";
 import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
 
@@ -334,6 +334,42 @@ export async function deleteUserByAdmin(
   if (error) {
     console.error("Supabase delete user failed:", error.message);
   }
+
+  return { success: true };
+}
+
+export async function updateMiniAdminByAdmin(
+  targetUserId: string,
+  input: UpdateMiniAdminInput,
+  companyId: string | null,
+  isSuperAdmin = false
+) {
+  const user = await prisma.user.findUnique({ where: { id: targetUserId } });
+  if (!user) throw new Error("USER_NOT_FOUND");
+
+  if (!isSuperAdmin && user.companyId !== companyId) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
+  if (!role || role.systemRole !== "MINI_ADMIN") {
+    throw new Error("ROLE_NOT_EDITABLE");
+  }
+
+  const current =
+    user.settings && typeof user.settings === "object" && !Array.isArray(user.settings)
+      ? (user.settings as Record<string, unknown>)
+      : {};
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      settings: {
+        ...current,
+        ...buildMiniAdminSettings(input.miniAdminTitle, input.miniAdminModules),
+      },
+    },
+  });
 
   return { success: true };
 }
