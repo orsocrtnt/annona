@@ -27,10 +27,10 @@ Le retrait du cron ne supprime pas sa route. `/api/cron/operations` reste appela
 
 ## Ordre de configuration distante
 
-1. Se reconnecter à GitHub, Vercel et Supabase.
-2. Confirmer dans Vercel que `main` est la branche Production et que le projet est relié à `orsocrtnt/tutelliv-v2`.
-3. Vérifier dans Supabase le nombre de projets gratuits actifs et la région du projet existant.
-4. S'il reste une place gratuite, créer `tutelliv-preproduction` dans une région adaptée, sans copier de données.
+1. Connexion aux tableaux de bord confirmée le 19 octobre 2026.
+2. Vercel vérifié : `main` est la branche Production et le projet est relié à `orsocrtnt/tutelliv-v2`.
+3. Supabase vérifié : un projet actif et deux projets en pause ; un second emplacement actif Free est disponible. La cible actuelle et la future préproduction utilisent Paris (`eu-west-3`).
+4. Créer `tutelliv-preproduction` dans Paris, sans copier de données. Le formulaire est préparé avec exposition automatique des nouvelles tables désactivée et RLS automatique activée ; mot de passe et validation finale restent à effectuer.
 5. Créer les secrets propres à cette cible et ne recopier aucune clé du projet existant.
 6. Revoir puis appliquer la migration initiale DB-1 sur la base vide. Contrôler tables, RLS, droits, Auth et bucket privé avant le premier seed fictif.
 7. Configurer dans Vercel les variables Preview limitées à `preproduction`. Conserver `AUTH_EMAIL_LINKS_ENABLED=false`, `EMAIL_DELIVERY_MODE=disabled` et `DEMO_CLEANUP_ENABLED=false`.
@@ -55,7 +55,7 @@ Ne pas pousser si la branche Production Vercel n'est pas confirmée, si la nouve
 
 ## Limites des offres gratuites
 
-Supabase Free permet deux projets actifs au total pour un propriétaire/administrateur. Il peut donc couvrir développement + préproduction si aucun autre projet actif n'utilise le quota. Les projets gratuits peuvent être mis en pause pour inactivité et ne donnent pas les sauvegardes quotidiennes téléchargeables des offres payantes ; un export logique hors site est nécessaire.
+Supabase Free permet deux projets actifs au total pour un propriétaire/administrateur ; les projets en pause ne comptent pas. Le compte vérifié le 19 octobre 2026 n'en utilise qu'un : développement + préproduction peuvent donc rester gratuits. Les projets gratuits peuvent être mis en pause pour inactivité et ne donnent pas les sauvegardes quotidiennes téléchargeables des offres payantes ; un export logique hors site est nécessaire.
 
 Vercel Hobby fournit les Preview Git, mais limite les crons à une exécution quotidienne et son usage aux projets personnels non commerciaux. Il convient pour préparer techniquement la Preview, pas pour exploiter les pilotes ou vendre TutelLiv. Une offre Vercel commerciale devra être validée avant cette étape.
 

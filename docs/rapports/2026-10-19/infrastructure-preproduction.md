@@ -12,15 +12,15 @@ La branche locale `preproduction` a été créée depuis ce commit sans modifier
 
 ### Vercel
 
-Le dossier local est relié au projet `tutelliv-v2`. La connexion Git et la branche Production ne peuvent pas encore être vérifiées côté serveur : le tableau de bord demande une connexion et le jeton CLI local répond `403 Not authorized`.
+Le dossier local est relié au projet `tutelliv-v2`. Le tableau de bord confirme la connexion au dépôt privé `orsocrtnt/tutelliv-v2`, le déploiement Production sur `main` au commit `af614947…` et l'offre Hobby. Les huit variables existantes sont limitées à Production ; aucune valeur n'a été lue ni affichée. La dernière Preview visible, ancienne et sans rapport avec la branche préparée, a échoué. Une Preview Git dédiée reste possible sur Hobby, mais devra recevoir des variables Preview propres à `preproduction`.
 
 Le manifeste contenait un cron chaque minute incompatible avec Vercel Hobby. La branche locale de préproduction conserve le cron quotidien et retire uniquement cette planification minute ; la route opérationnelle reste présente. Le workflow et la procédure exigent une confirmation de la branche Production avant le premier push.
 
 ### Supabase
 
-La configuration locale cible bien le projet `wlomrzilflbouzyhzwxm` donné par le propriétaire. Il s'agit de la cible de développement/test déjà autorisée, avec PostgreSQL 17.6, vingt tables publiques sous RLS, un bucket privé et 51 démonstrations historiques. Rien n'a été écrit pendant cet audit.
+La configuration locale cible bien le projet `wlomrzilflbouzyhzwxm` donné par le propriétaire. Le tableau de bord confirme le projet `TutelLiv`, actif sur l'offre Free dans la région `eu-west-3` (Paris). Il s'agit de la cible de développement/test déjà autorisée, avec PostgreSQL 17.6, vingt tables publiques sous RLS, un bucket privé et 51 démonstrations historiques. Rien n'a été écrit dans ce projet pendant l'audit.
 
-La création d'un second projet gratuit paraît possible en principe, car Supabase accorde deux projets gratuits actifs, mais le quota réel du compte et la région restent invisibles tant que le tableau de bord n'est pas reconnecté. Aucun projet n'a été créé.
+L'organisation contient ce projet actif et deux anciens projets en pause. Supabase autorise deux projets gratuits actifs et les projets en pause ne comptent pas dans cette limite : un second emplacement actif gratuit est donc disponible. Le formulaire du nouveau projet `tutelliv-preproduction` est préparé en région Paris, avec exposition automatique des nouvelles tables désactivée et RLS automatique activée. Aucun projet n'a encore été créé et aucun secret n'a été saisi.
 
 ### CI et isolation
 
@@ -49,10 +49,9 @@ Une nouvelle garde refuse la recette si l'URL Vercel n'est pas l'hôte attendu, 
 
 ## Blocages actuels
 
-1. Connexion humaine à GitHub, Vercel et Supabase.
-2. Confirmation du réglage Vercel Production et de la connexion Git.
-3. Confirmation qu'un deuxième emplacement Supabase Free est disponible et choix de région.
-4. Validation de la migration initiale DB-1 sur une base vide.
-5. Offre Vercel commerciale avant pilotes ou vente ; aucune dépense n'est nécessaire pour finir la préparation locale.
+1. Création finale du second projet Supabase gratuit et conservation sécurisée de ses identifiants distincts.
+2. Validation de la migration initiale DB-1 sur cette base vide.
+3. Configuration des variables Preview Vercel limitées à `preproduction`, puis publication de la branche.
+4. Offre Vercel commerciale avant pilotes ou vente ; aucune dépense n'est nécessaire pour finir la préparation technique.
 
 Procédure : `docs/operations/preproduction/README.md`.
