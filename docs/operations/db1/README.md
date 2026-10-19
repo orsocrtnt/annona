@@ -1,6 +1,6 @@
 # DB-1 — Baseline et évolutions de base
 
-Date de référence : 17 octobre 2026. Cette procédure travaille d'abord en lecture seule. Aucune commande `db push`, `migrate dev`, `migrate deploy`, `migrate resolve` ou SQL d'écriture n'est autorisée par ce document seul.
+Date de référence : 19 octobre 2026. La première phase d'inventaire reste en lecture seule. La migration décrite ci-dessous a ensuite été autorisée et exécutée exclusivement sur la préproduction vide.
 
 ## Contrôle reproductible
 
@@ -22,13 +22,13 @@ Le premier diff contenait onze instructions : cinq suppressions puis cinq recré
 
 ## Construire la baseline sur une cible isolée
 
-1. Terminer ENV-1 et identifier une préproduction vide.
-2. Revoir le brouillon Prisma instruction par instruction.
-3. Ajouter le complément sécurité après la création des tables.
-4. Ajouter séparément la création du bucket privé, ses règles, les réglages Auth et les droits fournisseur qui ne sont pas représentés par Prisma.
-5. Placer seulement la version revue dans `prisma/migrations/0_init/migration.sql`.
-6. Appliquer la migration initiale à la préproduction vide.
-7. Vérifier les vingt tables, contraintes, index, RLS, retraits de droits, Auth, Storage et TEST-2.
+1. Terminé : identifier la préproduction vide `tutelliv-preproduction`.
+2. Terminé : régénérer et comparer le brouillon Prisma avec le schéma courant.
+3. Terminé : ajouter le complément sécurité après la création des tables.
+4. Terminé pour Storage : créer le bucket privé `delivery-pods`, limité à 5 Mio aux JPEG/PNG. Les réglages Auth dépendant de l'URL Vercel restent à faire.
+5. Terminé : placer la version revue dans `prisma/migrations/20261019000000_initial/migration.sql`.
+6. Terminé : appliquer la migration initiale à la préproduction vide.
+7. Terminé pour la baseline : vérifier les vingt tables, le registre Prisma, RLS, les retraits de droits, zéro utilisateur Auth, Storage privé et zéro drift. TEST-2 reste à exécuter après remplacement des identifiants et déploiement Preview.
 8. Sur une base existante identique, marquer `0_init` comme déjà appliquée seulement après sauvegarde, diff vide et autorisation explicite.
 
 Prisma décrit ce flux pour une base existante : la migration initiale recrée l'état complet sur une base vide, tandis qu'une cible existante identique la marque comme appliquée afin de ne pas recréer ses tables. Le projet utilise Prisma 5.22 ; conserver les commandes compatibles avec cette version : [Prisma — Baselining a database](https://www.prisma.io/docs/orm/prisma-migrate/workflows/baselining).
@@ -46,8 +46,8 @@ Une migration n'est considérée réversible que lorsque son scénario de panne 
 
 ## Blocages actuels
 
-- préproduction ENV-1 absente ;
-- brouillons non revus comme migration finale ;
-- Auth et Storage hors du brouillon Prisma ;
+- mot de passe PostgreSQL et clé serveur à remplacer avant déploiement ;
+- URL Auth et recette TEST-2 à vérifier sur la Preview ;
+- migration additive et reprise correspondante à exercer ;
 - sauvegarde/restauration complète OPS-03A non exercée ;
-- baseline non marquée sur la cible existante.
+- baseline non marquée sur la cible existante, qui reste volontairement inchangée.

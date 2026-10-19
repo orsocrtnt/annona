@@ -1,6 +1,6 @@
 # Audit infrastructure et préparation préproduction
 
-Date : 19 octobre 2026. Audit sans suppression, sans modification distante, sans dépense et sans affichage de secret.
+Date : 19 octobre 2026. Audit puis création autorisée d'une préproduction isolée, sans suppression, sans dépense et sans modification de la cible existante.
 
 ## Résultat
 
@@ -20,7 +20,11 @@ Le manifeste contenait un cron chaque minute incompatible avec Vercel Hobby. La 
 
 La configuration locale cible bien le projet `wlomrzilflbouzyhzwxm` donné par le propriétaire. Le tableau de bord confirme le projet `TutelLiv`, actif sur l'offre Free dans la région `eu-west-3` (Paris). Il s'agit de la cible de développement/test déjà autorisée, avec PostgreSQL 17.6, vingt tables publiques sous RLS, un bucket privé et 51 démonstrations historiques. Rien n'a été écrit dans ce projet pendant l'audit.
 
-L'organisation contient ce projet actif et deux anciens projets en pause. Supabase autorise deux projets gratuits actifs et les projets en pause ne comptent pas dans cette limite : un second emplacement actif gratuit est donc disponible. Le formulaire du nouveau projet `tutelliv-preproduction` est préparé en région Paris, avec exposition automatique des nouvelles tables désactivée et RLS automatique activée. Aucun projet n'a encore été créé et aucun secret n'a été saisi.
+L'organisation contient ce projet actif et deux anciens projets en pause. Supabase autorise deux projets gratuits actifs et les projets en pause ne comptent pas dans cette limite. Le second emplacement a été utilisé pour créer `tutelliv-preproduction`, référence publique `zwwyalsslyydubtetagj`, dans la région Paris. L'exposition automatique des nouvelles tables est désactivée et RLS automatique est activée. Aucune donnée ni démonstration n'a été copiée.
+
+La migration initiale versionnée a été appliquée sur cette base vide. Elle crée les vingt tables métier, active RLS sur les vingt tables et le registre Prisma, retire tous les droits directs de `PUBLIC`, `anon` et `authenticated`, et crée le bucket `delivery-pods` privé limité à 5 Mio aux JPEG/PNG. La vérification connectée confirme vingt tables métier, une migration, zéro utilisateur Auth, zéro politique publique, zéro droit direct et zéro drift Prisma.
+
+Les paramètres sont conservés uniquement dans `.env.preproduction.local`, ignoré par Git et limité en lecture/écriture au compte local. Le premier import Vercel a été annulé avant enregistrement après qu'une vue technique a rendu des valeurs sensibles visibles. Ces identifiants doivent être remplacés avant toute publication : aucun secret de cette tentative ne doit être utilisé dans Vercel ou GitHub.
 
 ### CI et isolation
 
@@ -49,9 +53,10 @@ Une nouvelle garde refuse la recette si l'URL Vercel n'est pas l'hôte attendu, 
 
 ## Blocages actuels
 
-1. Création finale du second projet Supabase gratuit et conservation sécurisée de ses identifiants distincts.
-2. Validation de la migration initiale DB-1 sur cette base vide.
+1. Remplacement du mot de passe PostgreSQL et de la clé serveur exposés pendant la préparation ; le formulaire Vercel est resté non enregistré.
+2. Nouvelle vérification connectée avec les identifiants remplacés.
 3. Configuration des variables Preview Vercel limitées à `preproduction`, puis publication de la branche.
-4. Offre Vercel commerciale avant pilotes ou vente ; aucune dépense n'est nécessaire pour finir la préparation technique.
+4. Configuration de l'environnement GitHub protégé et première exécution CI connectée.
+5. Offre Vercel commerciale avant pilotes ou vente ; aucune dépense n'est nécessaire pour finir la préparation technique.
 
 Procédure : `docs/operations/preproduction/README.md`.

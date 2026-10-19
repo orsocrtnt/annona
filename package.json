@@ -41,6 +41,7 @@
     "data02:demo-legacy-inventory": "dotenv -e .env.local -- tsx scripts/data02/inventory-legacy-demos.ts",
     "audit:env1": "dotenv -e .env.local -- tsx scripts/env1/inventory.ts outputs/env1/inventory.json",
     "audit:db1": "dotenv -e .env.local -- tsx scripts/db1/inventory.ts outputs/db1/inventory.json outputs/db1/prisma-baseline-draft.sql outputs/db1/security-baseline-draft.sql",
+    "db1:verify-preproduction": "tsx scripts/db1/verify-preproduction.ts outputs/db1/preproduction-validation.json",
     "audit:ops03a": "dotenv -e .env.local -- tsx scripts/ops03a/inventory.ts outputs/ops03a/inventory.json",
     "ci:secrets": "node scripts/ci/scan-secrets.mjs",
     "ci:preprod-env": "tsx scripts/ci/verify-preproduction-env.ts",

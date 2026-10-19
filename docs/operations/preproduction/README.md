@@ -30,9 +30,9 @@ Le retrait du cron ne supprime pas sa route. `/api/cron/operations` reste appela
 1. Connexion aux tableaux de bord confirmée le 19 octobre 2026.
 2. Vercel vérifié : `main` est la branche Production et le projet est relié à `orsocrtnt/tutelliv-v2`.
 3. Supabase vérifié : un projet actif et deux projets en pause ; un second emplacement actif Free est disponible. La cible actuelle et la future préproduction utilisent Paris (`eu-west-3`).
-4. Créer `tutelliv-preproduction` dans Paris, sans copier de données. Le formulaire est préparé avec exposition automatique des nouvelles tables désactivée et RLS automatique activée ; mot de passe et validation finale restent à effectuer.
-5. Créer les secrets propres à cette cible et ne recopier aucune clé du projet existant.
-6. Revoir puis appliquer la migration initiale DB-1 sur la base vide. Contrôler tables, RLS, droits, Auth et bucket privé avant le premier seed fictif.
+4. Terminé le 19 octobre 2026 : `tutelliv-preproduction` créé à Paris sans copie de données, avec exposition automatique des nouvelles tables désactivée et RLS automatique activée.
+5. Les secrets propres à cette cible sont stockés dans `.env.preproduction.local`, ignoré par Git et en mode `0600`. Le mot de passe se retrouve dans la variable `SUPABASE_DB_PASSWORD` de ce fichier ; ne jamais le copier dans un rapport, un commit ou la conversation.
+6. La migration initiale DB-1 est appliquée et vérifiée sur la base vide : vingt tables métier, registre Prisma, RLS partout, aucun droit navigateur direct, bucket privé et zéro utilisateur Auth. Remplacer les identifiants signalés avant le premier seed ou déploiement.
 7. Configurer dans Vercel les variables Preview limitées à `preproduction`. Conserver `AUTH_EMAIL_LINKS_ENABLED=false`, `EMAIL_DELIVERY_MODE=disabled` et `DEMO_CLEANUP_ENABLED=false`.
 8. Configurer l'environnement GitHub `preproduction` avec les secrets `PREPROD_*` attendus par le workflow.
 9. Pousser la branche seulement après les contrôles précédents. Vérifier que Vercel crée une Preview et ne touche pas au déploiement Production.
