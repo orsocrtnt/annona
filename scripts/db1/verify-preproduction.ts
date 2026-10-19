@@ -1,10 +1,12 @@
 import { execFileSync } from "node:child_process";
+import { readdirSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { Prisma } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 import { validatePreproductionEnvironment } from "../ci/verify-preproduction-env";
 import { prisma } from "../../src/services/prisma/client";
+import { PERMISSIONS, ROLE_PERMISSIONS, ROLES } from "../../prisma/reference-data";
 
 const output = resolve(process.argv[2] ?? "outputs/db1/preproduction-validation.json");
 
@@ -24,6 +26,10 @@ function pendingDiff() {
     "prisma/schema.prisma",
     "--script",
   ], { encoding: "utf8", env: process.env, maxBuffer: 10 * 1024 * 1024 }).trim();
+}
+
+function canonical(value: unknown) {
+  return JSON.stringify(value);
 }
 
 async function main() {
@@ -60,6 +66,24 @@ async function main() {
     FROM storage.buckets
     WHERE id = 'delivery-pods'
   `);
+  const [roles, permissions] = await Promise.all([
+    prisma.role.findMany({
+      where: { isSystem: true },
+      select: {
+        slug: true,
+        name: true,
+        description: true,
+        systemRole: true,
+        isSystem: true,
+        permissions: { select: { permission: { select: { slug: true } } } },
+      },
+      orderBy: { slug: "asc" },
+    }),
+    prisma.permission.findMany({
+      select: { slug: true, name: true, resource: true, action: true },
+      orderBy: { slug: "asc" },
+    }),
+  ]);
 
   const url = required("NEXT_PUBLIC_SUPABASE_URL");
   const admin = createClient(url, required("SUPABASE_SERVICE_ROLE_KEY"), {
@@ -81,14 +105,44 @@ async function main() {
   const catalogRow = catalog[0];
   const bucketRow = bucketRows[0];
   const diff = pendingDiff();
+  const expectedMigrationCount = readdirSync(resolve("prisma/migrations"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .length;
+  const expectedRoles = ROLES
+    .map((role) => ({
+      slug: role.slug,
+      name: role.name,
+      description: role.description,
+      systemRole: role.systemRole,
+      isSystem: true,
+    }))
+    .sort((left, right) => left.slug.localeCompare(right.slug));
+  const actualRoles = roles.map(({ permissions: _permissions, ...role }) => role);
+  const expectedPermissions = [...PERMISSIONS].sort((left, right) => left.slug.localeCompare(right.slug));
+  const actualRolePermissionEntries: Array<[string, string[]]> = roles
+      .map((role): [string, string[]] => [
+        role.systemRole,
+        role.permissions.map(({ permission }) => permission.slug).sort(),
+      ])
+      .sort(([left], [right]) => left.localeCompare(right));
+  const actualRolePermissions = Object.fromEntries(actualRolePermissionEntries);
+  const expectedRolePermissionEntries: Array<[string, string[]]> = Object.entries(ROLE_PERMISSIONS)
+    .map(([systemRole, slugs]): [string, string[]] => [systemRole, [...slugs].sort()])
+    .sort(([left], [right]) => left.localeCompare(right));
+  const expectedRolePermissions = Object.fromEntries(expectedRolePermissionEntries);
   const checks = {
     expectedTablesPresent:
       JSON.stringify(appTables.map(({ name }) => name).sort()) === JSON.stringify(expectedTables),
     everyPublicTableHasRls: publicTables.length === expectedTables.length + 1 && publicTables.every(({ rls }) => rls),
     noPublicPolicies: Number(catalogRow?.policies ?? -1) === 0,
     noPublicRoleGrants: Number(catalogRow?.public_role_grants ?? -1) === 0,
-    oneAppliedMigration: Number(catalogRow?.migration_count ?? -1) === 1,
+    allVersionedMigrationsApplied:
+      Number(catalogRow?.migration_count ?? -1) === expectedMigrationCount,
     prismaSchemaHasNoDrift: !/\b(?:ALTER|CREATE|DROP)\b/.test(diff),
+    referenceRolesMatch: canonical(actualRoles) === canonical(expectedRoles),
+    referencePermissionsMatch: canonical(permissions) === canonical(expectedPermissions),
+    referenceRolePermissionsMatch:
+      canonical(actualRolePermissions) === canonical(expectedRolePermissions),
     noAuthUsers: users.users.length === 0,
     anonCannotReadCompanies: Boolean(anonAttempt.error),
     privatePodBucket:
@@ -112,6 +166,10 @@ async function main() {
       policies: Number(catalogRow?.policies ?? -1),
       publicRoleGrants: Number(catalogRow?.public_role_grants ?? -1),
       appliedMigrations: Number(catalogRow?.migration_count ?? -1),
+      expectedMigrations: expectedMigrationCount,
+      systemRoles: roles.length,
+      permissions: permissions.length,
+      rolePermissionLinks: roles.reduce((total, role) => total + role.permissions.length, 0),
       authUsersObserved: users.users.length,
     },
     secretsIncluded: false,
