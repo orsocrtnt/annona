@@ -32,6 +32,15 @@ export type DashboardDrillDown =
       description?: string;
     };
 
+export function isLateDashboardDrillDown(drillDown: DashboardDrillDown | null) {
+  return Boolean(
+    drillDown &&
+      ((drillDown.scope === "alert" && drillDown.key === "late") ||
+        (drillDown.scope === "today" && drillDown.key === "late") ||
+        (drillDown.scope === "period" && drillDown.key === "late"))
+  );
+}
+
 export function filterByCategory(
   items: DashboardDeliveryItem[],
   category: "standard" | "courier"

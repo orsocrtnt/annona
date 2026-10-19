@@ -58,6 +58,8 @@ export default function InvoiceDetailPage() {
         <InvoiceStatusBadge status={invoice.status} />
       </div>
 
+      <p className="text-sm text-muted-foreground">Relevé de prestation de livraison. Document opérationnel, distinct de l&apos;abonnement TutelLiv ; il ne constitue pas une facture électronique réglementaire.</p>
+
       {(invoice.lineItems?.length ?? 0) > 0 && (
         <Card>
           <CardHeader>

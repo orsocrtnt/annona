@@ -1,3 +1,4 @@
+import { ConversationError } from "@/domains/order-conversation/order-conversation.service";
 import { NextResponse } from "next/server";
 import { requireDriverRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
@@ -18,7 +19,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const location = await upsertDriverLocation(auth.context.user.id, parsed.data);
+    let location;
+    try { location = await upsertDriverLocation(auth.context.user.id, auth.context.user.companyId ?? "", parsed.data); }
+    catch (error) { if (error instanceof ConversationError) return NextResponse.json({ error: error.message }, { status: error.status }); throw error; }
     return NextResponse.json({
       data: { updatedAt: location.updatedAt.toISOString() },
       success: true,

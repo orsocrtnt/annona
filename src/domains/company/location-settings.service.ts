@@ -5,7 +5,7 @@ import {
   type DriverLocationSettings,
 } from "@/lib/validations/driver-location-settings";
 
-function parseLocationSettings(raw: unknown): DriverLocationSettings {
+export function parseLocationSettings(raw: unknown): DriverLocationSettings {
   const stored = (raw ?? {}) as Partial<DriverLocationSettings>;
   return driverLocationSettingsSchema.parse({
     ...DEFAULT_DRIVER_LOCATION_SETTINGS,

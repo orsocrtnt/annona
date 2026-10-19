@@ -41,7 +41,7 @@ export function Header({ breadcrumbs, className }: HeaderProps) {
       </Button>
 
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="hidden items-center gap-1.5 text-sm md:flex">
+        <nav aria-label="Fil d'Ariane" className="hidden items-center gap-1.5 text-sm md:flex">
           {breadcrumbs.map((item, i) => (
             <div key={i} className="flex items-center gap-1.5">
               {i > 0 && <span className="text-muted-foreground">/</span>}
@@ -63,7 +63,10 @@ export function Header({ breadcrumbs, className }: HeaderProps) {
       <div className="ml-auto flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-muted">
+            <button
+              aria-label="Ouvrir le menu du compte"
+              className="flex items-center gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.avatarUrl ?? undefined} />
                 <AvatarFallback className="bg-brand-subtle text-brand text-xs">

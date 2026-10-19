@@ -278,7 +278,7 @@ export function normalizeDashboardLayout(
   const stored = input?.widgets ?? [];
   const byType = new Map(stored.map((widget) => [widget.type, widget]));
 
-  const widgets = DASHBOARD_WIDGET_TYPES.map((type, index) => {
+  const widgets = DASHBOARD_WIDGET_TYPES.map((type) => {
     const existing = byType.get(type);
     const fallback = DEFAULT_DASHBOARD_LAYOUT.widgets.find((w) => w.type === type)!;
     return {

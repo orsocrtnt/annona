@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
-import { createOrderInvoice } from "@/domains/invoice/invoice.service";
-import { createOrderInvoiceSchema } from "@/lib/validations/invoice";
+import { createOrderInvoice, markOrderInvoicePaid } from "@/domains/invoice/invoice.service";
+import { createOrderInvoiceSchema, markOrderInvoicePaidSchema } from "@/lib/validations/invoice";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireStaffRole("orders:update");
+  const auth = await requireStaffRole("invoices:create");
   if ("error" in auth) return auth.error;
 
   const companyId = getCompanyId(auth.context);
@@ -35,6 +35,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof Error) {
       const messages: Record<string, string> = {
+        INVOICE_AMOUNT_TOO_LARGE: "Le montant dépasse la limite du document",
         INVOICE_ALREADY_PAID: "Cette commande a déjà une facture payée",
         INVOICE_EMPTY: "Sélectionnez au moins une zone, un supplément ou une ligne",
         ZONE_NOT_FOUND: "La zone tarifaire sélectionnée n'existe plus — rechargez la page",
@@ -49,6 +50,29 @@ export async function POST(
         { error: "Impossible d'émettre la facture. Réessayez ou contactez le support." },
         { status: 500 }
       );
+    }
+    throw error;
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireStaffRole("invoices:update");
+  if ("error" in auth) return auth.error;
+  const companyId = getCompanyId(auth.context);
+  if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+  const parsed = markOrderInvoicePaidSchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+  const { id } = await params;
+  try {
+    const invoice = await markOrderInvoicePaid(companyId, id, parsed.data.invoiceId, new Date(parsed.data.expectedUpdatedAt));
+    if (!invoice) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
+    return NextResponse.json({ data: invoice, success: true });
+  } catch (error) {
+    if (error instanceof Error && ["INVOICE_NOT_PAYABLE", "INVOICE_STATUS_CONFLICT"].includes(error.message)) {
+      return NextResponse.json({ error: "Cette facture a changé ou ne peut pas être réglée. Rechargez-la." }, { status: 409 });
     }
     throw error;
   }

@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, Users, Settings, Radio,
-  Truck, Package, MapPin, Shield, UserCircle, Receipt, BarChart3,
+  Truck, Package, MapPin, Shield, UserCircle, Receipt, BarChart3, HeadphonesIcon, ListChecks,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -19,11 +19,13 @@ const dispatchMapItems: NavItem[] = [
 
 export const companyNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Première livraison", href: "/onboarding", icon: ListChecks },
   { title: "Analyse", href: "/dashboard/analytics", icon: BarChart3 },
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
   { title: "Dispatch", href: "/dispatch", icon: Radio },
   ...dispatchMapItems,
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
+  { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
@@ -35,6 +37,7 @@ export const dispatcherNavItems: NavItem[] = [
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
   ...dispatchMapItems,
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
+  { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
 ];
@@ -47,6 +50,7 @@ export const miniAdminNavItems: NavItem[] = [
   { title: "Dispatch", href: "/dispatch", icon: Radio },
   ...dispatchMapItems,
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
+  { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },

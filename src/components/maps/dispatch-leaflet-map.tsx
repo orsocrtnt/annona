@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { CircleMarker, Popup, useMap } from "react-leaflet";
 import type { DispatchMapPointKind } from "@/domains/delivery/dispatch-map.service";
 import { LeafletBaseMap, PARIS_CENTER } from "@/components/maps/leaflet-base-map";
+import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
 
 export interface DispatchLeafletMarker {
   id: string;
@@ -26,9 +27,9 @@ const MARKER_STYLE: Record<
   DispatchMapPointKind,
   { radius: number; color: string; fill: string; weight: number }
 > = {
-  destination: { radius: 8, color: "#2563eb", fill: "#3b82f6", weight: 2 },
-  pickup: { radius: 7, color: "#ea580c", fill: "#f97316", weight: 2 },
-  driver: { radius: 11, color: "#6d28d9", fill: "#7c3aed", weight: 3 },
+  destination: { radius: 8, color: MAP_VISUAL_THEME.surface, fill: MAP_VISUAL_THEME.ink, weight: 3 },
+  pickup: { radius: 7, color: MAP_VISUAL_THEME.ink, fill: MAP_VISUAL_THEME.surface, weight: 2 },
+  driver: { radius: 10, color: MAP_VISUAL_THEME.surface, fill: MAP_VISUAL_THEME.inkSoft, weight: 3 },
 };
 
 function MapViewController({
@@ -97,10 +98,10 @@ export function DispatchLeafletMap({
               center={[marker.latitude, marker.longitude]}
               radius={isSelected ? style.radius + 3 : style.radius}
               pathOptions={{
-                color: isSelected ? "#0f172a" : style.color,
+                color: isSelected ? MAP_VISUAL_THEME.ink : style.color,
                 fillColor: style.fill,
-                fillOpacity: 0.92,
-                weight: isSelected ? style.weight + 1 : style.weight,
+                fillOpacity: 1,
+                weight: isSelected ? style.weight + 2 : style.weight,
               }}
               eventHandlers={{
                 click: () => onSelect?.(marker.id),

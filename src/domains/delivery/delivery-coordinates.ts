@@ -32,8 +32,8 @@ export async function resolveDeliveryCoordinateFields(
 
   if (!includePickup) {
     return {
-      latitude: dest.lat,
-      longitude: dest.lng,
+      latitude: dest?.lat ?? null,
+      longitude: dest?.lng ?? null,
       pickupLatitude: null,
       pickupLongitude: null,
     };
@@ -46,20 +46,20 @@ export async function resolveDeliveryCoordinateFields(
   });
 
   return {
-    latitude: dest.lat,
-    longitude: dest.lng,
-    pickupLatitude: pickup.lat,
-    pickupLongitude: pickup.lng,
+    latitude: dest?.lat ?? null,
+    longitude: dest?.lng ?? null,
+    pickupLatitude: pickup?.lat ?? null,
+    pickupLongitude: pickup?.lng ?? null,
   };
 }
 
 /** Géocode une adresse d'arrêt (OrderStop). */
 export async function resolveStopCoordinates(parts: AddressParts): Promise<{
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
 }> {
   const coords = await geocodeAddress(parts);
-  return { latitude: coords.lat, longitude: coords.lng };
+  return { latitude: coords?.lat ?? null, longitude: coords?.lng ?? null };
 }
 
 /**
@@ -100,8 +100,7 @@ export async function ensureDeliveryCoordinates(delivery: DeliveryAddressInput &
       city: delivery.city,
       postalCode: delivery.postalCode,
     });
-    data.latitude = dest.lat;
-    data.longitude = dest.lng;
+    if (dest) { data.latitude = dest.lat; data.longitude = dest.lng; }
   }
 
   if (needsPickup) {
@@ -110,11 +109,10 @@ export async function ensureDeliveryCoordinates(delivery: DeliveryAddressInput &
       city: delivery.pickupCity,
       postalCode: delivery.pickupPostalCode,
     });
-    data.pickupLatitude = pickup.lat;
-    data.pickupLongitude = pickup.lng;
+    if (pickup) { data.pickupLatitude = pickup.lat; data.pickupLongitude = pickup.lng; }
   }
 
-  await prisma.delivery.update({
+  if (Object.keys(data).length) await prisma.delivery.update({
     where: { id: delivery.id },
     data,
   });
@@ -132,7 +130,7 @@ export async function ensureOrderStopCoordinates(stop: AddressParts & {
   id: string;
   latitude?: number | null;
   longitude?: number | null;
-}): Promise<{ latitude: number; longitude: number }> {
+}): Promise<{ latitude: number | null; longitude: number | null }> {
   if (stop.latitude != null && stop.longitude != null) {
     return { latitude: stop.latitude, longitude: stop.longitude };
   }
@@ -143,7 +141,7 @@ export async function ensureOrderStopCoordinates(stop: AddressParts & {
     postalCode: stop.postalCode,
   });
 
-  await prisma.orderStop.update({
+  if (coords.latitude != null && coords.longitude != null) await prisma.orderStop.update({
     where: { id: stop.id },
     data: { latitude: coords.latitude, longitude: coords.longitude },
   });

@@ -6,7 +6,10 @@ import {
   updateClientSettings,
 } from "@/domains/client-portal/settings.service";
 import { clientSettingsSchema } from "@/lib/validations/settings";
-import { getEmailDeliveryConfigured } from "@/domains/client-portal/notify.service";
+import {
+  getEmailDeliveryConfigured,
+  getEmailDeliveryMode,
+} from "@/domains/client-portal/notify.service";
 
 export async function GET() {
   return withApiHandler(async () => {
@@ -15,7 +18,11 @@ export async function GET() {
 
     const settings = await getClientSettings(auth.context.user.id);
     return NextResponse.json({
-      data: { ...settings, emailConfigured: getEmailDeliveryConfigured() },
+      data: {
+        ...settings,
+        emailConfigured: getEmailDeliveryConfigured(),
+        emailMode: getEmailDeliveryMode(),
+      },
       success: true,
     });
   });
@@ -38,7 +45,11 @@ export async function PATCH(request: Request) {
 
     const settings = await updateClientSettings(auth.context.user.id, parsed.data);
     return NextResponse.json({
-      data: { ...settings, emailConfigured: getEmailDeliveryConfigured() },
+      data: {
+        ...settings,
+        emailConfigured: getEmailDeliveryConfigured(),
+        emailMode: getEmailDeliveryMode(),
+      },
       success: true,
     });
   });

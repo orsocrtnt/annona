@@ -19,6 +19,7 @@ interface LocationConfirmationDialogProps {
   kind: ProximityTargetKind;
   distanceMeters: number | null;
   loading?: boolean;
+  feedbackMessage?: string | null;
   onConfirm: () => void;
 }
 
@@ -32,24 +33,25 @@ export function LocationConfirmationDialog({
   kind,
   distanceMeters,
   loading,
+  feedbackMessage,
   onConfirm,
 }: LocationConfirmationDialogProps) {
   const label = pointLabel(kind);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!loading) onOpenChange(next); }}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-warning" />
-            Localisation éloignée
+            {distanceMeters == null ? "Position non vérifiée" : "Localisation éloignée"}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-2 pt-1 text-left text-sm text-muted-foreground">
               <p>
                 {distanceMeters != null
                   ? `Vous n'êtes pas proche du ${label}. Êtes-vous sûr de vouloir continuer ?`
-                  : `Votre position n'a pas pu être vérifiée ou vous semblez éloigné du ${label}. Êtes-vous sûr de vouloir continuer ?`}
+                  : `Votre position n’a pas pu être vérifiée. Confirmez explicitement que vous êtes au ${label}. Êtes-vous sûr de vouloir continuer ?`}
               </p>
               {distanceMeters != null && (
                 <p className="rounded-lg bg-muted/50 px-3 py-2 text-foreground">
@@ -61,6 +63,7 @@ export function LocationConfirmationDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {feedbackMessage && <p role={loading ? "status" : "alert"} aria-live="polite" className="text-sm text-muted-foreground">{feedbackMessage}</p>}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Annuler

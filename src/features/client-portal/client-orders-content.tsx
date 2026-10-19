@@ -1,9 +1,10 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataGrid } from "@/components/ui/data-grid";
+import { OrderHistoryTable } from "@/components/shared/order-history-table";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePortalOrders } from "@/features/client-portal/hooks";
@@ -16,6 +17,12 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { ShoppingBag, Plus, History } from "lucide-react";
 import type { TableColumn } from "@/types";
 import type { PortalOrder } from "@/features/client-portal/types";
+import {
+  ORDER_HISTORY_DEFAULT_PAGE_SIZE,
+  type OrderHistoryPage,
+  type OrderHistoryQuery,
+} from "@/lib/query/order-history";
+import { ACTIVE_ORDER_STATUSES } from "@/lib/constants/order-status";
 
 const columns: TableColumn<PortalOrder>[] = [
   {
@@ -59,34 +66,39 @@ const columns: TableColumn<PortalOrder>[] = [
 ];
 
 interface ClientOrdersContentProps {
-  initialOrders?: PortalOrder[];
+  initialOrders?: OrderHistoryPage<PortalOrder>;
 }
 
 export function ClientOrdersContent({ initialOrders }: ClientOrdersContentProps) {
-  const { data: orders, isLoading, error } = usePortalOrders(false, initialOrders);
+  const [query, setQuery] = React.useState<OrderHistoryQuery>({
+    page: 1,
+    pageSize: ORDER_HISTORY_DEFAULT_PAGE_SIZE,
+    history: false,
+  });
+  const { data: result, isLoading, isFetching, error } = usePortalOrders(query, initialOrders);
 
-  if (isInitialQueryLoading(isLoading, orders)) return <PageSkeleton />;
+  if (isInitialQueryLoading(isLoading, result)) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mes commandes</h1>
-          <p className="mt-1 text-muted-foreground">Commandes en cours — 50 plus récentes</p>
+          <p className="mt-1 text-muted-foreground">Commandes en cours, avec recherche et filtres complets.</p>
         </div>
         <div className="flex flex-wrap gap-2 max-md:w-full">
-          <Link href="/portal/orders/history">
-            <Button variant="outline" className="max-md:w-full">
+          <Button variant="outline" className="max-md:w-full" asChild>
+            <Link href="/portal/orders/history">
               <History className="mr-2 h-4 w-4" />
               Historique
-            </Button>
-          </Link>
-          <Link href="/portal/orders/new" className="max-md:w-full">
-            <Button variant="brand" className="max-md:w-full">
+            </Link>
+          </Button>
+          <Button variant="brand" className="max-md:w-full" asChild>
+            <Link href="/portal/orders/new" className="max-md:w-full">
               <Plus className="mr-2 h-4 w-4" />
               Nouvelle commande
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -102,11 +114,15 @@ export function ClientOrdersContent({ initialOrders }: ClientOrdersContentProps)
             <CardTitle className="text-base">Toutes mes commandes</CardTitle>
           </CardHeader>
           <CardContent>
-            <DataGrid
-              data={(orders ?? []) as unknown as Record<string, unknown>[]}
+            <OrderHistoryTable
+              result={result as unknown as OrderHistoryPage<Record<string, unknown>> | undefined}
               columns={columns as unknown as TableColumn<Record<string, unknown>>[]}
-              searchKey="reference"
-              searchPlaceholder="Rechercher une commande..."
+              query={query}
+              onQueryChange={setQuery}
+              exportPath="/api/portal/orders/export"
+              loading={isFetching}
+              statusOptions={ACTIVE_ORDER_STATUSES}
+              searchPlaceholder="Référence ou adresse…"
               emptyTitle="Aucune commande"
               emptyDescription="Vos commandes apparaîtront ici une fois passées."
             />

@@ -1,19 +1,7 @@
 import L from "leaflet";
 import type { Map as LeafletMap } from "leaflet";
-
-export interface MapFitPadding {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-const DEFAULT_FIT_PADDING: MapFitPadding = {
-  top: 80,
-  right: 80,
-  bottom: 120,
-  left: 80,
-};
+import { DEFAULT_FIT_PADDING, getMapLayoutPadding, type MapFitPadding } from "./map-layout-padding";
+export type { MapFitPadding } from "./map-layout-padding";
 
 export function getDispatchMapFitPadding(map: LeafletMap): MapFitPadding {
   const page = map.getContainer().closest("[data-dispatch-map-page]");
@@ -26,15 +14,7 @@ export function getDispatchMapFitPadding(map: LeafletMap): MapFitPadding {
   const pageRect = page.getBoundingClientRect();
   const panelRect = panel.getBoundingClientRect();
 
-  const left = Math.max(DEFAULT_FIT_PADDING.left, panelRect.right - pageRect.left + 24);
-  const top = Math.max(DEFAULT_FIT_PADDING.top, 72);
-
-  return {
-    top,
-    right: DEFAULT_FIT_PADDING.right,
-    bottom: DEFAULT_FIT_PADDING.bottom,
-    left,
-  };
+  return getMapLayoutPadding(pageRect, panelRect);
 }
 
 export function fitMapBoundsWithPadding(

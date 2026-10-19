@@ -5,6 +5,8 @@ import {
   getDriverMissions,
   getDriverStats,
 } from "@/domains/delivery/delivery.service";
+import { parseDispatchSettings } from "@/domains/company/dispatch-settings.service";
+import { isPodPhotoPathForDelivery } from "@/lib/storage/pod";
 
 export async function GET() {
   const auth = await requireDriverRole();
@@ -16,11 +18,22 @@ export async function GET() {
   }
 
   const driverId = auth.context.user.id;
+  const raw = (auth.context.user.company?.settings ?? {}) as Record<string, unknown>;
+  const dispatchSettings = parseDispatchSettings(raw.dispatchRules);
   const [missions, available, stats] = await Promise.all([
     getDriverMissions(driverId),
-    getAvailableDeliveriesForDriver(companyId),
+    getAvailableDeliveriesForDriver(companyId, dispatchSettings),
     getDriverStats(driverId),
   ]);
 
-  return NextResponse.json({ data: { missions, available, stats }, success: true });
+  const safeMissions = missions.map((mission) => {
+    const { podPhotoPath, ...safeMission } = mission;
+    return {
+      ...safeMission,
+      podPhotoUrl: podPhotoPath && isPodPhotoPathForDelivery(podPhotoPath, companyId, mission.id)
+        ? `/api/driver/missions/${encodeURIComponent(mission.id)}/proof` : null,
+    };
+  });
+
+  return NextResponse.json({ data: { missions: safeMissions, available, stats }, success: true });
 }

@@ -13,21 +13,28 @@ import type {
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "@/lib/validations/driver-location-settings";
 import type { PortalInvoice, PortalOrder } from "./types";
 import { QUERY_STALE_MS } from "@/lib/query/defaults";
+import type { OrderHistoryPage, OrderHistoryQuery } from "@/lib/query/order-history";
 
 export function usePortalDashboard() {
   return useQuery({
     queryKey: ["portal", "dashboard"],
     queryFn: portalApi.getDashboard,
     staleTime: QUERY_STALE_MS,
+    refetchInterval: QUERY_STALE_MS,
   });
 }
 
-export function usePortalOrders(history = false, initialData?: PortalOrder[]) {
+export function usePortalOrders(
+  query: OrderHistoryQuery,
+  initialData?: OrderHistoryPage<PortalOrder>
+) {
   return useQuery({
-    queryKey: ["portal", "orders", history ? "history" : "active"],
-    queryFn: () => portalApi.getOrders(history),
+    queryKey: ["portal", "orders", query],
+    queryFn: () => portalApi.getOrders(query),
     initialData,
     staleTime: QUERY_STALE_MS,
+    refetchInterval: QUERY_STALE_MS,
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -42,7 +49,10 @@ export function usePortalOrder(id: string) {
 export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateClientOrderInput) => portalApi.createOrder(data),
+    mutationFn: ({ data, idempotencyKey }: {
+      data: CreateClientOrderInput;
+      idempotencyKey: string;
+    }) => portalApi.createOrder(data, idempotencyKey),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["portal"] });
     },
@@ -233,6 +243,27 @@ export function usePortalSupportTickets() {
     queryKey: ["portal", "support"],
     queryFn: portalApi.getSupportTickets,
     staleTime: QUERY_STALE_MS,
+  });
+}
+
+export function usePortalSupportTicket(id: string) {
+  return useQuery({
+    queryKey: ["portal", "support", id],
+    queryFn: () => portalApi.getSupportTicket(id),
+    enabled: Boolean(id),
+    refetchInterval: 15_000,
+  });
+}
+
+export function useAddPortalSupportMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ticketId, body }: { ticketId: string; body: string }) =>
+      portalApi.addSupportMessage(ticketId, body),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["portal", "support"] });
+      qc.invalidateQueries({ queryKey: ["portal", "support", variables.ticketId] });
+    },
   });
 }
 

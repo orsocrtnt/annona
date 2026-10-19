@@ -76,12 +76,12 @@ export default function CompanyClientDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/dashboard/clients">
-          <Button variant="ghost" size="sm" className="mb-2 -ml-2">
+        <Button variant="ghost" size="sm" className="mb-2 -ml-2" asChild>
+          <Link href="/dashboard/clients">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Retour
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <h1 className="text-2xl font-semibold tracking-tight">
           {formatPersonNameByRole(client.firstName, client.lastName, "CLIENT")}
         </h1>

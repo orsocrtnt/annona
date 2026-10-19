@@ -9,7 +9,8 @@ import {
 } from "@/lib/demo/constants";
 import { getDemoPersonaCookie } from "@/lib/demo/persona-cookie";
 import { getDemoPersonaUser } from "@/domains/demo/demo-users.service";
-import { getCachedAuth } from "@/lib/api/auth-cache";
+import { getDemoSessionCompanyId } from "@/domains/demo/demo-session.service";
+import { isAccountActive } from "@/lib/auth/account-access";
 
 export interface DemoSessionInfo {
   isDemo: true;
@@ -33,21 +34,24 @@ export async function getDemoBaseAuthUser(
     authId = authUser.id;
   }
 
-  // Réutilise le cache posé par getServerAuth dans la même requête
-  const cached = getCachedAuth(authId);
-  const user = cached?.user ?? (await getUserByAuthId(authId));
-  if (!user?.company?.isDemo || !isDemoLoginEmail(user.email)) return null;
+  const user = await getUserByAuthId(authId);
+  if (!user || !isAccountActive(user) || !user.company?.isDemo || !isDemoLoginEmail(user.email)) return null;
   return user;
 }
 
 export async function resolveDemoActiveUser(
   baseUser: UserWithRole,
-  persona?: DemoPersona
+  persona?: DemoPersona,
+  sessionCompanyId?: string
 ): Promise<UserWithRole | null> {
   if (!baseUser.companyId || !baseUser.company?.isDemo) return baseUser;
 
   const activePersona = persona ?? (await getDemoPersonaCookie());
-  const personaUser = await getDemoPersonaUser(baseUser.companyId, activePersona);
+  const activeCompanyId = sessionCompanyId ?? (await getDemoSessionCompanyId());
+  const personaUser = await getDemoPersonaUser(
+    activeCompanyId ?? baseUser.companyId,
+    activePersona
+  );
   return personaUser ?? baseUser;
 }
 

@@ -28,15 +28,17 @@ export async function PATCH(
   }
 
   try {
-    await updateMiniAdminByAdmin(id, parsed.data, companyId, isSuperAdmin);
+    await updateMiniAdminByAdmin(id, parsed.data, companyId, auth.context.user.role.systemRole);
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN";
     const statusMap: Record<string, number> = {
+      MINI_ADMIN_MANAGEMENT_FORBIDDEN: 403,
       USER_NOT_FOUND: 404,
       ROLE_NOT_EDITABLE: 403,
     };
     const labels: Record<string, string> = {
+      MINI_ADMIN_MANAGEMENT_FORBIDDEN: "La gestion des mini-admins est réservée aux administrateurs principaux.",
       USER_NOT_FOUND: "Utilisateur introuvable.",
       ROLE_NOT_EDITABLE: "Seuls les mini-admins peuvent être modifiés ici.",
     };
@@ -67,26 +69,34 @@ export async function DELETE(
       id,
       auth.context.user.id,
       companyId,
-      isSuperAdmin
+      auth.context.user.role.systemRole
     );
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN";
     const statusMap: Record<string, number> = {
+      MINI_ADMIN_MANAGEMENT_FORBIDDEN: 403,
       USER_NOT_FOUND: 404,
       CANNOT_DELETE_SELF: 400,
       ROLE_NOT_DELETABLE: 403,
       DEMO_ACCOUNT_LOCKED: 403,
+      DRIVER_HAS_ACTIVE_DELIVERIES: 409,
     };
     const labels: Record<string, string> = {
+      MINI_ADMIN_MANAGEMENT_FORBIDDEN: "La gestion des mini-admins est réservée aux administrateurs principaux.",
       USER_NOT_FOUND: "Utilisateur introuvable.",
       CANNOT_DELETE_SELF: "Vous ne pouvez pas supprimer votre propre compte.",
       ROLE_NOT_DELETABLE: "Ce rôle ne peut pas être supprimé depuis cette page.",
       DEMO_ACCOUNT_LOCKED: "Ce compte fait partie de la démo et ne peut pas être supprimé.",
+      DRIVER_HAS_ACTIVE_DELIVERIES:
+        "Ce chauffeur a encore une mission active. Réaffectez ou terminez ses missions avant de le supprimer.",
     };
 
     return NextResponse.json(
-      { error: labels[message] ?? "Erreur lors de la suppression" },
+      {
+        error: labels[message] ?? "Erreur lors de la suppression",
+        ...(message === "DRIVER_HAS_ACTIVE_DELIVERIES" ? { code: message } : {}),
+      },
       { status: statusMap[message] ?? 500 }
     );
   }

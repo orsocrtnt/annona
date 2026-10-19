@@ -1,6 +1,7 @@
 import { getDriverMissionById } from "@/domains/delivery/delivery.service";
-import { geocodeAddress, formatAddressQuery } from "@/lib/geocoding";
+import { geocodeAddress, formatAddressQuery, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
+import { isValidCoordinate } from "@/lib/maps/provider-config";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
 
 export type DriverNavigationPoint = {
@@ -18,10 +19,12 @@ export type DriverMissionNavigation = {
   missionStartedAt: string | null;
   pickup: DriverNavigationPoint | null;
   pickups: DriverNavigationPoint[];
-  destination: DriverNavigationPoint;
+  destination: DriverNavigationPoint | null;
   target: DriverNavigationPoint | null;
   canNavigate: boolean;
   unavailableReason: string | null;
+  destinationQuery: string;
+  targetQuery: string | null;
 };
 
 function formatAddress(parts: (string | null | undefined)[]) {
@@ -35,7 +38,7 @@ function resolveNavigationTarget(
     missionStartedAt: Date | null;
   },
   pickup: DriverNavigationPoint | null,
-  destination: DriverNavigationPoint
+  destination: DriverNavigationPoint | null
 ): { target: DriverNavigationPoint | null; canNavigate: boolean; unavailableReason: string | null } {
   if (!mission.missionStartedAt) {
     return {
@@ -43,6 +46,11 @@ function resolveNavigationTarget(
       canNavigate: false,
       unavailableReason: "Démarrez la mission avant de lancer la navigation.",
     };
+  }
+
+  if ((mission.deliveryCategory === "COURIER" && mission.status === "ASSIGNED" && !pickup) ||
+      (!(mission.deliveryCategory === "COURIER" && mission.status === "ASSIGNED") && !destination)) {
+    return { target: null, canNavigate: false, unavailableReason: "Adresse non localisée : navigation indisponible. Réessayez plus tard ou ouvrez l’adresse dans une application externe." };
   }
 
   if (mission.deliveryCategory === "COURIER") {
@@ -78,8 +86,12 @@ function resolveNavigationTarget(
   };
 }
 
-export async function getDriverMissionNavigation(driverId: string, deliveryId: string) {
-  const mission = await getDriverMissionById(driverId, deliveryId);
+export async function getDriverMissionNavigation(
+  driverId: string,
+  companyId: string,
+  deliveryId: string
+) {
+  const mission = await getDriverMissionById(driverId, companyId, deliveryId);
   if (!mission) return null;
 
   const destinationAddress = formatAddress([
@@ -98,26 +110,29 @@ export async function getDriverMissionNavigation(driverId: string, deliveryId: s
   });
 
   const [destinationCoords, ...pickupCoordsList] = await Promise.all([
-    geocodeAddress({
+    (isValidCoordinate(mission.latitude, mission.longitude) && !isLegacyFakeTrackingCoord(mission.latitude, mission.longitude)
+      ? Promise.resolve({ lat: mission.latitude!, lng: mission.longitude! })
+      : geocodeAddress({
       address: mission.address,
       postalCode: mission.postalCode,
       city: mission.city,
+    })),
+    ...pickupStops.map((stop, index) => {
+      const stored = mission.order.stops.find(s => s.address === stop.address && s.city === stop.city && s.postalCode === stop.postalCode);
+      const lat = stored?.latitude ?? (index === 0 ? mission.pickupLatitude : null);
+      const lng = stored?.longitude ?? (index === 0 ? mission.pickupLongitude : null);
+      return isValidCoordinate(lat, lng) && !isLegacyFakeTrackingCoord(lat, lng)
+        ? Promise.resolve({ lat: lat!, lng: lng! })
+        : geocodeAddress({ address: stop.address, postalCode: stop.postalCode, city: stop.city });
     }),
-    ...pickupStops.map((stop) =>
-      geocodeAddress({
-        address: stop.address,
-        postalCode: stop.postalCode,
-        city: stop.city,
-      })
-    ),
   ]);
 
-  const destination: DriverNavigationPoint = {
+  const destination: DriverNavigationPoint | null = destinationCoords ? {
     latitude: destinationCoords.lat,
     longitude: destinationCoords.lng,
     address: destinationAddress,
     label: "Livraison",
-  };
+  } : null;
 
   const pickups: DriverNavigationPoint[] = pickupStops
     .map((stop, index) => {
@@ -132,7 +147,7 @@ export async function getDriverMissionNavigation(driverId: string, deliveryId: s
     })
     .filter((point): point is DriverNavigationPoint => point != null);
 
-  const pickup = pickups[0] ?? null;
+  const pickup = pickupCoordsList[0] ? pickups[0] ?? null : null;
 
   const { target, canNavigate, unavailableReason } = resolveNavigationTarget(
     mission,

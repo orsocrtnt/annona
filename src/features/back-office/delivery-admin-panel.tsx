@@ -1,18 +1,19 @@
 "use client";
 
+import { isPlannedTrackingEvent } from "@/domains/tracking/tracking.policy";
+import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
 import { useEffect, useState } from "react";
-import type { DeliveryStatus } from "@prisma/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FormField } from "@/components/ui/form-field";
-import { ADMIN_EDITABLE_STATUSES, getFulfillmentStatusLabel } from "@/lib/constants/order-status";
-import type { DeliveryCategory } from "@prisma/client";
-import { formatDate } from "@/lib/utils";
-import { useUpdateDelivery } from "./hooks";
+import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
 import { toast } from "sonner";
 import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ADMIN_EDITABLE_STATUSES, getFulfillmentStatusLabel } from "@/lib/constants/order-status";
+import { formatDate } from "@/lib/utils";
+import { useUpdateDelivery } from "./hooks";
 
 interface TrackingEvent {
   id: string;
@@ -26,6 +27,8 @@ interface DeliveryAdminPanelProps {
     id: string;
     reference: string;
     status: DeliveryStatus;
+    missionStartedAt?: string | null;
+    missionAcceptedAt?: string | null;
     address?: string;
     city?: string | null;
     postalCode?: string | null;
@@ -52,6 +55,10 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
     delivery.scheduledAt ? delivery.scheduledAt.slice(0, 16) : ""
   );
   const [reason, setReason] = useState("");
+  const isMissionInProgress =
+    Boolean(delivery.missionStartedAt) ||
+    delivery.status === "PURCHASING" ||
+    delivery.status === "IN_DELIVERY";
 
   useEffect(() => {
     setStatus(delivery.status);
@@ -76,7 +83,7 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
               ? null
               : undefined,
           unassignDriver: extra?.unassignDriver,
-          reason: reason || undefined,
+          reason: reason.trim() || undefined,
         },
       });
       setReason("");
@@ -89,17 +96,24 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
   };
 
   const handleCancel = async () => {
+    const cancellationReason = reason.trim();
+    if (isMissionInProgress && !cancellationReason) {
+      toast.error("Motif obligatoire", {
+        description: "Indiquez pourquoi la mission déjà démarrée doit être annulée.",
+      });
+      return;
+    }
     if (!confirm("Annuler cette livraison ? Cette action est visible par le client.")) return;
     try {
       await update.mutateAsync({
         deliveryId: delivery.id,
         data: {
           status: "CANCELLED",
-          reason: reason || "Annulée par l'administrateur",
+          reason: cancellationReason || "Annulée par l'administrateur",
         },
       });
       setReason("");
-      toast.success("Livraison annulée");
+      toast.success(isMissionInProgress ? "Mission annulée" : "Livraison annulée");
     } catch (error) {
       toast.error("Annulation impossible", {
         description: error instanceof Error ? error.message : undefined,
@@ -136,6 +150,13 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
         <CardTitle className="text-base">Gestion livraison — {delivery.reference}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+            <MissionAcknowledgement {...delivery} />
+        {isMissionInProgress && (
+          <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900">
+            La mission a démarré. Son annulation reste possible, mais un motif est obligatoire et sera
+            conservé dans l’historique.
+          </p>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Statut">
             <Select value={status} onValueChange={(v) => setStatus(v as DeliveryStatus)}>
@@ -143,9 +164,11 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ADMIN_EDITABLE_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {getFulfillmentStatusLabel(s, deliveryCategory)}
+                {ADMIN_EDITABLE_STATUSES.filter(
+                  (candidate) => candidate !== "ASSIGNED" && candidate !== "CANCELLED"
+                ).map((candidate) => (
+                  <SelectItem key={candidate} value={candidate}>
+                    {getFulfillmentStatusLabel(candidate, deliveryCategory)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -155,23 +178,35 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
             <Input
               type="datetime-local"
               value={scheduledAt}
-              onChange={(e) => setScheduledAt(e.target.value)}
+              onChange={(event) => setScheduledAt(event.target.value)}
             />
           </FormField>
           <FormField label="Adresse">
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Input value={address} onChange={(event) => setAddress(event.target.value)} />
           </FormField>
           <FormField label="Ville">
-            <Input value={city} onChange={(e) => setCity(e.target.value)} />
+            <Input value={city} onChange={(event) => setCity(event.target.value)} />
           </FormField>
           <FormField label="Code postal">
-            <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+            <Input value={postalCode} onChange={(event) => setPostalCode(event.target.value)} />
           </FormField>
-          <FormField label="Motif (optionnel)">
+          <FormField
+            label="Motif"
+            required={isMissionInProgress}
+            hint={
+              isMissionInProgress
+                ? "Obligatoire pour annuler une mission démarrée."
+                : "Optionnel pour une simple modification ou une annulation avant départ."
+            }
+          >
             <Input
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Raison de la modification..."
+              onChange={(event) => setReason(event.target.value)}
+              placeholder={
+                isMissionInProgress
+                  ? "Pourquoi annuler cette mission ?"
+                  : "Raison de la modification..."
+              }
             />
           </FormField>
         </div>
@@ -180,12 +215,8 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
           <Button variant="brand" loading={update.isPending} onClick={() => handleUpdate()}>
             Enregistrer les modifications
           </Button>
-          <Button
-            variant="destructive"
-            loading={update.isPending}
-            onClick={handleCancel}
-          >
-            Annuler la livraison
+          <Button variant="destructive" loading={update.isPending} onClick={handleCancel}>
+            {isMissionInProgress ? "Annuler la mission" : "Annuler la livraison"}
           </Button>
         </div>
 
@@ -212,13 +243,11 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
 function TrackingTimeline({ events }: { events: TrackingEvent[] }) {
   return (
     <ol className="space-y-3 border-l border-border pl-4">
-      {[...events].reverse().map((event) => (
+      {[...events].filter(event => !isPlannedTrackingEvent(event)).reverse().map((event) => (
         <li key={event.id} className="relative text-sm">
           <span className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-brand" />
           <p className="font-medium">{event.label}</p>
-          {event.description && (
-            <p className="text-muted-foreground">{event.description}</p>
-          )}
+          {event.description && <p className="text-muted-foreground">{event.description}</p>}
           <p className="text-xs text-muted-foreground">{formatDate(event.occurredAt)}</p>
         </li>
       ))}

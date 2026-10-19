@@ -8,8 +8,9 @@ import {
   type DemoPersona,
 } from "@/lib/demo/constants";
 import { setDemoPersonaCookie } from "@/lib/demo/persona-cookie";
-import { clearAuthCache } from "@/lib/api/auth-cache";
+import { isAccountActive } from "@/lib/auth/account-access";
 import { extractPermissionSlugs } from "@/domains/user/user.service";
+import { getDemoSessionCompanyId } from "@/domains/demo/demo-session.service";
 
 const bodySchema = z.object({
   persona: z.enum(["admin", "client", "driver"]),
@@ -27,13 +28,23 @@ export async function POST(request: Request) {
   }
 
   const persona = parsed.data.persona as DemoPersona;
-  const personaUser = await getDemoPersonaUser(baseUser.companyId, persona);
+  const sessionCompanyId = await getDemoSessionCompanyId();
+  if (!sessionCompanyId) {
+    return NextResponse.json(
+      { error: "Session de démonstration absente. Reconnectez-vous." },
+      { status: 409 }
+    );
+  }
+  const personaUser = await getDemoPersonaUser(sessionCompanyId, persona);
   if (!personaUser) {
     return NextResponse.json({ error: "Persona introuvable" }, { status: 404 });
   }
 
+  if (!isAccountActive(personaUser)) {
+    return NextResponse.json({ error: "Compte indisponible" }, { status: 403 });
+  }
+
   await setDemoPersonaCookie(persona);
-  clearAuthCache(baseUser.authId);
 
   return NextResponse.json({
     success: true,

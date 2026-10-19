@@ -67,12 +67,12 @@ function PortalDashboardView() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <PortalDashboardCustomizeButton onClick={() => setCustomizeOpen(true)} />
-          <Link href="/portal/orders/new">
-            <Button variant="brand">
+          <Button variant="brand" asChild>
+            <Link href="/portal/orders/new">
               <Plus className="mr-2 h-4 w-4" />
               Nouvelle commande
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -82,7 +82,8 @@ function PortalDashboardView() {
             Aucun bloc affiché. Cliquez sur{" "}
             <button
               type="button"
-              className="font-medium text-brand underline-offset-2 hover:underline"
+              aria-label="Personnaliser mon espace"
+              className="inline-flex min-h-6 min-w-6 items-center justify-center rounded font-medium text-brand underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               onClick={() => setCustomizeOpen(true)}
             >
               +

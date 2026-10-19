@@ -69,8 +69,8 @@ export function DeleteOrderButton({
           <DialogHeader>
             <DialogTitle>Supprimer {orderReference} ?</DialogTitle>
             <DialogDescription>
-              Cette action est irréversible. La commande, ses articles et les livraisons
-              associées seront définitivement supprimés.
+              Cette action est irréversible. La demande de devis et ses informations
+              préparatoires seront définitivement supprimées.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

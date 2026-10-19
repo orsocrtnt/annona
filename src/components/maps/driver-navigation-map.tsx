@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import { Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import { LeafletBaseMap } from "@/components/maps/leaflet-base-map";
+import { MAP_TILES } from "@/lib/maps/provider-config";
 import type { NavigationRoute } from "@/lib/maps/osrm-route";
 import type { LivePosition } from "@/features/driver/use-driver-live-position";
+import { MAP_ROUTE_STYLE, MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
 
 type DriverNavigationMapProps = {
   position: LivePosition | null;
@@ -16,7 +18,7 @@ type DriverNavigationMapProps = {
   onUserInteraction: () => void;
 };
 
-const NAV_ZOOM = 18;
+const NAV_ZOOM = Math.min(18, MAP_TILES.maxZoom);
 
 function MapNavigationFollow({
   position,
@@ -29,16 +31,18 @@ function MapNavigationFollow({
 }) {
   const map = useMap();
   const initialized = useRef(false);
+  const latitude = position?.latitude;
+  const longitude = position?.longitude;
 
   useEffect(() => {
-    if (!followDriver || !position) return;
+    if (!followDriver || latitude == null || longitude == null) return;
 
-    const latlng = L.latLng(position.latitude, position.longitude);
+    const latlng = L.latLng(latitude, longitude);
     const zoom = initialized.current ? map.getZoom() : NAV_ZOOM;
     const size = map.getSize();
     const projected = map.project(latlng, zoom);
 
-    const offsetY = size.y * 0.24;
+    const offsetY = -size.y * 0.08;
     const offsetPoint = L.point(projected.x, projected.y + offsetY);
     const center = map.unproject(offsetPoint, zoom);
 
@@ -48,7 +52,7 @@ function MapNavigationFollow({
     });
 
     initialized.current = true;
-  }, [followDriver, heading, map, position?.latitude, position?.longitude]);
+  }, [followDriver, heading, latitude, longitude, map]);
 
   return null;
 }
@@ -72,7 +76,7 @@ function createDriverIcon(heading: number | null) {
       transform-origin: center center;
     ">
       <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="10" fill="#2563eb" stroke="#ffffff" stroke-width="2.5"/>
+        <circle cx="12" cy="12" r="10" fill="${MAP_VISUAL_THEME.ink}" stroke="#ffffff" stroke-width="2.5"/>
         <path d="M12 6 L16 16 L12 13 L8 16 Z" fill="#ffffff"/>
       </svg>
     </div>`,
@@ -98,7 +102,7 @@ export function DriverNavigationMap({
   const driverIcon = useMemo(() => createDriverIcon(heading), [heading]);
 
   return (
-    <LeafletBaseMap fill variant="uber" center={center} zoom={NAV_ZOOM} className="h-full w-full">
+    <LeafletBaseMap fill navigation variant="uber" center={center} zoom={NAV_ZOOM} className="h-full w-full">
       <MapInteractionWatcher onUserInteraction={onUserInteraction} />
       <MapNavigationFollow position={position} heading={heading} followDriver={followDriver} />
 
@@ -106,11 +110,11 @@ export function DriverNavigationMap({
         <>
           <Polyline
             positions={route.polyline}
-            pathOptions={{ color: "#93c5fd", weight: 10, opacity: 0.55, lineCap: "round" }}
+            pathOptions={MAP_ROUTE_STYLE.halo}
           />
           <Polyline
             positions={route.polyline}
-            pathOptions={{ color: "#2563eb", weight: 6, opacity: 0.95, lineCap: "round" }}
+            pathOptions={{ ...MAP_ROUTE_STYLE.line, weight: 6 }}
           />
         </>
       )}
@@ -122,9 +126,9 @@ export function DriverNavigationMap({
             className: "",
             html: `<div style="
               width: 18px; height: 18px; border-radius: 9999px;
-              background: #ea580c; border: 3px solid white;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-            "></div>`,
+              background: ${MAP_VISUAL_THEME.surface}; border: 3px solid ${MAP_VISUAL_THEME.ink};
+              box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+            "><span style="display:block;width:6px;height:6px;margin:3px;border-radius:9999px;background:${MAP_VISUAL_THEME.ink};"></span></div>`,
             iconSize: [18, 18],
             iconAnchor: [9, 9],
           })}

@@ -2,8 +2,6 @@ import { prisma } from "@/services/prisma/client";
 import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 import {
-  DEMO_CLIENT_EMAIL,
-  DEMO_DRIVER_EMAIL,
   DEMO_FIXTURE_CLIENTS,
   DEMO_FIXTURE_DRIVERS,
   DEMO_LOGIN_EMAIL,
@@ -67,17 +65,20 @@ export async function getDemoPersonaUser(
     const admin = await prisma.user.findFirst({
       where: {
         companyId,
-        email: DEMO_LOGIN_EMAIL,
         role: { systemRole: "COMPANY_ADMIN" },
+        OR: [
+          { email: DEMO_LOGIN_EMAIL },
+          { authId: demoFixtureAuthId("admin", companyId) },
+        ],
       },
       include: userInclude,
     });
     return admin ? toUserWithRole(admin) : null;
   }
 
-  const email = persona === "client" ? DEMO_CLIENT_EMAIL : DEMO_DRIVER_EMAIL;
+  const authId = demoPersonaAuthId(persona, companyId);
   const user = await prisma.user.findFirst({
-    where: { companyId, email },
+    where: { companyId, authId },
     include: userInclude,
   });
   return user ? toUserWithRole(user) : null;
@@ -108,6 +109,23 @@ export function demoKeepEmails(): string[] {
     ...DEMO_FIXTURE_CLIENTS.map((client) => client.email),
     ...DEMO_FIXTURE_DRIVERS.map((driver) => driver.email),
   ].map((email) => email.toLowerCase());
+}
+
+export function demoRosterAuthIds(companyId: string): string[] {
+  return [
+    demoFixtureAuthId("admin", companyId),
+    ...DEMO_FIXTURE_CLIENTS.map((_, index) =>
+      demoFixtureAuthId(index === 0 ? "client" : `client-${index + 1}`, companyId)
+    ),
+    ...DEMO_FIXTURE_DRIVERS.map((_, index) =>
+      demoFixtureAuthId(index === 0 ? "driver" : `driver-${index + 1}`, companyId)
+    ),
+  ];
+}
+
+function scopedDemoEmail(email: string, companyId: string): string {
+  const [localPart, domain = "tutelliv.fr"] = email.toLowerCase().split("@");
+  return `${localPart}+session-${companyId}@${domain}`;
 }
 
 export function demoPersonaSeedUsers(companyId: string) {
@@ -181,6 +199,49 @@ export async function ensureDemoRosterUsers(companyId: string, adminAuthId?: str
       },
     });
   }
+}
+
+/** Roster sans compte Supabase, propre à une session de démonstration isolée. */
+export async function ensureDemoSessionRosterUsers(companyId: string) {
+  const seedUsers = demoPersonaSeedUsers(companyId).map((seed) => ({
+    ...seed,
+    email: scopedDemoEmail(seed.email, companyId),
+    authId:
+      seed.persona === "admin"
+        ? demoFixtureAuthId("admin", companyId)
+        : seed.authId,
+  }));
+  const roleSlugs = [...new Set(seedUsers.map((user) => user.roleSlug))];
+  const roles = await prisma.role.findMany({ where: { slug: { in: roleSlugs } } });
+  const roleBySlug = new Map(roles.map((role) => [role.slug, role]));
+
+  await Promise.all(seedUsers.map(async (seed) => {
+    const role = roleBySlug.get(seed.roleSlug);
+    if (!role) throw new Error(`Rôle ${seed.roleSlug} introuvable — lancez npm run db:seed`);
+    if (!seed.authId) throw new Error("DEMO_SESSION_AUTH_ID_MISSING");
+    await prisma.user.upsert({
+      where: { authId: seed.authId },
+      update: {
+        email: seed.email,
+        firstName: seed.firstName,
+        lastName: seed.lastName,
+        phone: seed.phone,
+        roleId: role.id,
+        companyId,
+        status: "ACTIVE",
+      },
+      create: {
+        authId: seed.authId,
+        email: seed.email,
+        firstName: seed.firstName,
+        lastName: seed.lastName,
+        phone: seed.phone,
+        roleId: role.id,
+        companyId,
+        status: "ACTIVE",
+      },
+    });
+  }));
 }
 
 export function roleSlugForPersona(persona: DemoPersona): string {

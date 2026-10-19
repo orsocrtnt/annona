@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getServerAuth } from "@/lib/api/server-auth";
-import { getDemoBaseAuthUser } from "@/domains/demo/demo-auth.service";
 import { demoPersonaForRole, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 
 export async function GET() {
@@ -11,8 +10,7 @@ export async function GET() {
       return NextResponse.json({ user: null, permissions: [], demo: null });
     }
 
-    const baseUser = await getDemoBaseAuthUser(auth.authId);
-    const demo = baseUser
+    const demo = auth.isDemoSession
       ? {
           isDemo: true as const,
           persona: demoPersonaForRole(auth.user.role.systemRole),

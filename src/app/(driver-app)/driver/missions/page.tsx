@@ -40,7 +40,7 @@ export default function DriverMissionsPage() {
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Missions</h1>
         <p className="text-sm text-muted-foreground">
-          Vos missions assignées par le dispatch. Démarrez-en plusieurs en parallèle si besoin.
+          Confirmez la prise en charge des missions affectées, puis démarrez quand vous êtes prêt.
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export default function DriverMissionsPage() {
               <div>
                 <h2 className="text-sm font-medium">Assignées</h2>
                 <p className="text-xs text-muted-foreground">
-                  Démarrez quand vous êtes prêt
+                  Confirmez la prise en charge avant le départ
                 </p>
               </div>
               {assignedMissions.map((mission) => (
@@ -85,7 +85,7 @@ export default function DriverMissionsPage() {
               <div>
                 <h2 className="text-sm font-medium">Disponibles</h2>
                 <p className="text-xs text-muted-foreground">
-                  Missions à prendre en charge ({availableMissions.length})
+                  Missions à vous affecter ({availableMissions.length})
                 </p>
               </div>
               {availableMissions.map((mission) => (

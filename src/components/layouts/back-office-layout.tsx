@@ -1,4 +1,5 @@
 "use client";
+import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -43,6 +44,8 @@ export function BackOfficeLayout({
         {!mapFullscreen && <Header breadcrumbs={breadcrumbs} />}
         {mapFullscreen ? (
           <main
+            id="main-content"
+            tabIndex={-1}
             data-map-main=""
             className="fixed right-0 bottom-0 z-0 overflow-hidden transition-[left,top] duration-300 ease-in-out"
             style={{
@@ -53,8 +56,8 @@ export function BackOfficeLayout({
             {children}
           </main>
         ) : (
-          <main className="flex-1 p-4 max-md:px-3 max-md:py-4 lg:p-6">
-            <div className="mx-auto max-w-7xl">{children}</div>
+          <main id="main-content" tabIndex={-1} className="flex-1 p-4 max-md:px-3 max-md:py-4 lg:p-6">
+            <div className="mx-auto max-w-7xl"><OrderMessagesInbox enableDispatchTargets />{children}</div>
           </main>
         )}
       </div>

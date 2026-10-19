@@ -6,6 +6,11 @@ import { billingSettingsApi } from "@/features/back-office/billing-settings-api"
 import { driverApi } from "@/features/driver/api";
 import { fetchAdminOverview } from "@/features/admin/api";
 import { QUERY_STALE_MS } from "@/lib/query/defaults";
+import type { OrderHistoryQuery } from "@/lib/query/order-history";
+
+const COMPANY_ORDERS_QUERY: OrderHistoryQuery = { page: 1, pageSize: 50 };
+const ACTIVE_PORTAL_ORDERS_QUERY: OrderHistoryQuery = { page: 1, pageSize: 50, history: false };
+const PORTAL_ORDER_HISTORY_QUERY: OrderHistoryQuery = { page: 1, pageSize: 50, history: true };
 
 type RoutePrefetch = {
   queryKey: readonly unknown[];
@@ -39,12 +44,12 @@ const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
     queryFn: portalApi.getDashboard,
   },
   "/portal/orders": {
-    queryKey: ["portal", "orders", "active"],
-    queryFn: () => portalApi.getOrders(false),
+    queryKey: ["portal", "orders", ACTIVE_PORTAL_ORDERS_QUERY],
+    queryFn: () => portalApi.getOrders(ACTIVE_PORTAL_ORDERS_QUERY),
   },
   "/portal/orders/history": {
-    queryKey: ["portal", "orders", "history"],
-    queryFn: () => portalApi.getOrders(true),
+    queryKey: ["portal", "orders", PORTAL_ORDER_HISTORY_QUERY],
+    queryFn: () => portalApi.getOrders(PORTAL_ORDER_HISTORY_QUERY),
   },
   "/portal/recurring": {
     queryKey: ["portal", "recurring"],
@@ -75,8 +80,8 @@ const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
     queryFn: () => backOfficeApi.getAnalytics(30),
   },
   "/dashboard/orders": {
-    queryKey: ["company", "orders"],
-    queryFn: backOfficeApi.getOrders,
+    queryKey: ["company", "orders", COMPANY_ORDERS_QUERY],
+    queryFn: () => backOfficeApi.getOrders(COMPANY_ORDERS_QUERY),
   },
   "/dashboard/clients": {
     queryKey: ["company", "clients"],
@@ -85,6 +90,10 @@ const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
   "/dashboard/drivers": {
     queryKey: ["company", "drivers"],
     queryFn: backOfficeApi.getDrivers,
+  },
+  "/support": {
+    queryKey: ["company", "support"],
+    queryFn: backOfficeApi.getSupportTickets,
   },
   "/dispatch": {
     queryKey: ["company", "dispatch", "overview"],

@@ -35,11 +35,33 @@ export const ADMIN_EDITABLE_STATUSES: OrderStatus[] = [
   "PURCHASING",
   "IN_DELIVERY",
   "DELIVERED",
-  "INVOICED",
-  "PAID",
   "CANCELLED",
   "FAILED",
 ];
+
+const SPECIAL_MISSION_QUOTE_STATUSES: OrderStatus[] = [
+  "QUOTE_REQUESTED",
+  "PENDING",
+  "CANCELLED",
+];
+
+/**
+ * Une demande de mission spéciale n'est pas encore une livraison. Tant que
+ * l'accord a lieu hors TutelLiv, l'administration peut seulement la conserver,
+ * la convertir manuellement après accord ou l'annuler.
+ */
+export function getAdminEditableOrderStatuses(
+  currentStatus: OrderStatus,
+  deliveryCategory?: DeliveryCategory | null
+): OrderStatus[] {
+  if (
+    currentStatus === "QUOTE_REQUESTED" &&
+    deliveryCategory === "SPECIAL_MISSION"
+  ) {
+    return SPECIAL_MISSION_QUOTE_STATUSES;
+  }
+  return ADMIN_EDITABLE_STATUSES.filter((status) => status !== "ASSIGNED");
+}
 
 /** Statuts modifiables par le chauffeur */
 export const DRIVER_EDITABLE_STATUSES: OrderStatus[] = [

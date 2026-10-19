@@ -22,6 +22,7 @@ interface PurchaseValidationDialogProps {
   description: string;
   confirmLabel: string;
   loading?: boolean;
+  feedbackMessage?: string | null;
   onConfirm: (items: { id: string; unitPrice: number }[]) => void;
 }
 
@@ -33,6 +34,7 @@ export function PurchaseValidationDialog({
   description,
   confirmLabel,
   loading,
+  feedbackMessage,
   onConfirm,
 }: PurchaseValidationDialogProps) {
   const [prices, setPrices] = useState<Record<string, string>>({});
@@ -64,7 +66,7 @@ export function PurchaseValidationDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(next) => { if (!loading) onOpenChange(next); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -106,6 +108,7 @@ export function PurchaseValidationDialog({
           </p>
         </div>
 
+        {feedbackMessage && <p role={loading ? "status" : "alert"} aria-live="polite" className="text-sm text-muted-foreground">{feedbackMessage}</p>}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Annuler

@@ -1,131 +1,53 @@
-# RBAC — Role-Based Access Control
+# Contrôle d'accès TutelLiv
 
-## Architecture
-
-```
-User → Role → RolePermission → Permission
-                (many-to-many)
-```
+État de référence : 16 octobre 2026.
 
 ## Rôles système
 
-| Rôle | Slug | Niveau | Dashboard |
-|------|------|--------|-----------|
-| Super Admin | `super-admin` | 100 | `/admin` |
-| Administrateur | `company-admin` | 80 | `/dashboard` |
-| Dispatcher | `dispatcher` | 60 | `/dispatch` |
-| Chauffeur | `driver` | 40 | `/driver` |
-| Client | `client` | 20 | `/portal` |
+| Rôle | Espace principal | Périmètre |
+|---|---|---|
+| `SUPER_ADMIN` | `/admin` | plateforme ; peut être sans entreprise |
+| `COMPANY_ADMIN` | `/dashboard` | administration complète de son entreprise |
+| `MINI_ADMIN` | `/dashboard` | modules explicitement délégués dans son entreprise |
+| `DISPATCHER` | `/dispatch` | exploitation et affectation dans son entreprise |
+| `DRIVER` | `/driver` | missions auxquelles il est actuellement autorisé |
+| `CLIENT` | `/portal` | ses commandes, livraisons, factures et tickets |
+
+La hiérarchie facilite certains affichages, mais une valeur plus élevée n'accorde pas automatiquement toutes les permissions. Les gardes utilisent les rôles admis et les permissions requises.
 
 ## Permissions
 
-Format : `{resource}:{action}`
+Le format est `{ressource}:{action}`. Les ressources déclarées sont : `users`, `companies`, `deliveries`, `orders`, `drivers`, `vehicles`, `analytics`, `settings`, `dashboard`, `invoices` et `support`.
 
-### Ressources
+Les permissions exactes et leurs affectations initiales se trouvent dans `prisma/seed.ts`. Un mini-administrateur reçoit seulement les modules choisis par l'administrateur principal ; l'absence de réglage n'accorde rien.
 
-| Resource | Description |
-|----------|-------------|
-| `users` | Gestion utilisateurs |
-| `companies` | Gestion entreprises |
-| `deliveries` | Livraisons |
-| `orders` | Commandes |
-| `drivers` | Chauffeurs |
-| `vehicles` | Véhicules |
-| `analytics` | Analytics |
-| `settings` | Paramètres |
-| `dashboard` | Accès dashboards |
+## Défenses appliquées
 
-### Actions
+1. `src/middleware.ts` protège les préfixes et maintient la session Supabase.
+2. `src/lib/permissions/route-guards.ts` définit les rôles et permissions des espaces.
+3. Les gardes API résolvent l'utilisateur courant et refusent compte/entreprise suspendus.
+4. Chaque service ajoute les frontières d'entreprise et de ressource.
+5. Les composants masquent les actions indisponibles pour éviter une fausse affordance.
 
-| Action | Description |
-|--------|-------------|
-| `read` | Lecture |
-| `create` | Création |
-| `update` | Modification |
-| `delete` | Suppression |
-| `manage` | Gestion complète |
-| `dispatch` | Dispatch |
-| `admin/company/dispatcher/driver/client` | Accès dashboard |
+Le niveau 5 améliore l'expérience ; seuls les niveaux serveur protègent les données.
 
-## Matrice des permissions
+## Règles particulières
 
-| Permission | Super Admin | Company Admin | Dispatcher | Driver | Client |
-|-----------|:-----------:|:-------------:|:----------:|:------:|:------:|
-| users:read | ✅ | ✅ | ❌ | ❌ | ❌ |
-| users:create | ✅ | ✅ | ❌ | ❌ | ❌ |
-| users:update | ✅ | ✅ | ❌ | ❌ | ❌ |
-| users:delete | ✅ | ✅ | ❌ | ❌ | ❌ |
-| companies:read | ✅ | ✅ | ❌ | ❌ | ❌ |
-| companies:create | ✅ | ❌ | ❌ | ❌ | ❌ |
-| companies:update | ✅ | ✅ | ❌ | ❌ | ❌ |
-| companies:delete | ✅ | ❌ | ❌ | ❌ | ❌ |
-| deliveries:read | ✅ | ✅ | ✅ | ✅ | ✅ |
-| deliveries:create | ✅ | ✅ | ✅ | ❌ | ❌ |
-| deliveries:update | ✅ | ✅ | ✅ | ✅ | ❌ |
-| deliveries:delete | ✅ | ✅ | ❌ | ❌ | ❌ |
-| deliveries:dispatch | ✅ | ✅ | ✅ | ❌ | ❌ |
-| orders:read | ✅ | ✅ | ✅ | ❌ | ✅ |
-| orders:create | ✅ | ✅ | ✅ | ❌ | ❌ |
-| orders:update | ✅ | ✅ | ✅ | ❌ | ❌ |
-| drivers:read | ✅ | ✅ | ✅ | ❌ | ❌ |
-| drivers:manage | ✅ | ✅ | ❌ | ❌ | ❌ |
-| vehicles:read | ✅ | ✅ | ✅ | ❌ | ❌ |
-| vehicles:manage | ✅ | ✅ | ❌ | ❌ | ❌ |
-| analytics:read | ✅ | ✅ | ❌ | ❌ | ❌ |
-| settings:read | ✅ | ✅ | ❌ | ❌ | ❌ |
-| settings:update | ✅ | ✅ | ❌ | ❌ | ❌ |
-| dashboard:admin | ✅ | ❌ | ❌ | ❌ | ❌ |
-| dashboard:company | ❌ | ✅ | ❌ | ❌ | ❌ |
-| dashboard:dispatcher | ❌ | ❌ | ✅ | ❌ | ❌ |
-| dashboard:driver | ❌ | ❌ | ❌ | ✅ | ❌ |
-| dashboard:client | ❌ | ❌ | ❌ | ❌ | ✅ |
+- Le super-administrateur est le seul rôle de plateforme.
+- Seul un administrateur principal ou super-administrateur gère la délégation mini-admin ; un mini-admin ne peut pas augmenter ses propres droits.
+- Le support interne accepte `COMPANY_ADMIN`, `DISPATCHER` et `MINI_ADMIN`; ce dernier doit avoir `support:read`.
+- Les factures utilisent `invoices:read/create/update`, séparées des permissions de commande.
+- Un client doit appartenir à la commande et à l'entreprise ; une correspondance d'e-mail seule n'autorise rien.
+- Un chauffeur est réévalué après réaffectation. Une ancienne affectation ne conserve pas l'accès aux messages, au suivi ou à la preuve.
+- Les fichiers de preuve restent privés ; une URL signée n'est créée qu'après autorisation.
 
-## Implémentation
+## Ajouter ou modifier un accès
 
-### Middleware (`src/middleware.ts`)
+1. Définir la permission dans `prisma/seed.ts` et, si nécessaire, la ressource/action dans `src/lib/permissions/rbac.ts`.
+2. Mettre à jour la garde de route et la garde API.
+3. Ajouter les filtres `companyId` et ressource dans le service, avant toute lecture ou écriture.
+4. Adapter la navigation et l'interface.
+5. Tester autorisation légitime, rôle voisin, entreprise B, ressource réaffectée et compte suspendu.
+6. Si la base change, suivre `DATABASE.md` et vérifier RLS/droits publics.
 
-- Vérifie la session Supabase
-- Redirige les routes protégées vers `/login`
-- Redirige les utilisateurs connectés hors des pages auth
-
-### Route Guards (`src/lib/permissions/route-guards.ts`)
-
-```typescript
-const ROUTE_GUARDS = [
-  { path: "/admin", allowedRoles: ["SUPER_ADMIN"], requiredPermissions: ["dashboard:admin"] },
-  { path: "/dashboard", allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN"], ... },
-  // ...
-];
-```
-
-### Client-side
-
-```typescript
-// Hook
-const { can, isRole, hasMinimumRole } = usePermissions();
-can("deliveries:create"); // true/false
-
-// Composant
-<PermissionGate permissions="users:read" roles={["COMPANY_ADMIN"]}>
-  <UserList />
-</PermissionGate>
-```
-
-### Server-side
-
-```typescript
-import { hasPermission } from "@/lib/permissions/rbac";
-const permissions = await getUserPermissions(authId);
-if (!hasPermission(permissions, "deliveries:create")) {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-}
-```
-
-## Extension
-
-Pour ajouter une permission :
-
-1. Ajouter dans `prisma/seed.ts` → `PERMISSIONS`
-2. Assigner aux rôles dans `ROLE_PERMISSIONS`
-3. Ajouter le route guard si nécessaire
-4. Utiliser `PermissionGate` ou `usePermissions` côté client
+Les recettes de référence sont les tests `account-access`, `mini-admin`, `permissions`, `tenant-boundaries` et la suite connectée TEST-2.

@@ -9,6 +9,8 @@ export async function GET(
 ) {
   const auth = await requireDriverRole();
   if ("error" in auth) return auth.error;
+  const companyId = auth.context.user.companyId;
+  if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
 
   const { id } = await params;
   const { searchParams } = new URL(request.url);
@@ -34,6 +36,7 @@ export async function GET(
 
   const result = await checkDriverMissionProximity(
     auth.context.user.id,
+    companyId,
     id,
     kind as ProximityTargetKind,
     overridePosition

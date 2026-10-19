@@ -11,6 +11,7 @@ import { ChevronLeft, ChevronRight, Search, ArrowUpDown } from "lucide-react";
 import { EmptyState } from "./empty-state";
 import { Skeleton } from "./skeleton";
 import type { TableColumn } from "@/types";
+import { getHighlightedPage } from "@/lib/table/data-grid-focus";
 
 interface DataGridProps<T> {
   data: T[];
@@ -20,12 +21,16 @@ interface DataGridProps<T> {
   searchKey?: keyof T;
   pageSize?: number;
   paginate?: boolean;
+  showResultCount?: boolean;
   loading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
   className?: string;
   tableClassName?: string;
   onRowClick?: (row: T) => void;
+  getRowId?: (row: T) => string;
+  highlightedRowId?: string | null;
+  highlightedRowLabel?: string;
 }
 
 export function DataGrid<T extends Record<string, unknown>>({
@@ -36,17 +41,28 @@ export function DataGrid<T extends Record<string, unknown>>({
   searchKey,
   pageSize = 10,
   paginate = true,
+  showResultCount = true,
   loading = false,
   emptyTitle = "Aucune donnée",
   emptyDescription = "Aucun élément à afficher pour le moment.",
   className,
   tableClassName,
   onRowClick,
+  getRowId,
+  highlightedRowId,
+  highlightedRowLabel = "Élément ciblé",
 }: DataGridProps<T>) {
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(0);
   const [sortKey, setSortKey] = React.useState<string | null>(null);
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const highlightedRowRef = React.useRef<HTMLTableRowElement | null>(null);
+  const lastFocusedRowId = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (!highlightedRowId) return;
+    setSearch("");
+  }, [highlightedRowId]);
 
   const filtered = React.useMemo(() => {
     let result = [...data];
@@ -68,9 +84,42 @@ export function DataGrid<T extends Record<string, unknown>>({
   }, [data, search, searchKey, sortKey, sortDir]);
 
   const totalPages = paginate ? Math.ceil(filtered.length / pageSize) : 1;
-  const paginated = paginate
-    ? filtered.slice(page * pageSize, (page + 1) * pageSize)
-    : filtered;
+  const targetPage = React.useMemo(
+    () =>
+      getHighlightedPage(
+        getRowId ? filtered.map(getRowId) : [],
+        highlightedRowId,
+        pageSize
+      ),
+    [filtered, getRowId, highlightedRowId, pageSize]
+  );
+
+  React.useEffect(() => {
+    if (paginate && targetPage !== null) setPage(targetPage);
+  }, [paginate, targetPage]);
+
+  const paginated = React.useMemo(
+    () =>
+      paginate
+        ? filtered.slice(page * pageSize, (page + 1) * pageSize)
+        : filtered,
+    [filtered, page, pageSize, paginate]
+  );
+  const highlightedVisible = Boolean(
+    highlightedRowId && getRowId && paginated.some((row) => getRowId(row) === highlightedRowId)
+  );
+
+  React.useEffect(() => {
+    if (!highlightedRowId) {
+      lastFocusedRowId.current = null;
+      return;
+    }
+    if (!highlightedVisible) return;
+    if (lastFocusedRowId.current === highlightedRowId) return;
+    highlightedRowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    highlightedRowRef.current?.focus({ preventScroll: true });
+    lastFocusedRowId.current = highlightedRowId;
+  }, [highlightedRowId, highlightedVisible]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -105,6 +154,7 @@ export function DataGrid<T extends Record<string, unknown>>({
         <div className="relative w-full max-w-sm max-md:max-w-none">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            aria-label={searchPlaceholder}
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => {
@@ -128,7 +178,10 @@ export function DataGrid<T extends Record<string, unknown>>({
                     <TableHead key={String(col.key)} className={getColumnClassName(col)}>
                       {col.sortable ? (
                         <button
-                          className="inline-flex items-center gap-1 hover:text-foreground"
+                          type="button"
+                          aria-label={`Trier par ${col.header}${sortKey === String(col.key) ? `, ordre ${sortDir === "asc" ? "croissant" : "décroissant"}` : ""}`}
+                          aria-pressed={sortKey === String(col.key)}
+                          className="inline-flex min-h-6 min-w-6 items-center gap-1 rounded px-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                           onClick={() => handleSort(String(col.key))}
                         >
                           {col.header}
@@ -142,10 +195,22 @@ export function DataGrid<T extends Record<string, unknown>>({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginated.map((row, i) => (
+                {paginated.map((row, i) => {
+                  const rowId = getRowId?.(row);
+                  const highlighted = Boolean(rowId && rowId === highlightedRowId);
+                  return (
                   <TableRow
-                    key={i}
-                    className={onRowClick ? "cursor-pointer" : undefined}
+                    key={rowId ?? i}
+                    ref={highlighted ? highlightedRowRef : undefined}
+                    tabIndex={highlighted ? -1 : undefined}
+                    aria-current={highlighted ? "true" : undefined}
+                    aria-label={highlighted ? highlightedRowLabel : undefined}
+                    data-highlighted={highlighted ? "true" : undefined}
+                    className={cn(
+                      onRowClick && "cursor-pointer",
+                      highlighted &&
+                        "bg-zinc-50 shadow-[inset_4px_0_0_#111111] outline-none ring-2 ring-inset ring-black"
+                    )}
                     onClick={() => onRowClick?.(row)}
                   >
                     {columns.map((col) => (
@@ -156,7 +221,8 @@ export function DataGrid<T extends Record<string, unknown>>({
                       </TableCell>
                     ))}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -176,6 +242,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  aria-label="Page précédente"
                   disabled={page === 0}
                   onClick={() => setPage((p) => p - 1)}
                 >
@@ -187,6 +254,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  aria-label="Page suivante"
                   disabled={page >= totalPages - 1}
                   onClick={() => setPage((p) => p + 1)}
                 >
@@ -195,7 +263,7 @@ export function DataGrid<T extends Record<string, unknown>>({
               </div>
             </div>
           ) : (
-            filtered.length > 0 && (
+            showResultCount && filtered.length > 0 && (
               <p className="text-sm text-muted-foreground">
                 {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
               </p>

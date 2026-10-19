@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { prefetchRouteQueries } from "@/lib/navigation/nav-query-prefetch";
@@ -20,41 +20,10 @@ export function useNavQueryPrefetch(href: string) {
   }, [queryClient, href, router]);
 
   return {
-    prefetch: true as const,
+    // Le survol/focus exprime une intention ; éviter le fan-out automatique du menu.
+    prefetch: false as const,
     onMouseEnter: prefetch,
     onFocus: prefetch,
     onPointerDown: prefetch,
   };
-}
-
-/** Précharge le menu dès que le layout est affiché (idle). */
-export function usePrefetchNavHrefs(hrefs: readonly string[]) {
-  const router = useRouter();
-  const key = hrefs.join("|");
-
-  useEffect(() => {
-    const routes = key.split("|").filter(Boolean);
-    let cancelled = false;
-
-    const run = () => {
-      if (cancelled) return;
-      for (const href of routes) {
-        router.prefetch(href);
-      }
-    };
-
-    if (typeof requestIdleCallback === "function") {
-      const idleId = requestIdleCallback(run, { timeout: 1200 });
-      return () => {
-        cancelled = true;
-        cancelIdleCallback(idleId);
-      };
-    }
-
-    const timeoutId = window.setTimeout(run, 200);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-    };
-  }, [key, router]);
 }

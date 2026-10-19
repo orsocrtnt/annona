@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -232,7 +233,7 @@ export default function ClientSupportPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="rounded-lg border border-border p-4">
+              <div id={`ticket-${ticket.id}`} key={ticket.id} className="rounded-lg border border-border p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium">{ticket.subject}</p>
@@ -243,6 +244,12 @@ export default function ClientSupportPage() {
                         Livraison {ticket.relatedDelivery.reference}
                       </p>
                     )}
+                    <Link
+                      href={`/portal/support/${ticket.id}`}
+                      className="mt-2 inline-flex text-sm font-medium text-brand hover:underline"
+                    >
+                      Voir l’échange et répondre
+                    </Link>
                   </div>
                   <TicketStatusBadge status={ticket.status} />
                 </div>

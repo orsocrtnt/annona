@@ -1,7 +1,5 @@
 import type { NavigationRouteStep } from "@/lib/maps/osrm-route";
 import {
-  buildManeuverInstruction,
-  computeBearing,
   formatDistance,
   haversineMeters,
 } from "@/lib/maps/navigation-utils";

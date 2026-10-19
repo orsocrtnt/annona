@@ -1,4 +1,5 @@
 "use client";
+import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -6,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavQueryPrefetch, usePrefetchNavHrefs } from "@/hooks/use-nav-query-prefetch";
+import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { getInitials } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
@@ -79,6 +80,7 @@ function PortalNavLink({
   return (
     <Link
       href={item.href}
+      aria-current={isActive ? "page" : undefined}
       {...prefetchHandlers}
       className={cn(
         "flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
@@ -96,10 +98,10 @@ function PortalNavLink({
 
 function PortalNav({ compact = false, overlay = false }: { compact?: boolean; overlay?: boolean }) {
   const pathname = usePathname();
-  usePrefetchNavHrefs(navItems.map((item) => item.href));
 
   return (
     <nav
+      aria-label="Navigation de l'espace client"
       className={cn(
         "flex gap-1 overflow-x-auto rounded-xl border p-1",
         overlay
@@ -130,7 +132,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
         className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:calc(4rem+1.5rem+2.875rem)] max-md:[--portal-chrome:calc(3.5rem+0.75rem+2.25rem)]"
         data-portal-map-page
       >
-        <main className="absolute inset-0 z-0">{children}</main>
+        <main id="main-content" tabIndex={-1} className="absolute inset-0 z-0"><OrderMessagesInbox />{children}</main>
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
           <div className="pointer-events-auto">
@@ -154,7 +156,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
 
       <div className="mx-auto max-w-6xl px-4 py-6 max-md:px-3 max-md:py-4 lg:px-6">
         <PortalNav />
-        <div>{children}</div>
+        <main id="main-content" tabIndex={-1}><OrderMessagesInbox />{children}</main>
       </div>
     </div>
   );

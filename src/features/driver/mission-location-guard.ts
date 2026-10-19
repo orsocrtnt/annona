@@ -1,5 +1,5 @@
 import { driverApi } from "@/features/driver/api";
-import { getCurrentDriverPosition, type ProximityTargetKind } from "@/lib/maps/driver-proximity";
+import { getCurrentDriverPosition, type DriverPosition, type ProximityTargetKind } from "@/lib/maps/driver-proximity";
 
 export type LocationGuardBlock = {
   kind: ProximityTargetKind;
@@ -7,8 +7,8 @@ export type LocationGuardBlock = {
 };
 
 export type LocationGuardResult =
-  | { proceed: true }
-  | { proceed: false; block: LocationGuardBlock };
+  | { proceed: true; position: DriverPosition | null }
+  | { proceed: false; block: LocationGuardBlock; position: DriverPosition | null };
 
 export async function checkMissionLocationProximity(
   missionId: string,
@@ -23,11 +23,12 @@ export async function checkMissionLocationProximity(
   );
 
   if (serverCheck.near) {
-    return { proceed: true };
+    return { proceed: true, position: browserPosition };
   }
 
   return {
     proceed: false,
+    position: browserPosition,
     block: {
       kind,
       distanceMeters: serverCheck.distanceMeters,

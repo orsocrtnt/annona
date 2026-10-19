@@ -6,6 +6,8 @@ export class DriverApiError extends Error {
   code?: string;
   kind?: ProximityTargetKind;
   distanceMeters?: number | null;
+  status?: number;
+  retryable?: boolean;
 
   constructor(message: string, extras?: Partial<DriverApiError>) {
     super(message);
@@ -37,7 +39,7 @@ export type DriverMissionNavigation = {
     longitude: number;
     address: string;
     label: string;
-  };
+  } | null;
   target: {
     latitude: number;
     longitude: number;
@@ -46,10 +48,21 @@ export type DriverMissionNavigation = {
   } | null;
   canNavigate: boolean;
   unavailableReason: string | null;
+  destinationQuery: string;
+  targetQuery: string | null;
 };
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
+  let res: Response;
+  try {
+    res = await fetch(url, options);
+  } catch (error) {
+    if (error instanceof DriverApiError) throw error;
+    throw new DriverApiError(
+      "Connexion interrompue. L’action sera conservée puis renvoyée automatiquement.",
+      { status: 0, retryable: true }
+    );
+  }
   const text = await res.text();
   let json: {
     data?: T;
@@ -64,7 +77,8 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
       json = JSON.parse(text) as typeof json;
     } catch {
       throw new DriverApiError(
-        res.ok ? "Réponse serveur invalide" : `Erreur serveur (${res.status})`
+        res.ok ? "Réponse serveur invalide" : `Erreur serveur (${res.status})`,
+        { status: res.status, retryable: res.status >= 500 }
       );
     }
   }
@@ -74,10 +88,35 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
       code: json.code,
       kind: json.kind,
       distanceMeters: json.distanceMeters,
+      status: res.status,
+      retryable: res.status === 408 || res.status === 425 || res.status === 429 || res.status >= 500,
     });
   }
 
   return json.data as T;
+}
+
+export const PROXIMITY_WAIT_MS = 8_000;
+
+export async function checkProximityWithTimeout(url: string): Promise<MissionProximityResult> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout>;
+  try {
+    return await Promise.race([
+      fetchJson<MissionProximityResult>(url, { signal: controller.signal }),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new DriverApiError("La vérification prend trop de temps. Vérifiez votre connexion puis réessayez. Aucune confirmation n’a été envoyée."));
+          controller.abort();
+        }, PROXIMITY_WAIT_MS);
+      }),
+    ]);
+  } catch (error) {
+    if (error instanceof DriverApiError) throw error;
+    throw new DriverApiError("Impossible de vérifier la proximité. Vérifiez votre connexion puis réessayez.");
+  } finally {
+    clearTimeout(timer!);
+  }
 }
 
 export const driverApi = {
@@ -98,12 +137,16 @@ export const driverApi = {
       params.set("latitude", String(position.latitude));
       params.set("longitude", String(position.longitude));
     }
-    return fetchJson<MissionProximityResult>(`/api/driver/missions/${id}/proximity?${params}`);
+    return checkProximityWithTimeout(`/api/driver/missions/${id}/proximity?${params}`);
   },
   claimDelivery: (id: string) =>
     fetchJson<DriverMission>(`/api/driver/deliveries/${id}/claim`, { method: "POST" }),
-  startMission: (id: string) =>
-    fetchJson<DriverMission>(`/api/driver/missions/${id}/start`, { method: "POST" }),
+  acknowledgeMission: (id: string, input: { action: "accept" | "decline"; expectedUpdatedAt: string; reason?: string }) =>
+    fetchJson<DriverMission>(`/api/driver/missions/${id}/acknowledgement`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input),
+    }),
+  startMission: (id: string, expectedUpdatedAt: string) =>
+    fetchJson<DriverMission>(`/api/driver/missions/${id}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expectedUpdatedAt }) }),
   updateMissionStatus: (
     id: string,
     status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED",

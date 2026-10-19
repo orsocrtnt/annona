@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
 import { createClient } from "@/services/supabase/server";
 import {
   syncUserFromSupabase,
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!authUser?.email) {
+    if (!authUser?.email || !authUser.email_confirmed_at) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       companyName: metadata.company_name,
     });
 
+    assertAccountActive(user);
     const permissions = await getUserPermissions(authUser.id);
 
     return NextResponse.json({
@@ -41,6 +43,9 @@ export async function POST(request: Request) {
       redirectTo: getDashboardPathForRole(user.role.systemRole, user.settings),
     });
   } catch (error) {
+    if (error instanceof AccountUnavailableError) {
+      return NextResponse.json({ error: "Compte ou entreprise indisponible. Contactez votre administrateur." }, { status: 403 });
+    }
     if (error instanceof UserNotProvisionedError) {
       return NextResponse.json(
         {

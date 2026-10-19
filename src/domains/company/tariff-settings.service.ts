@@ -9,7 +9,7 @@ export const DEFAULT_TARIFF_SETTINGS: CompanyTariffSettings = {
   tariffFees: [],
 };
 
-function parseTariffSettings(raw: unknown): CompanyTariffSettings {
+export function parseTariffSettings(raw: unknown): CompanyTariffSettings {
   const stored = (raw ?? {}) as Partial<CompanyTariffSettings>;
   return {
     tariffZones: stored.tariffZones ?? DEFAULT_TARIFF_SETTINGS.tariffZones,

@@ -107,6 +107,7 @@ export function PickupStopItemsFields({
               type="button"
               variant="ghost"
               size="icon-sm"
+              aria-label={`Supprimer l'article ${index + 1} de la collecte`}
               className="mb-0.5 shrink-0"
               onClick={() => remove(index)}
             >

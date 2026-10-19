@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import { assertAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
 import { loginSchema } from "@/lib/validations/auth";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { createClient } from "@/services/supabase/server";
-import { createAdminClient } from "@/services/supabase/admin";
 import {
   syncUserFromSupabase,
   getDashboardPathForRole,
@@ -11,17 +11,11 @@ import {
 import type { AccountType } from "@/domains/auth/auth.service";
 import {
   extractPermissionSlugs,
-  getUserByAuthId,
 } from "@/domains/user/user.service";
 import { isDemoLoginEmail, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { setDemoPersonaCookie } from "@/lib/demo/persona-cookie";
 import { resolveDemoActiveUser } from "@/domains/demo/demo-auth.service";
-import { resetDemoScenario } from "@/domains/demo/demo-scenario.service";
-import { provisionDemoEnvironment } from "@/domains/demo/demo-provision.service";
-
-function isDemoPersonasMissing(error: unknown): boolean {
-  return error instanceof Error && error.message === "DEMO_PERSONAS_MISSING";
-}
+import { ensureDemoSessionForLogin } from "@/domains/demo/demo-session.service";
 
 export async function POST(request: Request) {
   try {
@@ -41,32 +35,11 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
-    let { data: signInData, error: signInError } =
+    const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
       });
-
-    if (signInError) {
-      const code = (signInError as { code?: string }).code;
-      if (code === "email_not_confirmed") {
-        const admin = createAdminClient();
-        const { data: listed } = await admin.auth.admin.listUsers({ perPage: 1000 });
-        const authUser = listed?.users.find(
-          (u) => u.email?.toLowerCase() === normalizedEmail
-        );
-        if (authUser) {
-          await admin.auth.admin.updateUserById(authUser.id, {
-            email_confirm: true,
-          });
-          ({ data: signInData, error: signInError } =
-            await supabase.auth.signInWithPassword({
-              email: normalizedEmail,
-              password,
-            }));
-        }
-      }
-    }
 
     if (signInError || !signInData.user?.email) {
       return NextResponse.json(
@@ -76,6 +49,10 @@ export async function POST(request: Request) {
     }
 
     const authUser = signInData.user;
+    if (!authUser.email_confirmed_at) {
+      await supabase.auth.signOut({ scope: "local" });
+      return NextResponse.json({ error: "Confirmez votre adresse e-mail avant de vous connecter." }, { status: 403 });
+    }
     const metadata = authUser.user_metadata as Record<string, string>;
     const resolvedAccountType =
       accountType ??
@@ -91,79 +68,26 @@ export async function POST(request: Request) {
       companyName: metadata.company_name,
     });
 
+    assertAccountActive(user);
     const isDemoAccount = isDemoLoginEmail(authUser.email!);
 
     if (isDemoAccount) {
-      let companyId = user.companyId;
-      let isDemoCompany = user.company?.isDemo === true;
-
-      // Demo email on a non-demo / incomplete company → (re)provision then reload user.
-      if (!companyId || !isDemoCompany) {
-        console.warn(
-          "Demo login missing demo company; provisioning environment",
-          { companyId, isDemoCompany }
+      // La connexion reprend la démo ; seule l'action explicite de l'utilisateur
+      // peut réinitialiser ses données. Aucun seed ni reconstruction au login.
+      if (!user.companyId || !user.company?.isDemo) {
+        return NextResponse.json(
+          { error: "Environnement de démo incomplet. Contactez votre administrateur." },
+          { status: 503 }
         );
-        try {
-          await provisionDemoEnvironment();
-          const refreshed = await getUserByAuthId(authUser.id);
-          if (refreshed) user = refreshed;
-          companyId = user.companyId;
-          isDemoCompany = user.company?.isDemo === true;
-        } catch (provisionError) {
-          console.error("Demo provision on login failed:", provisionError);
-          return NextResponse.json(
-            {
-              error:
-                "Environnement de démo incomplet. Lancez `npm run db:seed-demo` puis réessayez.",
-            },
-            { status: 500 }
-          );
-        }
       }
 
-      if (companyId && isDemoCompany) {
-        try {
-          const loginAt = new Date();
-          await resetDemoScenario(companyId, loginAt);
-        } catch (resetError) {
-          if (isDemoPersonasMissing(resetError)) {
-            try {
-              console.warn("Demo personas missing on login; re-provisioning");
-              await provisionDemoEnvironment();
-              const refreshed = await getUserByAuthId(authUser.id);
-              if (refreshed) user = refreshed;
-              companyId = user.companyId ?? companyId;
-              if (companyId) {
-                await resetDemoScenario(companyId, new Date());
-              }
-            } catch (retryError) {
-              console.error("Demo reset retry after provision failed:", retryError);
-              return NextResponse.json(
-                {
-                  error:
-                    "Environnement de démo incomplet. Lancez `npm run db:seed-demo` puis réessayez.",
-                },
-                { status: 500 }
-              );
-            }
-          } else {
-            console.error("Demo reset on login failed:", resetError);
-            return NextResponse.json(
-              {
-                error:
-                  "Impossible de réinitialiser l'environnement de démo. Réessayez dans un instant.",
-              },
-              { status: 500 }
-            );
-          }
-        }
-      }
-
+      const sessionCompanyId = await ensureDemoSessionForLogin(user.companyId);
       await setDemoPersonaCookie("admin");
-      const personaUser = await resolveDemoActiveUser(user, "admin");
+      const personaUser = await resolveDemoActiveUser(user, "admin", sessionCompanyId);
       if (personaUser) user = personaUser;
     }
 
+    assertAccountActive(user);
     const permissions = extractPermissionSlugs(user);
 
     return NextResponse.json({
@@ -179,6 +103,9 @@ export async function POST(request: Request) {
         : null,
     });
   } catch (error) {
+    if (error instanceof AccountUnavailableError) {
+      return NextResponse.json({ error: "Compte ou entreprise indisponible. Contactez votre administrateur." }, { status: 403 });
+    }
     if (error instanceof UserNotProvisionedError) {
       return NextResponse.json(
         {

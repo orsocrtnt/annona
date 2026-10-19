@@ -61,6 +61,7 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
     "analytics:read",
     "settings:read", "settings:update",
     "invoices:read", "invoices:create", "invoices:update",
+    "support:read",
     "dashboard:company",
   ],
   DISPATCHER: [
@@ -68,6 +69,7 @@ const ROLE_PERMISSIONS: Record<SystemRole, string[]> = {
     "orders:read", "orders:create", "orders:update",
     "drivers:read",
     "vehicles:read",
+    "support:read",
     "dashboard:dispatcher",
   ],
   MINI_ADMIN: [

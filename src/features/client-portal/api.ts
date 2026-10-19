@@ -9,6 +9,11 @@ import type { CreateClientOrderInput, CreateRecurringOrderInput, UpdateRecurring
 import type { CustomerAddressInput } from "@/lib/validations/address";
 import type { CreateSupportTicketInput } from "@/lib/validations/support";
 import type { ClientSettingsInput } from "@/lib/validations/settings";
+import {
+  orderHistorySearchParams,
+  type OrderHistoryPage,
+  type OrderHistoryQuery,
+} from "@/lib/query/order-history";
 
 async function fetchPortal<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(path, options);
@@ -23,13 +28,18 @@ async function fetchPortal<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const portalApi = {
   getDashboard: () => fetchPortal<import("./types").PortalDashboardStats>("/api/portal/dashboard"),
-  getOrders: (history = false) =>
-    fetchPortal<import("./types").PortalOrder[]>(`/api/portal/orders${history ? "?history=true" : ""}`),
+  getOrders: (query: OrderHistoryQuery) =>
+    fetchPortal<OrderHistoryPage<import("./types").PortalOrder>>(
+      `/api/portal/orders?${orderHistorySearchParams(query)}`
+    ),
   getOrder: (id: string) => fetchPortal<import("./types").PortalOrder>(`/api/portal/orders/${id}`),
-  createOrder: (data: CreateClientOrderInput) =>
+  createOrder: (data: CreateClientOrderInput, idempotencyKey: string) =>
     fetchPortal<import("./types").PortalOrder>("/api/portal/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+      },
       body: JSON.stringify(data),
     }),
   estimateCourier: (data: {

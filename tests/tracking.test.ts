@@ -1,0 +1,149 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
+import { z } from "zod";
+import { updateDriverDeliveryStatusSchema } from "../src/lib/validations/delivery";
+import { syncTrackingDetail } from "../src/lib/tracking/cache";
+import * as policy from "../src/domains/tracking/tracking.policy";
+import { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema } from "../src/lib/validations/driver-location-settings";
+const now = new Date("2026-10-12T12:00:00Z");
+const mission = { status: "IN_DELIVERY", missionStartedAt: new Date(+now - 60000), completedAt: null as Date | null };
+const driver = { status: "ACTIVE", settings: { trackingService: { active: true, startedAt: new Date(+now - 120000).toISOString() } }, driverLocation: { latitude: 45, longitude: 3, accuracy: 8, updatedAt: new Date(+now - 10000) } };
+test("TRACK-1 : service explicite, valeurs absentes ou malformées fermées", () => {
+  for (const settings of [null, {}, { trackingService: { active: true } }, { trackingService: { active: "true", startedAt: now.toISOString() } }]) assert.equal(policy.trackingService(settings).active, false);
+  assert.equal(policy.trackingService(driver.settings).active, true);
+});
+test("TRACK-1 : position fraîche datée, précision conservée, frontière exacte de péremption sans coordonnées", () => {
+  assert.equal(policy.trackingPosition(mission, driver, 45, now).state, "FRESH");
+  const expired = policy.trackingPosition(mission, driver, 10, now); assert.equal(expired.state, "STALE"); assert.equal(expired.latitude, null); assert.equal(expired.updatedAt, driver.driverLocation.updatedAt.toISOString());
+});
+test("TRACK-1 : mission affectée sans départ et états terminaux ne révèlent aucune position", () => {
+  for (const status of ["PENDING", "ASSIGNED"]) assert.equal(policy.trackingPosition({ ...mission, status, missionStartedAt: null }, driver, 45, now).state, "NOT_STARTED");
+  for (const status of ["DELIVERED", "FAILED", "CANCELLED", "INVOICED", "PAID"]) { const p = policy.trackingPosition({ ...mission, status }, driver, 45, now); assert.equal(p.state, "ENDED"); assert.equal(p.latitude, null); assert.equal(p.updatedAt, null); }
+  assert.equal(policy.trackingPosition({ ...mission, completedAt: now }, driver, 45, now).state, "ENDED");
+});
+test("TRACK-1 : arrêt service ou compte, ancien signal, signal futur et absence sont explicites", () => {
+  for (const d of [null, { ...driver, settings: {} }, { ...driver, status: "SUSPENDED" }]) assert.equal(policy.trackingPosition(mission, d, 45, now).state, "OFF_DUTY");
+  for (const d of [{ ...driver, driverLocation: null }, { ...driver, driverLocation: { ...driver.driverLocation, updatedAt: new Date(+now - 70000) } }, { ...driver, driverLocation: { ...driver.driverLocation, updatedAt: new Date(+now + 1) } }, { ...driver, settings: { trackingService: { active: true, startedAt: now.toISOString() } } }]) assert.equal(policy.trackingPosition(mission, d, 180, now).state, "ABSENT");
+});
+test("TRACK-1 : chronologie stable, étapes prévues exclues, aucune coordonnée ni champ interne", () => {
+  const rows = ["Livraison", "Collecte 1", "Collecté", "Mission démarrée"].map((label, i) => ({ id: String(4-i), label, description: null, occurredAt: now, latitude: 45, secret: "x" }));
+  const timeline = policy.trackingTimeline(rows); assert.deepEqual(timeline.map(r => r.label), ["Mission démarrée", "Collecté"]); assert.ok(!JSON.stringify(timeline).includes("latitude")); assert.ok(!JSON.stringify(timeline).includes("secret"));
+});
+class ConversationError extends Error { constructor(public status: number, message: string) { super(message); } }
+function moduleAt(path: string, deps: Record<string, unknown>) {
+  const module = { exports: {} };
+  runInNewContext(ts.transpileModule(readFileSync(path, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module, exports: module.exports, Date, Error, console, require: (id: string) => { assert.ok(id in deps, id); return deps[id]; } });
+  return module.exports as any;
+}
+function fixture() {
+  const calls: any[] = [];
+  let user: any = { ...driver, companyId: "a", updatedAt: new Date(1), settings: { ...driver.settings, other: { preserve: true }, miniAdmin: { modules: ["orders"] } } };
+  let order: any = { id: "o", reference: "CMD", status: "IN_DELIVERY", deliveryCategory: "STANDARD", updatedAt: now, company: { settings: {} }, deliveries: [{ id: "d", ...mission, reference: "LIV", driverId: "driver", driverName: "Responsable", deliveryCategory: "STANDARD", updatedAt: now, missionAcceptedAt: null, driver: user, trackingEvents: [{ id: "e", label: "Livré", description: null, occurredAt: now, latitude: 1 }] }] };
+  let foundMission: any = { id: "d", updatedAt: now }; let claim = 1;
+  const db: any = {
+    user: { findFirst: async (args: any) => { calls.push(["user", args]); return user; }, updateMany: async (args: any) => { calls.push(["userUpdate", args]); return { count: claim }; } },
+    order: { findFirst: async (args: any) => { calls.push(["order", args]); return order; } },
+    delivery: { findFirst: async (args: any) => { calls.push(["mission", args]); return foundMission; }, updateMany: async (args: any) => { calls.push(["missionUpdate", args]); return { count: claim }; } },
+    driverLocation: { deleteMany: async (args: any) => { calls.push(["deleteLocation", args]); }, upsert: async (args: any) => { calls.push(["location", args]); return { updatedAt: now }; } },
+  };
+  const deps = { "@/services/prisma/client": { prisma: db }, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(db), conversationScope: (actor: any) => ({ companyId: actor.companyId, ...(actor.role === "CLIENT" ? { customerId: actor.id } : {}) }) }, "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s }, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema }, "./tracking.policy": policy, "@/domains/tracking/tracking.policy": policy, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s } };
+  return { service: moduleAt("src/domains/tracking/tracking.service.ts", deps), location: moduleAt("src/domains/driver/driver-location.service.ts", deps), calls, user, order, noUser: () => { user = null; }, noOrder: () => { order = null; }, noMission: () => { foundMission = null; }, conflict: () => { claim = 0; } };
+}
+const actor = { id: "client", companyId: "a", role: "CLIENT", permissions: ["dashboard:client"] };
+test("TRACK-1 service : commande et enfants limités entreprise/client ; chauffeur enfants affectés seulement", async () => {
+  const f = fixture(); await f.service.getOrderTracking(actor, "o"); const q = f.calls.find(c => c[0] === "order")[1]; assert.equal(q.where.customerId, "client"); assert.equal(q.where.companyId, "a"); assert.equal(q.select.deliveries.where.customerId, "client"); assert.equal(q.select.deliveries.where.companyId, "a");
+  f.calls.length = 0; await f.service.getOrderTracking({ ...actor, role: "DRIVER", id: "driver" }, "o"); assert.equal(f.calls.find(c => c[0] === "order")[1].select.deliveries.where.driverId, "driver");
+});
+test("TRACK-1 service : projection minimale, conducteur autre entreprise masqué, commande inexistante 404", async () => {
+  const f = fixture(); f.order.deliveries[0].driver.companyId = "b";
+  const data = await f.service.getOrderTracking(actor, "o"); assert.equal(data.deliveries[0].position.state, "OFF_DUTY"); assert.ok(!JSON.stringify(data).includes("settings")); assert.ok(!JSON.stringify(data).includes("latitude\":1"));
+  f.noOrder(); await assert.rejects(f.service.getOrderTracking(actor, "o"), (e: any) => e.status === 404);
+});
+test("TRACK-1 service : fusion des réglages, version et suppression ancienne position, rejeu idempotent", async () => {
+  const f = fixture(); await f.service.setDriverService("driver", "a", false);
+  const update = f.calls.find(c => c[0] === "userUpdate")[1]; assert.equal(update.where.updatedAt, f.user.updatedAt); assert.equal(update.data.settings.other.preserve, true); assert.equal(update.data.settings.miniAdmin.modules[0], "orders"); assert.equal(update.data.settings.trackingService.active, false); assert.equal(f.calls.filter(c => c[0] === "deleteLocation").length, 1);
+  f.calls.length = 0; await f.service.setDriverService("driver", "a", true); assert.equal(f.calls.filter(c => c[0] === "userUpdate").length, 0);
+});
+test("TRACK-1 service : conflit de version n’efface pas de position, utilisateur hors périmètre refusé", async () => {
+  const f = fixture(); f.conflict(); await assert.rejects(f.service.setDriverService("driver", "a", false), (e: any) => e.status === 409); assert.ok(!f.calls.some(c => c[0] === "deleteLocation")); f.noUser(); await assert.rejects(f.service.getDriverService("driver", "b"), (e: any) => e.status === 404);
+});
+test("TRACK-1 publication : état DB courant et mission démarrée exigés, hors service aucune écriture", async () => {
+  const f = fixture(); f.user.settings.trackingService.active = false; await assert.rejects(f.location.upsertDriverLocation("driver", "a", { latitude: 45, longitude: 3 }), (e: any) => e.status === 409); assert.ok(!f.calls.some(c => c[0] === "location"));
+  f.user.settings.trackingService.active = true; f.noMission(); await assert.rejects(f.location.upsertDriverLocation("driver", "a", { latitude: 45, longitude: 3 }), (e: any) => e.status === 409);
+  const q = f.calls.find(c => c[0] === "mission")[1]; assert.equal(q.where.companyId, "a"); assert.equal(q.where.completedAt, null); assert.equal(q.where.missionStartedAt.not, null);
+});
+test("TRACK-1 publication : verrou mission puis utilisateur, versions inchangées, conflit sans upsert", async () => {
+  const f = fixture(); await f.location.upsertDriverLocation("driver", "a", { latitude: 45, longitude: 3 });
+  assert.ok(f.calls.findIndex(c => c[0] === "missionUpdate") < f.calls.findIndex(c => c[0] === "userUpdate")); assert.equal(f.calls.find(c => c[0] === "userUpdate")[1].data.updatedAt, f.user.updatedAt);
+  f.calls.length = 0; f.conflict(); await assert.rejects(f.location.upsertDriverLocation("driver", "a", { latitude: 45, longitude: 3 }), (e: any) => e.status === 409); assert.ok(!f.calls.some(c => c[0] === "location"));
+});
+test("TRACK-1 route : auth refusée sans lecture, dossier absent 404, succès non mis en cache", async () => {
+  let auth: any = { error: new Response(null, { status: 401 }) }, called = 0, missing = false;
+  const route = moduleAt("src/app/api/tracking/[id]/route.ts", { "next/server": { NextResponse: Response }, "@/lib/api/conversation-auth": { conversationAuth: async () => auth }, "@/domains/order-conversation/order-conversation.service": { ConversationError }, "@/domains/tracking/tracking.service": { getOrderTracking: async () => { called++; if (missing) throw new ConversationError(404, "Commande introuvable."); return {}; } } });
+  const context = { params: Promise.resolve({ id: "o" }) }; assert.equal((await route.GET(new Request("http://localhost"), context)).status, 401); assert.equal(called, 0); auth = { actor }; missing = true; assert.equal((await route.GET(new Request("http://localhost"), context)).status, 404); missing = false; const r = await route.GET(new Request("http://localhost"), context); assert.equal(r.headers.get("cache-control"), "private, no-store");
+});
+
+test("TRACK-1 route service : identité authentifiée imposée, corps strict, aucune écriture invalide", async () => {
+  let called = 0; const calls: any[] = [];
+  const route = moduleAt("src/app/api/driver/service/route.ts", { "next/server": { NextResponse: Response }, zod: { z }, "@/lib/api/auth-guard": { requireDriverRole: async () => ({ context: { user: { id: "current", companyId: "a" } } }) }, "@/domains/order-conversation/order-conversation.service": { ConversationError }, "@/domains/tracking/tracking.service": { getDriverService: async (...args: any[]) => { calls.push(args); return { active: false }; }, setDriverService: async (...args: any[]) => { called++; calls.push(args); return { active: true }; } } });
+  for (const body of [{ active: true, driverId: "other" }, { active: "true" }, {}]) assert.equal((await route.POST(new Request("http://localhost", { method: "POST", body: JSON.stringify(body) }))).status, 400);
+  assert.equal(called, 0); assert.equal((await route.GET()).status, 200); assert.equal(calls[0][0], "current");
+  assert.equal((await route.POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ active: true }) }))).status, 200); assert.equal(calls[1][0], "current"); assert.equal(calls[1][1], "a");
+});
+
+test("TRACK-1 carte chauffeurs : destination ne devient jamais position, signal autorisé seul fait marqueur", async () => {
+  let locations: any[] = [];
+  let missingDestination = false;
+  const service = moduleAt("src/domains/delivery/dispatch-map.service.ts", {
+    "@/services/prisma/client": { prisma: { user: { findMany: async () => [{ id: "driver", firstName: "D", lastName: "A" }] }, delivery: { findMany: async () => [{ id: "d", reference: "LIV", driverId: "driver", status: "IN_DELIVERY", deliveryCategory: "STANDARD", address: "Destination", latitude: missingDestination ? null : 48, longitude: missingDestination ? null : 2, companyId: "a", driverName: "Driver", missionStartedAt: new Date(0), missionAcceptedAt: new Date(0), completedAt: null, createdAt: now, driver: null, customer: null, order: { id: "o", customer: null, customerEmail: null, items: [], stops: [] }, trackingEvents: [{ id: "e", label: "Contrôle", description: null, latitude: 45, longitude: 3, occurredAt: now }] }] } } },
+    "@/domains/delivery/delivery.service": { repairCourierDeliveryIfNeeded: async () => {} },
+    "@/domains/driver/driver-location.service": { getCompanyDriverLocations: async () => locations },
+    "@/domains/company/location-settings.service": { getCompanyLocationSettings: async () => DEFAULT_DRIVER_LOCATION_SETTINGS },
+    "@/domains/tracking/tracking.policy": policy,
+    "@/lib/geocoding": { geocodeManyCapped: async () => new Map(), isLegacyFakeTrackingCoord: () => false },
+    "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s },
+    "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS },
+    "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s, formatClientFromParts: () => "Client" },
+  });
+  const adminMap = await service.getDispatchMapDeliveries("a"); assert.equal(adminMap.deliveries[0].trackingSteps[0].latitude, 45);
+  const clientMap = await service.getClientDeliveriesMap("client", "a"); assert.equal(clientMap.active[0].trackingSteps[0].latitude, null); assert.equal(clientMap.history[0].trackingSteps[0].longitude, null);
+  const absent = await service.getDispatchDriversMap("a"); assert.equal(absent.drivers[0].latitude, null); assert.equal(absent.points.filter((p: any) => p.kind === "driver").length, 0); assert.equal(absent.points.filter((p: any) => p.kind === "destination").length, 1);
+  locations = [{ id: "driver", latitude: 45, longitude: 3, updatedAt: now.toISOString(), positionState: "FRESH" }];
+  const fresh = await service.getDispatchDriversMap("a"); assert.equal(fresh.drivers[0].latitude, 45); assert.equal(fresh.points.find((p: any) => p.kind === "driver").latitude, 45); assert.equal(fresh.drivers[0].updatedAt, now.toISOString());
+  missingDestination = true;
+  const degraded = await service.getDispatchMapDeliveries("a");
+  assert.equal(degraded.deliveries.length, 1); assert.equal(degraded.deliveries[0].destination, null);
+  assert.equal(degraded.points.filter((p: any) => p.kind === "destination").length, 0);
+  const degradedClient = await service.getClientDeliveriesMap("client", "a"); assert.equal(degradedClient.active[0].destination, null);
+  const degradedDrivers = await service.getDispatchDriversMap("a"); assert.equal(degradedDrivers.drivers[0].inTransit, 1);
+  assert.equal(degradedDrivers.drivers[0].missions[0].latitude, null); assert.equal(degradedDrivers.points.filter((p: any) => p.kind === "destination").length, 0);
+});
+
+test("TRACK-1 transition : statut ASSIGNED exclu des entrées, 400 avant service de mutation", async () => {
+  let mutations = 0;
+  const route = moduleAt("src/app/api/driver/missions/[id]/route.ts", {
+    "next/server": { NextResponse: Response },
+    "@/lib/api/auth-guard": { requireDriverRole: async () => ({ context: { user: { id: "driver", companyId: "a" } } }) },
+    "@/services/prisma/client": { prisma: { delivery: { findFirst: async () => ({ companyId: "a" }) } } },
+    "@/domains/delivery/delivery.service": { updateDeliveryStatusByDriver: async () => { mutations++; } },
+    "@/lib/validations/delivery": { updateDriverDeliveryStatusSchema },
+    "@/domains/delivery/driver-proximity.service": { DriverProximityError: Error },
+    "@/lib/storage/pod": {}, "@/lib/pod/codes": {},
+  });
+  const response = await route.PATCH(new Request("http://localhost", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "ASSIGNED" }) }), { params: Promise.resolve({ id: "d" }) });
+  assert.equal(response.status, 400); assert.equal(mutations, 0);
+});
+
+test("TRACK-1 cache : en-tête et historique logistiques synchronisés sans prix/preuve/coordonnées perdus", () => {
+  const current = { id: "o", status: "ASSIGNED", updatedAt: new Date(1).toISOString(), totalAmount: "79.90", deliveries: [{ id: "d", status: "ASSIGNED", updatedAt: new Date(1).toISOString(), driverName: "Ancien", podPhotoUrl: "signed", trackingEvents: [{ id: "e", label: "Action", occurredAt: now.toISOString(), latitude: 45 }, { id: "p", label: "Livraison" }] }] };
+  const data = { orderId: "o", status: "IN_DELIVERY", updatedAt: now.toISOString(), deliveries: [{ id: "d", status: "IN_DELIVERY", updatedAt: now.toISOString(), driverName: "Nouveau", missionAcceptedAt: null, missionStartedAt: now.toISOString(), completedAt: null, timeline: [{ id: "e", label: "Action", description: null, occurredAt: now.toISOString() }] }] };
+  const next = syncTrackingDetail(current, data, "order") as typeof current;
+  assert.equal(next.status, "IN_DELIVERY"); assert.equal(next.deliveries[0]!.driverName, "Nouveau"); assert.equal(next.totalAmount, "79.90"); assert.equal(next.deliveries[0]!.podPhotoUrl, "signed"); assert.equal(next.deliveries[0]!.trackingEvents.length, 1); assert.equal(next.deliveries[0]!.trackingEvents[0]!.latitude, 45); assert.ok(!("missionStartedAt" in next.deliveries[0]!));
+  assert.equal(syncTrackingDetail(undefined, data, "order"), undefined);
+  const unrelated = { ...current, id: "other" }; assert.equal(syncTrackingDetail(unrelated, data, "order"), unrelated);
+  const newer = { ...current, updatedAt: new Date(+now+1).toISOString(), status: "DELIVERED", deliveries: current.deliveries.map(d => ({ ...d, updatedAt: new Date(+now+1).toISOString() })) };
+  assert.equal(syncTrackingDetail(newer, data, "order"), newer);
+});

@@ -53,6 +53,8 @@ export async function estimateCourierPrice(
     geocodeAddress(input.shipping),
   ]);
 
+  if (!from || !to) return { enabled: true, amount: null, distanceKm: null };
+
   const distanceKm = Math.round(haversineKm(from, to) * ROAD_FACTOR * 10) / 10;
 
   let price = courier.basePrice + Math.max(0, distanceKm - courier.freeKmIncluded) * courier.pricePerKm;

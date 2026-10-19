@@ -115,30 +115,30 @@ function QuickActionsWidget() {
         <CardTitle className="text-base">Raccourcis</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
-        <Link href="/portal/orders/new">
-          <Button variant="brand" className="w-full justify-start">
+        <Button variant="brand" className="w-full justify-start" asChild>
+          <Link href="/portal/orders/new">
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle commande
-          </Button>
-        </Link>
-        <Link href="/portal/orders">
-          <Button variant="outline" className="w-full justify-start">
+          </Link>
+        </Button>
+        <Button variant="outline" className="w-full justify-start" asChild>
+          <Link href="/portal/orders">
             <Package className="mr-2 h-4 w-4" />
             Mes commandes
-          </Button>
-        </Link>
-        <Link href="/portal/deliveries">
-          <Button variant="outline" className="w-full justify-start">
+          </Link>
+        </Button>
+        <Button variant="outline" className="w-full justify-start" asChild>
+          <Link href="/portal/deliveries">
             <Truck className="mr-2 h-4 w-4" />
             Livraisons
-          </Button>
-        </Link>
-        <Link href="/portal/recurring">
-          <Button variant="outline" className="w-full justify-start">
+          </Link>
+        </Button>
+        <Button variant="outline" className="w-full justify-start" asChild>
+          <Link href="/portal/recurring">
             <RefreshCw className="mr-2 h-4 w-4" />
             Récurrences
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   );

@@ -13,32 +13,19 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createUserSchema, type CreateUserInput } from "@/lib/validations/user";
-import { MINI_ADMIN_MODULE_IDS } from "@/lib/permissions/mini-admin";
+import { canManageMiniAdmins } from "@/lib/permissions/mini-admin";
+import { usePermissions } from "@/hooks/use-permissions";
 import { MiniAdminModulesField } from "./mini-admin-modules-field";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import type { SystemRole } from "@prisma/client";
-import type { PendingCredentials } from "./user-credentials-cell";
-
-interface CreatedUserResponse {
-  data: {
-    id: string;
-    email: string;
-    role: { systemRole: SystemRole };
-  };
-  temporaryPassword: string;
-}
-
-interface CreateUserDialogProps {
-  onUserCreated: (userId: string, credentials: PendingCredentials) => void;
-}
-
 const MINI_ADMIN_DEFAULTS = {
   miniAdminTitle: "",
-  miniAdminModules: [...MINI_ADMIN_MODULE_IDS],
+  miniAdminModules: [],
 };
 
-export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
+export function CreateUserDialog() {
+  const { role } = usePermissions();
+  const canDelegate = canManageMiniAdmins(role);
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -65,19 +52,14 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      return json as CreatedUserResponse;
+      return json;
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["company", "drivers"] });
       queryClient.invalidateQueries({ queryKey: ["company", "clients"] });
-      onUserCreated(result.data.id, {
-        email: result.data.email,
-        password: result.temporaryPassword,
-        role: result.data.role.systemRole,
-      });
-      toast.success("Utilisateur créé", {
-        description: "Les identifiants sont affichés dans le tableau.",
+      toast.success("Invitation envoyée", {
+        description: "Le destinataire recevra un lien pour choisir son mot de passe.",
       });
       setOpen(false);
       form.reset();
@@ -92,16 +74,16 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
       <DialogTrigger asChild>
         <Button variant="brand">
           <UserPlus className="mr-2 h-4 w-4" />
-          Créer un utilisateur
+          Inviter un utilisateur
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvel utilisateur</DialogTitle>
+          <DialogTitle>Inviter un utilisateur</DialogTitle>
           <DialogDescription>
             {isMiniAdmin
-              ? "Donnez-lui un nom de poste et les écrans auxquels il a droit. Un mot de passe temporaire sera généré."
-              : "Un mot de passe temporaire sera généré automatiquement. Les identifiants apparaîtront dans le tableau après création."}
+              ? "Choisissez son poste et ses accès. Il recevra une invitation par e-mail."
+              : "Un lien personnel sera envoyé par e-mail pour choisir son mot de passe."}
           </DialogDescription>
         </DialogHeader>
 
@@ -127,7 +109,7 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
                   onValueChange={(value) => {
                     field.onChange(value);
                     if (value === "mini-admin") {
-                      form.setValue("miniAdminModules", [...MINI_ADMIN_MODULE_IDS]);
+                      form.setValue("miniAdminModules", []);
                     }
                   }}
                 >
@@ -137,7 +119,7 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
                   <SelectContent>
                     <SelectItem value="client">Client</SelectItem>
                     <SelectItem value="driver">Chauffeur / Livreur</SelectItem>
-                    <SelectItem value="mini-admin">Mini-admin</SelectItem>
+                    {canDelegate && <SelectItem value="mini-admin">Mini-admin</SelectItem>}
                   </SelectContent>
                 </Select>
               )}
@@ -178,7 +160,7 @@ export function CreateUserDialog({ onUserCreated }: CreateUserDialogProps) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
             <Button type="submit" variant="brand" loading={mutation.isPending}>
-              Créer
+              Envoyer l’invitation
             </Button>
           </DialogFooter>
         </form>

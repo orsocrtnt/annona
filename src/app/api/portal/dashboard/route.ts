@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
-import { getClientOrderCount, getClientOrderStats } from "@/domains/order/order.service";
+import { getClientOrderStats } from "@/domains/order/order.service";
 import { getClientDeliveries } from "@/domains/delivery/delivery.service";
 import { PORTAL_RECENT_DELIVERIES_TAKE } from "@/lib/query/list-limits";
 
@@ -11,11 +11,14 @@ export async function GET() {
     if ("error" in auth) return auth.error;
 
     const customerId = auth.context.user.id;
+    const companyId = auth.context.user.companyId;
+    if (!companyId) {
+      return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
+    }
 
-    const [stats, orderCount, deliveries] = await Promise.all([
-      getClientOrderStats(customerId),
-      getClientOrderCount(customerId),
-      getClientDeliveries(customerId, { take: PORTAL_RECENT_DELIVERIES_TAKE }),
+    const [stats, deliveries] = await Promise.all([
+      getClientOrderStats(customerId, companyId),
+      getClientDeliveries(customerId, companyId, { take: PORTAL_RECENT_DELIVERIES_TAKE }),
     ]);
 
     return NextResponse.json({
@@ -24,7 +27,7 @@ export async function GET() {
         inDelivery: stats.inDelivery,
         deliveredThisMonth: stats.deliveredThisMonth,
         nextDeliveryEta: stats.nextDeliveryEta,
-        orderCount,
+        orderCount: stats.orderCount,
         recentDeliveries: deliveries.map((d) => ({
           id: d.id,
           reference: d.reference,

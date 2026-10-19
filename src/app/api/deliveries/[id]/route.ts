@@ -26,10 +26,11 @@ export async function GET(
     return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
   }
 
+  const { podPhotoPath, ...safeDelivery } = delivery;
   return NextResponse.json({
     data: {
-      ...delivery,
-      podPhotoUrl: await getPodPhotoSignedUrl(delivery.podPhotoPath),
+      ...safeDelivery,
+      podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, delivery.id),
     },
     success: true,
   });
@@ -57,7 +58,45 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const delivery = await adminUpdateDelivery(companyId, id, parsed.data);
+  let delivery;
+  try {
+    delivery = await adminUpdateDelivery(companyId, id, parsed.data);
+  } catch (error) {
+    if (error instanceof Error && error.message === "DELIVERY_ASSIGNMENT_REQUIRED") {
+      return NextResponse.json(
+        { error: "Assignez d’abord un chauffeur depuis le centre de dispatch." },
+        { status: 409 }
+      );
+    }
+    if (error instanceof Error) {
+      const conflicts: Record<string, string> = {
+        DELIVERY_MISSION_STARTED:
+          "La mission a déjà démarré. Elle ne peut plus être retirée ni réaffectée.",
+        DELIVERY_NOT_ASSIGNABLE:
+          "Cette livraison ne peut plus être modifiée depuis le dispatch.",
+        DELIVERY_NOT_CANCELLABLE:
+          "Cette livraison est terminée et ne peut plus être annulée.",
+        DELIVERY_STATUS_CONFLICT:
+          "L’état de cette livraison a changé. Actualisez la page.",
+        DELIVERY_UPDATE_CONFLICT:
+          "Cette action doit être effectuée séparément pour préserver l’historique.",
+        ORDER_STATUS_CONFLICT:
+          "L’état de la commande a changé. Actualisez la page.",
+        CANCELLATION_REASON_REQUIRED:
+          "Indiquez un motif pour annuler une mission déjà démarrée.",
+        DELIVERY_PAID:
+          "Cette livraison est liée à une facture payée et ne peut pas être annulée.",
+      };
+      const message = conflicts[error.message];
+      if (message) {
+        return NextResponse.json(
+          { error: message, code: error.message },
+          { status: 409 }
+        );
+      }
+    }
+    throw error;
+  }
 
   if (!delivery) {
     return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });

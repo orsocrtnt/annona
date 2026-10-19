@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { driverApi } from "./api";
 import { useDriverLocationSettings } from "./location-settings-hooks";
+import { useDriverActionQueue } from "./driver-action-queue-provider";
+import type { PodFailureCode } from "@/lib/pod/codes";
 
 export function useDriverMissions() {
   const { data: locationSettings } = useDriverLocationSettings();
@@ -34,8 +36,8 @@ export function useDriverMissionNavigation(id: string) {
 export function useStartMission() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => driverApi.startMission(id),
-    onSuccess: () => {
+    mutationFn: ({ id, expectedUpdatedAt }: { id: string; expectedUpdatedAt: string }) => driverApi.startMission(id, expectedUpdatedAt),
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["driver"] });
       qc.invalidateQueries({ queryKey: ["company"] });
     },
@@ -46,7 +48,7 @@ export function useClaimDelivery() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => driverApi.claimDelivery(id),
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["driver"] });
       qc.invalidateQueries({ queryKey: ["company"] });
     },
@@ -55,6 +57,7 @@ export function useClaimDelivery() {
 
 export function useUpdateMissionStatus() {
   const qc = useQueryClient();
+  const actionQueue = useDriverActionQueue();
   return useMutation({
     mutationFn: ({
       id,
@@ -73,20 +76,34 @@ export function useUpdateMissionStatus() {
       longitude?: number;
       pod?: {
         outcome: "SUCCESS" | "FAILED";
-        photo?: Blob | null;
-        failureCode?: string;
+        photo: Blob | null;
+        failureCode?: PodFailureCode;
         note?: string;
       };
     }) =>
-      driverApi.updateMissionStatus(id, status, {
+      actionQueue.submit(id, {
+        status,
         purchaseItems,
         confirmOutOfRange,
         latitude,
         longitude,
         pod,
       }),
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["driver"] });
+    },
+  });
+}
+
+export function useAcknowledgeMission() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string; action: "accept" | "decline"; expectedUpdatedAt: string; reason?: string }) => driverApi.acknowledgeMission(id, input),
+    onSettled: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["driver"] }),
+        qc.invalidateQueries({ queryKey: ["company"] }),
+      ]);
     },
   });
 }

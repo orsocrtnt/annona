@@ -1,12 +1,14 @@
 "use client";
+import { OrderTrackingTrigger } from "@/components/shared/order-tracking";
+import { OrderConversationTrigger } from "@/components/shared/order-conversation";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
-import { useStartMission, useUpdateMissionStatus } from "./hooks";
+import { useStartMission, useUpdateMissionStatus, useAcknowledgeMission } from "./hooks";
 import type { DriverMission } from "./types";
 import {
   PurchaseValidationDialog,
@@ -14,9 +16,10 @@ import {
 } from "./purchase-validation-dialog";
 import { LocationConfirmationDialog } from "./location-confirmation-dialog";
 import { ProofOfDeliveryDialog, type PodDialogValue } from "./proof-of-delivery-dialog";
+import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
 import { checkMissionLocationProximity } from "./mission-location-guard";
 import { DriverApiError } from "./api";
-import { getCurrentDriverPosition, type ProximityTargetKind } from "@/lib/maps/driver-proximity";
+import { type DriverPosition, type ProximityTargetKind } from "@/lib/maps/driver-proximity";
 import { DeliveryRouteDisplay } from "@/components/shared/delivery-route-display";
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { canNavigateMission } from "@/features/driver/driver-navigation-utils";
@@ -32,6 +35,10 @@ import {
 } from "lucide-react";
 import { formatClientFromParts } from "@/lib/format/person-labels";
 import { toast } from "sonner";
+import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useQueuedDriverAction } from "./driver-action-queue-provider";
+
 
 function MissionNavigateButton({ missionId }: { missionId: string }) {
   return (
@@ -56,6 +63,19 @@ interface MissionCardProps {
 export function MissionCard({ mission, showActions = true }: MissionCardProps) {
   const updateStatus = useUpdateMissionStatus();
   const startMission = useStartMission();
+  const acknowledgement = useAcknowledgeMission();
+  const queuedAction = useQueuedDriverAction(mission.id);
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const acknowledge = async (action: "accept" | "decline") => {
+    try {
+      await acknowledgement.mutateAsync({ id: mission.id, action, expectedUpdatedAt: mission.updatedAt, reason: action === "decline" ? declineReason : undefined });
+      setDeclineOpen(false);
+      toast.success(action === "accept" ? "Prise en charge confirmée" : "Mission rendue au dispatch");
+    } catch (error) {
+      toast.error("Action impossible", { description: error instanceof Error ? error.message : undefined });
+    }
+  };
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<"PURCHASING" | "IN_DELIVERY" | null>(
     null
@@ -63,6 +83,7 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
   const [locationConfirm, setLocationConfirm] = useState<{
     kind: ProximityTargetKind;
     distanceMeters: number | null;
+    position: DriverPosition | null;
     pending: {
       status: "PURCHASING" | "DELIVERED" | "FAILED";
       purchaseItems?: { id: string; unitPrice: number }[];
@@ -70,6 +91,9 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
     };
   } | null>(null);
   const [locationChecking, setLocationChecking] = useState(false);
+  const actionInFlight = useRef(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [podDialog, setPodDialog] = useState<"SUCCESS" | "FAILED" | null>(null);
 
   const isCourier = mission.deliveryCategory === "COURIER";
@@ -95,12 +119,14 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
     status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED",
     purchaseItems?: { id: string; unitPrice: number }[],
     confirmOutOfRange = false,
-    pod?: PodDialogValue
+    pod?: PodDialogValue,
+    position: DriverPosition | null = null
   ) => {
-    const position = await getCurrentDriverPosition();
+    setActionError(null);
+    setActionMessage("Enregistrement en cours…");
 
     try {
-      await updateStatus.mutateAsync({
+      const submission = await updateStatus.mutateAsync({
         id: mission.id,
         status,
         purchaseItems,
@@ -109,7 +135,13 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
         longitude: position?.longitude,
         pod,
       });
-      toast.success(statusLabels[status]);
+      if (submission.disposition === "queued") {
+        toast.warning("Action conservée hors ligne", {
+          description: "Elle sera renvoyée automatiquement dès que la connexion sera disponible.",
+        });
+      } else {
+        toast.success(statusLabels[status]);
+      }
       setPurchaseDialogOpen(false);
       setPendingStatus(null);
       setLocationConfirm(null);
@@ -119,6 +151,7 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
         setLocationConfirm({
           kind: error.kind ?? "delivery",
           distanceMeters: error.distanceMeters ?? null,
+          position,
           pending: {
             status: status === "IN_DELIVERY" ? "DELIVERED" : status,
             purchaseItems,
@@ -128,15 +161,18 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
         return;
       }
 
+      setActionError(error instanceof Error ? error.message : "Mise à jour impossible. Réessayez.");
       toast.error("Mise à jour impossible", {
         description: error instanceof Error ? error.message : undefined,
       });
+    } finally {
+      setActionMessage(null);
     }
   };
 
   const handleStartMission = async () => {
     try {
-      await startMission.mutateAsync(mission.id);
+      await startMission.mutateAsync({ id: mission.id, expectedUpdatedAt: mission.updatedAt });
       toast.success("Mission démarrée", {
         description: isCourier
           ? "L'itinéraire est visible sur la carte dispatch."
@@ -167,35 +203,51 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
     purchaseItems?: { id: string; unitPrice: number }[],
     pod?: PodDialogValue
   ) => {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setLocationChecking(true);
+    setActionError(null);
+    setActionMessage("Vérification de votre position… Cela peut prendre jusqu’à 14 secondes.");
     try {
       const result = await checkMissionLocationProximity(mission.id, kind);
       if (result.proceed) {
-        await submitStatus(status, purchaseItems, false, pod);
+        await submitStatus(status, purchaseItems, false, pod, result.position);
         return;
       }
 
       setLocationConfirm({
         kind: result.block.kind,
         distanceMeters: result.block.distanceMeters,
+        position: result.position,
         pending: { status, purchaseItems, pod },
       });
     } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Impossible de vérifier votre position. Réessayez.");
       toast.error("Impossible de vérifier votre position", {
         description: error instanceof Error ? error.message : undefined,
       });
     } finally {
+      actionInFlight.current = false;
       setLocationChecking(false);
+      setActionMessage(null);
     }
   };
 
   const confirmLocationAction = async () => {
-    if (!locationConfirm) return;
-    const { pending } = locationConfirm;
-    await submitStatus(pending.status, pending.purchaseItems, true, pending.pod);
+    if (!locationConfirm || actionInFlight.current) return;
+    actionInFlight.current = true;
+    setLocationChecking(true);
+    const { pending, position } = locationConfirm;
+    try {
+      await submitStatus(pending.status, pending.purchaseItems, true, pending.pod, position);
+    } finally {
+      actionInFlight.current = false;
+      setLocationChecking(false);
+    }
   };
 
-  const actionLoading = updateStatus.isPending || locationChecking;
+  const actionLoading = updateStatus.isPending || locationChecking || actionMessage !== null;
+  const actionDisabled = actionLoading || queuedAction !== null;
 
   const purchaseDialogCopy =
     pendingStatus === "PURCHASING"
@@ -216,6 +268,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
     <>
       <Card>
         <CardContent className="space-y-3 p-4">
+        <OrderTrackingTrigger orderId={mission.orderId} />
+        <OrderConversationTrigger orderId={mission.orderId} />
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">{mission.reference}</span>
             <DeliveryStatusBadge
@@ -223,6 +277,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
               deliveryCategory={mission.deliveryCategory}
             />
           </div>
+          <p className="text-sm">Responsable : {mission.driverName ?? "Vous"}</p>
+          <MissionAcknowledgement {...mission} />
           {showActions && (
             <MissionStepper status={mission.status} category={mission.deliveryCategory} />
           )}
@@ -269,9 +325,26 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
               </Badge>
             )}
           </div>
+          {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
+          {actionMessage && <p role="status" aria-live="polite" className="text-sm text-muted-foreground">{actionMessage}</p>}
+          {queuedAction && (
+            <p role={queuedAction.state === "failed" ? "alert" : "status"} aria-live="polite" className="rounded-lg border border-warning/30 bg-warning-subtle px-3 py-2 text-sm">
+              {queuedAction.state === "failed"
+                ? queuedAction.lastError ?? "Action enregistrée, mais refusée par le serveur."
+                : "Action enregistrée sur cet appareil, en attente de synchronisation."}
+            </p>
+          )}
           {showActions && (
             <div className="flex flex-col gap-2 pt-1">
+              {mission.status === "ASSIGNED" && !started && !mission.missionAcceptedAt && (
+                <Button variant="brand" size="lg" className="w-full" loading={acknowledgement.isPending} onClick={() => void acknowledge("accept")}>
+                  Prendre en charge
+                </Button>
+              )}
               {mission.status === "ASSIGNED" && !started && (
+                <Button variant="outline" disabled={acknowledgement.isPending || startMission.isPending} onClick={() => setDeclineOpen(true)}>Refuser / indisponible</Button>
+              )}
+              {mission.status === "ASSIGNED" && !started && mission.missionAcceptedAt && (
                 <Button
                   variant="brand"
                   size="lg"
@@ -293,6 +366,7 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                       size="lg"
                       className="w-full"
                       loading={actionLoading}
+                      disabled={actionDisabled}
                       onClick={() => void runWithLocationGuard("pickup", "PURCHASING")}
                     >
                       <PackageCheck className="mr-1.5 h-4 w-4" />
@@ -304,7 +378,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                         variant="brand"
                         size="lg"
                         className="w-full"
-                        loading={updateStatus.isPending}
+                        loading={actionLoading}
+                        disabled={actionDisabled}
                         onClick={() => requestStatusChange("PURCHASING")}
                       >
                         <ShoppingCart className="mr-1.5 h-4 w-4" />
@@ -314,7 +389,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                         variant="outline"
                         size="lg"
                         className="w-full"
-                        loading={updateStatus.isPending}
+                        loading={actionLoading}
+                        disabled={actionDisabled}
                         onClick={() => requestStatusChange("IN_DELIVERY")}
                       >
                         <Truck className="mr-1.5 h-4 w-4" />
@@ -332,7 +408,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                     variant="brand"
                     size="lg"
                     className="w-full"
-                    loading={updateStatus.isPending}
+                    loading={actionLoading}
+                    disabled={actionDisabled}
                     onClick={() => requestStatusChange("IN_DELIVERY")}
                   >
                     <Truck className="mr-1.5 h-4 w-4" />
@@ -349,6 +426,7 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                     size="lg"
                     className="w-full"
                     loading={actionLoading}
+                    disabled={actionDisabled}
                     onClick={() => setPodDialog("SUCCESS")}
                   >
                     <CheckCircle className="mr-1.5 h-4 w-4" />
@@ -358,7 +436,7 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                     variant="outline"
                     size="lg"
                     className="w-full"
-                    disabled={actionLoading}
+                    disabled={actionDisabled}
                     onClick={() => setPodDialog("FAILED")}
                   >
                     Échec de livraison
@@ -367,9 +445,25 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
               )}
             </div>
           )}
+          {(mission.status === "DELIVERED" || mission.status === "FAILED") && (
+            <ProofOfDeliveryCard
+              status={mission.status}
+              photoUrl={mission.podPhotoUrl}
+              failureCode={mission.podFailureCode}
+              note={mission.podNote}
+            />
+          )}
         </CardContent>
       </Card>
 
+      <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Rendre la mission au dispatch</DialogTitle><DialogDescription>Indiquez pourquoi vous ne pouvez pas effectuer cette mission. Le motif sera conservé dans son historique partagé.</DialogDescription></DialogHeader>
+          <label htmlFor={`decline-${mission.id}`}>Motif de refus</label>
+          <textarea className="min-h-24 w-full rounded-md border p-2" id={`decline-${mission.id}`} value={declineReason} onChange={(event) => setDeclineReason(event.target.value)} maxLength={500} />
+          <DialogFooter><Button variant="outline" onClick={() => setDeclineOpen(false)}>Annuler</Button><Button disabled={!declineReason.trim()} loading={acknowledgement.isPending} onClick={() => void acknowledge("decline")}>Confirmer le refus</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       {pendingStatus && (
         <PurchaseValidationDialog
           open={purchaseDialogOpen}
@@ -381,7 +475,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
           title={purchaseDialogCopy.title}
           description={purchaseDialogCopy.description}
           confirmLabel={purchaseDialogCopy.confirmLabel}
-          loading={updateStatus.isPending}
+          loading={actionLoading}
+          feedbackMessage={actionMessage ?? actionError}
           onConfirm={(purchaseItems) => submitStatus(pendingStatus, purchaseItems)}
         />
       )}
@@ -393,7 +488,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
           }}
           kind={locationConfirm.kind}
           distanceMeters={locationConfirm.distanceMeters}
-          loading={updateStatus.isPending}
+          loading={actionLoading}
+          feedbackMessage={actionMessage ?? actionError}
           onConfirm={() => void confirmLocationAction()}
         />
       )}
@@ -401,7 +497,8 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
         <ProofOfDeliveryDialog
           open={Boolean(podDialog)}
           outcome={podDialog}
-          loading={updateStatus.isPending || locationChecking}
+          loading={actionLoading}
+          feedbackMessage={actionMessage ?? actionError}
           onOpenChange={(open) => {
             if (!open) setPodDialog(null);
           }}

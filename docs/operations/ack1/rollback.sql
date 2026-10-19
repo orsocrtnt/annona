@@ -1,0 +1,5 @@
+-- Retour applicatif : conserver mission_accepted_at et toutes ses valeurs.
+-- L'ancien client Prisma ignore cette colonne nullable ; aucune suppression
+-- n'est nécessaire pour revenir à l'ancienne version applicative.
+-- Aucun DROP COLUMN préparé : une suppression ultérieure de confirmations
+-- exigerait sauvegarde/restauration vérifiée et autorisation distincte.

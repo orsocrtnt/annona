@@ -6,6 +6,7 @@ export const MINI_ADMIN_MODULE_IDS = [
   "driver-map",
   "delivery-map",
   "clients",
+  "support",
   "drivers",
   "accounts",
   "billing",
@@ -88,6 +89,14 @@ export const MINI_ADMIN_MODULES: {
     permissions: ["orders:read"],
   },
   {
+    id: "support",
+    label: "Support clients",
+    group: "ops",
+    hrefs: ["/support"],
+    match: "prefix",
+    permissions: ["support:read"],
+  },
+  {
     id: "drivers",
     label: "Chauffeurs",
     group: "ops",
@@ -153,7 +162,7 @@ export function parseMiniAdminSettings(settings: unknown): MiniAdminSettings {
   if (!raw || typeof raw !== "object") {
     return {
       title: "",
-      modules: [...MINI_ADMIN_MODULE_IDS],
+      modules: [],
     };
   }
 
@@ -161,11 +170,11 @@ export function parseMiniAdminSettings(settings: unknown): MiniAdminSettings {
   const title = typeof record.title === "string" ? record.title.trim() : "";
   const modules = Array.isArray(record.modules)
     ? record.modules.filter(isModuleId)
-    : [...MINI_ADMIN_MODULE_IDS];
+    : [];
 
   return {
     title,
-    modules: modules.length > 0 ? modules : [...MINI_ADMIN_MODULE_IDS],
+    modules: [...new Set(modules)],
   };
 }
 
@@ -212,4 +221,9 @@ export function getMiniAdminHomePath(settings: unknown): string {
   const { modules } = parseMiniAdminSettings(settings);
   const first = MINI_ADMIN_MODULES.find((mod) => modules.includes(mod.id));
   return first?.hrefs[0] ?? "/dashboard";
+}
+
+/** La délégation des accès est réservée aux administrateurs principaux. */
+export function canManageMiniAdmins(role: string | undefined): boolean {
+  return role === "COMPANY_ADMIN" || role === "SUPER_ADMIN";
 }

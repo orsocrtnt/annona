@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { registerSchema } from "@/lib/validations/auth";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { provisionCompanyAdmin } from "@/domains/auth/provision-company-admin";
-import { createClient } from "@/services/supabase/server";
 
 export async function POST(request: Request) {
   try {
@@ -27,37 +26,12 @@ export async function POST(request: Request) {
       companyName,
     });
 
-    const supabase = await createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-
-    if (signInError) {
-      return NextResponse.json(
-        {
-          error:
-            "Compte configuré mais connexion impossible. Utilisez la page de connexion avec le même mot de passe.",
-        },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      user: result.user,
-      permissions: result.permissions,
-      redirectTo: result.redirectTo,
-    });
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("Register error:", error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Erreur lors de la création du compte",
-      },
-      { status: 500 }
-    );
+    const code = error instanceof Error ? error.message : "UNKNOWN";
+    const status = code === "AUTH_RATE_LIMITED" ? 429 :
+      ["AUTH_EMAIL_NOT_CONFIGURED", "AUTH_EMAIL_CONFIRMATION_REQUIRED"].includes(code) ? 503 : 502;
+    return NextResponse.json({ error: status === 429 ? "Trop de demandes. Réessayez plus tard." :
+      "Inscription indisponible. Réessayez plus tard." }, { status });
   }
 }

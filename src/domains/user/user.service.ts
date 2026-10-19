@@ -5,7 +5,8 @@ import { linkPortalDataToClient } from "@/domains/client-portal/client-data.serv
 import type { UserWithRole } from "@/types";
 import { COMPANY_USERS_TAKE } from "@/lib/query/list-limits";
 import type { CreateUserInput, UpdateMiniAdminInput, UpdateProfileInput } from "@/lib/validations/user";
-import { filterMiniAdminPermissions, buildMiniAdminSettings } from "@/lib/permissions/mini-admin";
+import { filterMiniAdminPermissions, buildMiniAdminSettings, canManageMiniAdmins } from "@/lib/permissions/mini-admin";
+import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
 import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
 
 type RoleRecord = {
@@ -55,15 +56,16 @@ async function fetchRolesByIds(ids: string[]): Promise<Map<string, RoleRecord>> 
 export async function hydrateUserWithRole<T extends { roleId: string }>(
   user: T
 ): Promise<T & { role: UserWithRole["role"] }> {
-  const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
-  if (!role) {
-    throw new Error("ROLE_NOT_FOUND");
-  }
-
-  const rolePermissions = await prisma.rolePermission.findMany({
-    where: { roleId: user.roleId },
-    include: { permission: true },
-  });
+  // Lectures indépendantes, sans cache des droits entre requêtes.
+  const [roles, rolePermissions] = await Promise.all([
+    fetchRolesByIds([user.roleId]),
+    prisma.rolePermission.findMany({
+      where: { roleId: user.roleId },
+      include: { permission: true },
+    }),
+  ]);
+  const role = roles.get(user.roleId);
+  if (!role) throw new Error("ROLE_NOT_FOUND");
 
   return {
     ...user,
@@ -86,13 +88,21 @@ export async function attachRolesById<T extends { roleId: string }>(
 }
 
 export async function getUserByAuthId(authId: string): Promise<UserWithRole | null> {
+  // Lecture relationnelle fraîche sans la stratégie relationJoins expérimentale :
+  // Prisma 5.22 panique sous des lectures auth concurrentes avec cette stratégie.
+  // Aucune mémorisation inter-requêtes (suspension/révocation immédiates).
   const user = await prisma.user.findUnique({
     where: { authId },
-    include: { company: true },
+    include: {
+      company: true,
+      role: { include: { permissions: { include: { permission: true } } } },
+    },
   });
-
   if (!user) return null;
-  return hydrateUserWithRole(user);
+  return {
+    ...user,
+    role: { ...user.role, permissions: user.role.permissions.map((rp) => rp.permission) },
+  };
 }
 
 export function extractPermissionSlugs(user: UserWithRole): string[] {
@@ -182,11 +192,6 @@ async function findCreatableRoleBySlug(slug: string) {
   };
 }
 
-function generateTempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
-
 export async function resolveCompanyIdForUserCreation(
   adminCompanyId: string | null | undefined,
   isSuperAdmin: boolean
@@ -203,8 +208,9 @@ export async function resolveCompanyIdForUserCreation(
 export async function createUserByAdmin(
   input: CreateUserInput,
   adminCompanyId: string | null | undefined,
-  isSuperAdmin = false
+  actorRole: SystemRole
 ) {
+  const isSuperAdmin = actorRole === "SUPER_ADMIN";
   const companyId = await resolveCompanyIdForUserCreation(adminCompanyId, isSuperAdmin);
   if (!companyId) {
     throw new Error("COMPANY_REQUIRED");
@@ -215,17 +221,19 @@ export async function createUserByAdmin(
     throw new Error("INVALID_ROLE");
   }
 
+  if (role.systemRole === "MINI_ADMIN" && !canManageMiniAdmins(actorRole)) {
+    throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new Error("EMAIL_EXISTS");
 
-  const password = generateTempPassword();
+  const redirectTo = getPasswordLinkRedirect();
   const supabase = createAdminClient();
 
-  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-    email: input.email,
-    password,
-    email_confirm: true,
-    user_metadata: {
+  const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(input.email, {
+    redirectTo,
+    data: {
       first_name: input.firstName,
       last_name: input.lastName,
     },
@@ -236,7 +244,7 @@ export async function createUserByAdmin(
     if (msg.includes("already") || msg.includes("exists") || msg.includes("registered")) {
       throw new Error("EMAIL_EXISTS");
     }
-    throw new Error(`SUPABASE_CREATE_FAILED:${authError?.message ?? "unknown"}`);
+    throw new Error(authError?.status === 429 ? "AUTH_RATE_LIMITED" : "INVITATION_FAILED");
   }
 
   let user;
@@ -249,7 +257,7 @@ export async function createUserByAdmin(
         lastName: input.lastName,
         roleId: role.id,
         companyId,
-        status: "ACTIVE",
+        status: "PENDING_VERIFICATION",
         ...(input.roleSlug === "mini-admin"
           ? {
               settings: buildMiniAdminSettings(
@@ -261,13 +269,14 @@ export async function createUserByAdmin(
       },
       include: { company: true },
     });
-  } catch (prismaError) {
-    await supabase.auth.admin.deleteUser(authData.user.id);
-    throw prismaError;
+  } catch {
+    // Le fournisseur peut avoir renvoyé une ancienne invitation : ne pas supprimer ce compte.
+    // Aucun accès applicatif sans profil ; l’administrateur peut retenter la création.
+    throw new Error("INVITATION_PROFILE_FAILED");
   }
 
   if (input.roleSlug === "client") {
-    await linkPortalDataToClient(user.id, input.email);
+    await linkPortalDataToClient(user.id, input.email, user.companyId);
   }
 
   return {
@@ -280,7 +289,7 @@ export async function createUserByAdmin(
         systemRole: role.systemRole,
       },
     },
-    temporaryPassword: password,
+    invitationSent: true,
   };
 }
 
@@ -290,8 +299,9 @@ export async function deleteUserByAdmin(
   targetUserId: string,
   adminUserId: string,
   companyId: string | null,
-  isSuperAdmin = false
+  actorRole: SystemRole
 ) {
+  const isSuperAdmin = actorRole === "SUPER_ADMIN";
   if (targetUserId === adminUserId) {
     throw new Error("CANNOT_DELETE_SELF");
   }
@@ -302,7 +312,7 @@ export async function deleteUserByAdmin(
 
   if (!user) throw new Error("USER_NOT_FOUND");
 
-  if (!isSuperAdmin && user.companyId !== companyId) {
+  if (!isSuperAdmin && (!companyId || user.companyId !== companyId)) {
     throw new Error("USER_NOT_FOUND");
   }
 
@@ -317,18 +327,36 @@ export async function deleteUserByAdmin(
     throw new Error("ROLE_NOT_DELETABLE");
   }
 
+  if (role.systemRole === "MINI_ADMIN" && !canManageMiniAdmins(actorRole)) {
+    throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
+  }
+
   const supabase = createAdminClient();
 
-  await prisma.$transaction(async (tx) => {
-    if (role.systemRole === "DRIVER") {
-      await tx.delivery.updateMany({
-        where: { driverId: user.id },
-        data: { driverId: null, driverName: null },
-      });
-    }
+  await prisma.$transaction(
+    async (tx) => {
+      const lockedUsers = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM "users" WHERE id = ${user.id} FOR UPDATE
+      `;
+      if (lockedUsers.length === 0) throw new Error("USER_NOT_FOUND");
 
-    await tx.user.delete({ where: { id: user.id } });
-  });
+      if (role.systemRole === "DRIVER") {
+        const activeDeliveries = await tx.delivery.count({
+          where: {
+            driverId: user.id,
+            status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
+          },
+        });
+        if (activeDeliveries > 0) {
+          throw new Error("DRIVER_HAS_ACTIVE_DELIVERIES");
+        }
+      }
+
+      // La FK met driverId à null sur l'historique ; driverName reste la preuve lisible.
+      await tx.user.delete({ where: { id: user.id } });
+    },
+    { maxWait: 10_000, timeout: 30_000 }
+  );
 
   const { error } = await supabase.auth.admin.deleteUser(user.authId);
   if (error) {
@@ -342,12 +370,16 @@ export async function updateMiniAdminByAdmin(
   targetUserId: string,
   input: UpdateMiniAdminInput,
   companyId: string | null,
-  isSuperAdmin = false
+  actorRole: SystemRole
 ) {
+  const isSuperAdmin = actorRole === "SUPER_ADMIN";
+  if (!canManageMiniAdmins(actorRole)) {
+    throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
+  }
   const user = await prisma.user.findUnique({ where: { id: targetUserId } });
   if (!user) throw new Error("USER_NOT_FOUND");
 
-  if (!isSuperAdmin && user.companyId !== companyId) {
+  if (!isSuperAdmin && (!companyId || user.companyId !== companyId)) {
     throw new Error("USER_NOT_FOUND");
   }
 

@@ -73,6 +73,7 @@ export interface PortalOrder {
 
 export interface PortalDelivery {
   id: string;
+  orderId: string;
   reference: string;
   status: DeliveryStatus;
   deliveryCategory?: DeliveryCategory;
@@ -83,6 +84,8 @@ export interface PortalDelivery {
   pickupCity?: string | null;
   pickupPostalCode?: string | null;
   driverName: string | null;
+  missionAcceptedAt: string | null;
+  missionStartedAt: string | null;
   estimatedArrival: string | null;
   completedAt: string | null;
   createdAt: string;
@@ -222,11 +225,12 @@ export interface PortalSettings {
   deliveryAlerts: boolean;
   invoiceAlerts: boolean;
   emailConfigured?: boolean;
+  emailMode?: "disabled" | "test" | "live";
 }
 
 export interface PortalClientNotification {
   id: string;
-  type: "DELIVERY" | "INVOICE";
+  type: "DELIVERY" | "INVOICE" | "SUPPORT";
   title: string;
   body: string;
   href: string | null;

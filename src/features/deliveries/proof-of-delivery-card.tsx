@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { POD_FAILURE_LABELS, type PodFailureCode } from "@/lib/pod/codes";
 
 export function ProofOfDeliveryCard({
@@ -27,7 +28,14 @@ export function ProofOfDeliveryCard({
       ) : null}
       {note ? <p className="text-sm">{note}</p> : null}
       {photoUrl ? (
-        <img src={photoUrl} alt="Preuve de livraison" className="max-h-72 w-full rounded-md object-cover" />
+        <Image
+          src={photoUrl}
+          alt="Preuve de livraison"
+          width={960}
+          height={720}
+          unoptimized
+          className="max-h-72 w-full rounded-md object-cover"
+        />
       ) : failed ? null : (
         <p className="text-xs text-muted-foreground">Aucune photo jointe.</p>
       )}

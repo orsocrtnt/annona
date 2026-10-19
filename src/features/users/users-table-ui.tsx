@@ -9,7 +9,6 @@ export const USER_TABLE_COL = {
   email: "w-[9.5rem] max-w-[9.5rem]",
   role: "w-[7.5rem] max-w-[7.5rem]",
   status: "w-[4.5rem]",
-  credentials: "w-[5.5rem]",
   actions: "w-16 px-1",
 } as const;
 
@@ -50,7 +49,7 @@ export function TableUserStatus({ status }: { status: string }) {
       variant={isActive ? "success" : "secondary"}
       className="whitespace-nowrap px-1.5 py-0 text-[10px]"
     >
-      {isActive ? "Actif" : status}
+      {isActive ? "Actif" : status === "PENDING_VERIFICATION" ? "Invité" : status}
     </Badge>
   );
 }

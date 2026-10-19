@@ -4,6 +4,8 @@ import type {
   InvoiceStatus,
   OrderSource,
   OrderStatus,
+  SupportTicketPriority,
+  SupportTicketStatus,
 } from "@prisma/client";
 import type { InvoiceLineItem } from "@/lib/validations/invoice";
 
@@ -51,6 +53,8 @@ export interface CompanyOrder {
     pickupPostalCode?: string | null;
     scheduledAt?: string | null;
     estimatedArrival?: string | null;
+    missionStartedAt?: string | null;
+    missionAcceptedAt?: string | null;
     driverId?: string | null;
     driverName?: string | null;
     driver?: { id: string; firstName: string; lastName: string; phone?: string | null } | null;
@@ -69,11 +73,11 @@ export interface CompanyOrder {
     dueDate: string | null;
     paidAt?: string | null;
     createdAt: string;
+    updatedAt: string;
     lineItems?: InvoiceLineItem[];
     notes?: string | null;
   }[];
 }
-
 export interface CompanyDelivery {
   id: string;
   reference: string;
@@ -87,6 +91,9 @@ export interface CompanyDelivery {
   postalCode: string | null;
   driverId: string | null;
   driverName: string | null;
+  missionStartedAt: string | null;
+  missionAcceptedAt: string | null;
+  completedAt: string | null;
   scheduledAt: string | null;
   createdAt: string;
   order: {
@@ -103,6 +110,7 @@ export interface CompanyDelivery {
     shippingCity: string | null;
     shippingPostalCode: string | null;
     deliveryInstructions: string | null;
+    requestedDeliveryDate: string | null;
     customer: { firstName: string; lastName: string; email: string } | null;
     items: { name: string; quantity: number }[];
   };
@@ -179,3 +187,29 @@ export type {
   DashboardStatusListKey,
   DashboardTodayStats,
 } from "@/lib/dashboard/dashboard-types";
+export interface CompanySupportTicket {
+  id: string;
+  subject: string;
+  message: string;
+  status: SupportTicketStatus;
+  priority: SupportTicketPriority;
+  contactType: "ADMIN" | "DRIVER" | null;
+  createdAt: string;
+  updatedAt: string;
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+  };
+  relatedOrder: { id: string; reference: string } | null;
+  relatedDelivery: { id: string; reference: string } | null;
+  messages: Array<{
+    id: string;
+    body: string;
+    isStaff: boolean;
+    authorId: string;
+    createdAt: string;
+  }>;
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { OrderTracking } from "@/components/shared/order-tracking";
+import { OrderConversation } from "@/components/shared/order-conversation";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -103,7 +105,8 @@ export default function ClientOrderDetailPage() {
           <CardContent className="space-y-4 text-sm">
             {order.status === "QUOTE_REQUESTED" && (
               <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-                Votre demande de devis a bien été reçue. Nous vous recontactons prochainement.
+                Votre demande a bien été reçue. Le devis chiffré et son acceptation sont traités
+                hors TutelLiv ; l&apos;entreprise vous recontactera directement.
               </p>
             )}
             {order.missionDescription && (
@@ -233,6 +236,8 @@ export default function ClientOrderDetailPage() {
           </CardContent>
         </Card>
       )}
+      <OrderTracking orderId={order.id} />
+      <OrderConversation orderId={order.id} />
     </div>
   );
 }

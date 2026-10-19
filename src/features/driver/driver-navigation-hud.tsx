@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import {
   ArrowUp,
   CornerUpLeft,
@@ -37,6 +39,8 @@ interface DriverNavigationHudProps {
   etaLabel: string | null;
   remainingLabel: string | null;
   loading?: boolean;
+  unavailable?: boolean;
+  waitingForPosition?: boolean;
 }
 
 export function DriverNavigationHud({
@@ -45,10 +49,18 @@ export function DriverNavigationHud({
   etaLabel,
   remainingLabel,
   loading,
+  unavailable,
+  waitingForPosition,
 }: DriverNavigationHudProps) {
+  if (unavailable || waitingForPosition) {
+    return <div role="status" className="rounded-2xl bg-white/95 px-4 py-4 text-foreground shadow-xl">
+      <p className="text-sm font-semibold">{waitingForPosition ? "En attente de la position GPS" : "Itinéraire indisponible"}</p>
+      <p className="mt-1 text-xs">{waitingForPosition ? "Le guidage débutera avec une position exploitable." : "Aucun guidage ni durée fiable. Nouvelle tentative automatique ; Google Maps reste accessible ci-dessous."}</p>
+    </div>;
+  }
   if (loading || !guidance) {
     return (
-      <div className="rounded-2xl bg-[#1d4ed8] px-4 py-5 text-white shadow-xl">
+      <div className="rounded-2xl border border-white/10 bg-black px-4 py-5 text-white shadow-xl">
         <p className="text-sm font-medium opacity-90">Calcul du guidage…</p>
         <p className="mt-1 text-xs opacity-75">Vers {destinationLabel}</p>
       </div>
@@ -58,8 +70,7 @@ export function DriverNavigationHud({
   return (
     <div
       className={cn(
-        "rounded-2xl px-4 py-4 text-white shadow-xl transition-colors",
-        guidance.isImminent || guidance.icon === "arrive" ? "bg-emerald-600" : "bg-[#1d4ed8]"
+        "rounded-2xl border border-white/10 bg-black px-4 py-4 text-white shadow-xl transition-colors"
       )}
     >
       <div className="flex items-start gap-4">

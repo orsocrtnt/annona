@@ -17,5 +17,5 @@ const PortalDeliveriesMap = dynamic(
 );
 
 export default function ClientDeliveriesPage() {
-  return <PortalDeliveriesMap fullscreen />;
+  return <><h1 className="sr-only">Carte des livraisons</h1><PortalDeliveriesMap fullscreen /></>;
 }

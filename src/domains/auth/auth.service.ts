@@ -1,6 +1,7 @@
+import { assertAccountActive } from "@/lib/auth/account-access";
 import { prisma } from "@/services/prisma/client";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
-import { hydrateUserWithRole } from "@/domains/user/user.service";
+import { hydrateUserWithRole, getUserByAuthId } from "@/domains/user/user.service";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { slugify } from "@/lib/utils";
 import type { SystemRole, UserStatus } from "@prisma/client";
@@ -30,18 +31,17 @@ export async function syncUserFromSupabase(
 ): Promise<UserWithRole> {
   const email = normalizeEmail(input.email);
 
-  const existing = await prisma.user.findUnique({
-    where: { authId: input.authId },
-    include: { company: true },
-  });
+  const existing = await getUserByAuthId(input.authId);
 
   if (existing) {
-    await prisma.user.update({
-      where: { id: existing.id },
-      data: { lastLoginAt: new Date() },
-    });
-    await linkPortalDataToClient(existing.id, email);
-    return hydrateUserWithRole(existing);
+    const hydrated = existing;
+    assertAccountActive(hydrated);
+    await Promise.all([
+      prisma.user.update({ where: { id: existing.id }, data: { lastLoginAt: new Date() } }),
+      ...(hydrated.role.systemRole === "CLIENT"
+        ? [linkPortalDataToClient(existing.id, email, existing.companyId ?? null)] : []),
+    ]);
+    return hydrated;
   }
 
   const existingByEmail = await prisma.user.findFirst({
@@ -50,6 +50,7 @@ export async function syncUserFromSupabase(
   });
 
   if (existingByEmail) {
+    assertAccountActive(await hydrateUserWithRole(existingByEmail));
     const user = await prisma.user.update({
       where: { id: existingByEmail.id },
       data: {
@@ -61,7 +62,7 @@ export async function syncUserFromSupabase(
       },
       include: { company: true },
     });
-    await linkPortalDataToClient(user.id, email);
+    await linkPortalDataToClient(user.id, email, user.companyId);
     return hydrateUserWithRole(user);
   }
 

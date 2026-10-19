@@ -43,11 +43,12 @@ export function statusNeedsProximityCheck(
 
 export async function checkDriverMissionProximity(
   driverId: string,
+  companyId: string,
   deliveryId: string,
   kind: ProximityTargetKind,
   overridePosition?: { latitude: number; longitude: number } | null
 ): Promise<MissionProximityResult | null> {
-  const navigation = await getDriverMissionNavigation(driverId, deliveryId);
+  const navigation = await getDriverMissionNavigation(driverId, companyId, deliveryId);
   if (!navigation) return null;
 
   const target =
@@ -59,7 +60,7 @@ export async function checkDriverMissionProximity(
     return {
       kind,
       hasLocation: false,
-      near: true,
+      near: false,
       distanceMeters: null,
       thresholdMeters: DRIVER_PROXIMITY_THRESHOLD_METERS,
     };
@@ -102,6 +103,7 @@ export async function checkDriverMissionProximity(
 
 export async function assertDriverMissionProximityOrThrow(
   driverId: string,
+  companyId: string,
   deliveryId: string,
   kind: ProximityTargetKind,
   confirmOutOfRange: boolean | undefined,
@@ -111,6 +113,7 @@ export async function assertDriverMissionProximityOrThrow(
 
   const check = await checkDriverMissionProximity(
     driverId,
+    companyId,
     deliveryId,
     kind,
     overridePosition

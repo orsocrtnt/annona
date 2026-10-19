@@ -5,8 +5,9 @@ import dynamic from "next/dynamic";
 export const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
 
 export interface LeafletBaseMapProps {
-  height?: number;
+  height?: number | string;
   fill?: boolean;
+  navigation?: boolean;
   variant?: "default" | "uber";
   center?: [number, number];
   zoom?: number;

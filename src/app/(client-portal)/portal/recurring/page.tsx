@@ -128,11 +128,13 @@ export default function RecurringOrdersPage() {
                         item.intervalValue ?? 1,
                         item.intervalUnit ?? "WEEKS"
                       )}
-                      {" — "}Prochaine : {formatDate(item.nextRunAt)}
+                      {" — "}Prochaine : {formatDate(item.nextRunAt, { timeZone: "UTC" })}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Du {formatDate(item.startAt)} 
-                      {item.endAt ? ` au ${formatDate(item.endAt)}` : " (sans date de fin)"}
+                      Du {formatDate(item.startAt, { timeZone: "UTC" })}{" "}
+                      {item.endAt
+                        ? ` au ${formatDate(item.endAt, { timeZone: "UTC" })}`
+                        : " (sans date de fin)"}
                     </p>
                     <DeliveryRouteDisplay
                       category={item.deliveryCategory ?? "STANDARD"}

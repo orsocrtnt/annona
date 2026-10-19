@@ -1,13 +1,20 @@
 "use client";
 
 import { useMemo } from "react";
-import { DriversLiveMap } from "@/components/maps/drivers-live-map";
-import {
-  DispatchLeafletMap,
-  type DispatchLeafletMarker,
-} from "@/components/maps/dispatch-leaflet-map";
+import dynamic from "next/dynamic";
+import type { DispatchLeafletMarker } from "@/components/maps/dispatch-leaflet-map";
 import type { DispatchMapPointKind } from "@/domains/delivery/dispatch-map.service";
 import { useDispatchDeliveriesMap, useDriverLiveLocations } from "@/features/back-office/dispatch-map-hooks";
+
+// Leaflet children also access window at import time, before the base map renders.
+const DriversLiveMap = dynamic(
+  () => import("@/components/maps/drivers-live-map").then((module) => module.DriversLiveMap),
+  { ssr: false }
+);
+const DispatchLeafletMap = dynamic(
+  () => import("@/components/maps/dispatch-leaflet-map").then((module) => module.DispatchLeafletMap),
+  { ssr: false }
+);
 
 function escapeHtml(value: string) {
   return value

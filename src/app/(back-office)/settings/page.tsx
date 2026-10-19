@@ -27,7 +27,8 @@ const SETTINGS_CATEGORY_DESCRIPTIONS: Record<DeliveryCategory, string> = {
   ...DELIVERY_CATEGORY_DESCRIPTIONS,
   STANDARD: "Achat et livraison",
   COURIER: "Collecte et livraison",
-  SPECIAL_MISSION: "Déménagement, assistance, etc. — sur devis",
+  SPECIAL_MISSION:
+    "Expérimental, hors offre pilote — demande multi-adresses ; devis et accord gérés hors TutelLiv",
 };
 
 const CATEGORY_ICONS = {

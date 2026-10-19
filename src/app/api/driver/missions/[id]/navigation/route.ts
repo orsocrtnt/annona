@@ -8,9 +8,11 @@ export async function GET(
 ) {
   const auth = await requireDriverRole();
   if ("error" in auth) return auth.error;
+  const companyId = auth.context.user.companyId;
+  if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
 
   const { id } = await params;
-  const navigation = await getDriverMissionNavigation(auth.context.user.id, id);
+  const navigation = await getDriverMissionNavigation(auth.context.user.id, companyId, id);
 
   if (!navigation) {
     return NextResponse.json({ error: "Mission introuvable" }, { status: 404 });

@@ -1,3 +1,5 @@
+import { trackingPosition, trackingService } from "@/domains/tracking/tracking.policy";
+import { transaction, ConversationError } from "@/domains/order-conversation/order-conversation.service";
 import { prisma } from "@/services/prisma/client";
 import type { UpdateDriverLocationInput } from "@/lib/validations/driver-location";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "@/lib/validations/driver-location-settings";
@@ -12,25 +14,20 @@ export type LiveDriverLocation = {
   updatedAt: string | null;
   activeMissions: number;
   isOnline: boolean;
+  positionState: string;
 };
 
-export async function upsertDriverLocation(
-  driverId: string,
-  data: UpdateDriverLocationInput
-) {
-  return prisma.driverLocation.upsert({
-    where: { driverId },
-    create: {
-      driverId,
-      latitude: data.latitude,
-      longitude: data.longitude,
-      accuracy: data.accuracy,
-    },
-    update: {
-      latitude: data.latitude,
-      longitude: data.longitude,
-      accuracy: data.accuracy,
-    },
+export async function upsertDriverLocation(driverId: string, companyId: string, data: UpdateDriverLocationInput) {
+  return transaction(async tx => {
+    const driver = await tx.user.findFirst({ where: { id: driverId, companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } }, select: { settings: true, updatedAt: true } });
+    if (!driver || !trackingService(driver.settings).active) throw new ConversationError(409, "Service arrêté : position non enregistrée.");
+    const mission = await tx.delivery.findFirst({ where: { driverId, companyId, status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] }, missionStartedAt: { not: null }, completedAt: null }, select: { id: true, updatedAt: true } });
+    if (!mission) throw new ConversationError(409, "Aucune mission démarrée : position non enregistrée.");
+    // Same driver lock as service closure; delivery lock serializes completion.
+    const claimed = await tx.delivery.updateMany({ where: { id: mission.id, driverId, companyId, updatedAt: mission.updatedAt, completedAt: null }, data: { updatedAt: mission.updatedAt } });
+    const locked = await tx.user.updateMany({ where: { id: driverId, companyId, updatedAt: driver.updatedAt }, data: { updatedAt: driver.updatedAt } });
+    if (locked.count !== 1 || claimed.count !== 1) throw new ConversationError(409, "La mission ou le service a changé.");
+    return tx.driverLocation.upsert({ where: { driverId }, create: { driverId, ...data }, update: data });
   });
 }
 
@@ -48,6 +45,9 @@ export async function getCompanyDriverLocations(
       id: true,
       firstName: true,
       lastName: true,
+      status: true,
+      settings: true,
+      deliveriesAsDriver: { where: { companyId, status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] }, missionStartedAt: { not: null }, completedAt: null }, select: { status: true, missionStartedAt: true, completedAt: true } },
       driverLocation: {
         select: {
           latitude: true,
@@ -60,6 +60,7 @@ export async function getCompanyDriverLocations(
         select: {
           deliveriesAsDriver: {
             where: {
+              companyId,
               status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
             },
           },
@@ -69,24 +70,16 @@ export async function getCompanyDriverLocations(
     orderBy: { firstName: "asc" },
   });
 
-  const now = Date.now();
-  const onlineThresholdMs = onlineThresholdSeconds * 1000;
-
+  const now = new Date();
   return drivers.map((driver) => {
-    const loc = driver.driverLocation;
-    const updatedAt = loc?.updatedAt ?? null;
-    const isOnline =
-      !!updatedAt && now - updatedAt.getTime() < onlineThresholdMs;
-
+    const mission = driver.deliveriesAsDriver[0] ?? { status: "ASSIGNED", missionStartedAt: null };
+    const position = trackingPosition(mission, driver, onlineThresholdSeconds, now);
     return {
       id: driver.id,
       name: formatDriverDisplayName(`${driver.firstName} ${driver.lastName}`.trim()),
-      latitude: loc?.latitude ?? null,
-      longitude: loc?.longitude ?? null,
-      accuracy: loc?.accuracy ?? null,
-      updatedAt: updatedAt?.toISOString() ?? null,
-      activeMissions: driver._count.deliveriesAsDriver,
-      isOnline,
+      latitude: position.latitude, longitude: position.longitude, accuracy: position.accuracy,
+      updatedAt: position.updatedAt, activeMissions: driver._count.deliveriesAsDriver,
+      isOnline: position.state === "FRESH", positionState: position.state,
     };
   });
 }

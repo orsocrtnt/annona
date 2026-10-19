@@ -1,87 +1,77 @@
-# Tutelliv
+# TutelLiv
 
-Plateforme SaaS de gestion et pilotage pour entreprises de livraison.
+TutelLiv est un SaaS multi-entreprise pour centraliser les commandes de livraison, l'affectation des chauffeurs, les échanges, le suivi daté, les preuves et l'historique. Le produit comporte trois espaces : administration/dispatch, portail client et application web chauffeur.
 
-## Stack technique
+L'état et l'ordre du travail sont suivis dans [`TODO.md`](TODO.md). Les instructions persistantes destinées aux contributeurs et agents se trouvent dans [`AGENTS.md`](AGENTS.md).
 
-- **Framework** : Next.js 15 (App Router)
-- **Langage** : TypeScript (strict)
-- **Styling** : Tailwind CSS 4
-- **UI** : shadcn/ui (Radix primitives)
-- **Auth** : Supabase Auth
-- **Database** : PostgreSQL + Prisma ORM
-- **State** : Zustand + TanStack Query
-- **Validation** : Zod + React Hook Form
+## Démarrage local
 
-## Démarrage rapide
+Configuration vérifiée le 16 octobre 2026 avec Node.js 22.18 et npm 10.9. Node.js 20.19 ou 22 est recommandé.
 
 ```bash
-# Installation
-npm install
-
-# Configuration
+npm ci
 cp .env.example .env.local
-# Renseigner les variables Supabase et DATABASE_URL
-
-# Base de données
-npm run db:generate
-npm run db:push
-npm run db:seed
-
-# Développement
-npm run dev
+npm run check
+npm run dev -- --hostname 127.0.0.1 --port 3106
 ```
 
-## Structure du projet
+Ne pas écraser un fichier `.env.local` existant. Avant le premier démarrage authentifié, remplacer les valeurs d'exemple par les accès d'un environnement de développement identifié. Le site est alors disponible sur `http://127.0.0.1:3106`.
 
-```
-src/
-├── app/                  # Routes Next.js (App Router)
-│   ├── (auth)/           # Pages d'authentification
-│   ├── (back-office)/    # Interface administrateur
-│   ├── (client-portal)/  # Portail client
-│   ├── (driver-app)/     # Application chauffeur
-│   └── api/              # API Routes
-├── components/
-│   ├── ui/               # Design System
-│   ├── layouts/          # Layouts réutilisables
-│   ├── providers/        # Context providers
-│   └── shared/           # Composants partagés
-├── domains/              # Logique métier (DDD)
-├── features/             # Modules fonctionnels
-├── hooks/                # React hooks custom
-├── lib/                  # Utilitaires, permissions, validations
-├── services/             # Services externes (Supabase, Prisma)
-├── stores/               # État global (Zustand)
-└── types/                # Types TypeScript
+`npm run dev` régénère le client Prisma si le schéma a changé, sans modifier la base. Les commandes `db:push`, `db:sync-schema`, `db:migrate` et les seeds écrivent dans la base et ne font jamais partie d'un démarrage normal.
+
+## Vérifications
+
+```bash
+npm run typecheck       # TypeScript
+npm run lint            # ESLint sur le code applicatif, zéro avertissement admis
+npm test                # règles locales sans service externe
+npm run check           # typecheck + lint + tests locaux
+npm run audit:prod      # vulnérabilités des dépendances livrées
+npm run test:v1         # recette locale, connectée et navigateur sur base de test
+npm run test:ops01      # récurrences connectées sur fixtures isolées
+npm run test:special1   # socle missions spéciales sur fixtures isolées
+npm run test:demo1      # deux démonstrations isolées et reset limité
+npm run build           # build de production, serveur dev arrêté
 ```
 
-## Rôles utilisateurs
+La recette V1 crée uniquement des fixtures identifiables, les supprime de façon ciblée et contrôle leur absence. Elle nécessite la base de test autorisée et Chrome/Chromium. Voir [`docs/operations/test2/README.md`](docs/operations/test2/README.md).
 
-| Rôle | Dashboard | Description |
-|------|-----------|-------------|
-| Super Admin | `/admin` | Gestion plateforme |
-| Administrateur | `/dashboard` | Gestion entreprise |
-| Dispatcher | `/dispatch` | Dispatch livraisons |
-| Chauffeur | `/driver` | Missions mobile |
-| Client | `/portal` | Suivi commandes |
+## Configuration
+
+Les variables et procédures sont décrites dans [`docs/OPERATIONS.md`](docs/OPERATIONS.md). Les dépendances principales sont :
+
+- Supabase Auth et Storage ;
+- PostgreSQL via Prisma ;
+- Resend, optionnel tant que les e-mails ne sont pas activés ;
+- OpenStreetMap pour les tuiles, Géoplateforme/IGN pour le géocodage et un endpoint compatible OSRM pour les itinéraires.
+
+Les services cartographiques publics actuellement configurés servent aux essais. Ils n'offrent pas les garanties nécessaires à un SaaS vendu. Voir [`docs/operations/map-providers.md`](docs/operations/map-providers.md).
+
+## Architecture
+
+- Next.js 15 App Router et TypeScript strict ;
+- Tailwind CSS 4, composants Radix/shadcn ;
+- TanStack Query pour les données client et Zustand pour l'état local ciblé ;
+- services métier dans `src/domains/` ;
+- routes HTTP dans `src/app/api/` ;
+- Prisma pour tous les accès métier à PostgreSQL ;
+- Supabase pour l'identité et le stockage privé des preuves.
+
+Les données métier sont bornées par `companyId` et, selon le rôle, par le client propriétaire ou le chauffeur affecté. Les contrôles d'interface complètent les contrôles serveur ; ils ne les remplacent pas.
 
 ## Documentation
 
-- [Architecture](./docs/ARCHITECTURE.md)
-- [Design System](./docs/DESIGN_SYSTEM.md)
-- [RBAC & Permissions](./docs/RBAC.md)
-- [Base de données](./docs/DATABASE.md)
-- [Conventions de développement](./docs/CONVENTIONS.md)
-- [Modules futurs](./docs/FUTURE_MODULES.md)
+- [`docs/README.md`](docs/README.md) — index et statut des documents ;
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — composants, flux et limites ;
+- [`docs/DATABASE.md`](docs/DATABASE.md) — modèles, sécurité et commandes de schéma ;
+- [`docs/RBAC.md`](docs/RBAC.md) — rôles et contrôles d'accès ;
+- [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — installation, configuration, dépannage et reprise ;
+- [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — conventions de contribution ;
+- [`docs/RECETTE_V1.md`](docs/RECETTE_V1.md) — scénarios fonctionnels ;
+- [`docs/VISION_PRODUIT_COMMERCIALE.md`](docs/VISION_PRODUIT_COMMERCIALE.md) — vision commerciale, avec hypothèses clairement séparées.
 
-## Scripts
+Les rapports datés dans `docs/rapports/` prouvent un état à leur date. Ils ne remplacent ni `TODO.md` ni la documentation courante.
 
-| Commande | Description |
-|----------|-------------|
-| `npm run dev` | Serveur de développement |
-| `npm run build` | Build production |
-| `npm run db:generate` | Générer le client Prisma |
-| `npm run db:push` | Pousser le schéma en BDD |
-| `npm run db:seed` | Peupler les rôles/permissions |
-| `npm run db:studio` | Interface Prisma Studio |
+## Limites avant vente
+
+Le code et la recette locale ne constituent pas une mise en production. Une préproduction séparée, un historique de migrations reproductible, une restauration chronométrée, la configuration e-mail réelle, les essais iPhone/Android, les fournisseurs cartographiques avec garanties et les décisions juridiques/comptables restent ouverts dans `TODO.md`.

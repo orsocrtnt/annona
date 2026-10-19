@@ -1,209 +1,35 @@
-# Modules futurs — Phase 2
+# Hypothèses de modules futurs
 
-Architecture anticipée pour les modules métier à développer.
+Ce document n'est pas une feuille de route engagée. `TODO.md` est la seule source de priorité. Une idée listée ici doit répondre à un besoin répété et recevoir une tâche avec critères de sortie avant toute implémentation.
 
-## Modules planifiés
+## Fonctions déjà présentes
 
-### 1. Gestion des commandes (`features/orders/`)
+Les commandes, livraisons, dispatch, suivi GPS daté, cartographie, factures de livraison, conversations, alertes, support, notifications intégrées, récurrences et preuves existent déjà à des niveaux de qualification différents. Ne pas les recréer sous un nouveau module sans inspecter `src/domains/`, `src/features/` et les rapports associés.
 
-```
-domains/order/
-├── order.service.ts
-├── order.types.ts
-└── order.repository.ts
+## Extensions envisagées, non confirmées
 
-features/orders/
-├── components/
-│   ├── order-list.tsx
-│   ├── order-detail.tsx
-│   └── order-form.tsx
-├── hooks/
-│   └── use-orders.ts
-└── mock-data.ts (à supprimer)
+- optimisation de tournées et regroupement de livraisons ;
+- flotte et maintenance de véhicules ;
+- fournisseur cartographique avec SLA ou auto-hébergement ;
+- intégrations comptables après décision sur le périmètre des factures ;
+- SMS ou notifications push pour quelques événements qualifiés ;
+- import de commandes depuis des outils clients ;
+- application native si les essais terrain démontrent une limite bloquante de la web app ;
+- analytics commerciaux et opérationnels au-delà des tableaux actuels ;
+- automatisation des abonnements et quotas après pilotes payants.
 
-app/(back-office)/dashboard/orders/
-app/(client-portal)/portal/orders/  ← existe (structure)
-app/api/orders/
-```
+Ces éléments ne doivent apparaître ni comme disponibles, ni comme promis commercialement. Les tâches SPECIAL-1, BILL-01A/B, SAAS-01B, SMS et les décisions de V1-GO encadrent une partie de ces hypothèses.
 
-**Tables** : `Order`, `OrderItem`
-**Permissions** : `orders:read`, `orders:create`, `orders:update`
+## Conditions d'ajout
 
----
+Avant de créer un module :
 
-### 2. Gestion des livraisons (`features/deliveries/`)
+1. décrire le problème et l'utilisateur concerné ;
+2. vérifier que le code actuel ne couvre pas déjà le besoin ;
+3. définir le parcours, les limites et les métriques de valeur ;
+4. préciser les rôles et frontières d'entreprise ;
+5. évaluer schéma, concurrence, idempotence, coûts externes et reprise ;
+6. ajouter une tâche priorisée à `TODO.md` ;
+7. tester avec deux entreprises et les rôles concernés.
 
-```
-domains/delivery/
-features/deliveries/
-app/(back-office)/dashboard/deliveries/
-app/(back-office)/dispatch/deliveries/
-app/api/deliveries/
-```
-
-**Tables** : `Delivery`, `DeliveryStatus`, `DeliveryItem`
-**Permissions** : `deliveries:*`, `deliveries:dispatch`
-
----
-
-### 3. Dispatch automatique (`features/dispatch/`)
-
-```
-domains/dispatch/
-├── dispatch.service.ts
-├── dispatch.algorithm.ts
-└── dispatch.types.ts
-
-features/dispatch/
-├── components/
-│   ├── dispatch-board.tsx
-│   ├── dispatch-map.tsx
-│   └── driver-assignment.tsx
-```
-
-**Dépendances** : Deliveries, Drivers, Vehicles, GPS
-
----
-
-### 4. Tracking GPS (`features/tracking/`)
-
-```
-domains/tracking/
-services/tracking/
-├── gps-provider.ts
-└── realtime.ts
-
-features/tracking/
-├── components/
-│   ├── live-map.tsx
-│   └── tracking-timeline.tsx
-```
-
-**Tables** : `TrackingEvent`
-**Services** : WebSocket, Mapbox/Google Maps
-
----
-
-### 5. Cartographie (`features/maps/`)
-
-```
-features/maps/
-├── components/
-│   ├── fleet-map.tsx
-│   ├── route-map.tsx
-│   └── zone-map.tsx
-services/maps/
-└── mapbox.ts
-```
-
----
-
-### 6. Optimisation de tournées (`features/routing/`)
-
-```
-domains/routing/
-├── routing.service.ts
-└── routing.algorithm.ts
-```
-
-**Dépendances** : Deliveries, Vehicles, Maps
-
----
-
-### 7. Gestion de flotte (`features/fleet/`)
-
-```
-domains/vehicle/
-features/fleet/
-app/(back-office)/dashboard/fleet/
-app/api/vehicles/
-```
-
-**Tables** : `Vehicle`, `VehicleMaintenance`
-
----
-
-### 8. Facturation (`features/billing/`)
-
-```
-domains/invoice/
-features/billing/
-app/(back-office)/dashboard/billing/
-app/(client-portal)/portal/invoices/  ← existe (structure)
-app/api/invoices/
-```
-
-**Tables** : `Invoice`, `InvoiceItem`, `Payment`
-
----
-
-### 9. Analytics (`features/analytics/`)
-
-```
-domains/analytics/
-features/analytics/
-├── components/
-│   ├── kpi-dashboard.tsx
-│   ├── delivery-metrics.tsx
-│   └── revenue-chart.tsx
-app/(back-office)/dashboard/analytics/
-app/(back-office)/admin/analytics/
-```
-
-**Permissions** : `analytics:read`
-
----
-
-### 10. Notifications (`features/notifications/`)
-
-```
-domains/notification/
-services/notifications/
-├── email.ts
-├── push.ts
-└── in-app.ts
-
-features/notifications/
-├── components/
-│   ├── notification-bell.tsx
-│   └── notification-list.tsx
-```
-
-**Tables** : `Notification`, `NotificationPreference`
-
----
-
-## Pattern d'ajout d'un module
-
-1. **Schéma Prisma** : Ajouter les modèles dans `schema.prisma`
-2. **Migration** : `npm run db:migrate`
-3. **Domain** : Créer le service dans `domains/{entity}/`
-4. **Permissions** : Ajouter dans seed + RBAC
-5. **Validation** : Schémas Zod dans `lib/validations/`
-6. **API** : Routes dans `app/api/{resource}/`
-7. **Feature** : Composants dans `features/{module}/`
-8. **Pages** : Routes dans le layout approprié
-9. **Navigation** : Ajouter dans `nav-config.ts`
-10. **Tests** : Couvrir le domain service
-
-## Dépendances inter-modules
-
-```
-Orders ──► Deliveries ──► Tracking
-                │
-                ├──► Dispatch ──► Routing
-                │
-                └──► Drivers ──► Fleet (Vehicles)
-
-Deliveries ──► Billing (Invoices)
-All ──► Notifications
-All ──► Analytics
-```
-
-## Capacité
-
-L'architecture actuelle supporte :
-- **Multi-tenant** : milliers d'entreprises via `companyId`
-- **RBAC extensible** : permissions granulaires
-- **Modularité** : ajout de modules sans refactoring
-- **Scalabilité** : Server Components + API Routes + cache React Query
+L'architecture générale à respecter est décrite dans `ARCHITECTURE.md` et les changements de données dans `DATABASE.md`.

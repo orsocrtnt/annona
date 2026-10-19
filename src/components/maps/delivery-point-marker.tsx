@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import L from "leaflet";
 import { Marker } from "react-leaflet";
 import type { DeliveryMapMarkerKind } from "@/features/back-office/dispatch-delivery-map-state";
+import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
 
 function escapeHtml(text: string) {
   return text
@@ -14,15 +15,15 @@ function escapeHtml(text: string) {
 }
 
 const MARKER_COLORS: Record<DeliveryMapMarkerKind, string> = {
-  destination: "#2563eb",
-  pickup: "#ea580c",
-  step: "#71717a",
+  destination: MAP_VISUAL_THEME.ink,
+  pickup: MAP_VISUAL_THEME.surface,
+  step: MAP_VISUAL_THEME.inkSoft,
 };
 
 const MUTED_MARKER_COLORS: Record<DeliveryMapMarkerKind, string> = {
-  destination: "#94a3b8",
-  pickup: "#cbd5e1",
-  step: "#d4d4d8",
+  destination: MAP_VISUAL_THEME.muted,
+  pickup: MAP_VISUAL_THEME.surface,
+  step: MAP_VISUAL_THEME.mutedLight,
 };
 
 function createPointIcon(
@@ -36,13 +37,18 @@ function createPointIcon(
   const color = (muted ? MUTED_MARKER_COLORS : MARKER_COLORS)[kind];
   const dotSize = isSelected ? 16 : 13;
   const cardOffset = dotSize / 2 + 10;
+  const stepTextColor = muted ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
   const innerLabel =
     kind === "step" && stepIndex != null
-      ? `<span style="font-size:10px;font-weight:700;color:#fff;">${stepIndex}</span>`
+      ? `<span style="font-size:10px;font-weight:700;color:${stepTextColor};">${stepIndex}</span>`
       : "";
+  const selectedSurface = isSelected ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
+  const selectedText = isSelected ? MAP_VISUAL_THEME.surface : MAP_VISUAL_THEME.ink;
+  const selectedMutedText = isSelected ? "#d4d4d8" : "#71717a";
+  const dotBorder = kind === "pickup" ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
 
   const subtitleBlock = subtitle
-    ? `<div style="font-size:10px;color:#71717a;margin-top:2px;max-width:160px;white-space:normal;line-height:1.25;">${escapeHtml(subtitle)}</div>`
+    ? `<div style="font-size:10px;color:${selectedMutedText};margin-top:2px;max-width:160px;white-space:normal;line-height:1.25;">${escapeHtml(subtitle)}</div>`
     : "";
 
   const html = `
@@ -53,21 +59,21 @@ function createPointIcon(
         transform:translate(-50%,-50%);
         border-radius:50%;
         background:${color};
-        border:3px solid #ffffff;
-        box-shadow:0 2px 10px rgba(0,0,0,0.25);
+        border:3px solid ${dotBorder};
+        box-shadow:0 2px 10px rgba(0,0,0,0.22)${isSelected ? ",0 0 0 2px #111111" : ""};
         display:flex;align-items:center;justify-content:center;
       ">${innerLabel}</div>
       <div style="
         position:absolute;left:0;top:0;
         transform:translate(-50%,calc(-100% - ${cardOffset}px));
-        padding:6px 12px;border-radius:10px;
-        background:rgba(255,255,255,0.88);
-        backdrop-filter:blur(12px);
-        border:1px solid rgba(255,255,255,0.95);
-        box-shadow:0 4px 18px rgba(0,0,0,0.12);
+        padding:6px 11px;border-radius:10px;
+        background:${selectedSurface};
+        backdrop-filter:blur(8px);
+        border:1px solid rgba(10,10,10,0.10);
+        box-shadow:0 6px 20px rgba(0,0,0,0.10);
         text-align:center;max-width:180px;
       ">
-        <div style="font-size:11px;font-weight:600;color:#0a0a0a;">${escapeHtml(label)}</div>
+        <div style="font-size:11px;font-weight:650;color:${selectedText};">${escapeHtml(label)}</div>
         ${subtitleBlock}
       </div>
     </div>

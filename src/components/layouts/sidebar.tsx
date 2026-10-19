@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUIStore } from "@/stores/ui.store";
 import { APP_NAME } from "@/lib/constants";
 import { isNavItemActive } from "@/lib/navigation/is-nav-item-active";
-import { useNavQueryPrefetch, usePrefetchNavHrefs } from "@/hooks/use-nav-query-prefetch";
+import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { ChevronLeft, Package2 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -31,7 +31,14 @@ function SidebarNavLink({
   const Icon = item.icon;
 
   return (
-    <Link key={item.href} href={item.href} {...prefetchHandlers} className={className}>
+    <Link
+      key={item.href}
+      href={item.href}
+      aria-label={sidebarCollapsed ? item.title : undefined}
+      aria-current={isActive ? "page" : undefined}
+      {...prefetchHandlers}
+      className={className}
+    >
       {Icon && (
         <Icon
           className={cn(
@@ -58,7 +65,6 @@ export function Sidebar({ items, footer }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const allHrefs = items.map((item) => item.href);
-  usePrefetchNavHrefs(items.filter((item) => !item.disabled).map((item) => item.href));
 
   return (
     <aside
@@ -92,7 +98,7 @@ export function Sidebar({ items, footer }: SidebarProps) {
       </div>
 
       <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-1">
+        <nav aria-label="Navigation principale" className="space-y-1">
           {items.map((item) => {
             const isActive = isNavItemActive(pathname, item.href, allHrefs);
             const Icon = item.icon;

@@ -22,9 +22,20 @@ export const ROUTE_GUARDS: RouteGuardConfig[] = [
     redirectTo: "/login",
   },
   {
+    path: "/onboarding",
+    allowedRoles: ["COMPANY_ADMIN"],
+    requiredPermissions: ["settings:read"],
+    redirectTo: "/login",
+  },
+  {
     path: "/dispatch",
     allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
     requiredPermissions: ["dashboard:dispatcher"],
+    redirectTo: "/login",
+  },
+  {
+    path: "/support",
+    allowedRoles: ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
     redirectTo: "/login",
   },
   {

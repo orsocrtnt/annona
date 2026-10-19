@@ -1,3 +1,5 @@
+import { ROUTE_BASE_URL, isValidCoordinate } from "@/lib/maps/provider-config";
+import { fetchProviderJson } from "@/lib/maps/provider-request";
 import { buildManeuverInstruction } from "@/lib/maps/navigation-utils";
 
 export type RouteWaypoint = {
@@ -33,87 +35,37 @@ type OsrmStep = {
   };
 };
 
-/** Itinéraire OSRM (fallback : lignes droites entre les points). */
-export async function fetchOsrmRoute(
-  waypoints: RouteWaypoint[]
-): Promise<[number, number][]> {
-  const route = await fetchOsrmNavigationRoute(waypoints);
-  return route.polyline;
+let lastRequestAt = 0;
+
+/** No straight-line substitute: an unavailable route is null. */
+export async function fetchOsrmRoute(waypoints: RouteWaypoint[], signal?: AbortSignal): Promise<[number, number][] | null> {
+  return (await fetchOsrmNavigationRoute(waypoints, signal))?.polyline ?? null;
 }
 
-/** Itinéraire OSRM avec distance, durée et étapes de navigation. */
-export async function fetchOsrmNavigationRoute(
-  waypoints: RouteWaypoint[]
-): Promise<NavigationRoute> {
-  const fallbackPolyline = waypoints.map((w) => [w.latitude, w.longitude] as [number, number]);
-
-  if (waypoints.length < 2) {
-    return {
-      polyline: fallbackPolyline,
-      distanceMeters: 0,
-      durationSeconds: 0,
-      steps: [],
-    };
-  }
-
+export async function fetchOsrmNavigationRoute(waypoints: RouteWaypoint[], signal?: AbortSignal): Promise<NavigationRoute | null> {
+  if (waypoints.length < 2 || waypoints.some(w => !isValidCoordinate(w.latitude, w.longitude))) return null;
+  if (Date.now() - lastRequestAt < 1_100) return null;
+  lastRequestAt = Date.now();
   try {
-    const coords = waypoints.map((w) => `${w.longitude},${w.latitude}`).join(";");
-    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`;
-    const res = await fetch(url);
-    const json = (await res.json()) as {
+    const coords = waypoints.map(w => `${w.longitude},${w.latitude}`).join(";");
+    const json = await fetchProviderJson(`${ROUTE_BASE_URL.replace(/\/$/, "")}/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`, signal) as {
       code?: string;
-      routes?: {
-        distance: number;
-        duration: number;
-        geometry: { coordinates: [number, number][] };
-        legs?: { steps: OsrmStep[] }[];
-      }[];
+      routes?: { distance: number; duration: number; geometry?: { coordinates?: [number, number][] }; legs?: { steps: OsrmStep[] }[] }[];
     };
-
-    if (json.code !== "Ok" || !json.routes?.[0]?.geometry?.coordinates?.length) {
-      return {
-        polyline: fallbackPolyline,
-        distanceMeters: 0,
-        durationSeconds: 0,
-        steps: [],
-      };
-    }
-
-    const route = json.routes[0];
-    const polyline = route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
+    const route = json.routes?.[0];
+    if (json.code !== "Ok" || !route?.geometry?.coordinates || route.geometry.coordinates.length < 2 ||
+      !Number.isFinite(route.distance) || route.distance <= 0 || !Number.isFinite(route.duration) || route.duration <= 0 ||
+      route.geometry.coordinates.some(p => !Array.isArray(p) || !isValidCoordinate(p[1], p[0]))) return null;
     const steps: NavigationRouteStep[] = [];
-
     for (const leg of route.legs ?? []) {
       for (const step of leg.steps ?? []) {
         const [lng, lat] = step.maneuver.location;
-        steps.push({
-          instruction: buildManeuverInstruction(
-            step.maneuver.type,
-            step.maneuver.modifier,
-            step.name
-          ),
-          distanceMeters: step.distance,
-          latitude: lat,
-          longitude: lng,
-          maneuverType: step.maneuver.type,
-          modifier: step.maneuver.modifier,
-          streetName: step.name ?? null,
-        });
+        if (!isValidCoordinate(lat, lng) || !Number.isFinite(step.distance) || step.distance < 0) return null;
+        steps.push({ instruction: buildManeuverInstruction(step.maneuver.type, step.maneuver.modifier, step.name), distanceMeters: step.distance,
+          latitude: lat, longitude: lng, maneuverType: step.maneuver.type, modifier: step.maneuver.modifier, streetName: step.name ?? null });
       }
     }
-
-    return {
-      polyline,
-      distanceMeters: route.distance,
-      durationSeconds: route.duration,
-      steps,
-    };
-  } catch {
-    return {
-      polyline: fallbackPolyline,
-      distanceMeters: 0,
-      durationSeconds: 0,
-      steps: [],
-    };
-  }
+    if (steps.length === 0) return null;
+    return { polyline: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]), distanceMeters: route.distance, durationSeconds: route.duration, steps };
+  } catch { return null; }
 }

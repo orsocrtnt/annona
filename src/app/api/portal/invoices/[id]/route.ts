@@ -8,9 +8,13 @@ export async function GET(
 ) {
   const auth = await requireClientRole();
   if ("error" in auth) return auth.error;
+  const companyId = auth.context.user.companyId;
+  if (!companyId) {
+    return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
+  }
 
   const { id } = await params;
-  const invoice = await getClientInvoiceById(auth.context.user.id, id);
+  const invoice = await getClientInvoiceById(auth.context.user.id, companyId, id);
 
   if (!invoice) {
     return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });

@@ -36,7 +36,7 @@ export function getDeliveryRouteWaypoints(
   const driver = delivery.driverLocation;
   const dest = delivery.destination;
 
-  if (!driver) return null;
+  if (!driver || !dest) return null;
 
   if (delivery.deliveryCategory === "COURIER") {
     if (!ACTIVE_ROUTE_STATUSES.includes(delivery.status as (typeof ACTIVE_ROUTE_STATUSES)[number])) {
@@ -108,7 +108,7 @@ export function getDeliveryRouteWaypoints(
 export function buildDeliveryMapMarkers(
   delivery: DispatchMapDelivery
 ): DeliveryMapMarker[] {
-  const markers: DeliveryMapMarker[] = [
+  const markers: DeliveryMapMarker[] = delivery.destination ? [
     {
       id: `${delivery.id}-dest`,
       kind: "destination",
@@ -117,7 +117,7 @@ export function buildDeliveryMapMarkers(
       label: "Livraison",
       subtitle: delivery.address,
     },
-  ];
+  ] : [];
 
   if (delivery.pickups.length > 0) {
     for (const pickupPoint of delivery.pickups) {
@@ -201,6 +201,7 @@ export function isPreMissionDriverLocation(delivery: DispatchMapDelivery) {
 }
 
 export function getDeliveryMapPhaseHint(delivery: DispatchMapDelivery): string | null {
+  if (!delivery.destination) return null;
   if (isPreMissionDriverLocation(delivery)) {
     return "Livreur assigné · itinéraire estimé vers la livraison";
   }

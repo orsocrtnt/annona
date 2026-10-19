@@ -45,7 +45,7 @@ export function useDispatchDriverOptions(delivery: DeliveryForEligibility) {
         settings,
         tariffSettings.tariffZones
       );
-      const { soft, hard } = splitEligibilityReasons(reasonCodes);
+      const { soft } = splitEligibilityReasons(reasonCodes);
       const overCapacity = isOnlySoftIneligibility(reasonCodes);
       return {
         driver,

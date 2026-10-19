@@ -23,7 +23,6 @@ export const updateDriverDeliveryStatusSchema = z.object({
   podOutcome: z.enum(["SUCCESS", "FAILED"]).optional(),
   podFailureCode: z.enum(POD_FAILURE_CODES).optional(),
   podNote: z.string().max(400).optional(),
-  podPhotoPath: z.string().min(1).optional(),
 });
 
 export const adminUpdateDeliverySchema = z.object({
@@ -39,6 +38,7 @@ export const adminUpdateDeliverySchema = z.object({
       "CANCELLED",
       "FAILED",
     ])
+    .refine((status): boolean => status !== "INVOICED" && status !== "PAID", "Utilisez les actions de facturation dédiées")
     .optional(),
   address: z.string().min(5).optional(),
   city: z.string().min(2).optional(),

@@ -7,7 +7,15 @@ import {
 } from "@/domains/delivery/delivery.service";
 import { updateDriverDeliveryStatusSchema } from "@/lib/validations/delivery";
 import { DriverProximityError } from "@/domains/delivery/driver-proximity.service";
-import { uploadPodPhoto } from "@/lib/storage/pod";
+import {
+  cleanupPodPhotoOrphans,
+  deletePodPhoto,
+  getPodPhotoSignedUrl,
+  MAX_POD_BYTES,
+  MAX_POD_REQUEST_BYTES,
+  uploadPodPhoto,
+  validatePodPhoto,
+} from "@/lib/storage/pod";
 import { POD_FAILURE_CODES } from "@/lib/pod/codes";
 
 export async function GET(
@@ -16,48 +24,104 @@ export async function GET(
 ) {
   const auth = await requireDriverRole();
   if ("error" in auth) return auth.error;
+  const companyId = auth.context.user.companyId;
+  if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
 
   const { id } = await params;
-  const mission = await getDriverMissionById(auth.context.user.id, id);
+  const mission = await getDriverMissionById(auth.context.user.id, companyId, id);
 
   if (!mission) {
     return NextResponse.json({ error: "Mission introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json({ data: mission, success: true });
+  const { podPhotoPath, ...safeMission } = mission;
+  return NextResponse.json({
+    data: {
+      ...safeMission,
+      podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, mission.id),
+    },
+    success: true,
+  });
 }
 
-async function parseDriverStatusPayload(request: Request, deliveryId: string, companyId: string) {
+async function parseDriverStatusPayload(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("multipart/form-data")) {
+    const requestLength = Number(request.headers.get("content-length"));
+    if (Number.isFinite(requestLength) && requestLength > MAX_POD_REQUEST_BYTES) {
+      throw new Error("POD_PHOTO_TOO_LARGE");
+    }
     const form = await request.formData();
     const photo = form.get("photo");
-    let podPhotoPath: string | undefined;
+    let podPhoto: { bytes: Buffer; contentType: string } | undefined;
     if (photo instanceof File && photo.size > 0) {
+      if (photo.size > MAX_POD_BYTES) throw new Error("POD_PHOTO_TOO_LARGE");
       const bytes = Buffer.from(await photo.arrayBuffer());
-      podPhotoPath = await uploadPodPhoto({
-        companyId,
-        deliveryId,
-        bytes,
-        contentType: photo.type || "image/jpeg",
-      });
+      const photoContentType = photo.type || "application/octet-stream";
+      validatePodPhoto(bytes, photoContentType);
+      podPhoto = { bytes, contentType: photoContentType };
     }
     const failureRaw = String(form.get("podFailureCode") ?? "");
     return {
-      status: String(form.get("status") ?? ""),
-      confirmOutOfRange: form.get("confirmOutOfRange") === "true",
-      latitude: form.get("latitude") ? Number(form.get("latitude")) : undefined,
-      longitude: form.get("longitude") ? Number(form.get("longitude")) : undefined,
-      podOutcome: form.get("podOutcome") ? String(form.get("podOutcome")) : undefined,
-      podFailureCode: POD_FAILURE_CODES.includes(failureRaw as (typeof POD_FAILURE_CODES)[number])
-        ? failureRaw
-        : undefined,
-      podNote: form.get("podNote") ? String(form.get("podNote")) : undefined,
-      podPhotoPath,
+      input: {
+        status: String(form.get("status") ?? ""),
+        confirmOutOfRange: form.get("confirmOutOfRange") === "true",
+        latitude: form.get("latitude") ? Number(form.get("latitude")) : undefined,
+        longitude: form.get("longitude") ? Number(form.get("longitude")) : undefined,
+        podOutcome: form.get("podOutcome") ? String(form.get("podOutcome")) : undefined,
+        podFailureCode: POD_FAILURE_CODES.includes(failureRaw as (typeof POD_FAILURE_CODES)[number])
+          ? failureRaw
+          : undefined,
+        podNote: form.get("podNote") ? String(form.get("podNote")) : undefined,
+      },
+      podPhoto,
     };
   }
 
-  return request.json();
+  const body: unknown = await request.json();
+  // Un chemin de preuve ne peut provenir que de l’upload réalisé par ce serveur.
+  if (body && typeof body === "object" && "podPhotoPath" in body) throw new Error("POD_UNTRUSTED_PATH");
+  return { input: body, podPhoto: undefined };
+}
+
+function normalizedNote(value: string | null | undefined) {
+  return value?.trim() || null;
+}
+
+function isMatchingPodReplay(
+  existing: {
+    status: string;
+    podOutcome: string | null;
+    podPhotoPath: string | null;
+    podFailureCode: string | null;
+    podNote: string | null;
+  },
+  input: {
+    status: string;
+    podFailureCode?: string;
+    podNote?: string;
+  },
+  hasPhoto: boolean
+) {
+  if (existing.status !== input.status) return false;
+  if (input.status === "DELIVERED") {
+    return hasPhoto && existing.podOutcome === "SUCCESS" && Boolean(existing.podPhotoPath) &&
+      normalizedNote(existing.podNote) === normalizedNote(input.podNote);
+  }
+  if (input.status === "FAILED") {
+    return existing.podOutcome === "FAILED" && existing.podFailureCode === input.podFailureCode &&
+      Boolean(existing.podPhotoPath) === hasPhoto && normalizedNote(existing.podNote) === normalizedNote(input.podNote);
+  }
+  return false;
+}
+
+async function removeUnattachedPhoto(path: string | undefined, companyId: string, deliveryId: string) {
+  if (!path) return;
+  try {
+    await deletePodPhoto(path, companyId, deliveryId);
+  } catch (error) {
+    console.error("[pod] nettoyage immédiat impossible", path, error instanceof Error ? error.message : error);
+  }
 }
 
 export async function PATCH(
@@ -67,27 +131,42 @@ export async function PATCH(
   const auth = await requireDriverRole();
   if ("error" in auth) return auth.error;
 
+  const companyId = auth.context.user.companyId;
+  if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
   const { id } = await params;
   const existing = await prisma.delivery.findFirst({
-    where: { id, driverId: auth.context.user.id },
-    select: { companyId: true },
+    where: { id, driverId: auth.context.user.id, companyId },
+    select: {
+      companyId: true,
+      status: true,
+      podOutcome: true,
+      podPhotoPath: true,
+      podFailureCode: true,
+      podNote: true,
+    },
   });
   if (!existing) {
     return NextResponse.json({ error: "Mission introuvable" }, { status: 404 });
   }
 
-  let raw: unknown;
+  let raw: Awaited<ReturnType<typeof parseDriverStatusPayload>>;
   try {
-    raw = await parseDriverStatusPayload(request, id, existing.companyId);
+    raw = await parseDriverStatusPayload(request);
   } catch (error) {
     const message = error instanceof Error ? error.message : "UPLOAD";
+    if (message === "POD_PHOTO_TOO_LARGE") {
+      return NextResponse.json({ error: "Photo trop volumineuse. Limite : 5 Mo." }, { status: 413 });
+    }
+    if (message === "POD_UNTRUSTED_PATH" || message === "POD_INVALID_PHOTO") {
+      return NextResponse.json({ error: "Photo invalide. Envoyez une image JPEG ou PNG de 5 Mo maximum." }, { status: 400 });
+    }
     if (message.startsWith("POD_")) {
       return NextResponse.json({ error: "Impossible d'enregistrer la photo." }, { status: 502 });
     }
     throw error;
   }
 
-  const parsed = updateDriverDeliveryStatusSchema.safeParse(raw);
+  const parsed = updateDriverDeliveryStatusSchema.safeParse(raw.input);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Données invalides", details: parsed.error.flatten() },
@@ -95,7 +174,68 @@ export async function PATCH(
     );
   }
 
+  const terminal = parsed.data.status === "DELIVERED" || parsed.data.status === "FAILED";
+  const expectedOutcome = parsed.data.status === "FAILED" ? "FAILED" : "SUCCESS";
+  if (
+    !terminal &&
+    (raw.podPhoto || parsed.data.podOutcome || parsed.data.podFailureCode || parsed.data.podNote)
+  ) {
+    return NextResponse.json(
+      { error: "Une preuve de livraison ne peut être jointe qu'à la clôture de la mission." },
+      { status: 400 }
+    );
+  }
+  if (terminal && parsed.data.podOutcome && parsed.data.podOutcome !== expectedOutcome) {
+    return NextResponse.json({ error: "La preuve ne correspond pas au résultat de la mission." }, { status: 400 });
+  }
+  if (parsed.data.status === "DELIVERED" && !raw.podPhoto) {
+    return NextResponse.json({ error: "Une photo de preuve est obligatoire pour clôturer." }, { status: 400 });
+  }
+  if (parsed.data.status === "FAILED" && !parsed.data.podFailureCode) {
+    return NextResponse.json({ error: "Indiquez le motif d'échec." }, { status: 400 });
+  }
+
+  // Une réponse réseau peut être perdue après la transaction. Le rejeu du même
+  // palier est alors un succès de lecture et ne crée ni événement ni notification.
+  if (!terminal && existing.status === parsed.data.status) {
+    const replay = await getDriverMissionById(auth.context.user.id, companyId, id);
+    if (!replay) return NextResponse.json({ error: "Mission introuvable" }, { status: 404 });
+    const { podPhotoPath, ...safeReplay } = replay;
+    return NextResponse.json({
+      data: { ...safeReplay, podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, replay.id) },
+      success: true,
+      replay: true,
+    });
+  }
+
+  if (existing.status === "DELIVERED" || existing.status === "FAILED") {
+    if (!isMatchingPodReplay(existing, parsed.data, Boolean(raw.podPhoto))) {
+      return NextResponse.json(
+        { error: "Cette mission est déjà clôturée avec une autre preuve.", code: "POD_REPLAY_CONFLICT" },
+        { status: 409 }
+      );
+    }
+    const replay = await getDriverMissionById(auth.context.user.id, companyId, id);
+    if (!replay) return NextResponse.json({ error: "Mission introuvable" }, { status: 404 });
+    const { podPhotoPath, ...safeReplay } = replay;
+    return NextResponse.json({
+      data: { ...safeReplay, podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, replay.id) },
+      success: true,
+      replay: true,
+    });
+  }
+
+  let podPhotoPath: string | undefined;
+  let photoAttached = false;
+
   try {
+    if (raw.podPhoto) {
+      podPhotoPath = await uploadPodPhoto({
+        companyId: existing.companyId,
+        deliveryId: id,
+        ...raw.podPhoto,
+      });
+    }
     const mission = await updateDeliveryStatusByDriver(
       auth.context.user.id,
       id,
@@ -105,19 +245,32 @@ export async function PATCH(
         confirmOutOfRange: parsed.data.confirmOutOfRange,
         latitude: parsed.data.latitude,
         longitude: parsed.data.longitude,
-        podOutcome: parsed.data.podOutcome,
+        podOutcome: terminal ? expectedOutcome : undefined,
         podFailureCode: parsed.data.podFailureCode,
         podNote: parsed.data.podNote,
-        podPhotoPath: parsed.data.podPhotoPath,
+        podPhotoPath,
       }
     );
 
     if (!mission) {
+      await removeUnattachedPhoto(podPhotoPath, existing.companyId, id);
       return NextResponse.json({ error: "Mission introuvable" }, { status: 404 });
     }
+    photoAttached = true;
 
-    return NextResponse.json({ data: mission, success: true });
+    try {
+      await cleanupPodPhotoOrphans({ companyId: existing.companyId, deliveryId: id, keepPath: podPhotoPath ?? null });
+    } catch (error) {
+      console.error("[pod] nettoyage différé impossible", id, error instanceof Error ? error.message : error);
+    }
+    const { podPhotoPath: storedPath, ...safeMission } = mission;
+    return NextResponse.json({
+      data: { ...safeMission, podPhotoUrl: await getPodPhotoSignedUrl(storedPath, companyId, mission.id) },
+      success: true,
+      replay: false,
+    });
   } catch (error) {
+    if (!photoAttached) await removeUnattachedPhoto(podPhotoPath, existing.companyId, id);
     if (error instanceof DriverProximityError) {
       return NextResponse.json(
         {
@@ -144,6 +297,19 @@ export async function PATCH(
         { status: 409 }
       );
     }
+    if (
+      error instanceof Error &&
+      (error.message === "DELIVERY_STATUS_CONFLICT" ||
+        error.message === "ORDER_STATUS_CONFLICT")
+    ) {
+      return NextResponse.json(
+        {
+          error: "La mission a changé pendant votre action. Actualisez avant de continuer.",
+          code: error.message,
+        },
+        { status: 409 }
+      );
+    }
     if (error instanceof Error && error.message === "POD_PHOTO_REQUIRED") {
       return NextResponse.json(
         { error: "Une photo de preuve est obligatoire pour clôturer." },
@@ -155,6 +321,9 @@ export async function PATCH(
         { error: "Indiquez le motif d'échec." },
         { status: 400 }
       );
+    }
+    if (error instanceof Error && error.message.startsWith("POD_")) {
+      return NextResponse.json({ error: "Impossible d'enregistrer la photo." }, { status: 502 });
     }
     throw error;
   }

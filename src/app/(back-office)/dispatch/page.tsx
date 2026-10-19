@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DataGrid } from "@/components/ui/data-grid";
 import { StatCard } from "@/components/ui/stat-card";
@@ -10,15 +12,20 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useDispatchOverview } from "@/features/back-office/hooks";
-import { useRunAutoDispatch } from "@/features/back-office/dispatch-settings-hooks";
+import {
+  useOperationJobHealth,
+  useRetryFailedOperationJobs,
+  useRunAutoDispatch,
+} from "@/features/back-office/dispatch-settings-hooks";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
 import { getDispatchColumns } from "@/features/back-office/dispatch-columns";
-import { MapPin, Radio, Settings2, Sparkles, Truck } from "lucide-react";
+import { MapPin, Radio, RefreshCw, Settings2, Sparkles, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DeliveryCategory } from "@prisma/client";
 import type { TableColumn } from "@/types";
+import { resolveDispatchFocus } from "@/features/back-office/dispatch-focus";
 
 type DispatchView = "queue" | "rules";
 type CategoryFilter = "ALL" | DeliveryCategory;
@@ -26,13 +33,40 @@ type CategoryFilter = "ALL" | DeliveryCategory;
 const columns = getDispatchColumns();
 
 export default function DispatcherDashboardPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <DispatcherDashboardContent />
+    </Suspense>
+  );
+}
+
+function DispatcherDashboardContent() {
+  const searchParams = useSearchParams();
+  const requestedDeliveryId = searchParams.get("delivery")?.trim() || null;
   const [view, setView] = useState<DispatchView>("queue");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("ALL");
-  const { data: overview, isLoading, error } = useDispatchOverview();
+  const { data: overview, isLoading, error } = useDispatchOverview(requestedDeliveryId);
   const deliveries = overview?.deliveries;
   const stats = overview?.stats;
   const dispatchSettings = overview?.settings;
   const runAutoDispatch = useRunAutoDispatch();
+  const { data: operationHealth } = useOperationJobHealth();
+  const retryFailedJobs = useRetryFailedOperationJobs();
+  const dispatchFocus = useMemo(
+    () => resolveDispatchFocus(searchParams, deliveries ?? []),
+    [deliveries, searchParams]
+  );
+  const focusedDelivery =
+    dispatchFocus.state === "ready"
+      ? (deliveries ?? []).find((delivery) => delivery.id === dispatchFocus.delivery.id) ?? null
+      : null;
+  const focusedDeliveryId = focusedDelivery?.id ?? null;
+
+  useEffect(() => {
+    if (!focusedDeliveryId) return;
+    setView("queue");
+    setCategoryFilter("ALL");
+  }, [focusedDeliveryId]);
 
   const queue = useMemo(() => {
     const base = (deliveries ?? []).filter(
@@ -77,6 +111,17 @@ export default function DispatcherDashboardPage() {
     }
   };
 
+  const handleRetryFailedJobs = async () => {
+    try {
+      const result = await retryFailedJobs.mutateAsync();
+      toast.success(`${result.retried} traitement(s) relancé(s)`);
+    } catch (err) {
+      toast.error("Relance impossible", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
+  };
+
   if (isInitialQueryLoading(isLoading, overview)) return <PageSkeleton />;
 
   return (
@@ -91,7 +136,15 @@ export default function DispatcherDashboardPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/dispatch/map"
+            href={
+              focusedDelivery
+                ? `/dispatch/map?delivery=${encodeURIComponent(focusedDelivery.id)}${
+                    dispatchFocus.state === "ready" && dispatchFocus.reason === "late"
+                      ? "&focus=late"
+                      : ""
+                  }`
+                : "/dispatch/map"
+            }
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
             <MapPin className="h-4 w-4" />
@@ -147,6 +200,79 @@ export default function DispatcherDashboardPage() {
           Règles dispatch
         </button>
       </div>
+
+      {operationHealth &&
+        (operationHealth.failed > 0 ||
+          operationHealth.pending > 0 ||
+          operationHealth.processing > 0) && (
+          <Alert variant={operationHealth.failed > 0 ? "destructive" : "info"}>
+            <AlertTitle>
+              {operationHealth.failed > 0
+                ? `${operationHealth.failed} traitement(s) automatique(s) en échec`
+                : "Traitements automatiques en cours"}
+            </AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+              <span>
+                {operationHealth.pending} en attente, {operationHealth.processing} en cours.
+                {operationHealth.failedJobs[0]?.lastError
+                  ? ` Dernière erreur : ${operationHealth.failedJobs[0].lastError}`
+                  : ""}
+              </span>
+              {operationHealth.failed > 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  loading={retryFailedJobs.isPending}
+                  onClick={handleRetryFailedJobs}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Relancer
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+      {dispatchFocus.state === "ready" && focusedDelivery && (
+        <Alert variant={dispatchFocus.reason === "late" ? "warning" : "info"}>
+          <AlertTitle>
+            {dispatchFocus.reason === "late"
+              ? `Commande en retard ciblée — ${focusedDelivery.reference}`
+              : `Livraison ciblée — ${focusedDelivery.reference}`}
+          </AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              La ligne correspondante est affichée, surlignée et reçoit le focus clavier.
+            </span>
+            <Button variant="outline" size="sm" asChild>
+              <Link
+                href={`/dispatch/map?delivery=${encodeURIComponent(focusedDelivery.id)}${
+                  dispatchFocus.reason === "late" ? "&focus=late" : ""
+                }`}
+              >
+                Voir sur la carte
+              </Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {dispatchFocus.state === "unavailable" && (
+        <Alert variant="warning">
+          <AlertTitle>Cible indisponible</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+            <span>
+              {dispatchFocus.reason === "late"
+                ? "Cette livraison n’est plus en retard ou n’est pas accessible."
+                : "Cette livraison n’est plus active ou n’est pas accessible."}
+            </span>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dispatch">Afficher toute la file</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {view === "rules" ? (
         <DispatchSettingsForm />
@@ -221,6 +347,13 @@ export default function DispatcherDashboardPage() {
                   pageSize={15}
                   emptyTitle="Aucune livraison en attente"
                   emptyDescription="Les nouvelles commandes clients apparaîtront ici."
+                  getRowId={(row) => String(row.id)}
+                  highlightedRowId={focusedDelivery?.id}
+                  highlightedRowLabel={
+                    focusedDelivery
+                      ? `Livraison ciblée ${focusedDelivery.reference}`
+                      : undefined
+                  }
                 />
               </CardContent>
             </Card>

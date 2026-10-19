@@ -1,14 +1,14 @@
 import { prisma } from "@/services/prisma/client";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type { CreateOrderInvoiceInput, InvoiceLineItem } from "@/lib/validations/invoice";
 import {
   getCompanyTariffSettings,
   findTariffZoneForPostalCode,
 } from "@/domains/company/tariff-settings.service";
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
-import { FULFILLMENT_STATUS_LABELS } from "@/lib/constants/order-status";
 import { CLIENT_INVOICES_TAKE } from "@/lib/query/list-limits";
-import { notifyInvoiceIssued } from "@/domains/client-portal/notify.service";
+import { queueInvoiceIssuedNotification } from "@/domains/client-portal/notify.service";
+import { kickOperationJob } from "@/domains/operations/operation-job.service";
 
 function generateInvoiceReference(prefix: string) {
   return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
@@ -73,9 +73,13 @@ export function buildInvoiceLineItems(
     });
   }
 
+  // Save rounded unit prices, so the saved lines exactly explain the saved total.
+  for (const line of lines) {
+    line.amount = new Prisma.Decimal(String(line.amount)).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber();
+  }
   if (vatRate > 0 && lines.length > 0) {
-    const subtotalHT = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
-    const vatAmount = Math.round(subtotalHT * vatRate) / 100;
+    const subtotalHT = new Prisma.Decimal(String(computeInvoiceTotal(lines)));
+    const vatAmount = subtotalHT.times(String(vatRate)).div(100).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber();
     if (vatAmount > 0) {
       lines.push({
         label: `TVA (${vatRate}%)`,
@@ -90,7 +94,8 @@ export function buildInvoiceLineItems(
 }
 
 export function computeInvoiceTotal(lines: InvoiceLineItem[]): number {
-  return lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+  return lines.reduce((sum, line) => sum.plus(new Prisma.Decimal(String(line.amount)).times(line.quantity)
+    .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)), new Prisma.Decimal(0)).toNumber();
 }
 
 export async function createOrderInvoice(
@@ -100,7 +105,7 @@ export async function createOrderInvoice(
 ) {
   const order = await prisma.order.findFirst({
     where: { id: orderId, companyId },
-    include: { items: true, invoices: true, deliveries: true },
+    include: { items: true, invoices: true },
   });
   if (!order) return null;
 
@@ -125,15 +130,20 @@ export async function createOrderInvoice(
   }
 
   const amount = computeInvoiceTotal(lineItems);
+  if (amount > 99_999_999.99) throw new Error("INVOICE_AMOUNT_TOO_LARGE");
   const dueDate = input.dueDate
     ? new Date(input.dueDate)
     : new Date(Date.now() + billing.invoice.defaultDueDays * 24 * 60 * 60 * 1000);
 
-  const existingDraft = order.invoices.find(
-    (inv) => inv.status === "DRAFT" || inv.status === "PENDING"
-  );
-
-  const invoice = await prisma.$transaction(async (tx) => {
+  const { invoice, notificationJobId } = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "orders" WHERE id = ${order.id} FOR UPDATE`;
+    const currentInvoices = await tx.invoice.findMany({ where: { orderId: order.id } });
+    if (currentInvoices.some((candidate) => candidate.status === "PAID")) {
+      throw new Error("INVOICE_ALREADY_PAID");
+    }
+    const existingDraft = currentInvoices.find(
+      (candidate) => candidate.status === "DRAFT" || candidate.status === "PENDING"
+    );
     let invoice;
 
     if (existingDraft) {
@@ -163,34 +173,18 @@ export async function createOrderInvoice(
       });
     }
 
-    await tx.order.update({
-      where: { id: orderId },
-      data: { status: "INVOICED" },
+    const notificationJob = await queueInvoiceIssuedNotification(tx, {
+      customerId: invoice.customerId,
+      companyId,
+      reference: invoice.reference,
+      invoiceId: invoice.id,
+      amount: Number(invoice.amount),
     });
 
-    for (const delivery of order.deliveries) {
-      await tx.delivery.update({
-        where: { id: delivery.id },
-        data: { status: "INVOICED" },
-      });
-      await tx.trackingEvent.create({
-        data: {
-          deliveryId: delivery.id,
-          label: FULFILLMENT_STATUS_LABELS.INVOICED,
-          description: "Facture émise par l'administrateur",
-        },
-      });
-    }
+    return { invoice, notificationJobId: notificationJob?.id ?? null };
+  }, { maxWait: 10_000, timeout: 30_000 });
 
-    return invoice;
-  });
-
-  notifyInvoiceIssued({
-    customerId: invoice.customerId,
-    reference: invoice.reference,
-    invoiceId: invoice.id,
-    amount: Number(invoice.amount),
-  });
+  if (notificationJobId) kickOperationJob(notificationJobId);
 
   return invoice;
 }
@@ -224,9 +218,9 @@ export async function getOrderInvoicePreview(
   };
 }
 
-export async function getClientInvoices(customerId: string) {
+export async function getClientInvoices(customerId: string, companyId: string) {
   return prisma.invoice.findMany({
-    where: { customerId },
+    where: { customerId, companyId },
     include: {
       order: {
         select: {
@@ -242,9 +236,13 @@ export async function getClientInvoices(customerId: string) {
   });
 }
 
-export async function getClientInvoiceById(customerId: string, invoiceId: string) {
+export async function getClientInvoiceById(
+  customerId: string,
+  companyId: string,
+  invoiceId: string
+) {
   return prisma.invoice.findFirst({
-    where: { id: invoiceId, customerId },
+    where: { id: invoiceId, customerId, companyId },
     include: {
       order: {
         select: {
@@ -260,3 +258,24 @@ export async function getClientInvoiceById(customerId: string, invoiceId: string
   });
 }
 
+/** Le règlement ne modifie jamais la commande, la mission ni leurs dates. */
+export async function markOrderInvoicePaid(
+  companyId: string,
+  orderId: string,
+  invoiceId: string,
+  expectedUpdatedAt: Date
+) {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "orders" WHERE id = ${orderId} AND company_id = ${companyId} FOR UPDATE`;
+    const invoice = await tx.invoice.findFirst({ where: { id: invoiceId, orderId, companyId } });
+    if (!invoice) return null;
+    if (invoice.status === "PAID") return invoice;
+    if (invoice.status !== "PENDING") throw new Error("INVOICE_NOT_PAYABLE");
+    const claim = await tx.invoice.updateMany({
+      where: { id: invoiceId, orderId, companyId, status: "PENDING", updatedAt: expectedUpdatedAt },
+      data: { status: "PAID", paidAt: new Date() },
+    });
+    if (claim.count !== 1) throw new Error("INVOICE_STATUS_CONFLICT");
+    return tx.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+  }, { maxWait: 10_000, timeout: 30_000 });
+}

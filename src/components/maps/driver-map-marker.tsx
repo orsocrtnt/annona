@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import L from "leaflet";
 import { Marker } from "react-leaflet";
 import { getDriverPresenceColor } from "@/lib/driver-presence";
+import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
 
 function escapeHtml(text: string) {
   return text
@@ -35,13 +36,16 @@ function createDriverIcon(
 ) {
   const { firstName, lastName } = splitName(name);
   const dotSize = isSelected ? DOT_SELECTED : DOT_SIZE;
-  const dotColor = getDriverPresenceColor(isOnline, updatedAt);
+  const presenceColor = getDriverPresenceColor(isOnline, updatedAt);
   const cardOffset = dotSize / 2 + GAP;
+  const cardSurface = isSelected ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
+  const primaryText = isSelected ? MAP_VISUAL_THEME.surface : MAP_VISUAL_THEME.ink;
+  const secondaryText = isSelected ? "#d4d4d8" : "#52525b";
 
   const nameBlock = lastName
-    ? `<div style="font-size:${isSelected ? 12 : 11}px;font-weight:600;color:#0a0a0a;line-height:1.2;">${escapeHtml(firstName)}</div>
-       <div style="font-size:${isSelected ? 11 : 10}px;font-weight:500;color:#52525b;line-height:1.2;margin-top:1px;">${escapeHtml(lastName)}</div>`
-    : `<div style="font-size:${isSelected ? 12 : 11}px;font-weight:600;color:#0a0a0a;line-height:1.2;">${escapeHtml(firstName)}</div>`;
+    ? `<div style="font-size:${isSelected ? 12 : 11}px;font-weight:650;color:${primaryText};line-height:1.2;">${escapeHtml(firstName)}</div>
+       <div style="font-size:${isSelected ? 11 : 10}px;font-weight:500;color:${secondaryText};line-height:1.2;margin-top:1px;">${escapeHtml(lastName)}</div>`
+    : `<div style="font-size:${isSelected ? 12 : 11}px;font-weight:650;color:${primaryText};line-height:1.2;">${escapeHtml(firstName)}</div>`;
 
   const cardPadding = isSelected ? "7px 14px" : "6px 12px";
   const cardRadius = isSelected ? "12px" : "10px";
@@ -57,10 +61,10 @@ function createDriverIcon(
         height:${dotSize}px;
         transform:translate(-50%,-50%);
         border-radius:50%;
-        background:${dotColor};
+        background:${MAP_VISUAL_THEME.ink};
         border:3px solid #ffffff;
-        box-shadow:0 2px 10px rgba(0,0,0,0.3),0 0 0 2px ${dotColor}40;
-      "></div>
+        box-shadow:0 2px 10px rgba(0,0,0,0.26)${isSelected ? ",0 0 0 2px #111111" : ""};
+      "><span style="position:absolute;right:-2px;bottom:-2px;width:7px;height:7px;border-radius:50%;background:${presenceColor};border:1.5px solid #ffffff;"></span></div>
       <div style="
         position:absolute;
         left:0;
@@ -68,11 +72,11 @@ function createDriverIcon(
         transform:translate(-50%,calc(-100% - ${cardOffset}px));
         padding:${cardPadding};
         border-radius:${cardRadius};
-        background:rgba(255,255,255,0.88);
-        backdrop-filter:blur(12px);
-        -webkit-backdrop-filter:blur(12px);
-        border:1px solid rgba(255,255,255,0.95);
-        box-shadow:0 4px 18px rgba(0,0,0,0.12),0 1px 4px rgba(0,0,0,0.06);
+        background:${cardSurface};
+        backdrop-filter:blur(8px);
+        -webkit-backdrop-filter:blur(8px);
+        border:1px solid rgba(10,10,10,0.10);
+        box-shadow:0 6px 20px rgba(0,0,0,0.10);
         text-align:center;
         white-space:nowrap;
       ">${nameBlock}</div>

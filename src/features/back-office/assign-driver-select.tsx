@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -12,16 +12,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAssignDelivery, useUnassignDelivery } from "./hooks";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { isSoftIneligibilityMessage } from "@/lib/dispatch/driver-eligibility";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
+import { useAssignDelivery, useUnassignDelivery } from "./hooks";
 import { TABLE_SELECT_TRIGGER_CLASS } from "./table-ui";
 import {
   getDeliveryEligibilityInput,
   useDispatchDriverOptions,
   type DispatchDriverOption,
 } from "./use-dispatch-driver-options";
-import { isSoftIneligibilityMessage } from "@/lib/dispatch/driver-eligibility";
-import { toast } from "sonner";
 
 interface AssignDriverSelectProps {
   deliveryId: string;
@@ -29,6 +29,7 @@ interface AssignDriverSelectProps {
   driverId?: string | null;
   driverName?: string | null;
   driver?: { firstName: string; lastName: string } | null;
+  missionStartedAt?: string | Date | null;
   deliveryCategory?: DeliveryCategory;
   postalCode?: string | null;
   pickupPostalCode?: string | null;
@@ -39,7 +40,6 @@ type PendingAssign = {
   driverId: string;
   driverLabel: string;
   reasons: string;
-  mode: "overload" | "rules";
 };
 
 function getDriverLabel(
@@ -87,6 +87,7 @@ function DriverSelectItems({
             key={item.driver.id}
             value={item.driver.id}
             className="text-xs text-muted-foreground"
+            disabled
           >
             {formatDriverFromParts(item.driver, null)} — {item.reasons}
           </SelectItem>
@@ -101,6 +102,7 @@ export function AssignDriverSelect({
   driverId,
   driverName,
   driver,
+  missionStartedAt,
   deliveryCategory,
   postalCode,
   pickupPostalCode,
@@ -135,14 +137,17 @@ export function AssignDriverSelect({
   );
 
   const assignedLabel = getDriverLabel(driverName, driver);
-  const isCancelled = status === "CANCELLED" || status === "FAILED";
+  const canManage =
+    !missionStartedAt && (status === "PENDING" || status === "ASSIGNED");
+  const isMissionInProgress =
+    Boolean(missionStartedAt) || status === "PURCHASING" || status === "IN_DELIVERY";
   const isReassign = Boolean(assignedLabel);
 
   const findDriverOption = (id: string) =>
     [...compatible, ...overCapacity, ...incompatible].find((item) => item.driver.id === id);
 
   const handleAssign = async (id: string, force = false) => {
-    if (!id) return;
+    if (!id || !canManage) return;
     try {
       await assign.mutateAsync({ deliveryId, driverId: id, force });
       setDriverIdDraft("");
@@ -158,23 +163,12 @@ export function AssignDriverSelect({
             : "Chauffeur assigné"
       );
     } catch (error) {
-      if (error instanceof Error && !force) {
-        if (isSoftIneligibilityMessage(error.message)) {
-          const option = findDriverOption(id);
-          setPendingAssign({
-            driverId: id,
-            driverLabel: formatDriverFromParts(option?.driver ?? null, null),
-            reasons: error.message,
-            mode: "overload",
-          });
-          return;
-        }
-
+      if (error instanceof Error && !force && isSoftIneligibilityMessage(error.message)) {
+        const option = findDriverOption(id);
         setPendingAssign({
           driverId: id,
-          driverLabel: formatDriverFromParts(findDriverOption(id)?.driver ?? null, null),
+          driverLabel: formatDriverFromParts(option?.driver ?? null, null),
           reasons: error.message,
-          mode: "rules",
         });
         return;
       }
@@ -192,18 +186,14 @@ export function AssignDriverSelect({
         driverId: id,
         driverLabel: formatDriverFromParts(item?.driver ?? null, null),
         reasons: item?.reasons ?? "Charge max atteinte",
-        mode: "overload",
       });
       return;
     }
 
     if (incompatibleIds.has(id)) {
       const item = incompatible.find((entry) => entry.driver.id === id);
-      setPendingAssign({
-        driverId: id,
-        driverLabel: formatDriverFromParts(item?.driver ?? null, null),
-        reasons: item?.reasons ?? "Règles dispatch",
-        mode: "rules",
+      toast.error("Chauffeur incompatible avec cette livraison", {
+        description: item?.reasons ?? "Règles dispatch non respectées",
       });
       return;
     }
@@ -218,11 +208,26 @@ export function AssignDriverSelect({
 
   const selectableCount = compatible.length + overCapacity.length;
 
-  if (compact) {
-    if (isCancelled) {
-      return <span className="text-xs text-muted-foreground">—</span>;
+  if (!canManage) {
+    if (compact) {
+      return (
+        <span
+          className="text-xs text-muted-foreground"
+          title={isMissionInProgress ? "Affectation verrouillée : mission démarrée" : "Affectation verrouillée"}
+        >
+          {assignedLabel ?? "—"}
+        </span>
+      );
     }
 
+    return (
+      <span className="text-sm text-muted-foreground">
+        {assignedLabel ?? "—"} ({isMissionInProgress ? "mission démarrée" : "affectation verrouillée"})
+      </span>
+    );
+  }
+
+  if (compact) {
     const showIncompatible = showAllDrivers || selectableCount === 0;
 
     return (
@@ -233,8 +238,8 @@ export function AssignDriverSelect({
             onValueChange={requestAssign}
             disabled={assign.isPending}
           >
-            <SelectTrigger className={TABLE_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder={selectableCount > 0 ? "Chauffeur" : "Aucun disponible"} />
+            <SelectTrigger aria-label="Assigner un chauffeur" className={TABLE_SELECT_TRIGGER_CLASS}>
+              <SelectValue placeholder={selectableCount > 0 ? "Chauffeur" : "Aucun compatible"} />
             </SelectTrigger>
             <SelectContent align="start" className="max-h-48 min-w-[8.5rem]">
               <DriverSelectItems
@@ -251,7 +256,7 @@ export function AssignDriverSelect({
               className="text-[10px] text-muted-foreground underline"
               onClick={() => setShowAllDrivers((value) => !value)}
             >
-              {showAllDrivers ? "Masquer hors règles" : "Voir tous"}
+              {showAllDrivers ? "Masquer hors règles" : "Voir hors règles"}
             </button>
           )}
         </div>
@@ -264,16 +269,6 @@ export function AssignDriverSelect({
           onCancel={() => setPendingAssign(null)}
         />
       </>
-    );
-  }
-
-  const canManage = !isCancelled;
-
-  if (!canManage) {
-    return (
-      <span className="text-sm text-muted-foreground">
-        {assignedLabel ?? "—"} (livraison annulée)
-      </span>
     );
   }
 
@@ -326,8 +321,8 @@ export function AssignDriverSelect({
         )}
         {selectableCount === 0 && (
           <p className="text-sm text-amber-700">
-            Aucun chauffeur disponible sans dépasser les règles dispatch. Vous pouvez forcer une
-            assignation via « Voir tous ».
+            Aucun chauffeur compatible. Les chauffeurs hors règles sont affichés à titre informatif
+            et ne peuvent pas être assignés.
           </p>
         )}
         <div className="flex flex-wrap items-end gap-3">
@@ -337,7 +332,7 @@ export function AssignDriverSelect({
               onValueChange={setDriverIdDraft}
               disabled={assign.isPending}
             >
-              <SelectTrigger>
+              <SelectTrigger aria-label="Choisir un chauffeur">
                 <SelectValue placeholder="Choisir un chauffeur..." />
               </SelectTrigger>
               <SelectContent>
@@ -360,7 +355,7 @@ export function AssignDriverSelect({
           </Button>
           {incompatible.length > 0 && selectableCount > 0 && (
             <Button variant="ghost" size="sm" onClick={() => setShowAllDrivers((value) => !value)}>
-              {showAllDrivers ? "Masquer hors règles" : "Voir tous"}
+              {showAllDrivers ? "Masquer hors règles" : "Voir hors règles"}
             </Button>
           )}
           {editing && (
@@ -395,30 +390,20 @@ function AssignConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const isOverload = pending?.mode === "overload";
-
   return (
     <Dialog open={Boolean(pending)} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isOverload
-              ? isReassign
-                ? "Réassigner malgré la charge max ?"
-                : "Assigner malgré la charge max ?"
-              : isReassign
-                ? "Forcer la réassignation ?"
-                : "Forcer l'assignation ?"}
+            {isReassign ? "Réassigner malgré la charge max ?" : "Assigner malgré la charge max ?"}
           </DialogTitle>
           <DialogDescription asChild>
             <div className="space-y-2 pt-1 text-sm text-muted-foreground">
               {pending && (
                 <>
                   <p>
-                    <span className="font-medium text-foreground">{pending.driverLabel}</span>{" "}
-                    {isOverload
-                      ? "a atteint sa limite de livraisons actives."
-                      : "ne respecte pas toutes les règles dispatch."}
+                    <span className="font-medium text-foreground">{pending.driverLabel}</span> a
+                    atteint sa limite de livraisons actives.
                   </p>
                   <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-900">
                     {pending.reasons}

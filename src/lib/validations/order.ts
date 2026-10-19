@@ -380,7 +380,7 @@ export const updateOrderStatusSchema = z.object({
     "PAID",
     "CANCELLED",
     "FAILED",
-  ]),
+  ]).refine((status): boolean => status !== "INVOICED" && status !== "PAID", "Utilisez les actions de facturation dédiées"),
 });
 
 export type CreateClientOrderInput = z.infer<typeof createClientOrderSchema>;

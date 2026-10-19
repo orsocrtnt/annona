@@ -3,6 +3,11 @@ import type { CreateOrderInvoiceInput } from "@/lib/validations/invoice";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
 import type { CompanyAnalytics } from "@/domains/analytics/analytics.service";
+import {
+  orderHistorySearchParams,
+  type OrderHistoryPage,
+  type OrderHistoryQuery,
+} from "@/lib/query/order-history";
 import type {
   CompanyClient,
   CompanyDelivery,
@@ -11,6 +16,7 @@ import type {
   CompanyOrderStats,
   DispatchOverview,
   DriverDispatchWorkload,
+  CompanySupportTicket,
 } from "./types";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -30,12 +36,18 @@ export const backOfficeApi = {
     fetchJson<CompanyDashboardStats>("/api/back-office/dashboard"),
   getAnalytics: (days: 7 | 30 = 30) =>
     fetchJson<CompanyAnalytics>(`/api/back-office/analytics?days=${days}`),
-  getOrders: () => fetchJson<CompanyOrder[]>("/api/orders"),
+  getOrders: (query: OrderHistoryQuery) =>
+    fetchJson<OrderHistoryPage<CompanyOrder>>(`/api/orders?${orderHistorySearchParams(query)}`),
   getOrder: (id: string) => fetchJson<CompanyOrder>(`/api/orders/${id}`),
   getOrderStats: () => fetchJson<CompanyOrderStats>("/api/orders/stats"),
   getDeliveries: (unassignedOnly = false) =>
     fetchJson<CompanyDelivery[]>(`/api/deliveries${unassignedOnly ? "?unassigned=true" : ""}`),
-  getDispatchOverview: () => fetchJson<DispatchOverview>("/api/dispatch/overview"),
+  getDispatchOverview: (deliveryId?: string | null) =>
+    fetchJson<DispatchOverview>(
+      `/api/dispatch/overview${
+        deliveryId ? `?delivery=${encodeURIComponent(deliveryId)}` : ""
+      }`
+    ),
   getDrivers: () => fetchJson<CompanyDriver[]>("/api/drivers"),
   getDriverDispatchWorkload: () =>
     fetchJson<DriverDispatchWorkload[]>("/api/dispatch/drivers-workload"),
@@ -59,6 +71,12 @@ export const backOfficeApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
+  markOrderInvoicePaid: (orderId: string, invoiceId: string, expectedUpdatedAt: string) =>
+    fetchJson(`/api/orders/${orderId}/invoice`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invoiceId, expectedUpdatedAt }),
+    }),
   getClients: () => fetchJson<CompanyClient[]>("/api/clients"),
   getClient: (id: string) => fetchJson<Record<string, unknown>>(`/api/clients/${id}`),
   getDriver: (id: string) => fetchJson<Record<string, unknown>>(`/api/drivers/${id}`),
@@ -67,5 +85,18 @@ export const backOfficeApi = {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
+    }),
+  getSupportTickets: () => fetchJson<CompanySupportTicket[]>("/api/support"),
+  addSupportMessage: (ticketId: string, body: string) =>
+    fetchJson<CompanySupportTicket>(`/api/support/${ticketId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body }),
+    }),
+  updateSupportStatus: (ticketId: string, status: CompanySupportTicket["status"]) =>
+    fetchJson<CompanySupportTicket>(`/api/support/${ticketId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
     }),
 };

@@ -26,19 +26,12 @@ const previousPrismaHash = existsSync(prismaHashFile)
 const schemaChanged = previousPrismaHash !== currentPrismaHash;
 
 if (schemaChanged) {
-  try {
-    execSync("npx prisma generate", { stdio: "inherit" });
-  } catch {
-    console.warn("[tutelliv] prisma generate a échoué — vérifiez DATABASE_URL / DIRECT_URL.");
-  }
-
-  try {
-    execSync("npm run db:sync-schema", { stdio: "inherit" });
-  } catch {
-    console.warn(
-      "[tutelliv] db:sync-schema a échoué — lancez `npm run db:sync-schema` si des colonnes manquent."
-    );
-  }
+  // La génération est locale ; aucune commande de schéma/seed n'est lancée ici.
+  // Ne pas enregistrer le hash si la génération échoue : réessayer au prochain lancement.
+  execSync("npm run db:generate", { stdio: "inherit" });
+  console.warn(
+    "[tutelliv] Client Prisma régénéré. La base n'a pas été modifiée ; vérifiez sa compatibilité séparément sur un environnement de développement."
+  );
 
   if (previousPrismaHash && existsSync(nextDir)) {
     console.log("[tutelliv] Schéma Prisma modifié — nettoyage du cache Next.js...");

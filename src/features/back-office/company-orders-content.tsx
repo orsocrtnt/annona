@@ -1,35 +1,48 @@
 "use client";
 
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataGrid } from "@/components/ui/data-grid";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { OrderHistoryTable } from "@/components/shared/order-history-table";
 import { useCompanyOrders } from "@/features/back-office/hooks";
 import { getCompanyOrderColumns } from "@/features/back-office/company-order-columns";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
+import {
+  ORDER_HISTORY_DEFAULT_PAGE_SIZE,
+  type OrderHistoryPage,
+  type OrderHistoryQuery,
+} from "@/lib/query/order-history";
 import { Package } from "lucide-react";
 import type { TableColumn } from "@/types";
 import type { CompanyOrder } from "@/features/back-office/types";
+import { AccountingExportForm } from "@/features/back-office/accounting-export-form";
 
 const columns = getCompanyOrderColumns("interactive");
 
 interface CompanyOrdersContentProps {
-  initialOrders?: CompanyOrder[];
+  initialOrders?: OrderHistoryPage<CompanyOrder>;
 }
 
 export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProps) {
-  const { data: orders, isLoading, error } = useCompanyOrders(initialOrders);
+  const [query, setQuery] = React.useState<OrderHistoryQuery>({
+    page: 1,
+    pageSize: ORDER_HISTORY_DEFAULT_PAGE_SIZE,
+  });
+  const { data: result, isLoading, isFetching, error } = useCompanyOrders(query, initialOrders);
 
-  if (isInitialQueryLoading(isLoading, orders)) return <PageSkeleton />;
+  if (isInitialQueryLoading(isLoading, result)) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Commandes</h1>
         <p className="mt-1 text-muted-foreground">
-          Recevez les commandes et assignez-les à vos chauffeurs. Les 80 plus récentes.
+          Retrouvez toutes les commandes, filtrez l&apos;historique et exportez le résultat complet.
         </p>
       </div>
+
+      <AccountingExportForm />
 
       {error ? (
         <EmptyState
@@ -43,12 +56,13 @@ export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProp
             <CardTitle className="text-base">Toutes les commandes</CardTitle>
           </CardHeader>
           <CardContent>
-            <DataGrid
-              data={(orders ?? []) as unknown as Record<string, unknown>[]}
+            <OrderHistoryTable
+              result={result as unknown as OrderHistoryPage<Record<string, unknown>> | undefined}
               columns={columns as unknown as TableColumn<Record<string, unknown>>[]}
-              searchKey="reference"
-              searchPlaceholder="Rechercher une commande..."
-              paginate={false}
+              query={query}
+              onQueryChange={setQuery}
+              exportPath="/api/orders/export"
+              loading={isFetching}
               emptyTitle="Aucune commande"
               emptyDescription="Les commandes clients apparaîtront ici."
             />

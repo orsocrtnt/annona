@@ -2,7 +2,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageSkeleton() {
   return (
-    <div className="space-y-6">
+    <div role="status" aria-live="polite" aria-label="Chargement du contenu" className="space-y-6">
+      <span className="sr-only">Chargement du contenu…</span>
       <div className="space-y-2">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-72" />

@@ -32,7 +32,9 @@ export async function POST(
     if (
       error instanceof Error &&
       (error.message === "DELIVERY_NOT_AVAILABLE" ||
-        error.message === "DELIVERY_ALREADY_ASSIGNED")
+        (error.message === "DELIVERY_ALREADY_ASSIGNED" ||
+          error.message === "DELIVERY_ASSIGNMENT_CONFLICT" ||
+          error.message === "DELIVERY_STATUS_CONFLICT"))
     ) {
       return NextResponse.json(
         { error: "Cette livraison n'est plus disponible." },
@@ -40,7 +42,10 @@ export async function POST(
       );
     }
     if (error instanceof Error && error.message === "DELIVERY_CANCELLED") {
-      return NextResponse.json({ error: "Livraison annulée." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Livraison annulée.", code: "DELIVERY_CANCELLED" },
+        { status: 409 }
+      );
     }
     throw error;
   }

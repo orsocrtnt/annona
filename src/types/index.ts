@@ -58,6 +58,7 @@ export interface Company {
   country?: string | null;
   status: CompanyStatus;
   isDemo?: boolean;
+  settings?: unknown;
   createdAt: Date;
   updatedAt: Date;
 }

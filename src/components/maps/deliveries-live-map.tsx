@@ -18,6 +18,7 @@ import {
 import { DeliveryPointMarker } from "@/components/maps/delivery-point-marker";
 import { DriverMapMarker } from "@/components/maps/driver-map-marker";
 import { LeafletBaseMap, PARIS_CENTER } from "@/components/maps/leaflet-base-map";
+import { MAP_ROUTE_STYLE } from "@/lib/maps/map-visual-theme";
 import { useUIStore } from "@/stores/ui.store";
 
 export type DeliveriesMapApi = {
@@ -46,9 +47,9 @@ function MapApiBridge({ onMapReady }: { onMapReady?: (api: DeliveriesMapApi) => 
 const FIT_RETRY_DELAYS = [50, 150, 320, 500, 800] as const;
 
 function fitMapToDelivery(map: LeafletMap, delivery: DispatchMapDelivery) {
-  const points: [number, number][] = [
+  const points: [number, number][] = delivery.destination ? [
     [delivery.destination.latitude, delivery.destination.longitude],
-  ];
+  ] : [];
   if (delivery.pickup) {
     points.push([delivery.pickup.latitude, delivery.pickup.longitude]);
   }
@@ -114,6 +115,7 @@ function MapViewController({ delivery }: { delivery: DispatchMapDelivery | null 
 
 function DeliveryRouteLayer({ delivery }: { delivery: DispatchMapDelivery }) {
   const [route, setRoute] = useState<[number, number][]>([]);
+  const [unavailable, setUnavailable] = useState(false);
   const waypoints = useMemo(() => getDeliveryRouteWaypoints(delivery), [delivery]);
 
   useEffect(() => {
@@ -122,24 +124,28 @@ function DeliveryRouteLayer({ delivery }: { delivery: DispatchMapDelivery }) {
       return;
     }
 
-    let cancelled = false;
-    fetchOsrmRoute(waypoints).then((coords) => {
-      if (!cancelled) setRoute(coords);
-    });
+    const controller = new AbortController();
+    setRoute([]);
+    setUnavailable(false);
+    const initial = setTimeout(() => {
+      void fetchOsrmRoute(waypoints, controller.signal).then((coords) => {
+        if (!controller.signal.aborted) { setRoute(coords ?? []); setUnavailable(!coords); }
+      });
+    }, 0);
 
     return () => {
-      cancelled = true;
+      clearTimeout(initial);
+      controller.abort();
     };
   }, [waypoints]);
 
+  if (unavailable) return <div role="status" className="pointer-events-none absolute bottom-36 right-3 z-[1000] max-w-[80%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow">Itinéraire indisponible · positions seules</div>;
   if (route.length < 2) return null;
 
-  return (
-    <Polyline
-      positions={route}
-      pathOptions={{ color: "#2563eb", weight: 5, opacity: 0.85, lineCap: "round" }}
-    />
-  );
+  return <>
+    <Polyline positions={route} pathOptions={MAP_ROUTE_STYLE.halo} />
+    <Polyline positions={route} pathOptions={MAP_ROUTE_STYLE.line} />
+  </>;
 }
 
 export function DeliveriesLiveMap({ delivery, onMapReady }: DeliveriesLiveMapProps) {
@@ -159,6 +165,8 @@ export function DeliveriesLiveMap({ delivery, onMapReady }: DeliveriesLiveMapPro
       <MapViewController delivery={delivery} />
 
       {delivery && !delivery.isHistorical && <DeliveryRouteLayer delivery={delivery} />}
+
+      {delivery && !delivery.destination && <div role="status" className="pointer-events-none absolute right-3 top-1/2 z-[1000] max-w-[85%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow">Adresse non localisée · position de livraison indisponible</div>}
 
       {phaseHint && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[1000] flex justify-center px-4">

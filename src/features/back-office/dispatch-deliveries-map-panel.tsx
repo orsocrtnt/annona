@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
@@ -14,6 +15,7 @@ interface DispatchDeliveriesMapPanelProps {
   deliveries: DispatchMapDelivery[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  focusSelectedId?: string | null;
 }
 
 function matchesDeliverySearch(delivery: DispatchMapDelivery, query: string) {
@@ -35,30 +37,40 @@ function matchesDeliverySearch(delivery: DispatchMapDelivery, query: string) {
 
 function deliveryBadgeClasses(category: DeliveryCategory) {
   return category === "COURIER"
-    ? "border-transparent bg-blue-200/80 text-blue-900"
-    : "border-transparent bg-rose-200/80 text-rose-900";
+    ? "border-zinc-300 bg-zinc-100 text-zinc-900"
+    : "border-black bg-black text-white";
 }
 
 function DeliveryListItem({
   delivery,
   isSelected,
   onSelect,
+  shouldFocus = false,
 }: {
   delivery: DispatchMapDelivery;
   isSelected: boolean;
   onSelect: () => void;
+  shouldFocus?: boolean;
 }) {
   const purchasing = isPurchasingPhase(delivery);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!shouldFocus) return;
+    buttonRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    buttonRef.current?.focus({ preventScroll: true });
+  }, [shouldFocus]);
 
   return (
     <button
       type="button"
+      ref={buttonRef}
       onClick={onSelect}
       className={cn(
-        "w-full rounded-xl border p-3 text-left transition-colors",
+        "w-full rounded-xl border p-3 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
         isSelected
-          ? "border-brand/40 bg-white/95 shadow-sm"
-          : "border-white/70 bg-white/70 hover:bg-white/90"
+          ? "border-black bg-white shadow-[inset_3px_0_0_#111111]"
+          : "border-zinc-200 bg-white/90 hover:border-zinc-400 hover:bg-white"
       )}
     >
       <div className="flex items-center justify-between gap-2">
@@ -97,6 +109,7 @@ function DeliveryListItem({
         )
       )}
 
+      <MissionAcknowledgement {...delivery} />
       {delivery.driverName && (
         <p className="mt-2 text-xs text-muted-foreground">{delivery.driverName}</p>
       )}
@@ -128,6 +141,7 @@ function DispatchDeliveriesList({
   search,
   onSearchChange,
   onSelect,
+  focusSelectedId,
 }: {
   deliveries: DispatchMapDelivery[];
   filteredDeliveries: DispatchMapDelivery[];
@@ -135,12 +149,13 @@ function DispatchDeliveriesList({
   search: string;
   onSearchChange: (value: string) => void;
   onSelect: (id: string) => void;
+  focusSelectedId?: string | null;
 }) {
   const hasSearch = search.trim().length > 0;
 
   return (
     <>
-      <div className="border-b border-white/60 px-4 py-3">
+      <div className="border-b border-black/10 px-4 py-3">
         <p className="font-semibold text-foreground">Livraisons actives</p>
         <p className="text-xs text-muted-foreground">
           {hasSearch
@@ -149,14 +164,14 @@ function DispatchDeliveriesList({
         </p>
       </div>
 
-      <div className="border-b border-white/60 px-3 py-3">
+      <div className="border-b border-black/10 px-3 py-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Client, livreur, n° livraison, adresse..."
-            className="h-9 border-white/70 bg-white/80 pl-8 text-sm shadow-none"
+            className="h-9 border-zinc-200 bg-white pl-8 text-sm shadow-none focus-visible:ring-black"
           />
         </div>
       </div>
@@ -176,6 +191,7 @@ function DispatchDeliveriesList({
               key={delivery.id}
               delivery={delivery}
               isSelected={selectedId === delivery.id}
+              shouldFocus={focusSelectedId === delivery.id}
               onSelect={() => onSelect(delivery.id)}
             />
           ))
@@ -189,6 +205,7 @@ export function DispatchDeliveriesMapPanel({
   deliveries,
   selectedId,
   onSelect,
+  focusSelectedId = null,
 }: DispatchDeliveriesMapPanelProps) {
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -199,6 +216,12 @@ export function DispatchDeliveriesMapPanel({
   );
 
   const selectedDelivery = deliveries.find((delivery) => delivery.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!focusSelectedId) return;
+    setSearch("");
+    setMobileOpen(true);
+  }, [focusSelectedId]);
 
   const handleSelect = (id: string) => {
     onSelect(id);
@@ -216,7 +239,7 @@ export function DispatchDeliveriesMapPanel({
           style={mapGlassCardStyle}
           aria-expanded={mobileOpen}
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white">
             <Truck className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -252,6 +275,7 @@ export function DispatchDeliveriesMapPanel({
               search={search}
               onSearchChange={setSearch}
               onSelect={handleSelect}
+              focusSelectedId={focusSelectedId}
             />
           </div>
         )}
@@ -270,6 +294,7 @@ export function DispatchDeliveriesMapPanel({
           search={search}
           onSearchChange={setSearch}
           onSelect={onSelect}
+          focusSelectedId={focusSelectedId}
         />
       </div>
     </>

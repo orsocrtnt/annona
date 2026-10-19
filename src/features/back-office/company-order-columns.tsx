@@ -1,4 +1,5 @@
 import { OrderStatusBadge } from "@/features/client-portal/status-badges";
+import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
 import { AssignDriverSelect } from "./assign-driver-select";
 import { DeleteOrderButton } from "./delete-order-button";
 import { OrderStatusSelect } from "./order-status-select";
@@ -63,6 +64,7 @@ export function getCompanyOrderColumns(mode: ColumnMode): TableColumn<CompanyOrd
       cell: (row) =>
         mode === "interactive" ? (
           <div className={tableSelectWrapper()}>
+
             <OrderStatusSelect
               orderId={row.id}
               currentStatus={row.status}
@@ -93,12 +95,14 @@ export function getCompanyOrderColumns(mode: ColumnMode): TableColumn<CompanyOrd
 
         return (
           <div className={tableSelectWrapper()}>
+            <MissionAcknowledgement {...delivery} />
             <AssignDriverSelect
               deliveryId={delivery.id}
               status={delivery.status}
               driverId={delivery.driverId}
               driverName={delivery.driverName}
               driver={delivery.driver ?? null}
+              missionStartedAt={delivery.missionStartedAt}
               deliveryCategory={row.deliveryCategory}
               postalCode={delivery.postalCode ?? row.shippingPostalCode}
               pickupPostalCode={delivery.pickupPostalCode ?? row.pickupPostalCode}
@@ -115,9 +119,21 @@ export function getCompanyOrderColumns(mode: ColumnMode): TableColumn<CompanyOrd
       key: "actions",
       header: "",
       className: ORDER_TABLE_COL.actions,
-      cell: (row) => (
-        <DeleteOrderButton orderId={row.id} orderReference={row.reference} />
-      ),
+      cell: (row) => {
+        const counts = (
+          row as CompanyOrder & {
+            _count?: { deliveries: number; invoices: number };
+          }
+        )._count;
+        const canDelete =
+          row.status === "QUOTE_REQUESTED" &&
+          counts?.deliveries === 0 &&
+          counts.invoices === 0;
+
+        return canDelete ? (
+          <DeleteOrderButton orderId={row.id} orderReference={row.reference} />
+        ) : null;
+      },
     });
   }
 

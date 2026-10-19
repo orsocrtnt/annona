@@ -1,0 +1,117 @@
+name: TutelLiv CI
+
+on:
+  push:
+    branches: [main, preproduction]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_connected:
+        description: "Exécuter la recette connectée sur la préproduction isolée"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tutelliv-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local:
+    name: Contrôles sans secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3106"
+      NEXT_PUBLIC_SUPABASE_URL: "https://ci.invalid"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-public-placeholder"
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+          cache: npm
+
+      - name: Rechercher les secrets accidentels
+        run: node scripts/ci/scan-secrets.mjs
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier types, lint et règles métier
+        run: npm run check
+
+      - name: Vérifier la documentation
+        run: npm run docs:verify
+
+      - name: Auditer les dépendances de production
+        run: npm run audit:prod
+
+      - name: Construire l'application sans secret
+        run: npm run build
+
+  connected:
+    name: Recette préproduction
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_connected }}
+    needs: local
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: preproduction
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_APP_URL: ${{ secrets.PREPROD_APP_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.PREPROD_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PREPROD_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.PREPROD_SUPABASE_SERVICE_ROLE_KEY }}
+      DATABASE_URL: ${{ secrets.PREPROD_DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.PREPROD_DIRECT_URL }}
+      CRON_SECRET: ${{ secrets.PREPROD_CRON_SECRET }}
+      OPS_HEALTH_SECRET: ${{ secrets.PREPROD_OPS_HEALTH_SECRET }}
+      PREPROD_EXPECTED_APP_HOST: ${{ secrets.PREPROD_EXPECTED_APP_HOST }}
+      PREPROD_EXPECTED_SUPABASE_REF: ${{ secrets.PREPROD_EXPECTED_SUPABASE_REF }}
+      PREPROD_FORBIDDEN_SUPABASE_REFS: "wlomrzilflbouzyhzwxm"
+      AUTH_EMAIL_LINKS_ENABLED: "false"
+      EMAIL_DELIVERY_MODE: "disabled"
+      DEMO_CLEANUP_ENABLED: "false"
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier l'isolation de la préproduction
+        run: npm run ci:preprod-env
+
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Rejouer la recette V1 isolée
+        run: npm run test:v1
+
+      - name: Conserver seulement les preuves sans secret
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutelliv-preproduction-proof
+          path: |
+            outputs/test2/connected.json
+            outputs/test2/browser.json
+            outputs/test2/summary.json
+          if-no-files-found: warn
+          retention-days: 7

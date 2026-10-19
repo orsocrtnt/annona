@@ -232,9 +232,11 @@ export default function ClientSettingsPage() {
                 </div>
               ))}
               <p className="text-xs text-muted-foreground">
-                {settings?.emailConfigured
-                  ? "Les e-mails seront envoyés à l’adresse de ce compte."
-                  : "Aucun service d’e-mail n’est branché pour l’instant : les alertes restent visibles dans la cloche."}
+                {settings?.emailMode === "test"
+                  ? "Mode recette actif : les copies sont redirigées vers la boîte de test, jamais vers les clients."
+                  : settings?.emailConfigured
+                    ? "Les e-mails seront envoyés à l’adresse de ce compte."
+                    : "Aucun service d’e-mail n’est branché pour l’instant : les alertes restent visibles dans la cloche."}
               </p>
               <p className="text-xs text-muted-foreground">
                 SMS : pas encore disponible (il faut un opérateur type Twilio).

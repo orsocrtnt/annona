@@ -7,7 +7,11 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { attachRolesById } from "@/domains/user/user.service";
-import { demoKeepEmails, ensureDemoRosterUsers } from "@/domains/demo/demo-users.service";
+import {
+  demoKeepEmails,
+  demoRosterAuthIds,
+  ensureDemoRosterUsers,
+} from "@/domains/demo/demo-users.service";
 import {
   DEMO_FIXTURE_CLIENTS,
   DEMO_FIXTURE_DRIVERS,
@@ -73,7 +77,7 @@ function buildScenario(): ScenarioItem[] {
     {
       label: "Livrée + facture payée",
       deliveryCategory: "STANDARD",
-      orderStatus: "PAID",
+      orderStatus: "DELIVERED",
       deliveryStatus: "DELIVERED",
       assignDriver: true,
       requestedDeliveryDateOffsetHours: -72,
@@ -360,13 +364,6 @@ const DRIVER_LOCATION_SEEDS = [
   { latitude: 48.8532, longitude: 2.3691 },
 ] as const;
 
-function pickRosterUser<T extends { email: string }>(
-  users: T[],
-  email: string
-): T | undefined {
-  return users.find((user) => user.email.toLowerCase() === email.toLowerCase());
-}
-
 async function applyDemoDispatchDrivers(companyId: string, driverIds: string[]) {
   if (driverIds.length === 0) return;
 
@@ -379,11 +376,11 @@ async function applyDemoDispatchDrivers(companyId: string, driverIds: string[]) 
       ? { ...(company.settings as Record<string, unknown>) }
       : {};
   const previousDispatch =
-    settings.dispatch && typeof settings.dispatch === "object"
-      ? { ...(settings.dispatch as Record<string, unknown>) }
+    settings.dispatchRules && typeof settings.dispatchRules === "object"
+      ? { ...(settings.dispatchRules as Record<string, unknown>) }
       : {};
 
-  settings.dispatch = {
+  settings.dispatchRules = {
     ...previousDispatch,
     enabled: true,
     defaultDriverId: driverIds[0],
@@ -410,12 +407,12 @@ async function applyDemoDispatchDrivers(companyId: string, driverIds: string[]) 
 async function ensureDemoClientAddresses(
   clients: Array<{ id: string }>
 ) {
-  for (const [index, client] of clients.entries()) {
+  await Promise.all(clients.map(async (client, index) => {
     const seeds = CLIENT_ADDRESS_SEEDS[index] ?? CLIENT_ADDRESS_SEEDS[0];
     const addressCount = await prisma.customerAddress.count({
       where: { userId: client.id },
     });
-    if (addressCount > 0) continue;
+    if (addressCount > 0) return;
 
     await prisma.customerAddress.createMany({
       data: seeds.map((seed, seedIndex) => ({
@@ -427,11 +424,11 @@ async function ensureDemoClientAddresses(
         isDefault: seedIndex === 0,
       })),
     });
-  }
+  }));
 }
 
 async function ensureDemoDriverLocations(drivers: Array<{ id: string }>) {
-  for (const [index, driver] of drivers.entries()) {
+  await Promise.all(drivers.map(async (driver, index) => {
     const coords = DRIVER_LOCATION_SEEDS[index] ?? DRIVER_LOCATION_SEEDS[0];
     await prisma.driverLocation.upsert({
       where: { driverId: driver.id },
@@ -447,7 +444,7 @@ async function ensureDemoDriverLocations(drivers: Array<{ id: string }>) {
         accuracy: 12,
       },
     });
-  }
+  }));
 }
 
 async function purgeDemoTransactionalData(companyId: string) {
@@ -470,12 +467,16 @@ async function purgeDemoTransactionalData(companyId: string) {
 /** Comptes créés pendant la démo (mini-admin, etc.) — le roster figé reste. */
 async function purgeDemoExtraAccounts(companyId: string) {
   const keep = new Set(demoKeepEmails());
+  const keepAuthIds = new Set(demoRosterAuthIds(companyId));
   const extras = (
     await prisma.user.findMany({
       where: { companyId },
       select: { id: true, authId: true, email: true },
     })
-  ).filter((user) => !keep.has(user.email.toLowerCase()));
+  ).filter(
+    (user) =>
+      !keep.has(user.email.toLowerCase()) && !keepAuthIds.has(user.authId)
+  );
 
   if (extras.length === 0) return;
 
@@ -558,8 +559,10 @@ async function createScenarioDelivery(
     ? courierItems.reduce((sum, item) => sum + item.quantity, 0)
     : items.reduce((sum, item) => sum + item.quantity, 0);
 
-  const orderReference = await generateOrderReference(scenario.deliveryCategory);
-  const deliveryReference = await generateDeliveryReference();
+  const [orderReference, deliveryReference] = await Promise.all([
+    generateOrderReference(scenario.deliveryCategory),
+    generateDeliveryReference(),
+  ]);
   const primaryPickup = isCourier
     ? getPrimaryCourierPickupFields(
         pickupStops.map((stop) => ({
@@ -571,40 +574,41 @@ async function createScenarioDelivery(
       )
     : null;
 
-  const order = await prisma.order.create({
-    data: {
-      reference: orderReference,
-      status: scenario.orderStatus,
-      source: "CLIENT",
-      totalAmount,
-      itemCount: Math.max(itemCount, 1),
-      notes: scenario.notes ?? null,
-      deliveryCategory: scenario.deliveryCategory,
-      pickupAddress: isCourier ? (primaryPickup?.pickupAddress ?? firstPickup?.address ?? null) : null,
-      pickupCity: isCourier ? (primaryPickup?.pickupCity ?? firstPickup?.city ?? null) : null,
-      pickupPostalCode: isCourier
-        ? (primaryPickup?.pickupPostalCode ?? firstPickup?.postalCode ?? null)
-        : null,
-      shippingAddress: scenario.shipping.address,
-      shippingCity: scenario.shipping.city,
-      shippingPostalCode: scenario.shipping.postalCode,
-      deliveryInstructions: scenario.deliveryInstructions ?? null,
-      requestedDeliveryDate: hoursFromNow(scenario.requestedDeliveryDateOffsetHours, referenceDate),
-      companyId: actors.companyId,
-      customerId: actors.clientId,
-      customerEmail: actors.clientEmail,
-      items: !isCourier
-        ? {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.create({
+      data: {
+        reference: orderReference,
+        status: scenario.orderStatus,
+        source: "CLIENT",
+        totalAmount,
+        itemCount: Math.max(itemCount, 1),
+        notes: scenario.notes ?? null,
+        deliveryCategory: scenario.deliveryCategory,
+        pickupAddress: isCourier ? (primaryPickup?.pickupAddress ?? firstPickup?.address ?? null) : null,
+        pickupCity: isCourier ? (primaryPickup?.pickupCity ?? firstPickup?.city ?? null) : null,
+        pickupPostalCode: isCourier
+          ? (primaryPickup?.pickupPostalCode ?? firstPickup?.postalCode ?? null)
+          : null,
+        shippingAddress: scenario.shipping.address,
+        shippingCity: scenario.shipping.city,
+        shippingPostalCode: scenario.shipping.postalCode,
+        deliveryInstructions: scenario.deliveryInstructions ?? null,
+        requestedDeliveryDate: hoursFromNow(scenario.requestedDeliveryDateOffsetHours, referenceDate),
+        companyId: actors.companyId,
+        customerId: actors.clientId,
+        customerEmail: actors.clientEmail,
+        items: !isCourier
+          ? {
             create: items.map((item) => ({
               name: item.name,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
             })),
           }
-        : undefined,
-      stops:
-        isCourier && pickupStops.length > 0
-          ? {
+          : undefined,
+        stops:
+          isCourier && pickupStops.length > 0
+            ? {
               create: pickupStops.map((stop, index) => ({
                 sequence: index,
                 label: stop.label,
@@ -613,152 +617,164 @@ async function createScenarioDelivery(
                 postalCode: stop.postalCode,
               })),
             }
-          : undefined,
-    },
-    include: {
-      stops: { orderBy: { sequence: "asc" } },
-    },
-  });
-
-  if (isCourier && pickupStops.length > 0 && order.stops.length > 0) {
-    const itemRows = order.stops.flatMap((stop) => {
-      const stopInput = pickupStops[stop.sequence];
-      return (stopInput?.items ?? []).map((item) => ({
-        orderId: order.id,
-        orderStopId: stop.id,
-        name: item.name,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-      }));
-    });
-    if (itemRows.length > 0) {
-      await prisma.orderItem.createMany({ data: itemRows });
-    }
-  }
-
-  const delivery = await prisma.delivery.create({
-    data: {
-      reference: deliveryReference,
-      status: scenario.deliveryStatus,
-      deliveryCategory: scenario.deliveryCategory,
-      pickupAddress: isCourier ? (primaryPickup?.pickupAddress ?? null) : null,
-      pickupCity: isCourier ? (primaryPickup?.pickupCity ?? null) : null,
-      pickupPostalCode: isCourier ? (primaryPickup?.pickupPostalCode ?? null) : null,
-      address: scenario.shipping.address,
-      city: scenario.shipping.city,
-      postalCode: scenario.shipping.postalCode,
-      driverId: scenario.assignDriver ? actors.driverId : null,
-      driverName: scenario.assignDriver
-        ? formatDriverDisplayName(actors.driverName)
-        : null,
-      companyId: actors.companyId,
-      orderId: order.id,
-      customerId: actors.clientId,
-      scheduledAt:
-        scenario.scheduledAtOffsetHours != null
-          ? hoursFromNow(scenario.scheduledAtOffsetHours, referenceDate)
-          : hoursFromNow(scenario.requestedDeliveryDateOffsetHours, referenceDate),
-      estimatedArrival:
-        scenario.estimatedArrivalOffsetHours != null
-          ? hoursFromNow(scenario.estimatedArrivalOffsetHours, referenceDate)
-          : null,
-      completedAt:
-        scenario.completedAtOffsetHours != null
-          ? hoursFromNow(scenario.completedAtOffsetHours, referenceDate)
-          : null,
-      missionStartedAt:
-        scenario.missionStartedAtOffsetHours != null
-          ? hoursFromNow(scenario.missionStartedAtOffsetHours, referenceDate)
-          : null,
-      trackingEvents: {
-        create: scenario.tracking.map((event) => ({
-          label: event.label,
-          description: event.description ?? null,
-          latitude: event.latitude ?? null,
-          longitude: event.longitude ?? null,
-          occurredAt: hoursFromNow(event.offsetHours, referenceDate),
-        })),
+            : undefined,
       },
-    },
-  });
+      include: {
+        stops: { orderBy: { sequence: "asc" } },
+      },
+    });
 
-  if (scenario.invoice) {
-    // Full delivery ref keeps global uniqueness (slice(-6) can collide).
-    const invoiceRef = `FAC-DEMO-${deliveryReference.replace(/^LIV-/, "")}`;
-    await prisma.invoice.create({
+    if (isCourier && pickupStops.length > 0 && order.stops.length > 0) {
+      const itemRows = order.stops.flatMap((stop) => {
+        const stopInput = pickupStops[stop.sequence];
+        return (stopInput?.items ?? []).map((item) => ({
+          orderId: order.id,
+          orderStopId: stop.id,
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        }));
+      });
+      if (itemRows.length > 0) {
+        await tx.orderItem.createMany({ data: itemRows });
+      }
+    }
+
+    const delivery = await tx.delivery.create({
       data: {
-        reference: invoiceRef,
-        status: scenario.invoice.status,
-        amount: totalAmount,
-        lineItems: items.length
-          ? items.map((item) => ({
+        reference: deliveryReference,
+        status: scenario.deliveryStatus,
+        deliveryCategory: scenario.deliveryCategory,
+        pickupAddress: isCourier ? (primaryPickup?.pickupAddress ?? null) : null,
+        pickupCity: isCourier ? (primaryPickup?.pickupCity ?? null) : null,
+        pickupPostalCode: isCourier ? (primaryPickup?.pickupPostalCode ?? null) : null,
+        address: scenario.shipping.address,
+        city: scenario.shipping.city,
+        postalCode: scenario.shipping.postalCode,
+        driverId: scenario.assignDriver ? actors.driverId : null,
+        driverName: scenario.assignDriver
+          ? formatDriverDisplayName(actors.driverName)
+          : null,
+        companyId: actors.companyId,
+        orderId: order.id,
+        customerId: actors.clientId,
+        scheduledAt:
+          scenario.scheduledAtOffsetHours != null
+            ? hoursFromNow(scenario.scheduledAtOffsetHours, referenceDate)
+            : hoursFromNow(scenario.requestedDeliveryDateOffsetHours, referenceDate),
+        estimatedArrival:
+          scenario.estimatedArrivalOffsetHours != null
+            ? hoursFromNow(scenario.estimatedArrivalOffsetHours, referenceDate)
+            : null,
+        completedAt:
+          scenario.completedAtOffsetHours != null
+            ? hoursFromNow(scenario.completedAtOffsetHours, referenceDate)
+            : null,
+        missionStartedAt:
+          scenario.missionStartedAtOffsetHours != null
+            ? hoursFromNow(scenario.missionStartedAtOffsetHours, referenceDate)
+            : null,
+        trackingEvents: {
+          create: scenario.tracking.map((event) => ({
+            label: event.label,
+            description: event.description ?? null,
+            latitude: event.latitude ?? null,
+            longitude: event.longitude ?? null,
+            occurredAt: hoursFromNow(event.offsetHours, referenceDate),
+          })),
+        },
+      },
+    });
+
+    if (scenario.invoice) {
+      // Full delivery ref keeps global uniqueness (slice(-6) can collide).
+      const invoiceRef = `FAC-DEMO-${deliveryReference.replace(/^LIV-/, "")}`;
+      await tx.invoice.create({
+        data: {
+          reference: invoiceRef,
+          status: scenario.invoice.status,
+          amount: totalAmount,
+          lineItems: items.length
+            ? items.map((item) => ({
               label: item.name,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               sourceType: "ITEM",
             }))
-          : courierItems.map((item) => ({
+            : courierItems.map((item) => ({
               label: item.name,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               sourceType: "ITEM",
             })),
-        companyId: actors.companyId,
-        orderId: order.id,
-        customerId: actors.clientId,
-        dueDate: scenario.invoice.dueInDays
-          ? hoursFromNow(scenario.invoice.dueInDays * 24, referenceDate)
-          : null,
-        paidAt: scenario.invoice.paidDaysAgo
-          ? hoursFromNow(-scenario.invoice.paidDaysAgo * 24, referenceDate)
-          : null,
-      },
-    });
-  }
+          companyId: actors.companyId,
+          orderId: order.id,
+          customerId: actors.clientId,
+          dueDate: scenario.invoice.dueInDays
+            ? hoursFromNow(scenario.invoice.dueInDays * 24, referenceDate)
+            : null,
+          paidAt: scenario.invoice.paidDaysAgo
+            ? hoursFromNow(-scenario.invoice.paidDaysAgo * 24, referenceDate)
+            : null,
+        },
+      });
+    }
 
-  if (scenario.supportTicket) {
-    await prisma.supportTicket.create({
-      data: {
-        subject: scenario.supportTicket.subject,
-        message: scenario.supportTicket.message,
-        status: "OPEN",
-        priority: "NORMAL",
-        contactType: "ADMIN",
-        companyId: actors.companyId,
-        customerId: actors.clientId,
-        relatedOrderId: order.id,
-        relatedDeliveryId: delivery.id,
-        messages: {
-          create: {
-            body: scenario.supportTicket.message,
-            isStaff: false,
-            authorId: actors.clientId,
+    if (scenario.supportTicket) {
+      await tx.supportTicket.create({
+        data: {
+          subject: scenario.supportTicket.subject,
+          message: scenario.supportTicket.message,
+          status: "OPEN",
+          priority: "NORMAL",
+          contactType: "ADMIN",
+          companyId: actors.companyId,
+          customerId: actors.clientId,
+          relatedOrderId: order.id,
+          relatedDeliveryId: delivery.id,
+          messages: {
+            create: {
+              body: scenario.supportTicket.message,
+              isStaff: false,
+              authorId: actors.clientId,
+            },
           },
         },
-      },
-    });
-  }
+      });
+    }
 
-  return { orderId: order.id, deliveryId: delivery.id };
+    return { orderId: order.id, deliveryId: delivery.id };
+  });
 }
 
 export async function resetDemoScenario(
   companyId: string,
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
+  options: { ensureCanonicalRoster?: boolean } = {}
 ): Promise<{ deliveries: number }> {
   await purgeDemoTransactionalData(companyId);
   await purgeDemoExtraAccounts(companyId);
-  await ensureDemoRosterUsers(companyId);
+  if (options.ensureCanonicalRoster !== false) {
+    await ensureDemoRosterUsers(companyId);
+  }
 
   const roster = await attachRolesById(
     await prisma.user.findMany({ where: { companyId } })
   );
 
-  const clients = DEMO_FIXTURE_CLIENTS.map((fixture) =>
-    pickRosterUser(roster, fixture.email)
+  const clients = DEMO_FIXTURE_CLIENTS.map((_, index) =>
+    roster.find(
+      (user) =>
+        user.authId ===
+        demoRosterAuthIds(companyId)[index + 1]
+    )
   ).filter((user): user is NonNullable<typeof user> => Boolean(user));
-  const drivers = DEMO_FIXTURE_DRIVERS.map((fixture) =>
-    pickRosterUser(roster, fixture.email)
+  const drivers = DEMO_FIXTURE_DRIVERS.map((_, index) =>
+    roster.find(
+      (user) =>
+        user.authId ===
+        demoRosterAuthIds(companyId)[DEMO_FIXTURE_CLIENTS.length + 1 + index]
+    )
   ).filter((user): user is NonNullable<typeof user> => Boolean(user));
 
   const firstClient = clients[0];
@@ -769,48 +785,61 @@ export async function resetDemoScenario(
   }
 
   const scenarios = buildScenario();
-  for (const [index, scenario] of scenarios.entries()) {
-    const client = clients[index % clients.length] ?? firstClient;
-    const driver = drivers[index % drivers.length] ?? firstDriver;
-    await createScenarioDelivery(
-      {
-        companyId,
-        clientId: client.id,
-        clientEmail: client.email,
-        driverId: driver.id,
-        driverName: `${driver.firstName} ${driver.lastName}`,
-      },
-      scenario,
-      referenceDate
-    );
+  // Chaque scénario utilise une transaction interactive. Les lancer tous ensemble
+  // peut saturer le petit pool applicatif et faire échouer les démos suivantes.
+  // Deux transactions simultanées conservent un montage rapide tout en laissant de
+  // la capacité aux lectures d'authentification et aux autres requêtes du serveur.
+  const scenarioConcurrency = 2;
+  for (let start = 0; start < scenarios.length; start += scenarioConcurrency) {
+    const batch = scenarios.slice(start, start + scenarioConcurrency);
+    await Promise.all(batch.map(async (scenario, batchIndex) => {
+      const index = start + batchIndex;
+      const client = clients[index % clients.length] ?? firstClient;
+      const driver = drivers[index % drivers.length] ?? firstDriver;
+      await createScenarioDelivery(
+        {
+          companyId,
+          clientId: client.id,
+          clientEmail: client.email,
+          driverId: driver.id,
+          driverName: `${driver.firstName} ${driver.lastName}`,
+        },
+        scenario,
+        referenceDate
+      );
+    }));
   }
 
-  await ensureRecurringOrder(
-    {
-      companyId,
-      clientId: firstClient.id,
-      clientEmail: firstClient.email,
-      driverId: firstDriver.id,
-      driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
-    },
-    referenceDate
-  );
-  if (secondClient) {
-    await ensureRecurringOrder(
+  await Promise.all([
+    ensureRecurringOrder(
       {
         companyId,
-        clientId: secondClient.id,
-        clientEmail: secondClient.email,
+        clientId: firstClient.id,
+        clientEmail: firstClient.email,
         driverId: firstDriver.id,
         driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
       },
-      referenceDate,
-      "Collecte documents chaque semaine"
-    );
-  }
+      referenceDate
+    ),
+    secondClient
+      ? ensureRecurringOrder(
+          {
+            companyId,
+            clientId: secondClient.id,
+            clientEmail: secondClient.email,
+            driverId: firstDriver.id,
+            driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
+          },
+          referenceDate,
+          "Collecte documents chaque semaine"
+        )
+      : Promise.resolve(null),
+  ]);
 
-  await ensureDemoDriverLocations(drivers);
-  await ensureDemoClientAddresses(clients);
+  await Promise.all([
+    ensureDemoDriverLocations(drivers),
+    ensureDemoClientAddresses(clients),
+  ]);
   await applyDemoDispatchDrivers(
     companyId,
     drivers.map((driver) => driver.id)

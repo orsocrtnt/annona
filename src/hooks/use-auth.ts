@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { createClient } from "@/services/supabase/client";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 
@@ -14,7 +15,11 @@ export function useAuth() {
   const queryClient = useQueryClient();
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Déconnexion impossible. Vérifiez votre connexion et réessayez.");
+      return;
+    }
     clearAuth();
     clearPendingCredentials();
     queryClient.clear();

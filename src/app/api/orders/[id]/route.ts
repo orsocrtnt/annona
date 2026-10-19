@@ -28,10 +28,13 @@ export async function GET(
   }
 
   const deliveries = await Promise.all(
-    order.deliveries.map(async (delivery) => ({
-      ...delivery,
-      podPhotoUrl: await getPodPhotoSignedUrl(delivery.podPhotoPath),
-    }))
+    order.deliveries.map(async (delivery) => {
+      const { podPhotoPath, ...safeDelivery } = delivery;
+      return {
+        ...safeDelivery,
+        podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, delivery.id),
+      };
+    })
   );
 
   return NextResponse.json({ data: { ...order, deliveries }, success: true });
@@ -59,7 +62,66 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const order = await updateCompanyOrderStatus(companyId, id, parsed.data.status);
+  let order;
+  try {
+    order = await updateCompanyOrderStatus(companyId, id, parsed.data.status);
+  } catch (error) {
+    if (error instanceof Error && error.message === "ORDER_STATUS_CONFLICT") {
+      return NextResponse.json(
+        { error: "Le statut vient d’être modifié. Rechargez la commande." },
+        { status: 409 }
+      );
+    }
+    if (error instanceof Error && error.message === "ORDER_ASSIGNMENT_REQUIRED") {
+      return NextResponse.json(
+        { error: "Assignez d’abord un chauffeur depuis le centre de dispatch." },
+        { status: 409 }
+      );
+    }
+    if (error instanceof Error && error.message === "SPECIAL_QUOTE_TRANSITION_INVALID") {
+      return NextResponse.json(
+        {
+          error:
+            "Cette demande doit être confirmée en « En attente » après accord externe, ou annulée.",
+          code: error.message,
+        },
+        { status: 409 }
+      );
+    }
+    if (error instanceof Error && error.message === "CANCELLATION_REASON_REQUIRED") {
+      return NextResponse.json(
+        {
+          error: "La mission a démarré. Annulez-la depuis la livraison en indiquant un motif.",
+          code: error.message,
+        },
+        { status: 409 }
+      );
+    }
+    if (error instanceof Error && error.message === "ORDER_PAID") {
+      return NextResponse.json(
+        { error: "Une facture payée interdit l’annulation de cette commande.", code: error.message },
+        { status: 409 }
+      );
+    }
+    if (
+      error instanceof Error &&
+      [
+        "ORDER_NOT_CANCELLABLE",
+        "DELIVERY_NOT_CANCELLABLE",
+        "DELIVERY_STATUS_CONFLICT",
+        "INVOICE_STATUS_CONFLICT",
+      ].includes(error.message)
+    ) {
+      return NextResponse.json(
+        {
+          error: "La commande a changé ou ne peut plus être annulée. Rechargez-la.",
+          code: error.message,
+        },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 
   if (!order) {
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
@@ -81,7 +143,21 @@ export async function DELETE(
   }
 
   const { id } = await params;
-  const order = await deleteCompanyOrder(companyId, id);
+  let order;
+  try {
+    order = await deleteCompanyOrder(companyId, id);
+  } catch (error) {
+    if (error instanceof Error && error.message === "ORDER_HAS_OPERATIONAL_HISTORY") {
+      return NextResponse.json(
+        {
+          error: "Seule une demande de devis sans livraison ni facture peut être supprimée.",
+          code: error.message,
+        },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 
   if (!order) {
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });

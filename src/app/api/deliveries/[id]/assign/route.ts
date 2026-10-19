@@ -57,6 +57,26 @@ export async function PATCH(
         { status: 409 }
       );
     }
+    if (error instanceof Error) {
+      const conflicts: Record<string, string> = {
+        DELIVERY_ASSIGNMENT_CONFLICT:
+          "Cette livraison vient d’être modifiée par un autre dispatcher. Actualisez la page.",
+        DELIVERY_STATUS_CONFLICT:
+          "L’état de cette livraison a changé. Actualisez la page.",
+        DELIVERY_MISSION_STARTED:
+          "La mission a déjà démarré et ne peut plus être réaffectée.",
+        DELIVERY_NOT_ASSIGNABLE:
+          "Cette livraison ne peut plus être affectée.",
+        DELIVERY_CANCELLED: "Cette livraison est annulée.",
+      };
+      const message = conflicts[error.message];
+      if (message) {
+        return NextResponse.json(
+          { error: message, code: error.message },
+          { status: 409 }
+        );
+      }
+    }
     throw error;
   }
 }

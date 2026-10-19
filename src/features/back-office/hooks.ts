@@ -3,17 +3,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { UpdateOrderStatusInput } from "@/lib/validations/order";
 import { backOfficeApi } from "./api";
-import type { CompanyClient, CompanyOrder } from "./types";
+import type { CompanyClient, CompanyOrder, CompanySupportTicket } from "./types";
 import { QUERY_STALE_MS } from "@/lib/query/defaults";
+import type { OrderHistoryPage, OrderHistoryQuery } from "@/lib/query/order-history";
 
 export function useCompanyDashboard() {
   return useQuery({
     queryKey: ["company", "dashboard"],
     queryFn: backOfficeApi.getDashboard,
     staleTime: QUERY_STALE_MS,
+    refetchInterval: QUERY_STALE_MS,
   });
 }
-
 export function useCompanyAnalytics(days: 7 | 30) {
   return useQuery({
     queryKey: ["company", "analytics", days],
@@ -22,12 +23,17 @@ export function useCompanyAnalytics(days: 7 | 30) {
   });
 }
 
-export function useCompanyOrders(initialData?: CompanyOrder[]) {
+export function useCompanyOrders(
+  query: OrderHistoryQuery,
+  initialData?: OrderHistoryPage<CompanyOrder>
+) {
   return useQuery({
-    queryKey: ["company", "orders"],
-    queryFn: backOfficeApi.getOrders,
+    queryKey: ["company", "orders", query],
+    queryFn: () => backOfficeApi.getOrders(query),
     initialData,
     staleTime: QUERY_STALE_MS,
+    refetchInterval: QUERY_STALE_MS,
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -39,11 +45,12 @@ export function useCompanyOrder(id: string) {
   });
 }
 
-export function useDispatchOverview() {
+export function useDispatchOverview(deliveryId?: string | null) {
   return useQuery({
-    queryKey: ["company", "dispatch", "overview"],
-    queryFn: backOfficeApi.getDispatchOverview,
+    queryKey: ["company", "dispatch", "overview", deliveryId ?? null],
+    queryFn: () => backOfficeApi.getDispatchOverview(deliveryId),
     staleTime: QUERY_STALE_MS,
+    refetchInterval: QUERY_STALE_MS,
   });
 }
 
@@ -162,5 +169,36 @@ export function useCompanyDriver(id: string) {
     queryKey: ["company", "drivers", id],
     queryFn: () => backOfficeApi.getDriver(id),
     enabled: !!id,
+  });
+}
+export function useCompanySupportTickets() {
+  return useQuery({
+    queryKey: ["company", "support"],
+    queryFn: backOfficeApi.getSupportTickets,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
+  });
+}
+
+export function useAddStaffSupportMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ticketId, body }: { ticketId: string; body: string }) =>
+      backOfficeApi.addSupportMessage(ticketId, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["company", "support"] }),
+  });
+}
+
+export function useUpdateStaffSupportStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      ticketId,
+      status,
+    }: {
+      ticketId: string;
+      status: CompanySupportTicket["status"];
+    }) => backOfficeApi.updateSupportStatus(ticketId, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["company", "support"] }),
   });
 }

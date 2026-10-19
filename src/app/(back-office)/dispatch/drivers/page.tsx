@@ -16,7 +16,7 @@ export default function DispatchDriversMapPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapApi, setMapApi] = useState<DriversMapApi | null>(null);
 
-  const list = drivers ?? [];
+  const list = useMemo(() => drivers ?? [], [drivers]);
   const onlineCount = useMemo(() => list.filter((d) => d.isOnline).length, [list]);
   const locatedCount = useMemo(
     () => list.filter((d) => d.latitude != null).length,
@@ -24,7 +24,7 @@ export default function DispatchDriversMapPage() {
   );
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#f0f0f0]">
+    <div className="relative h-full w-full overflow-hidden bg-[#ececea]">
       <div className="absolute inset-0">
         <DriversLiveMap
           drivers={list}
@@ -65,7 +65,7 @@ export default function DispatchDriversMapPage() {
         <button
           type="button"
           aria-label="Zoomer"
-          className="shrink-0 transition-opacity hover:opacity-80"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomIn()}
         >
@@ -74,7 +74,7 @@ export default function DispatchDriversMapPage() {
         <button
           type="button"
           aria-label="Dézoomer"
-          className="shrink-0 transition-opacity hover:opacity-80"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomOut()}
         >

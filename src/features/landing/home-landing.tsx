@@ -100,7 +100,7 @@ export function HomeLanding() {
         </div>
       </header>
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         {/* Hero — une composition : marque, message, CTA */}
         <section className="mx-auto max-w-3xl px-5 pb-16 pt-16 text-center sm:px-6 sm:pb-20 sm:pt-24">
           <h1 className="home-landing-reveal home-landing-reveal-1 home-landing-brand font-bold tracking-tight">

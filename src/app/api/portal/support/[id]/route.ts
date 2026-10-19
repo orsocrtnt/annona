@@ -4,11 +4,7 @@ import {
   getClientTicketById,
   addClientTicketMessage,
 } from "@/domains/support/support.service";
-import { z } from "zod";
-
-const messageSchema = z.object({
-  body: z.string().min(1, "Message requis"),
-});
+import { supportMessageSchema } from "@/lib/validations/support";
 
 export async function GET(
   _request: Request,
@@ -17,8 +13,12 @@ export async function GET(
   const auth = await requireClientRole();
   if ("error" in auth) return auth.error;
 
+  const companyId = auth.context.user.companyId;
+  if (!companyId) {
+    return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+  }
   const { id } = await params;
-  const ticket = await getClientTicketById(auth.context.user.id, id);
+  const ticket = await getClientTicketById(auth.context.user.id, companyId, id);
 
   if (!ticket) {
     return NextResponse.json({ error: "Ticket introuvable" }, { status: 404 });
@@ -34,9 +34,13 @@ export async function POST(
   const auth = await requireClientRole();
   if ("error" in auth) return auth.error;
 
+  const companyId = auth.context.user.companyId;
+  if (!companyId) {
+    return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+  }
   const { id } = await params;
   const body = await request.json();
-  const parsed = messageSchema.safeParse(body);
+  const parsed = supportMessageSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json({ error: "Message invalide" }, { status: 400 });
@@ -44,6 +48,7 @@ export async function POST(
 
   const message = await addClientTicketMessage(
     auth.context.user.id,
+    companyId,
     id,
     parsed.data.body
   );

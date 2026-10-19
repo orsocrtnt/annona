@@ -5,7 +5,7 @@ import type { OrderStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  ADMIN_EDITABLE_STATUSES,
+  getAdminEditableOrderStatuses,
   getCompactStatusLabel,
   getFulfillmentStatusLabel,
 } from "@/lib/constants/order-status";
@@ -31,6 +31,9 @@ export function OrderStatusSelect({
   const updateStatus = useUpdateOrderStatus();
   const [status, setStatus] = useState<UpdateOrderStatusInput["status"]>(currentStatus);
   const hasChange = status !== currentStatus;
+  const editableStatuses = getAdminEditableOrderStatuses(currentStatus, deliveryCategory);
+  const isSpecialQuote =
+    currentStatus === "QUOTE_REQUESTED" && deliveryCategory === "SPECIAL_MISSION";
 
   useEffect(() => {
     setStatus(currentStatus);
@@ -69,11 +72,11 @@ export function OrderStatusSelect({
         }}
         disabled={updateStatus.isPending}
       >
-        <SelectTrigger className={TABLE_SELECT_TRIGGER_CLASS}>
+        <SelectTrigger aria-label="Modifier le statut de la commande" className={TABLE_SELECT_TRIGGER_CLASS}>
           <SelectValue>{getCompactStatusLabel(status, deliveryCategory)}</SelectValue>
         </SelectTrigger>
         <SelectContent align="start" className="max-h-48 min-w-[8.5rem]">
-          {ADMIN_EDITABLE_STATUSES.map((s) => (
+          {editableStatuses.map((s) => (
             <SelectItem key={s} value={s} className="text-xs">
               {getCompactStatusLabel(s, deliveryCategory)}
             </SelectItem>
@@ -97,11 +100,11 @@ export function OrderStatusSelect({
             value={status}
             onValueChange={(v) => setStatus(v as UpdateOrderStatusInput["status"])}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label="Nouveau statut de la commande">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {ADMIN_EDITABLE_STATUSES.map((s) => (
+              {editableStatuses.map((s) => (
                 <SelectItem key={s} value={s}>
                   {getFulfillmentStatusLabel(s, deliveryCategory)}
                 </SelectItem>
@@ -119,7 +122,9 @@ export function OrderStatusSelect({
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        L&apos;administrateur peut modifier le statut à tout moment, y compris annuler la livraison.
+        {isSpecialQuote
+          ? "Passez à « En attente » uniquement après un accord obtenu hors TutelLiv. L’acceptation du devis n’est pas enregistrée dans la plateforme."
+          : "L’administrateur peut modifier le statut à tout moment, y compris annuler la livraison."}
       </p>
     </div>
   );

@@ -1,8 +1,9 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataGrid } from "@/components/ui/data-grid";
+import { OrderHistoryTable } from "@/components/shared/order-history-table";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePortalOrders } from "@/features/client-portal/hooks";
@@ -17,6 +18,12 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { History, ArrowLeft } from "lucide-react";
 import type { TableColumn } from "@/types";
 import type { PortalOrder } from "@/features/client-portal/types";
+import {
+  ORDER_HISTORY_DEFAULT_PAGE_SIZE,
+  type OrderHistoryPage,
+  type OrderHistoryQuery,
+} from "@/lib/query/order-history";
+import { HISTORY_ORDER_STATUSES } from "@/lib/constants/order-status";
 
 const columns: TableColumn<PortalOrder>[] = [
   {
@@ -61,13 +68,18 @@ const columns: TableColumn<PortalOrder>[] = [
 ];
 
 interface ClientOrdersHistoryContentProps {
-  initialOrders?: PortalOrder[];
+  initialOrders?: OrderHistoryPage<PortalOrder>;
 }
 
 export function ClientOrdersHistoryContent({ initialOrders }: ClientOrdersHistoryContentProps) {
-  const { data: orders, isLoading, error } = usePortalOrders(true, initialOrders);
+  const [query, setQuery] = React.useState<OrderHistoryQuery>({
+    page: 1,
+    pageSize: ORDER_HISTORY_DEFAULT_PAGE_SIZE,
+    history: true,
+  });
+  const { data: result, isLoading, isFetching, error } = usePortalOrders(query, initialOrders);
 
-  if (isInitialQueryLoading(isLoading, orders)) return <PageSkeleton />;
+  if (isInitialQueryLoading(isLoading, result)) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
@@ -78,7 +90,7 @@ export function ClientOrdersHistoryContent({ initialOrders }: ClientOrdersHistor
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Historique des commandes</h1>
-        <p className="mt-1 text-muted-foreground">Commandes livrées et annulées — 50 plus récentes</p>
+        <p className="mt-1 text-muted-foreground">Toutes les commandes terminées, consultables et exportables.</p>
       </div>
 
       {error ? (
@@ -89,11 +101,15 @@ export function ClientOrdersHistoryContent({ initialOrders }: ClientOrdersHistor
             <CardTitle className="text-base">Toutes les commandes passées</CardTitle>
           </CardHeader>
           <CardContent>
-            <DataGrid
-              data={(orders ?? []) as unknown as Record<string, unknown>[]}
+            <OrderHistoryTable
+              result={result as unknown as OrderHistoryPage<Record<string, unknown>> | undefined}
               columns={columns as unknown as TableColumn<Record<string, unknown>>[]}
-              searchKey="reference"
-              searchPlaceholder="Rechercher..."
+              query={query}
+              onQueryChange={setQuery}
+              exportPath="/api/portal/orders/export"
+              loading={isFetching}
+              statusOptions={HISTORY_ORDER_STATUSES}
+              searchPlaceholder="Référence ou adresse…"
               emptyTitle="Aucun historique"
               emptyDescription="Vos commandes terminées apparaîtront ici."
             />

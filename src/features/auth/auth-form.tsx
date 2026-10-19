@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import type { UseFormReturn } from "react-hook-form";
 import { useForm } from "react-hook-form";
@@ -23,13 +23,14 @@ import type {
   ForgotPasswordInput,
   ResetPasswordInput,
 } from "@/lib/validations/auth";
-import { createClient } from "@/services/supabase/client";
+import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Package2 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { useAuthStore } from "@/stores/auth.store";
+import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
 type AuthMode = "login" | "register" | "forgot-password" | "reset-password";
 type LoginContext = "company" | "client" | "driver";
 
@@ -54,8 +55,34 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const supabase = createClient();
+  const [passwordLink, setPasswordLink] = useState<{ tokenHash: string; type: "invite" | "recovery" | "signup" } | null>(null);
+  const linkRead = useRef(false);
+  const [completingLink, setCompletingLink] = useState(false);
   const { setUser, setPermissions, setDemo } = useAuthStore();
+
+  useEffect(() => {
+    if (mode !== "reset-password") return;
+    const readLink = () => {
+      if (!window.location.hash && linkRead.current) return;
+      linkRead.current = true;
+      const params = new URLSearchParams(window.location.hash.slice(1));
+      const tokenHash = params.get("token_hash");
+      const type = params.get("type");
+      // Le fragment n'est pas envoyé au serveur ; le retirer de l'historique après lecture.
+      window.history.replaceState(null, "", window.location.pathname);
+      setSuccess(null);
+      if (tokenHash && (type === "invite" || type === "recovery" || type === "signup")) {
+        setPasswordLink({ tokenHash, type });
+        setError(null);
+      } else {
+        setPasswordLink(null);
+        setError("Lien manquant ou invalide. Demandez un nouveau lien.");
+      }
+    };
+    if (!linkRead.current || window.location.hash) readLink();
+    window.addEventListener("hashchange", readLink);
+    return () => window.removeEventListener("hashchange", readLink);
+  }, [mode]);
 
   const isClient = loginContext === "client";
   const isDriver = loginContext === "driver";
@@ -128,40 +155,39 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       return;
     }
 
-    setUser(json.user);
-    setPermissions(json.permissions);
-    queryClient.setQueryData(["session"], {
-      user: json.user,
-      permissions: json.permissions,
-      demo: null,
-    });
-    router.push(json.redirectTo);
+    registerForm.reset();
+    setSuccess("Consultez votre messagerie pour confirmer votre adresse, puis connectez-vous.");
   };
 
   const onForgotPassword = async (data: ForgotPasswordInput) => {
     setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    setSuccess("Un email de réinitialisation a été envoyé.");
+    try {
+      const res = await fetch("/api/auth/password-recovery", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) { setError(json.error ?? "Envoi indisponible."); return; }
+      setSuccess("Si cette adresse peut recevoir un lien, un e-mail sera envoyé.");
+    } catch { setError("Connexion interrompue. Réessayez plus tard."); }
   };
 
-  const onResetPassword = async (data: ResetPasswordInput) => {
+  const onResetPassword = async (data?: ResetPasswordInput) => {
     setError(null);
-    const { error } = await supabase.auth.updateUser({ password: data.password });
-    if (error) {
-      setError(
-        error.message ||
-          "Lien expiré ou invalide. Refaites une demande de réinitialisation."
-      );
-      return;
-    }
-    setSuccess("Mot de passe mis à jour. Redirection vers la connexion…");
-    setTimeout(() => router.push("/login"), 1500);
+    if (!passwordLink || completingLink) { setError("Demandez un nouveau lien ou attendez la fin de la demande."); return; }
+    setCompletingLink(true);
+    try {
+      const res = await fetch("/api/auth/password-link", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, ...passwordLink }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setError(json.error ?? "Lien indisponible."); return; }
+      setPasswordLink(null);
+      resetForm.reset();
+      clearPendingCredentials();
+      setSuccess(passwordLink.type === "signup" ? "Adresse confirmée. Vous pouvez vous connecter." : "Mot de passe enregistré. Vous pouvez vous connecter.");
+    } catch { setError("Connexion interrompue. Si le lien a été utilisé, demandez-en un nouveau."); }
+    finally { setCompletingLink(false); }
   };
 
   const loginLinks: Record<LoginContext, { forgot: string; register?: string }> = {
@@ -210,7 +236,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           </h2>
           <p className="mt-4 max-w-md text-lg text-white/60">
             {isInvitedUser
-              ? "Vos identifiants vous ont été communiqués par votre administrateur."
+              ? "Votre administrateur vous envoie une invitation pour choisir votre mot de passe."
               : "La plateforme de référence pour les entreprises de livraison."}
           </p>
         </div>
@@ -232,8 +258,8 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
         </Link>
 
         <div className="w-full max-w-md animate-slide-up pt-12 lg:pt-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{titles[mode].title}</h1>
-          <p className="mt-1 text-muted-foreground">{titles[mode].subtitle}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{passwordLink?.type === "signup" ? "Confirmer votre adresse e-mail" : titles[mode].title}</h1>
+          <p className="mt-1 text-muted-foreground">{passwordLink?.type === "signup" ? "Confirmez votre adresse pour activer votre espace entreprise." : titles[mode].subtitle}</p>
 
           {mode === "login" && loginContext === "company" && (
             <Alert variant="info" className="mt-4">
@@ -250,7 +276,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           {isInvitedUser && mode === "login" && (
             <Alert variant="info" className="mt-4">
               <AlertDescription>
-                La création de compte est réservée à votre administrateur. Utilisez les identifiants qui vous ont été transmis.
+                La création de compte est réservée à votre administrateur. Utilisez votre e-mail et le mot de passe choisi lors de votre invitation.
               </AlertDescription>
             </Alert>
           )}
@@ -264,6 +290,10 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
             <Alert variant="success" className="mt-6">
               <AlertDescription>{success}</AlertDescription>
             </Alert>
+          )}
+
+          {(mode === "reset-password" || (mode === "register" && success)) && (
+            <p className="mt-4 text-sm"><Link href={success ? "/login" : passwordLink?.type === "signup" ? "/register" : "/forgot-password"} className="text-brand hover:underline">{success ? "Se connecter" : passwordLink?.type === "signup" ? "Reprendre l’inscription" : "Demander un nouveau lien"}</Link></p>
           )}
 
           {mode === "login" && (
@@ -299,7 +329,11 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
               {loginLinks[loginContext].register && (
                 <p className="text-center text-sm text-muted-foreground">
                   Pas encore de compte entreprise ?{" "}
-                  <Link href={loginLinks[loginContext].register!} className="font-medium text-brand hover:underline">
+                  <Link
+                    href={loginLinks[loginContext].register!}
+                    onClick={(event) => navigateToAuthPage(event, loginLinks[loginContext].register!)}
+                    className="font-medium text-brand hover:underline"
+                  >
                     Créer un compte
                   </Link>
                 </p>
@@ -307,7 +341,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
             </form>
           )}
 
-          {mode === "register" && (
+          {mode === "register" && !success && (
             <form onSubmit={registerForm.handleSubmit(onRegister)} className="mt-8 space-y-5">
               <Alert variant="info">
                 <AlertDescription>
@@ -362,7 +396,11 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
             </form>
           )}
 
-          {mode === "reset-password" && (
+          {mode === "reset-password" && !success && passwordLink?.type === "signup" && (
+            <Button className="mt-8 w-full" loading={completingLink} onClick={() => { void onResetPassword(); }}>Confirmer mon adresse</Button>
+          )}
+
+          {mode === "reset-password" && !success && passwordLink?.type !== "signup" && (
             <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="mt-8 space-y-5">
               <FormField label="Nouveau mot de passe" error={resetForm.formState.errors.password?.message} required>
                 <PasswordInput
@@ -380,7 +418,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                   {...resetForm.register("confirmPassword")}
                 />
               </FormField>
-              <Button type="submit" variant="brand" size="lg" className="w-full" loading={resetForm.formState.isSubmitting}>
+              <Button type="submit" variant="brand" size="lg" className="w-full" loading={resetForm.formState.isSubmitting} disabled={!passwordLink}>
                 Mettre à jour le mot de passe
               </Button>
               <p className="text-center text-sm text-muted-foreground">

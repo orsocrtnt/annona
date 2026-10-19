@@ -50,6 +50,11 @@ const FIT_RETRY_DELAYS = {
   fullscreen: [50, 150, 320, 500, 800],
 } as const;
 
+const FIT_OPTIONS = {
+  embedded: { padding: [32, 32] as [number, number], maxZoom: 15, singleZoom: 14 },
+  fullscreen: { padding: [80, 80] as [number, number], maxZoom: 14, singleZoom: 14 },
+} as const;
+
 function driversFitKey(located: LiveDriverLocation[]) {
   return located
     .map((d) => `${d.id}:${d.latitude?.toFixed(5)},${d.longitude?.toFixed(5)}`)
@@ -103,10 +108,7 @@ function MapViewController({
   const prevSelectedId = useRef<string | null | undefined>(undefined);
   const prevFitKey = useRef("");
 
-  const fitOptions = embedded
-    ? { padding: [32, 32] as [number, number], maxZoom: 15, singleZoom: 14 }
-    : { padding: [80, 80] as [number, number], maxZoom: 14, singleZoom: 14 };
-
+  const fitOptions = embedded ? FIT_OPTIONS.embedded : FIT_OPTIONS.fullscreen;
   const fitRetryDelays = embedded ? FIT_RETRY_DELAYS.embedded : FIT_RETRY_DELAYS.fullscreen;
 
   useEffect(() => {
@@ -168,7 +170,15 @@ function MapViewController({
     applyFit();
     const timers = fitRetryDelays.map((ms) => window.setTimeout(applyFit, ms));
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [located, selectedId, map, embedded, sidebarCollapsed, fitOptions.maxZoom, fitOptions.padding, fitOptions.singleZoom]);
+  }, [
+    embedded,
+    fitOptions,
+    fitRetryDelays,
+    located,
+    map,
+    selectedId,
+    sidebarCollapsed,
+  ]);
 
   return null;
 }

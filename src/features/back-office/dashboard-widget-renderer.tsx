@@ -772,12 +772,12 @@ function MapDriversWidget({ height = 280 }: { height?: number }) {
           <CardTitle className="text-base">Livreurs en direct</CardTitle>
           <CardDescription>Positions GPS des livreurs connectés</CardDescription>
         </div>
-        <Link href="/dispatch/drivers">
-          <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dispatch/drivers">
             <MapPin className="mr-2 h-4 w-4" />
             Carte complète
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent>
         <DriversMapWidget height={height} />
@@ -794,12 +794,12 @@ function MapDeliveriesWidget({ height = 280 }: { height?: number }) {
           <CardTitle className="text-base">Missions actives</CardTitle>
           <CardDescription>Destinations et points sur la carte</CardDescription>
         </div>
-        <Link href="/dispatch/map">
-          <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/dispatch/map">
             <Radio className="mr-2 h-4 w-4" />
             Dispatch
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </CardHeader>
       <CardContent>
         <DeliveriesMapWidget height={height} />

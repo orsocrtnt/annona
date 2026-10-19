@@ -5,6 +5,9 @@ alwaysApply: true
 
 # Relais Tutelliv
 
+> Consignes permanentes : lire `AGENTS.md`. Backlog actif : `TODO.md`.
+> Le contenu ci-dessous est conservé comme historique ; ses statuts sont à vérifier et ne doivent plus être mis à jour ici.
+
 ## État
 - Projet : `/Users/orso/Developer/tutelliv`
 - Perf T2–T12 poussées (GitHub / Vercel). Plus de backlog T1–T12.
@@ -13,13 +16,18 @@ alwaysApply: true
 
 | ID | Quoi | Où |
 |----|------|-----|
-| PERF-LOGIN | **À faire** : continuer à comprendre pourquoi c’est lent, surtout à la connexion (waterfall auth, TTFB login → dashboard, roundtrips session/Prisma) | `/login`, middleware, `getServerAuth`, première page après login |
+| PERF-LOGIN | **À faire** : améliorer le temps de connexion (login → première page). Mesurer puis couper waterfall auth, TTFB, roundtrips session/Prisma | `/login`, middleware, `getServerAuth`, dashboard / portail / chauffeur après login |
 | NAV | **Poussé** : 1 appel dispatch overview ; prefetch idle = RSC only ; pas de refetch au mount ; cache route 60s | Hard refresh prod après deploy |
 | UI-1 | **Fait local** : barre de suivi centrée sous le chrome ; panneau sous la barre | `portal-deliveries-map` |
+| UI-2 | **À faire** : changer la couleur du bandeau de démo sur téléphone | `demo-mode-bar`, mobile |
+| MAP-1 | **À faire** : carte des missions côté admin qui ne s’affiche pas en mode Uber | dispatch / carte missions admin |
+| MAP-2 | **Fait local** : OSM configurable, zoom natif 1–19, pannes explicites, attribution ; choix commercial avant vente | `docs/rapports/2026-10-15/map2.md` |
 | F-1 | **Fait local** : Mini-admin (modules + édition crayon) | users / rôles |
+| F-2 | **À faire** : pouvoir modifier les accès d’un mini-admin (ex. comptable simple → contrôleur de gestion, avec plus de modules) | users / mini-admin / rôles |
 | P0 | **Étendu local** : Analyse réelle + alertes portail (cloche). SMS toujours pas branché | analytics, portal notifications |
 | P1 | **En cours local** : preuve de livraison (photo) + échec avec motif. Puis e-mails Resend + file retards | chauffeur / portail / commande |
 | SMS | **À faire** : configurer l’envoi SMS (opérateur type Twilio + clés env), puis brancher la case portail pour de vrai | portal settings / notify |
+| HYGIENE | **À faire** : se laver | IRL |
 
 Optionnel : confirmer en prod que le déploiement Vercel est bien le dernier SHA + colonnes lat/lng en DB.
 

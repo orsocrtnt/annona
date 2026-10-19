@@ -1,0 +1,17 @@
+---
+description: Route les tâches TutelLiv vers le modèle le moins coûteux adapté et impose une exécution complète, séquentielle et vérifiée
+alwaysApply: true
+---
+
+# Routeur autonome TutelLiv
+
+- Appliquer cette règle seulement lorsqu'un travail de développement ou une tâche TODO a été autorisé.
+- Lire `AGENTS.md`, `TODO.md`, `docs/CONVENTIONS.md` et l'état Git avant toute délégation.
+- Sélectionner une seule tâche ouverte, autorisée et non bloquée selon les priorités et dépendances de la TODO.
+- Lire son champ `Modèle conseillé`. Utiliser ce modèle ; si indisponible, appliquer uniquement le repli défini dans la légende de la TODO.
+- Réutiliser l'agent courant si son modèle convient. Sinon, déléguer à `tutelliv-task-runner` en précisant modèle, identifiant, critères de sortie, preuves connues et limites.
+- Un seul agent travaille à la fois. Ne pas lancer de travail parallèle, de revue indépendante, Max ou Ultra par défaut.
+- Le même exécutant réalise inspection → implémentation → tests → corrections → nouveaux tests → documentation. Le coordinateur vérifie les preuves avant de cocher la tâche et synchronise les copies de suivi.
+- Escalader d'un niveau si un schéma, la sécurité, des données, une concurrence complexe, des domaines fortement couplés ou une décision produit ambiguë apparaissent. Consigner la raison de l'escalade.
+- Une tâche terminée ne doit pas être rejouée. Une tâche bloquée est consignée ; poursuivre une tâche indépendante seulement si elle entre dans l'autorisation reçue.
+- Par défaut, terminer une tâche TODO par lancement puis rendre un bilan. Enchaîner plusieurs tâches uniquement sur demande explicite afin de garder la consommation bornée.

@@ -194,6 +194,8 @@ export function DemoModeBar() {
         <>
           <div
             ref={barRef}
+            role="region"
+            aria-label="Environnement de démonstration"
             className="fixed inset-x-0 top-0 z-[2000] border-b border-amber-200/80 bg-amber-50/95 px-3 py-2 backdrop-blur-md dark:border-amber-900/50 dark:bg-amber-950/90"
           >
             <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -201,7 +203,7 @@ export function DemoModeBar() {
                 <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                 <span className="font-medium">Environnement de démonstration</span>
                 <span className="hidden text-amber-800/80 sm:inline dark:text-amber-200/80">
-                  — données fictives, même interface que la production
+                  — données fictives dans votre session isolée
                 </span>
               </div>
 
@@ -213,7 +215,7 @@ export function DemoModeBar() {
                     onValueChange={(value) => void switchPersona(value as DemoPersona)}
                     disabled={switching || resetting}
                   >
-                    <SelectTrigger className="h-9 w-[180px] border-amber-200 bg-white/90 dark:border-amber-800 dark:bg-amber-950">
+                    <SelectTrigger aria-label="Changer de vue de démonstration" className="h-9 w-[min(180px,calc(100vw-1.5rem))] border-amber-200 bg-white/90 dark:border-amber-800 dark:bg-amber-950">
                       <SelectValue placeholder="Changer de vue" />
                     </SelectTrigger>
                     <SelectContent className="z-[2100]">
@@ -268,9 +270,9 @@ export function DemoModeBar() {
           <DialogHeader>
             <DialogTitle>Réinitialiser la démonstration ?</DialogTitle>
             <DialogDescription>
-              Toutes les commandes, livraisons, factures et tickets créés pendant la session seront
-              supprimés. Le scénario de base (8 livraisons, récurrence, support) sera recréé à
-              l&apos;identique.
+              Seules les commandes, livraisons, factures et tickets de votre session seront
+              supprimés. Les autres démonstrations ne seront pas modifiées. Le scénario de base
+              (8 livraisons, récurrence, support) sera recréé à l&apos;identique.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

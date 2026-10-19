@@ -24,6 +24,7 @@ import {
   DashboardCustomizeDrawer,
 } from "@/features/back-office/dashboard-customize-drawer";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
+import { isLateDashboardDrillDown } from "@/features/back-office/dashboard-drill-down";
 
 export function CompanyDashboardContent() {
   const { data: dashboard, isLoading, error } = useCompanyDashboard();
@@ -66,18 +67,18 @@ function CompanyDashboardView() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <DashboardCustomizeButton onClick={() => setCustomizeOpen(true)} />
-          <Link href="/dispatch">
-            <Button variant="outline">
+          <Button variant="outline" asChild>
+            <Link href="/dispatch">
               <Radio className="mr-2 h-4 w-4" />
               Dispatch
-            </Button>
-          </Link>
-          <Link href="/dashboard/orders">
-            <Button variant="brand">
+            </Link>
+          </Button>
+          <Button variant="brand" asChild>
+            <Link href="/dashboard/orders">
               <Package className="mr-2 h-4 w-4" />
               Commandes
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -87,7 +88,8 @@ function CompanyDashboardView() {
             Aucun bloc affiché. Cliquez sur{" "}
             <button
               type="button"
-              className="font-medium text-brand underline-offset-2 hover:underline"
+              aria-label="Personnaliser le tableau de bord"
+              className="inline-flex min-h-6 min-w-6 items-center justify-center rounded font-medium text-brand underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               onClick={() => setCustomizeOpen(true)}
             >
               +
@@ -115,6 +117,7 @@ function CompanyDashboardView() {
         title={drillDown?.title ?? ""}
         description={drillDown?.description}
         items={drillDownItems}
+        focusLate={isLateDashboardDrillDown(drillDown)}
       />
 
       <DashboardCustomizeDrawer open={customizeOpen} onOpenChange={setCustomizeOpen} />

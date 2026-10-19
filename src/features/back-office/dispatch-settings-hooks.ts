@@ -31,3 +31,23 @@ export function useRunAutoDispatch() {
     },
   });
 }
+
+export function useOperationJobHealth() {
+  return useQuery({
+    queryKey: ["company", "operation-jobs"],
+    queryFn: dispatchSettingsApi.getOperationJobHealth,
+    retry: 1,
+    refetchInterval: 30_000,
+  });
+}
+
+export function useRetryFailedOperationJobs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: dispatchSettingsApi.retryFailedOperationJobs,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["company", "operation-jobs"] });
+      qc.invalidateQueries({ queryKey: ["company"] });
+    },
+  });
+}

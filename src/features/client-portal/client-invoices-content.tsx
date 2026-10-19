@@ -117,6 +117,7 @@ export function ClientInvoicesContent({ initialInvoices }: ClientInvoicesContent
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Factures</h1>
         <p className="mt-1 text-muted-foreground">Les 50 factures les plus récentes</p>
+        <p className="mt-2 text-sm text-muted-foreground">Relevés de prestations de livraison : documents de suivi et informations tarifaires. Ils ne constituent pas une émission réglementaire de factures électroniques.</p>
       </div>
       <Card>
         <CardHeader>

@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 import { isNavItemActive } from "@/lib/navigation/is-nav-item-active";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { useUIStore } from "@/stores/ui.store";
-import { X } from "lucide-react";
 import type { NavItem } from "@/types";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 interface MobileNavProps {
   items: NavItem[];
@@ -15,10 +15,12 @@ interface MobileNavProps {
 
 function MobileNavLink({
   item,
+  isActive,
   className,
   onNavigate,
 }: {
   item: NavItem;
+  isActive: boolean;
   className: string;
   onNavigate: () => void;
 }) {
@@ -28,6 +30,7 @@ function MobileNavLink({
   return (
     <Link
       href={item.href}
+      aria-current={isActive ? "page" : undefined}
       {...prefetchHandlers}
       onClick={onNavigate}
       className={className}
@@ -43,26 +46,17 @@ export function MobileNav({ items }: MobileNavProps) {
   const { mobileNavOpen, setMobileNavOpen } = useUIStore();
   const allHrefs = items.map((item) => item.href);
 
-  if (!mobileNavOpen) return null;
-
   return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
-        onClick={() => setMobileNavOpen(false)}
-      />
-      <div className="fixed inset-y-0 left-0 z-50 w-72 border-r border-border bg-card p-4 lg:hidden animate-slide-down">
-        <div className="mb-6 flex items-center justify-between">
-          <span className="text-lg font-semibold">Navigation</span>
-          <button
-            onClick={() => setMobileNavOpen(false)}
-            aria-label="Fermer le menu"
-            className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <nav className="space-y-1">
+    <Dialog open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+      <DialogContent
+        className="left-0 top-0 h-[100dvh] w-72 max-w-[85vw] translate-x-0 translate-y-0 content-start gap-0 rounded-none border-y-0 border-l-0 bg-card p-4 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden"
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          document.querySelector<HTMLElement>('[aria-label="Ouvrir le menu"]')?.focus();
+        }}
+      >
+        <DialogTitle className="mb-6 pr-10 text-lg">Navigation</DialogTitle>
+        <nav aria-label="Navigation mobile" className="space-y-1">
           {items.map((item) => {
             const isActive = isNavItemActive(pathname, item.href, allHrefs);
             const Icon = item.icon;
@@ -87,13 +81,14 @@ export function MobileNav({ items }: MobileNavProps) {
               <MobileNavLink
                 key={item.href}
                 item={item}
+                isActive={isActive}
                 className={className}
                 onNavigate={() => setMobileNavOpen(false)}
               />
             );
           })}
         </nav>
-      </div>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePermissions } from "@/hooks/use-permissions";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ interface OrderInvoiceFormProps {
       dueDate: string | null;
       paidAt?: string | null;
       createdAt: string;
+      updatedAt: string;
       lineItems?: InvoiceLineItem[];
     }[];
   };
@@ -71,6 +73,7 @@ function computeTotal(
 export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
   const { data: tariffs, isLoading, isError } = useCompanyTariffSettings();
   const qc = useQueryClient();
+  const { can } = usePermissions();
   const hasPurchasePrices =
     order.items?.some((item) => Number(item.unitPrice) > 0) ?? false;
   const [zoneId, setZoneId] = useState("");
@@ -80,13 +83,11 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const existingInvoice = order.invoices?.[0];
+  const existingInvoice = order.invoices?.find((invoice) => invoice.status !== "CANCELLED");
   const existingLines = (existingInvoice?.lineItems ?? []) as InvoiceLineItem[];
   const isPaid = existingInvoice?.status === "PAID";
   const isInvoiced =
-    (order.status === "INVOICED" || order.status === "PAID") &&
-    !!existingInvoice &&
-    existingLines.length > 0;
+    existingInvoice?.status === "PENDING";
 
   const suggestedZone = useMemo(() => {
     if (!tariffs || !order.shippingPostalCode) return null;
@@ -146,12 +147,26 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
           .map((l) => ({ label: l.label, amount: parseFloat(l.amount) })),
         notes: notes || undefined,
       });
-      toast.success("Facture émise — le client peut la consulter");
+      toast.success("Relevé enregistré — le client peut le consulter");
       qc.invalidateQueries({ queryKey: ["company", "orders", order.id] });
     } catch (error) {
       toast.error("Émission impossible", {
         description: error instanceof Error ? error.message : undefined,
       });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!existingInvoice) return;
+    setSubmitting(true);
+    try {
+      await backOfficeApi.markOrderInvoicePaid(order.id, existingInvoice.id, existingInvoice.updatedAt);
+      await qc.invalidateQueries({ queryKey: ["company", "orders", order.id] });
+      toast.success("Règlement enregistré");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Règlement impossible");
     } finally {
       setSubmitting(false);
     }
@@ -179,7 +194,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4" />
-            Facture
+            Relevé de prestation
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
@@ -204,10 +219,10 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4" />
-            Facture émise
+            Relevé de prestation enregistré
           </CardTitle>
           <CardDescription>
-            Visible par le client dans son espace factures
+            Document opérationnel visible dans l&apos;espace factures du client. Il ne constitue pas une facture électronique réglementaire.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
@@ -232,6 +247,11 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
               </div>
             </div>
           )}
+          {can("invoices:update") && (
+            <Button onClick={handlePayment} disabled={submitting} loading={submitting}>
+              Enregistrer le règlement
+            </Button>
+          )}
           {existingInvoice.dueDate && (
             <p className="text-muted-foreground">
               Échéance : {formatDate(existingInvoice.dueDate)}
@@ -242,6 +262,8 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
     );
   }
 
+  if (!can("invoices:create")) return null;
+
   const hasTariffs =
     tariffs.tariffZones.length > 0 || tariffs.tariffFees.length > 0;
 
@@ -250,10 +272,10 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <FileText className="h-4 w-4" />
-          Facturation
+          Tarifs de la prestation
         </CardTitle>
         <CardDescription>
-          Choisissez les tarifs à appliquer. La facture sera visible côté client.
+          Choisissez les tarifs à appliquer. Le relevé sera visible côté client. Document opérationnel, distinct de l&apos;abonnement TutelLiv, sans émission réglementaire de facture électronique.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -402,7 +424,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
               loading={submitting}
               onClick={handleSubmit}
             >
-              Émettre la facture
+              Enregistrer le relevé
             </Button>
           </>
         )}

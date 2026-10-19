@@ -11,8 +11,6 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { CreateUserDialog } from "@/features/users/create-user-dialog";
 import { EditMiniAdminDialog } from "@/features/users/edit-mini-admin-dialog";
 import { DeleteUserButton } from "@/features/users/delete-user-button";
-import { UserCredentialsCell } from "@/features/users/user-credentials-cell";
-import { usePendingCredentials } from "@/features/users/use-pending-credentials";
 import {
   TableUserEmail,
   TableUserName,
@@ -21,7 +19,8 @@ import {
   USER_TABLE_COL,
 } from "@/features/users/users-table-ui";
 import { formatPersonNameByRole } from "@/lib/format/person-labels";
-import { parseMiniAdminSettings } from "@/lib/permissions/mini-admin";
+import { usePermissions } from "@/hooks/use-permissions";
+import { canManageMiniAdmins, parseMiniAdminSettings } from "@/lib/permissions/mini-admin";
 import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "@/types";
@@ -65,10 +64,9 @@ async function fetchUsers() {
 }
 
 export default function UsersPage() {
+  const { role } = usePermissions();
+  const canDelegate = canManageMiniAdmins(role);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
-  const { credentials: pendingCredentials, addCredentials, dismissCredentials } =
-    usePendingCredentials();
-
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
@@ -110,28 +108,12 @@ export default function UsersPage() {
       cell: (row) => <TableUserStatus status={row.status} />,
     },
     {
-      key: "credentials",
-      header: "MDP",
-      hideOnMobile: true,
-      className: USER_TABLE_COL.credentials,
-      cell: (row) => {
-        const creds = pendingCredentials[row.id];
-        if (!creds) return <span className="text-muted-foreground">—</span>;
-        return (
-          <UserCredentialsCell
-            credentials={creds}
-            onDismiss={() => dismissCredentials(row.id)}
-          />
-        );
-      },
-    },
-    {
       key: "actions",
       header: "",
       className: USER_TABLE_COL.actions,
       cell: (row) => (
         <div className="flex items-center justify-end gap-0.5">
-          {row.role.systemRole === "MINI_ADMIN" ? (
+          {canDelegate && row.role.systemRole === "MINI_ADMIN" ? (
             <EditMiniAdminDialog
               userId={row.id}
               userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
@@ -142,13 +124,12 @@ export default function UsersPage() {
             userId={row.id}
             userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
             role={row.role.systemRole}
-            locked={isDemoLockedAccountEmail(row.email)}
-            onDeleted={() => dismissCredentials(row.id)}
+            locked={isDemoLockedAccountEmail(row.email) || (row.role.systemRole === "MINI_ADMIN" && !canDelegate)}
           />
         </div>
       ),
     },
-  ], [pendingCredentials, dismissCredentials]);
+  ], [canDelegate]);
 
   const rows = useMemo(() => {
     const mapped = (users ?? []).map((u) => ({
@@ -194,7 +175,7 @@ export default function UsersPage() {
             Clients, chauffeurs et mini-admins de votre entreprise
           </p>
         </div>
-        <CreateUserDialog onUserCreated={addCredentials} />
+        <CreateUserDialog />
       </div>
 
       {error && (

@@ -67,6 +67,6 @@ export function useDashboardContext() {
 }
 
 export function useWidgetPeriod(widgetPeriod?: DashboardPeriodKey) {
-  const { period, layout } = useDashboardContext();
-  return widgetPeriod ?? layout.defaultPeriod;
+  const { period } = useDashboardContext();
+  return widgetPeriod ?? period;
 }

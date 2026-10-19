@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  DeliveriesLiveMap,
-  type DeliveriesMapApi,
-} from "@/components/maps/deliveries-live-map";
+import dynamic from "next/dynamic";
+import type { DeliveriesMapApi } from "@/components/maps/deliveries-live-map";
 import { mapGlassButtonStyle, mapGlassCardStyle } from "@/components/maps/map-glass-styles";
 import { PageLoader } from "@/components/ui/loader";
 import { PortalDeliveriesMapPanel } from "@/features/client-portal/portal-deliveries-map-panel";
 import { usePortalDeliveriesMap } from "@/features/client-portal/hooks";
 import { DeliveryMapStatusBar } from "@/components/maps/delivery-map-status-bar";
 import { cn } from "@/lib/utils";
+
+const DeliveriesLiveMap = dynamic(
+  () => import("@/components/maps/deliveries-live-map").then((module) => module.DeliveriesLiveMap),
+  { ssr: false }
+);
 
 interface PortalDeliveriesMapProps {
   fullscreen?: boolean;
@@ -22,8 +25,8 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapApi, setMapApi] = useState<DeliveriesMapApi | null>(null);
 
-  const activeDeliveries = data?.active ?? [];
-  const historyDeliveries = data?.history ?? [];
+  const activeDeliveries = useMemo(() => data?.active ?? [], [data?.active]);
+  const historyDeliveries = useMemo(() => data?.history ?? [], [data?.history]);
   const allDeliveries = useMemo(
     () => [...activeDeliveries, ...historyDeliveries],
     [activeDeliveries, historyDeliveries]
@@ -48,7 +51,7 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
     return (
       <div
         className={cn(
-          "flex items-center justify-center overflow-hidden bg-[#f0f0f0]",
+          "flex items-center justify-center overflow-hidden bg-[#ececea]",
           fullscreen ? "h-full w-full" : "rounded-2xl"
         )}
         style={fullscreen ? undefined : { height }}
@@ -61,7 +64,7 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-[#f0f0f0]",
+        "relative overflow-hidden bg-[#ececea]",
         fullscreen ? "h-full w-full" : "rounded-2xl shadow-md"
       )}
       style={fullscreen ? undefined : { height }}
@@ -133,7 +136,7 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
         <button
           type="button"
           aria-label="Zoomer"
-          className="shrink-0 transition-opacity hover:opacity-80"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomIn()}
         >
@@ -142,7 +145,7 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
         <button
           type="button"
           aria-label="Dézoomer"
-          className="shrink-0 transition-opacity hover:opacity-80"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomOut()}
         >

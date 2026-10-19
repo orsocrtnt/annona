@@ -61,7 +61,8 @@ const ACTIVE_STATUSES: DeliveryStatus[] = [
   "IN_DELIVERY",
 ];
 
-const DELIVERED_STATUSES: DeliveryStatus[] = ["DELIVERED", "INVOICED", "PAID"];
+// Les anciens états de facturation ne prouvent pas une livraison terminée.
+const DELIVERED_STATUSES: DeliveryStatus[] = ["DELIVERED"];
 
 export function isActiveDeliveryStatus(status: DeliveryStatus) {
   return ACTIVE_STATUSES.includes(status);

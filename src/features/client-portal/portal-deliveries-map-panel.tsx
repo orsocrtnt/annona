@@ -21,8 +21,8 @@ interface PortalDeliveriesMapPanelProps {
 
 function deliveryBadgeClasses(category: DeliveryCategory) {
   return category === "COURIER"
-    ? "border-transparent bg-blue-200/80 text-blue-900"
-    : "border-transparent bg-rose-200/80 text-rose-900";
+    ? "border-zinc-300 bg-zinc-100 text-zinc-900"
+    : "border-black bg-black text-white";
 }
 
 function formatHistoryDate(value: string | null) {
@@ -51,13 +51,13 @@ function DeliveryListItem({
   return (
     <div
       className={cn(
-        "w-full rounded-xl border p-3 transition-colors",
+        "w-full rounded-xl border p-3 transition-all",
         isSelected
-          ? "border-brand/40 bg-white/95 shadow-sm"
-          : "border-white/70 bg-white/70 hover:bg-white/90"
+          ? "border-black bg-white shadow-[inset_3px_0_0_#111111]"
+          : "border-zinc-200 bg-white/90 hover:border-zinc-400 hover:bg-white"
       )}
     >
-      <button type="button" onClick={onSelect} className="w-full text-left">
+      <button type="button" onClick={onSelect} className="w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium">{delivery.reference}</span>
           <Badge className={deliveryBadgeClasses(delivery.deliveryCategory)}>
@@ -92,7 +92,7 @@ function DeliveryListItem({
           <p className="mt-2 text-xs text-muted-foreground">{delivery.driverName}</p>
         )}
 
-        <p className="mt-1 text-xs font-medium text-brand">{delivery.statusLabel}</p>
+        <p className="mt-1 text-xs font-semibold text-zinc-900">{delivery.statusLabel}</p>
 
         {isHistorical && historyDate && (
           <p className="mt-1 text-xs text-muted-foreground">Terminée le {historyDate}</p>
@@ -143,8 +143,9 @@ export function PortalDeliveriesMapPanel({
         className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-opacity hover:opacity-95"
         style={mapGlassCardStyle}
         aria-expanded={open}
+        aria-controls="portal-deliveries-panel"
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white">
           {tab === "history" ? <History className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
         </div>
         <div className="min-w-0 flex-1">
@@ -171,31 +172,34 @@ export function PortalDeliveriesMapPanel({
 
       {open && (
         <div
+          id="portal-deliveries-panel"
           className="mt-2 max-h-[min(420px,50vh)] overflow-hidden rounded-2xl"
           style={mapGlassCardStyle}
         >
-          <div className="border-b border-white/70 p-2">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-white/60 p-1">
+          <div className="border-b border-black/10 p-2">
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1">
               <button
                 type="button"
+                aria-pressed={tab === "active"}
                 onClick={() => setTab("active")}
                 className={cn(
                   "rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "active"
-                    ? "bg-brand text-white shadow-sm"
-                    : "text-muted-foreground hover:bg-white/80"
+                    ? "bg-black text-white shadow-sm"
+                    : "text-muted-foreground hover:bg-white"
                 )}
               >
                 En cours ({activeDeliveries.length})
               </button>
               <button
                 type="button"
+                aria-pressed={tab === "history"}
                 onClick={() => setTab("history")}
                 className={cn(
                   "rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "history"
-                    ? "bg-brand text-white shadow-sm"
-                    : "text-muted-foreground hover:bg-white/80"
+                    ? "bg-black text-white shadow-sm"
+                    : "text-muted-foreground hover:bg-white"
                 )}
               >
                 Historique ({historyDeliveries.length})

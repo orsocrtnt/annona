@@ -1,5 +1,19 @@
 import type { CompanyDispatchSettings } from "@/lib/validations/dispatch-settings";
 
+export type OperationJobHealth = {
+  pending: number;
+  processing: number;
+  failed: number;
+  failedJobs: Array<{
+    id: string;
+    type: "AUTO_DISPATCH" | "CLIENT_NOTIFICATION";
+    attempts: number;
+    maxAttempts: number;
+    lastError: string | null;
+    updatedAt: string;
+  }>;
+};
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
   const json = await res.json();
@@ -20,4 +34,8 @@ export const dispatchSettingsApi = {
       "/api/dispatch/auto-assign",
       { method: "POST" }
     ),
+  getOperationJobHealth: () =>
+    fetchJson<OperationJobHealth>("/api/operations/jobs"),
+  retryFailedOperationJobs: () =>
+    fetchJson<{ retried: number }>("/api/operations/jobs", { method: "POST" }),
 };

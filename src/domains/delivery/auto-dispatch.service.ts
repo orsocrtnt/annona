@@ -287,7 +287,15 @@ export async function tryAutoAssignDelivery(
       expectUnassigned: true,
     });
   } catch (error) {
-    if (error instanceof Error && error.message === "DELIVERY_ALREADY_ASSIGNED") {
+    if (
+      error instanceof Error &&
+      (error.message === "DELIVERY_ALREADY_ASSIGNED" ||
+        error.message === "DELIVERY_NOT_AVAILABLE" ||
+        error.message === "DELIVERY_ASSIGNMENT_CONFLICT" ||
+        error.message === "DELIVERY_STATUS_CONFLICT" ||
+        error.message === "DELIVERY_MISSION_STARTED" ||
+        error.message === "DELIVERY_NOT_ASSIGNABLE")
+    ) {
       return { deliveryId, assigned: false, skippedReason: "Déjà assignée entre-temps" };
     }
     throw error;

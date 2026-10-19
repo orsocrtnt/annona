@@ -1,25 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useViewportHeight } from "@/hooks/use-viewport-height";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui.store";
+import { MAP_TILES } from "@/lib/maps/provider-config";
+import { ProviderTileLayer, MapAttribution } from "@/components/maps/provider-tile-layer";
 import type { LeafletBaseMapProps } from "./leaflet-base-map";
 import { PARIS_CENTER } from "./leaflet-base-map";
-
-const OSM_TILES = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-/** Fond clair type Positron/Uber, sans clé Carto (évite « API key required »). */
-const LIGHT_TILES = {
-  url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-  attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
-} as const;
-
-const TILES = {
-  default: OSM_TILES,
-  uber: LIGHT_TILES.url,
-} as const;
 
 function getMapHost(el: HTMLElement | null) {
   return el?.closest<HTMLElement>("[data-map-main]") ?? el?.parentElement;
@@ -93,7 +83,8 @@ function MapResizeHandler({ shellRef }: { shellRef: RefObject<HTMLDivElement | n
 export function LeafletBaseMapInner({
   height = 600,
   fill = false,
-  variant = "default",
+  navigation = false,
+  variant = "uber",
   center = PARIS_CENTER,
   zoom = 12,
   children,
@@ -173,26 +164,31 @@ export function LeafletBaseMapInner({
     : { height, width: "100%", position: "relative" as const, zIndex: 0 };
 
   return (
-    <div ref={shellRef} className={cn("leaflet-map-host", className)} style={shellStyle}>
+    <div
+      ref={shellRef}
+      className={cn(
+        "leaflet-map-host",
+        variant === "uber" && "leaflet-map-host--uber",
+        className
+      )}
+      data-map-variant={variant}
+      style={shellStyle}
+    >
       <MapContainer
         center={center}
-        zoom={zoom}
+        zoom={Math.min(zoom, MAP_TILES.maxZoom)}
+        minZoom={MAP_TILES.minZoom}
+        maxZoom={MAP_TILES.maxZoom}
         scrollWheelZoom
         style={{ height: "100%", width: "100%" }}
         zoomControl={false}
-        attributionControl={variant !== "uber"}
+        attributionControl={false}
       >
-        <TileLayer
-          attribution={
-            variant === "uber"
-              ? LIGHT_TILES.attribution
-              : '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          }
-          url={TILES[variant]}
-        />
+        <ProviderTileLayer />
         <MapResizeHandler shellRef={shellRef} />
         {children}
       </MapContainer>
+      <MapAttribution navigation={navigation} fill={fill} />
     </div>
   );
 }

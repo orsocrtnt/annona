@@ -12,7 +12,8 @@ type WithCustomerEmail = {
 };
 
 export async function resolveCustomersByEmail<T extends WithCustomerEmail>(
-  rows: T[]
+  rows: T[],
+  companyId: string
 ): Promise<T[]> {
   const orphanEmails = [
     ...new Set(
@@ -25,7 +26,7 @@ export async function resolveCustomersByEmail<T extends WithCustomerEmail>(
   if (orphanEmails.length === 0) return rows;
 
   const usersByEmail = await prisma.user.findMany({
-    where: { email: { in: orphanEmails } },
+    where: { email: { in: orphanEmails }, companyId },
     select: { email: true, firstName: true, lastName: true },
   });
   const emailToUser = new Map(usersByEmail.map((user) => [user.email, user]));

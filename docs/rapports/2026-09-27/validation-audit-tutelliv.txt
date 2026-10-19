@@ -1,0 +1,9 @@
+CONFIRMED with simulated Prisma: linking client-A also links orphan order from company B.
+CONFIRMED pure helper: empty mini-admin modules fall back to all modules. API validation normally rejects empty arrays; legacy/corrupt settings remain affected.
+CONFIRMED with simulated Prisma: support accepts supplied foreign order ID without ownership lookup; real DB/route exploit not tested.
+CONFIRMED with simulated Prisma: occurrence advances before failed order creation; nextRunAt is not restored.
+
+Portée : code réel chargé dans une VM locale, imports remplacés par des doubles en mémoire. Aucun accès réseau, aucune base réelle. Les fixtures sont fictives.
+
+Contrôle du dépôt : npm run check, code retour 0. TypeScript OK ; lint 24 avertissements existants, zéro erreur ; 7 tests réussis.
+Build et parcours navigateur non exécutés ; aucune connexion aux services réels.

@@ -1,6 +1,9 @@
+import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
+import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
+import { trackingPosition } from "@/domains/tracking/tracking.policy";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
-import { averageCoordinates, geocodeManyCapped, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
+import { geocodeManyCapped, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
 import { getFulfillmentStatusLabel } from "@/lib/constants/order-status";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "@/lib/validations/driver-location-settings";
 import {
@@ -72,6 +75,7 @@ export type DispatchMapDelivery = {
   id: string;
   reference: string;
   orderId: string;
+  requestedDeliveryDate: string | null;
   status: DeliveryStatus;
   statusLabel: string;
   deliveryCategory: DeliveryCategory;
@@ -79,14 +83,17 @@ export type DispatchMapDelivery = {
   driverName: string | null;
   customerName: string | null;
   driverLocation: DispatchMapDriverLocation | null;
+  positionState: string;
+  positionUpdatedAt: string | null;
   address: string;
   pickupAddress: string | null;
-  destination: { latitude: number; longitude: number };
+  destination: { latitude: number; longitude: number } | null;
   pickup: { latitude: number; longitude: number } | null;
   pickups: DispatchMapPickup[];
   trackingSteps: DispatchMapTrackingStep[];
   orderItems: DispatchMapOrderItem[];
   missionStartedAt: string | null;
+  missionAcceptedAt: string | null;
   isHistorical: boolean;
   completedAt: string | null;
   createdAt: string;
@@ -95,8 +102,10 @@ export type DispatchMapDelivery = {
 export type DispatchDriverMapEntry = {
   id: string;
   name: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
+  updatedAt: string | null;
+  positionState: string;
   assigned: number;
   inTransit: number;
   missions: {
@@ -106,8 +115,8 @@ export type DispatchDriverMapEntry = {
     statusLabel: string;
     deliveryCategory: DeliveryCategory;
     address: string;
-    latitude: number;
-    longitude: number;
+    latitude: number | null;
+    longitude: number | null;
   }[];
 };
 
@@ -151,6 +160,7 @@ let preferLegacyMapSelect = false;
 
 const MAP_DELIVERY_SELECT_LEGACY = {
   id: true,
+  companyId: true,
   reference: true,
   status: true,
   deliveryCategory: true,
@@ -163,6 +173,7 @@ const MAP_DELIVERY_SELECT_LEGACY = {
   driverId: true,
   driverName: true,
   missionStartedAt: true,
+  missionAcceptedAt: true,
   completedAt: true,
   createdAt: true,
   customer: {
@@ -170,6 +181,7 @@ const MAP_DELIVERY_SELECT_LEGACY = {
   },
   driver: {
     select: {
+      status: true, settings: true, companyId: true,
       driverLocation: {
         select: { latitude: true, longitude: true, updatedAt: true },
       },
@@ -178,6 +190,7 @@ const MAP_DELIVERY_SELECT_LEGACY = {
   order: {
     select: {
       id: true,
+      requestedDeliveryDate: true,
       customerEmail: true,
       customer: { select: { firstName: true, lastName: true } },
       items: {
@@ -211,6 +224,7 @@ const MAP_DELIVERY_SELECT_LEGACY = {
 
 const MAP_DELIVERY_SELECT = {
   id: true,
+  companyId: true,
   reference: true,
   status: true,
   deliveryCategory: true,
@@ -227,6 +241,7 @@ const MAP_DELIVERY_SELECT = {
   driverId: true,
   driverName: true,
   missionStartedAt: true,
+  missionAcceptedAt: true,
   completedAt: true,
   createdAt: true,
   customer: {
@@ -234,6 +249,7 @@ const MAP_DELIVERY_SELECT = {
   },
   driver: {
     select: {
+      status: true, settings: true, companyId: true,
       driverLocation: {
         select: { latitude: true, longitude: true, updatedAt: true },
       },
@@ -242,6 +258,7 @@ const MAP_DELIVERY_SELECT = {
   order: {
     select: {
       id: true,
+      requestedDeliveryDate: true,
       customerEmail: true,
       customer: { select: { firstName: true, lastName: true } },
       items: {
@@ -316,10 +333,12 @@ async function findManyMapDeliveries(args: {
     | Array<{ completedAt: "desc" | "asc" } | { createdAt: "desc" | "asc" }>;
   take?: number;
 }): Promise<MapDeliveryRecord[]> {
+  // Ownership must agree on both the delivery and its parent order.
+  const scopedArgs = { ...args, where: { ...args.where, ...(args.where.customerId ? { order: { customerId: args.where.customerId, companyId: args.where.companyId } } : {}) } };
   if (!preferLegacyMapSelect) {
     try {
       return await prisma.delivery.findMany({
-        ...args,
+        ...scopedArgs,
         select: MAP_DELIVERY_SELECT,
       });
     } catch (error) {
@@ -332,14 +351,14 @@ async function findManyMapDeliveries(args: {
   }
 
   const rows = await prisma.delivery.findMany({
-    ...args,
+    ...scopedArgs,
     select: MAP_DELIVERY_SELECT_LEGACY,
   });
   return rows.map(normalizeLegacyMapDelivery);
 }
 
 async function fetchActiveMapDeliveries(
-  where: { companyId: string } | { customerId: string }
+  where: { companyId: string } | { customerId: string; companyId: string }
 ): Promise<MapDeliveryRecord[]> {
   const deliveries = await findManyMapDeliveries({
     where: {
@@ -361,7 +380,9 @@ async function fetchActiveMapDeliveries(
             (!delivery.pickupAddress?.trim() ||
               !delivery.trackingEvents.some((event) => event.label === "Livraison"))
         )
-        .map((delivery) => repairCourierDeliveryIfNeeded(delivery.id, where.customerId))
+        .map((delivery) =>
+          repairCourierDeliveryIfNeeded(delivery.id, where.customerId, where.companyId)
+        )
     );
 
     if (
@@ -388,11 +409,10 @@ async function fetchActiveMapDeliveries(
 async function buildDeliveriesMapPayload(
   deliveries: MapDeliveryRecord[],
   onlineThresholdSeconds: number,
-  options?: { isHistorical?: boolean }
+  options?: { isHistorical?: boolean; exposeTrackingCoordinates?: boolean }
 ): Promise<{ deliveries: DispatchMapDelivery[]; points: DispatchMapPoint[] }> {
   const isHistorical = options?.isHistorical ?? false;
-  const onlineThresholdMs = onlineThresholdSeconds * 1000;
-  const now = Date.now();
+  const now = new Date();
 
   const geocodeEntries: {
     key: string;
@@ -514,21 +534,15 @@ async function buildDeliveriesMapPayload(
     const destCoords =
       delivery.latitude != null && delivery.longitude != null
         ? { lat: delivery.latitude, lng: delivery.longitude }
-        : coordsByKey.get(`${delivery.id}-dest`)!;
+        : coordsByKey.get(`${delivery.id}-dest`);
     const destAddress = formatAddress([delivery.address, delivery.postalCode, delivery.city]);
     const driverName = resolveDriverName(delivery.driverName);
     const customerName = resolveCustomerName(delivery);
 
-    const rawLoc = delivery.driver?.driverLocation;
-    const driverLocation =
-      !isHistorical && rawLoc && delivery.driverId
-        ? {
-            latitude: rawLoc.latitude,
-            longitude: rawLoc.longitude,
-            updatedAt: rawLoc.updatedAt.toISOString(),
-            isOnline: now - rawLoc.updatedAt.getTime() < onlineThresholdMs,
-          }
-        : null;
+    const position = trackingPosition(delivery, delivery.driver?.companyId === delivery.companyId ? delivery.driver : null, onlineThresholdSeconds, now);
+    const driverLocation = !isHistorical && position.state === "FRESH"
+      ? { latitude: position.latitude!, longitude: position.longitude!, updatedAt: position.updatedAt!, isOnline: true }
+      : null;
 
     let pickupCoords: { lat: number; lng: number } | null = null;
     let pickupAddress: string | null = null;
@@ -580,8 +594,8 @@ async function buildDeliveriesMapPayload(
       id: e.id,
       label: e.label,
       description: e.description,
-      latitude: isLegacyFakeTrackingCoord(e.latitude, e.longitude) ? null : e.latitude,
-      longitude: isLegacyFakeTrackingCoord(e.latitude, e.longitude) ? null : e.longitude,
+      latitude: options?.exposeTrackingCoordinates === false || isLegacyFakeTrackingCoord(e.latitude, e.longitude) ? null : e.latitude,
+      longitude: options?.exposeTrackingCoordinates === false || isLegacyFakeTrackingCoord(e.latitude, e.longitude) ? null : e.longitude,
       occurredAt: e.occurredAt.toISOString(),
     }));
 
@@ -595,6 +609,7 @@ async function buildDeliveriesMapPayload(
       id: delivery.id,
       reference: delivery.reference,
       orderId: delivery.order.id,
+      requestedDeliveryDate: delivery.order.requestedDeliveryDate?.toISOString() ?? null,
       status: delivery.status,
       statusLabel: statusLabel(delivery.status, delivery.deliveryCategory),
       deliveryCategory: delivery.deliveryCategory,
@@ -602,9 +617,11 @@ async function buildDeliveriesMapPayload(
       driverName,
       customerName,
       driverLocation,
+      positionState: position.state,
+      positionUpdatedAt: position.updatedAt,
       address: destAddress,
       pickupAddress,
-      destination: { latitude: destCoords.lat, longitude: destCoords.lng },
+      destination: destCoords ? { latitude: destCoords.lat, longitude: destCoords.lng } : null,
       pickup: pickupCoords
         ? { latitude: pickupCoords.lat, longitude: pickupCoords.lng }
         : null,
@@ -612,13 +629,14 @@ async function buildDeliveriesMapPayload(
       trackingSteps,
       orderItems,
       missionStartedAt: delivery.missionStartedAt?.toISOString() ?? null,
+      missionAcceptedAt: delivery.missionAcceptedAt?.toISOString() ?? null,
       isHistorical,
       completedAt: delivery.completedAt?.toISOString() ?? null,
       createdAt: delivery.createdAt.toISOString(),
     });
 
     const typeLabel = delivery.deliveryCategory === "COURIER" ? "Course" : "Commande";
-    points.push({
+    if (destCoords) points.push({
       id: `${delivery.id}-dest`,
       deliveryId: delivery.id,
       kind: "destination",
@@ -682,13 +700,15 @@ export async function getDispatchMapDeliveries(
 
 export async function getClientDeliveriesMap(
   customerId: string,
+  companyId: string,
   onlineThresholdSeconds = DEFAULT_DRIVER_LOCATION_SETTINGS.onlineThresholdSeconds
 ): Promise<{ active: DispatchMapDelivery[]; history: DispatchMapDelivery[] }> {
   const [activeRecords, historyRecords] = await Promise.all([
-    fetchActiveMapDeliveries({ customerId }),
+    fetchActiveMapDeliveries({ customerId, companyId }),
     findManyMapDeliveries({
       where: {
         customerId,
+        companyId,
         status: { in: MAP_HISTORY_STATUSES },
       },
       orderBy: [{ completedAt: "desc" }, { createdAt: "desc" }],
@@ -697,8 +717,8 @@ export async function getClientDeliveriesMap(
   ]);
 
   const [activePayload, historyPayload] = await Promise.all([
-    buildDeliveriesMapPayload(activeRecords, onlineThresholdSeconds, { isHistorical: false }),
-    buildDeliveriesMapPayload(historyRecords, onlineThresholdSeconds, { isHistorical: true }),
+    buildDeliveriesMapPayload(activeRecords, onlineThresholdSeconds, { isHistorical: false, exposeTrackingCoordinates: false }),
+    buildDeliveriesMapPayload(historyRecords, onlineThresholdSeconds, { isHistorical: true, exposeTrackingCoordinates: false }),
   ]);
 
   return {
@@ -718,6 +738,8 @@ export async function getDispatchDriversMap(
 
   if (drivers.length === 0) return { drivers: [], points: [] };
 
+  const locationSettings = await getCompanyLocationSettings(companyId);
+  const locations = await getCompanyDriverLocations(companyId, locationSettings.onlineThresholdSeconds);
   const driverIds = drivers.map((d) => d.id);
   type DriverMapDelivery = {
     id: string;
@@ -861,7 +883,7 @@ export async function getDispatchDriversMap(
       const coords =
         m.latitude != null && m.longitude != null
           ? { lat: m.latitude, lng: m.longitude }
-          : coordsByKey.get(m.id)!;
+          : coordsByKey.get(m.id);
       const address = formatAddress([m.address, m.postalCode, m.city]);
       return {
         deliveryId: m.id,
@@ -870,8 +892,8 @@ export async function getDispatchDriversMap(
         statusLabel: statusLabel(m.status, m.deliveryCategory),
         deliveryCategory: m.deliveryCategory,
         address,
-        latitude: coords.lat,
-        longitude: coords.lng,
+        latitude: coords?.lat ?? null,
+        longitude: coords?.lng ?? null,
       };
     });
 
@@ -880,28 +902,28 @@ export async function getDispatchDriversMap(
       (m) => m.status === "PURCHASING" || m.status === "IN_DELIVERY"
     ).length;
 
-    const position = averageCoordinates(
-      missionPoints.map((m) => ({ lat: m.latitude, lng: m.longitude }))
-    );
+    const location = locations.find(row => row.id === driver.id);
 
     const name = formatDriverDisplayName(`${driver.firstName} ${driver.lastName}`.trim());
 
     entries.push({
       id: driver.id,
       name,
-      latitude: position.lat,
-      longitude: position.lng,
+      latitude: location?.latitude ?? null,
+      longitude: location?.longitude ?? null,
+      updatedAt: location?.updatedAt ?? null,
+      positionState: location?.positionState ?? "ABSENT",
       assigned,
       inTransit,
       missions: missionPoints,
     });
 
-    points.push({
+    if (location?.latitude != null && location.longitude != null) points.push({
       id: `driver-${driver.id}`,
       deliveryId: driver.id,
       kind: "driver",
-      latitude: position.lat,
-      longitude: position.lng,
+      latitude: location!.latitude!,
+      longitude: location!.longitude!,
       reference: name,
       status: inTransit > 0 ? "IN_DELIVERY" : "ASSIGNED",
       deliveryCategory: "STANDARD",
@@ -911,6 +933,7 @@ export async function getDispatchDriversMap(
     });
 
     for (const mission of missionPoints) {
+      if (mission.latitude == null || mission.longitude == null) continue;
       points.push({
         id: `mission-${mission.deliveryId}`,
         deliveryId: mission.deliveryId,

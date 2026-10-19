@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { OrderTracking } from "@/components/shared/order-tracking";
+import { OrderConversation } from "@/components/shared/order-conversation";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,7 @@ import { OrderStatusSelect } from "@/features/back-office/order-status-select";
 import { OrderInvoiceForm } from "@/features/back-office/order-invoice-form";
 import { DeliveryAdminPanel } from "@/features/back-office/delivery-admin-panel";
 import { DeleteOrderButton } from "@/features/back-office/delete-order-button";
-import { OrderStatusBadge, DeliveryStatusBadge } from "@/features/client-portal/status-badges";
+import { OrderStatusBadge } from "@/features/client-portal/status-badges";
 import { formatCurrency } from "@/features/client-portal/utils";
 import { formatClientFromParts } from "@/lib/format/person-labels";
 import { formatDate } from "@/lib/utils";
@@ -22,7 +24,10 @@ import { MissionStopsDisplay } from "@/components/shared/mission-stops-display";
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { ArrowLeft, Package } from "lucide-react";
 
+import { usePermissions } from "@/hooks/use-permissions";
+
 export default function CompanyOrderDetailPage() {
+  const { can } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const { data: order, isLoading, error } = useCompanyOrder(id ?? "");
 
@@ -43,17 +48,21 @@ export default function CompanyOrderDetailPage() {
     order.customerEmail ?? undefined
   );
   const courierPickups = getCourierPickupStops(order);
+  const canDeleteOrder =
+    order.status === "QUOTE_REQUESTED" &&
+    (order.deliveries?.length ?? 0) === 0 &&
+    (order.invoices?.length ?? 0) === 0;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/dashboard/orders">
-            <Button variant="ghost" size="sm" className="mb-2 -ml-2">
+          <Button variant="ghost" size="sm" className="mb-2 -ml-2" asChild>
+            <Link href="/dashboard/orders">
               <ArrowLeft className="mr-1 h-4 w-4" />
               Retour
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <h1 className="text-2xl font-semibold tracking-tight">{order.reference}</h1>
           <p className="mt-1 text-muted-foreground">
             {clientName} — {formatDate(order.createdAt)}
@@ -61,12 +70,14 @@ export default function CompanyOrderDetailPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <OrderStatusBadge status={order.status} deliveryCategory={order.deliveryCategory} />
-          <DeleteOrderButton
-            orderId={order.id}
-            orderReference={order.reference}
-            redirectTo="/dashboard/orders"
-            variant="button"
-          />
+          {canDeleteOrder && (
+            <DeleteOrderButton
+              orderId={order.id}
+              orderReference={order.reference}
+              redirectTo="/dashboard/orders"
+              variant="button"
+            />
+          )}
         </div>
       </div>
 
@@ -78,8 +89,9 @@ export default function CompanyOrderDetailPage() {
           <CardContent className="space-y-4 text-sm">
             {order.status === "QUOTE_REQUESTED" && (
               <p className="rounded-lg border border-amber-200 bg-background p-3 text-amber-900 dark:text-amber-100">
-                Le client attend votre devis. Passez le statut en « En attente » une fois le devis
-                accepté pour lancer la mission.
+                Fonction expérimentale hors offre pilote. Le devis chiffré et son acceptation
+                restent gérés hors TutelLiv. Après accord externe, passez manuellement le statut
+                en « En attente » pour créer la livraison.
               </p>
             )}
             {order.missionDescription && (
@@ -110,6 +122,7 @@ export default function CompanyOrderDetailPage() {
               driverId={order.deliveries[0].driverId}
               driverName={order.deliveries[0].driverName}
               driver={order.deliveries[0].driver ?? null}
+              missionStartedAt={order.deliveries[0].missionStartedAt}
               deliveryCategory={order.deliveryCategory}
               postalCode={order.deliveries[0].postalCode ?? order.shippingPostalCode}
               pickupPostalCode={order.deliveries[0].pickupPostalCode ?? order.pickupPostalCode}
@@ -131,7 +144,7 @@ export default function CompanyOrderDetailPage() {
         </CardContent>
       </Card>
 
-      {(order.status === "IN_DELIVERY" ||
+      {can(["invoices:read", "invoices:create", "invoices:update"]) && (order.status === "IN_DELIVERY" ||
         order.status === "DELIVERED" ||
         order.status === "INVOICED" ||
         order.status === "PAID") && <OrderInvoiceForm order={order} />}
@@ -230,6 +243,8 @@ export default function CompanyOrderDetailPage() {
           </CardContent>
         </Card>
       )}
+      <OrderTracking orderId={order.id} />
+      <OrderConversation orderId={order.id} />
     </div>
   );
 }

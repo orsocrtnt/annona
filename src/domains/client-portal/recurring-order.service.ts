@@ -12,14 +12,13 @@ import {
   resolveRecurringPickupStops,
   type StoredPickupStop,
 } from "@/lib/order/recurring-pickups";
+import {
+  addRecurringInterval,
+  parseRecurringCalendarDate,
+  recurringCalendarDateValue,
+} from "@/lib/order/recurrence-schedule";
 
-function addInterval(date: Date, value: number, unit: RecurrenceUnit): Date {
-  const next = new Date(date);
-  if (unit === "DAYS") next.setDate(next.getDate() + value);
-  else if (unit === "WEEKS") next.setDate(next.getDate() + value * 7);
-  else next.setMonth(next.getMonth() + value);
-  return next;
-}
+const RECURRING_MAX_OCCURRENCES_PER_RUN = 500;
 
 function intervalToLegacyFrequency(
   value: number,
@@ -54,10 +53,6 @@ function normalizeItems(
   }
   if (items.length > 0) return items;
   return items;
-}
-
-function toDateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10);
 }
 
 function assertRecurringCategory(
@@ -154,10 +149,8 @@ export async function createClientRecurringOrder(
 ) {
   await assertDeliveryCategoryEnabled(companyId, input.deliveryCategory);
 
-  const startAt = new Date(input.startAt);
-  startAt.setHours(0, 0, 0, 0);
-  const endAt = input.endAt ? new Date(input.endAt) : null;
-  if (endAt) endAt.setHours(23, 59, 59, 999);
+  const startAt = parseRecurringCalendarDate(input.startAt);
+  const endAt = input.endAt ? parseRecurringCalendarDate(input.endAt, true) : null;
 
   const items = normalizeItems(input.items, input.deliveryCategory);
   const nextRunAt = startAt;
@@ -201,12 +194,21 @@ export async function createClientRecurringOrder(
   if (startAt <= now && (!endAt || endAt >= now)) {
     assertRecurringCategory(recurring.deliveryCategory);
     await createClientOrder(customerId, companyId, email, {
-      ...buildOrderPayload({ ...recurring, items }, toDateInputValue(startAt)),
+      ...buildOrderPayload({ ...recurring, items }, recurringCalendarDateValue(startAt)),
+    }, {
+      idempotencyKey: `recurring:${recurring.id}:${startAt.toISOString()}`,
     });
+    const followingRunAt = addRecurringInterval(
+      startAt,
+      input.intervalValue,
+      input.intervalUnit,
+      startAt
+    );
     await prisma.recurringOrder.update({
       where: { id: recurring.id },
       data: {
-        nextRunAt: addInterval(startAt, input.intervalValue, input.intervalUnit),
+        nextRunAt: followingRunAt,
+        status: endAt && followingRunAt > endAt ? "CANCELLED" : undefined,
       },
     });
   }
@@ -236,6 +238,9 @@ export async function updateClientRecurringOrder(
     pickupStopsInput !== undefined
       ? firstPickupFields(pickupStopsInput)
       : null;
+  const updatedStartAt = input.startAt
+    ? parseRecurringCalendarDate(input.startAt)
+    : undefined;
 
   return prisma.recurringOrder.update({
     where: { id: recurringId },
@@ -256,19 +261,14 @@ export async function updateClientRecurringOrder(
       deliveryInstructions: input.deliveryInstructions,
       notes: input.notes,
       items: input.items ?? undefined,
-      startAt: input.startAt
-        ? (() => {
-            const d = new Date(input.startAt);
-            d.setHours(0, 0, 0, 0);
-            return d;
-          })()
-        : undefined,
+      startAt: updatedStartAt,
+      nextRunAt: updatedStartAt,
       endAt:
         input.endAt === undefined
           ? undefined
           : input.endAt === null
             ? null
-            : new Date(input.endAt),
+            : parseRecurringCalendarDate(input.endAt, true),
       frequency:
         input.intervalValue && input.intervalUnit
           ? intervalToLegacyFrequency(input.intervalValue, input.intervalUnit)
@@ -277,44 +277,117 @@ export async function updateClientRecurringOrder(
   });
 }
 
-export async function processDueRecurringOrders() {
-  const now = new Date();
-  const due = await prisma.recurringOrder.findMany({
+export type RecurringProcessingSummary = {
+  processed: number;
+  failed: number;
+  cancelled: number;
+  skipped: number;
+  hasMore: boolean;
+};
+
+export async function processDueRecurringOrders(options: {
+  now?: Date;
+  maxOccurrences?: number;
+} = {}): Promise<RecurringProcessingSummary> {
+  const now = options.now ?? new Date();
+  const maxOccurrences = Math.max(
+    1,
+    Math.min(options.maxOccurrences ?? RECURRING_MAX_OCCURRENCES_PER_RUN, RECURRING_MAX_OCCURRENCES_PER_RUN)
+  );
+  const failedRecurringIds = new Set<string>();
+  const summary: RecurringProcessingSummary = {
+    processed: 0,
+    failed: 0,
+    cancelled: 0,
+    skipped: 0,
+    hasMore: false,
+  };
+
+  while (
+    summary.processed + summary.cancelled + summary.skipped + summary.failed < maxOccurrences
+  ) {
+    const remaining =
+      maxOccurrences -
+      summary.processed -
+      summary.cancelled -
+      summary.skipped -
+      summary.failed;
+    const due = await prisma.recurringOrder.findMany({
+      where: {
+        status: "ACTIVE",
+        nextRunAt: { lte: now },
+        startAt: { lte: now },
+        id: failedRecurringIds.size > 0
+          ? { notIn: [...failedRecurringIds] }
+          : undefined,
+      },
+      include: { customer: true },
+      orderBy: [{ nextRunAt: "asc" }, { id: "asc" }],
+      take: Math.min(RECURRING_DUE_TAKE, remaining),
+    });
+    if (due.length === 0) break;
+
+    for (const recurring of due) {
+      const occurrenceAt = recurring.nextRunAt;
+      const occurrenceKey = `recurring:${recurring.id}:${occurrenceAt.toISOString()}`;
+
+      if (
+        recurring.deliveryCategory === "SPECIAL_MISSION" ||
+        (recurring.endAt && occurrenceAt > recurring.endAt)
+      ) {
+        const cancelled = await prisma.recurringOrder.updateMany({
+          where: { id: recurring.id, status: "ACTIVE", nextRunAt: occurrenceAt },
+          data: { status: "CANCELLED" },
+        });
+        if (cancelled.count === 1) summary.cancelled += 1;
+        else summary.skipped += 1;
+        continue;
+      }
+
+      try {
+        // L'Order et sa livraison sont l'occurrence durable. La clé associe de
+        // façon unique la récurrence et la date. On avance seulement après leur
+        // création atomique : un crash intermédiaire rejoue la même occurrence.
+        await createClientOrder(
+          recurring.customerId,
+          recurring.companyId,
+          recurring.customer.email,
+          {
+            ...buildOrderPayload(recurring, recurringCalendarDateValue(occurrenceAt)),
+          },
+          { idempotencyKey: occurrenceKey }
+        );
+
+        const { value, unit } = resolveRecurringInterval(recurring);
+        const nextRunAt = addRecurringInterval(
+          occurrenceAt,
+          value,
+          unit,
+          recurring.startAt
+        );
+        const willCancel = Boolean(recurring.endAt && nextRunAt > recurring.endAt);
+        const advanced = await prisma.recurringOrder.updateMany({
+          where: { id: recurring.id, status: "ACTIVE", nextRunAt: occurrenceAt },
+          data: willCancel ? { status: "CANCELLED", nextRunAt } : { nextRunAt },
+        });
+        if (advanced.count === 1) summary.processed += 1;
+        else summary.skipped += 1;
+      } catch (error) {
+        failedRecurringIds.add(recurring.id);
+        summary.failed += 1;
+        console.error("Recurring occurrence processing failed", occurrenceKey, error);
+      }
+    }
+  }
+
+  const pending = await prisma.recurringOrder.findFirst({
     where: {
       status: "ACTIVE",
       nextRunAt: { lte: now },
       startAt: { lte: now },
-      OR: [{ endAt: null }, { endAt: { gte: now } }],
     },
-    include: { customer: true },
-    take: RECURRING_DUE_TAKE,
+    select: { id: true },
   });
-
-  let processed = 0;
-
-  for (const recurring of due) {
-    const { value, unit } = resolveRecurringInterval(recurring);
-
-    if (recurring.deliveryCategory === "SPECIAL_MISSION") {
-      continue;
-    }
-
-    const nextRunAt = addInterval(recurring.nextRunAt, value, unit);
-    const willCancel = Boolean(recurring.endAt && nextRunAt > recurring.endAt);
-
-    // Claim atomique : seul le process qui réussit ce bump traite l'occurrence
-    // (évite les doublons si le cron et une visite du portail coïncident).
-    const claim = await prisma.recurringOrder.updateMany({
-      where: { id: recurring.id, status: "ACTIVE", nextRunAt: recurring.nextRunAt },
-      data: willCancel ? { status: "CANCELLED", nextRunAt } : { nextRunAt },
-    });
-    if (claim.count === 0) continue;
-
-    await createClientOrder(recurring.customerId, recurring.companyId, recurring.customer.email, {
-      ...buildOrderPayload(recurring, toDateInputValue(recurring.nextRunAt)),
-    });
-    processed += 1;
-  }
-
-  return processed;
+  summary.hasMore = Boolean(pending);
+  return summary;
 }

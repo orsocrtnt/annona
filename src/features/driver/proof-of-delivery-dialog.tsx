@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import Image from "next/image";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ interface ProofOfDeliveryDialogProps {
   open: boolean;
   outcome: "SUCCESS" | "FAILED";
   loading?: boolean;
+  feedbackMessage?: string | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: (value: PodDialogValue) => void;
 }
@@ -55,9 +57,13 @@ export function ProofOfDeliveryDialog({
   open,
   outcome,
   loading,
+  feedbackMessage,
   onOpenChange,
   onConfirm,
 }: ProofOfDeliveryDialogProps) {
+  const titleId = useId();
+  const failureCodeId = useId();
+  const noteId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
@@ -65,6 +71,13 @@ export function ProofOfDeliveryDialog({
   const [note, setNote] = useState("");
 
   const success = outcome === "SUCCESS";
+
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview);
+    },
+    [preview]
+  );
 
   const onPick = async (file: File | undefined) => {
     if (!file) return;
@@ -87,6 +100,7 @@ export function ProofOfDeliveryDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
+        if (loading) return;
         if (!next) {
           setPreview(null);
           setPhoto(null);
@@ -95,9 +109,14 @@ export function ProofOfDeliveryDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="max-w-sm">
+      <DialogContent
+        aria-labelledby={titleId}
+        className="max-w-sm"
+      >
         <DialogHeader>
-          <DialogTitle>{success ? "Preuve de livraison" : "Échec de livraison"}</DialogTitle>
+          <DialogTitle id={titleId}>
+            {success ? "Preuve de livraison" : "Échec de livraison"}
+          </DialogTitle>
           <DialogDescription>
             {success
               ? "Prenez une photo du colis remis (porte, destinataire, ou reçu)."
@@ -107,9 +126,10 @@ export function ProofOfDeliveryDialog({
 
         <div className="space-y-3">
           {!success ? (
-            <label className="block space-y-1 text-sm">
+            <label htmlFor={failureCodeId} className="block space-y-1 text-sm">
               <span className="font-medium">Motif</span>
               <select
+                id={failureCodeId}
                 value={failureCode}
                 onChange={(e) => setFailureCode(e.target.value as PodFailureCode)}
                 className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
@@ -138,7 +158,14 @@ export function ProofOfDeliveryDialog({
             className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-6 text-sm text-muted-foreground hover:bg-muted/40"
           >
               {preview ? (
-                <img src={preview} alt="Preuve" className="max-h-48 rounded-md object-cover" />
+                <Image
+                  src={preview}
+                  alt="Preuve"
+                  width={320}
+                  height={192}
+                  unoptimized
+                  className="max-h-48 rounded-md object-cover"
+                />
               ) : (
               <>
                 <Camera className="h-6 w-6" />
@@ -147,9 +174,10 @@ export function ProofOfDeliveryDialog({
             )}
           </button>
 
-          <label className="block space-y-1 text-sm">
+          <label htmlFor={noteId} className="block space-y-1 text-sm">
             <span className="font-medium">Note</span>
             <textarea
+              id={noteId}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               maxLength={400}
@@ -160,6 +188,7 @@ export function ProofOfDeliveryDialog({
           </label>
         </div>
 
+        {feedbackMessage && <p role={loading ? "status" : "alert"} aria-live="polite" className="text-sm text-muted-foreground">{feedbackMessage}</p>}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Annuler

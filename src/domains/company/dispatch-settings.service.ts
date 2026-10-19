@@ -7,7 +7,7 @@ import {
   type CompanyDispatchSettings,
 } from "@/lib/validations/dispatch-settings";
 
-function parseDispatchSettings(raw: unknown): CompanyDispatchSettings {
+export function parseDispatchSettings(raw: unknown): CompanyDispatchSettings {
   const stored = (raw ?? {}) as Partial<CompanyDispatchSettings>;
   const merged = {
     ...DEFAULT_DISPATCH_SETTINGS,

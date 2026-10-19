@@ -13,10 +13,8 @@ import {
   isInPeriod,
   isLateDelivery,
   startOfToday,
-  type CategoryCounts,
   type DashboardPeriodKey,
   type PeriodDashboardStats,
-  type StatusBreakdown,
 } from "@/lib/dashboard/period-stats";
 import {
   formatClientFromParts,

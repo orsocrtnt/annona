@@ -10,6 +10,7 @@
 
 # testing
 /coverage
+/outputs/
 
 # next.js
 /.next/
@@ -43,3 +44,6 @@ next-env.d.ts
 /prisma/*.db
 /prisma/*.db-journal
 .env*
+
+# Local destinations for shared TODO copies
+/.todo-share-paths.local.json

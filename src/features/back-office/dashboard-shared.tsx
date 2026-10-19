@@ -22,7 +22,7 @@ export function ClickableCount({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md px-1.5 py-0.5 font-medium text-brand underline-offset-2 transition-colors hover:bg-brand/10 hover:underline",
+        "inline-flex min-h-6 min-w-6 items-center justify-center rounded-md px-1.5 py-0.5 font-medium text-brand underline-offset-2 transition-colors hover:bg-brand/10 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         className
       )}
     >

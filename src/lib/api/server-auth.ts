@@ -2,20 +2,22 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { createClient } from "@/services/supabase/server";
-import { extractPermissionSlugs, getUserByAuthId } from "@/domains/user/user.service";
+import { getUserByAuthId } from "@/domains/user/user.service";
 import { syncUserFromSupabase, UserNotProvisionedError } from "@/domains/auth/auth.service";
 import { hasPermission } from "@/lib/permissions/rbac";
 import type { PermissionSlug } from "@/lib/permissions/rbac";
 import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 import { resolveAuthUserWithDemoPersona } from "@/domains/demo/demo-auth.service";
-import { getCachedAuth, loadAuthOnce } from "./auth-cache";
+import { isAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
+import { isDemoLoginEmail } from "@/lib/demo/constants";
 import { TUTELLIV_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
 
 export interface ServerAuthContext {
   authId: string;
   user: UserWithRole;
   permissions: string[];
+  isDemoSession: boolean;
 }
 
 async function resolveUserFromAuthId(
@@ -23,57 +25,40 @@ async function resolveUserFromAuthId(
   metadata?: Record<string, string>,
   email?: string
 ): Promise<ServerAuthContext | null> {
-  const cached = getCachedAuth(authId);
-  if (cached) {
-    if (!cached.user.company?.isDemo) {
-      return {
-        authId,
-        user: cached.user,
-        permissions: cached.permissions,
-      };
+  // Aucun cache inter-requêtes : une modification validée en base est relue
+  // dès la prochaine requête, indépendamment de l'instance qui la reçoit.
+  let user = await getUserByAuthId(authId);
+  if (!user && email) {
+    const meta = metadata ?? {};
+    const isCompanyAccount = meta.account_type === "company" || Boolean(meta.company_name);
+    try {
+      user = await syncUserFromSupabase({
+        authId, email,
+        firstName: meta.first_name ?? meta.firstName ?? "Utilisateur",
+        lastName: meta.last_name ?? meta.lastName ?? "",
+        accountType: isCompanyAccount ? "company" : undefined,
+        companyName: meta.company_name,
+      });
+    } catch (error) {
+      if (error instanceof UserNotProvisionedError || error instanceof AccountUnavailableError) return null;
+      throw error;
     }
-    const resolved = await resolveAuthUserWithDemoPersona(authId, cached.user);
-    return {
-      authId,
-      user: resolved.user,
-      permissions: resolved.permissions,
-    };
   }
+  if (!user || !isAccountActive(user)) return null;
 
-  const loaded = await loadAuthOnce(authId, async () => {
-    let user = await getUserByAuthId(authId);
-
-    if (!user && email) {
-      const meta = metadata ?? {};
-      const isCompanyAccount =
-        meta.account_type === "company" || Boolean(meta.company_name);
-
-      try {
-        user = await syncUserFromSupabase({
-          authId,
-          email,
-          firstName: meta.first_name ?? meta.firstName ?? "Utilisateur",
-          lastName: meta.last_name ?? meta.lastName ?? "",
-          accountType: isCompanyAccount ? "company" : undefined,
-          companyName: meta.company_name,
-        });
-      } catch (error) {
-        if (error instanceof UserNotProvisionedError) return null;
-        throw error;
-      }
-    }
-
-    if (!user) return null;
-    return { user, permissions: extractPermissionSlugs(user) };
-  });
-
-  if (!loaded) return null;
-
-  const resolved = await resolveAuthUserWithDemoPersona(authId, loaded.user);
+  let resolved;
+  try {
+    resolved = await resolveAuthUserWithDemoPersona(authId, user);
+  } catch (error) {
+    if (error instanceof AccountUnavailableError) return null;
+    throw error;
+  }
+  if (!isAccountActive(resolved.user)) return null;
   return {
     authId,
     user: resolved.user,
     permissions: resolved.permissions,
+    isDemoSession: user.company?.isDemo === true && isDemoLoginEmail(user.email),
   };
 }
 
@@ -94,7 +79,7 @@ const loadAuthContext = cache(async (): Promise<ServerAuthContext | null> => {
     data: { user: authUser },
   } = await supabase.auth.getUser();
 
-  if (!authUser) return null;
+  if (!authUser || !authUser.email_confirmed_at) return null;
 
   return resolveUserFromAuthId(
     authUser.id,

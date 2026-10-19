@@ -1,35 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDriverService } from "@/features/driver/driver-service-control";
+import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "@/lib/validations/driver-location-settings";
 import { hasActiveDriverMission } from "@/lib/constants/driver-location";
 import { useDriverMissions } from "@/features/driver/hooks";
 import { useDriverLocationSettings } from "@/features/driver/location-settings-hooks";
-
-type TrackingStatus = "idle" | "requesting" | "active" | "denied" | "unsupported";
-
-async function sendPosition(position: GeolocationPosition) {
-  await fetch("/api/driver/location", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy,
-    }),
-  });
-}
+import { useDriverLivePosition } from "@/features/driver/use-driver-live-position";
+import { DriverLocationStatus } from "@/features/driver/driver-location-status";
 
 export function DriverLocationTracker() {
+  const service = useDriverService();
+  const serviceActive = service.data?.active === true && !service.error;
   const pathname = usePathname();
   const isNavigatePage = pathname.startsWith("/driver/navigate");
-  const [status, setStatus] = useState<TrackingStatus>("idle");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const watchIdRef = useRef<number | null>(null);
-  const lastSentAtRef = useRef(0);
   const { data: settings } = useDriverLocationSettings();
-  const { data: missionData } = useDriverMissions();
+  const missions = useDriverMissions();
+  const missionData = missions.data;
 
   const locationSettings = settings ?? DEFAULT_DRIVER_LOCATION_SETTINGS;
   const hasActiveMission = useMemo(
@@ -37,121 +25,45 @@ export function DriverLocationTracker() {
     [missionData?.missions]
   );
 
-  const intervalMs = useMemo(() => {
-    const seconds = hasActiveMission
-      ? locationSettings.activeMissionIntervalSeconds
-      : locationSettings.idleIntervalSeconds;
-    return seconds * 1000;
-  }, [hasActiveMission, locationSettings]);
+  const enabled = !isNavigatePage && serviceActive && hasActiveMission;
+  const tracking = useDriverLivePosition(enabled, {
+    minSendIntervalMs: Math.min(locationSettings.activeMissionIntervalSeconds * 1000, 4_000),
+    staleAfterMs: locationSettings.onlineThresholdSeconds * 1000,
+  });
 
-  useEffect(() => {
-    if (isNavigatePage) return;
+  if (isNavigatePage) return null;
 
-    if (typeof window === "undefined" || !navigator.geolocation) {
-      setStatus("unsupported");
-      return;
-    }
+  let status = tracking.status;
+  let detail: string | undefined;
+  let error = tracking.syncError;
+  if (service.error || missions.error) {
+    status = "sync-error";
+    error = service.error?.message ?? missions.error?.message ?? "État du suivi indisponible.";
+  } else if (!service.data || !missionData) {
+    status = "requesting";
+    detail = "Vérification du service et des missions…";
+  } else if (!serviceActive) {
+    status = "stopped";
+    detail = "Partage GPS arrêté : service fermé.";
+  } else if (!hasActiveMission) {
+    status = "stopped";
+    detail = "Partage GPS en attente : aucune mission démarrée.";
+  }
 
-    const publishPosition = async (position: GeolocationPosition) => {
-      try {
-        await sendPosition(position);
-        setStatus("active");
-      } catch {
-        setStatus("active");
-      }
-    };
-
-    const clearWatch = () => {
-      if (watchIdRef.current != null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-    };
-
-    const clearIntervalTimer = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-
-    if (hasActiveMission) {
-      clearIntervalTimer();
-      setStatus("requesting");
-
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (position) => {
-          const now = Date.now();
-          if (now - lastSentAtRef.current < Math.min(intervalMs, 4_000)) return;
-          lastSentAtRef.current = now;
-          void publishPosition(position);
-        },
-        (error) => {
-          if (error.code === error.PERMISSION_DENIED) {
-            setStatus("denied");
-          }
-        },
-        {
-          enableHighAccuracy: true,
-          maximumAge: 2_000,
-          timeout: 15_000,
-        }
-      );
-
-      return () => {
-        clearWatch();
-      };
-    }
-
-    clearWatch();
-    const publish = () => {
-      setStatus("requesting");
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          void publishPosition(position);
-        },
-        (error) => {
-          if (error.code === error.PERMISSION_DENIED) {
-            setStatus("denied");
-          }
-        },
-        {
-          enableHighAccuracy: false,
-          maximumAge: Math.floor(intervalMs * 0.5),
-          timeout: 12_000,
-        }
-      );
-    };
-
-    publish();
-    intervalRef.current = setInterval(publish, intervalMs);
-
-    return () => {
-      clearIntervalTimer();
-    };
-  }, [hasActiveMission, intervalMs, isNavigatePage]);
-
-  void status;
-  return null;
-}
-
-export function useDriverTrackingStatus() {
-  const [online, setOnline] = useState(false);
-
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-
-    const check = () => {
-      navigator.permissions
-        ?.query({ name: "geolocation" })
-        .then((result) => setOnline(result.state === "granted"))
-        .catch(() => setOnline(false));
-    };
-
-    check();
-    const id = setInterval(check, 5_000);
-    return () => clearInterval(id);
-  }, []);
-
-  return online;
+  return (
+    <div className="mx-4 mb-4" aria-label="État de synchronisation GPS">
+      <DriverLocationStatus
+        status={status}
+        detail={detail}
+        error={error}
+        lastPositionAt={tracking.lastPositionAt}
+        lastSyncedAt={tracking.lastSyncedAt}
+        onRetry={() => {
+          tracking.retry();
+          void service.refetch();
+          void missions.refetch();
+        }}
+      />
+    </div>
+  );
 }

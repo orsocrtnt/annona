@@ -125,10 +125,13 @@ function buildRandomOrder(): CreateClientOrderInput {
 }
 
 async function resolveCompanyId(): Promise<string> {
-  const admin = await prisma.user.findFirst({
-    where: { email: "orsocarotenuto@gmail.com", companyId: { not: null } },
-    select: { companyId: true },
-  });
+  const preferredAdminEmail = process.env.SEED_COMPANY_ADMIN_EMAIL?.trim();
+  const admin = preferredAdminEmail
+    ? await prisma.user.findFirst({
+        where: { email: preferredAdminEmail, companyId: { not: null } },
+        select: { companyId: true },
+      })
+    : null;
   if (admin?.companyId) return admin.companyId;
 
   const company = await prisma.company.findFirst({

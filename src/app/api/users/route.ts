@@ -39,37 +39,41 @@ export async function POST(request: Request) {
     const result = await createUserByAdmin(
       parsed.data,
       auth.context.user.companyId,
-      auth.context.user.role.systemRole === "SUPER_ADMIN"
+      auth.context.user.role.systemRole
     );
 
     return NextResponse.json(
       {
         data: result.user,
-        temporaryPassword: result.temporaryPassword,
+        invitationSent: result.invitationSent,
         success: true,
-        message: "Utilisateur créé. Communiquez les identifiants affichés dans le tableau.",
+        message: "Invitation envoyée. Le destinataire choisira son mot de passe.",
       },
       { status: 201 }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN";
     const statusMap: Record<string, number> = {
+      MINI_ADMIN_MANAGEMENT_FORBIDDEN: 403,
+      AUTH_EMAIL_NOT_CONFIGURED: 503,
+      AUTH_RATE_LIMITED: 429,
+      INVITATION_FAILED: 502,
+      INVITATION_PROFILE_FAILED: 503,
       EMAIL_EXISTS: 409,
       INVALID_ROLE: 400,
       COMPANY_REQUIRED: 400,
     };
     const labels: Record<string, string> = {
+      MINI_ADMIN_MANAGEMENT_FORBIDDEN: "La gestion des mini-admins est réservée aux administrateurs principaux.",
+      AUTH_EMAIL_NOT_CONFIGURED: "Les invitations par e-mail ne sont pas encore configurées.",
+      AUTH_RATE_LIMITED: "Trop de demandes. Réessayez plus tard.",
+      INVITATION_FAILED: "L’invitation n’a pas pu être envoyée. Réessayez plus tard.",
+      INVITATION_PROFILE_FAILED: "L’e-mail a pu être envoyé mais le profil n’a pas été créé. Réessayez la création.",
       EMAIL_EXISTS: "Cet email est déjà utilisé.",
       INVALID_ROLE: "Rôle non autorisé.",
       COMPANY_REQUIRED: "Aucune entreprise associée. Créez d'abord une entreprise ou reconnectez-vous.",
     };
 
-    if (message.startsWith("SUPABASE_CREATE_FAILED:")) {
-      return NextResponse.json(
-        { error: `Erreur Supabase : ${message.replace("SUPABASE_CREATE_FAILED:", "")}` },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json(
       { error: labels[message] ?? "Erreur lors de la création" },

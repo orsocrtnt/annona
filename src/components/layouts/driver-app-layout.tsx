@@ -1,15 +1,16 @@
 "use client";
+import { DriverServiceControl } from "@/features/driver/driver-service-control";
+import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { useDriverTrackingStatus } from "@/features/driver/driver-location-tracker";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { Home, MapPin, User } from "lucide-react";
-import { useNavQueryPrefetch, usePrefetchNavHrefs } from "@/hooks/use-nav-query-prefetch";
+import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 
 const bottomNav = [
   { title: "Accueil", href: "/driver", icon: Home },
@@ -51,11 +52,9 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
   const pathname = usePathname();
   const isNavigationPage = pathname.startsWith("/driver/navigate");
   const { user } = useAuth();
-  const geoGranted = useDriverTrackingStatus();
-  usePrefetchNavHrefs(bottomNav.map((item) => item.href));
 
   if (isNavigationPage) {
-    return <div className="min-h-screen bg-background">{children}</div>;
+    return <div className="min-h-screen bg-background"><main id="main-content" tabIndex={-1}>{children}</main></div>;
   }
 
   return (
@@ -77,16 +76,16 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
                   )
                 : "Livreur"}
             </p>
-            <p className={cn("mt-0.5 text-xs", geoGranted ? "text-success" : "text-muted-foreground")}>
-              {geoGranted ? "GPS actif" : "GPS en attente"}
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              État GPS et synchronisation affichés ci-dessous
             </p>
           </div>
         </div>
       </header>
 
-      <main>{children}</main>
+      <main id="main-content" tabIndex={-1}><DriverServiceControl /><OrderMessagesInbox />{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
+      <nav aria-label="Navigation chauffeur" className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1.5">
           {bottomNav.map((item) => {
             const isActive = pathname === item.href;

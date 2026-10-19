@@ -106,6 +106,7 @@ export function canAccessRoute(
     "/dispatch": DISPATCH_ROLES,
     "/driver": ["DRIVER"],
     "/portal": ["CLIENT"],
+    "/support": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
     "/settings": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
     "/users": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
     "/companies": ["SUPER_ADMIN"],
@@ -126,6 +127,7 @@ export function getAllowedRolesForPath(path: string): SystemRole[] {
   if (path.startsWith("/dispatch")) return DISPATCH_ROLES;
   if (path.startsWith("/driver")) return ["DRIVER"];
   if (path.startsWith("/portal")) return ["CLIENT"];
+  if (path.startsWith("/support")) return ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"];
   if (path.startsWith("/settings")) return ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"];
   if (path.startsWith("/users")) return ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"];
   if (path.startsWith("/companies")) return ["SUPER_ADMIN"];

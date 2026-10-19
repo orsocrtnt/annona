@@ -1,3 +1,6 @@
+import { GEOCODING_URL, isValidCoordinate } from "@/lib/maps/provider-config";
+import { fetchProviderJson } from "@/lib/maps/provider-request";
+
 const PARIS_CENTER = { lat: 48.8566, lng: 2.3522 };
 
 export type AddressParts = {
@@ -12,20 +15,6 @@ export function formatAddressQuery(parts: AddressParts): string {
   return [parts.address, parts.postalCode, parts.city].filter(Boolean).join(", ").trim();
 }
 
-/** Position approximative à partir du code postal (secours sans API). */
-export function geocodeFrenchPostalCode(postalCode: string): { lat: number; lng: number } {
-  const code = postalCode.trim().slice(0, 5);
-  if (!/^\d{5}$/.test(code)) return PARIS_CENTER;
-
-  const dept = Number(code.slice(0, 2));
-  const suffix = Number(code.slice(2));
-
-  const lat = 48.85 + (dept - 75) * 0.06 + (suffix % 100) * 0.0008;
-  const lng = 2.35 + (dept - 75) * 0.04 + Math.floor(suffix / 100) * 0.0008;
-
-  return { lat, lng };
-}
-
 /** Coordonnées fictives laissées par d'anciennes versions (centre Paris). */
 export function isLegacyFakeTrackingCoord(
   latitude: number | null | undefined,
@@ -38,52 +27,47 @@ export function isLegacyFakeTrackingCoord(
   );
 }
 
-/** Géocodage via la Base Adresse Nationale (data.gouv.fr). */
-export async function geocodeAddress(parts: AddressParts): Promise<{ lat: number; lng: number }> {
+type Coordinates = { lat: number; lng: number };
+const pendingGeocodes = new Map<string, Promise<Coordinates | null>>();
+const geocodeExpiry = new Map<string, number>();
+let geocodeBlockedUntil = 0;
+
+/** IGN/BAN address index. Failure never becomes an invented point. */
+export async function geocodeAddress(parts: AddressParts): Promise<Coordinates | null> {
   const query = formatAddressQuery(parts);
-  if (!query) return PARIS_CENTER;
-
+  if (!query) return null;
   const cacheKey = query.toLowerCase();
-  const cached = geocodeCache.get(cacheKey);
-  if (cached) return cached;
-
-  try {
-    const url = new URL("https://api-adresse.data.gouv.fr/search/");
-    url.searchParams.set("q", query);
-    url.searchParams.set("limit", "1");
-    const postcode = parts.postalCode?.trim().slice(0, 5);
-    if (postcode && /^\d{5}$/.test(postcode)) {
-      url.searchParams.set("postcode", postcode);
-    }
-
-    const response = await fetch(url.toString(), {
-      headers: { Accept: "application/json" },
-      next: { revalidate: 86_400 },
-    });
-
-    if (response.ok) {
-      const data = (await response.json()) as {
-        features?: { geometry?: { coordinates?: [number, number] } }[];
+  if ((geocodeExpiry.get(cacheKey) ?? 0) > Date.now()) return geocodeCache.get(cacheKey) ?? null;
+  const pending = pendingGeocodes.get(cacheKey);
+  if (pending) return pending;
+  // A local bound, not an IP-wide quota across serverless instances.
+  if (pendingGeocodes.size >= 8 || Date.now() < geocodeBlockedUntil) return null;
+  const request = (async () => {
+    let result: Coordinates | null = null;
+    try {
+      const url = new URL(GEOCODING_URL);
+      url.searchParams.set("q", query);
+      url.searchParams.set("limit", "1");
+      url.searchParams.set("index", "address");
+      const postcode = parts.postalCode?.trim();
+      if (postcode && /^\d{5}$/.test(postcode)) url.searchParams.set("postcode", postcode);
+      const data = await fetchProviderJson(url.toString()) as {
+        features?: { properties?: { score?: number }; geometry?: { coordinates?: [number, number] } }[];
       };
-      const coordinates = data.features?.[0]?.geometry?.coordinates;
-      if (coordinates) {
-        const [lng, lat] = coordinates;
-        const result = { lat, lng };
-        geocodeCache.set(cacheKey, result);
-        return result;
-      }
+      const feature = data.features?.[0];
+      const point = feature?.geometry?.coordinates;
+      if (point && isValidCoordinate(point[1], point[0]) && (feature?.properties?.score ?? 0) >= 0.6) result = { lat: point[1], lng: point[0] };
+    } catch {
+      // Prevent a tight retry loop, including 429, without logging the address.
+      geocodeBlockedUntil = Date.now() + 5_000;
     }
-  } catch (error) {
-    console.warn("[geocoding] BAN lookup failed:", query, error);
-  }
-
-  if (parts.postalCode?.trim()) {
-    const fallback = geocodeFrenchPostalCode(parts.postalCode);
-    geocodeCache.set(cacheKey, fallback);
-    return fallback;
-  }
-
-  return PARIS_CENTER;
+    if (geocodeExpiry.size >= 1000) { geocodeCache.clear(); geocodeExpiry.clear(); }
+    if (result) geocodeCache.set(cacheKey, result); else geocodeCache.delete(cacheKey);
+    geocodeExpiry.set(cacheKey, Date.now() + (result ? 86_400_000 : 30_000));
+    return result;
+  })().finally(() => pendingGeocodes.delete(cacheKey));
+  pendingGeocodes.set(cacheKey, request);
+  return request;
 }
 
 export async function geocodeMany(
@@ -94,29 +78,11 @@ export async function geocodeMany(
   await Promise.all(
     entries.map(async (entry) => {
       const coords = await geocodeAddress(entry.parts);
-      results.set(entry.key, coords);
+      if (coords) results.set(entry.key, coords);
     })
   );
 
   return results;
-}
-
-/** @deprecated Préférer geocodeAddress — conservé pour compatibilité synchrone. */
-export function resolveCoordinates(
-  postalCode: string | null | undefined,
-  tracking?: { latitude: number | null; longitude: number | null } | null
-): { lat: number; lng: number } {
-  if (
-    tracking?.latitude != null &&
-    tracking?.longitude != null &&
-    !isLegacyFakeTrackingCoord(tracking.latitude, tracking.longitude)
-  ) {
-    return { lat: tracking.latitude, lng: tracking.longitude };
-  }
-  if (postalCode?.trim()) {
-    return geocodeFrenchPostalCode(postalCode);
-  }
-  return PARIS_CENTER;
 }
 
 export function averageCoordinates(points: { lat: number; lng: number }[]): { lat: number; lng: number } {

@@ -31,7 +31,11 @@ const CATEGORY_ICONS: Partial<Record<DeliveryCategory, typeof Package>> = {
 const UNITS: RecurrenceUnit[] = ["DAYS", "WEEKS", "MONTHS"];
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 interface CreateRecurringOrderFormProps {

@@ -33,6 +33,8 @@ export function isDemoLockedAccountEmail(email: string): boolean {
 }
 
 export const DEMO_PERSONA_COOKIE = "tutelliv-demo-persona";
+export const DEMO_SESSION_COOKIE = "tutelliv-demo-session";
+export const DEMO_SESSION_COMPANY_PREFIX = `${DEMO_COMPANY_SLUG}-session-`;
 
 export type DemoPersona = "admin" | "client" | "driver";
 

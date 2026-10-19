@@ -33,6 +33,7 @@ export function AddressFieldsGroup({
   instructions,
 }: AddressFieldsGroupProps) {
   const listId = useId();
+  const addressInputId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const skipExternalResetRef = useRef(false);
   const [open, setOpen] = useState(false);
@@ -135,10 +136,14 @@ export function AddressFieldsGroup({
   return (
     <div className="space-y-4">
       <div ref={containerRef} className="relative">
-        <FormField label={addressLabel} error={addressError} required={required}>
+        <FormField htmlFor={addressInputId} label={addressLabel} error={addressError} required={required}>
           <div className="relative">
             <Input
+              id={addressInputId}
               value={values.address}
+              aria-invalid={addressError ? true : undefined}
+              aria-required={required || undefined}
+              aria-describedby={addressError ? `${addressInputId}-error` : undefined}
               placeholder={addressPlaceholder}
               autoComplete="off"
               aria-autocomplete="list"

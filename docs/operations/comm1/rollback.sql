@@ -1,0 +1,1 @@
+-- Retour applicatif uniquement : conserver tables, colonne et données ; ancien client Prisma les ignore. Aucun DROP ni purge.

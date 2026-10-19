@@ -33,11 +33,11 @@ export function AvailableMissionCard({ mission }: AvailableMissionCardProps) {
   const handleClaim = async () => {
     try {
       await claim.mutateAsync(mission.id);
-      toast.success("Livraison prise en charge", {
-        description: "Vous pouvez la démarrer quand vous voulez, même en parallèle d'autres missions.",
+      toast.success("Mission affectée", {
+        description: "Confirmez sa prise en charge, puis démarrez quand vous êtes prêt.",
       });
     } catch (error) {
-      toast.error("Prise en charge impossible", {
+      toast.error("Affectation impossible", {
         description: error instanceof Error ? error.message : undefined,
       });
     }
@@ -90,7 +90,7 @@ export function AvailableMissionCard({ mission }: AvailableMissionCardProps) {
           onClick={() => void handleClaim()}
         >
           <Hand className="mr-1.5 h-3.5 w-3.5" />
-          Prendre en charge
+          Me l’affecter
         </Button>
       </CardContent>
     </Card>

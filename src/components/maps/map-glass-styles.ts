@@ -2,12 +2,12 @@ import type { CSSProperties } from "react";
 
 export const mapGlassCardStyle: CSSProperties = {
   padding: "6px 12px",
-  borderRadius: "10px",
-  background: "rgba(255, 255, 255, 0.88)",
-  backdropFilter: "blur(12px)",
-  WebkitBackdropFilter: "blur(12px)",
-  border: "1px solid rgba(255, 255, 255, 0.95)",
-  boxShadow: "0 4px 18px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06)",
+  borderRadius: "12px",
+  background: "rgba(255, 255, 255, 0.97)",
+  backdropFilter: "blur(8px)",
+  WebkitBackdropFilter: "blur(8px)",
+  border: "1px solid rgba(10, 10, 10, 0.10)",
+  boxShadow: "0 8px 28px rgba(0, 0, 0, 0.10)",
 };
 
 export const mapGlassButtonStyle: CSSProperties = {
@@ -19,9 +19,9 @@ export const mapGlassButtonStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   fontSize: 22,
-  fontWeight: 500,
+  fontWeight: 600,
   lineHeight: 1,
-  color: "#0a0a0a",
+  color: "#111111",
   background: "#ffffff",
   cursor: "pointer",
   flexShrink: 0,

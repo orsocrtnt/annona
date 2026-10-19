@@ -1,9 +1,18 @@
-import type { DeliveryStatus } from "@prisma/client";
-import { prisma } from "@/services/prisma/client";
+import { createHash } from "node:crypto";
+import type { DeliveryStatus, Prisma } from "@prisma/client";
 import { CLIENT_NOTIFICATIONS_TAKE } from "@/lib/query/list-limits";
+import {
+  enqueueOperationJob,
+  kickOperationJob,
+} from "@/domains/operations/operation-job.service";
+import {
+  getTransactionalEmailConfiguration,
+  sendTransactionalEmail,
+} from "@/lib/email/transactional-email";
+import { prisma } from "@/services/prisma/client";
 import { getClientSettings } from "./settings.service";
 
-export type ClientNotificationType = "DELIVERY" | "INVOICE";
+export type ClientNotificationType = "DELIVERY" | "INVOICE" | "SUPPORT";
 
 export interface ClientNotificationItem {
   id: string;
@@ -15,69 +24,29 @@ export interface ClientNotificationItem {
   createdAt: string;
 }
 
-function isEmailConfigured() {
-  return Boolean(process.env.RESEND_API_KEY && (process.env.MAIL_FROM || process.env.EMAIL_FROM));
-}
+type NotificationDatabase = Pick<Prisma.TransactionClient, "operationJob">;
 
-export function getEmailDeliveryConfigured() {
-  return isEmailConfigured();
-}
+type DeliveryNotificationPayload = {
+  kind: "DELIVERY";
+  customerId: string;
+  companyId: string;
+  status: DeliveryStatus;
+  reference: string;
+  deliveryId: string;
+};
 
-async function sendClientEmail(to: string, subject: string, text: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.MAIL_FROM || process.env.EMAIL_FROM;
-  if (!apiKey || !from) return;
+type InvoiceNotificationPayload = {
+  kind: "INVOICE";
+  customerId: string;
+  companyId: string;
+  reference: string;
+  invoiceId: string;
+  amount: number;
+};
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from, to: [to], subject, text }),
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    console.error("[notify] email failed", res.status, detail);
-  }
-}
-
-async function insertNotification(input: {
-  userId: string;
-  type: ClientNotificationType;
-  title: string;
-  body: string;
-  href: string | null;
-  email?: { to: string; subject: string; text: string };
-}) {
-  await prisma.clientNotification.create({
-    data: {
-      userId: input.userId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      href: input.href,
-    },
-  });
-
-  const extra = await prisma.clientNotification.findMany({
-    where: { userId: input.userId },
-    orderBy: { createdAt: "desc" },
-    skip: CLIENT_NOTIFICATIONS_TAKE,
-    select: { id: true },
-  });
-  if (extra.length > 0) {
-    await prisma.clientNotification.deleteMany({
-      where: { id: { in: extra.map((row) => row.id) } },
-    });
-  }
-
-  if (input.email) {
-    void sendClientEmail(input.email.to, input.email.subject, input.email.text).catch((error) => {
-      console.error("[notify] email", error);
-    });
-  }
-}
+type ClientNotificationJobPayload =
+  | DeliveryNotificationPayload
+  | InvoiceNotificationPayload;
 
 const DELIVERY_COPY: Partial<
   Record<DeliveryStatus, { title: string; body: (ref: string) => string }>
@@ -108,82 +77,258 @@ const DELIVERY_COPY: Partial<
   },
 };
 
-export function notifyDeliveryStatusChange(input: {
-  customerId: string | null;
-  status: DeliveryStatus;
-  reference: string;
-  deliveryId: string;
-}) {
-  if (!input.customerId) return;
-  const copy = DELIVERY_COPY[input.status];
-  if (!copy) return;
+export function getEmailDeliveryConfigured() {
+  return getTransactionalEmailConfiguration().enabled;
+}
 
-  void (async () => {
-    const settings = await getClientSettings(input.customerId!);
-    if (!settings.deliveryAlerts) return;
+export function getEmailDeliveryMode() {
+  return getTransactionalEmailConfiguration().mode;
+}
 
-    const user = await prisma.user.findUnique({
-      where: { id: input.customerId! },
-      select: { email: true },
+function stableNotificationId(eventKey: string) {
+  return `evt_${createHash("sha256").update(eventKey).digest("hex").slice(0, 24)}`;
+}
+
+async function sendClientEmail(
+  to: string,
+  subject: string,
+  text: string,
+  idempotencyKey: string
+) {
+  await sendTransactionalEmail({
+    to,
+    subject,
+    text,
+    idempotencyKey,
+  });
+}
+
+async function insertNotification(
+  eventKey: string,
+  input: {
+    userId: string;
+    type: ClientNotificationType;
+    title: string;
+    body: string;
+    href: string | null;
+    email?: { to: string; subject: string; text: string };
+  }
+) {
+  await prisma.clientNotification.upsert({
+    where: { id: stableNotificationId(eventKey) },
+    update: {},
+    create: {
+      id: stableNotificationId(eventKey),
+      userId: input.userId,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      href: input.href,
+    },
+  });
+
+  const extra = await prisma.clientNotification.findMany({
+    where: { userId: input.userId, type: { not: "ORDER_MESSAGE" } },
+    orderBy: { createdAt: "desc" },
+    skip: CLIENT_NOTIFICATIONS_TAKE,
+    select: { id: true },
+  });
+  if (extra.length > 0) {
+    await prisma.clientNotification.deleteMany({
+      where: { id: { in: extra.map((row) => row.id) } },
     });
-    if (!user) return;
+  }
 
-    const body = copy.body(input.reference);
-    await insertNotification({
-      userId: input.customerId!,
+  if (input.email) {
+    await sendClientEmail(
+      input.email.to,
+      input.email.subject,
+      input.email.text,
+      eventKey
+    );
+  }
+}
+
+export async function queueDeliveryStatusNotification(
+  db: NotificationDatabase,
+  input: {
+    customerId: string | null;
+    companyId: string;
+    status: DeliveryStatus;
+    reference: string;
+    deliveryId: string;
+    eventId: string;
+  }
+) {
+  if (!input.customerId || !DELIVERY_COPY[input.status]) return null;
+  return enqueueOperationJob(db, {
+    jobKey: `client-notification:delivery:${input.deliveryId}:${input.eventId}`,
+    type: "CLIENT_NOTIFICATION",
+    companyId: input.companyId,
+    payload: {
+      kind: "DELIVERY",
+      customerId: input.customerId,
+      companyId: input.companyId,
+      status: input.status,
+      reference: input.reference,
+      deliveryId: input.deliveryId,
+    },
+  });
+}
+
+export async function queueInvoiceIssuedNotification(
+  db: NotificationDatabase,
+  input: {
+    customerId: string | null;
+    companyId: string;
+    reference: string;
+    invoiceId: string;
+    amount: number;
+  }
+) {
+  if (!input.customerId) return null;
+  return enqueueOperationJob(db, {
+    jobKey: `client-notification:invoice:${input.invoiceId}:issued`,
+    type: "CLIENT_NOTIFICATION",
+    companyId: input.companyId,
+    payload: {
+      kind: "INVOICE",
+      customerId: input.customerId,
+      companyId: input.companyId,
+      reference: input.reference,
+      invoiceId: input.invoiceId,
+      amount: input.amount,
+    },
+  });
+}
+
+function parseNotificationPayload(payload: Prisma.JsonValue): ClientNotificationJobPayload {
+  if (!payload || Array.isArray(payload) || typeof payload !== "object") {
+    throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
+  }
+  const value = payload as Record<string, Prisma.JsonValue>;
+  const customerId = typeof value.customerId === "string" ? value.customerId : null;
+  const companyId = typeof value.companyId === "string" ? value.companyId : null;
+  const reference = typeof value.reference === "string" ? value.reference : null;
+  if (!customerId || !companyId || !reference) {
+    throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
+  }
+
+  if (value.kind === "DELIVERY") {
+    const deliveryId = typeof value.deliveryId === "string" ? value.deliveryId : null;
+    const status = typeof value.status === "string" ? value.status as DeliveryStatus : null;
+    if (!deliveryId || !status || !DELIVERY_COPY[status]) {
+      throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
+    }
+    return { kind: "DELIVERY", customerId, companyId, reference, deliveryId, status };
+  }
+
+  if (value.kind === "INVOICE") {
+    const invoiceId = typeof value.invoiceId === "string" ? value.invoiceId : null;
+    const amount = typeof value.amount === "number" ? value.amount : null;
+    if (!invoiceId || amount === null) throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
+    return { kind: "INVOICE", customerId, companyId, reference, invoiceId, amount };
+  }
+
+  throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
+}
+
+export async function deliverClientNotificationJob(
+  rawPayload: Prisma.JsonValue,
+  eventKey: string
+) {
+  const payload = parseNotificationPayload(rawPayload);
+  const settings = await getClientSettings(payload.customerId);
+  const enabled = payload.kind === "DELIVERY"
+    ? settings.deliveryAlerts
+    : settings.invoiceAlerts;
+  if (!enabled) return;
+
+  const user = await prisma.user.findFirst({
+    where: { id: payload.customerId, companyId: payload.companyId },
+    select: { email: true },
+  });
+  if (!user) return;
+
+  if (payload.kind === "DELIVERY") {
+    const delivery = await prisma.delivery.findFirst({
+      where: {
+        id: payload.deliveryId,
+        customerId: payload.customerId,
+        companyId: payload.companyId,
+      },
+      select: { id: true },
+    });
+    if (!delivery) return;
+    const copy = DELIVERY_COPY[payload.status]!;
+    const body = copy.body(payload.reference);
+    await insertNotification(eventKey, {
+      userId: payload.customerId,
       type: "DELIVERY",
       title: copy.title,
       body,
-      href: `/portal/deliveries/${input.deliveryId}`,
+      href: `/portal/deliveries/${payload.deliveryId}`,
       email:
         settings.emailNotifications && user.email
           ? { to: user.email, subject: copy.title, text: body }
           : undefined,
     });
-  })().catch((error) => console.error("[notify] delivery", error));
+    return;
+  }
+
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: payload.invoiceId,
+      customerId: payload.customerId,
+      companyId: payload.companyId,
+    },
+    select: { id: true },
+  });
+  if (!invoice) return;
+  const amount = new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+  }).format(payload.amount);
+  const body = `La facture ${payload.reference} (${amount}) est disponible.`;
+  await insertNotification(eventKey, {
+    userId: payload.customerId,
+    type: "INVOICE",
+    title: "Nouvelle facture",
+    body,
+    href: `/portal/invoices/${payload.invoiceId}`,
+    email:
+      settings.emailNotifications && user.email
+        ? { to: user.email, subject: `Facture ${payload.reference}`, text: body }
+        : undefined,
+  });
 }
 
-export function notifyInvoiceIssued(input: {
+export async function notifyDeliveryStatusChange(input: {
   customerId: string | null;
+  companyId: string;
+  status: DeliveryStatus;
+  reference: string;
+  deliveryId: string;
+  eventId: string;
+}) {
+  const job = await queueDeliveryStatusNotification(prisma, input);
+  if (job) kickOperationJob(job.id);
+}
+
+export async function notifyInvoiceIssued(input: {
+  customerId: string | null;
+  companyId: string;
   reference: string;
   invoiceId: string;
   amount: number;
 }) {
-  if (!input.customerId) return;
-
-  void (async () => {
-    const settings = await getClientSettings(input.customerId!);
-    if (!settings.invoiceAlerts) return;
-
-    const user = await prisma.user.findUnique({
-      where: { id: input.customerId! },
-      select: { email: true },
-    });
-    if (!user) return;
-
-    const amount = new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "EUR",
-    }).format(input.amount);
-    const body = `La facture ${input.reference} (${amount}) est disponible.`;
-
-    await insertNotification({
-      userId: input.customerId!,
-      type: "INVOICE",
-      title: "Nouvelle facture",
-      body,
-      href: `/portal/invoices/${input.invoiceId}`,
-      email:
-        settings.emailNotifications && user.email
-          ? { to: user.email, subject: `Facture ${input.reference}`, text: body }
-          : undefined,
-    });
-  })().catch((error) => console.error("[notify] invoice", error));
+  const job = await queueInvoiceIssuedNotification(prisma, input);
+  if (job) kickOperationJob(job.id);
 }
 
 export async function listClientNotifications(userId: string) {
   const rows = await prisma.clientNotification.findMany({
-    where: { userId },
+    where: { userId, type: { not: "ORDER_MESSAGE" } },
     orderBy: { createdAt: "desc" },
     take: CLIENT_NOTIFICATIONS_TAKE,
   });
@@ -191,7 +336,7 @@ export async function listClientNotifications(userId: string) {
   return rows.map(
     (row): ClientNotificationItem => ({
       id: row.id,
-      type: row.type === "INVOICE" ? "INVOICE" : "DELIVERY",
+      type: row.type === "INVOICE" ? "INVOICE" : row.type === "SUPPORT" ? "SUPPORT" : "DELIVERY",
       title: row.title,
       body: row.body,
       href: row.href,
@@ -205,6 +350,7 @@ export async function markClientNotificationsRead(userId: string, ids?: string[]
   await prisma.clientNotification.updateMany({
     where: {
       userId,
+      type: { not: "ORDER_MESSAGE" },
       readAt: null,
       ...(ids?.length ? { id: { in: ids } } : {}),
     },

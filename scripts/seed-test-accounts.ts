@@ -39,13 +39,16 @@ function createSupabaseAdmin() {
 }
 
 async function resolveCompanyId(): Promise<string> {
-  const admin = await prisma.user.findFirst({
-    where: {
-      email: "orsocarotenuto@gmail.com",
-      companyId: { not: null },
-    },
-    select: { companyId: true },
-  });
+  const preferredAdminEmail = process.env.SEED_COMPANY_ADMIN_EMAIL?.trim();
+  const admin = preferredAdminEmail
+    ? await prisma.user.findFirst({
+        where: {
+          email: preferredAdminEmail,
+          companyId: { not: null },
+        },
+        select: { companyId: true },
+      })
+    : null;
   if (admin?.companyId) return admin.companyId;
 
   const companyAdmin = await prisma.user.findFirst({
@@ -119,7 +122,7 @@ async function createTestUser(
     });
 
     if (roleSlug === "client") {
-      await linkPortalDataToClient(user.id, account.email);
+      await linkPortalDataToClient(user.id, account.email, user.companyId);
     }
 
     console.log(`  ✅ ${account.email}`);

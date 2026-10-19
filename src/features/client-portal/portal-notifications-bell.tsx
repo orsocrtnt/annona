@@ -42,7 +42,7 @@ export function PortalNotificationsBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="flex items-center justify-between gap-2">
-          <span>Alertes</span>
+          <span>Notifications</span>
           {unread.length > 0 ? (
             <button
               type="button"
@@ -56,7 +56,7 @@ export function PortalNotificationsBell() {
         <DropdownMenuSeparator />
         {notifications.length === 0 ? (
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-            Aucune alerte pour le moment.
+            Aucune notification pour le moment.
           </p>
         ) : (
           <div className="max-h-80 overflow-y-auto">

@@ -1,11 +1,6 @@
-import { createAdminClient } from "@/services/supabase/admin";
+import { createPasswordLinkClient } from "@/services/supabase/password-link";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
-import {
-  syncUserFromSupabase,
-  getDashboardPathForRole,
-} from "@/domains/auth/auth.service";
-import { getUserPermissions } from "@/domains/user/user.service";
-import type { UserWithRole } from "@/types";
+import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
 
 interface ProvisionCompanyAdminInput {
   email: string;
@@ -15,60 +10,23 @@ interface ProvisionCompanyAdminInput {
   companyName?: string;
 }
 
-async function findSupabaseUserByEmail(email: string) {
-  const supabase = createAdminClient();
-  const { data } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  return data?.users.find((u) => u.email?.toLowerCase() === email) ?? null;
-}
-
-export async function provisionCompanyAdmin(
-  input: ProvisionCompanyAdminInput
-): Promise<{
-  user: UserWithRole;
-  permissions: string[];
-  redirectTo: string;
-  authId: string;
-}> {
-  const normalizedEmail = normalizeEmail(input.email);
-  const supabase = createAdminClient();
-
-  const existing = await findSupabaseUserByEmail(normalizedEmail);
-  if (existing) {
-    // Sécurité : on ne réécrit jamais le mot de passe d'un compte existant.
-    throw new Error(
-      "Un compte existe déjà avec cet email. Connectez-vous ou réinitialisez votre mot de passe."
-    );
+/** L'entreprise sera provisionnée après vérification du lien, jamais à la soumission du formulaire. */
+export async function provisionCompanyAdmin(input: ProvisionCompanyAdminInput) {
+  const redirectTo = getPasswordLinkRedirect();
+  const client = createPasswordLinkClient();
+  const { data, error } = await client.auth.signUp({
+    email: normalizeEmail(input.email), password: input.password,
+    options: { emailRedirectTo: redirectTo, data: {
+      first_name: input.firstName, last_name: input.lastName,
+      company_name: input.companyName ?? "", account_type: "company",
+    } },
+  });
+  if (error?.status === 429) throw new Error("AUTH_RATE_LIMITED");
+  if (error) throw new Error("AUTH_EMAIL_FAILED");
+  if (data.session) {
+    await client.auth.signOut({ scope: "global" });
+    throw new Error("AUTH_EMAIL_CONFIRMATION_REQUIRED");
   }
-
-  const { data, error } = await supabase.auth.admin.createUser({
-    email: normalizedEmail,
-    password: input.password,
-    email_confirm: true,
-    user_metadata: {
-      first_name: input.firstName,
-      last_name: input.lastName,
-      company_name: input.companyName ?? "",
-      account_type: "company",
-    },
-  });
-  if (error || !data.user) throw new Error(error?.message ?? "SUPABASE_CREATE_FAILED");
-  const authUser = data.user;
-
-  const user = await syncUserFromSupabase({
-    authId: authUser.id,
-    email: normalizedEmail,
-    firstName: input.firstName,
-    lastName: input.lastName,
-    accountType: "company",
-    companyName: input.companyName,
-  });
-
-  const permissions = await getUserPermissions(authUser.id);
-
-  return {
-    user,
-    permissions,
-    redirectTo: getDashboardPathForRole(user.role.systemRole, user.settings),
-    authId: authUser.id,
-  };
+  // Supabase peut masquer un compte existant : réponse identique, aucun secret renvoyé.
+  return { verificationRequired: true };
 }

@@ -1,6 +1,6 @@
 import type { DeliveryCategory } from "@prisma/client";
 import type { RouteAddress } from "@/components/shared/delivery-route-display";
-import type { OrderStopInput, PickupStopInput } from "@/lib/validations/order";
+import type { PickupStopInput } from "@/lib/validations/order";
 
 export type StoredPickupStop = PickupStopInput;
 

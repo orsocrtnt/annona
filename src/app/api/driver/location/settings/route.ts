@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireDriverRole } from "@/lib/api/auth-guard";
-import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
+import { parseLocationSettings } from "@/domains/company/location-settings.service";
 
 export async function GET() {
   const auth = await requireDriverRole();
@@ -11,6 +11,7 @@ export async function GET() {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 
-  const settings = await getCompanyLocationSettings(companyId);
+  const raw = (auth.context.user.company?.settings ?? {}) as Record<string, unknown>;
+  const settings = parseLocationSettings(raw.locationTracking);
   return NextResponse.json({ data: settings, success: true });
 }

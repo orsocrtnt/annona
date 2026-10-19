@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm, type Control, type FieldErrors, type FieldValues, type UseFormRegister } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import { AddressFieldsGroup } from "@/components/addresses/address-fields-group";
 import {
   findFirstPickupStopErrorIndex,
-  findFirstStopErrorIndex,
   getFirstFormErrorMessage,
   pickupStopHasError,
   stopHasError,
@@ -81,7 +80,10 @@ export function CreateOrderForm({
 }: CreateOrderFormProps) {
   const { data: addresses } = usePortalAddresses();
   const { data: deliveryOptions, isLoading: loadingOptions } = usePortalDeliveryOptions();
-  const enabledCategories = deliveryOptions?.enabled ?? [];
+  const enabledCategories = useMemo(
+    () => deliveryOptions?.enabled ?? [],
+    [deliveryOptions?.enabled]
+  );
   const [activeStopIndex, setActiveStopIndex] = useState(0);
   const [activePickupIndex, setActivePickupIndex] = useState(0);
 
@@ -212,7 +214,7 @@ export function CreateOrderForm({
       {enabledCategories.length > 1 && (
         <div className="space-y-3">
           <h3 className="font-medium">Type de demande</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div role="group" aria-label="Type de demande" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {enabledCategories.map((type) => {
               const selected = deliveryCategory === type;
               const Icon = CATEGORY_ICONS[type];
@@ -220,9 +222,10 @@ export function CreateOrderForm({
                 <button
                   key={type}
                   type="button"
+                  aria-pressed={selected}
                   onClick={() => form.setValue("deliveryCategory", type)}
                   className={cn(
-                    "rounded-xl border p-4 text-left transition-colors",
+                    "rounded-xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     selected
                       ? "border-brand bg-brand-subtle/40"
                       : "border-border hover:border-brand/40"
@@ -244,6 +247,11 @@ export function CreateOrderForm({
 
       {isSpecialMission ? (
         <>
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            Fonction expérimentale hors offre pilote. TutelLiv centralise la description et les
+            adresses ; le devis chiffré et son acceptation restent traités directement avec
+            l&apos;entreprise.
+          </p>
           <FormField
             label="Décrivez votre mission"
             error={errors.missionDescription?.message}
@@ -279,16 +287,18 @@ export function CreateOrderForm({
               </Button>
             </div>
 
-            <div className="flex flex-wrap gap-2 border-b pb-3">
+            <div role="group" aria-label="Adresses de la mission" className="flex flex-wrap gap-2 border-b pb-3">
               {stopFields.map((field, index) => {
                 const hasError = isSubmitted && stopHasError(errors, index);
                 return (
                 <button
                   key={field.id}
                   type="button"
+                  aria-pressed={activeStopIndex === index}
+                  aria-label={`${form.watch(`stops.${index}.label`) || `Adresse ${index + 1}`}${hasError ? " — incomplète" : ""}`}
                   onClick={() => setActiveStopIndex(index)}
                   className={cn(
-                    "rounded-lg border px-3 py-1.5 text-sm transition-colors",
+                    "min-h-10 rounded-lg border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                     hasError && "border-destructive bg-destructive/5 text-destructive",
                     activeStopIndex === index && !hasError
                       ? "border-brand bg-brand-subtle/40 font-medium"
@@ -321,6 +331,7 @@ export function CreateOrderForm({
                       type="button"
                       variant="ghost"
                       size="icon"
+                      aria-label={`Supprimer l'adresse ${activeStopIndex + 1}`}
                       className="mt-6 shrink-0"
                       onClick={() => {
                         removeStop(activeStopIndex);
@@ -451,6 +462,7 @@ export function CreateOrderForm({
                         type="button"
                         variant="ghost"
                         size="icon-sm"
+                        aria-label={`Supprimer l'article ${index + 1}`}
                         className="mb-0.5 shrink-0"
                         onClick={() => removeItem(index)}
                       >
@@ -460,7 +472,7 @@ export function CreateOrderForm({
                   </div>
                 ))}
                 {isSubmitted && errors.items?.message && (
-                  <p className="text-sm text-destructive">{errors.items.message}</p>
+                  <p role="alert" className="text-sm text-destructive">{errors.items.message}</p>
                 )}
               </>
             )}
@@ -493,22 +505,24 @@ export function CreateOrderForm({
               </div>
 
               {isSubmitted && findFirstPickupStopErrorIndex(errors) !== null && (
-                <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                   Une ou plusieurs collectes sont incomplètes. Les onglets en rouge indiquent où
                   corriger.
                 </p>
               )}
 
-              <div className="flex flex-wrap gap-2 border-b pb-3">
+              <div role="group" aria-label="Collectes de la course" className="flex flex-wrap gap-2 border-b pb-3">
                 {pickupStopFields.map((field, index) => {
                   const hasError = isSubmitted && pickupStopHasError(errors, index);
                   return (
                   <button
                     key={field.id}
                     type="button"
+                    aria-pressed={activePickupIndex === index}
+                    aria-label={`${form.watch(`pickupStops.${index}.label`) || `Collecte ${index + 1}`}${hasError ? " — incomplète" : ""}`}
                     onClick={() => setActivePickupIndex(index)}
                     className={cn(
-                      "rounded-lg border px-3 py-1.5 text-sm transition-colors",
+                      "min-h-10 rounded-lg border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                       hasError && "border-destructive bg-destructive/5 text-destructive",
                       activePickupIndex === index && !hasError
                         ? "border-brand bg-brand-subtle/40 font-medium"
@@ -543,6 +557,7 @@ export function CreateOrderForm({
                         type="button"
                         variant="ghost"
                         size="icon"
+                      aria-label={`Supprimer la collecte ${activePickupIndex + 1}`}
                         className="mt-6 shrink-0"
                         onClick={() => {
                           removePickupStop(activePickupIndex);
@@ -687,8 +702,8 @@ export function CreateOrderForm({
             </FormField>
             {!isCourier && (
               <>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" {...form.register("saveAddress")} />
+                <label className="flex min-h-8 items-center gap-2 text-sm">
+                  <input className="h-5 w-5" type="checkbox" {...form.register("saveAddress")} />
                   Enregistrer cette adresse
                 </label>
                 {form.watch("saveAddress") && (

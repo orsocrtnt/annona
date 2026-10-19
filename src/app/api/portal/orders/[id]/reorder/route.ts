@@ -8,9 +8,13 @@ export async function GET(
 ) {
   const auth = await requireClientRole();
   if ("error" in auth) return auth.error;
+  const companyId = auth.context.user.companyId;
+  if (!companyId) {
+    return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
+  }
 
   const { id } = await params;
-  const template = await getOrderReorderTemplate(auth.context.user.id, id);
+  const template = await getOrderReorderTemplate(auth.context.user.id, companyId, id);
 
   if (!template) {
     return NextResponse.json({ error: "Commande introuvable ou non reproductible" }, { status: 404 });

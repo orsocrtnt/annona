@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { OrderTracking } from "@/components/shared/order-tracking";
+import { OrderConversation } from "@/components/shared/order-conversation";
+import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -86,6 +89,7 @@ export default function ClientDeliveryDetailPage() {
             <CardTitle className="text-base">Itinéraire</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <MissionAcknowledgement {...delivery} />
             <DeliveryRouteDisplay
               category={category}
               pickups={courierPickups.length ? courierPickups : undefined}
@@ -182,6 +186,8 @@ export default function ClientDeliveryDetailPage() {
           </CardContent>
         </Card>
       </div>
+      <OrderTracking orderId={delivery.orderId} />
+      <OrderConversation orderId={delivery.orderId} />
     </div>
   );
 }

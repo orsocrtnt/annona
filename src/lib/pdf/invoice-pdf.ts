@@ -37,7 +37,7 @@ function formatDate(value: Date | string | null | undefined): string {
 
 export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const page = doc.addPage([595, 842]);
+  let page = doc.addPage([595, 842]);
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
@@ -77,7 +77,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
 
   // En-tête
   text(data.company.name ?? "Entreprise", margin, y, { size: 18, bold: true });
-  textRight("FACTURE", right, y, { size: 22, bold: true });
+  textRight("RELEVE DE PRESTATION", right, y, { size: 12, bold: true });
   y -= 22;
   if (data.company.address) {
     text(`${data.company.address}${data.company.city ? `, ${data.company.city}` : ""}`, margin, y, { color: muted });
@@ -91,7 +91,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   y -= 40;
 
   // Méta
-  text("Émise le", margin, y, { color: muted });
+  text("Créé le", margin, y, { color: muted });
   text(formatDate(data.createdAt), margin + 90, y);
   if (data.dueDate) {
     text("Échéance", margin + 220, y, { color: muted });
@@ -106,9 +106,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   }
   y -= 30;
 
-  // Facturé à
+  // Client du relevé opérationnel.
   if (data.customerName || data.customerEmail) {
-    text("Facturé à", margin, y, { bold: true });
+    text("Client", margin, y, { bold: true });
     y -= 16;
     if (data.customerName) {
       text(data.customerName, margin, y);
@@ -128,14 +128,50 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   textRight("Montant", right - 8, y + 4, { bold: true });
   y -= 24;
 
-  // Lignes
+  const ensureRoom = (height: number, table = false) => {
+    if (y - height >= 90) return;
+    page = doc.addPage([595, 842]);
+    y = 792;
+    text(`Relevé de prestation - ${data.reference}`, margin, y, { bold: true });
+    y -= 28;
+    if (table) {
+      text("Désignation (suite)", margin + 8, y, { bold: true });
+      textRight("Qté", margin + 360, y, { bold: true });
+      textRight("Montant", right - 8, y, { bold: true });
+      y -= 24;
+    }
+  };
+  const wrap = (value: string, width: number): string[] => {
+    const result: string[] = [];
+    for (const paragraph of sanitize(value).split(/\r?\n/)) {
+      let current = "";
+      for (const character of paragraph) {
+        if (font.widthOfTextAtSize(current + character, 9) > width && current) {
+          result.push(current); current = "";
+        }
+        current += character;
+      }
+      result.push(current);
+    }
+    return result;
+  };
+
+  // Long labels and notes continue on further pages, without silently dropping rows.
   for (const line of data.lineItems) {
-    text(line.label, margin + 8, y, { size: 9 });
-    textRight(String(line.quantity), margin + 360, y, { size: 9 });
-    textRight(money(line.amount * line.quantity), right - 8, y, { size: 9 });
-    y -= 18;
+    const parts = wrap(line.label, 300);
+    for (let index = 0; index < parts.length; index++) {
+      ensureRoom(14, true);
+      text(parts[index]!, margin + 8, y, { size: 9 });
+      if (index === 0) {
+        textRight(String(line.quantity), margin + 360, y, { size: 9 });
+        textRight(money(line.amount * line.quantity), right - 8, y, { size: 9 });
+      }
+      y -= 14;
+    }
+    y -= 4;
   }
 
+  ensureRoom(50);
   y -= 6;
   page.drawLine({ start: { x: margin, y }, end: { x: right, y }, thickness: 1, color: rgb(0.85, 0.85, 0.85) });
   y -= 22;
@@ -144,13 +180,24 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
 
   // Notes + pied de page
   if (data.notes) {
+    ensureRoom(68);
     y -= 40;
     text("Note", margin, y, { color: muted });
     y -= 14;
-    text(data.notes, margin, y, { size: 9 });
+    for (const part of wrap(data.notes, right - margin)) {
+      ensureRoom(14); text(part, margin, y, { size: 9 }); y -= 14;
+    }
   }
   if (data.footerNote) {
-    text(data.footerNote, margin, 50, { size: 8, color: muted });
+    y -= 20;
+    for (const part of wrap(data.footerNote, right - margin)) {
+      ensureRoom(14); text(part, margin, y, { size: 9, color: muted }); y -= 14;
+    }
+  }
+  for (const [index, currentPage] of doc.getPages().entries()) {
+    page = currentPage;
+    text("Document de suivi operationnel - ne constitue pas une facture electronique reglementaire.", margin, 50, { size: 8, color: muted });
+    text(`Page ${index + 1}/${doc.getPageCount()}`, margin, 36, { size: 8, color: muted });
   }
 
   return doc.save();
