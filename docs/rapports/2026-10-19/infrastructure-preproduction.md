@@ -8,7 +8,7 @@ Date : 19 octobre 2026. Audit sans suppression, sans modification distante, sans
 
 Le dépôt local pointe vers `orsocrtnt/tutelliv-v2`. Le `main` distant et le dernier commit local partagé sont identiques (`af614947…`, 7 septembre 2026). Le code actuel n'est donc pas sur GitHub : il comprend 214 fichiers suivis modifiés et 498 fichiers non suivis, dont le code, les tests, la documentation et les preuves produits depuis ce commit. Le scanner de secrets ne détectait aucun secret avant la préparation ; il est relancé dans la validation finale.
 
-La branche locale `preproduction` a été créée depuis ce commit sans modifier `main`. Aucun commit, push, demande de fusion ou déploiement n'a été effectué. L'historique Git existant et les 51 démonstrations restent préservés.
+La branche locale `preproduction` a été créée depuis ce commit sans modifier `main`. Le travail courant est figé dans le commit local `34ba118` ; aucun push, demande de fusion ou déploiement n'a été effectué. Les preuves générées sous `outputs/` restent locales et ignorées. L'historique Git existant et les 51 démonstrations restent préservés.
 
 ### Vercel
 
