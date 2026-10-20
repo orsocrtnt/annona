@@ -1,4 +1,6 @@
 import { defineConfig } from "@playwright/test";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 
 try {
   process.loadEnvFile(".env.local");
@@ -19,7 +21,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 30_000 },
   reporter: "line",
-  outputDir: "/private/tmp/tutelliv-test2-playwright",
+  outputDir: resolve(tmpdir(), "tutelliv-test2-playwright"),
   use: {
     baseURL,
     headless: true,
