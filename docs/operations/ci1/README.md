@@ -42,7 +42,7 @@ Le retour arrière applicatif doit redéployer le dernier artefact sain. Les év
 
 ## Travail restant
 
-- terminer l'essai distant de la recette connectée après chaque modification de son montage ;
+- maintenir l'essai distant connecté après toute modification du montage ou du nettoyage ;
 - tester le redéploiement d'un artefact Vercel sain sur la cible isolée ;
 - tester la restauration base + Storage avant de fixer les objectifs de reprise ;
 - conserver `main` et la production hors de ces essais.

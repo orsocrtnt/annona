@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**43 tâches terminées sur 67 — 64 %**
+**44 tâches terminées sur 67 — 66 %**
 
-`█████████████░░░░░░░` · 24 tâches restantes
+`█████████████░░░░░░░` · 23 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -120,7 +120,7 @@ Le cadrage du propriétaire permet d’avancer ; aucun entretien commercial n’
 
 SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement mais reste ouverte jusqu’à la configuration et à la recette e-mail réelles. L’absence d’accès hébergeur ne bloque pas les analyses et tests locaux indépendants.
 
-- [ ] **ENV-1 — Séparer développement, préproduction et production.** Inventorier les services existants ; préparer une cible isolée, secrets distincts et fixtures A/B. La base actuelle est autorisée pour les tests sans données réelles ; elle ne constitue pas une préproduction dédiée.
+- [x] **ENV-1 — Séparer développement, préproduction et production.** Inventorier les services existants ; préparer une cible isolée, secrets distincts et fixtures A/B. La base actuelle est autorisée pour les tests sans données réelles ; elle ne constitue pas une préproduction dédiée.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -140,7 +140,7 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
   Préproduction créée le 2026-10-19 : second projet Supabase Free sain à Paris, sans donnée copiée. Configuration locale distincte dans `.env.preproduction.local`, ignoré et limité au compte local. Baseline Prisma appliquée et vérifiée : vingt tables métier sous RLS, registre de migration protégé, zéro droit direct aux rôles publics, zéro utilisateur Auth, bucket `delivery-pods` privé limité à 5 Mio JPEG/PNG et zéro drift. Le formulaire Vercel est resté non enregistré. Le mot de passe PostgreSQL et la clé serveur aperçus dans une vue technique doivent être remplacés avant push ; ENV-1 reste ouverte jusqu'à cette rotation, la configuration Preview et TEST-2.
 
-  Avancement du 2026-10-20 : identifiants remplacés, ancienne clé serveur révoquée, branche distante et Preview Vercel actives, variables Preview et environnement GitHub `preproduction` configurés. La migration additive RBAC et son rejeu sont vérifiés. TEST-2 local sur la cible isolée passe avec quatre parcours navigateur ; son montage temporaire refuse une cible non vide ou incohérente et son nettoyage prouve zéro entreprise, utilisateur applicatif ou Auth résiduel. La Preview reste protégée par l'authentification Vercel ; la CI teste donc le commit dans son runner relié au Supabase de préproduction et contrôle le déploiement séparément. ENV-1 reste ouverte jusqu'à la réussite de cette nouvelle chaîne dans GitHub Actions.
+  Terminé le 2026-10-20 : identifiants remplacés, ancienne clé serveur révoquée, branche distante et Preview Vercel actives, variables Preview et environnement GitHub `preproduction` configurés. La migration additive RBAC et son rejeu sont vérifiés. Le commit `f6e19cc` est déployé avec succès en Preview et la chaîne GitHub connectée réussit la garde d'isolation, 279 tests, TEST-2, le montage temporaire, trois parcours Chromium, la preuve nettoyée et le nettoyage `always()`. Le contrôle direct final confirme zéro entreprise de test, zéro utilisateur Auth, deux migrations appliquées, zéro drift, RLS partout et bucket privé. La Preview reste protégée par l'authentification Vercel ; la CI teste donc le même commit dans son runner relié au Supabase de préproduction et contrôle le déploiement séparément. Rapport `docs/rapports/2026-10-20/preproduction-ci.md`.
 
 - [x] **SEC-02 — Bloquer les références étrangères dans le support.** Vérifier entreprise ET client pour relatedOrderId et relatedDeliveryId avant insertion et lecture.
 
@@ -500,7 +500,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Avancement du 2026-10-19 : le workflow couvre désormais les pushes `preproduction` et exécute une garde d'isolation avant le job connecté. Cette garde refuse la référence Supabase actuelle, les hôtes incohérents, les secrets opérationnels faibles/partagés, les e-mails réels et le nettoyage automatique. Le cron opérationnel chaque minute a été retiré du manifeste de préproduction car Vercel Hobby le refuse ; sa route reste disponible. Validation : 279 tests dont quatre ciblés, types/lint stricts, build de 102 pages, 58 documents, audit production sans vulnérabilité, scanner de 871 fichiers sans secret et diff-check réussis. Publication et première exécution distante restent bloquées par la reconnexion et ENV-1/DB-1.
 
-  Avancement du 2026-10-20 : workflow et branche publiés, job local GitHub vert et Preview Vercel créée sans modifier `main`. Le job connecté a franchi la garde et la recette A/B ; ses premiers échecs ont corrigé un chemin Playwright non portable et une date variable dans le test d'idempotence. Le dernier blocage, l'absence volontaire de démo sur la base vide, est traité par un montage temporaire strict et un nettoyage `always()`. La chaîne locale équivalente réussit 279 tests, recette connectée propre, quatre E2E en 8,8 minutes, preuve sans secret, nettoyage de cinq sociétés temporaires et retour vérifié à zéro utilisateur Auth. CI-1 reste ouverte jusqu'au résultat distant de cette chaîne et à l'essai de retour arrière applicatif.
+  Avancement du 2026-10-20 : workflow et branche publiés, job local GitHub vert et Preview Vercel créée sans modifier `main`. La chaîne connectée distante du commit `f6e19cc` est entièrement verte : garde d'isolation, 279 tests, recette A/B, montage temporaire, trois parcours Chromium, preuve sans secret, nettoyage de six sociétés temporaires et artefact de preuve publié. Le contrôle direct final retrouve zéro utilisateur Auth et une base conforme. CI-1 reste ouverte uniquement pour essayer et chronométrer le retour arrière applicatif ; la restauration base + Storage est suivie par DB-1 et OPS-03A.
 
 - [ ] **OPS-03A — Vérifier sauvegarde et restauration.** Inventorier hébergement, base, photos et politiques existantes ; fixer objectifs de perte acceptable et délai de reprise.
 
@@ -942,3 +942,5 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-18 — Jauge et documentation réconciliées : la copie externe `TODO-TutelLiv-vente.md` est désormais synchronisée automatiquement depuis une configuration locale ignorée par Git, avec recalcul idempotent vérifié. Document de vision commerciale actualisé aux fonctions réellement qualifiées au 18 octobre : navigation, support, reprise réseau, retards, onboarding interne et export privé ; aucune validation terrain ou commerciale ajoutée.
 
 - 2026-10-18 — BILL-01B terminée sur la branche export V1 décidée par BILL-01A : CSV comptable privé versionné, 29 colonnes, périodes UTC/statuts explicites, Decimal, lecture cohérente par lots, limites de volume, versions et données historiques qualifiées. 261 tests, build isolé 101 pages, recette connectée 1 001 documents A + 1 B avec écriture concurrente entre lots et zéro résidu ; relevé opérationnel de 160 lignes/neuf pages contrôlé. Aucune émission réglementaire, avoir automatique ou immutabilité légale complète revendiqués. Rapport `docs/rapports/2026-10-18/bill01b.md`.
+
+- 2026-10-20 — ENV-1 terminée : branche `preproduction`, Preview Vercel protégée, projet Supabase isolé et secrets propres configurés sans modifier `main` ni la cible historique. La chaîne GitHub distante du commit `f6e19cc` réussit la garde, 279 tests, TEST-2, trois parcours Chromium, la preuve nettoyée et le nettoyage `always()` ; Vercel confirme le déploiement. Le contrôle direct final retrouve zéro utilisateur Auth, deux migrations, zéro drift, RLS partout et bucket privé. Rapport `docs/rapports/2026-10-20/preproduction-ci.md`. Suite : CI-1 pour le retour arrière applicatif, DB-1/OPS-03A pour la restauration base + Storage.

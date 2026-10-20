@@ -36,7 +36,7 @@ Le retrait du cron ne supprime pas sa route. `/api/cron/operations` reste appela
 7. Terminé : variables Vercel Preview limitées à `preproduction`, avec `AUTH_EMAIL_LINKS_ENABLED=false`, `EMAIL_DELIVERY_MODE=disabled` et `DEMO_CLEANUP_ENABLED=false`.
 8. Terminé : environnement GitHub `preproduction` configuré avec les secrets `PREPROD_*` attendus par le workflow.
 9. Terminé : branche publiée, Preview créée et Production restée sur `main`.
-10. La recette connectée monte une démo temporaire seulement après avoir confirmé que la cible ne contient aucune entreprise, aucun utilisateur applicatif et aucun utilisateur Auth. Elle crée une session par parcours navigateur, puis le bloc `always()` supprime les sociétés, utilisateurs, Auth et objets Storage possédés par la fixture. Tout graphe étranger, roster modifié ou objet ambigu bloque la suppression.
+10. Terminé le 20 octobre 2026 : la recette connectée distante du commit `f6e19cc` a confirmé la cible vide, monté une démo temporaire et exécuté trois parcours Chromium. Le bloc `always()` a supprimé six sociétés temporaires, leurs utilisateurs, l'utilisateur Auth et les objets Storage possédés par la fixture. Le contrôle direct final retrouve zéro utilisateur Auth, deux migrations appliquées, zéro drift, RLS partout et un bucket privé. Tout graphe étranger, roster modifié ou objet ambigu continue de bloquer la suppression.
 11. Reste à faire : export logique base + Storage, restauration sur une cible jetable isolée, chronométrage et contrôle santé, RLS, commandes et photos.
 
 ## Recette temporaire de navigateur
