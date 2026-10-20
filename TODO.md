@@ -10,7 +10,7 @@
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
-Mise à jour : 18 octobre 2026. Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
+Mise à jour : 20 octobre 2026. Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
 
 ## Objectif actuel : une V1 fiable prête à être essayée
 
@@ -70,7 +70,7 @@ Ces réussites ne valident pas le GPS terrain, la charge, la conformité du PDF 
 Priorités confirmées le 18 octobre 2026 pour les tâches encore ouvertes :
 
 - **P0 — Sécurité, stabilité et blocages :** DB-1, LEGAL-1, DATA-02. PERF-01 et les principales frontières SEC sont déjà terminées ; toute régression mesurable redevient P0.
-- **P1 — Préproduction et exploitation :** ENV-1, SEC-05, CI-1, OPS-03A, OPS-03B, EMAIL, MOB-01C.
+- **P1 — Préproduction et exploitation :** SEC-05, OPS-03A, OPS-03B, EMAIL, MOB-01C. ENV-1 et CI-1 sont terminées.
 - **P2 — Validation V1 et préparation des pilotes :** MAP-3, ONBOARD-1, V1-GO, PROD-02, PROD-04.
 - **P3 — Offres, quotas et permissions :** BILL-01B, OFFER-1, SAAS-01A, SAAS-02.
 - **P4 — Pilotes et commercialisation autonome :** PILOT-1, PILOT-2, GROWTH-1, RELEASE-1.
@@ -82,7 +82,7 @@ Les dépendances de sécurité et de validation priment sur le numéro : une tâ
 2. **MAP-3 est techniquement terminée ; revue visuelle groupée différée par le propriétaire.** Le rendu noir/blanc est en place et ne bloque pas les tâches indépendantes.
 3. **DISPATCH-2 terminée le 16 octobre 2026.** Les retards ouvrent la livraison exacte dans le dispatch et sur la carte, avec URL, pagination, focus et frontière entreprise vérifiés.
 4. PROD-03, V1-RECETTE et V1-MESURE sont établies. La baseline automatisée reste distincte de la future mesure humaine et des gains clients.
-5. SEC-01/02/03/04/06 sont terminées. SEC-05 reste ouverte pour la configuration e-mail réelle ; préparer ENV-1 et DB-1 lorsque les accès sont disponibles.
+5. SEC-01/02/03/04/06, ENV-1 et CI-1 sont terminées. SEC-05 reste ouverte pour la configuration e-mail réelle ; DB-1 attend une cible de restauration jetable complète.
 6. OPS-02A, OPS-02B, DISPATCH-1, ACK-1, BILL-02, COMM-1, ALERT-1, TRACK-1, POD-1 et DATA-01 sont terminées.
 7. TRACK-1, MOB-01A/B, UX-01 et MAP-1/2 sont terminées. MOB-01C reste à valider sur téléphones avec l’opérateur disponible.
 8. Après PERF-01, MAP-3 et DISPATCH-2, terminer les jalons internes d’onboarding, tests, exploitation et recette V1. Les dépendances techniques de chaque tâche priment sur cet ordre de lecture.
