@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
+import { endServerSession } from "@/lib/auth/end-server-session";
 
 export function useAuth() {
   const { user, isAuthenticated, isLoading, logout: clearAuth } = useAuthStore();
@@ -15,6 +16,7 @@ export function useAuth() {
   const queryClient = useQueryClient();
 
   const logout = useCallback(async () => {
+    endServerSession();
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error("Déconnexion impossible. Vérifiez votre connexion et réessayez.");

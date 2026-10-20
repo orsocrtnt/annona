@@ -183,6 +183,7 @@ test("déconnexion : nettoyer l'état local après succès, signaler un échec f
     const { useAuth } = load<{ useAuth: () => { logout: () => Promise<void> } }>("src/hooks/use-auth.ts", {
       react: { useCallback: (fn: unknown) => fn },
       "@/stores/auth.store": { useAuthStore: () => ({ logout: () => events.push("store") }) },
+      "@/lib/auth/end-server-session": { endServerSession: () => { events.push("server"); } },
       "@/services/supabase/client": { createClient: () => ({ auth: { signOut: async () => { events.push("signout"); return { error: failed ? new Error("offline") : null }; } } }) },
       "next/navigation": { useRouter: () => ({ push: (url: string) => { assert.equal(url, "/login"); events.push("redirect"); } }) },
       "@tanstack/react-query": { useQueryClient: () => ({ clear: () => events.push("cache") }) },
@@ -190,7 +191,7 @@ test("déconnexion : nettoyer l'état local après succès, signaler un échec f
       sonner: { toast: { error: () => events.push("error") } },
     });
     await useAuth().logout();
-    assert.deepEqual(events, failed ? ["signout", "error"] : ["signout", "store", "legacy", "cache", "redirect"]);
+    assert.deepEqual(events, failed ? ["server", "signout", "error"] : ["server", "signout", "store", "legacy", "cache", "redirect"]);
   }
 });
 

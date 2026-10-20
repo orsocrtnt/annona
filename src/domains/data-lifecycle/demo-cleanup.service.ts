@@ -6,6 +6,7 @@ import { demoFixtureAuthId } from "@/lib/demo/constants";
 import { DEMO_CLEANUP_GRACE_MS, demoSessionExpiry } from "@/lib/demo/retention";
 
 export const DEMO_CLEANUP_AUTHORIZATION = "expired-demo-sessions-v1";
+export const DEMO_LOGOUT_CLEANUP_AUTHORIZATION = "current-demo-session-logout-v1";
 type Result = { status: "eligible" | "deleted" | "missing" | "blocked"; reason?: string };
 class CleanupBlocked extends Error {}
 function block(reason: string): never { throw new CleanupBlocked(reason); }
@@ -113,13 +114,16 @@ export async function hasCrossTenantDemoReference(
  * No Auth/Storage delete call exists here. Legacy sessions and ambiguous graphs stay intact.
  * Caller is a trusted operator script, never a public company-delete endpoint.
  */
-export async function cleanupExpiredDemoSession(companyId: string, options: {
+async function cleanupManagedDemoSession(companyId: string, options: {
   apply?: boolean;
   authorization?: string;
   now?: Date;
   assertStorageEmpty?: (companyId: string) => Promise<void>;
-} = {}): Promise<Result> {
-  if (options.apply && options.authorization !== DEMO_CLEANUP_AUTHORIZATION) return { status: "blocked", reason: "EXPLICIT_ACTIVATION_REQUIRED" };
+}, mode: "expired" | "logout"): Promise<Result> {
+  const expectedAuthorization = mode === "expired"
+    ? DEMO_CLEANUP_AUTHORIZATION
+    : DEMO_LOGOUT_CLEANUP_AUTHORIZATION;
+  if (options.apply && options.authorization !== expectedAuthorization) return { status: "blocked", reason: "EXPLICIT_ACTIVATION_REQUIRED" };
   const now = options.now ?? new Date();
   if (!Number.isFinite(now.getTime())) return { status: "blocked", reason: "INVALID_TIME" };
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -129,8 +133,10 @@ export async function cleanupExpiredDemoSession(companyId: string, options: {
         if (!company) return { status: "missing" };
         const expiry = demoSessionExpiry(company);
         if (!expiry) block("UNMANAGED_OR_NON_DEMO");
-        if (expiry.getTime() > now.getTime()) block("ACTIVE_SESSION");
-        if (expiry.getTime() + DEMO_CLEANUP_GRACE_MS > now.getTime()) block("IN_FLIGHT_GRACE");
+        if (mode === "expired") {
+          if (expiry.getTime() > now.getTime()) block("ACTIVE_SESSION");
+          if (expiry.getTime() + DEMO_CLEANUP_GRACE_MS > now.getTime()) block("IN_FLIGHT_GRACE");
+        }
         if (company.status !== "ACTIVE") block("UNEXPECTED_STATUS");
         if (company.logoUrl) block("EXTERNAL_ASSET_REFERENCE");
 
@@ -181,4 +187,29 @@ export async function cleanupExpiredDemoSession(companyId: string, options: {
     }
   }
   throw new Error("DEMO_CLEANUP_RETRY_EXHAUSTED");
+}
+
+export async function cleanupExpiredDemoSession(companyId: string, options: {
+  apply?: boolean;
+  authorization?: string;
+  now?: Date;
+  assertStorageEmpty?: (companyId: string) => Promise<void>;
+} = {}): Promise<Result> {
+  return cleanupManagedDemoSession(companyId, options, "expired");
+}
+
+/**
+ * Supprime uniquement la session de démonstration active du navigateur qui se
+ * déconnecte. La route appelante doit d'abord vérifier le compte démo commun et
+ * résoudre l'entreprise depuis son cookie HTTP-only.
+ */
+export async function cleanupDemoSessionOnLogout(companyId: string, options: {
+  authorization?: string;
+  now?: Date;
+  assertStorageEmpty?: (companyId: string) => Promise<void>;
+} = {}): Promise<Result> {
+  return cleanupManagedDemoSession(companyId, {
+    ...options,
+    apply: true,
+  }, "logout");
 }

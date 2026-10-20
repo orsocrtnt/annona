@@ -744,7 +744,7 @@ async function createScenarioDelivery(
     }
 
     return { orderId: order.id, deliveryId: delivery.id };
-  });
+  }, { maxWait: 10_000, timeout: 60_000 });
 }
 
 export async function resetDemoScenario(

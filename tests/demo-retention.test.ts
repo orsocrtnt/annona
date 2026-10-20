@@ -8,7 +8,12 @@ import { prisma } from "../src/services/prisma/client";
 import { demoRetentionSettings, demoSessionExpiry } from "../src/lib/demo/retention";
 import { demoPersonaSeedUsers } from "../src/domains/demo/demo-users.service";
 import { demoFixtureAuthId } from "../src/lib/demo/constants";
-import { cleanupExpiredDemoSession, DEMO_CLEANUP_AUTHORIZATION } from "../src/domains/data-lifecycle/demo-cleanup.service";
+import {
+  cleanupDemoSessionOnLogout,
+  cleanupExpiredDemoSession,
+  DEMO_CLEANUP_AUTHORIZATION,
+  DEMO_LOGOUT_CLEANUP_AUTHORIZATION,
+} from "../src/domains/data-lifecycle/demo-cleanup.service";
 import * as constants from "../src/lib/demo/constants";
 import * as retention from "../src/lib/demo/retention";
 import * as access from "../src/lib/auth/account-access";
@@ -97,6 +102,26 @@ test("demo cleanup never reaches deletes on Storage failure, then can be retried
   assert.deepEqual(await cleanupExpiredDemoSession(h.c.id, options), { status: "deleted" });
   assert.equal(h.calls[0], "lock");
   assert.equal(h.calls[1], "storage:read");
+  assert.equal(h.calls.at(-1), "delete:company");
+});
+
+test("demo logout deletes the current active synthetic session only with its dedicated authorization", async (t) => {
+  const h = harness(t);
+  const activeNow = new Date("2026-10-18T01:00:00.000Z");
+  assert.deepEqual(
+    await cleanupDemoSessionOnLogout(h.c.id, { now: activeNow, assertStorageEmpty: h.options.assertStorageEmpty }),
+    { status: "blocked", reason: "EXPLICIT_ACTIVATION_REQUIRED" }
+  );
+  assert.deepEqual(h.calls, []);
+  assert.deepEqual(
+    await cleanupDemoSessionOnLogout(h.c.id, {
+      now: activeNow,
+      authorization: DEMO_LOGOUT_CLEANUP_AUTHORIZATION,
+      assertStorageEmpty: h.options.assertStorageEmpty,
+    }),
+    { status: "deleted" }
+  );
+  assert.equal(h.calls[0], "lock");
   assert.equal(h.calls.at(-1), "delete:company");
 });
 

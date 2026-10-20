@@ -7,6 +7,8 @@ import { createClient } from "@supabase/supabase-js";
 import { validatePreproductionEnvironment } from "../ci/verify-preproduction-env";
 import { prisma } from "../../src/services/prisma/client";
 import { PERMISSIONS, ROLE_PERMISSIONS, ROLES } from "../../prisma/reference-data";
+import { DEMO_COMPANY_SLUG, DEMO_LOGIN_EMAIL } from "../../src/lib/demo/constants";
+import { demoKeepEmails, demoRosterAuthIds } from "../../src/domains/demo/demo-users.service";
 
 const output = resolve(process.argv[2] ?? "outputs/db1/preproduction-validation.json");
 
@@ -66,7 +68,7 @@ async function main() {
     FROM storage.buckets
     WHERE id = 'delivery-pods'
   `);
-  const [roles, permissions] = await Promise.all([
+  const [roles, permissions, companies, appUsers] = await Promise.all([
     prisma.role.findMany({
       where: { isSystem: true },
       select: {
@@ -83,6 +85,12 @@ async function main() {
       select: { slug: true, name: true, resource: true, action: true },
       orderBy: { slug: "asc" },
     }),
+    prisma.company.findMany({
+      select: { id: true, slug: true, isDemo: true, status: true, logoUrl: true },
+    }),
+    prisma.user.findMany({
+      select: { companyId: true, authId: true, email: true, avatarUrl: true },
+    }),
   ]);
 
   const url = required("NEXT_PUBLIC_SUPABASE_URL");
@@ -92,9 +100,9 @@ async function main() {
   const browser = createClient(url, required("NEXT_PUBLIC_SUPABASE_ANON_KEY"), {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const [{ data: users, error: usersError }, { data: bucket, error: bucketError }, anonAttempt] =
+  const [{ data: authData, error: usersError }, { data: bucket, error: bucketError }, anonAttempt] =
     await Promise.all([
-      admin.auth.admin.listUsers({ page: 1, perPage: 1 }),
+      admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
       admin.storage.getBucket("delivery-pods"),
       browser.from("companies").select("id", { count: "exact", head: true }),
     ]);
@@ -130,6 +138,29 @@ async function main() {
     .map(([systemRole, slugs]): [string, string[]] => [systemRole, [...slugs].sort()])
     .sort(([left], [right]) => left.localeCompare(right));
   const expectedRolePermissions = Object.fromEntries(expectedRolePermissionEntries);
+  const emptyApplicationData = companies.length === 0 && appUsers.length === 0 && authData.users.length === 0;
+  const base = companies[0];
+  const authUser = authData.users[0];
+  const expectedEmails = base ? demoKeepEmails() : [];
+  const expectedAuthIds = base && authUser
+    ? demoRosterAuthIds(base.id).map((authId, index) => index === 0 ? authUser.id : authId)
+    : [];
+  const persistentDemoOnly = Boolean(
+    companies.length === 1 &&
+    base?.slug === DEMO_COMPANY_SLUG &&
+    base.isDemo &&
+    base.status === "ACTIVE" &&
+    !base.logoUrl &&
+    authData.users.length === 1 &&
+    authUser?.email?.toLowerCase() === DEMO_LOGIN_EMAIL &&
+    appUsers.length === expectedEmails.length &&
+    appUsers.every((user) =>
+      user.companyId === base.id &&
+      !user.avatarUrl &&
+      expectedEmails.includes(user.email.toLowerCase()) &&
+      expectedAuthIds.includes(user.authId)
+    )
+  );
   const checks = {
     expectedTablesPresent:
       JSON.stringify(appTables.map(({ name }) => name).sort()) === JSON.stringify(expectedTables),
@@ -143,7 +174,7 @@ async function main() {
     referencePermissionsMatch: canonical(permissions) === canonical(expectedPermissions),
     referenceRolePermissionsMatch:
       canonical(actualRolePermissions) === canonical(expectedRolePermissions),
-    noAuthUsers: users.users.length === 0,
+    controlledPreproductionData: emptyApplicationData || persistentDemoOnly,
     anonCannotReadCompanies: Boolean(anonAttempt.error),
     privatePodBucket:
       bucket.public === false &&
@@ -170,7 +201,10 @@ async function main() {
       systemRoles: roles.length,
       permissions: permissions.length,
       rolePermissionLinks: roles.reduce((total, role) => total + role.permissions.length, 0),
-      authUsersObserved: users.users.length,
+      companiesObserved: companies.length,
+      applicationUsersObserved: appUsers.length,
+      authUsersObserved: authData.users.length,
+      persistentDemoPresent: persistentDemoOnly,
     },
     secretsIncluded: false,
   };
