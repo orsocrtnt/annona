@@ -1,6 +1,6 @@
 # CI-1 — Contrôles automatiques et préparation de livraison
 
-Date de référence : 17 octobre 2026. Le workflow vérifie les changements et prépare la future recette de préproduction. Il ne déploie rien, ne modifie pas le schéma et ne doit jamais utiliser la production comme cible de test.
+Date de référence : 20 octobre 2026. Le workflow vérifie les changements et exécute la recette de préproduction isolée. Il ne modifie pas le schéma et ne doit jamais utiliser la production comme cible de test.
 
 ## Contrôle automatique sans secret
 
@@ -17,7 +17,7 @@ Les valeurs de build utilisent `https://ci.invalid` et une clé publique factice
 
 ## Recette connectée de préproduction
 
-Le job `Recette préproduction` ne s'exécute que lors d'un lancement manuel avec `run_connected=true`, après réussite du job local. Créer un environnement protégé nommé `preproduction`, exiger l'approbation d'un responsable et y définir exclusivement les secrets de la cible isolée :
+Le job `Recette préproduction` ne s'exécute que lors d'un lancement manuel avec `run_connected=true`, après réussite du job local. L'environnement GitHub `preproduction` contient exclusivement les secrets de la cible isolée :
 
 - `PREPROD_APP_URL` ;
 - `PREPROD_SUPABASE_URL` ;
@@ -25,9 +25,14 @@ Le job `Recette préproduction` ne s'exécute que lors d'un lancement manuel ave
 - `PREPROD_SUPABASE_SERVICE_ROLE_KEY` ;
 - `PREPROD_DATABASE_URL` ;
 - `PREPROD_DIRECT_URL` ;
-- `PREPROD_CRON_SECRET`.
+- `PREPROD_CRON_SECRET` ;
+- `PREPROD_OPS_HEALTH_SECRET` ;
+- `PREPROD_EXPECTED_APP_HOST` ;
+- `PREPROD_EXPECTED_SUPABASE_REF`.
 
-Le job installe Chromium puis lance `npm run test:v1`. Cette suite crée deux entreprises préfixées `test2-`, vérifie les trois rôles et nettoie ses fixtures. Les trois fichiers de preuve sans secret sont conservés sept jours seulement lorsque la suite entière réussit. Les liens e-mail réels restent désactivés.
+Le job refuse d'abord toute cible qui ne correspond pas à la référence Supabase et à l'hôte attendus. Il exécute les 279 règles locales, la recette connectée A/B, puis monte une démonstration temporaire sur la cible vide avant les quatre parcours Chromium. Un nettoyage `always()` supprime ensuite le socle, les quatre sessions isolées, leurs utilisateurs, leur utilisateur Auth et leurs éventuels objets Storage. Une suppression est refusée si le graphe, le roster ou les objets ne sont pas strictement ceux de la fixture. Cinq fichiers de preuve sans secret sont conservés sept jours seulement lorsque la suite entière et le nettoyage réussissent. Les liens et e-mails réels restent désactivés.
+
+La Preview Vercel est protégée par l'authentification de l'équipe et renvoie donc 401 à un navigateur d'automatisation non connecté. La recette fonctionnelle démarre le commit testé dans le runner et le relie au Supabase de préproduction. Le déploiement Vercel du même commit est vérifié séparément via son statut GitHub/Vercel ; aucun contournement public de la protection n'est créé.
 
 ## Mise en service future
 
@@ -35,9 +40,9 @@ Après ENV-1 et DB-1, compléter le workflow avec une livraison vers la préprod
 
 Le retour arrière applicatif doit redéployer le dernier artefact sain. Les évolutions de base exigent leur propre procédure testée sur une copie isolée ; un retour arrière d'application ne doit jamais supposer que la base peut être effacée ou rétrogradée. Chronométrer une publication et son retour arrière avant de cocher CI-1.
 
-## Blocages actuels
+## Travail restant
 
-- le dépôt `origin` existe, mais le workflow local non publié n'a pas encore été exécuté par GitHub ;
-- l'environnement de préproduction et ses secrets dépendent d'ENV-1 ;
-- la baseline et la stratégie de retour arrière de base dépendent de DB-1 ;
-- aucun déploiement ni retour arrière réel n'a été tenté.
+- terminer l'essai distant de la recette connectée après chaque modification de son montage ;
+- tester le redéploiement d'un artefact Vercel sain sur la cible isolée ;
+- tester la restauration base + Storage avant de fixer les objectifs de reprise ;
+- conserver `main` et la production hors de ces essais.

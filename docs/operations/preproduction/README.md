@@ -12,11 +12,11 @@ Cette procédure prépare une préproduction isolée sans modifier `main`, le pr
 
 Le dépôt GitHub conserve l'historique existant. La branche `main` et le projet Supabase actuel restent inchangés. Les 51 démonstrations historiques restent dans la cible actuelle et ne sont ni copiées ni supprimées.
 
-Une Preview Vercel standard suffit pour la préproduction : les environnements personnalisés Vercel sont inutiles à ce stade. Les variables Preview doivent être limitées à la branche `preproduction`.
+Une Preview Vercel standard suffit pour la préproduction : les environnements personnalisés Vercel sont inutiles à ce stade. Les variables Preview sont limitées à la branche `preproduction`. La Preview est protégée par l'authentification Vercel de l'équipe ; la CI vérifie donc l'application démarrée dans son runner avec les mêmes variables de préproduction, tandis que l'état du vrai déploiement est contrôlé séparément.
 
 ## État préparé dans le dépôt
 
-- branche locale `preproduction` créée depuis le dernier commit de `main` ;
+- branche `preproduction` publiée sans modification de `main` ;
 - workflow GitHub Actions préparé pour `main`, `preproduction`, les demandes de fusion et un lancement manuel connecté ;
 - garde `npm run ci:preprod-env` ajoutée avant toute recette connectée ;
 - e-mails Auth désactivés, e-mails métier désactivés et nettoyage automatique des démos interdit dans ce job ;
@@ -32,12 +32,22 @@ Le retrait du cron ne supprime pas sa route. `/api/cron/operations` reste appela
 3. Supabase vérifié : un projet actif et deux projets en pause ; un second emplacement actif Free est disponible. La cible actuelle et la future préproduction utilisent Paris (`eu-west-3`).
 4. Terminé le 19 octobre 2026 : `tutelliv-preproduction` créé à Paris sans copie de données, avec exposition automatique des nouvelles tables désactivée et RLS automatique activée.
 5. Les secrets propres à cette cible sont stockés dans `.env.preproduction.local`, ignoré par Git et en mode `0600`. Le mot de passe se retrouve dans la variable `SUPABASE_DB_PASSWORD` de ce fichier ; ne jamais le copier dans un rapport, un commit ou la conversation.
-6. La migration initiale DB-1 est appliquée et vérifiée sur la base vide : vingt tables métier, registre Prisma, RLS partout, aucun droit navigateur direct, bucket privé et zéro utilisateur Auth. Remplacer les identifiants signalés avant le premier seed ou déploiement.
-7. Configurer dans Vercel les variables Preview limitées à `preproduction`. Conserver `AUTH_EMAIL_LINKS_ENABLED=false`, `EMAIL_DELIVERY_MODE=disabled` et `DEMO_CLEANUP_ENABLED=false`.
-8. Configurer l'environnement GitHub `preproduction` avec les secrets `PREPROD_*` attendus par le workflow.
-9. Pousser la branche seulement après les contrôles précédents. Vérifier que Vercel crée une Preview et ne touche pas au déploiement Production.
-10. Lancer le job GitHub connecté manuellement, puis confirmer que les fixtures ont été supprimées.
-11. Faire un export logique base + Storage, restaurer sur une cible jetable isolée, chronométrer et vérifier santé, RLS, commandes et photos.
+6. Terminé : les identifiants vus pendant la préparation ont été remplacés et l'ancienne clé serveur révoquée. La migration initiale et la migration référentielle RBAC sont appliquées : vingt tables métier, registre Prisma, RLS partout, aucun droit navigateur direct, bucket privé, six rôles, trente-trois permissions et zéro utilisateur Auth au repos.
+7. Terminé : variables Vercel Preview limitées à `preproduction`, avec `AUTH_EMAIL_LINKS_ENABLED=false`, `EMAIL_DELIVERY_MODE=disabled` et `DEMO_CLEANUP_ENABLED=false`.
+8. Terminé : environnement GitHub `preproduction` configuré avec les secrets `PREPROD_*` attendus par le workflow.
+9. Terminé : branche publiée, Preview créée et Production restée sur `main`.
+10. La recette connectée monte une démo temporaire seulement après avoir confirmé que la cible ne contient aucune entreprise, aucun utilisateur applicatif et aucun utilisateur Auth. Elle crée une session par parcours navigateur, puis le bloc `always()` supprime les sociétés, utilisateurs, Auth et objets Storage possédés par la fixture. Tout graphe étranger, roster modifié ou objet ambigu bloque la suppression.
+11. Reste à faire : export logique base + Storage, restauration sur une cible jetable isolée, chronométrage et contrôle santé, RLS, commandes et photos.
+
+## Recette temporaire de navigateur
+
+Le montage et le nettoyage sont séparés pour que le nettoyage s'exécute même après un échec Playwright :
+
+1. `npm run test:v1:browser-fixture:setup` ;
+2. `npm run test:e2e` ;
+3. `npm run test:v1:browser-fixture:cleanup` dans un bloc exécuté sans condition de succès.
+
+Un manifeste local en mode `0600` lie le nettoyage à l'exécution et à la référence Supabase attendue. Il n'est ni versionné ni téléversé. Les preuves JSON publiées ne contiennent aucun identifiant interne, e-mail, mot de passe ou secret.
 
 ## Variables GitHub nécessaires
 

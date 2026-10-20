@@ -25,6 +25,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "test:connected": "dotenv -e .env.local -- tsx scripts/test-v1/connected.ts outputs/test2/connected.json",
     "test:e2e": "playwright test",
+    "test:v1:browser-fixture:setup": "tsx scripts/test-v1/setup-browser-fixture.ts",
+    "test:v1:browser-fixture:cleanup": "tsx scripts/test-v1/cleanup-browser-fixture.ts",
     "test:v1": "npm test && npm run test:connected && npm run test:e2e && node scripts/test-v1/verify-output.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "test:support1": "dotenv -e .env.local -- tsx scripts/support1/connected.ts outputs/support1/connected.json",

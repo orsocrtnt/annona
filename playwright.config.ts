@@ -12,6 +12,8 @@ try {
 // production local. L'écoute reste bornée à 127.0.0.1 dans `webServer`.
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3106";
 const useExternalServer = process.env.E2E_SKIP_WEB_SERVER === "1";
+const localServerPort = new URL(baseURL).port || "3106";
+if (!/^\d{2,5}$/.test(localServerPort)) throw new Error("E2E_PORT_INVALID");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -34,7 +36,7 @@ export default defineConfig({
     ? undefined
     : {
         command:
-          "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true npm run dev -- --hostname 127.0.0.1 --port 3106",
+          `WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true npm run dev -- --hostname 127.0.0.1 --port ${localServerPort}`,
         url: `${baseURL}/login`,
         reuseExistingServer: true,
         timeout: 120_000,
