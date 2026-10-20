@@ -34,15 +34,20 @@ Le job refuse d'abord toute cible qui ne correspond pas à la référence Supaba
 
 La Preview Vercel est protégée par l'authentification de l'équipe et renvoie donc 401 à un navigateur d'automatisation non connecté. La recette fonctionnelle démarre le commit testé dans le runner et le relie au Supabase de préproduction. Le déploiement Vercel du même commit est vérifié séparément via son statut GitHub/Vercel ; aucun contournement public de la protection n'est créé.
 
-## Mise en service future
+## Déploiement et retour arrière de préproduction
 
-Après ENV-1 et DB-1, compléter le workflow avec une livraison vers la préproduction sans écriture de schéma implicite. Vérifier le diagnostic profond, exécuter TEST-2, conserver l'artefact immuable validé puis demander l'accord de publication. La production doit réutiliser exactement cet artefact, avec ses propres secrets.
+La publication Git de `preproduction` crée une Preview sans écriture de schéma implicite. Avant de retenir un commit sain, vérifier le job sans secret, la recette connectée manuelle et le statut `Ready` de son déploiement Vercel. Conserver le SHA, l'identifiant du déploiement et la durée dans le rapport de validation.
 
-Le retour arrière applicatif doit redéployer le dernier artefact sain. Les évolutions de base exigent leur propre procédure testée sur une copie isolée ; un retour arrière d'application ne doit jamais supposer que la base peut être effacée ou rétrogradée. Chronométrer une publication et son retour arrière avant de cocher CI-1.
+Sur une Preview Hobby, `Instant Rollback` est indisponible. Ouvrir le déploiement sain de la branche, choisir `Redeploy`, vérifier que l'environnement sélectionné est `Preview` et que la branche est `preproduction`, puis attendre `Ready`. Pour revenir au commit courant, redéployer de la même manière son déploiement sain. Cette action reconstruit le même code avec les réglages de projet actuels ; elle ne réutilise pas un binaire immuable. Ne jamais choisir `Production`, `Promote` ou `Force Promote` pendant cette procédure.
 
-## Travail restant
+Les évolutions de base exigent leur propre procédure testée sur une copie isolée. Un retour arrière d'application ne doit jamais effacer ou rétrograder la base. La production future devra réutiliser un artefact qualifié avec ses propres secrets et une procédure adaptée au plan d'hébergement retenu.
 
-- maintenir l'essai distant connecté après toute modification du montage ou du nettoyage ;
-- tester le redéploiement d'un artefact Vercel sain sur la cible isolée ;
-- tester la restauration base + Storage avant de fixer les objectifs de reprise ;
-- conserver `main` et la production hors de ces essais.
+## Validation du 20 octobre 2026
+
+- retour vers le commit sain `f6e19cc` : Preview `Ready` en 1 min 39 s ;
+- rétablissement du commit courant `04a0a35` : Preview `Ready` en 2 min 11 s ;
+- alias stable de `preproduction` réassigné au commit courant ;
+- contrôle Supabase final conforme, avec zéro utilisateur Auth ;
+- branche `main` et déploiement Production inchangés.
+
+Maintenir la recette connectée après toute modification du montage ou du nettoyage. La restauration base + Storage reste couverte par DB-1 et OPS-03A.

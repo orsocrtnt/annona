@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**44 tâches terminées sur 67 — 66 %**
+**45 tâches terminées sur 67 — 67 %**
 
-`█████████████░░░░░░░` · 23 tâches restantes
+`█████████████░░░░░░░` · 22 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -484,7 +484,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Validation : `npm run check` réussi avec 235/235 tests, trois E2E Chrome réussis en 4,5 minutes, build Next.js de 100 pages, scanner de 802 fichiers sans secret, 38 documents et `git diff --check` réussis. La recette a reproduit puis corrigé la saturation du pool au troisième login de démonstration : les montages transactionnels sont bornés par lots de deux et le build local est testé via `localhost` pour ses cookies sécurisés. Les preuves ne contiennent ni identifiant interne, ni e-mail, ni secret ; traces et vidéos persistantes désactivées. Procédure `docs/operations/test2/README.md`, rapport `docs/rapports/2026-10-16/test2.md`, preuves `outputs/test2/`. TEST-2 fournit le point d'entrée pour CI-1 sans déployer.
 
-- [ ] **CI-1 — Automatiser les contrôles et préparer la livraison.** Types, lint, tests, build, revue des dépendances et secrets ; procédure de déploiement préproduction puis production et retour arrière.
+- [x] **CI-1 — Automatiser les contrôles et préparer la livraison.** Types, lint, tests, build, revue des dépendances et secrets ; procédure de déploiement préproduction puis production et retour arrière.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -500,7 +500,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Avancement du 2026-10-19 : le workflow couvre désormais les pushes `preproduction` et exécute une garde d'isolation avant le job connecté. Cette garde refuse la référence Supabase actuelle, les hôtes incohérents, les secrets opérationnels faibles/partagés, les e-mails réels et le nettoyage automatique. Le cron opérationnel chaque minute a été retiré du manifeste de préproduction car Vercel Hobby le refuse ; sa route reste disponible. Validation : 279 tests dont quatre ciblés, types/lint stricts, build de 102 pages, 58 documents, audit production sans vulnérabilité, scanner de 871 fichiers sans secret et diff-check réussis. Publication et première exécution distante restent bloquées par la reconnexion et ENV-1/DB-1.
 
-  Avancement du 2026-10-20 : workflow et branche publiés, job local GitHub vert et Preview Vercel créée sans modifier `main`. La chaîne connectée distante du commit `f6e19cc` est entièrement verte : garde d'isolation, 279 tests, recette A/B, montage temporaire, trois parcours Chromium, preuve sans secret, nettoyage de six sociétés temporaires et artefact de preuve publié. Le contrôle direct final retrouve zéro utilisateur Auth et une base conforme. CI-1 reste ouverte uniquement pour essayer et chronométrer le retour arrière applicatif ; la restauration base + Storage est suivie par DB-1 et OPS-03A.
+  Terminé le 2026-10-20 : workflow et branche publiés, job local GitHub vert et Preview Vercel créée sans modifier `main`. La chaîne connectée distante du commit `f6e19cc` est entièrement verte : garde d'isolation, 279 tests, recette A/B, montage temporaire, trois parcours Chromium, preuve sans secret, nettoyage de six sociétés temporaires et artefact de preuve publié. Le contrôle direct final retrouve zéro utilisateur Auth et une base conforme. Le retour arrière Preview vers `f6e19cc` réussit en 1 min 39 s, puis le rétablissement du commit courant `04a0a35` réussit en 2 min 11 s ; l'alias stable suit de nouveau le commit courant. Vercel Hobby ne propose pas l'Instant Rollback pour une Preview : la procédure redéploie le commit sain avec les réglages actuels. Rapport `docs/rapports/2026-10-20/ci1-rollback.md`. La restauration base + Storage reste suivie séparément par DB-1 et OPS-03A.
 
 - [ ] **OPS-03A — Vérifier sauvegarde et restauration.** Inventorier hébergement, base, photos et politiques existantes ; fixer objectifs de perte acceptable et délai de reprise.
 
@@ -944,3 +944,5 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-18 — BILL-01B terminée sur la branche export V1 décidée par BILL-01A : CSV comptable privé versionné, 29 colonnes, périodes UTC/statuts explicites, Decimal, lecture cohérente par lots, limites de volume, versions et données historiques qualifiées. 261 tests, build isolé 101 pages, recette connectée 1 001 documents A + 1 B avec écriture concurrente entre lots et zéro résidu ; relevé opérationnel de 160 lignes/neuf pages contrôlé. Aucune émission réglementaire, avoir automatique ou immutabilité légale complète revendiqués. Rapport `docs/rapports/2026-10-18/bill01b.md`.
 
 - 2026-10-20 — ENV-1 terminée : branche `preproduction`, Preview Vercel protégée, projet Supabase isolé et secrets propres configurés sans modifier `main` ni la cible historique. La chaîne GitHub distante du commit `f6e19cc` réussit la garde, 279 tests, TEST-2, trois parcours Chromium, la preuve nettoyée et le nettoyage `always()` ; Vercel confirme le déploiement. Le contrôle direct final retrouve zéro utilisateur Auth, deux migrations, zéro drift, RLS partout et bucket privé. Rapport `docs/rapports/2026-10-20/preproduction-ci.md`. Suite : CI-1 pour le retour arrière applicatif, DB-1/OPS-03A pour la restauration base + Storage.
+
+- 2026-10-20 — CI-1 terminée : la Preview isolée a été ramenée vers le commit sain `f6e19cc` en 1 min 39 s, puis remise sur le commit courant `04a0a35` en 2 min 11 s. Les deux reconstructions sont `Ready`, l'alias de branche suit le commit courant, la base reste conforme et vide d'utilisateur Auth, `main` et la production n'ont pas bougé. Sur Preview Hobby, le retour arrière documenté redéploie le commit sain avec les réglages actuels car Instant Rollback est indisponible. Rapport `docs/rapports/2026-10-20/ci1-rollback.md`.
