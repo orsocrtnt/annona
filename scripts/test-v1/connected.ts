@@ -29,6 +29,7 @@ import { DEFAULT_DISPATCH_SETTINGS } from "../../src/lib/validations/dispatch-se
 
 const outputPath = resolve(process.argv[2] ?? "outputs/test2/connected.json");
 const fixtureKey = `test2-${randomUUID()}`;
+const fixtureDeliveryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 type FixtureCompany = {
   id: string;
@@ -136,7 +137,7 @@ async function createOrder(company: FixtureCompany, suffix: string) {
       shippingAddress: "1 place de la Concorde",
       shippingCity: "Paris",
       shippingPostalCode: "75008",
-      requestedDeliveryDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      requestedDeliveryDate: fixtureDeliveryDate,
       deliveryInstructions: "Fixture isolée TEST-2",
       notes: `${fixtureKey}:${suffix}`,
     },
@@ -165,7 +166,7 @@ async function createCourierOrder(company: FixtureCompany, suffix: string) {
       shippingAddress: "10 boulevard Voltaire",
       shippingCity: "Paris",
       shippingPostalCode: "75011",
-      requestedDeliveryDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      requestedDeliveryDate: fixtureDeliveryDate,
       deliveryInstructions: "Fixture coursier TEST-2",
       notes: `${fixtureKey}:${suffix}`,
     },
