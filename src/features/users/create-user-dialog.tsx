@@ -119,7 +119,8 @@ export function CreateUserDialog() {
                   <SelectContent>
                     <SelectItem value="client">Client</SelectItem>
                     <SelectItem value="driver">Chauffeur / Livreur</SelectItem>
-                    {canDelegate && <SelectItem value="mini-admin">Mini-admin</SelectItem>}
+                    {canDelegate && <SelectItem value="dispatcher">Dispatcher</SelectItem>}
+                    {canDelegate && <SelectItem value="mini-admin">Mini-admin personnalisé</SelectItem>}
                   </SelectContent>
                 </Select>
               )}

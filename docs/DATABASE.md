@@ -1,6 +1,6 @@
 # Base de données TutelLiv
 
-État de référence : 17 octobre 2026. La définition actuelle est `prisma/schema.prisma`; ce document décrit les groupes fonctionnels et les règles de modification sans recopier chaque colonne.
+État de référence : 22 octobre 2026. La définition actuelle est `prisma/schema.prisma`; ce document décrit les groupes fonctionnels et les règles de modification sans recopier chaque colonne.
 
 ## Modèles actuels
 
@@ -19,26 +19,40 @@
 - `OrderMessage`, `OrderThreadRead` : conversation liée à la commande et marqueurs de lecture ;
 - `OperationJob` : auto-dispatch et notifications différées avec reprise.
 
+### Offres et souscriptions SaaS
+
+- `SaasCatalogVersion`, `SaasPlan`, `SaasOption` : catalogue commercial versionné et prix centralisés ;
+- `SaasSubscription`, `SaasPlanAssignment`, `SaasSubscriptionItem` : souscription ou pilote par entreprise, historique d'offre, options et sièges supplémentaires ;
+- `SaasUsagePeriod`, `SaasUsageEvent` : consommation mensuelle, dépassements et événements idempotents ;
+- `SaasSeatReservation` : réservation atomique d'une place pendant une invitation concurrente.
+
 ### Client et exploitation
 
 - `Invoice` : facturation de livraison séparée de l'état logistique ;
 - `SupportTicket`, `SupportTicketMessage` : support client et historique ;
 - `CustomerAddress` : carnet d'adresses client ;
 - `RecurringOrder` : modèle et planification de commandes récurrentes.
+- `DemoPoolEnvironment` : stock de démonstrations préconstruites, location exclusive et recyclage durable.
 
-Le schéma comprend 20 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 30 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
 
 ## Relations essentielles
 
 ```text
 Company
 ├── User ── Role ── RolePermission ── Permission
+├── SaasSubscription
+│     ├── SaasPlanAssignment ── SaasPlan ── SaasCatalogVersion
+│     ├── SaasSubscriptionItem ── SaasOption
+│     ├── SaasUsagePeriod ── SaasUsageEvent
+│     └── SaasSeatReservation
 ├── Order ── OrderItem / OrderStop / OrderMessage
 │     ├── Delivery ── DriverLocation / TrackingEvent
 │     └── Invoice
 ├── SupportTicket ── SupportTicketMessage
 ├── RecurringOrder
-└── OperationJob
+├── OperationJob
+└── DemoPoolEnvironment
 ```
 
 Les liens vers un client, un chauffeur, une commande ou une livraison ne suffisent jamais seuls : l'entreprise doit aussi correspondre.
@@ -67,11 +81,9 @@ Seule `db:generate` fait partie du travail local courant. Toutes les autres comm
 
 ## État des migrations et de la sécurité
 
-Le dépôt ne contient pas encore de répertoire `prisma/migrations` servant de baseline reproductible. Plusieurs évolutions additives ont été contrôlées sur la base de test et leurs procédures se trouvent dans `docs/operations/`, mais elles ne remplacent pas DB-1.
+Le dépôt contient cinq migrations reproductibles : baseline initiale, données de référence RBAC, noyau SaaS, pool de démonstration et sécurité de ce pool. Elles ont été appliquées uniquement à la préproduction autorisée. Le contrôle final retrouve 30 tables applicatives et cinq migrations terminées.
 
-L'inventaire DB-1 aligne désormais les actions référentielles et le défaut `operation_jobs.updated_at` du fichier Prisma sur la cible de test, sans écrire dans la base. Le diff Prisma cible → schéma est vide. Deux brouillons non applicables directement se trouvent sous `outputs/db1/` : la création des modèles Prisma et le complément RLS/retraits de droits. Ils ne couvrent pas Supabase Auth, Storage ni la configuration fournisseur et ne constituent pas encore `prisma/migrations`.
-
-La base de test inspectée a RLS active sur les tables métier et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau.
+Les 30 tables ont RLS active et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau. Le catalogue SaaS actif et les entreprises historiques migrées en compatibilité `LEGACY` ne créent aucun abonnement payant implicite.
 
 ## Procédure d'évolution
 
@@ -85,7 +97,7 @@ La base de test inspectée a RLS active sur les tables métier et aucun droit di
 
 Le contrôle en lecture seule se relance avec `npm run audit:db1`. La procédure de baseline, les écarts couverts et la stratégie de retour arrière sont détaillés dans `operations/db1/README.md`.
 
-La création d'une préproduction, la baseline complète et la restauration chronométrée restent respectivement dans ENV-1, DB-1 et OPS-03A.
+La préproduction, la baseline et la restauration fournisseur sont terminées. La sauvegarde récurrente hors site, les alertes et l'exercice périodique de restauration restent suivis dans OPS-03B.
 
 ## Export de sortie d'une entreprise
 

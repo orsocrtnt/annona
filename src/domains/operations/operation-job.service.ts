@@ -1,5 +1,6 @@
 import type { OperationJob, Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
+import { assertSaasMutationFeature } from "@/domains/saas/saas.service";
 
 const OPERATION_JOB_TAKE = 50;
 const OPERATION_JOB_LEASE_MS = 5 * 60 * 1000;
@@ -83,6 +84,7 @@ async function executeJob(job: OperationJob) {
     const companyId = readString(job.payload, "companyId");
     const deliveryId = readString(job.payload, "deliveryId");
     if (!companyId || !deliveryId) throw new Error("AUTO_DISPATCH_PAYLOAD_INVALID");
+    await assertSaasMutationFeature(companyId, "auto_dispatch");
 
     const { tryAutoAssignDelivery } = await import(
       "@/domains/delivery/auto-dispatch.service"

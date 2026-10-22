@@ -455,6 +455,11 @@ async function purgeDemoTransactionalData(companyId: string) {
   const driverIds = drivers.map((d) => d.id);
 
   await prisma.$transaction([
+    // Les tâches terminées ou échouées appartiennent au scénario précédent.
+    // Les tâches actives sont bloquées en amont par le worker DEMO-2.
+    prisma.operationJob.deleteMany({
+      where: { companyId, status: { in: ["SUCCEEDED", "FAILED"] } },
+    }),
     prisma.supportTicket.deleteMany({ where: { companyId } }),
     prisma.invoice.deleteMany({ where: { companyId } }),
     ...(driverIds.length > 0
@@ -480,21 +485,19 @@ async function purgeDemoExtraAccounts(companyId: string) {
 
   if (extras.length === 0) return;
 
+  const supabase = createAdminClient();
+  // Supprimer Auth avant la ligne locale évite de perdre la trace d'un compte
+  // externe si le fournisseur est indisponible au milieu du recyclage.
+  for (const user of extras.filter((candidate) => !candidate.authId.startsWith("demo-persona-"))) {
+    const { error } = await supabase.auth.admin.deleteUser(user.authId);
+    if (error && error.status !== 404) {
+      throw new Error("DEMO_AUTH_CLEANUP_FAILED");
+    }
+  }
+
   await prisma.user.deleteMany({
     where: { id: { in: extras.map((user) => user.id) } },
   });
-
-  const supabase = createAdminClient();
-  await Promise.all(
-    extras
-      .filter((user) => !user.authId.startsWith("demo-persona-"))
-      .map(async (user) => {
-        const { error } = await supabase.auth.admin.deleteUser(user.authId);
-        if (error) {
-          console.error("Demo reset: suppression auth échouée:", user.email, error.message);
-        }
-      })
-  );
 }
 
 async function ensureRecurringOrder(

@@ -148,6 +148,7 @@ function fixture(options?: { failNotification?: boolean; slowFirstDispatchFailur
 
   const service = load<typeof import("../src/domains/operations/operation-job.service")>({
     "@/services/prisma/client": { prisma },
+    "@/domains/saas/saas.service": { assertSaasMutationFeature: async () => ({}) },
     "@/domains/delivery/auto-dispatch.service": {
       tryAutoAssignDelivery: async (_companyId: string, deliveryId: string) => {
         executions.push(`dispatch:${deliveryId}`);

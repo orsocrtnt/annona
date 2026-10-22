@@ -62,6 +62,11 @@ export async function POST(request: Request) {
       EMAIL_EXISTS: 409,
       INVALID_ROLE: 400,
       COMPANY_REQUIRED: 400,
+      SAAS_SUBSCRIPTION_REQUIRED: 409,
+      SAAS_ACCOUNT_READ_ONLY: 403,
+      SAAS_DRIVERS_LIMIT_REACHED: 409,
+      SAAS_ADMINS_LIMIT_REACHED: 409,
+      SAAS_DISPATCHERS_LIMIT_REACHED: 409,
     };
     const labels: Record<string, string> = {
       MINI_ADMIN_MANAGEMENT_FORBIDDEN: "La gestion des mini-admins est réservée aux administrateurs principaux.",
@@ -72,6 +77,11 @@ export async function POST(request: Request) {
       EMAIL_EXISTS: "Cet email est déjà utilisé.",
       INVALID_ROLE: "Rôle non autorisé.",
       COMPANY_REQUIRED: "Aucune entreprise associée. Créez d'abord une entreprise ou reconnectez-vous.",
+      SAAS_SUBSCRIPTION_REQUIRED: "Aucun abonnement ou pilote actif n’est associé à cette entreprise.",
+      SAAS_ACCOUNT_READ_ONLY: "Ce compte est actuellement en lecture seule.",
+      SAAS_DRIVERS_LIMIT_REACHED: "La limite de livreurs de l’offre est atteinte.",
+      SAAS_ADMINS_LIMIT_REACHED: "La limite d’administrateurs de l’offre est atteinte.",
+      SAAS_DISPATCHERS_LIMIT_REACHED: "La limite de dispatchers de l’offre est atteinte.",
     };
 
 

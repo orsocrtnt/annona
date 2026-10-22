@@ -10,6 +10,11 @@ import { resetDemoScenario } from "@/domains/demo/demo-scenario.service";
 import { DEFAULT_DISPATCH_SETTINGS } from "@/lib/validations/dispatch-settings";
 import { demoRetentionSettings, demoSessionExpiry } from "@/lib/demo/retention";
 import { AccountUnavailableError } from "@/lib/auth/account-access";
+import {
+  demoSessionIdFromRequestKey,
+  getActiveDemoPoolLease,
+  leaseDemoPoolEnvironment,
+} from "@/domains/demo/demo-pool.service";
 
 const SESSION_ID_PATTERN = /^[a-f0-9]{64}$/;
 
@@ -79,6 +84,7 @@ export async function ensureDemoSessionEnvironment(
 
   let company;
   const createdAt = new Date();
+  const expiresAt = new Date(demoRetentionSettings(createdAt).expiresAt);
   try {
     company = await prisma.company.create({
       data: {
@@ -93,6 +99,33 @@ export async function ensureDemoSessionEnvironment(
         country: base.country,
         createdAt,
         settings: safeSessionSettings(base.settings, createdAt),
+        saasSubscription: {
+          create: {
+            kind: "PILOT",
+            status: "ACTIVE",
+            startsAt: createdAt,
+            currentPeriodStart: createdAt,
+            currentPeriodEnd: expiresAt,
+            snapshot: {
+              schemaVersion: 1,
+              mode: "PILOT",
+              limits: {
+                drivers: null,
+                admins: null,
+                dispatchers: null,
+                monthlyOrders: 2147483647,
+              },
+              orderOverageUnitPriceCents: 0,
+              features: [
+                "auto_dispatch",
+                "admin_gps",
+                "client_gps",
+                "advanced_analytics",
+                "priority_support",
+              ],
+            },
+          },
+        },
       },
     });
   } catch (error) {
@@ -108,26 +141,46 @@ export async function ensureDemoSessionEnvironment(
   return { companyId: company.id, created: true };
 }
 
-export async function ensureDemoSessionForLogin(baseCompanyId: string): Promise<string> {
+export async function ensureDemoSessionForLogin(
+  baseCompanyId: string,
+  requestKey?: string
+): Promise<string> {
   const { getDemoSessionCookie, setDemoSessionCookie } = await import(
     "@/lib/demo/persona-cookie"
   );
   const stored = await getDemoSessionCookie();
+  if (isValidSessionId(stored)) {
+    const poolLease = await getActiveDemoPoolLease(stored);
+    if (poolLease) return poolLease.companyId;
+  }
+
+  // Compatibilité transitoire : les sessions DEMO-1 déjà ouvertes restent
+  // accessibles jusqu'à leur expiration, sans passer par le nouveau pool.
   const previous = isValidSessionId(stored)
     ? await prisma.company.findUnique({ where: { slug: demoSessionCompanySlug(stored) } })
     : null;
   const expiry = previous && demoSessionExpiry(previous);
   const reuse = previous && previous.status !== "INACTIVE" && expiry && expiry.getTime() > Date.now();
-  const sessionId = isValidSessionId(stored) && reuse ? stored : createDemoSessionId();
-  const session = await ensureDemoSessionEnvironment(baseCompanyId, sessionId);
-  if (stored !== sessionId) await setDemoSessionCookie(sessionId);
-  return session.companyId;
+  if (isValidSessionId(stored) && reuse) return previous.id;
+
+  // `baseCompanyId` provient du compte Supabase démo déjà relu et contrôlé dans
+  // la route. Ne pas refaire cette lecture sur le chemin critique DEMO-2.
+  if (!baseCompanyId) throw new Error("DEMO_BASE_COMPANY_UNAVAILABLE");
+
+  const sessionId = requestKey
+    ? demoSessionIdFromRequestKey(requestKey)
+    : createDemoSessionId();
+  const lease = await leaseDemoPoolEnvironment(sessionId);
+  await setDemoSessionCookie(sessionId);
+  return lease.companyId;
 }
 
 export async function getDemoSessionCompanyId(): Promise<string | null> {
   const { getDemoSessionCookie } = await import("@/lib/demo/persona-cookie");
   const sessionId = await getDemoSessionCookie();
   if (!isValidSessionId(sessionId)) return null;
+  const poolLease = await getActiveDemoPoolLease(sessionId);
+  if (poolLease) return poolLease.companyId;
   const company = await prisma.company.findUnique({
     where: { slug: demoSessionCompanySlug(sessionId) },
     select: { id: true, isDemo: true, status: true, slug: true, settings: true, createdAt: true },

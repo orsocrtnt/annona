@@ -32,6 +32,11 @@ import {
   type OrderHistoryPage,
   type OrderHistoryQuery,
 } from "@/lib/query/order-history";
+import {
+  assertCanCreateOrder,
+  recordOrderCreatedUsage,
+  resolveCompanySaasAccess,
+} from "@/domains/saas/saas.service";
 
 type CreateOrderOptions = CreateClientOrderInput & {
   recurringOrderId?: string;
@@ -488,41 +493,46 @@ export async function createClientOrder(
     );
 
     try {
-      return await prisma.order.create({
-        data: {
-        reference: orderReference,
-        status: "QUOTE_REQUESTED",
-        source: input.source ?? "CLIENT",
-        totalAmount: 0,
-        itemCount: 0,
-        notes: input.notes ?? null,
-        missionDescription: input.missionDescription?.trim() ?? null,
-        deliveryCategory: "SPECIAL_MISSION",
-        shippingAddress: firstStop?.address ?? null,
-        shippingCity: firstStop?.city ?? null,
-        shippingPostalCode: firstStop?.postalCode ?? null,
-        requestedDeliveryDate: input.requestedDeliveryDate
-          ? new Date(input.requestedDeliveryDate)
-          : null,
-        companyId,
-        customerId,
-        customerEmail: email,
-        idempotencyKey,
-        requestFingerprint,
-        stops: {
-          create: stops.map((stop, index) => ({
-            sequence: index,
-            label: stop.label?.trim() || `Adresse ${index + 1}`,
-            address: stop.address,
-            city: stop.city ?? null,
-            postalCode: stop.postalCode ?? null,
-            instructions: stop.instructions ?? null,
-            latitude: stopCoords[index]?.latitude ?? null,
-            longitude: stopCoords[index]?.longitude ?? null,
-          })),
-        },
-        },
-        include: { stops: { orderBy: { sequence: "asc" } } },
+      return await prisma.$transaction(async (tx) => {
+        await assertCanCreateOrder(companyId, tx);
+        const order = await tx.order.create({
+          data: {
+            reference: orderReference,
+            status: "QUOTE_REQUESTED",
+            source: input.source ?? "CLIENT",
+            totalAmount: 0,
+            itemCount: 0,
+            notes: input.notes ?? null,
+            missionDescription: input.missionDescription?.trim() ?? null,
+            deliveryCategory: "SPECIAL_MISSION",
+            shippingAddress: firstStop?.address ?? null,
+            shippingCity: firstStop?.city ?? null,
+            shippingPostalCode: firstStop?.postalCode ?? null,
+            requestedDeliveryDate: input.requestedDeliveryDate
+              ? new Date(input.requestedDeliveryDate)
+              : null,
+            companyId,
+            customerId,
+            customerEmail: email,
+            idempotencyKey,
+            requestFingerprint,
+            stops: {
+              create: stops.map((stop, index) => ({
+                sequence: index,
+                label: stop.label?.trim() || `Adresse ${index + 1}`,
+                address: stop.address,
+                city: stop.city ?? null,
+                postalCode: stop.postalCode ?? null,
+                instructions: stop.instructions ?? null,
+                latitude: stopCoords[index]?.latitude ?? null,
+                longitude: stopCoords[index]?.longitude ?? null,
+              })),
+            },
+          },
+          include: { stops: { orderBy: { sequence: "asc" } } },
+        });
+        await recordOrderCreatedUsage(tx, { companyId, orderId: order.id });
+        return order;
       });
     } catch (error) {
       if (idempotencyKey && requestFingerprint && isUniqueConstraintError(error)) {
@@ -590,6 +600,7 @@ export async function createClientOrder(
   let transactionResult;
   try {
     transactionResult = await prisma.$transaction(async (tx) => {
+    const saasAccess = await assertCanCreateOrder(companyId, tx);
     const createdOrder = await tx.order.create({
       data: {
         reference: orderReference,
@@ -653,6 +664,7 @@ export async function createClientOrder(
     });
 
     const order = createdOrder;
+    await recordOrderCreatedUsage(tx, { companyId, orderId: order.id });
 
     if (isCourier && pickupStops.length > 0 && order.stops.length > 0) {
       const itemRows = order.stops.flatMap((stop) => {
@@ -743,12 +755,14 @@ export async function createClientOrder(
       },
     });
 
-      const operationJob = await enqueueAutoDispatchJob(tx, {
-        companyId,
-        deliveryId: delivery.id,
-      });
+      const operationJob = saasAccess.features.has("auto_dispatch")
+        ? await enqueueAutoDispatchJob(tx, {
+            companyId,
+            deliveryId: delivery.id,
+          })
+        : null;
 
-      return { order, delivery, operationJobId: operationJob.id };
+      return { order, delivery, operationJobId: operationJob?.id ?? null };
     });
   } catch (error) {
     if (idempotencyKey && requestFingerprint && isUniqueConstraintError(error)) {
@@ -778,7 +792,7 @@ export async function createClientOrder(
     }
   }
 
-  kickOperationJob(operationJobId);
+  if (operationJobId) kickOperationJob(operationJobId);
 
   return order;
 }
@@ -1090,6 +1104,7 @@ export async function updateCompanyOrderStatus(
     });
 
     if (acceptingQuote) {
+      const saasAccess = await resolveCompanySaasAccess(companyId, new Date(), tx);
       const delivery = await tx.delivery.create({
         data: {
           reference: quoteDeliveryReference!,
@@ -1125,11 +1140,13 @@ export async function updateCompanyOrderStatus(
         },
       });
 
-      const operationJob = await enqueueAutoDispatchJob(tx, {
-        companyId,
-        deliveryId: delivery.id,
-      });
-      operationJobIds.push(operationJob.id);
+      if (saasAccess.features.has("auto_dispatch")) {
+        const operationJob = await enqueueAutoDispatchJob(tx, {
+          companyId,
+          deliveryId: delivery.id,
+        });
+        operationJobIds.push(operationJob.id);
+      }
     }
 
     for (const delivery of order.deliveries) {

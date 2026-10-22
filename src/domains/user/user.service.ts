@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Prisma, type SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { createAdminClient } from "@/services/supabase/admin";
@@ -8,6 +9,7 @@ import type { CreateUserInput, UpdateMiniAdminInput, UpdateProfileInput } from "
 import { filterMiniAdminPermissions, buildMiniAdminSettings, canManageMiniAdmins } from "@/lib/permissions/mini-admin";
 import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
 import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
+import { releaseSaasSeat, reserveSaasSeat } from "@/domains/saas/saas.service";
 
 type RoleRecord = {
   id: string;
@@ -169,7 +171,7 @@ export async function listAllUsers() {
   });
 }
 
-const CREATABLE_SYSTEM_ROLES = ["CLIENT", "DRIVER", "MINI_ADMIN"] as const;
+const CREATABLE_SYSTEM_ROLES = ["CLIENT", "DRIVER", "DISPATCHER", "MINI_ADMIN"] as const;
 
 async function findCreatableRoleBySlug(slug: string) {
   const rows = await prisma.$queryRaw<
@@ -221,7 +223,10 @@ export async function createUserByAdmin(
     throw new Error("INVALID_ROLE");
   }
 
-  if (role.systemRole === "MINI_ADMIN" && !canManageMiniAdmins(actorRole)) {
+  if (
+    (role.systemRole === "MINI_ADMIN" || role.systemRole === "DISPATCHER") &&
+    !canManageMiniAdmins(actorRole)
+  ) {
     throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
   }
 
@@ -230,6 +235,7 @@ export async function createUserByAdmin(
 
   const redirectTo = getPasswordLinkRedirect();
   const supabase = createAdminClient();
+  const reservationKey = await reserveSaasSeat(companyId, role.systemRole, randomUUID());
 
   const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(input.email, {
     redirectTo,
@@ -240,6 +246,7 @@ export async function createUserByAdmin(
   });
 
   if (authError || !authData.user) {
+    await releaseSaasSeat(reservationKey);
     const msg = authError?.message?.toLowerCase() ?? "";
     if (msg.includes("already") || msg.includes("exists") || msg.includes("registered")) {
       throw new Error("EMAIL_EXISTS");
@@ -249,27 +256,32 @@ export async function createUserByAdmin(
 
   let user;
   try {
-    user = await prisma.user.create({
-      data: {
-        authId: authData.user.id,
-        email: input.email,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        roleId: role.id,
-        companyId,
-        status: "PENDING_VERIFICATION",
-        ...(input.roleSlug === "mini-admin"
-          ? {
-              settings: buildMiniAdminSettings(
-                input.miniAdminTitle ?? "",
-                input.miniAdminModules ?? []
-              ),
-            }
-          : {}),
-      },
-      include: { company: true },
+    user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          authId: authData.user.id,
+          email: input.email,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          roleId: role.id,
+          companyId,
+          status: "PENDING_VERIFICATION",
+          ...(input.roleSlug === "mini-admin"
+            ? {
+                settings: buildMiniAdminSettings(
+                  input.miniAdminTitle ?? "",
+                  input.miniAdminModules ?? []
+                ),
+              }
+            : {}),
+        },
+        include: { company: true },
+      });
+      await releaseSaasSeat(reservationKey, tx);
+      return created;
     });
   } catch {
+    await releaseSaasSeat(reservationKey);
     // Le fournisseur peut avoir renvoyé une ancienne invitation : ne pas supprimer ce compte.
     // Aucun accès applicatif sans profil ; l’administrateur peut retenter la création.
     throw new Error("INVITATION_PROFILE_FAILED");

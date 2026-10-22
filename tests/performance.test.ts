@@ -57,7 +57,7 @@ test("auth : compte inconnu et erreur base ne réutilisent aucune ancienne autor
 function sessionRoute(auth: unknown) {
   let calls = 0; const module = { exports: {} as { GET: () => Promise<Response> } };
   const dependencies: Record<string, unknown> = {
-    "next/server": { NextResponse },
+    "next/server": { NextResponse, after: () => undefined },
     "@/lib/api/server-auth": { getServerAuth: async () => { calls++; return auth; } },
     "@/lib/demo/constants": { demoPersonaForRole: (role: string) => role === "DRIVER" ? "driver" : "admin", DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },
   };
@@ -104,13 +104,17 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
   let sessionPreparations = 0;
   let resolvedCompanyId: string | null = null;
   const dependencies: Record<string, unknown> = {
-    "next/server": { NextResponse },
+    "next/server": { NextResponse, after: () => undefined },
     "@/lib/auth/account-access": { assertAccountActive: () => {}, AccountUnavailableError: class extends Error {} },
     "@/lib/validations/auth": { loginSchema: { safeParse: () => ({ success: true, data: { email: "demo@fixture.invalid", password: "fixture-password" } }) } },
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value },
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: async () => ({ data: { user: { id: "auth", email: "demo@fixture.invalid", email_confirmed_at: "2026-10-15", user_metadata: {} } } }) } }) },
     "@/domains/auth/auth.service": { syncUserFromSupabase: async () => user, getDashboardPathForRole: () => "/dashboard", UserNotProvisionedError: class extends Error {} },
-    "@/domains/user/user.service": { extractPermissionSlugs: () => ["orders:read"] },
+    "@/domains/user/user.service": {
+      extractPermissionSlugs: () => ["orders:read"],
+      getUserByAuthId: async () => user,
+      updateLastLogin: async () => undefined,
+    },
     "@/lib/demo/constants": { isDemoLoginEmail: () => true, DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },
     "@/lib/demo/persona-cookie": { setDemoPersonaCookie: async () => { cookieWrites++; } },
     "@/domains/demo/demo-auth.service": {
@@ -125,6 +129,12 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
         return "session-company";
       },
     },
+    "@/domains/demo/demo-pool.service": {
+      DemoPoolUnavailableError: class extends Error {},
+      maintainDemoPool: async () => [],
+      requestDemoPoolRecycle: async () => true,
+      recycleDemoPoolEnvironment: async () => ({ status: "recycled" }),
+    },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/auth/login/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   runInNewContext(source, { exports: module.exports, module, console, require: (id: string) => { assert.ok(id in dependencies, `Aucune dépendance reset/seed autorisée au login : ${id}`); return dependencies[id]; } });
@@ -134,7 +144,7 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
   assert.equal((await response.json()).demo.persona, "admin");
   user.company.isDemo = false;
   const missing = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body: "{}" }));
-  assert.equal(missing.status, 503); assert.equal(cookieWrites, 1); assert.equal(sessionPreparations, 1);
+  assert.equal(missing.status, 503); assert.equal(cookieWrites, 1); assert.equal(sessionPreparations, 2);
 });
 
 test("compteurs agrégés : états actifs, date logistique, client/entreprise restent isolés", async (t) => {

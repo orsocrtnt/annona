@@ -178,6 +178,10 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
       "@/domains/demo/demo-session.service": {
         ensureDemoSessionForLogin: async () => assert.fail("non-demo session must not be created"),
       },
+      "@/domains/demo/demo-pool.service": {
+        DemoPoolUnavailableError: class extends Error {},
+        maintainDemoPool: async () => [],
+      },
     }).POST;
     const request = () => new Request("http://local", { method: "POST", body: JSON.stringify({ email: current.email, password: "local-test-only" }) });
     assert.equal((await post(request())).status, 200);

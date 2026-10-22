@@ -113,13 +113,21 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
 
   const onLogin = async (data: LoginInput) => {
     setError(null);
+    const normalizedEmail = data.email.trim().toLowerCase();
+    let demoRequestKey: string | undefined;
+    if (normalizedEmail === DEMO_LOGIN_EMAIL) {
+      const storageKey = "tutelliv-demo-request-key";
+      demoRequestKey = window.sessionStorage.getItem(storageKey) ?? window.crypto.randomUUID();
+      window.sessionStorage.setItem(storageKey, demoRequestKey);
+    }
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: data.email.trim().toLowerCase(),
+        email: normalizedEmail,
         password: data.password,
         accountType: loginContext === "company" ? "company" : undefined,
+        demoRequestKey,
       }),
     });
     const json = await res.json();

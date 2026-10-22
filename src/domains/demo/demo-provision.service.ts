@@ -149,6 +149,7 @@ export async function provisionDemoEnvironment(): Promise<{
   password: string;
 }> {
   const authId = await ensureSupabaseDemoUser();
+  const startsAt = new Date();
 
   const company = await prisma.company.upsert({
     where: { slug: DEMO_COMPANY_SLUG },
@@ -159,6 +160,18 @@ export async function provisionDemoEnvironment(): Promise<{
       email: "contact@logiexpress-demo.fr",
       city: "Paris",
       country: "FR",
+      saasSubscription: {
+        upsert: {
+          create: {
+            kind: "LEGACY",
+            status: "ACTIVE",
+            startsAt,
+            currentPeriodStart: startsAt,
+            snapshot: { schemaVersion: 1, mode: "LEGACY", reason: "PERMANENT_DEMO" },
+          },
+          update: {},
+        },
+      },
     },
     create: {
       name: DEMO_COMPANY_NAME,
@@ -168,6 +181,15 @@ export async function provisionDemoEnvironment(): Promise<{
       email: "contact@logiexpress-demo.fr",
       city: "Paris",
       country: "FR",
+      saasSubscription: {
+        create: {
+          kind: "LEGACY",
+          status: "ACTIVE",
+          startsAt,
+          currentPeriodStart: startsAt,
+          snapshot: { schemaVersion: 1, mode: "LEGACY", reason: "PERMANENT_DEMO" },
+        },
+      },
     },
   });
 

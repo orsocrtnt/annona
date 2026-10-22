@@ -30,7 +30,7 @@ Cette liste contient les inconnues qui empêchent encore des documents définiti
 - fixer les personnes autorisées à recevoir les mesures et retours ;
 - obtenir une autorisation séparée avant tout témoignage, logo ou cas client public ;
 - qualifier chaque apporteur/commercial selon ses missions effectives, pas selon le nom choisi ;
-- valider taux 25/35/50 %, durée douze mois, assiette HT encaissée, exclusions des changements ultérieurs, remboursements, impayés, justificatifs et fin du contrat.
+- valider taux 15/25/35 %, durée douze mois, assiette HT encaissée, exclusions des changements ultérieurs, remboursements, impayés, justificatifs et fin du contrat.
 
 ## Données opérationnelles
 

@@ -83,6 +83,7 @@ export async function syncUserFromSupabase(
     : null;
 
   if (!company) {
+    const startsAt = new Date();
     const name =
       input.companyName?.trim() ||
       email.split("@")[1]?.split(".")[0] ||
@@ -92,6 +93,19 @@ export async function syncUserFromSupabase(
         name,
         slug: `${slugify(name)}-${Date.now()}`,
         status: "TRIAL",
+        saasSubscription: {
+          create: {
+            kind: "LEGACY",
+            status: "ACTIVE",
+            startsAt,
+            currentPeriodStart: startsAt,
+            snapshot: {
+              schemaVersion: 1,
+              mode: "LEGACY",
+              reason: "SELF_SIGNUP_BEFORE_AUTONOMOUS_BILLING",
+            },
+          },
+        },
       },
     });
   }

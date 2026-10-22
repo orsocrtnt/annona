@@ -4,15 +4,59 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**45 tâches terminées sur 67 — 67 %**
+**48 tâches terminées sur 78 — 62 %**
 
-`█████████████░░░░░░░` · 22 tâches restantes
+`████████████░░░░░░░░` · 30 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
-Mise à jour : 20 octobre 2026. Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
+Mise à jour : 22 octobre 2026. Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
 
-## Objectif actuel : une V1 fiable prête à être essayée
+## Tableau de pilotage
+
+### Deux jalons indépendants
+
+| Jalon | Résultat attendu | Ce qui ne le bloque pas | État actuel |
+|---|---|---|---|
+| **A — V1 pour trois pilotes** | Trois entreprises françaises de livraison B2B utilisent TutelLiv pendant environ quatre semaines avec comptes créés et droits attribués manuellement. | Stripe, inscription commerciale autonome, commissions et site complet. | Socle fonctionnel, préproduction, CI et restauration validés ; démo rapide, alertes, e-mails réels, GPS physique, cadre juridique et recette finale restent à fermer. |
+| **B — SaaS autonome** | Site → offre/options → compte → paiement → activation → configuration → première livraison sans intervention TutelLiv. | Recrutement des pilotes et activation des paiements réels. | Catalogue, droits et quotas serveur terminés ; inscription persistante et paiement fictif restent à construire. |
+
+### Cinq prochaines tâches recommandées
+
+| Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
+|---:|---|---|---|---|
+| 1 | **DEMO-2** | Retirer les 83 s d'attente qui empêchent une démonstration commerciale fiable. | DEMO-1, les garde-fous démo de DATA-02 et la préproduction sont prêts ; la politique générale DATA-02 reste ouverte sans bloquer cet incrément. | GPT‑6 Astra · effort élevé |
+| 2 | **SIGNUP-1** | Construire le parcours autonome sur le noyau SaaS terminé avec un paiement fictif stable. | Interfaces et droits SAAS-01A disponibles ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
+| 3 | **COST-1 — estimation documentaire** | Tester rapidement la cohérence économique des trois offres et le risque Business illimité avant de figer davantage le catalogue. | Inventaires et tarifs publics ; aucune charge payante. La validation mesurée attend PERF-02. | GPT‑6.1 Sol · effort moyen |
+| 4 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
+| 5 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain. | Une entreprise pilote peut être créée manuellement ; SIGNUP-1 servira ensuite au libre-service. | GPT‑6.1 Sol · effort élevé |
+
+DEMO-2, COST-1 documentaire et OPS-03B sont fonctionnellement indépendantes. Les exécuter dans des sessions ou branches isolées évite les conflits ; une seule tâche reste active par session. Les interfaces serveur de SAAS-01A sont désormais stabilisées pour SIGNUP-1.
+
+### Chemins critiques
+
+- **Pilotes :** DEMO-2 + OPS-03B + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
+- **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A terminé → SAAS-01B sandbox → SAAS-03 et SAAS-04 → SALES-1 et SAAS-02 → GROWTH-1 intégré → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
+- **Validation économique :** COST-1 documentaire peut démarrer maintenant ; PERF-02 et les pilotes remplacent ensuite les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
+- **Design :** DESIGN-1 fixe les composants communs, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni SAAS-01A/SIGNUP-1 ni les portes techniques des pilotes.
+
+### Interventions du propriétaire
+
+| Moment utile | Intervention réellement nécessaire | Tâches concernées |
+|---|---|---|
+| Dès que possible, sans bloquer le code | Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. | MOB-01C, puis V1-GO |
+| Avant e-mails pilotes | Acheter le domaine retenu, choisir/configurer l'expéditeur et fournir l'accès au fournisseur d'e-mails. | SEC-05, EMAIL |
+| Avant données réelles | Créer/identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. | LEGAL-1, DATA-02, V1-GO |
+| Avant démarrer les essais | Sélectionner les trois entreprises, autoriser les contacts et signer le protocole pilote. | PILOT-1 |
+
+### Dépendances fournisseur ou validation extérieure
+
+- **Professionnels juridique/comptable :** validation des documents, rôles RGPD, fiscalité et facturation ; la préparation interne ne ferme jamais LEGAL-1.
+- **E-mail et domaine :** le code et les modèles peuvent avancer avec un transport de test ; les envois pilotes attendent domaine et expéditeur vérifiés.
+- **Stripe :** l'adaptateur et la sandbox peuvent être développés avant la structure juridique ; encaissement réel, activation live et dépense restent interdits sans validation.
+- **Appareils et pilotes :** seuls les essais physiques et l'usage terrain exigent ces ressources. Les développements, simulations et tests fictifs indépendants continuent.
+
+## Deux objectifs actuels : pilotes fiables et SaaS autonome
 
 Objectif économique confirmé : vendre TutelLiv par abonnement à des entreprises françaises de livraison locale B2B. Le cœur de cible compte 5 à 20 livreurs et des clients professionnels récurrents, avec priorité commerciale à Paris/Île-de-France et Marseille/Bouches-du-Rhône. La préparation technique avance sans attendre les entretiens ; la demande du marché et la volonté de payer ne sont pas pour autant validées.
 
@@ -67,28 +111,71 @@ Ces réussites ne valident pas le GPS terrain, la charge, la conformité du PDF 
 
 ## Ordre d’exécution et tâches différées
 
-Priorités confirmées le 18 octobre 2026 pour les tâches encore ouvertes :
+Priorités réconciliées le 22 octobre 2026 pour les tâches encore ouvertes. Le niveau indique l'ordre du travail interne ; les validations extérieures sont suivies séparément et ne doivent pas immobiliser les tâches indépendantes :
 
-- **P0 — Sécurité, stabilité et blocages :** DB-1, LEGAL-1, DATA-02. PERF-01 et les principales frontières SEC sont déjà terminées ; toute régression mesurable redevient P0.
-- **P1 — Préproduction et exploitation :** SEC-05, OPS-03A, OPS-03B, EMAIL, MOB-01C. ENV-1 et CI-1 sont terminées.
-- **P2 — Validation V1 et préparation des pilotes :** MAP-3, ONBOARD-1, V1-GO, PROD-02, PROD-04.
-- **P3 — Offres, quotas et permissions :** BILL-01B, OFFER-1, SAAS-01A, SAAS-02.
-- **P4 — Pilotes et commercialisation autonome :** PILOT-1, PILOT-2, GROWTH-1, RELEASE-1.
-- **P5 — Paiement et extensions commerciales :** SAAS-01B, SMS. L'attribution et les commissions sont intégrées à SAAS-01A/B sans créer un CRM.
+- **P0 — Débloquer les pilotes et poursuivre le libre-service :** DEMO-2, COST-1 dans sa phase documentaire, OPS-03B et SIGNUP-1. SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
+- **P1 — Fermer la fiabilité et le libre-service testable :** SEC-05, EMAIL, SAAS-01B, SAAS-03, SAAS-04, SALES-1, PERF-02, ONBOARD-1.
+- **P2 — Expérience et préparation opérationnelle :** MAP-3, DESIGN-1, UX-03, UX-04, GROWTH-1, ADMIN-1, V1-GO, OFFER-1.
+- **P3 — Validation extérieure et terrain :** LEGAL-1, DATA-02, MOB-01C, PROD-02, PROD-04, PILOT-1, PILOT-2, SAAS-02, RELEASE-1.
+- **P4 — Extensions après validation :** SMS. Aucun paiement réel, fournisseur payant ou déploiement de production n'est autorisé par cette priorité.
 
 Les dépendances de sécurité et de validation priment sur le numéro : une tâche P3 peut être préparée localement, mais ne doit pas contourner une porte P0/P1 pour utiliser des données réelles.
 
-1. **PERF-01 terminée le 15 octobre 2026.** Navigation des trois espaces mesurée en dev et production, causes dominantes corrigées et budgets de référence vérifiés. Rapport : docs/rapports/2026-10-15/perf01.md.
-2. **MAP-3 est techniquement terminée ; revue visuelle groupée différée par le propriétaire.** Le rendu noir/blanc est en place et ne bloque pas les tâches indépendantes.
-3. **DISPATCH-2 terminée le 16 octobre 2026.** Les retards ouvrent la livraison exacte dans le dispatch et sur la carte, avec URL, pagination, focus et frontière entreprise vérifiés.
-4. PROD-03, V1-RECETTE et V1-MESURE sont établies. La baseline automatisée reste distincte de la future mesure humaine et des gains clients.
-5. SEC-01/02/03/04/06, ENV-1 et CI-1 sont terminées. SEC-05 reste ouverte pour la configuration e-mail réelle ; DB-1 attend une cible de restauration jetable complète.
-6. OPS-02A, OPS-02B, DISPATCH-1, ACK-1, BILL-02, COMM-1, ALERT-1, TRACK-1, POD-1 et DATA-01 sont terminées.
-7. TRACK-1, MOB-01A/B, UX-01 et MAP-1/2 sont terminées. MOB-01C reste à valider sur téléphones avec l’opérateur disponible.
-8. Après PERF-01, MAP-3 et DISPATCH-2, terminer les jalons internes d’onboarding, tests, exploitation et recette V1. Les dépendances techniques de chaque tâche priment sur cet ordre de lecture.
-9. Reprendre entretiens, offre et pilotes plus tard, puis automatiser les abonnements. Leur report ne bloque pas le travail sur données fictives, mais ne supprime pas les exigences avant usage réel ou vente.
+1. Rendre la démo rapide et réutilisable avec DEMO-2 avant toute diffusion commerciale : budgets p95 mesurés, pool prêt et recyclage asynchrone.
+2. Terminé : SAAS-01A fournit le catalogue versionné, le registre pilote/souscription, les droits, options, quotas et compteurs appliqués côté serveur.
+3. En parallèle sans charge payante, produire l'estimation documentaire COST-1 et mettre en place la première tranche d'alertes OPS-03B.
+4. Construire SIGNUP-1 sur les interfaces stabilisées de SAAS-01A avec un faux paiement déterministe, une activation idempotente et une reprise après interruption.
+5. Brancher Stripe uniquement dans son environnement fictif avec SAAS-01B, puis développer SAAS-03, SAAS-04 et la tranche théorique de SALES-1.
+6. Fermer ONBOARD-1 pour les comptes pilotes créés manuellement, puis le relier au parcours autonome ; terminer en parallèle les e-mails, la capacité et les essais GPS physiques dès que leurs ressources sont disponibles.
+7. Appliquer DESIGN-1, MAP-3, UX-03 et UX-04 aux parcours essentiels, puis intégrer le site commercial, la supervision interne et la recette V1 sur données fictives.
+8. Après les portes sécurité, juridique et exploitation, conduire les trois pilotes séparément de la découverte premium, remplacer les hypothèses de coût par des mesures et décider de la mise en vente.
+9. Activer le paiement réel seulement après structure juridique, règles fiscales/facturation, compte bancaire, contrats et décision explicite.
 
 La réorganisation du plan n’autorise pas à implémenter tout le backlog. La reprise a permis de formaliser PROD-03 et V1-RECETTE ; la recette complète V1-GO reste ouverte.
+
+## Audit de fusion — SaaS autonome, 21 octobre 2026
+
+- **Déjà développé et à conserver :** préproduction Supabase/Vercel isolée, branche GitHub et CI connectée ; séparation multi-tenant et permissions principales ; trois espaces ; parcours complet d'une livraison ; commandes récurrentes ; duplication d'une ancienne commande/livraison ; preuve, historique, échanges, support, export comptable ; page publique de présentation ; première supervision SUPER_ADMIN ; assistant interne en sept étapes.
+- **Partiellement développé :** inscription entreprise avec vérification d'e-mail, mais sans offre, coordonnées légales, paiement ni activation conditionnelle ; onboarding calculé depuis les données, mais invitations réelles/import/reprise commerciale non qualifiés ; supervision interne limitée aux entreprises/utilisateurs/livraisons et au revenu des prestations ; restauration fournisseur exercée, mais sauvegarde horaire et alertes encore incomplètes ; site public sans pages Tarifs/Fonctionnalités/Démo/Contact/Légal complètes. Le catalogue, les souscriptions/pilotes, les droits et compteurs de quotas sont désormais présents via SAAS-01A.
+- **Absent du code actuel :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet.
+- **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
+
+## Matrice des 30 tâches ouvertes
+
+`A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Maintenant » signifie qu'une tranche vérifiable peut être terminée sans dépense ni intervention extérieure.
+
+| Tâche | Jalon | Travail restant et prochain incrément | Dépendance / parallélisation | Complexité · modèle |
+|---|---|---|---|---|
+| SEC-05 | A+B | Fermer invitations, expiration, récupération et recette avec envoi réel. | Code presque terminé ; activation parallèle, bloquée seulement par domaine/expéditeur. | Moyenne · GPT‑6.1 Sol |
+| MAP-3 | A | Reprendre la carte avec la référence historique puis validation visuelle. | Après tokens DESIGN-1 ; parallèle aux travaux SaaS. | Moyenne · GPT‑6.1 Sol |
+| MOB-01C | A | Exécuter GPS, verrouillage, refus et reprise sur iPhone/Android réels. | Bloquée par appareils/opérateur ; n'empêche aucun code indépendant. | Moyenne · GPT‑6.1 Sol |
+| ONBOARD-1 | A+B | Finir d'abord la reprise/progression du parcours pilote manuel, puis le brancher à SIGNUP-1. | Tranche pilote maintenant ; intégration autonome après SAAS-01A/SIGNUP-1. | Élevée · GPT‑6.1 Sol |
+| DESIGN-1 | A+B | Définir tokens/composants et traiter seulement cinq parcours essentiels avant extension. | Maintenant, parallèle au SaaS ; ne bloque pas la logique métier. | Élevée · GPT‑6.1 Sol |
+| UX-03 | A+B | Unifier la fiche livraison et rendre la commande secondaire mais accessible. | Après composants DESIGN-1 ; réutilise TRACK-1/POD-1. | Élevée · GPT‑6.1 Sol |
+| UX-04 | A+B | Inventorier et simplifier les actions des parcours prioritaires. | Après composants DESIGN-1 ; peut accompagner UX-03 par écran. | Moyenne · GPT‑6.1 Sol |
+| OPS-03B | A | Brancher un canal de test, simuler une panne et valider diagnostic/reprise. | Maintenant grâce à ENV-1 ; canal live seulement plus tard. | Élevée · GPT‑6.1 Sol |
+| EMAIL | A+B | Valider invitations, récupération, erreurs et modèles ; puis envoi réel. | Tests locaux maintenant ; domaine/Resend pour la fermeture. | Moyenne · GPT‑6.1 Sol |
+| V1-GO | A | Rejouer la recette finale et documenter les limites promises. | Attend uniquement MOB-01C, EMAIL/SEC-05 réels et validations juridiques pertinentes. | Élevée · GPT‑6 Astra |
+| LEGAL-1 | A+B | Compléter les inconnues puis obtenir validation professionnelle. | Dossier interne prêt ; identité éditeur et professionnels externes requis. | Moyenne · GPT‑6 Astra |
+| DATA-02 | A+B | Finaliser politique, remise chiffrée et horaire de nettoyage sur préproduction. | Technique en parallèle ; politique finale dépend de LEGAL-1. | Élevée · GPT‑6 Astra |
+| DEMO-2 | A | Remplacer la construction synchrone par attribution atomique d'un pool isolé et recyclage. | Maintenant ; première priorité, sans dégrader l'isolation. | Très élevée · GPT‑6 Astra |
+| PROD-02 | A | Conduire dix entretiens sur le travail réel. | Bloquée par recrutement/contacts autorisés ; parallèle au code. | Élevée · GPT‑6.1 Sol |
+| PROD-04 | A+B | Définir dès maintenant les instruments et valeurs de départ ; mesurer ensuite sur pilotes. | Protocole maintenant ; validation terrain après PROD-02/PILOT-1. | Moyenne · GPT‑6.1 Sol |
+| OFFER-1 | A+B | Confronter au marché la grille et les limites ; les sept familles de règles C7 sont confirmées. | COST-1 documentaire maintenant ; acceptation avec prospects/pilotes. | Moyenne · GPT‑6 Astra |
+| SIGNUP-1 | B | Orchestrer offre, compte, paiement fictif, activation idempotente et reprise. | Après interfaces stables de SAAS-01A ; n'attend ni Stripe live ni pilotes. | Très élevée · GPT‑6 Astra |
+| PILOT-1 | A | Recruter, contractualiser et conduire trois pilotes quatre semaines. | Attend les portes A–C et l'autorisation de contact. | Moyenne · GPT‑6.1 Sol |
+| PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1 ; aucune conclusion avant les données. | Moyenne · GPT‑6 Astra |
+| SAAS-01B | B | Intégrer Stripe sandbox, webhooks idempotents et cycle de facturation fictif. | Après SAAS-01A/SIGNUP-1 ; peut précéder les pilotes et la structure juridique. | Très élevée · GPT‑6 Astra |
+| SAAS-03 | B | Ajouter gestion autonome, confirmations, rétrogradations et documents. | Après noyau et événements SAAS-01B. | Très élevée · GPT‑6 Astra |
+| SAAS-04 | B | Appliquer et expirer les 60 jours sans surcoût automatique. | Après SAAS-01A et événements SAAS-01B ; parallèle à SAAS-03 une fois les contrats stables. | Élevée · GPT‑6.1 Sol |
+| SALES-1 | B | Tracer source/instantané initial et calculer la commission théorique, sans versement. | Après SAAS-01A/B ; contrat requis uniquement avant mise en service. | Élevée · GPT‑6 Astra |
+| SAAS-02 | B+C | Mesurer revenu, activation, rétention, consommation et risque Business. | Après SAAS-01A/B ; utilise PROD-04 et alimente ADMIN-1. | Élevée · GPT‑6.1 Sol |
+| PERF-02 | A+B | Construire le harnais local puis mesurer p50/p95 et saturation à charge bornée. | Harnais maintenant ; charge distante après SAAS-01A, sans dépense. | Élevée · GPT‑6 Astra |
+| COST-1 | A+B | Produire l'estimation documentaire immédiate, puis remplacer les hypothèses par PERF-02/pilotes. | Phase 1 maintenant, parallèle ; phase 2 après mesures. | Moyenne puis élevée · GPT‑6.1 Sol puis Astra |
+| GROWTH-1 | B | Préparer l'arborescence et les contenus vrais, puis relier tarifs et inscription. | Contenu maintenant ; intégration après SAAS-01A/SIGNUP-1 et composants DESIGN-1. | Élevée · GPT‑6.1 Sol |
+| ADMIN-1 | B+C | Ajouter supervision souscriptions, quotas, paiements, pilotes et incidents. | Après SAAS-01A/B, SAAS-02 et OPS-03B. | Élevée · GPT‑6 Astra |
+| RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon ; dépend des fonctions commercialisées et validations extérieures. | Très élevée · GPT‑6 Astra |
+| SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée ; aucune dépendance du pilote ou du SaaS initial. | Moyenne · GPT‑6.1 Sol |
 
 ## 0 — Cadrer la V1 sur le problème observé
 
@@ -190,7 +277,7 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
   Source / dépendance / blocage : Terminé ; les droits par défaut des futures tables restent dans DB-1.
 
-- [ ] **DB-1 — Versionner les évolutions de base.** Comparer schéma et état de la cible, établir une base de migrations et une stratégie de retour arrière.
+- [x] **DB-1 — Versionner les évolutions de base.** Comparer schéma et état de la cible, établir une base de migrations et une stratégie de retour arrière.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -206,7 +293,9 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
   Avancement du 2026-10-20 : identifiants remplacés et ancienne clé serveur révoquée. La migration additive `20261019010000_rbac_reference_data` versionne six rôles, trente-trois permissions et cent neuf liaisons ; son application puis un second `migrate deploy` sans migration en attente sont vérifiés. TEST-2 passe sur la cible isolée et la vérification finale retrouve deux migrations, zéro drift, zéro utilisateur Auth et les références exactes. DB-1 reste ouverte pour une restauration complète base + Storage et le traitement séparé de la cible historique après sauvegarde et autorisation.
 
-  Source / dépendance / blocage : Avant nouveaux changements de schéma ; ENV-1.
+  État final vérifié le 2026-10-21 : deux schémas temporaires strictement bornés ont reçu les deux migrations sur la préproduction isolée. Un graphe fictif couvrant les vingt tables applicatives a été exporté puis restauré à l'identique ; les vingt empreintes correspondent, les références RBAC sont exactes, RLS couvre les vingt tables, le diff Prisma est vide et un second `migrate deploy` ne trouve rien à appliquer. Les schémas temporaires ont été supprimés. L'empreinte du schéma public, ses compteurs métier et le bucket Storage sont identiques avant/après. Le contrôle final reconnaît seulement la démo permanente et trois sessions temporaires valides. La restauration complète du service et de Storage a ensuite été validée séparément dans OPS-03A.
+
+  Source / dépendance / limite : Terminé ; procédure `docs/operations/db1/README.md`, rapport `docs/rapports/2026-10-21/db1-migration-restore.md`, preuves sans secret sous `outputs/db1/`. Toute migration destructive future doit disposer de sa propre reprise vérifiée.
 
 ## 2 — Remplacer la coordination par e-mail
 
@@ -390,11 +479,11 @@ Statuts ET localisation sont demandés. Leur présence dans le code ne suffit pa
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
-  Terminé quand : une même direction visuelle noir/blanc est cohérente dans les trois espaces sur mobile et desktop ; les informations essentielles restent compréhensibles en quelques secondes ; marqueurs sélectionnés/non sélectionnés, trajet, regroupements, panneau et états dégradés sont distinguables ; comparaison visuelle avant/après validée par le propriétaire.
+  Terminé quand : une même direction visuelle noir/blanc est cohérente dans les trois espaces sur mobile et desktop ; les informations essentielles restent compréhensibles en quelques secondes ; marqueurs sélectionnés/non sélectionnés, trajet, regroupements, panneau et états dégradés sont distinguables ; la carte retrouve la hiérarchie de l’ancienne version — fond très clair, itinéraire bleu dominant, panneaux blancs flottants, progression discrète, libellés de collecte/livraison et position du livreur lisibles — sans copier les éléments devenus inutiles ; comparaison visuelle avant/après validée par le propriétaire.
 
-  Source / dépendance / blocage : préférence explicite du propriétaire le 15 octobre 2026 : les cartes actuelles sont jugées trop chargées et l’ancien style blanc/noir « type Uber » était préféré. Après PERF-01 afin de ne pas confondre refonte visuelle et diagnostic de lenteur. Réutiliser les garanties fonctionnelles de MAP-1/2 et ne pas choisir un fournisseur payant sans décision.
+  Source / dépendance / blocage : préférence explicite du propriétaire le 15 octobre 2026 : les cartes actuelles sont jugées trop chargées et l’ancien style blanc/noir « type Uber » était préféré. La capture de l’ancienne version fournie le 20 octobre est conservée dans `docs/references/design/ancienne-carte-tutelliv.png` et devient la référence principale de direction visuelle. Après PERF-01 afin de ne pas confondre refonte visuelle et diagnostic de lenteur. Réutiliser les garanties fonctionnelles de MAP-1/2 et ne pas choisir un fournisseur payant sans décision.
 
-  État technique au 16 octobre 2026 : thème commun noir/blanc appliqué aux cartes administrateur, client et livreur ; fond monochrome, trajets à halo blanc/ligne noire, marqueurs et sélection contrastés, panneaux blancs, HUD et progression simplifiés, panne fournisseur et attribution préservées. Recette locale 1280 × 720 et 390 × 844 sans débordement, `npm run check` réussi (199/199 tests), build Next.js réussi (96 pages) et `git diff --check` réussi. Preuves avant/après et rapport : `docs/rapports/2026-10-15/map3.md`. Blocage restant avant de cocher : validation visuelle explicite du propriétaire, requise par le critère de fin.
+  État technique au 16 octobre 2026 : thème commun noir/blanc appliqué aux cartes administrateur, client et livreur ; fond monochrome, trajets à halo blanc/ligne noire, marqueurs et sélection contrastés, panneaux blancs, HUD et progression simplifiés, panne fournisseur et attribution préservées. Recette locale 1280 × 720 et 390 × 844 sans débordement, `npm run check` réussi (199/199 tests), build Next.js réussi (96 pages) et `git diff --check` réussi. Preuves avant/après et rapport : `docs/rapports/2026-10-15/map3.md`. Le 20 octobre, le propriétaire a fourni l’ancienne carte et demandé une nouvelle passe : la tâche reste ouverte pour rapprocher la composition et la hiérarchie visuelle de cette référence, puis obtenir sa validation explicite.
 
   Support de revue préparé le 2026-10-18 : critères et captures disponibles dans `docs/operations/map3/REVIEW.md`. Une nouvelle série homogène admin/client/livreur sera produite sur préproduction avec mission active ; la case reste ouverte jusqu'à l'accord du propriétaire.
 
@@ -424,19 +513,19 @@ Statuts ET localisation sont demandés. Leur présence dans le code ne suffit pa
 
 Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour les jalons internes ; ne pas confondre une archive du code avec une restauration de service.
 
-- [ ] **ONBOARD-1 — Guider jusqu’à la première livraison.** Configuration entreprise, invitation client/chauffeur, tarifs utiles, import validé et première commande avec aide minimale.
+- [ ] **ONBOARD-1 — Guider jusqu’à la première livraison.** Proposer un assistant persistant avec barre de progression : informations entreprise, services/paramètres, livreurs, collaborateurs autorisés, premiers clients professionnels, tarifs utiles, import validé si retenu, première commande et première livraison. Chaque étape peut être quittée et reprise sans perdre les données déjà confirmées. Le même assistant doit fonctionner pour un compte pilote créé manuellement puis, plus tard, après activation autonome par SIGNUP-1.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
-  Terminé quand : Un pilote réalise une livraison test ; temps et interventions mesurés ; import invalide ne corrompt rien.
+  Terminé quand : une entreprise fictive puis un pilote réalisent une livraison test sans intervention obligatoire ; progression fiable après reconnexion ; invitations d'utilisateurs existants ou nouveaux cohérentes ; étapes facultatives sautables ; temps et interventions mesurés ; import invalide ne corrompt rien.
 
-  Source / dépendance / blocage : Après PROD-03, sécurité et cycle métier.
+  Source / dépendance / blocage : la tranche pilote ne dépend plus de SIGNUP-1 ; elle peut rendre la progression reprenable et qualifier les invitations sur une entreprise fictive ou créée manuellement. Le branchement automatique dépend ensuite de SAAS-01A/SIGNUP-1. La validation humaine finale attend PILOT-1.
 
   Jalon interne prioritaire : rejouer la première livraison avec une entreprise fictive et les trois rôles, en consignant le temps et les aides nécessaires. La validation par un pilote réel reste ultérieure ; ne pas cocher l’ensemble sur la seule recette interne.
 
   Jalon interne réalisé le 2026-10-16 : écran `/onboarding` réservé à l'administrateur, sept étapes calculées depuis l'état réel et liens vers services, comptes, tarifs, dispatch, commandes et livraison. Une entreprise fictive isolée passe de 2/7 à 5/7, 6/7 puis 7/7 en 45 372 ms automatisées ; tâches asynchrones attendues et résidu nul. 220 tests locaux, test Chrome de l'écran et refus client/livreur réussis. L'invitation e-mail réelle et l'import restent explicitement non validés. Rapport `docs/rapports/2026-10-16/onboard1-internal.md`, procédure `docs/operations/onboard1/README.md`, preuve `outputs/onboard1/connected.json`.
 
-  Reste à faire avant de cocher : exécution par un pilote réel, mesure du temps humain et des interventions, réception des invitations après configuration e-mail, puis décision et validation atomique d'un format d'import si le pilote en a besoin.
+  Reste à faire avant de cocher : rendre l'avancement explicitement persistant/reprenable, inviter collaborateurs et clients, qualifier d'abord une entreprise pilote créée manuellement, puis relier l'assistant à SIGNUP-1 et aux droits SAAS-01A. L'exécution par un pilote réel, la mesure du temps humain, la réception des invitations et un éventuel format d'import ferment la validation terrain ; elles ne bloquent pas la tranche technique.
 
 - [x] **UX-02 — Reproduire et corriger la navigation d’inscription.** Tester le lien /login → /register après chargement, retour et cache ; préserver l’inscription qui fonctionne en accès direct.
 
@@ -472,6 +561,40 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Validation : `npm run check` réussi avec 214/214 tests, build Next.js réussi (96 pages), `git diff --check` réussi et recette interactive Chrome sans erreur JavaScript. Aucune donnée métier créée ou modifiée. Rapport `docs/rapports/2026-10-16/ui2.md`, procédure `docs/operations/ui2/README.md`, preuves `outputs/ui2/`.
 
+- [ ] **DESIGN-1 — Revoir la direction visuelle de l’ensemble du produit.** Auditer les écrans des trois espaces, définir une direction commune sobre inspirée de l’ancienne carte, puis alléger et harmoniser tableaux de bord, navigation, listes, formulaires, cartes de contenu, modales et états vides/chargement/erreur. Revenir à des surfaces majoritairement blanches, noires et grises avec une couleur d’action maîtrisée ; réduire les blocs, couleurs, ombres et informations simultanées qui rendent les écrans chargés. Conserver la lisibilité métier et les repères propres à chaque rôle.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : inventaire visuel des parcours essentiels et règles de design consignés ; composants et tokens partagés au lieu de corrections page par page ; espaces administrateur, client et livreur cohérents sur ordinateur et mobile ; cartes de contenu redevenues sobres dans l’esprit blanc/noir apprécié par le propriétaire ; états interactifs, contraste, clavier, densité et responsive vérifiés ; comparaison avant/après des écrans principaux relue et validée par le propriétaire.
+
+  Source / dépendance / blocage : demande explicite du propriétaire le 20 octobre 2026 de revoir le design complet, en utilisant l’ancienne carte conservée dans `docs/references/design/ancienne-carte-tutelliv.png` comme référence de sobriété et de hiérarchie, pas comme maquette à copier à l’identique. Commencer par l’audit et le système visuel, puis appliquer par parcours prioritaire : connexion/onboarding, tableau de bord/dispatch, commande, suivi client, mission livreur. Préserver les acquis UI-2, les performances PERF-01 et les fonctions métier ; aucun nouveau fournisseur payant.
+
+  Ordre limité : valider d'abord les tokens et composants sur connexion/inscription, tableau de bord/dispatch, création de commande, fiche livraison, mission livreur et suivi client. Généraliser seulement après revue de ces écrans. Une refonte cosmétique exhaustive n'est une dépendance ni de SAAS-01A/SIGNUP-1 ni du démarrage manuel des pilotes.
+
+- [ ] **UX-03 — Faire de la livraison le dossier opérationnel principal.** Depuis toute liste, carte, alerte ou tableau de bord, un clic sur une livraison doit ouvrir une fiche canonique claire. Elle regroupe selon le rôle : référence et statut de livraison, client et contacts utiles, adresses et étapes, créneaux/délais prévus, retard calculé, horodatages réels, livreur et affectation, instructions, contenu utile de la commande, incident ou échec, échanges et chronologie, preuve de livraison et documents associés. Organiser par priorité et sections repliables afin que l’état, le délai et la prochaine action soient compris immédiatement sans produire une page surchargée.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  **Complexité : élevée — agrégation multi-rôles, confidentialité, états temporels et cohérence entre plusieurs écrans.**
+
+  Terminé quand : toutes les entrées vers une même livraison ouvrent la même fiche ou sa variante de rôle cohérente ; les données essentielles sont visibles avant le détail ; la preuve peut être consultée lorsqu’elle existe et son absence est explicite ; délais prévus, retard, durée et horodatages utilisent une règle serveur unique ; les données client et internes sont filtrées par rôle et entreprise ; liens profonds, retour à la liste, clavier et mobile fonctionnent. La référence de livraison sert de repère humain principal. Le numéro de commande reste disponible pour recherche, copie, support ou rapprochement, mais apparaît dans une zone secondaire « Informations techniques » et ne concurrence plus le statut, le client ou la livraison.
+
+  Tests requis : livraison en attente, affectée, en cours, livrée avec preuve, échouée, annulée et en retard ; preuve absente/présente ; accès administrateur, mini-admin, client et livreur ; entreprise étrangère refusée sans fuite ; lien profond, navigation retour, petit écran et données partielles anciennes. Vérifier qu'aucune référence de commande ne domine visuellement les listes et fiches principales.
+
+  Source / dépendance / blocage : demande explicite du propriétaire le 21 octobre 2026. Réutiliser les services et pages de détail existants, les garanties TRACK-1/POD-1/SEC-06 et les règles DISPATCH-2 ; commencer par un inventaire des écrans pour éviter une nouvelle fiche concurrente. DESIGN-1 fixe la présentation, UX-03 fixe la hiérarchie métier et le contenu.
+
+- [ ] **UX-04 — Simplifier les actions et supprimer les explications permanentes inutiles.** Inventorier les boutons, rangées d'actions et textes qui expliquent en permanence leur fonctionnement. Pour chaque écran, conserver une action principale évidente, regrouper les actions secondaires, déplacer les actions rares dans un menu clairement nommé et retirer les lignes d'aide redondantes. Si la place, le nom ou l'icône ne suffisent pas à comprendre une action, renommer ou repositionner le contrôle avant d'ajouter une aide. Réserver les aides contextuelles aux notions réellement complexes, sans masquer une étape critique dans une infobulle.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  **Complexité : moyenne à élevée — inventaire transversal, hiérarchie des actions et risque de masquer une fonction importante.**
+
+  Terminé quand : aucun parcours essentiel n'affiche une succession de boutons accompagnés chacun d'une phrase explicative ; les libellés utilisent des verbes et désignent précisément le résultat ; les actions principales sont stables au même endroit ; les actions destructives restent séparées et confirmées ; les icônes seules possèdent un nom accessible ; les aides restantes sont courtes, contextuelles et justifiées. Un utilisateur de chaque rôle peut créer, affecter, démarrer, suivre, clôturer et consulter une preuve sans demander à quoi servent les commandes visibles.
+
+  Tests requis : audit des écrans principaux administrateur/client/livreur sur ordinateur et mobile ; noms accessibles, clavier, focus, menus et confirmations ; scénarios de découverte sans consigne préalable ; vérification qu'aucune action métier existante n'a disparu et que la réduction visuelle ne dégrade ni permissions ni performances.
+
+  Source / dépendance / blocage : demande explicite du propriétaire le 21 octobre 2026 après constat d'un trop grand nombre de boutons, de rangées et d'explications. Complète DESIGN-1 sans le dupliquer : DESIGN-1 définit le système visuel, UX-04 réduit et clarifie les actions. Préserver UI-2 et les protections serveur ; une interface plus simple ne doit pas rendre une action sensible moins explicite.
+
 - [x] **TEST-2 — Transformer les vérifications en suite reproductible.** Tests de règles métier, intégration sur deux entreprises et E2E des trois rôles ; fixtures isolées et traces sans secrets.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
@@ -500,9 +623,9 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Avancement du 2026-10-19 : le workflow couvre désormais les pushes `preproduction` et exécute une garde d'isolation avant le job connecté. Cette garde refuse la référence Supabase actuelle, les hôtes incohérents, les secrets opérationnels faibles/partagés, les e-mails réels et le nettoyage automatique. Le cron opérationnel chaque minute a été retiré du manifeste de préproduction car Vercel Hobby le refuse ; sa route reste disponible. Validation : 279 tests dont quatre ciblés, types/lint stricts, build de 102 pages, 58 documents, audit production sans vulnérabilité, scanner de 871 fichiers sans secret et diff-check réussis. Publication et première exécution distante restent bloquées par la reconnexion et ENV-1/DB-1.
 
-  Terminé le 2026-10-20 : workflow et branche publiés, job local GitHub vert et Preview Vercel créée sans modifier `main`. La chaîne connectée distante du commit `f6e19cc` est entièrement verte : garde d'isolation, 279 tests, recette A/B, montage temporaire, trois parcours Chromium, preuve sans secret, nettoyage de six sociétés temporaires et artefact de preuve publié. Le contrôle direct final retrouve zéro utilisateur Auth et une base conforme. Le retour arrière Preview vers `f6e19cc` réussit en 1 min 39 s, puis le rétablissement du commit courant `04a0a35` réussit en 2 min 11 s ; l'alias stable suit de nouveau le commit courant. Vercel Hobby ne propose pas l'Instant Rollback pour une Preview : la procédure redéploie le commit sain avec les réglages actuels. Rapport `docs/rapports/2026-10-20/ci1-rollback.md`. La restauration base + Storage reste suivie séparément par DB-1 et OPS-03A.
+  Terminé le 2026-10-20 : workflow et branche publiés, job local GitHub vert et Preview Vercel créée sans modifier `main`. La chaîne connectée distante du commit `f6e19cc` est entièrement verte : garde d'isolation, 279 tests, recette A/B, montage temporaire, trois parcours Chromium, preuve sans secret, nettoyage de six sociétés temporaires et artefact de preuve publié. Le contrôle direct final retrouve zéro utilisateur Auth et une base conforme. Le retour arrière Preview vers `f6e19cc` réussit en 1 min 39 s, puis le rétablissement du commit courant `04a0a35` réussit en 2 min 11 s ; l'alias stable suit de nouveau le commit courant. Vercel Hobby ne propose pas l'Instant Rollback pour une Preview : la procédure redéploie le commit sain avec les réglages actuels. Rapport `docs/rapports/2026-10-20/ci1-rollback.md`. DB-1 et OPS-03A ont ensuite validé séparément migrations et restauration base + Storage.
 
-- [ ] **OPS-03A — Vérifier sauvegarde et restauration.** Inventorier hébergement, base, photos et politiques existantes ; fixer objectifs de perte acceptable et délai de reprise.
+- [x] **OPS-03A — Vérifier sauvegarde et restauration.** Inventorier hébergement, base, photos et politiques existantes ; fixer objectifs de perte acceptable et délai de reprise.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -518,13 +641,21 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Décision du 2026-10-18 : RPO ≤ 1 h et RTO ≤ 4 h retenus comme cibles techniques, sans garantie contractuelle avant exercice. Les simulations sont autorisées exclusivement sur préproduction. L'estimation montre qu'un PITR Supabase 7 jours coûte environ 100 $/mois en plus du plan et couvre PostgreSQL, pas à lui seul les fichiers Storage ; validation de dépense et stratégie de copie des photos requises avant activation.
 
+  Avancement connecté du 2026-10-21 : répétition logique base + Storage réussie sur la préproduction isolée. Deux schémas et deux buckets temporaires strictement bornés ont été créés ; l'archive locale temporaire a contenu les vingt tables et une vraie preuve PNG avec manifeste SHA-256. La source a été supprimée avant restauration. Les vingt tables, la relation commande/livraison, le chemin de preuve, la configuration privée du bucket, les octets et la lecture par URL signée ont été retrouvés à l'identique. Sauvegarde 18,332 s, restauration 10,529 s, validation 12,9 s, total 55,969 s. Schéma public, données, comptes Auth, catalogue et fichiers existants sont identiques avant/après ; schémas, buckets et archive temporaires ont été supprimés. Procédure `docs/operations/ops03a/README.md`, rapport `docs/rapports/2026-10-21/ops03a-restore-rehearsal.md`, preuve `outputs/ops03a/restore-rehearsal.json`.
+
+  Déblocage du 2026-10-21 : le propriétaire a confirmé que les quatre entreprises non démo et toutes les anciennes sessions de la cible historique sont aussi fictives. L'inventaire final en lecture seule a trouvé cinquante-deux anciennes sessions, une société démo de base et zéro mutation. Le projet historique `wlomrzilflbouzyhzwxm` a ensuite été mis en pause, sans suppression ; Supabase le conserve récupérable et l'emplacement gratuit est libéré. La préproduction est restée conforme après l'opération : garde d'isolation, vingt tables, deux migrations, références RBAC, RLS, bucket privé, démo permanente et trois sessions temporaires valides. Rapport `docs/rapports/2026-10-21/supabase-legacy-pause.md`.
+
+  Terminé le 2026-10-21 : une cible Supabase Free temporaire et isolée a reçu l'export officiel de la cible historique. Les 58 tables sauvegardées ont exactement les compteurs attendus : 4 569 lignes publiques, 1 061 lignes Auth, 91 Realtime et 77 Storage ; 25 utilisateurs sont visibles par l'API Auth. Les vingt tables applicatives ont RLS active, 438 commandes et 438 livraisons sont présentes. Les deux PNG ont été restaurés dans le bucket privé, puis vérifiés octet par octet par téléchargement direct et URL signée. Import SQL : 2 min 12 s ; phase Storage finale : 3,298 s. Archives et journaux sont protégés par un manifeste SHA-256 ; aucun secret n'entre dans les preuves. Procédure `docs/operations/ops03a/README.md`, rapport `docs/rapports/2026-10-21/ops03a-provider-restore.md`, preuve `outputs/ops03a/provider-restore.json`.
+
+  Limite connue de lancement : le plan Free ne garantit pas le RPO interne d'une heure et les sauvegardes de base n'incluent pas Storage. RELEASE-1 devra valider une copie chiffrée hors site au moins horaire ou une option fournisseur payante approuvée, sans présenter l'objectif comme une garantie contractuelle.
+
 - [ ] **OPS-03B — Installer diagnostics et alertes utiles.** Suivre erreurs API, jobs, uploads, disponibilité et actions sensibles sans secrets ; procédure d’incident et responsable.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
   Terminé quand : Panne simulée déclenche une alerte exploitable ; diagnostic et reprise documentés.
 
-  Source / dépendance / blocage : Après environnement isolé.
+  Source / dépendance / blocage : ENV-1 et la préproduction isolée sont terminées. La simulation, le diagnostic et un canal de test peuvent avancer maintenant ; seul le destinataire live dépend d'EMAIL.
 
   Avancement local du 2026-10-16 : sonde publique minimale et diagnostic profond protégé ajoutés. La base, le bucket privé et les tâches échouées/bloquées sont contrôlés sans identifiant métier ; un état dégradé renvoie 503. Les crons signalent désormais les échecs terminaux et les files non vidées via un événement structuré, nettoyé avant journal ou webhook HTTPS. Procédure : `docs/operations/ops03b/README.md` ; rapport : `docs/rapports/2026-10-16/ops03b-local.md`.
 
@@ -554,7 +685,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Terminé quand : Envoi test reçu ; échec visible/rejouable ; préférences respectées ; aucun envoi en double.
 
-  Source / dépendance / blocage : Clé Resend et domaine vérifié requis ; OPS-02B.
+  Source / dépendance / blocage : le transport, les modèles, l'idempotence et les pannes simulées sont testables sans domaine. La clé Resend, le domaine vérifié et la boîte contrôlée sont requis uniquement pour fermer la recette d'envoi réel ; OPS-02B est terminée.
 
   Limite V1 : les e-mails servent aux invitations, à la récupération et aux alertes utiles ; ils ne redeviennent pas le lieu principal de coordination des missions. Pas d’import automatique des commandes par e-mail prévu dans le noyau.
 
@@ -598,7 +729,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Avancement local vérifié les 2026-10-17/18 : 235 règles locales, recette connectée A/B avec doubles créations standard/coursier, collecte obligatoire, transition invalide refusée, livraison, échec avec motif obligatoire et concordant client/admin, preuve, facture, conversation et isolation, puis trois parcours Chrome généraux consécutifs réussis. Un scénario Chrome opérationnel supplémentaire ferme R01, R02, R06 et R10 en 4,1 minutes : double clic réel avec une seule commande, parcours coursier collecte → livraison, trois contrôles de proximité 200, vraie preuve PNG relue côté client/admin et échec `ABSENT` concordant. Les champs Motif et Note sont nommés pour les technologies d'assistance. Cinq captures, aucune erreur de page, preuve privée supprimée et zéro résidu. Une saturation `P2028` au troisième login a été reproduite puis corrigée en bornant à deux les transactions simultanées de montage de démo. Le build local de production est testé via `localhost` pour conserver les cookies sécurisés. Build 100 pages, scanner et documentation sans erreur, diff-check réussi. Procédure `docs/operations/v1-go/README.md`, rapport `docs/rapports/2026-10-17/v1-go-local.md`, preuves `outputs/v1-go/readiness.json` et `outputs/v1-go/browser-operational.json`.
 
-  Reste à faire avec intervention : MOB-01C sur iPhone/Android physiques, SEC-05/EMAIL avec expéditeur réel, TEST-2 sur la préproduction isolée d'ENV-1 et restauration OPS-03A sur cible isolée. Ces contrôles sont reportés et la case reste ouverte ; ils ne bloquent pas les travaux locaux indépendants.
+  Reste à faire avec intervention : MOB-01C sur iPhone/Android physiques et SEC-05/EMAIL avec expéditeur réel. TEST-2 sur préproduction et la restauration OPS-03A sur cible isolée sont terminés. Les essais physiques et e-mails gardent la case ouverte sans bloquer les travaux locaux indépendants.
 
 ## 5 — Conserver les modules utiles et préparer l’usage réel
 
@@ -680,7 +811,7 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
 
   Qualification legacy vérifiée le 2026-10-18 : un ancien cookie ne peut plus rouvrir une session sans échéance exacte ; la prochaine connexion crée une session bornée. Inventaire connecté strictement en lecture seule : 51/51 anciennes candidates ont le marqueur et le roster synthétique attendus, aucune référence DB de logo/avatar/photo/PDF ou job actif, aucun objet Storage et aucune référence interentreprises ; toutes portent un graphe métier et aucune n'a d'échéance persistée. Elles restent inaccessibles et conservées : aucune adoption, date inventée ou suppression sans décision explicite. Validation : 275 tests, types/lint stricts, build isolé de 102 pages, 57 documents, scanner de 867 fichiers et diff-check réussis. Rapport `docs/rapports/2026-10-18/data02-legacy-demos.md`, preuve agrégée `outputs/data02/demo-legacy-inventory.json`.
 
-  Reste à faire avec intervention/décision : politique légale de conservation par pays, canal chiffré de remise, traitement Supabase Auth/Storage et sauvegardes, restauration de l'export sur cible isolée, décision explicite sur les 51 anciennes démos, nettoyage des futurs cas avec assets, puis activation et observation de l'horaire sur préproduction. Aucune route destructive générique n'est exposée ; la route démo étroitement gardée n'est pas planifiée. DATA-02 reste ouverte.
+  Décision legacy du 2026-10-21 : les cinquante-deux anciennes sessions, la société démo de base et les quatre sociétés auparavant marquées normales sont confirmées fictives. Le projet historique a été mis en pause sans suppression ; aucune conservation métier de ces jeux n'est requise. L'export complet, Auth et Storage compris, a ensuite été restauré sur une cible isolée dans OPS-03A. Reste à faire avec intervention/décision : politique légale de conservation, canal chiffré de remise, politique de sauvegarde hors site des futurs clients, nettoyage des futurs cas avec assets, puis activation et observation de l'horaire sur préproduction. Aucune route destructive générique n'est exposée ; la route démo étroitement gardée n'est pas planifiée. DATA-02 reste ouverte.
 
   Proposition France préparée le 2026-10-18 : GPS 60 jours par défaut, archivage commercial probatoire jusqu'à cinq ans si justifié, pièces comptables dix ans, démos sous 24 h et pilotes supprimés sous 30 jours après export, avec séparation active/archive. Toute suppression définitive de données réelles reste interdite avant validation juridique ; seule la tranche de données démo explicitement autorisée ci-dessus est implémentée. `docs/operations/data02/RETENTION_POLICY_DRAFT.md`.
 
@@ -695,6 +826,24 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
   Validation : chaque navigateur reçoit une entreprise fictive propre, avec cookie HTTP-only de huit heures et trois personas isolés. Deux sessions simultanées de huit livraisons ont été créées ; reset de A sans perte du marqueur B, puis reconnexion B sans reconstruction. La recette complète est passée de 85,7 à 36,7 s après parallélisation et a laissé zéro résidu. Les réglages de dispatch utilisent la clé courante. Suite complète 230/230, types/lint stricts, 33 documents, diff-check et build de 100 pages réussis. Les sessions expirées restent à traiter par la future politique DATA-02/OPS-03B avant trafic public important. Rapport `docs/rapports/2026-10-16/demo1.md`, guide `docs/operations/demo1/README.md`, preuve `outputs/demo1/connected.json`.
 
   Extension préproduction du 2026-10-20 : compte et scénario modèle permanents installés sur la nouvelle base isolée, société propre créée pour le navigateur puis supprimée à la déconnexion. La fermeture d'onglet seule conserve la session jusqu'à son échéance fiable de huit heures. La CI sait réutiliser et préserver le modèle exact. L'ancienne cible et ses 51 démonstrations n'ont pas été modifiées. La latence initiale distante de 83 s est une régression P0 à traiter avant ouverture publique ; elle ne remet pas en cause l'isolation vérifiée.
+
+- [ ] **DEMO-2 — Rendre l'ouverture de la démonstration quasi immédiate.** Retirer la construction complète du scénario du chemin de connexion. Préparer un petit stock d'environnements fictifs isolés, les attribuer atomiquement à une session, puis les remettre à l'état modèle en arrière-plan après déconnexion ou expiration. Prévoir capacité, attente et repli explicites sans jamais partager une entreprise entre deux visiteurs.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  **Complexité : élevée — concurrence, recyclage fiable, nettoyage et coexistence avec la CI.**
+
+  Terminé quand : première ouverture et reconnexion respectent un budget mesuré sur Preview ; deux visiteurs simultanés restent isolés ; aucune construction longue ne bloque l'authentification ; un pool épuisé affiche un état maîtrisé ; logout/expiration recyclent uniquement la session concernée ; données, Auth, Storage et jobs sont contrôlés ; le modèle permanent reste intact et la cible historique mise en pause n'est pas sollicitée.
+
+  Tests requis : attribution concurrente, double clic, abandon pendant attribution, pool vide, recycle réussi/échoué, expiration, redémarrage worker, CI simultanée et zéro fuite A/B. Ne pas augmenter le plan Supabase ni activer un ordonnanceur payant sans accord.
+
+  Budgets à valider sur la Preview : p95 connexion → tableau de bord ≤ 5 s lorsqu'un environnement est prêt, aucune ouverture ≥ 10 s, reconnexion p95 ≤ 3 s et réponse de déconnexion ≤ 2 s avant recyclage asynchrone. Maintenir au moins trois environnements prêts pour les essais ; un pool vide affiche une attente explicite et ne bascule jamais vers une entreprise partagée. Le temps de reconstruction en arrière-plan reste mesuré séparément.
+
+  Source / dépendance / blocage : DEMO-1 a validé l'isolation mais la création mesurée à 83 s sur Supabase Free est incompatible avec une démo publique. Réutiliser les gardes DATA-02 et OPS-02B ; distinguer vitesse de démo et connexion normale d'un client existant.
+
+  Avancement du 2026-10-22 : pool persistant de trois entreprises fictives créé sur la seule préproduction isolée, avec réservation sérialisable, empreinte de session unique, double clic idempotent, attente `503/Retry-After` si le stock est vide, recyclage durable hors réponse et quarantaine fermée en cas d'asset, job, référence étrangère ou panne Storage. Auth est nettoyé avant la ligne locale ; les jobs terminés sont purgés. RLS est active et les rôles publics n'ont aucun droit sur la table de coordination. La recette connectée a validé concurrence, A/B, stock vide, expiration, worker interrompu, échec/récupération et modèle permanent intact ; état final 3 prêts, 0 loué, 0 quarantaine. Le build de production local relié à la préproduction tient les budgets sur trois ouvertures : p95 2 983 ms, max 2 983 ms, reconnexion p95 7 ms, logout p95 1 224 ms. Validation globale : 298 tests, types/lint et build réussis. Guide `docs/operations/demo2/README.md`, rapport `docs/rapports/2026-10-22/demo2.md`, preuves `outputs/demo2/connected.json` et `outputs/demo2/http.json`.
+
+  Porte restante avant coche : publier de façon maîtrisée ces changements sur la Vercel Preview puis relancer `DEMO_BASE_URL=https://URL-DE-PREVIEW npm run test:demo2:http`. Aucun outil Vercel MCP n'est disponible dans cette session et les changements locaux d'autres tâches ne doivent pas être poussés ensemble sans revue ; la production et l'ancienne cible restent intactes.
 
 ## 6 — Reprendre la validation commerciale quand le propriétaire sera disponible
 
@@ -728,27 +877,47 @@ Prospection, entretiens et pilotes différés à sa demande ; aucune prise de co
 
   Terminé quand : Valeur de départ avant pilote et objectif convenu avec chaque entreprise ; instruments utilisables sans collecte excessive.
 
-  Source / dépendance / blocage : Après PROD-02 ; pas de gain chiffré inventé.
+  Source / dépendance / blocage : l'instrumentation, les définitions et la fiche de valeur initiale peuvent être préparées maintenant à partir de V1-MESURE. Les valeurs propres à chaque entreprise et tout gain annoncé attendent PROD-02/PILOT-1.
 
-  Statut de planification : différé, conservé ; ne bloque pas le développement de la V1 sur données fictives. Les validations externes restent nécessaires au critère de clôture.
+  Prochaine tranche immédiate : figer définitions, événements, périodes, minimisation et fiche de saisie, sans produire de gain commercial. La baseline entreprise et les objectifs convenus restent une validation terrain.
 
-- [ ] **OFFER-1 — Valider la grille cible et l'offre pilote.** Confronter les formules Starter 79 € HT/mois, Pro 179 € et Business 349 €, leurs annuels, options, plafonds et dépassements aux coûts et prospects. Pilote proposé : trois entreprises, quatre semaines, gratuit, usage encadré, accompagnement direct, export final et aucune obligation de souscription.
+- [ ] **OFFER-1 — Valider la grille cible et l'offre pilote.** Confronter les formules Starter 79 € HT/mois, Pro 179 € et Business 349 €, leurs annuels à 790/1 790/3 490 € HT, options, plafonds et dépassements aux coûts et prospects. Pilote proposé : trois entreprises, quatre semaines, gratuit, usage encadré, accompagnement direct, export final et aucune obligation de souscription. Les prix TTC à 20 % servent d'exemple France ; la taxe réellement applicable doit être déterminée par transaction.
 
   **Modèle conseillé : GPT‑6 Astra · effort moyen.**
 
   Terminé quand : Offre acceptée par prospects ; coûts infrastructure/cartes/stockage/messages/support mesurés ; pas d’illimité non maîtrisé.
 
-  Source / dépendance / blocage : grille et pilote décidés par le propriétaire le 2026-10-18 ; acceptation, rentabilité et limites Business à vérifier. L'ancienne hypothèse 199 € est abandonnée. Référence : `docs/DECISIONS_PRODUIT_COMMERCIALES.md` et estimation `docs/operations/env1/COSTS.md`.
+  Source / dépendance / blocage : grille et pilote décidés par le propriétaire le 2026-10-18, complétés les 2026-10-20/21. Les options et utilisateurs supplémentaires ne bénéficient pas des deux mois offerts de la formule annuelle : leur prix annuel correspond à douze mensualités. Les dépassements sont non bloquants, mesurés et facturés chaque mois, sans packs. Le dispatcher limité est confirmé : 0 inclus en Starter, 1 en Pro, 1 en Business, puis 8 € HT/mois par dispatcher supplémentaire dans toutes les offres et douze mensualités sur l'annuel. Les sept familles de règles C7 sont fermées ; acceptation, rentabilité et limites Business restent à vérifier. L'ancienne hypothèse 199 € est abandonnée. Référence : `docs/DECISIONS_PRODUIT_COMMERCIALES.md` et future simulation COST-1.
 
   Statut de planification : différé, conservé ; ne bloque pas le développement de la V1 sur données fictives. Les validations externes restent nécessaires au critère de clôture.
 
-- [ ] **SAAS-01A — Implémenter les droits, quotas et contrats configurables.** Registre de pilote ou souscription, version de catalogue, période et droits côté serveur ; séparation entre abonnement TutelLiv et prestations ; fin de contrat avec export. Prévoir attribution de la vente initiale et commissions 25/35/50 % sur montants HT encaissés pendant douze mois maximum, sans CRM complexe.
+- [x] **SAAS-01A — Implémenter le noyau des offres, droits et quotas.** Créer un catalogue versionné et configurable pour Starter, Pro, Business et leurs options ; une souscription ou un pilote identifié par entreprise ; des éléments souscrits et un instantané contractuel ; des droits effectifs et compteurs par période. Appliquer côté serveur les fonctions, plafonds de livreurs, administrateurs et dispatchers/mini-administrateurs ainsi que les commandes, y compris après changement d'offre. Une option déjà incluse ne peut jamais être facturée une seconde fois. Séparer strictement abonnement TutelLiv, prestations de livraison et pilote gratuit.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
-  Terminé quand : Pilote gratuit ou souscription manuelle produit des droits et plafonds cohérents ; catalogue accepté figé ; revenu TutelLiv distinct de la livraison ; attribution initiale auditable ; accès cohérent à l'échéance sans perte de données.
+  **Complexité : très élevée — nouveau schéma, migrations, concurrence, droits transversaux et compatibilité des entreprises existantes.**
 
-  Source / dépendance / blocage : architecture préparée dans `docs/SAAS_OFFERS_ARCHITECTURE.md` ; après revue OFFER-1 et cadre contractuel. Aucun paiement réel nécessaire au pilote gratuit.
+  Terminé quand : catalogue et instantanés sont historisés ; pilote gratuit ou souscription manuelle produit les bons droits et plafonds ; Starter/Pro/Business incluent respectivement 0/1/1 dispatcher et chaque dispatcher supplémentaire est tarifé une seule fois ; chaque création d'utilisateur est contrôlée côté serveur ; Business « illimité » reste mesuré avec politique d'usage ; les commandes ne sont pas bloquées au quota et leurs dépassements sont comptés une seule fois dans la bonne période mensuelle, y compris pour l'annuel ; changements de formule recalculent les droits sans réécrire le passé ; requêtes forgées et interface modifiée ne contournent rien ; entreprises existantes sont migrées vers un état explicite sans activation payante inventée.
+
+  Tests requis : matrice Starter/Pro/Business × options × rôles, dont 0/1/1 dispatcher inclus et supplément à 8 € ; refus serveur des abonnements, paiements et paramètres sensibles au dispatcher ; bornes exactes et concurrence au dernier siège/à la dernière commande ; changement, échéance et reprise ; inclusion sans double facturation ; isolation A/B ; pilote distinct ; migration et retour arrière sur préproduction.
+
+  Source / dépendance / blocage : architecture et règles confirmées dans `docs/SAAS_OFFERS_ARCHITECTURE.md` et `docs/DECISIONS_PRODUIT_COMMERCIALES.md`. Aucun paiement réel n'est nécessaire ni activé.
+
+  Ordre interne : (1) catalogue/version et pilote manuel, (2) souscription/éléments instantanés, (3) résolution centralisée des droits, (4) quotas et compteurs transactionnels, (5) changements d'offre. Chaque incrément migre et se restaure sur copie isolée ; aucune logique temporaire dans l'interface ne remplace le contrôle serveur.
+
+  Résultat vérifié le 2026-10-22 : catalogue C7, 3 offres et 9 options versionnés ; souscriptions commerciales, pilotes et états historiques séparés ; instantanés et périodes d'effet historisés ; plafonds de sièges réservés atomiquement ; dispatcher 0/1/1 puis 8 € HT/mois ou 96 € HT/an ; commandes non bloquées et comptées une seule fois par mois UTC ; contrôles serveur sur dispatch automatique, GPS administrateur/client et analytics. Les entreprises présentes restent `LEGACY` sans paiement inventé et les sessions démo deviennent des pilotes de huit heures. La migration additive est appliquée à la préproduction isolée : 29 tables sous RLS, 3 migrations, zéro droit public et zéro drift. Répétition sauvegarde/restauration : 29 empreintes identiques, schémas temporaires supprimés, données publiques inchangées. Validation : `npm run check` avec 295 tests, build 103 pages, vérification préproduction verte. Rapport : `docs/rapports/2026-10-22/saas-01a.md`.
+
+- [ ] **SIGNUP-1 — Construire l'inscription autonome jusqu'à la première livraison.** Créer un parcours persistant : offre mensuelle/annuelle → options et quantités autorisées → prix HT/TTC indicatif et dépassements expliqués → identité/coordonnées professionnelles, SIREN/SIRET et facturation → vérification e-mail → paiement fictif → création atomique de l'entreprise et du premier administrateur → droits/quotas → bienvenue → reprise dans ONBOARD-1. Aucune entreprise payante active ne doit être accordée sur un simple retour navigateur ou sans confirmation serveur du paiement requis.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  **Complexité : très élevée — orchestration durable entre identité, paiement, entreprise, e-mail et onboarding.**
+
+  Terminé quand : le parcours reprend après fermeture ou panne ; e-mail/entreprise déjà utilisés sont traités sans fuite ; paiement refusé, double événement, double soumission, invitation d'un compte existant et erreur de provisionnement restent cohérents ; l'activation est idempotente et compensable ; une entreprise fictive va de la page d'offre à sa première livraison sans intervention humaine ; les étapes et leur progression sont accessibles sur mobile.
+
+  Tests requis : succès mensuel/annuel, interruption à chaque étape, paiement refusé/non confirmé/dupliqué/désordonné, e-mail et SIREN/SIRET existants, provisionnement partiel injecté, reprise, deux inscriptions concurrentes et isolation interentreprises. Utiliser d'abord un adaptateur de paiement fictif déterministe ; aucune transaction réelle.
+
+  Source / dépendance / blocage : dépend des interfaces stables de SAAS-01A et réutilise SEC-05, EMAIL et ONBOARD-1. Le transport e-mail de test et un adaptateur de paiement fictif suffisent au développement ; domaine, Stripe live, structure juridique et pilotes ne le bloquent pas. L'inscription actuelle ne collecte que nom, prénom, e-mail, mot de passe et nom d'entreprise ; elle vérifie l'e-mail mais ne choisit ni offre ni paiement et ne porte pas encore les données légales/facturation.
 
 - [ ] **PILOT-1 — Recruter et conduire trois pilotes accompagnés.** Préparer démonstration, critères d’entrée et protocole ; viser quatre semaines d’usage représentatif, sans en faire un délai de développement.
 
@@ -774,19 +943,55 @@ Prospection, entretiens et pilotes différés à sa demande ; aucune prise de co
 
   Statut de planification : différé, conservé ; ne bloque pas le développement de la V1 sur données fictives. Les validations externes restent nécessaires au critère de clôture.
 
-## 7 — Vente autonome et extensions après validation
+## 7 — Vente autonome, exploitation SaaS et extensions
 
-Conserver ces chantiers dans la roadmap. Ne pas investir maintenant dans les forfaits complexes, les intégrations multiples ou les fonctions sans lien avec le problème prioritaire.
+Développer l'architecture et les scénarios en environnement fictif sans activer de paiement réel. Les inconnues commerciales restent configurables jusqu'à arbitrage ; les intégrations multiples ou fonctions sans lien avec le problème prioritaire restent différées.
 
-- [ ] **SAAS-01B — Automatiser abonnement et paiement.** Après pilotes, choisir le fournisseur — Stripe est prioritaire à l'étude — puis souscription mensuelle/annuelle, découverte premium de 60 jours pour Starter/Pro, options, renouvellement, changement de plan, dépassements, impayé et webhooks idempotents. Le client doit pouvoir gérer son abonnement sans intervention commerciale.
+- [ ] **SAAS-01B — Intégrer paiement et facturation SaaS en environnement fictif.** Brancher Stripe comme premier fournisseur étudié derrière l'adaptateur de paiement de SIGNUP-1. Gérer abonnement mensuel/annuel, options, utilisateurs supplémentaires, dépassements facturés sur la période, renouvellement, changement, paiement échoué, résiliation, remboursement décidé et historique. Les droits suivent uniquement des événements serveur vérifiés et idempotents. Distinguer facture/justificatif du fournisseur de paiement et obligations françaises de facturation électronique.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
-  Terminé quand : En sandbox : succès, événement dupliqué/désordonné, impayé, annulation et remboursement si proposé ; pas de droits accordés sur simple retour navigateur.
+  **Complexité : très élevée — argent, fiscalité, événements asynchrones, idempotence et réconciliation.**
 
-  Source / dépendance / blocage : après PILOT-2 ; fournisseur non définitif, coûts et accès sandbox requis. Architecture préparatoire : `docs/SAAS_OFFERS_ARCHITECTURE.md`.
+  Terminé quand : en sandbox, succès, événement dupliqué/désordonné/manquant, impayé, renouvellement, annulation et remboursement retenu sont réconciliés ; aucun droit sur simple retour navigateur ; montants EUR HT/TTC, taxe appliquée et source de calcul sont traçables ; une option incluse n'est jamais facturée ; les options d'une formule annuelle sont facturées douze mensualités sans remise de deux mois ; les dépassements sont comptabilisés sur la période ; aucun secret n'est exposé.
 
-  Statut de planification : différé, conservé ; ne bloque pas le développement de la V1 sur données fictives. Les validations externes restent nécessaires au critère de clôture.
+  Tests requis : webhooks signés, rejeu et ordre inversé, interruption navigateur, double paiement, changement simultané, taxes simulées, limites de montant, rapprochement, panne fournisseur et reprise. Aucun paiement réel ni activation commerciale avant structure juridique, compte bancaire, règles fiscales/facturation et autorisation explicite.
+
+  Source / dépendance / blocage : après SAAS-01A et SIGNUP-1 ; le développement sandbox peut commencer avant les pilotes. Les règles C7 sont confirmées : montées et ajouts immédiats après paiement du prorata, diminutions au renouvellement, dépassements mensuels non bloquants, restrictions J0/J3/J7/J14/J30, résiliation en fin de période, remboursements exceptionnels tracés et support prioritaire sans délai court garanti. Fournisseur réel, règles fiscales/contractuelles et coûts restent à valider avant paiement réel. Architecture : `docs/SAAS_OFFERS_ARCHITECTURE.md`.
+
+- [ ] **SAAS-03 — Permettre la gestion autonome de l'abonnement.** Ajouter « Mon abonnement » pour afficher formule, périodicité, options, consommations, alertes et historique ; ajouter/supprimer une option, changer de formule ou de périodicité, gérer le moyen de paiement, consulter les documents, résilier et lancer l'export DATA-02. Toute dépense supplémentaire exige un récapitulatif et une confirmation explicite ; une rétrogradation impossible explique les dépassements à résoudre.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  **Complexité : très élevée — cycle de vie, facturation, droits immédiats/différés et cas de rétrogradation.**
+
+  Terminé quand : chaque action passe par le serveur et un journal auditable ; l'état affiché se réconcilie avec le fournisseur ; seuils de commandes/livreurs produisent des alertes sans doublon ; les rétrogradations avec ressources excédentaires sont refusées ou planifiées selon la règle décidée, jamais destructives ; résiliation conserve l'accès/export selon la politique ; seuls les rôles autorisés gèrent l'abonnement.
+
+  Tests requis : ajout/retrait d'option incluse ou payante, montée/rétrogradation, mensuel→annuel, plafond dépassé, moyen de paiement, résiliation, export, concurrence et isolement A/B. Dépend de SAAS-01A/B et DATA-02.
+
+  Source / dépendance / blocage : après les événements et droits stables de SAAS-01A/B. Les vues en lecture et alertes peuvent être préparées avant les mutations payantes ; prorata, effets immédiats/différés et restrictions d'impayé suivent les règles C7 confirmées.
+
+- [ ] **SAAS-04 — Appliquer les 60 jours de découverte premium.** Pour une nouvelle souscription payante Starter ou Pro, ouvrir temporairement les fonctions logicielles premium éligibles, sans relever les quotas et sans inclure automatiquement le support humain prioritaire. Afficher la date de fin et les fonctions concernées ; à l'échéance, retirer seulement les droits non inclus/non achetés, sans facturation automatique.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  **Complexité : élevée — droits temporels, fuseaux horaires, renouvellement et communication sans vente forcée.**
+
+  Terminé quand : début et fin sont calculés côté serveur depuis la première souscription payante ; horloge simulée à J0/J59/J60 ; quotas inchangés ; option achetée conservée ; fonction incluse jamais coupée ; aucun supplément créé à l'échéance ; annulation/impayé/changement de formule suivent une règle documentée ; pilote gratuit reste entièrement distinct.
+
+  Source / dépendance / blocage : dépend de SAAS-01A et des événements SAAS-01B. Les règles d'impayé et changement pendant la découverte restent à arbitrer avec celles de facturation.
+
+- [ ] **SALES-1 — Tracer l'origine des ventes et calculer les commissions.** Associer un code/lien et un commercial à l'inscription, figer les éléments de souscription initiale, conserver le niveau **apporteur 15 % / accompagné 25 % / autonome 35 %**, puis calculer pendant douze mois maximum une commission théorique sur les seuls montants HT réellement encaissés et éligibles. Les options ou changements ultérieurs n'ajoutent pas de commission. Aucun versement automatisé ni CRM complexe.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  **Complexité : élevée — audit financier, corrections, remboursements et immutabilité de l'attribution.**
+
+  Terminé quand : attribution initiale non falsifiable depuis le navigateur ; lien/code expiré ou invalide traité ; instantané des éléments éligibles historisé ; encaissement, impayé et remboursement créent des écritures explicables et idempotentes ; historique consultable par un rôle plateforme autorisé ; calcul exclut achats ultérieurs et s'arrête à douze mois.
+
+  Source / dépendance / blocage : dépend de SAAS-01A/B. Les taux remplacent l'ancienne hypothèse 25/35/50. Contrat et qualification juridique obligatoires avant mise en service ; aucun paiement de commission automatisé.
+
+  Périmètre V1 : enregistrer l'origine, figer l'instantané initial et calculer un montant théorique explicable. Exclure versement, portefeuille commercial, objectifs, relances et CRM ; ces fonctions ne sont pas des dépendances de RELEASE-1.
 
 - [ ] **SAAS-02 — Mesurer le revenu et la santé du SaaS.** Séparer revenu abonnement, frais et coûts des factures de livraison ; activation, rétention, conversion et consommation par entreprise. Mesurer commandes, livreurs et options, y compris l'usage Business annoncé illimité, avec alertes de coût sans plafond caché.
 
@@ -798,15 +1003,45 @@ Conserver ces chantiers dans la roadmap. Ne pas investir maintenant dans les for
 
   Statut de planification : différé, conservé ; ne bloque pas le développement de la V1 sur données fictives. Les validations externes restent nécessaires au critère de clôture.
 
-- [ ] **GROWTH-1 — Aligner site, démo et onboarding sur la valeur prouvée.** Page bénéfices pour le segment retenu, offre lisible, demande de démo/essai et preuves autorisées ; aucun témoignage inventé.
+- [ ] **PERF-02 — Qualifier la charge et la capacité multi-entreprises.** Compléter PERF-01 par des essais reproductibles de montée en charge sur préproduction : connexions, tableaux de bord, création/affectation, positions GPS, Realtime, preuves, exports, jobs et webhooks SaaS. Mesurer débit, p50/p95, erreurs, saturation du pool et récupération, sans générer de coût non autorisé.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  **Complexité : élevée — charge réaliste, protection de la cible et interprétation des limites Free.**
+
+  Terminé quand : profils Starter 5/1 000, Pro 10/3 000 et Business 25/6 000 représentés par données fictives ; scénarios 1, 10, 50 et 100 entreprises simulés sans écrire en production ; budgets et point de saturation consignés ; dégradation et reprise observées ; aucune fuite interentreprises ; décision de capacité avant pilotes réels. Un modèle analytique peut remplacer une charge distante coûteuse tant que sa limite est explicite.
+
+  Source / dépendance / blocage : PERF-01 a qualifié la navigation unitaire mais pas le p95 sous charge. Toute exécution susceptible de dépasser les offres gratuites exige une autorisation préalable ; commencer par harnais local, données synthétiques et plafond conservateur.
+
+- [ ] **COST-1 — Simuler les coûts d'exploitation et la marge contributive.** Établir un modèle par Starter 5 livreurs/1 000 commandes, Pro 10/3 000 et Business 25/6 000, puis pour 1, 10, 50 et 100 entreprises. Séparer coûts fixes, variables et paliers de forfait pour Supabase/PostgreSQL/Realtime/Storage, positions GPS, cartographie/itinéraires, e-mails, preuves, Vercel, paiement et support. Comparer aux prix 79/179/349 € HT et aux commissions de 15/25/35 % sur les montants initiaux éligibles encaissés.
+
+  **Modèle conseillé : phase documentaire GPT‑6.1 Sol · effort moyen ; validation mesurée GPT‑6 Astra · effort élevé.**
+
+  **Complexité : élevée — hypothèses de volume, tarifs externes changeants et scénarios de montée en gamme.**
+
+  Terminé quand : hypothèses et sources datées ; volumes par livraison explicités ; frais de paiement et support distingués ; commissions 15/25/35 % simulées séparément ; coût mensuel total, marge contributive et coût marginal approximatif par client pour chaque scénario ; seuils de changement de plan et sensibilité haute/basse ; risque des livreurs Business illimités isolé ; comparaison aux prix HT sans confondre marge contributive, marge brute et résultat ; chiffres exportables vers le prévisionnel. Aucun test facturable lancé sans accord.
+
+  Source / dépendance / blocage : phase 1 immédiate avec inventaire ENV-1, limites MAP-2, factures publiques datées et hypothèses explicites ; elle produit des fourchettes, pas une vérité mesurée. Phase 2 après PERF-02 et premiers pilotes pour remplacer les hypothèses de charge et support. Aucun test distant payant n'est requis pour la phase 1.
+
+- [ ] **GROWTH-1 — Construire le site commercial relié au parcours autonome.** Faire évoluer la page publique existante vers Accueil, Fonctionnalités par rôle, Tarifs/options, Démonstration, Inscription, Connexion, Contact et Informations légales. Relier chaque offre à SIGNUP-1 ; présenter uniquement les fonctions réellement disponibles, limites, dépassements et traitement des données. Aucun témoignage ou gain inventé.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
-  Terminé quand : Un prospect comprend pour qui est le produit, le gain, les limites, le prix et la prochaine étape.
+  Terminé quand : un prospect comprend pour qui est le produit, le problème résolu, les trois espaces, le prix HT/TTC indicatif, options et dépassements, la différence démo/pilote/découverte premium et la prochaine étape ; navigation responsive et accessible ; contenu cohérent avec le catalogue actif ; formulaires protégés contre abus ; pages légales publiées seulement après validation.
 
-  Source / dépendance / blocage : Après PILOT-2, OFFER-1, DEMO-1 ; publication sur instruction.
+  Source / dépendance / blocage : la page d'accueil existe, mais pas l'ensemble du site commercial demandé. L'arborescence, les contenus factuels et les composants partagés peuvent être préparés maintenant ; prix dynamiques et appels à l'action s'intègrent après SAAS-01A/SIGNUP-1, puis les preuves commerciales après PILOT-2/OFFER-1. Publication sur instruction.
 
   Statut de planification : différé, conservé ; ne bloque pas le développement de la V1 sur données fictives. Les validations externes restent nécessaires au critère de clôture.
+
+- [ ] **ADMIN-1 — Étendre la supervision interne du SaaS.** Compléter l'espace SUPER_ADMIN existant pour consulter entreprises, état de souscription/pilote, droits/options, consommation, paiements réconciliés, alertes techniques, tickets et incidents. Prévoir recherche, filtres et accès au détail strictement audité, sans devenir un CRM.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  **Complexité : élevée — agrégations transversales, données financières et privilèges plateforme.**
+
+  Terminé quand : seules les personnes plateforme explicitement autorisées accèdent aux vues ; accès sensibles journalisés ; aucune impersonation ni mutation de données client implicite ; métriques d'abonnement séparées des factures de livraison ; pagination côté serveur ; panne d'un fournisseur visible sans secret ; isolation et minimisation des données vérifiées.
+
+  Source / dépendance / blocage : l'espace actuel liste entreprises/utilisateurs/livraisons et agrège les factures de prestations, mais ne connaît ni abonnements, options, paiements SaaS, pilotes, quotas ni incidents consolidés. Dépend de SAAS-01A/B, SAAS-02, OPS-03B et SUPPORT-1.
 
 - [ ] **RELEASE-1 — Réaliser la recette de mise en vente.** Rejouer sécurité, livraison, GPS promis, abonnement, support, exports et restauration ; revue des défauts ouverts et charge représentative.
 
@@ -837,6 +1072,12 @@ Conserver ces chantiers dans la roadmap. Ne pas investir maintenant dans les for
 Rapports sources archivés dans `docs/rapports/2026-09-27/` : audit-tutelliv-saas.md, rapport-tests.md, validation-audit-tutelliv.txt, perimetre-audit-tutelliv.txt. La validation locale est antérieure aux tests E2E : ses mentions « build non exécuté » décrivent sa propre étape et sont remplacées, pour l’état actuel, par le rapport E2E.
 
 L’audit visuel reprend les mêmes constats que le rapport SaaS ; fixtures.json et api-results.json de la tâche constituent les preuves opérationnelles sans mots de passe. Les scripts de travail et secrets ne sont pas à archiver dans la documentation.
+
+- 2026-10-20 — L’ancienne carte fournie par le propriétaire est conservée dans `docs/references/design/ancienne-carte-tutelliv.png`. MAP-3 est rouverte pour reprendre sa hiérarchie visuelle précise ; DESIGN-1 est ajouté en P2 pour harmoniser ensuite l’ensemble des trois espaces dans une direction plus sobre. La jauge compte désormais 68 tâches, dont 45 terminées.
+- 2026-10-21 — Nouvelle roadmap SaaS autonome fusionnée après inspection du schéma, des routes, des pages, des services, des tests et des documents existants. Huit responsabilités réellement absentes sont ajoutées : DEMO-2, SIGNUP-1, SAAS-03, SAAS-04, SALES-1, PERF-02, COST-1 et ADMIN-1. SAAS-01A/B, OFFER-1, ONBOARD-1 et GROWTH-1 sont précisés sans doublon. Commissions corrigées à 15/25/35 %, options annuelles sans remise de deux mois, dépassements facturés sur la période et accès dispatch du mini-admin consignés. Rapport : `docs/rapports/2026-10-21/audit-roadmap-saas-autonome.md`.
+- 2026-10-21 — Les 31 tâches ouvertes sont réorganisées autour de deux jalons indépendants : V1 exploitable par trois pilotes avec création manuelle autorisée, puis SaaS autonome de la découverte au paiement et à la première livraison. DEMO-2 devient le premier chantier, SAAS-01A précède SIGNUP-1, COST-1 commence par une estimation documentaire sans test payant et SALES-1 reste limité à l'attribution et au calcul théorique. Les dépendances extérieures sont séparées du travail réalisable immédiatement ; aucun identifiant historique ni tâche terminée n'est supprimé.
+- 2026-10-21 — C7 ferme les sept familles de règles commerciales : dispatcher 0/1/1 puis 8 € HT/mois ; augmentations immédiates après paiement du prorata et diminutions au renouvellement ; dépassements mensuels non bloquants avec alertes 80/100/120 % ; restrictions d'impayé J0/J3/J7/J14/J30 ; résiliation en fin de période et remboursements exceptionnels tracés ; support standard sous un jour ouvré comme objectif interne et priorité sans délai court garanti ; quotas mensuels même sur l'annuel. Aucun paiement réel ni déploiement de production n'est autorisé par cette décision.
+- 2026-10-22 — SAAS-01A terminée : catalogue C7, souscriptions/pilotes/historique, droits, sièges et consommation mensuelle sont appliqués côté serveur. Les fonctions payantes sont protégées sur leurs routes, les entreprises existantes restent sans abonnement payant inventé et les sessions démo reçoivent un pilote de huit heures. Migration additive appliquée uniquement à la préproduction : 29 tables RLS, trois migrations, zéro drift ; restauration 29/29, 295 tests et build 103 pages réussis. Rapport : `docs/rapports/2026-10-22/saas-01a.md`.
 
 Correspondance avec l’ancien backlog : RUN-1 → RUN-1A/B + TEST-2 + MOB-01C ; F-2/F-1 → SEC-03/04 ; P1 → POD-1/ALERT-1 ; P0 → ALERT-1/SAAS-02 ; PERF-LOGIN/NAV/T2–T12 → PERF-01/UX-02 ; UI-1 → UI-2. Les autres identifiants historiques restent présents. Audit OPS-03 → ENV-1/DB-1/TEST-2/CI-1/OPS-03A/B/LEGAL-1/DATA-02 ; SAAS-01 → SAAS-01A/B/SAAS-02 ; PROD-01 de l’audit → PROD-01–04/ONBOARD-1/SUPPORT-1/DEMO-1/GROWTH-1.
 
@@ -951,3 +1192,11 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-20 — ENV-1 terminée : branche `preproduction`, Preview Vercel protégée, projet Supabase isolé et secrets propres configurés sans modifier `main` ni la cible historique. La chaîne GitHub distante du commit `f6e19cc` réussit la garde, 279 tests, TEST-2, trois parcours Chromium, la preuve nettoyée et le nettoyage `always()` ; Vercel confirme le déploiement. Le contrôle direct final retrouve zéro utilisateur Auth, deux migrations, zéro drift, RLS partout et bucket privé. Rapport `docs/rapports/2026-10-20/preproduction-ci.md`. Suite : CI-1 pour le retour arrière applicatif, DB-1/OPS-03A pour la restauration base + Storage.
 
 - 2026-10-20 — CI-1 terminée : la Preview isolée a été ramenée vers le commit sain `f6e19cc` en 1 min 39 s, puis remise sur le commit courant `04a0a35` en 2 min 11 s. Les deux reconstructions sont `Ready`, l'alias de branche suit le commit courant, la base reste conforme et vide d'utilisateur Auth, `main` et la production n'ont pas bougé. Sur Preview Hobby, le retour arrière documenté redéploie le commit sain avec les réglages actuels car Instant Rollback est indisponible. Rapport `docs/rapports/2026-10-20/ci1-rollback.md`.
+
+- 2026-10-21 — DB-1 terminée : les deux migrations ont reconstruit deux schémas temporaires strictement bornés sur la préproduction isolée ; un graphe fictif couvrant les vingt tables a été exporté et restauré avec vingt empreintes identiques. RLS, références RBAC, absence de drift et rejeu sans migration restante passent. Les schémas temporaires ont été supprimés et le schéma public, ses données ainsi que Storage sont restés inchangés. La cible historique et ses 51 démonstrations n'ont pas été touchées. Rapport `docs/rapports/2026-10-21/db1-migration-restore.md` ; restauration complète du service et de Storage suivie dans OPS-03A.
+
+- 2026-10-21 — Deux exigences UX ajoutées sans modifier le produit : UX-03 fait de la livraison la fiche opérationnelle centrale avec client, délais, chronologie et preuve, tandis que la référence de commande devient secondaire mais reste accessible ; UX-04 réduit les boutons, rangées et explications permanentes en exigeant des actions compréhensibles par leur emplacement et leur nom. Les deux tâches complètent DESIGN-1 et conservent les acquis d'accessibilité, de sécurité et de performance.
+
+- 2026-10-21 — La cible Supabase historique a été mise en pause après confirmation que ses données restantes étaient fictives. L'inventaire final a trouvé cinquante-deux anciennes sessions et une société démo de base ; aucune donnée n'a été supprimée. La préproduction est restée entièrement conforme. Un emplacement Free est désormais disponible pour la cible temporaire de restauration OPS-03A. Rapport `docs/rapports/2026-10-21/supabase-legacy-pause.md`.
+
+- 2026-10-21 — OPS-03A terminée : l'export officiel de la cible historique a été restauré sur un troisième projet Supabase Free isolé. Les 58 tables attendues et tous leurs compteurs correspondent ; 25 comptes Auth sont visibles, les vingt tables publiques ont RLS active, 438 commandes et 438 livraisons sont retrouvées. Les deux preuves PNG du bucket privé sont restaurées et identiques par téléchargement direct et URL signée. Import SQL 2 min 12 s, phase Storage 3,298 s, manifeste SHA-256 vert, aucun secret dans les preuves. Rapport `docs/rapports/2026-10-21/ops03a-provider-restore.md`. Le RPO d'une heure reste une porte de RELEASE-1 car le plan Free n'automatise pas ce point et n'inclut pas les fichiers Storage.

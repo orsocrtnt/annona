@@ -38,6 +38,7 @@ function fixture(failureStage: FailureStage) {
     addresses: [] as Row[],
     jobs: [] as Row[],
     jobKicks: [] as string[],
+    usage: [] as string[],
   };
   let orderSequence = 0;
   let stopSequence = 0;
@@ -116,6 +117,7 @@ function fixture(failureStage: FailureStage) {
         state.addresses.splice(0, state.addresses.length, ...snapshot.addresses);
         state.jobs.splice(0, state.jobs.length, ...snapshot.jobs);
         state.jobKicks.splice(0, state.jobKicks.length, ...snapshot.jobKicks);
+        state.usage.splice(0, state.usage.length, ...snapshot.usage);
         throw error;
       }
     },
@@ -177,6 +179,13 @@ function fixture(failureStage: FailureStage) {
             },
           }),
         kickOperationJob: (jobId: string) => state.jobKicks.push(jobId),
+      },
+      "@/domains/saas/saas.service": {
+        assertCanCreateOrder: async () => ({ features: new Set(["auto_dispatch"]) }),
+        recordOrderCreatedUsage: async (_db: unknown, input: { orderId: string }) => {
+          state.usage.push(input.orderId);
+        },
+        resolveCompanySaasAccess: async () => ({ features: new Set(["auto_dispatch"]) }),
       },
       "@/domains/client-portal/notify.service": {
         queueDeliveryStatusNotification: async () => null,

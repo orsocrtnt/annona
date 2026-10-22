@@ -7,8 +7,18 @@ import { createClient } from "@supabase/supabase-js";
 import { validatePreproductionEnvironment } from "../ci/verify-preproduction-env";
 import { prisma } from "../../src/services/prisma/client";
 import { PERMISSIONS, ROLE_PERMISSIONS, ROLES } from "../../prisma/reference-data";
-import { DEMO_COMPANY_SLUG, DEMO_LOGIN_EMAIL } from "../../src/lib/demo/constants";
-import { demoKeepEmails, demoRosterAuthIds } from "../../src/domains/demo/demo-users.service";
+import {
+  DEMO_COMPANY_SLUG,
+  DEMO_LOGIN_EMAIL,
+  DEMO_SESSION_COMPANY_PREFIX,
+  demoFixtureAuthId,
+} from "../../src/lib/demo/constants";
+import {
+  demoKeepEmails,
+  demoPersonaSeedUsers,
+  demoRosterAuthIds,
+} from "../../src/domains/demo/demo-users.service";
+import { demoSessionExpiry } from "../../src/lib/demo/retention";
 
 const output = resolve(process.argv[2] ?? "outputs/db1/preproduction-validation.json");
 
@@ -32,6 +42,11 @@ function pendingDiff() {
 
 function canonical(value: unknown) {
   return JSON.stringify(value);
+}
+
+function scopedDemoEmail(email: string, companyId: string) {
+  const [local, domain = "tutelliv.fr"] = email.toLowerCase().split("@");
+  return `${local}+session-${companyId}@${domain}`;
 }
 
 async function main() {
@@ -86,10 +101,24 @@ async function main() {
       orderBy: { slug: "asc" },
     }),
     prisma.company.findMany({
-      select: { id: true, slug: true, isDemo: true, status: true, logoUrl: true },
+      select: {
+        id: true,
+        slug: true,
+        isDemo: true,
+        status: true,
+        logoUrl: true,
+        settings: true,
+        createdAt: true,
+      },
     }),
     prisma.user.findMany({
-      select: { companyId: true, authId: true, email: true, avatarUrl: true },
+      select: {
+        companyId: true,
+        authId: true,
+        email: true,
+        avatarUrl: true,
+        role: { select: { slug: true } },
+      },
     }),
   ]);
 
@@ -139,27 +168,59 @@ async function main() {
     .sort(([left], [right]) => left.localeCompare(right));
   const expectedRolePermissions = Object.fromEntries(expectedRolePermissionEntries);
   const emptyApplicationData = companies.length === 0 && appUsers.length === 0 && authData.users.length === 0;
-  const base = companies[0];
+  const base = companies.find((company) => company.slug === DEMO_COMPANY_SLUG);
   const authUser = authData.users[0];
   const expectedEmails = base ? demoKeepEmails() : [];
   const expectedAuthIds = base && authUser
     ? demoRosterAuthIds(base.id).map((authId, index) => index === 0 ? authUser.id : authId)
     : [];
-  const persistentDemoOnly = Boolean(
-    companies.length === 1 &&
+  const persistentDemoValid = Boolean(
     base?.slug === DEMO_COMPANY_SLUG &&
     base.isDemo &&
     base.status === "ACTIVE" &&
     !base.logoUrl &&
     authData.users.length === 1 &&
     authUser?.email?.toLowerCase() === DEMO_LOGIN_EMAIL &&
-    appUsers.length === expectedEmails.length &&
-    appUsers.every((user) =>
+    appUsers.filter((user) => user.companyId === base.id).length === expectedEmails.length &&
+    appUsers.filter((user) => user.companyId === base.id).every((user) =>
       user.companyId === base.id &&
       !user.avatarUrl &&
       expectedEmails.includes(user.email.toLowerCase()) &&
-      expectedAuthIds.includes(user.authId)
+      expectedAuthIds.includes(user.authId) &&
+      demoPersonaSeedUsers(base.id).some((seed) =>
+        seed.email.toLowerCase() === user.email.toLowerCase() && seed.roleSlug === user.role.slug
+      )
     )
+  );
+  const sessionCompanies = companies.filter((company) => company.slug !== DEMO_COMPANY_SLUG);
+  const sessionSlugPattern = new RegExp(`^${DEMO_SESSION_COMPANY_PREFIX}[a-f0-9]{24}$`);
+  const managedDemoSessionsValid = sessionCompanies.every((company) => {
+    const companyUsers = appUsers.filter((user) => user.companyId === company.id);
+    const expected = demoPersonaSeedUsers(company.id).map((seed) => ({
+      authId: seed.persona === "admin" ? demoFixtureAuthId("admin", company.id) : seed.authId,
+      email: scopedDemoEmail(seed.email, company.id),
+      roleSlug: seed.roleSlug,
+    }));
+    return Boolean(
+      company.isDemo &&
+      company.status === "ACTIVE" &&
+      !company.logoUrl &&
+      sessionSlugPattern.test(company.slug) &&
+      demoSessionExpiry(company) &&
+      companyUsers.length === expected.length &&
+      companyUsers.every((user) =>
+        !user.avatarUrl && expected.some((entry) =>
+          entry.authId === user.authId &&
+          entry.email === user.email.toLowerCase() &&
+          entry.roleSlug === user.role.slug
+        )
+      )
+    );
+  });
+  const controlledDemoData = Boolean(
+    persistentDemoValid &&
+    managedDemoSessionsValid &&
+    appUsers.length === expectedEmails.length * companies.length
   );
   const checks = {
     expectedTablesPresent:
@@ -174,7 +235,7 @@ async function main() {
     referencePermissionsMatch: canonical(permissions) === canonical(expectedPermissions),
     referenceRolePermissionsMatch:
       canonical(actualRolePermissions) === canonical(expectedRolePermissions),
-    controlledPreproductionData: emptyApplicationData || persistentDemoOnly,
+    controlledPreproductionData: emptyApplicationData || controlledDemoData,
     anonCannotReadCompanies: Boolean(anonAttempt.error),
     privatePodBucket:
       bucket.public === false &&
@@ -204,7 +265,8 @@ async function main() {
       companiesObserved: companies.length,
       applicationUsersObserved: appUsers.length,
       authUsersObserved: authData.users.length,
-      persistentDemoPresent: persistentDemoOnly,
+      persistentDemoPresent: persistentDemoValid,
+      managedDemoSessionsObserved: sessionCompanies.length,
     },
     secretsIncluded: false,
   };

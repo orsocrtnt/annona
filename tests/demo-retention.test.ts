@@ -136,6 +136,11 @@ function sessionModule(c: ReturnType<typeof company> | null) {
     "@/lib/validations/dispatch-settings": { DEFAULT_DISPATCH_SETTINGS: {} },
     "@/lib/demo/retention": retention,
     "@/lib/auth/account-access": access,
+    "@/domains/demo/demo-pool.service": {
+      getActiveDemoPoolLease: async () => null,
+      demoSessionIdFromRequestKey: () => "b".repeat(64),
+      leaseDemoPoolEnvironment: async () => assert.fail("legacy retention test must not lease pool"),
+    },
     "@/lib/demo/persona-cookie": { getDemoSessionCookie: async () => "a".repeat(64) },
   };
   const source = ts.transpileModule(readFileSync("src/domains/demo/demo-session.service.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;

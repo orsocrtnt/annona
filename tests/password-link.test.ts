@@ -139,16 +139,23 @@ test("route du lien : pas de succès ni de secret pour jeton invalide, 429 et mo
 test("création réelle du service : invitation sans mot de passe, profil en attente, aucun secret retourné", async (t) => {
   configured(t);
   const calls: unknown[] = [];
+  const prismaMock: Record<string, unknown> = {
+    $queryRaw: async () => [{ id: "role", name: "Driver", slug: "driver", system_role: "DRIVER" }],
+    user: { findUnique: async () => null, create: async ({ data }: { data: Record<string, unknown> }) => {
+      assert.equal(data.status, "PENDING_VERIFICATION"); assert.equal(data.companyId, "a"); return { id: "u", ...data };
+    } },
+  };
+  prismaMock.$transaction = async (callback: (tx: Record<string, unknown>) => Promise<unknown>) => callback(prismaMock);
   const service = load<typeof import("../src/domains/user/user.service")>("src/domains/user/user.service.ts", {
+    "node:crypto": { randomUUID: () => "reservation-test" },
     "@prisma/client": { Prisma }, "@/lib/auth/email-links": links,
     "@/lib/permissions/mini-admin": mini, "@/lib/demo/constants": demo, "@/lib/query/list-limits": limits,
     "@/domains/client-portal/client-data.service": { linkPortalDataToClient: async () => undefined },
-    "@/services/prisma/client": { prisma: {
-      $queryRaw: async () => [{ id: "role", name: "Driver", slug: "driver", system_role: "DRIVER" }],
-      user: { findUnique: async () => null, create: async ({ data }: { data: Record<string, unknown> }) => {
-        assert.equal(data.status, "PENDING_VERIFICATION"); assert.equal(data.companyId, "a"); return { id: "u", ...data };
-      } },
-    } },
+    "@/domains/saas/saas.service": {
+      reserveSaasSeat: async () => "reservation-test",
+      releaseSaasSeat: async () => undefined,
+    },
+    "@/services/prisma/client": { prisma: prismaMock },
     "@/services/supabase/admin": { createAdminClient: () => ({ auth: { admin: { inviteUserByEmail: async (...args: unknown[]) => { calls.push(args); return { data: { user: { id: "auth" } }, error: null }; } } } }) },
   });
   const result = await service.createUserByAdmin({ firstName: "Test", lastName: "Local", email: "test@example.com", roleSlug: "driver" }, "a", "COMPANY_ADMIN");
@@ -173,6 +180,10 @@ test("connexion : e-mail non confirmé refusé sans appel administrateur", async
     "@/lib/demo/constants": demo, "@/lib/demo/persona-cookie": {},
     "@/domains/demo/demo-auth.service": {}, "@/domains/demo/demo-scenario.service": {}, "@/domains/demo/demo-provision.service": {},
     "@/domains/demo/demo-session.service": {},
+    "@/domains/demo/demo-pool.service": {
+      DemoPoolUnavailableError: class extends Error {},
+      maintainDemoPool: async () => [],
+    },
   });
   assert.equal((await POST(new Request("http://local", { method: "POST", body: JSON.stringify({ email: "test@example.com", password: "TestLocal123!" }) }))).status, 401);
 });
