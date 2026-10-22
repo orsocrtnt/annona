@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**48 tâches terminées sur 78 — 62 %**
+**49 tâches terminées sur 78 — 63 %**
 
-`████████████░░░░░░░░` · 30 tâches restantes
+`█████████████░░░░░░░` · 29 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -18,24 +18,24 @@ Mise à jour : 22 octobre 2026. Source unique des priorités du projet. Cette ve
 
 | Jalon | Résultat attendu | Ce qui ne le bloque pas | État actuel |
 |---|---|---|---|
-| **A — V1 pour trois pilotes** | Trois entreprises françaises de livraison B2B utilisent TutelLiv pendant environ quatre semaines avec comptes créés et droits attribués manuellement. | Stripe, inscription commerciale autonome, commissions et site complet. | Socle fonctionnel, préproduction, CI et restauration validés ; démo rapide, alertes, e-mails réels, GPS physique, cadre juridique et recette finale restent à fermer. |
+| **A — V1 pour trois pilotes** | Trois entreprises françaises de livraison B2B utilisent TutelLiv pendant environ quatre semaines avec comptes créés et droits attribués manuellement. | Stripe, inscription commerciale autonome, commissions et site complet. | Socle fonctionnel, préproduction, CI, restauration et démo rapide validés ; alertes, e-mails réels, GPS physique, cadre juridique et recette finale restent à fermer. |
 | **B — SaaS autonome** | Site → offre/options → compte → paiement → activation → configuration → première livraison sans intervention TutelLiv. | Recrutement des pilotes et activation des paiements réels. | Catalogue, droits et quotas serveur terminés ; inscription persistante et paiement fictif restent à construire. |
 
 ### Cinq prochaines tâches recommandées
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **DEMO-2** | Retirer les 83 s d'attente qui empêchent une démonstration commerciale fiable. | DEMO-1, les garde-fous démo de DATA-02 et la préproduction sont prêts ; la politique générale DATA-02 reste ouverte sans bloquer cet incrément. | GPT‑6 Astra · effort élevé |
-| 2 | **SIGNUP-1** | Construire le parcours autonome sur le noyau SaaS terminé avec un paiement fictif stable. | Interfaces et droits SAAS-01A disponibles ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
-| 3 | **COST-1 — estimation documentaire** | Tester rapidement la cohérence économique des trois offres et le risque Business illimité avant de figer davantage le catalogue. | Inventaires et tarifs publics ; aucune charge payante. La validation mesurée attend PERF-02. | GPT‑6.1 Sol · effort moyen |
-| 4 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
-| 5 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain. | Une entreprise pilote peut être créée manuellement ; SIGNUP-1 servira ensuite au libre-service. | GPT‑6.1 Sol · effort élevé |
+| 1 | **SIGNUP-1** | Construire le parcours autonome sur le noyau SaaS terminé avec un paiement fictif stable. | Interfaces et droits SAAS-01A disponibles ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
+| 2 | **COST-1 — estimation documentaire** | Tester rapidement la cohérence économique des trois offres et le risque Business illimité avant de figer davantage le catalogue. | Inventaires et tarifs publics ; aucune charge payante. La validation mesurée attend PERF-02. | GPT‑6.1 Sol · effort moyen |
+| 3 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
+| 4 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain. | Une entreprise pilote peut être créée manuellement ; SIGNUP-1 servira ensuite au libre-service. | GPT‑6.1 Sol · effort élevé |
+| 5 | **COST-1 — validation mesurée** | Remplacer les hypothèses de coût par des mesures représentatives avant de figer les marges. | L'estimation documentaire peut commencer seule ; les mesures complètes attendent PERF-02. | GPT‑6.1 Sol · effort moyen |
 
-DEMO-2, COST-1 documentaire et OPS-03B sont fonctionnellement indépendantes. Les exécuter dans des sessions ou branches isolées évite les conflits ; une seule tâche reste active par session. Les interfaces serveur de SAAS-01A sont désormais stabilisées pour SIGNUP-1.
+COST-1 documentaire, OPS-03B et SIGNUP-1 sont fonctionnellement indépendantes. Les exécuter dans des sessions ou branches isolées évite les conflits ; une seule tâche reste active par session. Les interfaces serveur de SAAS-01A sont désormais stabilisées pour SIGNUP-1.
 
 ### Chemins critiques
 
-- **Pilotes :** DEMO-2 + OPS-03B + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
+- **Pilotes :** DEMO-2 terminé ; OPS-03B + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
 - **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A terminé → SAAS-01B sandbox → SAAS-03 et SAAS-04 → SALES-1 et SAAS-02 → GROWTH-1 intégré → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
 - **Validation économique :** COST-1 documentaire peut démarrer maintenant ; PERF-02 et les pilotes remplacent ensuite les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
 - **Design :** DESIGN-1 fixe les composants communs, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni SAAS-01A/SIGNUP-1 ni les portes techniques des pilotes.
@@ -827,7 +827,7 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
 
   Extension préproduction du 2026-10-20 : compte et scénario modèle permanents installés sur la nouvelle base isolée, société propre créée pour le navigateur puis supprimée à la déconnexion. La fermeture d'onglet seule conserve la session jusqu'à son échéance fiable de huit heures. La CI sait réutiliser et préserver le modèle exact. L'ancienne cible et ses 51 démonstrations n'ont pas été modifiées. La latence initiale distante de 83 s est une régression P0 à traiter avant ouverture publique ; elle ne remet pas en cause l'isolation vérifiée.
 
-- [ ] **DEMO-2 — Rendre l'ouverture de la démonstration quasi immédiate.** Retirer la construction complète du scénario du chemin de connexion. Préparer un petit stock d'environnements fictifs isolés, les attribuer atomiquement à une session, puis les remettre à l'état modèle en arrière-plan après déconnexion ou expiration. Prévoir capacité, attente et repli explicites sans jamais partager une entreprise entre deux visiteurs.
+- [x] **DEMO-2 — Rendre l'ouverture de la démonstration quasi immédiate.** Retirer la construction complète du scénario du chemin de connexion. Préparer un petit stock d'environnements fictifs isolés, les attribuer atomiquement à une session, puis les remettre à l'état modèle en arrière-plan après déconnexion ou expiration. Prévoir capacité, attente et repli explicites sans jamais partager une entreprise entre deux visiteurs.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -841,9 +841,7 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
 
   Source / dépendance / blocage : DEMO-1 a validé l'isolation mais la création mesurée à 83 s sur Supabase Free est incompatible avec une démo publique. Réutiliser les gardes DATA-02 et OPS-02B ; distinguer vitesse de démo et connexion normale d'un client existant.
 
-  Avancement du 2026-10-22 : pool persistant de trois entreprises fictives créé sur la seule préproduction isolée, avec réservation sérialisable, empreinte de session unique, double clic idempotent, attente `503/Retry-After` si le stock est vide, recyclage durable hors réponse et quarantaine fermée en cas d'asset, job, référence étrangère ou panne Storage. Auth est nettoyé avant la ligne locale ; les jobs terminés sont purgés. RLS est active et les rôles publics n'ont aucun droit sur la table de coordination. La recette connectée a validé concurrence, A/B, stock vide, expiration, worker interrompu, échec/récupération et modèle permanent intact ; état final 3 prêts, 0 loué, 0 quarantaine. Le build de production local relié à la préproduction tient les budgets sur trois ouvertures : p95 2 983 ms, max 2 983 ms, reconnexion p95 7 ms, logout p95 1 224 ms. Validation globale : 298 tests, types/lint et build réussis. Guide `docs/operations/demo2/README.md`, rapport `docs/rapports/2026-10-22/demo2.md`, preuves `outputs/demo2/connected.json` et `outputs/demo2/http.json`.
-
-  Porte restante avant coche : publier de façon maîtrisée ces changements sur la Vercel Preview puis relancer `DEMO_BASE_URL=https://URL-DE-PREVIEW npm run test:demo2:http`. Aucun outil Vercel MCP n'est disponible dans cette session et les changements locaux d'autres tâches ne doivent pas être poussés ensemble sans revue ; la production et l'ancienne cible restent intactes.
+  Terminé le 2026-10-22 : pool persistant de trois entreprises fictives créé sur la seule préproduction isolée, avec réservation sérialisable, empreinte de session unique, double clic idempotent, attente `503/Retry-After` si le stock est vide, recyclage durable hors réponse et quarantaine fermée en cas d'asset, job, référence étrangère ou panne Storage. Auth est nettoyé avant la ligne locale ; les jobs terminés sont purgés. RLS est active et les rôles publics n'ont aucun droit sur la table de coordination. La recette connectée a validé concurrence, A/B, stock vide, expiration, worker interrompu, échec/récupération et modèle permanent intact. Sur la vraie Vercel Preview du commit `f353f58`, trois ouvertures prêtes ont mesuré p95/max 3 035 ms, reconnexion p95 279 ms et logout p95 1 201 ms ; une première fonction froide avait mesuré 5 290 ms, toujours sous le plafond absolu de 10 s. Le pool final contient 3 prêts, 0 loué, 0 quarantaine. Validation globale : 298 tests, types/lint et build réussis. Guide `docs/operations/demo2/README.md`, rapport `docs/rapports/2026-10-22/demo2.md`, preuves `outputs/demo2/connected.json` et `outputs/demo2/http.json`.
 
 ## 6 — Reprendre la validation commerciale quand le propriétaire sera disponible
 

@@ -19,7 +19,14 @@ La recette base de préproduction a mesuré 1 945 ms pour trois réservations co
 - reconnexion au tableau de bord p95 : 7 ms ;
 - réponse de déconnexion p95 : 1 224 ms.
 
-Les budgets DEMO-2 sont donc tenus dans cet environnement. Le benchmark reproductible attend encore l'URL Vercel Preview pour fermer formellement la tâche.
+Sur la véritable Vercel Preview du commit `f353f58`, trois ouvertures avec un pool prêt ont ensuite mesuré :
+
+- ouverture connexion puis tableau de bord p95 : 3 035 ms ;
+- ouverture maximale : 3 035 ms ;
+- reconnexion au tableau de bord p95 : 279 ms ;
+- réponse de déconnexion p95 : 1 201 ms.
+
+La première exécution juste après le démarrage à froid Vercel avait mesuré 5 290 ms pour l'ouverture p95/max, soit 290 ms au-dessus du budget p95 mais toujours sous le plafond absolu de 10 s. Après stabilisation de la fonction et remise du pool à trois slots prêts, le passage de validation respecte les quatre budgets. Le cookie temporaire de protection Vercel a été injecté en mémoire et n'est présent ni dans les preuves, ni dans le dépôt.
 
 ## Validation
 
@@ -27,9 +34,10 @@ Les budgets DEMO-2 sont donc tenus dans cet environnement. Le benchmark reproduc
 - `npm run build` : build Next production réussi ;
 - `npm run test:demo2` : concurrence, idempotence, stock vide, A/B, expiration, panne, quarantaine, reprise et modèle permanent réussis ;
 - `DEMO_BASE_URL=http://127.0.0.1:3107 npm run test:demo2:http` : quatre budgets réussis ;
+- benchmark protégé sur la véritable Vercel Preview : quatre budgets réussis sur trois ouvertures ;
 - sécurité préproduction : RLS active, lecture refusée à `anon` et `authenticated` sur la table de pool ;
 - état final : trois prêts, zéro loué, zéro quarantaine.
 
-## Limite restante
+## État de clôture
 
-Aucun push ni déploiement Vercel n'a été effectué par cette exécution. L'outil Vercel MCP requis par le workflow de publication n'est pas disponible dans cette session et le dépôt contient plusieurs changements locaux d'autres tâches qu'il ne faut pas pousser aveuglément. DEMO-2 reste donc non cochée jusqu'à publication maîtrisée de la Preview et exécution de `test:demo2:http` sur son URL.
+La branche `preproduction` a été publiée sans promotion en production. Le déploiement Preview est resté relié à la base Supabase de préproduction. L'état final contrôlé contient trois slots prêts, zéro loué et zéro en quarantaine. La branche et la base de production ainsi que l'ancienne cible Supabase n'ont pas été modifiées. DEMO-2 est terminée.

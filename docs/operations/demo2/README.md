@@ -1,6 +1,6 @@
 # DEMO-2 — Pool de démonstrations préconstruites
 
-État : implémentation et base de préproduction validées le 22 octobre 2026. La validation finale sur l'URL Vercel Preview reste à exécuter après publication du code.
+État : terminé et validé sur la Vercel Preview le 22 octobre 2026.
 
 ## Objectif
 
@@ -63,8 +63,8 @@ DEMO_BASE_URL=https://URL-DE-PREVIEW npm run test:demo2:http
 - HTTP local en build de production relié à la préproduction : ouverture p95 2 983 ms, maximum 2 983 ms, reconnexion p95 7 ms, déconnexion p95 1 224 ms sur trois ouvertures ;
 - validation globale : 298 tests réussis, types et lint stricts, build Next réussi.
 
-Preuves machine : `outputs/demo2/connected.json` et `outputs/demo2/http.json`.
+Sur la Vercel Preview du commit `f353f58`, le passage final sur trois ouvertures a mesuré : ouverture p95/max 3 035 ms, reconnexion p95 279 ms et déconnexion p95 1 201 ms. Une première exécution après démarrage à froid avait mesuré 5 290 ms à l'ouverture, sous le plafond absolu de 10 s mais 290 ms au-dessus du budget p95 ; le passage stabilisé respecte les quatre budgets.
 
-## Porte de clôture
+Le benchmark accepte `DEMO_ACCESS_COOKIE` pour traverser une Preview protégée. Ce cookie temporaire doit uniquement être injecté dans l'environnement du processus : il n'est ni écrit dans la preuve, ni ajouté au dépôt.
 
-DEMO-2 reste ouverte jusqu'au même benchmark sur la véritable URL Vercel Preview. La publication ne doit pas inclure la branche de production ni modifier l'ancienne cible Supabase. Après succès Preview, consigner l'URL sans jeton, les quatre budgets et l'état final du pool, puis cocher la tâche.
+Preuves machine : `outputs/demo2/connected.json` et `outputs/demo2/http.json`. État final vérifié : trois slots prêts, aucun loué ou en quarantaine. La branche et la base de production ainsi que l'ancienne cible Supabase n'ont pas été modifiées.

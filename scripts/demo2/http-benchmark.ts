@@ -7,6 +7,7 @@ import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL, DEMO_POOL_MIN_READY } from "..
 
 const baseUrl = process.env.DEMO_BASE_URL ?? "";
 if (!baseUrl) throw new Error("DEMO_BASE_URL_REQUIRED");
+const accessCookie = process.env.DEMO_ACCESS_COOKIE?.trim() ?? "";
 const outputPath = resolve(process.argv[2] ?? "outputs/demo2/http.json");
 const sampleCount = Number.parseInt(process.env.DEMO_HTTP_SAMPLES ?? String(DEMO_POOL_MIN_READY), 10);
 
@@ -36,7 +37,10 @@ async function run() {
   for (let sample = 0; sample < sampleCount; sample += 1) {
     const login = await timed(() => fetch(new URL("/api/auth/login", baseUrl), {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(accessCookie ? { cookie: accessCookie } : {}),
+      },
       body: JSON.stringify({
         email: DEMO_LOGIN_EMAIL,
         password: DEMO_DEFAULT_PASSWORD,
@@ -47,8 +51,9 @@ async function run() {
     assert.equal(login.response.status, 200, await login.response.text());
     const cookies = cookieHeader(login.response);
     assert.ok(cookies.includes("tutelliv-demo-session="));
+    const authenticatedCookies = [accessCookie, cookies].filter(Boolean).join("; ");
     const dashboard = await timed(() => fetch(new URL("/dashboard", baseUrl), {
-      headers: { cookie: cookies },
+      headers: { cookie: authenticatedCookies },
       redirect: "manual",
     }));
     assert.equal(dashboard.response.status, 200);
@@ -56,7 +61,7 @@ async function run() {
 
     for (let reconnect = 0; reconnect < 2; reconnect += 1) {
       const reload = await timed(() => fetch(new URL("/dashboard", baseUrl), {
-        headers: { cookie: cookies },
+        headers: { cookie: authenticatedCookies },
         redirect: "manual",
       }));
       assert.equal(reload.response.status, 200);
@@ -65,7 +70,7 @@ async function run() {
 
     const logout = await timed(() => fetch(new URL("/api/auth/logout", baseUrl), {
       method: "POST",
-      headers: { cookie: cookies },
+      headers: { cookie: authenticatedCookies },
     }));
     assert.equal(logout.response.status, 204);
     logouts.push(logout.ms);
