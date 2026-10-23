@@ -84,4 +84,4 @@ ALTER TABLE "signup_payment_events"
 -- Tables internes : exclusivement accessibles via le serveur Prisma.
 ALTER TABLE "signup_journeys" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "signup_payment_events" ENABLE ROW LEVEL SECURITY;
-REVOKE ALL PRIVILEGES ON TABLE "signup_journeys", "signup_payment_events" FROM PUBLIC, anon, authenticated;\n
+REVOKE ALL PRIVILEGES ON TABLE "signup_journeys", "signup_payment_events" FROM PUBLIC, anon, authenticated;

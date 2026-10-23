@@ -149,4 +149,4 @@ test("SIGNUP-1 : parcours mobile, reprise et progression restent visibles", () =
   assert.match(ui, /J’ai confirmé, actualiser/);
   const paymentRoute = readFileSync(resolve("src/app/api/signup/payment/route.ts"), "utf8");
   assert.match(paymentRoute, /redirect=\/onboarding/);
-});\n
+});

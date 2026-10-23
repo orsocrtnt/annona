@@ -41,4 +41,4 @@ export const signupActionSchema = z.union([signupSelectionSchema, signupIdentity
 export const fakePaymentSchema = z.object({
   eventKey: z.string().uuid(),
   outcome: z.enum(["confirmed", "declined", "pending"]).default("confirmed"),
-});\n
+});

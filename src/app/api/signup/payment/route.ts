@@ -24,4 +24,4 @@ export async function POST(request: NextRequest) {
         : "Le paiement fictif n'a pas pu être confirmé. Réessayez sans créer un second compte.";
     return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
   }
-}\n
+}

@@ -681,4 +681,4 @@ export async function processFakeSignupPayment(resumeToken: string, input: {
   if (event.status !== "CONFIRMED") return { status: event.status, activated: false as const };
   const activation = await activateSignupJourney(journey.id);
   return { status: event.status, activated: true as const, ...activation };
-}\n
+}

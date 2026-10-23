@@ -13,4 +13,4 @@ export function setSignupResumeCookie(response: NextResponse, token: string) {
 
 export function clearSignupResumeCookie(response: NextResponse) {
   response.cookies.set(SIGNUP_COOKIE, "", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 0 });
-}\n
+}

@@ -52,4 +52,4 @@ export async function POST(request: NextRequest) {
     const result = publicError(error);
     return NextResponse.json({ error: result.error }, { status: result.status, headers: noStore });
   }
-}\n
+}

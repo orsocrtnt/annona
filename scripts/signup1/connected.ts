@@ -153,4 +153,4 @@ console.log(JSON.stringify({ passed: true, output }));
 main().catch((error) => {
   console.error(error instanceof Error ? error.message : "SIGNUP-1 connected failed");
   process.exitCode = 1;
-});\n
+});
