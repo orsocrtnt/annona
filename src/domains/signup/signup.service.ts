@@ -14,6 +14,7 @@ import { sendTransactionalEmail } from "@/lib/email/transactional-email";
 
 export const SIGNUP_COOKIE = "tutelliv-signup-resume";
 export const SIGNUP_TTL_SECONDS = 30 * 24 * 60 * 60;
+export const SIGNUP_EMAIL_RESEND_COOLDOWN_SECONDS = 30;
 
 export type SignupOptionSelection = { code: string; quantity: number };
 
@@ -145,6 +146,9 @@ function publicJourney(journey: NonNullable<JourneyRecord>) {
     billingCity: journey.billingCity,
     billingCountry: journey.billingCountry,
     emailVerified: Boolean(journey.emailVerifiedAt),
+    emailResendAvailableAt: journey.verificationEmailSentAt
+      ? new Date(journey.verificationEmailSentAt.getTime() + SIGNUP_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString()
+      : null,
     paymentConfirmed: Boolean(journey.paymentConfirmedAt),
     activated: Boolean(journey.activatedAt),
   };
@@ -325,6 +329,7 @@ export async function submitSignupIdentity(resumeToken: string, input: SignupIde
     return { verificationRequired: true as const };
   }
   const emailLinkToken = randomBytes(32).toString("base64url");
+  const verificationEmailSentAt = new Date();
   const persisted = await prisma.signupJourney.update({
     where: { id: journey.id },
     data: {
@@ -343,6 +348,7 @@ export async function submitSignupIdentity(resumeToken: string, input: SignupIde
       billingCity: input.billingCity.trim(),
       billingCountry: input.billingCountry,
       failureCode: null,
+      verificationEmailSentAt,
     },
   });
 
@@ -375,6 +381,53 @@ export async function submitSignupIdentity(resumeToken: string, input: SignupIde
     });
   }
   return { verificationRequired: true as const };
+}
+
+export async function resendSignupConfirmation(resumeToken: string) {
+  const journey = await requireJourney(resumeToken);
+  if (journey.status !== "EMAIL_PENDING" || !journey.email || journey.emailVerifiedAt) {
+    throw new Error("SIGNUP_RESEND_INVALID");
+  }
+  const now = new Date();
+  const availableBefore = new Date(now.getTime() - SIGNUP_EMAIL_RESEND_COOLDOWN_SECONDS * 1000);
+  const previousSentAt = journey.verificationEmailSentAt;
+  const reserved = await prisma.signupJourney.updateMany({
+    where: {
+      id: journey.id,
+      status: "EMAIL_PENDING",
+      emailVerifiedAt: null,
+      OR: [
+        { verificationEmailSentAt: null },
+        { verificationEmailSentAt: { lte: availableBefore } },
+      ],
+    },
+    data: { verificationEmailSentAt: now, failureCode: null },
+  });
+  if (reserved.count !== 1) throw new Error("SIGNUP_EMAIL_RESEND_COOLDOWN");
+
+  const client = createPasswordLinkClient();
+  const redirectTo = getPasswordLinkRedirect();
+  const { error } = await client.auth.resend({
+    type: "signup",
+    email: journey.email,
+    options: { emailRedirectTo: redirectTo },
+  });
+  if (error) {
+    if (error.status === 429) {
+      await prisma.signupJourney.updateMany({
+        where: { id: journey.id, status: "EMAIL_PENDING", verificationEmailSentAt: now },
+        data: { failureCode: "AUTH_RATE_LIMITED" },
+      });
+      throw new Error("AUTH_RATE_LIMITED");
+    }
+    await prisma.signupJourney.updateMany({
+      where: { id: journey.id, status: "EMAIL_PENDING", verificationEmailSentAt: now },
+      data: { verificationEmailSentAt: previousSentAt, failureCode: "AUTH_EMAIL_FAILED" },
+    });
+    throw new Error("AUTH_EMAIL_FAILED");
+  }
+  const updated = await prisma.signupJourney.findUniqueOrThrow({ where: { id: journey.id } });
+  return { verificationRequired: true as const, journey: publicJourney(updated) };
 }
 
 export async function confirmManagedSignupEmail(input: {

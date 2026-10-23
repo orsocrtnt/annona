@@ -34,7 +34,7 @@ type Journey = {
   email: string | null; firstName: string | null; lastName: string | null; companyName: string | null;
   legalName: string | null; siren: string | null; siret: string | null; phone: string | null;
   billingAddress: string | null; billingPostalCode: string | null; billingCity: string | null; billingCountry: string;
-  emailVerified: boolean; paymentConfirmed: boolean; activated: boolean;
+  emailVerified: boolean; emailResendAvailableAt: string | null; paymentConfirmed: boolean; activated: boolean;
 };
 
 const planDescriptions: Record<PlanCode, string> = {
@@ -57,6 +57,8 @@ export function SignupWizard() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [resendSeconds, setResendSeconds] = useState(0);
   const [paymentEventKey, setPaymentEventKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -78,12 +80,25 @@ export function SignupWizard() {
       .finally(() => setLoading(false));
   }, [load]);
 
+  useEffect(() => {
+    const updateCountdown = () => {
+      if (journey?.status !== "EMAIL_PENDING" || !journey.emailResendAvailableAt) {
+        setResendSeconds(0);
+        return;
+      }
+      setResendSeconds(Math.max(0, Math.ceil((new Date(journey.emailResendAvailableAt).getTime() - Date.now()) / 1000)));
+    };
+    updateCountdown();
+    const interval = window.setInterval(updateCountdown, 1000);
+    return () => window.clearInterval(interval);
+  }, [journey?.emailResendAvailableAt, journey?.status]);
+
   const activePlan = catalog?.plans.find((plan) => plan.code === planCode);
   const options = useMemo(() => catalog?.options.filter((option) =>
     option.applicablePlans.includes(planCode) && (!option.featureKey || !activePlan?.includedFeatures.includes(option.featureKey))) ?? [], [catalog, planCode, activePlan]);
 
   const post = async (body: unknown) => {
-    setSubmitting(true); setError(null);
+    setSubmitting(true); setError(null); setNotice(null);
     try {
       const response = await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const payload = await response.json();
@@ -132,6 +147,18 @@ export function SignupWizard() {
     finally { setSubmitting(false); }
   };
 
+  const resendVerificationEmail = async () => {
+    if (resendSeconds > 0) return;
+    try {
+      const payload = await post({ action: "resend-email" });
+      if (payload.journey) setJourney(payload.journey);
+      setNotice("Un nouveau lien de confirmation vient d’être envoyé.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Impossible de renvoyer l’e-mail.");
+      await load().catch(() => undefined);
+    }
+  };
+
   const setOption = (code: string, quantity: number) => {
     setSelections((current) => quantity <= 0 ? current.filter((item) => item.code !== code) : [...current.filter((item) => item.code !== code), { code, quantity }]);
   };
@@ -153,6 +180,7 @@ export function SignupWizard() {
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-brand transition-all" style={{ width: `${progress * 20}%` }} /></div>
           </div>
           {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
+          {notice && <Alert variant="success" className="mb-6"><AlertDescription>{notice}</AlertDescription></Alert>}
 
           {!journey && stage === "plan" && catalog && (
             <div>
@@ -203,7 +231,7 @@ export function SignupWizard() {
           )}
 
           {journey?.status === "EMAIL_PENDING" && (
-            <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><Button className="mt-7" variant="brand" loading={submitting} onClick={() => { setSubmitting(true); load().catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button></div>
+            <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><Button variant="brand" loading={submitting} onClick={() => { setSubmitting(true); load().catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button><Button variant="outline" disabled={submitting || resendSeconds > 0} onClick={() => void resendVerificationEmail()}>{resendSeconds > 0 ? `Renvoyer l’e-mail dans ${resendSeconds} s` : "Renvoyer l’e-mail"}</Button></div></div>
           )}
 
           {journey?.emailVerified && !journey.activated && (

@@ -6,9 +6,9 @@ import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { Prisma } from "@prisma/client";
-import { signupIdentitySchema } from "../src/lib/validations/signup";
+import { signupActionSchema, signupIdentitySchema } from "../src/lib/validations/signup";
 
-function loadSignupService() {
+function loadSignupService(overrides: Record<string, unknown> = {}) {
   const module = { exports: {} };
   const dependencies: Record<string, unknown> = {
     "server-only": {},
@@ -25,6 +25,7 @@ function loadSignupService() {
       kickOperationJob: () => undefined,
     },
     "@/lib/email/transactional-email": { sendTransactionalEmail: () => ({}) },
+    ...overrides,
   };
   const source = ts.transpileModule(readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -104,6 +105,83 @@ test("SIGNUP-1 : identité bornée, SIREN/SIRET cohérents et mot de passe jamai
   assert.doesNotMatch(migration, /password/i);
   assert.match(migration, /ENABLE ROW LEVEL SECURITY/g);
   assert.match(migration, /REVOKE ALL PRIVILEGES/);
+});
+
+test("SIGNUP-1 : le renvoi d’e-mail est une action bornée à trente secondes côté serveur", () => {
+  assert.equal(signupActionSchema.safeParse({ action: "resend-email" }).success, true);
+  const service = readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8");
+  const ui = readFileSync(resolve("src/features/auth/signup-wizard.tsx"), "utf8");
+  const migration = readFileSync(resolve("prisma/migrations/20261023150000_signup_email_resend/migration.sql"), "utf8");
+  assert.match(service, /SIGNUP_EMAIL_RESEND_COOLDOWN_SECONDS = 30/);
+  assert.match(service, /verificationEmailSentAt: \{ lte: availableBefore \}/);
+  assert.match(service, /client\.auth\.resend/);
+  assert.match(ui, /Renvoyer l’e-mail dans \$\{resendSeconds\} s/);
+  assert.match(ui, /disabled=\{submitting \|\| resendSeconds > 0\}/);
+  assert.match(migration, /verification_email_sent_at/);
+});
+
+test("SIGNUP-1 : deux renvois concurrents produisent un seul e-mail", async () => {
+  const resumeToken = "resume-token-long-enough-for-signup-test";
+  const row = {
+    id: "signup-1",
+    resumeTokenHash: createHash("sha256").update(resumeToken).digest("hex"),
+    status: "EMAIL_PENDING",
+    catalogVersionId: "catalog",
+    planCode: "STARTER",
+    billingInterval: "MONTHLY",
+    optionSelections: [],
+    quoteSnapshot: {},
+    email: "signup@example.test",
+    authUserId: "auth-1",
+    emailLinkTokenHash: "hash",
+    firstName: "Ada",
+    lastName: "Martin",
+    companyName: "Livraison Ada",
+    legalName: null,
+    siren: null,
+    siret: null,
+    phone: null,
+    billingAddress: "1 rue du Test",
+    billingPostalCode: "75001",
+    billingCity: "Paris",
+    billingCountry: "FR",
+    emailVerifiedAt: null,
+    verificationEmailSentAt: null as Date | null,
+    paymentConfirmedAt: null,
+    activatedAt: null,
+    failureCode: null as string | null,
+    expiresAt: new Date(Date.now() + 60_000),
+    companyId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  let sends = 0;
+  const prismaMock = { signupJourney: {
+    findUnique: async () => row,
+    findUniqueOrThrow: async () => row,
+    updateMany: async ({ data }: { data: { verificationEmailSentAt: Date | null; failureCode?: string | null } }) => {
+      if (data.verificationEmailSentAt instanceof Date) {
+        if (row.verificationEmailSentAt && Date.now() - row.verificationEmailSentAt.getTime() < 30_000) return { count: 0 };
+        row.verificationEmailSentAt = data.verificationEmailSentAt;
+        row.failureCode = data.failureCode ?? null;
+        return { count: 1 };
+      }
+      row.verificationEmailSentAt = data.verificationEmailSentAt;
+      return { count: 1 };
+    },
+  } };
+  const service = loadSignupService({
+    "@/services/prisma/client": { prisma: prismaMock },
+    "@/services/supabase/password-link": { createPasswordLinkClient: () => ({ auth: { resend: async () => { sends += 1; return { error: null }; } } }) },
+  });
+  const results = await Promise.allSettled([
+    service.resendSignupConfirmation(resumeToken),
+    service.resendSignupConfirmation(resumeToken),
+  ]);
+  assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+  assert.equal(results.filter((result) => result.status === "rejected").length, 1);
+  assert.equal(sends, 1);
+  assert.ok(row.verificationEmailSentAt);
 });
 
 test("SIGNUP-1 : activation verrouillée, atomique et conditionnée par e-mail + paiement serveur", () => {

@@ -19,6 +19,8 @@ Les notifications métier ne suivent pas ce drapeau. Elles utilisent EMAIL_DELIV
 
 Les liens utilisent une destination fixe contrôlée. Le fragment contient un jeton sensible : ne pas le partager, journaliser, copier dans les rapports ou laisser un outil d’analytics enregistrer le corps de la requête de confirmation. L’application lit puis retire immédiatement ce fragment. Avec le modèle Supabase par défaut, le premier clic consomme le lien à usage unique avant la redirection ; un second clic est donc normalement refusé.
 
+L'écran d'attente de l'inscription permet de renvoyer le lien de confirmation. Le bouton affiche un compte à rebours et redevient disponible trente secondes après chaque envoi. Le même délai est réservé atomiquement côté serveur afin qu'un double clic ou deux requêtes concurrentes ne produisent qu'un seul e-mail. Supabase conserve ses propres limites de fournisseur : un refus `429` n'est pas contourné et relance également le délai local. Avec un futur SMTP personnalisé, régler l'intervalle fournisseur à trente secondes si l'offre le permet, puis vérifier le comportement sur la préproduction avant commercialisation.
+
 ## Modèles personnalisés futurs
 
 Ces modèles demandent un SMTP personnalisé. Ils ne sont pas requis pour tester la préproduction : le lien `ConfirmationURL` par défaut est désormais pris en charge par l'application.
@@ -62,7 +64,7 @@ Lorsque ces modèles seront activés, vérifier les trois parcours après le cha
 - Invitation mini-admin : mêmes contrôles avec autorisation spécifique des comptes/rôles concernés ; conserver la limitation SEC-03.
 - Ouvrir un lien sans soumettre : aucun compte activé. Soumettre : compte actif ; deuxième soumission : refus. Jeton expiré : refus, nouvelle demande puis succès.
 - Invitation consommée mais changement de mot de passe échoué : demander un lien de récupération ; vérifier que le compte en attente peut terminer son activation, sans contourner une suspension.
-- Inscription entreprise : aucun profil/entreprise avant confirmation ; confirmation puis connexion. Lien expiré : reprendre l’inscription ; adresse déjà inscrite : réponse sans révéler l’existence du compte.
+- Inscription entreprise : aucun profil/entreprise avant confirmation ; confirmation puis connexion. Vérifier le compte à rebours de trente secondes, le renvoi après expiration, le double clic et le refus fournisseur. Lien expiré : renvoyer un lien depuis le brouillon ; adresse déjà inscrite : réponse sans révéler l’existence du compte.
 - Récupération : adresse inconnue et connue donnent la même réponse publique ; mot de passe changé, reconnexion réussie, ancien mot de passe refusé.
 - Refaire les contrôles avec compte et entreprise suspendus, et avec limitation Supabase atteinte sur environnement isolé.
 - Déconnexion et liens ouverts sur un autre appareil ; mesurer la durée résiduelle d’un ancien JWT. La révocation des refresh tokens ne supprime pas instantanément un JWT déjà émis.

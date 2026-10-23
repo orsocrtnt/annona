@@ -351,6 +351,7 @@ model SignupJourney {
   billingCity        String?              @map("billing_city")
   billingCountry     String               @default("FR") @map("billing_country")
   emailVerifiedAt    DateTime?            @map("email_verified_at")
+  verificationEmailSentAt DateTime?       @map("verification_email_sent_at")
   paymentConfirmedAt DateTime?            @map("payment_confirmed_at")
   activatedAt        DateTime?            @map("activated_at")
   failureCode        String?               @map("failure_code")

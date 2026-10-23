@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, submitSignupIdentity, updateSignupSelection } from "@/domains/signup/signup.service";
+import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, resendSignupConfirmation, submitSignupIdentity, updateSignupSelection } from "@/domains/signup/signup.service";
 import { setSignupResumeCookie } from "@/domains/signup/signup-cookie";
 import { signupActionSchema } from "@/lib/validations/signup";
 
@@ -7,6 +7,7 @@ const noStore = { "Cache-Control": "no-store" };
 
 function publicError(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
+  if (code === "SIGNUP_EMAIL_RESEND_COOLDOWN") return { status: 429, error: "Patientez 30 secondes avant de renvoyer l’e-mail." };
   if (code === "AUTH_RATE_LIMITED") return { status: 429, error: "Trop de demandes. Réessayez dans quelques minutes." };
   if (["AUTH_EMAIL_NOT_CONFIGURED", "AUTH_EMAIL_FAILED"].includes(code)) return { status: 503, error: "La vérification e-mail est temporairement indisponible." };
   if (code === "SIGNUP_RESUME_INVALID") return { status: 401, error: "Cette inscription a expiré. Recommencez en quelques instants." };
@@ -45,6 +46,9 @@ export async function POST(request: NextRequest) {
     if (!currentToken) return NextResponse.json({ error: "Cette inscription a expiré." }, { status: 401, headers: noStore });
     if (parsed.data.action === "selection") {
       return NextResponse.json({ journey: await updateSignupSelection(currentToken, parsed.data) }, { headers: noStore });
+    }
+    if (parsed.data.action === "resend-email") {
+      return NextResponse.json(await resendSignupConfirmation(currentToken), { headers: noStore });
     }
     const result = await submitSignupIdentity(currentToken, parsed.data);
     return NextResponse.json(result, { headers: noStore });

@@ -8,15 +8,17 @@ Une entreprise fictive peut désormais partir de `/register`, choisir Starter, P
 
 Le serveur recalcule toujours le devis depuis le catalogue C7 actif. Il refuse les options déjà incluses, les doublons, les quantités invalides et les plafonds dépassés. Le mot de passe n'entre jamais dans PostgreSQL : Supabase Auth le reçoit directement et la confirmation d'e-mail rattache le compte au brouillon uniquement si l'identité, l'adresse et le jeton correspondent. L'ancien endpoint de création directe ne provisionne plus d'entreprise.
 
+Depuis le correctif du 23 octobre, l'écran en attente propose aussi de renvoyer le lien. Le bouton affiche les secondes restantes et redevient disponible après trente secondes. Cette limite est enregistrée et réservée atomiquement en base : elle résiste au rechargement, aux doubles clics et aux requêtes concurrentes. Un refus de limite Supabase reste un refus et ne supprime pas la protection locale.
+
 L'adaptateur de paiement de SIGNUP-1 est déterministe et fictif. Il est activé uniquement en local ou sur la Preview `preproduction`, et la route le refuse lorsque `VERCEL_ENV=production`. Un retour du navigateur ne suffit jamais : l'activation exige un événement serveur `CONFIRMED` du bon montant et de la bonne devise. Les événements en attente, refusés, dupliqués ou reçus après une confirmation ne peuvent pas dégrader un paiement confirmé.
 
 L'activation verrouille le brouillon et crée dans une seule transaction sérialisable l'entreprise, l'administrateur, la souscription, l'offre et ses options. Une collision d'e-mail, de compte Auth, de SIREN ou de SIRET ne laisse aucune entreprise partielle. Le rejeu renvoie l'activation existante. L'e-mail de bienvenue est enregistré dans la même transaction comme tâche durable et utilise une clé d'envoi idempotente ; sa panne n'annule donc pas le compte et le worker peut le rejouer. Après connexion, l'utilisateur reprend sur ONBOARD-1.
 
 ## Base et sécurité
 
-Quatre migrations additives créent les brouillons et événements de paiement, ajoutent les coordonnées légales nécessaires, indexent le catalogue, isolent le secret à usage unique de confirmation et retirent l'exécution publique d'une fonction interne de trigger. Les nouvelles tables ont RLS active et aucun droit direct pour `PUBLIC`, `anon` ou `authenticated`. Toutes les opérations passent par les services serveur.
+Cinq migrations additives créent les brouillons et événements de paiement, ajoutent les coordonnées légales nécessaires, indexent le catalogue, isolent le secret à usage unique de confirmation, mémorisent le dernier envoi et retirent l'exécution publique d'une fonction interne de trigger. Les nouvelles tables ont RLS active et aucun droit direct pour `PUBLIC`, `anon` ou `authenticated`. Toutes les opérations passent par les services serveur.
 
-La préproduction Supabase isolée contient neuf migrations et ne présente aucun drift. La garde d'environnement confirme la cible attendue et interdit la cible historique. Les variables Vercel `AUTH_EMAIL_LINKS_ENABLED=true` et `SIGNUP_PAYMENT_ADAPTER=fake` sont limitées à Preview et à la branche `preproduction`. Aucune variable Production n'a été changée.
+La préproduction Supabase isolée contient dix migrations Prisma et ne présente aucun drift. La garde d'environnement confirme la cible attendue et interdit la cible historique. Les variables Vercel `AUTH_EMAIL_LINKS_ENABLED=true` et `SIGNUP_PAYMENT_ADAPTER=fake` sont limitées à Preview et à la branche `preproduction`. Aucune variable Production n'a été changée.
 
 ## Recette
 
@@ -28,14 +30,15 @@ La recette connectée a validé :
 - deux inscriptions concurrentes avec le même SIREN : une seule entreprise créée ;
 - entreprises distinctes et données isolées ;
 - passage à ONBOARD-1, sept étapes complétées et première livraison fictive avec preuve ;
+- renvoi borné à trente secondes, y compris deux requêtes concurrentes qui ne produisent qu'un envoi ;
 - nettoyage complet : 8 entreprises, 64 utilisateurs, 0 brouillon et 0 événement avant comme après.
 
 Preuves finales :
 
-- `npm run check` : TypeScript, ESLint strict et 308 tests réussis ;
+- `npm run check` après le correctif : TypeScript, ESLint strict et 311 tests réussis ;
 - `npm run build` : build de production réussi, 106 pages ;
 - `npm run test:signup1` : tous les scénarios connectés réussis ; preuve `outputs/signup1/connected.json` ;
-- `prisma migrate status` sur préproduction : neuf migrations, schéma à jour ;
+- `prisma migrate status` sur préproduction : dix migrations, schéma à jour ;
 - `npm run ci:preprod-env` avec les variables de préproduction : garde verte ;
 - `git diff --check` : aucune erreur de format.
 

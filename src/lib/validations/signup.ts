@@ -36,7 +36,9 @@ export const signupIdentitySchema = z.object({
   path: ["siret"],
 });
 
-export const signupActionSchema = z.union([signupSelectionSchema, signupIdentitySchema]);
+export const signupResendEmailSchema = z.object({ action: z.literal("resend-email") });
+
+export const signupActionSchema = z.union([signupSelectionSchema, signupIdentitySchema, signupResendEmailSchema]);
 
 export const fakePaymentSchema = z.object({
   eventKey: z.string().uuid(),
