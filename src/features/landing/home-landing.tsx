@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Building2, Package2, Truck, UserRound } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import { PublicSupportLink } from "@/features/support/public-support-link";
 
 /**
  * Accueil public — sobre, sans assets.
@@ -90,13 +91,16 @@ export function HomeLanding() {
             </span>
             <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
           </Link>
-          <Link
-            href="/login"
-            className="inline-flex min-h-10 items-center rounded-md px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: t.accent }}
-          >
-            Connexion
-          </Link>
+          <div className="flex items-center gap-4">
+            <PublicSupportLink />
+            <Link
+              href="/login"
+              className="inline-flex min-h-10 items-center rounded-md px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: t.accent }}
+            >
+              Connexion
+            </Link>
+          </div>
         </div>
       </header>
 

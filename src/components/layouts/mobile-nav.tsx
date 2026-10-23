@@ -70,10 +70,17 @@ export function MobileNav({ items }: MobileNavProps) {
 
             if (item.disabled) {
               return (
-                <span key={item.href} aria-disabled="true" className={className}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={item.disabledReason}
+                  aria-disabled="true"
+                  onClick={() => setMobileNavOpen(false)}
+                  className={className}
+                >
                   {Icon && <Icon className="h-[18px] w-[18px]" />}
                   {item.title}
-                </span>
+                </Link>
               );
             }
 

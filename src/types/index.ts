@@ -74,6 +74,7 @@ export interface NavItem {
   icon?: React.ComponentType<{ className?: string }>;
   badge?: string | number;
   disabled?: boolean;
+  disabledReason?: string;
   children?: NavItem[];
 }
 

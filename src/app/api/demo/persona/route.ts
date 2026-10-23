@@ -11,6 +11,7 @@ import { setDemoPersonaCookie } from "@/lib/demo/persona-cookie";
 import { isAccountActive } from "@/lib/auth/account-access";
 import { extractPermissionSlugs } from "@/domains/user/user.service";
 import { getDemoSessionCompanyId } from "@/domains/demo/demo-session.service";
+import { getSessionSaasAccess } from "@/domains/saas/saas-session";
 
 const bodySchema = z.object({
   persona: z.enum(["admin", "client", "driver"]),
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     persona,
     user: personaUser,
     permissions: extractPermissionSlugs(personaUser),
+    saas: await getSessionSaasAccess(sessionCompanyId),
     redirectTo: DEMO_PERSONA_PATHS[persona],
     demo: {
       isDemo: true as const,

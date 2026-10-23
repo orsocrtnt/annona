@@ -232,6 +232,16 @@ test("SAAS-01A : catalogue C7 versionné, annuel sans remise sur options et migr
   assert.match(sql, /CREATE UNIQUE INDEX "saas_plan_assignments_one_current_key"/);
 });
 
+test("C8 : dispatch auto 29 € Starter, admin extra 12 € toutes offres, C7 retiré", () => {
+  const sql = readFileSync(resolve("prisma/migrations/20261023180000_catalog_c8_prices/migration.sql"), "utf8");
+  assert.match(sql, /C8-2026-10-23/);
+  assert.match(sql, /"status" = 'RETIRED'/);
+  assert.match(sql, /'STARTER', 'Starter', 7900, 79000, 5, false, 10, 1, NULL, 0/);
+  assert.match(sql, /'AUTO_DISPATCH', 'Dispatch automatique', 'OPTION', 'auto_dispatch', NULL, 2900, 34800/);
+  assert.match(sql, /'ADMIN_EXTRA', 'Administrateur supplémentaire', 'ADMIN_SEAT', NULL, 'COMPANY_ADMIN', 1200, 14400, ARRAY\['STARTER','PRO','BUSINESS'\]/);
+  assert.match(sql, /'DISPATCHER_ALL'.*800, 9600/);
+});
+
 test("SAAS-01A : le dispatcher ne reçoit aucun droit de compte, facturation ou paramétrage", () => {
   const forbidden = new Set([
     "users:read", "users:create", "users:update", "users:delete",

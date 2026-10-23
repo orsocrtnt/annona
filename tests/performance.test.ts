@@ -60,6 +60,7 @@ function sessionRoute(auth: unknown) {
     "next/server": { NextResponse, after: () => undefined },
     "@/lib/api/server-auth": { getServerAuth: async () => { calls++; return auth; } },
     "@/lib/demo/constants": { demoPersonaForRole: (role: string) => role === "DRIVER" ? "driver" : "admin", DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },
+    "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/auth/session/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   runInNewContext(source, { exports: module.exports, module, require: (id: string) => { assert.ok(id in dependencies, `Lecture supplémentaire interdite : ${id}`); return dependencies[id]; } });
@@ -135,6 +136,7 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
       requestDemoPoolRecycle: async () => true,
       recycleDemoPoolEnvironment: async () => ({ status: "recycled" }),
     },
+    "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/auth/login/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   runInNewContext(source, { exports: module.exports, module, console, require: (id: string) => { assert.ok(id in dependencies, `Aucune dépendance reset/seed autorisée au login : ${id}`); return dependencies[id]; } });

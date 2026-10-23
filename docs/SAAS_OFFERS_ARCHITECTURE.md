@@ -70,7 +70,7 @@ Les taux de travail confirmés sont 15 % pour un apporteur d'affaires, 25 % pour
 
 ## État du noyau au 22 octobre 2026
 
-Le catalogue `C7-2026-10-21`, les trois offres et les neuf options sont enregistrés dans une migration additive. Les prix sont stockés en centimes, les annuels des options correspondent à douze mensualités et les instantanés d'offre/option préservent l'historique lors d'un changement.
+Le catalogue `C7-2026-10-21` a été remplacé comme catalogue actif par `C8-2026-10-23` : dispatch automatique Starter à 29 € HT/mois, administrateur supplémentaire à 12 € HT/mois sur les trois offres. C7 reste retiré et historisé. Les prix sont stockés en centimes, les annuels des options correspondent à douze mensualités et les instantanés d'offre/option préservent l'historique lors d'un changement.
 
 Chaque entreprise possède désormais un état explicite `COMMERCIAL`, `PILOT` ou `LEGACY`. La migration conserve les entreprises existantes en `LEGACY` sans inventer d'activation payante. Les sessions de démonstration isolées reçoivent un pilote limité à leur durée de huit heures ; une nouvelle inscription antérieure au futur parcours autonome reste explicitement historique.
 

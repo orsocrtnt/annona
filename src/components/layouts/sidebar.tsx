@@ -112,8 +112,10 @@ export function Sidebar({ items, footer }: SidebarProps) {
 
             if (item.disabled) {
               return (
-                <span
+                <Link
                   key={item.href}
+                  href={item.href}
+                  title={item.disabledReason}
                   aria-disabled="true"
                   className={className}
                 >
@@ -130,7 +132,7 @@ export function Sidebar({ items, footer }: SidebarProps) {
                       )}
                     </>
                   )}
-                </span>
+                </Link>
               );
             }
 

@@ -193,6 +193,7 @@ test("connexion : e-mail non confirmé refusé sans appel administrateur", async
       DemoPoolUnavailableError: class extends Error {},
       maintainDemoPool: async () => [],
     },
+    "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
   });
   assert.equal((await POST(new Request("http://local", { method: "POST", body: JSON.stringify({ email: "test@example.com", password: "TestLocal123!" }) }))).status, 401);
 });

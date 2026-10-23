@@ -62,6 +62,11 @@ export type ResolvedSaasAccess = {
     dispatchers: number | null;
     monthlyOrders: number;
   };
+  maxSeats: {
+    drivers: number | null;
+    admins: number | null;
+    dispatchers: number | null;
+  };
   orderOverageUnitPriceCents: number;
   canCreateOrders: boolean;
   canMutate: boolean;
@@ -238,6 +243,7 @@ export async function resolveCompanySaasAccess(
       planCode: null,
       features: new Set(SAAS_FEATURES),
       limits: { drivers: null, admins: null, dispatchers: null, monthlyOrders: 2_147_483_647 },
+      maxSeats: { drivers: null, admins: null, dispatchers: null },
       orderOverageUnitPriceCents: 0,
       canCreateOrders,
       canMutate,
@@ -253,6 +259,11 @@ export async function resolveCompanySaasAccess(
       planCode: null,
       features: new Set(snapshot.features),
       limits: snapshot.limits,
+      maxSeats: {
+        drivers: snapshot.limits.drivers,
+        admins: snapshot.limits.admins,
+        dispatchers: snapshot.limits.dispatchers,
+      },
       orderOverageUnitPriceCents: snapshot.orderOverageUnitPriceCents,
       canCreateOrders,
       canMutate,
@@ -291,6 +302,11 @@ export async function resolveCompanySaasAccess(
         plan.maxDispatcherSeats
       ),
       monthlyOrders: plan.includedMonthlyOrders,
+    },
+    maxSeats: {
+      drivers: plan.unlimitedDriverSeats ? null : plan.maxDriverSeats,
+      admins: plan.maxAdminSeats,
+      dispatchers: plan.maxDispatcherSeats,
     },
     orderOverageUnitPriceCents: plan.orderOverageUnitPriceCents,
     canCreateOrders,

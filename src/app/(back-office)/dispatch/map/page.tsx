@@ -14,18 +14,21 @@ import { DispatchDeliveriesMapPanel } from "@/features/back-office/dispatch-deli
 import { useDispatchDeliveriesMap } from "@/features/back-office/dispatch-map-hooks";
 import { PageLoader } from "@/components/ui/loader";
 import { isLateDispatchDelivery } from "@/features/back-office/dispatch-focus";
+import { OfferFeatureGate } from "@/features/saas/locked-offer-feature";
 
 export default function DispatchMapPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-full items-center justify-center bg-[#ececea]">
-          <PageLoader />
-        </div>
-      }
-    >
-      <DispatchMapContent />
-    </Suspense>
+    <OfferFeatureGate feature="admin_gps">
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center bg-[#ececea]">
+            <PageLoader />
+          </div>
+        }
+      >
+        <DispatchMapContent />
+      </Suspense>
+    </OfferFeatureGate>
   );
 }
 

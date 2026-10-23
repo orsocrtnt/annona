@@ -20,9 +20,9 @@ const planDescriptions: Record<PlanCode, string> = {
 function CellContent({ cell }: { cell: ComparisonCell }) {
   if (cell.kind === "included") {
     return (
-      <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-        <Check className="h-4 w-4 text-brand" aria-hidden />
-        {cell.text}
+      <span className="inline-flex items-start gap-1.5 font-medium text-foreground">
+        <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
+        <span>{cell.text}</span>
       </span>
     );
   }
@@ -36,6 +36,15 @@ function CellContent({ cell }: { cell: ComparisonCell }) {
   }
   if (cell.kind === "option") {
     return <span className="text-muted-foreground">{cell.text}</span>;
+  }
+  if (cell.struckText) {
+    return (
+      <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span>{cell.text}</span>
+        <span className="sr-only">au lieu de</span>
+        <s className="text-muted-foreground decoration-muted-foreground/80">{cell.struckText}</s>
+      </span>
+    );
   }
   return <span>{cell.text}</span>;
 }

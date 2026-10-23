@@ -7,6 +7,7 @@ import { DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { getDemoPersonaUser } from "@/domains/demo/demo-users.service";
 import { extractPermissionSlugs } from "@/domains/user/user.service";
 import { getDemoSessionCompanyId } from "@/domains/demo/demo-session.service";
+import { getSessionSaasAccess } from "@/domains/saas/saas-session";
 
 export async function POST() {
   const baseUser = await getDemoBaseAuthUser();
@@ -37,6 +38,7 @@ export async function POST() {
     deliveries: result.deliveries,
     user: adminUser,
     permissions: adminUser ? extractPermissionSlugs(adminUser) : [],
+    saas: await getSessionSaasAccess(sessionCompanyId),
     redirectTo: "/dashboard",
     demo: {
       isDemo: true as const,

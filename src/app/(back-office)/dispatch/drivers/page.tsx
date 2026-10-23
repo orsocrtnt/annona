@@ -10,8 +10,17 @@ const DriversLiveMap = dynamic(
   { ssr: false }
 );
 import { useDriverLiveLocations } from "@/features/back-office/dispatch-map-hooks";
+import { OfferFeatureGate } from "@/features/saas/locked-offer-feature";
 
 export default function DispatchDriversMapPage() {
+  return (
+    <OfferFeatureGate feature="admin_gps">
+      <DispatchDriversMapContent />
+    </OfferFeatureGate>
+  );
+}
+
+function DispatchDriversMapContent() {
   const { data: drivers, error, isError } = useDriverLiveLocations();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapApi, setMapApi] = useState<DriversMapApi | null>(null);

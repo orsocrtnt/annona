@@ -24,6 +24,7 @@ import {
   recycleDemoPoolEnvironment,
   requestDemoPoolRecycle,
 } from "@/domains/demo/demo-pool.service";
+import { getSessionSaasAccess } from "@/domains/saas/saas-session";
 
 export async function POST(request: Request) {
   try {
@@ -133,6 +134,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       user,
       permissions,
+      saas: await getSessionSaasAccess(user.companyId),
       redirectTo: getDashboardPathForRole(user.role.systemRole, user.settings),
       demo: isDemoAccount
         ? {

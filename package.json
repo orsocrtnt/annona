@@ -19,6 +19,7 @@
     "db:seed-test-accounts": "dotenv -e .env.local -- tsx scripts/seed-test-accounts.ts",
     "db:seed-random-orders": "dotenv -e .env.local -- tsx scripts/seed-random-orders.ts",
     "db:seed-demo": "dotenv -e .env.local -- tsx scripts/seed-demo-environment.ts",
+    "db:seed-offer-environments": "dotenv -e .env.preproduction.local -- tsx scripts/seed-offer-environments.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit --incremental false",

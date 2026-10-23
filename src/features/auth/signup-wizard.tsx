@@ -15,7 +15,9 @@ import {
   type SignupCatalog,
   formatSignupMoney,
 } from "@/features/auth/signup-plan-comparison";
+import { describeSignupValidation, signupIdentityDetailsSchema, signupIdentitySchema } from "@/lib/validations/signup";
 import { APP_NAME } from "@/lib/constants";
+import { PublicSupportLink } from "@/features/support/public-support-link";
 
 type Stage = "plan" | "options" | "identity" | "email" | "payment";
 type Selection = { code: string; quantity: number };
@@ -61,6 +63,7 @@ export function SignupWizard() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [resendSeconds, setResendSeconds] = useState(0);
   const [identityDraft, setIdentityDraft] = useState<Record<string, string>>({});
@@ -107,12 +110,26 @@ export function SignupWizard() {
   const progress = stage === "payment" ? 5 : stage === "email" ? 4 : stage === "identity" ? 3 : stage === "options" ? 2 : 1;
   const currentStepIndex = stepItems.findIndex((step) => step.id === stage);
 
+  const showFieldErrors = (fields: Record<string, string>, summary: string, form?: HTMLFormElement) => {
+    setFieldErrors(fields);
+    setError(summary);
+    const first = Object.keys(fields)[0];
+    if (first && form) {
+      const target = form.elements.namedItem(first);
+      if (target instanceof HTMLElement) target.focus();
+    }
+  };
+
   const post = async (body: unknown) => {
     setSubmitting(true); setError(null); setNotice(null);
     try {
       const response = await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "Impossible de poursuivre.");
+      if (!response.ok) {
+        const error = new Error(payload.error ?? "Impossible de poursuivre.") as Error & { fields?: Record<string, string> };
+        error.fields = payload.fields;
+        throw error;
+      }
       return payload;
     } finally { setSubmitting(false); }
   };
@@ -163,21 +180,44 @@ export function SignupWizard() {
 
   const submitIdentity = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const password = String(form.get("password") ?? "");
     const confirmPassword = String(form.get("confirmPassword") ?? "");
-    if (!emailLocked && password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
+    setFieldErrors({});
+    if (!emailLocked && password !== confirmPassword) {
+      showFieldErrors({ confirmPassword: "Les mots de passe ne correspondent pas." }, "Les mots de passe ne correspondent pas.", formElement);
+      return;
+    }
     const body = Object.fromEntries(form.entries());
+    const parsed = emailLocked
+      ? signupIdentityDetailsSchema.safeParse({ action: "identity-details", ...body })
+      : signupIdentitySchema.safeParse({ action: "identity", ...body });
+    if (!parsed.success) {
+      const details = describeSignupValidation(parsed.error);
+      showFieldErrors(details.fields, details.summary, formElement);
+      return;
+    }
     try {
       if (emailLocked) {
-        const payload = await post({ action: "identity-details", ...body });
+        const payload = await post(parsed.data);
         applyJourney(payload.journey, "payment");
         setNotice("Vos informations ont été mises à jour.");
         return;
       }
-      await post({ action: "identity", ...body });
-      await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible d'enregistrer ces informations."); }
+      const payload = await post(parsed.data);
+      if (payload.journey) applyJourney(payload.journey, stageFromJourney(payload.journey));
+      else await load();
+    } catch (reason) {
+      const fields = reason && typeof reason === "object" && "fields" in reason
+        ? (reason.fields as Record<string, string> | undefined)
+        : undefined;
+      if (fields && Object.keys(fields).length > 0) {
+        showFieldErrors(fields, reason instanceof Error ? reason.message : "Impossible d'enregistrer ces informations.", formElement);
+        return;
+      }
+      setError(reason instanceof Error ? reason.message : "Impossible d'enregistrer ces informations.");
+    }
   };
 
   const pay = async () => {
@@ -198,7 +238,11 @@ export function SignupWizard() {
     if (resendSeconds > 0) return;
     try {
       const payload = await post({ action: "resend-email" });
-      if (payload.journey) setJourney(payload.journey);
+      if (payload.journey) applyJourney(payload.journey, stageFromJourney(payload.journey));
+      if (payload.journey?.emailVerified) {
+        setNotice("Cette adresse est déjà confirmée. Vous pouvez continuer.");
+        return;
+      }
       setNotice("Un nouveau lien de confirmation vient d’être envoyé.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Impossible de renvoyer l’e-mail.");
@@ -217,7 +261,10 @@ export function SignupWizard() {
       <div className="mx-auto max-w-5xl">
         <header className="flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-3 font-semibold"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white"><Package2 className="h-5 w-5" /></span>{APP_NAME}</Link>
-          <Link href="/login" className="text-sm font-medium text-brand hover:underline">Se connecter</Link>
+          <div className="flex items-center gap-4">
+            <PublicSupportLink />
+            <Link href="/login" className="text-sm font-medium text-brand hover:underline">Se connecter</Link>
+          </div>
         </header>
         <section className="mt-8 rounded-2xl border bg-background p-5 shadow-sm sm:p-8">
           <div className="mb-8">
@@ -280,21 +327,21 @@ export function SignupWizard() {
           )}
 
           {stage === "identity" && choicesEditable && journey && (
-            <form onSubmit={submitIdentity} onChange={(event) => { const field = event.target as unknown as HTMLInputElement; if (field.name) setIdentityDraft((current) => ({ ...current, [field.name]: field.value })); }} className="space-y-5">
+            <form onSubmit={submitIdentity} onChange={(event) => { const field = event.target as unknown as HTMLInputElement; if (field.name) { setIdentityDraft((current) => ({ ...current, [field.name]: field.value })); setFieldErrors((current) => current[field.name] ? { ...current, [field.name]: "" } : current); } }} className="space-y-5" noValidate>
               <div>
                 <h1 className="text-2xl font-semibold">{emailLocked ? "Corrigez les informations de l’entreprise" : "Créez votre entreprise"}</h1>
                 <p className="mt-2 text-muted-foreground">{emailLocked ? "L’adresse e-mail déjà confirmée reste inchangée. Le mot de passe n’a pas à être resaisi." : "L’e-mail professionnel devra être confirmé avant le paiement fictif."}</p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Prénom" required><Input name="firstName" autoComplete="given-name" defaultValue={identityDraft.firstName ?? journey.firstName ?? ""} required /></FormField><FormField label="Nom" required><Input name="lastName" autoComplete="family-name" defaultValue={identityDraft.lastName ?? journey.lastName ?? ""} required /></FormField></div>
-              <FormField label="E-mail professionnel" required><Input name="email" type="email" autoComplete="email" defaultValue={identityDraft.email ?? journey.email ?? ""} required readOnly={emailLocked} /></FormField>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Prénom" required error={fieldErrors.firstName}><Input name="firstName" autoComplete="given-name" defaultValue={identityDraft.firstName ?? journey.firstName ?? ""} required /></FormField><FormField label="Nom" required error={fieldErrors.lastName}><Input name="lastName" autoComplete="family-name" defaultValue={identityDraft.lastName ?? journey.lastName ?? ""} required /></FormField></div>
+              <FormField label="E-mail professionnel" required error={fieldErrors.email}><Input name="email" type="email" autoComplete="email" defaultValue={identityDraft.email ?? journey.email ?? ""} required readOnly={emailLocked} /></FormField>
               {!emailLocked && (
-                <div className="grid gap-4 sm:grid-cols-2"><FormField label="Mot de passe" required><PasswordInput name="password" autoComplete="new-password" defaultValue={identityDraft.password ?? ""} required /></FormField><FormField label="Confirmer" required><PasswordInput name="confirmPassword" autoComplete="new-password" defaultValue={identityDraft.confirmPassword ?? ""} required /></FormField></div>
+                <div className="grid gap-4 sm:grid-cols-2"><FormField label="Mot de passe" required hint="Au moins 8 caractères, une minuscule, une majuscule et un chiffre." error={fieldErrors.password}><PasswordInput name="password" autoComplete="new-password" defaultValue={identityDraft.password ?? ""} required /></FormField><FormField label="Confirmer" required error={fieldErrors.confirmPassword}><PasswordInput name="confirmPassword" autoComplete="new-password" defaultValue={identityDraft.confirmPassword ?? ""} required /></FormField></div>
               )}
-              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Nom commercial" required><Input name="companyName" autoComplete="organization" defaultValue={identityDraft.companyName ?? journey.companyName ?? ""} required /></FormField><FormField label="Raison sociale" hint="Optionnel"><Input name="legalName" defaultValue={identityDraft.legalName ?? journey.legalName ?? ""} /></FormField></div>
-              <div className="grid gap-4 sm:grid-cols-2"><FormField label="SIREN" hint="9 chiffres, optionnel"><Input name="siren" inputMode="numeric" maxLength={9} defaultValue={identityDraft.siren ?? journey.siren ?? ""} /></FormField><FormField label="SIRET" hint="14 chiffres, optionnel"><Input name="siret" inputMode="numeric" maxLength={14} defaultValue={identityDraft.siret ?? journey.siret ?? ""} /></FormField></div>
-              <FormField label="Téléphone" hint="Optionnel"><Input name="phone" type="tel" autoComplete="tel" defaultValue={identityDraft.phone ?? journey.phone ?? ""} /></FormField>
-              <FormField label="Adresse de facturation" required><Input name="billingAddress" autoComplete="street-address" defaultValue={identityDraft.billingAddress ?? journey.billingAddress ?? ""} required /></FormField>
-              <div className="grid gap-4 sm:grid-cols-[140px_1fr_100px]"><FormField label="Code postal" required><Input name="billingPostalCode" autoComplete="postal-code" defaultValue={identityDraft.billingPostalCode ?? journey.billingPostalCode ?? ""} required /></FormField><FormField label="Ville" required><Input name="billingCity" autoComplete="address-level2" defaultValue={identityDraft.billingCity ?? journey.billingCity ?? ""} required /></FormField><FormField label="Pays" required><Input name="billingCountry" defaultValue={identityDraft.billingCountry ?? journey.billingCountry ?? "FR"} maxLength={2} required /></FormField></div>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Nom commercial" required error={fieldErrors.companyName}><Input name="companyName" autoComplete="organization" defaultValue={identityDraft.companyName ?? journey.companyName ?? ""} required /></FormField><FormField label="Raison sociale" hint="Optionnel" error={fieldErrors.legalName}><Input name="legalName" defaultValue={identityDraft.legalName ?? journey.legalName ?? ""} /></FormField></div>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="SIREN" hint="9 chiffres, optionnel" error={fieldErrors.siren}><Input name="siren" inputMode="numeric" maxLength={9} defaultValue={identityDraft.siren ?? journey.siren ?? ""} /></FormField><FormField label="SIRET" hint="14 chiffres, optionnel" error={fieldErrors.siret}><Input name="siret" inputMode="numeric" maxLength={14} defaultValue={identityDraft.siret ?? journey.siret ?? ""} /></FormField></div>
+              <FormField label="Téléphone" hint="Optionnel" error={fieldErrors.phone}><Input name="phone" type="tel" autoComplete="tel" defaultValue={identityDraft.phone ?? journey.phone ?? ""} /></FormField>
+              <FormField label="Adresse de facturation" required error={fieldErrors.billingAddress}><Input name="billingAddress" autoComplete="street-address" defaultValue={identityDraft.billingAddress ?? journey.billingAddress ?? ""} required /></FormField>
+              <div className="grid gap-4 sm:grid-cols-[140px_1fr_100px]"><FormField label="Code postal" required error={fieldErrors.billingPostalCode}><Input name="billingPostalCode" autoComplete="postal-code" defaultValue={identityDraft.billingPostalCode ?? journey.billingPostalCode ?? ""} required /></FormField><FormField label="Ville" required error={fieldErrors.billingCity}><Input name="billingCity" autoComplete="address-level2" defaultValue={identityDraft.billingCity ?? journey.billingCity ?? ""} required /></FormField><FormField label="Pays" required error={fieldErrors.billingCountry}><Input name="billingCountry" defaultValue={identityDraft.billingCountry ?? journey.billingCountry ?? "FR"} maxLength={2} required /></FormField></div>
               <div className="flex flex-col-reverse gap-3 sm:flex-row"><Button type="button" variant="outline" onClick={() => void goToStage("options")}>Retour</Button><Button type="submit" variant="brand" loading={submitting}>{emailLocked ? "Enregistrer et revenir au paiement" : "Vérifier mon e-mail"}</Button></div>
             </form>
           )}

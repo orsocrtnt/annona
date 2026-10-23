@@ -34,7 +34,7 @@ export function useDispatchDeliveriesMap() {
   });
 }
 
-export function useDriverLiveLocations() {
+export function useDriverLiveLocations(enabled = true) {
   const { data: locationSettings } = useCompanyLocationSettings();
   const refreshMs =
     (locationSettings?.adminMapRefreshSeconds ??
@@ -43,6 +43,7 @@ export function useDriverLiveLocations() {
   return useQuery({
     queryKey: ["company", "dispatch", "drivers-locations"],
     queryFn: () => fetchJson<LiveDriverLocation[]>("/api/dispatch/drivers-locations"),
+    enabled,
     retry: 1,
     refetchInterval: (query) =>
       query.state.status === "error" ? false : refreshMs,

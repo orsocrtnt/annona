@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { applyOfferNavLocks } from "@/features/saas/offer-nav";
+import { useOfferAccess } from "@/features/saas/use-offer-access";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { getInitials } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
@@ -71,7 +73,7 @@ function PortalNavLink({
   item,
   isActive,
 }: {
-  item: (typeof navItems)[number];
+  item: (typeof navItems)[number] & { disabled?: boolean; disabledReason?: string };
   isActive: boolean;
 }) {
   const prefetchHandlers = useNavQueryPrefetch(item.href);
@@ -81,13 +83,16 @@ function PortalNavLink({
     <Link
       href={item.href}
       aria-current={isActive ? "page" : undefined}
-      {...prefetchHandlers}
+      aria-disabled={item.disabled || undefined}
+      title={item.disabledReason}
+      {...(item.disabled ? {} : prefetchHandlers)}
       className={cn(
         "flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
         "max-md:px-2.5 max-md:py-2 max-md:text-xs",
         isActive
           ? "bg-brand text-white shadow-sm"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground"
       )}
     >
       <Icon className="h-4 w-4" />
@@ -98,6 +103,8 @@ function PortalNavLink({
 
 function PortalNav({ compact = false, overlay = false }: { compact?: boolean; overlay?: boolean }) {
   const pathname = usePathname();
+  const saas = useOfferAccess();
+  const items = applyOfferNavLocks(navItems, saas);
 
   return (
     <nav
@@ -110,7 +117,7 @@ function PortalNav({ compact = false, overlay = false }: { compact?: boolean; ov
         !compact && "mb-8"
       )}
     >
-      {navItems.map((item) => {
+      {items.map((item) => {
         const isActive =
           pathname === item.href ||
           (item.href !== "/portal" && pathname.startsWith(item.href));

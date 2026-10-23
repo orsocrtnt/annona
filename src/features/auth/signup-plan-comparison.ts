@@ -38,6 +38,7 @@ export type ComparisonCellKind = "value" | "included" | "option" | "missing";
 export type ComparisonCell = {
   kind: ComparisonCellKind;
   text: string;
+  struckText?: string;
 };
 
 export type ComparisonRow = {
@@ -85,6 +86,20 @@ function featureCell(
   return { kind: "missing", text: "Non inclus" };
 }
 
+function autoDispatchCell(
+  plan: SignupCatalogPlan,
+  options: SignupCatalogOption[],
+  billingInterval: BillingInterval,
+): ComparisonCell {
+  if (!plan.includedFeatures.includes("auto_dispatch")) {
+    return featureCell(plan, "auto_dispatch", options, billingInterval);
+  }
+  return {
+    kind: "included",
+    text: plan.includedDispatcherSeats > 0 ? `${plan.includedDispatcherSeats} inclus` : "Inclus",
+  };
+}
+
 export function buildSignupPlanComparison(catalog: SignupCatalog, billingInterval: BillingInterval): ComparisonRow[] {
   const { plans, options } = catalog;
   const period = billingInterval === "ANNUAL" ? "an" : "mois";
@@ -92,10 +107,21 @@ export function buildSignupPlanComparison(catalog: SignupCatalog, billingInterva
     {
       id: "price",
       label: `Prix HT / ${period}`,
-      cells: cellsFor(plans, (plan) => ({
-        kind: "value",
-        text: formatSignupMoney(billingInterval === "ANNUAL" ? plan.annualPriceCents : plan.monthlyPriceCents, catalog.currency),
-      })),
+      cells: cellsFor(plans, (plan) => {
+        if (billingInterval !== "ANNUAL") {
+          return { kind: "value", text: formatSignupMoney(plan.monthlyPriceCents, catalog.currency) };
+        }
+        const listPriceCents = plan.monthlyPriceCents * 12;
+        const discounted = formatSignupMoney(plan.annualPriceCents, catalog.currency);
+        if (listPriceCents <= plan.annualPriceCents) {
+          return { kind: "value", text: discounted };
+        }
+        return {
+          kind: "value",
+          text: discounted,
+          struckText: formatSignupMoney(listPriceCents, catalog.currency),
+        };
+      }),
     },
     {
       id: "drivers",
@@ -131,17 +157,14 @@ export function buildSignupPlanComparison(catalog: SignupCatalog, billingInterva
       label: "Administrateurs inclus",
       cells: cellsFor(plans, (plan) => ({ kind: "value", text: `${plan.includedAdminSeats}` })),
     },
-    {
-      id: "dispatchers",
-      label: "Dispatchers inclus",
-      cells: cellsFor(plans, (plan) => plan.includedDispatcherSeats > 0
-        ? { kind: "included", text: `${plan.includedDispatcherSeats} inclus` }
-        : { kind: "missing", text: "Non inclus" }),
-    },
     ...FEATURE_COMPARISON_ORDER.map((feature) => ({
       id: feature.key,
       label: feature.label,
-      cells: cellsFor(plans, (plan) => featureCell(plan, feature.key, options, billingInterval)),
+      cells: cellsFor(plans, (plan) =>
+        feature.key === "auto_dispatch"
+          ? autoDispatchCell(plan, options, billingInterval)
+          : featureCell(plan, feature.key, options, billingInterval)
+      ),
     })),
   ];
 }

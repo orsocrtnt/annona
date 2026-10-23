@@ -362,10 +362,8 @@ export async function submitSignupIdentity(resumeToken: string, input: SignupIde
   if (journey.status === "EMAIL_PENDING" && journey.email && journey.email !== email) {
     throw new Error("SIGNUP_IDENTITY_LOCKED");
   }
-  if (journey.status === "EMAIL_PENDING" && journey.authUserId) {
-    return { verificationRequired: true as const };
-  }
   const emailLinkToken = randomBytes(32).toString("base64url");
+  const previousSentAt = journey.verificationEmailSentAt;
   const verificationEmailSentAt = new Date();
   const persisted = await prisma.signupJourney.update({
     where: { id: journey.id },
@@ -389,33 +387,26 @@ export async function submitSignupIdentity(resumeToken: string, input: SignupIde
     },
   });
 
-  const redirectTo = getPasswordLinkRedirect();
-  const client = createPasswordLinkClient();
-  const { data, error } = await client.auth.signUp({
-    email,
-    password: input.password,
-    options: {
-      emailRedirectTo: redirectTo,
-      data: {
-        signup_flow: "managed",
-        signup_draft_id: journey.id,
-        signup_link_token: emailLinkToken,
-      },
-    },
-  });
-  if (error?.status === 429) throw new Error("AUTH_RATE_LIMITED");
-  if (error) throw new Error("AUTH_EMAIL_FAILED");
-  if (data.session) {
-    await client.auth.signOut({ scope: "global" });
-    throw new Error("AUTH_EMAIL_CONFIRMATION_REQUIRED");
-  }
-  // Supabase masque volontairement l'existence d'un compte. Une identité vide
-  // reçoit donc exactement la même réponse publique mais n'est jamais liée au brouillon.
-  if (data.user?.id && (data.user.identities?.length ?? 1) > 0) {
-    await prisma.signupJourney.updateMany({
-      where: { id: persisted.id, email, authUserId: null, status: "EMAIL_PENDING" },
-      data: { authUserId: data.user.id },
+  try {
+    await deliverSignupConfirmationEmail({
+      email,
+      password: input.password,
+      journeyId: persisted.id,
+      emailLinkToken,
+      knownAuthUserId: persisted.authUserId,
     });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "AUTH_EMAIL_FAILED";
+    await prisma.signupJourney.updateMany({
+      where: { id: persisted.id, status: "EMAIL_PENDING" },
+      data: { verificationEmailSentAt: previousSentAt, failureCode: code.startsWith("AUTH_") ? code : "AUTH_EMAIL_FAILED" },
+    });
+    throw error;
+  }
+  const latest = await prisma.signupJourney.findUniqueOrThrow({ where: { id: persisted.id } });
+  const verified = await reconcileSignupEmailConfirmation(latest);
+  if (verified.emailVerifiedAt) {
+    return { verificationRequired: false as const, journey: publicJourney(verified) };
   }
   return { verificationRequired: true as const };
 }
@@ -473,26 +464,38 @@ export async function resendSignupConfirmation(resumeToken: string) {
   });
   if (reserved.count !== 1) throw new Error("SIGNUP_EMAIL_RESEND_COOLDOWN");
 
-  const client = createPasswordLinkClient();
-  const redirectTo = getPasswordLinkRedirect();
-  const { error } = await client.auth.resend({
-    type: "signup",
-    email: journey.email,
-    options: { emailRedirectTo: redirectTo },
+  const emailLinkToken = randomBytes(32).toString("base64url");
+  await prisma.signupJourney.update({
+    where: { id: journey.id },
+    data: { emailLinkTokenHash: hashToken(emailLinkToken) },
   });
-  if (error) {
-    if (error.status === 429) {
+  try {
+    const result = await deliverOrReuseSignupConfirmation({
+      email: journey.email,
+      journeyId: journey.id,
+      emailLinkToken,
+      knownAuthUserId: journey.authUserId,
+    });
+    if (result === "already_verified") {
+      const verified = await reconcileSignupEmailConfirmation(
+        await prisma.signupJourney.findUniqueOrThrow({ where: { id: journey.id } })
+      );
+      return { verificationRequired: false as const, journey: publicJourney(verified) };
+    }
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "AUTH_EMAIL_FAILED";
+    if (code === "AUTH_RATE_LIMITED") {
       await prisma.signupJourney.updateMany({
         where: { id: journey.id, status: "EMAIL_PENDING", verificationEmailSentAt: now },
         data: { failureCode: "AUTH_RATE_LIMITED" },
       });
-      throw new Error("AUTH_RATE_LIMITED");
+      throw error;
     }
     await prisma.signupJourney.updateMany({
       where: { id: journey.id, status: "EMAIL_PENDING", verificationEmailSentAt: now },
       data: { verificationEmailSentAt: previousSentAt, failureCode: "AUTH_EMAIL_FAILED" },
     });
-    throw new Error("AUTH_EMAIL_FAILED");
+    throw error instanceof Error ? error : new Error("AUTH_EMAIL_FAILED");
   }
   const updated = await prisma.signupJourney.findUniqueOrThrow({ where: { id: journey.id } });
   return { verificationRequired: true as const, journey: publicJourney(updated) };
@@ -500,6 +503,270 @@ export async function resendSignupConfirmation(resumeToken: string) {
 
 function isMissingAuthUser(error: { status?: number; code?: string } | null) {
   return error?.status === 404 || error?.code === "user_not_found";
+}
+
+function signupAuthMetadata(journeyId: string, emailLinkToken: string) {
+  return { signup_flow: "managed", signup_draft_id: journeyId, signup_link_token: emailLinkToken };
+}
+
+function authEmailRedirectTo() {
+  const redirect = getPasswordLinkRedirect();
+  const hostname = new URL(redirect).hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1" ? undefined : redirect;
+}
+
+function signupFakeEmailBypassAllowed() {
+  return (
+    process.env.VERCEL_ENV !== "production" &&
+    (process.env.SIGNUP_PAYMENT_ADAPTER === "fake" || process.env.NODE_ENV !== "production")
+  );
+}
+
+async function confirmAuthUserEmailViaAdmin(authUserId: string) {
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.updateUserById(authUserId, { email_confirm: true });
+  if (error || !data.user) throw new Error("AUTH_EMAIL_FAILED");
+  return data.user;
+}
+
+async function provisionAuthUserWithoutEmail(input: {
+  email: string;
+  password: string;
+  journeyId: string;
+  emailLinkToken: string;
+  knownAuthUserId?: string;
+}) {
+  const admin = createAdminClient();
+  const metadata = signupAuthMetadata(input.journeyId, input.emailLinkToken);
+  if (input.knownAuthUserId) {
+    const updated = await admin.auth.admin.updateUserById(input.knownAuthUserId, {
+      password: input.password,
+      email_confirm: true,
+      user_metadata: metadata,
+    });
+    if (!updated.error && updated.data.user) return updated.data.user;
+  }
+  const created = await admin.auth.admin.createUser({
+    email: input.email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: metadata,
+  });
+  if (!created.error && created.data.user) return created.data.user;
+  const existing = await findAuthUserByEmail(input.email);
+  if (!existing) throw new Error("AUTH_EMAIL_FAILED");
+  const updated = await admin.auth.admin.updateUserById(existing.id, {
+    password: input.password,
+    email_confirm: true,
+    user_metadata: metadata,
+  });
+  if (updated.error || !updated.data.user) throw new Error("AUTH_EMAIL_FAILED");
+  return updated.data.user;
+}
+
+async function tutellivUserExists(input: { authUserId?: string | null; email: string }) {
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [
+        ...(input.authUserId ? [{ authId: input.authUserId }] : []),
+        { email: { equals: input.email, mode: "insensitive" } },
+      ],
+    },
+    select: { id: true },
+  });
+  return Boolean(existing);
+}
+
+async function findAuthUserByEmail(email: string) {
+  const admin = createAdminClient();
+  const normalized = normalizeEmail(email);
+  for (let page = 1; page <= 5; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw new Error("AUTH_EMAIL_FAILED");
+    const found = data.users.find((user) => user.email && normalizeEmail(user.email) === normalized);
+    if (found) return found;
+    if (data.users.length < 200) return null;
+  }
+  return null;
+}
+
+async function attachSignupAuthUser(journeyId: string, email: string, authUserId: string) {
+  await prisma.signupJourney.updateMany({
+    where: { id: journeyId, email, status: "EMAIL_PENDING" },
+    data: { authUserId },
+  });
+}
+
+async function resendUnconfirmedSignupEmail(email: string, redirectTo: string | undefined) {
+  const client = createPasswordLinkClient();
+  const { error } = await client.auth.resend({
+    type: "signup",
+    email,
+    options: redirectTo ? { emailRedirectTo: redirectTo } : {},
+  });
+  if (error?.status === 429) {
+    if (!signupFakeEmailBypassAllowed()) throw new Error("AUTH_RATE_LIMITED");
+    const found = await findAuthUserByEmail(email);
+    if (!found) throw new Error("AUTH_RATE_LIMITED");
+    await confirmAuthUserEmailViaAdmin(found.id);
+    return;
+  }
+  if (error) throw new Error("AUTH_EMAIL_FAILED");
+}
+
+async function createManagedAuthUser(input: {
+  email: string;
+  password: string;
+  journeyId: string;
+  emailLinkToken: string;
+  redirectTo: string | undefined;
+}) {
+  const client = createPasswordLinkClient();
+  const { data, error } = await client.auth.signUp({
+    email: input.email,
+    password: input.password,
+    options: {
+      ...(input.redirectTo ? { emailRedirectTo: input.redirectTo } : {}),
+      data: signupAuthMetadata(input.journeyId, input.emailLinkToken),
+    },
+  });
+  if (error?.status === 429) {
+    if (!signupFakeEmailBypassAllowed()) throw new Error("AUTH_RATE_LIMITED");
+    return provisionAuthUserWithoutEmail(input);
+  }
+  if (error) throw new Error("AUTH_EMAIL_FAILED");
+  if (data.session) {
+    await client.auth.signOut({ scope: "global" });
+    throw new Error("AUTH_EMAIL_CONFIRMATION_REQUIRED");
+  }
+  if (data.user?.id && (data.user.identities?.length ?? 1) > 0) return data.user;
+  return null;
+}
+
+async function reuseUnconfirmedAuthUser(input: {
+  authUserId: string;
+  password?: string;
+  email: string;
+  journeyId: string;
+  emailLinkToken: string;
+  redirectTo: string | undefined;
+}) {
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(input.authUserId, {
+    ...(input.password ? { password: input.password } : {}),
+    user_metadata: signupAuthMetadata(input.journeyId, input.emailLinkToken),
+  });
+  if (error) throw new Error("AUTH_EMAIL_FAILED");
+  await attachSignupAuthUser(input.journeyId, input.email, input.authUserId);
+  await resendUnconfirmedSignupEmail(input.email, input.redirectTo);
+}
+
+async function deleteOrphanAuthUser(authUserId: string) {
+  const existingUser = await prisma.user.findUnique({ where: { authId: authUserId }, select: { id: true } });
+  if (existingUser) return false;
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(authUserId);
+  if (error && !isMissingAuthUser(error)) throw new Error("AUTH_EMAIL_FAILED");
+  return true;
+}
+
+async function resolveSignupAuthUser(knownAuthUserId: string | null, email: string) {
+  const admin = createAdminClient();
+  if (knownAuthUserId) {
+    const { data, error } = await admin.auth.admin.getUserById(knownAuthUserId);
+    if (error && !isMissingAuthUser(error)) throw new Error("AUTH_EMAIL_FAILED");
+    if (data?.user) return data.user;
+  }
+  return findAuthUserByEmail(email);
+}
+
+async function deliverOrReuseSignupConfirmation(input: {
+  email: string;
+  journeyId: string;
+  emailLinkToken: string;
+  knownAuthUserId: string | null;
+  password?: string;
+}) {
+  const redirectTo = authEmailRedirectTo();
+  const found = await resolveSignupAuthUser(input.knownAuthUserId, input.email);
+
+  if (found && !found.email_confirmed_at) {
+    await reuseUnconfirmedAuthUser({
+      authUserId: found.id,
+      password: input.password,
+      email: input.email,
+      journeyId: input.journeyId,
+      emailLinkToken: input.emailLinkToken,
+      redirectTo,
+    });
+    return "sent" as const;
+  }
+  if (found?.email_confirmed_at) {
+    if (await tutellivUserExists({ authUserId: found.id, email: input.email })) return "already_registered" as const;
+    if (!input.password) {
+      await attachSignupAuthUser(input.journeyId, input.email, found.id);
+      return "already_verified" as const;
+    }
+    const deleted = await deleteOrphanAuthUser(found.id);
+    if (!deleted) return "already_registered" as const;
+  }
+
+  if (!input.password) {
+    await resendUnconfirmedSignupEmail(input.email, redirectTo);
+    return "sent" as const;
+  }
+
+  const created = await createManagedAuthUser({
+    email: input.email,
+    password: input.password,
+    journeyId: input.journeyId,
+    emailLinkToken: input.emailLinkToken,
+    redirectTo,
+  });
+  if (created) {
+    await attachSignupAuthUser(input.journeyId, input.email, created.id);
+    return "sent" as const;
+  }
+
+  const leftover = await findAuthUserByEmail(input.email);
+  if (leftover && !leftover.email_confirmed_at) {
+    await reuseUnconfirmedAuthUser({
+      authUserId: leftover.id,
+      password: input.password,
+      email: input.email,
+      journeyId: input.journeyId,
+      emailLinkToken: input.emailLinkToken,
+      redirectTo,
+    });
+    return "sent" as const;
+  }
+  if (leftover?.email_confirmed_at) {
+    if (await tutellivUserExists({ authUserId: leftover.id, email: input.email })) return "already_registered" as const;
+    const deleted = await deleteOrphanAuthUser(leftover.id);
+    if (!deleted) return "already_registered" as const;
+    const retry = await createManagedAuthUser({
+      email: input.email,
+      password: input.password,
+      journeyId: input.journeyId,
+      emailLinkToken: input.emailLinkToken,
+      redirectTo,
+    });
+    if (retry) await attachSignupAuthUser(input.journeyId, input.email, retry.id);
+    return "sent" as const;
+  }
+
+  await resendUnconfirmedSignupEmail(input.email, redirectTo);
+  return "sent" as const;
+}
+
+async function deliverSignupConfirmationEmail(input: {
+  email: string;
+  password: string;
+  journeyId: string;
+  emailLinkToken: string;
+  knownAuthUserId: string | null;
+}) {
+  await deliverOrReuseSignupConfirmation(input);
 }
 
 export async function reopenSignupIdentity(resumeToken: string) {
@@ -607,6 +874,7 @@ export async function activateSignupJourney(signupId: string) {
         return {
           companyId: journey.companyId,
           email: journey.email!,
+          authUserId: journey.authUserId,
           alreadyActivated: true,
           welcomeJobId: welcomeJob?.id ?? null,
         };
@@ -724,6 +992,7 @@ export async function activateSignupJourney(signupId: string) {
       return {
         companyId: company.id,
         email: journey.email,
+        authUserId: journey.authUserId,
         alreadyActivated: false,
         welcomeJobId: welcomeJob.id,
       };
@@ -732,6 +1001,7 @@ export async function activateSignupJourney(signupId: string) {
     return {
       companyId: activation.companyId,
       email: activation.email,
+      authUserId: activation.authUserId,
       alreadyActivated: activation.alreadyActivated,
     };
   } catch (error) {
@@ -848,4 +1118,9 @@ export async function processFakeSignupPayment(resumeToken: string, input: {
   if (event.status !== "CONFIRMED") return { status: event.status, activated: false as const };
   const activation = await activateSignupJourney(journey.id);
   return { status: event.status, activated: true as const, ...activation };
+}
+
+export function signupPaidEnvironmentPath(email: string, sessionOpened: boolean) {
+  if (sessionOpened) return "/dashboard";
+  return `/login?email=${encodeURIComponent(email)}&redirect=/dashboard`;
 }

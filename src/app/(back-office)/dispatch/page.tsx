@@ -26,6 +26,8 @@ import { cn } from "@/lib/utils";
 import type { DeliveryCategory } from "@prisma/client";
 import type { TableColumn } from "@/types";
 import { resolveDispatchFocus } from "@/features/back-office/dispatch-focus";
+import { lockedOfferReason } from "@/domains/saas/saas-access";
+import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
 
 type DispatchView = "queue" | "rules";
 type CategoryFilter = "ALL" | DeliveryCategory;
@@ -50,6 +52,9 @@ function DispatcherDashboardContent() {
   const stats = overview?.stats;
   const dispatchSettings = overview?.settings;
   const runAutoDispatch = useRunAutoDispatch();
+  const offerAccess = useOfferAccess();
+  const hasAdminGps = useHasOfferFeature("admin_gps");
+  const hasAutoDispatch = useHasOfferFeature("auto_dispatch");
   const { data: operationHealth } = useOperationJobHealth();
   const retryFailedJobs = useRetryFailedOperationJobs();
   const dispatchFocus = useMemo(
@@ -145,14 +150,22 @@ function DispatcherDashboardContent() {
                   }`
                 : "/dispatch/map"
             }
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            title={hasAdminGps ? undefined : lockedOfferReason("admin_gps", offerAccess?.planCode)}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              !hasAdminGps && "opacity-50"
+            )}
           >
             <MapPin className="h-4 w-4" />
             Carte livraison
           </Link>
           <Link
             href="/dispatch/drivers"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            title={hasAdminGps ? undefined : lockedOfferReason("admin_gps", offerAccess?.planCode)}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              !hasAdminGps && "opacity-50"
+            )}
           >
             <Truck className="h-4 w-4" />
             Carte chauffeurs
@@ -162,7 +175,8 @@ function DispatcherDashboardContent() {
               variant="brand"
               size="sm"
               loading={runAutoDispatch.isPending}
-              disabled={!dispatchSettings?.enabled || runAutoDispatch.isPending}
+              disabled={!hasAutoDispatch || !dispatchSettings?.enabled || runAutoDispatch.isPending}
+              title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
               onClick={handleAutoDispatch}
             >
               <Sparkles className="mr-2 h-4 w-4" />
@@ -250,6 +264,8 @@ function DispatcherDashboardContent() {
                 href={`/dispatch/map?delivery=${encodeURIComponent(focusedDelivery.id)}${
                   dispatchFocus.reason === "late" ? "&focus=late" : ""
                 }`}
+                title={hasAdminGps ? undefined : lockedOfferReason("admin_gps", offerAccess?.planCode)}
+                className={cn(!hasAdminGps && "opacity-50")}
               >
                 Voir sur la carte
               </Link>

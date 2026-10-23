@@ -63,7 +63,7 @@ export function DemoModeBar() {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { demo, setUser, setPermissions, setDemo } = useAuthStore();
+  const { demo, setUser, setPermissions, setDemo, setSaas } = useAuthStore();
   const [switching, setSwitching] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
@@ -124,14 +124,16 @@ export function DemoModeBar() {
         if (!res.ok) {
           throw new Error(json.error ?? "Impossible de changer de vue");
         }
-        setUser(json.user);
+        setSaas(json.saas ?? null);
         setPermissions(json.permissions ?? []);
         setDemo(json.demo ?? null);
+        setUser(json.user);
         await queryClient.clear();
         queryClient.setQueryData(["session"], {
           user: json.user,
           permissions: json.permissions ?? [],
           demo: json.demo ?? null,
+          saas: json.saas ?? null,
         });
         router.push(json.redirectTo);
         toast.success(`Vue ${DEMO_PERSONA_LABELS[persona]} activée`);
@@ -141,7 +143,7 @@ export function DemoModeBar() {
         setSwitching(false);
       }
     },
-    [demo, queryClient, router, setDemo, setPermissions, setUser]
+    [demo, queryClient, router, setDemo, setPermissions, setSaas, setUser]
   );
 
   const resetDemo = useCallback(async () => {
@@ -152,14 +154,16 @@ export function DemoModeBar() {
       if (!res.ok) {
         throw new Error(json.error ?? "Impossible de réinitialiser la démo");
       }
-      setUser(json.user);
+      setSaas(json.saas ?? null);
       setPermissions(json.permissions ?? []);
       setDemo(json.demo ?? null);
+      setUser(json.user);
       await queryClient.clear();
       queryClient.setQueryData(["session"], {
         user: json.user,
         permissions: json.permissions ?? [],
         demo: json.demo ?? null,
+        saas: json.saas ?? null,
       });
       setResetOpen(false);
       router.push(json.redirectTo ?? "/dashboard");
@@ -169,7 +173,7 @@ export function DemoModeBar() {
     } finally {
       setResetting(false);
     }
-  }, [queryClient, router, setDemo, setPermissions, setUser]);
+  }, [queryClient, router, setDemo, setPermissions, setSaas, setUser]);
 
   if (!visible || !demo || !hydrated) return null;
 

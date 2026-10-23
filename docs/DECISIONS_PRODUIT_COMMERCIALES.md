@@ -49,18 +49,18 @@ Les tarifs ci-dessous sont des décisions de configuration et de positionnement.
 | Analytics avancés | Option | Option | Inclus |
 | Assistance prioritaire | Option | Option | Incluse |
 
-Options mensuelles HT :
+Options mensuelles HT (catalogue C8 du 23 octobre 2026) :
 
 | Option | Prix |
 |---|---:|
-| Dispatch automatique | 49 € |
+| Dispatch automatique | 29 € Starter ; 39 € Pro ; 49 € Business. Inclus dans Pro et Business, donc non refacturé. Achetable seulement en Starter, à 29 €. |
 | Carte GPS client | 49 € |
 | Carte GPS administrateur | 39 € |
 | Analytics avancés | 29 € |
 | Assistance prioritaire | 29 € |
 | Livreur supplémentaire Starter | 12 € |
 | Livreur supplémentaire Pro | 10 € |
-| Administrateur supplémentaire Business | 12 € |
+| Administrateur supplémentaire, toutes offres | 12 € |
 | Dispatcher supplémentaire, toutes offres | 8 € |
 
 Les commandes supplémentaires sont ciblées à 0,10 € HT en Starter, 0,08 € HT en Pro et 0,06 € HT en Business. L'abonnement annuel correspond à douze mois pour le prix de dix.

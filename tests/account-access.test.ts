@@ -182,6 +182,7 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
         DemoPoolUnavailableError: class extends Error {},
         maintainDemoPool: async () => [],
       },
+      "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
     }).POST;
     const request = () => new Request("http://local", { method: "POST", body: JSON.stringify({ email: current.email, password: "local-test-only" }) });
     assert.equal((await post(request())).status, 200);
@@ -204,6 +205,7 @@ test("routes démo : persona suspendue et reset avec admin suspendu refusés san
       "@/lib/demo/constants": constants,
       "@/lib/demo/persona-cookie": { setDemoPersonaCookie: async () => assert.fail("no cookie change allowed") },
       "@/domains/user/user.service": userService,
+      "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
     });
     assert.equal((await POST(new Request("http://local", { method: "POST", body: JSON.stringify({ persona: "client" }) }))).status, 403);
   }

@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Package2 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import { PublicSupportLink } from "@/features/support/public-support-link";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { useAuthStore } from "@/stores/auth.store";
 import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
@@ -61,7 +62,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   const [passwordLink, setPasswordLink] = useState<PasswordLink | null>(null);
   const linkRead = useRef(false);
   const [completingLink, setCompletingLink] = useState(false);
-  const { setUser, setPermissions, setDemo } = useAuthStore();
+  const { setUser, setPermissions, setDemo, setSaas } = useAuthStore();
 
   useEffect(() => {
     if (mode !== "reset-password") return;
@@ -144,16 +145,22 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       return;
     }
     await queryClient.clear();
-    setUser(json.user);
+    setSaas(json.saas ?? null);
     setPermissions(json.permissions);
     setDemo(json.demo ?? null);
+    setUser(json.user);
     queryClient.setQueryData(["session"], {
       user: json.user,
       permissions: json.permissions,
       demo: json.demo ?? null,
+      saas: json.saas ?? null,
     });
     const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
-    router.push(requestedRedirect === "/onboarding" ? requestedRedirect : json.redirectTo);
+    router.push(
+      requestedRedirect === "/onboarding" || requestedRedirect === "/dashboard"
+        ? requestedRedirect
+        : json.redirectTo
+    );
   };
 
   const onRegister = async (data: RegisterInput) => {
@@ -267,6 +274,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       </div>
 
       <div className="relative flex flex-1 items-center justify-center p-6">
+        <PublicSupportLink className="absolute left-6 top-7 z-10 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline" />
         <Link
           href="/"
           className="absolute right-6 top-6 z-10 flex items-center gap-2.5 transition-opacity hover:opacity-80"

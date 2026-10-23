@@ -27,6 +27,8 @@ import {
 } from "@/features/back-office/dashboard-drill-down";
 import { CategoryCard, ClickableCount, TodayMetric } from "@/features/back-office/dashboard-shared";
 import { useDriverLiveLocations } from "@/features/back-office/dispatch-map-hooks";
+import { lockedOfferReason } from "@/domains/saas/saas-access";
+import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
 
 const DeliveriesMapWidget = dynamic(
   () =>
@@ -751,7 +753,8 @@ function StatusStatWidget({ widget }: { widget: DashboardWidgetLayout }) {
 }
 
 function DriversOnlineWidget() {
-  const { data: drivers } = useDriverLiveLocations();
+  const hasAdminGps = useHasOfferFeature("admin_gps");
+  const { data: drivers } = useDriverLiveLocations(hasAdminGps);
   const onlineCount = (drivers ?? []).filter((d) => d.isOnline).length;
 
   return (
@@ -765,6 +768,23 @@ function DriversOnlineWidget() {
 }
 
 function MapDriversWidget({ height = 280 }: { height?: number }) {
+  const access = useOfferAccess();
+  const hasAdminGps = useHasOfferFeature("admin_gps");
+  if (!hasAdminGps) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Livreurs en direct</CardTitle>
+          <CardDescription>{lockedOfferReason("admin_gps", access?.planCode)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-[180px] items-center justify-center rounded-xl border border-dashed bg-muted/20 text-sm text-muted-foreground">
+            Carte GPS indisponible dans cette offre
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
@@ -787,6 +807,23 @@ function MapDriversWidget({ height = 280 }: { height?: number }) {
 }
 
 function MapDeliveriesWidget({ height = 280 }: { height?: number }) {
+  const access = useOfferAccess();
+  const hasAdminGps = useHasOfferFeature("admin_gps");
+  if (!hasAdminGps) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Missions actives</CardTitle>
+          <CardDescription>{lockedOfferReason("admin_gps", access?.planCode)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-[180px] items-center justify-center rounded-xl border border-dashed bg-muted/20 text-sm text-muted-foreground">
+            Carte GPS indisponible dans cette offre
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">

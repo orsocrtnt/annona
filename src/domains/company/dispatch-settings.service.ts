@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
+import { resolveCompanySaasAccess } from "@/domains/saas/saas.service";
 import {
   DEFAULT_DISPATCH_SETTINGS,
   companyDispatchSettingsSchema,
@@ -42,6 +43,17 @@ export async function updateCompanyDispatchSettings(
   settings: CompanyDispatchSettings
 ): Promise<CompanyDispatchSettings> {
   const parsed = companyDispatchSettingsSchema.parse(settings);
+  if (parsed.enabled) {
+    try {
+      const access = await resolveCompanySaasAccess(companyId);
+      if (!access.features.has("auto_dispatch")) {
+        throw new Error("SAAS_FEATURE_NOT_AVAILABLE");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === "SAAS_FEATURE_NOT_AVAILABLE") throw error;
+      if (!(error instanceof Error && error.message === "SAAS_SUBSCRIPTION_REQUIRED")) throw error;
+    }
+  }
 
   const company = await prisma.company.findUnique({
     where: { id: companyId },

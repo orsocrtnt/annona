@@ -17,7 +17,7 @@ async function fetchSession() {
  */
 export function useSession() {
   const user = useAuthStore((s) => s.user);
-  const { setUser, setPermissions, setDemo, setLoading } = useAuthStore();
+  const { setUser, setPermissions, setDemo, setSaas, setLoading } = useAuthStore();
 
   const query = useQuery({
     queryKey: ["session"],
@@ -39,13 +39,15 @@ export function useSession() {
     if (query.isLoading || query.isFetching) return;
 
     if (query.data) {
-      setUser(query.data.user ?? null);
+      setSaas(query.data.saas ?? null);
       setPermissions(query.data.permissions ?? []);
       setDemo(query.data.demo ?? null);
+      setUser(query.data.user ?? null);
     } else if (query.isError) {
       setUser(null);
       setPermissions([]);
       setDemo(null);
+      setSaas(null);
     }
     setLoading(false);
   }, [
@@ -57,6 +59,7 @@ export function useSession() {
     setUser,
     setPermissions,
     setDemo,
+    setSaas,
     setLoading,
   ]);
 

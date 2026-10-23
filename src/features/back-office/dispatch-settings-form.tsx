@@ -34,6 +34,8 @@ import { formatPostalCodeList, parsePostalCodeList } from "@/lib/dispatch/postal
 import { Bike, MapPin, Package, Plus, Radio, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { lockedOfferReason } from "@/domains/saas/saas-access";
+import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
 
 function driverLabel(firstName: string, lastName: string) {
   return formatDriverFromParts({ firstName, lastName }, null);
@@ -55,6 +57,8 @@ export function DispatchSettingsForm() {
   const { data: drivers } = useCompanyDrivers();
   const { data: tariffSettings } = useCompanyTariffSettings();
   const updateSettings = useUpdateCompanyDispatchSettings();
+  const offerAccess = useOfferAccess();
+  const hasAutoDispatch = useHasOfferFeature("auto_dispatch");
   const [local, setLocal] = useState<CompanyDispatchSettings | null>(null);
   const [postalDrafts, setPostalDrafts] = useState<Record<string, string>>({});
 
@@ -107,7 +111,9 @@ export function DispatchSettingsForm() {
     }
 
     try {
-      await updateSettings.mutateAsync(local);
+      await updateSettings.mutateAsync(
+        hasAutoDispatch ? local : { ...local, enabled: false }
+      );
       toast.success("Règles de dispatch enregistrées");
     } catch (error) {
       toast.error("Enregistrement impossible", {
@@ -525,16 +531,20 @@ export function DispatchSettingsForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-4">
+          <label className={cn("flex items-center gap-3 rounded-xl border p-4", hasAutoDispatch ? "cursor-pointer" : "cursor-not-allowed opacity-60")}>
             <input
               type="checkbox"
-              checked={local.enabled}
+              checked={hasAutoDispatch && local.enabled}
+              disabled={!hasAutoDispatch}
+              title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
               onChange={(e) => setLocal({ ...local, enabled: e.target.checked })}
             />
             <div>
               <p className="font-medium">Activer l&apos;auto-dispatch</p>
               <p className="text-sm text-muted-foreground">
-                Assigne automatiquement aux livreurs compatibles selon leurs profils ci-dessus.
+                {hasAutoDispatch
+                  ? "Assigne automatiquement aux livreurs compatibles selon leurs profils ci-dessus."
+                  : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
               </p>
             </div>
           </label>

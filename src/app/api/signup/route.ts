@@ -1,9 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, reopenSignupIdentity, resendSignupConfirmation, submitSignupIdentity, updateSignupIdentityDetails, updateSignupSelection } from "@/domains/signup/signup.service";
-import { setSignupResumeCookie } from "@/domains/signup/signup-cookie";
-import { signupActionSchema } from "@/lib/validations/signup";
+import { clearSignupResumeCookie, setSignupResumeCookie } from "@/domains/signup/signup-cookie";
+import { describeSignupValidation, signupActionSchema } from "@/lib/validations/signup";
 
 const noStore = { "Cache-Control": "no-store" };
+
+function isResumeInvalid(error: unknown) {
+  return error instanceof Error && error.message === "SIGNUP_RESUME_INVALID";
+}
 
 function publicError(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
@@ -19,28 +23,53 @@ function publicError(error: unknown) {
 
 export async function GET(request: NextRequest) {
   try {
-    const [catalog, journey] = await Promise.all([
-      getActiveSignupCatalog(),
-      request.cookies.get(SIGNUP_COOKIE)?.value
-        ? getSignupJourney(request.cookies.get(SIGNUP_COOKIE)!.value).catch(() => null)
-        : Promise.resolve(null),
-    ]);
-    return NextResponse.json({ catalog, journey }, { headers: noStore });
+    const token = request.cookies.get(SIGNUP_COOKIE)?.value;
+    const catalogPromise = getActiveSignupCatalog();
+    let staleResume = false;
+    let journey = null;
+    if (token) {
+      try {
+        journey = await getSignupJourney(token);
+      } catch (error) {
+        if (!isResumeInvalid(error)) throw error;
+        staleResume = true;
+      }
+    }
+    const catalog = await catalogPromise;
+    const response = NextResponse.json({ catalog, journey }, { headers: noStore });
+    if (staleResume) clearSignupResumeCookie(response);
+    return response;
   } catch (error) {
     const result = publicError(error);
-    return NextResponse.json({ error: result.error }, { status: result.status, headers: noStore });
+    const response = NextResponse.json({ error: result.error }, { status: result.status, headers: noStore });
+    if (isResumeInvalid(error)) clearSignupResumeCookie(response);
+    return response;
   }
 }
 
 export async function POST(request: NextRequest) {
   const parsed = signupActionSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Vérifiez les informations saisies." }, { status: 400, headers: noStore });
+  if (!parsed.success) {
+    const details = describeSignupValidation(parsed.error);
+    return NextResponse.json({ error: details.summary, fields: details.fields }, { status: 400, headers: noStore });
+  }
   try {
     const currentToken = request.cookies.get(SIGNUP_COOKIE)?.value;
     if (parsed.data.action === "create") {
-      const result = currentToken
-        ? { resumeToken: currentToken, journey: await updateSignupSelection(currentToken, parsed.data) }
-        : await createSignupJourney(parsed.data);
+      let result: Awaited<ReturnType<typeof createSignupJourney>>;
+      if (currentToken) {
+        try {
+          result = {
+            resumeToken: currentToken,
+            journey: await updateSignupSelection(currentToken, parsed.data),
+          };
+        } catch (error) {
+          if (!isResumeInvalid(error)) throw error;
+          result = await createSignupJourney(parsed.data);
+        }
+      } else {
+        result = await createSignupJourney(parsed.data);
+      }
       const response = NextResponse.json({ journey: result.journey }, { headers: noStore });
       setSignupResumeCookie(response, result.resumeToken);
       return response;
@@ -62,6 +91,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { headers: noStore });
   } catch (error) {
     const result = publicError(error);
-    return NextResponse.json({ error: result.error }, { status: result.status, headers: noStore });
+    const response = NextResponse.json({ error: result.error }, { status: result.status, headers: noStore });
+    if (isResumeInvalid(error)) clearSignupResumeCookie(response);
+    return response;
   }
 }
