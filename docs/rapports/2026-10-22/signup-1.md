@@ -30,12 +30,12 @@ La recette connectée a validé :
 - deux inscriptions concurrentes avec le même SIREN : une seule entreprise créée ;
 - entreprises distinctes et données isolées ;
 - passage à ONBOARD-1, sept étapes complétées et première livraison fictive avec preuve ;
-- renvoi borné à trente secondes, y compris deux requêtes concurrentes qui ne produisent qu'un envoi ;
 - nettoyage complet : 8 entreprises, 64 utilisateurs, 0 brouillon et 0 événement avant comme après.
 
 Preuves finales :
 
 - `npm run check` après le correctif : TypeScript, ESLint strict et 311 tests réussis ;
+- test métier local du renvoi : compteur de trente secondes et deux requêtes concurrentes produisant un seul appel fournisseur ;
 - `npm run build` : build de production réussi, 106 pages ;
 - `npm run test:signup1` : tous les scénarios connectés réussis ; preuve `outputs/signup1/connected.json` ;
 - `prisma migrate status` sur préproduction : dix migrations, schéma à jour ;
@@ -44,6 +44,6 @@ Preuves finales :
 
 ## Limites conservées
 
-Le paiement réel n'existe pas encore ; Stripe sandbox relève de SAAS-01B. Le transport métier reste désactivé tant que le domaine et l'expéditeur ne sont pas configurés : la tâche de bienvenue est durable, mais l'envoi externe attend EMAIL/SEC-05. Le SMTP Supabase de confirmation doit être surveillé avec ses limites de service avant usage commercial. La protection Supabase contre les mots de passe compromis reste à activer avant données réelles si l'offre du fournisseur la rend disponible.
+Le paiement réel n'existe pas encore ; Stripe sandbox relève de SAAS-01B. Le transport métier reste désactivé tant que le domaine et l'expéditeur ne sont pas configurés : la tâche de bienvenue est durable, mais l'envoi externe attend EMAIL/SEC-05. Le bouton de renvoi TutelLiv redevient actif après trente secondes, mais le fournisseur Supabase gratuit conserve actuellement sa fenêtre de confirmation par défaut de soixante secondes : un clic à trente secondes peut donc recevoir un refus temporaire explicite. Un véritable envoi toutes les trente secondes devra être qualifié après branchement du SMTP personnalisé et réglage de sa limite. La protection Supabase contre les mots de passe compromis reste à activer avant données réelles si l'offre du fournisseur la rend disponible.
 
 Le parcours remet correctement l'utilisateur à ONBOARD-1. Les invitations réelles, l'import éventuel et la validation par une entreprise pilote restent dans ONBOARD-1 ; ils ne remettent pas en cause l'activation autonome qualifiée ici. Aucun paiement réel, donnée réelle, déploiement Production ou dépense n'a été effectué.
