@@ -228,6 +228,7 @@ test("SIGNUP-1 : revenir corriger l’identité invalide l’ancien lien et cons
       findUnique: async () => row,
       update: async ({ data }: { data: Partial<typeof row> }) => Object.assign(row, data),
     },
+    user: { findUnique: async () => null },
   };
   const service = loadSignupService({
     "@/services/prisma/client": {
@@ -255,11 +256,11 @@ test("SIGNUP-1 : revenir corriger l’identité invalide l’ancien lien et cons
   assert.match(source, /journey\.status !== "EMAIL_PENDING"/);
 
   row.status = "EMAIL_PENDING";
-  row.authUserId = "auth-confirmed-1";
+  row.authUserId = "auth-confirmed-orphan";
   row.emailLinkTokenHash = "confirmed-link";
   row.emailVerifiedAt = null;
-  let confirmedUserDeleted = false;
-  const lockedService = loadSignupService({
+  let orphanDeleted = false;
+  const orphanService = loadSignupService({
     "@/services/prisma/client": {
       prisma: {
         signupJourney: { findUnique: async () => row },
@@ -269,12 +270,96 @@ test("SIGNUP-1 : revenir corriger l’identité invalide l’ancien lien et cons
     "@/services/supabase/admin": {
       createAdminClient: () => ({ auth: { admin: {
         getUserById: async () => ({ data: { user: { email: row.email, email_confirmed_at: new Date().toISOString() } }, error: null }),
-        deleteUser: async () => { confirmedUserDeleted = true; return { error: null }; },
+        deleteUser: async () => { orphanDeleted = true; return { error: null }; },
+      } } }),
+    },
+  });
+  const reopenedConfirmed = await orphanService.reopenSignupIdentity(resumeToken);
+  assert.equal(orphanDeleted, true);
+  assert.equal(reopenedConfirmed.status, "DRAFT");
+
+  row.status = "EMAIL_PENDING";
+  row.authUserId = "auth-confirmed-account";
+  row.emailLinkTokenHash = "account-link";
+  row.emailVerifiedAt = null;
+  let confirmedAccountDeleted = false;
+  const lockedTx = { ...tx, user: { findUnique: async () => ({ id: "user-1" }) } };
+  const lockedService = loadSignupService({
+    "@/services/prisma/client": {
+      prisma: {
+        signupJourney: { findUnique: async () => row },
+        $transaction: async (callback: (client: typeof lockedTx) => unknown) => callback(lockedTx),
+      },
+    },
+    "@/services/supabase/admin": {
+      createAdminClient: () => ({ auth: { admin: {
+        getUserById: async () => ({ data: { user: { email: row.email, email_confirmed_at: new Date().toISOString() } }, error: null }),
+        deleteUser: async () => { confirmedAccountDeleted = true; return { error: null }; },
       } } }),
     },
   });
   await assert.rejects(() => lockedService.reopenSignupIdentity(resumeToken), /SIGNUP_EDIT_IDENTITY_LOCKED/);
-  assert.equal(confirmedUserDeleted, false);
+  assert.equal(confirmedAccountDeleted, false);
+});
+
+test("SIGNUP-1 : une confirmation Auth déjà faite rattache le brouillon au rafraîchissement", async () => {
+  const resumeToken = "resume-token-for-reconciling-confirmed-email";
+  const row = {
+    id: "signup-reconcile-1",
+    resumeTokenHash: createHash("sha256").update(resumeToken).digest("hex"),
+    status: "EMAIL_PENDING",
+    catalogVersionId: "catalog",
+    planCode: "STARTER",
+    billingInterval: "MONTHLY",
+    optionSelections: [],
+    quoteSnapshot: { totalHtCents: 7900, vatCents: 1580, totalTtcCents: 9480, currency: "EUR", includedMonthlyOrders: 1000, orderOverageUnitPriceCents: 10 },
+    email: "orsocarot@gmail.com",
+    authUserId: "auth-already-confirmed",
+    emailLinkTokenHash: "stale-link",
+    firstName: "Orso",
+    lastName: "Carotenuto",
+    companyName: "TutelLiv Test",
+    legalName: null,
+    siren: null,
+    siret: null,
+    phone: null,
+    billingAddress: "1 rue du Test",
+    billingPostalCode: "75001",
+    billingCity: "Paris",
+    billingCountry: "FR",
+    emailVerifiedAt: null as Date | null,
+    verificationEmailSentAt: new Date(),
+    paymentConfirmedAt: null,
+    activatedAt: null,
+    failureCode: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    companyId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const service = loadSignupService({
+    "@/services/prisma/client": {
+      prisma: {
+        signupJourney: {
+          findUnique: async () => row,
+          findUniqueOrThrow: async () => row,
+          updateMany: async ({ data }: { data: Partial<typeof row> }) => {
+            Object.assign(row, data);
+            return { count: 1 };
+          },
+        },
+      },
+    },
+    "@/services/supabase/admin": {
+      createAdminClient: () => ({ auth: { admin: {
+        getUserById: async () => ({ data: { user: { email: row.email, email_confirmed_at: new Date().toISOString() } }, error: null }),
+      } } }),
+    },
+  });
+  const reconciled = await service.getSignupJourney(resumeToken);
+  assert.equal(reconciled.status, "EMAIL_VERIFIED");
+  assert.equal(reconciled.emailVerified, true);
+  assert.equal(row.emailLinkTokenHash, null);
 });
 
 test("SIGNUP-1 : l’offre et l’identité restent corrigeables jusqu’au paiement confirmé", async () => {
@@ -402,6 +487,7 @@ test("SIGNUP-1 : parcours mobile, reprise et progression restent visibles", () =
   assert.match(ui, /fetch\("\/api\/signup", \{ cache: "no-store" \}\)/);
   assert.match(ui, /sm:grid-cols-2/);
   assert.match(ui, /J’ai confirmé, actualiser/);
+  assert.match(ui, /La confirmation n’est pas encore enregistrée/);
   assert.match(ui, /Modifier l’offre/);
   assert.match(ui, /goToStage/);
   assert.match(ui, /Revoir la formule/);

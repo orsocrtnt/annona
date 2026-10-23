@@ -1215,3 +1215,5 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-23 — Renvoi de confirmation SIGNUP-1 ajouté : bouton avec compte à rebours de trente secondes, garde serveur persistante et réservation atomique empêchant les doubles envois concurrents. Migration additive appliquée uniquement à la préproduction isolée et enregistrée dans Prisma ; 311 tests, types, lint, build, CI et Preview passent. La limite Supabase gratuite reste de soixante secondes jusqu'au SMTP personnalisé ; aucun changement Production.
 
 - 2026-10-23 — SIGNUP-1 : retour arrière avant paiement. Formule, options et informations d'entreprise restent corrigeables jusqu'à confirmation du paiement fictif ; l'e-mail déjà vérifié reste verrouillé. Aucun paiement réel ni changement Production.
+
+- 2026-10-23 — SIGNUP-1 : confirmation Auth orpheline rattachée au rafraîchissement, et retour arrière autorisé tant qu'aucun utilisateur TutelLiv n'existe encore pour ce compte.

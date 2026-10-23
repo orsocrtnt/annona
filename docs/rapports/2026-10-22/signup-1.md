@@ -46,6 +46,8 @@ Preuves finales :
 
 Depuis le 23 octobre, l'inscription n'est plus à sens unique. Tant que le paiement fictif n'est pas confirmé, l'utilisateur peut revenir à la formule, aux options ou aux informations d'entreprise. Après confirmation d'e-mail, l'adresse reste verrouillée et le mot de passe n'est pas redemandé ; un changement d'offre recalcule le devis côté serveur. Dès que le paiement est confirmé ou le compte activé, ces corrections sont refusées.
 
+Correctif du même jour : si Supabase a déjà confirmé l'adresse (lien cliqué, ou compte de test réutilisé) alors que le brouillon restait en attente, « J’ai confirmé, actualiser » rattache désormais cette confirmation. Un compte Auth confirmé sans utilisateur TutelLiv peut aussi être retiré pour revenir corriger l'identité. Un compte déjà lié à une entreprise reste verrouillé.
+
 ## Limites conservées
 
 Le paiement réel n'existe pas encore ; Stripe sandbox relève de SAAS-01B. Le transport métier reste désactivé tant que le domaine et l'expéditeur ne sont pas configurés : la tâche de bienvenue est durable, mais l'envoi externe attend EMAIL/SEC-05. Le bouton de renvoi TutelLiv redevient actif après trente secondes, mais le fournisseur Supabase gratuit conserve actuellement sa fenêtre de confirmation par défaut de soixante secondes : un clic à trente secondes peut donc recevoir un refus temporaire explicite. Un véritable envoi toutes les trente secondes devra être qualifié après branchement du SMTP personnalisé et réglage de sa limite. La protection Supabase contre les mots de passe compromis reste à activer avant données réelles si l'offre du fournisseur la rend disponible.

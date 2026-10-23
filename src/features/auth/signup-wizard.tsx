@@ -92,6 +92,7 @@ export function SignupWizard() {
       setSelections(payload.journey.optionSelections);
       setStage(stageFromJourney(payload.journey));
     }
+    return payload.journey as Journey | null;
   }, []);
 
   useEffect(() => {
@@ -313,7 +314,7 @@ export function SignupWizard() {
           )}
 
           {stage === "email" && journey?.status === "EMAIL_PENDING" && (
-            <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap"><Button variant="brand" loading={submitting} onClick={() => { setSubmitting(true); load().catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button><Button variant="outline" disabled={submitting || resendSeconds > 0} onClick={() => void resendVerificationEmail()}>{resendSeconds > 0 ? `Renvoyer l’e-mail dans ${resendSeconds} s` : "Renvoyer l’e-mail"}</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("plan")}>Revoir la formule</Button></div></div>
+            <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap"><Button variant="brand" loading={submitting} onClick={() => { setSubmitting(true); setError(null); load().then((next) => { if (next?.status === "EMAIL_PENDING") setError("La confirmation n’est pas encore enregistrée. Ouvrez le lien reçu par e-mail, puis actualisez."); }).catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button><Button variant="outline" disabled={submitting || resendSeconds > 0} onClick={() => void resendVerificationEmail()}>{resendSeconds > 0 ? `Renvoyer l’e-mail dans ${resendSeconds} s` : "Renvoyer l’e-mail"}</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("plan")}>Revoir la formule</Button></div></div>
           )}
 
           {stage === "payment" && journey?.emailVerified && !journey.activated && (

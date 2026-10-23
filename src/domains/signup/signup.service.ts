@@ -283,8 +283,33 @@ function signupChoicesLocked(journey: NonNullable<JourneyRecord>) {
   );
 }
 
+async function reconcileSignupEmailConfirmation(journey: NonNullable<JourneyRecord>) {
+  if (journey.status !== "EMAIL_PENDING" || journey.emailVerifiedAt || !journey.authUserId || !journey.email) {
+    return journey;
+  }
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.getUserById(journey.authUserId);
+  if (error || !data?.user?.email_confirmed_at || !data.user.email || normalizeEmail(data.user.email) !== journey.email) {
+    return journey;
+  }
+  await prisma.signupJourney.updateMany({
+    where: {
+      id: journey.id,
+      status: "EMAIL_PENDING",
+      emailVerifiedAt: null,
+      authUserId: journey.authUserId,
+    },
+    data: {
+      emailLinkTokenHash: null,
+      status: journey.paymentConfirmedAt ? "PAYMENT_CONFIRMED" : "EMAIL_VERIFIED",
+      emailVerifiedAt: new Date(),
+    },
+  });
+  return prisma.signupJourney.findUniqueOrThrow({ where: { id: journey.id } });
+}
+
 export async function getSignupJourney(resumeToken: string) {
-  return publicJourney(await requireJourney(resumeToken));
+  return publicJourney(await reconcileSignupEmailConfirmation(await requireJourney(resumeToken)));
 }
 
 export async function updateSignupSelection(resumeToken: string, input: {
@@ -493,9 +518,14 @@ export async function reopenSignupIdentity(resumeToken: string) {
       const { data, error } = await admin.auth.admin.getUserById(locked.authUserId);
       if (error && !isMissingAuthUser(error)) throw new Error("SIGNUP_EDIT_IDENTITY_FAILED");
       if (data?.user) {
-        if (data.user.email_confirmed_at || !data.user.email || normalizeEmail(data.user.email) !== locked.email) {
+        if (!data.user.email || normalizeEmail(data.user.email) !== locked.email) {
           throw new Error("SIGNUP_EDIT_IDENTITY_LOCKED");
         }
+        const existingUser = await tx.user.findUnique({
+          where: { authId: locked.authUserId },
+          select: { id: true },
+        });
+        if (existingUser) throw new Error("SIGNUP_EDIT_IDENTITY_LOCKED");
         const { error: deleteError } = await admin.auth.admin.deleteUser(locked.authUserId);
         if (deleteError && !isMissingAuthUser(deleteError)) throw new Error("SIGNUP_EDIT_IDENTITY_FAILED");
       }
