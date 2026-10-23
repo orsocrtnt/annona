@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { Prisma } from "@prisma/client";
-import { signupActionSchema, signupIdentitySchema } from "../src/lib/validations/signup";
+import { signupActionSchema, signupIdentityDetailsSchema, signupIdentitySchema } from "../src/lib/validations/signup";
 
 function loadSignupService(overrides: Record<string, unknown> = {}) {
   const module = { exports: {} };
@@ -15,6 +15,7 @@ function loadSignupService(overrides: Record<string, unknown> = {}) {
     "node:crypto": { createHash, randomBytes, timingSafeEqual },
     "@prisma/client": { Prisma },
     "@/services/prisma/client": { prisma: {} },
+    "@/services/supabase/admin": { createAdminClient: () => ({}) },
     "@/services/supabase/password-link": { createPasswordLinkClient: () => ({}) },
     "@/lib/auth/email-links": { getPasswordLinkRedirect: () => "https://example.test/reset-password" },
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value.trim().toLowerCase() },
@@ -184,6 +185,182 @@ test("SIGNUP-1 : deux renvois concurrents produisent un seul e-mail", async () =
   assert.ok(row.verificationEmailSentAt);
 });
 
+test("SIGNUP-1 : revenir corriger l’identité invalide l’ancien lien et conserve le brouillon", async () => {
+  assert.equal(signupActionSchema.safeParse({ action: "edit-identity" }).success, true);
+  const resumeToken = "resume-token-for-editing-signup-identity";
+  const row = {
+    id: "signup-edit-1",
+    resumeTokenHash: createHash("sha256").update(resumeToken).digest("hex"),
+    status: "EMAIL_PENDING",
+    catalogVersionId: "catalog",
+    planCode: "STARTER",
+    billingInterval: "MONTHLY",
+    optionSelections: [],
+    quoteSnapshot: {},
+    email: "edit@example.test",
+    authUserId: "auth-edit-1" as string | null,
+    emailLinkTokenHash: "one-time-link" as string | null,
+    firstName: "Ada",
+    lastName: "Martin",
+    companyName: "Livraison Ada",
+    legalName: null,
+    siren: null,
+    siret: null,
+    phone: null,
+    billingAddress: "1 rue du Test",
+    billingPostalCode: "75001",
+    billingCity: "Paris",
+    billingCountry: "FR",
+    emailVerifiedAt: null,
+    verificationEmailSentAt: new Date() as Date | null,
+    paymentConfirmedAt: null,
+    activatedAt: null,
+    failureCode: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    companyId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  let deletedAuthUser: string | null = null;
+  const tx = {
+    $queryRaw: async () => [{ id: row.id }],
+    signupJourney: {
+      findUnique: async () => row,
+      update: async ({ data }: { data: Partial<typeof row> }) => Object.assign(row, data),
+    },
+  };
+  const service = loadSignupService({
+    "@/services/prisma/client": {
+      prisma: {
+        signupJourney: { findUnique: async () => row },
+        $transaction: async (callback: (client: typeof tx) => unknown) => callback(tx),
+      },
+    },
+    "@/services/supabase/admin": {
+      createAdminClient: () => ({ auth: { admin: {
+        getUserById: async () => ({ data: { user: { email: row.email, email_confirmed_at: null } }, error: null }),
+        deleteUser: async (id: string) => { deletedAuthUser = id; return { error: null }; },
+      } } }),
+    },
+  });
+  const reopened = await service.reopenSignupIdentity(resumeToken);
+  assert.equal(deletedAuthUser, "auth-edit-1");
+  assert.equal(reopened.status, "DRAFT");
+  assert.equal(row.authUserId, null);
+  assert.equal(row.emailLinkTokenHash, null);
+  assert.equal(row.verificationEmailSentAt, null);
+  assert.equal(row.email, "edit@example.test");
+  assert.equal(row.companyName, "Livraison Ada");
+  const source = readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8");
+  assert.match(source, /journey\.status !== "EMAIL_PENDING"/);
+
+  row.status = "EMAIL_PENDING";
+  row.authUserId = "auth-confirmed-1";
+  row.emailLinkTokenHash = "confirmed-link";
+  row.emailVerifiedAt = null;
+  let confirmedUserDeleted = false;
+  const lockedService = loadSignupService({
+    "@/services/prisma/client": {
+      prisma: {
+        signupJourney: { findUnique: async () => row },
+        $transaction: async (callback: (client: typeof tx) => unknown) => callback(tx),
+      },
+    },
+    "@/services/supabase/admin": {
+      createAdminClient: () => ({ auth: { admin: {
+        getUserById: async () => ({ data: { user: { email: row.email, email_confirmed_at: new Date().toISOString() } }, error: null }),
+        deleteUser: async () => { confirmedUserDeleted = true; return { error: null }; },
+      } } }),
+    },
+  });
+  await assert.rejects(() => lockedService.reopenSignupIdentity(resumeToken), /SIGNUP_EDIT_IDENTITY_LOCKED/);
+  assert.equal(confirmedUserDeleted, false);
+});
+
+test("SIGNUP-1 : l’offre et l’identité restent corrigeables jusqu’au paiement confirmé", async () => {
+  assert.equal(signupActionSchema.safeParse({ action: "identity-details", firstName: "Ada", lastName: "Martin", email: "ada@example.test", companyName: "Livraison Ada", billingAddress: "1 rue du Test", billingPostalCode: "75001", billingCity: "Paris", billingCountry: "FR" }).success, true);
+  assert.equal(signupIdentityDetailsSchema.safeParse({ action: "identity-details", firstName: "A", lastName: "Martin", email: "ada@example.test", companyName: "Livraison Ada", billingAddress: "1 rue du Test", billingPostalCode: "75001", billingCity: "Paris" }).success, false);
+
+  const resumeToken = "resume-token-for-editing-signup-quote";
+  const row = {
+    id: "signup-edit-quote",
+    resumeTokenHash: createHash("sha256").update(resumeToken).digest("hex"),
+    status: "EMAIL_VERIFIED",
+    catalogVersionId: "catalog",
+    planCode: "STARTER" as const,
+    billingInterval: "MONTHLY" as const,
+    optionSelections: [],
+    quoteSnapshot: {},
+    email: "ada@example.test",
+    authUserId: "auth-verified-1",
+    emailLinkTokenHash: null,
+    firstName: "Ada",
+    lastName: "Martin",
+    companyName: "Livraison Ada",
+    legalName: null,
+    siren: null,
+    siret: null,
+    phone: null,
+    billingAddress: "1 rue du Test",
+    billingPostalCode: "75001",
+    billingCity: "Paris",
+    billingCountry: "FR",
+    emailVerifiedAt: new Date(),
+    verificationEmailSentAt: new Date(),
+    paymentConfirmedAt: null as Date | null,
+    activatedAt: null as Date | null,
+    failureCode: null,
+    expiresAt: new Date(Date.now() + 60_000),
+    companyId: null as string | null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const service = loadSignupService({
+    "@/services/prisma/client": {
+      prisma: {
+        signupJourney: {
+          findUnique: async () => row,
+          update: async ({ data }: { data: Partial<typeof row> }) => Object.assign(row, data),
+        },
+        saasCatalogVersion: { findUnique: async () => catalog },
+      },
+    },
+  });
+  const quoted = await service.updateSignupSelection(resumeToken, { planCode: "PRO", billingInterval: "ANNUAL", optionSelections: [] });
+  assert.equal(quoted.planCode, "PRO");
+  assert.equal(quoted.choicesEditable, true);
+  const renamed = await service.updateSignupIdentityDetails(resumeToken, {
+    firstName: "Ada",
+    lastName: "Martin",
+    email: "ada@example.test",
+    companyName: "Courses Ada",
+    billingAddress: "12 rue du Test",
+    billingPostalCode: "75002",
+    billingCity: "Paris",
+    billingCountry: "FR",
+  });
+  assert.equal(renamed.companyName, "Courses Ada");
+  await assert.rejects(
+    () => service.updateSignupIdentityDetails(resumeToken, {
+      firstName: "Ada",
+      lastName: "Martin",
+      email: "autre@example.test",
+      companyName: "Courses Ada",
+      billingAddress: "12 rue du Test",
+      billingPostalCode: "75002",
+      billingCity: "Paris",
+      billingCountry: "FR",
+    }),
+    /SIGNUP_IDENTITY_LOCKED/,
+  );
+  row.paymentConfirmedAt = new Date();
+  row.status = "PAYMENT_CONFIRMED";
+  await assert.rejects(
+    () => service.updateSignupSelection(resumeToken, { planCode: "STARTER", billingInterval: "MONTHLY", optionSelections: [] }),
+    /SIGNUP_SELECTION_LOCKED/,
+  );
+});
+
 test("SIGNUP-1 : activation verrouillée, atomique et conditionnée par e-mail + paiement serveur", () => {
   const source = readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8");
   assert.match(source, /SELECT id FROM \"signup_journeys\" WHERE id = \$\{signupId\} FOR UPDATE/);
@@ -225,6 +402,9 @@ test("SIGNUP-1 : parcours mobile, reprise et progression restent visibles", () =
   assert.match(ui, /fetch\("\/api\/signup", \{ cache: "no-store" \}\)/);
   assert.match(ui, /sm:grid-cols-2/);
   assert.match(ui, /J’ai confirmé, actualiser/);
+  assert.match(ui, /Modifier l’offre/);
+  assert.match(ui, /goToStage/);
+  assert.match(ui, /Revoir la formule/);
   const paymentRoute = readFileSync(resolve("src/app/api/signup/payment/route.ts"), "utf8");
   assert.match(paymentRoute, /redirect=\/onboarding/);
 });

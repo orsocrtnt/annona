@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { Prisma, type SaasBillingInterval, type SaasPlanCode, type SignupPaymentStatus } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
+import { createAdminClient } from "@/services/supabase/admin";
 import { createPasswordLinkClient } from "@/services/supabase/password-link";
 import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
@@ -151,6 +152,7 @@ function publicJourney(journey: NonNullable<JourneyRecord>) {
       : null,
     paymentConfirmed: Boolean(journey.paymentConfirmedAt),
     activated: Boolean(journey.activatedAt),
+    choicesEditable: !signupChoicesLocked(journey),
   };
 }
 
@@ -271,6 +273,16 @@ async function requireJourney(resumeToken: string) {
   return journey;
 }
 
+function signupChoicesLocked(journey: NonNullable<JourneyRecord>) {
+  return Boolean(
+    journey.paymentConfirmedAt ||
+    journey.activatedAt ||
+    journey.companyId ||
+    journey.status === "ACTIVATED" ||
+    journey.status === "FAILED"
+  );
+}
+
 export async function getSignupJourney(resumeToken: string) {
   return publicJourney(await requireJourney(resumeToken));
 }
@@ -281,7 +293,7 @@ export async function updateSignupSelection(resumeToken: string, input: {
   optionSelections: SignupOptionSelection[];
 }) {
   const journey = await requireJourney(resumeToken);
-  if (journey.status !== "DRAFT") throw new Error("SIGNUP_SELECTION_LOCKED");
+  if (signupChoicesLocked(journey)) throw new Error("SIGNUP_SELECTION_LOCKED");
   const catalog = await prisma.saasCatalogVersion.findUnique({
     where: { id: journey.catalogVersionId },
     include: { plans: true, options: true },
@@ -383,6 +395,37 @@ export async function submitSignupIdentity(resumeToken: string, input: SignupIde
   return { verificationRequired: true as const };
 }
 
+export async function updateSignupIdentityDetails(resumeToken: string, input: Omit<SignupIdentityInput, "password">) {
+  const journey = await requireJourney(resumeToken);
+  if (
+    signupChoicesLocked(journey) ||
+    !journey.emailVerifiedAt ||
+    !["EMAIL_VERIFIED", "PAYMENT_PENDING"].includes(journey.status)
+  ) {
+    throw new Error("SIGNUP_IDENTITY_LOCKED");
+  }
+  const email = normalizeEmail(input.email);
+  if (!journey.email || email !== journey.email) throw new Error("SIGNUP_IDENTITY_LOCKED");
+  const updated = await prisma.signupJourney.update({
+    where: { id: journey.id },
+    data: {
+      firstName: input.firstName.trim(),
+      lastName: input.lastName.trim(),
+      companyName: input.companyName.trim(),
+      legalName: input.legalName?.trim() || null,
+      siren: input.siren?.replace(/\s/g, "") || null,
+      siret: input.siret?.replace(/\s/g, "") || null,
+      phone: input.phone?.trim() || null,
+      billingAddress: input.billingAddress.trim(),
+      billingPostalCode: input.billingPostalCode.trim(),
+      billingCity: input.billingCity.trim(),
+      billingCountry: input.billingCountry,
+      failureCode: null,
+    },
+  });
+  return publicJourney(updated);
+}
+
 export async function resendSignupConfirmation(resumeToken: string) {
   const journey = await requireJourney(resumeToken);
   if (journey.status !== "EMAIL_PENDING" || !journey.email || journey.emailVerifiedAt) {
@@ -430,6 +473,48 @@ export async function resendSignupConfirmation(resumeToken: string) {
   return { verificationRequired: true as const, journey: publicJourney(updated) };
 }
 
+function isMissingAuthUser(error: { status?: number; code?: string } | null) {
+  return error?.status === 404 || error?.code === "user_not_found";
+}
+
+export async function reopenSignupIdentity(resumeToken: string) {
+  const journey = await requireJourney(resumeToken);
+  if (journey.status !== "EMAIL_PENDING" || journey.emailVerifiedAt || journey.paymentConfirmedAt || journey.companyId) {
+    throw new Error("SIGNUP_EDIT_IDENTITY_LOCKED");
+  }
+  const admin = createAdminClient();
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "signup_journeys" WHERE id = ${journey.id} FOR UPDATE`;
+    const locked = await tx.signupJourney.findUnique({ where: { id: journey.id } });
+    if (!locked || locked.status !== "EMAIL_PENDING" || locked.emailVerifiedAt || locked.paymentConfirmedAt || locked.companyId) {
+      throw new Error("SIGNUP_EDIT_IDENTITY_LOCKED");
+    }
+    if (locked.authUserId) {
+      const { data, error } = await admin.auth.admin.getUserById(locked.authUserId);
+      if (error && !isMissingAuthUser(error)) throw new Error("SIGNUP_EDIT_IDENTITY_FAILED");
+      if (data?.user) {
+        if (data.user.email_confirmed_at || !data.user.email || normalizeEmail(data.user.email) !== locked.email) {
+          throw new Error("SIGNUP_EDIT_IDENTITY_LOCKED");
+        }
+        const { error: deleteError } = await admin.auth.admin.deleteUser(locked.authUserId);
+        if (deleteError && !isMissingAuthUser(deleteError)) throw new Error("SIGNUP_EDIT_IDENTITY_FAILED");
+      }
+    }
+    return tx.signupJourney.update({
+      where: { id: locked.id },
+      data: {
+        status: "DRAFT",
+        authUserId: null,
+        emailLinkTokenHash: null,
+        emailVerifiedAt: null,
+        verificationEmailSentAt: null,
+        failureCode: null,
+      },
+    });
+  }, { maxWait: 10_000, timeout: 30_000 });
+  return publicJourney(updated);
+}
+
 export async function confirmManagedSignupEmail(input: {
   draftId: string;
   linkToken: string;
@@ -441,10 +526,9 @@ export async function confirmManagedSignupEmail(input: {
   await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "signup_journeys" WHERE id = ${input.draftId} FOR UPDATE`;
     const journey = await tx.signupJourney.findUnique({ where: { id: input.draftId } });
-    if (!journey || journey.expiresAt <= new Date() || !journey.emailLinkTokenHash ||
+    if (!journey || journey.status !== "EMAIL_PENDING" || journey.expiresAt <= new Date() || !journey.emailLinkTokenHash ||
         !tokenMatches(input.linkToken, journey.emailLinkTokenHash) ||
-        (journey.authUserId !== null && journey.authUserId !== input.authUserId) || journey.email !== email ||
-        journey.status === "ACTIVATED") {
+        (journey.authUserId !== null && journey.authUserId !== input.authUserId) || journey.email !== email) {
       throw new Error("AUTH_LINK_INVALID");
     }
     await tx.signupJourney.update({

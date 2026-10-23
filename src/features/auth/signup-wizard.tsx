@@ -12,6 +12,7 @@ import { APP_NAME } from "@/lib/constants";
 
 type PlanCode = "STARTER" | "PRO" | "BUSINESS";
 type BillingInterval = "MONTHLY" | "ANNUAL";
+type Stage = "plan" | "options" | "identity" | "email" | "payment";
 type Selection = { code: string; quantity: number };
 type Catalog = {
   currency: string;
@@ -35,6 +36,7 @@ type Journey = {
   legalName: string | null; siren: string | null; siret: string | null; phone: string | null;
   billingAddress: string | null; billingPostalCode: string | null; billingCity: string | null; billingCountry: string;
   emailVerified: boolean; emailResendAvailableAt: string | null; paymentConfirmed: boolean; activated: boolean;
+  choicesEditable: boolean;
 };
 
 const planDescriptions: Record<PlanCode, string> = {
@@ -43,14 +45,30 @@ const planDescriptions: Record<PlanCode, string> = {
   BUSINESS: "Pour les opérations plus importantes",
 };
 
+const stepItems: Array<{ id: Stage; label: string }> = [
+  { id: "plan", label: "Formule" },
+  { id: "options", label: "Options" },
+  { id: "identity", label: "Entreprise" },
+  { id: "email", label: "E-mail" },
+  { id: "payment", label: "Paiement" },
+];
+
 function money(cents: number, currency = "EUR") {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(cents / 100);
+}
+
+function stageFromJourney(journey: Journey | null): Stage {
+  if (!journey) return "plan";
+  if (journey.activated || journey.paymentConfirmed || journey.emailVerified) return "payment";
+  if (journey.status === "EMAIL_PENDING") return "email";
+  if (journey.firstName || journey.companyName) return "identity";
+  return "options";
 }
 
 export function SignupWizard() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [journey, setJourney] = useState<Journey | null>(null);
-  const [stage, setStage] = useState<"plan" | "options" | "identity">("plan");
+  const [stage, setStage] = useState<Stage>("plan");
   const [planCode, setPlanCode] = useState<PlanCode>("STARTER");
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("MONTHLY");
   const [selections, setSelections] = useState<Selection[]>([]);
@@ -59,6 +77,7 @@ export function SignupWizard() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [identityDraft, setIdentityDraft] = useState<Record<string, string>>({});
   const [paymentEventKey, setPaymentEventKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -71,7 +90,7 @@ export function SignupWizard() {
       setPlanCode(payload.journey.planCode);
       setBillingInterval(payload.journey.billingInterval);
       setSelections(payload.journey.optionSelections);
-      if (payload.journey.status === "DRAFT") setStage("options");
+      setStage(stageFromJourney(payload.journey));
     }
   }, []);
 
@@ -96,6 +115,9 @@ export function SignupWizard() {
   const activePlan = catalog?.plans.find((plan) => plan.code === planCode);
   const options = useMemo(() => catalog?.options.filter((option) =>
     option.applicablePlans.includes(planCode) && (!option.featureKey || !activePlan?.includedFeatures.includes(option.featureKey))) ?? [], [catalog, planCode, activePlan]);
+  const choicesEditable = Boolean(!journey || journey.choicesEditable);
+  const emailLocked = Boolean(journey?.emailVerified);
+  const progress = stage === "payment" ? 5 : stage === "email" ? 4 : stage === "identity" ? 3 : stage === "options" ? 2 : 1;
 
   const post = async (body: unknown) => {
     setSubmitting(true); setError(null); setNotice(null);
@@ -107,17 +129,47 @@ export function SignupWizard() {
     } finally { setSubmitting(false); }
   };
 
+  const applyJourney = (next: Journey, nextStage?: Stage) => {
+    setJourney(next);
+    setPlanCode(next.planCode);
+    setBillingInterval(next.billingInterval);
+    setSelections(next.optionSelections);
+    if (nextStage) setStage(nextStage);
+  };
+
+  const reopenUnverifiedIdentity = async () => {
+    const payload = await post({ action: "edit-identity" });
+    applyJourney(payload.journey);
+    setNotice("Vous pouvez corriger vos informations. L’ancien lien de confirmation n’est plus valable.");
+    return payload.journey as Journey;
+  };
+
+  const goToStage = async (next: Stage) => {
+    if (!choicesEditable && next !== "payment") return;
+    try {
+      if (journey?.status === "EMAIL_PENDING" && (next === "plan" || next === "options" || next === "identity")) {
+        await reopenUnverifiedIdentity();
+      }
+      setStage(next);
+      setError(null);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Impossible de modifier cette étape.");
+    }
+  };
+
   const choosePlan = async () => {
     try {
-      const payload = await post({ action: "create", planCode, billingInterval, optionSelections: [] });
-      setJourney(payload.journey); setSelections([]); setStage("options");
+      const action = journey ? "selection" : "create";
+      const payload = await post({ action, planCode, billingInterval, optionSelections: [] });
+      applyJourney(payload.journey, "options");
+      setSelections([]);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible de poursuivre."); }
   };
 
   const saveOptions = async () => {
     try {
       const payload = await post({ action: "selection", planCode, billingInterval, optionSelections: selections });
-      setJourney(payload.journey); setStage("identity");
+      applyJourney(payload.journey, journey?.emailVerified ? "payment" : "identity");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible de poursuivre."); }
   };
 
@@ -125,12 +177,19 @@ export function SignupWizard() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const password = String(form.get("password") ?? "");
-    if (password !== String(form.get("confirmPassword") ?? "")) { setError("Les mots de passe ne correspondent pas."); return; }
+    const confirmPassword = String(form.get("confirmPassword") ?? "");
+    if (!emailLocked && password !== confirmPassword) { setError("Les mots de passe ne correspondent pas."); return; }
     const body = Object.fromEntries(form.entries());
     try {
+      if (emailLocked) {
+        const payload = await post({ action: "identity-details", ...body });
+        applyJourney(payload.journey, "payment");
+        setNotice("Vos informations ont été mises à jour.");
+        return;
+      }
       await post({ action: "identity", ...body });
       await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible d'envoyer l'e-mail."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible d'enregistrer ces informations."); }
   };
 
   const pay = async () => {
@@ -163,8 +222,6 @@ export function SignupWizard() {
     setSelections((current) => quantity <= 0 ? current.filter((item) => item.code !== code) : [...current.filter((item) => item.code !== code), { code, quantity }]);
   };
 
-  const progress = journey?.emailVerified ? 4 : journey?.status === "EMAIL_PENDING" ? 3 : stage === "identity" ? 3 : stage === "options" ? 2 : 1;
-
   if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Préparation de l’inscription…</div>;
 
   return (
@@ -178,19 +235,36 @@ export function SignupWizard() {
           <div className="mb-8">
             <div className="flex items-center justify-between text-xs font-medium text-muted-foreground"><span>Inscription entreprise</span><span>Étape {progress} sur 5</span></div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-brand transition-all" style={{ width: `${progress * 20}%` }} /></div>
+            <ol className="mt-4 grid grid-cols-5 gap-2 text-center text-[11px] sm:text-xs">
+              {stepItems.map((step, index) => {
+                const reachable = choicesEditable && (index < 3 ? Boolean(journey) || step.id === "plan" : false);
+                return (
+                  <li key={step.id}>
+                    <button
+                      type="button"
+                      disabled={!reachable || submitting}
+                      onClick={() => void goToStage(step.id)}
+                      className={`w-full rounded-md px-1 py-1 ${stage === step.id ? "font-semibold text-foreground" : "text-muted-foreground"} ${reachable ? "hover:text-foreground" : ""}`}
+                    >
+                      {step.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
           {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
           {notice && <Alert variant="success" className="mb-6"><AlertDescription>{notice}</AlertDescription></Alert>}
 
-          {!journey && stage === "plan" && catalog && (
+          {stage === "plan" && catalog && choicesEditable && (
             <div>
               <h1 className="text-2xl font-semibold">Choisissez votre formule</h1>
-              <p className="mt-2 text-muted-foreground">Vous pourrez ajouter les options utiles à l’étape suivante.</p>
+              <p className="mt-2 text-muted-foreground">Vous pourrez ajouter les options utiles à l’étape suivante. Un retour est possible tant que le paiement n’est pas confirmé.</p>
               <div className="mt-5 inline-flex rounded-lg border p-1">
                 {(["MONTHLY", "ANNUAL"] as const).map((interval) => <button key={interval} type="button" onClick={() => setBillingInterval(interval)} className={`rounded-md px-4 py-2 text-sm ${billingInterval === interval ? "bg-foreground text-background" : "text-muted-foreground"}`}>{interval === "MONTHLY" ? "Mensuel" : "Annuel"}</button>)}
               </div>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
-                {catalog.plans.map((plan) => <button key={plan.code} type="button" onClick={() => setPlanCode(plan.code)} className={`rounded-xl border p-5 text-left transition ${planCode === plan.code ? "border-brand ring-2 ring-brand/20" : "hover:border-foreground/30"}`}>
+                {catalog.plans.map((plan) => <button key={plan.code} type="button" onClick={() => { if (plan.code !== planCode) setSelections([]); setPlanCode(plan.code); }} className={`rounded-xl border p-5 text-left transition ${planCode === plan.code ? "border-brand ring-2 ring-brand/20" : "hover:border-foreground/30"}`}>
                   <div className="flex items-center justify-between"><strong>{plan.name}</strong>{planCode === plan.code && <Check className="h-5 w-5 text-brand" />}</div>
                   <p className="mt-2 text-sm text-muted-foreground">{planDescriptions[plan.code]}</p>
                   <p className="mt-5 text-2xl font-semibold">{money(billingInterval === "ANNUAL" ? plan.annualPriceCents : plan.monthlyPriceCents)}</p>
@@ -198,11 +272,14 @@ export function SignupWizard() {
                   <ul className="mt-4 space-y-2 text-sm"><li>{plan.unlimitedDriverSeats ? "Livreurs illimités" : `${plan.includedDriverSeats} livreurs inclus`}</li><li>{plan.includedMonthlyOrders.toLocaleString("fr-FR")} commandes / mois</li><li>{plan.includedAdminSeats} administrateur{plan.includedAdminSeats > 1 ? "s" : ""} inclus</li></ul>
                 </button>)}
               </div>
-              <Button className="mt-7 w-full sm:w-auto" variant="brand" size="lg" loading={submitting} onClick={() => void choosePlan()}>Continuer</Button>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
+                {journey ? <Button variant="outline" onClick={() => void goToStage(journey.emailVerified ? "payment" : journey.status === "EMAIL_PENDING" ? "email" : "options")}>Retour</Button> : null}
+                <Button className="w-full sm:w-auto" variant="brand" size="lg" loading={submitting} onClick={() => void choosePlan()}>Continuer</Button>
+              </div>
             </div>
           )}
 
-          {journey?.status === "DRAFT" && stage === "options" && catalog && activePlan && (
+          {stage === "options" && catalog && activePlan && choicesEditable && journey && (
             <div>
               <h1 className="text-2xl font-semibold">Ajoutez seulement ce dont vous avez besoin</h1>
               <p className="mt-2 text-muted-foreground">Les fonctions déjà incluses dans {activePlan.name} ne sont jamais refacturées.</p>
@@ -211,31 +288,36 @@ export function SignupWizard() {
                 const price = billingInterval === "ANNUAL" ? option.annualPriceCents : option.monthlyPriceCents;
                 return <div key={option.code} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">{option.name}</p><p className="text-sm text-muted-foreground">{money(price)} HT / {billingInterval === "ANNUAL" ? "an" : "mois"}</p></div>{option.kind === "OPTION" ? <button type="button" onClick={() => setOption(option.code, selected ? 0 : 1)} className={`rounded-lg border px-4 py-2 text-sm font-medium ${selected ? "border-brand bg-brand text-white" : ""}`}>{selected ? "Ajoutée" : "Ajouter"}</button> : <Input aria-label={`Quantité ${option.name}`} type="number" min={0} max={500} value={selected} onChange={(event) => setOption(option.code, Number(event.target.value))} className="w-28" />}</div>;
               })}</div>
-              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" onClick={() => { setJourney(null); setStage("plan"); }}>Revoir la formule</Button><Button variant="brand" loading={submitting} onClick={() => void saveOptions()}>Continuer</Button></div>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" onClick={() => void goToStage("plan")}>Revoir la formule</Button><Button variant="brand" loading={submitting} onClick={() => void saveOptions()}>Continuer</Button></div>
             </div>
           )}
 
-          {journey?.status === "DRAFT" && stage === "identity" && (
-            <form onSubmit={submitIdentity} className="space-y-5">
-              <div><h1 className="text-2xl font-semibold">Créez votre entreprise</h1><p className="mt-2 text-muted-foreground">L’e-mail professionnel devra être confirmé avant le paiement fictif.</p></div>
-              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Prénom" required><Input name="firstName" autoComplete="given-name" defaultValue={journey.firstName ?? ""} required /></FormField><FormField label="Nom" required><Input name="lastName" autoComplete="family-name" defaultValue={journey.lastName ?? ""} required /></FormField></div>
-              <FormField label="E-mail professionnel" required><Input name="email" type="email" autoComplete="email" defaultValue={journey.email ?? ""} required /></FormField>
-              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Mot de passe" required><PasswordInput name="password" autoComplete="new-password" required /></FormField><FormField label="Confirmer" required><PasswordInput name="confirmPassword" autoComplete="new-password" required /></FormField></div>
-              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Nom commercial" required><Input name="companyName" autoComplete="organization" defaultValue={journey.companyName ?? ""} required /></FormField><FormField label="Raison sociale" hint="Optionnel"><Input name="legalName" defaultValue={journey.legalName ?? ""} /></FormField></div>
-              <div className="grid gap-4 sm:grid-cols-2"><FormField label="SIREN" hint="9 chiffres, optionnel"><Input name="siren" inputMode="numeric" maxLength={9} defaultValue={journey.siren ?? ""} /></FormField><FormField label="SIRET" hint="14 chiffres, optionnel"><Input name="siret" inputMode="numeric" maxLength={14} defaultValue={journey.siret ?? ""} /></FormField></div>
-              <FormField label="Téléphone" hint="Optionnel"><Input name="phone" type="tel" autoComplete="tel" defaultValue={journey.phone ?? ""} /></FormField>
-              <FormField label="Adresse de facturation" required><Input name="billingAddress" autoComplete="street-address" defaultValue={journey.billingAddress ?? ""} required /></FormField>
-              <div className="grid gap-4 sm:grid-cols-[140px_1fr_100px]"><FormField label="Code postal" required><Input name="billingPostalCode" autoComplete="postal-code" defaultValue={journey.billingPostalCode ?? ""} required /></FormField><FormField label="Ville" required><Input name="billingCity" autoComplete="address-level2" defaultValue={journey.billingCity ?? ""} required /></FormField><FormField label="Pays" required><Input name="billingCountry" defaultValue={journey.billingCountry || "FR"} maxLength={2} required /></FormField></div>
-              <div className="flex flex-col-reverse gap-3 sm:flex-row"><Button type="button" variant="outline" onClick={() => setStage("options")}>Retour</Button><Button type="submit" variant="brand" loading={submitting}>Vérifier mon e-mail</Button></div>
+          {stage === "identity" && choicesEditable && journey && (
+            <form onSubmit={submitIdentity} onChange={(event) => { const field = event.target as unknown as HTMLInputElement; if (field.name) setIdentityDraft((current) => ({ ...current, [field.name]: field.value })); }} className="space-y-5">
+              <div>
+                <h1 className="text-2xl font-semibold">{emailLocked ? "Corrigez les informations de l’entreprise" : "Créez votre entreprise"}</h1>
+                <p className="mt-2 text-muted-foreground">{emailLocked ? "L’adresse e-mail déjà confirmée reste inchangée. Le mot de passe n’a pas à être resaisi." : "L’e-mail professionnel devra être confirmé avant le paiement fictif."}</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Prénom" required><Input name="firstName" autoComplete="given-name" defaultValue={identityDraft.firstName ?? journey.firstName ?? ""} required /></FormField><FormField label="Nom" required><Input name="lastName" autoComplete="family-name" defaultValue={identityDraft.lastName ?? journey.lastName ?? ""} required /></FormField></div>
+              <FormField label="E-mail professionnel" required><Input name="email" type="email" autoComplete="email" defaultValue={identityDraft.email ?? journey.email ?? ""} required readOnly={emailLocked} /></FormField>
+              {!emailLocked && (
+                <div className="grid gap-4 sm:grid-cols-2"><FormField label="Mot de passe" required><PasswordInput name="password" autoComplete="new-password" defaultValue={identityDraft.password ?? ""} required /></FormField><FormField label="Confirmer" required><PasswordInput name="confirmPassword" autoComplete="new-password" defaultValue={identityDraft.confirmPassword ?? ""} required /></FormField></div>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Nom commercial" required><Input name="companyName" autoComplete="organization" defaultValue={identityDraft.companyName ?? journey.companyName ?? ""} required /></FormField><FormField label="Raison sociale" hint="Optionnel"><Input name="legalName" defaultValue={identityDraft.legalName ?? journey.legalName ?? ""} /></FormField></div>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="SIREN" hint="9 chiffres, optionnel"><Input name="siren" inputMode="numeric" maxLength={9} defaultValue={identityDraft.siren ?? journey.siren ?? ""} /></FormField><FormField label="SIRET" hint="14 chiffres, optionnel"><Input name="siret" inputMode="numeric" maxLength={14} defaultValue={identityDraft.siret ?? journey.siret ?? ""} /></FormField></div>
+              <FormField label="Téléphone" hint="Optionnel"><Input name="phone" type="tel" autoComplete="tel" defaultValue={identityDraft.phone ?? journey.phone ?? ""} /></FormField>
+              <FormField label="Adresse de facturation" required><Input name="billingAddress" autoComplete="street-address" defaultValue={identityDraft.billingAddress ?? journey.billingAddress ?? ""} required /></FormField>
+              <div className="grid gap-4 sm:grid-cols-[140px_1fr_100px]"><FormField label="Code postal" required><Input name="billingPostalCode" autoComplete="postal-code" defaultValue={identityDraft.billingPostalCode ?? journey.billingPostalCode ?? ""} required /></FormField><FormField label="Ville" required><Input name="billingCity" autoComplete="address-level2" defaultValue={identityDraft.billingCity ?? journey.billingCity ?? ""} required /></FormField><FormField label="Pays" required><Input name="billingCountry" defaultValue={identityDraft.billingCountry ?? journey.billingCountry ?? "FR"} maxLength={2} required /></FormField></div>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row"><Button type="button" variant="outline" onClick={() => void goToStage("options")}>Retour</Button><Button type="submit" variant="brand" loading={submitting}>{emailLocked ? "Enregistrer et revenir au paiement" : "Vérifier mon e-mail"}</Button></div>
             </form>
           )}
 
-          {journey?.status === "EMAIL_PENDING" && (
-            <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row"><Button variant="brand" loading={submitting} onClick={() => { setSubmitting(true); load().catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button><Button variant="outline" disabled={submitting || resendSeconds > 0} onClick={() => void resendVerificationEmail()}>{resendSeconds > 0 ? `Renvoyer l’e-mail dans ${resendSeconds} s` : "Renvoyer l’e-mail"}</Button></div></div>
+          {stage === "email" && journey?.status === "EMAIL_PENDING" && (
+            <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap"><Button variant="brand" loading={submitting} onClick={() => { setSubmitting(true); load().catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button><Button variant="outline" disabled={submitting || resendSeconds > 0} onClick={() => void resendVerificationEmail()}>{resendSeconds > 0 ? `Renvoyer l’e-mail dans ${resendSeconds} s` : "Renvoyer l’e-mail"}</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("plan")}>Revoir la formule</Button></div></div>
           )}
 
-          {journey?.emailVerified && !journey.activated && (
-            <div className="mx-auto max-w-2xl"><h1 className="text-2xl font-semibold">Confirmez l’abonnement en environnement test</h1><p className="mt-2 text-muted-foreground">Aucun débit réel n’est effectué. L’activation dépend exclusivement de la confirmation serveur ci-dessous.</p><div className="mt-6 rounded-xl border bg-muted/20 p-5"><div className="flex justify-between"><span>Total HT</span><strong>{money(journey.quote.totalHtCents, journey.quote.currency)}</strong></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>TVA indicative</span><span>{money(journey.quote.vatCents, journey.quote.currency)}</span></div><div className="mt-4 flex justify-between border-t pt-4 text-lg"><span>Total TTC</span><strong>{money(journey.quote.totalTtcCents, journey.quote.currency)}</strong></div><p className="mt-4 text-xs text-muted-foreground">{journey.quote.includedMonthlyOrders.toLocaleString("fr-FR")} commandes incluses par mois, puis {money(journey.quote.orderOverageUnitPriceCents)} HT par commande supplémentaire. Les dépassements restent non bloquants.</p></div><Button className="mt-7 w-full" variant="brand" size="lg" loading={submitting} onClick={() => void pay()}>Confirmer le paiement fictif et activer</Button></div>
+          {stage === "payment" && journey?.emailVerified && !journey.activated && (
+            <div className="mx-auto max-w-2xl"><h1 className="text-2xl font-semibold">Confirmez l’abonnement en environnement test</h1><p className="mt-2 text-muted-foreground">Aucun débit réel n’est effectué. Vous pouvez encore corriger l’offre ou les informations tant que ce paiement n’est pas confirmé.</p><div className="mt-6 rounded-xl border bg-muted/20 p-5"><div className="flex justify-between"><span>Total HT</span><strong>{money(journey.quote.totalHtCents, journey.quote.currency)}</strong></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>TVA indicative</span><span>{money(journey.quote.vatCents, journey.quote.currency)}</span></div><div className="mt-4 flex justify-between border-t pt-4 text-lg"><span>Total TTC</span><strong>{money(journey.quote.totalTtcCents, journey.quote.currency)}</strong></div><p className="mt-4 text-xs text-muted-foreground">{journey.quote.includedMonthlyOrders.toLocaleString("fr-FR")} commandes incluses par mois, puis {money(journey.quote.orderOverageUnitPriceCents)} HT par commande supplémentaire. Les dépassements restent non bloquants.</p></div><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" onClick={() => void goToStage("plan")}>Modifier l’offre</Button><Button variant="outline" onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button className="w-full" variant="brand" size="lg" loading={submitting} onClick={() => void pay()}>Confirmer le paiement fictif et activer</Button></div></div>
           )}
         </section>
       </div>

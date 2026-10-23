@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, resendSignupConfirmation, submitSignupIdentity, updateSignupSelection } from "@/domains/signup/signup.service";
+import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, reopenSignupIdentity, resendSignupConfirmation, submitSignupIdentity, updateSignupIdentityDetails, updateSignupSelection } from "@/domains/signup/signup.service";
 import { setSignupResumeCookie } from "@/domains/signup/signup-cookie";
 import { signupActionSchema } from "@/lib/validations/signup";
 
@@ -8,6 +8,8 @@ const noStore = { "Cache-Control": "no-store" };
 function publicError(error: unknown) {
   const code = error instanceof Error ? error.message : "UNKNOWN";
   if (code === "SIGNUP_EMAIL_RESEND_COOLDOWN") return { status: 429, error: "Patientez 30 secondes avant de renvoyer l’e-mail." };
+  if (code === "SIGNUP_EDIT_IDENTITY_LOCKED") return { status: 409, error: "L’adresse a déjà été confirmée et ne peut plus être modifiée à cette étape." };
+  if (code === "SIGNUP_EDIT_IDENTITY_FAILED") return { status: 503, error: "Impossible de rouvrir cette étape pour le moment." };
   if (code === "AUTH_RATE_LIMITED") return { status: 429, error: "Trop de demandes. Réessayez dans quelques minutes." };
   if (["AUTH_EMAIL_NOT_CONFIGURED", "AUTH_EMAIL_FAILED"].includes(code)) return { status: 503, error: "La vérification e-mail est temporairement indisponible." };
   if (code === "SIGNUP_RESUME_INVALID") return { status: 401, error: "Cette inscription a expiré. Recommencez en quelques instants." };
@@ -49,6 +51,12 @@ export async function POST(request: NextRequest) {
     }
     if (parsed.data.action === "resend-email") {
       return NextResponse.json(await resendSignupConfirmation(currentToken), { headers: noStore });
+    }
+    if (parsed.data.action === "edit-identity") {
+      return NextResponse.json({ journey: await reopenSignupIdentity(currentToken) }, { headers: noStore });
+    }
+    if (parsed.data.action === "identity-details") {
+      return NextResponse.json({ journey: await updateSignupIdentityDetails(currentToken, parsed.data) }, { headers: noStore });
     }
     const result = await submitSignupIdentity(currentToken, parsed.data);
     return NextResponse.json(result, { headers: noStore });
