@@ -7,6 +7,7 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { Prisma } from "@prisma/client";
 import { signupActionSchema, signupIdentityDetailsSchema, signupIdentitySchema } from "../src/lib/validations/signup";
+import { buildSignupPlanComparison } from "../src/features/auth/signup-plan-comparison";
 
 function loadSignupService(overrides: Record<string, unknown> = {}) {
   const module = { exports: {} };
@@ -53,6 +54,50 @@ const catalog = {
     { id: "dispatcher", code: "DISPATCHER_ALL", name: "Dispatcher supplémentaire", kind: "DISPATCHER_SEAT" as const, featureKey: null, monthlyPriceCents: 800, annualPriceCents: 9600, applicablePlans: ["STARTER" as const, "PRO" as const] },
   ],
 };
+
+test("SIGNUP-1 : la comparaison d’offres montre ce que les formules moins chères n’incluent pas", () => {
+  const comparisonCatalog = {
+    currency: "EUR",
+    vatRateBps: 2000,
+    plans: [
+      { code: "STARTER" as const, name: "Starter", monthlyPriceCents: 7900, annualPriceCents: 79000, includedDriverSeats: 5, unlimitedDriverSeats: false, maxDriverSeats: 10, includedAdminSeats: 1, includedDispatcherSeats: 0, includedMonthlyOrders: 1000, orderOverageUnitPriceCents: 10, includedFeatures: [] },
+      { code: "PRO" as const, name: "Pro", monthlyPriceCents: 17900, annualPriceCents: 179000, includedDriverSeats: 10, unlimitedDriverSeats: false, maxDriverSeats: 30, includedAdminSeats: 1, includedDispatcherSeats: 1, includedMonthlyOrders: 3000, orderOverageUnitPriceCents: 8, includedFeatures: ["auto_dispatch", "admin_gps"] },
+      { code: "BUSINESS" as const, name: "Business", monthlyPriceCents: 34900, annualPriceCents: 349000, includedDriverSeats: 0, unlimitedDriverSeats: true, maxDriverSeats: null, includedAdminSeats: 2, includedDispatcherSeats: 1, includedMonthlyOrders: 6000, orderOverageUnitPriceCents: 6, includedFeatures: ["auto_dispatch", "admin_gps", "client_gps", "advanced_analytics", "priority_support"] },
+    ],
+    options: [
+      { code: "AUTO_DISPATCH", name: "Dispatch automatique", kind: "OPTION" as const, featureKey: "auto_dispatch", monthlyPriceCents: 4900, annualPriceCents: 58800, applicablePlans: ["STARTER" as const] },
+      { code: "ADMIN_GPS", name: "Carte GPS administrateur", kind: "OPTION" as const, featureKey: "admin_gps", monthlyPriceCents: 3900, annualPriceCents: 46800, applicablePlans: ["STARTER" as const] },
+      { code: "CLIENT_GPS", name: "Carte GPS client", kind: "OPTION" as const, featureKey: "client_gps", monthlyPriceCents: 4900, annualPriceCents: 58800, applicablePlans: ["STARTER" as const, "PRO" as const] },
+      { code: "ADVANCED_ANALYTICS", name: "Analytics avancés", kind: "OPTION" as const, featureKey: "advanced_analytics", monthlyPriceCents: 2900, annualPriceCents: 34800, applicablePlans: ["STARTER" as const, "PRO" as const] },
+      { code: "PRIORITY_SUPPORT", name: "Support prioritaire", kind: "OPTION" as const, featureKey: "priority_support", monthlyPriceCents: 2900, annualPriceCents: 34800, applicablePlans: ["STARTER" as const, "PRO" as const] },
+    ],
+  };
+  const rows = buildSignupPlanComparison(comparisonCatalog, "MONTHLY");
+  const byId = Object.fromEntries(rows.map((row) => [row.id, row]));
+  const row = (id: string) => {
+    const found = byId[id];
+    if (!found) throw new Error(`missing comparison row ${id}`);
+    return found;
+  };
+  assert.equal(row("dispatchers").cells.STARTER.kind, "missing");
+  assert.equal(row("dispatchers").cells.STARTER.text, "Non inclus");
+  assert.equal(row("dispatchers").cells.PRO.kind, "included");
+  assert.equal(row("admin_gps").cells.STARTER.kind, "option");
+  assert.match(row("admin_gps").cells.STARTER.text, /En option/);
+  assert.equal(row("admin_gps").cells.PRO.kind, "included");
+  assert.equal(row("admin_gps").cells.BUSINESS.kind, "included");
+  assert.equal(row("client_gps").cells.STARTER.kind, "option");
+  assert.equal(row("client_gps").cells.PRO.kind, "option");
+  assert.equal(row("client_gps").cells.BUSINESS.kind, "included");
+  assert.equal(row("drivers").cells.BUSINESS.text, "Illimités, usage mesuré");
+  assert.equal(row("orders").cells.STARTER.text.replace(/\s/g, " "), "1 000");
+  const annual = buildSignupPlanComparison(comparisonCatalog, "ANNUAL");
+  assert.match(annual.find((row) => row.id === "auto_dispatch")!.cells.STARTER.text, /\/ an/);
+  const ui = readFileSync(resolve("src/features/auth/signup-wizard.tsx"), "utf8");
+  const table = readFileSync(resolve("src/features/auth/signup-plan-comparison-table.tsx"), "utf8");
+  assert.match(ui, /SignupPlanComparisonTable/);
+  assert.match(table, /Comparaison des formules Starter, Pro et Business/);
+});
 
 test("SIGNUP-1 : devis mensuel/annuel exact, options annuelles à douze mensualités", () => {
   const service = loadSignupService();
@@ -488,6 +533,7 @@ test("SIGNUP-1 : parcours mobile, reprise et progression restent visibles", () =
   assert.match(ui, /sm:grid-cols-2/);
   assert.match(ui, /J’ai confirmé, actualiser/);
   assert.match(ui, /La confirmation n’est pas encore enregistrée/);
+  assert.match(ui, /SignupPlanComparisonTable/);
   assert.match(ui, /Modifier l’offre/);
   assert.match(ui, /goToStage/);
   assert.match(ui, /Revoir la formule/);

@@ -1,0 +1,26 @@
+---
+description: Ne valider une étape qu'après tests et vérifs que la demande marche et que rien n'est cassé
+alwaysApply: true
+---
+
+# Porte qualité TutelLiv
+
+Avant de dire qu'une étape est faite, allonger le travail plutôt que livrer un demi-parcours.
+
+## Interdit
+
+- Annoncer « c'est bon » après seulement un changement de code ou un test unitaire trop étroit.
+- Laisser l'utilisateur découvrir un cas évident (e-mail déjà confirmé, retour arrière, rechargement, double clic).
+- Cocher une tâche TODO ou demander un push si `npm run check` n'a pas passé, ou si le parcours demandé n'a pas été exercé.
+
+## Série obligatoire avant validation
+
+1. Inspecter les états voisins du parcours touché (brouillon, attente, confirmé, payé, reprise cookie, compte de test déjà existant).
+2. Ajouter ou étendre un test qui reproduirait le bug signalé, pas seulement le cas idéal.
+3. Lancer `npm run check` (types, lint, tests locaux). Relancer après chaque correction.
+4. Si l'écran ou le flux change : vérifier dans le navigateur Preview/local le clic réel, le retour arrière et le rechargement. Une lecture du JSX ne compte pas.
+5. Si le navigateur n'est pas disponible, le dire clairement et ne pas prétendre que l'UI est recettée.
+
+## Compte rendu
+
+Lister commandes, résultat, cas couverts et limites restantes. Une limite connue n'est pas une étape validée.

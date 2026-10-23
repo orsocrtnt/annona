@@ -2,32 +2,24 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Package2 } from "lucide-react";
+import { Package2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { FormField } from "@/components/ui/form-field";
+import { SignupPlanComparisonTable } from "@/features/auth/signup-plan-comparison-table";
+import {
+  type BillingInterval,
+  type PlanCode,
+  type SignupCatalog,
+  formatSignupMoney,
+} from "@/features/auth/signup-plan-comparison";
 import { APP_NAME } from "@/lib/constants";
 
-type PlanCode = "STARTER" | "PRO" | "BUSINESS";
-type BillingInterval = "MONTHLY" | "ANNUAL";
 type Stage = "plan" | "options" | "identity" | "email" | "payment";
 type Selection = { code: string; quantity: number };
-type Catalog = {
-  currency: string;
-  vatRateBps: number;
-  plans: Array<{
-    code: PlanCode; name: string; monthlyPriceCents: number; annualPriceCents: number;
-    includedDriverSeats: number; unlimitedDriverSeats: boolean; maxDriverSeats: number | null;
-    includedAdminSeats: number; includedDispatcherSeats: number; includedMonthlyOrders: number;
-    orderOverageUnitPriceCents: number; includedFeatures: string[];
-  }>;
-  options: Array<{
-    code: string; name: string; kind: "OPTION" | "DRIVER_SEAT" | "ADMIN_SEAT" | "DISPATCHER_SEAT";
-    featureKey: string | null; monthlyPriceCents: number; annualPriceCents: number; applicablePlans: PlanCode[];
-  }>;
-};
+type Catalog = SignupCatalog;
 type Journey = {
   status: "DRAFT" | "EMAIL_PENDING" | "EMAIL_VERIFIED" | "PAYMENT_PENDING" | "PAYMENT_CONFIRMED" | "ACTIVATED" | "FAILED";
   planCode: PlanCode; billingInterval: BillingInterval; optionSelections: Selection[];
@@ -39,12 +31,6 @@ type Journey = {
   choicesEditable: boolean;
 };
 
-const planDescriptions: Record<PlanCode, string> = {
-  STARTER: "Pour démarrer avec une petite équipe",
-  PRO: "Pour organiser une activité régulière",
-  BUSINESS: "Pour les opérations plus importantes",
-};
-
 const stepItems: Array<{ id: Stage; label: string }> = [
   { id: "plan", label: "Formule" },
   { id: "options", label: "Options" },
@@ -54,7 +40,7 @@ const stepItems: Array<{ id: Stage; label: string }> = [
 ];
 
 function money(cents: number, currency = "EUR") {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(cents / 100);
+  return formatSignupMoney(cents, currency);
 }
 
 function stageFromJourney(journey: Journey | null): Stage {
@@ -260,18 +246,17 @@ export function SignupWizard() {
           {stage === "plan" && catalog && choicesEditable && (
             <div>
               <h1 className="text-2xl font-semibold">Choisissez votre formule</h1>
-              <p className="mt-2 text-muted-foreground">Vous pourrez ajouter les options utiles à l’étape suivante. Un retour est possible tant que le paiement n’est pas confirmé.</p>
+              <p className="mt-2 text-muted-foreground">Comparez ce qui est inclus, en option ou absent. Les fonctions déjà incluses ne sont jamais refacturées à l’étape suivante.</p>
               <div className="mt-5 inline-flex rounded-lg border p-1">
                 {(["MONTHLY", "ANNUAL"] as const).map((interval) => <button key={interval} type="button" onClick={() => setBillingInterval(interval)} className={`rounded-md px-4 py-2 text-sm ${billingInterval === interval ? "bg-foreground text-background" : "text-muted-foreground"}`}>{interval === "MONTHLY" ? "Mensuel" : "Annuel"}</button>)}
               </div>
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
-                {catalog.plans.map((plan) => <button key={plan.code} type="button" onClick={() => { if (plan.code !== planCode) setSelections([]); setPlanCode(plan.code); }} className={`rounded-xl border p-5 text-left transition ${planCode === plan.code ? "border-brand ring-2 ring-brand/20" : "hover:border-foreground/30"}`}>
-                  <div className="flex items-center justify-between"><strong>{plan.name}</strong>{planCode === plan.code && <Check className="h-5 w-5 text-brand" />}</div>
-                  <p className="mt-2 text-sm text-muted-foreground">{planDescriptions[plan.code]}</p>
-                  <p className="mt-5 text-2xl font-semibold">{money(billingInterval === "ANNUAL" ? plan.annualPriceCents : plan.monthlyPriceCents)}</p>
-                  <p className="text-xs text-muted-foreground">HT / {billingInterval === "ANNUAL" ? "an" : "mois"}</p>
-                  <ul className="mt-4 space-y-2 text-sm"><li>{plan.unlimitedDriverSeats ? "Livreurs illimités" : `${plan.includedDriverSeats} livreurs inclus`}</li><li>{plan.includedMonthlyOrders.toLocaleString("fr-FR")} commandes / mois</li><li>{plan.includedAdminSeats} administrateur{plan.includedAdminSeats > 1 ? "s" : ""} inclus</li></ul>
-                </button>)}
+              <div className="mt-6">
+                <SignupPlanComparisonTable
+                  catalog={catalog}
+                  billingInterval={billingInterval}
+                  planCode={planCode}
+                  onSelectPlan={(code) => { if (code !== planCode) setSelections([]); setPlanCode(code); }}
+                />
               </div>
               <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
                 {journey ? <Button variant="outline" onClick={() => void goToStage(journey.emailVerified ? "payment" : journey.status === "EMAIL_PENDING" ? "email" : "options")}>Retour</Button> : null}
