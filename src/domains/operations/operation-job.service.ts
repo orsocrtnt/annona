@@ -104,6 +104,13 @@ async function executeJob(job: OperationJob) {
   }
 
   if (job.type === "CLIENT_NOTIFICATION") {
+    if (readString(job.payload, "kind") === "SIGNUP_WELCOME") {
+      const { deliverSignupWelcomeEmail } = await import(
+        "@/domains/signup/signup.service"
+      );
+      await deliverSignupWelcomeEmail(job.payload, job.jobKey);
+      return;
+    }
     if (readString(job.payload, "kind") === "ORDER_MESSAGE") {
       const messageId = readString(job.payload, "messageId");
       if (!messageId) throw new Error("ORDER_MESSAGE_PAYLOAD_INVALID");

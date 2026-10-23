@@ -144,7 +144,8 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       permissions: json.permissions,
       demo: json.demo ?? null,
     });
-    router.push(json.redirectTo);
+    const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
+    router.push(requestedRedirect === "/onboarding" ? requestedRedirect : json.redirectTo);
   };
 
   const onRegister = async (data: RegisterInput) => {
@@ -193,6 +194,10 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       setPasswordLink(null);
       resetForm.reset();
       clearPendingCredentials();
+      if (json.redirectTo) {
+        router.push(json.redirectTo);
+        return;
+      }
       setSuccess(passwordLink.type === "signup" ? "Adresse confirmée. Vous pouvez vous connecter." : "Mot de passe enregistré. Vous pouvez vous connecter.");
     } catch { setError("Connexion interrompue. Si le lien a été utilisé, demandez-en un nouveau."); }
     finally { setCompletingLink(false); }

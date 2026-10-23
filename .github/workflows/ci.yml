@@ -80,6 +80,7 @@ jobs:
       PREPROD_EXPECTED_SUPABASE_REF: ${{ secrets.PREPROD_EXPECTED_SUPABASE_REF }}
       PREPROD_FORBIDDEN_SUPABASE_REFS: "wlomrzilflbouzyhzwxm"
       AUTH_EMAIL_LINKS_ENABLED: "false"
+      SIGNUP_PAYMENT_ADAPTER: "fake"
       EMAIL_DELIVERY_MODE: "disabled"
       DEMO_CLEANUP_ENABLED: "false"
     steps:

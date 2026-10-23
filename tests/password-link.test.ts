@@ -49,6 +49,7 @@ function fixture(signup = false) {
     "@/lib/auth/email-links": links,
     "@/domains/auth/auth.service": { syncUserFromSupabase: async (input: { authId: string; accountType: string }) => { assert.ok(signup); assert.equal(input.authId, "auth"); assert.equal(input.accountType, "company"); provisions++; } },
     "@/lib/auth/account-access": access,
+    "@/domains/signup/signup.service": { confirmManagedSignupEmail: async () => ({ resumeToken: "managed-resume-token" }) },
     "@/domains/user/user.service": { getUserByAuthId: async (id: string) => { assert.equal(id, "auth"); return signup ? null : structuredClone(user); } },
     "@/services/prisma/client": { prisma: { user: { updateMany: async ({ where, data }: { where: { id: string; authId: string; status: string; companyId: string; company: { status: { in: string[] } } }; data: { status: string } }) => {
       if (suspensionRace) user.status = "SUSPENDED";
@@ -84,7 +85,7 @@ test("configuration e-mail explicite et URL de retour contrôlée", (t) => {
 });
 test("invitation : mot de passe choisi, révocation, activation conditionnelle et rejeu refusé", async (t) => {
   configured(t); const f = fixture();
-  assert.equal(await f.service.finishPasswordLink(input), undefined);
+  assert.equal(JSON.stringify(await f.service.finishPasswordLink(input)), "{}");
   assert.equal(f.writes(), 1); assert.equal(f.activations(), 1);
   assert.deepEqual(f.signouts, ["global", "local"]);
   await assert.rejects(f.service.finishPasswordLink(input), /AUTH_LINK_INVALID/);
@@ -129,6 +130,7 @@ test("route du lien : pas de succès ni de secret pour jeton invalide, 429 et mo
   const { POST } = load<{ POST: (r: Request) => Promise<Response> }>("src/app/api/auth/password-link/route.ts", {
     zod: await import("zod"), "@/lib/validations/auth": validation,
     "@/domains/auth/password-link.service": f.service,
+    "@/domains/signup/signup-cookie": { setSignupResumeCookie: () => undefined },
   });
   const req = (extra = {}) => new Request("http://local", { method: "POST", body: JSON.stringify({ ...input, confirmPassword: input.password, ...extra }) });
   const invalid = await POST(req()); assert.equal(invalid.status, 400); assert.ok(!(await invalid.text()).includes(input.tokenHash));
@@ -213,6 +215,27 @@ test("confirmation d'inscription : création seulement après jeton vérifié, a
   assert.deepEqual(f.signouts, ["global", "local"]);
   await assert.rejects(f.service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" }), /AUTH_LINK_INVALID/);
   assert.equal(f.provisions(), 1);
+});
+test("SIGNUP-1 : confirmation gérée reprend le brouillon sans provisionnement anticipé", async (t) => {
+  configured(t);
+  const calls: unknown[] = [];
+  const signouts: string[] = [];
+  const service = load<typeof import("../src/domains/auth/password-link.service")>("src/domains/auth/password-link.service.ts", {
+    "@/lib/auth/email-links": links,
+    "@/domains/auth/auth.service": { syncUserFromSupabase: async () => assert.fail("no legacy provisioning") },
+    "@/lib/auth/account-access": access,
+    "@/domains/user/user.service": { getUserByAuthId: async () => null },
+    "@/services/prisma/client": { prisma: {} },
+    "@/domains/signup/signup.service": { confirmManagedSignupEmail: async (input: unknown) => { calls.push(input); return { resumeToken: "resume-token-high-entropy" }; } },
+    "@/services/supabase/password-link": { createPasswordLinkClient: () => ({ auth: {
+      verifyOtp: async () => ({ data: { user: { id: "auth-managed", email: "managed@example.test", email_confirmed_at: "2026-10-22", user_metadata: { signup_flow: "managed", signup_draft_id: "draft-1", signup_link_token: "link-token-high-entropy" } }, session: {} }, error: null }),
+      signOut: async ({ scope }: { scope: string }) => { signouts.push(scope); return { error: null }; },
+    } }) },
+  });
+  const result = await service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" });
+  assert.equal(result.signupResumeToken, "resume-token-high-entropy");
+  assert.equal(JSON.stringify(calls), JSON.stringify([{ draftId: "draft-1", linkToken: "link-token-high-entropy", authUserId: "auth-managed", email: "managed@example.test" }]));
+  assert.deepEqual(signouts, ["global", "local"]);
 });
 test("inscription : demande de confirmation sans profil ni session retournée ; auto-confirmation refusée", async (t) => {
   configured(t); let automaticSession = false; let signouts = 0;

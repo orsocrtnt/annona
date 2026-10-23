@@ -1,0 +1,216 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Check, Package2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { FormField } from "@/components/ui/form-field";
+import { APP_NAME } from "@/lib/constants";
+
+type PlanCode = "STARTER" | "PRO" | "BUSINESS";
+type BillingInterval = "MONTHLY" | "ANNUAL";
+type Selection = { code: string; quantity: number };
+type Catalog = {
+  currency: string;
+  vatRateBps: number;
+  plans: Array<{
+    code: PlanCode; name: string; monthlyPriceCents: number; annualPriceCents: number;
+    includedDriverSeats: number; unlimitedDriverSeats: boolean; maxDriverSeats: number | null;
+    includedAdminSeats: number; includedDispatcherSeats: number; includedMonthlyOrders: number;
+    orderOverageUnitPriceCents: number; includedFeatures: string[];
+  }>;
+  options: Array<{
+    code: string; name: string; kind: "OPTION" | "DRIVER_SEAT" | "ADMIN_SEAT" | "DISPATCHER_SEAT";
+    featureKey: string | null; monthlyPriceCents: number; annualPriceCents: number; applicablePlans: PlanCode[];
+  }>;
+};
+type Journey = {
+  status: "DRAFT" | "EMAIL_PENDING" | "EMAIL_VERIFIED" | "PAYMENT_PENDING" | "PAYMENT_CONFIRMED" | "ACTIVATED" | "FAILED";
+  planCode: PlanCode; billingInterval: BillingInterval; optionSelections: Selection[];
+  quote: { totalHtCents: number; vatCents: number; totalTtcCents: number; currency: string; includedMonthlyOrders: number; orderOverageUnitPriceCents: number };
+  email: string | null; firstName: string | null; lastName: string | null; companyName: string | null;
+  legalName: string | null; siren: string | null; siret: string | null; phone: string | null;
+  billingAddress: string | null; billingPostalCode: string | null; billingCity: string | null; billingCountry: string;
+  emailVerified: boolean; paymentConfirmed: boolean; activated: boolean;
+};
+
+const planDescriptions: Record<PlanCode, string> = {
+  STARTER: "Pour démarrer avec une petite équipe",
+  PRO: "Pour organiser une activité régulière",
+  BUSINESS: "Pour les opérations plus importantes",
+};
+
+function money(cents: number, currency = "EUR") {
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(cents / 100);
+}
+
+export function SignupWizard() {
+  const [catalog, setCatalog] = useState<Catalog | null>(null);
+  const [journey, setJourney] = useState<Journey | null>(null);
+  const [stage, setStage] = useState<"plan" | "options" | "identity">("plan");
+  const [planCode, setPlanCode] = useState<PlanCode>("STARTER");
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("MONTHLY");
+  const [selections, setSelections] = useState<Selection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [paymentEventKey, setPaymentEventKey] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const response = await fetch("/api/signup", { cache: "no-store" });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error ?? "Impossible de charger l'inscription.");
+    setCatalog(payload.catalog);
+    setJourney(payload.journey);
+    if (payload.journey) {
+      setPlanCode(payload.journey.planCode);
+      setBillingInterval(payload.journey.billingInterval);
+      setSelections(payload.journey.optionSelections);
+      if (payload.journey.status === "DRAFT") setStage("options");
+    }
+  }, []);
+
+  useEffect(() => {
+    load().catch((reason) => setError(reason instanceof Error ? reason.message : "Inscription indisponible."))
+      .finally(() => setLoading(false));
+  }, [load]);
+
+  const activePlan = catalog?.plans.find((plan) => plan.code === planCode);
+  const options = useMemo(() => catalog?.options.filter((option) =>
+    option.applicablePlans.includes(planCode) && (!option.featureKey || !activePlan?.includedFeatures.includes(option.featureKey))) ?? [], [catalog, planCode, activePlan]);
+
+  const post = async (body: unknown) => {
+    setSubmitting(true); setError(null);
+    try {
+      const response = await fetch("/api/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Impossible de poursuivre.");
+      return payload;
+    } finally { setSubmitting(false); }
+  };
+
+  const choosePlan = async () => {
+    try {
+      const payload = await post({ action: "create", planCode, billingInterval, optionSelections: [] });
+      setJourney(payload.journey); setSelections([]); setStage("options");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible de poursuivre."); }
+  };
+
+  const saveOptions = async () => {
+    try {
+      const payload = await post({ action: "selection", planCode, billingInterval, optionSelections: selections });
+      setJourney(payload.journey); setStage("identity");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible de poursuivre."); }
+  };
+
+  const submitIdentity = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password") ?? "");
+    if (password !== String(form.get("confirmPassword") ?? "")) { setError("Les mots de passe ne correspondent pas."); return; }
+    const body = Object.fromEntries(form.entries());
+    try {
+      await post({ action: "identity", ...body });
+      await load();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible d'envoyer l'e-mail."); }
+  };
+
+  const pay = async () => {
+    setSubmitting(true); setError(null);
+    const eventKey = paymentEventKey ?? window.crypto.randomUUID();
+    setPaymentEventKey(eventKey);
+    try {
+      const response = await fetch("/api/signup/payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventKey, outcome: "confirmed" }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Paiement fictif indisponible.");
+      if (payload.redirectTo) window.location.assign(payload.redirectTo);
+      else await load();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Paiement fictif indisponible."); }
+    finally { setSubmitting(false); }
+  };
+
+  const setOption = (code: string, quantity: number) => {
+    setSelections((current) => quantity <= 0 ? current.filter((item) => item.code !== code) : [...current.filter((item) => item.code !== code), { code, quantity }]);
+  };
+
+  const progress = journey?.emailVerified ? 4 : journey?.status === "EMAIL_PENDING" ? 3 : stage === "identity" ? 3 : stage === "options" ? 2 : 1;
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Préparation de l’inscription…</div>;
+
+  return (
+    <main className="min-h-screen bg-muted/20 px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-5xl">
+        <header className="flex items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-3 font-semibold"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white"><Package2 className="h-5 w-5" /></span>{APP_NAME}</Link>
+          <Link href="/login" className="text-sm font-medium text-brand hover:underline">Se connecter</Link>
+        </header>
+        <section className="mt-8 rounded-2xl border bg-background p-5 shadow-sm sm:p-8">
+          <div className="mb-8">
+            <div className="flex items-center justify-between text-xs font-medium text-muted-foreground"><span>Inscription entreprise</span><span>Étape {progress} sur 5</span></div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-brand transition-all" style={{ width: `${progress * 20}%` }} /></div>
+          </div>
+          {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
+
+          {!journey && stage === "plan" && catalog && (
+            <div>
+              <h1 className="text-2xl font-semibold">Choisissez votre formule</h1>
+              <p className="mt-2 text-muted-foreground">Vous pourrez ajouter les options utiles à l’étape suivante.</p>
+              <div className="mt-5 inline-flex rounded-lg border p-1">
+                {(["MONTHLY", "ANNUAL"] as const).map((interval) => <button key={interval} type="button" onClick={() => setBillingInterval(interval)} className={`rounded-md px-4 py-2 text-sm ${billingInterval === interval ? "bg-foreground text-background" : "text-muted-foreground"}`}>{interval === "MONTHLY" ? "Mensuel" : "Annuel"}</button>)}
+              </div>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {catalog.plans.map((plan) => <button key={plan.code} type="button" onClick={() => setPlanCode(plan.code)} className={`rounded-xl border p-5 text-left transition ${planCode === plan.code ? "border-brand ring-2 ring-brand/20" : "hover:border-foreground/30"}`}>
+                  <div className="flex items-center justify-between"><strong>{plan.name}</strong>{planCode === plan.code && <Check className="h-5 w-5 text-brand" />}</div>
+                  <p className="mt-2 text-sm text-muted-foreground">{planDescriptions[plan.code]}</p>
+                  <p className="mt-5 text-2xl font-semibold">{money(billingInterval === "ANNUAL" ? plan.annualPriceCents : plan.monthlyPriceCents)}</p>
+                  <p className="text-xs text-muted-foreground">HT / {billingInterval === "ANNUAL" ? "an" : "mois"}</p>
+                  <ul className="mt-4 space-y-2 text-sm"><li>{plan.unlimitedDriverSeats ? "Livreurs illimités" : `${plan.includedDriverSeats} livreurs inclus`}</li><li>{plan.includedMonthlyOrders.toLocaleString("fr-FR")} commandes / mois</li><li>{plan.includedAdminSeats} administrateur{plan.includedAdminSeats > 1 ? "s" : ""} inclus</li></ul>
+                </button>)}
+              </div>
+              <Button className="mt-7 w-full sm:w-auto" variant="brand" size="lg" loading={submitting} onClick={() => void choosePlan()}>Continuer</Button>
+            </div>
+          )}
+
+          {journey?.status === "DRAFT" && stage === "options" && catalog && activePlan && (
+            <div>
+              <h1 className="text-2xl font-semibold">Ajoutez seulement ce dont vous avez besoin</h1>
+              <p className="mt-2 text-muted-foreground">Les fonctions déjà incluses dans {activePlan.name} ne sont jamais refacturées.</p>
+              <div className="mt-6 space-y-3">{options.map((option) => {
+                const selected = selections.find((item) => item.code === option.code)?.quantity ?? 0;
+                const price = billingInterval === "ANNUAL" ? option.annualPriceCents : option.monthlyPriceCents;
+                return <div key={option.code} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">{option.name}</p><p className="text-sm text-muted-foreground">{money(price)} HT / {billingInterval === "ANNUAL" ? "an" : "mois"}</p></div>{option.kind === "OPTION" ? <button type="button" onClick={() => setOption(option.code, selected ? 0 : 1)} className={`rounded-lg border px-4 py-2 text-sm font-medium ${selected ? "border-brand bg-brand text-white" : ""}`}>{selected ? "Ajoutée" : "Ajouter"}</button> : <Input aria-label={`Quantité ${option.name}`} type="number" min={0} max={500} value={selected} onChange={(event) => setOption(option.code, Number(event.target.value))} className="w-28" />}</div>;
+              })}</div>
+              <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" onClick={() => { setJourney(null); setStage("plan"); }}>Revoir la formule</Button><Button variant="brand" loading={submitting} onClick={() => void saveOptions()}>Continuer</Button></div>
+            </div>
+          )}
+
+          {journey?.status === "DRAFT" && stage === "identity" && (
+            <form onSubmit={submitIdentity} className="space-y-5">
+              <div><h1 className="text-2xl font-semibold">Créez votre entreprise</h1><p className="mt-2 text-muted-foreground">L’e-mail professionnel devra être confirmé avant le paiement fictif.</p></div>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Prénom" required><Input name="firstName" autoComplete="given-name" defaultValue={journey.firstName ?? ""} required /></FormField><FormField label="Nom" required><Input name="lastName" autoComplete="family-name" defaultValue={journey.lastName ?? ""} required /></FormField></div>
+              <FormField label="E-mail professionnel" required><Input name="email" type="email" autoComplete="email" defaultValue={journey.email ?? ""} required /></FormField>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Mot de passe" required><PasswordInput name="password" autoComplete="new-password" required /></FormField><FormField label="Confirmer" required><PasswordInput name="confirmPassword" autoComplete="new-password" required /></FormField></div>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="Nom commercial" required><Input name="companyName" autoComplete="organization" defaultValue={journey.companyName ?? ""} required /></FormField><FormField label="Raison sociale" hint="Optionnel"><Input name="legalName" defaultValue={journey.legalName ?? ""} /></FormField></div>
+              <div className="grid gap-4 sm:grid-cols-2"><FormField label="SIREN" hint="9 chiffres, optionnel"><Input name="siren" inputMode="numeric" maxLength={9} defaultValue={journey.siren ?? ""} /></FormField><FormField label="SIRET" hint="14 chiffres, optionnel"><Input name="siret" inputMode="numeric" maxLength={14} defaultValue={journey.siret ?? ""} /></FormField></div>
+              <FormField label="Téléphone" hint="Optionnel"><Input name="phone" type="tel" autoComplete="tel" defaultValue={journey.phone ?? ""} /></FormField>
+              <FormField label="Adresse de facturation" required><Input name="billingAddress" autoComplete="street-address" defaultValue={journey.billingAddress ?? ""} required /></FormField>
+              <div className="grid gap-4 sm:grid-cols-[140px_1fr_100px]"><FormField label="Code postal" required><Input name="billingPostalCode" autoComplete="postal-code" defaultValue={journey.billingPostalCode ?? ""} required /></FormField><FormField label="Ville" required><Input name="billingCity" autoComplete="address-level2" defaultValue={journey.billingCity ?? ""} required /></FormField><FormField label="Pays" required><Input name="billingCountry" defaultValue={journey.billingCountry || "FR"} maxLength={2} required /></FormField></div>
+              <div className="flex flex-col-reverse gap-3 sm:flex-row"><Button type="button" variant="outline" onClick={() => setStage("options")}>Retour</Button><Button type="submit" variant="brand" loading={submitting}>Vérifier mon e-mail</Button></div>
+            </form>
+          )}
+
+          {journey?.status === "EMAIL_PENDING" && (
+            <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><Button className="mt-7" variant="brand" loading={submitting} onClick={() => { setSubmitting(true); load().catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button></div>
+          )}
+
+          {journey?.emailVerified && !journey.activated && (
+            <div className="mx-auto max-w-2xl"><h1 className="text-2xl font-semibold">Confirmez l’abonnement en environnement test</h1><p className="mt-2 text-muted-foreground">Aucun débit réel n’est effectué. L’activation dépend exclusivement de la confirmation serveur ci-dessous.</p><div className="mt-6 rounded-xl border bg-muted/20 p-5"><div className="flex justify-between"><span>Total HT</span><strong>{money(journey.quote.totalHtCents, journey.quote.currency)}</strong></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>TVA indicative</span><span>{money(journey.quote.vatCents, journey.quote.currency)}</span></div><div className="mt-4 flex justify-between border-t pt-4 text-lg"><span>Total TTC</span><strong>{money(journey.quote.totalTtcCents, journey.quote.currency)}</strong></div><p className="mt-4 text-xs text-muted-foreground">{journey.quote.includedMonthlyOrders.toLocaleString("fr-FR")} commandes incluses par mois, puis {money(journey.quote.orderOverageUnitPriceCents)} HT par commande supplémentaire. Les dépassements restent non bloquants.</p></div><Button className="mt-7 w-full" variant="brand" size="lg" loading={submitting} onClick={() => void pay()}>Confirmer le paiement fictif et activer</Button></div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}\n

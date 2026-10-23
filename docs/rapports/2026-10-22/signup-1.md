@@ -1,0 +1,46 @@
+# SIGNUP-1 — Inscription autonome avec paiement fictif
+
+Date de clôture : 22 octobre 2026.
+
+## Résultat
+
+Une entreprise fictive peut désormais partir de `/register`, choisir Starter, Pro ou Business en mensuel ou annuel, ajouter uniquement les options et sièges autorisés, consulter le prix HT/TTC et le coût des dépassements, puis saisir son identité professionnelle et ses coordonnées de facturation. Le parcours comprend cinq étapes lisibles sur mobile et reprend un brouillon pendant trente jours grâce à un jeton opaque conservé dans un cookie `HttpOnly` ; seule son empreinte est stockée en base.
+
+Le serveur recalcule toujours le devis depuis le catalogue C7 actif. Il refuse les options déjà incluses, les doublons, les quantités invalides et les plafonds dépassés. Le mot de passe n'entre jamais dans PostgreSQL : Supabase Auth le reçoit directement et la confirmation d'e-mail rattache le compte au brouillon uniquement si l'identité, l'adresse et le jeton correspondent. L'ancien endpoint de création directe ne provisionne plus d'entreprise.
+
+L'adaptateur de paiement de SIGNUP-1 est déterministe et fictif. Il est activé uniquement en local ou sur la Preview `preproduction`, et la route le refuse lorsque `VERCEL_ENV=production`. Un retour du navigateur ne suffit jamais : l'activation exige un événement serveur `CONFIRMED` du bon montant et de la bonne devise. Les événements en attente, refusés, dupliqués ou reçus après une confirmation ne peuvent pas dégrader un paiement confirmé.
+
+L'activation verrouille le brouillon et crée dans une seule transaction sérialisable l'entreprise, l'administrateur, la souscription, l'offre et ses options. Une collision d'e-mail, de compte Auth, de SIREN ou de SIRET ne laisse aucune entreprise partielle. Le rejeu renvoie l'activation existante. L'e-mail de bienvenue est enregistré dans la même transaction comme tâche durable et utilise une clé d'envoi idempotente ; sa panne n'annule donc pas le compte et le worker peut le rejouer. Après connexion, l'utilisateur reprend sur ONBOARD-1.
+
+## Base et sécurité
+
+Quatre migrations additives créent les brouillons et événements de paiement, ajoutent les coordonnées légales nécessaires, indexent le catalogue, isolent le secret à usage unique de confirmation et retirent l'exécution publique d'une fonction interne de trigger. Les nouvelles tables ont RLS active et aucun droit direct pour `PUBLIC`, `anon` ou `authenticated`. Toutes les opérations passent par les services serveur.
+
+La préproduction Supabase isolée contient neuf migrations et ne présente aucun drift. La garde d'environnement confirme la cible attendue et interdit la cible historique. Les variables Vercel `AUTH_EMAIL_LINKS_ENABLED=true` et `SIGNUP_PAYMENT_ADAPTER=fake` sont limitées à Preview et à la branche `preproduction`. Aucune variable Production n'a été changée.
+
+## Recette
+
+La recette connectée a validé :
+
+- mensuel avec paiement en attente, refusé, confirmé puis rejoué ;
+- annuel avec options annuelles facturées à douze mensualités, conformément à C7 ;
+- activation idempotente et bienvenue durable ;
+- deux inscriptions concurrentes avec le même SIREN : une seule entreprise créée ;
+- entreprises distinctes et données isolées ;
+- passage à ONBOARD-1, sept étapes complétées et première livraison fictive avec preuve ;
+- nettoyage complet : 8 entreprises, 64 utilisateurs, 0 brouillon et 0 événement avant comme après.
+
+Preuves finales :
+
+- `npm run check` : TypeScript, ESLint strict et 308 tests réussis ;
+- `npm run build` : build de production réussi, 106 pages ;
+- `npm run test:signup1` : tous les scénarios connectés réussis ; preuve `outputs/signup1/connected.json` ;
+- `prisma migrate status` sur préproduction : neuf migrations, schéma à jour ;
+- `npm run ci:preprod-env` avec les variables de préproduction : garde verte ;
+- `git diff --check` : aucune erreur de format.
+
+## Limites conservées
+
+Le paiement réel n'existe pas encore ; Stripe sandbox relève de SAAS-01B. Le transport métier reste désactivé tant que le domaine et l'expéditeur ne sont pas configurés : la tâche de bienvenue est durable, mais l'envoi externe attend EMAIL/SEC-05. Le SMTP Supabase de confirmation doit être surveillé avec ses limites de service avant usage commercial. La protection Supabase contre les mots de passe compromis reste à activer avant données réelles si l'offre du fournisseur la rend disponible.
+
+Le parcours remet correctement l'utilisateur à ONBOARD-1. Les invitations réelles, l'import éventuel et la validation par une entreprise pilote restent dans ONBOARD-1 ; ils ne remettent pas en cause l'activation autonome qualifiée ici. Aucun paiement réel, donnée réelle, déploiement Production ou dépense n'a été effectué.

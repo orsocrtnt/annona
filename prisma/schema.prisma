@@ -199,6 +199,22 @@ enum DemoPoolState {
   QUARANTINED
 }
 
+enum SignupStatus {
+  DRAFT
+  EMAIL_PENDING
+  EMAIL_VERIFIED
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  ACTIVATED
+  FAILED
+}
+
+enum SignupPaymentStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+}
+
 // -----------------------------------------------------------------------------
 // CORE ENTITIES
 // -----------------------------------------------------------------------------
@@ -278,6 +294,12 @@ model Company {
   status   CompanyStatus @default(TRIAL)
   isDemo   Boolean       @default(false) @map("is_demo")
   settings Json?         @default("{}")
+  legalName         String? @map("legal_name")
+  siren             String? @unique
+  siret             String? @unique
+  billingAddress    String? @map("billing_address")
+  billingPostalCode String? @map("billing_postal_code")
+  billingCity       String? @map("billing_city")
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -296,10 +318,72 @@ model Company {
   saasUsageEvents      SaasUsageEvent[]
   saasSeatReservations SaasSeatReservation[]
   demoPoolEnvironment  DemoPoolEnvironment?
+  signupJourney        SignupJourney?
 
   @@index([slug])
   @@index([status])
   @@map("companies")
+}
+
+/// Brouillon durable d'inscription. Le jeton de reprise n'est jamais stocké en clair.
+model SignupJourney {
+  id                 String              @id @default(cuid())
+  resumeTokenHash    String              @unique @map("resume_token_hash")
+  status             SignupStatus        @default(DRAFT)
+  catalogVersionId   String              @map("catalog_version_id")
+  catalogVersion     SaasCatalogVersion  @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
+  planCode           SaasPlanCode        @map("plan_code")
+  billingInterval    SaasBillingInterval @map("billing_interval")
+  optionSelections   Json                @default("[]") @map("option_selections")
+  quoteSnapshot      Json                @map("quote_snapshot")
+  email              String?
+  authUserId         String?             @unique @map("auth_user_id")
+  emailLinkTokenHash String?             @map("email_link_token_hash")
+  firstName          String?             @map("first_name")
+  lastName           String?             @map("last_name")
+  companyName        String?             @map("company_name")
+  legalName          String?             @map("legal_name")
+  siren              String?
+  siret              String?
+  phone              String?
+  billingAddress     String?             @map("billing_address")
+  billingPostalCode  String?             @map("billing_postal_code")
+  billingCity        String?              @map("billing_city")
+  billingCountry     String               @default("FR") @map("billing_country")
+  emailVerifiedAt    DateTime?            @map("email_verified_at")
+  paymentConfirmedAt DateTime?            @map("payment_confirmed_at")
+  activatedAt        DateTime?            @map("activated_at")
+  failureCode        String?               @map("failure_code")
+  expiresAt          DateTime              @map("expires_at")
+  companyId          String?               @unique @map("company_id")
+  company            Company?              @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+
+  paymentEvents SignupPaymentEvent[]
+
+  @@index([email, status])
+  @@index([catalogVersionId])
+  @@index([siren, status])
+  @@index([siret, status])
+  @@index([expiresAt])
+  @@map("signup_journeys")
+}
+
+model SignupPaymentEvent {
+  id          String              @id @default(cuid())
+  eventKey    String              @unique @map("event_key")
+  signupId    String              @map("signup_id")
+  signup      SignupJourney       @relation(fields: [signupId], references: [id], onDelete: Cascade)
+  status      SignupPaymentStatus
+  amountCents Int                 @map("amount_cents")
+  currency    String              @default("EUR")
+  snapshot    Json                @default("{}")
+  receivedAt  DateTime            @default(now()) @map("received_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  @@index([signupId, receivedAt])
+  @@map("signup_payment_events")
 }
 
 /// Environnement fictif préconstruit, attribué à une seule session de démo.
@@ -396,6 +480,7 @@ model SaasCatalogVersion {
   plans         SaasPlan[]
   options       SaasOption[]
   subscriptions SaasSubscription[]
+  signupJourneys SignupJourney[]
 
   @@index([status, effectiveAt])
   @@map("saas_catalog_versions")

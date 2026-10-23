@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**49 tâches terminées sur 78 — 63 %**
+**50 tâches terminées sur 78 — 64 %**
 
-`█████████████░░░░░░░` · 29 tâches restantes
+`█████████████░░░░░░░` · 28 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -19,24 +19,24 @@ Mise à jour : 22 octobre 2026. Source unique des priorités du projet. Cette ve
 | Jalon | Résultat attendu | Ce qui ne le bloque pas | État actuel |
 |---|---|---|---|
 | **A — V1 pour trois pilotes** | Trois entreprises françaises de livraison B2B utilisent TutelLiv pendant environ quatre semaines avec comptes créés et droits attribués manuellement. | Stripe, inscription commerciale autonome, commissions et site complet. | Socle fonctionnel, préproduction, CI, restauration et démo rapide validés ; alertes, e-mails réels, GPS physique, cadre juridique et recette finale restent à fermer. |
-| **B — SaaS autonome** | Site → offre/options → compte → paiement → activation → configuration → première livraison sans intervention TutelLiv. | Recrutement des pilotes et activation des paiements réels. | Catalogue, droits et quotas serveur terminés ; inscription persistante et paiement fictif restent à construire. |
+| **B — SaaS autonome** | Site → offre/options → compte → paiement → activation → configuration → première livraison sans intervention TutelLiv. | Recrutement des pilotes et activation des paiements réels. | Catalogue, droits, quotas et inscription persistante avec paiement fictif terminés ; Stripe sandbox, gestion autonome de l'abonnement et finalisation d'ONBOARD-1 restent à construire. |
 
 ### Cinq prochaines tâches recommandées
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **SIGNUP-1** | Construire le parcours autonome sur le noyau SaaS terminé avec un paiement fictif stable. | Interfaces et droits SAAS-01A disponibles ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
-| 2 | **COST-1 — estimation documentaire** | Tester rapidement la cohérence économique des trois offres et le risque Business illimité avant de figer davantage le catalogue. | Inventaires et tarifs publics ; aucune charge payante. La validation mesurée attend PERF-02. | GPT‑6.1 Sol · effort moyen |
-| 3 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
-| 4 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain. | Une entreprise pilote peut être créée manuellement ; SIGNUP-1 servira ensuite au libre-service. | GPT‑6.1 Sol · effort élevé |
+| 1 | **COST-1 — estimation documentaire** | Tester rapidement la cohérence économique des trois offres et le risque Business illimité avant de figer davantage le catalogue. | Inventaires et tarifs publics ; aucune charge payante. La validation mesurée attend PERF-02. | GPT‑6.1 Sol · effort moyen |
+| 2 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
+| 3 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain et achever le raccord à SIGNUP-1. | L'inscription autonome remet déjà le compte activé à l'assistant ; la validation pilote reste distincte. | GPT‑6.1 Sol · effort élevé |
+| 4 | **SAAS-01B — Stripe sandbox** | Remplacer l'adaptateur fictif déterministe par des événements Stripe de test idempotents. | SIGNUP-1 et le noyau SAAS-01A sont terminés ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
 | 5 | **COST-1 — validation mesurée** | Remplacer les hypothèses de coût par des mesures représentatives avant de figer les marges. | L'estimation documentaire peut commencer seule ; les mesures complètes attendent PERF-02. | GPT‑6.1 Sol · effort moyen |
 
-COST-1 documentaire, OPS-03B et SIGNUP-1 sont fonctionnellement indépendantes. Les exécuter dans des sessions ou branches isolées évite les conflits ; une seule tâche reste active par session. Les interfaces serveur de SAAS-01A sont désormais stabilisées pour SIGNUP-1.
+COST-1 documentaire et OPS-03B sont fonctionnellement indépendantes. SIGNUP-1 et les interfaces serveur de SAAS-01A sont désormais stabilisées pour SAAS-01B et la fin d'ONBOARD-1.
 
 ### Chemins critiques
 
 - **Pilotes :** DEMO-2 terminé ; OPS-03B + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
-- **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A terminé → SAAS-01B sandbox → SAAS-03 et SAAS-04 → SALES-1 et SAAS-02 → GROWTH-1 intégré → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
+- **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A est terminé → SAAS-01B sandbox → SAAS-03 et SAAS-04 → SALES-1 et SAAS-02 → GROWTH-1 intégré → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
 - **Validation économique :** COST-1 documentaire peut démarrer maintenant ; PERF-02 et les pilotes remplacent ensuite les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
 - **Design :** DESIGN-1 fixe les composants communs, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni SAAS-01A/SIGNUP-1 ni les portes techniques des pilotes.
 
@@ -113,7 +113,7 @@ Ces réussites ne valident pas le GPS terrain, la charge, la conformité du PDF 
 
 Priorités réconciliées le 22 octobre 2026 pour les tâches encore ouvertes. Le niveau indique l'ordre du travail interne ; les validations extérieures sont suivies séparément et ne doivent pas immobiliser les tâches indépendantes :
 
-- **P0 — Débloquer les pilotes et poursuivre le libre-service :** DEMO-2, COST-1 dans sa phase documentaire, OPS-03B et SIGNUP-1. SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
+- **P0 — Débloquer les pilotes et poursuivre le libre-service :** COST-1 dans sa phase documentaire et OPS-03B. DEMO-2, SIGNUP-1, SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
 - **P1 — Fermer la fiabilité et le libre-service testable :** SEC-05, EMAIL, SAAS-01B, SAAS-03, SAAS-04, SALES-1, PERF-02, ONBOARD-1.
 - **P2 — Expérience et préparation opérationnelle :** MAP-3, DESIGN-1, UX-03, UX-04, GROWTH-1, ADMIN-1, V1-GO, OFFER-1.
 - **P3 — Validation extérieure et terrain :** LEGAL-1, DATA-02, MOB-01C, PROD-02, PROD-04, PILOT-1, PILOT-2, SAAS-02, RELEASE-1.
@@ -121,10 +121,10 @@ Priorités réconciliées le 22 octobre 2026 pour les tâches encore ouvertes. L
 
 Les dépendances de sécurité et de validation priment sur le numéro : une tâche P3 peut être préparée localement, mais ne doit pas contourner une porte P0/P1 pour utiliser des données réelles.
 
-1. Rendre la démo rapide et réutilisable avec DEMO-2 avant toute diffusion commerciale : budgets p95 mesurés, pool prêt et recyclage asynchrone.
+1. Terminé : DEMO-2 rend la démo rapide et réutilisable grâce au pool isolé et au recyclage asynchrone.
 2. Terminé : SAAS-01A fournit le catalogue versionné, le registre pilote/souscription, les droits, options, quotas et compteurs appliqués côté serveur.
 3. En parallèle sans charge payante, produire l'estimation documentaire COST-1 et mettre en place la première tranche d'alertes OPS-03B.
-4. Construire SIGNUP-1 sur les interfaces stabilisées de SAAS-01A avec un faux paiement déterministe, une activation idempotente et une reprise après interruption.
+4. Terminé : SIGNUP-1 orchestre offre, compte, vérification e-mail, faux paiement déterministe, activation idempotente et reprise après interruption.
 5. Brancher Stripe uniquement dans son environnement fictif avec SAAS-01B, puis développer SAAS-03, SAAS-04 et la tranche théorique de SALES-1.
 6. Fermer ONBOARD-1 pour les comptes pilotes créés manuellement, puis le relier au parcours autonome ; terminer en parallèle les e-mails, la capacité et les essais GPS physiques dès que leurs ressources sont disponibles.
 7. Appliquer DESIGN-1, MAP-3, UX-03 et UX-04 aux parcours essentiels, puis intégrer le site commercial, la supervision interne et la recette V1 sur données fictives.
@@ -136,7 +136,7 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 ## Audit de fusion — SaaS autonome, 21 octobre 2026
 
 - **Déjà développé et à conserver :** préproduction Supabase/Vercel isolée, branche GitHub et CI connectée ; séparation multi-tenant et permissions principales ; trois espaces ; parcours complet d'une livraison ; commandes récurrentes ; duplication d'une ancienne commande/livraison ; preuve, historique, échanges, support, export comptable ; page publique de présentation ; première supervision SUPER_ADMIN ; assistant interne en sept étapes.
-- **Partiellement développé :** inscription entreprise avec vérification d'e-mail, mais sans offre, coordonnées légales, paiement ni activation conditionnelle ; onboarding calculé depuis les données, mais invitations réelles/import/reprise commerciale non qualifiés ; supervision interne limitée aux entreprises/utilisateurs/livraisons et au revenu des prestations ; restauration fournisseur exercée, mais sauvegarde horaire et alertes encore incomplètes ; site public sans pages Tarifs/Fonctionnalités/Démo/Contact/Légal complètes. Le catalogue, les souscriptions/pilotes, les droits et compteurs de quotas sont désormais présents via SAAS-01A.
+- **Partiellement développé :** inscription autonome complète avec paiement fictif mais sans fournisseur de paiement sandbox/réel ; onboarding calculé depuis les données et désormais atteint après activation, mais invitations réelles/import/reprise commerciale non qualifiés ; supervision interne limitée aux entreprises/utilisateurs/livraisons et au revenu des prestations ; restauration fournisseur exercée, mais sauvegarde horaire et alertes encore incomplètes ; site public sans pages Tarifs/Fonctionnalités/Démo/Contact/Légal complètes. Le catalogue, les souscriptions/pilotes, les droits et compteurs de quotas sont présents via SAAS-01A.
 - **Absent du code actuel :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet.
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
@@ -162,7 +162,7 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 | PROD-02 | A | Conduire dix entretiens sur le travail réel. | Bloquée par recrutement/contacts autorisés ; parallèle au code. | Élevée · GPT‑6.1 Sol |
 | PROD-04 | A+B | Définir dès maintenant les instruments et valeurs de départ ; mesurer ensuite sur pilotes. | Protocole maintenant ; validation terrain après PROD-02/PILOT-1. | Moyenne · GPT‑6.1 Sol |
 | OFFER-1 | A+B | Confronter au marché la grille et les limites ; les sept familles de règles C7 sont confirmées. | COST-1 documentaire maintenant ; acceptation avec prospects/pilotes. | Moyenne · GPT‑6 Astra |
-| SIGNUP-1 | B | Orchestrer offre, compte, paiement fictif, activation idempotente et reprise. | Après interfaces stables de SAAS-01A ; n'attend ni Stripe live ni pilotes. | Très élevée · GPT‑6 Astra |
+| SIGNUP-1 | B | Terminé : offre, compte, paiement fictif, activation idempotente, bienvenue durable et reprise vers ONBOARD-1. | Socle prêt pour SAAS-01B et le raccord final d'ONBOARD-1. | Très élevée · GPT‑6 Astra |
 | PILOT-1 | A | Recruter, contractualiser et conduire trois pilotes quatre semaines. | Attend les portes A–C et l'autorisation de contact. | Moyenne · GPT‑6.1 Sol |
 | PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1 ; aucune conclusion avant les données. | Moyenne · GPT‑6 Astra |
 | SAAS-01B | B | Intégrer Stripe sandbox, webhooks idempotents et cycle de facturation fictif. | Après SAAS-01A/SIGNUP-1 ; peut précéder les pilotes et la structure juridique. | Très élevée · GPT‑6 Astra |
@@ -905,7 +905,7 @@ Prospection, entretiens et pilotes différés à sa demande ; aucune prise de co
 
   Résultat vérifié le 2026-10-22 : catalogue C7, 3 offres et 9 options versionnés ; souscriptions commerciales, pilotes et états historiques séparés ; instantanés et périodes d'effet historisés ; plafonds de sièges réservés atomiquement ; dispatcher 0/1/1 puis 8 € HT/mois ou 96 € HT/an ; commandes non bloquées et comptées une seule fois par mois UTC ; contrôles serveur sur dispatch automatique, GPS administrateur/client et analytics. Les entreprises présentes restent `LEGACY` sans paiement inventé et les sessions démo deviennent des pilotes de huit heures. La migration additive est appliquée à la préproduction isolée : 29 tables sous RLS, 3 migrations, zéro droit public et zéro drift. Répétition sauvegarde/restauration : 29 empreintes identiques, schémas temporaires supprimés, données publiques inchangées. Validation : `npm run check` avec 295 tests, build 103 pages, vérification préproduction verte. Rapport : `docs/rapports/2026-10-22/saas-01a.md`.
 
-- [ ] **SIGNUP-1 — Construire l'inscription autonome jusqu'à la première livraison.** Créer un parcours persistant : offre mensuelle/annuelle → options et quantités autorisées → prix HT/TTC indicatif et dépassements expliqués → identité/coordonnées professionnelles, SIREN/SIRET et facturation → vérification e-mail → paiement fictif → création atomique de l'entreprise et du premier administrateur → droits/quotas → bienvenue → reprise dans ONBOARD-1. Aucune entreprise payante active ne doit être accordée sur un simple retour navigateur ou sans confirmation serveur du paiement requis.
+- [x] **SIGNUP-1 — Construire l'inscription autonome jusqu'à la première livraison.** Créer un parcours persistant : offre mensuelle/annuelle → options et quantités autorisées → prix HT/TTC indicatif et dépassements expliqués → identité/coordonnées professionnelles, SIREN/SIRET et facturation → vérification e-mail → paiement fictif → création atomique de l'entreprise et du premier administrateur → droits/quotas → bienvenue → reprise dans ONBOARD-1. Aucune entreprise payante active ne doit être accordée sur un simple retour navigateur ou sans confirmation serveur du paiement requis.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -915,7 +915,9 @@ Prospection, entretiens et pilotes différés à sa demande ; aucune prise de co
 
   Tests requis : succès mensuel/annuel, interruption à chaque étape, paiement refusé/non confirmé/dupliqué/désordonné, e-mail et SIREN/SIRET existants, provisionnement partiel injecté, reprise, deux inscriptions concurrentes et isolation interentreprises. Utiliser d'abord un adaptateur de paiement fictif déterministe ; aucune transaction réelle.
 
-  Source / dépendance / blocage : dépend des interfaces stables de SAAS-01A et réutilise SEC-05, EMAIL et ONBOARD-1. Le transport e-mail de test et un adaptateur de paiement fictif suffisent au développement ; domaine, Stripe live, structure juridique et pilotes ne le bloquent pas. L'inscription actuelle ne collecte que nom, prénom, e-mail, mot de passe et nom d'entreprise ; elle vérifie l'e-mail mais ne choisit ni offre ni paiement et ne porte pas encore les données légales/facturation.
+  Source / dépendance / blocage : dépend des interfaces stables de SAAS-01A et réutilise SEC-05, EMAIL et ONBOARD-1. Le transport e-mail de test et un adaptateur de paiement fictif suffisent au développement ; domaine, Stripe live, structure juridique et pilotes ne le bloquent pas.
+
+  Résultat vérifié le 2026-10-22 : assistant responsive en cinq étapes, reprise par jeton opaque de trente jours, catalogue serveur et devis HT/TTC mensuel/annuel, options et plafonds contrôlés, identité légale/facturation, confirmation Supabase gérée et paiement fictif strictement limité au local/Preview. Une confirmation serveur exacte est exigée avant la transaction atomique qui crée entreprise, administrateur, offre, options, droits et quotas. Les événements de paiement, doubles soumissions et activations sont idempotents ; l'e-mail de bienvenue est une tâche durable rejouable. La préproduction isolée porte les quatre migrations SIGNUP-1, la vérification e-mail et l'adaptateur fictif sans aucune variable Production. Recette connectée : mensuel, annuel, refus, attente, rejeu, concurrence SIREN, isolation, passage ONBOARD-1 jusqu'à une première livraison et retour exact de la base à son état initial. Validation : 308 tests, build de 106 pages, migration à jour et garde de préproduction verte. Rapport : `docs/rapports/2026-10-22/signup-1.md`.
 
 - [ ] **PILOT-1 — Recruter et conduire trois pilotes accompagnés.** Préparer démonstration, critères d’entrée et protocole ; viser quatre semaines d’usage représentatif, sans en faire un délai de développement.
 
@@ -1198,3 +1200,5 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-21 — La cible Supabase historique a été mise en pause après confirmation que ses données restantes étaient fictives. L'inventaire final a trouvé cinquante-deux anciennes sessions et une société démo de base ; aucune donnée n'a été supprimée. La préproduction est restée entièrement conforme. Un emplacement Free est désormais disponible pour la cible temporaire de restauration OPS-03A. Rapport `docs/rapports/2026-10-21/supabase-legacy-pause.md`.
 
 - 2026-10-21 — OPS-03A terminée : l'export officiel de la cible historique a été restauré sur un troisième projet Supabase Free isolé. Les 58 tables attendues et tous leurs compteurs correspondent ; 25 comptes Auth sont visibles, les vingt tables publiques ont RLS active, 438 commandes et 438 livraisons sont retrouvées. Les deux preuves PNG du bucket privé sont restaurées et identiques par téléchargement direct et URL signée. Import SQL 2 min 12 s, phase Storage 3,298 s, manifeste SHA-256 vert, aucun secret dans les preuves. Rapport `docs/rapports/2026-10-21/ops03a-provider-restore.md`. Le RPO d'une heure reste une porte de RELEASE-1 car le plan Free n'automatise pas ce point et n'inclut pas les fichiers Storage.
+
+- 2026-10-22 — SIGNUP-1 terminée : cinq étapes persistantes de l'offre à l'activation, prix et quotas serveur, confirmation e-mail gérée, paiement fictif Preview, transaction atomique, bienvenue durable et passage vers ONBOARD-1. Paiements refusés/en attente/rejoués, mensuel/annuel, concurrence SIREN, isolation et première livraison fictive réussissent ; 308 tests, build de 106 pages et quatre migrations SIGNUP-1 de préproduction passent, avec nettoyage exact. Aucun paiement réel ni changement Production. Rapport : `docs/rapports/2026-10-22/signup-1.md`.

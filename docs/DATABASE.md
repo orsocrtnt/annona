@@ -34,7 +34,7 @@
 - `RecurringOrder` : modèle et planification de commandes récurrentes.
 - `DemoPoolEnvironment` : stock de démonstrations préconstruites, location exclusive et recyclage durable.
 
-Le schéma comprend 30 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 32 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
 
 ## Relations essentielles
 
@@ -83,7 +83,7 @@ Seule `db:generate` fait partie du travail local courant. Toutes les autres comm
 
 Le dépôt contient cinq migrations reproductibles : baseline initiale, données de référence RBAC, noyau SaaS, pool de démonstration et sécurité de ce pool. Elles ont été appliquées uniquement à la préproduction autorisée. Le contrôle final retrouve 30 tables applicatives et cinq migrations terminées.
 
-Les 30 tables ont RLS active et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau. Le catalogue SaaS actif et les entreprises historiques migrées en compatibilité `LEGACY` ne créent aucun abonnement payant implicite.
+Les 32 tables ont RLS active et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau. Le catalogue SaaS actif et les entreprises historiques migrées en compatibilité `LEGACY` ne créent aucun abonnement payant implicite. Les brouillons d'inscription et événements de paiement restent eux aussi exclusivement accessibles par le serveur.
 
 ## Procédure d'évolution
 

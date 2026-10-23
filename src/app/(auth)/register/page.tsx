@@ -1,5 +1,5 @@
-import { AuthForm } from "@/features/auth/auth-form";
+import { SignupWizard } from "@/features/auth/signup-wizard";
 
 export default function RegisterPage() {
-  return <AuthForm mode="register" />;
+  return <SignupWizard />;
 }
