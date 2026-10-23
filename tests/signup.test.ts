@@ -534,6 +534,7 @@ test("SIGNUP-1 : parcours mobile, reprise et progression restent visibles", () =
   assert.match(ui, /J’ai confirmé, actualiser/);
   assert.match(ui, /La confirmation n’est pas encore enregistrée/);
   assert.match(ui, /SignupPlanComparisonTable/);
+  assert.match(ui, /index <= currentStepIndex/);
   assert.match(ui, /Modifier l’offre/);
   assert.match(ui, /goToStage/);
   assert.match(ui, /Revoir la formule/);

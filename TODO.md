@@ -1217,3 +1217,5 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-23 — SIGNUP-1 : retour arrière avant paiement. Formule, options et informations d'entreprise restent corrigeables jusqu'à confirmation du paiement fictif ; l'e-mail déjà vérifié reste verrouillé. Aucun paiement réel ni changement Production.
 
 - 2026-10-23 — SIGNUP-1 : confirmation Auth orpheline rattachée au rafraîchissement, et retour arrière autorisé tant qu'aucun utilisateur TutelLiv n'existe encore pour ce compte.
+
+- 2026-10-23 — SIGNUP-1 vérifiée après reprise externe : 315 tests, types/lint, garde préproduction, scanner de secrets, build de 106 pages, CI distante, Preview et recette connectée passent avec nettoyage exact. Le clic réel Entreprise → Options → Entreprise conserve les saisies ; un saut vers une étape future sans enregistrer les options, découvert pendant la recette, est désormais interdit. Supabase conserve un intervalle fournisseur de 60 s tant qu'aucun SMTP personnalisé n'est configuré.

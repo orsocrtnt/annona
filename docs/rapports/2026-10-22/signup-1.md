@@ -34,7 +34,7 @@ La recette connectée a validé :
 
 Preuves finales :
 
-- `npm run check` après le correctif : TypeScript, ESLint strict et 311 tests réussis ;
+- `npm run check` après la recette du retour arrière : TypeScript, ESLint strict et 315 tests réussis ;
 - test métier local du renvoi : compteur de trente secondes et deux requêtes concurrentes produisant un seul appel fournisseur ;
 - `npm run build` : build de production réussi, 106 pages ;
 - `npm run test:signup1` : tous les scénarios connectés réussis ; preuve `outputs/signup1/connected.json` ;
@@ -45,6 +45,8 @@ Preuves finales :
 ## Correctif — retour arrière avant paiement
 
 Depuis le 23 octobre, l'inscription n'est plus à sens unique. Tant que le paiement fictif n'est pas confirmé, l'utilisateur peut revenir à la formule, aux options ou aux informations d'entreprise. Après confirmation d'e-mail, l'adresse reste verrouillée et le mot de passe n'est pas redemandé ; un changement d'offre recalcule le devis côté serveur. Dès que le paiement est confirmé ou le compte activé, ces corrections sont refusées.
+
+La recette navigateur a vérifié un aller-retour Entreprise → Options → Entreprise avec conservation des champs saisis. La barre d'étapes n'autorise que les étapes déjà atteintes : elle ne peut plus contourner le bouton de validation des options et produire un devis qui ignorerait un choix visible seulement dans le navigateur.
 
 Correctif du même jour : si Supabase a déjà confirmé l'adresse (lien cliqué, ou compte de test réutilisé) alors que le brouillon restait en attente, « J’ai confirmé, actualiser » rattache désormais cette confirmation. Un compte Auth confirmé sans utilisateur TutelLiv peut aussi être retiré pour revenir corriger l'identité. Un compte déjà lié à une entreprise reste verrouillé.
 

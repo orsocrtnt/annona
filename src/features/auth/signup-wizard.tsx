@@ -105,6 +105,7 @@ export function SignupWizard() {
   const choicesEditable = Boolean(!journey || journey.choicesEditable);
   const emailLocked = Boolean(journey?.emailVerified);
   const progress = stage === "payment" ? 5 : stage === "email" ? 4 : stage === "identity" ? 3 : stage === "options" ? 2 : 1;
+  const currentStepIndex = stepItems.findIndex((step) => step.id === stage);
 
   const post = async (body: unknown) => {
     setSubmitting(true); setError(null); setNotice(null);
@@ -224,7 +225,7 @@ export function SignupWizard() {
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-brand transition-all" style={{ width: `${progress * 20}%` }} /></div>
             <ol className="mt-4 grid grid-cols-5 gap-2 text-center text-[11px] sm:text-xs">
               {stepItems.map((step, index) => {
-                const reachable = choicesEditable && (index < 3 ? Boolean(journey) || step.id === "plan" : false);
+                const reachable = choicesEditable && index < 3 && index <= currentStepIndex && (Boolean(journey) || step.id === "plan");
                 return (
                   <li key={step.id}>
                     <button
