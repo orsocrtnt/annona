@@ -10,7 +10,7 @@
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
-Mise à jour : 22 octobre 2026. Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
+Mise à jour : 23 octobre 2026. Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
 
 ## Tableau de pilotage
 
@@ -25,19 +25,19 @@ Mise à jour : 22 octobre 2026. Source unique des priorités du projet. Cette ve
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **COST-1 — estimation documentaire** | Tester rapidement la cohérence économique des trois offres et le risque Business illimité avant de figer davantage le catalogue. | Inventaires et tarifs publics ; aucune charge payante. La validation mesurée attend PERF-02. | GPT‑6.1 Sol · effort moyen |
-| 2 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
-| 3 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain et achever le raccord à SIGNUP-1. | L'inscription autonome remet déjà le compte activé à l'assistant ; la validation pilote reste distincte. | GPT‑6.1 Sol · effort élevé |
-| 4 | **SAAS-01B — Stripe sandbox** | Remplacer l'adaptateur fictif déterministe par des événements Stripe de test idempotents. | SIGNUP-1 et le noyau SAAS-01A sont terminés ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
-| 5 | **COST-1 — validation mesurée** | Remplacer les hypothèses de coût par des mesures représentatives avant de figer les marges. | L'estimation documentaire peut commencer seule ; les mesures complètes attendent PERF-02. | GPT‑6.1 Sol · effort moyen |
+| 1 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
+| 2 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain et achever le raccord à SIGNUP-1. | L'inscription autonome remet déjà le compte activé à l'assistant ; la validation pilote reste distincte. | GPT‑6.1 Sol · effort élevé |
+| 3 | **SAAS-01B — Stripe sandbox** | Remplacer l'adaptateur fictif déterministe par des événements Stripe de test idempotents. | SIGNUP-1 et le noyau SAAS-01A sont terminés ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
+| 4 | **PERF-02** | Mesurer les paliers de capacité qui conditionnent coûts et fiabilité. | Harnais borné sur préproduction ; aucune charge payante sans accord. | GPT‑6 Astra · effort élevé |
+| 5 | **COST-1 — validation mesurée** | Remplacer les hypothèses documentaires par les mesures PERF-02/pilotes avant de figer les marges. | Phase documentaire terminée ; attend PERF-02 et données pilotes. | GPT‑6.1 Sol · effort moyen |
 
-COST-1 documentaire et OPS-03B sont fonctionnellement indépendantes. SIGNUP-1 et les interfaces serveur de SAAS-01A sont désormais stabilisées pour SAAS-01B et la fin d'ONBOARD-1.
+COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02. SIGNUP-1 et les interfaces serveur de SAAS-01A sont désormais stabilisées pour SAAS-01B et la fin d'ONBOARD-1.
 
 ### Chemins critiques
 
 - **Pilotes :** DEMO-2 terminé ; OPS-03B + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
 - **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A est terminé → SAAS-01B sandbox → SAAS-03 et SAAS-04 → SALES-1 et SAAS-02 → GROWTH-1 intégré → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
-- **Validation économique :** COST-1 documentaire peut démarrer maintenant ; PERF-02 et les pilotes remplacent ensuite les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
+- **Validation économique :** COST-1 documentaire est terminée ; PERF-02 et les pilotes doivent maintenant remplacer les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
 - **Design :** DESIGN-1 fixe les composants communs, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni SAAS-01A/SIGNUP-1 ni les portes techniques des pilotes.
 
 ### Interventions du propriétaire
@@ -113,7 +113,7 @@ Ces réussites ne valident pas le GPS terrain, la charge, la conformité du PDF 
 
 Priorités réconciliées le 22 octobre 2026 pour les tâches encore ouvertes. Le niveau indique l'ordre du travail interne ; les validations extérieures sont suivies séparément et ne doivent pas immobiliser les tâches indépendantes :
 
-- **P0 — Débloquer les pilotes et poursuivre le libre-service :** COST-1 dans sa phase documentaire et OPS-03B. DEMO-2, SIGNUP-1, SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
+- **P0 — Débloquer les pilotes et poursuivre le libre-service :** OPS-03B puis tranche pilote d'ONBOARD-1. La phase documentaire COST-1, DEMO-2, SIGNUP-1, SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
 - **P1 — Fermer la fiabilité et le libre-service testable :** SEC-05, EMAIL, SAAS-01B, SAAS-03, SAAS-04, SALES-1, PERF-02, ONBOARD-1.
 - **P2 — Expérience et préparation opérationnelle :** MAP-3, DESIGN-1, UX-03, UX-04, GROWTH-1, ADMIN-1, V1-GO, OFFER-1.
 - **P3 — Validation extérieure et terrain :** LEGAL-1, DATA-02, MOB-01C, PROD-02, PROD-04, PILOT-1, PILOT-2, SAAS-02, RELEASE-1.
@@ -123,7 +123,7 @@ Les dépendances de sécurité et de validation priment sur le numéro : une tâ
 
 1. Terminé : DEMO-2 rend la démo rapide et réutilisable grâce au pool isolé et au recyclage asynchrone.
 2. Terminé : SAAS-01A fournit le catalogue versionné, le registre pilote/souscription, les droits, options, quotas et compteurs appliqués côté serveur.
-3. En parallèle sans charge payante, produire l'estimation documentaire COST-1 et mettre en place la première tranche d'alertes OPS-03B.
+3. L'estimation documentaire COST-1 étant terminée, mettre en place la première tranche d'alertes OPS-03B ; conserver les mesures de coûts pour PERF-02.
 4. Terminé : SIGNUP-1 orchestre offre, compte, vérification e-mail, faux paiement déterministe, activation idempotente et reprise après interruption.
 5. Brancher Stripe uniquement dans son environnement fictif avec SAAS-01B, puis développer SAAS-03, SAAS-04 et la tranche théorique de SALES-1.
 6. Fermer ONBOARD-1 pour les comptes pilotes créés manuellement, puis le relier au parcours autonome ; terminer en parallèle les e-mails, la capacité et les essais GPS physiques dès que leurs ressources sont disponibles.
@@ -1022,6 +1022,9 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Terminé quand : hypothèses et sources datées ; volumes par livraison explicités ; frais de paiement et support distingués ; commissions 15/25/35 % simulées séparément ; coût mensuel total, marge contributive et coût marginal approximatif par client pour chaque scénario ; seuils de changement de plan et sensibilité haute/basse ; risque des livreurs Business illimités isolé ; comparaison aux prix HT sans confondre marge contributive, marge brute et résultat ; chiffres exportables vers le prévisionnel. Aucun test facturable lancé sans accord.
 
   Source / dépendance / blocage : phase 1 immédiate avec inventaire ENV-1, limites MAP-2, factures publiques datées et hypothèses explicites ; elle produit des fourchettes, pas une vérité mesurée. Phase 2 après PERF-02 et premiers pilotes pour remplacer les hypothèses de charge et support. Aucun test distant payant n'est requis pour la phase 1.
+
+  - [x] **Phase 1 — estimation documentaire.** Terminée le 2026-10-23 : modèle reproductible de 36 scénarios, variantes basse/centrale/haute, coûts fixes/variables, trois commissions, frais Stripe, support et coût marginal exportés. L'audit constate zéro Realtime actuel, GPS jusqu'à 4 s, polling dispatch 20 s, route 30 s et preuve 5 Mio. Le scénario central à dix entreprises avec commission 35 % estime une contribution de 99,62 € Starter, 94,44 € Pro et 664,17 € Business. Le risque dominant est cartographie/navigation + GPS/compute + support ; « Business illimité » reste économiquement non borné sans mesure et règle d'usage. Rapport `docs/rapports/2026-10-23/cost1-documentaire.md`, méthode `docs/operations/cost1/README.md`, calcul `scripts/cost1/model.mjs`, exports `outputs/cost1/`.
+  - [ ] **Phase 2 — validation mesurée.** Remplacer temps CPU, paliers Supabase, cadence réelle de navigation, taille/taux de preuves, e-mails et support par `PERF-02` et les trois pilotes ; obtenir un devis cartographique au-delà des paliers publics. Aucun essai facturable sans accord.
 
 - [ ] **GROWTH-1 — Construire le site commercial relié au parcours autonome.** Faire évoluer la page publique existante vers Accueil, Fonctionnalités par rôle, Tarifs/options, Démonstration, Inscription, Connexion, Contact et Informations légales. Relier chaque offre à SIGNUP-1 ; présenter uniquement les fonctions réellement disponibles, limites, dépassements et traitement des données. Aucun témoignage ou gain inventé.
 
