@@ -15,11 +15,19 @@ export async function requestPasswordRecovery(email: string): Promise<void> {
   if (error) throw new Error("AUTH_EMAIL_FAILED");
 }
 
-export async function finishPasswordLink(input: { tokenHash: string; type: "invite" | "recovery"; password: string } | { tokenHash: string; type: "signup" }): Promise<{ signupResumeToken?: string }> {
+type PasswordLinkInput =
+  | ({ tokenHash: string } & ({ type: "invite" | "recovery"; password: string } | { type: "signup" }))
+  | ({ accessToken: string; refreshToken: string } & ({ type: "invite" | "recovery"; password: string } | { type: "signup" }));
+
+export async function finishPasswordLink(input: PasswordLinkInput): Promise<{ signupResumeToken?: string }> {
   getPasswordLinkRedirect();
   const client = createPasswordLinkClient();
-  // Supabase vérifie et consomme le jeton à usage unique, avec expiration et limites serveur.
-  const { data, error } = await client.auth.verifyOtp({ token_hash: input.tokenHash, type: input.type });
+  // Le modèle personnalisable utilise token_hash. Le modèle Supabase par défaut
+  // consomme d'abord le jeton, puis renvoie une session dans le fragment de l'URL.
+  // Les deux variantes sont validées côté serveur avec un client isolé.
+  const { data, error } = "tokenHash" in input
+    ? await client.auth.verifyOtp({ token_hash: input.tokenHash, type: input.type })
+    : await client.auth.setSession({ access_token: input.accessToken, refresh_token: input.refreshToken });
   if (error?.status === 429) throw new Error("AUTH_RATE_LIMITED");
   if (error || !data.user || !data.session || !data.user.email_confirmed_at) throw new Error("AUTH_LINK_INVALID");
   try {

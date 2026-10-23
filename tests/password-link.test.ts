@@ -44,6 +44,7 @@ function fixture(signup = false) {
   let passwordWrites = 0;
   let activations = 0;
   const signouts: string[] = [];
+  const sessions: unknown[] = [];
   const recoveries: unknown[] = [];
   const service = load<typeof import("../src/domains/auth/password-link.service")>("src/domains/auth/password-link.service.ts", {
     "@/lib/auth/email-links": links,
@@ -65,12 +66,18 @@ function fixture(signup = false) {
         consumed = true;
         return { data: { user: { id: "auth", email_confirmed_at: "2026-09-28", email: "test@example.com", user_metadata: { account_type: "company" } }, session: {} }, error: null };
       },
+      setSession: async (session: { access_token: string; refresh_token: string }) => {
+        sessions.push(session);
+        if (invalid || consumed || limited) return { data: {}, error: { status: limited ? 429 : 403 } };
+        consumed = true;
+        return { data: { user: { id: "auth", email_confirmed_at: "2026-09-28", email: "test@example.com", user_metadata: { account_type: "company" } }, session: {} }, error: null };
+      },
       updateUser: async ({ password }: { password: string }) => { assert.equal(password, "TestLocal123!"); passwordWrites++; return { error: updateFails ? new Error("provider") : null }; },
       signOut: async ({ scope }: { scope: string }) => { signouts.push(scope); return { error: revokeFails && scope === "global" ? new Error("provider") : null }; },
       resetPasswordForEmail: async (...args: unknown[]) => { recoveries.push(args); return { error: limited ? { status: 429 } : null }; },
     } }) },
   });
-  return { service, user, signouts, recoveries, provisions: () => provisions, writes: () => passwordWrites, activations: () => activations,
+  return { service, user, signouts, sessions, recoveries, provisions: () => provisions, writes: () => passwordWrites, activations: () => activations,
     set invalid(v: boolean) { invalid = v; }, set limited(v: boolean) { limited = v; }, set updateFails(v: boolean) { updateFails = v; }, set revokeFails(v: boolean) { revokeFails = v; }, set suspensionRace(v: boolean) { suspensionRace = v; } };
 }
 const input = { tokenHash: "test-token-not-a-real-secret", type: "invite" as const, password: "TestLocal123!" };
@@ -216,7 +223,22 @@ test("confirmation d'inscription : création seulement après jeton vérifié, a
   await assert.rejects(f.service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" }), /AUTH_LINK_INVALID/);
   assert.equal(f.provisions(), 1);
 });
-test("SIGNUP-1 : confirmation gérée reprend le brouillon sans provisionnement anticipé", async (t) => {
+test("confirmation Supabase par défaut : la session du fragment reprend l'inscription", async (t) => {
+  configured(t); const f = fixture(true);
+  const result = await f.service.finishPasswordLink({
+    accessToken: "access-token-test-not-a-real-secret",
+    refreshToken: "refresh-token-test-not-a-real-secret",
+    type: "signup",
+  });
+  assert.equal(JSON.stringify(result), "{}");
+  assert.equal(f.provisions(), 1);
+  assert.equal(JSON.stringify(f.sessions), JSON.stringify([{
+    access_token: "access-token-test-not-a-real-secret",
+    refresh_token: "refresh-token-test-not-a-real-secret",
+  }]));
+  assert.deepEqual(f.signouts, ["global", "local"]);
+});
+test("SIGNUP-1 : la session du modèle Supabase reprend le brouillon sans provisionnement anticipé", async (t) => {
   configured(t);
   const calls: unknown[] = [];
   const signouts: string[] = [];
@@ -228,11 +250,19 @@ test("SIGNUP-1 : confirmation gérée reprend le brouillon sans provisionnement 
     "@/services/prisma/client": { prisma: {} },
     "@/domains/signup/signup.service": { confirmManagedSignupEmail: async (input: unknown) => { calls.push(input); return { resumeToken: "resume-token-high-entropy" }; } },
     "@/services/supabase/password-link": { createPasswordLinkClient: () => ({ auth: {
-      verifyOtp: async () => ({ data: { user: { id: "auth-managed", email: "managed@example.test", email_confirmed_at: "2026-10-22", user_metadata: { signup_flow: "managed", signup_draft_id: "draft-1", signup_link_token: "link-token-high-entropy" } }, session: {} }, error: null }),
+      setSession: async ({ access_token, refresh_token }: { access_token: string; refresh_token: string }) => {
+        assert.equal(access_token, "access-token-managed-not-a-real-secret");
+        assert.equal(refresh_token, "refresh-token-managed-not-a-real-secret");
+        return { data: { user: { id: "auth-managed", email: "managed@example.test", email_confirmed_at: "2026-10-22", user_metadata: { signup_flow: "managed", signup_draft_id: "draft-1", signup_link_token: "link-token-high-entropy" } }, session: {} }, error: null };
+      },
       signOut: async ({ scope }: { scope: string }) => { signouts.push(scope); return { error: null }; },
     } }) },
   });
-  const result = await service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" });
+  const result = await service.finishPasswordLink({
+    accessToken: "access-token-managed-not-a-real-secret",
+    refreshToken: "refresh-token-managed-not-a-real-secret",
+    type: "signup",
+  });
   assert.equal(result.signupResumeToken, "resume-token-high-entropy");
   assert.equal(JSON.stringify(calls), JSON.stringify([{ draftId: "draft-1", linkToken: "link-token-high-entropy", authUserId: "auth-managed", email: "managed@example.test" }]));
   assert.deepEqual(signouts, ["global", "local"]);

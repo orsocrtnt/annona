@@ -5,10 +5,16 @@ import { finishPasswordLink } from "@/domains/auth/password-link.service";
 import { setSignupResumeCookie } from "@/domains/signup/signup-cookie";
 
 const tokenHash = z.string().min(20).max(512);
-const schema = z.union([
+const sessionToken = z.string().min(20).max(8192);
+const tokenHashSchema = z.union([
   resetPasswordSchema.and(z.object({ tokenHash, type: z.enum(["invite", "recovery"]) })),
   z.object({ tokenHash, type: z.literal("signup") }),
 ]);
+const sessionSchema = z.union([
+  resetPasswordSchema.and(z.object({ accessToken: sessionToken, refreshToken: sessionToken, type: z.enum(["invite", "recovery"]) })),
+  z.object({ accessToken: sessionToken, refreshToken: sessionToken, type: z.literal("signup") }),
+]);
+const schema = z.union([tokenHashSchema, sessionSchema]);
 export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Lien ou mot de passe invalide." }, { status: 400 });

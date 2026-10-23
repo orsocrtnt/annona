@@ -1,6 +1,8 @@
 # TutelLiv — configuration des liens d’authentification
 
-Préparation locale du 28 septembre 2026. Aucun réglage distant ni envoi effectué.
+Préparation initiale du 28 septembre 2026. Configuration de préproduction vérifiée le 23 octobre 2026.
+
+État de la préproduction : la Site URL Supabase pointe vers l'alias stable Vercel de la branche `preproduction` et son chemin `/reset-password` est dans la liste des redirections autorisées. Le modèle e-mail Supabase par défaut est utilisé tant qu'aucun SMTP personnalisé n'est configuré. TutelLiv accepte ce modèle ainsi que les futurs modèles personnalisés fondés sur `TokenHash`.
 
 Décision du 18 octobre 2026 : Resend est retenu en principe ; la boîte de réception de test est configurée uniquement dans `.env.local`, ignoré par Git. Les expéditeurs visés sont `no-reply@…` et `support@…`, mais aucun domaine TutelLiv n'est encore acheté ou confirmé. Ne pas inventer de domaine, modifier le DNS ou activer les envois avant sa validation.
 
@@ -10,12 +12,16 @@ Décision du 18 octobre 2026 : Resend est retenu en principe ; la boîte de réc
 2. Définir Site URL sur l’origine exacte de l’application (sans chemin, par exemple l’origine de préproduction), et autoriser uniquement son `/reset-password` dans les Redirect URLs. Aligner NEXT_PUBLIC_APP_URL.
 3. Activer **Confirm email**. Configurer l’expiration Email OTP à **3 600 secondes maximum** ; relever la valeur réellement appliquée et tester un délai raccourci sur la cible isolée.
 4. Vérifier les limites des envois, récupérations, vérifications et connexions. Les routes utilisent le SDK anonyme pour récupération/vérification : Supabase peut compter l’IP du serveur, commune à plusieurs utilisateurs. Régler et tester une protection anti-abus adaptée à l’hébergeur avant mise en service ; ne pas faire confiance à un en-tête IP arbitraire envoyé par le navigateur.
-5. Désactiver le suivi de clics du prestataire d’e-mail, susceptible de réécrire les liens. Installer les trois modèles ci-dessous.
+5. Avec un SMTP personnalisé, désactiver le suivi de clics du prestataire d’e-mail, susceptible de réécrire les liens. Les trois modèles ci-dessous pourront alors remplacer les modèles par défaut.
 6. Seulement après contrôle, définir `AUTH_EMAIL_LINKS_ENABLED=true` dans l’environnement de test et redémarrer. Le drapeau n’applique aucun réglage Supabase : il atteste que cette configuration a été faite. Il est absent de l’environnement actuel, donc les nouveaux envois restent désactivés.
 
 Les notifications métier ne suivent pas ce drapeau. Elles utilisent EMAIL_DELIVERY_MODE avec les valeurs disabled, test ou live et restent désactivées par défaut. Pour la recette, test redirige toutes les copies vers EMAIL_TEST_RECIPIENT ; voir [la procédure EMAIL](operations/email/README.md). Le mode live ne doit pas être activé pendant la recette.
 
-Les modèles utilisent SiteURL pour une destination fixe. Le fragment contient un jeton sensible : ne pas le partager, journaliser, copier dans les rapports ou laisser un outil d’analytics enregistrer le corps de la requête de confirmation. L’application lit puis retire ce fragment ; seule la soumission volontaire du formulaire consomme le jeton.
+Les liens utilisent une destination fixe contrôlée. Le fragment contient un jeton sensible : ne pas le partager, journaliser, copier dans les rapports ou laisser un outil d’analytics enregistrer le corps de la requête de confirmation. L’application lit puis retire immédiatement ce fragment. Avec le modèle Supabase par défaut, le premier clic consomme le lien à usage unique avant la redirection ; un second clic est donc normalement refusé.
+
+## Modèles personnalisés futurs
+
+Ces modèles demandent un SMTP personnalisé. Ils ne sont pas requis pour tester la préproduction : le lien `ConfirmationURL` par défaut est désormais pris en charge par l'application.
 
 ## Modèle « Invite user »
 
@@ -48,7 +54,7 @@ Sujet : Confirmer votre adresse e-mail TutelLiv
 <p>Votre espace entreprise sera créé après confirmation. Vous pourrez ensuite vous connecter avec le mot de passe choisi lors de l’inscription.</p>
 ```
 
-Ne pas conserver le lien `ConfirmationURL` par défaut pour ces trois parcours : cette version attend un TokenHash et ne reçoit aucune session depuis l’URL. L’ancien modèle nécessite donc une mise à jour avant activation.
+Lorsque ces modèles seront activés, vérifier les trois parcours après le changement. L'application conserve volontairement la compatibilité avec `ConfirmationURL` afin qu'un retour temporaire aux modèles Supabase ne casse pas les confirmations.
 
 ## Recette réelle restant à faire
 

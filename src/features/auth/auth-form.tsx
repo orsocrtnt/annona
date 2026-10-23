@@ -33,6 +33,9 @@ import { useAuthStore } from "@/stores/auth.store";
 import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
 type AuthMode = "login" | "register" | "forgot-password" | "reset-password";
 type LoginContext = "company" | "client" | "driver";
+type PasswordLink =
+  | { tokenHash: string; type: "invite" | "recovery" | "signup" }
+  | { accessToken: string; refreshToken: string; type: "invite" | "recovery" | "signup" };
 
 function LoginEmailPrefill({ form }: { form: UseFormReturn<LoginInput> }) {
   const searchParams = useSearchParams();
@@ -55,7 +58,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [passwordLink, setPasswordLink] = useState<{ tokenHash: string; type: "invite" | "recovery" | "signup" } | null>(null);
+  const [passwordLink, setPasswordLink] = useState<PasswordLink | null>(null);
   const linkRead = useRef(false);
   const [completingLink, setCompletingLink] = useState(false);
   const { setUser, setPermissions, setDemo } = useAuthStore();
@@ -67,12 +70,17 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       linkRead.current = true;
       const params = new URLSearchParams(window.location.hash.slice(1));
       const tokenHash = params.get("token_hash");
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
       const type = params.get("type");
       // Le fragment n'est pas envoyé au serveur ; le retirer de l'historique après lecture.
       window.history.replaceState(null, "", window.location.pathname);
       setSuccess(null);
       if (tokenHash && (type === "invite" || type === "recovery" || type === "signup")) {
         setPasswordLink({ tokenHash, type });
+        setError(null);
+      } else if (accessToken && refreshToken && (type === "invite" || type === "recovery" || type === "signup")) {
+        setPasswordLink({ accessToken, refreshToken, type });
         setError(null);
       } else {
         setPasswordLink(null);
