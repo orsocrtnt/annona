@@ -66,6 +66,8 @@ npm run test:v1
 
 Pour les copies externes consultées sur cet ordinateur, `.todo-share-paths.local.json` contient une liste JSON de chemins absolus vers des fichiers nommés `TODO-TutelLiv-vente.md`. Ce réglage local est ignoré par Git et absent en CI. Les copies enregistrées sont synchronisées par les mêmes commandes ; une erreur d'écriture interrompt le contrôle pour éviter un statut périmé silencieux. Toujours modifier la source `TODO.md`, car une copie est remplacée par la source lors de la synchronisation.
 
+La lecture courante se fait dans ce Markdown, pas dans un PDF ou un Word. Après modification, le même fichier est republié en `.md` dans le dossier Drive `Contexte MD`, et poussé sur `preproduction`. Règle : `.cursor/rules/contexte-markdown.mdc`.
+
 ## Démonstration
 
 Le compte de démonstration authentifie l'entrée, puis chaque navigateur travaille dans une entreprise fictive isolée pendant huit heures. Changer de persona ou se reconnecter conserve cette même session. Le bouton de remise à zéro recrée uniquement ses huit livraisons et n'agit pas sur une autre démonstration. Vérifier ce comportement avec `npm run test:demo1` et consulter `operations/demo1/README.md`.

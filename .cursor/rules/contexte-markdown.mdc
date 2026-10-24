@@ -1,0 +1,20 @@
+---
+description: Lire et republier la TODO et le contexte projet en Markdown sur GitHub et Drive
+alwaysApply: true
+---
+
+# Contexte en Markdown
+
+Lire le statut et le contexte dans les fichiers Markdown du dépôt. Ne pas les lire dans un PDF, un Word, un Google Doc ou la TODO personnelle du fondateur.
+
+Source unique : `TODO.md`. Contexte à tenir aligné : `AGENTS.md`, `docs/README.md`, `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, `docs/SAAS_OFFERS_ARCHITECTURE.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`.
+
+Après chaque modification de l’un de ces fichiers :
+
+1. Lancer `npm run todo:progress` si `TODO.md` a changé.
+2. Pousser uniquement ces Markdown sur `preproduction` de `orsocrtnt/tutelliv-v2`. Ne pas embarquer le reste du working tree, un secret, ou un fichier sous `outputs/`.
+3. Écraser le fichier Drive déjà créé, sans en ajouter un autre. Dossier [Contexte MD](https://drive.google.com/drive/folders/1f4oEqJnHm2LkSBG20GclValeTQOdAdVR). Texte `text/markdown`, sans conversion en Doc, Word ou PDF. Vérifier que la relecture est identique au dépôt.
+
+Identifiants : `AGENTS.md` `1yqusgfeJlOvyDckqN8pFcfbZuDJnlRzL` ; `docs-README.md` `1RyVjp266KwfEGJVhTQn5jEyuF20Brlam` ; `ARCHITECTURE.md` `1sLbi2ICsA8s1kwGRW330M4CVQzcq3cma` ; `OPERATIONS.md` `1iHbBfWoXVwQvPm7Os_Qep6iB-RGLJTQW`. Créer `TODO.md`, `DECISIONS_PRODUIT_COMMERCIALES.md` et `SAAS_OFFERS_ARCHITECTURE.md` au premier envoi, puis conserver leur identifiant ici.
+
+Les PDF et Word déjà sur Drive restent des archives. La TODO personnelle du fondateur ne se recouvre pas avec `TODO.md`.

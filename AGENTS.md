@@ -12,7 +12,7 @@
 3. Implémenter un changement ciblé et ajouter des tests pertinents pour les comportements métier modifiés.
 4. Lancer les vérifications adaptées, corriger, puis relancer celles qui ont échoué ou sont affectées.
 5. Mettre à jour `TODO.md` : état, résultat, commandes exécutées, limites et prochaine étape.
-6. Synchroniser toute copie de partage de la TODO ou de la recette, puis vérifier qu’elle est identique à la source du dépôt. Les copies sous `work/` restent des archives de travail et ne servent jamais de statut courant.
+6. Lire `TODO.md` et le contexte en Markdown dans le dépôt. Après leur modification, lancer `npm run todo:progress` si la TODO a changé, pousser seulement ces Markdown sur `preproduction`, puis republier les mêmes fichiers `.md` dans le dossier Drive `Contexte MD`. PDF, Word et Google Doc sont des archives. Les copies sous `work/` ne servent jamais de statut courant. Détail : `.cursor/rules/contexte-markdown.mdc`.
 7. Continuer sur la prochaine tâche autorisée sans demander confirmation entre les étapes.
 - Depuis le 16 octobre 2026, le propriétaire demande d’enchaîner les tâches autorisées sans confirmation jusqu’à instruction contraire et de regrouper la revue pour plus tard. Une revue visuelle différée ne bloque pas une tâche indépendante suivante ; ne jamais contourner un vrai blocage listé ci-dessous.
 - Ne cocher une tâche que lorsque ses critères sont vérifiés ; ne jamais présenter un contrôle statique comme un test fonctionnel.
@@ -39,5 +39,5 @@
 - Base distante actuelle : le 27 septembre 2026, l’utilisateur a confirmé qu’elle ne contient pas de données réelles et a autorisé les tests. Utiliser des données E2E identifiables ; préserver les données préexistantes. Cette autorisation ne vaut pas pour une future base de production.
 - Ne jamais modifier les données de production. Pas de migration, synchronisation, seed ou reset implicite.
 - `dev` ne synchronise pas la base. Les commandes `db:push`, `db:sync-schema`, `db:migrate` et les seeds sont des opérations séparées à évaluer avant exécution.
-- Pas de push, déploiement, suppression de données ou réinitialisation Git sans demande explicite.
+- Pas de push, déploiement, suppression de données ou réinitialisation Git sans demande explicite. Exception : les seuls Markdown listés dans `.cursor/rules/contexte-markdown.mdc`, une fois modifiés, partent sur `preproduction`.
 - Respecter les limites d'accès du système ; une autorisation supplémentaire peut être nécessaire pour écrire hors du dossier de la session.
