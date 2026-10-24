@@ -44,6 +44,8 @@
     "test:signup1": "dotenv -e .env.preproduction.local -- tsx scripts/signup1/connected.ts outputs/signup1/connected.json",
     "cost1:model": "node scripts/cost1/model.mjs outputs/cost1/model.json",
     "test:ops03b": "dotenv -e .env.local -- tsx scripts/ops03b/connected.ts outputs/ops03b/connected.json",
+    "ops03b:rehearse-preproduction": "dotenv -e .env.preproduction.local -e .env.ops03b.local -- tsx scripts/ops03b/rehearse-preproduction.ts outputs/ops03b/preproduction-rehearsal.json",
+    "ops03b:test-channel": "dotenv -e .env.preproduction.local -e .env.ops03b.local -- tsx scripts/ops03b/rehearse-preproduction.ts outputs/ops03b/test-channel.json --alert-only",
     "test:data02": "dotenv -e .env.local -- tsx scripts/data02/connected.ts outputs/data02/connected.json",
     "test:data02:demo-retention": "dotenv -e .env.local -- tsx scripts/data02/demo-retention-connected.ts",
     "data02:demo-cleanup": "dotenv -e .env.local -- tsx scripts/data02/cleanup-demo.ts",

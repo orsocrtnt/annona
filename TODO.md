@@ -665,6 +665,8 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Décision du 2026-10-18 : démarrer avec des alertes par e-mail, suivies initialement par le propriétaire. Couvrir indisponibilité, base, sauvegarde, tâches critiques, sécurité et paiement futur ; aucun Slack requis en V1. Le destinataire opérationnel et le domaine d'envoi restent à configurer avec EMAIL.
 
+  Avancement préproduction du 2026-10-23 : moniteur indépendant préparé dans Supabase avec journal privé 90 jours, secrets dans Vault, transitions panne/reprise, rappels bornés et idempotence. Deux répétitions de panne fictive ont produit des alertes critiques reçues par le canal de test en 101 à 145 ms, sans secret, e-mail, identifiant client ni mutation métier. L'alias stable de préproduction reste protégé par Vercel Authentication ; le cron n'est volontairement pas activé tant qu'un jeton Automation Bypass limité au moniteur n'est pas explicitement autorisé. Le contournement public de l'alias a été refusé. Reste à autoriser ce jeton, vérifier baseline + reprise réelles puis activer la sonde toutes les trente minutes. Rapport : `docs/rapports/2026-10-23/ops03b-preproduction-monitor.md`.
+
 - [x] **SUPPORT-1 — Fermer la boucle du support.** Vérifier puis compléter réception staff, réponse, statut et historique ; définir canal réellement suivi et délai annoncé.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**

@@ -172,3 +172,28 @@ test("une erreur de requête non gérée produit un incident sans chemin réel n
   assert.equal(serialized.includes("private failure detail"), false);
   assert.equal(serialized.includes("/api/orders/[id]"), true);
 });
+
+test("OPS-03B : la migration du moniteur garde secrets et journal hors Data API", () => {
+  const migration = readFileSync(resolve(
+    "prisma/migrations/20261023191000_ops03b_monitor/migration.sql"
+  ), "utf8");
+  assert.match(migration, /CREATE SCHEMA IF NOT EXISTS ops_monitor/);
+  assert.match(migration, /vault\.decrypted_secrets/);
+  assert.match(migration, /REVOKE ALL ON FUNCTION ops_monitor\.run\(BOOLEAN\) FROM PUBLIC, anon, authenticated/);
+  assert.match(migration, /x-vercel-protection-bypass/);
+  assert.match(migration, /idempotency-key/);
+  assert.match(migration, /INTERVAL '2 hours'/);
+  assert.match(migration, /INTERVAL '90 days'/);
+  assert.doesNotMatch(migration, /https:\/\//);
+  assert.doesNotMatch(migration, /sk[-_][A-Za-z0-9]/);
+});
+
+test("OPS-03B : le cron reste inactif tant que la reprise n'est pas validée", () => {
+  const rehearsal = readFileSync(resolve(
+    "scripts/ops03b/rehearse-preproduction.ts"
+  ), "utf8");
+  const recoveryAssertion = rehearsal.indexOf("OPS03B_RECOVERY_ALERT_NOT_SENT");
+  const scheduleActivation = rehearsal.indexOf("SELECT cron.schedule");
+  assert.ok(recoveryAssertion >= 0);
+  assert.ok(scheduleActivation > recoveryAssertion);
+});

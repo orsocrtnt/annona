@@ -1,8 +1,20 @@
 # OPS-03B — Santé du service et procédure d'incident
 
-État de référence : 16 octobre 2026. Cette procédure couvre le socle local de diagnostic. Elle ne remplace pas la configuration d'un moniteur et d'un canal d'astreinte sur une préproduction isolée.
+État de référence : 23 octobre 2026. Le diagnostic applicatif et le moniteur indépendant sont préparés sur la préproduction isolée. L'activation périodique attend uniquement l'autorisation du jeton d'automatisation Vercel nécessaire pour traverser la protection SSO sans rendre le site public.
 
 Décision d'exploitation du 18 octobre 2026 : commencer par des alertes e-mail suivies par le propriétaire. Slack n'est pas nécessaire en V1. Le domaine et le destinataire opérationnel seront configurés avec EMAIL ; aucune alerte réelle n'est encore active.
+
+## Moniteur de préproduction
+
+- Supabase exécute la sonde, donc une indisponibilité de Vercel reste détectable.
+- Le rythme prévu est de trente minutes, sans coût additionnel sur les offres gratuites actuelles.
+- Les secrets `ops03b_app_url`, `ops03b_health_secret`, `ops03b_vercel_bypass` et `ops03b_webhook_url` vivent dans Supabase Vault. Ils n'entrent ni dans Git, ni dans les preuves, ni dans le journal.
+- `ops_monitor.run(false)` contrôle la sonde publique puis le diagnostic profond. `ops_monitor.run(true)` est réservé à la répétition opérateur d'une panne fictive.
+- Les résultats agrégés sont conservés quatre-vingt-dix jours dans le schéma privé `ops_monitor`. Aucun identifiant client, e-mail, URL ou message fournisseur n'y est écrit.
+- Une alerte est envoyée au passage sain → panne, puis au retour panne → sain. Une panne persistante peut produire un rappel au plus tôt deux heures plus tard. Chaque signal porte une clé d'idempotence.
+- Le propriétaire de TutelLiv est le responsable initial du canal. Le webhook temporaire sert seulement à la recette ; EMAIL le remplacera par le destinataire opérationnel confirmé.
+
+La configuration et la répétition s'exécutent avec `npm run ops03b:rehearse-preproduction`. Le fichier `.env.ops03b.local`, ignoré par Git, doit contenir l'URL de la préproduction, le webhook de recette et le jeton Vercel limité à l'automatisation. Le script refuse une cible Supabase différente de la préproduction déclarée.
 
 ## Points de contrôle
 
@@ -31,10 +43,20 @@ Ne placer aucune de ces valeurs dans le dépôt, une capture, un rapport ou une 
 
 Pour les preuves photo, vérifier le bucket privé et une URL signée de fixture. Pour les récurrences, contrôler le drainage sans doublon. Pour le dispatch et les notifications, utiliser les tâches identifiables de l'entreprise de test et nettoyer seulement ces fixtures.
 
+## Répétition du 23 octobre 2026
+
+La migration additive a été appliquée à `tutelliv-preproduction`. Le schéma et ses fonctions sont inaccessibles à `PUBLIC`, `anon` et `authenticated`. Deux répétitions persistées ont produit un événement critique reçu par le canal de test en 101 à 145 ms ; le corps ne contenait ni secret, ni e-mail, ni donnée métier. La version finale ajoute une clé d'idempotence et limite les rappels.
+
+Le cron n'est pas activé et le retour à l'état sain n'est pas encore déclaré : la préproduction est protégée par Vercel Authentication et renvoie `302` à une sonde anonyme. Rendre l'alias public a été refusé afin de ne pas affaiblir l'accès. Il faut autoriser un jeton Vercel **Automation Bypass** dédié, conservé dans Vault, puis exécuter la répétition complète. Cette autorisation n'ouvre pas le site au public et peut être révoquée.
+
 ## Validation avant mise en vente
 
 Sur une préproduction distincte, brancher le webhook ou le moniteur retenu, provoquer successivement une panne de dépendance et une tâche terminale fictive, puis confirmer : réception de l'alerte, absence de secret, diagnostic, correction et retour à l'état sain. Mesurer le délai de détection et nommer le responsable du canal.
 
-OPS-03B reste ouverte tant que cet essai réel n'a pas été effectué. OPS-03A couvre séparément la sauvegarde et la restauration ; une sonde saine ne prouve pas qu'une restauration est possible.
+OPS-03B reste ouverte tant que la sonde protégée n'a pas confirmé le retour sain et que le cron n'est pas actif. OPS-03A couvre séparément la sauvegarde et la restauration ; une sonde saine ne prouve pas qu'une restauration est possible.
+
+## Arrêt et retour arrière
+
+Pour arrêter sans supprimer les preuves, désactiver le job nommé `ops03b-preproduction-health` dans Supabase Cron. Pour retirer complètement le moniteur de recette, révoquer ensuite le jeton Automation Bypass dans Vercel, puis les quatre secrets `ops03b_*` dans Vault. Ne supprimer le schéma `ops_monitor` qu'après export du journal utile. Aucune de ces opérations ne touche les tables métier.
 
 La vérification connectée en lecture seule s'exécute avec `npm run test:ops03b`. Elle lance vingt lectures auth simultanées et contrôle le diagnostic profond sans créer ni modifier de donnée métier.
