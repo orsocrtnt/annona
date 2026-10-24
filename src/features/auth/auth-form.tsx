@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { FormField } from "@/components/ui/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { selectLoginRedirect } from "@/lib/auth/login-redirect";
 import {
   loginSchema,
   registerSchema,
@@ -156,11 +157,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       saas: json.saas ?? null,
     });
     const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
-    router.push(
-      requestedRedirect === "/onboarding" || requestedRedirect === "/dashboard"
-        ? requestedRedirect
-        : json.redirectTo
-    );
+    router.push(selectLoginRedirect(requestedRedirect, json.redirectTo));
   };
 
   const onRegister = async (data: RegisterInput) => {

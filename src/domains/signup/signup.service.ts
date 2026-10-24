@@ -275,6 +275,7 @@ async function requireJourney(resumeToken: string) {
 
 function signupChoicesLocked(journey: NonNullable<JourneyRecord>) {
   return Boolean(
+    journey.failureCode === "STRIPE_CHECKOUT_LOCKED" ||
     journey.paymentConfirmedAt ||
     journey.activatedAt ||
     journey.companyId ||
@@ -1078,6 +1079,7 @@ export async function processFakeSignupPayment(resumeToken: string, input: {
   eventKey: string;
   outcome: "confirmed" | "declined" | "pending";
 }) {
+  if (process.env.SIGNUP_PAYMENT_ADAPTER === "stripe-sandbox") throw new Error("SIGNUP_FAKE_PAYMENT_DISABLED");
   const journey = await requireJourney(resumeToken);
   if (!journey.emailVerifiedAt) throw new Error("SIGNUP_EMAIL_UNVERIFIED");
   const quote = quoteFromJson(journey.quoteSnapshot);
@@ -1121,6 +1123,6 @@ export async function processFakeSignupPayment(resumeToken: string, input: {
 }
 
 export function signupPaidEnvironmentPath(email: string, sessionOpened: boolean) {
-  if (sessionOpened) return "/dashboard";
-  return `/login?email=${encodeURIComponent(email)}&redirect=/dashboard`;
+  if (sessionOpened) return "/onboarding";
+  return `/login?email=${encodeURIComponent(email)}&redirect=/onboarding`;
 }

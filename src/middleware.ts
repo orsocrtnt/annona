@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isCronRoute = pathname.startsWith("/api/cron/");
 
-  if (isCronRoute) {
+  if (isCronRoute || pathname === "/api/billing/webhook") {
     return NextResponse.next();
   }
 

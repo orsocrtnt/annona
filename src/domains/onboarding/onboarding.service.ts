@@ -1,7 +1,14 @@
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { prisma } from "@/services/prisma/client";
+import { companyDeliveryOptionsSchema } from "@/lib/validations/company-settings";
+import { companyBillingSettingsSchema } from "@/lib/validations/billing-settings";
+import { companyDispatchSettingsSchema } from "@/lib/validations/dispatch-settings";
 
 export type OnboardingStepKey =
   | "company"
+  | "services"
+  | "collaborators"
   | "client"
   | "driver"
   | "pricing"
@@ -16,12 +23,30 @@ export interface OnboardingStep {
   href: string;
   action: string;
   complete: boolean;
+  optional?: boolean;
+  skipped?: boolean;
 }
+
+export const onboardingCompanyProfileSchema = z.object({
+  name: z.string().trim().min(2, "Indiquez le nom de l’entreprise (2 caractères minimum).").max(160),
+  email: z.string().trim().email("Indiquez une adresse e-mail professionnelle valide.").max(254),
+  phone: z.string().trim().max(30).default(""),
+  address: z.string().trim().min(5, "Indiquez l’adresse de l’entreprise (5 caractères minimum).").max(240),
+  city: z.string().trim().min(2, "Indiquez la ville.").max(120),
+  country: z.string().trim().length(2, "Le pays s’écrit en deux lettres.").toUpperCase(),
+}).strict();
+
+export type OnboardingCompanyProfile = z.infer<typeof onboardingCompanyProfileSchema>;
 
 export interface CompanyOnboardingSnapshot {
   companyName: string;
+  companyProfile?: Partial<OnboardingCompanyProfile>;
   companyStatus: "ACTIVE" | "TRIAL" | "INACTIVE" | "SUSPENDED";
   settings: unknown;
+  collaboratorCount?: number;
+  pendingClientCount?: number;
+  pendingDriverCount?: number;
+  pendingCollaboratorCount?: number;
   clientCount: number;
   driverCount: number;
   orderCount: number;
@@ -30,7 +55,9 @@ export interface CompanyOnboardingSnapshot {
 
 export interface CompanyOnboardingStatus {
   companyName: string;
+  companyProfile: OnboardingCompanyProfile;
   completedSteps: number;
+  skippedSteps: number;
   totalSteps: number;
   readyForInternalTest: boolean;
   steps: OnboardingStep[];
@@ -50,19 +77,34 @@ export function buildCompanyOnboardingStatus(
   snapshot: CompanyOnboardingSnapshot
 ): CompanyOnboardingStatus {
   const settings = asSettings(snapshot.settings);
+  const profile = {
+    name: snapshot.companyName, email: "", phone: "", address: "", city: "", country: "FR",
+    ...snapshot.companyProfile,
+  };
+  const profileComplete = onboardingCompanyProfileSchema.safeParse(profile).success;
   const companyConfigured =
     ["ACTIVE", "TRIAL"].includes(snapshot.companyStatus) &&
-    ("deliveryCategories" in settings || "deliveryOptions" in settings);
+    companyDeliveryOptionsSchema.safeParse(settings).success;
   const pricingConfigured =
-    "billing" in settings || "tariffZones" in settings || "tariffs" in settings;
+    companyBillingSettingsSchema.safeParse(settings.billing).success;
   const dispatchConfigured =
-    "dispatchRules" in settings ||
-    "dispatch" in settings ||
+    companyDispatchSettingsSchema.safeParse(settings.dispatchRules).success ||
     snapshot.completedDeliveryCount > 0;
+
+  const skipped = asSettings(settings.onboarding).skippedCollaborators === true;
+  const pending = (count: number | undefined) => count ? ` ${count} invitation(s) en attente d’activation.` : "";
 
   const steps: OnboardingStep[] = [
     {
       key: "company",
+      title: "Vérifier les informations entreprise",
+      description: "Confirmez le nom et les coordonnées de votre entreprise.",
+      href: "/onboarding#company-profile",
+      action: "Compléter les informations",
+      complete: profileComplete,
+    },
+    {
+      key: "services",
       title: "Choisir les services proposés",
       description: "Vérifiez les types de commandes visibles par vos clients.",
       href: "/settings",
@@ -70,12 +112,22 @@ export function buildCompanyOnboardingStatus(
       complete: companyConfigured,
     },
     {
+      key: "collaborators",
+      title: "Inviter des collaborateurs autorisés",
+      description: `${snapshot.collaboratorCount ?? 0} collaborateur(s) actif(s).${pending(snapshot.pendingCollaboratorCount)} Cette étape est facultative si vous travaillez seul.`,
+      href: "/users",
+      action: "Gérer les collaborateurs",
+      complete: (snapshot.collaboratorCount ?? 0) > 0,
+      optional: true,
+      skipped: skipped && !(snapshot.collaboratorCount ?? 0),
+    },
+    {
       key: "client",
       title: "Ajouter un client",
       description:
         snapshot.clientCount > 0
-          ? `${snapshot.clientCount} compte(s) client présent(s).`
-          : "Ajoutez le client qui créera la première commande test.",
+          ? `${snapshot.clientCount} compte(s) client actif(s).`
+          : `Ajoutez le client qui créera la première commande test.${pending(snapshot.pendingClientCount)}`,
       href: "/users",
       action: "Gérer les comptes",
       complete: snapshot.clientCount > 0,
@@ -85,8 +137,8 @@ export function buildCompanyOnboardingStatus(
       title: "Ajouter un livreur",
       description:
         snapshot.driverCount > 0
-          ? `${snapshot.driverCount} compte(s) livreur présent(s).`
-          : "Ajoutez le livreur qui prendra en charge la première mission.",
+          ? `${snapshot.driverCount} compte(s) livreur actif(s).`
+          : `Ajoutez le livreur qui prendra en charge la première mission.${pending(snapshot.pendingDriverCount)}`,
       href: "/users",
       action: "Gérer les comptes",
       complete: snapshot.driverCount > 0,
@@ -134,9 +186,11 @@ export function buildCompanyOnboardingStatus(
   const completedSteps = steps.filter((step) => step.complete).length;
   return {
     companyName: snapshot.companyName,
+    companyProfile: profile,
     completedSteps,
+    skippedSteps: steps.filter((step) => step.skipped).length,
     totalSteps: steps.length,
-    readyForInternalTest: completedSteps === steps.length,
+    readyForInternalTest: steps.every((step) => step.complete || step.skipped),
     steps,
     limits: {
       invitationEmailValidated: false,
@@ -148,25 +202,16 @@ export function buildCompanyOnboardingStatus(
 export async function getCompanyOnboardingStatus(
   companyId: string
 ): Promise<CompanyOnboardingStatus> {
-  const [company, clientCount, driverCount, orderCount, completedDeliveryCount] =
+  const [company, accounts, orderCount, completedDeliveryCount] =
     await Promise.all([
       prisma.company.findUnique({
         where: { id: companyId },
-        select: { name: true, status: true, settings: true },
+        select: { name: true, email: true, phone: true, address: true, city: true, country: true, status: true, settings: true },
       }),
-      prisma.user.count({
-        where: {
-          companyId,
-          status: { in: ["ACTIVE", "PENDING_VERIFICATION"] },
-          role: { systemRole: "CLIENT" },
-        },
-      }),
-      prisma.user.count({
-        where: {
-          companyId,
-          status: { in: ["ACTIVE", "PENDING_VERIFICATION"] },
-          role: { systemRole: "DRIVER" },
-        },
+      prisma.user.groupBy({
+        by: ["roleId", "status"],
+        where: { companyId, status: { in: ["ACTIVE", "PENDING_VERIFICATION"] } },
+        _count: { _all: true },
       }),
       prisma.order.count({ where: { companyId } }),
       prisma.delivery.count({
@@ -176,13 +221,66 @@ export async function getCompanyOnboardingStatus(
 
   if (!company) throw new Error("COMPANY_NOT_FOUND");
 
+  const roles = await prisma.role.findMany({
+    where: { systemRole: { in: ["CLIENT", "DRIVER", "MINI_ADMIN", "DISPATCHER"] } },
+    select: { id: true, systemRole: true },
+  });
+  const count = (systemRoles: string[], status: string) => accounts.reduce((total, account) =>
+    account.status === status && roles.some((role) => role.id === account.roleId && systemRoles.includes(role.systemRole))
+      ? total + account._count._all : total, 0);
+
   return buildCompanyOnboardingStatus({
     companyName: company.name,
+    companyProfile: { name: company.name, email: company.email ?? "", phone: company.phone ?? "", address: company.address ?? "", city: company.city ?? "", country: company.country ?? "FR" },
     companyStatus: company.status,
     settings: company.settings,
-    clientCount,
-    driverCount,
+    clientCount: count(["CLIENT"], "ACTIVE"),
+    driverCount: count(["DRIVER"], "ACTIVE"),
+    collaboratorCount: count(["MINI_ADMIN", "DISPATCHER"], "ACTIVE"),
+    pendingClientCount: count(["CLIENT"], "PENDING_VERIFICATION"),
+    pendingDriverCount: count(["DRIVER"], "PENDING_VERIFICATION"),
+    pendingCollaboratorCount: count(["MINI_ADMIN", "DISPATCHER"], "PENDING_VERIFICATION"),
     orderCount,
     completedDeliveryCount,
   });
+}
+
+// Seul le choix facultatif peut être enregistré ; les étapes métier restent calculées.
+export const onboardingPreferenceSchema = z.object({
+  step: z.literal("collaborators"),
+  skipped: z.boolean(),
+}).strict();
+
+export async function updateOnboardingPreference(companyId: string, input: unknown) {
+  const preference = onboardingPreferenceSchema.parse(input);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
+    if (!company) throw new Error("COMPANY_NOT_FOUND");
+    const settings = asSettings(company.settings);
+    const saved = await prisma.company.updateMany({
+      where: { id: companyId, settings: { equals: company.settings ?? Prisma.AnyNull } },
+      data: { settings: {
+        ...settings,
+        onboarding: { ...asSettings(settings.onboarding), skippedCollaborators: preference.skipped },
+      } as Prisma.InputJsonObject },
+    });
+    if (saved.count === 1) return;
+  }
+  throw new Error("ONBOARDING_CONFLICT");
+}
+
+export async function updateOnboardingCompanyProfile(companyId: string, input: unknown) {
+  const profile = onboardingCompanyProfileSchema.parse(input);
+  const updated = await prisma.company.updateMany({ where: { id: companyId }, data: profile });
+  if (updated.count !== 1) throw new Error("COMPANY_NOT_FOUND");
+}
+
+export async function resolveOnboardingLoginPath(
+  user: { companyId?: string | null; role: { systemRole: string }; settings?: unknown },
+  defaultPath: string
+): Promise<string> {
+  if (user.role.systemRole !== "COMPANY_ADMIN" || !user.companyId ||
+      asSettings(user.settings).onboardingRequired !== true) return defaultPath;
+  const status = await getCompanyOnboardingStatus(user.companyId);
+  return status.readyForInternalTest ? defaultPath : "/onboarding";
 }

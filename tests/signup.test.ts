@@ -1015,10 +1015,10 @@ test("SIGNUP-1 : un quota Auth 429 confirme l’e-mail via admin hors production
 
 test("SIGNUP-1 : le paiement confirmé ouvre l’environnement d’offre payé", () => {
   const service = loadSignupService();
-  assert.equal(service.signupPaidEnvironmentPath("alex@example.fr", true), "/dashboard");
+  assert.equal(service.signupPaidEnvironmentPath("alex@example.fr", true), "/onboarding");
   assert.equal(
     service.signupPaidEnvironmentPath("alex@example.fr", false),
-    "/login?email=alex%40example.fr&redirect=/dashboard"
+    "/login?email=alex%40example.fr&redirect=/onboarding"
   );
   const paymentRoute = readFileSync(resolve("src/app/api/signup/payment/route.ts"), "utf8");
   assert.match(paymentRoute, /generateLink/);

@@ -110,6 +110,7 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
     "@/lib/validations/auth": { loginSchema: { safeParse: () => ({ success: true, data: { email: "demo@fixture.invalid", password: "fixture-password" } }) } },
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value },
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: async () => ({ data: { user: { id: "auth", email: "demo@fixture.invalid", email_confirmed_at: "2026-10-15", user_metadata: {} } } }) } }) },
+    "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
     "@/domains/auth/auth.service": { syncUserFromSupabase: async () => user, getDashboardPathForRole: () => "/dashboard", UserNotProvisionedError: class extends Error {} },
     "@/domains/user/user.service": {
       extractPermissionSlugs: () => ["orders:read"],

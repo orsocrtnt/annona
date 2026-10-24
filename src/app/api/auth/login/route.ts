@@ -1,3 +1,4 @@
+import { resolveOnboardingLoginPath } from "@/domains/onboarding/onboarding.service";
 import { after, NextResponse } from "next/server";
 import { assertAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
 import { loginSchema } from "@/lib/validations/auth";
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
       user,
       permissions,
       saas: await getSessionSaasAccess(user.companyId),
-      redirectTo: getDashboardPathForRole(user.role.systemRole, user.settings),
+      redirectTo: await resolveOnboardingLoginPath(user, getDashboardPathForRole(user.role.systemRole, user.settings)),
       demo: isDemoAccount
         ? {
             isDemo: true as const,

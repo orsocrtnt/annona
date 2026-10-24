@@ -7,6 +7,7 @@ import {
 import { clearSignupResumeCookie } from "@/domains/signup/signup-cookie";
 import { createAdminClient } from "@/services/supabase/admin";
 import { createClient } from "@/services/supabase/server";
+import { sandboxBilling } from "@/domains/billing/billing.service";
 import { fakePaymentSchema } from "@/lib/validations/signup";
 
 async function openActivatedSignupSession(email: string, authUserId: string) {
@@ -30,6 +31,16 @@ async function openActivatedSignupSession(email: string, authUserId: string) {
 }
 
 export async function POST(request: NextRequest) {
+  if (process.env.SIGNUP_PAYMENT_ADAPTER === "stripe-sandbox") {
+    const token = request.cookies.get(SIGNUP_COOKIE)?.value;
+    if (!token) return NextResponse.json({ error: "Inscription absente." }, { status: 401 });
+    try {
+      const result = await sandboxBilling().checkout(token);
+      return NextResponse.json({ checkoutUrl: result.url }, { headers: { "Cache-Control": "no-store" } });
+    } catch {
+      return NextResponse.json({ error: "Le paiement sandbox est indisponible. Votre inscription est conservée." }, { status: 503 });
+    }
+  }
   const enabled =
     process.env.VERCEL_ENV !== "production" &&
     (process.env.SIGNUP_PAYMENT_ADAPTER === "fake" || process.env.NODE_ENV !== "production");
@@ -65,4 +76,16 @@ export async function POST(request: NextRequest) {
         : "Le paiement fictif n'a pas pu être confirmé. Réessayez sans créer un second compte.";
     return NextResponse.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } });
   }
+}
+
+export async function GET(request: NextRequest) {
+  if (process.env.SIGNUP_PAYMENT_ADAPTER !== "stripe-sandbox") return NextResponse.json({ error: "Indisponible" }, { status: 404 });
+  const token = request.cookies.get(SIGNUP_COOKIE)?.value;
+  if (!token) return NextResponse.json({ error: "Inscription absente." }, { status: 401 });
+  try {
+    const billing = sandboxBilling();
+    const account = await billing.accountForSignup(token);
+    const state = await billing.reconcile(account.id);
+    return NextResponse.json({ status: state.status, confirmed: Boolean(state.activeContract) }, { headers: { "Cache-Control": "no-store" } });
+  } catch { return NextResponse.json({ error: "Confirmation en attente. Réessayez." }, { status: 503 }); }
 }

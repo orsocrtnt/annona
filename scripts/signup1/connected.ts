@@ -3,7 +3,9 @@ import { dirname, resolve } from "node:path";
 import { createHash as nodeCreateHash, randomUUID } from "node:crypto";
 import { prisma } from "../../src/services/prisma/client";
 import { createSignupJourney, processFakeSignupPayment } from "../../src/domains/signup/signup.service";
-import { getCompanyOnboardingStatus } from "../../src/domains/onboarding/onboarding.service";
+import { getCompanyOnboardingStatus, resolveOnboardingLoginPath, updateOnboardingPreference } from "../../src/domains/onboarding/onboarding.service";
+import { DEFAULT_BILLING_SETTINGS } from "../../src/lib/validations/billing-settings";
+import { DEFAULT_DISPATCH_SETTINGS } from "../../src/lib/validations/dispatch-settings";
 import { processOperationJob } from "../../src/domains/operations/operation-job.service";
 
 const output = resolve(process.argv[2] ?? "outputs/signup1/connected.json");
@@ -84,16 +86,23 @@ try {
 
   const admin = await prisma.user.findUniqueOrThrow({ where: { authId: `auth-${run}-monthly` } });
   userIds.push(admin.id);
+  const onboardingAdmin = { companyId: admin.companyId, role: { systemRole: "COMPANY_ADMIN" }, settings: admin.settings };
+  const initialRedirect = await resolveOnboardingLoginPath(onboardingAdmin, "/dashboard");
+  if (initialRedirect !== "/onboarding") throw new Error("SIGNUP_ONBOARDING_REDIRECT_FAILED");
   const client = await prisma.user.create({ data: { authId: `auth-${run}-client`, email: `${run}-client@example.test`, firstName: "Client", lastName: "Test", status: "ACTIVE", roleId: clientRole.id, companyId: activated.companyId } });
   const driver = await prisma.user.create({ data: { authId: `auth-${run}-driver`, email: `${run}-driver@example.test`, firstName: "Livreur", lastName: "Test", status: "ACTIVE", roleId: driverRole.id, companyId: activated.companyId } });
   userIds.push(client.id, driver.id);
-  await prisma.company.update({ where: { id: activated.companyId }, data: { settings: { deliveryCategories: { STANDARD: true }, billing: { minimumPrice: 10 }, dispatchRules: { enabled: false } } } });
+  await prisma.company.update({ where: { id: activated.companyId }, data: { settings: { deliveryCategories: { STANDARD: true, COURIER: false, SPECIAL_MISSION: false }, billing: DEFAULT_BILLING_SETTINGS, dispatchRules: DEFAULT_DISPATCH_SETTINGS } } });
   const order = await prisma.order.create({ data: { reference: `SIGNUP-${run}`, status: "DELIVERED", totalAmount: 10, companyId: activated.companyId, customerId: client.id, customerEmail: client.email, shippingAddress: "2 rue du Test", shippingCity: "Paris", shippingPostalCode: "75002" } });
   orderIds.push(order.id);
   const delivery = await prisma.delivery.create({ data: { reference: `SIGNUP-LIV-${run}`, status: "DELIVERED", address: "2 rue du Test", city: "Paris", postalCode: "75002", driverId: driver.id, driverName: "Livreur Test", companyId: activated.companyId, orderId: order.id, customerId: client.id, completedAt: new Date(), podOutcome: "DELIVERED", podNote: "Preuve fictive SIGNUP-1", podCapturedAt: new Date() } });
   deliveryIds.push(delivery.id);
+  await updateOnboardingPreference(activated.companyId, { step: "collaborators", skipped: true });
   const onboarding = await getCompanyOnboardingStatus(activated.companyId);
-  if (!onboarding.readyForInternalTest || onboarding.completedSteps !== onboarding.totalSteps) throw new Error("SIGNUP_ONBOARDING_HANDOFF_FAILED");
+  if (!onboarding.readyForInternalTest || onboarding.completedSteps + onboarding.skippedSteps !== onboarding.totalSteps) throw new Error("SIGNUP_ONBOARDING_HANDOFF_FAILED");
+
+  const completedRedirect = await resolveOnboardingLoginPath(onboardingAdmin, "/dashboard");
+  if (completedRedirect !== "/dashboard") throw new Error("SIGNUP_ONBOARDING_COMPLETE_REDIRECT_FAILED");
 
   const annual = await prepare("PRO", "ANNUAL", "annual");
   const annualResult = await processFakeSignupPayment(annual.resumeToken, { eventKey: randomUUID(), outcome: "confirmed" });
@@ -132,7 +141,7 @@ try {
     monthly: { pending: pending.status, declined: declined.status, activated: activated.activated, replayIdempotent: replay.alreadyActivated },
     annual: { activated: annualResult.activated },
     welcomeEmail: { queuedDurably: true, idempotent: true, delivery: welcomeMode, transportMode: process.env.EMAIL_DELIVERY_MODE ?? "disabled" },
-    onboarding: { completedSteps: onboarding.completedSteps, totalSteps: onboarding.totalSteps, firstDelivery: true },
+    onboarding: { initialRedirect, completedRedirect, completedSteps: onboarding.completedSteps, skippedSteps: onboarding.skippedSteps, totalSteps: onboarding.totalSteps, firstDelivery: true },
     concurrency: { successes: successes.length, failures: failures.length, companiesWithSameSiren: sirenCompanyCount },
     isolation: { distinctCompanies: new Set(companyIds).size === companyIds.length },
   };

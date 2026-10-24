@@ -4,11 +4,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { prisma } from "../../src/services/prisma/client";
-import { getCompanyOnboardingStatus } from "../../src/domains/onboarding/onboarding.service";
+import { getCompanyOnboardingStatus, updateOnboardingCompanyProfile, updateOnboardingPreference } from "../../src/domains/onboarding/onboarding.service";
 import { createClientOrder } from "../../src/domains/order/order.service";
 import { assignDeliveryToDriver, updateDeliveryStatusByDriver } from "../../src/domains/delivery/delivery.service";
 import { acknowledgeDeliveryMissionByDriver } from "../../src/domains/delivery/acknowledge-delivery-mission.service";
 import { startDeliveryMissionByDriver } from "../../src/domains/delivery/start-delivery-mission.service";
+import { activateManualPilot } from "../../src/domains/saas/saas.service";
+import { validatePreproductionEnvironment } from "../ci/verify-preproduction-env";
 import { DEFAULT_BILLING_SETTINGS } from "../../src/lib/validations/billing-settings";
 import { DEFAULT_DISPATCH_SETTINGS } from "../../src/lib/validations/dispatch-settings";
 
@@ -64,6 +66,8 @@ async function waitForFixtureJobs(companyId: string) {
 }
 
 async function run() {
+  assert.deepEqual(validatePreproductionEnvironment(process.env), [], "PREPRODUCTION_ISOLATION_FAILED");
+  assert.equal(process.env.EMAIL_DELIVERY_MODE, "disabled", "EMAIL_MUST_BE_DISABLED");
   await cleanup();
   const startedAt = performance.now();
   const roles = await roleIds();
@@ -82,8 +86,12 @@ async function run() {
       },
     },
   });
+  await activateManualPilot({ companyId: company.id, startsAt: new Date(),
+    endsAt: new Date(Date.now() + 86_400_000), features: [], limits: { admins: 1, drivers: 1, dispatchers: 1, monthlyOrders: 10 } });
+  await updateOnboardingCompanyProfile(company.id, { name: "ONBOARD-1 — entreprise fictive", email: `contact@${fixtureKey}.invalid`, phone: "", address: "1 rue du Test", city: "Paris", country: "FR" });
+  await updateOnboardingPreference(company.id, { step: "collaborators", skipped: true });
   const afterConfiguration = await getCompanyOnboardingStatus(company.id);
-  assert.equal(afterConfiguration.completedSteps, 2);
+  assert.equal(afterConfiguration.completedSteps, 3);
   const configurationMs = performance.now() - configStartedAt;
 
   const accountsStartedAt = performance.now();
@@ -124,7 +132,7 @@ async function run() {
   ]);
   assert.ok(admin.id);
   const afterAccounts = await getCompanyOnboardingStatus(company.id);
-  assert.equal(afterAccounts.completedSteps, 5);
+  assert.equal(afterAccounts.completedSteps, 6);
   const accountsMs = performance.now() - accountsStartedAt;
 
   const orderStartedAt = performance.now();
@@ -147,7 +155,7 @@ async function run() {
     { idempotencyKey: `${fixtureKey}:order` }
   );
   const afterOrder = await getCompanyOnboardingStatus(company.id);
-  assert.equal(afterOrder.completedSteps, 6);
+  assert.equal(afterOrder.completedSteps, 7);
   const createOrderMs = performance.now() - orderStartedAt;
 
   const deliveryStartedAt = performance.now();
@@ -170,8 +178,13 @@ async function run() {
     podPhotoPath: `${company.id}/${delivery.id}-${randomUUID()}.png`,
   });
   const finalStatus = await getCompanyOnboardingStatus(company.id);
-  assert.equal(finalStatus.completedSteps, 7);
+  assert.equal(finalStatus.completedSteps, 8);
   assert.equal(finalStatus.readyForInternalTest, true);
+  assert.equal(finalStatus.skippedSteps, 1);
+  const resumed = await getCompanyOnboardingStatus(company.id);
+  assert.deepEqual(resumed, finalStatus);
+  await assert.rejects(updateOnboardingPreference(company.id, { step: "firstOrder", skipped: true }));
+  assert.deepEqual(await getCompanyOnboardingStatus(company.id), finalStatus);
   await waitForFixtureJobs(company.id);
   const completeDeliveryMs = performance.now() - deliveryStartedAt;
 
@@ -197,6 +210,10 @@ async function run() {
       realInvitationEmail: false,
       realPilot: false,
       initialImport: "not-offered",
+      persistedOptionalChoice: true,
+      freshServerReadIdentical: true,
+      invalidPreferenceNoMutation: true,
+      pilotSaasAccess: true,
     },
   };
 }

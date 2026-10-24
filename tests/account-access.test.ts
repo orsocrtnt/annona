@@ -171,6 +171,7 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
         getUser: async () => ({ data: { user: authUser } }),
       } }) },
       "@/services/supabase/admin": { createAdminClient: () => assert.fail("unexpected admin call") },
+      "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
       "@/domains/auth/auth.service": { ...authService, syncUserFromSupabase: async () => structuredClone(current) },
       "@/domains/user/user.service": { ...userService, getUserPermissions: async () => userService.extractPermissionSlugs(current) },
       "@/lib/demo/constants": constants, "@/lib/demo/persona-cookie": {},

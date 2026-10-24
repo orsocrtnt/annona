@@ -185,6 +185,7 @@ test("connexion : e-mail non confirmé refusé sans appel administrateur", async
     "@/lib/auth/account-access": access, "@/lib/validations/auth": validation,
     "@/lib/auth/normalize-email": { normalizeEmail: (s: string) => s.trim().toLowerCase() },
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: async () => ({ data: { user: null }, error: { code: "email_not_confirmed" } }) } }) },
+    "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
     "@/domains/auth/auth.service": {}, "@/domains/user/user.service": {},
     "@/lib/demo/constants": demo, "@/lib/demo/persona-cookie": {},
     "@/domains/demo/demo-auth.service": {}, "@/domains/demo/demo-scenario.service": {}, "@/domains/demo/demo-provision.service": {},

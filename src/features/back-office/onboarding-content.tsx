@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/loader";
+import { CompanyOnboardingProfile } from "@/features/back-office/onboarding-company-profile";
+import { useAuthStore } from "@/stores/auth.store";
 import type { CompanyOnboardingStatus } from "@/domains/onboarding/onboarding.service";
 
 async function fetchOnboardingStatus(): Promise<CompanyOnboardingStatus> {
@@ -17,6 +19,21 @@ async function fetchOnboardingStatus(): Promise<CompanyOnboardingStatus> {
 }
 
 export function OnboardingContent() {
+  const queryClient = useQueryClient();
+  const readOnly = useAuthStore((state) => state.saas?.canMutate === false);
+  const preference = useMutation({
+    mutationFn: async (skipped: boolean) => {
+      const response = await fetch("/api/onboarding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step: "collaborators", skipped }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Impossible d’enregistrer votre choix");
+      return payload.data as CompanyOnboardingStatus;
+    },
+    onSuccess: (status) => queryClient.setQueryData(["company", "onboarding"], status),
+  });
   const { data, isLoading, error } = useQuery({
     queryKey: ["company", "onboarding"],
     queryFn: fetchOnboardingStatus,
@@ -33,7 +50,7 @@ export function OnboardingContent() {
     );
   }
 
-  const progress = Math.round((data.completedSteps / data.totalSteps) * 100);
+  const progress = Math.round(((data.completedSteps + data.skippedSteps) / data.totalSteps) * 100);
 
   return (
     <div className="space-y-6">
@@ -42,7 +59,9 @@ export function OnboardingContent() {
         <h1 className="text-2xl font-semibold tracking-tight">Première livraison</h1>
         <p className="mt-1 max-w-3xl text-muted-foreground">
           Suivez ces étapes avec des données fictives. TutelLiv calcule l’avancement depuis les
-          comptes, réglages, commandes et livraisons réellement présents dans votre entreprise.
+          comptes actifs, réglages, commandes et livraisons réellement présents dans votre entreprise.
+          Les données confirmées et les choix facultatifs sont conservés après déconnexion.
+          Une invitation en attente ne valide pas un compte actif.
         </p>
       </div>
 
@@ -52,7 +71,7 @@ export function OnboardingContent() {
             <div>
               <CardTitle className="text-base">Avancement</CardTitle>
               <CardDescription>
-                {data.completedSteps} étape(s) sur {data.totalSteps}
+                {data.completedSteps} étape(s) terminée(s), {data.skippedSteps} passée(s) sur {data.totalSteps}
               </CardDescription>
             </div>
             <span className="text-2xl font-semibold tabular-nums">{progress}%</span>
@@ -78,11 +97,15 @@ export function OnboardingContent() {
         </CardContent>
       </Card>
 
+      {readOnly && <Alert><AlertDescription>Ce compte est en lecture seule. Votre avancement reste consultable.</AlertDescription></Alert>}
+      <CompanyOnboardingProfile key={JSON.stringify(data.companyProfile)} profile={data.companyProfile} readOnly={readOnly} />
+      {preference.error && <Alert variant="destructive" role="alert"><AlertDescription>{preference.error.message}</AlertDescription></Alert>}
       <div className="space-y-3" aria-label="Étapes de démarrage">
         {data.steps.map((step, index) => (
           <Card
             key={step.key}
             data-testid="onboarding-step"
+            data-step={step.key}
             className={step.complete ? "border-border" : "border-foreground/30"}
           >
             <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
@@ -94,12 +117,17 @@ export function OnboardingContent() {
                 )}
                 <div className="min-w-0">
                   <p className="font-medium">
-                    {index + 1}. {step.title}
-                    <span className="sr-only"> — {step.complete ? "terminée" : "à faire"}</span>
+                    {index + 1}. {step.title}{step.optional && " (facultatif)"}
+                    <span className="sr-only"> — {step.complete ? "terminée" : step.skipped ? "passée" : "à faire"}</span>
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">{step.description}</p>
                 </div>
               </div>
+              {step.optional && !step.complete && (
+                <Button variant="ghost" size="sm" disabled={readOnly || preference.isPending} onClick={() => preference.mutate(!step.skipped)}>
+                  {step.skipped ? "Reprendre cette étape" : "Passer cette étape"}
+                </Button>
+              )}
               <Button variant={step.complete ? "outline" : "brand"} size="sm" asChild>
                 <Link href={step.href}>
                   {step.complete ? "Revoir" : step.action}
@@ -116,8 +144,9 @@ export function OnboardingContent() {
         <AlertTitle>Limites du pilote interne</AlertTitle>
         <AlertDescription className="space-y-1">
           <p>
-            Les comptes peuvent être préparés, mais la réception des invitations par e-mail reste
-            à valider lorsque l’expéditeur et le domaine seront configurés.
+            Invitez les nouveaux clients, livreurs et collaborateurs depuis la gestion des comptes.
+            Pour un compte déjà présent, utilisez son accès existant ; une nouvelle invitation
+            ne modifie ni son entreprise ni ses droits. La réception réelle des e-mails reste à valider avec le pilote.
           </p>
           <p>
             Aucun import initial n’est proposé aujourd’hui : commencez avec des comptes et commandes

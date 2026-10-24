@@ -227,11 +227,17 @@ export async function resolveCompanySaasAccess(
   const periodEnded = Boolean(
     subscription.currentPeriodEnd && subscription.currentPeriodEnd.getTime() <= at.getTime()
   );
+  const billingSnapshot = subscription.snapshot && typeof subscription.snapshot === "object" && !Array.isArray(subscription.snapshot) ? subscription.snapshot : {};
+  const failedAt = typeof billingSnapshot.billingFailedAt === "string" ? Date.parse(billingSnapshot.billingFailedAt) : NaN;
+  const overdueDays = (at.getTime() - failedAt) / 86_400_000;
+  const commercialStatus = subscription.kind === "COMMERCIAL" && Number.isFinite(failedAt) && subscription.status !== "CANCELLED"
+    ? overdueDays >= 30 ? "READ_ONLY" : overdueDays >= 14 ? "RESTRICTED" : "PAST_DUE"
+    : subscription.status;
   const status = subscription.kind === "PILOT" && periodEnded
     ? "EXPIRED"
     : subscription.cancelAtPeriodEnd && periodEnded
       ? "CANCELLED"
-      : subscription.status;
+      : commercialStatus;
   const canMutate = !["PENDING_PAYMENT", "READ_ONLY", "CANCELLED", "EXPIRED"].includes(status);
   const canCreateOrders = canMutate && status !== "RESTRICTED";
 
@@ -707,13 +713,14 @@ export async function recordOrderCreatedUsage(
       createdAt: occurredAt,
     },
   });
-  await db.$executeRaw`
+  const updated = await db.$executeRaw`
     UPDATE "saas_usage_periods"
     SET
       "order_count" = "order_count" + 1,
       "overage_count" = GREATEST(("order_count" + 1) - "included_orders", 0),
       "updated_at" = CURRENT_TIMESTAMP
-    WHERE "id" = ${period.id}
+    WHERE "id" = ${period.id} AND "closed_at" IS NULL
   `;
+  if (updated !== 1) throw new Error("SAAS_USAGE_PERIOD_CLOSED");
   return event;
 }

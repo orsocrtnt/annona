@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       }
     }
     const catalog = await catalogPromise;
-    const response = NextResponse.json({ catalog, journey }, { headers: noStore });
+    const response = NextResponse.json({ catalog, journey, paymentAdapter: process.env.SIGNUP_PAYMENT_ADAPTER === "stripe-sandbox" ? "stripe-sandbox" : "fake" }, { headers: noStore });
     if (staleResume) clearSignupResumeCookie(response);
     return response;
   } catch (error) {

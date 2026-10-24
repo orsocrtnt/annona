@@ -54,6 +54,7 @@ function stageFromJourney(journey: Journey | null): Stage {
 }
 
 export function SignupWizard() {
+  const [paymentAdapter, setPaymentAdapter] = useState("fake");
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [stage, setStage] = useState<Stage>("plan");
@@ -74,6 +75,7 @@ export function SignupWizard() {
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error ?? "Impossible de charger l'inscription.");
     setCatalog(payload.catalog);
+    setPaymentAdapter(payload.paymentAdapter ?? "fake");
     setJourney(payload.journey);
     if (payload.journey) {
       setPlanCode(payload.journey.planCode);
@@ -101,6 +103,19 @@ export function SignupWizard() {
     const interval = window.setInterval(updateCountdown, 1000);
     return () => window.clearInterval(interval);
   }, [journey?.emailResendAvailableAt, journey?.status]);
+
+  useEffect(() => {
+    if (paymentAdapter !== "stripe-sandbox" || journey?.status !== "PAYMENT_PENDING") return;
+    let stopped = false;
+    const timer = window.setInterval(async () => {
+      try {
+        const response = await fetch("/api/signup/payment", { cache: "no-store" });
+        const result = await response.json();
+        if (!stopped && result.confirmed) await load();
+      } catch { /* Network interruption leaves the durable journey available. */ }
+    }, 5000);
+    return () => { stopped = true; window.clearInterval(timer); };
+  }, [paymentAdapter, journey?.status, load]);
 
   const activePlan = catalog?.plans.find((plan) => plan.code === planCode);
   const options = useMemo(() => catalog?.options.filter((option) =>
@@ -228,7 +243,8 @@ export function SignupWizard() {
       const response = await fetch("/api/signup/payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventKey, outcome: "confirmed" }) });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Paiement fictif indisponible.");
-      if (payload.redirectTo) window.location.assign(payload.redirectTo);
+      if (payload.checkoutUrl) window.location.assign(payload.checkoutUrl);
+      else if (payload.redirectTo) window.location.assign(payload.redirectTo);
       else await load();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Paiement fictif indisponible."); }
     finally { setSubmitting(false); }
@@ -350,8 +366,9 @@ export function SignupWizard() {
             <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Confirmez votre adresse e-mail</h1><p className="mt-3 text-muted-foreground">Nous avons envoyé un lien à <strong className="text-foreground">{journey.email}</strong>. Votre entreprise n’est pas encore créée.</p><div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap"><Button variant="brand" loading={submitting} onClick={() => { setSubmitting(true); setError(null); load().then((next) => { if (next?.status === "EMAIL_PENDING") setError("La confirmation n’est pas encore enregistrée. Ouvrez le lien reçu par e-mail, puis actualisez."); }).catch(() => setError("Vérification indisponible.")).finally(() => setSubmitting(false)); }}>J’ai confirmé, actualiser</Button><Button variant="outline" disabled={submitting || resendSeconds > 0} onClick={() => void resendVerificationEmail()}>{resendSeconds > 0 ? `Renvoyer l’e-mail dans ${resendSeconds} s` : "Renvoyer l’e-mail"}</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button variant="ghost" disabled={submitting} onClick={() => void goToStage("plan")}>Revoir la formule</Button></div></div>
           )}
 
+          {journey?.activated && <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Votre espace est prêt</h1><p className="mt-3">Le paiement a été confirmé par le serveur.</p><Link className="mt-6 inline-block underline" href="/login?redirect=/onboarding">Se connecter et commencer</Link></div>}
           {stage === "payment" && journey?.emailVerified && !journey.activated && (
-            <div className="mx-auto max-w-2xl"><h1 className="text-2xl font-semibold">Confirmez l’abonnement en environnement test</h1><p className="mt-2 text-muted-foreground">Aucun débit réel n’est effectué. Vous pouvez encore corriger l’offre ou les informations tant que ce paiement n’est pas confirmé.</p><div className="mt-6 rounded-xl border bg-muted/20 p-5"><div className="flex justify-between"><span>Total HT</span><strong>{money(journey.quote.totalHtCents, journey.quote.currency)}</strong></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>TVA indicative</span><span>{money(journey.quote.vatCents, journey.quote.currency)}</span></div><div className="mt-4 flex justify-between border-t pt-4 text-lg"><span>Total TTC</span><strong>{money(journey.quote.totalTtcCents, journey.quote.currency)}</strong></div><p className="mt-4 text-xs text-muted-foreground">{journey.quote.includedMonthlyOrders.toLocaleString("fr-FR")} commandes incluses par mois, puis {money(journey.quote.orderOverageUnitPriceCents)} HT par commande supplémentaire. Les dépassements restent non bloquants.</p></div><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" onClick={() => void goToStage("plan")}>Modifier l’offre</Button><Button variant="outline" onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button className="w-full" variant="brand" size="lg" loading={submitting} onClick={() => void pay()}>Confirmer le paiement fictif et activer</Button></div></div>
+            <div className="mx-auto max-w-2xl"><h1 className="text-2xl font-semibold">Confirmez l’abonnement en environnement test</h1><p className="mt-2 text-muted-foreground">Aucun débit réel n’est effectué. Les choix sont verrouillés dès l’ouverture du paiement Stripe pour éviter une différence avec le devis accepté.</p><div className="mt-6 rounded-xl border bg-muted/20 p-5"><div className="flex justify-between"><span>Total HT</span><strong>{money(journey.quote.totalHtCents, journey.quote.currency)}</strong></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>TVA indicative</span><span>{money(journey.quote.vatCents, journey.quote.currency)}</span></div><div className="mt-4 flex justify-between border-t pt-4 text-lg"><span>Total TTC</span><strong>{money(journey.quote.totalTtcCents, journey.quote.currency)}</strong></div><p className="mt-4 text-xs text-muted-foreground">{journey.quote.includedMonthlyOrders.toLocaleString("fr-FR")} commandes incluses par mois, puis {money(journey.quote.orderOverageUnitPriceCents)} HT par commande supplémentaire. Les dépassements restent non bloquants.</p></div><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" disabled={!choicesEditable} onClick={() => void goToStage("plan")}>Modifier l’offre</Button><Button variant="outline" disabled={!choicesEditable} onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button className="w-full" variant="brand" size="lg" loading={submitting} onClick={() => void pay()}>{paymentAdapter === "stripe-sandbox" ? "Payer dans la sandbox Stripe" : "Confirmer le paiement fictif et activer"}</Button></div></div>
           )}
         </section>
       </div>
