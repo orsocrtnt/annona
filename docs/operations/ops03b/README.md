@@ -1,8 +1,8 @@
 # OPS-03B — Santé du service et procédure d'incident
 
-État de référence : 23 octobre 2026. Le diagnostic applicatif et le moniteur indépendant sont préparés sur la préproduction isolée. L'activation périodique attend uniquement l'autorisation du jeton d'automatisation Vercel nécessaire pour traverser la protection SSO sans rendre le site public.
+État de référence : 23 octobre 2026. Le diagnostic applicatif et le moniteur indépendant sont actifs sur la préproduction isolée. Un jeton d'automatisation dédié traverse la protection Vercel sans rendre le site public.
 
-Décision d'exploitation du 18 octobre 2026 : commencer par des alertes e-mail suivies par le propriétaire. Slack n'est pas nécessaire en V1. Le domaine et le destinataire opérationnel seront configurés avec EMAIL ; aucune alerte réelle n'est encore active.
+Décision d'exploitation du 18 octobre 2026 : commencer par des alertes e-mail suivies par le propriétaire. Slack n'est pas nécessaire en V1. Le canal webhook de recette est actif ; le domaine et le destinataire opérationnel seront configurés avec EMAIL avant les pilotes réels.
 
 ## Moniteur de préproduction
 
@@ -47,13 +47,13 @@ Pour les preuves photo, vérifier le bucket privé et une URL signée de fixture
 
 La migration additive a été appliquée à `tutelliv-preproduction`. Le schéma et ses fonctions sont inaccessibles à `PUBLIC`, `anon` et `authenticated`. Deux répétitions persistées ont produit un événement critique reçu par le canal de test en 101 à 145 ms ; le corps ne contenait ni secret, ni e-mail, ni donnée métier. La version finale ajoute une clé d'idempotence et limite les rappels.
 
-Le cron n'est pas activé et le retour à l'état sain n'est pas encore déclaré : la préproduction est protégée par Vercel Authentication et renvoie `302` à une sonde anonyme. Rendre l'alias public a été refusé afin de ne pas affaiblir l'accès. Il faut autoriser un jeton Vercel **Automation Bypass** dédié, conservé dans Vault, puis exécuter la répétition complète. Cette autorisation n'ouvre pas le site au public et peut être révoquée.
+La répétition complète a ensuite confirmé une baseline réelle saine, une panne fictive alertée en 80 ms et une reprise réelle alertée en 1 369 ms. Les deux appels réels ont reçu HTTP 200 sur les sondes publique et profonde ; base, Storage et file étaient `ok`. L'état final est sain et un seul job `ops03b-preproduction-health` est actif toutes les trente minutes. Le jeton Vercel **Automation Bypass** dédié reste dans Vault et peut être révoqué.
 
 ## Validation avant mise en vente
 
 Sur une préproduction distincte, brancher le webhook ou le moniteur retenu, provoquer successivement une panne de dépendance et une tâche terminale fictive, puis confirmer : réception de l'alerte, absence de secret, diagnostic, correction et retour à l'état sain. Mesurer le délai de détection et nommer le responsable du canal.
 
-OPS-03B reste ouverte tant que la sonde protégée n'a pas confirmé le retour sain et que le cron n'est pas actif. OPS-03A couvre séparément la sauvegarde et la restauration ; une sonde saine ne prouve pas qu'une restauration est possible.
+OPS-03B est terminée. OPS-03A couvre séparément la sauvegarde et la restauration ; une sonde saine ne prouve pas qu'une restauration est possible.
 
 ## Arrêt et retour arrière
 

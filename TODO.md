@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**50 tâches terminées sur 78 — 64 %**
+**51 tâches terminées sur 78 — 65 %**
 
-`█████████████░░░░░░░` · 28 tâches restantes
+`█████████████░░░░░░░` · 27 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -25,17 +25,17 @@ Mise à jour : 23 octobre 2026. Source unique des priorités du projet. Cette ve
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **OPS-03B** | Rendre les premiers pilotes supervisables et les pannes actionnables. | ENV-1 et la préproduction sont terminées ; choix du canal réel seulement pour l'activation finale. | GPT‑6.1 Sol · effort élevé |
-| 2 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain et achever le raccord à SIGNUP-1. | L'inscription autonome remet déjà le compte activé à l'assistant ; la validation pilote reste distincte. | GPT‑6.1 Sol · effort élevé |
-| 3 | **SAAS-01B — Stripe sandbox** | Remplacer l'adaptateur fictif déterministe par des événements Stripe de test idempotents. | SIGNUP-1 et le noyau SAAS-01A sont terminés ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
-| 4 | **PERF-02** | Mesurer les paliers de capacité qui conditionnent coûts et fiabilité. | Harnais borné sur préproduction ; aucune charge payante sans accord. | GPT‑6 Astra · effort élevé |
-| 5 | **COST-1 — validation mesurée** | Remplacer les hypothèses documentaires par les mesures PERF-02/pilotes avant de figer les marges. | Phase documentaire terminée ; attend PERF-02 et données pilotes. | GPT‑6.1 Sol · effort moyen |
+| 1 | **ONBOARD-1 — tranche pilote** | Rendre la configuration initiale reprenable avant les trois essais terrain et achever le raccord à SIGNUP-1. | L'inscription autonome remet déjà le compte activé à l'assistant ; la validation pilote reste distincte. | GPT‑6.1 Sol · effort élevé |
+| 2 | **SAAS-01B — Stripe sandbox** | Remplacer l'adaptateur fictif déterministe par des événements Stripe de test idempotents. | SIGNUP-1 et le noyau SAAS-01A sont terminés ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
+| 3 | **PERF-02** | Mesurer les paliers de capacité qui conditionnent coûts et fiabilité. | Harnais borné sur préproduction ; aucune charge payante sans accord. | GPT‑6 Astra · effort élevé |
+| 4 | **COST-1 — validation mesurée** | Remplacer les hypothèses documentaires par les mesures PERF-02/pilotes avant de figer les marges. | Phase documentaire terminée ; attend PERF-02 et données pilotes. | GPT‑6.1 Sol · effort moyen |
+| 5 | **EMAIL — transport de test** | Fermer invitations, récupération et modèles avant l'activation du domaine réel. | Le code peut avancer sans domaine ; l'envoi pilote réel attend l'expéditeur vérifié. | GPT‑6.1 Sol · effort moyen |
 
 COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02. SIGNUP-1 et les interfaces serveur de SAAS-01A sont désormais stabilisées pour SAAS-01B et la fin d'ONBOARD-1.
 
 ### Chemins critiques
 
-- **Pilotes :** DEMO-2 terminé ; OPS-03B + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
+- **Pilotes :** DEMO-2 et OPS-03B terminés ; tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
 - **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A est terminé → SAAS-01B sandbox → SAAS-03 et SAAS-04 → SALES-1 et SAAS-02 → GROWTH-1 intégré → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
 - **Validation économique :** COST-1 documentaire est terminée ; PERF-02 et les pilotes doivent maintenant remplacer les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
 - **Design :** DESIGN-1 fixe les composants communs, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni SAAS-01A/SIGNUP-1 ni les portes techniques des pilotes.
@@ -113,7 +113,7 @@ Ces réussites ne valident pas le GPS terrain, la charge, la conformité du PDF 
 
 Priorités réconciliées le 22 octobre 2026 pour les tâches encore ouvertes. Le niveau indique l'ordre du travail interne ; les validations extérieures sont suivies séparément et ne doivent pas immobiliser les tâches indépendantes :
 
-- **P0 — Débloquer les pilotes et poursuivre le libre-service :** OPS-03B puis tranche pilote d'ONBOARD-1. La phase documentaire COST-1, DEMO-2, SIGNUP-1, SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
+- **P0 — Débloquer les pilotes et poursuivre le libre-service :** tranche pilote d'ONBOARD-1. La phase documentaire COST-1, DEMO-2, OPS-03B, SIGNUP-1, SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
 - **P1 — Fermer la fiabilité et le libre-service testable :** SEC-05, EMAIL, SAAS-01B, SAAS-03, SAAS-04, SALES-1, PERF-02, ONBOARD-1.
 - **P2 — Expérience et préparation opérationnelle :** MAP-3, DESIGN-1, UX-03, UX-04, GROWTH-1, ADMIN-1, V1-GO, OFFER-1.
 - **P3 — Validation extérieure et terrain :** LEGAL-1, DATA-02, MOB-01C, PROD-02, PROD-04, PILOT-1, PILOT-2, SAAS-02, RELEASE-1.
@@ -123,7 +123,7 @@ Les dépendances de sécurité et de validation priment sur le numéro : une tâ
 
 1. Terminé : DEMO-2 rend la démo rapide et réutilisable grâce au pool isolé et au recyclage asynchrone.
 2. Terminé : SAAS-01A fournit le catalogue versionné, le registre pilote/souscription, les droits, options, quotas et compteurs appliqués côté serveur.
-3. L'estimation documentaire COST-1 étant terminée, mettre en place la première tranche d'alertes OPS-03B ; conserver les mesures de coûts pour PERF-02.
+3. Terminé : OPS-03B surveille la préproduction protégée toutes les trente minutes et a validé l'alerte de panne puis de reprise ; conserver les mesures de coûts pour PERF-02.
 4. Terminé : SIGNUP-1 orchestre offre, compte, vérification e-mail, faux paiement déterministe, activation idempotente et reprise après interruption.
 5. Brancher Stripe uniquement dans son environnement fictif avec SAAS-01B, puis développer SAAS-03, SAAS-04 et la tranche théorique de SALES-1.
 6. Fermer ONBOARD-1 pour les comptes pilotes créés manuellement, puis le relier au parcours autonome ; terminer en parallèle les e-mails, la capacité et les essais GPS physiques dès que leurs ressources sont disponibles.
@@ -649,7 +649,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Limite connue de lancement : le plan Free ne garantit pas le RPO interne d'une heure et les sauvegardes de base n'incluent pas Storage. RELEASE-1 devra valider une copie chiffrée hors site au moins horaire ou une option fournisseur payante approuvée, sans présenter l'objectif comme une garantie contractuelle.
 
-- [ ] **OPS-03B — Installer diagnostics et alertes utiles.** Suivre erreurs API, jobs, uploads, disponibilité et actions sensibles sans secrets ; procédure d’incident et responsable.
+- [x] **OPS-03B — Installer diagnostics et alertes utiles.** Suivre erreurs API, jobs, uploads, disponibilité et actions sensibles sans secrets ; procédure d’incident et responsable.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -665,7 +665,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Décision du 2026-10-18 : démarrer avec des alertes par e-mail, suivies initialement par le propriétaire. Couvrir indisponibilité, base, sauvegarde, tâches critiques, sécurité et paiement futur ; aucun Slack requis en V1. Le destinataire opérationnel et le domaine d'envoi restent à configurer avec EMAIL.
 
-  Avancement préproduction du 2026-10-23 : moniteur indépendant préparé dans Supabase avec journal privé 90 jours, secrets dans Vault, transitions panne/reprise, rappels bornés et idempotence. Deux répétitions de panne fictive ont produit des alertes critiques reçues par le canal de test en 101 à 145 ms, sans secret, e-mail, identifiant client ni mutation métier. L'alias stable de préproduction reste protégé par Vercel Authentication ; le cron n'est volontairement pas activé tant qu'un jeton Automation Bypass limité au moniteur n'est pas explicitement autorisé. Le contournement public de l'alias a été refusé. Reste à autoriser ce jeton, vérifier baseline + reprise réelles puis activer la sonde toutes les trente minutes. Rapport : `docs/rapports/2026-10-23/ops03b-preproduction-monitor.md`.
+  Terminé le 2026-10-23 : moniteur indépendant actif dans Supabase toutes les trente minutes, avec journal privé 90 jours, quatre secrets dans Vault, transitions panne/reprise, rappels bornés et idempotence. Le jeton Vercel Automation Bypass dédié traverse la protection sans rendre la préproduction publique. Baseline réelle saine (HTTP public/profond 200, base/Storage/file `ok`), panne fictive alertée en 80 ms puis reprise réelle alertée en 1 369 ms ; état final sain, un seul cron actif, aucun accès `anon`/`authenticated`, aucune donnée métier mutée. Le canal webhook reste un canal de recette ; EMAIL le remplacera avant pilotes réels. Rapport : `docs/rapports/2026-10-23/ops03b-preproduction-monitor.md`.
 
 - [x] **SUPPORT-1 — Fermer la boucle du support.** Vérifier puis compléter réception staff, réponse, statut et historique ; définir canal réellement suivi et délai annoncé.
 
@@ -1221,3 +1221,5 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-23 — SIGNUP-1 : confirmation Auth orpheline rattachée au rafraîchissement, et retour arrière autorisé tant qu'aucun utilisateur TutelLiv n'existe encore pour ce compte.
 
 - 2026-10-23 — SIGNUP-1 vérifiée après reprise externe : 315 tests, types/lint, garde préproduction, scanner de secrets, build de 106 pages, CI distante, Preview et recette connectée passent avec nettoyage exact. Le clic réel Entreprise → Options → Entreprise conserve les saisies ; un saut vers une étape future sans enregistrer les options, découvert pendant la recette, est désormais interdit. Supabase conserve un intervalle fournisseur de 60 s tant qu'aucun SMTP personnalisé n'est configuré.
+
+- 2026-10-23 — OPS-03B terminée : la préproduction protégée est sondée depuis Supabase toutes les trente minutes grâce à un jeton Vercel dédié conservé dans Vault. Baseline réelle HTTP 200 et dépendances `ok`, panne fictive alertée en 80 ms, reprise réelle alertée en 1 369 ms, état final sain et un seul cron actif. Le schéma privé est inaccessible à `anon` et `authenticated`, le scanner trouve zéro secret et aucune donnée métier n'a été mutée. Le canal e-mail réel reste suivi séparément dans EMAIL. Rapport `docs/rapports/2026-10-23/ops03b-preproduction-monitor.md`.

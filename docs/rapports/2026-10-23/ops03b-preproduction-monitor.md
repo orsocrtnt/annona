@@ -13,6 +13,10 @@ Date : 23 octobre 2026.
 - Deux répétitions persistées livrées en 101 à 145 ms ; aucune donnée métier modifiée.
 - Clé d'idempotence ajoutée et rappels d'une panne persistante limités à une fois toutes les deux heures.
 - Responsable initial désigné : propriétaire de TutelLiv. Le canal e-mail définitif reste rattaché au chantier EMAIL.
+- Jeton Vercel Automation Bypass dédié créé après autorisation explicite, conservé uniquement dans Vault ; la préproduction reste protégée.
+- Baseline réelle saine : sondes publique et profonde HTTP 200, base, Storage et file `ok`.
+- Répétition finale : panne fictive alertée en 80 ms, puis reprise réelle alertée en 1 369 ms.
+- Un seul job `ops03b-preproduction-health` actif toutes les trente minutes ; état final `healthy`.
 
 ## Contrôles de sécurité
 
@@ -20,11 +24,11 @@ Date : 23 octobre 2026.
 
 L'alias stable `tutelliv-preproduction.vercel.app` a été relié à la branche `preproduction`, mais Vercel Authentication le protège toujours. Un appel anonyme retourne `302` avant d'atteindre `/api/health`.
 
-## Blocage restant
+## Fermeture
 
-Le contournement public de l'alias a été refusé car il diminuerait la protection de toute la préproduction. L'alternative sûre est un jeton Vercel Automation Bypass dédié au moniteur, stocké dans Supabase Vault. Sa génération a aussi été arrêtée par le contrôle automatique tant que le propriétaire ne l'a pas explicitement autorisée.
+Le contournement public de l'alias a été refusé car il aurait diminué la protection de toute la préproduction. L'alternative sûre a été mise en place après autorisation : jeton dédié, révocable, non exposé et stocké dans Supabase Vault.
 
-Après autorisation, `npm run ops03b:rehearse-preproduction` doit obtenir successivement : baseline saine, alerte de panne reçue, diagnostic profond sain, alerte de reprise reçue, puis installation du job toutes les trente minutes. OPS-03B restera ouverte jusque-là.
+Les critères OPS-03B sont atteints : diagnostic réel sain, alerte de panne, alerte de reprise, responsable et procédure documentés, surveillance périodique active. L'activation d'un canal e-mail réel reste dans EMAIL et ne remet pas en cause la recette du canal de test.
 
 ## Preuves
 
