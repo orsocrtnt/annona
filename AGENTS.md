@@ -12,12 +12,19 @@
 3. Implémenter un changement ciblé et ajouter des tests pertinents pour les comportements métier modifiés.
 4. Lancer les vérifications adaptées, corriger, puis relancer celles qui ont échoué ou sont affectées.
 5. Mettre à jour `TODO.md` : état, résultat, commandes exécutées, limites et prochaine étape.
-6. Lire `TODO.md` et le contexte en Markdown dans le dépôt. Après leur modification, lancer `npm run todo:progress` si la TODO a changé, pousser seulement ces Markdown sur `preproduction`, puis republier les mêmes fichiers `.md` dans le dossier Drive `Contexte MD`. PDF, Word et Google Doc sont des archives. Les copies sous `work/` ne servent jamais de statut courant. Détail : `.cursor/rules/contexte-markdown.mdc`.
+6. Lire `TODO.md` et le contexte Markdown exclusivement dans le dépôt. Après modification de `TODO.md`, lancer `npm run todo:progress` ; mettre à jour les preuves et documents pertinents dans le dépôt. Les modifications Markdown autorisées se publient uniquement sur la branche GitHub `preproduction`, conformément à `.cursor/rules/contexte-markdown.mdc`. Ne jamais rechercher, lire, écrire ni republier ces documents sur Google Drive, Google Docs, Google Sheets ou Notion dans un workflow d'agent de développement.
 7. Continuer sur la prochaine tâche autorisée sans demander confirmation entre les étapes.
 - Depuis le 16 octobre 2026, le propriétaire demande d’enchaîner les tâches autorisées sans confirmation jusqu’à instruction contraire et de regrouper la revue pour plus tard. Une revue visuelle différée ne bloque pas une tâche indépendante suivante ; ne jamais contourner un vrai blocage listé ci-dessous.
 - Ne cocher une tâche que lorsque ses critères sont vérifiés ; ne jamais présenter un contrôle statique comme un test fonctionnel.
 - Une tâche commencée doit être menée jusqu’à ses critères, ses tests, sa documentation et sa case cochée, sauf blocage réel consigné.
 - Si une tâche bloque, noter la cause et poursuivre une tâche indépendante. Ne solliciter l'utilisateur que pour un accès indispensable, une action destructive, une décision produit/architecture majeure ou une ambiguïté réellement bloquante.
+
+## Contexte local obligatoire — aucune dépendance à Drive
+- Avant toute tâche : consulter `AGENTS.md`, `TODO.md`, `docs/README.md`, `docs/CONVENTIONS.md` et la documentation concernée dans `docs/`. La source de vérité technique est le dépôt `orsocrtnt/tutelliv-v2` sur `preproduction`, pas les copies Drive ni la TODO personnelle Notion.
+- Ne jamais invoquer une recherche ou une écriture dans Drive/Docs/Sheets/Notion pour « se remettre en contexte », mettre à jour une TODO, produire une preuve ou republier du Markdown. Aucun fichier hors dépôt ne doit être modifié par les agents. Les `outputs/` générés pour les tests locaux restent locaux et ne doivent pas être diffusés.
+- Si une donnée de décision ou un contrat n'est disponible qu'en dehors du dépôt : ne pas y accéder, ne pas inventer de contenu ni inférer une validation ; consigner précisément la pièce manquante et demander au fondateur de la traiter dans ChatGPT puis, si nécessaire, de fournir une version exploitable dans le dépôt. Poursuivre les travaux indépendants autorisés.
+- Pour une modification de comportement, consulter la documentation métier existante (`docs/DECISIONS_PRODUIT_COMMERCIALES.md`, `docs/SAAS_OFFERS_ARCHITECTURE.md`, `docs/legal/`, `docs/operations/`) sans transformer une hypothèse ou une version de travail en engagement commercial ou juridique.
+- Ne pas synchroniser les 45 actions personnelles Notion avec les 78 tâches techniques : périmètres différents. L'agent ne modifie que `TODO.md` pour le suivi technique.
 
 ## Routage autonome des modèles et maîtrise du quota
 - Suivre `.cursor/rules/tutelliv-model-router.mdc` pour toute tâche de la TODO.
