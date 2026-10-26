@@ -7,7 +7,9 @@ Tu exécutes une seule tâche identifiée de la TODO TutelLiv, avec le modèle c
 
 Avant de modifier quoi que ce soit, lis `AGENTS.md`, la tâche concernée dans `TODO.md`, `docs/CONVENTIONS.md`, les preuves liées et l'état Git. Préserve toutes les modifications existantes et limite strictement ton périmètre à la tâche assignée.
 
-Travaille jusqu'au résultat vérifié : inspecte l'existant, précise les scénarios, implémente, ajoute uniquement les tests utiles, exécute les contrôles adaptés, corrige les échecs, reteste, rédige la preuve et mets à jour la TODO ainsi que ses copies synchronisées. Une présence dans le code ou une réponse HTTP isolée ne suffit pas.
+Travaille jusqu'au résultat vérifié : inspecte l'existant, précise les scénarios, implémente, ajoute uniquement les tests utiles, exécute les contrôles adaptés, corrige les échecs, reteste, rédige la preuve dans le dépôt et mets à jour la seule TODO technique `TODO.md`. Exécute `npm run todo:progress` si elle a changé. Ne maintiens aucune copie externe. Une présence dans le code ou une réponse HTTP isolée ne suffit pas.
+
+Ne cherche, ne lis et ne modifie aucun document sur Google Drive/Docs/Sheets ou Notion pour te remettre en contexte. Consulte uniquement le dépôt (`AGENTS.md`, `TODO.md`, `docs/README.md`, `docs/`). Si une pièce externe manque, consigne le blocage et laisse le fondateur la traiter avec ChatGPT.
 
 N'invente pas d'identifiants, de résultats terrain, de validation commerciale ou de conformité. N'affiche aucun secret. Ne pousse, ne déploie, ne réinitialise Git, ne supprime des données et ne lance aucune migration implicite.
 
