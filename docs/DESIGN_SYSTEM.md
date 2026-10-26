@@ -1,5 +1,7 @@
 # Design System Tutelliv
 
+> **Direction créative provisoire validée en discussion le 26/10/2026 (DESIGN-1 encore ouvert).** Les maquettes Light « Soft Glass sobre » et Dark graphite professionnel sont les références de travail pour la landing page, fonctionnalités, tarifs et les trois espaces. Fond blanc cassé et menthe très discrète en Light ; graphite neutre et cartes anthracite en Dark ; vert émeraude mesuré pour les CTA, statuts et focus ; verre très subtil, bordures fines, typographie nette. Pas de néon, d'esthétique crypto, de dégradés agressifs ni de chiffres/témoignages fictifs. La palette bleue documentée ci-dessous est **historique**, non cible : ne pas l'implémenter comme nouvelle DA. Les tokens définitifs, l'accessibilité et les écrans n'ont pas encore été validés ni implémentés. Ne pas marquer DESIGN-1 terminé sur cette base.
+
 ## Philosophie
 
 Inspiré des références premium : Uber, Tesla, Stripe, Linear, Apple.
