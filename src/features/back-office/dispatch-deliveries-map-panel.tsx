@@ -1,6 +1,7 @@
 "use client";
 
 import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
+import { withoutRolePrefix } from "@/lib/format/person-labels";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -77,9 +78,15 @@ function DeliveryListItem({
           : "border-transparent bg-white/90 hover:border-[#e4e8e5] hover:bg-white"
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium">{delivery.reference}</span>
-        <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", status.pill)}>
+      {/* Le client (ou l'adresse) identifie la livraison ; la référence reste en petit. */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate font-medium text-foreground">
+            {withoutRolePrefix(delivery.customerName) || delivery.address}
+          </p>
+          <p className="text-xs tabular-nums text-muted-foreground">{delivery.reference}</p>
+        </div>
+        <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", status.pill)}>
           {status.label}
         </span>
       </div>
@@ -87,18 +94,7 @@ function DeliveryListItem({
         {delivery.deliveryCategory === "COURIER" ? "Course" : "Commande"}
       </Badge>
 
-      {delivery.deliveryCategory === "STANDARD" && delivery.customerName && (
-        <p className="mt-2 text-sm font-medium text-foreground">{delivery.customerName}</p>
-      )}
-
-      <p
-        className={cn(
-          "line-clamp-2 text-sm",
-          delivery.deliveryCategory === "STANDARD" && delivery.customerName ? "mt-1" : "mt-2"
-        )}
-      >
-        {delivery.address}
-      </p>
+      {delivery.customerName && <p className="mt-2 line-clamp-2 text-sm">{delivery.address}</p>}
 
       {delivery.pickups.length > 0 ? (
         <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
@@ -116,10 +112,12 @@ function DeliveryListItem({
         )
       )}
 
-      <MissionAcknowledgement {...delivery} />
-      {delivery.driverName && (
-        <p className="mt-2 text-xs text-muted-foreground">{delivery.driverName}</p>
-      )}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {delivery.driverName && (
+          <p className="text-xs text-muted-foreground">Livreur : {withoutRolePrefix(delivery.driverName)}</p>
+        )}
+        <MissionAcknowledgement {...delivery} compact />
+      </div>
 
       {purchasing && delivery.orderItems.length > 0 && (
         <div className="mt-3 space-y-1 rounded-lg bg-muted/40 p-2">
@@ -253,8 +251,8 @@ export function DispatchDeliveriesMapPanel({
             <p className="text-sm font-semibold text-foreground">Livraisons actives</p>
             {selectedDelivery ? (
               <p className="truncate text-xs text-muted-foreground">
+                {selectedDelivery.customerName ? `${withoutRolePrefix(selectedDelivery.customerName)} · ` : ""}
                 {selectedDelivery.reference}
-                {selectedDelivery.customerName ? ` · ${selectedDelivery.customerName}` : ""}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">

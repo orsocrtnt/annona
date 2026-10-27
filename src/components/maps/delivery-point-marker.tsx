@@ -151,6 +151,7 @@ export function DeliveryOverviewMarker({
   latitude,
   longitude,
   reference,
+  title,
   status,
   subtitle,
   showCallout: calloutAllowed = true,
@@ -159,6 +160,8 @@ export function DeliveryOverviewMarker({
   latitude: number;
   longitude: number;
   reference: string;
+  /** Étiquette lisible (client ou adresse) ; la référence sert à défaut. */
+  title?: string;
   status: DispatchMapStatusKey;
   subtitle?: string;
   /** Faux en vue éloignée : l'épingle seule, pour ne pas couvrir la carte de fiches. */
@@ -174,12 +177,12 @@ export function DeliveryOverviewMarker({
         className: "delivery-point-marker",
         html: `<div style="position:relative;width:0;height:0;overflow:visible;cursor:pointer;">
             <div style="position:absolute;left:0;top:0;transform:translate(-50%,-100%);">${pinSvg(26, getDispatchMapStatusMeta(status).dot, false)}</div>
-            ${showCallout ? calloutHtml(reference.replace(/^LIV-/, "#"), subtitle, status, 40) : ""}
+            ${showCallout ? calloutHtml(title || reference.replace(/^LIV-/, "#"), subtitle, status, 40) : ""}
           </div>`,
         iconSize: [1, 1],
         iconAnchor: [0, 0],
       }),
-    [reference, showCallout, status, subtitle]
+    [reference, showCallout, status, subtitle, title]
   );
 
   return (

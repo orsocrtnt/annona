@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { withoutRolePrefix } from "@/lib/format/person-labels";
 import type { Map as LeafletMap } from "leaflet";
 import { Polyline, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -212,8 +213,9 @@ function OverviewLayer({
               latitude={delivery.destination!.latitude}
               longitude={delivery.destination!.longitude}
               reference={delivery.reference}
+              title={withoutRolePrefix(delivery.customerName) || delivery.address}
               status={getDispatchMapStatus(delivery)}
-              subtitle={delivery.driverName ?? undefined}
+              subtitle={delivery.driverName ? withoutRolePrefix(delivery.driverName) : undefined}
               showCallout={zoom >= 11}
               onSelect={() => onSelect?.(delivery.id)}
             />
