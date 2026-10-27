@@ -44,16 +44,32 @@ COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02 et les pilo
 
 ### Interventions du propriétaire
 
-| Moment utile | Intervention réellement nécessaire | Tâches concernées |
-|---|---|---|
-| Dès que possible, sans bloquer le code | Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. | MOB-01C, puis V1-GO |
-| Avant e-mails pilotes | Acheter le domaine retenu, choisir/configurer l'expéditeur et fournir l'accès au fournisseur d'e-mails. | SEC-05, EMAIL |
-| Avant données réelles | Créer/identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. | LEGAL-1, DATA-02, V1-GO |
-| Avant démarrer les essais | Sélectionner les trois entreprises, autoriser les contacts et signer le protocole pilote. | PILOT-1 |
-| Dès que possible | Changer le mot de passe de l'ancienne base de développement `wlomrzil…` (exposé dans un journal d'outil le 26 octobre), puis la réactiver ou la remplacer : `.env.local` vise ce projet en pause et toute recette locale doit aujourd'hui passer par `.env.preproduction.local`. | ENV-2 |
-| Avant de clore SAAS-01B | Créer un compte Stripe gratuit en mode test et fournir ses clés de test. | SAAS-01B, SAAS-03, SAAS-02 |
-| Avant clôture | Décider la règle d'impayé et de changement de formule pendant la découverte (SAAS-04) ; décider émission, propriété et expiration des codes commerciaux (SALES-1) ; décider la destination des messages Contact (GROWTH-1). | SAAS-04, SALES-1, GROWTH-1 |
-| Avant publication | Pousser les commits locaux : la CI de `preproduction` échoue depuis le 26 octobre sur `docs:verify` (34 modèles documentés pour 35 réels) ; la correction est un commit local. Vérifier aussi la région des fonctions Vercel (hypothèse `iad1` contre une base à Paris). | ENV-2, PERF-02 |
+Liste unique des actions qui ne peuvent pas être faites par un agent, classées par urgence. Mise à jour le 27 octobre 2026 ; un agent la tient à jour et la retire ligne par ligne quand l'action est constatée.
+
+**Urgent — sécurité et chaîne de livraison**
+1. Changer le mot de passe de l'ancienne base de développement `wlomrzil…`, exposé dans un journal d'outil le 26 octobre. → ENV-2
+2. Relire puis pousser la branche locale `todo/agent2-backlog` (worktree `TutelLiv-GPT-agent2`) et la fusionner dans `preproduction`. La CI y est rouge depuis le 26 octobre (`docs:verify`, faille critique `maplibre-gl`) ; les deux corrections ne sont que locales. → CI, MAP-3
+3. Réactiver le projet Supabase de développement en pause, ou en créer un autre, puis mettre à jour `.env.local`. En attendant, toute recette locale passe par `.env.preproduction.local`. → ENV-2
+4. Vérifier dans Vercel → Settings → Functions la région des fonctions de préproduction (hypothèse `iad1` alors que la base est à Paris) ; l'accès Vercel de l'agent n'est pas autorisé pour l'équipe `tutelliv`. → ENV-2, PERF-02
+
+**Décisions produit (débloquent du code local)**
+5. SAAS-04 : règle d'impayé et de changement de formule pendant les 60 jours de découverte ; elle conditionne aussi l'ouverture de la découverte aux souscriptions Stripe.
+6. SAAS-03 : sort d'une baisse de formule bloquée par des dépassements (refus ou planification au renouvellement), remplacement d'une option incompatible, et accord pour une migration additive « journal d'abonnement » avant toute modification par le client.
+7. SALES-1 : émission, propriété et expiration des codes commerciaux.
+8. GROWTH-1 : destination des messages du formulaire Contact.
+9. SAAS-02 : seuils d'alerte de coût et de consommation.
+10. Pool de démonstration de préproduction : 6 espaces loués 8 h chacun, saturés quand plusieurs agents testent en parallèle. Augmenter la taille ou raccourcir les locations de test.
+
+**Ressources et comptes**
+11. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
+12. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
+13. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
+14. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
+
+**Juridique et terrain**
+15. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
+16. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
+17. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
 
 ### Dépendances fournisseur ou validation extérieure
 
@@ -1021,6 +1037,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Source / dépendance / blocage : après les événements et droits stables de SAAS-01A/B. Les vues en lecture et alertes peuvent être préparées avant les mutations payantes ; prorata, effets immédiats/différés et restrictions d'impayé suivent les règles C7 confirmées.
 
   Avancement local du 2026-10-24 : vue « Mon abonnement » ajoutée à la seule navigation `COMPANY_ADMIN`, avec `GET /api/billing/subscription` sans cache et strictement filtré à l’entreprise de session. Le DTO local affiche formule, période, options, consommation, alertes 80/100/120 et historique dédupliqué par identifiant interne, sans état JSON brut ni identifiant fournisseur, secret ou entrée/résultat d’opération. État vide et erreur de lecture explicites ; aucun POST n’est appelé. `npm run test:saas03` 5/5 et `npm run check` 371/371 passent. La recette Playwright ouvre désormais explicitement la session démo COMPANY_ADMIN, mais échoue avant navigation (login 401 : résolution DNS Supabase indisponible, sans contournement du middleware) : aucune réussite navigateur n’est revendiquée. SAAS-03 reste ouverte : mutations payantes, moyen de paiement, résiliation et export DATA-02 ne sont pas livrés. Procédure `docs/operations/saas03/README.md`, rapport `docs/rapports/2026-10-24/saas-03-readonly.md`.
+
+  Évaluation de changement de formule du 2026-10-27 : la fonction pure `assessPlanChange` (`src/domains/billing/plan-change.ts`) donne le sens et le moment d'effet C7 (montée immédiate après prorata, baisse au renouvellement). Elle calcule aussi les limites de sièges de la formule visée, en ne comptant que les options compatibles et dans la limite de son maximum. Elle liste enfin les dépassements bloquants, les options qui tomberaient, les fonctions perdues et le dépassement de commandes, qui ne bloque pas. Elle ne tranche ni le sort d'une baisse bloquée ni le remplacement d'une option incompatible, et rien ne l'appelle encore. Vérifié : `npm run test:saas03` 10/10, dont 5 nouveaux cas sur le catalogue C9. Prochaine étape : un journal d'abonnement auditable, donc une migration additive à faire autoriser par le propriétaire, avant toute mutation.
 
 - [ ] **SAAS-04 — Appliquer les 60 jours de découverte premium.** Pour une nouvelle souscription payante Starter ou Pro, ouvrir temporairement les fonctions logicielles premium éligibles, sans relever les quotas et sans inclure automatiquement le support humain prioritaire. Afficher la date de fin et les fonctions concernées ; à l'échéance, retirer seulement les droits non inclus/non achetés, sans facturation automatique.
 

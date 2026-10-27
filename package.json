@@ -48,7 +48,7 @@
     "test:perf02": "tsx scripts/perf02/run-local.ts outputs/perf02/local.json",
     "test:perf02:postgres": "tsx scripts/perf02/postgres-local.ts outputs/perf02/postgres-local.json",
     "test:email-sec05": "node --import tsx --test tests/password-link.test.ts tests/transactional-email.test.ts tests/notification-idempotency.test.ts tests/operation-jobs.test.ts",
-    "test:saas03": "node --import tsx --test tests/saas03-subscription.test.ts",
+    "test:saas03": "node --import tsx --test tests/saas03-subscription.test.ts tests/saas03-plan-change.test.ts",
     "test:saas03:e2e": "playwright test tests/e2e/saas03.spec.ts",
     "test:saas04": "node --import tsx --test tests/saas04-premium-discovery.test.ts",
     "test:growth01": "node --import tsx --test tests/growth01-public-pricing.test.ts tests/growth01-features.test.ts tests/growth01-demo.test.ts tests/growth01-public-journey.test.ts",
