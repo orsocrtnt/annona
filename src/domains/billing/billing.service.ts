@@ -24,6 +24,27 @@ export type BillingCommand =
   | { kind: "REFUND"; invoiceId: string; amountCents: number; reason: string; actorId: string }
   | { kind: "USAGE"; periodId: string; amountHtCents: number; start: string; end: string };
 
+const RELEASED_ON_REJECTION = new Set<BillingCommand["kind"]>(["CHANGE", "CANCEL", "REFUND"]);
+/** Échecs certains : refus 4xx du fournisseur, ou changement vide détecté avant tout appel. */
+const DEFINITIVE_FAILURES = new Set(["BILLING_PROVIDER_REJECTED", "BILLING_CHANGE_EMPTY"]);
+
+/** Webhooks simultanés : PostgreSQL refuse l'une des écritures (40001, 40P01). Seule la transaction locale est rejouée, jamais un appel fournisseur. */
+export function isWriteConflict(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const { code, meta, message } = error as { code?: unknown; meta?: { code?: unknown }; message?: unknown };
+  return code === "P2034" || meta?.code === "40001" || meta?.code === "40P01" || (typeof message === "string" && /\b40001\b|could not serialize access/.test(message));
+}
+
+export async function retryOnWriteConflict<T>(run: () => Promise<T>, attempts = 4, wait = (ms: number) => new Promise((done) => setTimeout(done, ms))): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try { return await run(); }
+    catch (error) {
+      if (attempt >= attempts || !isWriteConflict(error)) throw error;
+      await wait(50 * attempt + Math.floor(Math.random() * 50));
+    }
+  }
+}
+
 /** Lock locally, call provider outside transactions, then finish atomically. A timed-out POST keeps its original key. */
 export class BillingService {
   constructor(private readonly provider: SandboxBillingProvider, private readonly db: Db = prisma) {}
@@ -78,6 +99,7 @@ export class BillingService {
       const state = stateOf(account.state);
       if (input.kind !== "CHECKOUT" && (!account.providerSubscriptionId || !state.activeContract)) throw new Error("BILLING_NOT_ACTIVE");
       if (input.kind === "CHANGE" && (state.pendingChange || state.cancelAtPeriodEnd || state.status !== "ACTIVE")) throw new Error("BILLING_CHANGE_CONFLICT");
+      if (input.kind === "CHANGE" && input.target.hash === state.activeContract!.hash) throw new Error("BILLING_CHANGE_NOOP");
       if (input.kind === "CHANGE") {
         if (!input.actorId || !Number.isSafeInteger(input.prorationDate) || Math.abs(Date.now() / 1000 - input.prorationDate) > 900) throw new Error("BILLING_CONSENT_EXPIRED");
         await this.assertSeatsFit(tx, account.subscriptionId, input.target);
@@ -97,36 +119,49 @@ export class BillingService {
     });
     if (prepared.operation.status === "DONE") return object(prepared.operation.result);
     if (prepared.operation.status === "REJECTED") throw new Error("BILLING_CONSENT_AMOUNT_CHANGED");
+    if (prepared.operation.status === "FAILED") throw new Error(String(object(prepared.operation.result).code ?? "BILLING_PROVIDER_REJECTED"));
     // A provider may discard idempotency keys after 24h. Do not blindly replay an older uncertain charge.
     if (Date.now() - prepared.operation.createdAt.getTime() >= 23 * 3_600_000) throw new Error("BILLING_MANUAL_RECONCILIATION_REQUIRED");
     await this.db.saasBillingOperation.update({ where: { id: operationId }, data: { attempts: { increment: 1 } } });
     const state = stateOf(prepared.account.state);
     const sub = prepared.account.providerSubscriptionId!;
     let result: object;
-    switch (input.kind) {
-      case "CHECKOUT": result = await this.provider.checkout(accountId, input.email, state.contract, operationId); break;
-      case "CHANGE": {
-        const timing = changeTiming(state.activeContract!, input.target);
-        if (timing === "renewal") result = { ...await this.provider.schedule(sub, input.target, operationId), timing };
-        else {
-          if (!object(prepared.operation.result).consentVerified) {
-            const preview = await this.provider.previewChange(sub, input.target, operationId, input.prorationDate);
-            if (preview.currency !== "EUR" || preview.totalCents !== input.confirmedTotalCents) {
-              await this.db.$transaction([
-                this.db.saasBillingOperation.update({ where: { id: operationId }, data: { status: "REJECTED" } }),
-                this.db.saasBillingAccount.updateMany({ where: { id: accountId, pendingOperationId: operationId }, data: { pendingOperationId: null, revision: { increment: 1 } } }),
-              ]);
-              throw new Error("BILLING_CONSENT_AMOUNT_CHANGED");
+    try {
+      switch (input.kind) {
+        case "CHECKOUT": result = await this.provider.checkout(accountId, input.email, state.contract, operationId); break;
+        case "CHANGE": {
+          const timing = changeTiming(state.activeContract!, input.target);
+          if (timing === "renewal") result = { ...await this.provider.schedule(sub, input.target, operationId), timing };
+          else {
+            if (!object(prepared.operation.result).consentVerified) {
+              const preview = await this.provider.previewChange(sub, input.target, operationId, input.prorationDate);
+              if (preview.currency !== "EUR" || preview.totalCents !== input.confirmedTotalCents) {
+                await this.db.$transaction([
+                  this.db.saasBillingOperation.update({ where: { id: operationId }, data: { status: "REJECTED" } }),
+                  this.db.saasBillingAccount.updateMany({ where: { id: accountId, pendingOperationId: operationId }, data: { pendingOperationId: null, revision: { increment: 1 } } }),
+                ]);
+                throw new Error("BILLING_CONSENT_AMOUNT_CHANGED");
+              }
+              await this.db.saasBillingOperation.update({ where: { id: operationId }, data: { result: { consentVerified: true, totalCents: preview.totalCents, currency: preview.currency } } });
             }
-            await this.db.saasBillingOperation.update({ where: { id: operationId }, data: { result: { consentVerified: true, totalCents: preview.totalCents, currency: preview.currency } } });
+            result = { ...await this.provider.change(sub, input.target, operationId, input.prorationDate), timing };
           }
-          result = { ...await this.provider.change(sub, input.target, operationId, input.prorationDate), timing };
+          break;
         }
-        break;
+        case "CANCEL": result = await this.provider.cancel(sub, operationId); break;
+        case "REFUND": result = await this.provider.refund(input.invoiceId, input.amountCents, operationId); break;
+        case "USAGE": result = input.amountHtCents === 0 ? { invoiceId: null } : await this.provider.usage(accountId, sub, input.amountHtCents, state.activeContract!.quote.vatRateBps, { start: input.start, end: input.end }, operationId); break;
       }
-      case "CANCEL": result = await this.provider.cancel(sub, operationId); break;
-      case "REFUND": result = await this.provider.refund(input.invoiceId, input.amountCents, operationId); break;
-      case "USAGE": result = input.amountHtCents === 0 ? { invoiceId: null } : await this.provider.usage(accountId, sub, input.amountHtCents, state.activeContract!.quote.vatRateBps, { start: input.start, end: input.end }, operationId); break;
+    } catch (error) {
+      // Échec certain d'une demande d'opérateur : rien n'est appliqué, le verrou est rendu.
+      // Une panne réseau ou 5xx garde le verrou : seul le rejeu de la même clé peut conclure.
+      if (error instanceof Error && DEFINITIVE_FAILURES.has(error.message) && RELEASED_ON_REJECTION.has(input.kind)) {
+        await this.db.$transaction([
+          this.db.saasBillingOperation.update({ where: { id: operationId }, data: { status: "FAILED", result: { code: error.message }, completedAt: new Date() } }),
+          this.db.saasBillingAccount.updateMany({ where: { id: accountId, pendingOperationId: operationId }, data: { pendingOperationId: null, revision: { increment: 1 } } }),
+        ]);
+      }
+      throw error;
     }
     await this.db.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM saas_billing_accounts WHERE id = ${accountId} FOR UPDATE`;
@@ -184,8 +219,10 @@ export class BillingService {
       if (!saved) continue;
       if (next.activeContract) {
         // If provisioning fails, payment is durable and the next sweep resumes this exact activation.
-        const activation = await activateSignupJourney(account.signupId);
-        await this.project(accountId, activation.companyId);
+        await retryOnWriteConflict(async () => {
+          const activation = await activateSignupJourney(account.signupId);
+          await this.project(accountId, activation.companyId);
+        });
       }
       return next;
     }

@@ -92,7 +92,7 @@ function billingDependencies(calls: string[], role: string, companyId: string | 
       getActiveSignupCatalog: async () => { calls.push("catalog"); return { code: "C9-2026-10-24" }; },
     },
     "@/domains/billing/billing-core": {
-      makeBillingContract: () => { calls.push("contract"); return { quote: { totalCents: 7900 } }; },
+      makeBillingContract: () => { calls.push("contract"); return { hash: "contract-target", quote: { totalCents: 7900 } }; },
     },
     "@/domains/billing/plan-change.service": {
       assessBillingContractChange: async (assessedCompanyId: string) => {
@@ -103,7 +103,7 @@ function billingDependencies(calls: string[], role: string, companyId: string | 
   };
 }
 
-const activeAccount = { id: "account-1", state: { activeContract: { quote: { planCode: "PRO" } } } };
+const activeAccount = { id: "account-1", state: { activeContract: { hash: "contract-current", quote: { planCode: "PRO" } } } };
 
 test("ADMIN-1 facturation : les autres rôles sont refusés avant l'entreprise, le corps et le fournisseur", async () => {
   for (const role of deniedRoles) {
@@ -165,6 +165,13 @@ test("ADMIN-1 facturation : l'administrateur d'entreprise atteint les comporteme
   const previewed = await load("src/app/api/billing/route.ts", billingDependencies(previewCalls, "COMPANY_ADMIN", "company-1", activeAccount, excess)).POST!(tracked(previewCalls, preview));
   assert.equal(previewed.status, 200, "l'aperçu reste consultable et montre les dépassements");
   assert.deepEqual((await previewed.json() as { assessment: { blockers: unknown } }).assessment.blockers, excess);
+
+  const sameCalls: string[] = [];
+  const sameAccount = { id: "account-1", state: { activeContract: { hash: "contract-target", quote: { planCode: "STARTER" } } } };
+  const same = await load("src/app/api/billing/route.ts", billingDependencies(sameCalls, "COMPANY_ADMIN", "company-1", sameAccount)).POST!(tracked(sameCalls, change));
+  assert.equal(same.status, 409);
+  assert.equal((await same.json() as { code: string }).code, "PLAN_CHANGE_NOOP");
+  assert.equal(sameCalls.some((call) => call.startsWith("assess") || call.startsWith("command")), false, "la formule actuelle est refusée avant tout verrou");
 
   const inactiveCalls: string[] = [];
   const inactive = await load("src/app/api/billing/route.ts", billingDependencies(inactiveCalls, "COMPANY_ADMIN", "company-1", { id: "account-1", state: { activeContract: null } })).POST!(tracked(inactiveCalls, change));

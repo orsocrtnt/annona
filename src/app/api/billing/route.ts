@@ -39,13 +39,15 @@ export async function POST(request: Request) {
     const billing = sandboxBilling(), input = parsed.data;
     if (input.action === "cancel") {
       const result = await billing.command(auth.account.id, input.key, { kind: "CANCEL", actorId: auth.actorId });
-      await billing.reconcile(auth.account.id);
+      // La demande est appliquée : un rapprochement en échec est repris par le webhook ou le cron.
+      await billing.reconcile(auth.account.id).catch(() => null);
       return NextResponse.json(result);
     }
     const catalog = await getActiveSignupCatalog();
     const target = makeBillingContract(catalog, input.selection.planCode, input.selection.billingInterval, input.selection.selections);
     const current = (auth.account.state as unknown as BillingState | null)?.activeContract;
     if (!current) return NextResponse.json({ error: "Abonnement non actif" }, { status: 409 });
+    if (current.hash === target.hash) return NextResponse.json({ error: "Cette formule est déjà la vôtre.", code: "PLAN_CHANGE_NOOP" }, { status: 409 });
     // Décision C10 : comptes en excès pour la cible = refus immédiat, avant tout appel fournisseur.
     const assessment = await assessBillingContractChange(auth.companyId, current, target);
     if (input.action === "preview") return NextResponse.json({ ...await billing.preview(auth.account.id, target, Math.floor(Date.now() / 1000)), quote: target.quote, assessment });
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
     const result = await billing.command(auth.account.id, input.key, { kind: "CHANGE", target, prorationDate: input.prorationDate, confirmedTotalCents: input.confirmedTotalCents, actorId: auth.actorId });
-    await billing.reconcile(auth.account.id);
+    await billing.reconcile(auth.account.id).catch(() => null);
     return NextResponse.json(result);
   } catch { return NextResponse.json({ error: "Modification non appliquée ou en attente de rapprochement. Relisez l’historique avant de réessayer avec la même demande." }, { status: 409 }); }
 }

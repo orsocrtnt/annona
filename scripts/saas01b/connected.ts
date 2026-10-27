@@ -23,6 +23,8 @@ class TestProvider implements SandboxBillingProvider {
   failAfterCheckout = false;
   failAfterChange = false;
   failAfterUsage = false;
+  rejectNextChange = false;
+  rejectedCalls = 0;
   async checkout(account: string, _email: string, contract: BillingContract, key: string) {
     const existing = this.effects.get(key);
     if (existing) return existing as { id: string; url: string; customerId: string };
@@ -43,6 +45,7 @@ class TestProvider implements SandboxBillingProvider {
   }
   async previewChange() { return { totalCents: 1200, currency: "EUR" }; }
   async change(sub: string, target: BillingContract, key: string) {
+    if (this.rejectNextChange) { this.rejectNextChange = false; this.rejectedCalls++; throw new Error("BILLING_PROVIDER_REJECTED"); }
     const existing = this.effects.get(key); if (existing) return existing as { invoiceId: string };
     const state = this.states.get(sub)!;
     state.contractHash = target.hash;
@@ -121,6 +124,14 @@ async function main() {
   checked("simultaneous changes rejected; crash-after-charge resumes once; paid Pro rights projected");
   await assert.rejects(restarted.command(account.id, "change-pro", { ...change, confirmedTotalCents: 1201 }), /KEY_REUSED/);
   checked("idempotency key cannot be reused with changed consent");
+  await assert.rejects(restarted.command(account.id, "change-same", { ...change, prorationDate: Math.floor(Date.now() / 1000) }), /CHANGE_NOOP/);
+  const rejectedChange = { ...change, target: core.makeBillingContract(catalog, "BUSINESS", "MONTHLY", []), prorationDate: Math.floor(Date.now() / 1000) };
+  provider.rejectNextChange = true;
+  await assert.rejects(restarted.command(account.id, "change-rejected", rejectedChange), /PROVIDER_REJECTED/);
+  assert.equal((await db.saasBillingAccount.findUniqueOrThrow({ where: { id: account.id } })).pendingOperationId, null);
+  await assert.rejects(restarted.command(account.id, "change-rejected", rejectedChange), /PROVIDER_REJECTED/);
+  assert.equal(provider.rejectedCalls, 1);
+  checked("same-plan change refused; definitive provider rejection releases the lock and replays without a new provider call");
   const crashPeriod = await db.saasUsagePeriod.create({ data: { companyId: updated.companyId, subscriptionId: updated.id, startsAt: new Date("2026-08-01Z"), endsAt: new Date("2026-09-01Z"), includedOrders: 3000, orderCount: 3050, overageCount: 50, orderOverageUnitPriceCents: 8 } });
   provider.failAfterUsage = true;
   await assert.rejects(restarted.billClosedUsage(account.id), /UNAVAILABLE/);
