@@ -4,11 +4,39 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { TONE_CLASSES, resolveTone, type Tone } from "./tone";
 import type { DashboardStat } from "@/types";
 
+export type StatDelta = {
+  /** Écart absolu avec le point de comparaison (ex. hier à la même heure). */
+  value: number;
+  label: string;
+  /** Sens favorable : une hausse des retards est une mauvaise nouvelle. */
+  goodWhen: "up" | "down";
+};
+
+/** Écart affiché en valeur absolue : sur de petits volumes, un pourcentage exagère. */
+export function DeltaBadge({ delta }: { delta: StatDelta }) {
+  const { value, label, goodWhen } = delta;
+  const isGood = value === 0 ? null : (value > 0) === (goodWhen === "up");
+  return (
+    <p className="flex flex-wrap items-center gap-x-1 text-xs">
+      <span
+        className={cn(
+          "whitespace-nowrap font-semibold",
+          isGood === null ? "text-muted-foreground" : isGood ? "text-brand" : "text-[#c43b2f]"
+        )}
+      >
+        {value > 0 ? `↑ +${value}` : value < 0 ? `↓ ${value}` : "="}
+      </span>
+      <span className="text-muted-foreground">{label}</span>
+    </p>
+  );
+}
+
 interface StatCardProps extends DashboardStat {
   className?: string;
   onClick?: () => void;
   /** Teinte d'état (direction Menthe). Une alerte critique à zéro reste neutre. */
   tone?: Tone;
+  delta?: StatDelta;
 }
 
 export function StatCard({
@@ -20,6 +48,7 @@ export function StatCard({
   className,
   onClick,
   tone,
+  delta,
 }: StatCardProps) {
   const isPositive = change !== undefined && change >= 0;
   const numericValue = typeof value === "number" ? value : Number(value);
@@ -39,6 +68,7 @@ export function StatCard({
           >
             {value}
           </p>
+          {delta && <DeltaBadge delta={delta} />}
           {(change !== undefined || changeLabel) && (
             <div className="flex items-center gap-1.5">
               {change !== undefined && (

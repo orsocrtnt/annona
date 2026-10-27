@@ -13,13 +13,14 @@ import {
   Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
+import { StatCard, type StatDelta } from "@/components/ui/stat-card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 import { TONE_CLASSES } from "@/components/ui/tone";
 import { DASHBOARD_PERIOD_LABELS } from "@/lib/dashboard/period-stats";
 import type { DashboardWidgetLayout, DashboardWidgetType } from "@/lib/dashboard/dashboard-layout";
+import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
 import { useDashboardContext, useWidgetPeriod } from "@/features/back-office/dashboard-context";
 import {
   PERIOD_OPTIONS,
@@ -29,6 +30,7 @@ import {
 import {
   CategoryCard,
   ClickableCount,
+  HourlyBars,
   TodayDonut,
   TodayMetric,
 } from "@/features/back-office/dashboard-shared";
@@ -56,11 +58,20 @@ function MapWidgetSkeleton() {
   );
 }
 
+/** Écart des retards avec hier à la même heure, sur la même définition reconstituée. */
+function lateDelta(dashboard: CompanyDashboardStats): StatDelta {
+  return {
+    value: dashboard.trends.lateNow - dashboard.trends.lateYesterdaySameTime,
+    label: "vs hier même heure",
+    goodWhen: "down",
+  };
+}
+
 function PeriodToggle() {
   const { period, setPeriod } = useDashboardContext();
 
   return (
-    <div className="inline-flex rounded-xl bg-muted p-1">
+    <div className="inline-flex w-fit self-start rounded-xl bg-muted p-1">
       {PERIOD_OPTIONS.map((option) => (
         <button
           key={option.key}
@@ -92,6 +103,7 @@ function AlertsRowWidget() {
         value={dashboard.alerts.late}
         icon={AlertTriangle}
         tone="critical"
+        delta={lateDelta(dashboard)}
         onClick={() =>
           openDrillDown({
             scope: "alert",
@@ -152,6 +164,7 @@ function AlertLateWidget() {
       value={dashboard.alerts.late}
       icon={AlertTriangle}
       tone="critical"
+      delta={lateDelta(dashboard)}
       onClick={() =>
         openDrillDown({
           scope: "alert",
@@ -235,6 +248,11 @@ function TodaySummaryWidget() {
           <TodayMetric
             label="Livrées"
             tone="success"
+            delta={{
+              value: dashboard.trends.deliveredToday - dashboard.trends.deliveredYesterdaySameTime,
+              label: "vs hier même heure",
+              goodWhen: "up",
+            }}
             counts={dashboard.today.delivered}
             onClick={() =>
               openDrillDown({
@@ -289,6 +307,9 @@ function TodaySummaryWidget() {
             { label: "Restantes", value: dashboard.today.remaining.total, color: "#d5dbd7" },
           ]}
         />
+        <div className="xl:col-span-2">
+          <HourlyBars values={dashboard.trends.deliveredByHour} />
+        </div>
       </CardContent>
     </Card>
   );

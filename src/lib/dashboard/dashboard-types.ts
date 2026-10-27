@@ -80,11 +80,22 @@ export interface DashboardTodayStats {
   late: number;
 }
 
+/** Comparaisons « vs hier à la même heure », limitées aux séries reconstituables exactement. */
+export interface DashboardTrends {
+  lateNow: number;
+  lateYesterdaySameTime: number;
+  deliveredToday: number;
+  deliveredYesterdaySameTime: number;
+  /** 24 cases, heure locale du serveur. */
+  deliveredByHour: number[];
+}
+
 export interface CompanyDashboardStats {
   periods: Record<DashboardPeriodKey, DashboardPeriodStats>;
   lists: DashboardLists;
   alerts: DashboardAlerts;
   today: DashboardTodayStats;
+  trends: DashboardTrends;
 }
 
 export type { DashboardPeriodKey, PeriodDashboardStats };

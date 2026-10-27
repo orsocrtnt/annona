@@ -29,6 +29,7 @@ import type {
   DashboardTodayStats,
 } from "@/lib/dashboard/dashboard-types";
 import { DASHBOARD_DELIVERIES_TAKE } from "@/lib/query/list-limits";
+import { buildDashboardTrends } from "@/lib/dashboard/trends";
 
 type DeliveryRow = {
   id: string;
@@ -273,7 +274,9 @@ export async function getCompanyDashboardStats(
   const tomorrowStart = addDays(todayStart, 1);
   const maxPeriodEnd = addDays(todayStart, DASHBOARD_PERIOD_DAYS["30d"]);
 
-  const [planningDeliveries, activeDeliveries, allForToday] = await Promise.all([
+  const yesterdayStart = addDays(todayStart, -1);
+
+  const [planningDeliveries, activeDeliveries, allForToday, trendDeliveries] = await Promise.all([
     prisma.delivery.findMany({
       where: {
         companyId,
@@ -316,6 +319,27 @@ export async function getCompanyDashboardStats(
       select: deliverySelect,
       take: DASHBOARD_DELIVERIES_TAKE,
     }),
+    // Tendances : missions encore ouvertes ou terminées depuis hier minuit.
+    prisma.delivery.findMany({
+      where: {
+        companyId,
+        createdAt: { lte: now },
+        OR: [
+          {
+            completedAt: null,
+            status: { in: ["PENDING", "ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
+          },
+          { completedAt: { gte: yesterdayStart } },
+        ],
+      },
+      select: {
+        status: true,
+        createdAt: true,
+        completedAt: true,
+        order: { select: { requestedDeliveryDate: true } },
+      },
+      take: DASHBOARD_DELIVERIES_TAKE,
+    }),
   ]);
 
   const periods = {} as Record<DashboardPeriodKey, PeriodDashboardStats>;
@@ -351,5 +375,15 @@ export async function getCompanyDashboardStats(
     },
     alerts,
     today: todayStats,
+    trends: buildDashboardTrends(
+      trendDeliveries.map((delivery) => ({
+        status: delivery.status,
+        createdAt: delivery.createdAt,
+        completedAt: delivery.completedAt,
+        requestedDeliveryDate: delivery.order.requestedDeliveryDate,
+      })),
+      todayStart,
+      now
+    ),
   };
 }

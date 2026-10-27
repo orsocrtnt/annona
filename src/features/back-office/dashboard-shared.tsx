@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { TONE_CLASSES, resolveTone, type Tone } from "@/components/ui/tone";
+import { DeltaBadge, type StatDelta } from "@/components/ui/stat-card";
 import type { DashboardCategoryCounts } from "@/lib/dashboard/dashboard-types";
 import { Package } from "lucide-react";
 
@@ -137,17 +138,57 @@ export function TodayDonut({
   );
 }
 
+/** Livraisons terminées par heure, en barres encre (direction Encre pour les diagrammes). */
+export function HourlyBars({ values }: { values: number[] }) {
+  const max = Math.max(...values, 0);
+  return (
+    <figure className="space-y-2">
+      <figcaption className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-medium">Livraisons terminées par heure</span>
+        {max === 0 && (
+          <span className="text-xs text-muted-foreground">Aucune livraison terminée aujourd&apos;hui</span>
+        )}
+      </figcaption>
+      <div className="flex h-16 items-end gap-1" role="img" aria-label={`Livraisons terminées par heure, maximum ${max}`}>
+        {values.map((value, hour) => (
+          <div
+            key={hour}
+            title={`${hour} h : ${value} livraison${value > 1 ? "s" : ""}`}
+            className="flex h-full flex-1 items-end rounded-[4px] bg-[#f3f5f3]"
+          >
+            {value > 0 && (
+              <div
+                className="w-full rounded-[4px] bg-[#0e1310]"
+                style={{ height: `${Math.max((value / max) * 100, 6)}%` }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between text-[11px] text-muted-foreground" aria-hidden="true">
+        <span>0 h</span>
+        <span>6 h</span>
+        <span>12 h</span>
+        <span>18 h</span>
+        <span>23 h</span>
+      </div>
+    </figure>
+  );
+}
+
 export function TodayMetric({
   label,
   counts,
   variant,
   tone,
+  delta,
   onClick,
 }: {
   label: string;
   counts: DashboardCategoryCounts;
   variant?: "late";
   tone?: Tone;
+  delta?: StatDelta;
   onClick?: () => void;
 }) {
   const isClickable = counts.total > 0 && onClick;
@@ -165,6 +206,7 @@ export function TodayMetric({
       >
         {counts.total}
       </p>
+      {delta && <div className="mt-1"><DeltaBadge delta={delta} /></div>}
       {variant !== "late" && (
         <p className="mt-2 text-xs text-muted-foreground">
           {counts.standard} commande{counts.standard > 1 ? "s" : ""} · {counts.courier} course
