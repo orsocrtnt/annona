@@ -24,9 +24,11 @@ function splitName(fullName: string) {
   };
 }
 
-const DOT_SIZE = 14;
-const DOT_SELECTED = 18;
-const GAP = 10;
+const DOT_SIZE = 32;
+const DOT_SELECTED = 36;
+const GAP = 12;
+const TRUCK_ICON =
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>';
 
 function createDriverIcon(
   name: string,
@@ -50,9 +52,11 @@ function createDriverIcon(
   const cardPadding = isSelected ? "7px 14px" : "6px 12px";
   const cardRadius = isSelected ? "12px" : "10px";
 
-  // Ancre (0,0) = centre exact du point GPS — indépendant du zoom
+  // Ancre (0,0) = centre exact du point GPS — indépendant du zoom.
+  // Planche A : pastille vert vif avec camion encre et halo pulsé tant que le livreur est en ligne.
   const html = `
     <div style="position:relative;width:0;height:0;overflow:visible;">
+      ${isOnline ? `<span class="driver-map-pulse" style="position:absolute;left:0;top:0;width:${dotSize + 26}px;height:${dotSize + 26}px;"></span>` : ""}
       <div style="
         position:absolute;
         left:0;
@@ -61,10 +65,11 @@ function createDriverIcon(
         height:${dotSize}px;
         transform:translate(-50%,-50%);
         border-radius:50%;
-        background:${MAP_VISUAL_THEME.ink};
-        border:3px solid #ffffff;
-        box-shadow:0 2px 10px rgba(0,0,0,0.26)${isSelected ? ",0 0 0 2px #111111" : ""};
-      "><span style="position:absolute;right:-2px;bottom:-2px;width:7px;height:7px;border-radius:50%;background:${presenceColor};border:1.5px solid #ffffff;"></span></div>
+        background:${isOnline ? MAP_VISUAL_THEME.brand : MAP_VISUAL_THEME.mutedLight};
+        color:${MAP_VISUAL_THEME.ink};
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 0 0 4px #ffffff,0 8px 20px rgba(0,120,60,0.28)${isSelected ? `,0 0 0 6px ${MAP_VISUAL_THEME.ink}` : ""};
+      ">${TRUCK_ICON}<span style="position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:${presenceColor};border:2px solid #ffffff;"></span></div>
       <div style="
         position:absolute;
         left:0;

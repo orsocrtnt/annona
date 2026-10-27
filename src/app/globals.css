@@ -266,3 +266,22 @@
   }
 }
 
+
+/* Livreur en ligne : halo vert pulsé (planche A « Suivi en direct »). */
+.driver-map-pulse {
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgb(0 212 106 / 18%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .driver-map-pulse {
+    animation: driverMapPulse 2.4s ease-out infinite;
+  }
+}
+
+@keyframes driverMapPulse {
+  from { transform: translate(-50%, -50%) scale(0.7); opacity: 0.9; }
+  to { transform: translate(-50%, -50%) scale(1.45); opacity: 0; }
+}

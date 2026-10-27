@@ -18,9 +18,10 @@ function contrast(a: string, b: string) {
   return (light! + 0.05) / (dark! + 0.05);
 }
 
-test("MAP-3 : le trajet et sa surface noire/blanche gardent un contraste fort", () => {
-  assert.ok(contrast(MAP_VISUAL_THEME.route, MAP_VISUAL_THEME.routeHalo) >= 7);
-  assert.equal(MAP_ROUTE_STYLE.line.color, MAP_VISUAL_THEME.ink);
+test("MAP-3 : le trajet vert garde au moins 3:1 sur son liseré blanc et sur le plan Menthe", () => {
+  assert.ok(contrast(MAP_VISUAL_THEME.route, MAP_VISUAL_THEME.routeHalo) >= 3);
+  assert.ok(contrast(MAP_VISUAL_THEME.route, MAP_VISUAL_THEME.land) >= 3);
+  assert.equal(MAP_ROUTE_STYLE.line.color, MAP_VISUAL_THEME.route);
   assert.ok(MAP_ROUTE_STYLE.halo.weight > MAP_ROUTE_STYLE.line.weight);
 });
 
@@ -59,10 +60,11 @@ test("MAP-3 : sélection, regroupements visuels et panne fournisseur restent exp
   const provider = readFileSync("src/components/maps/provider-tile-layer.tsx", "utf8");
 
   assert.match(deliveryMarker, /dotSize = isSelected \? 16 : 13/);
-  assert.match(deliveryMarker, /selectedSurface = isSelected \? MAP_VISUAL_THEME\.ink/);
+  assert.match(deliveryMarker, /const size = isSelected \? 32 : 26/);
   assert.match(deliveryMarker, /stepTextColor = muted \? MAP_VISUAL_THEME\.ink/);
   assert.match(driverMarker, /isSelected \? MAP_VISUAL_THEME\.ink/);
-  assert.match(dispatchPanel, /shadow-\[inset_3px_0_0_#111111\]/);
+  assert.match(driverMarker, /driver-map-pulse/);
+  assert.match(dispatchPanel, /shadow-\[inset_3px_0_0_#00d46a\]/);
   assert.match(portalPanel, /shadow-\[inset_3px_0_0_#111111\]/);
   assert.match(provider, /Fond de carte indisponible\. Les positions restent affichées\./);
   assert.match(provider, /bg-black[\s\S]*Réessayer la carte/);

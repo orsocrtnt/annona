@@ -3,6 +3,7 @@ import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guar
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { assertSaasFeature } from "@/domains/saas/saas.service";
+import { advanceDemoDriverPositions } from "@/domains/demo/demo-live-positions.service";
 
 export async function GET() {
   const auth = await requireStaffRole("deliveries:read");
@@ -17,6 +18,8 @@ export async function GET() {
 
   try {
     await assertSaasFeature(companyId, "admin_gps");
+    // Démo : positions simulées des livreurs en mission (sans effet hors démo).
+    await advanceDemoDriverPositions(companyId).catch((error) => console.warn("[demo-positions]", error));
     const locationSettings = await getCompanyLocationSettings(companyId);
     const drivers = await getCompanyDriverLocations(
       companyId,

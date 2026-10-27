@@ -71,6 +71,7 @@ function deps(file: string, role: string, calls: string[]) {
     "@/domains/saas/saas.service",
     "@/domains/delivery/dispatch-map.service",
     "@/domains/delivery/auto-dispatch.service",
+    "@/domains/demo/demo-live-positions.service",
   ]) base[id] = sink(calls);
   void file;
   return base;

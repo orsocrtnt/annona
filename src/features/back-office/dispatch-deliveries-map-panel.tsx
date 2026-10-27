@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
 import { isPurchasingPhase } from "@/features/back-office/dispatch-delivery-map-state";
+import { getDispatchMapStatus, getDispatchMapStatusMeta } from "@/features/back-office/dispatch-map-status";
 import { mapGlassCardStyle } from "@/components/maps/map-glass-styles";
 import { cn } from "@/lib/utils";
 import { ChevronDown, Package, Search, ShoppingBag, Truck } from "lucide-react";
@@ -37,8 +38,8 @@ function matchesDeliverySearch(delivery: DispatchMapDelivery, query: string) {
 
 function deliveryBadgeClasses(category: DeliveryCategory) {
   return category === "COURIER"
-    ? "border-zinc-300 bg-zinc-100 text-zinc-900"
-    : "border-black bg-black text-white";
+    ? "border-transparent bg-[#f1f3f1] text-[#3f4842]"
+    : "border-transparent bg-[#e9ece9] text-[#0e1310]";
 }
 
 function DeliveryListItem({
@@ -53,6 +54,7 @@ function DeliveryListItem({
   shouldFocus?: boolean;
 }) {
   const purchasing = isPurchasingPhase(delivery);
+  const status = getDispatchMapStatusMeta(getDispatchMapStatus(delivery));
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -69,16 +71,19 @@ function DeliveryListItem({
       className={cn(
         "w-full rounded-xl border p-3 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
         isSelected
-          ? "border-black bg-white shadow-[inset_3px_0_0_#111111]"
-          : "border-zinc-200 bg-white/90 hover:border-zinc-400 hover:bg-white"
+          ? "border-[#cfe9d9] bg-[#f1f6f2] shadow-[inset_3px_0_0_#00d46a]"
+          : "border-transparent bg-white/90 hover:border-[#e4e8e5] hover:bg-white"
       )}
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium">{delivery.reference}</span>
-        <Badge className={deliveryBadgeClasses(delivery.deliveryCategory)}>
-          {delivery.deliveryCategory === "COURIER" ? "Course" : "Commande"}
-        </Badge>
+        <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", status.pill)}>
+          {status.label}
+        </span>
       </div>
+      <Badge className={cn("mt-1.5", deliveryBadgeClasses(delivery.deliveryCategory))}>
+        {delivery.deliveryCategory === "COURIER" ? "Course" : "Commande"}
+      </Badge>
 
       {delivery.deliveryCategory === "STANDARD" && delivery.customerName && (
         <p className="mt-2 text-sm font-medium text-foreground">{delivery.customerName}</p>

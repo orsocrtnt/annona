@@ -15,7 +15,8 @@ import {
   getDispatchMapFitPadding,
   fitMapPointsWithPadding,
 } from "@/lib/maps/map-fit-padding";
-import { DeliveryPointMarker } from "@/components/maps/delivery-point-marker";
+import { DeliveryOverviewMarker, DeliveryPointMarker } from "@/components/maps/delivery-point-marker";
+import { getDispatchMapStatus } from "@/features/back-office/dispatch-map-status";
 import { DriverMapMarker } from "@/components/maps/driver-map-marker";
 import { LeafletBaseMap, PARIS_CENTER } from "@/components/maps/leaflet-base-map";
 import { MAP_ROUTE_STYLE } from "@/lib/maps/map-visual-theme";
@@ -28,6 +29,9 @@ export type DeliveriesMapApi = {
 
 interface DeliveriesLiveMapProps {
   delivery: DispatchMapDelivery | null;
+  /** Vue d'ensemble quand aucune livraison n'est sélectionnée : toutes les épingles et les livreurs. */
+  deliveries?: DispatchMapDelivery[];
+  onSelect?: (id: string) => void;
   onMapReady?: (api: DeliveriesMapApi) => void;
 }
 
@@ -113,6 +117,89 @@ function MapViewController({ delivery }: { delivery: DispatchMapDelivery | null 
   return null;
 }
 
+/** Cadre la carte sur toutes les livraisons visibles (où qu'elles soient) et leurs livreurs. */
+function OverviewViewController({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
+  const fitKey = points.map(([lat, lng]) => `${lat.toFixed(4)},${lng.toFixed(4)}`).join(";");
+  const prevFitKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    const key = `${fitKey}|${sidebarCollapsed ? "sb-c" : "sb-e"}`;
+    if (!fitKey || key === prevFitKey.current) return;
+    prevFitKey.current = key;
+    const applyFit = () => {
+      map.invalidateSize({ animate: false });
+      // Marge supplémentaire : les épingles et leurs fiches dépassent au-dessus du point GPS.
+      const padding = getDispatchMapFitPadding(map);
+      fitMapPointsWithPadding(
+        map,
+        points,
+        { top: padding.top + 120, right: padding.right + 56, bottom: padding.bottom + 40, left: padding.left + 40 },
+        14,
+        13
+      );
+    };
+    applyFit();
+    const timers = FIT_RETRY_DELAYS.map((ms) => window.setTimeout(applyFit, ms));
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [fitKey, map, points, sidebarCollapsed]);
+
+  return null;
+}
+
+function OverviewLayer({
+  deliveries,
+  onSelect,
+}: {
+  deliveries: DispatchMapDelivery[];
+  onSelect?: (id: string) => void;
+}) {
+  const located = deliveries.filter((delivery) => delivery.destination && !delivery.isHistorical);
+  const drivers = new Map<string, DispatchMapDelivery>();
+  for (const delivery of located) {
+    if (delivery.driverId && delivery.driverLocation && delivery.driverName && showDriverOnMap(delivery)) {
+      drivers.set(delivery.driverId, delivery);
+    }
+  }
+  const points = useMemo<[number, number][]>(
+    () => [
+      ...located.map((d) => [d.destination!.latitude, d.destination!.longitude] as [number, number]),
+      ...[...drivers.values()].map((d) => [d.driverLocation!.latitude, d.driverLocation!.longitude] as [number, number]),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : positions arrondies
+    [located.map((d) => d.id).join(), [...drivers.keys()].join()]
+  );
+
+  return (
+    <>
+      <OverviewViewController points={points} />
+      {located.map((delivery) => (
+        <DeliveryOverviewMarker
+          key={delivery.id}
+          latitude={delivery.destination!.latitude}
+          longitude={delivery.destination!.longitude}
+          reference={delivery.reference}
+          status={getDispatchMapStatus(delivery)}
+          subtitle={delivery.driverName ?? undefined}
+          onSelect={() => onSelect?.(delivery.id)}
+        />
+      ))}
+      {[...drivers.values()].map((delivery) => (
+        <DriverMapMarker
+          key={delivery.driverId}
+          name={delivery.driverName!}
+          latitude={delivery.driverLocation!.latitude}
+          longitude={delivery.driverLocation!.longitude}
+          isOnline={delivery.driverLocation!.isOnline}
+          updatedAt={delivery.driverLocation!.updatedAt}
+          onSelect={() => onSelect?.(delivery.id)}
+        />
+      ))}
+    </>
+  );
+}
+
 function DeliveryRouteLayer({ delivery }: { delivery: DispatchMapDelivery }) {
   const [route, setRoute] = useState<[number, number][]>([]);
   const [unavailable, setUnavailable] = useState(false);
@@ -148,7 +235,7 @@ function DeliveryRouteLayer({ delivery }: { delivery: DispatchMapDelivery }) {
   </>;
 }
 
-export function DeliveriesLiveMap({ delivery, onMapReady }: DeliveriesLiveMapProps) {
+export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapReady }: DeliveriesLiveMapProps) {
   const markers = useMemo(
     () => (delivery ? buildDeliveryMapMarkers(delivery) : []),
     [delivery]
@@ -163,6 +250,7 @@ export function DeliveriesLiveMap({ delivery, onMapReady }: DeliveriesLiveMapPro
     <LeafletBaseMap fill variant="uber" className="h-full w-full" center={PARIS_CENTER}>
       <MapApiBridge onMapReady={onMapReady} />
       <MapViewController delivery={delivery} />
+      {!delivery && <OverviewLayer deliveries={deliveries} onSelect={onSelect} />}
 
       {delivery && !delivery.isHistorical && <DeliveryRouteLayer delivery={delivery} />}
 
@@ -187,6 +275,7 @@ export function DeliveriesLiveMap({ delivery, onMapReady }: DeliveriesLiveMapPro
           stepIndex={marker.stepIndex}
           isSelected={marker.kind === "destination"}
           muted={mutedMarkers}
+          status={marker.kind === "destination" && delivery ? getDispatchMapStatus(delivery) : undefined}
         />
       ))}
 

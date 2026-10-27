@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { getDispatchDriversMap } from "@/domains/delivery/dispatch-map.service";
 import { assertSaasFeature } from "@/domains/saas/saas.service";
+import { advanceDemoDriverPositions } from "@/domains/demo/demo-live-positions.service";
 
 export async function GET() {
   const auth = await requireStaffRole("deliveries:read");
@@ -16,6 +17,7 @@ export async function GET() {
 
   try {
     await assertSaasFeature(companyId, "admin_gps");
+    await advanceDemoDriverPositions(companyId).catch((error) => console.warn("[demo-positions]", error));
     const data = await getDispatchDriversMap(companyId);
     return NextResponse.json({ data, success: true });
   } catch (error) {

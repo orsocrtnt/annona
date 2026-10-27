@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { DeliveriesMapApi } from "@/components/maps/deliveries-live-map";
-import { mapGlassButtonStyle, mapGlassCardStyle } from "@/components/maps/map-glass-styles";
+import { mapGlassButtonStyle } from "@/components/maps/map-glass-styles";
 
 const DeliveriesLiveMap = dynamic(
   () => import("@/components/maps/deliveries-live-map").then((m) => m.DeliveriesLiveMap),
@@ -14,6 +14,13 @@ import { DispatchDeliveriesMapPanel } from "@/features/back-office/dispatch-deli
 import { useDispatchDeliveriesMap } from "@/features/back-office/dispatch-map-hooks";
 import { PageLoader } from "@/components/ui/loader";
 import { isLateDispatchDelivery } from "@/features/back-office/dispatch-focus";
+import {
+  countDispatchMapStatuses,
+  DISPATCH_MAP_STATUSES,
+  getDispatchMapStatus,
+  type DispatchMapStatusKey,
+} from "@/features/back-office/dispatch-map-status";
+import { cn } from "@/lib/utils";
 import { OfferFeatureGate } from "@/features/saas/locked-offer-feature";
 
 export default function DispatchMapPage() {
@@ -39,8 +46,18 @@ function DispatchMapContent() {
   const { data, isPending, error, isError } = useDispatchDeliveriesMap();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapApi, setMapApi] = useState<DeliveriesMapApi | null>(null);
+  const [statusFilter, setStatusFilter] = useState<DispatchMapStatusKey | "all">("all");
 
   const deliveries = useMemo(() => data?.deliveries ?? [], [data?.deliveries]);
+  const statusCounts = useMemo(() => countDispatchMapStatuses(deliveries), [deliveries]);
+  const visibleDeliveries = useMemo(
+    () =>
+      statusFilter === "all"
+        ? deliveries
+        : deliveries.filter((delivery) => getDispatchMapStatus(delivery) === statusFilter),
+    [deliveries, statusFilter]
+  );
+  const unlocatedCount = visibleDeliveries.filter((delivery) => !delivery.destination).length;
   const requestedDeliveryId = searchParams.get("delivery")?.trim() || null;
   const requestedLateFocus = searchParams.get("focus") === "late";
   const requestedDelivery = requestedDeliveryId
@@ -93,28 +110,64 @@ function DispatchMapContent() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#ececea]" data-dispatch-map-page>
       <div className="absolute inset-0">
-        <DeliveriesLiveMap delivery={selectedDelivery} onMapReady={setMapApi} />
+        <DeliveriesLiveMap
+          delivery={selectedDelivery}
+          deliveries={visibleDeliveries}
+          onSelect={handleSelect}
+          onMapReady={setMapApi}
+        />
       </div>
 
       <div className="pointer-events-none absolute inset-0 z-[1000] p-4">
         <DispatchDeliveriesMapPanel
-          deliveries={deliveries}
+          deliveries={visibleDeliveries}
           selectedId={selectedId}
           onSelect={handleSelect}
           focusSelectedId={requestedDeliveryAvailable ? requestedDeliveryId : null}
         />
       </div>
 
-      {selectedDelivery && (
-        <div className="pointer-events-none absolute inset-x-0 top-4 z-[1000] hidden justify-center px-4 md:flex md:pl-[min(380px,calc(100vw-16px))]">
-          <div className="pointer-events-auto max-w-lg text-sm" style={mapGlassCardStyle}>
-            <span className="font-semibold text-foreground">{selectedDelivery.reference}</span>
-            {selectedDelivery.deliveryCategory === "STANDARD" && selectedDelivery.customerName && (
-              <span className="text-muted-foreground"> — {selectedDelivery.customerName}</span>
+      <div
+        role="toolbar"
+        aria-label="Filtrer par statut"
+        className="pointer-events-none absolute inset-x-0 top-4 z-[1000] hidden px-4 md:flex md:pl-[calc(min(360px,100vw-32px)+32px)]"
+      >
+        <div className="pointer-events-auto flex flex-wrap gap-2">
+          <button
+            type="button"
+            aria-pressed={statusFilter === "all"}
+            onClick={() => setStatusFilter("all")}
+            className={cn(
+              "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+              statusFilter === "all" ? "bg-[#0e1310] text-white" : "bg-white/95 text-[#0e1310] hover:bg-white"
             )}
-          </div>
+          >
+            Toutes · {deliveries.length}
+          </button>
+          {DISPATCH_MAP_STATUSES.map((status) => (
+            <button
+              key={status.key}
+              type="button"
+              aria-pressed={statusFilter === status.key}
+              onClick={() => setStatusFilter(statusFilter === status.key ? "all" : status.key)}
+              className={cn(
+                "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+                statusFilter === status.key ? status.pill : "bg-white/95 text-[#0e1310] hover:bg-white"
+              )}
+            >
+              {status.label} · {statusCounts[status.key]}
+            </button>
+          ))}
+          {unlocatedCount > 0 && (
+            <span
+              role="status"
+              className="inline-flex min-h-9 items-center rounded-full bg-white/80 px-4 text-sm text-[#68726b] shadow-[0_8px_24px_rgba(14,40,25,0.08)]"
+            >
+              {unlocatedCount} non localisée{unlocatedCount > 1 ? "s" : ""} sur la carte
+            </span>
+          )}
         </div>
-      )}
+      </div>
 
       {isError && (
         <div className="pointer-events-none absolute left-4 right-4 top-20 z-[1000] md:pl-[min(380px,calc(100vw-16px))]">
@@ -137,13 +190,6 @@ function DispatchMapContent() {
         </div>
       )}
 
-      {!selectedDelivery && deliveries.length > 0 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[1000] flex justify-center px-4">
-          <p className="rounded-full px-4 py-2 text-sm text-muted-foreground" style={mapGlassCardStyle}>
-            Sélectionnez une livraison pour afficher l&apos;adresse sur la carte
-          </p>
-        </div>
-      )}
 
       <div className="absolute bottom-5 right-5 z-[1100] flex flex-col gap-2 max-md:bottom-4 max-md:right-3">
         <button
