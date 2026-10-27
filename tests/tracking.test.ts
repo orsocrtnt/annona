@@ -177,3 +177,36 @@ test("TRACK-1 cache : en-tête et historique logistiques synchronisés sans prix
   const newer = { ...current, updatedAt: new Date(+now+1).toISOString(), status: "DELIVERED", deliveries: current.deliveries.map(d => ({ ...d, updatedAt: new Date(+now+1).toISOString() })) };
   assert.equal(syncTrackingDetail(newer, data, "order"), newer);
 });
+
+test("TRACK-2 services : signal perdu depuis 2 min, livreur gardé et estimé sur les trois cartes et le suivi", async () => {
+  const lostAt = new Date(Date.now() - 120_000);
+  const startedAt = new Date(Date.now() - 3600_000);
+  const lostDriver = { companyId: "a", status: "ACTIVE", settings: { trackingService: { active: true, startedAt: startedAt.toISOString() } }, driverLocation: { latitude: 48.8, longitude: 2.35, accuracy: 8, updatedAt: lostAt } };
+  const delivery = { id: "d", reference: "LIV", companyId: "a", driverId: "driver", driverName: "Driver", status: "IN_DELIVERY", deliveryCategory: "STANDARD", address: "Destination", latitude: 48.9, longitude: 2.35, pickupLatitude: null, pickupLongitude: null, missionStartedAt: startedAt, missionAcceptedAt: startedAt, completedAt: null, createdAt: startedAt, updatedAt: startedAt, driver: lostDriver, customer: null, order: { id: "o", customer: null, customerEmail: null, items: [], stops: [] }, trackingEvents: [] };
+  const assertEstimated = (point: { latitude: number | null; estimated: boolean }) => { assert.equal(point.estimated, true); assert.ok(point.latitude! > 48.8 && point.latitude! < 48.9, String(point.latitude)); };
+
+  const prisma = { user: { findMany: async () => [{ id: "driver", firstName: "D", lastName: "A", status: "ACTIVE", settings: lostDriver.settings, driverLocation: lostDriver.driverLocation, deliveriesAsDriver: [delivery], _count: { deliveriesAsDriver: 1 } }] }, delivery: { findMany: async () => [delivery] } };
+  const common = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS }, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s, formatClientFromParts: () => "Client" } };
+  const location = moduleAt("src/domains/driver/driver-location.service.ts", { ...common, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(prisma) } });
+  const [live] = await location.getCompanyDriverLocations("a", 45);
+  assertEstimated(live); assert.equal(live.isOnline, false); assert.equal(live.positionState, "STALE"); assert.equal(live.updatedAt, lostAt.toISOString());
+
+  const map = moduleAt("src/domains/delivery/dispatch-map.service.ts", { ...common,
+    "@/domains/delivery/delivery.service": { repairCourierDeliveryIfNeeded: async () => {} },
+    "@/domains/driver/driver-location.service": { getCompanyDriverLocations: async () => [live] },
+    "@/domains/company/location-settings.service": { getCompanyLocationSettings: async () => DEFAULT_DRIVER_LOCATION_SETTINGS },
+    "@/lib/geocoding": { geocodeManyCapped: async () => new Map(), isLegacyFakeTrackingCoord: () => false },
+    "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s },
+  });
+  const adminMap = await map.getDispatchMapDeliveries("a", 45);
+  assertEstimated(adminMap.deliveries[0].driverLocation); assert.equal(adminMap.deliveries[0].driverLocation.isOnline, false);
+  assert.equal(adminMap.points.find((p: any) => p.kind === "driver").address, "Position estimée du livreur");
+  const clientMap = await map.getClientDeliveriesMap("client", "a", 45);
+  assertEstimated(clientMap.active[0].driverLocation);
+  const drivers = await map.getDispatchDriversMap("a");
+  assert.equal(drivers.drivers[0].estimated, true); assert.equal(drivers.points.filter((p: any) => p.kind === "driver").length, 1);
+
+  const f = fixture(); f.order.deliveries[0] = { ...f.order.deliveries[0], ...delivery, driver: { ...lostDriver } };
+  const tracking = await f.service.getOrderTracking(actor, "o");
+  assertEstimated(tracking.deliveries[0].position); assert.ok(!JSON.stringify(tracking).includes("settings"));
+});

@@ -2,7 +2,7 @@ import { prisma } from "@/services/prisma/client";
 import { conversationScope, ConversationError, transaction, type ConversationActor } from "@/domains/order-conversation/order-conversation.service";
 import { getFulfillmentStatusLabel } from "@/lib/constants/order-status";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema } from "@/lib/validations/driver-location-settings";
-import { trackingPosition, trackingService, trackingTimeline } from "./tracking.policy";
+import { trackingPosition, trackingService, trackingTarget, trackingTimeline } from "./tracking.policy";
 
 export async function getOrderTracking(actor: ConversationActor, orderId: string) {
   const scope = conversationScope(actor);
@@ -10,8 +10,9 @@ export async function getOrderTracking(actor: ConversationActor, orderId: string
     const order = await tx.order.findFirst({ where: { id: orderId, ...scope }, select: {
       id: true, reference: true, status: true, deliveryCategory: true, updatedAt: true,
       company: { select: { settings: true } },
+      stops: { orderBy: { sequence: "asc" }, select: { latitude: true, longitude: true } },
       deliveries: { where: { companyId: actor.companyId!, ...(actor.role === "CLIENT" ? { customerId: actor.id } : actor.role === "DRIVER" ? { driverId: actor.id } : {}) }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], select: {
-        id: true, reference: true, status: true, deliveryCategory: true, driverId: true, driverName: true, missionAcceptedAt: true, missionStartedAt: true, completedAt: true, updatedAt: true,
+        id: true, reference: true, status: true, deliveryCategory: true, latitude: true, longitude: true, pickupLatitude: true, pickupLongitude: true, driverId: true, driverName: true, missionAcceptedAt: true, missionStartedAt: true, completedAt: true, updatedAt: true,
         driver: { select: { companyId: true, status: true, settings: true, driverLocation: true } },
         trackingEvents: { select: { id: true, label: true, description: true, occurredAt: true } },
       } },
@@ -24,7 +25,7 @@ export async function getOrderTracking(actor: ConversationActor, orderId: string
     return { orderId: order.id, reference: order.reference, status: order.status, statusLabel: getFulfillmentStatusLabel(order.status, order.deliveryCategory), updatedAt: order.updatedAt.toISOString(), serverTime: now.toISOString(), deliveries: order.deliveries.map(d => ({
       id: d.id, reference: d.reference, status: d.status, statusLabel: getFulfillmentStatusLabel(d.status, d.deliveryCategory), driverName: d.driverId ? d.driverName : null,
       missionAcceptedAt: d.missionAcceptedAt?.toISOString() ?? null, missionStartedAt: d.missionStartedAt?.toISOString() ?? null, completedAt: d.completedAt?.toISOString() ?? null, updatedAt: d.updatedAt.toISOString(),
-      position: trackingPosition(d, d.driver?.companyId === actor.companyId ? d.driver : null, threshold, now), timeline: trackingTimeline(d.trackingEvents),
+      position: trackingPosition(d, d.driver?.companyId === actor.companyId ? d.driver : null, threshold, now, trackingTarget({ ...d, order: { stops: order.stops } })), timeline: trackingTimeline(d.trackingEvents),
     })) };
   });
 }

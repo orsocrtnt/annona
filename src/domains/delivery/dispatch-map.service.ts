@@ -1,6 +1,6 @@
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
-import { trackingPosition } from "@/domains/tracking/tracking.policy";
+import { trackingPosition, trackingTarget } from "@/domains/tracking/tracking.policy";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
 import { geocodeManyCapped, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
@@ -47,6 +47,8 @@ export type DispatchMapDriverLocation = {
   longitude: number;
   updatedAt: string;
   isOnline: boolean;
+  /** Signal perdu depuis peu : position estimée vers la prochaine étape, pas un relevé GPS. */
+  estimated: boolean;
 };
 
 export type DispatchMapPoint = {
@@ -106,6 +108,7 @@ export type DispatchDriverMapEntry = {
   longitude: number | null;
   updatedAt: string | null;
   positionState: string;
+  estimated: boolean;
   assigned: number;
   inTransit: number;
   missions: {
@@ -539,11 +542,6 @@ async function buildDeliveriesMapPayload(
     const driverName = resolveDriverName(delivery.driverName);
     const customerName = resolveCustomerName(delivery);
 
-    const position = trackingPosition(delivery, delivery.driver?.companyId === delivery.companyId ? delivery.driver : null, onlineThresholdSeconds, now);
-    const driverLocation = !isHistorical && position.state === "FRESH"
-      ? { latitude: position.latitude!, longitude: position.longitude!, updatedAt: position.updatedAt!, isOnline: true }
-      : null;
-
     let pickupCoords: { lat: number; lng: number } | null = null;
     let pickupAddress: string | null = null;
     const pickups: DispatchMapPickup[] = [];
@@ -589,6 +587,28 @@ async function buildDeliveriesMapPayload(
         }
       }
     }
+
+    // Coordonnées résolues (y compris géocodées à l'instant) : même cible que le tracé de la carte.
+    const target = trackingTarget({
+      status: delivery.status,
+      deliveryCategory: delivery.deliveryCategory,
+      latitude: destCoords?.lat ?? null,
+      longitude: destCoords?.lng ?? null,
+      pickupLatitude: pickupCoords?.lat ?? null,
+      pickupLongitude: pickupCoords?.lng ?? null,
+    });
+    const position = trackingPosition(delivery, delivery.driver?.companyId === delivery.companyId ? delivery.driver : null, onlineThresholdSeconds, now, target);
+    // Frais, estimé ou dernier connu : le livreur reste sur la carte tant que la mission est suivie.
+    const driverLocation: DispatchMapDriverLocation | null =
+      !isHistorical && position.latitude != null && position.longitude != null && position.updatedAt
+        ? {
+            latitude: position.latitude,
+            longitude: position.longitude,
+            updatedAt: position.updatedAt,
+            isOnline: position.state === "FRESH",
+            estimated: position.estimated,
+          }
+        : null;
 
     const trackingSteps: DispatchMapTrackingStep[] = delivery.trackingEvents.map((e) => ({
       id: e.id,
@@ -677,9 +697,11 @@ async function buildDeliveriesMapPayload(
         status: delivery.status,
         deliveryCategory: delivery.deliveryCategory,
         driverName,
-        address: delivery.missionStartedAt
-          ? "Position livreur"
-          : "Dernière position livreur",
+        address: driverLocation.estimated
+          ? "Position estimée du livreur"
+          : driverLocation.isOnline
+            ? "Position livreur"
+            : "Dernière position livreur",
         label: delivery.missionStartedAt
           ? `${driverName} — en mission`
           : `${driverName} — dernière position`,
@@ -913,6 +935,7 @@ export async function getDispatchDriversMap(
       longitude: location?.longitude ?? null,
       updatedAt: location?.updatedAt ?? null,
       positionState: location?.positionState ?? "ABSENT",
+      estimated: location?.estimated ?? false,
       assigned,
       inTransit,
       missions: missionPoints,

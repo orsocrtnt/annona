@@ -5,12 +5,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { TRACKING_POLL_MS, type TrackingPosition } from "@/domains/tracking/tracking.policy";
+import { ESTIMATION_MAX_SECONDS, TRACKING_POLL_MS, type TrackingPosition } from "@/domains/tracking/tracking.policy";
 import { dateTimeLabel, elapsedLabel } from "@/lib/format/relative-day";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
 import type { getOrderTracking } from "@/domains/tracking/tracking.service";
 type Tracking = Awaited<ReturnType<typeof getOrderTracking>>;
-const positionLabels: Record<TrackingPosition["state"], string> = { NOT_STARTED: "Position non partagée : mission non démarrée.", ENDED: "Suivi arrêté : mission terminée.", OFF_DUTY: "Position non partagée : service arrêté.", ABSENT: "Position absente : aucun signal reçu pour cette mission et ce service.", STALE: "Position périmée : aucun signal récent, coordonnées masquées.", FRESH: "Dernière position reçue" };
+const positionLabels: Record<Exclude<TrackingPosition["state"], "STALE">, string> = { NOT_STARTED: "Position non partagée : mission non démarrée.", ENDED: "Suivi arrêté : mission terminée.", OFF_DUTY: "Position non partagée : service arrêté.", ABSENT: "Position absente : aucun signal reçu pour cette mission et ce service.", FRESH: "Dernière position reçue" };
+/** Signal perdu : estimation vers la prochaine étape pendant 10 min, puis dernière position connue. */
+function positionLabel(position: TrackingPosition, state: TrackingPosition["state"], serverNow: number) {
+  if (state !== "STALE") return positionLabels[state];
+  if (position.estimated) return "Position estimée : signal perdu, trajet supposé en ligne droite vers la prochaine étape.";
+  const lost = position.updatedAt != null && serverNow - Date.parse(position.updatedAt) > ESTIMATION_MAX_SECONDS * 1000;
+  return lost ? "Signal perdu : dernière position connue." : "Signal interrompu : dernière position connue.";
+}
 const date = dateTimeLabel;
 export function OrderTracking({ orderId }: { orderId: string }) {
   const cache = useQueryClient();
@@ -38,7 +45,7 @@ export function OrderTracking({ orderId }: { orderId: string }) {
       return <section key={delivery.id} className="min-w-0 space-y-3 rounded-lg border p-3 sm:p-4" aria-label={`Mission ${delivery.reference}`}>
         <div><h3 className="font-semibold">{delivery.statusLabel}</h3><p className="text-sm">Livreur : {withoutRolePrefix(delivery.driverName) || "pas encore affecté"}</p><p className="text-xs text-muted-foreground">État mis à jour le <time dateTime={delivery.updatedAt}>{date(delivery.updatedAt)}</time> · <span className="tabular-nums">{delivery.reference}</span></p></div>
         <p className="text-sm">{delivery.missionAcceptedAt ? `Prise en charge confirmée le ${date(delivery.missionAcceptedAt)}.` : "Prise en charge non confirmée."} {delivery.missionStartedAt ? `Départ le ${date(delivery.missionStartedAt)}.` : "Mission non démarrée."}</p>
-        <div className="rounded bg-muted/40 p-3 text-sm" role="status"><strong>{positionLabels[state]}</strong>{position.updatedAt && <p>Signal reçu <time dateTime={position.updatedAt} title={date(position.updatedAt)}>{elapsedLabel(position.updatedAt, serverNow)}</time>{state === "FRESH" && <span title={`Latitude ${position.latitude?.toFixed(5)}, longitude ${position.longitude?.toFixed(5)}`}>{position.accuracy != null ? ` · précision ±${Math.round(position.accuracy)} m` : " · précision inconnue"}</span>}.</p>}<p className="mt-1 text-xs text-muted-foreground">Partage limité au service ouvert et à la mission démarrée. Ce signal daté ne garantit pas un suivi permanent.</p></div>
+        <div className="rounded bg-muted/40 p-3 text-sm" role="status"><strong>{positionLabel(position, state, serverNow)}</strong>{position.updatedAt && <p>Signal reçu <time dateTime={position.updatedAt} title={date(position.updatedAt)}>{elapsedLabel(position.updatedAt, serverNow)}</time>{state === "FRESH" && <span title={`Latitude ${position.latitude?.toFixed(5)}, longitude ${position.longitude?.toFixed(5)}`}>{position.accuracy != null ? ` · précision ±${Math.round(position.accuracy)} m` : " · précision inconnue"}</span>}.</p>}<p className="mt-1 text-xs text-muted-foreground">Partage limité au service ouvert et à la mission démarrée. Ce signal daté ne garantit pas un suivi permanent.</p></div>
         <div><h4 className="text-sm font-medium">Chronologie des actions</h4>{!delivery.timeline.length && <p className="text-sm text-muted-foreground">Aucune action enregistrée.</p>}<ol className="mt-2 space-y-2">{delivery.timeline.map(event => <li key={event.id} className="border-l-2 pl-3 text-sm"><strong>{event.label}</strong> — <time dateTime={event.occurredAt}>{date(event.occurredAt)}</time>{event.description && <p className="whitespace-pre-wrap text-muted-foreground">{event.description}</p>}</li>)}</ol></div>
       </section>;
     })}</CardContent></Card>;

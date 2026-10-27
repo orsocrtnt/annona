@@ -1,4 +1,4 @@
-import { trackingPosition, trackingService } from "@/domains/tracking/tracking.policy";
+import { trackingPosition, trackingService, trackingTarget } from "@/domains/tracking/tracking.policy";
 import { transaction, ConversationError } from "@/domains/order-conversation/order-conversation.service";
 import { prisma } from "@/services/prisma/client";
 import type { UpdateDriverLocationInput } from "@/lib/validations/driver-location";
@@ -14,6 +14,8 @@ export type LiveDriverLocation = {
   updatedAt: string | null;
   activeMissions: number;
   isOnline: boolean;
+  /** Signal perdu depuis peu : position estimée vers la prochaine étape, pas un relevé GPS. */
+  estimated: boolean;
   positionState: string;
 };
 
@@ -47,7 +49,16 @@ export async function getCompanyDriverLocations(
       lastName: true,
       status: true,
       settings: true,
-      deliveriesAsDriver: { where: { companyId, status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] }, missionStartedAt: { not: null }, completedAt: null }, select: { status: true, missionStartedAt: true, completedAt: true } },
+      deliveriesAsDriver: {
+        where: { companyId, status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] }, missionStartedAt: { not: null }, completedAt: null },
+        // La mission démarrée la première est celle en cours : elle donne la prochaine étape de l'estimation.
+        orderBy: [{ missionStartedAt: "asc" }, { id: "asc" }],
+        select: {
+          status: true, missionStartedAt: true, completedAt: true, deliveryCategory: true,
+          latitude: true, longitude: true, pickupLatitude: true, pickupLongitude: true,
+          order: { select: { stops: { orderBy: { sequence: "asc" }, select: { latitude: true, longitude: true } } } },
+        },
+      },
       driverLocation: {
         select: {
           latitude: true,
@@ -72,14 +83,15 @@ export async function getCompanyDriverLocations(
 
   const now = new Date();
   return drivers.map((driver) => {
-    const mission = driver.deliveriesAsDriver[0] ?? { status: "ASSIGNED", missionStartedAt: null };
-    const position = trackingPosition(mission, driver, onlineThresholdSeconds, now);
+    const started = driver.deliveriesAsDriver[0];
+    const mission = started ?? { status: "ASSIGNED", missionStartedAt: null };
+    const position = trackingPosition(mission, driver, onlineThresholdSeconds, now, started ? trackingTarget(started) : null);
     return {
       id: driver.id,
       name: formatDriverDisplayName(`${driver.firstName} ${driver.lastName}`.trim()),
       latitude: position.latitude, longitude: position.longitude, accuracy: position.accuracy,
       updatedAt: position.updatedAt, activeMissions: driver._count.deliveriesAsDriver,
-      isOnline: position.state === "FRESH", positionState: position.state,
+      isOnline: position.state === "FRESH", estimated: position.estimated, positionState: position.state,
     };
   });
 }
