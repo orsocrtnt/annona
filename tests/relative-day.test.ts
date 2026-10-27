@@ -74,3 +74,10 @@ test("une facture se titre par sa date", async () => {
   assert.equal(invoiceTitle("2026-10-26T08:00:00Z", now), "Facture d'hier");
   assert.equal(invoiceTitle("2026-10-20T08:00:00Z", now), "Facture du 20 oct.");
 });
+
+test("une ligne de facture sans montant lisible n'affiche pas « NaN € »", async () => {
+  const { invoiceLineTotal } = await import("../src/features/client-portal/utils");
+  assert.match(invoiceLineTotal({ amount: 12.5, quantity: 2 }), /^25,00\s€$/);
+  assert.match(invoiceLineTotal({ amount: "4.90", quantity: 1 }), /^4,90\s€$/);
+  assert.equal(invoiceLineTotal({ amount: undefined as unknown as number, quantity: 2 }), "—");
+});

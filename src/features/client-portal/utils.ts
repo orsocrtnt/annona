@@ -33,3 +33,9 @@ export function invoiceTitle(createdAt: string, now = new Date()): string {
   if (label === "Hier") return "Facture d'hier";
   return `Facture du ${label}`;
 }
+
+/** Montant d'une ligne de facture ; « — » plutôt que « NaN € » si la ligne n'a pas de montant lisible. */
+export function invoiceLineTotal(line: { amount: number | string; quantity: number }): string {
+  const value = Number(line.amount) * line.quantity;
+  return Number.isFinite(value) ? formatCurrency(value) : "—";
+}
