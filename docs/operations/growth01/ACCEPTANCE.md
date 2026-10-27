@@ -23,3 +23,4 @@ Date : 2026-10-25. Cette porte ne clôt pas GROWTH-1.
 - Aucun domaine n'est acheté ni branché. Les pages restent locales.
 
 GROWTH-1 reste ouvert.
+- Boîte Contact (2026-10-27) : `/admin/contact`, réservée au super-administrateur, lecture seule et paginée. Recette Chrome locale : messages du plus récent au plus ancien, contenu HTML affiché comme texte, empreinte de source jamais exposée.

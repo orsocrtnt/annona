@@ -146,3 +146,16 @@ test("GROWTH-1 contact : la route publique répond 202, 400, 429 ou 503 sans dé
     if (status === 429) assert.equal(response.headers.get("retry-after"), "3600");
   }
 });
+
+test("GROWTH-1 contact : la boîte plateforme est en lecture seule, réservée au back-office", async () => {
+  const { adminNavItems, companyNavItems, miniAdminNavItems } = await import("../src/features/navigation/nav-config");
+  assert.equal(adminNavItems.find((item) => item.title === "Messages Contact")?.href, "/admin/contact");
+  assert.equal([...companyNavItems, ...miniAdminNavItems].some((item) => item.href === "/admin/contact"), false);
+  const page = readFileSync("src/app/(back-office)/admin/contact/page.tsx", "utf8");
+  const fields = [...page.matchAll(/row\.(\w+)/g)].map((match) => match[1]);
+  assert.deepEqual([...new Set(fields)].sort(), ["company", "createdAt", "email", "id", "message", "name", "phone"]);
+  for (const absent of ["sourceHash", "dangerouslySetInnerHTML", "Supprimer", "useMutation"]) assert.equal(page.includes(absent), false, absent);
+  const client = readFileSync("src/features/admin/contact-messages.ts", "utf8");
+  assert.equal(client.includes('fetch(`/api/admin/contact-messages?${params.toString()}`, { cache: "no-store" })'), true);
+  assert.equal(/method:/.test(client), false, "aucune écriture");
+});

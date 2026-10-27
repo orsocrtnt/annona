@@ -13,6 +13,14 @@ import { Building2, Users, Truck, ReceiptText, AlertTriangle } from "lucide-reac
 import type { DashboardStat, TableColumn } from "@/types";
 
 const planLabels = { STARTER: "Starter", PRO: "Pro", BUSINESS: "Business" } as const;
+/** SAAS-02, décision C10 : seuils plateforme ; la consommation n'est jamais bloquée. */
+const alertLabels = {
+  ORDERS_80: { label: "80 % des commandes incluses", variant: "warning" },
+  ORDERS_100: { label: "100 % des commandes incluses", variant: "warning" },
+  ORDERS_120: { label: "120 % des commandes incluses", variant: "destructive" },
+  BUSINESS_ORDERS_DOUBLE: { label: "Business : 2 × les commandes incluses", variant: "destructive" },
+  BUSINESS_DRIVERS_40: { label: "Business : 40 livreurs", variant: "destructive" },
+} as const;
 const monthFormat = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
 
 const companyColumns: TableColumn<Record<string, unknown>>[] = [
@@ -98,6 +106,28 @@ function SaasHealthPanel() {
           <Card><CardHeader><CardDescription>Livreurs actifs ou invités</CardDescription><CardTitle>{data.consumption.drivers}</CardTitle></CardHeader></Card>
           <Card><CardHeader><CardDescription>Options / sièges actifs</CardDescription><CardTitle>{data.consumption.activeOptionUnits}</CardTitle></CardHeader></Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Alertes de consommation</CardTitle>
+            <CardDescription>Seuils plateforme du mois : 80, 100 et 120 % des commandes incluses ; Business à deux fois l’inclus ou 40 livreurs. Rien n’est bloqué ni facturé par ces alertes.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data.alerts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune entreprise n’a franchi de seuil ce mois-ci.</p>
+            ) : (
+              <Table>
+                <TableHeader><TableRow><TableHead>Entreprise</TableHead><TableHead>Formule</TableHead><TableHead>Alerte</TableHead><TableHead>Mesure / seuil</TableHead></TableRow></TableHeader>
+                <TableBody>{data.alerts.map((alert) => <TableRow key={`${alert.companyId}-${alert.kind}`}>
+                  <TableCell className="font-medium">{alert.name}</TableCell>
+                  <TableCell>{alert.planCode ? planLabels[alert.planCode] : "Non déterminée"}</TableCell>
+                  <TableCell><Badge variant={alertLabels[alert.kind].variant}>{alertLabels[alert.kind].label}</Badge></TableCell>
+                  <TableCell>{alert.value} <span className="text-muted-foreground">/ {alert.threshold}</span></TableCell>
+                </TableRow>)}</TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

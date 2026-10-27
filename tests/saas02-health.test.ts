@@ -196,3 +196,15 @@ test("SAAS-02 (C10) : alertes 80/100/120 % et seuils Business, une seule par nat
     ["ORDERS_120"]
   );
 });
+
+test("SAAS-02 (C10) : la santé SaaS affiche chaque nature d'alerte, sans action", () => {
+  const page = readFileSync("src/app/(back-office)/admin/page.tsx", "utf8");
+  const service = readFileSync("src/domains/admin/saas-health.service.ts", "utf8");
+  const kinds = [...(service.match(/kind: ("[A-Z_0-9]+"(?: \| "[A-Z_0-9]+")*);/)?.[1] ?? "").matchAll(/"([A-Z_0-9]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(kinds, ["BUSINESS_DRIVERS_40", "BUSINESS_ORDERS_DOUBLE", "ORDERS_100", "ORDERS_120", "ORDERS_80"]);
+  const labels = page.slice(page.indexOf("const alertLabels"), page.indexOf("} as const;", page.indexOf("const alertLabels")));
+  for (const kind of kinds) assert.match(labels, new RegExp(`\\b${kind}: \\{ label: "`), kind);
+  const saas = page.split("function SaasHealthPanel")[1]?.split("export default function")[0] ?? "";
+  assert.match(saas, /data\.alerts\.length === 0/, "état vide explicite");
+  assert.equal(/onClick|useMutation|href=/.test(saas), false, "lecture seule");
+});
