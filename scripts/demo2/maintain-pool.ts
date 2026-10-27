@@ -1,3 +1,4 @@
+import "./node-websocket";
 import { prisma } from "../../src/services/prisma/client";
 import { getDemoPoolStats, maintainDemoPool } from "../../src/domains/demo/demo-pool.service";
 

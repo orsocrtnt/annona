@@ -1,3 +1,4 @@
+import "./node-websocket";
 import { prisma } from "../../src/services/prisma/client";
 import { DEMO_COMPANY_SLUG, DEMO_POOL_MIN_READY } from "../../src/lib/demo/constants";
 import { prepareDemoPool } from "../../src/domains/demo/demo-pool.service";
