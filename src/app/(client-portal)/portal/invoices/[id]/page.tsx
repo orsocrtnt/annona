@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePortalInvoice } from "@/features/client-portal/hooks";
+import { useCompanyLogo } from "@/hooks/use-company-logo";
 import { InvoiceStatusBadge } from "@/features/client-portal/status-badges";
 import {
   canReorderPortalOrder,
@@ -20,6 +22,7 @@ import { ArrowLeft, FileText, Download } from "lucide-react";
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: invoice, isLoading, error } = usePortalInvoice(id ?? "");
+  const companyLogo = useCompanyLogo();
 
   if (isInitialQueryLoading(isLoading, invoice)) return <PageSkeleton />;
 
@@ -130,6 +133,14 @@ export default function InvoiceDetailPage() {
           <CardTitle className="text-base">Émetteur</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
+          {companyLogo.hasLogo && (
+            // eslint-disable-next-line @next/next/no-img-element -- image privée servie par l'API, sans optimisation Next
+            <img
+              src={companyLogo.src}
+              alt={`Logo de ${invoice.company?.name ?? "l’entreprise"}`}
+              className="mb-2 h-12 w-auto max-w-[200px] object-contain object-left"
+            />
+          )}
           <p className="font-medium">{invoice.company?.name}</p>
           {invoice.company?.email && <p>{invoice.company.email}</p>}
           {invoice.company?.address && (
@@ -152,6 +163,11 @@ export default function InvoiceDetailPage() {
           <ReorderOrderButton orderId={invoice.order?.id} />
         )}
       </div>
+
+      <p className="flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground">
+        <Image src="/brand/logo-horizontal-fond-clair.png" alt="" width={64} height={19} className="h-auto w-16" />
+        Relevé édité avec TutelLiv
+      </p>
     </div>
   );
 }

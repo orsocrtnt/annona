@@ -1,21 +1,12 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImageIcon, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuthStore } from "@/stores/auth.store";
+import { COMPANY_LOGO_QUERY_KEY, useCompanyLogo } from "@/hooks/use-company-logo";
 import { cn } from "@/lib/utils";
-
-const LOGO_QUERY_KEY = ["company", "logo"] as const;
-
-async function fetchLogoMeta(): Promise<{ hasLogo: boolean }> {
-  const response = await fetch("/api/company/logo?meta=1");
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error ?? "Impossible de lire le logo");
-  return payload.data;
-}
 
 async function sendLogo(file: File | null) {
   const init: RequestInit = { method: file ? "POST" : "DELETE" };
@@ -46,26 +37,23 @@ export function CompanyLogoCard({
   const hintId = `${inputId}-hint`;
   const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
-  const isDemo = useAuthStore((state) => Boolean(state.demo?.isDemo));
+  const { isDemo, hasLogo, src } = useCompanyLogo();
   const [version, setVersion] = useState(() => Date.now());
   const [status, setStatus] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const disabled = readOnly || isDemo;
 
-  const meta = useQuery({ queryKey: LOGO_QUERY_KEY, queryFn: fetchLogoMeta, enabled: !isDemo });
   const save = useMutation({
     mutationFn: sendLogo,
     onSuccess: async (_data, file) => {
       setVersion(Date.now());
       setStatus({ tone: "success", message: file ? "Logo enregistré. Il apparaît sur vos prochaines factures." : "Logo retiré." });
-      await queryClient.invalidateQueries({ queryKey: LOGO_QUERY_KEY });
+      await queryClient.invalidateQueries({ queryKey: COMPANY_LOGO_QUERY_KEY });
     },
     onError: (error) => setStatus({ tone: "error", message: error instanceof Error ? error.message : "Impossible d’enregistrer le logo" }),
     onSettled: () => {
       if (inputRef.current) inputRef.current.value = "";
     },
   });
-
-  const hasLogo = !isDemo && meta.data?.hasLogo === true;
 
   return (
     <Card>
@@ -85,7 +73,7 @@ export function CompanyLogoCard({
           {hasLogo ? (
             // eslint-disable-next-line @next/next/no-img-element -- image privée servie par l'API, sans optimisation Next
             <img
-              src={`/api/company/logo?v=${version}`}
+              src={`${src}?v=${version}`}
               alt="Logo actuel de l’entreprise"
               className="max-h-full max-w-full object-contain"
             />
