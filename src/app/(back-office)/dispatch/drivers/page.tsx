@@ -34,6 +34,7 @@ function DispatchDriversMapContent() {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#ececea]">
+      <h1 className="sr-only">Carte des chauffeurs</h1>
       <div className="absolute inset-0">
         <DriversLiveMap
           drivers={list}
@@ -50,7 +51,8 @@ function DispatchDriversMapContent() {
             {" "}
             {onlineCount === 1 ? "connecté" : "connectés"}
           </span>
-          <span className="mx-2 text-muted-foreground/50"> - </span>
+          <span className="mx-2 text-muted-foreground" aria-hidden="true">·</span>
+          <span className="sr-only">, </span>
           <span className="font-semibold text-foreground">{locatedCount}</span>
           <span className="text-muted-foreground">
             {" "}
