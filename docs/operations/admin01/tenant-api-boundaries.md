@@ -22,6 +22,9 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/dispatch/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/location-settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/location-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/logo/route.ts | GET | aucun | aucun |
+| src/app/api/company/logo/route.ts | POST | settings:update | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/logo/route.ts | DELETE | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/tariffs/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
@@ -56,6 +59,8 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/users/[id]/route.ts | PATCH | users:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/users/[id]/route.ts | DELETE | users:delete | COMPANY_ADMIN, MINI_ADMIN |
 <!-- TENANT_API_BOUNDARIES_END -->
+
+Logo d'entreprise (2026-10-27) : `GET /api/company/logo` n'exige qu'une session (`requireAuth`), car l'équipe et les clients affichent le logo de leur propre entreprise sur les factures. L'entreprise vient toujours de la session (`getCompanyId`), jamais d'un paramètre ; la réponse ne contient que l'image ou `{ hasLogo }`. L'envoi et le retrait restent réservés à `settings:update` et aux rôles `COMPANY_ADMIN`, `MINI_ADMIN`.
 
 ## Frontières indirectes
 

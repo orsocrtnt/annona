@@ -24,6 +24,17 @@ function logoError(error: unknown) {
   return NextResponse.json({ error: "Impossible d’enregistrer le logo pour le moment." }, { status: 500 });
 }
 
+/** Envoi et retrait : admin et mini-admin uniquement. */
+async function requireLogoEditor() {
+  const auth = await requireStaffRole("settings:update");
+  if ("error" in auth) return { error: auth.error };
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return { error: denied };
+  const companyId = getCompanyId(auth.context);
+  if (!companyId) return { error: NextResponse.json({ error: "Entreprise non associée" }, { status: 400 }) };
+  return { companyId };
+}
+
 /**
  * Logo de l'entreprise de l'utilisateur connecté (équipe, client ou chauffeur), servi en privé.
  * `?meta=1` : seulement `{ hasLogo }`, pour ne demander l'image que si elle existe.
@@ -47,16 +58,6 @@ export async function GET(request: Request) {
       "X-Content-Type-Options": "nosniff",
     },
   });
-}
-
-async function requireLogoEditor() {
-  const auth = await requireStaffRole("settings:update");
-  if ("error" in auth) return { error: auth.error };
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
-  if (denied) return { error: denied };
-  const companyId = getCompanyId(auth.context);
-  if (!companyId) return { error: NextResponse.json({ error: "Entreprise non associée" }, { status: 400 }) };
-  return { companyId };
 }
 
 export async function POST(request: Request) {
