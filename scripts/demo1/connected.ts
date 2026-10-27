@@ -110,8 +110,9 @@ async function run() {
     prisma.order.count({ where: { companyId: sessionA.companyId } }),
     prisma.order.count({ where: { companyId: sessionB.companyId } }),
   ]);
-  assert.equal(ordersA, 8);
-  assert.equal(ordersB, 8);
+  // Le nombre suit le scénario versionné (DEMO_SCENARIO_VERSION) : seules l’égalité et la non-nullité comptent.
+  assert.ok(ordersA > 0);
+  assert.equal(ordersB, ordersA);
 
   const [markerA, markerB] = await Promise.all([
     createMarker(sessionA.companyId, personasA.client!.id, "A"),
@@ -122,8 +123,8 @@ async function run() {
   });
   assert.equal(await prisma.order.findUnique({ where: { id: markerA.id } }), null);
   assert.ok(await prisma.order.findUnique({ where: { id: markerB.id } }));
-  assert.equal(await prisma.order.count({ where: { companyId: sessionA.companyId } }), 8);
-  assert.equal(await prisma.order.count({ where: { companyId: sessionB.companyId } }), 9);
+  assert.equal(await prisma.order.count({ where: { companyId: sessionA.companyId } }), ordersA);
+  assert.equal(await prisma.order.count({ where: { companyId: sessionB.companyId } }), ordersA + 1);
 
   const reusedB = await ensureDemoSessionEnvironment(base.id, sessionIds[1]);
   assert.equal(reusedB.companyId, sessionB.companyId);
@@ -137,7 +138,7 @@ async function run() {
     sessions: {
       distinctCompanies: true,
       personasPerSession: ["admin", "client", "driver"],
-      baseOrdersPerSession: 8,
+      baseOrdersPerSession: ordersA,
       existingSessionReusedWithoutReset: true,
     },
     resetIsolation: {

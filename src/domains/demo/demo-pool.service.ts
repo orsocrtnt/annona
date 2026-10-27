@@ -158,12 +158,12 @@ async function createPoolSlot(base: Company, poolKey: string, slot: number) {
 
 async function buildPoolSlot(companyId: string): Promise<void> {
   await ensureDemoSessionRosterUsers(companyId);
-  await resetDemoScenario(companyId, new Date(), { ensureCanonicalRoster: false });
+  const { deliveries } = await resetDemoScenario(companyId, new Date(), { ensureCanonicalRoster: false });
   const [adminCount, orderCount] = await Promise.all([
     prisma.user.count({ where: { companyId, role: { systemRole: "COMPANY_ADMIN" } } }),
     prisma.order.count({ where: { companyId } }),
   ]);
-  if (adminCount !== 1 || orderCount !== 8) throw new Error("DEMO_POOL_BUILD_INCOMPLETE");
+  if (adminCount !== 1 || orderCount !== deliveries) throw new Error("DEMO_POOL_BUILD_INCOMPLETE");
 }
 
 /**
