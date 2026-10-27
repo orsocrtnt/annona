@@ -1,4 +1,5 @@
-import { trackingPosition, trackingService, trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
+import { resolveTrackingPosition } from "@/domains/tracking/tracking-position.service";
+import { trackingService, trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { transaction, ConversationError } from "@/domains/order-conversation/order-conversation.service";
 import { prisma } from "@/services/prisma/client";
 import type { UpdateDriverLocationInput } from "@/lib/validations/driver-location";
@@ -84,10 +85,10 @@ export async function getCompanyDriverLocations(
   });
 
   const now = new Date();
-  return drivers.map((driver) => {
+  return Promise.all(drivers.map(async (driver) => {
     const started = driver.deliveriesAsDriver[0];
     const mission = started ?? { status: "ASSIGNED", missionStartedAt: null };
-    const position = trackingPosition(mission, driver, onlineThresholdSeconds, now, started ? trackingTarget(started) : null);
+    const position = await resolveTrackingPosition(driver.id, mission, driver, onlineThresholdSeconds, now, started ? trackingTarget(started) : null);
     return {
       id: driver.id,
       name: formatDriverDisplayName(`${driver.firstName} ${driver.lastName}`.trim()),
@@ -95,5 +96,5 @@ export async function getCompanyDriverLocations(
       updatedAt: position.updatedAt, activeMissions: driver._count.deliveriesAsDriver,
       isOnline: position.state === "FRESH", estimated: position.estimated, motion: position.motion, positionState: position.state,
     };
-  });
+  }));
 }

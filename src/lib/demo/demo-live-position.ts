@@ -1,4 +1,6 @@
 import { DEMO_COMPANY_SLUG } from "@/lib/demo/constants";
+import { buildDrivePlan, positionAt, simulateDrive, timelineDuration, type DrivePlan, type DriveRoute, type DriveTimeline } from "@/lib/maps/drive-simulation";
+import { buildRouteTrack, slicePath, type LatLng } from "@/lib/maps/route-progress";
 
 type Point = { latitude: number; longitude: number };
 
@@ -57,15 +59,38 @@ export function demoTripProgress(missionStartedAt: Date, now: Date): number {
   return 0.08 + pingPong * 0.82;
 }
 
+type DemoLoop = { start: number; timeline: DriveTimeline; duration: number };
+/** Trajets simulés en mémoire : plan de conduite et boucles déjà calculées, par mission. */
+const demoTrips = new Map<string, { plan: DrivePlan; loops: DemoLoop[] }>();
+const DEMO_TRIPS_LIMIT = 200;
+const DEMO_LOOP_MAX_SECONDS = 3600;
+const DEMO_MAX_LOOPS = 500;
+
 /**
- * Distance parcourue sur un trajet simulé de `lengthMeters`, à la vitesse supposée entre deux
- * signaux : le livreur avance toujours vers la cible (comme l'estimation des cartes), de 8 % à
- * 90 % du trajet, puis repart du début. Déterministe pour un instant donné.
+ * Position simulée d'un livreur de démo : même conduite que l'estimation des cartes (virages,
+ * grands carrefours, feux), de 8 % à 90 % du trajet puis retour au début. Déterministe.
  */
-export function demoTripDistance(missionStartedAt: Date, at: Date, lengthMeters: number, speedKmh: number): number {
-  if (!(lengthMeters > 0)) return 0;
-  const travelled = (Math.max(0, at.getTime() - missionStartedAt.getTime()) / 1000) * (speedKmh / 3.6);
-  return lengthMeters * 0.08 + (travelled % (lengthMeters * 0.82));
+export function demoDrivePosition(route: DriveRoute, missionStartedAt: Date, at: Date): LatLng {
+  const startMs = missionStartedAt.getTime();
+  const key = `${startMs}|${route.points.length}|${route.points[0]!.join(",")}|${route.points[route.points.length - 1]!.join(",")}`;
+  let trip = demoTrips.get(key);
+  if (!trip) {
+    const track = buildRouteTrack(route.points);
+    trip = { plan: buildDrivePlan({ points: slicePath(track, track.length * 0.08, track.length * 0.9), lights: route.lights }), loops: [] };
+    if (demoTrips.size >= DEMO_TRIPS_LIMIT) demoTrips.delete(demoTrips.keys().next().value!);
+    demoTrips.set(key, trip);
+  }
+  const atMs = Math.max(at.getTime(), startMs);
+  while (trip.loops.length < DEMO_MAX_LOOPS) {
+    const loop = trip.loops.find((candidate) => atMs >= candidate.start && atMs < candidate.start + candidate.duration * 1000);
+    if (loop) return positionAt(loop.timeline, (atMs - loop.start) / 1000);
+    const last = trip.loops[trip.loops.length - 1];
+    const start = last ? last.start + last.duration * 1000 : startMs;
+    const timeline = simulateDrive(trip.plan, start, DEMO_LOOP_MAX_SECONDS);
+    trip.loops.push({ start, timeline, duration: Math.max(1, timelineDuration(timeline)) });
+  }
+  const last = trip.loops[trip.loops.length - 1]!;
+  return positionAt(last.timeline, last.duration);
 }
 
 /** Point situé à `progress` (0 à 1) de la longueur d'un tracé [lat, lng] : reste sur la route. */

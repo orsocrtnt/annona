@@ -19,40 +19,42 @@ test("TRACK-1 : position fraîche datée, précision conservée ; périmée sans
   const fresh = policy.trackingPosition(mission, driver, 45, now); assert.equal(fresh.state, "FRESH"); assert.equal(fresh.estimated, false);
   const expired = policy.trackingPosition(mission, driver, 10, now); assert.equal(expired.state, "STALE"); assert.equal(expired.latitude, 45); assert.equal(expired.longitude, 3); assert.equal(expired.estimated, false); assert.equal(expired.updatedAt, driver.driverLocation.updatedAt.toISOString());
 });
-// 0,1° de latitude ≈ 11,12 km : à 25 km/h, environ 26 min 41 s pour la parcourir (mi-chemin vers 800 s).
-const from = { latitude: 48.8, longitude: 2.35 }, target = { latitude: 48.9, longitude: 2.35 };
-test("TRACK-2 : estimation en ligne droite à 25 km/h, plafonnée à la cible", () => {
-  const halfway = policy.estimatePosition(from, target, 800.6); assert.ok(Math.abs(halfway.latitude - 48.85) < 0.0005, String(halfway.latitude)); assert.equal(halfway.longitude, 2.35);
-  assert.deepEqual({ ...policy.estimatePosition(from, target, 3600) }, { ...target });
-  assert.deepEqual({ ...policy.estimatePosition(from, target, 0) }, { ...from });
-  assert.deepEqual({ ...policy.estimatePosition(from, from, 120) }, { ...from });
+// Itinéraire en L : ≈ 1 112 m vers le nord, puis ≈ 1 464 m vers l'est jusqu'à la cible.
+const from = { latitude: 48.8, longitude: 2.35 }, target = { latitude: 48.81, longitude: 2.37 };
+const road = { points: [[48.8, 2.35], [48.81, 2.35], [48.81, 2.37]] as [number, number][], lights: [] as [number, number][] };
+const startedEarlier = { ...mission, missionStartedAt: new Date(+now - 3600_000) };
+const longService = { trackingService: { active: true, startedAt: new Date(+now - 3600_000).toISOString() } };
+const lostFor = (seconds: number) => ({ ...driver, settings: longService, driverLocation: { ...from, accuracy: 8, updatedAt: new Date(+now - seconds * 1000) } });
+const onRoad = (p: { latitude: number | null; longitude: number | null }) => Math.abs(p.longitude! - 2.35) < 1e-9 || Math.abs(p.latitude! - 48.81) < 1e-9;
+test("TRACK-2 : sans itinéraire, le livreur reste à son dernier relevé, jamais en ligne droite", () => {
+  const held = policy.trackingPosition(startedEarlier, lostFor(120), 45, now, target);
+  assert.equal(held.state, "STALE"); assert.equal(held.estimated, true); assert.equal(held.motion!.route, null);
+  assert.deepEqual({ latitude: held.latitude, longitude: held.longitude }, from);
+  assert.deepEqual({ ...policy.motionPositionAt(held.motion!, +now + 60_000) }, from);
 });
-test("TRACK-2 : signal périmé, estimation pendant 3 min puis arrêt au point atteint", () => {
-  const lost = (seconds: number) => ({ ...driver, driverLocation: { ...from, accuracy: 8, updatedAt: new Date(+now - seconds * 1000) } });
-  const startedEarlier = { ...mission, missionStartedAt: new Date(+now - 3600_000) };
-  const longService = { trackingService: { active: true, startedAt: new Date(+now - 3600_000).toISOString() } };
-  const at = (seconds: number, t: typeof target | null = target) => policy.trackingPosition(startedEarlier, { ...lost(seconds), settings: longService }, 45, now, t);
-  const estimated = at(120); assert.equal(estimated.state, "STALE"); assert.equal(estimated.estimated, true); assert.ok(estimated.latitude! > from.latitude && estimated.latitude! < target.latitude); assert.equal(estimated.accuracy, null); assert.equal(estimated.updatedAt, lost(120).driverLocation.updatedAt.toISOString());
+test("TRACK-2 : signal périmé, conduite le long de la route pendant 3 min puis arrêt au point atteint", () => {
+  const at = (seconds: number, t: typeof target | null = target) => policy.trackingPosition(startedEarlier, lostFor(seconds), 45, now, t, t ? road : null);
+  const early = at(60); assert.equal(early.estimated, true); assert.ok(onRoad(early) && early.latitude! > from.latitude, JSON.stringify(early));
   const limit = at(180); assert.equal(limit.estimated, true);
+  assert.ok(Math.abs(limit.latitude! - 48.81) < 1e-9 && limit.longitude! > 2.35, `passé l'angle, sur la route et non en diagonale : ${limit.latitude}, ${limit.longitude}`);
+  assert.equal(early.accuracy, null); assert.equal(early.updatedAt, lostFor(60).driverLocation.updatedAt.toISOString());
   const stopped = at(181), later = at(3600);
   assert.equal(stopped.estimated, false); assert.equal(later.estimated, false);
-  assert.equal(stopped.latitude, limit.latitude, "arrêt au point estimé atteint, sans retour en arrière"); assert.equal(later.latitude, limit.latitude);
-  assert.ok(stopped.latitude! > from.latitude);
+  assert.deepEqual([stopped.latitude, stopped.longitude], [limit.latitude, limit.longitude], "arrêt au point atteint, sans retour en arrière");
+  assert.deepEqual([later.latitude, later.longitude], [limit.latitude, limit.longitude]);
   const noTarget = at(120, null); assert.equal(noTarget.estimated, false); assert.equal(noTarget.latitude, from.latitude); assert.equal(noTarget.motion, null);
-  assert.equal(policy.trackingPosition(startedEarlier, { ...lost(10), settings: longService }, 45, now, target).estimated, false, "signal frais : jamais d'estimation");
+  assert.equal(policy.trackingPosition(startedEarlier, lostFor(10), 45, now, target, road).estimated, false, "signal frais : jamais d'estimation");
 });
-test("TRACK-2 : trajectoire exposée pour avancer entre deux signaux, depuis le dernier relevé", () => {
-  const startedEarlier = { ...mission, missionStartedAt: new Date(+now - 3600_000) };
-  const service = { trackingService: { active: true, startedAt: new Date(+now - 3600_000).toISOString() } };
+test("TRACK-2 : trajectoire exposée avec son itinéraire, pour avancer entre deux signaux", () => {
   const fix = new Date(+now - 10_000);
-  const fresh = policy.trackingPosition(startedEarlier, { ...driver, settings: service, driverLocation: { ...from, accuracy: 8, updatedAt: fix } }, 45, now, target);
+  const fresh = policy.trackingPosition(startedEarlier, { ...lostFor(0), driverLocation: { ...from, accuracy: 8, updatedAt: fix } }, 45, now, target, road);
   assert.equal(fresh.state, "FRESH"); assert.equal(fresh.latitude, from.latitude, "en direct : le relevé tel quel");
-  assert.deepEqual({ ...fresh.motion!.from }, { ...from }); assert.deepEqual({ ...fresh.motion!.target }, { ...target }); assert.equal(fresh.motion!.since, fix.toISOString());
-  const in60 = policy.motionPositionAt(fresh.motion!, +fix + 60_000), in120 = policy.motionPositionAt(fresh.motion!, +fix + 120_000);
-  assert.ok(in60.latitude > from.latitude && in120.latitude > in60.latitude, "avance avec le temps");
+  assert.deepEqual({ ...fresh.motion!.from }, from); assert.deepEqual({ ...fresh.motion!.target }, target); assert.equal(fresh.motion!.since, fix.toISOString()); assert.equal(fresh.motion!.route, road);
+  const in30 = policy.motionPositionAt(fresh.motion!, +fix + 30_000), in90 = policy.motionPositionAt(fresh.motion!, +fix + 90_000);
+  assert.ok(in30.latitude > from.latitude && in90.latitude >= in30.latitude && onRoad(in30) && onRoad(in90), "avance le long de la route");
   assert.deepEqual({ ...policy.motionPositionAt(fresh.motion!, +fix + 3600_000) }, { ...policy.motionPositionAt(fresh.motion!, +fix + 180_000) }, "plafonnée à 3 min");
-  assert.deepEqual({ ...policy.motionPositionAt(fresh.motion!, +fix - 5000) }, { ...from }, "horloge en retard : jamais avant le relevé");
-  const stale = policy.trackingPosition(startedEarlier, { ...driver, settings: service, driverLocation: { ...from, accuracy: 8, updatedAt: new Date(+now - 100_000) } }, 45, now, target);
+  assert.deepEqual({ ...policy.motionPositionAt(fresh.motion!, +fix - 5000) }, from, "horloge en retard : jamais avant le relevé");
+  const stale = policy.trackingPosition(startedEarlier, lostFor(100), 45, now, target, road);
   assert.deepEqual({ latitude: stale.latitude, longitude: stale.longitude }, { ...policy.motionPositionAt(stale.motion!, +now) }, "serveur et interface calculent le même point");
 });
 test("TRACK-2 : prochaine étape selon le statut et le type de mission", () => {
@@ -79,6 +81,9 @@ test("TRACK-1 : chronologie stable, étapes prévues exclues, aucune coordonnée
   const rows = ["Livraison", "Collecte 1", "Collecté", "Mission démarrée"].map((label, i) => ({ id: String(4-i), label, description: null, occurredAt: now, latitude: 45, secret: "x" }));
   const timeline = policy.trackingTimeline(rows); assert.deepEqual(timeline.map(r => r.label), ["Mission démarrée", "Collecté"]); assert.ok(!JSON.stringify(timeline).includes("latitude")); assert.ok(!JSON.stringify(timeline).includes("secret"));
 });
+/** Résolveur de test : itinéraire en ligne de rue directe du relevé vers la cible. */
+const resolver = { resolveTrackingPosition: async (_driverId: string | null, m: any, d: any, threshold: number, at: Date, t: any) =>
+  policy.trackingPosition(m, d, threshold, at, t, t && d?.driverLocation ? { points: [[d.driverLocation.latitude, d.driverLocation.longitude], [t.latitude, t.longitude]], lights: [] } : null) };
 class ConversationError extends Error { constructor(public status: number, message: string) { super(message); } }
 function moduleAt(path: string, deps: Record<string, unknown>) {
   const module = { exports: {} };
@@ -96,7 +101,7 @@ function fixture() {
     delivery: { findFirst: async (args: any) => { calls.push(["mission", args]); return foundMission; }, updateMany: async (args: any) => { calls.push(["missionUpdate", args]); return { count: claim }; } },
     driverLocation: { deleteMany: async (args: any) => { calls.push(["deleteLocation", args]); }, upsert: async (args: any) => { calls.push(["location", args]); return { updatedAt: now }; } },
   };
-  const deps = { "@/services/prisma/client": { prisma: db }, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(db), conversationScope: (actor: any) => ({ companyId: actor.companyId, ...(actor.role === "CLIENT" ? { customerId: actor.id } : {}) }) }, "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s }, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema }, "./tracking.policy": policy, "@/domains/tracking/tracking.policy": policy, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s } };
+  const deps = { "@/services/prisma/client": { prisma: db }, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(db), conversationScope: (actor: any) => ({ companyId: actor.companyId, ...(actor.role === "CLIENT" ? { customerId: actor.id } : {}) }) }, "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s }, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema }, "./tracking.policy": policy, "@/domains/tracking/tracking.policy": policy, "./tracking-position.service": resolver, "@/domains/tracking/tracking-position.service": resolver, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s } };
   return { service: moduleAt("src/domains/tracking/tracking.service.ts", deps), location: moduleAt("src/domains/driver/driver-location.service.ts", deps), calls, user, order, noUser: () => { user = null; }, noOrder: () => { order = null; }, noMission: () => { foundMission = null; }, conflict: () => { claim = 0; } };
 }
 const actor = { id: "client", companyId: "a", role: "CLIENT", permissions: ["dashboard:client"] };
@@ -150,6 +155,7 @@ test("TRACK-1 carte chauffeurs : destination ne devient jamais position, signal 
     "@/domains/driver/driver-location.service": { getCompanyDriverLocations: async () => locations },
     "@/domains/company/location-settings.service": { getCompanyLocationSettings: async () => DEFAULT_DRIVER_LOCATION_SETTINGS },
     "@/domains/tracking/tracking.policy": policy,
+    "@/domains/tracking/tracking-position.service": resolver,
     "@/lib/geocoding": { geocodeManyCapped: async () => new Map(), isLegacyFakeTrackingCoord: () => false },
     "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s },
     "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS },
@@ -203,7 +209,7 @@ test("TRACK-2 services : signal perdu depuis 2 min, livreur gardé et estimé su
   const assertEstimated = (point: { latitude: number | null; estimated: boolean }) => { assert.equal(point.estimated, true); assert.ok(point.latitude! > 48.8 && point.latitude! < 48.9, String(point.latitude)); };
 
   const prisma = { user: { findMany: async () => [{ id: "driver", firstName: "D", lastName: "A", status: "ACTIVE", settings: lostDriver.settings, driverLocation: lostDriver.driverLocation, deliveriesAsDriver: [delivery], _count: { deliveriesAsDriver: 1 } }] }, delivery: { findMany: async () => [delivery] } };
-  const common = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS }, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s, formatClientFromParts: () => "Client" } };
+  const common = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/domains/tracking/tracking-position.service": resolver, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS }, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s, formatClientFromParts: () => "Client" } };
   const location = moduleAt("src/domains/driver/driver-location.service.ts", { ...common, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(prisma) } });
   const [live] = await location.getCompanyDriverLocations("a", 45);
   assertEstimated(live); assert.equal(live.isOnline, false); assert.equal(live.positionState, "STALE"); assert.equal(live.updatedAt, lostAt.toISOString());

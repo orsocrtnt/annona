@@ -1,6 +1,7 @@
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
-import { trackingPosition, trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
+import { resolveTrackingPosition } from "@/domains/tracking/tracking-position.service";
+import { trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
 import { geocodeManyCapped, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
@@ -411,6 +412,71 @@ async function fetchActiveMapDeliveries(
   return deliveries;
 }
 
+/** Destination, collectes et prochaine étape du livreur, avec les coordonnées géocodées à l'instant. */
+function resolveDeliveryStops(delivery: MapDeliveryRecord, coordsByKey: Map<string, { lat: number; lng: number }>) {
+  const destCoords =
+    delivery.latitude != null && delivery.longitude != null
+      ? { lat: delivery.latitude, lng: delivery.longitude }
+      : coordsByKey.get(`${delivery.id}-dest`);
+
+  let pickupCoords: { lat: number; lng: number } | null = null;
+  let pickupAddress: string | null = null;
+  const pickups: DispatchMapPickup[] = [];
+
+  if (delivery.deliveryCategory === "COURIER") {
+    const stops = delivery.order.stops;
+    if (stops.length > 0) {
+      for (const stop of stops) {
+        const coords =
+          stop.latitude != null && stop.longitude != null
+            ? { lat: stop.latitude, lng: stop.longitude }
+            : coordsByKey.get(`${delivery.id}-pickup-${stop.id}`);
+        const address = formatAddress([stop.address, stop.postalCode, stop.city]);
+        if (!coords) continue;
+        pickups.push({
+          id: stop.id,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          address,
+          label: stop.label?.trim() || `Collecte ${pickups.length + 1}`,
+        });
+      }
+      pickupCoords = pickups[0] ? { lat: pickups[0].latitude, lng: pickups[0].longitude } : null;
+      pickupAddress = pickups[0]?.address ?? null;
+    } else {
+      pickupCoords =
+        delivery.pickupLatitude != null && delivery.pickupLongitude != null
+          ? { lat: delivery.pickupLatitude, lng: delivery.pickupLongitude }
+          : (coordsByKey.get(`${delivery.id}-pickup`) ?? null);
+      pickupAddress = formatAddress([
+        delivery.pickupAddress,
+        delivery.pickupPostalCode,
+        delivery.pickupCity,
+      ]);
+      if (pickupCoords && pickupAddress) {
+        pickups.push({
+          id: `${delivery.id}-pickup`,
+          latitude: pickupCoords.lat,
+          longitude: pickupCoords.lng,
+          address: pickupAddress,
+          label: "Collecte",
+        });
+      }
+    }
+  }
+
+  // Coordonnées résolues (y compris géocodées à l'instant) : même cible que le tracé de la carte.
+  const target = trackingTarget({
+    status: delivery.status,
+    deliveryCategory: delivery.deliveryCategory,
+    latitude: destCoords?.lat ?? null,
+    longitude: destCoords?.lng ?? null,
+    pickupLatitude: pickupCoords?.lat ?? null,
+    pickupLongitude: pickupCoords?.lng ?? null,
+  });
+  return { destCoords, pickupCoords, pickupAddress, pickups, target };
+}
+
 async function buildDeliveriesMapPayload(
   deliveries: MapDeliveryRecord[],
   onlineThresholdSeconds: number,
@@ -535,71 +601,25 @@ async function buildDeliveriesMapPayload(
   const result: DispatchMapDelivery[] = [];
   const points: DispatchMapPoint[] = [];
 
-  for (const delivery of deliveries) {
-    const destCoords =
-      delivery.latitude != null && delivery.longitude != null
-        ? { lat: delivery.latitude, lng: delivery.longitude }
-        : coordsByKey.get(`${delivery.id}-dest`);
+  // Positions résolues en parallèle : chaque livreur reçoit son itinéraire (en mémoire ou calculé).
+  const resolvedStops = deliveries.map((delivery) => resolveDeliveryStops(delivery, coordsByKey));
+  const positions = await Promise.all(deliveries.map((delivery, index) =>
+    resolveTrackingPosition(
+      delivery.driverId,
+      delivery,
+      delivery.driver?.companyId === delivery.companyId ? delivery.driver : null,
+      onlineThresholdSeconds,
+      now,
+      resolvedStops[index]!.target
+    )
+  ));
+
+  for (const [index, delivery] of deliveries.entries()) {
+    const { destCoords, pickupCoords, pickupAddress, pickups } = resolvedStops[index]!;
     const destAddress = formatAddress([delivery.address, delivery.postalCode, delivery.city]);
     const driverName = resolveDriverName(delivery.driverName);
     const customerName = resolveCustomerName(delivery);
-
-    let pickupCoords: { lat: number; lng: number } | null = null;
-    let pickupAddress: string | null = null;
-    const pickups: DispatchMapPickup[] = [];
-
-    if (delivery.deliveryCategory === "COURIER") {
-      const stops = delivery.order.stops;
-      if (stops.length > 0) {
-        for (const stop of stops) {
-          const coords =
-            stop.latitude != null && stop.longitude != null
-              ? { lat: stop.latitude, lng: stop.longitude }
-              : coordsByKey.get(`${delivery.id}-pickup-${stop.id}`);
-          const address = formatAddress([stop.address, stop.postalCode, stop.city]);
-          if (!coords) continue;
-          pickups.push({
-            id: stop.id,
-            latitude: coords.lat,
-            longitude: coords.lng,
-            address,
-            label: stop.label?.trim() || `Collecte ${pickups.length + 1}`,
-          });
-        }
-        pickupCoords = pickups[0] ? { lat: pickups[0].latitude, lng: pickups[0].longitude } : null;
-        pickupAddress = pickups[0]?.address ?? null;
-      } else {
-        pickupCoords =
-          delivery.pickupLatitude != null && delivery.pickupLongitude != null
-            ? { lat: delivery.pickupLatitude, lng: delivery.pickupLongitude }
-            : (coordsByKey.get(`${delivery.id}-pickup`) ?? null);
-        pickupAddress = formatAddress([
-          delivery.pickupAddress,
-          delivery.pickupPostalCode,
-          delivery.pickupCity,
-        ]);
-        if (pickupCoords && pickupAddress) {
-          pickups.push({
-            id: `${delivery.id}-pickup`,
-            latitude: pickupCoords.lat,
-            longitude: pickupCoords.lng,
-            address: pickupAddress,
-            label: "Collecte",
-          });
-        }
-      }
-    }
-
-    // Coordonnées résolues (y compris géocodées à l'instant) : même cible que le tracé de la carte.
-    const target = trackingTarget({
-      status: delivery.status,
-      deliveryCategory: delivery.deliveryCategory,
-      latitude: destCoords?.lat ?? null,
-      longitude: destCoords?.lng ?? null,
-      pickupLatitude: pickupCoords?.lat ?? null,
-      pickupLongitude: pickupCoords?.lng ?? null,
-    });
-    const position = trackingPosition(delivery, delivery.driver?.companyId === delivery.companyId ? delivery.driver : null, onlineThresholdSeconds, now, target);
+    const position = positions[index]!;
     // Frais, estimé ou dernier connu : le livreur reste sur la carte tant que la mission est suivie.
     const driverLocation: DispatchMapDriverLocation | null =
       !isHistorical && position.latitude != null && position.longitude != null && position.updatedAt

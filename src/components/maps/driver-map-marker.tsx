@@ -3,11 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import { Marker, Polyline } from "react-leaflet";
-import { ESTIMATION_MAX_SECONDS, type TrackingMotion } from "@/domains/tracking/tracking.policy";
+import { motionTimeline, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { useNow } from "@/hooks/use-now";
-import { useRoadTrack } from "@/hooks/use-road-track";
 import { driverSignalLabel, getDriverPresenceStatus, TEAMS_PRESENCE } from "@/lib/driver-presence";
-import { blendPoint, MOTION_BLEND_MS, motionPoint, motionTrail } from "@/lib/maps/driver-motion";
+import { blendPoint, MOTION_BLEND_MS, motionPoint, motionSettled, motionTrail } from "@/lib/maps/driver-motion";
 import { MAP_ROUTE_STYLE, MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
 import type { LatLng } from "@/lib/maps/route-progress";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
@@ -154,12 +153,9 @@ function useDriverMotion(
   markerRef: React.RefObject<L.Marker | null>,
   trailRefs: React.RefObject<(L.Polyline | null)[]>
 ) {
-  // Trajet effectivement animé : il ne change qu'une fois l'itinéraire du nouveau relevé prêt.
-  const { motion: driven, road } = useRoadTrack(motion);
   const shownRef = useRef<LatLng | null>(null);
 
   useEffect(() => {
-    const motion = driven;
     if (!motion) {
       shownRef.current = null;
       return;
@@ -167,23 +163,24 @@ function useDriverMotion(
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const blendFrom = reduceMotion ? null : shownRef.current;
     const blendStart = performance.now();
-    const stopsAt = Date.parse(motion.since) + ESTIMATION_MAX_SECONDS * 1000;
+    // Conduite simulée une fois par relevé (itinéraire fourni par le serveur), lue à chaque image.
+    const timeline = motionTimeline(motion);
     let frame = 0;
     let timer = 0;
     let lastTrail = 0;
 
     const render = () => {
       const nowMs = Date.now();
-      const goal = motionPoint(motion, road, nowMs);
+      const goal = motionPoint(motion, timeline, nowMs);
       const blending = blendFrom !== null && performance.now() - blendStart < MOTION_BLEND_MS;
       const shown = blending ? blendPoint(blendFrom, goal, performance.now() - blendStart) : goal;
       shownRef.current = shown;
       markerRef.current?.setLatLng(shown);
       // Livreur arrêté (signal perdu) et recalage fini : plus rien à animer après ce rendu.
-      const keepGoing = blending || nowMs < stopsAt;
+      const keepGoing = blending || !motionSettled(motion, timeline, nowMs);
       if (showTrail && (nowMs - lastTrail >= TRAIL_REFRESH_MS || !keepGoing)) {
         lastTrail = nowMs;
-        const trail = motionTrail(motion, road, nowMs, shown);
+        const trail = motionTrail(motion, timeline, nowMs, shown);
         for (const line of trailRefs.current ?? []) line?.setLatLngs(trail);
       }
       return keepGoing;
@@ -199,7 +196,7 @@ function useDriverMotion(
     };
     frame = window.requestAnimationFrame(loop);
     return () => window.cancelAnimationFrame(frame);
-  }, [driven, road, showTrail, markerRef, trailRefs]);
+  }, [motion, showTrail, markerRef, trailRefs]);
 }
 
 export function DriverMapMarker({
@@ -228,7 +225,8 @@ export function DriverMapMarker({
   // Références stables : react-leaflet ne repositionne pas le marqueur animé à chaque rendu.
   const staticPosition = useMemo<LatLng>(() => [latitude, longitude], [latitude, longitude]);
   const [mountPosition] = useState<LatLng>(() => [latitude, longitude]);
-  const [mountTrail] = useState<LatLng[]>(() => (motion ? [[latitude, longitude], [motion.target.latitude, motion.target.longitude]] : []));
+  // Trace vide au montage : la première image animée la dessine le long de la route.
+  const [mountTrail] = useState<LatLng[]>(() => []);
 
   return (
     <>

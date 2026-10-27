@@ -34,6 +34,14 @@ export function pointAtDistance(track: RouteTrack, meters: number): LatLng {
   return [from[0] + (to[0] - from[0]) * ratio, from[1] + (to[1] - from[1]) * ratio];
 }
 
+/** Tronçon de la route entre deux distances (bornées au tracé). */
+export function slicePath(track: RouteTrack, fromMeters: number, toMeters: number): LatLng[] {
+  const from = Math.min(Math.max(fromMeters, 0), track.length);
+  const to = Math.min(Math.max(toMeters, from), track.length);
+  const inner = track.points.filter((_, index) => track.cumulative[index]! > from && track.cumulative[index]! < to);
+  return [pointAtDistance(track, from), ...inner, pointAtDistance(track, to)];
+}
+
 /** Route encore à parcourir depuis `meters` : la trace derrière le livreur disparaît. */
 export function remainingPath(track: RouteTrack, meters: number): LatLng[] {
   if (track.points.length < 2) return [...track.points];

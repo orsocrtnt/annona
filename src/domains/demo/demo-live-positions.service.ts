@@ -1,24 +1,24 @@
 import { prisma } from "@/services/prisma/client";
-import { ESTIMATION_MAX_SECONDS, ESTIMATION_SPEED_KMH, trackingService, trackingTarget } from "@/domains/tracking/tracking.policy";
-import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
-import { buildRouteTrack, pointAtDistance } from "@/lib/maps/route-progress";
+import { ESTIMATION_MAX_SECONDS, trackingService, trackingTarget } from "@/domains/tracking/tracking.policy";
+import { fetchDriveRoute } from "@/lib/maps/drive-route-provider";
+import type { DriveRoute } from "@/lib/maps/drive-simulation";
 import {
   DEMO_LOST_SIGNAL_AFTER_START_MS,
   DEMO_POSITION_MIN_INTERVAL_MS,
+  demoDrivePosition,
   demoSignalLagSeconds,
-  demoTripDistance,
   demoTripStart,
   isDemoCompanyForSimulation,
 } from "@/lib/demo/demo-live-position";
 
 type Point = { latitude: number; longitude: number };
 
-/** Itinéraires routiers des trajets simulés, gardés en mémoire : un seul appel par trajet. */
-const routeCache = new Map<string, [number, number][]>();
+/** Itinéraires routiers (et grands carrefours) des trajets simulés, en mémoire : un appel par trajet. */
+const routeCache = new Map<string, DriveRoute>();
 const ROUTE_CACHE_LIMIT = 200;
 let lastRouteRequestAt = 0;
 
-async function demoTripRoute(start: Point, target: Point): Promise<[number, number][]> {
+async function demoTripRoute(start: Point, target: Point): Promise<DriveRoute> {
   const key = [start.latitude, start.longitude, target.latitude, target.longitude].map((v) => v.toFixed(5)).join(",");
   const cached = routeCache.get(key);
   if (cached) return cached;
@@ -26,14 +26,12 @@ async function demoTripRoute(start: Point, target: Point): Promise<[number, numb
   const wait = lastRouteRequestAt + 1_150 - Date.now();
   if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
   lastRouteRequestAt = Date.now();
-  const route = await fetchOsrmRoute([start, target]);
-  // Sans itinéraire (service indisponible), ligne droite : la démo reste utilisable.
-  const polyline: [number, number][] = route ?? [[start.latitude, start.longitude], [target.latitude, target.longitude]];
-  if (route) {
-    if (routeCache.size >= ROUTE_CACHE_LIMIT) routeCache.delete(routeCache.keys().next().value!);
-    routeCache.set(key, polyline);
-  }
-  return polyline;
+  const route = await fetchDriveRoute(start, target);
+  // Sans aucun fournisseur d'itinéraire, ligne droite non mise en cache : la démo reste utilisable.
+  if (!route) return { points: [[start.latitude, start.longitude], [target.latitude, target.longitude]], lights: [] };
+  if (routeCache.size >= ROUTE_CACHE_LIMIT) routeCache.delete(routeCache.keys().next().value!);
+  routeCache.set(key, route);
+  return route;
 }
 
 /**
@@ -101,9 +99,8 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
       (mission.latitude != null && mission.longitude != null ? { latitude: mission.latitude, longitude: mission.longitude } : null);
     if (!target) continue;
     const route = await demoTripRoute(demoTripStart(target), target);
-    // Même vitesse que l'estimation des cartes : entre deux signaux, le marqueur reste aligné.
-    const track = buildRouteTrack(route);
-    const [latitude, longitude] = pointAtDistance(track, demoTripDistance(mission.missionStartedAt!, signalAt, track.length, ESTIMATION_SPEED_KMH));
+    // Même conduite que l'estimation des cartes : entre deux signaux, le marqueur reste aligné.
+    const [latitude, longitude] = demoDrivePosition(route, mission.missionStartedAt!, signalAt);
     const position = { latitude, longitude };
 
     // Le suivi n'est visible que si le service du livreur est actif (même règle qu'en réel).

@@ -14,7 +14,7 @@ import {
   getRouteWaypointsAfterDriver,
   showDriverOnMap,
 } from "@/features/back-office/dispatch-delivery-map-state";
-import { requestQueuedRoute } from "@/hooks/use-road-track";
+import { requestQueuedRoute } from "@/lib/maps/queued-route";
 import {
   getDispatchMapFitPadding,
   fitMapPointsWithPadding,
