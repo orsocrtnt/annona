@@ -61,6 +61,33 @@ Mesure du 27 octobre 2026 (MacBook, PostgreSQL 15.14 Homebrew), sans aucune erre
 
 Au-delà de 5 opérations simultanées, la latence de création croît à peu près proportionnellement : les opérations attendent une connexion libre du pool, sans erreur. Base locale sans réseau : ces chiffres mesurent le coût Prisma/PostgreSQL et la file du pool, pas l'aller-retour vers Supabase. Une création de commande enchaîne une dizaine d'allers-retours séquentiels, donc sa durée réelle approche 10 × la latence réseau vers la base. Exemples : environ 5,5 s depuis le poste local (≈ 550 ms par requête, DISPATCH-3), environ 1 s si les fonctions Vercel tournaient hors de Paris (≈ 90 ms, hypothèse non vérifiée, voir ENV-2). Ce sont des ordres de grandeur, pas des mesures d'hébergement.
 
+## Serveur Next local, routes publiques (2026-10-27)
+
+```bash
+npm run test:perf02:next
+```
+
+Décision C10 du 27 octobre : mesure locale autorisée sur les routes publiques ; les routes connectées attendent une cible Supabase joignable (ENV-2). La commande démarre le même PostgreSQL jetable (`127.0.0.1:55441`, base `perf02`). Elle y pousse le schéma et charge le catalogue actif (migrations C8 puis C9). Elle construit ensuite l'application en production (`next build`), la sert par `next start` sur `127.0.0.1:55451`, mesure, puis arrête le serveur et supprime la base. L'environnement du serveur est entièrement fixé par `nextLocalEnv` : rien n'est hérité du poste, donc ni secret, ni Stripe, ni base distante, et Supabase pointe vers un domaine `.invalid`. Tests : `tests/perf02-next.test.ts`. Sortie : `outputs/perf02/next-local.json`.
+
+Protocole : 3 requêtes de chauffe, puis 48 requêtes par niveau de concurrence (1, 4, 8, 16) sur chaque route. Pour Contact, une rafale de 60 envois par 8, chacun avec une source distincte, puis 48 envois par niveau une fois la limite atteinte.
+
+Mesure du 27 octobre 2026 (MacBook, Node 20.19, PostgreSQL 15 Homebrew), sans aucune erreur :
+
+| Route | Rendu | p50 / p95 à 1 | p50 / p95 à 16 | Débit à 16 |
+|---|---|---|---|---:|
+| `/` | statique | 2,2 / 3,7 ms | 16,4 / 43,4 ms | 730/s |
+| `/fonctionnalites` | statique | 2,0 / 2,7 ms | 16,1 / 18,3 ms | 956/s |
+| `/tarifs` | statique, catalogue lu au build | 2,6 / 4,5 ms | 18,5 / 20,5 ms | 861/s |
+| `/demonstration` | statique | 1,6 / 2,2 ms | 12,4 / 12,9 ms | 1 306/s |
+| `/contact` | statique | 1,3 / 2,1 ms | 9,7 / 11,2 ms | 1 575/s |
+| `/register` | statique | 0,9 / 1,2 ms | 6,9 / 7,2 ms | 2 303/s |
+| `GET /api/signup` | dynamique, catalogue en base | 3,0 / 5,0 ms | 19,3 / 22,9 ms | 719/s |
+| `POST /api/contact` refusé (429) | dynamique, 2 comptages | 2,2 / 3,1 ms | 26,3 / 28,0 ms | 604/s |
+
+Lecture : les pages publiques sont prérendues et ne touchent pas la base. Conséquence : `/tarifs` affiche le catalogue lu au moment du build, et un changement de prix demande un nouveau déploiement. À 16 requêtes simultanées, la latence croît avec la file d'attente du serveur Node unique, sans erreur. Seules l'API d'inscription et Contact interrogent PostgreSQL à chaque requête. Comme pour la mesure précédente, ces chiffres excluent l'aller-retour réseau vers Supabase et le démarrage à froid des fonctions Vercel.
+
+**Défaut mis en évidence :** la rafale de 60 envois Contact simultanés en a accepté **56** pour une limite globale de 50, et 56 messages ont été écrits. Le comptage puis l'écriture ne sont pas atomiques : des envois concurrents lisent le même compte. Le même écart vaut pour la limite de 3 par source. Correction suivie dans GROWTH-1.
+
 ## Suite autorisée
 
 Avant les pilotes, rejouer le même protocole sur un PostgreSQL/Prisma réellement isolé et expressément autorisé, avec serveur Next local contrôlé, puis sur préproduction seulement après autorisation écrite et dans un plafond de charge défini. Mesurer alors les mêmes p50/p95, le pool réel, les fichiers, les jobs et l'absence de fuite A/B. Ces mesures manquent encore : PERF-02 reste ouverte.
