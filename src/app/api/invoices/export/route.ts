@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { exportAccountingCsv } from "@/domains/invoice/accounting-export.service";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { parseAccountingExportQuery } from "@/lib/validations/accounting-export";
 
 export const runtime = "nodejs";
@@ -8,6 +8,8 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const auth = await requireStaffRole("invoices:read");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
   const parsed = parseAccountingExportQuery(request.url);

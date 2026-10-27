@@ -1,0 +1,30 @@
+[     205ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[    2754ms] [LOG] [Fast Refresh] done in 2650ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[    2859ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[    3047ms] [LOG] [Fast Refresh] done in 289ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[    3401ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js:14537
+[    9864ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[   10314ms] [LOG] [Fast Refresh] done in 551ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[   16620ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[   16901ms] [LOG] [Fast Refresh] done in 384ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[   37102ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[   37261ms] [LOG] [Fast Refresh] done in 259ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[  155623ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[  156976ms] [LOG] [Fast Refresh] done in 1455ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[  218712ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[  221161ms] [LOG] [Fast Refresh] done in 2550ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[  221265ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[  221271ms] [LOG] [Fast Refresh] done in 106ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[  221313ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3106/api/orders?:0
+[  575212ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[  575426ms] [LOG] [Fast Refresh] done in 314ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[  663477ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[  663582ms] [LOG] [Fast Refresh] done in 207ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[  664337ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[  664348ms] [LOG] [Fast Refresh] done in 114ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[  664495ms] [LOG] [Fast Refresh] rebuilding @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9895
+[  664636ms] [LOG] [Fast Refresh] done in 243ms @ http://127.0.0.1:3106/_next/static/chunks/node_modules_next_dist_client_2d738c12._.js:9755
+[ 1817999ms] [ERROR] Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED @ http://127.0.0.1:3106/api/order-conversations/notifications:0
+[ 1833375ms] [ERROR] Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED @ http://127.0.0.1:3106/api/operational-alerts:0
+[ 1833387ms] [ERROR] Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED @ http://127.0.0.1:3106/api/orders?:0
+[ 2829561ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://127.0.0.1:3106/api/operational-alerts:0

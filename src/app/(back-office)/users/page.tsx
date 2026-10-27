@@ -65,7 +65,8 @@ async function fetchUsers() {
 
 export default function UsersPage() {
   const { role } = usePermissions();
-  const canDelegate = canManageMiniAdmins(role);
+  const platformReadOnly = role === "SUPER_ADMIN";
+  const canDelegate = canManageMiniAdmins(role) && !platformReadOnly;
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -120,16 +121,18 @@ export default function UsersPage() {
               settings={row.settings}
             />
           ) : null}
-          <DeleteUserButton
-            userId={row.id}
-            userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
-            role={row.role.systemRole}
-            locked={isDemoLockedAccountEmail(row.email) || (row.role.systemRole === "MINI_ADMIN" && !canDelegate)}
-          />
+          {platformReadOnly ? null : (
+            <DeleteUserButton
+              userId={row.id}
+              userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
+              role={row.role.systemRole}
+              locked={isDemoLockedAccountEmail(row.email) || (row.role.systemRole === "MINI_ADMIN" && !canDelegate)}
+            />
+          )}
         </div>
       ),
     },
-  ], [canDelegate]);
+  ], [canDelegate, platformReadOnly]);
 
   const rows = useMemo(() => {
     const mapped = (users ?? []).map((u) => ({
@@ -175,7 +178,7 @@ export default function UsersPage() {
             Clients, chauffeurs et mini-admins de votre entreprise
           </p>
         </div>
-        <CreateUserDialog />
+        {platformReadOnly ? null : <CreateUserDialog />}
       </div>
 
       {error && (
@@ -223,7 +226,7 @@ export default function UsersPage() {
                     ? "Aucun mini-admin"
                     : "Aucun utilisateur"
             }
-            emptyDescription="Créez un compte avec le bouton « Nouvel utilisateur »."
+            emptyDescription={platformReadOnly ? "Aucun compte ne correspond à cette recherche." : "Créez un compte avec le bouton « Nouvel utilisateur »."}
           />
         </CardContent>
       </Card>

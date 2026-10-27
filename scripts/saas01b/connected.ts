@@ -22,6 +22,7 @@ class TestProvider implements SandboxBillingProvider {
   effects = new Map<string, object>();
   failAfterCheckout = false;
   failAfterChange = false;
+  failAfterUsage = false;
   async checkout(account: string, _email: string, contract: BillingContract, key: string) {
     const existing = this.effects.get(key);
     if (existing) return existing as { id: string; url: string; customerId: string };
@@ -61,7 +62,9 @@ class TestProvider implements SandboxBillingProvider {
     const existing = this.effects.get(key); if (existing) return existing as { invoiceId: string };
     const tax = Math.round(amount * vat / 10000);
     this.states.get(sub)!.invoices.push({ id: `in_usage_${key}`, subscriptionId: sub, status: "paid", currency: "EUR", subtotalCents: amount, taxCents: tax, totalCents: amount + tax, paidCents: amount + tax, refundedCents: 0, periodStart: period.start, periodEnd: period.end, dueAt: period.end, reason: "usage", taxSource: "test:simulated", documentUrl: null });
-    const result = { invoiceId: `in_usage_${key}` }; this.effects.set(key, result); return result;
+    const result = { invoiceId: `in_usage_${key}` }; this.effects.set(key, result);
+    if (this.failAfterUsage) { this.failAfterUsage = false; throw new Error("BILLING_PROVIDER_UNAVAILABLE"); }
+    return result;
   }
 }
 async function main() {
@@ -112,10 +115,19 @@ async function main() {
   checked("simultaneous changes rejected; crash-after-charge resumes once; paid Pro rights projected");
   await assert.rejects(restarted.command(account.id, "change-pro", { ...change, confirmedTotalCents: 1201 }), /KEY_REUSED/);
   checked("idempotency key cannot be reused with changed consent");
+  const crashPeriod = await db.saasUsagePeriod.create({ data: { companyId: updated.companyId, subscriptionId: updated.id, startsAt: new Date("2026-08-01Z"), endsAt: new Date("2026-09-01Z"), includedOrders: 3000, orderCount: 3050, overageCount: 50, orderOverageUnitPriceCents: 8 } });
+  provider.failAfterUsage = true;
+  await assert.rejects(restarted.billClosedUsage(account.id), /UNAVAILABLE/);
+  const afterCrash = await db.saasUsagePeriod.findUniqueOrThrow({ where: { id: crashPeriod.id } });
+  assert.equal(afterCrash.closedAt, null);
+  const usagePending = await db.saasBillingAccount.findUniqueOrThrow({ where: { id: account.id } });
+  await restarted.resumeOperation(usagePending.pendingOperationId!);
+  assert.ok((await db.saasUsagePeriod.findUniqueOrThrow({ where: { id: crashPeriod.id } })).closedAt);
+  checked("usage crash keeps period open then resumes original key once");
   const period = await db.saasUsagePeriod.create({ data: { companyId: updated.companyId, subscriptionId: updated.id, startsAt: new Date("2026-09-01Z"), endsAt: new Date("2026-10-01Z"), includedOrders: 3000, orderCount: 3100, overageCount: 100, orderOverageUnitPriceCents: 8 } });
   await restarted.billClosedUsage(account.id); await restarted.billClosedUsage(account.id);
   assert.ok((await db.saasUsagePeriod.findUniqueOrThrow({ where: { id: period.id } })).closedAt);
-  assert.equal(provider.states.get(sub)!.invoices.filter((i) => i.reason === "usage").length, 1);
+  assert.equal(provider.states.get(sub)!.invoices.filter((i) => i.reason === "usage").length, 2);
   checked("monthly usage frozen/billed once with separate invoice");
   const initial = provider.states.get(sub)!.invoices[0]!;
   await restarted.command(account.id, "refund-decided", { kind: "REFUND", invoiceId: initial.id, amountCents: 100, actorId: "test-operator", reason: "Erreur de facturation fictive documentée" });

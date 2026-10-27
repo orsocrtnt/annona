@@ -1058,3 +1058,39 @@ model SaasBillingOperation {
   @@index([status, createdAt])
   @@map("saas_billing_operations")
 }
+
+enum PlatformAccessDecision {
+  ALLOWED
+  DENIED
+}
+
+enum PlatformAccessResource {
+  OVERVIEW
+  SAAS_HEALTH
+  SERVICE_HEALTH
+  COMPANIES
+  COMPANY_DETAIL
+  USERS
+  SUBSCRIPTIONS
+  SUPPORT_TICKETS
+  OPERATION_JOBS
+  INCIDENTS
+  ACCESS_EVENTS
+}
+
+/// Lecture plateforme journalisée. Aucune relation, aucune donnée personnelle.
+model PlatformAccessEvent {
+  id         String                   @id @default(cuid())
+  occurredAt DateTime                 @map("occurred_at")
+  expiresAt  DateTime                 @map("expires_at")
+  actorId    String                   @map("actor_id")
+  role       SystemRole
+  method     String
+  resource   PlatformAccessResource
+  decision   PlatformAccessDecision
+
+  @@index([occurredAt])
+  @@index([expiresAt])
+  @@index([actorId])
+  @@map("platform_access_events")
+}

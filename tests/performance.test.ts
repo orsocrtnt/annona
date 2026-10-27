@@ -102,14 +102,24 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
   const module = { exports: {} as { POST: (request: Request) => Promise<Response> } };
   const user = { id: "demo", companyId: "company", company: { isDemo: true }, role: { systemRole: "COMPANY_ADMIN" }, settings: {} };
   let cookieWrites = 0;
+  let cookieClears = 0;
+  let signOuts = 0;
   let sessionPreparations = 0;
+  let poolUnavailable = false;
   let resolvedCompanyId: string | null = null;
+  class DemoPoolUnavailableError extends Error {
+    code = "DEMO_POOL_BUSY";
+    retryAfterSeconds = 5;
+  }
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse, after: () => undefined },
     "@/lib/auth/account-access": { assertAccountActive: () => {}, AccountUnavailableError: class extends Error {} },
     "@/lib/validations/auth": { loginSchema: { safeParse: () => ({ success: true, data: { email: "demo@fixture.invalid", password: "fixture-password" } }) } },
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value },
-    "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: async () => ({ data: { user: { id: "auth", email: "demo@fixture.invalid", email_confirmed_at: "2026-10-15", user_metadata: {} } } }) } }) },
+    "@/services/supabase/server": { createClient: async () => ({ auth: {
+      signInWithPassword: async () => ({ data: { user: { id: "auth", email: "demo@fixture.invalid", email_confirmed_at: "2026-10-15", user_metadata: {} } } }),
+      signOut: async () => { signOuts++; },
+    } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
     "@/domains/auth/auth.service": { syncUserFromSupabase: async () => user, getDashboardPathForRole: () => "/dashboard", UserNotProvisionedError: class extends Error {} },
     "@/domains/user/user.service": {
@@ -118,7 +128,11 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
       updateLastLogin: async () => undefined,
     },
     "@/lib/demo/constants": { isDemoLoginEmail: () => true, DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },
-    "@/lib/demo/persona-cookie": { setDemoPersonaCookie: async () => { cookieWrites++; } },
+    "@/lib/demo/persona-cookie": {
+      setDemoPersonaCookie: async () => { cookieWrites++; },
+      clearDemoPersonaCookie: async () => { cookieClears++; },
+      clearDemoSessionCookie: async () => { cookieClears++; },
+    },
     "@/domains/demo/demo-auth.service": {
       resolveDemoActiveUser: async (_user: unknown, _persona: unknown, companyId: string) => {
         resolvedCompanyId = companyId;
@@ -128,11 +142,12 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
     "@/domains/demo/demo-session.service": {
       ensureDemoSessionForLogin: async () => {
         sessionPreparations++;
+        if (poolUnavailable) throw new DemoPoolUnavailableError();
         return "session-company";
       },
     },
     "@/domains/demo/demo-pool.service": {
-      DemoPoolUnavailableError: class extends Error {},
+      DemoPoolUnavailableError,
       maintainDemoPool: async () => [],
       requestDemoPoolRecycle: async () => true,
       recycleDemoPoolEnvironment: async () => ({ status: "recycled" }),
@@ -148,6 +163,11 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
   user.company.isDemo = false;
   const missing = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body: "{}" }));
   assert.equal(missing.status, 503); assert.equal(cookieWrites, 1); assert.equal(sessionPreparations, 2);
+  assert.equal(signOuts, 1); assert.equal(cookieClears, 2);
+  user.company.isDemo = true; poolUnavailable = true;
+  const busy = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body: "{}" }));
+  assert.equal(busy.status, 503); assert.equal(sessionPreparations, 3);
+  assert.equal(signOuts, 2); assert.equal(cookieClears, 4);
 });
 
 test("compteurs agrégés : états actifs, date logistique, client/entreprise restent isolés", async (t) => {
@@ -190,7 +210,7 @@ test("réglages réutilisés du contexte : nouveaux droits et valeurs relus à c
     const module = { exports: {} as { GET: (request?: Request) => Promise<Response> } };
     const deps: Record<string, unknown> = {
       "next/server": { NextResponse },
-      "@/lib/api/auth-guard": { requireStaffRole: requireRole, requireDriverRole: requireRole, getCompanyId: () => "a" },
+      "@/lib/api/auth-guard": { requireStaffRole: requireRole, requireDriverRole: requireRole, requireRole: () => null, getCompanyId: () => "a" },
       "@/lib/api/route-handler": { withApiHandler: (fn: () => unknown) => fn() },
       "@/domains/delivery/delivery.service": { getCompanyDeliveries: async () => [], getDriverDispatchWorkload: async () => [] },
       "@/domains/order/order.service": { getCompanyOrderStats: async () => ({}) },

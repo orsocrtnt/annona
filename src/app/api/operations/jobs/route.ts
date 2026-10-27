@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import {
   getOperationJobHealth,
@@ -9,6 +9,8 @@ import {
 async function resolveCompany() {
   const auth = await requireStaffRole("deliveries:dispatch");
   if ("error" in auth) return auth;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
+  if (denied) return { error: denied };
 
   const companyId = getCompanyId(auth.context);
   if (!companyId) {

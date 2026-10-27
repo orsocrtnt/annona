@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { listCompanyOrderHistory } from "@/domains/order/order.service";
 import { parseOrderHistoryQuery } from "@/lib/validations/order-history";
@@ -8,6 +8,8 @@ export async function GET(request: Request) {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("orders:read");
     if ("error" in auth) return auth.error;
+    const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
+    if (denied) return denied;
 
     const companyId = getCompanyId(auth.context);
     if (!companyId) {

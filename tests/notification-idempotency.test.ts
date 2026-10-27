@@ -38,6 +38,7 @@ function fixture(settings?: {
 }) {
   const notifications = new Map<string, Row>();
   const emails: Array<{ idempotencyKey: string | null; body: string }> = [];
+  const providerDeliveries = new Map<string, string>();
   const jobs = new Map<string, Row>();
 
   const prisma = {
@@ -94,6 +95,9 @@ function fixture(settings?: {
             idempotencyKey: input.idempotencyKey,
             body: JSON.stringify(input),
           });
+          if (!providerDeliveries.has(input.idempotencyKey)) {
+            providerDeliveries.set(input.idempotencyKey, JSON.stringify(input));
+          }
         },
       },
       "@/services/prisma/client": { prisma },
@@ -110,7 +114,7 @@ function fixture(settings?: {
     }
   );
 
-  return { service, notifications, emails, jobs, prisma };
+  return { service, notifications, emails, providerDeliveries, jobs, prisma };
 }
 
 const payload = {
@@ -136,6 +140,8 @@ test("rejouer une notification conserve une ligne et la même clé fournisseur",
     [eventKey]
   );
   assert.equal(f.emails[0]?.body, f.emails[1]?.body);
+  assert.equal(f.providerDeliveries.size, 1);
+  assert.equal(f.providerDeliveries.get(eventKey), f.emails[0]?.body);
 });
 
 test("une notification ne traverse pas la frontière d'entreprise", async () => {

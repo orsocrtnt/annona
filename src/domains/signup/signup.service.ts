@@ -6,7 +6,10 @@ import { createPasswordLinkClient } from "@/services/supabase/password-link";
 import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { slugify } from "@/lib/utils";
-import { snapshotPlan } from "@/domains/saas/saas.service";
+import {
+  premiumDiscoveryEndsAtForPaidSignup,
+  snapshotPlan,
+} from "@/domains/saas/saas.service";
 import {
   enqueueOperationJob,
   kickOperationJob,
@@ -125,6 +128,11 @@ function asSelections(value: Prisma.JsonValue | null | undefined): SignupOptionS
 
 function quoteFromJson(value: Prisma.JsonValue): SignupQuote {
   return value as unknown as SignupQuote;
+}
+
+function paymentAdapterFromSnapshot(value: Prisma.JsonValue): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return typeof value.adapter === "string" ? value.adapter : null;
 }
 
 function publicJourney(journey: NonNullable<JourneyRecord>) {
@@ -909,6 +917,11 @@ export async function activateSignupJourney(signupId: string) {
       const plan = journey.catalogVersion.plans.find((candidate) => candidate.code === journey.planCode);
       if (!role || !plan) throw new Error("SIGNUP_PROVISIONING_UNAVAILABLE");
       const now = new Date();
+      const premiumDiscoveryEndsAt = premiumDiscoveryEndsAtForPaidSignup({
+        startsAt: now,
+        planCode: journey.planCode,
+        paymentAdapter: paymentAdapterFromSnapshot(confirmed.snapshot),
+      });
       const company = await tx.company.create({
         data: {
           name: journey.companyName,
@@ -938,6 +951,7 @@ export async function activateSignupJourney(signupId: string) {
           startsAt: now,
           currentPeriodStart: now,
           currentPeriodEnd: signupPeriodEnd(now, journey.billingInterval),
+          premiumDiscoveryEndsAt,
           snapshot: { schemaVersion: 1, signupId: journey.id, catalogCode: journey.catalogVersion.code, quote },
         },
       });

@@ -1,9 +1,9 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { Building2, Package2, Truck, UserRound } from "lucide-react";
+import { Building2, Truck, UserRound } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
-import { PublicSupportLink } from "@/features/support/public-support-link";
+import { PublicTopNavbar } from "@/features/landing/public-top-navbar";
 
 /**
  * Accueil public — sobre, sans assets.
@@ -79,30 +79,7 @@ export function HomeLanding() {
         }}
       />
 
-      <header className="border-b" style={{ borderColor: t.border, backgroundColor: "rgba(255,255,255,0.72)" }}>
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 sm:px-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-md text-white"
-              style={{ backgroundColor: t.accent }}
-              aria-hidden
-            >
-              <Package2 className="h-4 w-4" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <PublicSupportLink />
-            <Link
-              href="/login"
-              className="inline-flex min-h-10 items-center rounded-md px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: t.accent }}
-            >
-              Connexion
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicTopNavbar />
 
       <main id="main-content" tabIndex={-1}>
         {/* Hero — une composition : marque, message, CTA */}

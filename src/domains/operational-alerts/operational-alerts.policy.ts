@@ -5,11 +5,15 @@ type Delivery = { id: string; reference: string; status: string; completedAt: Da
 type Order = { id: string; reference: string; status: string; requestedDeliveryDate: Date | null; deliveries: Delivery[] };
 export type OperationalAlert = { id: string; orderId: string; deliveryId: string | null; reference: string; title: string; detail: string; internal: boolean; deadline: Date | null; state: "OPEN" | "ACKNOWLEDGED" | "RESOLVED" | "CLOSED"; acknowledged: Message | null; resolution: Message | null; canAct: boolean };
 const active = new Set(["PENDING", "ASSIGNED", "PURCHASING", "IN_DELIVERY"]);
+const closedDelivery = new Set(["DELIVERED", "FAILED", "CANCELLED", "INVOICED", "PAID"]);
 export function alertActionKey(id: string, action: "ack" | "resolve") {
   return `alert1:${createHash("sha256").update(id).digest("hex")}:${action}`;
 }
+export function isOperationalOrderClosed(order: { status: string; deliveries: Array<{ completedAt: Date | null; status: string }> }) {
+  return order.status === "CANCELLED" || (order.deliveries.length > 0 && order.deliveries.every(d => Boolean(d.completedAt) || closedDelivery.has(d.status)));
+}
 export function deriveOperationalAlerts(order: Order, messages: Message[], canAct: boolean, now = new Date(), driverId?: string): OperationalAlert[] {
-  const closed = order.status === "CANCELLED" || (order.deliveries.length > 0 && order.deliveries.every(d => Boolean(d.completedAt) || ["DELIVERED", "FAILED", "CANCELLED", "INVOICED", "PAID"].includes(d.status)));
+  const closed = isOperationalOrderClosed(order);
   const sources: Array<Pick<OperationalAlert, "id" | "deliveryId" | "title" | "detail" | "internal" | "deadline"> & { closed: boolean }> = [];
   const due = order.requestedDeliveryDate;
   if (due && +due < +now) for (const d of order.deliveries) {

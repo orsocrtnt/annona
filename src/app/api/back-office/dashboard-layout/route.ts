@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireStaffRole } from "@/lib/api/auth-guard";
+import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import {
   getDashboardLayout,
@@ -12,6 +12,8 @@ export async function GET() {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("orders:read");
     if ("error" in auth) return auth.error;
+    const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+    if (denied) return denied;
 
     const layout = await getDashboardLayout(auth.context.user.id);
     return NextResponse.json({ data: layout, success: true });
@@ -22,6 +24,8 @@ export async function PATCH(request: Request) {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("orders:read");
     if ("error" in auth) return auth.error;
+    const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+    if (denied) return denied;
 
     const body = await request.json();
     const parsed = dashboardLayoutSchema.safeParse(body);
@@ -42,6 +46,8 @@ export async function DELETE() {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("orders:read");
     if ("error" in auth) return auth.error;
+    const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+    if (denied) return denied;
 
     const layout = await resetDashboardLayout(auth.context.user.id);
     return NextResponse.json({ data: layout, success: true });

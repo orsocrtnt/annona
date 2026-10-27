@@ -23,7 +23,7 @@ function formatWhen(iso: string) {
   });
 }
 
-export function PortalNotificationsBell() {
+export function PortalNotificationsBell({ className }: { className?: string }) {
   const { data: notifications = [] } = usePortalNotifications();
   const markRead = useMarkNotificationsRead();
   const unread = notifications.filter((item) => !item.readAt);
@@ -31,7 +31,7 @@ export function PortalNotificationsBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label="Notifications" className="relative">
+        <Button variant="ghost" size="icon-sm" aria-label="Notifications" className={cn("relative", className)}>
           <Bell className="h-4 w-4" />
           {unread.length > 0 ? (
             <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white">

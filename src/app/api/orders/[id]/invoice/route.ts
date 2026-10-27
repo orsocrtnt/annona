@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createOrderInvoice, markOrderInvoicePaid } from "@/domains/invoice/invoice.service";
 import { createOrderInvoiceSchema, markOrderInvoicePaidSchema } from "@/lib/validations/invoice";
 
@@ -9,6 +9,8 @@ export async function POST(
 ) {
   const auth = await requireStaffRole("invoices:create");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
 
   const companyId = getCompanyId(auth.context);
   if (!companyId) {
@@ -61,6 +63,8 @@ export async function PATCH(
 ) {
   const auth = await requireStaffRole("invoices:update");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   const parsed = markOrderInvoicePaidSchema.safeParse(await request.json());

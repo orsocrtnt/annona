@@ -95,7 +95,7 @@ test("BILL : permissions dédiées émission et règlement ; commandes seules re
   let calls = 0;
   const route = load<{POST: (r: Request, p: {params: Promise<{id: string}>}) => Promise<Response>; PATCH: (r: Request, p: {params: Promise<{id: string}>}) => Promise<Response>}>("src/app/api/orders/[id]/invoice/route.ts", {
     "next/server": { NextResponse },
-    "@/lib/api/auth-guard": { requireStaffRole: async (permission: string) => permissions.includes(permission) ? { context: {} } : { error: NextResponse.json({}, { status: 403 }) }, getCompanyId: () => "company" },
+    "@/lib/api/auth-guard": { requireStaffRole: async (permission: string) => permissions.includes(permission) ? { context: {} } : { error: NextResponse.json({}, { status: 403 }) }, requireRole: () => null, getCompanyId: () => "company" },
     "@/domains/invoice/invoice.service": { createOrderInvoice: async () => { calls++; return {}; }, markOrderInvoicePaid: async () => { calls++; return {}; } },
     "@/lib/validations/invoice": invoiceValidation,
   });

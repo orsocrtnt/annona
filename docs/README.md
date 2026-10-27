@@ -33,6 +33,7 @@ Cet index distingue la documentation courante des preuves datées. En cas de con
 - [`operations/bill01b/README.md`](operations/bill01b/README.md) — export comptable versionné des prestations, colonnes, filtres, rapprochement et limites historiques.
 - [`operations/email/README.md`](operations/email/README.md) — modes désactivé/recette/réel, transport métier et protocole d'envoi contrôlé.
 - [`operations/pilot1/README.md`](operations/pilot1/README.md) — portes, déroulement, mesures, incidents et sortie des trois pilotes accompagnés.
+- [`operations/saas01b/README.md`](operations/saas01b/README.md) — journal de facturation sandbox, gardes Stripe test et recette locale sans compte.
 
 ## Produit et recette
 

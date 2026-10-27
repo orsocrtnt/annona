@@ -4,7 +4,6 @@ import { PLATFORM_COMPANIES_TAKE } from "@/lib/query/list-limits";
 export interface PlatformCompany {
   id: string;
   name: string;
-  slug: string;
   status: string;
   users: number;
   deliveries: number;
@@ -15,27 +14,26 @@ export interface PlatformOverview {
     activeCompanies: number;
     totalUsers: number;
     deliveriesToday: number;
-    revenueThisMonth: number;
+    paidDeliveryInvoiceRevenue: number;
   };
   companies: PlatformCompany[];
 }
 
-export async function getPlatformOverview(): Promise<PlatformOverview> {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+export async function getPlatformOverview(now: Date = new Date()): Promise<PlatformOverview> {
+  const startOfToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const endOfToday = new Date(startOfToday.getTime() + 86_400_000);
 
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
 
   const [activeCompanies, totalUsers, deliveriesToday, paidThisMonth, companies] =
     await Promise.all([
       prisma.company.count({ where: { status: "ACTIVE" } }),
       prisma.user.count(),
-      prisma.delivery.count({ where: { createdAt: { gte: startOfToday } } }),
+      prisma.delivery.count({ where: { createdAt: { gte: startOfToday, lt: endOfToday } } }),
       prisma.invoice.aggregate({
         _sum: { amount: true },
-        where: { status: "PAID", paidAt: { gte: startOfMonth } },
+        where: { status: "PAID", paidAt: { gte: startOfMonth, lt: endOfMonth } },
       }),
       prisma.company.findMany({
         orderBy: { createdAt: "desc" },
@@ -43,7 +41,6 @@ export async function getPlatformOverview(): Promise<PlatformOverview> {
         select: {
           id: true,
           name: true,
-          slug: true,
           status: true,
           _count: { select: { users: true, deliveries: true } },
         },
@@ -55,12 +52,11 @@ export async function getPlatformOverview(): Promise<PlatformOverview> {
       activeCompanies,
       totalUsers,
       deliveriesToday,
-      revenueThisMonth: Number(paidThisMonth._sum.amount ?? 0),
+      paidDeliveryInvoiceRevenue: Number(paidThisMonth._sum.amount ?? 0),
     },
     companies: companies.map((c) => ({
       id: c.id,
       name: c.name,
-      slug: c.slug,
       status: c.status,
       users: c._count.users,
       deliveries: c._count.deliveries,

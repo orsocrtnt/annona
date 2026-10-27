@@ -89,7 +89,6 @@ export class BillingService {
         await tx.$queryRaw`SELECT id FROM saas_usage_periods WHERE id = ${input.periodId} FOR UPDATE`;
         const period = await tx.saasUsagePeriod.findUniqueOrThrow({ where: { id: input.periodId } });
         if (period.subscriptionId !== account.subscriptionId || period.closedAt || monthlyUsageAmount(period, new Date()) !== input.amountHtCents || period.startsAt.toISOString() !== input.start || period.endsAt.toISOString() !== input.end) throw new Error("BILLING_USAGE_MISMATCH");
-        await tx.saasUsagePeriod.update({ where: { id: period.id }, data: { closedAt: new Date() } });
       }
       const operation = await tx.saasBillingOperation.create({ data: { id: operationId, accountId, kind: input.kind, input: json({ requestKey, command: input }) } });
       await tx.saasBillingAccount.update({ where: { id: accountId }, data: { pendingOperationId: operationId, revision: { increment: 1 } } });

@@ -44,3 +44,18 @@ Les paliers de calcul Supabase sont des budgets de capacité, pas des mesures de
 
 La phase mesurée de COST-1 doit remplacer ces paramètres après `PERF-02` et les premiers pilotes. Aucun chiffre de ce modèle ne constitue une promesse de marge.
 
+## Phase 2 — rattachement local PERF-02
+
+La phase locale ne modifie pas `model.mjs` : elle contrôle et importe seulement les observations du harnais PERF-02 dans une sortie séparée.
+
+```bash
+npm run cost1:model
+npm run test:perf02
+npm run cost1:perf02
+```
+
+`cost1:perf02` lit `outputs/perf02/local.json` et `outputs/cost1/model.json`, puis écrit `outputs/cost1/perf02-local-validation.json`. Il exige exactement les 12 paires Starter/Pro/Business × 1/10/50/100, les associe aux trois variantes documentaires (`low`, `central`, `high`) et vérifie les volumes mensuels du modèle (1 000, 3 000, 6 000 par entreprise).
+
+La sortie reprend uniquement les p50/p95, débit, erreurs, matérialisation, extrapolation signalée, isolation, saturation/reprise et plafond local réellement présents dans PERF-02. Elle échoue avant toute écriture en cas de fichier absent, JSON invalide, schéma incompatible, cible non locale, scénario manquant/dupliqué, profil/volume divergent, pool ou reprise incohérents.
+
+Elle ne remplace **aucun** coût, marge, commission, CPU/mémoire/invocation Vercel, palier Supabase, preuve, e-mail, navigation/cartographie ou support. Le pool mémoire PERF-02 ne représente pas Prisma, PostgreSQL, Next, réseau, stockage ni un fournisseur Realtime. Les mesures sur une cible isolée autorisée et les trois pilotes restent indispensables avant de modifier les hypothèses économiques.

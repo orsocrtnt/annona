@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T20:26:38Z",
+  "title": "Design System: TutelLiv — Dashboard entreprise",
+  "extensions": {
+    "colorMeta": {
+      "mission-green": {
+        "role": "primary",
+        "displayName": "Vert mission",
+        "tonalRamp": ["#00371C", "#005A2D", "#007F40", "#00A652", "#00D46A", "#58E99A", "#A4F5C7", "#E8FFF2"]
+      },
+      "operational-ink": {
+        "role": "neutral",
+        "displayName": "Encre opérationnelle",
+        "tonalRamp": ["#070A08", "#0E1310", "#25302A", "#46534B", "#68766E", "#98A39C", "#CBD1CD", "#F0F2F0"]
+      },
+      "paper-canvas": {
+        "role": "neutral",
+        "displayName": "Papier lumineux",
+        "tonalRamp": ["#252824", "#444944", "#676D67", "#8D948D", "#B4BAB4", "#D7DBD7", "#ECEEEC", "#F8F9F7"]
+      },
+      "structural-mist": {
+        "role": "neutral",
+        "displayName": "Brume structurelle",
+        "tonalRamp": ["#202521", "#3B423D", "#59625C", "#7B847E", "#A0A8A2", "#C4CAC6", "#E4E8E5", "#F6F8F6"]
+      },
+      "surface-white": {
+        "role": "neutral",
+        "displayName": "Surface blanche",
+        "tonalRamp": ["#262626", "#474747", "#696969", "#8E8E8E", "#B5B5B5", "#DADADA", "#F0F0F0", "#FFFFFF"]
+      },
+      "surface-muted": {
+        "role": "neutral",
+        "displayName": "Surface assourdie",
+        "tonalRamp": ["#222622", "#414741", "#626A63", "#878E88", "#ADB3AE", "#D0D4D1", "#E7EAE7", "#F3F5F2"]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Texte secondaire",
+        "tonalRamp": ["#1A1F1B", "#303832", "#4B564E", "#68726B", "#879189", "#ABB2AC", "#D0D4D1", "#F1F3F1"]
+      },
+      "success-ink": {
+        "role": "secondary",
+        "displayName": "Succès profond",
+        "tonalRamp": ["#032516", "#054B29", "#08783F", "#0DA65A", "#23D477", "#6BE5A3", "#B0F3CD", "#EBFFF4"]
+      },
+      "danger-ink": {
+        "role": "tertiary",
+        "displayName": "Alerte rouge",
+        "tonalRamp": ["#351010", "#5C1919", "#842323", "#A12C2C", "#C84B4B", "#E78787", "#F5C3C3", "#FFF0F0"]
+      },
+      "warning-ink": {
+        "role": "tertiary",
+        "displayName": "Attention ambre",
+        "tonalRamp": ["#271E08", "#46370F", "#614F22", "#80692E", "#A88943", "#CCAF6F", "#E8D9AC", "#FFF8E5"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Salutation", "purpose": "Point d’entrée unique du dashboard." },
+      "headline": { "displayName": "Titre dominant", "purpose": "Carte d’activité principale." },
+      "title": { "displayName": "Titre de panneau", "purpose": "Panneaux, cartes et listes opérationnelles." },
+      "body": { "displayName": "Corps", "purpose": "Descriptions et informations secondaires." },
+      "label": { "displayName": "Libellé", "purpose": "Statuts, périodes et métadonnées compactes." }
+    },
+    "shadows": [
+      { "name": "chrome-floating", "value": "0 12px 44px rgba(14, 19, 16, 0.055)", "purpose": "Topbar translucide." },
+      { "name": "rail-anchored", "value": "0 22px 65px rgba(14, 19, 16, 0.20)", "purpose": "Rail de navigation premium." },
+      { "name": "dominant-card", "value": "0 22px 60px rgba(14, 19, 16, 0.13)", "purpose": "Carte sombre de répartition par étape." },
+      { "name": "raised-action", "value": "0 12px 28px rgba(14, 19, 16, 0.18)", "purpose": "Action primaire vers le dispatch." }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "200ms ease", "purpose": "Survol, focus et transitions de contrôles." },
+      { "name": "surface-standard", "value": "300ms ease", "purpose": "Élévation légère des cartes interactives et du rail." },
+      { "name": "route-reveal", "value": "800ms cubic-bezier(0.22, 1, 0.36, 1) 120ms", "purpose": "Tracé unique de la ligne de mission ; désactivé avec prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Action primaire Dispatch",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action sombre et flottante réservée à l’ouverture du dispatch.",
+      "html": "<button class=\"ds-btn-primary\"><span class=\"ds-btn-signal\" aria-hidden=\"true\">◉</span>Ouvrir le dispatch<span aria-hidden=\"true\">↗</span></button>",
+      "css": ".ds-btn-primary { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 20px; border: 0; border-radius: 9999px; background: #0E1310; color: #FFFFFF; font: 600 14px/1.2 Sora, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 12px 28px rgba(14,19,16,.18); transition: transform 200ms ease, background 200ms ease; } .ds-btn-primary:hover { background: #1B251F; transform: translateY(-2px); } .ds-btn-primary:active { transform: translateY(0); } .ds-btn-primary:focus-visible { outline: 2px solid #00D46A; outline-offset: 2px; } .ds-btn-signal { color: #00D46A; }"
+    },
+    {
+      "name": "Action secondaire",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Action blanche et bordée pour accéder aux commandes ou aux vues secondaires.",
+      "html": "<button class=\"ds-btn-secondary\">Voir les commandes<span aria-hidden=\"true\">↗</span></button>",
+      "css": ".ds-btn-secondary { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 0 20px; border: 1px solid rgba(14,19,16,.08); border-radius: 9999px; background: #FFFFFF; color: #0E1310; font: 600 14px/1.2 Sora, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 7px 24px rgba(14,19,16,.055); transition: background 200ms ease; } .ds-btn-secondary:hover { background: #F0F3F0; } .ds-btn-secondary:active { background: #E9EDE9; } .ds-btn-secondary:focus-visible { outline: 2px solid #00D46A; outline-offset: 2px; }"
+    },
+    {
+      "name": "Navigation active",
+      "kind": "nav",
+      "refersTo": "nav-active",
+      "description": "État actif du rail noir flottant.",
+      "html": "<nav class=\"ds-rail\" aria-label=\"Navigation principale\"><a class=\"ds-nav-active\" href=\"#\"><span aria-hidden=\"true\">▦</span>Tableau de bord</a><a class=\"ds-nav-item\" href=\"#\">Commandes</a></nav>",
+      "css": ".ds-rail { width: 240px; display: grid; gap: 2px; padding: 12px; border-radius: 24px; background: #0E1310; box-shadow: 0 22px 65px rgba(14,19,16,.20); font-family: Sora, ui-sans-serif, system-ui, sans-serif; } .ds-nav-active, .ds-nav-item { min-height: 44px; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 12px; text-decoration: none; font-size: 14px; font-weight: 600; transition: background 200ms ease, color 200ms ease; } .ds-nav-active { background: #00D46A; color: #07110B; box-shadow: 0 8px 24px rgba(0,212,106,.20); } .ds-nav-item { color: rgba(255,255,255,.58); } .ds-nav-item:hover { background: rgba(255,255,255,.075); color: #FFFFFF; } .ds-nav-active:focus-visible, .ds-nav-item:focus-visible { outline: 2px solid #00D46A; outline-offset: 2px; }"
+    },
+    {
+      "name": "KPI opérationnel",
+      "kind": "card",
+      "refersTo": "card-operational",
+      "description": "Carte blanche scannable pour une valeur réelle et son contexte immédiat.",
+      "html": "<button class=\"ds-kpi\"><span class=\"ds-kpi-label\">En cours</span><strong class=\"ds-kpi-value\">2</strong><span class=\"ds-kpi-detail\">Missions actuellement en route</span><span class=\"ds-kpi-arrow\" aria-hidden=\"true\">↗</span></button>",
+      "css": ".ds-kpi { position: relative; min-height: 148px; width: 100%; padding: 20px; border: 1px solid rgba(14,19,16,.065); border-radius: 16px; background: #FFFFFF; color: #0E1310; text-align: left; font-family: Sora, ui-sans-serif, system-ui, sans-serif; transition: transform 300ms ease, border-color 300ms ease; } .ds-kpi:hover { transform: translateY(-2px); border-color: rgba(14,19,16,.20); } .ds-kpi:active { transform: translateY(0); } .ds-kpi:focus-visible { outline: 2px solid #00D46A; outline-offset: 2px; } .ds-kpi-label { display: block; color: #68726B; font-size: 14px; font-weight: 500; } .ds-kpi-value { display: block; margin-top: 12px; font-size: 36px; line-height: 1; letter-spacing: -.04em; } .ds-kpi-detail { position: absolute; left: 20px; bottom: 20px; color: #5F6962; font-size: 12px; } .ds-kpi-arrow { position: absolute; right: 20px; bottom: 20px; }"
+    },
+    {
+      "name": "Sélecteur de période",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "Groupe de périodes compact dont la sélection noire contraste avec le fond pâle.",
+      "html": "<div class=\"ds-period\" role=\"group\" aria-label=\"Période\"><button>3 jours</button><button class=\"ds-period-active\" aria-pressed=\"true\">7 jours</button><button>30 jours</button></div>",
+      "css": ".ds-period { display: inline-flex; gap: 0; padding: 4px; border: 1px solid rgba(14,19,16,.065); border-radius: 9999px; background: #F3F5F2; } .ds-period button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 9999px; background: transparent; color: #68726B; font: 600 12px/1 Sora, ui-sans-serif, system-ui, sans-serif; transition: background 200ms ease, color 200ms ease; } .ds-period button:hover { background: #FFFFFF; color: #0E1310; } .ds-period button:focus-visible { outline: 2px solid #00D46A; outline-offset: 1px; } .ds-period .ds-period-active { background: #0E1310; color: #FFFFFF; }"
+    },
+    {
+      "name": "Topbar de pilotage",
+      "kind": "custom",
+      "refersTo": "button-secondary",
+      "description": "Chrome clair translucide qui porte le contexte et le compte sans brouiller les données.",
+      "html": "<header class=\"ds-topbar\"><span>Centre de pilotage</span><button class=\"ds-account\"><span class=\"ds-avatar\">AD</span><span>Alex Démo</span></button></header>",
+      "css": ".ds-topbar { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px 0 16px; border: 1px solid rgba(255,255,255,.70); border-radius: 18px; background: rgba(255,255,255,.64); color: #68726B; font: 500 14px/1.2 Sora, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 12px 44px rgba(14,19,16,.055); backdrop-filter: blur(24px); } .ds-account { min-height: 44px; display: inline-flex; align-items: center; gap: 10px; padding: 0 10px 0 6px; border: 1px solid rgba(14,19,16,.07); border-radius: 9999px; background: rgba(255,255,255,.72); color: #0E1310; font: 500 14px/1.2 Sora, ui-sans-serif, system-ui, sans-serif; } .ds-account:hover { background: #FFFFFF; } .ds-account:focus-visible { outline: 2px solid #00D46A; outline-offset: 2px; } .ds-avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9999px; background: #0E1310; color: #FFFFFF; font-size: 12px; font-weight: 700; }"
+    },
+    {
+      "name": "Ligne de mission",
+      "kind": "custom",
+      "refersTo": "card-operational",
+      "description": "Composant signature qui relie les volumes réels par étape sans simuler une série temporelle.",
+      "html": "<section class=\"ds-route\"><h3>Répartition par étape</h3><p>Volumes des missions visibles à chaque statut.</p><div class=\"ds-route-track\"><span><b>2</b></span><span><b>4</b></span><span><b>3</b></span><span><b>1</b></span><span><b>7</b></span></div><div class=\"ds-route-labels\"><small>Sans livreur</small><small>Assignées</small><small>Collectées</small><small>En livraison</small><small>Livrées</small></div></section>",
+      "css": ".ds-route { overflow: hidden; padding: 24px; border-radius: 16px; background: #0E1310; color: #FFFFFF; box-shadow: 0 22px 60px rgba(14,19,16,.13); font-family: Sora, ui-sans-serif, system-ui, sans-serif; } .ds-route h3 { margin: 0; font-size: 20px; letter-spacing: -.035em; } .ds-route > p { margin: 8px 0 38px; color: rgba(255,255,255,.55); font-size: 14px; } .ds-route-track { position: relative; display: flex; justify-content: space-between; border-top: 4px solid #00D46A; } .ds-route-track span { width: 18px; height: 18px; margin-top: -11px; border: 4px solid #00D46A; border-radius: 50%; background: #0E1310; } .ds-route-track b { display: block; width: 28px; margin: -28px 0 0 -9px; text-align: center; font-size: 12px; } .ds-route-labels { display: flex; justify-content: space-between; gap: 8px; margin-top: 22px; color: rgba(255,255,255,.48); } .ds-route-labels small { flex: 1; font-size: 10px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Ligne de Mission",
+    "overview": "Le dashboard entreprise est un instrument de supervision calme dans un bureau lumineux : un canevas papier cassé, un rail noir flottant et des cartes blanches nettes organisent les données réelles sans bruit décoratif. Le vert TutelLiv ne remplit pas l’écran ; il suit l’activité, marque l’état actif et relie les étapes d’une mission.\n\nLa direction associe Apple Glass Light, Bento et Minimal SaaS avec une discipline d’interface d’exploitation. Le verre reste réservé au chrome et aux couches temporaires ; le contenu métier reste opaque, lisible et stable. Cette expression est strictement limitée à `/dashboard` : les écrans adjacents conservent leur monde visuel existant.",
+    "keyCharacteristics": [
+      "Fond papier lumineux et surfaces de données blanches.",
+      "Rail noir flottant et topbar claire translucide.",
+      "Bento asymétrique gouverné par la hiérarchie opérationnelle.",
+      "Vert rare, fonctionnel et directement relié à l’activité réelle.",
+      "Ligne de mission à stations comme signature du suivi par statut.",
+      "Sora, grands chiffres lisibles et microcopie sobre en français."
+    ],
+    "rules": [
+      { "name": "The Activity-Only Green Rule", "body": "Le vert signale une activité, une sélection, une disponibilité ou un focus réel ; il ne sert jamais de remplissage décoratif.", "section": "colors" },
+      { "name": "The Opaque Data Rule", "body": "Les surfaces qui portent des données restent opaques ; la transparence appartient au chrome et aux overlays.", "section": "colors" },
+      { "name": "The One-Greeting Rule", "body": "Une seule accroche de niveau display ouvre la page ; les modules suivants utilisent headline ou title pour préserver la vitesse de lecture.", "section": "typography" },
+      { "name": "The Dashboard Boundary Rule", "body": "Cette composition, Sora et ce chrome premium s’appliquent à `/dashboard` uniquement ; ne pas propager cette refonte aux routes adjacentes sans décision explicite.", "section": "layout" },
+      { "name": "The Chrome-Owns-Glass Rule", "body": "Réserver le verre à la topbar, au tiroir et aux overlays ; le contenu métier ne devient ni transparent ni flou.", "section": "elevation" },
+      { "name": "The Measured-Radius Rule", "body": "Le rayon suit la fonction — contrôle, carte, chrome, rail ou pilule — et ne varie pas arbitrairement d’un module à l’autre.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do réserver le verre au chrome et garder les cartes de données opaques.",
+      "Do utiliser le vert mission uniquement pour une activité, une sélection, une disponibilité ou un focus réel.",
+      "Do présenter les données réellement disponibles et permettre le passage direct du résumé au détail.",
+      "Do conserver des cibles interactives d’au moins 44px et respecter la réduction de mouvement et de transparence.",
+      "Do empiler les modules sur mobile sans défilement horizontal."
+    ],
+    "donts": [
+      "Don't inventer une série temporelle, une tendance, une capacité de création ou une donnée absente.",
+      "Don't transformer la ligne de mission en carte de métro décorative ou multiplier les accents verts.",
+      "Don't appliquer le chrome premium du dashboard aux écrans adjacents sans décision de périmètre explicite.",
+      "Don't fabriquer un logo, un monogramme ou une fausse marque en l’absence d’un actif officiel.",
+      "Don't employer du verre, des ombres fortes ou des gradients sur les cartes métier ordinaires."
+    ]
+  }
+}

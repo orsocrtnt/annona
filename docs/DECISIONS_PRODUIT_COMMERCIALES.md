@@ -38,8 +38,8 @@ Les tarifs ci-dessous sont des décisions de configuration et de positionnement.
 |---|---:|---:|---:|
 | Mensuel HT | 79 € | 179 € | 349 € |
 | Annuel HT | 790 € | 1 790 € | 3 490 € |
-| Livreurs inclus | 5 | 10 | Illimités sous surveillance d'usage |
-| Maximum de livreurs | 10 | 30 | Illimité sous politique d'usage |
+| Livreurs inclus | 5 | 10 | 20 |
+| Maximum de livreurs | 10 | 30 | 50 |
 | Commandes incluses/mois | 1 000 | 3 000 | 6 000 |
 | Administrateurs inclus | 1 | 1 | 2 |
 | Dispatchers inclus | 0 | 1 | 1 |
@@ -49,7 +49,7 @@ Les tarifs ci-dessous sont des décisions de configuration et de positionnement.
 | Analytics avancés | Option | Option | Inclus |
 | Assistance prioritaire | Option | Option | Incluse |
 
-Options mensuelles HT (catalogue C8 du 23 octobre 2026) :
+Options mensuelles HT (catalogue C9 du 24 octobre 2026) :
 
 | Option | Prix |
 |---|---:|
@@ -60,6 +60,7 @@ Options mensuelles HT (catalogue C8 du 23 octobre 2026) :
 | Assistance prioritaire | 29 € |
 | Livreur supplémentaire Starter | 12 € |
 | Livreur supplémentaire Pro | 10 € |
+| Livreur supplémentaire Business (21 à 50) | 9 € |
 | Administrateur supplémentaire, toutes offres | 12 € |
 | Dispatcher supplémentaire, toutes offres | 8 € |
 

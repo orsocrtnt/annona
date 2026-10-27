@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
-import { deriveOperationalAlerts, alertActionKey } from "../src/domains/operational-alerts/operational-alerts.policy";
+import { deriveOperationalAlerts, alertActionKey, isOperationalOrderClosed } from "../src/domains/operational-alerts/operational-alerts.policy";
 import type { ConversationActor } from "../src/domains/order-conversation/order-conversation.service";
 const now = new Date("2026-10-12T12:00:00Z"), due = new Date(+now - 60000);
 const staff: ConversationActor = { id: "admin", companyId: "a", role: "COMPANY_ADMIN", permissions: ["orders:read", "orders:update"], name: "Admin" };
@@ -27,6 +27,20 @@ test("alerte : nouvelle date crée nouvelle cible, journal ancien reste indépen
   const o = order(), id = deriveOperationalAlerts(o, [], true, now)[0]!.id;
   const rows = deriveOperationalAlerts({ ...o, requestedDeliveryDate: new Date(+due - 1000) }, [action(id, "resolve")], true, now);
   assert.notEqual(rows[0]!.id, id); assert.equal(rows[0]!.state, "OPEN");
+});
+test("alerte : la clôture de commande est unique entre la politique et l'état incident", () => {
+  const cancelled = { status: "CANCELLED", deliveries: [] as Array<{ completedAt: Date | null; status: string }> };
+  const open = { status: "ASSIGNED", deliveries: [{ completedAt: null, status: "ASSIGNED" }] };
+  const delivered = { status: "ASSIGNED", deliveries: [{ completedAt: now, status: "DELIVERED" }] };
+  assert.equal(isOperationalOrderClosed(cancelled), true);
+  assert.equal(isOperationalOrderClosed(open), false);
+  assert.equal(isOperationalOrderClosed(delivered), true);
+  assert.equal(deriveOperationalAlerts({ ...order(), status: "CANCELLED", deliveries: [] }, [incident], true, now)[0]!.state, "CLOSED");
+  const closedOrder = order();
+  closedOrder.deliveries[0]!.status = "DELIVERED";
+  closedOrder.deliveries[0]!.completedAt = now;
+  assert.equal(deriveOperationalAlerts(closedOrder, [incident, action("incident:i", "ack")], true, now).find(row => row.id === "incident:i")!.state, "CLOSED");
+  assert.equal(deriveOperationalAlerts(closedOrder, [incident, action("incident:i", "resolve")], true, now).find(row => row.id === "incident:i")!.state, "RESOLVED");
 });
 test("alerte : incident, visibilité interne portée par la source et clôture distincte de résolution", () => {
   const o = order(); o.deliveries[0]!.status = "DELIVERED"; o.deliveries[0]!.completedAt = now;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import {
   getCompanyDeliveryOptions,
   updateCompanyDeliveryOptions,
@@ -9,6 +9,8 @@ import { companyDeliveryOptionsSchema } from "@/lib/validations/company-settings
 export async function GET() {
   const auth = await requireStaffRole("settings:read");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
 
   const companyId = getCompanyId(auth.context);
   if (!companyId) {
@@ -22,6 +24,8 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const auth = await requireStaffRole("settings:update");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
 
   const companyId = getCompanyId(auth.context);
   if (!companyId) {

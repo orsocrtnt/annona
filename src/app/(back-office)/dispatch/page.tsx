@@ -28,6 +28,8 @@ import type { TableColumn } from "@/types";
 import { resolveDispatchFocus } from "@/features/back-office/dispatch-focus";
 import { lockedOfferReason } from "@/domains/saas/saas-access";
 import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
+import { canSeeDispatchRules } from "@/features/back-office/dispatch-access";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type DispatchView = "queue" | "rules";
 type CategoryFilter = "ALL" | DeliveryCategory;
@@ -46,6 +48,9 @@ function DispatcherDashboardContent() {
   const searchParams = useSearchParams();
   const requestedDeliveryId = searchParams.get("delivery")?.trim() || null;
   const [view, setView] = useState<DispatchView>("queue");
+  const { role, permissions } = usePermissions();
+  const showRules = canSeeDispatchRules(role, permissions);
+  const activeView = showRules && view === "rules" ? "rules" : "queue";
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("ALL");
   const { data: overview, isLoading, error } = useDispatchOverview(requestedDeliveryId);
   const deliveries = overview?.deliveries;
@@ -192,7 +197,7 @@ function DispatcherDashboardContent() {
           onClick={() => setView("queue")}
           className={cn(
             "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
-            view === "queue"
+            activeView === "queue"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
@@ -200,19 +205,21 @@ function DispatcherDashboardContent() {
           <Radio className="h-4 w-4" />
           File d&apos;attente
         </button>
-        <button
-          type="button"
-          onClick={() => setView("rules")}
-          className={cn(
-            "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
-            view === "rules"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Settings2 className="h-4 w-4" />
-          Règles dispatch
-        </button>
+        {showRules ? (
+          <button
+            type="button"
+            onClick={() => setView("rules")}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              activeView === "rules"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Settings2 className="h-4 w-4" />
+            Règles dispatch
+          </button>
+        ) : null}
       </div>
 
       {operationHealth &&
@@ -290,7 +297,7 @@ function DispatcherDashboardContent() {
         </Alert>
       )}
 
-      {view === "rules" ? (
+      {activeView === "rules" ? (
         <DispatchSettingsForm />
       ) : (
         <>

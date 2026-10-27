@@ -139,7 +139,7 @@ test("BILL-01B route exige invoices:read, refuse entreprise absente, erreurs san
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": { requireStaffRole: async (permission: string) => {
       assert.equal(permission, "invoices:read"); return allowed ? { context: {} } : { error: NextResponse.json({}, { status: 403 }) };
-    }, getCompanyId: () => companyId },
+    }, getCompanyId: () => companyId, requireRole: () => null },
     "@/lib/validations/accounting-export": validation,
     "@/domains/invoice/accounting-export.service": { exportAccountingCsv: async (scope: string) => {
       calls++; assert.equal(scope, "A"); if (fail) throw new Error(fail); return "csv";
@@ -191,9 +191,9 @@ test("BILL-01B vraie garde serveur : anonyme, client, chauffeur et mini-admin co
   for (const role of ["CLIENT", "DRIVER", "MINI_ADMIN", "COMPANY_ADMIN", "DISPATCHER"]) {
     session = { permissions: role === "MINI_ADMIN" ? ["orders:read"] : ["invoices:read"], user: { companyId: "A", role: { systemRole: role } } };
     const response = await route.GET(request());
-    assert.equal(response.status, ["CLIENT", "DRIVER", "MINI_ADMIN"].includes(role) ? 403 : 200);
+    assert.equal(response.status, ["CLIENT", "DRIVER", "MINI_ADMIN", "DISPATCHER"].includes(role) ? 403 : 200);
   }
   session = { permissions: ["invoices:read"], user: { companyId: null, role: { systemRole: "SUPER_ADMIN" } } };
   assert.equal((await route.GET(request())).status, 403);
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
 });

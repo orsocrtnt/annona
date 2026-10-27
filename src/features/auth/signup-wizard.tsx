@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Package2 } from "lucide-react";
+import { signupEntryFromSearch } from "@/domains/growth/signup-entry";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,12 @@ export function SignupWizard() {
       setBillingInterval(payload.journey.billingInterval);
       setSelections(payload.journey.optionSelections);
       setStage(stageFromJourney(payload.journey));
+    } else {
+      const entry = signupEntryFromSearch(window.location.search);
+      if (entry) {
+        setPlanCode(entry.planCode);
+        setBillingInterval(entry.billingInterval);
+      }
     }
     return payload.journey as Journey | null;
   }, []);
@@ -105,15 +112,23 @@ export function SignupWizard() {
   }, [journey?.emailResendAvailableAt, journey?.status]);
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("payment") === "cancelled") {
+      setNotice("Le paiement sandbox a été interrompu. Votre inscription est conservée.");
+    }
+  }, []);
+
+  useEffect(() => {
     if (paymentAdapter !== "stripe-sandbox" || journey?.status !== "PAYMENT_PENDING") return;
     let stopped = false;
-    const timer = window.setInterval(async () => {
+    const poll = async () => {
       try {
         const response = await fetch("/api/signup/payment", { cache: "no-store" });
         const result = await response.json();
         if (!stopped && result.confirmed) await load();
       } catch { /* Network interruption leaves the durable journey available. */ }
-    }, 5000);
+    };
+    void poll();
+    const timer = window.setInterval(() => { void poll(); }, 5000);
     return () => { stopped = true; window.clearInterval(timer); };
   }, [paymentAdapter, journey?.status, load]);
 
@@ -242,11 +257,11 @@ export function SignupWizard() {
     try {
       const response = await fetch("/api/signup/payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventKey, outcome: "confirmed" }) });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "Paiement fictif indisponible.");
+      if (!response.ok) throw new Error(payload.error ?? (paymentAdapter === "stripe-sandbox" ? "Le paiement sandbox est indisponible. Votre inscription est conservée." : "Paiement fictif indisponible."));
       if (payload.checkoutUrl) window.location.assign(payload.checkoutUrl);
       else if (payload.redirectTo) window.location.assign(payload.redirectTo);
       else await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Paiement fictif indisponible."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : (paymentAdapter === "stripe-sandbox" ? "Le paiement sandbox est indisponible. Votre inscription est conservée." : "Paiement fictif indisponible.")); }
     finally { setSubmitting(false); }
   };
 
@@ -368,7 +383,7 @@ export function SignupWizard() {
 
           {journey?.activated && <div className="mx-auto max-w-xl text-center"><h1 className="text-2xl font-semibold">Votre espace est prêt</h1><p className="mt-3">Le paiement a été confirmé par le serveur.</p><Link className="mt-6 inline-block underline" href="/login?redirect=/onboarding">Se connecter et commencer</Link></div>}
           {stage === "payment" && journey?.emailVerified && !journey.activated && (
-            <div className="mx-auto max-w-2xl"><h1 className="text-2xl font-semibold">Confirmez l’abonnement en environnement test</h1><p className="mt-2 text-muted-foreground">Aucun débit réel n’est effectué. Les choix sont verrouillés dès l’ouverture du paiement Stripe pour éviter une différence avec le devis accepté.</p><div className="mt-6 rounded-xl border bg-muted/20 p-5"><div className="flex justify-between"><span>Total HT</span><strong>{money(journey.quote.totalHtCents, journey.quote.currency)}</strong></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>TVA indicative</span><span>{money(journey.quote.vatCents, journey.quote.currency)}</span></div><div className="mt-4 flex justify-between border-t pt-4 text-lg"><span>Total TTC</span><strong>{money(journey.quote.totalTtcCents, journey.quote.currency)}</strong></div><p className="mt-4 text-xs text-muted-foreground">{journey.quote.includedMonthlyOrders.toLocaleString("fr-FR")} commandes incluses par mois, puis {money(journey.quote.orderOverageUnitPriceCents)} HT par commande supplémentaire. Les dépassements restent non bloquants.</p></div><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" disabled={!choicesEditable} onClick={() => void goToStage("plan")}>Modifier l’offre</Button><Button variant="outline" disabled={!choicesEditable} onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button className="w-full" variant="brand" size="lg" loading={submitting} onClick={() => void pay()}>{paymentAdapter === "stripe-sandbox" ? "Payer dans la sandbox Stripe" : "Confirmer le paiement fictif et activer"}</Button></div></div>
+            <div className="mx-auto max-w-2xl"><h1 className="text-2xl font-semibold">Confirmez l’abonnement en environnement test</h1><p className="mt-2 text-muted-foreground">{paymentAdapter === "stripe-sandbox" ? "Aucun débit réel n’est effectué. Les choix sont verrouillés dès l’ouverture du paiement Stripe pour éviter une différence avec le devis accepté." : "Aucun débit réel n’est effectué. Le paiement fictif active le compte seulement après confirmation serveur."}</p><div className="mt-6 rounded-xl border bg-muted/20 p-5"><div className="flex justify-between"><span>Total HT</span><strong>{money(journey.quote.totalHtCents, journey.quote.currency)}</strong></div><div className="mt-2 flex justify-between text-sm text-muted-foreground"><span>TVA indicative</span><span>{money(journey.quote.vatCents, journey.quote.currency)}</span></div><div className="mt-4 flex justify-between border-t pt-4 text-lg"><span>Total TTC</span><strong>{money(journey.quote.totalTtcCents, journey.quote.currency)}</strong></div><p className="mt-4 text-xs text-muted-foreground">{journey.quote.includedMonthlyOrders.toLocaleString("fr-FR")} commandes incluses par mois, puis {money(journey.quote.orderOverageUnitPriceCents)} HT par commande supplémentaire. Les dépassements restent non bloquants.</p></div><div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row"><Button variant="outline" disabled={!choicesEditable} onClick={() => void goToStage("plan")}>Modifier l’offre</Button><Button variant="outline" disabled={!choicesEditable} onClick={() => void goToStage("identity")}>Modifier mes informations</Button><Button className="w-full" variant="brand" size="lg" loading={submitting} onClick={() => void pay()}>{paymentAdapter === "stripe-sandbox" ? "Payer dans la sandbox Stripe" : "Confirmer le paiement fictif et activer"}</Button></div></div>
           )}
         </section>
       </div>

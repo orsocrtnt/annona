@@ -16,7 +16,11 @@ import {
   updateLastLogin,
 } from "@/domains/user/user.service";
 import { isDemoLoginEmail, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
-import { setDemoPersonaCookie } from "@/lib/demo/persona-cookie";
+import {
+  clearDemoPersonaCookie,
+  clearDemoSessionCookie,
+  setDemoPersonaCookie,
+} from "@/lib/demo/persona-cookie";
 import { resolveDemoActiveUser } from "@/domains/demo/demo-auth.service";
 import { ensureDemoSessionForLogin } from "@/domains/demo/demo-session.service";
 import {
@@ -26,6 +30,16 @@ import {
   requestDemoPoolRecycle,
 } from "@/domains/demo/demo-pool.service";
 import { getSessionSaasAccess } from "@/domains/saas/saas-session";
+
+async function clearFailedDemoLogin(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<void> {
+  await Promise.allSettled([
+    supabase.auth.signOut({ scope: "local" }),
+    clearDemoPersonaCookie(),
+    clearDemoSessionCookie(),
+  ]);
+}
 
 export async function POST(request: Request) {
   try {
@@ -80,13 +94,18 @@ export async function POST(request: Request) {
       // Après authentification Supabase, la lecture du compte permanent et la
       // réservation atomique sont indépendantes : les exécuter ensemble retire
       // une attente réseau du chemin critique.
-      const [baseUser, leasedCompanyId] = await Promise.all([
-        getUserByAuthId(authUser.id),
-        ensureDemoSessionForLogin("authenticated-demo", requestKey),
-      ]);
-      if (!baseUser) throw new UserNotProvisionedError();
-      user = baseUser;
-      sessionCompanyId = leasedCompanyId;
+      try {
+        const [baseUser, leasedCompanyId] = await Promise.all([
+          getUserByAuthId(authUser.id),
+          ensureDemoSessionForLogin("authenticated-demo", requestKey),
+        ]);
+        if (!baseUser) throw new UserNotProvisionedError();
+        user = baseUser;
+        sessionCompanyId = leasedCompanyId;
+      } catch (error) {
+        await clearFailedDemoLogin(supabase);
+        throw error;
+      }
     } else {
       user = await syncUserFromSupabase({
         authId: authUser.id,
@@ -107,6 +126,7 @@ export async function POST(request: Request) {
         if (sessionCompanyId && await requestDemoPoolRecycle(sessionCompanyId)) {
           after(async () => { await recycleDemoPoolEnvironment(sessionCompanyId!); });
         }
+        await clearFailedDemoLogin(supabase);
         return NextResponse.json(
           { error: "Environnement de démo incomplet. Contactez votre administrateur." },
           { status: 503 }

@@ -157,20 +157,6 @@ export async function listCompanyDrivers(companyId: string) {
   });
 }
 
-export async function listAllUsers() {
-  const users = await prisma.user.findMany({
-    include: { company: { select: { name: true } } },
-    orderBy: { createdAt: "desc" },
-    take: COMPANY_USERS_TAKE,
-  });
-  const roles = await fetchRolesByIds(users.map((user) => user.roleId));
-  return users.map((user) => {
-    const role = roles.get(user.roleId);
-    if (!role) throw new Error("ROLE_NOT_FOUND");
-    return { ...user, role };
-  });
-}
-
 const CREATABLE_SYSTEM_ROLES = ["CLIENT", "DRIVER", "DISPATCHER", "MINI_ADMIN"] as const;
 
 async function findCreatableRoleBySlug(slug: string) {
@@ -195,16 +181,10 @@ async function findCreatableRoleBySlug(slug: string) {
 }
 
 export async function resolveCompanyIdForUserCreation(
-  adminCompanyId: string | null | undefined,
-  isSuperAdmin: boolean
-): Promise<string | null> {
-  if (adminCompanyId) return adminCompanyId;
-  if (!isSuperAdmin) return null;
-  const company = await prisma.company.findFirst({
-    where: { status: { in: ["ACTIVE", "TRIAL"] } },
-    orderBy: { createdAt: "asc" },
-  });
-  return company?.id ?? null;
+  adminCompanyId: string | null | undefined
+): Promise<string> {
+  if (!adminCompanyId) throw new Error("COMPANY_REQUIRED");
+  return adminCompanyId;
 }
 
 export async function createUserByAdmin(
@@ -212,11 +192,8 @@ export async function createUserByAdmin(
   adminCompanyId: string | null | undefined,
   actorRole: SystemRole
 ) {
-  const isSuperAdmin = actorRole === "SUPER_ADMIN";
-  const companyId = await resolveCompanyIdForUserCreation(adminCompanyId, isSuperAdmin);
-  if (!companyId) {
-    throw new Error("COMPANY_REQUIRED");
-  }
+  if (actorRole === "SUPER_ADMIN") throw new Error("PLATFORM_USER_MUTATION_FORBIDDEN");
+  const companyId = await resolveCompanyIdForUserCreation(adminCompanyId);
 
   const role = await findCreatableRoleBySlug(input.roleSlug);
   if (!role) {
@@ -313,7 +290,7 @@ export async function deleteUserByAdmin(
   companyId: string | null,
   actorRole: SystemRole
 ) {
-  const isSuperAdmin = actorRole === "SUPER_ADMIN";
+  if (actorRole === "SUPER_ADMIN") throw new Error("PLATFORM_USER_MUTATION_FORBIDDEN");
   if (targetUserId === adminUserId) {
     throw new Error("CANNOT_DELETE_SELF");
   }
@@ -322,11 +299,7 @@ export async function deleteUserByAdmin(
     where: { id: targetUserId },
   });
 
-  if (!user) throw new Error("USER_NOT_FOUND");
-
-  if (!isSuperAdmin && (!companyId || user.companyId !== companyId)) {
-    throw new Error("USER_NOT_FOUND");
-  }
+  if (!user || !companyId || user.companyId !== companyId) throw new Error("USER_NOT_FOUND");
 
   const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
   if (!role) throw new Error("USER_NOT_FOUND");
@@ -384,16 +357,12 @@ export async function updateMiniAdminByAdmin(
   companyId: string | null,
   actorRole: SystemRole
 ) {
-  const isSuperAdmin = actorRole === "SUPER_ADMIN";
+  if (actorRole === "SUPER_ADMIN") throw new Error("PLATFORM_USER_MUTATION_FORBIDDEN");
   if (!canManageMiniAdmins(actorRole)) {
     throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
   }
   const user = await prisma.user.findUnique({ where: { id: targetUserId } });
-  if (!user) throw new Error("USER_NOT_FOUND");
-
-  if (!isSuperAdmin && (!companyId || user.companyId !== companyId)) {
-    throw new Error("USER_NOT_FOUND");
-  }
+  if (!user || !companyId || user.companyId !== companyId) throw new Error("USER_NOT_FOUND");
 
   const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
   if (!role || role.systemRole !== "MINI_ADMIN") {

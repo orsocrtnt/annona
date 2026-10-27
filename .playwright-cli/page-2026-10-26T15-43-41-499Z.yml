@@ -1,0 +1,303 @@
+- generic:
+  - link [aria-hidden]:
+    - /url: "#main-content"
+    - text: Aller au contenu principal
+  - region [aria-hidden]:
+    - generic:
+      - generic: Environnement de démonstration
+      - generic:
+        - generic:
+          - combobox:
+            - generic: Administrateur
+        - button: Réinitialiser la démo
+        - button
+  - generic [aria-hidden]:
+    - generic:
+      - banner:
+        - generic:
+          - button
+          - link:
+            - /url: /
+            - text: TutelLiv
+          - generic:
+            - button:
+              - generic: AD
+      - main:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Bonjour Alex.
+                - paragraph: Les opérations essentielles, les alertes et l'activité de vos missions en un coup d'œil.
+              - generic:
+                - button
+                - link:
+                  - /url: /dashboard/orders
+                  - text: Voir les commandes
+                - link:
+                  - /url: /dispatch
+                  - text: Ouvrir le dispatch
+            - generic:
+              - region:
+                - button:
+                  - generic:
+                    - generic:
+                      - paragraph: En cours
+                      - paragraph: "2"
+                  - generic: Missions actuellement en route
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Terminées aujourd'hui
+                      - paragraph: "0"
+                  - generic: 0 commande · 0 course
+                - button:
+                  - generic:
+                    - generic:
+                      - paragraph: En retard
+                      - paragraph: "2"
+                  - generic: Date demandée par le client dépassée
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=2]: Répartition par étape
+                      - generic: 7 jours
+                    - paragraph: Volumes des missions visibles à chaque statut sur la période sélectionnée.
+                  - generic:
+                    - button: 3 jours
+                    - button [pressed]: 7 jours
+                    - button: 30 jours
+                - generic:
+                  - img:
+                    - generic: "2"
+                    - generic: "2"
+                    - generic: "1"
+                    - generic: "1"
+                    - generic: "0"
+                - generic:
+                  - button:
+                    - generic: Sans livreur
+                    - generic: 2 missions
+                  - button:
+                    - generic: Assignées
+                    - generic: 2 missions
+                  - button:
+                    - generic: Achat / Collecté
+                    - generic: 1 mission
+                  - button:
+                    - generic: En livraison
+                    - generic: 1 mission
+                  - button:
+                    - generic: Livrées
+                    - generic: 0 mission
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=2]: Missions actives
+                      - paragraph: Destinations et points actifs sur la carte
+                    - link:
+                      - /url: /dispatch/map
+                      - text: Dispatch
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img:
+                            - generic:
+                              - generic [ref=e195] [cursor=pointer]
+                              - generic [ref=e196] [cursor=pointer]
+                              - generic [ref=e197] [cursor=pointer]
+                              - generic [ref=e198] [cursor=pointer]
+                              - generic [ref=e199] [cursor=pointer]
+                              - generic [ref=e200] [cursor=pointer]
+                              - generic [ref=e201] [cursor=pointer]
+                              - generic [ref=e202] [cursor=pointer]
+                              - generic [ref=e203] [cursor=pointer]
+                              - generic [ref=e204] [cursor=pointer]
+                              - generic [ref=e205] [cursor=pointer]
+                        - generic:
+                          - text: ©
+                          - link:
+                            - /url: https://www.openstreetmap.org/copyright
+                            - text: OpenStreetMap contributors
+                          - text: "Géocodage :"
+                          - link:
+                            - /url: https://adresse.data.gouv.fr/
+                            - text: BAN
+                          - text: /
+                          - link:
+                            - /url: https://cartes.gouv.fr/
+                            - text: IGN
+                          - text: "· Itinéraires :"
+                          - link:
+                            - /url: https://project-osrm.org/
+                            - text: OSRM
+                          - text: /
+                          - link:
+                            - /url: https://www.openstreetmap.org/copyright
+                            - text: OSM
+                          - text: ·
+                          - link:
+                            - /url: https://www.openstreetmap.org/fixthemap
+                            - text: Corriger la carte
+                    - paragraph: 7 missions actives
+                - generic:
+                  - generic:
+                    - heading [level=2]: Livreurs actifs
+                    - generic: 0 en ligne
+                  - paragraph: Aucun livreur connecté pour le moment.
+                  - link:
+                    - /url: /dispatch/drivers
+                    - text: Voir la carte des livreurs
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=2]: Missions planifiées les plus récentes
+                      - paragraph: 7 jours
+                    - link:
+                      - /url: /dashboard/orders
+                      - text: Toutes les commandes
+                  - generic:
+                    - article:
+                      - generic:
+                        - generic:
+                          - link:
+                            - /url: /dispatch?delivery=cmvpergsh001lnmew0szvnq09
+                            - text: LIV-98598963
+                          - generic: CMD-65132181
+                        - generic: Attente
+                      - generic:
+                        - generic:
+                          - term: Client
+                          - definition: Client Thomas Moreau
+                        - generic:
+                          - term: Livreur
+                          - definition: Non assigné
+                        - generic:
+                          - term: Planification
+                          - definition: 28 oct., 11:24
+                    - article:
+                      - generic:
+                        - generic:
+                          - link:
+                            - /url: /dispatch?delivery=cmvperfam0015nmewta0p48gp
+                            - text: LIV-53490809
+                          - generic: CMD-18992747
+                        - generic: Attente
+                      - generic:
+                        - generic:
+                          - term: Client
+                          - definition: Client Louis Bernard
+                        - generic:
+                          - term: Livreur
+                          - definition: Non assigné
+                        - generic:
+                          - term: Planification
+                          - definition: 27 oct., 11:24
+                    - article:
+                      - generic:
+                        - generic:
+                          - link:
+                            - /url: /dispatch?delivery=cmvperifo0027nmewt12hfilq
+                            - text: LIV-21097362
+                          - generic: CMD-63184703
+                        - generic: Assigné
+                      - generic:
+                        - generic:
+                          - term: Client
+                          - definition: Client Louis Bernard
+                        - generic:
+                          - term: Livreur
+                          - definition: Livreur Jean Dupont
+                        - generic:
+                          - term: Planification
+                          - definition: 26 oct., 23:24
+                    - article:
+                      - generic:
+                        - generic:
+                          - link:
+                            - /url: /dispatch?delivery=cmvperikn002enmewfeb6cemh
+                            - text: LIV-69340438
+                          - generic: CRS-62519804
+                        - generic: Assigné
+                      - generic:
+                        - generic:
+                          - term: Client
+                          - definition: Client Sophie Martin
+                        - generic:
+                          - term: Livreur
+                          - definition: Livreur Marc Chauffeur Démo
+                        - generic:
+                          - term: Planification
+                          - definition: 26 oct., 19:24
+                    - article:
+                      - generic:
+                        - generic:
+                          - link:
+                            - /url: /dispatch?delivery=cmvpergxc001onmewk5tn2qko
+                            - text: LIV-32001425
+                          - generic: CRS-36106950
+                        - generic: Collecté
+                      - generic:
+                        - generic:
+                          - term: Client
+                          - definition: Client Marie Client Démo
+                        - generic:
+                          - term: Livreur
+                          - definition: Livreur Jean Dupont
+                        - generic:
+                          - term: Planification
+                          - definition: 26 oct., 15:24
+                - generic:
+                  - generic: Points d'attention
+                  - button: 3 sans livreur
+                  - button: 2 à démarrer
+                  - button: 1 en retard
+          - generic:
+            - generic:
+              - paragraph: 2 alerte(s) opérationnelle(s) à suivre
+              - paragraph: Lire une notification ne résout pas une alerte.
+              - generic:
+                - link:
+                  - /url: /dispatch?delivery=cmvperfan0018nmew0vqp2avz&focus=late
+                  - text: CMD-83378604 — Retard — LIV-59112514 · À traiter — ouvrir dans le dispatch
+                - link:
+                  - /url: /dispatch?delivery=cmvperd8y000fnmew6u3hf3zh&focus=late
+                  - text: CMD-96673332 — Retard — LIV-23329287 · À traiter — ouvrir dans le dispatch
+  - region "Notifications alt+T"
+  - alert
+  - dialog [ref=e207]:
+    - heading "Navigation" [level=2] [ref=e208]
+    - paragraph [ref=e209]: Accédez aux rubriques de votre espace entreprise.
+    - navigation "Navigation mobile" [ref=e210]:
+      - link "Tableau de bord" [ref=e211] [cursor=pointer]:
+        - /url: /dashboard
+      - link "Première livraison" [ref=e217] [cursor=pointer]:
+        - /url: /onboarding
+      - link "Analyse" [ref=e221] [cursor=pointer]:
+        - /url: /dashboard/analytics
+      - link "Commandes" [ref=e224] [cursor=pointer]:
+        - /url: /dashboard/orders
+      - link "Dispatch" [ref=e229] [cursor=pointer]:
+        - /url: /dispatch
+      - link "Carte chauffeurs" [ref=e236] [cursor=pointer]:
+        - /url: /dispatch/drivers
+      - link "Carte livraison" [ref=e242] [cursor=pointer]:
+        - /url: /dispatch/map
+      - link "Clients" [ref=e246] [cursor=pointer]:
+        - /url: /dashboard/clients
+      - link "Support" [ref=e251] [cursor=pointer]:
+        - /url: /support
+      - link "Chauffeurs" [ref=e254] [cursor=pointer]:
+        - /url: /dashboard/drivers
+      - link "Gestion des comptes" [ref=e260] [cursor=pointer]:
+        - /url: /users
+      - link "Mon abonnement" [ref=e266] [cursor=pointer]:
+        - /url: /settings/subscription
+      - link "Facturation" [ref=e269] [cursor=pointer]:
+        - /url: /settings/billing
+      - link "Paramètres" [ref=e273] [cursor=pointer]:
+        - /url: /settings
+    - button "Fermer" [active] [ref=e277]

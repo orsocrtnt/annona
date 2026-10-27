@@ -47,12 +47,17 @@ function load<T>(deps: Record<string, unknown>): T {
   return module.exports as T;
 }
 
-function fixture(options?: { failNotification?: boolean; slowFirstDispatchFailure?: boolean }) {
+function fixture(options?: {
+  failNotification?: boolean;
+  failFirstNotification?: boolean;
+  slowFirstDispatchFailure?: boolean;
+}) {
   const base = new Date("2026-10-05T12:00:00.000Z");
   const jobs: Job[] = [];
   const executions: string[] = [];
   let releaseFirstDispatch: (() => void) | null = null;
   let signalFirstDispatch: (() => void) | null = null;
+  let notificationAttempts = 0;
   const firstDispatchStarted = new Promise<void>((resolve) => {
     signalFirstDispatch = resolve;
   });
@@ -165,7 +170,10 @@ function fixture(options?: { failNotification?: boolean; slowFirstDispatchFailur
     "@/domains/client-portal/notify.service": {
       deliverClientNotificationJob: async (_payload: unknown, jobKey: string) => {
         executions.push(`notification:${jobKey}`);
-        if (options?.failNotification) throw new Error("PROVIDER\nTEMPORARILY_UNAVAILABLE");
+        notificationAttempts += 1;
+        if (options?.failNotification || (options?.failFirstNotification && notificationAttempts === 1)) {
+          throw new Error("PROVIDER\nTEMPORARILY_UNAVAILABLE");
+        }
       },
     },
   });
@@ -269,6 +277,30 @@ test("trois échecs bornés deviennent visibles sans boucle infinie", async () =
   assert.equal(f.executions.length, 3);
   assert.equal(health.failed, 1);
   assert.equal(health.failedJobs[0]?.lastError, "PROVIDER TEMPORARILY_UNAVAILABLE");
+});
+
+test("une panne de notification est visible puis reprise avec la même clé", async () => {
+  const f = fixture({ failFirstNotification: true });
+  const job = f.addJob({
+    jobKey: "client-notification:delivery:delivery-retry:event-1",
+    type: "CLIENT_NOTIFICATION",
+    payload: { kind: "DELIVERY_STATUS", companyId: "company-a" },
+  });
+
+  const failed = await f.service.processOperationJob(job.id, f.base);
+  assert.equal(failed?.status, "PENDING");
+  assert.equal(failed?.lastError, "PROVIDER TEMPORARILY_UNAVAILABLE");
+  const recovered = await f.service.processOperationJob(
+    job.id,
+    new Date(f.base.getTime() + 2 * 60_000)
+  );
+
+  assert.equal(recovered?.status, "SUCCEEDED");
+  assert.equal(f.jobs[0]?.attempts, 2);
+  assert.deepEqual(f.executions, [
+    "notification:client-notification:delivery:delivery-retry:event-1",
+    "notification:client-notification:delivery:delivery-retry:event-1",
+  ]);
 });
 
 test("une interruption après la dernière tentative devient un échec visible sans quatrième essai", async () => {

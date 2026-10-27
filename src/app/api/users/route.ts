@@ -1,22 +1,27 @@
 import { NextResponse } from "next/server";
-import { requireStaffRole } from "@/lib/api/auth-guard";
+import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createUserSchema } from "@/lib/validations/user";
-import { createUserByAdmin, listUsersForCompany, listAllUsers } from "@/domains/user/user.service";
+import { createUserByAdmin, listUsersForCompany } from "@/domains/user/user.service";
 
 export async function GET() {
   const auth = await requireStaffRole("users:read");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
 
-  const isSuperAdmin = auth.context.user.role.systemRole === "SUPER_ADMIN";
+  if (auth.context.user.role.systemRole === "SUPER_ADMIN") {
+    return NextResponse.json(
+      { error: "La gestion des comptes d'entreprise n'est pas ouverte depuis la plateforme." },
+      { status: 403 }
+    );
+  }
+
   const companyId = auth.context.user.companyId;
-
-  if (!isSuperAdmin && !companyId) {
+  if (!companyId) {
     return NextResponse.json({ error: "Entreprise non définie" }, { status: 400 });
   }
 
-  const users = isSuperAdmin
-    ? await listAllUsers()
-    : await listUsersForCompany(companyId!);
+  const users = await listUsersForCompany(companyId);
 
   return NextResponse.json({ data: users, success: true });
 }
@@ -24,6 +29,14 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = await requireStaffRole("users:create");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
+  if (auth.context.user.role.systemRole === "SUPER_ADMIN") {
+    return NextResponse.json(
+      { error: "Mutation de compte non autorisée depuis la plateforme." },
+      { status: 403 }
+    );
+  }
 
   const body = await request.json();
   const parsed = createUserSchema.safeParse(body);

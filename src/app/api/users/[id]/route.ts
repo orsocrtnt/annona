@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { deleteUserByAdmin, updateMiniAdminByAdmin } from "@/domains/user/user.service";
 import { updateMiniAdminSchema } from "@/lib/validations/user";
 
@@ -9,12 +9,19 @@ export async function PATCH(
 ) {
   const auth = await requireStaffRole("users:update");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
+  if (auth.context.user.role.systemRole === "SUPER_ADMIN") {
+    return NextResponse.json(
+      { error: "Mutation de compte non autorisée depuis la plateforme." },
+      { status: 403 }
+    );
+  }
 
   const { id } = await params;
-  const isSuperAdmin = auth.context.user.role.systemRole === "SUPER_ADMIN";
   const companyId = getCompanyId(auth.context);
 
-  if (!isSuperAdmin && !companyId) {
+  if (!companyId) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 
@@ -55,12 +62,19 @@ export async function DELETE(
 ) {
   const auth = await requireStaffRole("users:delete");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
+  if (auth.context.user.role.systemRole === "SUPER_ADMIN") {
+    return NextResponse.json(
+      { error: "Mutation de compte non autorisée depuis la plateforme." },
+      { status: 403 }
+    );
+  }
 
   const { id } = await params;
-  const isSuperAdmin = auth.context.user.role.systemRole === "SUPER_ADMIN";
   const companyId = getCompanyId(auth.context);
 
-  if (!isSuperAdmin && !companyId) {
+  if (!companyId) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import {
   adminUpdateDelivery,
   getCompanyDeliveryById,
@@ -13,6 +13,8 @@ export async function GET(
 ) {
   const auth = await requireStaffRole("deliveries:read");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
+  if (denied) return denied;
 
   const companyId = getCompanyId(auth.context);
   if (!companyId) {
@@ -42,6 +44,8 @@ export async function PATCH(
 ) {
   const auth = await requireStaffRole("deliveries:update");
   if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
+  if (denied) return denied;
 
   const companyId = getCompanyId(auth.context);
   if (!companyId) {

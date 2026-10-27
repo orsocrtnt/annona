@@ -98,17 +98,24 @@ test("invitation : mot de passe choisi, révocation, activation conditionnelle e
   await assert.rejects(f.service.finishPasswordLink(input), /AUTH_LINK_INVALID/);
   assert.equal(f.writes(), 1);
 });
-test("jeton expiré/invalide et limite fournisseur : aucune modification", async (t) => {
+test("invitations et récupérations expirées sont refusées sans écriture ni activation", async (t) => {
   configured(t);
-  for (const limited of [false, true]) {
-    const f = fixture(); f.invalid = !limited; f.limited = limited;
-    await assert.rejects(f.service.finishPasswordLink(input), limited ? /AUTH_RATE_LIMITED/ : /AUTH_LINK_INVALID/);
+  for (const type of ["invite", "recovery"] as const) {
+    const f = fixture(); f.invalid = true;
+    await assert.rejects(f.service.finishPasswordLink({ ...input, type }), /AUTH_LINK_INVALID/);
     assert.equal(f.writes(), 0); assert.equal(f.activations(), 0);
   }
+});
+test("limite fournisseur : aucune modification", async (t) => {
+  configured(t); const f = fixture(); f.limited = true;
+  await assert.rejects(f.service.finishPasswordLink(input), /AUTH_RATE_LIMITED/);
+  assert.equal(f.writes(), 0); assert.equal(f.activations(), 0);
 });
 test("récupération d'un compte actif sans activation ; suspension jamais annulée", async (t) => {
   configured(t); const f = fixture(); f.user.status = "ACTIVE";
   await f.service.finishPasswordLink({ ...input, type: "recovery" });
+  assert.equal(f.writes(), 1); assert.equal(f.activations(), 0);
+  await assert.rejects(f.service.finishPasswordLink({ ...input, type: "recovery" }), /AUTH_LINK_INVALID/);
   assert.equal(f.writes(), 1); assert.equal(f.activations(), 0);
   for (const kind of ["user", "company"]) {
     const blocked = fixture();

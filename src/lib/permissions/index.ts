@@ -54,12 +54,14 @@ export function canAccessRoute(
 ): boolean {
   const routeAccess: Record<string, SystemRole[]> = {
     "/admin": ["SUPER_ADMIN"],
-    "/dashboard": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
-    "/dispatch": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-    "/driver": ["SUPER_ADMIN", "DRIVER"],
-    "/portal": ["SUPER_ADMIN", "CLIENT"],
-    "/settings": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
-    "/users": ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
+    "/dashboard": ["COMPANY_ADMIN", "MINI_ADMIN"],
+    "/dispatch": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
+    "/support": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
+    "/onboarding": ["COMPANY_ADMIN"],
+    "/driver": ["DRIVER"],
+    "/portal": ["CLIENT"],
+    "/settings": ["COMPANY_ADMIN", "MINI_ADMIN"],
+    "/users": ["COMPANY_ADMIN", "MINI_ADMIN"],
     "/companies": ["SUPER_ADMIN"],
   };
 

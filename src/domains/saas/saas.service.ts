@@ -11,6 +11,28 @@ export const SAAS_FEATURES = [
 
 export type SaasFeature = (typeof SAAS_FEATURES)[number];
 
+export const PREMIUM_DISCOVERY_DAYS = 60;
+export const PREMIUM_DISCOVERY_FEATURES = [
+  "auto_dispatch",
+  "admin_gps",
+  "client_gps",
+  "advanced_analytics",
+] as const satisfies readonly SaasFeature[];
+
+export function premiumDiscoveryEndsAtForPaidSignup(input: {
+  startsAt: Date;
+  planCode: SaasPlanCode;
+  paymentAdapter: string | null;
+}) {
+  if (!Number.isFinite(input.startsAt.getTime())) {
+    throw new Error("SAAS_DISCOVERY_START_INVALID");
+  }
+  if (input.paymentAdapter !== "fake" || !["STARTER", "PRO"].includes(input.planCode)) {
+    return null;
+  }
+  return new Date(input.startsAt.getTime() + PREMIUM_DISCOVERY_DAYS * 86_400_000);
+}
+
 type DbClient = Prisma.TransactionClient | typeof prisma;
 
 type PlanSnapshot = {
@@ -68,6 +90,10 @@ export type ResolvedSaasAccess = {
     dispatchers: number | null;
   };
   orderOverageUnitPriceCents: number;
+  premiumDiscovery: {
+    endsAt: Date;
+    features: Set<SaasFeature>;
+  } | null;
   canCreateOrders: boolean;
   canMutate: boolean;
 };
@@ -251,6 +277,7 @@ export async function resolveCompanySaasAccess(
       limits: { drivers: null, admins: null, dispatchers: null, monthlyOrders: 2_147_483_647 },
       maxSeats: { drivers: null, admins: null, dispatchers: null },
       orderOverageUnitPriceCents: 0,
+      premiumDiscovery: null,
       canCreateOrders,
       canMutate,
     };
@@ -271,6 +298,7 @@ export async function resolveCompanySaasAccess(
         dispatchers: snapshot.limits.dispatchers,
       },
       orderOverageUnitPriceCents: snapshot.orderOverageUnitPriceCents,
+      premiumDiscovery: null,
       canCreateOrders,
       canMutate,
     };
@@ -280,6 +308,18 @@ export async function resolveCompanySaasAccess(
   if (!assignment) throw new Error("SAAS_PLAN_ASSIGNMENT_REQUIRED");
   const plan = planSnapshotFromJson(assignment.snapshot);
   const features = new Set(plan.features);
+  const discoveryEndsAt = subscription.premiumDiscoveryEndsAt;
+  const discoveryActive =
+    (plan.planCode === "STARTER" || plan.planCode === "PRO") &&
+    discoveryEndsAt instanceof Date &&
+    discoveryEndsAt.getTime() > at.getTime();
+  const discoveryFeatures = new Set<SaasFeature>();
+  if (discoveryActive) {
+    for (const feature of PREMIUM_DISCOVERY_FEATURES) {
+      features.add(feature);
+      discoveryFeatures.add(feature);
+    }
+  }
   let driverExtras = 0;
   let adminExtras = 0;
   let dispatcherExtras = 0;
@@ -315,6 +355,9 @@ export async function resolveCompanySaasAccess(
       dispatchers: plan.maxDispatcherSeats,
     },
     orderOverageUnitPriceCents: plan.orderOverageUnitPriceCents,
+    premiumDiscovery: discoveryActive
+      ? { endsAt: discoveryEndsAt, features: discoveryFeatures }
+      : null,
     canCreateOrders,
     canMutate,
   };
@@ -346,6 +389,7 @@ export async function activateManualCommercialSubscription(
         currentPeriodEnd: input.currentPeriodEnd,
         cancelAtPeriodEnd: false,
         endedAt: null,
+        premiumDiscoveryEndsAt: null,
         snapshot: {
           schemaVersion: 1,
           catalogCode: catalog.code,
@@ -362,6 +406,7 @@ export async function activateManualCommercialSubscription(
         startsAt: input.startsAt,
         currentPeriodStart: input.startsAt,
         currentPeriodEnd: input.currentPeriodEnd,
+        premiumDiscoveryEndsAt: null,
         snapshot: {
           schemaVersion: 1,
           catalogCode: catalog.code,
@@ -424,6 +469,7 @@ export async function activateManualPilot(input: ManualPilotInput) {
       currentPeriodEnd: input.endsAt,
       cancelAtPeriodEnd: false,
       endedAt: null,
+      premiumDiscoveryEndsAt: null,
       snapshot,
     },
     create: {
@@ -433,6 +479,7 @@ export async function activateManualPilot(input: ManualPilotInput) {
       startsAt: input.startsAt,
       currentPeriodStart: input.startsAt,
       currentPeriodEnd: input.endsAt,
+      premiumDiscoveryEndsAt: null,
       snapshot,
     },
   });

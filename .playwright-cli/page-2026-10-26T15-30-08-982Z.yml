@@ -1,0 +1,14 @@
+- generic [active] [ref=f5e1]:
+  - link "Aller au contenu principal" [ref=f5e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=f5e4]:
+    - banner [ref=f5e5]:
+      - generic [ref=f5e6]:
+        - button "Ouvrir le menu" [ref=f5e7]
+        - button "Ouvrir le menu du compte" [ref=f5e9]:
+          - generic [ref=f5e10]: U
+    - main [ref=f5e12]:
+      - status "Chargement du contenu" [ref=f5e14]:
+        - generic [ref=f5e15]: Chargement du contenu…
+  - region "Notifications alt+T"
+  - alert [ref=f5e25]

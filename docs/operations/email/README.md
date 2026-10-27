@@ -27,6 +27,17 @@ Le portail affiche si le transport est désactivé, en recette ou réel. En rece
 - Les préférences du client peuvent couper l'alerte complète ou seulement sa copie e-mail.
 - Les contrôles d'entreprise sont effectués avant la création de la notification et l'envoi.
 
+## Preuve locale ciblée (24 octobre 2026)
+
+Exécuter `npm run test:email-sec05`. La commande ne charge ni `.env`, ni réseau, ni base : elle exerce les services applicatifs avec un client Supabase et un transport Resend simulés.
+
+- invitation et récupération expirées, puis seconde utilisation des deux types de lien : refus sans écriture ni activation ;
+- échec HTTP fournisseur rendu visible, reprise avec la même clé d'idempotence, et file durable qui conserve cette clé entre deux tentatives ;
+- double déclenchement : une notification et une tâche durable logiques ; le fournisseur simulé ne matérialise qu'une livraison pour la clé stable ;
+- `disabled` : zéro appel fournisseur, y compris après rejeu.
+
+Cette preuve ne configure ni SMTP Supabase, ni Resend, ni domaine, ni boîte de réception. Elle ne remplace donc pas la recette isolée de réception, d'expiration et de limites appliquées par les fournisseurs.
+
 ## Activation de la recette
 
 1. Utiliser la future préproduction isolée d'ENV-1.

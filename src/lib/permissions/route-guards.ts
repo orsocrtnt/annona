@@ -17,7 +17,7 @@ export const ROUTE_GUARDS: RouteGuardConfig[] = [
   },
   {
     path: "/dashboard",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
+    allowedRoles: ["COMPANY_ADMIN", "MINI_ADMIN"],
     requiredPermissions: ["dashboard:company"],
     redirectTo: "/login",
   },
@@ -29,7 +29,7 @@ export const ROUTE_GUARDS: RouteGuardConfig[] = [
   },
   {
     path: "/dispatch",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
+    allowedRoles: ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
     requiredPermissions: ["dashboard:dispatcher"],
     redirectTo: "/login",
   },
@@ -52,13 +52,13 @@ export const ROUTE_GUARDS: RouteGuardConfig[] = [
   },
   {
     path: "/settings",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
+    allowedRoles: ["COMPANY_ADMIN", "MINI_ADMIN"],
     requiredPermissions: ["settings:read"],
     redirectTo: "/login",
   },
   {
     path: "/users",
-    allowedRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN"],
+    allowedRoles: ["COMPANY_ADMIN", "MINI_ADMIN"],
     requiredPermissions: ["users:read"],
     redirectTo: "/login",
   },

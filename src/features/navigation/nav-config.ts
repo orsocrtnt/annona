@@ -1,15 +1,19 @@
 import {
-  LayoutDashboard, Building2, Users, Settings, Radio,
-  Truck, Package, MapPin, Shield, UserCircle, Receipt, BarChart3, HeadphonesIcon, ListChecks,
+  LayoutDashboard, Building2, Users, Settings, Radio, ClipboardList, Activity, ShieldAlert,
+  Truck, Package, MapPin, Shield, UserCircle, Receipt, CreditCard, BarChart3, HeadphonesIcon, ListChecks,
+  ScrollText,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
 export const adminNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/admin", icon: LayoutDashboard },
+  { title: "Souscriptions", href: "/admin/subscriptions", icon: ClipboardList },
+  { title: "Support plateforme", href: "/admin/support", icon: HeadphonesIcon },
+  { title: "Exploitation", href: "/admin/operations", icon: Activity },
+  { title: "Incidents", href: "/admin/incidents", icon: ShieldAlert },
+  { title: "Journal d'accès", href: "/admin/access-events", icon: ScrollText },
   { title: "Entreprises", href: "/companies", icon: Building2 },
-  { title: "Utilisateurs", href: "/users", icon: Users },
-  { title: "Facturation", href: "/settings/billing", icon: Receipt },
-  { title: "Paramètres", href: "/settings", icon: Settings },
+  { title: "Utilisateurs", href: "/admin/users", icon: Users },
 ];
 
 const dispatchMapItems: NavItem[] = [
@@ -28,6 +32,7 @@ export const companyNavItems: NavItem[] = [
   { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
+  { title: "Mon abonnement", href: "/settings/subscription", icon: CreditCard },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
   { title: "Paramètres", href: "/settings", icon: Settings },
 ];

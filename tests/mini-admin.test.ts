@@ -42,9 +42,13 @@ test("réglages absents, vides ou invalides : aucun droit ni module implicite", 
 for (const actorRole of roles) {
   test(`matrice de délégation : ${actorRole}`, async (t) => {
     const writes = fixture(t);
-    const principal = ["SUPER_ADMIN", "COMPANY_ADMIN"].includes(actorRole);
-    assert.equal(canManageMiniAdmins(actorRole), principal);
-    if (principal) {
+    assert.equal(canManageMiniAdmins(actorRole), actorRole === "SUPER_ADMIN" || actorRole === "COMPANY_ADMIN");
+    if (actorRole === "SUPER_ADMIN") {
+      await assert.rejects(users.updateMiniAdminByAdmin("target", input, "a", actorRole), /PLATFORM_USER_MUTATION_FORBIDDEN/);
+      await assert.rejects(users.createUserByAdmin(input, "a", actorRole), /PLATFORM_USER_MUTATION_FORBIDDEN/);
+      await assert.rejects(users.deleteUserByAdmin("target", "self", "a", actorRole), /PLATFORM_USER_MUTATION_FORBIDDEN/);
+      assert.deepEqual(writes, []);
+    } else if (actorRole === "COMPANY_ADMIN") {
       await users.updateMiniAdminByAdmin("target", input, "a", actorRole);
       assert.deepEqual(writes, [{ where: { id: "target" }, data: { settings: { locale: "fr", miniAdmin: { title: "Comptes", modules: ["accounts"] } } } }]);
       // Authorized creation reaches the existing-account check, without creating an account.
@@ -61,14 +65,13 @@ for (const actorRole of roles) {
   });
 }
 
-test("administrateur : entreprise étrangère ou absente refusée, super-admin autorisé", async (t) => {
+test("administrateur : entreprise étrangère ou absente refusée, super-admin refusé avant écriture", async (t) => {
   const writes = fixture(t, "b");
   for (const company of ["a", null]) {
     await assert.rejects(users.updateMiniAdminByAdmin("target", input, company, "COMPANY_ADMIN"), /USER_NOT_FOUND/);
   }
+  await assert.rejects(users.updateMiniAdminByAdmin("target", input, null, "SUPER_ADMIN"), /PLATFORM_USER_MUTATION_FORBIDDEN/);
   assert.deepEqual(writes, []);
-  await users.updateMiniAdminByAdmin("target", input, null, "SUPER_ADMIN");
-  assert.equal(writes.length, 1);
 });
 
 test("deux entreprises nulles ne constituent pas un périmètre autorisé", async (t) => {
@@ -95,6 +98,9 @@ function route(file: string, role: SystemRole, companyId: string | null = "a") {
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": {
       requireStaffRole: async () => ({ context: { user: { id: "self", companyId, role: { systemRole: role } } } }),
+      requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => (
+        roles.includes(context.user.role.systemRole) ? null : NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+      ),
       getCompanyId: (context: { user: { companyId: string | null } }) => context.user.companyId,
     },
     "@/domains/user/user.service": users,

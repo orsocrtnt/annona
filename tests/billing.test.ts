@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { createHmac } from "node:crypto";
 import type { SignupCatalog } from "../src/domains/signup/signup.service";
 import type { BillingInvoice, ProviderSnapshot } from "../src/domains/billing/billing-core";
@@ -137,4 +139,20 @@ test("SAAS-01B : transport Stripe2024 récupère prix/TVA/période/remboursement
   for (const patch of [{ currency: "usd" }, { livemode: true }]) { override = patch; await assert.rejects(provider.snapshot("sub_test", "account"), /SANDBOX_REQUIRED/); }
   override = { amount_paid: 99999 };
   assert.throws(() => core.reconcileBilling(active(), { ...snapshot, invoices: [{ ...invoice, paidCents: 99999 }] }, now), /INVOICE_MISMATCH/);
+});
+
+test("SAAS-01B : cron inerte hors sandbox, inscription conservée si Checkout interrompu", () => {
+  const cron = readFileSync(resolve("src/app/api/cron/billing/route.ts"), "utf8");
+  const vercel = readFileSync(resolve("vercel.json"), "utf8");
+  const ui = readFileSync(resolve("src/features/auth/signup-wizard.tsx"), "utf8");
+  const service = readFileSync(resolve("src/domains/billing/billing.service.ts"), "utf8");
+  assert.match(cron, /SIGNUP_PAYMENT_ADAPTER !== "stripe-sandbox"/);
+  assert.match(cron, /skipped: true/);
+  assert.match(vercel, /\/api\/cron\/billing/);
+  assert.match(ui, /get\("payment"\) === "cancelled"/);
+  assert.match(readFileSync(resolve("src/domains/billing/stripe-sandbox.ts"), "utf8"), /\/register\?payment=cancelled/);
+  assert.match(ui, /Le paiement sandbox a été interrompu\. Votre inscription est conservée\./);
+  assert.match(ui, /Le paiement sandbox est indisponible\. Votre inscription est conservée\./);
+  assert.equal([...service.matchAll(/closedAt: new Date\(\)/g)].length, 1);
+  assert.match(service, /if \(input\.kind === "USAGE"\) await tx\.saasUsagePeriod\.update\(\{ where: \{ id: input\.periodId \}/);
 });

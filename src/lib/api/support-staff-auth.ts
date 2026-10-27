@@ -1,10 +1,12 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { getCompanyId, requireStaffRole } from "@/lib/api/auth-guard";
+import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 
 export async function requireSupportStaff() {
   const auth = await requireStaffRole();
   if ("error" in auth) return auth;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
+  if (denied) return { error: denied };
 
   const role = auth.context.user.role.systemRole;
   if (role === "MINI_ADMIN" && !auth.context.permissions.includes("support:read")) {
