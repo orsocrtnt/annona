@@ -112,9 +112,19 @@ test("démo : position déjà au bon retard non réécrite ; jamais datée avant
   const now = new Date();
   const upToDate = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService({ demoSignalLagSeconds: 180 }), new Date(+now - 182_000));
   assert.equal(await upToDate.service.advanceDemoDriverPositions("c", now), 0);
-  const tooLong = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService({ demoSignalLagSeconds: 3600 }), null);
-  await tooLong.service.advanceDemoDriverPositions("c", now);
-  assert.equal(+tooLong.writes.find((w) => w[0] === "location")[1].update.updatedAt, +tooLong.startedAt + 1000);
+  const early = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService({ demoSignalLagSeconds: 120 }), null);
+  await early.service.advanceDemoDriverPositions("c", new Date(+early.startedAt + 30_000));
+  assert.equal(+early.writes.find((w) => w[0] === "location")[1].update.updatedAt, +early.startedAt + 1000);
+});
+
+test("démo : signal perdu, un seul relevé figé une minute après le départ, qui ne bouge plus", async () => {
+  const now = new Date();
+  const lost = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService({ demoSignalLagSeconds: 900 }), null);
+  await lost.service.advanceDemoDriverPositions("c", now);
+  const frozenAt = +lost.writes.find((w) => w[0] === "location")[1].update.updatedAt;
+  assert.equal(frozenAt, +lost.startedAt + 60_000);
+  const later = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService({ demoSignalLagSeconds: 900 }), new Date(frozenAt));
+  assert.equal(await later.service.advanceDemoDriverPositions("c", new Date(+now + 5 * 60_000)), 0, "relevé figé : jamais réécrit");
 });
 
 test("démo : hors entreprise de démo, aucun retard ni position simulés", async () => {

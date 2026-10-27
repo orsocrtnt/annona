@@ -26,9 +26,9 @@ export const PUBLIC_CAPABILITIES: PublicCapability[] = [
         needles: ["État mis à jour le"],
       },
       {
-        text: "Chaque position est datée. Si le signal se perd, une position estimée est affichée et signalée comme telle, puis la dernière position connue. Ce signal ne garantit pas un suivi permanent.",
+        text: "Chaque position est datée. Entre deux signaux, le livreur avance vers sa prochaine étape en position estimée, signalée comme telle ; sans signal depuis 3 min, il s'arrête, marqué « Signal perdu ». Ce signal ne garantit pas un suivi permanent.",
         proof: "src/components/shared/order-tracking.tsx",
-        needles: ["Position absente", "Position estimée", "dernière position connue", "ne garantit pas un suivi permanent"],
+        needles: ["Position absente", "Position estimée", "Signal perdu", "ne garantit pas un suivi permanent"],
       },
       {
         text: "Échanger sur la commande, et y signaler un incident.",

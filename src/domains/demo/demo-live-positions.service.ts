@@ -1,7 +1,8 @@
 import { prisma } from "@/services/prisma/client";
-import { trackingService } from "@/domains/tracking/tracking.policy";
+import { ESTIMATION_MAX_SECONDS, trackingService } from "@/domains/tracking/tracking.policy";
 import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
 import {
+  DEMO_LOST_SIGNAL_AFTER_START_MS,
   DEMO_POSITION_MIN_INTERVAL_MS,
   demoSignalLagSeconds,
   demoTripProgress,
@@ -39,7 +40,8 @@ async function demoTripRoute(start: Point, target: Point): Promise<[number, numb
  * Démo uniquement : fait rouler les livreurs des missions démarrées sur le vrai itinéraire
  * que trace la carte (vers la collecte pour une course, vers l'adresse pour une commande).
  * Un livreur à retard de signal (`demoSignalLagSeconds`) reçoit la position qu'il avait à ce
- * moment-là, datée d'autant : les cartes le montrent estimé puis « Signal perdu », comme en réel.
+ * moment-là, datée d'autant : les cartes le montrent estimé. Au-delà de la durée d'estimation,
+ * son relevé reste figé peu après le départ : « Signal perdu », il ne bouge plus, comme en réel.
  * Sans effet hors des entreprises de démo. Renvoie le nombre de positions écrites.
  */
 export async function advanceDemoDriverPositions(companyId: string, now = new Date()): Promise<number> {
@@ -83,9 +85,12 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
     // réinitialisation, la position existe mais le service n'est pas encore actif : on l'active.
     const trackingActive = trackingService(mission.driver?.settings).active;
     const lastUpdate = mission.driver?.driverLocation?.updatedAt;
-    const lagMs = demoSignalLagSeconds(mission.driver?.settings) * 1000;
-    // Jamais avant le départ : le signal doit appartenir à la mission en cours.
-    const signalAt = new Date(Math.max(now.getTime() - lagMs, mission.missionStartedAt!.getTime() + 1000));
+    const lagSeconds = demoSignalLagSeconds(mission.driver?.settings);
+    const startedAt = mission.missionStartedAt!.getTime();
+    // Jamais avant le départ ni dans le futur : le signal doit appartenir à la mission en cours.
+    const signalAt = lagSeconds > ESTIMATION_MAX_SECONDS
+      ? new Date(Math.min(startedAt + DEMO_LOST_SIGNAL_AFTER_START_MS, now.getTime()))
+      : new Date(Math.max(now.getTime() - lagSeconds * 1000, startedAt + 1000));
     if (trackingActive && lastUpdate && Math.abs(signalAt.getTime() - lastUpdate.getTime()) < DEMO_POSITION_MIN_INTERVAL_MS) continue;
 
     // Même cible que le tracé de la carte : la collecte d'abord pour une course.

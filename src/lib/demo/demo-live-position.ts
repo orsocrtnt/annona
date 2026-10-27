@@ -9,9 +9,12 @@ export const DEMO_POSITION_MIN_INTERVAL_MS = 10 * 1000;
 
 /**
  * Retard fictif du dernier signal par livreur de démo, dans l'ordre du roster : en direct (0),
- * signal perdu depuis 3 min (position estimée) ou depuis 15 min (dernière position connue).
+ * signal périmé depuis 100 s (position estimée) ou perdu (au-delà de 3 min : un seul relevé,
+ * figé une minute après le départ, qui ne bouge plus).
  */
-export const DEMO_SIGNAL_LAG_SECONDS = [0, 0, 180, 0, 900] as const;
+export const DEMO_SIGNAL_LAG_SECONDS = [0, 0, 100, 0, 900] as const;
+/** Heure du relevé figé d'un livreur au signal perdu, après le départ de sa mission. */
+export const DEMO_LOST_SIGNAL_AFTER_START_MS = 60 * 1000;
 const DEMO_SIGNAL_LAG_MAX_SECONDS = 3600;
 
 /** Retard lu dans les réglages du livreur ; 0 si absent ou invalide, plafonné à une heure. */

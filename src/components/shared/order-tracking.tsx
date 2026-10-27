@@ -11,12 +11,13 @@ import { withoutRolePrefix } from "@/lib/format/person-labels";
 import type { getOrderTracking } from "@/domains/tracking/tracking.service";
 type Tracking = Awaited<ReturnType<typeof getOrderTracking>>;
 const positionLabels: Record<Exclude<TrackingPosition["state"], "STALE">, string> = { NOT_STARTED: "Position non partagée : mission non démarrée.", ENDED: "Suivi arrêté : mission terminée.", OFF_DUTY: "Position non partagée : service arrêté.", ABSENT: "Position absente : aucun signal reçu pour cette mission et ce service.", FRESH: "Dernière position reçue" };
-/** Signal perdu : estimation vers la prochaine étape pendant 10 min, puis dernière position connue. */
+/** Signal périmé : estimation vers la prochaine étape pendant 3 min, puis arrêt au point atteint. */
 function positionLabel(position: TrackingPosition, state: TrackingPosition["state"], serverNow: number) {
   if (state !== "STALE") return positionLabels[state];
-  if (position.estimated) return "Position estimée : signal perdu, trajet supposé en ligne droite vers la prochaine étape.";
   const lost = position.updatedAt != null && serverNow - Date.parse(position.updatedAt) > ESTIMATION_MAX_SECONDS * 1000;
-  return lost ? "Signal perdu : dernière position connue." : "Signal interrompu : dernière position connue.";
+  if (lost) return position.motion ? "Signal perdu : livreur arrêté à sa dernière position estimée." : "Signal perdu : dernière position connue.";
+  if (position.estimated) return "Position estimée : signal interrompu, trajet supposé en ligne droite vers la prochaine étape.";
+  return "Signal interrompu : dernière position connue.";
 }
 const date = dateTimeLabel;
 export function OrderTracking({ orderId }: { orderId: string }) {
