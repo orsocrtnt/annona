@@ -15,6 +15,22 @@ export function tileProviderConfig(values: { url?: string; attribution?: string;
 }
 
 export const MAP_TILES = tileProviderConfig();
+
+/**
+ * Plan vectoriel (direction Menthe). Une valeur vide désactive le vectoriel : la carte
+ * revient au plan raster ci-dessus. Le service public OpenFreeMap n'a pas de garantie de
+ * disponibilité : pour la production, pointer vers une instance hébergée ou un fournisseur.
+ */
+export function vectorStyleConfig(url: string | undefined = process.env.NEXT_PUBLIC_MAP_STYLE_URL) {
+  const styleUrl = url === undefined ? "https://tiles.openfreemap.org/styles/positron" : url.trim();
+  return {
+    styleUrl: styleUrl || null,
+    attribution:
+      '<a href="https://openfreemap.org">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  };
+}
+
+export const MAP_VECTOR = vectorStyleConfig();
 export const PROVIDER_TIMEOUT_MS = 8_000;
 export const TILE_TIMEOUT_MS = 10_000;
 export const ROUTE_REFRESH_MS = 30_000;

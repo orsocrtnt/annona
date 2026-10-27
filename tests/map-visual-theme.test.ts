@@ -34,12 +34,14 @@ test("MAP-3 : la progression reste compréhensible sans palette arc-en-ciel", ()
   assert.doesNotMatch(html, /#2563eb|#7c3aed|#ea580c|#16a34a|#f59e0b/);
 });
 
-test("MAP-3 : le fond monochrome est porté par la variante commune des cartes", () => {
+test("MAP-3 : plan vectoriel Menthe commun aux cartes, plan raster gris en secours", () => {
   const base = readFileSync("src/components/maps/leaflet-base-map-inner.tsx", "utf8");
   const css = readFileSync("src/app/globals.css", "utf8");
   assert.match(base, /variant = "uber"/);
   assert.match(base, /leaflet-map-host--uber/);
-  assert.match(css, /leaflet-map-host--uber \.leaflet-tile-pane/);
+  assert.match(base, /<BaseMapLayer/);
+  // Le filtre gris ne s'applique qu'au plan raster de secours, jamais au vectoriel.
+  assert.match(css, /leaflet-map-host--uber:not\(\.leaflet-map-host--vector\) \.leaflet-tile-pane/);
   assert.match(css, /grayscale\(1\)[\s\S]*saturate\(0\)/);
 });
 

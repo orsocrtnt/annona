@@ -174,9 +174,14 @@
   background: #ececea;
 }
 
-.leaflet-map-host--uber .leaflet-tile-pane {
+/* Plan raster de secours : gris doux. Le plan vectoriel Menthe porte ses propres couleurs. */
+.leaflet-map-host--uber:not(.leaflet-map-host--vector) .leaflet-tile-pane {
   filter: grayscale(1) saturate(0) brightness(1.08) contrast(0.78);
   opacity: 0.9;
+}
+
+.leaflet-map-host--vector .leaflet-container {
+  background: #eef2ef;
 }
 
 .leaflet-map-host--uber .leaflet-popup-content-wrapper,

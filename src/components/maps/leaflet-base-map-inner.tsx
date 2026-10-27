@@ -7,7 +7,8 @@ import { useViewportHeight } from "@/hooks/use-viewport-height";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui.store";
 import { MAP_TILES } from "@/lib/maps/provider-config";
-import { ProviderTileLayer, MapAttribution } from "@/components/maps/provider-tile-layer";
+import { MapAttribution } from "@/components/maps/provider-tile-layer";
+import { BaseMapLayer } from "@/components/maps/vector-base-layer";
 import type { LeafletBaseMapProps } from "./leaflet-base-map";
 import { PARIS_CENTER } from "./leaflet-base-map";
 
@@ -91,6 +92,7 @@ export function LeafletBaseMapInner({
   className,
 }: LeafletBaseMapProps) {
   const shellRef = useRef<HTMLDivElement>(null);
+  const [baseMode, setBaseMode] = useState<"vector" | "raster">("raster");
   const viewportHeight = useViewportHeight();
   const sidebarCollapsed = useUIStore((s) => s.sidebarCollapsed);
   const [fillSize, setFillSize] = useState({
@@ -169,6 +171,7 @@ export function LeafletBaseMapInner({
       className={cn(
         "leaflet-map-host",
         variant === "uber" && "leaflet-map-host--uber",
+        baseMode === "vector" && "leaflet-map-host--vector",
         className
       )}
       data-map-variant={variant}
@@ -184,11 +187,11 @@ export function LeafletBaseMapInner({
         zoomControl={false}
         attributionControl={false}
       >
-        <ProviderTileLayer />
+        <BaseMapLayer onModeChange={setBaseMode} />
         <MapResizeHandler shellRef={shellRef} />
         {children}
       </MapContainer>
-      <MapAttribution navigation={navigation} fill={fill} />
+      <MapAttribution navigation={navigation} fill={fill} vector={baseMode === "vector"} />
     </div>
   );
 }

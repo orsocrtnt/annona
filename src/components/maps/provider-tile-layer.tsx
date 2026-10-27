@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { TileLayer } from "react-leaflet";
-import { MAP_TILES, TILE_TIMEOUT_MS } from "@/lib/maps/provider-config";
+import { MAP_TILES, MAP_VECTOR, TILE_TIMEOUT_MS } from "@/lib/maps/provider-config";
 
 /** Markers stay usable when the background fails; retry only on user action. */
 export function ProviderTileLayer() {
@@ -30,8 +30,8 @@ export function ProviderTileLayer() {
   </>;
 }
 
-export function MapAttribution({ navigation = false, fill = false }: { navigation?: boolean; fill?: boolean }) {
+export function MapAttribution({ navigation = false, fill = false, vector = false }: { navigation?: boolean; fill?: boolean; vector?: boolean }) {
   return <div className="absolute right-0 z-[1200] max-w-[95%] rounded-tl-md border-l border-t border-black/5 bg-white/90 px-1.5 py-0.5 text-right text-[9px] leading-tight text-zinc-600 [&_a]:underline"
     style={{ bottom: navigation ? "min(40%, 19rem)" : fill ? "min(28%, 11rem)" : 0 }}
-    dangerouslySetInnerHTML={{ __html: `${MAP_TILES.attribution}<br/>Géocodage : <a href="https://adresse.data.gouv.fr/">BAN</a> / <a href="https://cartes.gouv.fr/">IGN</a> · Itinéraires : <a href="https://project-osrm.org/">OSRM</a> / <a href="https://www.openstreetmap.org/copyright">OSM</a> · <a href="https://www.openstreetmap.org/fixthemap">Corriger la carte</a>` }} />;
+    dangerouslySetInnerHTML={{ __html: `${vector ? MAP_VECTOR.attribution : MAP_TILES.attribution}<br/>Géocodage : <a href="https://adresse.data.gouv.fr/">BAN</a> / <a href="https://cartes.gouv.fr/">IGN</a> · Itinéraires : <a href="https://project-osrm.org/">OSRM</a> / <a href="https://www.openstreetmap.org/copyright">OSM</a> · <a href="https://www.openstreetmap.org/fixthemap">Corriger la carte</a>` }} />;
 }
