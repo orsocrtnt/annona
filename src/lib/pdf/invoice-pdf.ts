@@ -38,6 +38,7 @@ const MUTED = rgb(0.408, 0.447, 0.42); // #68726b
 const SOFT = rgb(0.58, 0.612, 0.592); // #949c97
 const PALE = rgb(0.957, 0.98, 0.965); // #f4faf6
 const HAIRLINE = rgb(0.902, 0.918, 0.906); // #e6eae7
+const RULE = rgb(0.78, 0.8, 0.788); // #c7ccc9, filet de structure (tableau, total)
 
 const STATUS_TONE: Record<string, { fill: Color; dot: Color; text: Color }> = {
   PAID: { fill: rgb(0.886, 0.973, 0.922), dot: MINT, text: BRAND },
@@ -121,19 +122,25 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   let page: PDFPage = doc.addPage(PAGE);
   type TextOptions = { size?: number; bold?: boolean; color?: Color; tracking?: number };
   const fontOf = (opts?: TextOptions): PDFFont => (opts?.bold ? bold : font);
+  /** Approche optique : resserrée sur les grands corps, légèrement ouverte sur les petits. */
+  const trackingOf = (opts?: TextOptions) => {
+    if (opts?.tracking !== undefined) return opts.tracking;
+    const size = opts?.size ?? 10;
+    return size * (size >= 28 ? -0.022 : size >= 14 ? -0.014 : 0.01);
+  };
   const widthOf = (value: string, opts?: TextOptions) => {
     const clean = sanitize(value);
-    return fontOf(opts).widthOfTextAtSize(clean, opts?.size ?? 10) + (opts?.tracking ?? 0) * clean.length;
+    return fontOf(opts).widthOfTextAtSize(clean, opts?.size ?? 10) + trackingOf(opts) * clean.length;
   };
   const text = (value: string, x: number, y: number, opts?: TextOptions) => {
-    if (opts?.tracking) page.pushOperators(setCharacterSpacing(opts.tracking));
+    page.pushOperators(setCharacterSpacing(trackingOf(opts)));
     page.drawText(sanitize(value), { x, y, size: opts?.size ?? 10, font: fontOf(opts), color: opts?.color ?? INK });
-    if (opts?.tracking) page.pushOperators(setCharacterSpacing(0));
+    page.pushOperators(setCharacterSpacing(0));
   };
   const textRight = (value: string, xRight: number, y: number, opts?: TextOptions) =>
     text(value, xRight - widthOf(value, opts), y, opts);
   /** Petit intitulé en capitales espacées, la signature typographique du relevé. */
-  const LABEL: TextOptions = { size: 7, bold: true, color: SOFT, tracking: 0.9 };
+  const LABEL: TextOptions = { size: 7, bold: true, color: SOFT, tracking: 0.55 };
   const label = (value: string, x: number, y: number) => text(value.toUpperCase(), x, y, LABEL);
   const labelRight = (value: string, xRight: number, y: number) => textRight(value.toUpperCase(), xRight, y, LABEL);
   const hairline = (y: number, from = MARGIN, to = RIGHT, color = HAIRLINE, thickness = 0.6) =>
@@ -244,8 +251,8 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   ];
   for (const [name, value] of details) {
     text(name, COL_C, detailY, { size: 9, color: MUTED });
-    const { size } = fit(value, RIGHT - COL_C - 62, 9, 7);
-    textRight(value, RIGHT, detailY, { size, bold: true });
+    const { size } = fit(value, RIGHT - COL_C - 62, 9, 7, false);
+    textRight(value, RIGHT, detailY, { size });
     detailY -= 14;
   }
   y = Math.min(colBottom, detailY) - 22;
@@ -259,7 +266,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     labelRight("Prix unitaire", COL_UNIT, y);
     labelRight("Montant", RIGHT, y);
     y -= 10;
-    hairline(y, MARGIN, RIGHT, INK, 0.8);
+    hairline(y, MARGIN, RIGHT, RULE, 0.6);
     y -= 20;
   };
   const ensureRoom = (height: number, table = false) => {
@@ -287,7 +294,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
       if (partIndex === 0) {
         textRight(String(line.quantity), COL_QTY, y, { size: 9.5, color: MUTED });
         textRight(money(line.amount), COL_UNIT, y, { size: 9.5, color: MUTED });
-        textRight(money(line.amount * line.quantity), RIGHT, y, { size: 9.5, bold: true });
+        textRight(money(line.amount * line.quantity), RIGHT, y, { size: 9.5 });
       }
       y -= 14;
     }
@@ -299,7 +306,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   // ── Total ──
   ensureRoom(64);
   y -= 6;
-  hairline(y + 8, MARGIN, RIGHT, INK, 0.8);
+  hairline(y + 8, MARGIN, RIGHT, RULE, 0.6);
   const totalLeft = COL_QTY - 40;
   roundedRect(page, totalLeft, y - 40, RIGHT - totalLeft, 40, 8, PALE);
   text(data.paidAt ? "Total réglé" : "Total à régler", totalLeft + 14, y - 24, { size: 10, bold: true });
