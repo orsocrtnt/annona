@@ -150,3 +150,46 @@ export async function attributeSignupSale(
   });
   return { status: "attributed", rateBps: snapshot.rateBps } as const;
 }
+
+export const SALES_CODE_PAGE_SIZES = [25, 50, 100] as const;
+
+export function parseSalesCodeListParams(params: URLSearchParams) {
+  const page = Number(params.get("page") ?? "1");
+  const pageSize = Number(params.get("pageSize") ?? "25");
+  if (!Number.isInteger(page) || page < 1 || page > 10_000) return { error: "Page invalide" } as const;
+  if (!SALES_CODE_PAGE_SIZES.includes(pageSize as (typeof SALES_CODE_PAGE_SIZES)[number])) {
+    return { error: "Taille de page invalide" } as const;
+  }
+  return { query: { page, pageSize } } as const;
+}
+
+/** Back-office plateforme : codes et nombre d'entreprises attribuées, sans montant ni client. */
+export async function listSalesCodes(
+  query: { page: number; pageSize: number },
+  db: Pick<typeof prisma, "salesCode"> = prisma
+) {
+  const [total, rows] = await Promise.all([
+    db.salesCode.count(),
+    db.salesCode.findMany({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      select: {
+        id: true,
+        code: true,
+        sellerName: true,
+        sellerEmail: true,
+        level: true,
+        disabledAt: true,
+        createdAt: true,
+        _count: { select: { attributions: true } },
+      },
+    }),
+  ]);
+  return {
+    items: rows.map(({ _count, ...row }) => ({ ...row, attributions: _count.attributions })),
+    total,
+    page: query.page,
+    pageSize: query.pageSize,
+  };
+}

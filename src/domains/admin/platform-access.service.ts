@@ -11,6 +11,7 @@ export const PLATFORM_ACCESS_RESOURCES = [
   "INCIDENTS",
   "ACCESS_EVENTS",
   "CONTACT_MESSAGES",
+  "SALES_CODES",
 ] as const;
 
 export const PLATFORM_ACCESS_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
@@ -18,6 +19,8 @@ export const PLATFORM_ACCESS_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 export type PlatformAccessResource = (typeof PLATFORM_ACCESS_RESOURCES)[number];
 export type PlatformAccessRole = "SUPER_ADMIN" | "COMPANY_ADMIN" | "MINI_ADMIN" | "DISPATCHER" | "DRIVER" | "CLIENT";
 export type PlatformAccessDecision = "ALLOWED" | "DENIED";
+/** Seules les routes des codes commerciaux écrivent (SALES-1, décision C10). */
+export type PlatformAccessMethod = "GET" | "POST" | "PATCH";
 
 export type PlatformAccessEvent = {
   id: string;
@@ -25,7 +28,7 @@ export type PlatformAccessEvent = {
   expiresAt: Date;
   actorId: string;
   role: PlatformAccessRole;
-  method: "GET";
+  method: PlatformAccessMethod;
   resource: PlatformAccessResource;
   decision: PlatformAccessDecision;
 };
@@ -138,6 +141,7 @@ export async function recordPlatformAccess(
     role: PlatformAccessRole;
     resource: PlatformAccessResource;
     decision: PlatformAccessDecision;
+    method?: PlatformAccessMethod;
   },
   dependencies?: {
     now?: () => Date;
@@ -153,7 +157,7 @@ export async function recordPlatformAccess(
     expiresAt: platformAccessExpiry(occurredAt),
     actorId: input.actorId,
     role: input.role,
-    method: "GET",
+    method: input.method ?? "GET",
     resource: input.resource,
     decision: input.decision,
   };

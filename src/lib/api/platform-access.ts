@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   recordPlatformAccess,
+  type PlatformAccessMethod,
   type PlatformAccessResource,
   type PlatformAccessRole,
 } from "@/domains/admin/platform-access.service";
@@ -16,11 +17,33 @@ export async function gatePlatformRead(
   resource: PlatformAccessResource,
   dependencies?: Parameters<typeof recordPlatformAccess>[1],
 ) {
+  return gatePlatformAccess(context, denied, resource, "GET", dependencies);
+}
+
+/** Écriture plateforme explicite : même journal, refusée elle aussi si le journal est indisponible. */
+export async function gatePlatformWrite(
+  context: PlatformActorContext,
+  denied: NextResponse | null,
+  resource: PlatformAccessResource,
+  method: Exclude<PlatformAccessMethod, "GET">,
+  dependencies?: Parameters<typeof recordPlatformAccess>[1],
+) {
+  return gatePlatformAccess(context, denied, resource, method, dependencies);
+}
+
+async function gatePlatformAccess(
+  context: PlatformActorContext,
+  denied: NextResponse | null,
+  resource: PlatformAccessResource,
+  method: PlatformAccessMethod,
+  dependencies?: Parameters<typeof recordPlatformAccess>[1],
+) {
   const recorded = await recordPlatformAccess({
     actorId: context.user.id,
     role: context.user.role.systemRole,
     resource,
     decision: denied ? "DENIED" : "ALLOWED",
+    method,
   }, dependencies);
   if (!recorded) {
     if (denied) {

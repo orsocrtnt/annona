@@ -39,7 +39,14 @@ function filesUnder(root: string) {
     .sort();
 }
 
-test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET", () => {
+// Seule exception, décision C10 : le super-administrateur crée et désactive les codes commerciaux,
+// données de la plateforme et non d'une entreprise cliente (voir tests/sales01-admin-routes.test.ts).
+const PLATFORM_WRITES: Record<string, string[]> = {
+  "src/app/api/admin/sales-codes/[id]/route.ts": ["PATCH"],
+  "src/app/api/admin/sales-codes/route.ts": ["GET", "POST"],
+};
+
+test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors codes commerciaux", () => {
   const routes = filesUnder("src/app/api/admin").filter((file) => file.endsWith("route.ts"));
   assert.deepEqual(routes, [
     "src/app/api/admin/access-events/route.ts",
@@ -50,6 +57,8 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET", () => 
     "src/app/api/admin/operation-jobs/route.ts",
     "src/app/api/admin/overview/route.ts",
     "src/app/api/admin/saas-health/route.ts",
+    "src/app/api/admin/sales-codes/[id]/route.ts",
+    "src/app/api/admin/sales-codes/route.ts",
     "src/app/api/admin/service-health/route.ts",
     "src/app/api/admin/subscriptions/route.ts",
     "src/app/api/admin/support-tickets/route.ts",
@@ -58,7 +67,8 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET", () => 
   for (const file of routes) {
     const source = readFileSync(file, "utf8");
     const methods = [...source.matchAll(/export\s+(?:async\s+)?(?:function|const)\s+(GET|POST|PATCH|PUT|DELETE)\b/g)].map((match) => match[1]);
-    assert.deepEqual(methods, ["GET"], file);
+    assert.deepEqual(methods, PLATFORM_WRITES[file] ?? ["GET"], file);
+    if (file in PLATFORM_WRITES) assert.doesNotMatch(source, /companyId|prisma\./, `${file} ne touche aucune donnée d'entreprise`);
   }
 });
 

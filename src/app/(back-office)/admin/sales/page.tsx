@@ -1,0 +1,172 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { AlertTriangle, BadgePercent } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  SALES_CODE_LEVELS,
+  useCreateSalesCode,
+  useDisableSalesCode,
+  useSalesCodes,
+  type SalesCodeLevel,
+  type SalesCodeRow,
+} from "@/features/admin/sales-codes";
+import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
+
+const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "UTC" });
+const levelLabel = (level: SalesCodeLevel) => SALES_CODE_LEVELS.find((item) => item.value === level)?.label ?? level;
+
+export default function AdminSalesCodesPage() {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sellerName, setSellerName] = useState("");
+  const [sellerEmail, setSellerEmail] = useState("");
+  const [level, setLevel] = useState<SalesCodeLevel>("REFERRER");
+  const [toDisable, setToDisable] = useState<SalesCodeRow | null>(null);
+  const { data, isLoading, error } = useSalesCodes(page, pageSize);
+  const create = useCreateSalesCode();
+  const disable = useDisableSalesCode();
+
+  if (isInitialQueryLoading(isLoading, data)) return <PageSkeleton />;
+  if (error || !data) {
+    return <EmptyState icon={AlertTriangle} title="Codes indisponibles" description="Impossible de charger les codes commerciaux." />;
+  }
+
+  const pageCount = Math.max(1, Math.ceil(data.total / data.pageSize));
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    create.mutate({ sellerName: sellerName.trim(), sellerEmail: sellerEmail.trim(), level }, {
+      onSuccess: (created) => {
+        setSellerName("");
+        setSellerEmail("");
+        setPage(1);
+        toast.success(`Code ${created.code} créé`);
+      },
+      onError: (failure) => toast.error("Création impossible", { description: failure.message }),
+    });
+  }
+
+  function confirmDisable() {
+    if (!toDisable) return;
+    disable.mutate(toDisable.id, {
+      onSuccess: () => toast.success(`Code ${toDisable.code} désactivé`),
+      onError: (failure) => toast.error("Désactivation impossible", { description: failure.message }),
+      onSettled: () => setToDisable(null),
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Codes commerciaux</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Un code permanent par commercial. Le niveau est figé dans chaque inscription au moment de l&apos;activation ; aucune commission n&apos;est versée automatiquement.
+        </p>
+      </div>
+      <form className="flex flex-wrap items-end gap-3 rounded-lg border p-4" onSubmit={submit}>
+        <label className="grid gap-1 text-sm">
+          Commercial
+          <Input value={sellerName} required minLength={2} maxLength={120} placeholder="Prénom Nom" onChange={(event) => setSellerName(event.target.value)} />
+        </label>
+        <label className="grid gap-1 text-sm">
+          E-mail
+          <Input type="email" value={sellerEmail} required maxLength={200} placeholder="commercial@exemple.fr" onChange={(event) => setSellerEmail(event.target.value)} />
+        </label>
+        <label className="grid gap-1 text-sm">
+          Niveau
+          <Select value={level} onValueChange={(value) => setLevel(value as SalesCodeLevel)}>
+            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SALES_CODE_LEVELS.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </label>
+        <Button type="submit" disabled={create.isPending}>{create.isPending ? "Création…" : "Créer le code"}</Button>
+      </form>
+      {data.total === 0 ? (
+        <EmptyState icon={BadgePercent} title="Aucun code" description="Créez le premier code commercial ci-dessus." />
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Code</TableHead>
+              <TableHead>Commercial</TableHead>
+              <TableHead>Niveau</TableHead>
+              <TableHead>Entreprises</TableHead>
+              <TableHead>État</TableHead>
+              <TableHead>Créé le</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.items.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell className="whitespace-nowrap font-mono font-medium">{row.code}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{row.sellerName}</div>
+                  <div className="text-xs text-muted-foreground">{row.sellerEmail}</div>
+                </TableCell>
+                <TableCell>{levelLabel(row.level)}</TableCell>
+                <TableCell>{row.attributions}</TableCell>
+                <TableCell>
+                  {row.disabledAt
+                    ? <Badge variant="secondary">Désactivé le {dateFormat.format(new Date(row.disabledAt))}</Badge>
+                    : <Badge>Actif</Badge>}
+                </TableCell>
+                <TableCell>{dateFormat.format(new Date(row.createdAt))}</TableCell>
+                <TableCell className="text-right">
+                  {!row.disabledAt && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => setToDisable(row)}>Désactiver</Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          Lignes
+          <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
+            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Précédent</Button>
+          <span className="text-sm text-muted-foreground">Page {page} / {pageCount}</span>
+          <Button type="button" variant="outline" disabled={page >= pageCount} onClick={() => setPage((current) => current + 1)}>Suivant</Button>
+        </div>
+      </div>
+      <Dialog open={toDisable !== null} onOpenChange={(open) => { if (!open && !disable.isPending) setToDisable(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Désactiver {toDisable?.code} ?</DialogTitle>
+            <DialogDescription>
+              Le code ne pourra plus être saisi à l&apos;inscription, ni être réactivé. Les entreprises déjà attribuées le restent.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={disable.isPending} onClick={() => setToDisable(null)}>Annuler</Button>
+            <Button type="button" variant="destructive" disabled={disable.isPending} onClick={confirmDisable}>
+              {disable.isPending ? "Désactivation…" : "Désactiver"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

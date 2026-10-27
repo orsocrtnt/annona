@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Building2, Users, Settings, Radio, ClipboardList, Activity, ShieldAlert,
   Truck, Package, MapPin, Shield, UserCircle, Receipt, CreditCard, BarChart3, HeadphonesIcon, ListChecks,
-  ScrollText,
+  ScrollText, BadgePercent,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -12,6 +12,7 @@ export const adminNavItems: NavItem[] = [
   { title: "Exploitation", href: "/admin/operations", icon: Activity },
   { title: "Incidents", href: "/admin/incidents", icon: ShieldAlert },
   { title: "Journal d'accès", href: "/admin/access-events", icon: ScrollText },
+  { title: "Codes commerciaux", href: "/admin/sales", icon: BadgePercent },
   { title: "Entreprises", href: "/companies", icon: Building2 },
   { title: "Utilisateurs", href: "/admin/users", icon: Users },
 ];
