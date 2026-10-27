@@ -228,13 +228,7 @@
   overflow: visible !important;
 }
 
-/* Landing publique — sobre, textuelle */
-.home-landing-brand {
-  font-size: clamp(2.75rem, 9vw, 4.5rem);
-  letter-spacing: -0.045em;
-  line-height: 0.95;
-}
-
+/* Landing publique : apparition douce du haut de page */
 .home-landing-reveal {
   animation: homeLandingReveal 0.5s ease-out both;
 }

@@ -20,7 +20,8 @@ test("la navigation publique reproduit le soulignement lumineux au survol", asyn
 
   await pricingLink.hover();
 
-  await expect(pricingLink).toHaveCSS("color", "rgb(255, 255, 255)");
+  // Barre publique claire (DA Menthe) : le lien survolé passe à l'encre #0e1310.
+  await expect(pricingLink).toHaveCSS("color", "rgb(14, 19, 16)");
   await expect(underline).toHaveCSS("opacity", "1");
   await expect(underline).not.toHaveCSS("transform", "matrix(0, 0, 0, 1, 0, 0)");
   await page.screenshot({ path: testInfo.outputPath("navbar-hover.png") });
