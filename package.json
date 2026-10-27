@@ -78,7 +78,8 @@
     "ci:preprod-env": "tsx scripts/ci/verify-preproduction-env.ts",
     "todo:progress": "node scripts/docs/update-todo-progress.mjs",
     "docs:verify": "npm run todo:progress && node scripts/docs/verify-docs.mjs outputs/doc1/verification.json",
-    "audit:prod": "npm audit --omit=dev --audit-level=high"
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "env2:verify-dev": "dotenv -e .env.local -- tsx scripts/env2/verify-dev-env.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
