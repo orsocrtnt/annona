@@ -18,3 +18,12 @@ test("la charge se dit aussi en mots", () => {
   assert.equal(workloadSentence({ standard: 0, courier: 3 }), "3 courses");
   assert.equal(workloadSentence({ standard: 0, courier: 0 }), "aucune livraison");
 });
+
+test("la journée d'un livreur : segments proportionnels et phrase", async () => {
+  const { driverDaySegments, driverDaySentence } = await import("../src/lib/dispatch/workload-bars");
+  assert.deepEqual(driverDaySegments({ delivered: 2, inTransit: 1, toDo: 1 }), { total: 4, delivered: 50, inTransit: 25, toDo: 25 });
+  assert.deepEqual(driverDaySegments({ delivered: 0, inTransit: 0, toDo: 0 }), { total: 0, delivered: 0, inTransit: 0, toDo: 0 });
+  assert.equal(driverDaySentence({ delivered: 2, inTransit: 1, toDo: 1 }), "1 en cours · 1 à faire · 2 livrées");
+  assert.equal(driverDaySentence({ delivered: 1, inTransit: 0, toDo: 0 }), "1 livrée");
+  assert.equal(driverDaySentence({ delivered: 0, inTransit: 0, toDo: 0 }), "Aucune mission aujourd'hui");
+});

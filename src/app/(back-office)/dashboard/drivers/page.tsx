@@ -1,15 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import { DataGrid } from "@/components/ui/data-grid";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Badge } from "@/components/ui/badge";
 import { useCompanyDrivers } from "@/features/back-office/hooks";
-import { formatPersonNameByRole } from "@/lib/format/person-labels";
-import { formatDate } from "@/lib/utils";
+import { TableDriverDayCell, TableLastSeenCell, TablePersonCell } from "@/features/back-office/table-ui";
 import { Truck } from "lucide-react";
 import type { TableColumn } from "@/types";
 import type { CompanyDriver } from "@/features/back-office/types";
@@ -17,46 +14,36 @@ import type { CompanyDriver } from "@/features/back-office/types";
 export default function CompanyDriversPage() {
   const { data: drivers, isLoading, error } = useCompanyDrivers();
 
-  const columns: TableColumn<CompanyDriver>[] = useMemo(
+  const columns: TableColumn<CompanyDriver & { name: string }>[] = useMemo(
     () => [
       {
         key: "name",
         header: "Chauffeur",
         sortable: true,
         cell: (row) => (
-          <Link href={`/dashboard/drivers/${row.id}`} className="font-medium hover:underline">
-            {formatPersonNameByRole(row.firstName, row.lastName, "DRIVER")}
-          </Link>
+          <TablePersonCell
+            href={`/dashboard/drivers/${row.id}`}
+            name={row.name}
+            detail={[row.phone, row.email].filter(Boolean).join(" · ")}
+          />
         ),
       },
-      { key: "email", header: "Email", hideOnMobile: true },
-      { key: "phone", header: "Téléphone", hideOnMobile: true, cell: (row) => row.phone ?? "—" },
       {
-        key: "assigned",
-        header: "Assignées",
-        cell: (row) => <Badge variant="secondary">{row.assigned ?? 0}</Badge>,
-      },
-      {
+        // Une barre et une phrase plutôt que quatre colonnes de compteurs.
         key: "inTransit",
-        header: "En cours",
-        cell: (row) => <Badge variant="brand">{row.inTransit ?? 0}</Badge>,
-      },
-      {
-        key: "deliveredToday",
-        header: "Livrées aujourd'hui",
-        cell: (row) => <Badge variant="success">{row.deliveredToday ?? 0}</Badge>,
-      },
-      {
-        key: "activityToday",
-        header: "Événements du jour",
-        hideOnMobile: true,
-        cell: (row) => row.activityToday ?? 0,
+        header: "Aujourd'hui",
+        cell: (row) => (
+          <TableDriverDayCell
+            day={{ delivered: row.deliveredToday ?? 0, inTransit: row.inTransit ?? 0, toDo: row.assigned ?? 0 }}
+            actions={row.activityToday}
+          />
+        ),
       },
       {
         key: "lastLoginAt",
         header: "Dernière connexion",
         hideOnMobile: true,
-        cell: (row) => (row.lastLoginAt ? formatDate(row.lastLoginAt) : "—"),
+        cell: (row) => <TableLastSeenCell date={row.lastLoginAt} />,
       },
     ],
     []
@@ -81,15 +68,20 @@ export default function CompanyDriversPage() {
         <p className="mt-1 text-muted-foreground">
           Suivi de l&apos;activité et des missions du jour
         </p>
+        <p className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground" aria-hidden="true">
+          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#0e1310]" /> Livrées</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#00a855]" /> En cours</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#c9d3cd]" /> À faire</span>
+        </p>
       </div>
       <DataGrid
         data={(drivers ?? []).map((d) => ({
           ...d,
-          name: formatPersonNameByRole(d.firstName, d.lastName, "DRIVER"),
+          name: `${d.firstName} ${d.lastName}`.trim(),
         })) as unknown as Record<string, unknown>[]}
         columns={columns as unknown as TableColumn<Record<string, unknown>>[]}
-        searchKey="name"
-        searchPlaceholder="Rechercher un chauffeur..."
+        searchText={(row) => [row.name, row.email, row.phone].filter(Boolean).join(" ")}
+        searchPlaceholder="Nom, e-mail ou téléphone…"
         paginate={false}
         emptyTitle="Aucun chauffeur"
         emptyDescription="Créez des comptes chauffeur dans Gestion des comptes."

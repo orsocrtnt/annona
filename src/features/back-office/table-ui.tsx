@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { formatPlace } from "@/lib/format/place";
 import { fullDateLabel, relativeDayLabel } from "@/lib/format/relative-day";
 import { isOrderOverdue } from "@/lib/orders/overdue";
+import { driverDaySegments, driverDaySentence, type DriverDay } from "@/lib/dispatch/workload-bars";
 import { cn } from "@/lib/utils";
 import type { CompanyOrder } from "./types";
 
@@ -198,4 +199,73 @@ export function TableDueCell({
 
 export function TableDeliveryDueCell({ order }: { order: CompanyOrder }) {
   return <TableDueCell status={order.status} date={order.requestedDeliveryDate} />;
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+/** Une personne : initiales, nom (lien), et un moyen de la joindre en dessous. */
+export function TablePersonCell({ href, name, detail }: { href: string; name: string; detail?: string | null }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-xs font-semibold text-foreground"
+        aria-hidden="true"
+      >
+        {initialsOf(name)}
+      </span>
+      <div className="min-w-0">
+        <Link
+          href={href}
+          className="block truncate rounded font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+        >
+          {name}
+        </Link>
+        {detail && (
+          <span className="block truncate text-xs text-muted-foreground" title={detail}>
+            {detail}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Dernière connexion en jours relatifs ; « Jamais » plutôt qu'un tiret. */
+export function TableLastSeenCell({ date }: { date?: string | null }) {
+  if (!date) return <span className="text-muted-foreground">Jamais</span>;
+  return (
+    <time dateTime={date} title={fullDateLabel(date)} className="whitespace-nowrap text-muted-foreground">
+      {relativeDayLabel(date, undefined, { withTime: true })}
+    </time>
+  );
+}
+
+/** Journée d'un livreur : barre livrées / en cours / à faire, et la même chose en mots. */
+export function TableDriverDayCell({ day, actions }: { day: DriverDay; actions?: number }) {
+  const segments = driverDaySegments(day);
+  return (
+    <div className="min-w-[10rem]">
+      <p className="text-sm text-foreground">{driverDaySentence(day)}</p>
+      {segments.total > 0 && (
+        <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
+          <span className="h-full bg-[#0e1310]" style={{ width: `${segments.delivered}%` }} />
+          <span className="h-full bg-[#00a855]" style={{ width: `${segments.inTransit}%` }} />
+          <span className="h-full bg-[#c9d3cd]" style={{ width: `${segments.toDo}%` }} />
+        </div>
+      )}
+      {actions ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {actions} action{actions > 1 ? "s" : ""} enregistrée{actions > 1 ? "s" : ""}
+        </p>
+      ) : null}
+    </div>
+  );
 }

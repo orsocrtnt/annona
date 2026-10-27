@@ -1,14 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import { DataGrid } from "@/components/ui/data-grid";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Badge } from "@/components/ui/badge";
 import { useCompanyClients } from "@/features/back-office/hooks";
-import { formatPersonNameByRole } from "@/lib/format/person-labels";
-import { formatDate } from "@/lib/utils";
+import { TableLastSeenCell, TablePersonCell } from "@/features/back-office/table-ui";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { Users } from "lucide-react";
 import type { TableColumn } from "@/types";
@@ -18,51 +15,52 @@ interface CompanyClientsContentProps {
   initialClients?: CompanyClient[];
 }
 
+/** Activité en mots : « 3 commandes · aujourd'hui : 1 commande, 3 mises à jour de suivi ». */
+function ClientActivity({ row }: { row: CompanyClient }) {
+  const total = row._count.ordersAsCustomer;
+  const today = [
+    row.ordersToday ? `${row.ordersToday} commande${row.ordersToday > 1 ? "s" : ""}` : "",
+    row.eventsToday ? `${row.eventsToday} mise${row.eventsToday > 1 ? "s" : ""} à jour de suivi` : "",
+  ].filter(Boolean);
+  return (
+    <div className="min-w-0">
+      <p className="text-sm text-foreground">
+        {total ? `${total} commande${total > 1 ? "s" : ""}` : "Aucune commande"}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {today.length ? `Aujourd'hui : ${today.join(", ")}` : "Rien aujourd'hui"}
+      </p>
+    </div>
+  );
+}
+
 export function CompanyClientsContent({ initialClients }: CompanyClientsContentProps) {
   const { data: clients, isLoading, error } = useCompanyClients(initialClients);
 
-  const columns: TableColumn<CompanyClient>[] = useMemo(
+  const columns: TableColumn<CompanyClient & { name: string }>[] = useMemo(
     () => [
       {
         key: "name",
         header: "Client",
         sortable: true,
         cell: (row) => (
-          <Link href={`/dashboard/clients/${row.id}`} className="font-medium hover:underline">
-            {formatPersonNameByRole(row.firstName, row.lastName, "CLIENT")}
-          </Link>
+          <TablePersonCell
+            href={`/dashboard/clients/${row.id}`}
+            name={row.name}
+            detail={[row.email, row.phone].filter(Boolean).join(" · ")}
+          />
         ),
       },
-      { key: "email", header: "Email", hideOnMobile: true },
-      { key: "phone", header: "Téléphone", hideOnMobile: true, cell: (row) => row.phone ?? "—" },
       {
         key: "orders",
-        header: "Commandes",
-        cell: (row) => row._count.ordersAsCustomer,
-      },
-      {
-        key: "today",
-        header: "Activité aujourd'hui",
-        hideOnMobile: true,
-        cell: (row) => (
-          <div className="flex gap-1">
-            {row.ordersToday > 0 && (
-              <Badge variant="brand">{row.ordersToday} cmd</Badge>
-            )}
-            {row.eventsToday > 0 && (
-              <Badge variant="secondary">{row.eventsToday} evt</Badge>
-            )}
-            {row.ordersToday === 0 && row.eventsToday === 0 && (
-              <span className="text-muted-foreground">—</span>
-            )}
-          </div>
-        ),
+        header: "Activité",
+        cell: (row) => <ClientActivity row={row} />,
       },
       {
         key: "lastLoginAt",
         header: "Dernière connexion",
         hideOnMobile: true,
-        cell: (row) => (row.lastLoginAt ? formatDate(row.lastLoginAt) : "—"),
+        cell: (row) => <TableLastSeenCell date={row.lastLoginAt} />,
       },
     ],
     []
@@ -89,10 +87,10 @@ export function CompanyClientsContent({ initialClients }: CompanyClientsContentP
           </p>
       </div>
       <DataGrid
-        data={(clients ?? []) as unknown as Record<string, unknown>[]}
+        data={(clients ?? []).map((c) => ({ ...c, name: `${c.firstName} ${c.lastName}`.trim() })) as unknown as Record<string, unknown>[]}
         columns={columns as unknown as TableColumn<Record<string, unknown>>[]}
-        searchKey="email"
-        searchPlaceholder="Rechercher un client..."
+        searchText={(row) => [row.name, row.email, row.phone].filter(Boolean).join(" ")}
+        searchPlaceholder="Nom, e-mail ou téléphone…"
         paginate={false}
         emptyTitle="Aucun client"
         emptyDescription="Créez des comptes clients dans Équipe."
