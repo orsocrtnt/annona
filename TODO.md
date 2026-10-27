@@ -4,13 +4,13 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**52 tâches terminées sur 78 — 67 %**
+**52 tâches terminées sur 80 — 65 %**
 
-`█████████████░░░░░░░` · 26 tâches restantes
+`█████████████░░░░░░░` · 28 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
-Mise à jour : 23 octobre 2026. Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
+Mise à jour : 26 octobre 2026 (revue de cohérence : tableaux de pilotage, priorités et matrice réalignés sur le code). Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
 
 ## Tableau de pilotage
 
@@ -18,27 +18,31 @@ Mise à jour : 23 octobre 2026. Source unique des priorités du projet. Cette ve
 
 | Jalon | Résultat attendu | Ce qui ne le bloque pas | État actuel |
 |---|---|---|---|
-| **A — V1 pour trois pilotes** | Trois entreprises françaises de livraison B2B utilisent TutelLiv pendant environ quatre semaines avec comptes créés et droits attribués manuellement. | Stripe, inscription commerciale autonome, commissions et site complet. | Socle fonctionnel, préproduction, CI, restauration et démo rapide validés ; alertes, e-mails réels, GPS physique, cadre juridique et recette finale restent à fermer. |
-| **B — SaaS autonome** | Site → offre/options → compte → paiement → activation → configuration → première livraison sans intervention TutelLiv. | Recrutement des pilotes et activation des paiements réels. | Catalogue, droits, quotas et inscription persistante avec paiement fictif terminés ; Stripe sandbox, gestion autonome de l'abonnement et finalisation d'ONBOARD-1 restent à construire. |
+| **A — V1 pour trois pilotes** | Trois entreprises françaises de livraison B2B utilisent TutelLiv pendant environ quatre semaines avec comptes créés et droits attribués manuellement. | Stripe, inscription commerciale autonome, commissions et site complet. | Socle fonctionnel, préproduction, CI, restauration, surveillance/alertes OPS-03B, démo rapide et supervision ADMIN-1 validés ; e-mails réels, GPS physique, cadre juridique, essai pilote d'ONBOARD-1 et recette finale restent à fermer. |
+| **B — SaaS autonome** | Site → offre/options → compte → paiement → activation → configuration → première livraison sans intervention TutelLiv. | Recrutement des pilotes et activation des paiements réels. | Catalogue, droits, quotas et inscription persistante avec paiement fictif terminés. Construits localement mais non clos : adaptateur Stripe sandbox (aucun compte Stripe de test), « Mon abonnement » en lecture, découverte premium, noyau de commission, indicateurs SaaS et pages Tarifs/Fonctionnalités/Démonstration. Restent les mutations d'abonnement, la persistance commerciale, Contact/légal et les preuves connectées. |
 
 ### Cinq prochaines tâches recommandées
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **ONBOARD-1 — validation pilote** | Tranche technique qualifiée ; mesurer maintenant temps humain, interventions et réception réelle des invitations. | Pilotes sélectionnés et e-mails configurés ; le parcours technique et le raccord SIGNUP-1 sont vérifiés. | GPT‑6.1 Sol · effort élevé |
-| 2 | **SAAS-01B — Stripe sandbox** | Remplacer l'adaptateur fictif déterministe par des événements Stripe de test idempotents. | SIGNUP-1 et le noyau SAAS-01A sont terminés ; aucun paiement réel nécessaire. | GPT‑6 Astra · effort élevé |
-| 3 | **PERF-02** | Mesurer les paliers de capacité qui conditionnent coûts et fiabilité. | Harnais borné sur préproduction ; aucune charge payante sans accord. | GPT‑6 Astra · effort élevé |
-| 4 | **COST-1 — validation mesurée** | Remplacer les hypothèses documentaires par les mesures PERF-02/pilotes avant de figer les marges. | Phase documentaire terminée ; attend PERF-02 et données pilotes. | GPT‑6.1 Sol · effort moyen |
-| 5 | **EMAIL — transport de test** | Fermer invitations, récupération et modèles avant l'activation du domaine réel. | Le code peut avancer sans domaine ; l'envoi pilote réel attend l'expéditeur vérifié. | GPT‑6.1 Sol · effort moyen |
+Revue du 26 octobre 2026 : les cinq tâches précédemment recommandées (validation pilote d'ONBOARD-1, Stripe sandbox, charge préproduction, COST-1 mesurée, envoi e-mail réel) attendent toutes une ressource extérieure. La liste ci-dessous ne retient que des incréments réalisables localement, sans dépense ni donnée réelle.
 
-COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02. SIGNUP-1 et les interfaces serveur de SAAS-01A sont désormais stabilisées pour SAAS-01B et la fin d'ONBOARD-1.
+| Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
+|---:|---|---|---|---|
+| 1 | **SAAS-04 — raccord Stripe sandbox** | La découverte n'est accordée qu'au paiement `fake` : une souscription confirmée par l'adaptateur `stripe-sandbox` n'en bénéficie pas. | Aucune ; tests locaux. | GPT‑6.1 Sol · effort moyen |
+| 2 | **DISPATCH-3 — auto-dispatch sous transaction** | Le premier essai ONBOARD-1 avec dispatch automatique a expiré dans une transaction Prisma de 5 s ; à reproduire et corriger avant les pilotes. | Aucune pour la reproduction locale. | GPT‑6.1 Sol · effort élevé |
+| 3 | **DATA-02 — complétude de l'export** | L'inventaire liste des modèles absents du contrat d'export ; la complétude technique ne dépend pas de la politique juridique. | Politique de conservation finale : LEGAL-1. | GPT‑6.1 Sol · effort élevé |
+| 4 | **SAAS-03 — premières mutations** | Les vues sont livrées ; les actions serveur peuvent être construites sur l'adaptateur fictif selon les règles C7. | Réconciliation fournisseur : compte Stripe de test. | GPT‑6 Astra · effort élevé |
+| 5 | **PERF-02 — PostgreSQL local** | Le harnais reste en mémoire ; le PostgreSQL isolé déjà utilisé par SAAS-01B permet de mesurer Prisma et le pool sans coût. | Charge préproduction : accord du propriétaire. | GPT‑6 Astra · effort élevé |
+
+COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02 et les pilotes. La validation pilote d'ONBOARD-1 et l'envoi réel EMAIL/SEC-05 restent prioritaires dès que pilotes et domaine sont disponibles.
 
 ### Chemins critiques
 
-- **Pilotes :** DEMO-2 et OPS-03B terminés ; tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
-- **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A est terminé → SAAS-01B sandbox → SAAS-03 et SAAS-04 → SALES-1 et SAAS-02 → GROWTH-1 intégré → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
+- **Pilotes :** DEMO-2, OPS-03B et ADMIN-1 terminés ; DISPATCH-3 + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
+- **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A est terminé ; SAAS-01B, SAAS-03 (lecture), SAAS-04, SALES-1 (noyau), SAAS-02 (lecture) et GROWTH-1 (pages publiques) ont une tranche locale → compte Stripe de test pour clore SAAS-01B → mutations SAAS-03 → persistance SALES-1 → Contact/légal GROWTH-1 → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
 - **Validation économique :** COST-1 documentaire est terminée ; PERF-02 et les pilotes doivent maintenant remplacer les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
-- **Design :** DESIGN-1 fixe les composants communs, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni SAAS-01A/SIGNUP-1 ni les portes techniques des pilotes.
+- **Design :** direction « Menthe » retenue le 26 octobre 2026 (Light menthe, Dark encre + pastel ; `DESIGN.md`). DESIGN-1 la propage aux trois espaces et ajoute le mode Dark, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni le SaaS ni les portes techniques des pilotes.
 
 ### Interventions du propriétaire
 
@@ -48,6 +52,10 @@ COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02. SIGNUP-1 e
 | Avant e-mails pilotes | Acheter le domaine retenu, choisir/configurer l'expéditeur et fournir l'accès au fournisseur d'e-mails. | SEC-05, EMAIL |
 | Avant données réelles | Créer/identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. | LEGAL-1, DATA-02, V1-GO |
 | Avant démarrer les essais | Sélectionner les trois entreprises, autoriser les contacts et signer le protocole pilote. | PILOT-1 |
+| Dès que possible | Changer le mot de passe de l'ancienne base de développement `wlomrzil…` (exposé dans un journal d'outil le 26 octobre), puis la réactiver ou la remplacer : `.env.local` vise ce projet en pause et toute recette locale doit aujourd'hui passer par `.env.preproduction.local`. | ENV-2 |
+| Avant de clore SAAS-01B | Créer un compte Stripe gratuit en mode test et fournir ses clés de test. | SAAS-01B, SAAS-03, SAAS-02 |
+| Avant clôture | Décider la règle d'impayé et de changement de formule pendant la découverte (SAAS-04) ; décider émission, propriété et expiration des codes commerciaux (SALES-1) ; décider la destination des messages Contact (GROWTH-1). | SAAS-04, SALES-1, GROWTH-1 |
+| Avant publication | Pousser les commits locaux : la CI de `preproduction` échoue depuis le 26 octobre sur `docs:verify` (34 modèles documentés pour 35 réels) ; la correction est un commit local. Vérifier aussi la région des fonctions Vercel (hypothèse `iad1` contre une base à Paris). | ENV-2, PERF-02 |
 
 ### Dépendances fournisseur ou validation extérieure
 
@@ -113,10 +121,10 @@ Ces réussites ne valident pas le GPS terrain, la charge, la conformité du PDF 
 
 Priorités réconciliées le 22 octobre 2026 pour les tâches encore ouvertes. Le niveau indique l'ordre du travail interne ; les validations extérieures sont suivies séparément et ne doivent pas immobiliser les tâches indépendantes :
 
-- **P0 — Débloquer les pilotes et poursuivre le libre-service :** tranche pilote d'ONBOARD-1. La phase documentaire COST-1, DEMO-2, OPS-03B, SIGNUP-1, SAAS-01A, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable redevient P0.
-- **P1 — Fermer la fiabilité et le libre-service testable :** SEC-05, EMAIL, SAAS-01B, SAAS-03, SAAS-04, SALES-1, PERF-02, ONBOARD-1.
-- **P2 — Expérience et préparation opérationnelle :** MAP-3, DESIGN-1, UX-03, UX-04, GROWTH-1, ADMIN-1, V1-GO, OFFER-1.
-- **P3 — Validation extérieure et terrain :** LEGAL-1, DATA-02, MOB-01C, PROD-02, PROD-04, PILOT-1, PILOT-2, SAAS-02, RELEASE-1.
+- **P0 — Débloquer les pilotes et garder la chaîne verte :** ENV-2, DISPATCH-3, tranche pilote d'ONBOARD-1. La phase documentaire COST-1, DEMO-2, OPS-03B, SIGNUP-1, SAAS-01A, ADMIN-1, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable ou CI rouge redevient P0.
+- **P1 — Fermer la fiabilité et le libre-service testable :** SEC-05, EMAIL, SAAS-01B, SAAS-03, SAAS-04, SALES-1, SAAS-02, PERF-02.
+- **P2 — Expérience et préparation opérationnelle :** DESIGN-1, MAP-3, UX-03, UX-04, GROWTH-1, V1-GO, OFFER-1, COST-1 (phase mesurée).
+- **P3 — Validation extérieure et terrain :** LEGAL-1, DATA-02, MOB-01C, PROD-02, PROD-04, PILOT-1, PILOT-2, RELEASE-1.
 - **P4 — Extensions après validation :** SMS. Aucun paiement réel, fournisseur payant ou déploiement de production n'est autorisé par cette priorité.
 
 Les dépendances de sécurité et de validation priment sur le numéro : une tâche P3 peut être préparée localement, mais ne doit pas contourner une porte P0/P1 pour utiliser des données réelles.
@@ -125,7 +133,7 @@ Les dépendances de sécurité et de validation priment sur le numéro : une tâ
 2. Terminé : SAAS-01A fournit le catalogue versionné, le registre pilote/souscription, les droits, options, quotas et compteurs appliqués côté serveur.
 3. Terminé : OPS-03B surveille la préproduction protégée toutes les trente minutes et a validé l'alerte de panne puis de reprise ; conserver les mesures de coûts pour PERF-02.
 4. Terminé : SIGNUP-1 orchestre offre, compte, vérification e-mail, faux paiement déterministe, activation idempotente et reprise après interruption.
-5. Brancher Stripe uniquement dans son environnement fictif avec SAAS-01B, puis développer SAAS-03, SAAS-04 et la tranche théorique de SALES-1.
+5. Tranches locales faites : adaptateur Stripe sandbox (SAAS-01B), vue « Mon abonnement » (SAAS-03), découverte premium (SAAS-04) et noyau théorique de SALES-1. Restent la preuve Stripe en mode test, les mutations d'abonnement et la persistance commerciale.
 6. Fermer ONBOARD-1 pour les comptes pilotes créés manuellement, puis le relier au parcours autonome ; terminer en parallèle les e-mails, la capacité et les essais GPS physiques dès que leurs ressources sont disponibles.
 7. Appliquer DESIGN-1, MAP-3, UX-03 et UX-04 aux parcours essentiels, puis intégrer le site commercial, la supervision interne et la recette V1 sur données fictives.
 8. Après les portes sécurité, juridique et exploitation, conduire les trois pilotes séparément de la découverte premium, remplacer les hypothèses de coût par des mesures et décider de la mise en vente.
@@ -137,45 +145,43 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 
 - **Déjà développé et à conserver :** préproduction Supabase/Vercel isolée, branche GitHub et CI connectée ; séparation multi-tenant et permissions principales ; trois espaces ; parcours complet d'une livraison ; commandes récurrentes ; duplication d'une ancienne commande/livraison ; preuve, historique, échanges, support, export comptable ; page publique de présentation ; première supervision SUPER_ADMIN ; assistant interne en sept étapes.
 - **Partiellement développé :** inscription autonome complète avec paiement fictif mais sans fournisseur de paiement sandbox/réel ; onboarding calculé depuis les données et désormais atteint après activation, mais invitations réelles/import/reprise commerciale non qualifiés ; supervision interne limitée aux entreprises/utilisateurs/livraisons et au revenu des prestations ; restauration fournisseur exercée, mais sauvegarde horaire et alertes encore incomplètes ; site public sans pages Tarifs/Fonctionnalités/Démo/Contact/Légal complètes. Le catalogue, les souscriptions/pilotes, les droits et compteurs de quotas sont présents via SAAS-01A.
-- **Absent du code actuel :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet.
+- **Absent du code au 21 octobre :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet. *Au 26 octobre, tous ont une tranche locale (voir SAAS-01B/02/03/04, SALES-1, COST-1, ADMIN-1) sauf les factures d'abonnement et l'attribution commerciale persistée.*
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
-## Matrice des 30 tâches ouvertes
+## Matrice des 28 tâches ouvertes
 
-`A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Maintenant » signifie qu'une tranche vérifiable peut être terminée sans dépense ni intervention extérieure.
+Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées, prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
 
 | Tâche | Jalon | Travail restant et prochain incrément | Dépendance / parallélisation | Complexité · modèle |
 |---|---|---|---|---|
-| SEC-05 | A+B | Fermer invitations, expiration, récupération et recette avec envoi réel. | Code presque terminé ; activation parallèle, bloquée seulement par domaine/expéditeur. | Moyenne · GPT‑6.1 Sol |
-| MAP-3 | A | Reprendre la carte avec la référence historique puis validation visuelle. | Après tokens DESIGN-1 ; parallèle aux travaux SaaS. | Moyenne · GPT‑6.1 Sol |
-| MOB-01C | A | Exécuter GPS, verrouillage, refus et reprise sur iPhone/Android réels. | Bloquée par appareils/opérateur ; n'empêche aucun code indépendant. | Moyenne · GPT‑6.1 Sol |
-| ONBOARD-1 | A+B | Finir d'abord la reprise/progression du parcours pilote manuel, puis le brancher à SIGNUP-1. | Tranche pilote maintenant ; intégration autonome après SAAS-01A/SIGNUP-1. | Élevée · GPT‑6.1 Sol |
-| DESIGN-1 | A+B | Définir tokens/composants et traiter seulement cinq parcours essentiels avant extension. | Maintenant, parallèle au SaaS ; ne bloque pas la logique métier. | Élevée · GPT‑6.1 Sol |
-| UX-03 | A+B | Unifier la fiche livraison et rendre la commande secondaire mais accessible. | Après composants DESIGN-1 ; réutilise TRACK-1/POD-1. | Élevée · GPT‑6.1 Sol |
-| UX-04 | A+B | Inventorier et simplifier les actions des parcours prioritaires. | Après composants DESIGN-1 ; peut accompagner UX-03 par écran. | Moyenne · GPT‑6.1 Sol |
-| OPS-03B | A | Brancher un canal de test, simuler une panne et valider diagnostic/reprise. | Maintenant grâce à ENV-1 ; canal live seulement plus tard. | Élevée · GPT‑6.1 Sol |
-| EMAIL | A+B | Valider invitations, récupération, erreurs et modèles ; puis envoi réel. | Tests locaux maintenant ; domaine/Resend pour la fermeture. | Moyenne · GPT‑6.1 Sol |
-| V1-GO | A | Rejouer la recette finale et documenter les limites promises. | Attend uniquement MOB-01C, EMAIL/SEC-05 réels et validations juridiques pertinentes. | Élevée · GPT‑6 Astra |
-| LEGAL-1 | A+B | Compléter les inconnues puis obtenir validation professionnelle. | Dossier interne prêt ; identité éditeur et professionnels externes requis. | Moyenne · GPT‑6 Astra |
-| DATA-02 | A+B | Finaliser politique, remise chiffrée et horaire de nettoyage sur préproduction. | Technique en parallèle ; politique finale dépend de LEGAL-1. | Élevée · GPT‑6 Astra |
-| DEMO-2 | A | Remplacer la construction synchrone par attribution atomique d'un pool isolé et recyclage. | Maintenant ; première priorité, sans dégrader l'isolation. | Très élevée · GPT‑6 Astra |
-| PROD-02 | A | Conduire dix entretiens sur le travail réel. | Bloquée par recrutement/contacts autorisés ; parallèle au code. | Élevée · GPT‑6.1 Sol |
-| PROD-04 | A+B | Définir dès maintenant les instruments et valeurs de départ ; mesurer ensuite sur pilotes. | Protocole maintenant ; validation terrain après PROD-02/PILOT-1. | Moyenne · GPT‑6.1 Sol |
-| OFFER-1 | A+B | Confronter au marché la grille et les limites ; les sept familles de règles C7 sont confirmées. | COST-1 documentaire maintenant ; acceptation avec prospects/pilotes. | Moyenne · GPT‑6 Astra |
-| SIGNUP-1 | B | Terminé : offre, compte, paiement fictif, activation idempotente, bienvenue durable et reprise vers ONBOARD-1. | Socle prêt pour SAAS-01B et le raccord final d'ONBOARD-1. | Très élevée · GPT‑6 Astra |
-| PILOT-1 | A | Recruter, contractualiser et conduire trois pilotes quatre semaines. | Attend les portes A–C et l'autorisation de contact. | Moyenne · GPT‑6.1 Sol |
-| PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1 ; aucune conclusion avant les données. | Moyenne · GPT‑6 Astra |
-| SAAS-01B | B | Intégrer Stripe sandbox, webhooks idempotents et cycle de facturation fictif. | Après SAAS-01A/SIGNUP-1 ; peut précéder les pilotes et la structure juridique. | Très élevée · GPT‑6 Astra |
-| SAAS-03 | B | Ajouter gestion autonome, confirmations, rétrogradations et documents. | Après noyau et événements SAAS-01B. | Très élevée · GPT‑6 Astra |
-| SAAS-04 | B | Appliquer et expirer les 60 jours sans surcoût automatique. | Après SAAS-01A et événements SAAS-01B ; parallèle à SAAS-03 une fois les contrats stables. | Élevée · GPT‑6.1 Sol |
-| SALES-1 | B | Tracer source/instantané initial et calculer la commission théorique, sans versement. | Après SAAS-01A/B ; contrat requis uniquement avant mise en service. | Élevée · GPT‑6 Astra |
-| SAAS-02 | B+C | Mesurer revenu, activation, rétention, consommation et risque Business. | Après SAAS-01A/B ; utilise PROD-04 et alimente ADMIN-1. | Élevée · GPT‑6.1 Sol |
-| PERF-02 | A+B | Construire le harnais local puis mesurer p50/p95 et saturation à charge bornée. | Harnais maintenant ; charge distante après SAAS-01A, sans dépense. | Élevée · GPT‑6 Astra |
-| COST-1 | A+B | Produire l'estimation documentaire immédiate, puis remplacer les hypothèses par PERF-02/pilotes. | Phase 1 maintenant, parallèle ; phase 2 après mesures. | Moyenne puis élevée · GPT‑6.1 Sol puis Astra |
-| GROWTH-1 | B | Préparer l'arborescence et les contenus vrais, puis relier tarifs et inscription. | Contenu maintenant ; intégration après SAAS-01A/SIGNUP-1 et composants DESIGN-1. | Élevée · GPT‑6.1 Sol |
-| ADMIN-1 | B+C | Ajouter supervision souscriptions, quotas, paiements, pilotes et incidents. | Après SAAS-01A/B, SAAS-02 et OPS-03B. | Élevée · GPT‑6 Astra |
-| RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon ; dépend des fonctions commercialisées et validations extérieures. | Très élevée · GPT‑6 Astra |
-| SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée ; aucune dépendance du pilote ou du SaaS initial. | Moyenne · GPT‑6.1 Sol |
+| ENV-2 | A+B | Rendre `.env.local` joignable (projet de développement en pause) et changer son mot de passe exposé. | Propriétaire ; contournement documenté par `.env.preproduction.local`. | Faible · GPT‑6 Luna |
+| DISPATCH-3 | A | Reproduire l'expiration de la transaction Prisma de 5 s de l'auto-dispatch, corriger et tester. | Local ; précède la validation pilote d'ONBOARD-1. | Élevée · GPT‑6.1 Sol |
+| SEC-05 | A+B | Code et 32 tests locaux faits ; recette avec envoi réel, expiration et réception. | Domaine/expéditeur. | Moyenne · GPT‑6.1 Sol |
+| EMAIL | A+B | Modèles et transport de test faits ; envoi réel, erreurs fournisseur et réception. | Domaine/Resend. | Moyenne · GPT‑6.1 Sol |
+| ONBOARD-1 | A+B | Tranche technique qualifiée ; essai par un pilote réel, temps humain, invitations réelles, décision d'import. | Pilotes + EMAIL ; DISPATCH-3 local avant. | Élevée · GPT‑6.1 Sol |
+| MOB-01C | A | Exécuter GPS, verrouillage, refus et reprise sur iPhone/Android réels. | Appareils/opérateur. | Moyenne · GPT‑6.1 Sol |
+| DESIGN-1 | A+B | Propager la direction Menthe aux pages restantes et ajouter le mode Dark. | Local ; validation visuelle du propriétaire. | Élevée · GPT‑6.1 Sol |
+| MAP-3 | A | Plan vectoriel Menthe livré ; validation visuelle et cas sans réseau. | Après DESIGN-1 ; propriétaire. | Moyenne · GPT‑6.1 Sol |
+| UX-03 | A+B | Inventorier les entrées vers une livraison et unifier la fiche. | Après composants DESIGN-1. | Élevée · GPT‑6.1 Sol |
+| UX-04 | A+B | Inventorier et simplifier les actions des parcours prioritaires. | Après composants DESIGN-1. | Moyenne · GPT‑6.1 Sol |
+| V1-GO | A | Rejouer la recette finale et documenter les limites promises. | MOB-01C, EMAIL/SEC-05 réels, LEGAL-1 ; latence préproduction (PERF-02). | Élevée · GPT‑6 Astra |
+| LEGAL-1 | A+B | Compléter les inconnues puis obtenir validation professionnelle. | Identité éditeur et professionnels externes. | Moyenne · GPT‑6 Astra |
+| DATA-02 | A+B | Compléter le contrat d'export avec les modèles manquants (local), puis politique et nettoyage planifié. | Politique finale : LEGAL-1. | Élevée · GPT‑6 Astra |
+| PROD-02 | A | Conduire dix entretiens sur le travail réel. | Recrutement/contacts autorisés. | Élevée · GPT‑6.1 Sol |
+| PROD-04 | A+B | Instruments définis ; mesurer sur pilotes. | PROD-02/PILOT-1. | Moyenne · GPT‑6.1 Sol |
+| OFFER-1 | A+B | Confronter au marché la grille et les limites. | Prospects/pilotes. | Moyenne · GPT‑6 Astra |
+| PILOT-1 | A | Recruter, contractualiser et conduire trois pilotes quatre semaines. | Portes A–C et autorisation de contact. | Moyenne · GPT‑6.1 Sol |
+| PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1. | Moyenne · GPT‑6 Astra |
+| SAAS-01B | B | Adaptateur sandbox, journal et webhooks signés faits ; Checkout/webhooks réels en mode test. | Compte Stripe de test. | Très élevée · GPT‑6 Astra |
+| SAAS-03 | B | Lecture faite ; mutations serveur (options, formule, périodicité, résiliation, export) avec journal et confirmation. | Local sur adaptateur fictif ; réconciliation : SAAS-01B. | Très élevée · GPT‑6 Astra |
+| SAAS-04 | B | Droits et affichage faits ; raccord `stripe-sandbox`, puis règles d'impayé/changement de formule. | Local pour le raccord ; décision propriétaire pour les règles. | Élevée · GPT‑6.1 Sol |
+| SALES-1 | B | Noyau de calcul fait ; persistance, codes/liens et raccord SIGNUP-1. | Décision propriétaire sur les codes. | Élevée · GPT‑6 Astra |
+| SAAS-02 | B+C | Lecture revenu/consommation faite ; réconciliation paiements, rétention, conversion, alertes de coût. | Stripe de test ; règles d'alerte à valider. | Élevée · GPT‑6.1 Sol |
+| PERF-02 | A+B | Harnais en mémoire fait ; PostgreSQL local isolé (local), puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
+| COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
+| GROWTH-1 | B | Tarifs, Fonctionnalités et Démonstration faits ; Contact protégé et pages légales. | Destination Contact : propriétaire ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
+| RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon. | Très élevée · GPT‑6 Astra |
+| SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée. | Moyenne · GPT‑6.1 Sol |
 
 ## 0 — Cadrer la V1 sur le problème observé
 
@@ -228,6 +234,14 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
   Préproduction créée le 2026-10-19 : second projet Supabase Free sain à Paris, sans donnée copiée. Configuration locale distincte dans `.env.preproduction.local`, ignoré et limité au compte local. Baseline Prisma appliquée et vérifiée : vingt tables métier sous RLS, registre de migration protégé, zéro droit direct aux rôles publics, zéro utilisateur Auth, bucket `delivery-pods` privé limité à 5 Mio JPEG/PNG et zéro drift. Le formulaire Vercel est resté non enregistré. Le mot de passe PostgreSQL et la clé serveur aperçus dans une vue technique doivent être remplacés avant push ; ENV-1 reste ouverte jusqu'à cette rotation, la configuration Preview et TEST-2.
 
   Terminé le 2026-10-20 : identifiants remplacés, ancienne clé serveur révoquée, branche distante et Preview Vercel actives, variables Preview et environnement GitHub `preproduction` configurés. La migration additive RBAC et son rejeu sont vérifiés. Le commit `f6e19cc` est déployé avec succès en Preview et la chaîne GitHub connectée réussit la garde d'isolation, 279 tests, TEST-2, le montage temporaire, trois parcours Chromium, la preuve nettoyée et le nettoyage `always()`. Le contrôle direct final confirme zéro entreprise de test, zéro utilisateur Auth, deux migrations appliquées, zéro drift, RLS partout et bucket privé. La Preview reste protégée par l'authentification Vercel ; la CI teste donc le même commit dans son runner relié au Supabase de préproduction et contrôle le déploiement séparément. Rapport `docs/rapports/2026-10-20/preproduction-ci.md`.
+
+- [ ] **ENV-2 — Rétablir une cible de développement locale joignable.** `.env.local` vise encore le projet Supabase de développement `wlomrzil…`, en pause : connexion, Playwright par défaut et recettes navigateur locales échouent (`ENOTFOUND`, 401), ce qui a bloqué les preuves navigateur de SAAS-03, SAAS-04 et ADMIN-1. Son mot de passe de base a de plus été exposé dans un journal d'outil le 26 octobre 2026.
+
+  **Modèle conseillé : GPT‑6 Luna · effort faible.**
+
+  Terminé quand : le mot de passe exposé est changé ; `.env.local` pointe vers une cible de développement joignable, distincte de la préproduction et de la production ; `npm run dev` permet une connexion démo et `npm run test:e2e` démarre sans contournement ; aucun secret n'est versionné.
+
+  Source / dépendance / blocage : ajoutée lors de la revue du 26 octobre 2026 à partir de `docs/rapports/CLAUDE_STABILISATION_HANDOFF.md` (E2). Action du propriétaire : réactiver le projet gratuit en pause ou en créer un autre. Contournement en attendant : lancer l'application avec `.env.preproduction.local` sur la préproduction autorisée (commande dans le rapport de passation).
 
 - [x] **SEC-02 — Bloquer les références étrangères dans le support.** Vérifier entreprise ET client pour relatedOrderId et relatedDeliveryId avant insertion et lecture.
 
@@ -374,6 +388,14 @@ Le client utilise son espace pour commander ; l’administrateur organise et le 
   Validation : `npm run check` réussi, 205/205 tests ; build production réussi, 96 pages statiques. Test connecté en lecture seule réussi sur un retard réel et une frontière interentreprises, sans aucune mutation. Aucun schéma, migration, donnée ou déploiement modifié. Rapport `docs/rapports/2026-10-16/dispatch2.md`.
 
   Source / dépendance / blocage : terminée. Revue visuelle groupée possible plus tard à la demande du propriétaire ; elle ne bloque pas le comportement validé.
+
+- [ ] **DISPATCH-3 — Qualifier l'auto-dispatch dans sa transaction.** Le premier essai interne d'ONBOARD-1 avec dispatch automatique a expiré dans une transaction Prisma interactive de 5 secondes (nettoyage confirmé, parcours manuel réussi ensuite). Reproduire localement, identifier ce qui allonge la transaction (requêtes séquentielles, appels réseau, verrous) et la rendre bornée sans perdre l'atomicité ni l'idempotence d'OPS-02B.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : la cause est identifiée et reproduite par un test ; l'auto-dispatch ne fait plus d'appel lent dans la transaction ou utilise un délai justifié ; un échec reste explicite, sans affectation partielle ni doublon de job ; la tranche ONBOARD-1 avec dispatch automatique réussit sur la préproduction autorisée.
+
+  Source / dépendance / blocage : ajoutée lors de la revue du 26 octobre 2026 depuis la note ONBOARD-1 du 23 octobre. Aucune dépendance extérieure pour la reproduction et la correction locales.
 
 - [x] **BILL-02 — Séparer livraison et facturation.** Préserver l'état logistique et sa date lors de la facturation ; contrôler une permission dédiée ; préparer la reprise des données existantes.
 
@@ -1193,6 +1215,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Navigateur connecté du 2026-10-25 : un `SUPER_ADMIN` temporaire, sans entreprise, a ouvert l'application locale branchée à la préproduction autorisée. Login 200. Le journal affichait des accès `ALLOWED` pour la vue d'ensemble, la santé SaaS, les entreprises, le détail et le journal. Un nom de la liste a ouvert le détail : nom, statut, création et deux compteurs, réponse 200. Le compte d'authentification, l'utilisateur et ses lignes de journal ont été supprimés. Il ne reste aucun `SUPER_ADMIN`.
   Clôture du 2026-10-25 : les sept critères du « Terminé quand » sont prouvés localement, et le journal ainsi que le détail entreprise ont été ouverts dans le navigateur connecté. ADMIN-1 est cochée. Les détails de compte, ticket, job et incident, les paiements réconciliés, l'alerte de coût et l'état des pilotes restent non prouvés : ce sont des limites hors critère, pas des capacités livrées.
   Détail entreprise du 2026-10-25, après clôture : le propriétaire demande l'identité, l'abonnement, les options et le chiffre d'affaires au clic, plus un suivi de qui paie. Le détail affiche contact, raison sociale, SIREN/SIRET, facturation, CA des factures de livraison, formule, montant HT enregistré, options, sièges et suivi. La page Souscriptions compte les commerciaux à jour, à relancer, en résiliation et qui ne paient plus, avec contact et lien vers l'entreprise. Aucun paiement Stripe n'est lu. La case reste cochée.
+  Contrôle en lecture seule du 2026-10-26 : les cinq migrations notées « en attente » ci-dessus ont été appliquées avec l'accord du propriétaire (rapport `docs/rapports/CLAUDE_STABILISATION_HANDOFF.md`). La préproduction compte dix-sept migrations terminées, 35 tables, RLS partout et aucun droit direct public.
 
 - [ ] **RELEASE-1 — Réaliser la recette de mise en vente.** Rejouer sécurité, livraison, GPS promis, abonnement, support, exports et restauration ; revue des défauts ouverts et charge représentative.
 
