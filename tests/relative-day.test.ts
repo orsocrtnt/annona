@@ -81,3 +81,10 @@ test("une ligne de facture sans montant lisible n'affiche pas « NaN € »", as
   assert.match(invoiceLineTotal({ amount: "4.90", quantity: 1 }), /^4,90\s€$/);
   assert.equal(invoiceLineTotal({ amount: undefined as unknown as number, quantity: 2 }), "—");
 });
+
+test("en milieu de phrase, le jour reste en minuscule et la date prend « le »", async () => {
+  const { inlineDayLabel } = await import("../src/lib/format/relative-day");
+  assert.equal(inlineDayLabel("2026-10-27T13:30:00Z", now), "aujourd'hui 14:30");
+  assert.equal(inlineDayLabel("2026-10-26T08:12:00Z", now), "hier 09:12");
+  assert.equal(inlineDayLabel("2026-10-20T08:00:00Z", now), "le 20 oct.");
+});

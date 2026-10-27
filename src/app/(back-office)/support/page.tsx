@@ -14,7 +14,8 @@ import {
   useUpdateStaffSupportStatus,
 } from "@/features/back-office/hooks";
 import type { CompanySupportTicket } from "@/features/back-office/types";
-import { formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { fullDateLabel, inlineDayLabel, relativeDayLabel } from "@/lib/format/relative-day";
 import { toast } from "sonner";
 
 type Filter = "ACTIVE" | "ALL" | CompanySupportTicket["status"];
@@ -60,7 +61,10 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
           <div>
             <CardTitle className="text-base">{ticket.subject}</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              {ticket.customer.firstName} {ticket.customer.lastName} · {formatDate(ticket.updatedAt)}
+              {ticket.customer.firstName} {ticket.customer.lastName} · mise à jour{" "}
+              <time dateTime={ticket.updatedAt} title={fullDateLabel(ticket.updatedAt)}>
+                {inlineDayLabel(ticket.updatedAt)}
+              </time>
             </p>
           </div>
           <div data-current-status={ticket.status}>
@@ -69,11 +73,11 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           <a className="inline-flex items-center gap-1 hover:text-foreground" href={`mailto:${ticket.customer.email}`}>
-            <Mail className="h-3.5 w-3.5" /> {ticket.customer.email}
+            <Mail className="h-3.5 w-3.5" aria-hidden="true" /> {ticket.customer.email}
           </a>
           {ticket.customer.phone ? (
             <a className="inline-flex items-center gap-1 hover:text-foreground" href={`tel:${ticket.customer.phone}`}>
-              <Phone className="h-3.5 w-3.5" /> {ticket.customer.phone}
+              <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {ticket.customer.phone}
             </a>
           ) : null}
           {ticket.relatedOrder ? (
@@ -85,19 +89,34 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="max-h-80 space-y-3 overflow-y-auto" aria-label={`Historique de ${ticket.subject}`}>
-          {ticket.messages.map((message) => (
-            <article
-              key={message.id}
-              className={`rounded-lg border p-3 ${message.isStaff ? "bg-brand/5" : "bg-muted/30"}`}
-            >
-              <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
-                <strong className="text-foreground">{message.isStaff ? "Équipe" : "Client"}</strong>
-                <time dateTime={message.createdAt}>{formatDate(message.createdAt)}</time>
-              </div>
-              <p className="mt-2 whitespace-pre-wrap break-words text-sm">{message.body}</p>
-            </article>
-          ))}
+        {/* Région nommée et focusable : l'historique défile aussi au clavier. */}
+        <div
+          role="region"
+          tabIndex={0}
+          aria-label={`Historique de ${ticket.subject}`}
+          className="max-h-80 overflow-y-auto rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ol className="space-y-3">
+            {ticket.messages.map((message) => (
+              <li
+                key={message.id}
+                className={cn(
+                  "max-w-[85%] rounded-2xl border p-3",
+                  message.isStaff
+                    ? "ml-auto rounded-br-md border-[#bfe9d0] bg-[#eafaf1]"
+                    : "mr-auto rounded-bl-md border-border bg-[#f5f8f6]"
+                )}
+              >
+                <p className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+                  <strong className="text-foreground">{message.isStaff ? "Équipe" : "Client"}</strong>
+                  <time dateTime={message.createdAt} title={fullDateLabel(message.createdAt)}>
+                    {relativeDayLabel(message.createdAt, undefined, { withTime: true })}
+                  </time>
+                </p>
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm">{message.body}</p>
+              </li>
+            ))}
+          </ol>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

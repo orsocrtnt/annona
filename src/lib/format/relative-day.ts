@@ -24,6 +24,12 @@ export function relativeDayLabel(value: string | Date, now = new Date(), options
   return (sameYear ? shortDate : shortDateYear).format(date);
 }
 
+/** En milieu de phrase : « aujourd'hui 14:30 », « hier 09:12 », « le 23 oct. ». */
+export function inlineDayLabel(value: string | Date, now = new Date()): string {
+  const label = relativeDayLabel(value, now, { withTime: true });
+  return /^\d/.test(label) ? `le ${label}` : label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 /** Version complète pour l'infobulle et les lecteurs d'écran. */
 export function fullDateLabel(value: string | Date): string {
   const date = new Date(value);

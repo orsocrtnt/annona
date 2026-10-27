@@ -14,7 +14,7 @@ import {
 } from "@/features/client-portal/hooks";
 import { TicketStatusBadge } from "@/features/client-portal/status-badges";
 import { cn } from "@/lib/utils";
-import { fullDateLabel, relativeDayLabel } from "@/lib/format/relative-day";
+import { fullDateLabel, inlineDayLabel, relativeDayLabel } from "@/lib/format/relative-day";
 import { toast } from "sonner";
 
 export default function ClientSupportTicketPage() {
@@ -64,7 +64,7 @@ export default function ClientSupportTicketPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Ouverte{" "}
             <time dateTime={data.createdAt} title={fullDateLabel(data.createdAt)}>
-              {inlineDay(data.createdAt)}
+              {inlineDayLabel(data.createdAt)}
             </time>{" "}
             · réponse visée sous 1 jour ouvré
           </p>
@@ -133,10 +133,4 @@ export default function ClientSupportTicketPage() {
       </Card>
     </div>
   );
-}
-
-/** « aujourd'hui 14:30 », « hier 09:12 », « 23 oct. » en milieu de phrase. */
-function inlineDay(date: string): string {
-  const label = relativeDayLabel(date, undefined, { withTime: true });
-  return /^\d/.test(label) ? `le ${label}` : label.charAt(0).toLowerCase() + label.slice(1);
 }
