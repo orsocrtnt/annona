@@ -23,14 +23,12 @@ Mise à jour : 26 octobre 2026 (revue de cohérence : tableaux de pilotage, prio
 
 ### Cinq prochaines tâches recommandées
 
-| Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
-|---:|---|---|---|---|
 Revue du 26 octobre 2026 : les cinq tâches précédemment recommandées (validation pilote d'ONBOARD-1, Stripe sandbox, charge préproduction, COST-1 mesurée, envoi e-mail réel) attendent toutes une ressource extérieure. La liste ci-dessous ne retient que des incréments réalisables localement, sans dépense ni donnée réelle.
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **SAAS-04 — raccord Stripe sandbox** | La découverte n'est accordée qu'au paiement `fake` : une souscription confirmée par l'adaptateur `stripe-sandbox` n'en bénéficie pas. | Aucune ; tests locaux. | GPT‑6.1 Sol · effort moyen |
-| 2 | **DISPATCH-3 — auto-dispatch sous transaction** | Le premier essai ONBOARD-1 avec dispatch automatique a expiré dans une transaction Prisma de 5 s ; à reproduire et corriger avant les pilotes. | Aucune pour la reproduction locale. | GPT‑6.1 Sol · effort élevé |
+| 1 | **DISPATCH-3 — auto-dispatch sous transaction** | Le premier essai ONBOARD-1 avec dispatch automatique a expiré dans une transaction Prisma de 5 s ; à reproduire et corriger avant les pilotes. | Aucune pour la reproduction locale. | GPT‑6.1 Sol · effort élevé |
+| 2 | **ENV-2 / CI — chaîne verte** | La CI `preproduction` est rouge (documentation, faille `maplibre-gl`) ; corrections locales faites le 27 octobre, à pousser. | Push et cible de développement : propriétaire. | GPT‑6 Luna · effort faible |
 | 3 | **DATA-02 — complétude de l'export** | L'inventaire liste des modèles absents du contrat d'export ; la complétude technique ne dépend pas de la politique juridique. | Politique de conservation finale : LEGAL-1. | GPT‑6.1 Sol · effort élevé |
 | 4 | **SAAS-03 — premières mutations** | Les vues sont livrées ; les actions serveur peuvent être construites sur l'adaptateur fictif selon les règles C7. | Réconciliation fournisseur : compte Stripe de test. | GPT‑6 Astra · effort élevé |
 | 5 | **PERF-02 — PostgreSQL local** | Le harnais reste en mémoire ; le PostgreSQL isolé déjà utilisé par SAAS-01B permet de mesurer Prisma et le pool sans coût. | Charge préproduction : accord du propriétaire. | GPT‑6 Astra · effort élevé |
@@ -174,7 +172,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1. | Moyenne · GPT‑6 Astra |
 | SAAS-01B | B | Adaptateur sandbox, journal et webhooks signés faits ; Checkout/webhooks réels en mode test. | Compte Stripe de test. | Très élevée · GPT‑6 Astra |
 | SAAS-03 | B | Lecture faite ; mutations serveur (options, formule, périodicité, résiliation, export) avec journal et confirmation. | Local sur adaptateur fictif ; réconciliation : SAAS-01B. | Très élevée · GPT‑6 Astra |
-| SAAS-04 | B | Droits et affichage faits ; raccord `stripe-sandbox`, puis règles d'impayé/changement de formule. | Local pour le raccord ; décision propriétaire pour les règles. | Élevée · GPT‑6.1 Sol |
+| SAAS-04 | B | Droits et affichage faits pour le paiement `fake` ; l'exclusion de `stripe-sandbox` est volontaire et testée tant que les règles d'impayé/changement de formule ne sont pas décidées. | Décision propriétaire, puis raccord Stripe. | Élevée · GPT‑6.1 Sol |
 | SALES-1 | B | Noyau de calcul fait ; persistance, codes/liens et raccord SIGNUP-1. | Décision propriétaire sur les codes. | Élevée · GPT‑6 Astra |
 | SAAS-02 | B+C | Lecture revenu/consommation faite ; réconciliation paiements, rétention, conversion, alertes de coût. | Stripe de test ; règles d'alerte à valider. | Élevée · GPT‑6.1 Sol |
 | PERF-02 | A+B | Harnais en mémoire fait ; PostgreSQL local isolé (local), puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
@@ -1031,6 +1029,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Avancement local du 2026-10-24 : machine de droits ajoutée uniquement au paiement `fake` confirmé. Une première souscription Starter ou Pro fixe côté serveur une échéance à 60 jours ; à J0 et J59, `auto_dispatch`, `admin_gps`, `client_gps` et `advanced_analytics` sont ouverts sans modifier les quotas, puis retirés exactement à J60 s'ils ne sont ni inclus ni achetés. L'assistance prioritaire n'est jamais offerte ; options achetées et fonctions de formule restent présentes ; aucune ligne, facture ou supplément n'est créé à l'échéance. Business, activations manuelles et pilotes gratuits n'ouvrent aucune découverte. Vérifié : `npm run test:saas04` 3/3 et `npm run check` 374/374. SAAS-04 reste ouverte pour l'affichage de la date/fonctions et pour les règles encore non décidées d'impayé ou de changement de formule pendant la découverte.
 
   Affichage local ajouté le 2026-10-25 dans « Mon abonnement » : tant que la découverte Starter/Pro est active, l'API de lecture expose uniquement son échéance et les quatre fonctions éligibles, puis l'encart disparaît exactement à J60. L'écran précise que quotas et facturation restent inchangés ; Business reste exclu. Vérifié : `npm run test:saas04` 4/4 et `npm run check` 375/375. La recette Playwright a démarré mais reste bloquée avant navigation par le DNS Supabase (`ENOTFOUND`, connexion 401), sans contournement. La case reste ouverte uniquement pour les règles d'impayé et de changement de formule pendant la découverte, qui nécessitent une décision du propriétaire.
+
+  Revue du 2026-10-27 : une souscription confirmée par l'adaptateur `stripe-sandbox` n'ouvre aucune découverte (`saas.service.ts`, test `saas04` qui l'exige). Ce n'est pas un oubli : avec Stripe, impayé et changement de formule deviennent possibles et leur règle pendant la découverte n'est pas décidée. Le raccord Stripe suivra cette décision ; aucun code modifié.
 
 - [ ] **SALES-1 — Tracer l'origine des ventes et calculer les commissions.** Associer un code/lien et un commercial à l'inscription, figer les éléments de souscription initiale, conserver le niveau **apporteur 15 % / accompagné 25 % / autonome 35 %**, puis calculer pendant douze mois maximum une commission théorique sur les seuls montants HT réellement encaissés et éligibles. Les options ou changements ultérieurs n'ajoutent pas de commission. Aucun versement automatisé ni CRM complexe.
 
