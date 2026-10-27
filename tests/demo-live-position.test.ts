@@ -46,9 +46,9 @@ test("la position simulée reste sur le tracé routier", () => {
 
 test("le départ simulé reste dans Paris, entre la cible et le centre", () => {
   const start = demoTripStart({ latitude: 48.85803, longitude: 2.28223 });
-  assert.ok(start.longitude > 2.28223 && start.longitude < 2.3522, "vers le centre");
+  assert.ok(start.longitude > 2.3522 && start.longitude < 2.43, "de l'autre côté du centre, dans Paris");
   const central = demoTripStart({ latitude: 48.857, longitude: 2.352 });
-  assert.ok(Math.hypot(central.latitude - 48.857, central.longitude - 2.352) > 0.015, "décalé quand la cible est au centre");
+  assert.ok(Math.hypot(central.latitude - 48.857, central.longitude - 2.352) > 0.035, "décalé quand la cible est au centre");
 });
 
 test("les routes des cartes avancent les positions de démo sans bloquer la lecture", () => {
@@ -83,12 +83,12 @@ test("démo : trois livreurs en direct, un estimé, un au signal perdu", () => {
   assert.equal(DEMO_SIGNAL_LAG_SECONDS.filter((lag) => lag > policy.ESTIMATION_MAX_SECONDS).length, 1);
 });
 
-function loadPositionsService(company: { isDemo: boolean; slug: string }, driverSettings: Record<string, unknown>, lastUpdate: Date | null) {
+function loadPositionsService(company: { isDemo: boolean; slug: string }, driverSettings: Record<string, unknown>, lastUpdate: Date | null, mission: Record<string, unknown> = {}) {
   const writes: any[] = [];
   const startedAt = new Date(Date.now() - 30 * 60_000);
   const prisma = {
     company: { findUnique: async () => company },
-    delivery: { findMany: async () => [{ driverId: "driver", deliveryCategory: "STANDARD", missionStartedAt: startedAt, latitude: 48.85, longitude: 2.35, pickupLatitude: null, pickupLongitude: null, driver: { settings: driverSettings, driverLocation: lastUpdate ? { updatedAt: lastUpdate } : null } }] },
+    delivery: { findMany: async () => [{ driverId: "driver", deliveryCategory: "STANDARD", missionStartedAt: startedAt, latitude: 48.85, longitude: 2.35, pickupLatitude: null, pickupLongitude: null, driver: { settings: driverSettings, driverLocation: lastUpdate ? { updatedAt: lastUpdate } : null }, ...mission }] },
     user: { update: async (args: any) => { writes.push(["user", args]); } },
     driverLocation: { upsert: async (args: any) => { writes.push(["location", args]); } },
   };
@@ -147,4 +147,16 @@ test("démo : le livreur roule à la vitesse des cartes vers la cible, puis repa
   assert.ok(at(cycle - 1) < 3000 * 0.9 + 1e-6, "jamais au-delà de 90 %");
   assert.ok(Math.abs(at(cycle + 1) - at(1)) < 1e-6, "repart du début");
   assert.equal(live.demoTripDistance(startedAt, new Date(+startedAt + 60_000), 0, 25), 0);
+});
+
+test("démo : même prochaine étape que les cartes (course en livraison vers la destination)", async () => {
+  const now = new Date();
+  const { service, writes } = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService(), null, { status: "IN_DELIVERY", deliveryCategory: "COURIER", pickupLatitude: 48.84, pickupLongitude: 2.37, order: { stops: [{ latitude: 48.84, longitude: 2.37 }] } });
+  assert.equal(await service.advanceDemoDriverPositions("c", now), 1);
+  const upsert = writes.find((w) => w[0] === "location")[1].update;
+  const expectedTarget = policy.trackingTarget({ status: "IN_DELIVERY", deliveryCategory: "COURIER", latitude: 48.85, longitude: 2.35, pickupLatitude: 48.84, pickupLongitude: 2.37 })!;
+  assert.deepEqual({ ...expectedTarget }, { latitude: 48.85, longitude: 2.35 });
+  const start = live.demoTripStart(expectedTarget);
+  const toDestination = Math.hypot(upsert.latitude - 48.85, upsert.longitude - 2.35) < Math.hypot(start.latitude - 48.85, start.longitude - 2.35);
+  assert.ok(toDestination, "roule vers la destination, pas vers la collecte");
 });

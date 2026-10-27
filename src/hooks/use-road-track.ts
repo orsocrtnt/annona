@@ -37,35 +37,44 @@ function requestRoadRoute(from: TrackingPoint, target: TrackingPoint): Promise<L
   return run;
 }
 
+/** Trajet animé : le relevé suivi et, s'il est chargé, son itinéraire routier. */
+export type DrivenMotion = { motion: TrackingMotion | null; road: RoadTrack | null };
+
 /**
  * Itinéraire routier du livreur vers sa prochaine étape. Un nouveau relevé resté sur la route
- * réutilise l'itinéraire chargé ; sinon il est recalculé (ligne droite en attendant : null).
+ * réutilise l'itinéraire chargé. Sinon, le livreur continue sur l'ancien itinéraire le temps
+ * de calculer le nouveau, puis bascule une seule fois : jamais d'aller-retour par la ligne droite.
  */
-export function useRoadTrack(motion: TrackingMotion | null): RoadTrack | null {
-  const [road, setRoad] = useState<RoadTrack | null>(null);
-  const roadRef = useRef<RoadTrack | null>(null);
+export function useRoadTrack(motion: TrackingMotion | null): DrivenMotion {
+  const [driven, setDriven] = useState<DrivenMotion>({ motion, road: null });
+  const drivenRef = useRef<DrivenMotion>(driven);
   const motionKey = motion ? `${motion.since}|${pointKey(motion.from)}|${pointKey(motion.target)}` : "";
 
   useEffect(() => {
-    const apply = (next: RoadTrack | null) => {
-      roadRef.current = next;
-      setRoad(next);
+    const apply = (next: DrivenMotion) => {
+      drivenRef.current = next;
+      setDriven(next);
     };
     if (!motion) {
-      apply(null);
+      apply({ motion: null, road: null });
       return;
     }
-    const reused = reuseRoad(roadRef.current, motion);
+    const reused = reuseRoad(drivenRef.current.road, motion);
     if (reused) {
-      apply(reused);
+      apply({ motion, road: reused });
       return;
     }
-    apply(null);
+    // Aucun itinéraire en cours : ligne droite tout de suite, la route remplacera à son arrivée.
+    if (!drivenRef.current.road) apply({ motion, road: null });
     let cancelled = false;
     void requestRoadRoute(motion.from, motion.target).then((points) => {
-      if (cancelled || !points) return;
+      if (cancelled) return;
+      if (!points) {
+        apply({ motion, road: null });
+        return;
+      }
       const track = buildRouteTrack(points);
-      apply({ track, startDistance: projectOnRoute(track, [motion.from.latitude, motion.from.longitude]).distance });
+      apply({ motion, road: { track, startDistance: projectOnRoute(track, [motion.from.latitude, motion.from.longitude]).distance } });
     });
     return () => {
       cancelled = true;
@@ -73,5 +82,5 @@ export function useRoadTrack(motion: TrackingMotion | null): RoadTrack | null {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : relevé, cible et heure
   }, [motionKey]);
 
-  return road;
+  return driven;
 }

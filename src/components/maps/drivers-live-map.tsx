@@ -46,10 +46,9 @@ const FIT_OPTIONS = {
   fullscreen: { padding: [80, 80] as [number, number], maxZoom: 14, singleZoom: 14 },
 } as const;
 
+/** Recadrage quand les livreurs affichés changent, pas quand ils roulent : la carte ne saute pas. */
 function driversFitKey(located: LiveDriverLocation[]) {
-  return located
-    .map((d) => `${d.id}:${d.latitude?.toFixed(5)},${d.longitude?.toFixed(5)}`)
-    .join("|");
+  return located.map((d) => d.id).join("|");
 }
 
 function fitMapToDrivers(

@@ -33,16 +33,17 @@ export function isDemoCompanyForSimulation(company: { isDemo: boolean; slug: str
 }
 
 /**
- * Point de départ du trajet simulé, toujours dans Paris : à mi-chemin entre la cible et le
- * centre, ou à environ 2 km au nord-est quand la cible est déjà au centre.
+ * Point de départ du trajet simulé, dans Paris : de l'autre côté du centre par rapport à la
+ * cible (trajet de plusieurs kilomètres, boucle rare), ou à environ 3,5 km au nord-est quand la
+ * cible est déjà au centre.
  */
 export function demoTripStart(target: Point): Point {
   const dLat = PARIS_CENTER.latitude - target.latitude;
   const dLng = PARIS_CENTER.longitude - target.longitude;
   if (Math.hypot(dLat, dLng) < 0.015) {
-    return { latitude: target.latitude + 0.014, longitude: target.longitude + 0.012 };
+    return { latitude: target.latitude + 0.025, longitude: target.longitude + 0.03 };
   }
-  return { latitude: target.latitude + dLat * 0.6, longitude: target.longitude + dLng * 0.6 };
+  return { latitude: PARIS_CENTER.latitude + dLat * 0.7, longitude: PARIS_CENTER.longitude + dLng * 0.7 };
 }
 
 /**

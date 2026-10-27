@@ -89,10 +89,10 @@ function MapViewController({ delivery }: { delivery: DispatchMapDelivery | null 
       return;
     }
 
+    // Le livreur qui roule ne recadre pas la carte : seule son apparition ou sa disparition compte.
     const fitKey = [
       delivery.id,
-      delivery.driverLocation?.latitude?.toFixed(5) ?? "no-driver",
-      delivery.driverLocation?.longitude?.toFixed(5) ?? "no-driver",
+      delivery.driverLocation ? "driver" : "no-driver",
       delivery.missionStartedAt ?? "pre-mission",
       sidebarCollapsed ? "sb-c" : "sb-e",
     ].join("|");

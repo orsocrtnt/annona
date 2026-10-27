@@ -1,5 +1,5 @@
 import { prisma } from "@/services/prisma/client";
-import { ESTIMATION_MAX_SECONDS, ESTIMATION_SPEED_KMH, trackingService } from "@/domains/tracking/tracking.policy";
+import { ESTIMATION_MAX_SECONDS, ESTIMATION_SPEED_KMH, trackingService, trackingTarget } from "@/domains/tracking/tracking.policy";
 import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
 import { buildRouteTrack, pointAtDistance } from "@/lib/maps/route-progress";
 import {
@@ -58,20 +58,21 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
       missionStartedAt: { not: null },
       completedAt: null,
       driverId: { not: null },
-      latitude: { not: null },
-      longitude: { not: null },
     },
     select: {
       driverId: true,
+      status: true,
       deliveryCategory: true,
       missionStartedAt: true,
       latitude: true,
       longitude: true,
       pickupLatitude: true,
       pickupLongitude: true,
+      order: { select: { stops: { orderBy: { sequence: "asc" }, select: { latitude: true, longitude: true } } } },
       driver: { select: { settings: true, driverLocation: { select: { updatedAt: true } } } },
     },
-    orderBy: { missionStartedAt: "asc" },
+    // Même mission en cours et même ordre que les cartes (getCompanyDriverLocations).
+    orderBy: [{ missionStartedAt: "asc" }, { id: "asc" }],
   });
 
   const seen = new Set<string>();
@@ -93,11 +94,12 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
       : new Date(Math.max(now.getTime() - lagSeconds * 1000, startedAt + 1000));
     if (trackingActive && lastUpdate && Math.abs(signalAt.getTime() - lastUpdate.getTime()) < DEMO_POSITION_MIN_INTERVAL_MS) continue;
 
-    // Même cible que le tracé de la carte : la collecte d'abord pour une course.
-    const target: Point =
-      mission.deliveryCategory === "COURIER" && mission.pickupLatitude != null && mission.pickupLongitude != null
-        ? { latitude: mission.pickupLatitude, longitude: mission.pickupLongitude }
-        : { latitude: mission.latitude!, longitude: mission.longitude! };
+    // Même prochaine étape que l'estimation des cartes : entre deux signaux, le marqueur et la
+    // simulation roulent vers le même point. Sans étape localisée, rien à simuler.
+    const target: Point | null =
+      trackingTarget(mission) ??
+      (mission.latitude != null && mission.longitude != null ? { latitude: mission.latitude, longitude: mission.longitude } : null);
+    if (!target) continue;
     const route = await demoTripRoute(demoTripStart(target), target);
     // Même vitesse que l'estimation des cartes : entre deux signaux, le marqueur reste aligné.
     const track = buildRouteTrack(route);

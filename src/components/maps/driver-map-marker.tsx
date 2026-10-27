@@ -154,10 +154,12 @@ function useDriverMotion(
   markerRef: React.RefObject<L.Marker | null>,
   trailRefs: React.RefObject<(L.Polyline | null)[]>
 ) {
-  const road = useRoadTrack(motion);
+  // Trajet effectivement animé : il ne change qu'une fois l'itinéraire du nouveau relevé prêt.
+  const { motion: driven, road } = useRoadTrack(motion);
   const shownRef = useRef<LatLng | null>(null);
 
   useEffect(() => {
+    const motion = driven;
     if (!motion) {
       shownRef.current = null;
       return;
@@ -197,7 +199,7 @@ function useDriverMotion(
     };
     frame = window.requestAnimationFrame(loop);
     return () => window.cancelAnimationFrame(frame);
-  }, [motion, road, showTrail, markerRef, trailRefs]);
+  }, [driven, road, showTrail, markerRef, trailRefs]);
 }
 
 export function DriverMapMarker({
