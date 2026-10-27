@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { activateSignupJourney, type SignupCatalog, type SignupOptionSelection } from "@/domains/signup/signup.service";
 import { premiumDiscoveryEndAfterCancellation, premiumDiscoveryEndAfterPaymentFailure, snapshotPlan } from "@/domains/saas/saas.service";
+import { recordSalesCommissions } from "@/domains/sales/sales-code.service";
 import { changeTiming, initialBillingState, makeBillingContract, monthlyUsageAmount, reconcileBilling, reminderDays, type BillingContract, type BillingState } from "./billing-core";
 import { StripeSandboxProvider, type SandboxBillingProvider } from "./stripe-sandbox";
 
@@ -232,6 +233,7 @@ export class BillingService {
       }
       await tx.saasSubscription.update({ where: { id: subscription.id }, data: { status: state.status, billingInterval: contract.quote.billingInterval, catalogVersionId: contract.catalog.id, providerSubscriptionId: account.providerSubscriptionId, providerCustomerId: account.providerCustomerId, currentPeriodStart: new Date(state.periodStart!), currentPeriodEnd: new Date(state.periodEnd!), cancelAtPeriodEnd: state.cancelAtPeriodEnd, endedAt: state.status === "CANCELLED" ? new Date(state.periodEnd!) : null, premiumDiscoveryEndsAt: premiumDiscoveryEndAfterCancellation(premiumDiscoveryEndAfterPaymentFailure(subscription.premiumDiscoveryEndsAt, state.failedAt), state.cancelAtPeriodEnd, new Date()), snapshot: json({ ...previous, billingContractHash: contract.hash, billingFailedAt: state.failedAt, billingAccountId: accountId, quote: contract.quote }) } });
       await tx.saasBillingAccount.update({ where: { id: accountId }, data: { subscriptionId: subscription.id } });
+      await recordSalesCommissions(tx, companyId, state.invoices);
     });
   }
   async billClosedUsage(accountId: string, now = new Date()) {

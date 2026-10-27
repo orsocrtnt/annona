@@ -6,6 +6,7 @@ CREATE TYPE "SalesCommissionLevel" AS ENUM ('REFERRER', 'ASSISTED', 'AUTONOMOUS'
 
 -- AlterEnum
 ALTER TYPE "PlatformAccessResource" ADD VALUE 'SALES_CODES';
+ALTER TYPE "PlatformAccessResource" ADD VALUE 'SALES_COMMISSIONS';
 
 -- AlterTable
 ALTER TABLE "signup_journeys" ADD COLUMN     "sales_code_id" TEXT;

@@ -74,3 +74,37 @@ export function useDisableSalesCode() {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["admin", "sales-codes"] }),
   });
 }
+
+export type SalesCommissionExplanation =
+  | "ELIGIBLE" | "NOT_PAID" | "OUTSIDE_WINDOW" | "LATER_CHANGE_OR_USAGE"
+  | "CONTRACT_CHANGED" | "PARTIAL_PAYMENT" | "UNRECOGNISED_INVOICE" | "REFUND";
+
+export type SalesCodeHistory = {
+  code: string;
+  sellerName: string;
+  attributions: Array<{
+    id: string;
+    companyName: string;
+    level: SalesCodeLevel;
+    rateBps: number;
+    attributedAt: string;
+    eligibleUntil: string;
+    totalCommissionCents: number;
+    entries: Array<{
+      kind: "PAYMENT" | "UNPAID" | "REFUND";
+      explanation: SalesCommissionExplanation;
+      eligibleHtCents: number;
+      commissionCents: number;
+      receivedAt: string;
+    }>;
+  }>;
+};
+
+export function useSalesCodeHistory(id: string | null) {
+  return useQuery({
+    queryKey: ["admin", "sales-codes", "history", id],
+    queryFn: async () => readJson<SalesCodeHistory>(await fetch(`/api/admin/sales-codes/${encodeURIComponent(id!)}`, { cache: "no-store" })),
+    enabled: Boolean(id),
+    staleTime: QUERY_STALE_MS,
+  });
+}

@@ -1083,6 +1083,7 @@ enum PlatformAccessResource {
   ACCESS_EVENTS
   CONTACT_MESSAGES
   SALES_CODES
+  SALES_COMMISSIONS
 }
 
 /// Lecture plateforme journalisée. Aucune relation, aucune donnée personnelle.

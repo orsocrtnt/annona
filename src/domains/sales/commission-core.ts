@@ -63,7 +63,7 @@ function cents(value: number) {
   return value;
 }
 
-function addUtcMonths(date: Date, months: number) {
+export function addUtcMonths(date: Date, months: number) {
   const targetMonth = date.getUTCMonth() + months;
   const targetYear = date.getUTCFullYear() + Math.floor(targetMonth / 12);
   const normalizedMonth = ((targetMonth % 12) + 12) % 12;
@@ -131,7 +131,7 @@ function emptyCommission(
   };
 }
 
-function commissionEntryKey(attribution: SalesAttributionSnapshot, settlementKey: string) {
+export function commissionEntryKey(attribution: SalesAttributionSnapshot, settlementKey: string) {
   return createHash("sha256")
     .update(`${attribution.initialContractHash}:${boundedText(settlementKey, 160, "SALES_SETTLEMENT_KEY_INVALID")}`)
     .digest("hex");

@@ -3,7 +3,8 @@ import { Prisma, type SalesCommissionLevel } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/services/prisma/client";
 import type { SignupCatalog, SignupQuote } from "@/domains/signup/signup.service";
-import { createSalesAttributionSnapshot } from "./commission-core";
+import { createSalesAttributionSnapshot, type SalesAttributionSnapshot } from "./commission-core";
+import { commissionEntriesForInvoices, type CommissionInvoice } from "./commission-ledger";
 
 /**
  * SALES-1, décision C10 : un code permanent par commercial, créé par le super-administrateur,
@@ -191,5 +192,79 @@ export async function listSalesCodes(
     total,
     page: query.page,
     pageSize: query.pageSize,
+  };
+}
+
+/**
+ * Appelée dans la transaction de projection de la facturation : ajoute les écritures manquantes
+ * de l'entreprise attribuée. Une erreur de calcul est journalisée et ne bloque jamais l'abonnement.
+ */
+export async function recordSalesCommissions(
+  tx: Pick<Prisma.TransactionClient, "salesAttribution" | "salesCommissionEntry">,
+  companyId: string,
+  invoices: CommissionInvoice[]
+) {
+  const attribution = await tx.salesAttribution.findUnique({
+    where: { companyId },
+    select: { id: true, snapshot: true, commissionEntries: { select: { settlementKey: true, commissionCents: true } } },
+  });
+  if (!attribution) return 0;
+  let entries: ReturnType<typeof commissionEntriesForInvoices>;
+  try {
+    entries = commissionEntriesForInvoices(attribution.snapshot as unknown as SalesAttributionSnapshot, invoices, attribution.commissionEntries);
+  } catch (error) {
+    console.error("[sales] commissions non calculées", { attributionId: attribution.id, code: error instanceof Error ? error.message : "UNKNOWN" });
+    return 0;
+  }
+  if (entries.length === 0) return 0;
+  const { count } = await tx.salesCommissionEntry.createMany({
+    data: entries.map((row) => ({ ...row, attributionId: attribution.id })),
+    skipDuplicates: true,
+  });
+  return count;
+}
+
+/** Libellé d'une écriture sans identifiant du fournisseur de paiement. */
+function entryKind(settlementKey: string) {
+  if (settlementKey.includes(":refund:")) return "REFUND" as const;
+  const status = settlementKey.slice(settlementKey.lastIndexOf(":") + 1);
+  return status === "paid" ? ("PAYMENT" as const) : ("UNPAID" as const);
+}
+
+/** Historique d'un code : 50 entreprises les plus récentes et leurs écritures théoriques. */
+export async function getSalesCodeHistory(id: string, db: Pick<typeof prisma, "salesCode"> = prisma) {
+  const code = await db.salesCode.findUnique({
+    where: { id },
+    select: {
+      code: true,
+      sellerName: true,
+      attributions: {
+        orderBy: [{ attributedAt: "desc" }, { id: "desc" }],
+        take: 50,
+        select: {
+          id: true,
+          level: true,
+          rateBps: true,
+          attributedAt: true,
+          eligibleUntil: true,
+          company: { select: { name: true } },
+          commissionEntries: {
+            orderBy: [{ receivedAt: "asc" }, { settlementKey: "asc" }],
+            select: { settlementKey: true, explanation: true, eligibleHtCents: true, commissionCents: true, receivedAt: true },
+          },
+        },
+      },
+    },
+  });
+  if (!code) return null;
+  return {
+    code: code.code,
+    sellerName: code.sellerName,
+    attributions: code.attributions.map(({ company, commissionEntries, ...attribution }) => ({
+      ...attribution,
+      companyName: company.name,
+      totalCommissionCents: commissionEntries.reduce((sum, row) => sum + row.commissionCents, 0),
+      entries: commissionEntries.map(({ settlementKey, ...row }) => ({ ...row, kind: entryKind(settlementKey) })),
+    })),
   };
 }

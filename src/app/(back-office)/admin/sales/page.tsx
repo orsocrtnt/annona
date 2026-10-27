@@ -15,7 +15,9 @@ import {
   SALES_CODE_LEVELS,
   useCreateSalesCode,
   useDisableSalesCode,
+  useSalesCodeHistory,
   useSalesCodes,
+  type SalesCommissionExplanation,
   type SalesCodeLevel,
   type SalesCodeRow,
 } from "@/features/admin/sales-codes";
@@ -23,6 +25,64 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "UTC" });
 const levelLabel = (level: SalesCodeLevel) => SALES_CODE_LEVELS.find((item) => item.value === level)?.label ?? level;
+const euros = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+const EXPLANATIONS: Record<SalesCommissionExplanation, string> = {
+  ELIGIBLE: "Paiement commissionné",
+  NOT_PAID: "Facture non payée",
+  OUTSIDE_WINDOW: "Hors des douze mois",
+  LATER_CHANGE_OR_USAGE: "Changement ou consommation",
+  CONTRACT_CHANGED: "Contrat modifié",
+  PARTIAL_PAYMENT: "Paiement partiel",
+  UNRECOGNISED_INVOICE: "Facture non reconnue",
+  REFUND: "Reprise sur remboursement",
+};
+
+function SalesCodeHistoryDialog({ row, onClose }: { row: SalesCodeRow | null; onClose: () => void }) {
+  const { data, isLoading, error } = useSalesCodeHistory(row?.id ?? null);
+  return (
+    <Dialog open={row !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Historique de {row?.code}</DialogTitle>
+          <DialogDescription>
+            Commissions théoriques calculées sur les montants HT encaissés ; aucun versement n&apos;est déclenché.
+          </DialogDescription>
+        </DialogHeader>
+        {isLoading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+        {error && <p className="text-sm text-destructive">Historique indisponible.</p>}
+        {data && data.attributions.length === 0 && <p className="text-sm text-muted-foreground">Aucune entreprise attribuée à ce code.</p>}
+        {data?.attributions.map((attribution) => (
+          <section key={attribution.id} className="space-y-2 rounded-lg border p-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="font-medium">{attribution.companyName}</p>
+              <p className="text-sm">Total : <strong>{euros.format(attribution.totalCommissionCents / 100)}</strong></p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {levelLabel(attribution.level)} · du {dateFormat.format(new Date(attribution.attributedAt))} au {dateFormat.format(new Date(attribution.eligibleUntil))}
+            </p>
+            {attribution.entries.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune facture encore rapprochée.</p>
+            ) : (
+              <Table>
+                <TableHeader><TableRow><TableHead>Période</TableHead><TableHead>Motif</TableHead><TableHead>Base HT</TableHead><TableHead className="text-right">Commission</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {attribution.entries.map((entry, index) => (
+                    <TableRow key={`${attribution.id}-${index}`}>
+                      <TableCell>{dateFormat.format(new Date(entry.receivedAt))}</TableCell>
+                      <TableCell>{EXPLANATIONS[entry.explanation]}</TableCell>
+                      <TableCell>{euros.format(entry.eligibleHtCents / 100)}</TableCell>
+                      <TableCell className="text-right">{euros.format(entry.commissionCents / 100)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </section>
+        ))}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function AdminSalesCodesPage() {
   const [page, setPage] = useState(1);
@@ -31,6 +91,7 @@ export default function AdminSalesCodesPage() {
   const [sellerEmail, setSellerEmail] = useState("");
   const [level, setLevel] = useState<SalesCodeLevel>("REFERRER");
   const [toDisable, setToDisable] = useState<SalesCodeRow | null>(null);
+  const [historyOf, setHistoryOf] = useState<SalesCodeRow | null>(null);
   const { data, isLoading, error } = useSalesCodes(page, pageSize);
   const create = useCreateSalesCode();
   const disable = useDisableSalesCode();
@@ -132,12 +193,15 @@ export default function AdminSalesCodesPage() {
                 </TableCell>
                 <TableCell>{dateFormat.format(new Date(row.createdAt))}</TableCell>
                 <TableCell className="text-right">
-                  {!row.disabledAt && (
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="ghost" size="sm" onClick={() => copySignupLink(row.code)}>Copier le lien</Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => setToDisable(row)}>Désactiver</Button>
-                    </div>
-                  )}
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setHistoryOf(row)}>Historique</Button>
+                    {!row.disabledAt && (
+                      <>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => copySignupLink(row.code)}>Copier le lien</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => setToDisable(row)}>Désactiver</Button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -162,6 +226,7 @@ export default function AdminSalesCodesPage() {
           <Button type="button" variant="outline" disabled={page >= pageCount} onClick={() => setPage((current) => current + 1)}>Suivant</Button>
         </div>
       </div>
+      <SalesCodeHistoryDialog row={historyOf} onClose={() => setHistoryOf(null)} />
       <Dialog open={toDisable !== null} onOpenChange={(open) => { if (!open && !disable.isPending) setToDisable(null); }}>
         <DialogContent>
           <DialogHeader>

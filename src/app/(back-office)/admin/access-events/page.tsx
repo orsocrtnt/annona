@@ -24,6 +24,7 @@ const RESOURCES = [
   "ACCESS_EVENTS",
   "CONTACT_MESSAGES",
   "SALES_CODES",
+  "SALES_COMMISSIONS",
 ] as const;
 
 const DECISIONS = [

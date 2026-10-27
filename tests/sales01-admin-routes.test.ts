@@ -40,6 +40,7 @@ function load(file: string, role: string, calls: string[], journal: "ok" | "fail
         listSalesCodes: async () => { calls.push("service:list"); return { items: [] }; },
         createSalesCode: async (body: unknown, actorId: string) => { calls.push(`service:create:${actorId}:${JSON.stringify(body)}`); return outcome.create ?? { status: "created", salesCode: { id: "code-1" } }; },
         disableSalesCode: async (id: string, actorId: string) => { calls.push(`service:disable:${id}:${actorId}`); return outcome.disable ?? { status: "disabled" }; },
+        getSalesCodeHistory: async (id: string) => { calls.push(`service:history:${id}`); return "history" in outcome ? outcome.history : { code: "X" }; },
       };
       throw new Error(id);
     },
@@ -141,8 +142,33 @@ test("SALES-1 admin : écran et lien réservés à la plateforme, sans montant n
   const page = readFileSync("src/app/(back-office)/admin/sales/page.tsx", "utf8");
   const fields = [...page.matchAll(/row\.(\w+)/g)].map((match) => match[1]);
   assert.deepEqual([...new Set(fields)].sort(), ["attributions", "code", "createdAt", "disabledAt", "id", "level", "sellerEmail", "sellerName"]);
-  for (const absent of ["companyId", "commissionCents", "rateBps", "Réactiver", "Supprimer"]) assert.equal(page.includes(absent), false, absent);
+  for (const absent of ["companyId", "settlementKey", "Réactiver", "Supprimer"]) assert.equal(page.includes(absent), false, absent);
   const client = readFileSync("src/features/admin/sales-codes.ts", "utf8");
   assert.equal(client.includes('fetch(`/api/admin/sales-codes?${params.toString()}`, { cache: "no-store" })'), true);
   assert.equal(client.includes('JSON.stringify({ action: "disable" })'), true, "seule action de modification");
 });
+
+test("SALES-1 admin : historique journalisé à part, sans identifiant du fournisseur", async () => {
+  const calls: string[] = [];
+  const ok = await load(DETAIL, "SUPER_ADMIN", calls, "ok").GET!(new Request("http://local/x"), params);
+  assert.equal(ok.status, 200);
+  assert.deepEqual(calls, ["staff", "role", "audit:read:SALES_COMMISSIONS:GET:ALLOWED", "service:history:code-1"]);
+  assert.equal((await load(DETAIL, "SUPER_ADMIN", [], "ok", { history: null }).GET!(new Request("http://local/x"), params)).status, 404);
+  const deniedCalls: string[] = [];
+  assert.equal((await load(DETAIL, "COMPANY_ADMIN", deniedCalls, "ok").GET!(new Request("http://local/x"), params)).status, 403);
+  assert.deepEqual(deniedCalls, ["staff", "role", "audit:read:SALES_COMMISSIONS:GET:DENIED"]);
+
+  const { getSalesCodeHistory } = await import("../src/domains/sales/sales-code.service");
+  const history = await getSalesCodeHistory("code-1", { salesCode: { findUnique: async () => ({
+    code: "CAMILLER-BBBB", sellerName: "Camille Roy",
+    attributions: [{ id: "attr-1", level: "ASSISTED", rateBps: 2500, attributedAt: new Date(0), eligibleUntil: new Date(1), company: { name: "Transports A" }, commissionEntries: [
+      { settlementKey: "in_secret_1:paid", explanation: "ELIGIBLE", eligibleHtCents: 10800, commissionCents: 2700, receivedAt: new Date(0) },
+      { settlementKey: "in_secret_1:refund:1296", explanation: "REFUND", eligibleHtCents: 0, commissionCents: -270, receivedAt: new Date(0) },
+      { settlementKey: "in_secret_2:open", explanation: "NOT_PAID", eligibleHtCents: 0, commissionCents: 0, receivedAt: new Date(0) },
+    ] }],
+  }) } } as never);
+  assert.equal(history?.attributions[0]?.totalCommissionCents, 2430);
+  assert.deepEqual(history?.attributions[0]?.entries.map((row) => row.kind), ["PAYMENT", "REFUND", "UNPAID"]);
+  assert.equal(JSON.stringify(history).includes("in_secret"), false, "aucun identifiant de facture Stripe");
+});
+

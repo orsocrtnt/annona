@@ -141,6 +141,15 @@ async function main() {
   assert.equal((json((await db.saasBillingAccount.findUniqueOrThrow({ where: { id: account.id } })).state).invoices as BillingInvoice[]).find((i) => i.id === initial.id)?.refundedCents, 100);
   await assert.rejects(restarted.command(account.id, "refund-too-large", { kind: "REFUND", invoiceId: initial.id, amountCents: 999999, actorId: "test-operator", reason: "Erreur fictive" }), /REFUND_INVALID/);
   checked("decided partial refund traced; over-refund refused");
+  const ledger = async () => (await db.salesCommissionEntry.findMany({ where: { attribution: { signupId: journey.id } }, orderBy: [{ receivedAt: "asc" }, { settlementKey: "asc" }] }))
+    .map((row) => `${row.settlementKey.replace(/^[^:]+/, (id) => id.split("_").slice(0, 2).join("_"))}=${row.explanation}:${row.commissionCents}`);
+  const entries = await ledger();
+  assert.ok(entries.includes("in_initial:paid=ELIGIBLE:2765"), entries.join(" | "));
+  assert.ok(entries.includes("in_initial:refund:100=REFUND:-30"), entries.join(" | "));
+  assert.ok(entries.filter((row) => !row.startsWith("in_initial")).every((row) => row.endsWith(":0")), entries.join(" | "));
+  await restarted.reconcile(account.id); await restarted.reconcile(account.id);
+  assert.deepEqual(await ledger(), entries);
+  checked(`sales commissions ledger: 35 % of initial, later change/usage at zero, refund prorata, replay-safe (${entries.length} entries)`);
   await restarted.command(account.id, "cancel-end", { kind: "CANCEL", actorId: "test-operator" });
   await restarted.reconcile(account.id);
   assert.equal((await db.saasSubscription.findUniqueOrThrow({ where: { id: updated.id } })).cancelAtPeriodEnd, true);

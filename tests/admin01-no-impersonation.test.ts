@@ -42,7 +42,7 @@ function filesUnder(root: string) {
 // Seule exception, décision C10 : le super-administrateur crée et désactive les codes commerciaux,
 // données de la plateforme et non d'une entreprise cliente (voir tests/sales01-admin-routes.test.ts).
 const PLATFORM_WRITES: Record<string, string[]> = {
-  "src/app/api/admin/sales-codes/[id]/route.ts": ["PATCH"],
+  "src/app/api/admin/sales-codes/[id]/route.ts": ["GET", "PATCH"],
   "src/app/api/admin/sales-codes/route.ts": ["GET", "POST"],
 };
 
