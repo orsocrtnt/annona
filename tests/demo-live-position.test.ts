@@ -5,6 +5,8 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as policy from "../src/domains/tracking/tracking.policy";
 import * as live from "../src/lib/demo/demo-live-position";
+import * as routeProgress from "../src/lib/maps/route-progress";
+const { buildRouteTrack, pointAtDistance } = routeProgress;
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "../src/lib/validations/driver-location-settings";
 import {
   DEMO_POSITION_CYCLE_MS,
@@ -90,7 +92,7 @@ function loadPositionsService(company: { isDemo: boolean; slug: string }, driver
     user: { update: async (args: any) => { writes.push(["user", args]); } },
     driverLocation: { upsert: async (args: any) => { writes.push(["location", args]); } },
   };
-  const deps: Record<string, unknown> = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/lib/maps/osrm-route": { fetchOsrmRoute: async () => null }, "@/lib/demo/demo-live-position": live };
+  const deps: Record<string, unknown> = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/lib/maps/osrm-route": { fetchOsrmRoute: async () => null }, "@/lib/maps/route-progress": routeProgress, "@/lib/demo/demo-live-position": live };
   const exportsObject = {};
   const sandbox = { module: { exports: exportsObject }, exports: exportsObject, Date, Math, Error, Map, Set, Promise, setTimeout, console, require: (id: string) => { assert.ok(id in deps, id); return deps[id]; } };
   runInNewContext(ts.transpileModule(readFileSync("src/domains/demo/demo-live-positions.service.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, sandbox);
@@ -104,8 +106,10 @@ test("démo : un livreur à retard reçoit la position qu'il avait alors, datée
   assert.equal(await service.advanceDemoDriverPositions("c", now), 1);
   const upsert = writes.find((w) => w[0] === "location")[1];
   assert.equal(+upsert.update.updatedAt, +now - 180_000);
-  const expected = live.pointAlongPolyline([[live.demoTripStart({ latitude: 48.85, longitude: 2.35 }).latitude, live.demoTripStart({ latitude: 48.85, longitude: 2.35 }).longitude], [48.85, 2.35]], live.demoTripProgress(startedAt, new Date(+now - 180_000)));
-  assert.ok(Math.abs(upsert.update.latitude - expected.latitude) < 1e-9);
+  const start = live.demoTripStart({ latitude: 48.85, longitude: 2.35 });
+  const track = buildRouteTrack([[start.latitude, start.longitude], [48.85, 2.35]]);
+  const expected = pointAtDistance(track, live.demoTripDistance(startedAt, new Date(+now - 180_000), track.length, policy.ESTIMATION_SPEED_KMH));
+  assert.ok(Math.abs(upsert.update.latitude - expected[0]) < 1e-9);
 });
 
 test("démo : position déjà au bon retard non réécrite ; jamais datée avant le départ", async () => {
@@ -131,4 +135,16 @@ test("démo : hors entreprise de démo, aucun retard ni position simulés", asyn
   const { service, writes } = loadPositionsService({ isDemo: false, slug: "transports-martin" }, activeService({ demoSignalLagSeconds: 180 }), null);
   assert.equal(await service.advanceDemoDriverPositions("c"), 0);
   assert.equal(writes.length, 0);
+});
+
+test("démo : le livreur roule à la vitesse des cartes vers la cible, puis repart du début", () => {
+  const startedAt = new Date("2026-10-27T10:00:00Z");
+  const at = (seconds: number) => live.demoTripDistance(startedAt, new Date(+startedAt + seconds * 1000), 3000, 25);
+  assert.equal(at(0), 240, "départ à 8 % du trajet");
+  assert.ok(Math.abs(at(36) - (240 + 250)) < 1e-6, "25 km/h : 250 m en 36 s");
+  assert.ok(at(120) > at(60) && at(60) > at(0), "toujours vers la cible");
+  const cycle = (3000 * 0.82) / (25 / 3.6);
+  assert.ok(at(cycle - 1) < 3000 * 0.9 + 1e-6, "jamais au-delà de 90 %");
+  assert.ok(Math.abs(at(cycle + 1) - at(1)) < 1e-6, "repart du début");
+  assert.equal(live.demoTripDistance(startedAt, new Date(+startedAt + 60_000), 0, 25), 0);
 });

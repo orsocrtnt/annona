@@ -260,10 +260,16 @@ function OverviewLayer({
   );
 }
 
-function DeliveryRouteLayer({ delivery }: { delivery: DispatchMapDelivery }) {
+function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapDelivery; driverMoving: boolean }) {
   const [route, setRoute] = useState<[number, number][]>([]);
   const [unavailable, setUnavailable] = useState(false);
-  const waypoints = useMemo(() => getDeliveryRouteWaypoints(delivery), [delivery]);
+  // Livreur en mouvement : son tronçon vers la prochaine étape est tracé (et effacé derrière lui)
+  // par son marqueur ; cette couche ne garde que la suite du parcours.
+  const all = getDeliveryRouteWaypoints(delivery);
+  const remaining = all && driverMoving ? all.slice(1) : all;
+  const waypointsKey = JSON.stringify(remaining?.map((w) => [w.latitude.toFixed(5), w.longitude.toFixed(5)]) ?? null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : points de passage arrondis
+  const waypoints = useMemo(() => remaining, [waypointsKey]);
 
   useEffect(() => {
     if (!waypoints || waypoints.length < 2) {
@@ -312,7 +318,9 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapRe
       <MapViewController delivery={delivery} />
       {!delivery && <OverviewLayer deliveries={deliveries} onSelect={onSelect} />}
 
-      {delivery && !delivery.isHistorical && <DeliveryRouteLayer delivery={delivery} />}
+      {delivery && !delivery.isHistorical && (
+        <DeliveryRouteLayer delivery={delivery} driverMoving={Boolean(showDriver && delivery.driverLocation?.motion)} />
+      )}
 
       {delivery && !delivery.destination && <div role="status" className="pointer-events-none absolute right-3 top-1/2 z-[1000] max-w-[85%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow">Adresse non localisée · position de livraison indisponible</div>}
 
@@ -350,6 +358,7 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapRe
           estimated={delivery.driverLocation.estimated}
           motion={delivery.driverLocation.motion}
           updatedAt={delivery.driverLocation.updatedAt}
+          showTrail
         />
       )}
     </LeafletBaseMap>

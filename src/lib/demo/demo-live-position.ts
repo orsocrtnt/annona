@@ -56,6 +56,17 @@ export function demoTripProgress(missionStartedAt: Date, now: Date): number {
   return 0.08 + pingPong * 0.82;
 }
 
+/**
+ * Distance parcourue sur un trajet simulé de `lengthMeters`, à la vitesse supposée entre deux
+ * signaux : le livreur avance toujours vers la cible (comme l'estimation des cartes), de 8 % à
+ * 90 % du trajet, puis repart du début. Déterministe pour un instant donné.
+ */
+export function demoTripDistance(missionStartedAt: Date, at: Date, lengthMeters: number, speedKmh: number): number {
+  if (!(lengthMeters > 0)) return 0;
+  const travelled = (Math.max(0, at.getTime() - missionStartedAt.getTime()) / 1000) * (speedKmh / 3.6);
+  return lengthMeters * 0.08 + (travelled % (lengthMeters * 0.82));
+}
+
 /** Point situé à `progress` (0 à 1) de la longueur d'un tracé [lat, lng] : reste sur la route. */
 export function pointAlongPolyline(polyline: [number, number][], progress: number): Point {
   if (polyline.length === 0) throw new Error("EMPTY_POLYLINE");

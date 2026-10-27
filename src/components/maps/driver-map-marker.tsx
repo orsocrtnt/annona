@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
-import { Marker } from "react-leaflet";
-import { motionPositionAt, type TrackingMotion } from "@/domains/tracking/tracking.policy";
+import { Marker, Polyline } from "react-leaflet";
+import { ESTIMATION_MAX_SECONDS, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { useNow } from "@/hooks/use-now";
+import { useRoadTrack } from "@/hooks/use-road-track";
 import { driverSignalLabel, getDriverPresenceStatus, TEAMS_PRESENCE } from "@/lib/driver-presence";
-import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import { blendPoint, MOTION_BLEND_MS, motionPoint, motionTrail } from "@/lib/maps/driver-motion";
+import { MAP_ROUTE_STYLE, MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import type { LatLng } from "@/lib/maps/route-progress";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
 
 function escapeHtml(text: string) {
@@ -36,8 +39,10 @@ const TRUCK_ICON =
 
 /** Le libellé du signal avance tout seul (« Il y a 3 min ») même quand les données ne changent pas. */
 const SIGNAL_LABEL_TICK_MS = 30_000;
-/** Livreur en route : il avance vers sa prochaine étape seconde après seconde, entre deux signaux. */
-const MOTION_TICK_MS = 1_000;
+/** Livreur en route : pastille recalculée souvent (jaune puis rouge à l'heure près). */
+const MOTION_PRESENCE_TICK_MS = 5_000;
+/** La trace restante est redessinée dix fois par seconde : assez pour l'œil, léger pour la carte. */
+const TRAIL_REFRESH_MS = 100;
 
 function createDriverIcon(
   name: string,
@@ -134,6 +139,65 @@ interface DriverMapMarkerProps {
   onSelect?: () => void;
   /** Vue éloignée : la pastille seule, sans l'étiquette du nom. */
   showLabel?: boolean;
+  /** Trace l'itinéraire restant devant le livreur ; la partie parcourue s'efface. */
+  showTrail?: boolean;
+}
+
+/**
+ * Fait rouler le marqueur comme un GPS : image par image le long de la route vers la cible,
+ * glissement doux à chaque nouveau signal, arrêt une fois le signal perdu. La position est
+ * posée directement sur Leaflet, sans re-rendu React à chaque image.
+ */
+function useDriverMotion(
+  motion: TrackingMotion | null,
+  showTrail: boolean,
+  markerRef: React.RefObject<L.Marker | null>,
+  trailRefs: React.RefObject<(L.Polyline | null)[]>
+) {
+  const road = useRoadTrack(motion);
+  const shownRef = useRef<LatLng | null>(null);
+
+  useEffect(() => {
+    if (!motion) {
+      shownRef.current = null;
+      return;
+    }
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const blendFrom = reduceMotion ? null : shownRef.current;
+    const blendStart = performance.now();
+    const stopsAt = Date.parse(motion.since) + ESTIMATION_MAX_SECONDS * 1000;
+    let frame = 0;
+    let timer = 0;
+    let lastTrail = 0;
+
+    const render = () => {
+      const nowMs = Date.now();
+      const goal = motionPoint(motion, road, nowMs);
+      const blending = blendFrom !== null && performance.now() - blendStart < MOTION_BLEND_MS;
+      const shown = blending ? blendPoint(blendFrom, goal, performance.now() - blendStart) : goal;
+      shownRef.current = shown;
+      markerRef.current?.setLatLng(shown);
+      // Livreur arrêté (signal perdu) et recalage fini : plus rien à animer après ce rendu.
+      const keepGoing = blending || nowMs < stopsAt;
+      if (showTrail && (nowMs - lastTrail >= TRAIL_REFRESH_MS || !keepGoing)) {
+        lastTrail = nowMs;
+        const trail = motionTrail(motion, road, nowMs, shown);
+        for (const line of trailRefs.current ?? []) line?.setLatLngs(trail);
+      }
+      return keepGoing;
+    };
+
+    if (reduceMotion) {
+      render();
+      timer = window.setInterval(render, 1_000);
+      return () => window.clearInterval(timer);
+    }
+    const loop = () => {
+      if (render()) frame = window.requestAnimationFrame(loop);
+    };
+    frame = window.requestAnimationFrame(loop);
+    return () => window.cancelAnimationFrame(frame);
+  }, [motion, road, showTrail, markerRef, trailRefs]);
 }
 
 export function DriverMapMarker({
@@ -147,24 +211,40 @@ export function DriverMapMarker({
   updatedAt = null,
   onSelect,
   showLabel = true,
+  showTrail = false,
 }: DriverMapMarkerProps) {
-  const now = useNow(motion ? MOTION_TICK_MS : SIGNAL_LABEL_TICK_MS);
+  const now = useNow(motion ? MOTION_PRESENCE_TICK_MS : SIGNAL_LABEL_TICK_MS);
   const signalLabel = driverSignalLabel({ isOnline, estimated, updatedAt }, now);
   const presence = getDriverPresenceStatus(isOnline, updatedAt, now);
-  const position = motion ? motionPositionAt(motion, now) : { latitude, longitude };
   const icon = useMemo(
     () => createDriverIcon(name, isSelected, presence, signalLabel, showLabel),
     [name, isSelected, presence, signalLabel, showLabel]
   );
+  const markerRef = useRef<L.Marker | null>(null);
+  const trailRefs = useRef<(L.Polyline | null)[]>([]);
+  useDriverMotion(motion, showTrail, markerRef, trailRefs);
+  // Références stables : react-leaflet ne repositionne pas le marqueur animé à chaque rendu.
+  const staticPosition = useMemo<LatLng>(() => [latitude, longitude], [latitude, longitude]);
+  const [mountPosition] = useState<LatLng>(() => [latitude, longitude]);
+  const [mountTrail] = useState<LatLng[]>(() => (motion ? [[latitude, longitude], [motion.target.latitude, motion.target.longitude]] : []));
 
   return (
-    <Marker
-      position={[position.latitude, position.longitude]}
-      icon={icon}
-      title={`${withoutRolePrefix(name)} — ${signalLabel}`}
-      eventHandlers={{ click: () => onSelect?.() }}
-      // Au-dessus des épingles et de leurs fiches : le livreur reste toujours visible.
-      zIndexOffset={isSelected ? 1100 : 900}
-    />
+    <>
+      {showTrail && motion && (
+        <>
+          <Polyline ref={(line) => { trailRefs.current[0] = line; }} positions={mountTrail} pathOptions={MAP_ROUTE_STYLE.halo} interactive={false} />
+          <Polyline ref={(line) => { trailRefs.current[1] = line; }} positions={mountTrail} pathOptions={MAP_ROUTE_STYLE.line} interactive={false} />
+        </>
+      )}
+      <Marker
+        ref={markerRef}
+        position={motion ? mountPosition : staticPosition}
+        icon={icon}
+        title={`${withoutRolePrefix(name)} — ${signalLabel}`}
+        eventHandlers={{ click: () => onSelect?.() }}
+        // Au-dessus des épingles et de leurs fiches : le livreur reste toujours visible.
+        zIndexOffset={isSelected ? 1100 : 900}
+      />
+    </>
   );
 }

@@ -1,14 +1,14 @@
 import { prisma } from "@/services/prisma/client";
-import { ESTIMATION_MAX_SECONDS, trackingService } from "@/domains/tracking/tracking.policy";
+import { ESTIMATION_MAX_SECONDS, ESTIMATION_SPEED_KMH, trackingService } from "@/domains/tracking/tracking.policy";
 import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
+import { buildRouteTrack, pointAtDistance } from "@/lib/maps/route-progress";
 import {
   DEMO_LOST_SIGNAL_AFTER_START_MS,
   DEMO_POSITION_MIN_INTERVAL_MS,
   demoSignalLagSeconds,
-  demoTripProgress,
+  demoTripDistance,
   demoTripStart,
   isDemoCompanyForSimulation,
-  pointAlongPolyline,
 } from "@/lib/demo/demo-live-position";
 
 type Point = { latitude: number; longitude: number };
@@ -99,7 +99,10 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
         ? { latitude: mission.pickupLatitude, longitude: mission.pickupLongitude }
         : { latitude: mission.latitude!, longitude: mission.longitude! };
     const route = await demoTripRoute(demoTripStart(target), target);
-    const position = pointAlongPolyline(route, demoTripProgress(mission.missionStartedAt!, signalAt));
+    // Même vitesse que l'estimation des cartes : entre deux signaux, le marqueur reste aligné.
+    const track = buildRouteTrack(route);
+    const [latitude, longitude] = pointAtDistance(track, demoTripDistance(mission.missionStartedAt!, signalAt, track.length, ESTIMATION_SPEED_KMH));
+    const position = { latitude, longitude };
 
     // Le suivi n'est visible que si le service du livreur est actif (même règle qu'en réel).
     if (!trackingActive) {
