@@ -86,6 +86,14 @@ export function CreateOrderForm({
   );
   const [activeStopIndex, setActiveStopIndex] = useState(0);
   const [activePickupIndex, setActivePickupIndex] = useState(0);
+  // Date du jour dans le fuseau du navigateur, calculée après montage :
+  // la date UTC du rendu serveur différait du client et autorisait la veille en France après minuit.
+  const [minDeliveryDate, setMinDeliveryDate] = useState<string>();
+  useEffect(() => {
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, "0");
+    setMinDeliveryDate(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`);
+  }, []);
 
   const form = useForm<CreateClientOrderFormInput>({
     resolver: zodResolver(createClientOrderSchema),
@@ -403,7 +411,7 @@ export function CreateOrderForm({
           <FormField label="Date souhaitée (optionnel)">
             <Input
               type="date"
-              min={new Date().toISOString().slice(0, 10)}
+              min={minDeliveryDate}
               {...form.register("requestedDeliveryDate")}
             />
           </FormField>
@@ -693,7 +701,7 @@ export function CreateOrderForm({
             >
               <Input
                 type="date"
-                min={new Date().toISOString().slice(0, 10)}
+                min={minDeliveryDate}
                 {...form.register("requestedDeliveryDate")}
               />
             </FormField>

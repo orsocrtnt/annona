@@ -92,8 +92,8 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetCatalogEntry[] = [
   },
   {
     type: "today-summary",
-    label: "Activité — synthèse",
-    description: "Répartition réelle des missions par statut",
+    label: "Aujourd'hui — résumé",
+    description: "Livrées, en cours, restantes, retard",
     category: "today",
   },
   {
@@ -126,8 +126,8 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetCatalogEntry[] = [
   },
   {
     type: "planning",
-    label: "Vue opérationnelle complète",
-    description: "Carte, livreurs actifs et missions de la période",
+    label: "Planning complet",
+    description: "Période, catégories et tableau par statut",
     category: "planning",
   },
   {

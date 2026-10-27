@@ -1,43 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  /* Premium palette — Tesla / Uber / Stripe inspired */
-  --color-background: #fafafa;
-  --color-foreground: #0a0a0a;
+  /* Palette TutelLiv (DESIGN.md) : encre pour l'action, vert réservé à l'activité et au focus. */
+  --color-background: #f8f9f7;
+  --color-foreground: #0e1310;
   --color-card: #ffffff;
-  --color-card-foreground: #0a0a0a;
+  --color-card-foreground: #0e1310;
   --color-popover: #ffffff;
-  --color-popover-foreground: #0a0a0a;
-  --color-primary: #0066ff;
+  --color-popover-foreground: #0e1310;
+  --color-primary: #0e1310;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f4f4f5;
-  --color-secondary-foreground: #18181b;
-  --color-muted: #f4f4f5;
-  --color-muted-foreground: #71717a;
-  --color-accent: #f0f7ff;
-  --color-accent-foreground: #0066ff;
-  --color-destructive: #b91c1c;
+  --color-secondary: #f3f5f2;
+  --color-secondary-foreground: #0e1310;
+  --color-muted: #f3f5f2;
+  --color-muted-foreground: #68726b;
+  --color-accent: #eaf8f0;
+  --color-accent-foreground: #08783f;
+  --color-destructive: #a12c2c;
   --color-destructive-foreground: #ffffff;
-  --color-border: #e4e4e7;
-  --color-input: #e4e4e7;
-  --color-ring: #0066ff;
+  --color-border: #e4e8e5;
+  --color-input: #e4e8e5;
+  --color-ring: #00d46a;
 
-  /* Extended palette */
+  /* Extended palette — `brand` sert au texte (liens, icônes) : vert foncé lisible sur blanc. */
   --color-surface: #ffffff;
   --color-surface-elevated: #ffffff;
-  --color-surface-subtle: #f9fafb;
-  --color-text-primary: #0a0a0a;
-  --color-text-secondary: #52525b;
-  --color-text-tertiary: #a1a1aa;
-  --color-brand: #0066ff;
-  --color-brand-hover: #0052cc;
-  --color-brand-subtle: #e6f0ff;
-  --color-success: #047857;
-  --color-success-subtle: #ecfdf5;
+  --color-surface-subtle: #f3f5f2;
+  --color-text-primary: #0e1310;
+  --color-text-secondary: #4f5953;
+  --color-text-tertiary: #9aa39d;
+  --color-brand: #08783f;
+  --color-brand-hover: #065f32;
+  --color-brand-subtle: #e6f8ee;
+  --color-success: #08783f;
+  --color-success-subtle: #ecf9f1;
   --color-warning: #b45309;
   --color-warning-subtle: #fffbeb;
-  --color-error: #b91c1c;
-  --color-error-subtle: #fef2f2;
+  --color-error: #a12c2c;
+  --color-error-subtle: #fdf2f2;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
@@ -96,7 +96,7 @@
   }
 
   .gradient-brand {
-    background: linear-gradient(135deg, #0066ff 0%, #0052cc 100%);
+    background: linear-gradient(135deg, #08783f 0%, #065f32 100%);
   }
 }
 
@@ -115,46 +115,9 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes dashboardRouteReveal {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 .dashboard-v2-shell {
   font-family: var(--font-dashboard), ui-sans-serif, system-ui, sans-serif;
   color: #0e1310;
-}
-
-.dashboard-v2-route-line {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: dashboardRouteReveal 800ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
-}
-
-.dashboard-v2-alerts [aria-label="Alertes opérationnelles"],
-.dashboard-v2-alerts [aria-label="Nouveaux échanges"] {
-  border-color: rgb(14 19 16 / 7%);
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: none;
-  color: #0e1310;
-}
-
-.dashboard-v2-alerts [aria-label="Alertes opérationnelles"] > div > a,
-.dashboard-v2-alerts [aria-label="Alertes opérationnelles"] > div > button {
-  border-color: rgb(14 19 16 / 8%);
-  border-radius: 12px;
-  background: #ffffff;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dashboard-v2-route-line {
-    stroke-dashoffset: 0;
-  }
 }
 
 @keyframes stepLinkLoading {

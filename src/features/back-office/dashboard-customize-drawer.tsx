@@ -193,9 +193,8 @@ export function DashboardCustomizeDrawer({
                     key={option.key}
                     type="button"
                     onClick={() => updateDraft({ ...draft, defaultPeriod: option.key })}
-                    aria-pressed={draft.defaultPeriod === option.key}
                     className={cn(
-                      "min-h-11 rounded-md px-3 py-2 text-xs font-medium transition-colors",
+                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                       draft.defaultPeriod === option.key
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground"
@@ -241,13 +240,13 @@ export function DashboardCustomizeDrawer({
         <div className="flex flex-wrap gap-2 border-t px-6 py-4">
           <Button
             variant="brand"
-            className="min-h-11 flex-1"
+            className="flex-1"
             onClick={handleSave}
             disabled={updateLayout.isPending}
           >
             Enregistrer
           </Button>
-          <Button className="min-h-11" variant="outline" onClick={handleReset} disabled={resetLayout.isPending}>
+          <Button variant="outline" onClick={handleReset} disabled={resetLayout.isPending}>
             <RotateCcw className="mr-2 h-4 w-4" />
             Défaut
           </Button>
@@ -287,7 +286,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-11 w-11"
+          className="h-8 w-8"
           disabled={!canMoveFirst}
           onClick={onMoveFirst}
           aria-label="Mettre en premier"
@@ -299,7 +298,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-11 w-11"
+          className="h-8 w-8"
           disabled={!canMoveUp}
           onClick={onMoveUp}
           aria-label="Monter"
@@ -311,7 +310,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-11 w-11"
+          className="h-8 w-8"
           disabled={!canMoveDown}
           onClick={onMoveDown}
           aria-label="Descendre"
@@ -348,21 +347,17 @@ function WidgetToggleRow({
           role="switch"
           aria-checked={visible}
           onClick={() => onToggle(!visible)}
-          className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            "mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+            visible ? "bg-brand" : "bg-muted"
+          )}
         >
           <span
             className={cn(
-              "flex h-5 w-9 items-center rounded-full transition-colors",
-              visible ? "bg-brand" : "bg-muted"
+              "block h-4 w-4 rounded-full bg-white shadow transition-transform",
+              visible ? "translate-x-4" : "translate-x-0.5"
             )}
-          >
-            <span
-              className={cn(
-                "block h-4 w-4 rounded-full bg-white shadow transition-transform",
-                visible ? "translate-x-4" : "translate-x-0.5"
-              )}
-            />
-          </span>
+          />
         </button>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{label}</p>
@@ -373,21 +368,9 @@ function WidgetToggleRow({
   );
 }
 
-export function DashboardCustomizeButton({
-  onClick,
-  className,
-}: {
-  onClick: () => void;
-  className?: string;
-}) {
+export function DashboardCustomizeButton({ onClick }: { onClick: () => void }) {
   return (
-    <Button
-      variant="outline"
-      size="icon"
-      className={className}
-      onClick={onClick}
-      aria-label="Personnaliser le dashboard"
-    >
+    <Button variant="outline" size="icon" onClick={onClick} aria-label="Personnaliser le dashboard">
       <Plus className="h-4 w-4" />
     </Button>
   );

@@ -5,6 +5,11 @@ const outputPath = "outputs/test2/browser.json";
 
 type DemoPersona = "admin" | "client" | "driver";
 
+// Libère l'espace du pool de démonstration réservé par la connexion du test.
+test.afterEach(async ({ page }) => {
+  await page.request.post("/api/auth/logout").catch(() => undefined);
+});
+
 test("TEST-2 : les trois rôles, le suivi, la facture, les refus et une panne réseau", async ({
   page,
 }) => {

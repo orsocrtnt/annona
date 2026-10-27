@@ -24,14 +24,9 @@ export default function BackOfficeRootLayout({ children }: { children: React.Rea
 
   const mapFullscreen =
     pathname === "/dispatch/drivers" || pathname === "/dispatch/map";
-  const dashboardVisualV2 = pathname === "/dashboard";
 
   return (
-    <BackOfficeLayout
-      navItems={navItems}
-      mapFullscreen={mapFullscreen}
-      dashboardVisualV2={dashboardVisualV2}
-    >
+    <BackOfficeLayout navItems={navItems} mapFullscreen={mapFullscreen}>
       {children}
     </BackOfficeLayout>
   );

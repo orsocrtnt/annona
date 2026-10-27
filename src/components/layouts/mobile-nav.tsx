@@ -51,7 +51,7 @@ export function MobileNav({ items, premium = false }: MobileNavProps) {
     <Dialog open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
       <DialogContent
         className={cn(
-          "left-0 top-0 h-[100dvh] w-72 max-w-[85vw] translate-x-0 translate-y-0 content-start gap-0 border-y-0 border-l-0 p-4 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden",
+          "left-0 top-[var(--demo-banner-height,0px)] h-[calc(100dvh-var(--demo-banner-height,0px))] w-72 max-w-[85vw] translate-x-0 translate-y-0 content-start gap-0 border-y-0 border-l-0 p-4 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden",
           premium ? "rounded-r-[28px] border-white/10 bg-[#0e1310] text-white" : "rounded-none bg-card"
         )}
         onCloseAutoFocus={(event) => {

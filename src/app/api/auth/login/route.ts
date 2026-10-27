@@ -31,6 +31,25 @@ import {
 } from "@/domains/demo/demo-pool.service";
 import { getSessionSaasAccess } from "@/domains/saas/saas-session";
 
+const SERVICE_UNAVAILABLE_MESSAGE =
+  "Service de connexion momentanément indisponible. Réessayez dans quelques instants.";
+
+// Panne réseau ou serveur côté Supabase Auth (AuthRetryableFetchError : status 0 ou 5xx).
+// Détection par forme pour ne pas lier cette route à une classe du SDK.
+function isAuthServiceUnavailable(error: { name?: string; status?: number } | null): boolean {
+  if (!error) return false;
+  if (error.name === "AuthRetryableFetchError") return true;
+  return error.status === 0 || (typeof error.status === "number" && error.status >= 500);
+}
+
+// Base injoignable ou pool de connexions Prisma saturé.
+function isDatabaseUnavailable(error: unknown): boolean {
+  const candidate = error as { name?: string; code?: string } | null;
+  if (!candidate) return false;
+  if (candidate.name === "PrismaClientInitializationError") return true;
+  return candidate.code === "P1001" || candidate.code === "P1002" || candidate.code === "P2024";
+}
+
 async function clearFailedDemoLogin(
   supabase: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
@@ -64,6 +83,11 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         password,
       });
+
+    if (isAuthServiceUnavailable(signInError)) {
+      console.error("Login auth provider unavailable:", signInError);
+      return NextResponse.json({ error: SERVICE_UNAVAILABLE_MESSAGE }, { status: 503 });
+    }
 
     if (signInError || !signInData.user?.email) {
       return NextResponse.json(
@@ -199,6 +223,9 @@ export async function POST(request: Request) {
       );
     }
     console.error("Login error:", error);
+    if (isDatabaseUnavailable(error)) {
+      return NextResponse.json({ error: SERVICE_UNAVAILABLE_MESSAGE }, { status: 503 });
+    }
     return NextResponse.json(
       { error: "Erreur lors de la connexion" },
       { status: 500 }
