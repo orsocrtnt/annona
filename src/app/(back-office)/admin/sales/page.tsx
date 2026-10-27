@@ -55,6 +55,14 @@ export default function AdminSalesCodesPage() {
     });
   }
 
+  function copySignupLink(code: string) {
+    const link = `${window.location.origin}/register?code=${encodeURIComponent(code)}`;
+    navigator.clipboard.writeText(link).then(
+      () => toast.success("Lien d'inscription copié", { description: link }),
+      () => toast.error("Copie impossible", { description: link }),
+    );
+  }
+
   function confirmDisable() {
     if (!toDisable) return;
     disable.mutate(toDisable.id, {
@@ -125,7 +133,10 @@ export default function AdminSalesCodesPage() {
                 <TableCell>{dateFormat.format(new Date(row.createdAt))}</TableCell>
                 <TableCell className="text-right">
                   {!row.disabledAt && (
-                    <Button type="button" variant="outline" size="sm" onClick={() => setToDisable(row)}>Désactiver</Button>
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => copySignupLink(row.code)}>Copier le lien</Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setToDisable(row)}>Désactiver</Button>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>

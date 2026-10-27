@@ -189,3 +189,16 @@ test("SALES-1 inscription : code saisi côté serveur, attribution dans la trans
   const route = readFileSync("src/app/api/signup/route.ts", "utf8");
   assert.ok(route.indexOf('"SALES_CODE_INVALID"') < route.indexOf('code.includes("INVALID")'), "message explicite avant le message générique");
 });
+
+test("SALES-1 inscription : le lien pré-remplit le code, envoyé seulement s'il est saisi", async () => {
+  const { salesCodeFromSearch, signupEntryFromSearch } = await import("../src/domains/growth/signup-entry");
+  assert.equal(salesCodeFromSearch("?code= camille-7k3p &plan=PRO"), "CAMILLE-7K3P");
+  assert.equal(salesCodeFromSearch("?plan=PRO"), "");
+  assert.equal(salesCodeFromSearch(`?code=${"A".repeat(25)}`), "", "un code trop long est ignoré");
+  assert.deepEqual(signupEntryFromSearch("?code=CAMILLE-7K3P&plan=PRO"), { planCode: "PRO", billingInterval: "MONTHLY" }, "le lien commercial garde la formule choisie");
+  const wizard = readFileSync("src/features/auth/signup-wizard.tsx", "utf8");
+  assert.match(wizard, /\.\.\.\(code \? \{ salesCode: code \} : \{\}\)/, "aucun champ envoyé quand le code est vide : le code déjà appliqué est conservé");
+  assert.equal(wizard.includes("salesCodeId"), false);
+  const admin = readFileSync("src/app/(back-office)/admin/sales/page.tsx", "utf8");
+  assert.match(admin, /\/register\?code=\$\{encodeURIComponent\(code\)\}/);
+});

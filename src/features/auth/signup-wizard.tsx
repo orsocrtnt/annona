@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Package2 } from "lucide-react";
-import { signupEntryFromSearch } from "@/domains/growth/signup-entry";
+import { salesCodeFromSearch, signupEntryFromSearch } from "@/domains/growth/signup-entry";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,7 @@ type Journey = {
   billingAddress: string | null; billingPostalCode: string | null; billingCity: string | null; billingCountry: string;
   emailVerified: boolean; emailResendAvailableAt: string | null; paymentConfirmed: boolean; activated: boolean;
   choicesEditable: boolean;
+  salesCodeApplied?: boolean;
 };
 
 const stepItems: Array<{ id: Stage; label: string }> = [
@@ -70,6 +71,7 @@ export function SignupWizard() {
   const [resendSeconds, setResendSeconds] = useState(0);
   const [identityDraft, setIdentityDraft] = useState<Record<string, string>>({});
   const [paymentEventKey, setPaymentEventKey] = useState<string | null>(null);
+  const [salesCode, setSalesCode] = useState("");
 
   const load = useCallback(async () => {
     const response = await fetch("/api/signup", { cache: "no-store" });
@@ -110,6 +112,10 @@ export function SignupWizard() {
     const interval = window.setInterval(updateCountdown, 1000);
     return () => window.clearInterval(interval);
   }, [journey?.emailResendAvailableAt, journey?.status]);
+
+  useEffect(() => {
+    setSalesCode(salesCodeFromSearch(window.location.search));
+  }, []);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("payment") === "cancelled") {
@@ -195,9 +201,11 @@ export function SignupWizard() {
   const choosePlan = async () => {
     try {
       const action = journey ? "selection" : "create";
-      const payload = await post({ action, planCode, billingInterval, optionSelections: [] });
+      const code = salesCode.trim();
+      const payload = await post({ action, planCode, billingInterval, optionSelections: [], ...(code ? { salesCode: code } : {}) });
       applyJourney(payload.journey, "options");
       setSelections([]);
+      setSalesCode("");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible de poursuivre."); }
   };
 
@@ -336,6 +344,19 @@ export function SignupWizard() {
                   planCode={planCode}
                   onSelectPlan={(code) => { if (code !== planCode) setSelections([]); setPlanCode(code); }}
                 />
+              </div>
+              <div className="mt-6 max-w-sm">
+                <FormField label="Code commercial (facultatif)">
+                  <Input
+                    name="salesCode"
+                    value={salesCode}
+                    maxLength={24}
+                    autoComplete="off"
+                    placeholder={journey?.salesCodeApplied ? "Code déjà appliqué" : "Ex. CAMILLE-7K3P"}
+                    onChange={(event) => setSalesCode(event.target.value.toUpperCase())}
+                  />
+                </FormField>
+                {journey?.salesCodeApplied && <p className="mt-2 text-sm text-muted-foreground">Un code commercial est appliqué à cette inscription. Saisissez-en un autre pour le remplacer.</p>}
               </div>
               <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row">
                 {journey ? <Button variant="outline" onClick={() => void goToStage(journey.emailVerified ? "payment" : journey.status === "EMAIL_PENDING" ? "email" : "options")}>Retour</Button> : null}

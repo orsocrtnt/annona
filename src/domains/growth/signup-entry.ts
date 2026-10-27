@@ -13,3 +13,10 @@ export function signupEntryFromSearch(search: string): { planCode: (typeof PLANS
       : "MONTHLY",
   };
 }
+
+/** SALES-1 : lien `/register?code=XXXX` ; seul le serveur décide si le code est valide et actif. */
+export function salesCodeFromSearch(search: string) {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const code = params.get("code")?.trim().toUpperCase() ?? "";
+  return code.length <= 24 ? code : "";
+}
