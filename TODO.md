@@ -185,10 +185,10 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | SAAS-01B | B | Adaptateur sandbox, journal et webhooks signés faits ; Checkout/webhooks réels en mode test. | Compte Stripe de test. | Très élevée · GPT‑6 Astra |
 | SAAS-03 | B | Lecture et API de changement/résiliation (sandbox, journalisées) faites ; refus C10 des baisses en excès (27 octobre). Restent écran, export, abonnements sans compte de facturation. | Compte Stripe de test ; recette navigateur. | Très élevée · GPT‑6 Astra |
 | SALES-1 | B | Noyau de calcul, codes permanents, écran super-admin, saisie à l'inscription et attribution figée à l'activation faits (27 octobre, migration non appliquée) ; lien et champ d'inscription faits ; écritures de commission et leur consultation. | Migration après fusion ; règle de remboursement. | Élevée · GPT‑6 Astra |
-| SAAS-02 | B+C | Lecture revenu/consommation et alertes C10 (API) faites ; affichage des alertes, réconciliation paiements, rétention, conversion. | Stripe de test ; recette navigateur super-admin. | Élevée · GPT‑6.1 Sol |
+| SAAS-02 | B+C | Lecture revenu/consommation et alertes C10 faites, affichées et recettées (27 octobre) ; réconciliation paiements, rétention, conversion. | Stripe de test. | Élevée · GPT‑6.1 Sol |
 | PERF-02 | A+B | Harnais en mémoire et PostgreSQL local jetable faits (27 octobre) ; routes Next locales, puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
 | COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
-| GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration et Contact (API + page, 27 octobre) faits ; écran de lecture Contact, pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
+| GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration, Contact et sa boîte de lecture faits (27 octobre) ; pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
 | RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon. | Très élevée · GPT‑6 Astra |
 | SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée. | Moyenne · GPT‑6.1 Sol |
 
