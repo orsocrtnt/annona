@@ -58,3 +58,12 @@ test("le nom seul, sans le rôle en préfixe", async () => {
   assert.equal(withoutRolePrefix("Karim Benali"), "Karim Benali");
   assert.equal(withoutRolePrefix(null), "");
 });
+
+test("la prochaine livraison dit son jour, pas seulement l'heure", async () => {
+  const { etaDayLabel, formatEta } = await import("../src/features/client-portal/utils");
+  assert.equal(formatEta("2026-10-27T13:30:00Z"), "14:30", "heure de Paris");
+  assert.equal(etaDayLabel("2026-10-27T13:30:00Z", now), "aujourd'hui");
+  assert.equal(etaDayLabel("2026-10-28T13:30:00Z", now), "demain");
+  assert.equal(etaDayLabel("2026-10-30T13:30:00Z", now), "le 30 oct.");
+  assert.equal(etaDayLabel(null, now), "Aucune livraison prévue");
+});

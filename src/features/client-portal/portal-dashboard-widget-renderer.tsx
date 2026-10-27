@@ -13,10 +13,23 @@ import { StatCard } from "@/components/ui/stat-card";
 import { ChartPlaceholder } from "@/components/ui/chart-placeholder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatEta } from "@/features/client-portal/utils";
+import { etaDayLabel, formatEta } from "@/features/client-portal/utils";
+import { formatPlace } from "@/lib/format/place";
 import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
 import type { PortalDashboardWidgetLayout } from "@/lib/dashboard/portal-dashboard-layout";
 import { usePortalDashboardContext } from "@/features/client-portal/portal-dashboard-context";
+
+/** L'heure seule ne suffit pas : on dit aussi quel jour (aujourd'hui, demain, date). */
+function NextDeliveryCard({ eta }: { eta: string | null }) {
+  return (
+    <StatCard
+      label="Prochaine livraison"
+      value={eta ? formatEta(eta) : "—"}
+      changeLabel={etaDayLabel(eta)}
+      icon={Clock}
+    />
+  );
+}
 
 function StatsRowWidget() {
   const { stats } = usePortalDashboardContext();
@@ -26,11 +39,7 @@ function StatsRowWidget() {
       <StatCard label="Commandes actives" value={stats.activeOrders} icon={Package} />
       <StatCard label="En livraison" value={stats.inDelivery} icon={Truck} />
       <StatCard label="Livrées ce mois" value={stats.deliveredThisMonth} icon={CheckCircle2} />
-      <StatCard
-        label="Prochaine livraison"
-        value={formatEta(stats.nextDeliveryEta)}
-        icon={Clock}
-      />
+      <NextDeliveryCard eta={stats.nextDeliveryEta} />
     </div>
   );
 }
@@ -55,11 +64,7 @@ function StatDeliveredMonthWidget() {
 function StatNextDeliveryWidget() {
   const { stats } = usePortalDashboardContext();
   return (
-    <StatCard
-      label="Prochaine livraison"
-      value={formatEta(stats.nextDeliveryEta)}
-      icon={Clock}
-    />
+    <NextDeliveryCard eta={stats.nextDeliveryEta} />
   );
 }
 
@@ -93,11 +98,10 @@ function RecentDeliveriesWidget() {
               href={`/portal/deliveries/${d.id}`}
               className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
             >
-              <div>
-                <p className="font-medium">{d.reference}</p>
-                <p className="text-sm text-muted-foreground">
-                  {d.address}, {d.city}
-                </p>
+              {/* L'adresse identifie la livraison ; la référence reste en petit dessous. */}
+              <div className="min-w-0">
+                <p className="truncate font-medium">{formatPlace(d.address, d.city) ?? "Livraison"}</p>
+                <p className="text-xs tabular-nums text-muted-foreground">{d.reference}</p>
               </div>
               <DeliveryStatusBadge status={d.status} deliveryCategory={d.deliveryCategory} />
             </Link>
