@@ -156,3 +156,16 @@ test("MAP-2 : destination inconnue sans marqueur ni itinéraire inventé", async
   assert.equal(getDeliveryRouteWaypoints(delivery), null);
   assert.equal(getDeliveryMapPhaseHint(delivery), null);
 });
+
+test("TRACK-2 : la couche d'itinéraire reprend après la prochaine étape du livreur", async () => {
+  const { getDeliveryRouteWaypoints, getRouteWaypointsAfterDriver } = await import("../src/features/back-office/dispatch-delivery-map-state");
+  const pickup = { id: "p", latitude: 48.84, longitude: 2.37, address: "Gare", label: "Collecte" };
+  const base = { id: "c", deliveryCategory: "COURIER", status: "ASSIGNED", destination: { latitude: 48.88, longitude: 2.34 }, pickup: null, pickups: [pickup], driverName: "Karim", trackingSteps: [] } as any;
+  const toPickup = { ...base, driverLocation: { latitude: 48.85, longitude: 2.36, motion: { from: { latitude: 48.85, longitude: 2.36 }, target: { latitude: 48.84, longitude: 2.37 }, since: "2026-10-27T12:00:00Z" } } };
+  const rest = getRouteWaypointsAfterDriver(toPickup)!;
+  assert.deepEqual(rest.map((w: any) => [w.latitude, w.longitude]), [[48.84, 2.37], [48.88, 2.34]], "collecte → livraison ; le tronçon livreur → collecte est au marqueur");
+  const collected = { ...toPickup, status: "IN_DELIVERY", driverLocation: { ...toPickup.driverLocation, motion: { ...toPickup.driverLocation.motion, target: { latitude: 48.88, longitude: 2.34 } } } };
+  assert.equal(getRouteWaypointsAfterDriver(collected), null, "prochaine étape = livraison : rien d'autre à tracer");
+  const still = { ...base, driverLocation: { latitude: 48.85, longitude: 2.36, motion: null } };
+  assert.deepEqual(getRouteWaypointsAfterDriver(still), getDeliveryRouteWaypoints(still), "sans trajectoire : parcours complet inchangé");
+});

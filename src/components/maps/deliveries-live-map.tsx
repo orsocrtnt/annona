@@ -11,9 +11,10 @@ import {
   buildDeliveryMapMarkers,
   getDeliveryMapPhaseHint,
   getDeliveryRouteWaypoints,
+  getRouteWaypointsAfterDriver,
   showDriverOnMap,
 } from "@/features/back-office/dispatch-delivery-map-state";
-import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
+import { requestQueuedRoute } from "@/hooks/use-road-track";
 import {
   getDispatchMapFitPadding,
   fitMapPointsWithPadding,
@@ -265,8 +266,7 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
   const [unavailable, setUnavailable] = useState(false);
   // Livreur en mouvement : son tronçon vers la prochaine étape est tracé (et effacé derrière lui)
   // par son marqueur ; cette couche ne garde que la suite du parcours.
-  const all = getDeliveryRouteWaypoints(delivery);
-  const remaining = all && driverMoving ? all.slice(1) : all;
+  const remaining = driverMoving ? getRouteWaypointsAfterDriver(delivery) : getDeliveryRouteWaypoints(delivery);
   const waypointsKey = JSON.stringify(remaining?.map((w) => [w.latitude.toFixed(5), w.longitude.toFixed(5)]) ?? null);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : points de passage arrondis
   const waypoints = useMemo(() => remaining, [waypointsKey]);
@@ -281,7 +281,8 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
     setRoute([]);
     setUnavailable(false);
     const initial = setTimeout(() => {
-      void fetchOsrmRoute(waypoints, controller.signal).then((coords) => {
+      // Même file que les marqueurs : jamais refusé pour deux requêtes trop rapprochées.
+      void requestQueuedRoute(waypoints).then((coords) => {
         if (!controller.signal.aborted) { setRoute(coords ?? []); setUnavailable(!coords); }
       });
     }, 0);

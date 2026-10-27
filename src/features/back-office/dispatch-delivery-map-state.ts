@@ -1,6 +1,10 @@
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
 import type { RouteWaypoint } from "@/lib/maps/osrm-route";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
+import { haversineMeters } from "@/lib/maps/navigation-utils";
+
+/** Un point de passage à moins de cette distance de la cible du livreur est cette cible. */
+const TARGET_MATCH_METERS = 30;
 
 export type DeliveryMapMarkerKind = "destination" | "pickup" | "step";
 
@@ -27,6 +31,20 @@ export function isAwaitingPurchasePhase(delivery: DispatchMapDelivery) {
     isMissionStarted(delivery) &&
     delivery.status === "ASSIGNED"
   );
+}
+
+/**
+ * Suite du parcours après la prochaine étape du livreur : son tronçon vers cette étape est tracé
+ * par son marqueur (et s'efface derrière lui). Sans trajectoire, tout le parcours ; null s'il ne
+ * reste rien à tracer (la prochaine étape est la livraison).
+ */
+export function getRouteWaypointsAfterDriver(delivery: DispatchMapDelivery): RouteWaypoint[] | null {
+  const all = getDeliveryRouteWaypoints(delivery);
+  const target = delivery.driverLocation?.motion?.target;
+  if (!all || !target) return all;
+  const index = all.findIndex((waypoint, i) => i > 0 && haversineMeters(waypoint, target) <= TARGET_MATCH_METERS);
+  const rest = all.slice(index > 0 ? index : 1);
+  return rest.length >= 2 ? rest : null;
 }
 
 /** Points de l'itinéraire à tracer selon le type et le statut de la livraison. */

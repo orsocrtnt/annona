@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TrackingMotion, TrackingPoint } from "@/domains/tracking/tracking.policy";
 import { reuseRoad, type RoadTrack } from "@/lib/maps/driver-motion";
-import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
+import { fetchOsrmRoute, type RouteWaypoint } from "@/lib/maps/osrm-route";
 import { buildRouteTrack, projectOnRoute, type LatLng } from "@/lib/maps/route-progress";
 
 /** Itinéraires déjà calculés, partagés par toutes les cartes de la page. */
@@ -16,14 +16,18 @@ let routeQueue: Promise<unknown> = Promise.resolve();
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const pointKey = (point: TrackingPoint) => `${point.latitude.toFixed(5)},${point.longitude.toFixed(5)}`;
 
-function requestRoadRoute(from: TrackingPoint, target: TrackingPoint): Promise<LatLng[] | null> {
-  const key = `${pointKey(from)}>${pointKey(target)}`;
+/**
+ * Itinéraire routier passant par `waypoints`, en file avec tous les autres appels de la page
+ * (une requête par seconde) et mis en cache. null si le service ne répond pas.
+ */
+export function requestQueuedRoute(waypoints: RouteWaypoint[]): Promise<LatLng[] | null> {
+  const key = waypoints.map(pointKey).join(">");
   const cached = routeCache.get(key);
   if (cached) return Promise.resolve(cached);
   const run = routeQueue.then(async () => {
     // Une requête trop rapprochée d'un autre appel de la page renvoie null : un seul nouvel essai.
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const route = await fetchOsrmRoute([from, target]);
+      const route = await fetchOsrmRoute(waypoints);
       if (route && route.length >= 2) {
         if (routeCache.size >= ROUTE_CACHE_LIMIT) routeCache.delete(routeCache.keys().next().value!);
         routeCache.set(key, route);
@@ -67,7 +71,7 @@ export function useRoadTrack(motion: TrackingMotion | null): DrivenMotion {
     // Aucun itinéraire en cours : ligne droite tout de suite, la route remplacera à son arrivée.
     if (!drivenRef.current.road) apply({ motion, road: null });
     let cancelled = false;
-    void requestRoadRoute(motion.from, motion.target).then((points) => {
+    void requestQueuedRoute([motion.from, motion.target]).then((points) => {
       if (cancelled) return;
       if (!points) {
         apply({ motion, road: null });
