@@ -1,16 +1,43 @@
 import { prisma } from "@/services/prisma/client";
 import { trackingService } from "@/domains/tracking/tracking.policy";
+import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
 import {
   DEMO_POSITION_MIN_INTERVAL_MS,
-  demoDriverPosition,
-  demoStartPoint,
+  demoTripProgress,
+  demoTripStart,
   isDemoCompanyForSimulation,
+  pointAlongPolyline,
 } from "@/lib/demo/demo-live-position";
 
+type Point = { latitude: number; longitude: number };
+
+/** Itinéraires routiers des trajets simulés, gardés en mémoire : un seul appel par trajet. */
+const routeCache = new Map<string, [number, number][]>();
+const ROUTE_CACHE_LIMIT = 200;
+let lastRouteRequestAt = 0;
+
+async function demoTripRoute(start: Point, target: Point): Promise<[number, number][]> {
+  const key = [start.latitude, start.longitude, target.latitude, target.longitude].map((v) => v.toFixed(5)).join(",");
+  const cached = routeCache.get(key);
+  if (cached) return cached;
+  // Le service public d'itinéraires limite à une requête par seconde.
+  const wait = lastRouteRequestAt + 1_150 - Date.now();
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  lastRouteRequestAt = Date.now();
+  const route = await fetchOsrmRoute([start, target]);
+  // Sans itinéraire (service indisponible), ligne droite : la démo reste utilisable.
+  const polyline: [number, number][] = route ?? [[start.latitude, start.longitude], [target.latitude, target.longitude]];
+  if (route) {
+    if (routeCache.size >= ROUTE_CACHE_LIMIT) routeCache.delete(routeCache.keys().next().value!);
+    routeCache.set(key, polyline);
+  }
+  return polyline;
+}
+
 /**
- * Démo uniquement : fait avancer les livreurs des missions démarrées pour que les cartes
- * montrent des positions en direct. Sans effet hors des entreprises de démo.
- * Renvoie le nombre de positions écrites.
+ * Démo uniquement : fait rouler les livreurs des missions démarrées sur le vrai itinéraire
+ * que trace la carte (vers la collecte pour une course, vers l'adresse pour une commande).
+ * Sans effet hors des entreprises de démo. Renvoie le nombre de positions écrites.
  */
 export async function advanceDemoDriverPositions(companyId: string, now = new Date()): Promise<number> {
   const company = await prisma.company.findUnique({
@@ -31,6 +58,7 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
     },
     select: {
       driverId: true,
+      deliveryCategory: true,
       missionStartedAt: true,
       latitude: true,
       longitude: true,
@@ -54,12 +82,13 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
     const lastUpdate = mission.driver?.driverLocation?.updatedAt;
     if (trackingActive && lastUpdate && now.getTime() - lastUpdate.getTime() < DEMO_POSITION_MIN_INTERVAL_MS) continue;
 
-    const destination = { latitude: mission.latitude!, longitude: mission.longitude! };
-    const pickup =
-      mission.pickupLatitude != null && mission.pickupLongitude != null
+    // Même cible que le tracé de la carte : la collecte d'abord pour une course.
+    const target: Point =
+      mission.deliveryCategory === "COURIER" && mission.pickupLatitude != null && mission.pickupLongitude != null
         ? { latitude: mission.pickupLatitude, longitude: mission.pickupLongitude }
-        : null;
-    const position = demoDriverPosition(demoStartPoint(destination, pickup), destination, mission.missionStartedAt!, now);
+        : { latitude: mission.latitude!, longitude: mission.longitude! };
+    const route = await demoTripRoute(demoTripStart(target), target);
+    const position = pointAlongPolyline(route, demoTripProgress(mission.missionStartedAt!, now));
 
     // Le suivi n'est visible que si le service du livreur est actif (même règle qu'en réel).
     if (!trackingActive) {

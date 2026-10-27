@@ -73,28 +73,30 @@ interface ScenarioItem {
 type Coordinates = { latitude: number; longitude: number };
 
 /**
- * Coordonnées fixes des adresses de démo : la carte n'attend pas le géocodage en ligne,
- * qui peut échouer ou expirer. Clé : « adresse|code postal ».
+ * Coordonnées fixes des adresses de démo, relevées sur la Base Adresse Nationale : la carte
+ * n'attend pas le géocodage en ligne, qui peut échouer ou expirer. Clé : « adresse|code postal ».
  */
 const DEMO_ADDRESS_COORDINATES: Record<string, Coordinates> = {
-  "12 Rue de Rivoli|75001": { latitude: 48.8556, longitude: 2.3591 },
-  "45 Avenue des Champs-Élysées|75008": { latitude: 48.87, longitude: 2.307 },
-  "8 Boulevard Haussmann|75009": { latitude: 48.8738, longitude: 2.3337 },
-  "22 Rue de la Roquette|75011": { latitude: 48.8547, longitude: 2.3727 },
-  "5 Place de la Bastille|75012": { latitude: 48.8532, longitude: 2.3691 },
-  "18 Rue de Vaugirard|75015": { latitude: 48.849, longitude: 2.3366 },
-  "2 Rue du Louvre|75001": { latitude: 48.8605, longitude: 2.3414 },
-  "14 Avenue de la République|92100": { latitude: 48.838, longitude: 2.242 },
-  "27 Rue Gabriel Péri|92300": { latitude: 48.893, longitude: 2.287 },
-  "30 Rue de la Boétie|75008": { latitude: 48.8735, longitude: 2.3112 },
-  "120 Rue de la Convention|75015": { latitude: 48.8388, longitude: 2.2905 },
-  "20 Boulevard Diderot|75012": { latitude: 48.8443, longitude: 2.3744 },
-  "15 Rue des Martyrs|75009": { latitude: 48.879, longitude: 2.3402 },
-  "8 Place de la Nation|75011": { latitude: 48.8483, longitude: 2.3958 },
-  "25 Rue de Passy|75016": { latitude: 48.8573, longitude: 2.2786 },
-  "12 Rue Lepic|75018": { latitude: 48.8846, longitude: 2.3337 },
-  "50 Rue de Belleville|75020": { latitude: 48.8722, longitude: 2.3844 },
-  "18 Rue Mouffetard|75005": { latitude: 48.8429, longitude: 2.3497 },
+  "12 Rue de Rivoli|75001": { latitude: 48.86244, longitude: 2.3362 },
+  "45 Avenue des Champs-Élysées|75008": { latitude: 48.87105, longitude: 2.30373 },
+  "8 Boulevard Haussmann|75009": { latitude: 48.87234, longitude: 2.33864 },
+  "22 Rue de la Roquette|75011": { latitude: 48.85399, longitude: 2.37112 },
+  "5 Place de la Bastille|75012": { latitude: 48.85277, longitude: 2.36994 },
+  "18 Rue de Vaugirard|75015": { latitude: 48.83956, longitude: 2.30316 },
+  "2 Rue du Louvre|75001": { latitude: 48.86285, longitude: 2.34182 },
+  "14 Avenue de Versailles|75016": { latitude: 48.85073, longitude: 2.27713 },
+  "27 Rue de Lévis|75017": { latitude: 48.88243, longitude: 2.31516 },
+  "30 Rue de la Boétie|75008": { latitude: 48.87393, longitude: 2.31534 },
+  "120 Rue de la Convention|75015": { latitude: 48.84052, longitude: 2.28939 },
+  "20 Boulevard Diderot|75012": { latitude: 48.84552, longitude: 2.37208 },
+  "15 Rue des Martyrs|75009": { latitude: 48.87784, longitude: 2.33942 },
+  "8 Place de la Nation|75011": { latitude: 48.84911, longitude: 2.39636 },
+  "25 Rue de Passy|75016": { latitude: 48.85803, longitude: 2.28223 },
+  "12 Rue Lepic|75018": { latitude: 48.88448, longitude: 2.33353 },
+  "50 Rue de Belleville|75020": { latitude: 48.87311, longitude: 2.38148 },
+  "18 Rue Mouffetard|75005": { latitude: 48.84434, longitude: 2.34923 },
+  "15 Rue Oberkampf|75011": { latitude: 48.8633, longitude: 2.36878 },
+  "4 Place d'Italie|75013": { latitude: 48.83204, longitude: 2.35459 },
 };
 
 function demoCoordinates(place: { address: string; postalCode: string } | undefined): Coordinates | null {
@@ -279,9 +281,9 @@ function buildScenario(): ScenarioItem[] {
       requestedDeliveryDateOffsetHours: 8,
       estimatedArrivalOffsetHours: 10,
       shipping: {
-        address: "14 Avenue de la République",
-        city: "Boulogne-Billancourt",
-        postalCode: "92100",
+        address: "14 Avenue de Versailles",
+        city: "Paris",
+        postalCode: "75016",
       },
       pickupStops: [
         {
@@ -314,7 +316,7 @@ function buildScenario(): ScenarioItem[] {
         { label: "Collecte 3", description: "4 Place d'Italie, Paris", offsetHours: 0 },
         {
           label: "Livraison",
-          description: "14 Avenue de la République, Boulogne-Billancourt",
+          description: "14 Avenue de Versailles, Paris",
           offsetHours: 0,
         },
       ],
@@ -329,9 +331,9 @@ function buildScenario(): ScenarioItem[] {
       requestedDeliveryDateOffsetHours: 12,
       estimatedArrivalOffsetHours: 14,
       shipping: {
-        address: "27 Rue Gabriel Péri",
-        city: "Levallois-Perret",
-        postalCode: "92300",
+        address: "27 Rue de Lévis",
+        city: "Paris",
+        postalCode: "75017",
       },
       items: [
         { name: "Matériel informatique", quantity: 1, unitPrice: 120.0 },
@@ -476,9 +478,9 @@ const CLIENT_ADDRESS_SEEDS = [
     },
     {
       label: "Entrepôt",
-      address: "9 Rue de la Gare",
-      city: "Montreuil",
-      postalCode: "93100",
+      address: "9 Rue de l'Ourcq",
+      city: "Paris",
+      postalCode: "75019",
     },
   ],
   [
@@ -508,9 +510,9 @@ const CLIENT_ADDRESS_SEEDS = [
   [
     {
       label: "Agence",
-      address: "27 Rue Gabriel Péri",
-      city: "Levallois-Perret",
-      postalCode: "92300",
+      address: "27 Rue de Lévis",
+      city: "Paris",
+      postalCode: "75017",
     },
   ],
 ] as const;
