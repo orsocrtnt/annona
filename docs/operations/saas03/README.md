@@ -32,4 +32,12 @@ Les changements de formule/options, moyen de paiement, résiliation, export DATA
 - les dépassements qui bloqueraient (livreurs, administrateurs, dispatchers), les options qui tomberaient et les fonctions perdues ;
 - le dépassement de commandes, signalé sans bloquer.
 
-Elle ne décide pas du sort d'une baisse bloquée (refus ou planification) ni du remplacement d'une option incompatible : ce sont des décisions du propriétaire. Aucune route, aucun écran et aucune écriture ne l'utilisent encore. Preuve : `npm run test:saas03` (cas réels du catalogue C9).
+Branchement du 2026-10-27 (décision C10 : une baisse avec ressources en excès est refusée). `assessBillingContractChange` (`src/domains/billing/plan-change.service.ts`) compte les comptes `ACTIVE`/`PENDING_VERIFICATION` de l'entreprise, avec les mini-admins parmi les dispatchers comme le moteur de droits, plus les réservations en cours et les commandes de la période. Il applique les plafonds de la formule visée. `POST /api/billing` l'utilise ainsi :
+
+- `preview` renvoie `assessment` : dépassements, fonctions perdues, dépassement de commandes ;
+- `change` répond 409 `PLAN_CHANGE_SEATS_EXCEEDED` avec la liste des dépassements **avant tout appel au fournisseur** dès qu'un compte excède la cible ;
+- un abonnement sans contrat actif est refusé sans évaluation.
+
+Ce contrôle est au moins aussi strict que celui de la projection au renouvellement (`BILLING_DOWNGRADE_SEATS_EXCEEDED`). Rien n'est désactivé automatiquement. Le moment d'effet reste donné par `changeTiming`. Le journal auditable des actions est `SaasBillingOperation` (commande, auteur, clé idempotente) : aucune nouvelle table n'est nécessaire.
+
+Preuves : `npm run test:saas03`, `tests/admin01-company-billing-boundary.test.ts` (refus sans appel fournisseur, aperçu, abonnement inactif), et un calcul réel en lecture seule sur une entreprise de préproduction, recoupé par SQL.

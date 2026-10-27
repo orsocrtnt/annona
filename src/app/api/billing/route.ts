@@ -4,7 +4,8 @@ import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guar
 import { prisma } from "@/services/prisma/client";
 import { sandboxBilling } from "@/domains/billing/billing.service";
 import { getActiveSignupCatalog } from "@/domains/signup/signup.service";
-import { makeBillingContract } from "@/domains/billing/billing-core";
+import { makeBillingContract, type BillingState } from "@/domains/billing/billing-core";
+import { assessBillingContractChange } from "@/domains/billing/plan-change.service";
 
 const selection = z.object({ planCode: z.enum(["STARTER", "PRO", "BUSINESS"]), billingInterval: z.enum(["MONTHLY", "ANNUAL"]), selections: z.array(z.object({ code: z.string().min(1).max(80), quantity: z.number().int().min(1).max(500) }).strict()).max(30) }).strict();
 const inputSchema = z.discriminatedUnion("action", [
@@ -21,7 +22,7 @@ async function context() {
   if (!companyId) return { error: NextResponse.json({ error: "Entreprise absente" }, { status: 403 }) };
   const account = await prisma.saasBillingAccount.findFirst({ where: { subscription: { companyId } } });
   if (!account) return { error: NextResponse.json({ error: "Abonnement sandbox absent" }, { status: 404 }) };
-  return { account, actorId: auth.context.user.id };
+  return { account, companyId, actorId: auth.context.user.id };
 }
 export async function GET() {
   const auth = await context();
@@ -43,7 +44,18 @@ export async function POST(request: Request) {
     }
     const catalog = await getActiveSignupCatalog();
     const target = makeBillingContract(catalog, input.selection.planCode, input.selection.billingInterval, input.selection.selections);
-    if (input.action === "preview") return NextResponse.json({ ...await billing.preview(auth.account.id, target, Math.floor(Date.now() / 1000)), quote: target.quote });
+    const current = (auth.account.state as unknown as BillingState | null)?.activeContract;
+    if (!current) return NextResponse.json({ error: "Abonnement non actif" }, { status: 409 });
+    // Décision C10 : comptes en excès pour la cible = refus immédiat, avant tout appel fournisseur.
+    const assessment = await assessBillingContractChange(auth.companyId, current, target);
+    if (input.action === "preview") return NextResponse.json({ ...await billing.preview(auth.account.id, target, Math.floor(Date.now() / 1000)), quote: target.quote, assessment });
+    if (assessment.blockers.length > 0) {
+      return NextResponse.json({
+        error: "Changement impossible : désactivez d'abord les comptes en excès pour la formule choisie.",
+        code: "PLAN_CHANGE_SEATS_EXCEEDED",
+        blockers: assessment.blockers,
+      }, { status: 409 });
+    }
     const result = await billing.command(auth.account.id, input.key, { kind: "CHANGE", target, prorationDate: input.prorationDate, confirmedTotalCents: input.confirmedTotalCents, actorId: auth.actorId });
     await billing.reconcile(auth.account.id);
     return NextResponse.json(result);

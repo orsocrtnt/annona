@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assessPlanChange, type PlanChangeInput, type PlanChangeTarget } from "../src/domains/billing/plan-change";
+import { assessBillingContractChange } from "../src/domains/billing/plan-change.service";
 
 // Valeurs du catalogue C9 actif (prisma/migrations/*_catalog_c8_prices et *_catalog_c9_business).
 const STARTER: PlanChangeTarget = {
@@ -116,4 +117,67 @@ test("SAAS-03 : l'évaluation est pure et ne modifie pas son entrée", () => {
   const first = assessPlanChange(value);
   assert.equal(JSON.stringify(value), snapshot);
   assert.deepEqual(assessPlanChange(value), first);
+});
+
+function contract(plan: PlanChangeTarget, selections: Array<{ code: string; quantity: number }>) {
+  const options = [
+    { code: "DRIVER_PRO", kind: "DRIVER_SEAT", featureKey: null, applicablePlans: ["PRO"] },
+    { code: "CLIENT_GPS", kind: "OPTION", featureKey: "client_gps", applicablePlans: ["STARTER", "PRO"] },
+    { code: "DISPATCHER_ALL", kind: "DISPATCHER_SEAT", featureKey: null, applicablePlans: ["STARTER", "PRO", "BUSINESS"] },
+  ];
+  return {
+    hash: `${plan.code}-${JSON.stringify(selections)}`,
+    quote: { planCode: plan.code, selections },
+    catalog: { plans: [STARTER, PRO, BUSINESS], options },
+    lines: [],
+  } as never;
+}
+
+test("SAAS-03 (C10) : la baisse demandée compte les comptes réels, réservations et mini-admins de l'entreprise seule", async () => {
+  const queries: Array<{ model: string; where: Record<string, unknown> }> = [];
+  const counts: Record<string, number> = { DRIVER: 7, COMPANY_ADMIN: 1, "DISPATCHER,MINI_ADMIN": 1 };
+  const db = {
+    user: { count: async ({ where }: { where: Record<string, unknown> }) => {
+      queries.push({ model: "user", where });
+      const roles = ((where.role as { systemRole: { in: string[] } }).systemRole.in).join(",");
+      return counts[roles] ?? 0;
+    } },
+    saasSeatReservation: { count: async ({ where }: { where: Record<string, unknown> }) => {
+      queries.push({ model: "reservation", where });
+      return (where.role as { in: string[] }).in.includes("DRIVER") ? 1 : 0;
+    } },
+    saasUsagePeriod: { findFirst: async ({ where }: { where: Record<string, unknown> }) => {
+      queries.push({ model: "period", where });
+      return { orderCount: 1_500 };
+    } },
+  };
+  const now = new Date("2026-10-27T10:00:00.000Z");
+  const result = await assessBillingContractChange(
+    "company-a",
+    contract(PRO, [{ code: "DRIVER_PRO", quantity: 2 }, { code: "CLIENT_GPS", quantity: 1 }]),
+    contract(STARTER, [{ code: "CLIENT_GPS", quantity: 1 }]),
+    now,
+    db as never
+  );
+  assert.deepEqual(result.blockers, [
+    { resource: "drivers", current: 8, limit: 5, excess: 3 },
+    { resource: "dispatchers", current: 1, limit: 0, excess: 1 },
+  ], "7 livreurs + 1 réservation ; le mini-admin compte comme dispatcher");
+  assert.deepEqual(result.lostFeatures, ["admin_gps", "auto_dispatch"]);
+  assert.deepEqual(result.orderOverage, { current: 1_500, included: 1_000, overage: 500 });
+  assert.ok(queries.every((query) => query.where.companyId === "company-a"), "aucune lecture hors de l'entreprise");
+  assert.ok(queries.filter((query) => query.model === "user").every((query) =>
+    JSON.stringify(query.where.status) === JSON.stringify({ in: ["ACTIVE", "PENDING_VERIFICATION"] })));
+  assert.ok(queries.filter((query) => query.model === "reservation").every((query) =>
+    (query.where.expiresAt as { gt: Date }).gt.getTime() === now.getTime()), "seules les réservations en cours comptent");
+
+  const allowed = await assessBillingContractChange(
+    "company-a",
+    contract(PRO, []),
+    contract(STARTER, [{ code: "DISPATCHER_ALL", quantity: 1 }]),
+    now,
+    { ...db, user: { count: async ({ where }: { where: Record<string, unknown> }) =>
+      ((where.role as { systemRole: { in: string[] } }).systemRole.in).includes("DRIVER") ? 4 : 1 } } as never
+  );
+  assert.deepEqual(allowed.blockers, [], "4 livreurs + 1 réservation tiennent dans Starter ; le dispatcher acheté couvre le compte");
 });

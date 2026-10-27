@@ -62,7 +62,9 @@ function auth(calls: string[], role: string, companyId: string | null) {
   };
 }
 
-function billingDependencies(calls: string[], role: string, companyId: string | null, account: { id: string; state: string } | null) {
+type Blockers = Array<{ resource: string; current: number; limit: number; excess: number }>;
+
+function billingDependencies(calls: string[], role: string, companyId: string | null, account: { id: string; state: unknown } | null, blockers: Blockers = []) {
   return {
     zod,
     "next/server": { NextResponse },
@@ -92,8 +94,16 @@ function billingDependencies(calls: string[], role: string, companyId: string | 
     "@/domains/billing/billing-core": {
       makeBillingContract: () => { calls.push("contract"); return { quote: { totalCents: 7900 } }; },
     },
+    "@/domains/billing/plan-change.service": {
+      assessBillingContractChange: async (assessedCompanyId: string) => {
+        calls.push(`assess:${assessedCompanyId}`);
+        return { blockers, lostFeatures: [], droppedItems: [], orderOverage: null };
+      },
+    },
   };
 }
+
+const activeAccount = { id: "account-1", state: { activeContract: { quote: { planCode: "PRO" } } } };
 
 test("ADMIN-1 facturation : les autres rôles sont refusés avant l'entreprise, le corps et le fournisseur", async () => {
   for (const role of deniedRoles) {
@@ -131,15 +141,35 @@ test("ADMIN-1 facturation : l'administrateur d'entreprise atteint les comporteme
   assert.deepEqual(missingCalls, ["staff", "role", "company", "account"]);
 
   for (const [body, expected] of [
-    [preview, ["staff", "role", "company", "account", "body", "provider", "catalog", "contract", "preview"]],
-    [change, ["staff", "role", "company", "account", "body", "provider", "catalog", "contract", "command:CHANGE:admin-1", "reconcile"]],
+    [preview, ["staff", "role", "company", "account", "body", "provider", "catalog", "contract", "assess:company-1", "preview"]],
+    [change, ["staff", "role", "company", "account", "body", "provider", "catalog", "contract", "assess:company-1", "command:CHANGE:admin-1", "reconcile"]],
     [cancel, ["staff", "role", "company", "account", "body", "provider", "command:CANCEL:admin-1", "reconcile"]],
   ] as const) {
     const calls: string[] = [];
-    const response = await load("src/app/api/billing/route.ts", billingDependencies(calls, "COMPANY_ADMIN", "company-1", { id: "account-1", state: "ACTIVE" })).POST!(tracked(calls, body));
+    const response = await load("src/app/api/billing/route.ts", billingDependencies(calls, "COMPANY_ADMIN", "company-1", activeAccount)).POST!(tracked(calls, body));
     assert.equal(response.status, 200);
     assert.deepEqual(calls, expected);
   }
+
+  // Décision C10 : comptes en excès pour la cible = refus immédiat, aucun appel au fournisseur.
+  const excess = [{ resource: "drivers", current: 8, limit: 5, excess: 3 }];
+  const refusedCalls: string[] = [];
+  const refused = await load("src/app/api/billing/route.ts", billingDependencies(refusedCalls, "COMPANY_ADMIN", "company-1", activeAccount, excess)).POST!(tracked(refusedCalls, change));
+  assert.equal(refused.status, 409);
+  const refusedBody = await refused.json() as { code: string; blockers: unknown };
+  assert.equal(refusedBody.code, "PLAN_CHANGE_SEATS_EXCEEDED");
+  assert.deepEqual(refusedBody.blockers, excess);
+  assert.deepEqual(refusedCalls, ["staff", "role", "company", "account", "body", "provider", "catalog", "contract", "assess:company-1"]);
+
+  const previewCalls: string[] = [];
+  const previewed = await load("src/app/api/billing/route.ts", billingDependencies(previewCalls, "COMPANY_ADMIN", "company-1", activeAccount, excess)).POST!(tracked(previewCalls, preview));
+  assert.equal(previewed.status, 200, "l'aperçu reste consultable et montre les dépassements");
+  assert.deepEqual((await previewed.json() as { assessment: { blockers: unknown } }).assessment.blockers, excess);
+
+  const inactiveCalls: string[] = [];
+  const inactive = await load("src/app/api/billing/route.ts", billingDependencies(inactiveCalls, "COMPANY_ADMIN", "company-1", { id: "account-1", state: { activeContract: null } })).POST!(tracked(inactiveCalls, change));
+  assert.equal(inactive.status, 409);
+  assert.equal(inactiveCalls.some((call) => call.startsWith("assess") || call.startsWith("command")), false);
 
   const viewCalls: string[] = [];
   const view = load("src/app/api/billing/subscription/route.ts", {
