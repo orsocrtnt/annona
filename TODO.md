@@ -27,7 +27,7 @@ Revue du 26 octobre 2026 : les cinq tâches précédemment recommandées (valida
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **DATA-02 — complétude de l'export** | L'inventaire liste des modèles absents du contrat d'export ; la complétude technique ne dépend pas de la politique juridique. | Politique de conservation finale : LEGAL-1. | GPT‑6.1 Sol · effort élevé |
+| 1 | **DATA-02 — export en flux** | L'export inclut désormais le contrat SaaS ; il reste chargé entièrement en mémoire avant écriture, ce qui limite les grosses entreprises. | Politique de conservation finale : LEGAL-1. | GPT‑6.1 Sol · effort élevé |
 | 2 | **ENV-2 / CI — chaîne verte** | La CI `preproduction` est rouge (documentation, faille `maplibre-gl`) ; corrections locales faites le 27 octobre, à pousser. | Push et cible de développement : propriétaire. | GPT‑6 Luna · effort faible |
 | 3 | **SAAS-02 — alertes de consommation** | Les compteurs existent ; des alertes de seuil sans doublon peuvent être testées localement si la règle est documentée comme provisoire. | Seuils définitifs : propriétaire. | GPT‑6.1 Sol · effort moyen |
 | 4 | **SAAS-03 — premières mutations** | Les vues sont livrées ; les actions serveur peuvent être construites sur l'adaptateur fictif selon les règles C7. | Réconciliation fournisseur : compte Stripe de test. | GPT‑6 Astra · effort élevé |
@@ -163,7 +163,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | UX-04 | A+B | Inventorier et simplifier les actions des parcours prioritaires. | Après composants DESIGN-1. | Moyenne · GPT‑6.1 Sol |
 | V1-GO | A | Rejouer la recette finale et documenter les limites promises. | MOB-01C, EMAIL/SEC-05 réels, LEGAL-1 ; latence préproduction (PERF-02). | Élevée · GPT‑6 Astra |
 | LEGAL-1 | A+B | Compléter les inconnues puis obtenir validation professionnelle. | Identité éditeur et professionnels externes. | Moyenne · GPT‑6 Astra |
-| DATA-02 | A+B | Compléter le contrat d'export avec les modèles manquants (local), puis politique et nettoyage planifié. | Politique finale : LEGAL-1. | Élevée · GPT‑6 Astra |
+| DATA-02 | A+B | Export complété du contrat SaaS (27 octobre) ; export en flux, remise chiffrée, politique et nettoyage planifié. | Politique finale : LEGAL-1. | Élevée · GPT‑6 Astra |
 | PROD-02 | A | Conduire dix entretiens sur le travail réel. | Recrutement/contacts autorisés. | Élevée · GPT‑6.1 Sol |
 | PROD-04 | A+B | Instruments définis ; mesurer sur pilotes. | PROD-02/PILOT-1. | Moyenne · GPT‑6.1 Sol |
 | OFFER-1 | A+B | Confronter au marché la grille et les limites. | Prospects/pilotes. | Moyenne · GPT‑6 Astra |
@@ -852,6 +852,7 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
 
   Inventaire technique du 2026-10-25 : `docs/operations/data02/INVENTORY.md` classe chaque modèle Prisma et signale ceux qui manquent à l'export entreprise. Auth et Storage ne sont pas relus. Aucune durée ni suppression n'est décidée. DATA-02 reste ouverte.
   Contrat d'export local du 2026-10-25 : une horloge figée et deux entreprises fictives aux données proches prouvent l'isolation de toutes les catégories déjà exportées, leurs tris stables, leurs compteurs et l'absence de lecture annexe quand l'entreprise manque. Le contenu n'est pas élargi : Role et OperationJob restent partiels, les modèles déjà absents le restent, Auth et Storage ne sont pas lus. Preuve dédiée : `npm run test:data02:export-contract`. DATA-02 reste ouverte.
+  Contrat SaaS dans l'export du 2026-10-27 : `data.subscriptions` ajoute la souscription de l'entreprise, l'historique des formules (code et nom seulement), les options et sièges, et les périodes de consommation. Les identifiants du fournisseur de paiement, les instantanés internes, les journaux techniques, les réservations transitoires et le brouillon d'inscription restent exclus. L'ajout est compatible avec la version 1, ce qui laisse l'archive et son vérificateur inchangés. Quatre compteurs ont été ajoutés et `INVENTORY.md` est mis à jour : douze modèles restent hors export, chacun avec sa raison. Vérifié : `npm run test:data02:export-contract` (huit lectures isolées, projection exacte, exclusions, tris), inventaire et archive 11/11, `npm run check` 515/515. Export réel en lecture seule sur deux entreprises de la préproduction autorisée : souscription LEGACY, puis souscription commerciale avec 2 formules et 2 options, sans identifiant fournisseur. Seuls les compteurs ont été affichés et rien n'a été écrit. DATA-02 reste ouverte : politique de conservation (LEGAL-1), canal de remise chiffré, JSON encore chargé en mémoire.
 
   Proposition France préparée le 2026-10-18 : GPS 60 jours par défaut, archivage commercial probatoire jusqu'à cinq ans si justifié, pièces comptables dix ans, démos sous 24 h et pilotes supprimés sous 30 jours après export, avec séparation active/archive. Toute suppression définitive de données réelles reste interdite avant validation juridique ; seule la tranche de données démo explicitement autorisée ci-dessus est implémentée. `docs/operations/data02/RETENTION_POLICY_DRAFT.md`.
 

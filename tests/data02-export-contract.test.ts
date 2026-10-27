@@ -303,6 +303,62 @@ function makeRepository() {
         value: { id: "job-b", jobKey: "FOREIGN_B_SENTINEL", payload: { secret: "FOREIGN_B_SENTINEL" } },
       },
     ],
+    saasSubscription: [
+      {
+        companyId: "company-a",
+        value: {
+          id: "subscription-a",
+          kind: "COMMERCIAL",
+          status: "ACTIVE",
+          billingInterval: "MONTHLY",
+          startsAt: date,
+          currentPeriodStart: date,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+          endedAt: null,
+          premiumDiscoveryEndsAt: null,
+          createdAt: date,
+          updatedAt: date,
+          planAssignments: [
+            { id: "assignment-a", effectiveFrom: date, effectiveTo: null, plan: { code: "PRO", name: "Pro" } },
+          ],
+          items: [
+            {
+              id: "subscription-item-a",
+              code: "extra_driver",
+              kind: "EXTRA_SEAT",
+              source: "INITIAL",
+              quantity: 2,
+              unitPriceCents: 900,
+              effectiveFrom: date,
+              effectiveTo: null,
+            },
+          ],
+          usagePeriods: [
+            {
+              id: "usage-a",
+              startsAt: date,
+              endsAt: otherDate,
+              includedOrders: 3000,
+              orderCount: 12,
+              overageCount: 0,
+              orderOverageUnitPriceCents: 8,
+              closedAt: null,
+            },
+          ],
+        },
+      },
+      {
+        companyId: "company-b",
+        value: {
+          id: "subscription-b",
+          status: "FOREIGN_B_SENTINEL",
+          planAssignments: [{ id: "assignment-b" }],
+          items: [{ id: "subscription-item-b" }],
+          usagePeriods: [{ id: "usage-b" }],
+        },
+      },
+    ],
   };
 
   function record(model: string, args: QueryArgs) {
@@ -332,6 +388,7 @@ function makeRepository() {
     invoice: { findMany: async (args: QueryArgs) => findMany("invoice", args) },
     supportTicket: { findMany: async (args: QueryArgs) => findMany("supportTicket", args) },
     operationJob: { findMany: async (args: QueryArgs) => findMany("operationJob", args) },
+    saasSubscription: { findMany: async (args: QueryArgs) => findMany("saasSubscription", args) },
   };
 
   const prisma = {
@@ -352,10 +409,10 @@ function makeRepository() {
 }
 
 function assertCurrentQueryContract(calls: Array<{ model: string; args: QueryArgs }>) {
-  const firstRun = calls.slice(0, 7);
+  const firstRun = calls.slice(0, 8);
   assert.deepEqual(
     firstRun.map((call) => call.model),
-    ["company", "user", "recurringOrder", "order", "invoice", "supportTicket", "operationJob"]
+    ["company", "user", "recurringOrder", "order", "invoice", "supportTicket", "operationJob", "saasSubscription"]
   );
   for (const call of firstRun.slice(1)) {
     assertJsonEqual(call.args.where, { companyId: "company-a" }, `${call.model} reste isolé à l'entreprise`);
@@ -443,6 +500,38 @@ function assertCurrentQueryContract(calls: Array<{ model: string; args: QueryArg
   ]);
   assert.equal("payload" in job, false);
   assert.equal("lastError" in job, false);
+
+  const subscription = firstRun[7]?.args.select ?? {};
+  assert.deepEqual(Object.keys(subscription), [
+    "id",
+    "kind",
+    "status",
+    "billingInterval",
+    "startsAt",
+    "currentPeriodStart",
+    "currentPeriodEnd",
+    "cancelAtPeriodEnd",
+    "endedAt",
+    "premiumDiscoveryEndsAt",
+    "createdAt",
+    "updatedAt",
+    "planAssignments",
+    "items",
+    "usagePeriods",
+  ]);
+  for (const excluded of ["providerCustomerId", "providerSubscriptionId", "snapshot", "billingAccount", "usageEvents", "seatReservations"]) {
+    assert.equal(excluded in subscription, false, `${excluded} reste hors de l'export`);
+  }
+  const assignments = subscription.planAssignments as { orderBy?: unknown; select?: Record<string, unknown> };
+  assertJsonEqual(assignments.orderBy, [{ effectiveFrom: "asc" }, { id: "asc" }], "les formules gardent un tri stable");
+  assertJsonEqual(assignments.select?.plan, { select: { code: true, name: true } }, "la formule n'expose que code et nom");
+  assert.equal("snapshot" in (assignments.select ?? {}), false);
+  const items = subscription.items as { orderBy?: unknown; select?: Record<string, unknown> };
+  assertJsonEqual(items.orderBy, [{ effectiveFrom: "asc" }, { id: "asc" }], "les options gardent un tri stable");
+  assert.equal("snapshot" in (items.select ?? {}), false);
+  assert.equal("optionId" in (items.select ?? {}), false);
+  const usage = subscription.usagePeriods as { orderBy?: unknown };
+  assertJsonEqual(usage.orderBy, [{ startsAt: "asc" }, { id: "asc" }], "la consommation garde un tri stable");
 }
 
 test("l'export local reste isolé, complet sur son contrat courant et reproductible", async () => {
@@ -482,6 +571,10 @@ test("l'export local reste isolé, complet sur son contrat courant et reproducti
       supportTickets: 1,
       supportMessages: 1,
       operationJobs: 1,
+      subscriptions: 1,
+      subscriptionPlans: 1,
+      subscriptionItems: 1,
+      usagePeriods: 1,
       proofObjects: 1,
     },
     "toutes les catégories actuellement exportées sont comptées"
@@ -496,10 +589,11 @@ test("l'export local reste isolé, complet sur son contrat courant et reproducti
   assert.match(serialized, /company-a/);
   assert.match(serialized, /CMD-PROCHE-A/);
   assert.doesNotMatch(serialized, /company-b|FOREIGN_B_SENTINEL/);
-  assert.doesNotMatch(serialized, /authId|requestFingerprint|payload|lastError/);
+  assert.doesNotMatch(serialized, /authId|requestFingerprint|payload|lastError|providerCustomerId|providerSubscriptionId/);
+  assert.match(serialized, /subscription-a/);
   assertCurrentQueryContract(repository.calls);
 
-  assert.equal(repository.calls.length, 14, "chaque export relit uniquement les sept modèles attendus");
+  assert.equal(repository.calls.length, 16, "chaque export relit uniquement les huit modèles attendus");
 });
 
 test("une entreprise absente n'ouvre aucune autre catégorie", async () => {

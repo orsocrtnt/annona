@@ -6,7 +6,8 @@ import { prisma } from "@/services/prisma/client";
  *
  * Les identifiants relationnels sont conservés pour permettre une reprise, mais
  * les identifiants Supabase Auth, clés d'idempotence, empreintes de requête,
- * charges de jobs et erreurs internes sont exclus.
+ * charges de jobs, erreurs internes et identifiants du fournisseur de paiement sont exclus.
+ * `subscriptions` est un ajout compatible de la version 1 (clé supplémentaire).
  */
 export async function exportCompanyData(companyId: string) {
   const exportedAt = new Date().toISOString();
@@ -32,7 +33,7 @@ export async function exportCompanyData(companyId: string) {
     });
     if (!company) return null;
 
-    const [users, recurringOrders, orders, invoices, supportTickets, operationJobs] =
+    const [users, recurringOrders, orders, invoices, supportTickets, operationJobs, subscriptions] =
       await Promise.all([
         tx.user.findMany({
           where: { companyId },
@@ -156,9 +157,64 @@ export async function exportCompanyData(companyId: string) {
             updatedAt: true,
           },
         }),
+        // Contrat SaaS de l'entreprise : formules, options et consommation. Les identifiants
+        // du fournisseur de paiement, instantanés internes et journaux techniques restent exclus.
+        tx.saasSubscription.findMany({
+          where: { companyId },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: {
+            id: true,
+            kind: true,
+            status: true,
+            billingInterval: true,
+            startsAt: true,
+            currentPeriodStart: true,
+            currentPeriodEnd: true,
+            cancelAtPeriodEnd: true,
+            endedAt: true,
+            premiumDiscoveryEndsAt: true,
+            createdAt: true,
+            updatedAt: true,
+            planAssignments: {
+              orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
+              select: {
+                id: true,
+                effectiveFrom: true,
+                effectiveTo: true,
+                plan: { select: { code: true, name: true } },
+              },
+            },
+            items: {
+              orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
+              select: {
+                id: true,
+                code: true,
+                kind: true,
+                source: true,
+                quantity: true,
+                unitPriceCents: true,
+                effectiveFrom: true,
+                effectiveTo: true,
+              },
+            },
+            usagePeriods: {
+              orderBy: [{ startsAt: "asc" }, { id: "asc" }],
+              select: {
+                id: true,
+                startsAt: true,
+                endsAt: true,
+                includedOrders: true,
+                orderCount: true,
+                overageCount: true,
+                orderOverageUnitPriceCents: true,
+                closedAt: true,
+              },
+            },
+          },
+        }),
       ]);
 
-    return { company, users, recurringOrders, orders, invoices, supportTickets, operationJobs };
+    return { company, users, recurringOrders, orders, invoices, supportTickets, operationJobs, subscriptions };
   }, {
     isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
     maxWait: 10_000,
@@ -196,6 +252,10 @@ export async function exportCompanyData(companyId: string) {
     supportTickets: data.supportTickets.length,
     supportMessages: data.supportTickets.reduce((sum, ticket) => sum + ticket.messages.length, 0),
     operationJobs: data.operationJobs.length,
+    subscriptions: data.subscriptions.length,
+    subscriptionPlans: data.subscriptions.reduce((sum, subscription) => sum + subscription.planAssignments.length, 0),
+    subscriptionItems: data.subscriptions.reduce((sum, subscription) => sum + subscription.items.length, 0),
+    usagePeriods: data.subscriptions.reduce((sum, subscription) => sum + subscription.usagePeriods.length, 0),
     proofObjects: proofObjects.length,
   };
 

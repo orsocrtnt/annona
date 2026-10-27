@@ -32,12 +32,12 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | SignupPaymentEvent | plateforme | signupId | non |
 | DemoPoolEnvironment | technique | companyId | non |
 | SaasCatalogVersion | plateforme | aucune, catalogue global | non |
-| SaasPlan | plateforme | catalogVersionId | non |
+| SaasPlan | plateforme | catalogVersionId | partiel |
 | SaasOption | plateforme | catalogVersionId | non |
-| SaasSubscription | partagée | companyId | non |
-| SaasPlanAssignment | partagée | subscriptionId | non |
-| SaasSubscriptionItem | partagée | subscriptionId | non |
-| SaasUsagePeriod | indirecte | companyId | non |
+| SaasSubscription | partagée | companyId | partiel |
+| SaasPlanAssignment | partagée | subscriptionId | partiel |
+| SaasSubscriptionItem | partagée | subscriptionId | partiel |
+| SaasUsagePeriod | indirecte | companyId | oui |
 | SaasUsageEvent | indirecte | companyId | non |
 | SaasSeatReservation | indirecte | companyId | non |
 | SaasBillingAccount | partagée | signupId | non |
@@ -46,9 +46,11 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 
 ## Absents de l'export
 
-Ces modèles ne sont pas dans `exportCompanyData` : SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasPlan, SaasOption, SaasSubscription, SaasPlanAssignment, SaasSubscriptionItem, SaasUsagePeriod, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent.
+Ces modèles ne sont pas dans `exportCompanyData` : SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise).
 
 Role et OperationJob n'y sont que partiels : le rôle est recopié par son nom sur l'utilisateur, le job est recopié sans sa charge ni son erreur.
+
+Ajout du 2026-10-27, compatible avec la version 1 (`data.subscriptions`) : la souscription de l'entreprise, sans identifiants du fournisseur de paiement ni instantané interne ; l'historique des formules réduit au code et au nom de la formule ; les options et sièges sans instantané ; les périodes de consommation complètes. Compteurs `subscriptions`, `subscriptionPlans`, `subscriptionItems` et `usagePeriods`.
 
 ## Auth et Storage
 
