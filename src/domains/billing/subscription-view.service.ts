@@ -67,14 +67,15 @@ function interval(value: unknown): "MONTHLY" | "ANNUAL" | null {
   return value === "MONTHLY" || value === "ANNUAL" ? value : null;
 }
 
-function operationLabel(kind: string) {
+/** Seules les demandes lisibles par le client sont listées ; webhooks et relances internes restent hors historique. */
+function operationLabel(kind: string): string | null {
   return ({
     CHECKOUT: "Paiement d’abonnement préparé",
     CHANGE: "Changement d’abonnement",
     CANCEL: "Résiliation demandée",
     REFUND: "Remboursement traité",
     USAGE: "Dépassement de commandes facturé",
-  } as Record<string, string>)[kind] ?? "Opération d’abonnement";
+  } as Record<string, string>)[kind] ?? null;
 }
 
 function operationStatus(status: string) {
@@ -82,6 +83,7 @@ function operationStatus(status: string) {
     PREPARED: "Préparée",
     DONE: "Terminée",
     REJECTED: "Refusée",
+    FAILED: "Échouée",
   } as Record<string, string>)[status] ?? "En attente de rapprochement";
 }
 
@@ -198,9 +200,10 @@ export function buildSubscriptionView(
   const history = [
     ...account.operations.flatMap((operation) => {
       const occurredAt = operation.completedAt ?? operation.createdAt;
-      return Number.isNaN(occurredAt.getTime()) ? [] : [{
+      const label = operationLabel(operation.kind);
+      return !label || Number.isNaN(occurredAt.getTime()) ? [] : [{
         type: "operation" as const,
-        label: operationLabel(operation.kind),
+        label,
         status: operationStatus(operation.status),
         occurredAt: occurredAt.toISOString(),
         internalKey: `operation:${operation.id}`,

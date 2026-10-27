@@ -47,6 +47,8 @@ function account(usedOrders = 79) {
       { id: "operation-one", kind: "CANCEL", status: "DONE", createdAt: new Date("2026-10-20T00:00:00.000Z"), completedAt: null, input: { providerSecret: "hidden" } },
       { id: "operation-one", kind: "CANCEL", status: "DONE", createdAt: new Date("2026-10-20T00:00:00.000Z"), completedAt: null },
       { id: "operation-two", kind: "CHANGE", status: "DONE", createdAt: new Date("2026-10-25T00:00:00.000Z"), completedAt: new Date("2026-10-26T00:00:00.000Z"), result: { customer: "cus_secret" } },
+      { id: "event:evt_1", kind: "EVENT", status: "DONE", createdAt: new Date("2026-10-26T00:00:00.000Z"), completedAt: new Date("2026-10-26T00:00:00.000Z") },
+      { id: "reminder-1", kind: "REMINDER_DUE", status: "PENDING_DELIVERY", createdAt: new Date("2026-10-26T00:00:00.000Z"), completedAt: null },
     ],
   };
 }
@@ -60,7 +62,7 @@ test("SAAS-03 : projection active filtre les secrets, options, période et histo
   assert.deepEqual(view.options, [{ code: "auto_dispatch", name: "Dispatch automatique", quantity: 2, unitPriceCents: 2900 }]);
   assert.equal(view.history.length, 4);
   assert.deepEqual(view.history.filter((entry) => entry.type === "invoice").map((entry) => entry.occurredAt), ["2026-10-20T00:00:00.000Z", "2026-10-20T00:00:00.000Z"]);
-  assert.equal(view.history.filter((entry) => entry.type === "operation").length, 2);
+  assert.equal(view.history.filter((entry) => entry.type === "operation").length, 2, "webhooks et relances internes absents");
   assert.ok(view.history.every((entry) => entry.status !== "DONE"));
   assert.ok(view.history.some((entry) => entry.status === "Terminée"));
   assert.deepEqual(view.history.map((entry) => entry.occurredAt), [...view.history.map((entry) => entry.occurredAt)].sort().reverse());
