@@ -26,6 +26,7 @@
 - `SaasUsagePeriod`, `SaasUsageEvent` : consommation mensuelle, dépassements et événements idempotents ;
 - `SaasSeatReservation` : réservation atomique d'une place pendant une invitation concurrente.
 - `SaasBillingAccount`, `SaasBillingOperation` : journal sandbox Stripe, commandes idempotentes et rapprochement.
+- `SignupJourney`, `SignupPaymentEvent` : brouillon d'inscription autonome et événements de paiement idempotents.
 
 ### Client et exploitation
 
@@ -34,8 +35,9 @@
 - `CustomerAddress` : carnet d'adresses client ;
 - `RecurringOrder` : modèle et planification de commandes récurrentes.
 - `DemoPoolEnvironment` : stock de démonstrations préconstruites, location exclusive et recyclage durable.
+- `PlatformAccessEvent` : journal minimal et expirant des lectures de la supervision plateforme, sans relation ni donnée personnelle.
 
-Le schéma comprend 34 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 35 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
 
 ## Relations essentielles
 
@@ -82,9 +84,9 @@ Seule `db:generate` fait partie du travail local courant. Toutes les autres comm
 
 ## État des migrations et de la sécurité
 
-Le dépôt contient cinq migrations reproductibles : baseline initiale, données de référence RBAC, noyau SaaS, pool de démonstration et sécurité de ce pool. Elles ont été appliquées uniquement à la préproduction autorisée. Le contrôle final retrouve 30 tables applicatives et cinq migrations terminées.
+Le dépôt contient dix-sept migrations reproductibles, de la baseline initiale au journal d'accès plateforme (`prisma/migrations/`). Elles ont été appliquées uniquement à la préproduction autorisée. Le contrôle en lecture seule du 26 octobre 2026 y retrouve dix-sept migrations terminées, 35 tables applicatives, RLS active sur chacune et aucun droit direct public.
 
-Les 34 tables ont RLS active et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau. Le catalogue SaaS actif et les entreprises historiques migrées en compatibilité `LEGACY` ne créent aucun abonnement payant implicite. Les brouillons d'inscription et événements de paiement restent eux aussi exclusivement accessibles par le serveur.
+Les 35 tables ont RLS active et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau. Le catalogue SaaS actif et les entreprises historiques migrées en compatibilité `LEGACY` ne créent aucun abonnement payant implicite. Les brouillons d'inscription et événements de paiement restent eux aussi exclusivement accessibles par le serveur.
 
 ## Procédure d'évolution
 
