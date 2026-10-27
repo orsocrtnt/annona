@@ -214,6 +214,10 @@ const COMPANY_ORDER_HISTORY_SELECT = {
   createdAt: true,
   requestedDeliveryDate: true,
   deliveryCategory: true,
+  // Adresse affichée sous le nom du client dans la liste des commandes.
+  shippingAddress: true,
+  shippingCity: true,
+  pickupAddress: true,
   customerEmail: true,
   customer: { select: { firstName: true, lastName: true, email: true } },
   deliveries: {

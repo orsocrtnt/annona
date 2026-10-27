@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { formatPlace } from "@/lib/format/place";
 
 type Message = { id: string; requestKey: string; kind: string; internal: boolean; body: string; authorName: string; createdAt: Date };
 type Delivery = { id: string; reference: string; status: string; completedAt: Date | null; driverId?: string | null };
@@ -42,9 +43,7 @@ type AlertTargetOrder = {
 /** Qui et où, pour lire une alerte sans déchiffrer ses références (liste des alertes). */
 export function describeAlertTarget(order: AlertTargetOrder, deliveryId: string | null) {
   const delivery = deliveryId ? order.deliveries.find(d => d.id === deliveryId) : undefined;
-  const street = (delivery?.address ?? order.shippingAddress ?? "").trim();
-  const city = (delivery?.city ?? order.shippingCity ?? "").trim();
-  const place = [street, city && !street.toLowerCase().includes(city.toLowerCase()) ? city : ""].filter(Boolean).join(", ");
+  const place = formatPlace(delivery?.address ?? order.shippingAddress, delivery?.city ?? order.shippingCity);
   const customerName = order.customer ? `${order.customer.firstName} ${order.customer.lastName}`.trim() : "";
-  return { customerName: customerName || null, place: place || null };
+  return { customerName: customerName || null, place };
 }

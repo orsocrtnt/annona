@@ -42,8 +42,6 @@ export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProp
         </p>
       </div>
 
-      <AccountingExportForm />
-
       {error ? (
         <EmptyState
           icon={Package}
@@ -69,6 +67,9 @@ export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProp
           </CardContent>
         </Card>
       )}
+
+      {/* Export comptable : action ponctuelle, sous la liste plutôt qu'avant elle. */}
+      <AccountingExportForm />
     </div>
   );
 }

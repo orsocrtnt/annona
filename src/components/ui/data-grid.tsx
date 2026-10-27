@@ -181,11 +181,12 @@ export function DataGrid<T extends Record<string, unknown>>({
                           type="button"
                           aria-label={`Trier par ${col.header}${sortKey === String(col.key) ? `, ordre ${sortDir === "asc" ? "croissant" : "décroissant"}` : ""}`}
                           aria-pressed={sortKey === String(col.key)}
-                          className="inline-flex min-h-6 min-w-6 items-center gap-1 rounded px-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                          // Le bouton reprend la casse de l'en-tête (le reset navigateur la supprime).
+                          className="-ml-1 inline-flex min-h-6 min-w-6 items-center gap-1 rounded px-1 uppercase tracking-wider hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-1"
                           onClick={() => handleSort(String(col.key))}
                         >
                           {col.header}
-                          <ArrowUpDown className="h-3 w-3" />
+                          <ArrowUpDown className="h-3 w-3" aria-hidden="true" />
                         </button>
                       ) : (
                         col.header

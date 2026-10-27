@@ -5,11 +5,10 @@ import { DeleteOrderButton } from "./delete-order-button";
 import { OrderStatusSelect } from "./order-status-select";
 import {
   ORDER_TABLE_COL,
-  TableClientCell,
-  TableDateCell,
+  TableDeliveryDueCell,
   TableDriverLabel,
-  TableReferenceLink,
-  TableRequestedDeliveryCell,
+  TableOrderCell,
+  TableRelativeDateCell,
   TableTypeBadge,
   tableSelectWrapper,
 } from "./table-ui";
@@ -21,11 +20,11 @@ type ColumnMode = "readonly" | "interactive";
 export function getCompanyOrderColumns(mode: ColumnMode): TableColumn<CompanyOrder>[] {
   const cols: TableColumn<CompanyOrder>[] = [
     {
+      // Client et adresse d'abord, la référence en petit : on reconnaît une commande sans la déchiffrer.
       key: "reference",
-      header: "Réf.",
-      sortable: true,
-      className: ORDER_TABLE_COL.reference,
-      cell: (row) => <TableReferenceLink order={row} />,
+      header: "Commande",
+      className: ORDER_TABLE_COL.order,
+      cell: (row) => <TableOrderCell order={row} />,
     },
     {
       key: "deliveryCategory",
@@ -35,27 +34,20 @@ export function getCompanyOrderColumns(mode: ColumnMode): TableColumn<CompanyOrd
       cell: (row) => <TableTypeBadge category={row.deliveryCategory} />,
     },
     {
-      key: "customerEmail",
-      header: "Client",
-      hideOnMobile: true,
-      className: ORDER_TABLE_COL.client,
-      cell: (row) => <TableClientCell order={row} />,
-    },
-    {
-      key: "createdAt",
-      header: "Création",
-      sortable: true,
-      hideOnMobile: true,
-      className: ORDER_TABLE_COL.createdAt,
-      cell: (row) => <TableDateCell date={row.createdAt} />,
-    },
-    {
       key: "requestedDeliveryDate",
-      header: "Livraison",
+      header: "Livraison prévue",
       sortable: true,
       hideOnMobile: true,
       className: ORDER_TABLE_COL.deliveryDate,
-      cell: (row) => <TableRequestedDeliveryCell date={row.requestedDeliveryDate} />,
+      cell: (row) => <TableDeliveryDueCell order={row} />,
+    },
+    {
+      key: "createdAt",
+      header: "Créée",
+      sortable: true,
+      hideOnMobile: true,
+      className: ORDER_TABLE_COL.createdAt,
+      cell: (row) => <TableRelativeDateCell date={row.createdAt} />,
     },
     {
       key: "status",
@@ -95,7 +87,7 @@ export function getCompanyOrderColumns(mode: ColumnMode): TableColumn<CompanyOrd
 
         return (
           <div className={tableSelectWrapper()}>
-            <MissionAcknowledgement {...delivery} />
+            <MissionAcknowledgement {...delivery} compact />
             <AssignDriverSelect
               deliveryId={delivery.id}
               status={delivery.status}
