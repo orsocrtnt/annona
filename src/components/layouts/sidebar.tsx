@@ -97,7 +97,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
           !sidebarCollapsed && (
             <Link
               href="/"
-              className="flex min-h-11 min-w-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a]"
+              className="flex min-h-11 min-w-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Image
                 src="/brand/logo-horizontal-fond-clair.png"

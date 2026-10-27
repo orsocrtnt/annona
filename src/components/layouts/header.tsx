@@ -63,7 +63,7 @@ export function Header({ breadcrumbs, className, premium = false }: HeaderProps)
                   className={cn(
                     "rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2",
                     premium
-                      ? "hover:text-[#0e1310] focus-visible:ring-[#00d46a]"
+                      ? "hover:text-[#0e1310] focus-visible:ring-ring"
                       : "hover:text-white focus-visible:ring-white/80"
                   )}
                 >
@@ -81,7 +81,7 @@ export function Header({ breadcrumbs, className, premium = false }: HeaderProps)
         <>
           <Link
             href="/"
-            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a] lg:hidden"
+            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
           >
             <Image src="/brand/logo-horizontal-fond-clair.png" alt="TutelLiv" width={94} height={28} priority />
           </Link>
@@ -99,7 +99,7 @@ export function Header({ breadcrumbs, className, premium = false }: HeaderProps)
               className={cn(
                 "flex items-center gap-2.5 px-1.5 pr-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2",
                 premium
-                  ? "min-h-11 rounded-full border border-black/[0.07] bg-white/72 text-[#0e1310] shadow-[0_8px_30px_rgba(14,19,16,0.06)] hover:bg-white focus-visible:ring-[#00d46a]"
+                  ? "min-h-11 rounded-full border border-black/[0.07] bg-white/72 text-[#0e1310] shadow-[0_8px_30px_rgba(14,19,16,0.06)] hover:bg-white focus-visible:ring-ring"
                   : "min-h-10 rounded-xl border border-white/10 bg-white/[0.06] text-white hover:bg-white/[0.1] focus-visible:ring-white/80"
               )}
             >

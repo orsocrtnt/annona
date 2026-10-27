@@ -21,7 +21,7 @@
   --color-destructive-foreground: #ffffff;
   --color-border: #e4e8e5;
   --color-input: #e4e8e5;
-  --color-ring: #00d46a;
+  --color-ring: #0b8a45; /* focus clavier : 4,4:1 sur blanc (le vert vif #00d46a ne faisait que 2:1) */
 
   /* Extended palette — `brand` sert au texte (liens, icônes) : vert foncé lisible sur blanc. */
   --color-surface: #ffffff;

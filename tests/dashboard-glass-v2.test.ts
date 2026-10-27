@@ -45,7 +45,8 @@ test("les jetons du thème suivent la palette TutelLiv, sans le bleu historique"
   // Bouton principal vert de la charte avec texte encre (contraste suffisant, contrairement au blanc sur vert).
   assert.match(styles, /--color-primary: #00d46a;/);
   assert.match(styles, /--color-primary-foreground: #0e1310;/);
-  assert.match(styles, /--color-ring: #00d46a;/);
+  // Anneau de focus plus profond que le vert du bouton : contraste ≥ 3:1 exigé pour un indicateur de focus.
+  assert.match(styles, /--color-ring: #0b8a45;/);
   assert.match(styles, /--color-brand: #08783f;/);
   assert.match(styles, /--color-background: #f5f8f6;/);
   assert.doesNotMatch(styles, /#0066ff|#0052cc|#e6f0ff/i);
