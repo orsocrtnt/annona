@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildSaasHealthIndicators,
+  companyUsageAlerts,
   getSaasHealthIndicators,
   saasHealthMonth,
   type SaasHealthSources,
@@ -161,4 +162,37 @@ test("SAAS-02 : le lecteur Prisma reste borné aux requêtes de lecture et l'API
   const healthRoute = readFileSync("src/app/api/admin/saas-health/route.ts", "utf8");
   assert.match(healthRoute, /getSaasHealthIndicators/);
   assert.match(healthRoute, /Cache-Control.*no-store/);
+});
+
+test("SAAS-02 (C10) : alertes 80/100/120 % et seuils Business, une seule par nature, pilotes exclus", () => {
+  const indicators = buildSaasHealthIndicators(sources(), at);
+  assert.deepEqual(
+    indicators.alerts.map(({ companyId, kind, value, threshold }) => ({ companyId, kind, value, threshold })),
+    [
+      { companyId: "company-business", kind: "ORDERS_120", value: 8_000, threshold: 7_200 },
+      { companyId: "company-starter", kind: "ORDERS_120", value: 1_200, threshold: 1_200 },
+    ],
+    "Starter à 120 % pile ; Business à 133 % mais sous deux fois l'inclus et sous 40 livreurs"
+  );
+  assert.equal(indicators.alerts.some((alert) => alert.companyId === "company-pilot"), false);
+  assert.match(indicators.definitions.join(" "), /Alertes \(décision C10\)/);
+
+  const company = { companyId: "c", name: "Société", drivers: 0 };
+  assert.deepEqual(companyUsageAlerts({ ...company, planCode: "PRO", orders: 799, includedOrders: 1_000 }), []);
+  assert.equal(companyUsageAlerts({ ...company, planCode: "PRO", orders: 800, includedOrders: 1_000 })[0]?.kind, "ORDERS_80");
+  assert.equal(companyUsageAlerts({ ...company, planCode: "PRO", orders: 1_000, includedOrders: 1_000 })[0]?.kind, "ORDERS_100");
+  assert.deepEqual(companyUsageAlerts({ ...company, planCode: "STARTER", orders: 5, includedOrders: 0 }), [], "sans période mesurée, aucune fausse alerte");
+  assert.deepEqual(
+    companyUsageAlerts({ ...company, planCode: "BUSINESS", orders: 12_000, includedOrders: 6_000, drivers: 40 }).map((alert) => alert.kind),
+    ["ORDERS_120", "BUSINESS_ORDERS_DOUBLE", "BUSINESS_DRIVERS_40"]
+  );
+  assert.deepEqual(
+    companyUsageAlerts({ ...company, planCode: "PRO", orders: 12_000, includedOrders: 6_000, drivers: 45 }).map((alert) => alert.kind),
+    ["ORDERS_120"],
+    "les seuils Business ne visent que Business"
+  );
+  assert.deepEqual(
+    companyUsageAlerts({ ...company, planCode: "BUSINESS", orders: 11_999, includedOrders: 6_000, drivers: 39 }).map((alert) => alert.kind),
+    ["ORDERS_120"]
+  );
 });

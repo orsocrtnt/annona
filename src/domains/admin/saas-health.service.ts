@@ -1,4 +1,5 @@
 import { prisma } from "@/services/prisma/client";
+import { orderUsageAlertPercent } from "@/domains/saas/saas.service";
 
 type JsonRecord = Record<string, unknown>;
 type PlanCode = "STARTER" | "PRO" | "BUSINESS";
@@ -49,6 +50,54 @@ export type SaasHealthPlanIndicators = {
   activeOptionUnits: number;
 };
 
+/** Décision C10 : seuils d'alerte de consommation côté plateforme. */
+export const BUSINESS_ORDER_ALERT_MULTIPLIER = 2;
+export const BUSINESS_DRIVER_ALERT = 40;
+
+export type SaasUsageAlert = {
+  companyId: string;
+  name: string;
+  planCode: PlanCode | null;
+  kind: "ORDERS_80" | "ORDERS_100" | "ORDERS_120" | "BUSINESS_ORDERS_DOUBLE" | "BUSINESS_DRIVERS_40";
+  value: number;
+  threshold: number;
+};
+
+const ALERT_SEVERITY: Record<SaasUsageAlert["kind"], number> = {
+  BUSINESS_ORDERS_DOUBLE: 5,
+  BUSINESS_DRIVERS_40: 4,
+  ORDERS_120: 3,
+  ORDERS_100: 2,
+  ORDERS_80: 1,
+};
+
+/** Au plus une alerte par entreprise et par nature : le plus haut seuil franchi, sans doublon. */
+export function companyUsageAlerts(input: {
+  companyId: string;
+  name: string;
+  planCode: PlanCode | null;
+  orders: number;
+  includedOrders: number;
+  drivers: number;
+}): SaasUsageAlert[] {
+  const base = { companyId: input.companyId, name: input.name, planCode: input.planCode };
+  const alerts: SaasUsageAlert[] = [];
+  if (input.includedOrders > 0) {
+    const level = orderUsageAlertPercent(input.orders, input.includedOrders);
+    if (level) {
+      alerts.push({ ...base, kind: `ORDERS_${level}`, value: input.orders, threshold: Math.ceil((input.includedOrders * level) / 100) });
+    }
+    const doubled = input.includedOrders * BUSINESS_ORDER_ALERT_MULTIPLIER;
+    if (input.planCode === "BUSINESS" && input.orders >= doubled) {
+      alerts.push({ ...base, kind: "BUSINESS_ORDERS_DOUBLE", value: input.orders, threshold: doubled });
+    }
+  }
+  if (input.planCode === "BUSINESS" && input.drivers >= BUSINESS_DRIVER_ALERT) {
+    alerts.push({ ...base, kind: "BUSINESS_DRIVERS_40", value: input.drivers, threshold: BUSINESS_DRIVER_ALERT });
+  }
+  return alerts;
+}
+
 export type SaasHealthIndicators = {
   period: { startsAt: string; endsAt: string; timezone: "UTC" };
   revenue: {
@@ -76,6 +125,7 @@ export type SaasHealthIndicators = {
     drivers: number;
     activeOptionUnits: number;
   }>;
+  alerts: SaasUsageAlert[];
   definitions: string[];
 };
 
@@ -197,6 +247,7 @@ export function buildSaasHealthIndicators(
     ["BUSINESS", emptyPlan("BUSINESS")],
   ]);
   const companies: SaasHealthIndicators["companies"] = [];
+  const alerts: SaasUsageAlert[] = [];
   let newSubscriptions = 0;
   let orders = 0;
   let includedOrders = 0;
@@ -229,6 +280,14 @@ export function buildSaasHealthIndicators(
       plan.drivers += companyDrivers;
       plan.activeOptionUnits += companyOptions;
     }
+    alerts.push(...companyUsageAlerts({
+      companyId: subscription.company.id,
+      name: subscription.company.name,
+      planCode: currentPlan,
+      orders: companyOrders,
+      includedOrders: companyIncluded,
+      drivers: companyDrivers,
+    }));
     companies.push({
       companyId: subscription.company.id,
       name: subscription.company.name,
@@ -261,12 +320,14 @@ export function buildSaasHealthIndicators(
     consumption: { orders, includedOrders, overageOrders, drivers, activeOptionUnits },
     byPlan: [...planIndicators.values()],
     companies: companies.slice(0, 50),
+    alerts: alerts.sort((a, b) => ALERT_SEVERITY[b.kind] - ALERT_SEVERITY[a.kind] || a.name.localeCompare(b.name) || a.companyId.localeCompare(b.companyId)),
     definitions: [
       "Période : mois civil UTC ; commandes issues des compteurs SaaS et options/sièges observés à la date de lecture.",
       "SaaS : montant HT brut des factures marquées payées dont l’échéance est dans le mois, complété par les faux paiements confirmés sans compte de facturation.",
       "Factures de livraison : indicateur séparé ; elles ne sont jamais incluses dans le montant SaaS.",
       "Remboursements non déduits : le journal ne persiste pas leur ventilation HT ni leur date comptable.",
       "Lecture locale non réconciliée avec un fournisseur ; aucun taux de conversion, rétention, coût ou marge n’est déduit.",
+      "Alertes (décision C10) : 80, 100 et 120 % des commandes incluses du mois ; Business dès deux fois les commandes incluses ou 40 livreurs actifs ou invités. Calculées à la lecture, une seule par entreprise et par nature.",
     ],
   };
 }
