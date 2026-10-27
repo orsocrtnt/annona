@@ -19,7 +19,7 @@ import {
   AppleNavbarBrand,
   AppleNavbarLink,
   AppleNavbarLinks,
-  appleNavbarIconButtonClass,
+  appleNavbarIconButtonLightClass,
 } from "@/components/navigation/apple-navbar";
 import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -73,6 +73,7 @@ function PortalDesktopNavLink({
 
   return (
     <AppleNavbarLink
+      tone="light"
       href={item.href}
       active={isActive}
       disabled={item.disabled}
@@ -99,7 +100,7 @@ function PortalMobileNavLink({
       <DropdownMenuItem
         disabled
         title={item.disabledReason}
-        className="min-h-11 rounded-xl px-3 text-white/35 data-[disabled]:opacity-100"
+        className="min-h-11 rounded-xl px-3 text-[#a3aca6] data-[disabled]:opacity-100"
       >
         <Icon className="h-4 w-4" aria-hidden />
         {item.title}
@@ -110,12 +111,12 @@ function PortalMobileNavLink({
   return (
     <DropdownMenuItem
       asChild
-      className="min-h-11 cursor-pointer rounded-xl px-3 text-white/75 focus:bg-white/10 focus:text-white"
+      className="min-h-11 cursor-pointer rounded-xl px-3 text-[#3d4540] focus:bg-[#f1f6f2] focus:text-[#0e1310] aria-[current=page]:font-semibold aria-[current=page]:text-[#0e1310]"
     >
       <Link href={item.href} aria-current={isActive ? "page" : undefined} {...prefetchHandlers}>
         <Icon className="h-4 w-4" aria-hidden />
         <span>{item.title}</span>
-        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> : null}
+        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#00a855]" aria-hidden /> : null}
       </Link>
     </DropdownMenuItem>
   );
@@ -129,11 +130,12 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
 
   return (
     <AppleNavbar
+      tone="light"
       sticky={!overlay}
       maxWidthClassName="max-w-7xl"
       className={overlay ? "pointer-events-auto" : undefined}
     >
-      <AppleNavbarBrand href="/portal" />
+      <AppleNavbarBrand href="/portal" tone="light" />
 
       <AppleNavbarLinks
         ariaLabel="Navigation de l’espace client"
@@ -149,15 +151,15 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       </AppleNavbarLinks>
 
       <div className="ml-auto flex items-center gap-1">
-        <PortalNotificationsBell className="text-white/70 hover:bg-white/[0.08] hover:text-white" />
+        <PortalNotificationsBell className="text-[#5f6a63] hover:bg-black/[0.05] hover:text-[#0e1310]" />
 
         <div
-          className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]"
+          className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-black/[0.07] bg-white"
           title={user ? `${user.firstName} ${user.lastName}` : "Compte client"}
         >
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-[#dce7ef] text-[10px] font-semibold text-[#243447]">
+            <AvatarFallback className="bg-[#0e1310] text-[10px] font-semibold text-white">
               {user ? getInitials(user.firstName, user.lastName) : "C"}
             </AvatarFallback>
           </Avatar>
@@ -168,7 +170,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           size="icon-sm"
           onClick={logout}
           aria-label="Se déconnecter"
-          className={appleNavbarIconButtonClass}
+          className={appleNavbarIconButtonLightClass}
         >
           <LogOut className="h-4 w-4" aria-hidden />
         </Button>
@@ -177,7 +179,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className={cn(appleNavbarIconButtonClass, "xl:hidden")}
+              className={cn(appleNavbarIconButtonLightClass, "xl:hidden")}
               aria-label="Ouvrir la navigation client"
             >
               <Menu className="h-5 w-5" aria-hidden />
@@ -186,12 +188,12 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           <DropdownMenuContent
             align="end"
             sideOffset={8}
-            className="w-72 rounded-2xl border-white/10 bg-[#15171f] p-2 text-white shadow-2xl"
+            className="w-72 rounded-2xl border-black/[0.07] bg-white p-2 text-[#0e1310] shadow-[0_18px_50px_rgba(14,19,16,0.12)]"
           >
-            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-white/45">
+            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-[#68726b]">
               Espace client
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuSeparator className="bg-black/[0.07]" />
             {items.map((item) => (
               <PortalMobileNavLink
                 key={item.href}
@@ -229,7 +231,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-surface-subtle">
+    <div className="min-h-screen bg-background">
       <PortalNavbar />
 
       <div className="mx-auto max-w-6xl px-4 py-6 max-md:px-3 max-md:py-4 lg:px-6">
