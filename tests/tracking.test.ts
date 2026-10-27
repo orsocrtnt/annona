@@ -15,9 +15,39 @@ test("TRACK-1 : service explicite, valeurs absentes ou malformées fermées", ()
   for (const settings of [null, {}, { trackingService: { active: true } }, { trackingService: { active: "true", startedAt: now.toISOString() } }]) assert.equal(policy.trackingService(settings).active, false);
   assert.equal(policy.trackingService(driver.settings).active, true);
 });
-test("TRACK-1 : position fraîche datée, précision conservée, frontière exacte de péremption sans coordonnées", () => {
-  assert.equal(policy.trackingPosition(mission, driver, 45, now).state, "FRESH");
-  const expired = policy.trackingPosition(mission, driver, 10, now); assert.equal(expired.state, "STALE"); assert.equal(expired.latitude, null); assert.equal(expired.updatedAt, driver.driverLocation.updatedAt.toISOString());
+test("TRACK-1 : position fraîche datée, précision conservée ; périmée sans cible, dernière position connue gardée", () => {
+  const fresh = policy.trackingPosition(mission, driver, 45, now); assert.equal(fresh.state, "FRESH"); assert.equal(fresh.estimated, false);
+  const expired = policy.trackingPosition(mission, driver, 10, now); assert.equal(expired.state, "STALE"); assert.equal(expired.latitude, 45); assert.equal(expired.longitude, 3); assert.equal(expired.estimated, false); assert.equal(expired.updatedAt, driver.driverLocation.updatedAt.toISOString());
+});
+// 0,1° de latitude ≈ 11,12 km : à 25 km/h, environ 26 min 41 s pour la parcourir (mi-chemin vers 800 s).
+const from = { latitude: 48.8, longitude: 2.35 }, target = { latitude: 48.9, longitude: 2.35 };
+test("TRACK-2 : estimation en ligne droite à 25 km/h, plafonnée à la cible", () => {
+  const halfway = policy.estimatePosition(from, target, 800.6); assert.ok(Math.abs(halfway.latitude - 48.85) < 0.0005, String(halfway.latitude)); assert.equal(halfway.longitude, 2.35);
+  assert.deepEqual({ ...policy.estimatePosition(from, target, 3600) }, { ...target });
+  assert.deepEqual({ ...policy.estimatePosition(from, target, 0) }, { ...from });
+  assert.deepEqual({ ...policy.estimatePosition(from, from, 120) }, { ...from });
+});
+test("TRACK-2 : signal perdu, estimation pendant 10 min puis dernière position connue", () => {
+  const lost = (seconds: number) => ({ ...driver, driverLocation: { ...from, accuracy: 8, updatedAt: new Date(+now - seconds * 1000) } });
+  const startedEarlier = { ...mission, missionStartedAt: new Date(+now - 3600_000) };
+  const longService = { trackingService: { active: true, startedAt: new Date(+now - 3600_000).toISOString() } };
+  const at = (seconds: number, t: typeof target | null = target) => policy.trackingPosition(startedEarlier, { ...lost(seconds), settings: longService }, 45, now, t);
+  const estimated = at(120); assert.equal(estimated.state, "STALE"); assert.equal(estimated.estimated, true); assert.ok(estimated.latitude! > from.latitude && estimated.latitude! < target.latitude); assert.equal(estimated.accuracy, null); assert.equal(estimated.updatedAt, lost(120).driverLocation.updatedAt.toISOString());
+  assert.equal(at(600).estimated, true);
+  const cut = at(601); assert.equal(cut.estimated, false); assert.equal(cut.latitude, from.latitude); assert.equal(cut.accuracy, 8);
+  const noTarget = at(120, null); assert.equal(noTarget.estimated, false); assert.equal(noTarget.latitude, from.latitude);
+  assert.equal(policy.trackingPosition(startedEarlier, { ...lost(10), settings: longService }, 45, now, target).estimated, false, "signal frais : jamais d'estimation");
+});
+test("TRACK-2 : prochaine étape selon le statut et le type de mission", () => {
+  const base = { latitude: 48.9, longitude: 2.4, pickupLatitude: 48.7, pickupLongitude: 2.2, order: { stops: [{ latitude: null, longitude: null }, { latitude: 48.75, longitude: 2.25 }] } };
+  assert.deepEqual({ ...policy.trackingTarget({ ...base, status: "IN_DELIVERY", deliveryCategory: "STANDARD" }) }, { latitude: 48.9, longitude: 2.4 });
+  assert.deepEqual({ ...policy.trackingTarget({ ...base, status: "PURCHASING", deliveryCategory: "COURIER" }) }, { latitude: 48.9, longitude: 2.4 });
+  assert.deepEqual({ ...policy.trackingTarget({ ...base, status: "ASSIGNED", deliveryCategory: "COURIER" }) }, { latitude: 48.75, longitude: 2.25 });
+  assert.deepEqual({ ...policy.trackingTarget({ ...base, order: { stops: [] }, status: "ASSIGNED", deliveryCategory: "COURIER" }) }, { latitude: 48.7, longitude: 2.2 });
+  assert.equal(policy.trackingTarget({ ...base, status: "PURCHASING", deliveryCategory: "STANDARD" }), null);
+  assert.equal(policy.trackingTarget({ ...base, status: "ASSIGNED", deliveryCategory: "STANDARD" }), null);
+  assert.equal(policy.trackingTarget({ status: "IN_DELIVERY", latitude: null, longitude: null }), null);
+  assert.equal(policy.trackingTarget({ status: "ASSIGNED", deliveryCategory: "COURIER", order: { stops: [] } }), null);
 });
 test("TRACK-1 : mission affectée sans départ et états terminaux ne révèlent aucune position", () => {
   for (const status of ["PENDING", "ASSIGNED"]) assert.equal(policy.trackingPosition({ ...mission, status, missionStartedAt: null }, driver, 45, now).state, "NOT_STARTED");

@@ -8,9 +8,36 @@ export function trackingService(settings: unknown) {
 export function missionIsTrackable(mission: { status: string; missionStartedAt: Date | string | null; completedAt?: Date | string | null }) {
   return activeStatuses.has(mission.status) && Boolean(mission.missionStartedAt) && !mission.completedAt;
 }
-export type TrackingPosition = { state: "NOT_STARTED" | "ENDED" | "OFF_DUTY" | "ABSENT" | "STALE" | "FRESH"; latitude: number | null; longitude: number | null; accuracy: number | null; updatedAt: string | null; expiresAt: string | null };
-export function trackingPosition(mission: { status: string; missionStartedAt: Date | string | null; completedAt?: Date | string | null }, driver: { status: string; settings: unknown; driverLocation: { latitude: number; longitude: number; accuracy?: number | null; updatedAt: Date } | null } | null, thresholdSeconds: number, now = new Date()): TrackingPosition {
-  const empty = { latitude: null, longitude: null, accuracy: null, updatedAt: null, expiresAt: null };
+/** Hypothèses de l'estimation quand le signal se perd : ligne droite à vitesse urbaine, puis arrêt. */
+export const ESTIMATION_SPEED_KMH = 25;
+export const ESTIMATION_MAX_SECONDS = 10 * 60;
+export type TrackingPoint = { latitude: number; longitude: number };
+const isPoint = (lat: number | null | undefined, lng: number | null | undefined): boolean => Number.isFinite(lat) && Number.isFinite(lng) && lat != null && lng != null;
+function distanceKm(a: TrackingPoint, b: TrackingPoint) {
+  const rad = Math.PI / 180, dLat = (b.latitude - a.latitude) * rad, dLng = (b.longitude - a.longitude) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+/** Avance en ligne droite depuis `from` vers `target` à `speedKmh`, sans jamais dépasser la cible. */
+export function estimatePosition(from: TrackingPoint, target: TrackingPoint, elapsedSeconds: number, speedKmh = ESTIMATION_SPEED_KMH): TrackingPoint {
+  const distance = distanceKm(from, target);
+  if (!(distance > 0) || !(elapsedSeconds > 0)) return { latitude: from.latitude, longitude: from.longitude };
+  const ratio = Math.min(1, (speedKmh * elapsedSeconds) / 3600 / distance);
+  return { latitude: from.latitude + (target.latitude - from.latitude) * ratio, longitude: from.longitude + (target.longitude - from.longitude) * ratio };
+}
+export type TrackingTargetMission = { status: string; deliveryCategory?: string | null; latitude?: number | null; longitude?: number | null; pickupLatitude?: number | null; pickupLongitude?: number | null; order?: { stops?: { latitude?: number | null; longitude?: number | null }[] } | null };
+/** Prochaine étape : destination en livraison (ou course collectée), collecte pour une course en route ; sinon aucune. */
+export function trackingTarget(mission: TrackingTargetMission): TrackingPoint | null {
+  const toDestination = mission.status === "IN_DELIVERY" || (mission.deliveryCategory === "COURIER" && mission.status === "PURCHASING");
+  if (toDestination) return isPoint(mission.latitude, mission.longitude) ? { latitude: mission.latitude!, longitude: mission.longitude! } : null;
+  if (mission.deliveryCategory !== "COURIER" || mission.status !== "ASSIGNED") return null;
+  const stop = mission.order?.stops?.find(s => isPoint(s.latitude, s.longitude));
+  if (stop) return { latitude: stop.latitude!, longitude: stop.longitude! };
+  return isPoint(mission.pickupLatitude, mission.pickupLongitude) ? { latitude: mission.pickupLatitude!, longitude: mission.pickupLongitude! } : null;
+}
+export type TrackingPosition = { state: "NOT_STARTED" | "ENDED" | "OFF_DUTY" | "ABSENT" | "STALE" | "FRESH"; latitude: number | null; longitude: number | null; accuracy: number | null; updatedAt: string | null; expiresAt: string | null; estimated: boolean };
+export function trackingPosition(mission: { status: string; missionStartedAt: Date | string | null; completedAt?: Date | string | null }, driver: { status: string; settings: unknown; driverLocation: { latitude: number; longitude: number; accuracy?: number | null; updatedAt: Date } | null } | null, thresholdSeconds: number, now = new Date(), target: TrackingPoint | null = null): TrackingPosition {
+  const empty = { latitude: null, longitude: null, accuracy: null, updatedAt: null, expiresAt: null, estimated: false };
   if (["DELIVERED", "FAILED", "CANCELLED", "INVOICED", "PAID"].includes(mission.status) || mission.completedAt) return { ...empty, state: "ENDED" };
   if (!missionIsTrackable(mission)) return { ...empty, state: "NOT_STARTED" };
   const service = trackingService(driver?.settings);
@@ -19,8 +46,16 @@ export function trackingPosition(mission: { status: string; missionStartedAt: Da
   const begins = Math.max(+new Date(mission.missionStartedAt!), Date.parse(service.startedAt!));
   if (!loc || +loc.updatedAt < begins || +loc.updatedAt > +now || !Number.isFinite(loc.latitude) || !Number.isFinite(loc.longitude)) return { ...empty, state: "ABSENT" };
   const expiresAt = new Date(+loc.updatedAt + thresholdSeconds * 1000).toISOString();
-  if (+now >= Date.parse(expiresAt)) return { ...empty, state: "STALE", updatedAt: loc.updatedAt.toISOString(), expiresAt };
-  return { state: "FRESH", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt: loc.updatedAt.toISOString(), expiresAt };
+  if (+now >= Date.parse(expiresAt)) {
+    // Signal perdu : position estimée vers la prochaine étape pendant 10 min, puis dernière position connue.
+    const elapsedSeconds = (+now - +loc.updatedAt) / 1000;
+    if (target && elapsedSeconds <= ESTIMATION_MAX_SECONDS) {
+      const estimate = estimatePosition(loc, target, elapsedSeconds);
+      return { state: "STALE", ...estimate, accuracy: null, updatedAt: loc.updatedAt.toISOString(), expiresAt, estimated: true };
+    }
+    return { state: "STALE", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt: loc.updatedAt.toISOString(), expiresAt, estimated: false };
+  }
+  return { state: "FRESH", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt: loc.updatedAt.toISOString(), expiresAt, estimated: false };
 }
 /** These historical labels represent planned stops, not completed actions. */
 export function isPlannedTrackingEvent(event: { label: string }) { return event.label === "Livraison" || /^Collecte(?:\s|$)/.test(event.label); }
