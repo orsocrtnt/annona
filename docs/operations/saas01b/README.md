@@ -1,6 +1,6 @@
 # SAAS-01B — Facturation sandbox Stripe
 
-État de référence : 24 octobre 2026. Le journal, l’adaptateur et les routes existent. Aucun compte Stripe n’est encore provisionné ; l’adaptateur actif reste le paiement fictif.
+État de référence : 27 octobre 2026. Le journal, l’adaptateur et les routes existent. Un compte Stripe de test est branché sur le développement local (`tutelliv-dev`) ; la préproduction reste sur le paiement fictif.
 
 ## Garde
 
@@ -29,6 +29,38 @@ npm run test:saas01b:e2e
 6. Rejouer : Checkout carte test, rechargement, événement dupliqué, impayé, renouvellement, annulation, remboursement.
 
 Le cron `/api/cron/billing` ne s’exécute que si l’adaptateur vaut `stripe-sandbox`. Tant que l’inscription utilise `fake`, il répond `{ skipped: true }`.
+
+## Recette sandbox réelle (27 octobre 2026)
+
+Prérequis : `npm run env2:verify-dev` vert, `SIGNUP_PAYMENT_ADAPTER=stripe-sandbox` et clés `sk_test_…`/`whsec_…` dans `.env.local`, serveur sur le port 3108, puis dans un terminal :
+
+```bash
+stripe listen --all-snapshot --forward-to localhost:3108/api/billing/webhook
+```
+
+Le secret affiché par `stripe listen --print-secret` reste stable d'une session à l'autre. Résultats :
+
+| Scénario | Résultat |
+|---|---|
+| Checkout carte 4242 | Entreprise activée après facture payée (94,80 € TTC) |
+| Abandon sur Stripe, carte refusée | Inscription conservée, aucune entreprise |
+| 3D Secure | Défi validé, entreprise activée |
+| Signature absente ou forgée | 400 |
+| Événement rejoué | Aucun effet, aucun doublon |
+| Changement Starter → Pro → Business | Prorata payé, consentement au centime ; formule active refusée (`PLAN_CHANGE_NOOP`) |
+| Résiliation | Fin de période, entreprise et historique conservés |
+| Remboursement | Un seul remboursement Stripe pour deux `--apply` identiques |
+| Horloge de test | Renouvellement payé ; refusé → `PAST_DUE`, droits non prolongés ; régularisation → `ACTIVE` |
+
+Sur Checkout, décocher « Enregistrer mes informations avec Link », sinon un numéro de téléphone est exigé. Hors zone euro, Stripe propose le dollar tant que la tarification adaptative (Adaptive Pricing) est active.
+
+## Remboursement opérateur
+
+```bash
+npm run billing:refund -- --invoice in_… --amount 1000 --operator ops@tutelliv.fr --reason "Motif d'au moins dix caractères"
+```
+
+Sans `--apply`, le script affiche la facture, le montant remboursable et la clé, sans rien envoyer. Avec `--apply`, il exige un opérateur `SUPER_ADMIN` actif, journalise motif, montant et opérateur dans `saas_billing_operations`, puis rapproche l'état. La clé dérive du contenu de la demande : une relance identique renvoie le même remboursement. Le script npm lit `.env.local` ; pour une autre cible, lancer `tsx scripts/saas01b/refund.ts` avec son propre fichier d'environnement.
 
 ## Limites
 
