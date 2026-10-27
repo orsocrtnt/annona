@@ -63,3 +63,45 @@ test("SAAS-03 : vue lecture seule, clic, retour, rechargement et mobile sans Str
   expect(requests.length).toBeGreaterThanOrEqual(2);
   expect(requests.every((method) => method === "GET")).toBe(true);
 });
+
+test("SAAS-03 : résiliation confirmée, même clé après une erreur, puis résiliation programmée", async ({ page }) => {
+  const login = await page.request.post("/api/auth/login", {
+    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+  });
+  expect(login.status()).toBe(200);
+  let cancelled = false;
+  const posts: Array<{ action: string; key: string; confirmed: boolean }> = [];
+  await page.route("**/api/billing/subscription", (route) => route.fulfill({
+    json: { data: { ...subscription, management: "SELF_SERVICE", canCancel: !cancelled, cancelAtPeriodEnd: cancelled } },
+    headers: { "Cache-Control": "no-store" },
+  }));
+  await page.route("**/api/billing", async (route) => {
+    posts.push(route.request().postDataJSON());
+    if (posts.length === 1) return route.fulfill({ status: 409, json: { error: "Modification non appliquée ou en attente de rapprochement. Relisez l’historique avant de réessayer avec la même demande." } });
+    cancelled = true;
+    return route.fulfill({ json: { cancelAtPeriodEnd: true } });
+  });
+  await page.route("**/*stripe*", async (route) => {
+    throw new Error(`Requête Stripe interdite : ${route.request().url()}`);
+  });
+
+  await page.goto("/settings/subscription");
+  await page.getByRole("button", { name: "Résilier à l’échéance" }).click();
+  await expect(page.getByRole("dialog", { name: "Résilier votre abonnement ?" })).toContainText("reste active jusqu’au");
+  await page.getByRole("button", { name: "Garder mon abonnement" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(posts).toHaveLength(0);
+
+  await page.getByRole("button", { name: "Résilier à l’échéance" }).click();
+  await page.getByRole("button", { name: "Confirmer la résiliation" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Relisez l’historique" })).toBeVisible();
+  await page.getByRole("button", { name: "Confirmer la résiliation" }).click();
+  await expect(page.getByRole("heading", { name: "Résiliation programmée" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Résilier à l’échéance" })).toHaveCount(0);
+  expect(posts).toHaveLength(2);
+  expect(posts.every((post) => post.action === "cancel" && post.confirmed === true)).toBe(true);
+  expect(posts[1]!.key).toBe(posts[0]!.key);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("heading", { name: "Résiliation programmée" })).toBeVisible();
+});

@@ -82,6 +82,25 @@ test("SAAS-03 : alertes de consommation 79/80/100/120 et états connexes", () =>
   assert.deepEqual(view.alerts.map((alert) => alert.code), ["USAGE_100", "STATUS_PAST_DUE", "CANCEL_AT_PERIOD_END", "PENDING_CHANGE"]);
 });
 
+test("SAAS-03 : la résiliation en libre-service n'est proposée qu'une fois, et jamais pour un abonnement géré", () => {
+  const active = buildSubscriptionView(account() as never)!;
+  assert.equal(active.canCancel, true);
+  assert.equal(active.cancelAtPeriodEnd, false);
+  const late = account();
+  late.state.status = "PAST_DUE";
+  assert.equal(buildSubscriptionView(late as never)!.canCancel, true, "un retard de paiement n'empêche pas de résilier");
+  const cancelling = account();
+  cancelling.state.cancelAtPeriodEnd = true;
+  const view = buildSubscriptionView(cancelling as never)!;
+  assert.equal(view.cancelAtPeriodEnd, true);
+  assert.equal(view.canCancel, false);
+  const ended = account();
+  ended.state.status = "CANCELLED";
+  assert.equal(buildSubscriptionView(ended as never)!.canCancel, false);
+  const team = buildManagedSubscriptionView(managed("PILOT") as never, new Date("2026-10-27T12:00:00Z"))!;
+  assert.equal(team.canCancel, false);
+});
+
 test("SAAS-03 : compte ou contrat absent produit un état vide sans abonnement inventé", async () => {
   assert.equal(buildSubscriptionView({ ...account(), state: { activeContract: null }, operations: [] } as never), null);
   let where: unknown = null;

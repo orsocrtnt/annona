@@ -18,6 +18,10 @@ export type SubscriptionView = {
   history: Array<{ type: "operation" | "invoice"; label: string; status: string; occurredAt: string; amountCents?: number }>;
   /** SELF_SERVICE : compte de facturation en ligne ; TUTELLIV_TEAM : changements par l'équipe TutelLiv. */
   management: "SELF_SERVICE" | "TUTELLIV_TEAM";
+  /** Résiliation déjà demandée : l'abonnement court jusqu'à la fin de la période payée. */
+  cancelAtPeriodEnd: boolean;
+  /** Résiliation en libre-service possible (compte en ligne, abonnement actif ou en retard de paiement). */
+  canCancel: boolean;
 };
 
 /** Plafond de commandes des pilotes et formules sans limite (entier PostgreSQL maximal). */

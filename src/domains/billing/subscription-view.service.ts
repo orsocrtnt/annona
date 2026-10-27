@@ -245,6 +245,8 @@ export function buildSubscriptionView(
     alerts,
     history: uniqueHistory,
     management: "SELF_SERVICE",
+    cancelAtPeriodEnd,
+    canCancel: (status === "ACTIVE" || status === "PAST_DUE") && !cancelAtPeriodEnd,
   };
 }
 
@@ -299,6 +301,8 @@ export function buildManagedSubscriptionView(
     alerts,
     history: [],
     management: "TUTELLIV_TEAM",
+    cancelAtPeriodEnd,
+    canCancel: false,
   };
 }
 

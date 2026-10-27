@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PageLoader } from "@/components/ui/loader";
 import { UNLIMITED_MONTHLY_ORDERS, type SubscriptionView } from "@/domains/billing/subscription-view.types";
 import { subscriptionApi } from "./subscription-api";
+import { SubscriptionCancel } from "./subscription-cancel";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 const discoveryDateFormat = new Intl.DateTimeFormat("fr-FR", {
@@ -51,10 +52,10 @@ export function SubscriptionContent() {
     </section>;
   }
 
-  return <div className="space-y-6" data-subscription-readonly="true">
+  return <div className="space-y-6" data-subscription-readonly={String(data.management !== "SELF_SERVICE" || !data.canCancel)}>
     <header>
       <h1 className="text-2xl font-semibold tracking-tight">Mon abonnement</h1>
-      <p className="mt-1 text-muted-foreground">Consultation locale de l’état et de l’historique. Les modifications ne sont pas proposées ici.</p>
+      <p className="mt-1 text-muted-foreground">Formule, consommation et historique de votre abonnement.</p>
     </header>
 
     {data.management === "TUTELLIV_TEAM" && <Card data-subscription-management="tutelliv-team">
@@ -128,5 +129,7 @@ export function SubscriptionContent() {
         </ol>}
       </CardContent>
     </Card>
+
+    {data.management === "SELF_SERVICE" && <SubscriptionCancel subscription={data} endsAtLabel={formatDate(data.period.endsAt)} />}
   </div>;
 }
