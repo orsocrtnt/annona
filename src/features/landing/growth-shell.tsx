@@ -22,13 +22,13 @@ export function GrowthShell({
 }) {
   return (
     <div
-      className={`${display.variable} relative min-h-screen overflow-hidden bg-[#f6f7f9] text-[#121820]`}
+      className={`${display.variable} relative min-h-screen overflow-hidden bg-[#f5f8f6] text-[#0e1310]`}
       data-growth-page={active}
       style={{ fontFamily: "var(--font-growth), ui-sans-serif, system-ui, sans-serif" }}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[34rem]" aria-hidden>
-        <div className="absolute -left-24 top-14 h-72 w-72 rounded-full bg-[#dfeaf1]/70 blur-3xl" />
-        <div className="absolute -right-20 top-28 h-80 w-80 rounded-full bg-[#f3e8dc]/70 blur-3xl" />
+        <div className="absolute -left-24 top-14 h-72 w-72 rounded-full bg-[#e3f7ec]/70 blur-3xl" />
+        <div className="absolute -right-20 top-28 h-80 w-80 rounded-full bg-[#fdf4e4]/70 blur-3xl" />
         <div className="absolute left-1/2 top-0 h-56 w-56 -translate-x-1/2 rounded-full bg-white blur-3xl" />
       </div>
 
@@ -36,11 +36,11 @@ export function GrowthShell({
 
       <div className="relative z-10">{children}</div>
 
-      <footer className="relative z-10 border-t border-[#d8dee6] bg-white/70">
+      <footer className="relative z-10 border-t border-[#e4e8e5] bg-white/70">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <p className="font-bold tracking-tight">{APP_NAME}</p>
-            <p className="mt-1 text-sm text-[#6b7785]">Pilotage des livraisons B2B.</p>
+            <p className="mt-1 text-sm text-[#68726b]">Pilotage des livraisons B2B.</p>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold text-[#506070]">
             <Link href="/" className="hover:text-[#243447] hover:underline hover:underline-offset-4">Accueil</Link>
