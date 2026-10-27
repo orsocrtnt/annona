@@ -24,6 +24,7 @@ import {
   generateOrderReference,
 } from "@/lib/order-reference";
 import { getPrimaryCourierPickupFields } from "@/lib/order/courier-pickups";
+import { demoInvoiceLineItems } from "@/domains/demo/demo-invoice-lines";
 
 interface DemoActors {
   companyId: string;
@@ -866,19 +867,7 @@ async function createScenarioDelivery(
           reference: invoiceRef,
           status: scenario.invoice.status,
           amount: totalAmount,
-          lineItems: items.length
-            ? items.map((item) => ({
-              label: item.name,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              sourceType: "ITEM",
-            }))
-            : courierItems.map((item) => ({
-              label: item.name,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              sourceType: "ITEM",
-            })),
+          lineItems: demoInvoiceLineItems(items.length ? items : courierItems),
           companyId: actors.companyId,
           orderId: order.id,
           customerId: actors.clientId,
