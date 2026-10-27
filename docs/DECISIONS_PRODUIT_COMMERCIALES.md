@@ -143,6 +143,9 @@ Réponses données au questionnaire de l'agent ; elles débloquent SAAS-02/03/04
 | Formulaire Contact | Les messages sont stockés et lus dans le back-office plateforme (super-administrateur), sans dépendre du domaine e-mail. | GROWTH-1 |
 | Alertes de consommation plateforme | 80 %, 100 % et 120 % des commandes incluses ; pour Business, alerte dès deux fois les commandes incluses ou 40 livreurs actifs. | SAAS-02 |
 | Pool de démonstration | Garder 6 espaces, mais libérer automatiquement les sessions de test après une heure au lieu de huit. | DEMO-2 (suivi ENV-2) |
+| Abonnement sans compte de facturation en ligne (complément du même jour) | Pilote, accès historique ou paiement manuel : « Mon abonnement » affiche formule, options, période et consommation en lecture seule, et renvoie vers l'équipe TutelLiv (page Contact) pour tout changement ou résiliation. Aucune action en ligne. | SAAS-03 |
+| Export DATA-02 depuis « Mon abonnement » (complément du même jour) | Reporté : le canal de remise chiffré n'est pas choisi ; il suit la politique de conservation LEGAL-1. | SAAS-03, DATA-02 |
+| Mesure de performance « Next » (complément du même jour) | Autorisée en local sur les routes publiques (build de production, PostgreSQL jetable) ; les routes connectées attendent ENV-2. | PERF-02 |
 
 Le choix d'un Contact stocké implique sa propre table : additive, préproduction seulement, comme le journal d'abonnement. Complément du même jour : la migration additive des codes commerciaux est autorisée, appliquée à la préproduction seulement après relecture et fusion de la branche ; un compte super-administrateur temporaire peut être créé sur la préproduction pour les recettes navigateur, puis supprimé.
 

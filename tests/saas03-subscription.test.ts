@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { NextResponse } from "next/server";
-import { buildSubscriptionView, getSubscriptionView } from "../src/domains/billing/subscription-view.service";
+import { buildManagedSubscriptionView, buildSubscriptionView, getSubscriptionView } from "../src/domains/billing/subscription-view.service";
 import { getNavItemsForRole } from "../src/features/navigation/get-nav-items";
 
 function account(usedOrders = 79) {
@@ -85,6 +85,7 @@ test("SAAS-03 : alertes de consommation 79/80/100/120 et états connexes", () =>
 test("SAAS-03 : compte ou contrat absent produit un état vide sans abonnement inventé", async () => {
   assert.equal(buildSubscriptionView({ ...account(), state: { activeContract: null }, operations: [] } as never), null);
   let where: unknown = null;
+  let fallback: unknown = null;
   const db = {
     saasBillingAccount: {
       findFirst: async (input: { where: unknown }) => {
@@ -92,9 +93,94 @@ test("SAAS-03 : compte ou contrat absent produit un état vide sans abonnement i
         return null;
       },
     },
+    saasSubscription: {
+      findUnique: async (input: { where: unknown }) => {
+        fallback = input.where;
+        return null;
+      },
+    },
   };
   assert.equal(await getSubscriptionView("company-a", db as never), null);
   assert.deepEqual(where, { subscription: { companyId: "company-a" } });
+  assert.deepEqual(fallback, { companyId: "company-a" });
+});
+
+const at = new Date("2026-10-27T10:00:00.000Z");
+function managed(kind: "COMMERCIAL" | "PILOT" | "LEGACY", overrides: Record<string, unknown> = {}) {
+  return {
+    kind,
+    status: "ACTIVE",
+    billingInterval: kind === "COMMERCIAL" ? "ANNUAL" : null,
+    currentPeriodStart: new Date("2026-10-01T00:00:00.000Z"),
+    currentPeriodEnd: kind === "LEGACY" ? null : new Date("2026-11-01T00:00:00.000Z"),
+    cancelAtPeriodEnd: false,
+    premiumDiscoveryEndsAt: null,
+    providerCustomerId: "cus_secret",
+    planAssignments: kind === "COMMERCIAL" ? [{ plan: { code: "STARTER", name: "Starter" } }] : [],
+    items: kind === "COMMERCIAL"
+      ? [
+          { code: "auto_dispatch", quantity: 1, unitPriceCents: 29000, option: { name: "Dispatch automatique" } },
+          { code: "driver_seat", quantity: 2, unitPriceCents: 9000, option: null },
+        ]
+      : [],
+    usagePeriods: [{
+      startsAt: new Date("2026-10-01T00:00:00.000Z"),
+      endsAt: new Date("2026-11-01T00:00:00.000Z"),
+      includedOrders: kind === "COMMERCIAL" ? 1000 : 2_147_483_647,
+      orderCount: 850,
+      overageCount: 0,
+    }],
+    ...overrides,
+  };
+}
+
+test("SAAS-03 : abonnement géré par TutelLiv, formule et options lues sur l'abonnement, sans historique ni fournisseur", () => {
+  const view = buildManagedSubscriptionView(managed("COMMERCIAL") as never, at)!;
+  assert.equal(view.management, "TUTELLIV_TEAM");
+  assert.deepEqual(view.formula, { code: "STARTER", name: "Starter" });
+  assert.equal(view.billingInterval, "ANNUAL");
+  assert.deepEqual(view.options, [
+    { code: "auto_dispatch", name: "Dispatch automatique", quantity: 1, unitPriceCents: 29000 },
+    { code: "driver_seat", name: "driver_seat", quantity: 2, unitPriceCents: 9000 },
+  ]);
+  assert.deepEqual(view.alerts.map((alert) => alert.code), ["USAGE_80"]);
+  assert.deepEqual(view.history, []);
+  assert.ok(!JSON.stringify(view).includes("secret"));
+  assert.equal(buildSubscriptionView(account() as never)!.management, "SELF_SERVICE");
+});
+
+test("SAAS-03 : pilote et accès historique affichés sans formule inventée ni alerte de plafond", () => {
+  const pilot = buildManagedSubscriptionView(managed("PILOT") as never, at)!;
+  assert.deepEqual(pilot.formula, { code: "PILOT", name: "Pilote accompagné" });
+  assert.equal(pilot.billingInterval, null);
+  assert.deepEqual(pilot.usage, { usedOrders: 850, includedOrders: 2_147_483_647, overageOrders: 0 });
+  assert.deepEqual(pilot.alerts, []);
+  assert.equal(pilot.premiumDiscovery, null);
+  const legacy = buildManagedSubscriptionView(managed("LEGACY", { usagePeriods: [] }) as never, at)!;
+  assert.deepEqual(legacy.formula, { code: "LEGACY", name: "Accès historique" });
+  assert.equal(legacy.period.endsAt, null);
+  assert.equal(legacy.usage, null);
+  assert.equal(buildManagedSubscriptionView(managed("COMMERCIAL", { planAssignments: [] }) as never, at), null, "commercial sans formule active");
+  const cancelling = buildManagedSubscriptionView(managed("COMMERCIAL", { status: "CANCEL_AT_PERIOD_END", cancelAtPeriodEnd: true }) as never, at)!;
+  assert.deepEqual(cancelling.alerts.map((alert) => alert.code), ["USAGE_80", "CANCEL_AT_PERIOD_END"]);
+});
+
+test("SAAS-03 : le repli ne lit que l'abonnement de l'entreprise et seulement sans compte de facturation", async () => {
+  const calls: Array<{ model: string; args: Record<string, unknown> }> = [];
+  const db = (billing: unknown) => ({
+    saasBillingAccount: { findFirst: async (args: Record<string, unknown>) => { calls.push({ model: "billing", args }); return billing; } },
+    saasSubscription: { findUnique: async (args: Record<string, unknown>) => { calls.push({ model: "subscription", args }); return managed("PILOT"); } },
+  });
+  assert.equal((await getSubscriptionView("company-a", db(account()) as never))!.management, "SELF_SERVICE");
+  assert.deepEqual(calls.map((call) => call.model), ["billing"], "compte présent : pas de repli");
+  calls.length = 0;
+  assert.equal((await getSubscriptionView("company-a", db(null) as never, at))!.formula.code, "PILOT");
+  const select = calls[1]!.args.select as Record<string, { where?: unknown }>;
+  const active = { effectiveFrom: { lte: at }, OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }] };
+  assert.deepEqual(calls[1]!.args.where, { companyId: "company-a" });
+  assert.deepEqual(select.planAssignments!.where, active);
+  assert.deepEqual(select.items!.where, active);
+  assert.ok(!("providerCustomerId" in select) && !("providerSubscriptionId" in select) && !("snapshot" in select));
 });
 
 test("SAAS-03 : seule la navigation COMPANY_ADMIN expose Mon abonnement", () => {

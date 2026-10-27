@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/loader";
+import { UNLIMITED_MONTHLY_ORDERS, type SubscriptionView } from "@/domains/billing/subscription-view.types";
 import { subscriptionApi } from "./subscription-api";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
@@ -20,6 +23,12 @@ function formatDate(value: string | null) {
 
 function formatMoney(cents: number) {
   return money.format(cents / 100);
+}
+
+function intervalLabel(value: SubscriptionView["billingInterval"]) {
+  if (value === "ANNUAL") return "Annuel";
+  if (value === "MONTHLY") return "Mensuel";
+  return "Sans facturation périodique";
 }
 
 export function SubscriptionContent() {
@@ -48,11 +57,21 @@ export function SubscriptionContent() {
       <p className="mt-1 text-muted-foreground">Consultation locale de l’état et de l’historique. Les modifications ne sont pas proposées ici.</p>
     </header>
 
+    {data.management === "TUTELLIV_TEAM" && <Card data-subscription-management="tutelliv-team">
+      <CardHeader>
+        <CardTitle>Abonnement géré par l’équipe TutelLiv</CardTitle>
+        <CardDescription>Pour changer de formule, ajouter une option ou résilier, écrivez-nous : nous appliquons la modification avec vous.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button asChild variant="outline"><Link href="/contact">Contacter l’équipe</Link></Button>
+      </CardContent>
+    </Card>}
+
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>{data.formula.name}</CardTitle>
-          <CardDescription>{data.formula.code} · {data.billingInterval === "ANNUAL" ? "Annuel" : "Mensuel"}</CardDescription>
+          <CardDescription>{data.formula.code} · {intervalLabel(data.billingInterval)}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-1 text-sm">
           <p><span className="text-muted-foreground">Statut : </span>{data.status}</p>
@@ -63,7 +82,7 @@ export function SubscriptionContent() {
       <Card>
         <CardHeader><CardTitle>Consommation de commandes</CardTitle></CardHeader>
         <CardContent className="text-sm">
-          {data.usage ? <p>{data.usage.usedOrders} utilisées sur {data.usage.includedOrders} incluses · {data.usage.overageOrders} en dépassement</p> : <p className="text-muted-foreground">Aucune période de consommation disponible.</p>}
+          {data.usage ? data.usage.includedOrders >= UNLIMITED_MONTHLY_ORDERS ? <p>{data.usage.usedOrders} commandes sur la période · sans plafond</p> : <p>{data.usage.usedOrders} utilisées sur {data.usage.includedOrders} incluses · {data.usage.overageOrders} en dépassement</p> : <p className="text-muted-foreground">Aucune période de consommation disponible.</p>}
         </CardContent>
       </Card>
     </div>
@@ -91,7 +110,7 @@ export function SubscriptionContent() {
       <CardHeader><CardTitle>Options actives</CardTitle></CardHeader>
       <CardContent>
         {data.options.length === 0 ? <p className="text-sm text-muted-foreground">Aucune option active.</p> : <ul className="space-y-2 text-sm">
-          {data.options.map((option) => <li key={option.code} className="flex flex-wrap justify-between gap-x-4 gap-y-1 rounded-lg border p-3"><span>{option.name} × {option.quantity}</span><span className="text-muted-foreground">{formatMoney(option.unitPriceCents)} par {data.billingInterval === "ANNUAL" ? "an" : "mois"}</span></li>)}
+          {data.options.map((option) => <li key={option.code} className="flex flex-wrap justify-between gap-x-4 gap-y-1 rounded-lg border p-3"><span>{option.name} × {option.quantity}</span><span className="text-muted-foreground">{formatMoney(option.unitPriceCents)}{data.billingInterval ? ` par ${data.billingInterval === "ANNUAL" ? "an" : "mois"}` : ""}</span></li>)}
         </ul>}
       </CardContent>
     </Card>

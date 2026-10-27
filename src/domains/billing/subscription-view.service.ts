@@ -9,6 +9,14 @@ import type { SubscriptionView } from "./subscription-view.types";
 
 type JsonRecord = Record<string, unknown>;
 
+type SubscriptionUsagePeriod = {
+  startsAt: Date;
+  endsAt: Date;
+  includedOrders: number;
+  orderCount: number;
+  overageCount: number;
+};
+
 type SubscriptionAccount = {
   state: unknown;
   subscription: {
@@ -18,15 +26,23 @@ type SubscriptionAccount = {
     billingInterval: string | null;
     cancelAtPeriodEnd: boolean;
     premiumDiscoveryEndsAt: Date | null;
-    usagePeriods: Array<{
-      startsAt: Date;
-      endsAt: Date;
-      includedOrders: number;
-      orderCount: number;
-      overageCount: number;
-    }>;
+    usagePeriods: SubscriptionUsagePeriod[];
   } | null;
   operations: Array<{ id: string; kind: string; status: string; createdAt: Date; completedAt: Date | null }>;
+};
+
+/** Abonnement sans compte de facturation en ligne : pilote, accès historique ou paiement manuel. */
+type ManagedSubscription = {
+  kind: "COMMERCIAL" | "PILOT" | "LEGACY";
+  status: string;
+  billingInterval: string | null;
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  premiumDiscoveryEndsAt: Date | null;
+  planAssignments: Array<{ plan: { code: string; name: string } }>;
+  items: Array<{ code: string; quantity: number; unitPriceCents: number; option: { name: string } | null }>;
+  usagePeriods: SubscriptionUsagePeriod[];
 };
 
 function record(value: unknown): JsonRecord | null {
@@ -95,8 +111,47 @@ function stateStatus(status: string) {
     PAST_DUE: "Paiement en retard",
     RESTRICTED: "Accès restreint",
     READ_ONLY: "Accès en lecture seule",
+    CANCEL_AT_PERIOD_END: "Résiliation en fin de période",
     CANCELLED: "Résilié",
+    EXPIRED: "Expiré",
   } as Record<string, string>)[status] ?? "État à vérifier";
+}
+
+const CANCEL_ALERT = { code: "CANCEL_AT_PERIOD_END", label: "Résiliation prévue à la fin de période" };
+
+function usageView(periods: SubscriptionUsagePeriod[]): SubscriptionView["usage"] {
+  const current = periods[0];
+  return current
+    ? {
+        usedOrders: Math.max(0, current.orderCount),
+        includedOrders: Math.max(0, current.includedOrders),
+        overageOrders: Math.max(0, current.overageCount),
+      }
+    : null;
+}
+
+function usageAlerts(usage: SubscriptionView["usage"]): SubscriptionView["alerts"] {
+  if (!usage || usage.includedOrders <= 0) return [];
+  const reached = (threshold: number) => usage.usedOrders * 100 >= usage.includedOrders * threshold;
+  if (reached(120)) return [{ code: "USAGE_120", label: "120 % du forfait de commandes atteint" }];
+  if (reached(100)) return [{ code: "USAGE_100", label: "Forfait de commandes atteint" }];
+  if (reached(80)) return [{ code: "USAGE_80", label: "80 % du forfait de commandes atteint" }];
+  return [];
+}
+
+function premiumDiscoveryView(planCode: string, endsAt: Date | null, at: Date): SubscriptionView["premiumDiscovery"] {
+  return (planCode === "STARTER" || planCode === "PRO") &&
+    endsAt instanceof Date &&
+    Number.isFinite(endsAt.getTime()) &&
+    endsAt.getTime() > at.getTime()
+    ? {
+        endsAt: endsAt.toISOString(),
+        features: PREMIUM_DISCOVERY_FEATURES.map((code) => ({
+          code,
+          name: SAAS_FEATURE_LABELS[code],
+        })),
+      }
+    : null;
 }
 
 export function buildSubscriptionView(
@@ -122,44 +177,21 @@ export function buildSubscriptionView(
     return [{ code, name, quantity, unitPriceCents }];
   });
 
-  const currentPeriod = account.subscription.usagePeriods[0] ?? null;
-  const usage = currentPeriod
-    ? {
-        usedOrders: Math.max(0, currentPeriod.orderCount),
-        includedOrders: Math.max(0, currentPeriod.includedOrders),
-        overageOrders: Math.max(0, currentPeriod.overageCount),
-      }
-    : null;
+  const usage = usageView(account.subscription.usagePeriods);
   const status = text(state.status, 40) ?? account.subscription.status;
-  const discoveryEndsAt = premiumDiscoveryEndAfterCancellation(
-    premiumDiscoveryEndAfterPaymentFailure(account.subscription.premiumDiscoveryEndsAt, text(state.failedAt, 40)),
-    account.subscription.cancelAtPeriodEnd || state.cancelAtPeriodEnd === true,
+  const cancelAtPeriodEnd = account.subscription.cancelAtPeriodEnd || state.cancelAtPeriodEnd === true;
+  const premiumDiscovery = premiumDiscoveryView(
+    planCode,
+    premiumDiscoveryEndAfterCancellation(
+      premiumDiscoveryEndAfterPaymentFailure(account.subscription.premiumDiscoveryEndsAt, text(state.failedAt, 40)),
+      cancelAtPeriodEnd,
+      at
+    ),
     at
   );
-  const premiumDiscovery =
-    (planCode === "STARTER" || planCode === "PRO") &&
-    discoveryEndsAt instanceof Date &&
-    Number.isFinite(discoveryEndsAt.getTime()) &&
-    discoveryEndsAt.getTime() > at.getTime()
-      ? {
-          endsAt: discoveryEndsAt.toISOString(),
-          features: PREMIUM_DISCOVERY_FEATURES.map((code) => ({
-            code,
-            name: SAAS_FEATURE_LABELS[code],
-          })),
-        }
-      : null;
-  const alerts: SubscriptionView["alerts"] = [];
-  if (usage && usage.includedOrders > 0) {
-    const reached = (threshold: number) => usage.usedOrders * 100 >= usage.includedOrders * threshold;
-    if (reached(120)) alerts.push({ code: "USAGE_120", label: "120 % du forfait de commandes atteint" });
-    else if (reached(100)) alerts.push({ code: "USAGE_100", label: "Forfait de commandes atteint" });
-    else if (reached(80)) alerts.push({ code: "USAGE_80", label: "80 % du forfait de commandes atteint" });
-  }
+  const alerts = usageAlerts(usage);
   if (status !== "ACTIVE") alerts.push({ code: `STATUS_${status}`, label: stateStatus(status) });
-  if (account.subscription.cancelAtPeriodEnd || state.cancelAtPeriodEnd === true) {
-    alerts.push({ code: "CANCEL_AT_PERIOD_END", label: "Résiliation prévue à la fin de période" });
-  }
+  if (cancelAtPeriodEnd) alerts.push(CANCEL_ALERT);
   if (record(state.pendingChange)) alerts.push({ code: "PENDING_CHANGE", label: "Changement d’abonnement en attente" });
 
   const invoices = Array.isArray(state.invoices) ? state.invoices : [];
@@ -212,14 +244,89 @@ export function buildSubscriptionView(
     status: stateStatus(status),
     alerts,
     history: uniqueHistory,
+    management: "SELF_SERVICE",
   };
 }
 
-type BillingReadDatabase = Pick<typeof prisma, "saasBillingAccount">;
+const MANAGED_FORMULAS = {
+  PILOT: { code: "PILOT", name: "Pilote accompagné" },
+  LEGACY: { code: "LEGACY", name: "Accès historique" },
+} as const;
+
+/**
+ * SAAS-03, décision du 27 octobre 2026 : sans compte de facturation en ligne, l'abonnement
+ * est affiché en lecture seule et ses changements passent par l'équipe TutelLiv.
+ */
+export function buildManagedSubscriptionView(
+  subscription: ManagedSubscription,
+  at: Date = new Date()
+): SubscriptionView | null {
+  const plan = subscription.planAssignments[0]?.plan;
+  const formula = subscription.kind === "COMMERCIAL"
+    ? plan && text(plan.code, 40) && text(plan.name, 120) ? { code: plan.code, name: plan.name } : null
+    : MANAGED_FORMULAS[subscription.kind];
+  if (!formula) return null;
+
+  const usage = usageView(subscription.usagePeriods);
+  const cancelAtPeriodEnd = subscription.cancelAtPeriodEnd || subscription.status === "CANCEL_AT_PERIOD_END";
+  const alerts = usageAlerts(usage);
+  if (subscription.status !== "ACTIVE" && subscription.status !== "CANCEL_AT_PERIOD_END") {
+    alerts.push({ code: `STATUS_${subscription.status}`, label: stateStatus(subscription.status) });
+  }
+  if (cancelAtPeriodEnd) alerts.push(CANCEL_ALERT);
+
+  return {
+    formula,
+    billingInterval: interval(subscription.billingInterval),
+    period: {
+      startsAt: subscription.currentPeriodStart.toISOString(),
+      endsAt: subscription.currentPeriodEnd?.toISOString() ?? null,
+    },
+    premiumDiscovery: premiumDiscoveryView(
+      formula.code,
+      premiumDiscoveryEndAfterCancellation(subscription.premiumDiscoveryEndsAt, cancelAtPeriodEnd, at),
+      at
+    ),
+    options: subscription.items.flatMap((item) => {
+      const code = text(item.code, 120);
+      const quantity = amount(item.quantity);
+      const unitPriceCents = amount(item.unitPriceCents);
+      if (!code || !quantity || unitPriceCents === null) return [];
+      return [{ code, name: text(item.option?.name, 160) ?? code, quantity, unitPriceCents }];
+    }),
+    usage,
+    status: stateStatus(subscription.status),
+    alerts,
+    history: [],
+    management: "TUTELLIV_TEAM",
+  };
+}
+
+type BillingReadDatabase = Pick<typeof prisma, "saasBillingAccount" | "saasSubscription">;
+
+const USAGE_PERIOD_SELECT = {
+  orderBy: { startsAt: "desc" },
+  take: 1,
+  select: {
+    startsAt: true,
+    endsAt: true,
+    includedOrders: true,
+    orderCount: true,
+    overageCount: true,
+  },
+} as const;
+
+function activeAt(at: Date) {
+  return {
+    effectiveFrom: { lte: at },
+    OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }],
+  };
+}
 
 export async function getSubscriptionView(
   companyId: string,
-  db: BillingReadDatabase = prisma
+  db: BillingReadDatabase = prisma,
+  at: Date = new Date()
 ): Promise<SubscriptionView | null> {
   const account = await db.saasBillingAccount.findFirst({
     where: { subscription: { companyId } },
@@ -233,17 +340,7 @@ export async function getSubscriptionView(
           billingInterval: true,
           cancelAtPeriodEnd: true,
           premiumDiscoveryEndsAt: true,
-          usagePeriods: {
-            orderBy: { startsAt: "desc" },
-            take: 1,
-            select: {
-              startsAt: true,
-              endsAt: true,
-              includedOrders: true,
-              orderCount: true,
-              overageCount: true,
-            },
-          },
+          usagePeriods: USAGE_PERIOD_SELECT,
         },
       },
       operations: {
@@ -253,5 +350,31 @@ export async function getSubscriptionView(
       },
     },
   });
-  return account ? buildSubscriptionView(account as unknown as SubscriptionAccount) : null;
+  if (account) return buildSubscriptionView(account as unknown as SubscriptionAccount, at);
+
+  const subscription = await db.saasSubscription.findUnique({
+    where: { companyId },
+    select: {
+      kind: true,
+      status: true,
+      billingInterval: true,
+      currentPeriodStart: true,
+      currentPeriodEnd: true,
+      cancelAtPeriodEnd: true,
+      premiumDiscoveryEndsAt: true,
+      planAssignments: {
+        where: activeAt(at),
+        orderBy: { effectiveFrom: "desc" },
+        take: 1,
+        select: { plan: { select: { code: true, name: true } } },
+      },
+      items: {
+        where: activeAt(at),
+        orderBy: { effectiveFrom: "asc" },
+        select: { code: true, quantity: true, unitPriceCents: true, option: { select: { name: true } } },
+      },
+      usagePeriods: USAGE_PERIOD_SELECT,
+    },
+  });
+  return subscription ? buildManagedSubscriptionView(subscription as ManagedSubscription, at) : null;
 }

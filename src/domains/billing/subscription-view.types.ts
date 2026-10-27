@@ -1,6 +1,7 @@
 export type SubscriptionView = {
   formula: { code: string; name: string };
-  billingInterval: "MONTHLY" | "ANNUAL";
+  /** Absente pour un pilote ou un accès historique, sans facturation périodique. */
+  billingInterval: "MONTHLY" | "ANNUAL" | null;
   period: { startsAt: string; endsAt: string | null };
   premiumDiscovery: {
     endsAt: string;
@@ -15,4 +16,9 @@ export type SubscriptionView = {
   status: string;
   alerts: Array<{ code: string; label: string }>;
   history: Array<{ type: "operation" | "invoice"; label: string; status: string; occurredAt: string; amountCents?: number }>;
+  /** SELF_SERVICE : compte de facturation en ligne ; TUTELLIV_TEAM : changements par l'équipe TutelLiv. */
+  management: "SELF_SERVICE" | "TUTELLIV_TEAM";
 };
+
+/** Plafond de commandes des pilotes et formules sans limite (entier PostgreSQL maximal). */
+export const UNLIMITED_MONTHLY_ORDERS = 2_147_483_647;
