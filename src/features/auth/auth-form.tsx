@@ -27,8 +27,8 @@ import type {
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Package2 } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { PublicSupportLink } from "@/features/support/public-support-link";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { useAuthStore } from "@/stores/auth.store";
@@ -247,11 +247,8 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   return (
     <div className="flex min-h-screen">
       <div className="hidden w-1/2 flex-col justify-between bg-foreground p-12 lg:flex">
-        <Link href="/" className="flex w-fit items-center gap-3 transition-opacity hover:opacity-90">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand">
-            <Package2 className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-semibold text-white">{APP_NAME}</span>
+        <Link href="/" className="flex w-fit items-center rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+          <BrandLogo onDark size="md" priority />
         </Link>
         <div>
           <h2 className="text-4xl font-semibold leading-tight text-white text-balance">
@@ -262,7 +259,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           <p className="mt-4 max-w-md text-lg text-white/60">
             {isInvitedUser
               ? "Votre administrateur vous envoie une invitation pour choisir votre mot de passe."
-              : "La plateforme de référence pour les entreprises de livraison."}
+              : "Commandes, dispatch, suivi et facturation au même endroit, pour vous, vos clients et vos livreurs."}
           </p>
         </div>
         <p className="text-sm text-white/40">
@@ -277,10 +274,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           className="absolute right-6 top-6 z-10 flex items-center gap-2.5 transition-opacity hover:opacity-80"
           aria-label={`Retour à l'accueil ${APP_NAME}`}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
-            <Package2 className="h-4 w-4" />
-          </div>
-          <span className="text-lg font-semibold">{APP_NAME}</span>
+          <BrandLogo />
         </Link>
 
         <div className="w-full max-w-md animate-slide-up pt-12 lg:pt-0">

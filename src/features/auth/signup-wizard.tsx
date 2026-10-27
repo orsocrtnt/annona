@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Package2 } from "lucide-react";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { salesCodeFromSearch, signupEntryFromSearch } from "@/domains/growth/signup-entry";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import {
   formatSignupMoney,
 } from "@/features/auth/signup-plan-comparison";
 import { describeSignupValidation, signupIdentityDetailsSchema, signupIdentitySchema } from "@/lib/validations/signup";
-import { APP_NAME } from "@/lib/constants";
 import { PublicSupportLink } from "@/features/support/public-support-link";
 
 type Stage = "plan" | "options" | "identity" | "email" | "payment";
@@ -299,7 +298,7 @@ export function SignupWizard() {
     <main className="min-h-screen bg-muted/20 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <header className="flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3 font-semibold"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white"><Package2 className="h-5 w-5" /></span>{APP_NAME}</Link>
+          <Link href="/" className="flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><BrandLogo priority /></Link>
           <div className="flex items-center gap-4">
             <PublicSupportLink />
             <Link href="/login" className="text-sm font-medium text-brand hover:underline">Se connecter</Link>
