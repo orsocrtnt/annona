@@ -250,6 +250,7 @@ export function buildSubscriptionView(
     management: "SELF_SERVICE",
     cancelAtPeriodEnd,
     canCancel: (status === "ACTIVE" || status === "PAST_DUE") && !cancelAtPeriodEnd,
+    canChange: status === "ACTIVE" && !cancelAtPeriodEnd && !record(state.pendingChange),
   };
 }
 
@@ -306,6 +307,7 @@ export function buildManagedSubscriptionView(
     management: "TUTELLIV_TEAM",
     cancelAtPeriodEnd,
     canCancel: false,
+    canChange: false,
   };
 }
 

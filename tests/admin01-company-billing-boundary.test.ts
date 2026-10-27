@@ -89,7 +89,7 @@ function billingDependencies(calls: string[], role: string, companyId: string | 
       },
     },
     "@/domains/signup/signup.service": {
-      getActiveSignupCatalog: async () => { calls.push("catalog"); return { code: "C9-2026-10-24" }; },
+      getActiveSignupCatalog: async () => { calls.push("catalog"); return { code: "C9-2026-10-24", plans: [] }; },
     },
     "@/domains/billing/billing-core": {
       makeBillingContract: () => { calls.push("contract"); return { hash: "contract-target", quote: { totalCents: 7900 } }; },
@@ -133,7 +133,7 @@ test("ADMIN-1 facturation : l'administrateur d'entreprise atteint les comporteme
   assert.equal(listed.status, 200);
   assert.equal(listed.headers.get("cache-control"), "no-store");
   assert.equal((await listed.json()).state, "ACTIVE");
-  assert.deepEqual(listedCalls, ["staff", "role", "company", "account", "operations"]);
+  assert.deepEqual(listedCalls, ["staff", "role", "company", "account", "operations", "catalog"]);
 
   const missingCalls: string[] = [];
   const missing = await load("src/app/api/billing/route.ts", billingDependencies(missingCalls, "COMPANY_ADMIN", "company-1", null)).GET!();

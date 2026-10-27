@@ -101,6 +101,13 @@ test("SAAS-03 : la résiliation en libre-service n'est proposée qu'une fois, et
   assert.equal(buildSubscriptionView(ended as never)!.canCancel, false);
   const team = buildManagedSubscriptionView(managed("PILOT") as never, new Date("2026-10-27T12:00:00Z"))!;
   assert.equal(team.canCancel, false);
+  assert.equal(team.canChange, false);
+  assert.equal(active.canChange, true);
+  assert.equal(view.canChange, false, "résiliation programmée : pas de changement");
+  assert.equal(buildSubscriptionView(late as never)!.canChange, false, "retard de paiement : régulariser d’abord");
+  const pending = account();
+  (pending.state as Record<string, unknown>).pendingChange = { contract: {} };
+  assert.equal(buildSubscriptionView(pending as never)!.canChange, false);
 });
 
 test("SAAS-03 : compte ou contrat absent produit un état vide sans abonnement inventé", async () => {

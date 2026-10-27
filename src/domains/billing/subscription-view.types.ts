@@ -22,6 +22,8 @@ export type SubscriptionView = {
   cancelAtPeriodEnd: boolean;
   /** Résiliation en libre-service possible (compte en ligne, abonnement actif ou en retard de paiement). */
   canCancel: boolean;
+  /** Changement de formule possible : actif, sans résiliation ni changement déjà en attente. */
+  canChange: boolean;
 };
 
 /** Plafond de commandes des pilotes et formules sans limite (entier PostgreSQL maximal). */

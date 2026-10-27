@@ -9,6 +9,7 @@ import { PageLoader } from "@/components/ui/loader";
 import { UNLIMITED_MONTHLY_ORDERS, type SubscriptionView } from "@/domains/billing/subscription-view.types";
 import { subscriptionApi } from "./subscription-api";
 import { SubscriptionCancel } from "./subscription-cancel";
+import { SubscriptionChange } from "./subscription-change";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 const discoveryDateFormat = new Intl.DateTimeFormat("fr-FR", {
@@ -52,7 +53,7 @@ export function SubscriptionContent() {
     </section>;
   }
 
-  return <div className="space-y-6" data-subscription-readonly={String(data.management !== "SELF_SERVICE" || !data.canCancel)}>
+  return <div className="space-y-6" data-subscription-readonly={String(data.management !== "SELF_SERVICE" || (!data.canCancel && !data.canChange))}>
     <header>
       <h1 className="text-2xl font-semibold tracking-tight">Mon abonnement</h1>
       <p className="mt-1 text-muted-foreground">Formule, consommation et historique de votre abonnement.</p>
@@ -130,6 +131,7 @@ export function SubscriptionContent() {
       </CardContent>
     </Card>
 
+    {data.management === "SELF_SERVICE" && <SubscriptionChange subscription={data} endsAtLabel={formatDate(data.period.endsAt)} />}
     {data.management === "SELF_SERVICE" && <SubscriptionCancel subscription={data} endsAtLabel={formatDate(data.period.endsAt)} />}
   </div>;
 }

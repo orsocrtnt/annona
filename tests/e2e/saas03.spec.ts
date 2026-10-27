@@ -105,3 +105,56 @@ test("SAAS-03 : résiliation confirmée, même clé après une erreur, puis rés
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole("heading", { name: "Résiliation programmée" })).toBeVisible();
 });
+
+test("SAAS-03 : changement de formule avec aperçu, comptes en excès bloquants, puis confirmation à la même clé", async ({ page }) => {
+  const login = await page.request.post("/api/auth/login", {
+    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+  });
+  expect(login.status()).toBe(200);
+  const plans = [
+    { code: "STARTER", name: "Starter", monthlyPriceCents: 7900, annualPriceCents: 79000 },
+    { code: "PRO", name: "Pro", monthlyPriceCents: 17900, annualPriceCents: 179000 },
+    { code: "BUSINESS", name: "Business", monthlyPriceCents: 39900, annualPriceCents: 399000 },
+  ];
+  const posts: Array<Record<string, unknown>> = [];
+  await page.route("**/api/billing/subscription", (route) => route.fulfill({
+    json: { data: { ...subscription, management: "SELF_SERVICE", canCancel: true, canChange: true, cancelAtPeriodEnd: false } },
+  }));
+  await page.route("**/api/billing", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: { plans, current: { planCode: "PRO", billingInterval: "MONTHLY", selections: [{ code: "AUTO_DISPATCH", quantity: 1 }] } } });
+    const body = route.request().postDataJSON() as Record<string, unknown> & { selection: { planCode: string } };
+    posts.push(body);
+    if (body.action === "preview" && body.selection.planCode === "STARTER") {
+      return route.fulfill({ json: { totalCents: 0, currency: "EUR", timing: "renewal", prorationDate: 1793100000, quote: { totalTtcCents: 9480, billingInterval: "MONTHLY" }, assessment: { blockers: [{ resource: "drivers", current: 8, limit: 5, excess: 3 }], lostFeatures: ["advanced_analytics"], orderOverage: null } } });
+    }
+    if (body.action === "preview") {
+      return route.fulfill({ json: { totalCents: 12345, currency: "EUR", timing: "immediate", prorationDate: 1793100000, quote: { totalTtcCents: 47880, billingInterval: "MONTHLY" }, assessment: { blockers: [], lostFeatures: [], orderOverage: null } } });
+    }
+    if (posts.filter((post) => post.action === "change").length === 1) return route.fulfill({ status: 409, json: { error: "Modification non appliquée ou en attente de rapprochement. Relisez l’historique avant de réessayer avec la même demande." } });
+    return route.fulfill({ json: { timing: "immediate", invoiceId: "in_fixture" } });
+  });
+  await page.route("**/*stripe*", async (route) => {
+    throw new Error(`Requête Stripe interdite : ${route.request().url()}`);
+  });
+
+  await page.goto("/settings/subscription");
+  await page.getByRole("button", { name: "Changer de formule" }).click();
+  const dialog = page.getByRole("dialog", { name: "Changer de formule" });
+  await expect(dialog.getByRole("radio", { name: /Pro.*Formule actuelle/ })).toBeDisabled();
+  await dialog.getByRole("radio", { name: /Starter/ }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Désactivez d’abord 3 comptes livreurs");
+  await expect(dialog).toContainText("Fonctions retirées : Statistiques avancées.");
+  await expect(dialog.getByRole("button", { name: "Programmer le changement" })).toBeDisabled();
+
+  await dialog.getByRole("radio", { name: /Business/ }).click();
+  await expect(dialog).toContainText("À payer aujourd’hui : 123,45 € TTC");
+  await dialog.getByRole("button", { name: "Payer 123,45 € et changer" }).click();
+  await expect(dialog.getByRole("alert").filter({ hasText: "Relisez l’historique" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Payer 123,45 € et changer" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  const changes = posts.filter((post) => post.action === "change");
+  expect(changes).toHaveLength(2);
+  expect(changes[1]!.key).toBe(changes[0]!.key);
+  expect(changes[0]).toMatchObject({ confirmed: true, confirmedTotalCents: 12345, prorationDate: 1793100000, selection: { planCode: "BUSINESS", billingInterval: "MONTHLY", selections: [{ code: "AUTO_DISPATCH", quantity: 1 }] } });
+});

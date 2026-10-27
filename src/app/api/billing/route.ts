@@ -28,7 +28,12 @@ export async function GET() {
   const auth = await context();
   if ("error" in auth) return auth.error;
   const operations = await prisma.saasBillingOperation.findMany({ where: { accountId: auth.account.id }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, kind: true, status: true, createdAt: true, completedAt: true } });
-  return NextResponse.json({ state: auth.account.state, operations }, { headers: { "Cache-Control": "no-store" } });
+  // Formules proposées au changement : catalogue actif, prix HT seulement ; la sélection actuelle garde ses options.
+  const catalog = await getActiveSignupCatalog().catch(() => null);
+  const plans = catalog?.plans.map((plan) => ({ code: plan.code, name: plan.name, monthlyPriceCents: plan.monthlyPriceCents, annualPriceCents: plan.annualPriceCents })) ?? [];
+  const active = (auth.account.state as unknown as BillingState | null)?.activeContract;
+  const current = active ? { planCode: active.quote.planCode, billingInterval: active.quote.billingInterval, selections: active.quote.selections } : null;
+  return NextResponse.json({ state: auth.account.state, operations, plans, current }, { headers: { "Cache-Control": "no-store" } });
 }
 export async function POST(request: Request) {
   const auth = await context();
