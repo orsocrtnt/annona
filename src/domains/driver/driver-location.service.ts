@@ -1,4 +1,4 @@
-import { trackingPosition, trackingService, trackingTarget } from "@/domains/tracking/tracking.policy";
+import { trackingPosition, trackingService, trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { transaction, ConversationError } from "@/domains/order-conversation/order-conversation.service";
 import { prisma } from "@/services/prisma/client";
 import type { UpdateDriverLocationInput } from "@/lib/validations/driver-location";
@@ -16,6 +16,8 @@ export type LiveDriverLocation = {
   isOnline: boolean;
   /** Signal perdu depuis peu : position estimée vers la prochaine étape, pas un relevé GPS. */
   estimated: boolean;
+  /** Trajet supposé vers la prochaine étape : la carte fait avancer le livreur entre deux signaux. */
+  motion: TrackingMotion | null;
   positionState: string;
 };
 
@@ -91,7 +93,7 @@ export async function getCompanyDriverLocations(
       name: formatDriverDisplayName(`${driver.firstName} ${driver.lastName}`.trim()),
       latitude: position.latitude, longitude: position.longitude, accuracy: position.accuracy,
       updatedAt: position.updatedAt, activeMissions: driver._count.deliveriesAsDriver,
-      isOnline: position.state === "FRESH", estimated: position.estimated, positionState: position.state,
+      isOnline: position.state === "FRESH", estimated: position.estimated, motion: position.motion, positionState: position.state,
     };
   });
 }

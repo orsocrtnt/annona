@@ -205,6 +205,7 @@ export function DriversLiveMap({
           isSelected={selectedId === driver.id}
           isOnline={driver.isOnline}
           estimated={driver.estimated}
+          motion={driver.motion}
           updatedAt={driver.updatedAt}
           onSelect={() => onSelect?.(driver.id)}
         />

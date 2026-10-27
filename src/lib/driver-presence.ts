@@ -1,19 +1,29 @@
 import { ESTIMATION_MAX_SECONDS } from "@/domains/tracking/tracking.policy";
 
-/** Couleurs de présence type Microsoft Teams : vert en direct, jaune dès que le signal n'est plus frais. */
+/**
+ * Couleurs de présence type Microsoft Teams : vert en direct, jaune pendant l'estimation
+ * (signal périmé depuis moins de 3 min), rouge une fois le signal perdu.
+ */
 export const TEAMS_PRESENCE = {
   online: "#6BB700",
   recent: "#EAA300",
+  lost: "#C4314B",
 } as const;
 
 export type DriverPresenceStatus = keyof typeof TEAMS_PRESENCE;
 
-export function getDriverPresenceStatus(isOnline: boolean): DriverPresenceStatus {
-  return isOnline ? "online" : "recent";
+/** Signal perdu : aucun relevé depuis plus longtemps que la durée d'estimation. */
+export function isSignalLost(updatedAt: string | null, now: number): boolean {
+  return !updatedAt || now - Date.parse(updatedAt) > ESTIMATION_MAX_SECONDS * 1000;
 }
 
-export function getDriverPresenceColor(isOnline: boolean): string {
-  return TEAMS_PRESENCE[getDriverPresenceStatus(isOnline)];
+export function getDriverPresenceStatus(isOnline: boolean, updatedAt: string | null, now: number): DriverPresenceStatus {
+  if (isOnline) return "online";
+  return isSignalLost(updatedAt, now) ? "lost" : "recent";
+}
+
+export function getDriverPresenceColor(isOnline: boolean, updatedAt: string | null, now: number): string {
+  return TEAMS_PRESENCE[getDriverPresenceStatus(isOnline, updatedAt, now)];
 }
 
 /** « Il y a 3 min » à partir de l'heure du dernier signal. */
@@ -37,7 +47,6 @@ export function driverSignalLabel(
   if (signal.isOnline) return "En direct";
   if (!signal.updatedAt) return "Signal inconnu";
   const age = formatSignalAge(signal.updatedAt, now);
-  if (signal.estimated) return `${age} · Position estimée`;
-  const lost = now - Date.parse(signal.updatedAt) > ESTIMATION_MAX_SECONDS * 1000;
-  return lost ? `${age} · Signal perdu` : age;
+  if (isSignalLost(signal.updatedAt, now)) return `${age} · Signal perdu`;
+  return signal.estimated ? `${age} · Position estimée` : age;
 }

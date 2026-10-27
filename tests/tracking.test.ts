@@ -207,6 +207,7 @@ test("TRACK-2 services : signal perdu depuis 2 min, livreur gardé et estimé su
   const location = moduleAt("src/domains/driver/driver-location.service.ts", { ...common, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(prisma) } });
   const [live] = await location.getCompanyDriverLocations("a", 45);
   assertEstimated(live); assert.equal(live.isOnline, false); assert.equal(live.positionState, "STALE"); assert.equal(live.updatedAt, lostAt.toISOString());
+  assert.deepEqual({ ...live.motion.target }, { latitude: 48.9, longitude: 2.35 }); assert.deepEqual({ ...live.motion.from }, { latitude: 48.8, longitude: 2.35 }); assert.equal(live.motion.since, lostAt.toISOString());
 
   const map = moduleAt("src/domains/delivery/dispatch-map.service.ts", { ...common,
     "@/domains/delivery/delivery.service": { repairCourierDeliveryIfNeeded: async () => {} },
@@ -217,6 +218,7 @@ test("TRACK-2 services : signal perdu depuis 2 min, livreur gardé et estimé su
   });
   const adminMap = await map.getDispatchMapDeliveries("a", 45);
   assertEstimated(adminMap.deliveries[0].driverLocation); assert.equal(adminMap.deliveries[0].driverLocation.isOnline, false);
+  assert.deepEqual({ ...adminMap.deliveries[0].driverLocation.motion.target }, { latitude: 48.9, longitude: 2.35 });
   assert.equal(adminMap.points.find((p: any) => p.kind === "driver").address, "Position estimée du livreur");
   const clientMap = await map.getClientDeliveriesMap("client", "a", 45);
   assertEstimated(clientMap.active[0].driverLocation);

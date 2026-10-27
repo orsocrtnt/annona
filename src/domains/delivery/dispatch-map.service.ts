@@ -1,6 +1,6 @@
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
-import { trackingPosition, trackingTarget } from "@/domains/tracking/tracking.policy";
+import { trackingPosition, trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
 import { geocodeManyCapped, isLegacyFakeTrackingCoord } from "@/lib/geocoding";
@@ -49,6 +49,8 @@ export type DispatchMapDriverLocation = {
   isOnline: boolean;
   /** Signal perdu depuis peu : position estimée vers la prochaine étape, pas un relevé GPS. */
   estimated: boolean;
+  /** Trajet supposé vers la prochaine étape : la carte fait avancer le livreur entre deux signaux. */
+  motion: TrackingMotion | null;
 };
 
 export type DispatchMapPoint = {
@@ -607,6 +609,7 @@ async function buildDeliveriesMapPayload(
             updatedAt: position.updatedAt,
             isOnline: position.state === "FRESH",
             estimated: position.estimated,
+            motion: position.motion,
           }
         : null;
 

@@ -3,8 +3,9 @@
 import { useMemo } from "react";
 import L from "leaflet";
 import { Marker } from "react-leaflet";
+import { motionPositionAt, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { useNow } from "@/hooks/use-now";
-import { driverSignalLabel, getDriverPresenceColor } from "@/lib/driver-presence";
+import { driverSignalLabel, getDriverPresenceStatus, TEAMS_PRESENCE } from "@/lib/driver-presence";
 import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
 
@@ -35,18 +36,21 @@ const TRUCK_ICON =
 
 /** Le libellé du signal avance tout seul (« Il y a 3 min ») même quand les données ne changent pas. */
 const SIGNAL_LABEL_TICK_MS = 30_000;
+/** Livreur en route : il avance vers sa prochaine étape seconde après seconde, entre deux signaux. */
+const MOTION_TICK_MS = 1_000;
 
 function createDriverIcon(
   name: string,
   isSelected: boolean,
-  isOnline: boolean,
-  estimated: boolean,
+  presence: keyof typeof TEAMS_PRESENCE,
   signalLabel: string,
   showLabel = true
 ) {
   const { firstName, lastName } = splitName(name);
   const dotSize = isSelected ? DOT_SELECTED : DOT_SIZE;
-  const presenceColor = getDriverPresenceColor(isOnline);
+  const presenceColor = TEAMS_PRESENCE[presence];
+  const isOnline = presence === "online";
+  const isLost = presence === "lost";
   const cardOffset = dotSize / 2 + GAP;
   const cardSurface = isSelected ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
   const primaryText = isSelected ? MAP_VISUAL_THEME.surface : MAP_VISUAL_THEME.ink;
@@ -60,15 +64,13 @@ function createDriverIcon(
   // Textes foncés sur la carte blanche (contraste AA), clairs sur la carte encre sélectionnée.
   const signalColor = isOnline
     ? isSelected ? MAP_VISUAL_THEME.brand : "#2f6f00"
-    : isSelected ? "#f5c75d" : "#7a5200";
+    : isLost
+      ? isSelected ? "#ff9aa8" : "#a4243b"
+      : isSelected ? "#f5c75d" : "#7a5200";
   const signalBlock = `<div style="font-size:10px;font-weight:600;color:${signalColor};line-height:1.2;margin-top:3px;">${escapeHtml(signalLabel)}</div>`;
-  // Position estimée : point translucide à bordure pointillée, jamais confondu avec un relevé GPS.
-  const dotSurface = estimated
-    ? "background:rgba(213,219,215,0.55);border:2px dashed #3f4842;box-sizing:border-box;"
-    : `background:${isOnline ? MAP_VISUAL_THEME.brand : MAP_VISUAL_THEME.mutedLight};`;
-  const dotShadow = estimated
-    ? `0 0 0 3px rgba(255,255,255,0.85)${isSelected ? `,0 0 0 5px ${MAP_VISUAL_THEME.ink}` : ""}`
-    : `0 0 0 4px #ffffff,0 8px 20px rgba(0,120,60,0.28)${isSelected ? `,0 0 0 6px ${MAP_VISUAL_THEME.ink}` : ""}`;
+  // Camion vert tant que le livreur roule (en direct ou estimé) ; gris une fois le signal perdu.
+  const dotSurface = `background:${isLost ? MAP_VISUAL_THEME.mutedLight : MAP_VISUAL_THEME.brand};`;
+  const dotShadow = `0 0 0 4px #ffffff,0 8px 20px rgba(0,120,60,0.28)${isSelected ? `,0 0 0 6px ${MAP_VISUAL_THEME.ink}` : ""}`;
 
   const cardPadding = isSelected ? "7px 14px" : "6px 12px";
   const cardRadius = isSelected ? "12px" : "10px";
@@ -90,7 +92,7 @@ function createDriverIcon(
         color:${MAP_VISUAL_THEME.ink};
         display:flex;align-items:center;justify-content:center;
         box-shadow:${dotShadow};
-      "><span style="display:flex;opacity:${estimated ? 0.6 : 1};">${TRUCK_ICON}</span><span style="position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:${presenceColor};border:2px solid #ffffff;"></span></div>
+      ">${TRUCK_ICON}<span style="position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:${presenceColor};border:2px solid #ffffff;"></span></div>
       <div style="
         position:absolute;
         left:0;
@@ -124,8 +126,10 @@ interface DriverMapMarkerProps {
   longitude: number;
   isSelected?: boolean;
   isOnline?: boolean;
-  /** Position estimée (signal perdu) plutôt que relevée. */
+  /** Position estimée (signal périmé) plutôt que relevée. */
   estimated?: boolean;
+  /** Trajet supposé : le marqueur avance vers la cible entre deux signaux, puis s'arrête signal perdu. */
+  motion?: TrackingMotion | null;
   updatedAt?: string | null;
   onSelect?: () => void;
   /** Vue éloignée : la pastille seule, sans l'étiquette du nom. */
@@ -139,20 +143,23 @@ export function DriverMapMarker({
   isSelected = false,
   isOnline = false,
   estimated = false,
+  motion = null,
   updatedAt = null,
   onSelect,
   showLabel = true,
 }: DriverMapMarkerProps) {
-  const now = useNow(SIGNAL_LABEL_TICK_MS);
+  const now = useNow(motion ? MOTION_TICK_MS : SIGNAL_LABEL_TICK_MS);
   const signalLabel = driverSignalLabel({ isOnline, estimated, updatedAt }, now);
+  const presence = getDriverPresenceStatus(isOnline, updatedAt, now);
+  const position = motion ? motionPositionAt(motion, now) : { latitude, longitude };
   const icon = useMemo(
-    () => createDriverIcon(name, isSelected, isOnline, estimated, signalLabel, showLabel),
-    [name, isSelected, isOnline, estimated, signalLabel, showLabel]
+    () => createDriverIcon(name, isSelected, presence, signalLabel, showLabel),
+    [name, isSelected, presence, signalLabel, showLabel]
   );
 
   return (
     <Marker
-      position={[latitude, longitude]}
+      position={[position.latitude, position.longitude]}
       icon={icon}
       title={`${withoutRolePrefix(name)} — ${signalLabel}`}
       eventHandlers={{ click: () => onSelect?.() }}
