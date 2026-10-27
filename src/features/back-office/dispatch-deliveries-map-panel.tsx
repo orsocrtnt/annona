@@ -16,8 +16,6 @@ interface DispatchDeliveriesMapPanelProps {
   deliveries: DispatchMapDelivery[];
   selectedId: string | null;
   onSelect: (id: string) => void;
-  /** Double-clic sur une ligne : ouvrir la fiche complète. */
-  onOpen?: (id: string) => void;
   focusSelectedId?: string | null;
 }
 
@@ -48,13 +46,11 @@ function DeliveryListItem({
   delivery,
   isSelected,
   onSelect,
-  onOpen,
   shouldFocus = false,
 }: {
   delivery: DispatchMapDelivery;
   isSelected: boolean;
   onSelect: () => void;
-  onOpen?: () => void;
   shouldFocus?: boolean;
 }) {
   const purchasing = isPurchasingPhase(delivery);
@@ -72,7 +68,6 @@ function DeliveryListItem({
       type="button"
       ref={buttonRef}
       onClick={onSelect}
-      onDoubleClick={onOpen}
       aria-pressed={isSelected}
       title="Clic : sélectionner ou désélectionner · double-clic : voir le détail"
       className={cn(
@@ -153,7 +148,6 @@ function DispatchDeliveriesList({
   search,
   onSearchChange,
   onSelect,
-  onOpen,
   focusSelectedId,
 }: {
   deliveries: DispatchMapDelivery[];
@@ -162,7 +156,6 @@ function DispatchDeliveriesList({
   search: string;
   onSearchChange: (value: string) => void;
   onSelect: (id: string) => void;
-  onOpen?: (id: string) => void;
   focusSelectedId?: string | null;
 }) {
   const hasSearch = search.trim().length > 0;
@@ -207,7 +200,6 @@ function DispatchDeliveriesList({
               isSelected={selectedId === delivery.id}
               shouldFocus={focusSelectedId === delivery.id}
               onSelect={() => onSelect(delivery.id)}
-              onOpen={onOpen ? () => onOpen(delivery.id) : undefined}
             />
           ))
         )}
@@ -220,7 +212,6 @@ export function DispatchDeliveriesMapPanel({
   deliveries,
   selectedId,
   onSelect,
-  onOpen,
   focusSelectedId = null,
 }: DispatchDeliveriesMapPanelProps) {
   const [search, setSearch] = useState("");
@@ -291,7 +282,6 @@ export function DispatchDeliveriesMapPanel({
               search={search}
               onSearchChange={setSearch}
               onSelect={handleSelect}
-              onOpen={onOpen}
               focusSelectedId={focusSelectedId}
             />
           </div>
@@ -311,7 +301,6 @@ export function DispatchDeliveriesMapPanel({
           search={search}
           onSearchChange={setSearch}
           onSelect={onSelect}
-          onOpen={onOpen}
           focusSelectedId={focusSelectedId}
         />
       </div>

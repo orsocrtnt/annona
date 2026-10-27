@@ -23,6 +23,14 @@ import {
 import { cn } from "@/lib/utils";
 import { OfferFeatureGate } from "@/features/saas/locked-offer-feature";
 
+/** Écart maximal entre deux clics d'un double-clic (macOS : environ 500 ms). */
+const DOUBLE_CLICK_MS = 500;
+/**
+ * Dernier clic sur une livraison. Hors du composant : la mise à jour de l'URL après le premier
+ * clic peut recréer le composant, et un état local serait perdu avant le second clic.
+ */
+let lastDeliveryClick: { id: string; at: number } | null = null;
+
 export default function DispatchMapPage() {
   return (
     <OfferFeatureGate feature="admin_gps">
@@ -83,9 +91,28 @@ function DispatchMapContent() {
     setSelectedId(requestedDeliveryAvailable ? requestedDeliveryId : null);
   }, [requestedDeliveryAvailable, requestedDeliveryId]);
 
-  // Un second clic sur la livraison sélectionnée (carte ou liste) la désélectionne.
+  // Double-clic : la fiche complète de la commande (suivi, articles, échanges).
+  const openDetails = useCallback(
+    (id: string) => {
+      const delivery = deliveries.find((d) => d.id === id);
+      if (delivery) router.push(`/dashboard/orders/${delivery.orderId}`);
+    },
+    [deliveries, router]
+  );
+
+  // Clic : sélectionner ; clic sur la livraison déjà sélectionnée : désélectionner.
+  // Deux clics sur la même livraison à moins de DOUBLE_CLICK_MS : ouvrir le détail. Le
+  // double-clic est reconnu ici et non par le navigateur, car l'épingle change entre les clics.
   const handleSelect = useCallback(
     (id: string) => {
+      const now = Date.now();
+      const previous = lastDeliveryClick;
+      if (previous && previous.id === id && now - previous.at < DOUBLE_CLICK_MS) {
+        lastDeliveryClick = null;
+        openDetails(id);
+        return;
+      }
+      lastDeliveryClick = { id, at: now };
       const deselect = id === selectedId;
       setSelectedId(deselect ? null : id);
       const params = new URLSearchParams(searchParams.toString());
@@ -95,16 +122,7 @@ function DispatchMapContent() {
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     },
-    [pathname, router, searchParams, selectedId]
-  );
-
-  // Double-clic : la fiche complète de la commande (suivi, articles, échanges).
-  const handleOpen = useCallback(
-    (id: string) => {
-      const delivery = deliveries.find((d) => d.id === id);
-      if (delivery) router.push(`/dashboard/orders/${delivery.orderId}`);
-    },
-    [deliveries, router]
+    [openDetails, pathname, router, searchParams, selectedId]
   );
 
   const selectedDelivery = useMemo(
@@ -127,7 +145,6 @@ function DispatchMapContent() {
           delivery={selectedDelivery}
           deliveries={visibleDeliveries}
           onSelect={handleSelect}
-          onOpen={handleOpen}
           onMapReady={setMapApi}
         />
       </div>
@@ -137,7 +154,6 @@ function DispatchMapContent() {
           deliveries={visibleDeliveries}
           selectedId={selectedId}
           onSelect={handleSelect}
-          onOpen={handleOpen}
           focusSelectedId={requestedDeliveryAvailable ? requestedDeliveryId : null}
         />
       </div>

@@ -37,9 +37,8 @@ interface DeliveriesLiveMapProps {
   delivery: DispatchMapDelivery | null;
   /** Vue d'ensemble quand aucune livraison n'est sélectionnée : toutes les épingles et les livreurs. */
   deliveries?: DispatchMapDelivery[];
+  /** Clic sur une livraison (deux clics rapprochés = double-clic, géré par la page). */
   onSelect?: (id: string) => void;
-  /** Double-clic sur une livraison : ouvrir sa fiche complète. */
-  onOpen?: (id: string) => void;
   onMapReady?: (api: DeliveriesMapApi) => void;
 }
 
@@ -159,11 +158,9 @@ function OverviewViewController({ points }: { points: [number, number][] }) {
 function OverviewLayer({
   deliveries,
   onSelect,
-  onOpen,
 }: {
   deliveries: DispatchMapDelivery[];
   onSelect?: (id: string) => void;
-  onOpen?: (id: string) => void;
 }) {
   const located = deliveries.filter((delivery) => delivery.destination && !delivery.isHistorical);
   const drivers = new Map<string, DispatchMapDelivery>();
@@ -219,7 +216,6 @@ function OverviewLayer({
               subtitle={delivery.driverName ?? undefined}
               showCallout={zoom >= 11}
               onSelect={() => onSelect?.(delivery.id)}
-              onOpen={onOpen ? () => onOpen(delivery.id) : undefined}
             />
           );
         }
@@ -295,7 +291,7 @@ function DeliveryRouteLayer({ delivery }: { delivery: DispatchMapDelivery }) {
   </>;
 }
 
-export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onOpen, onMapReady }: DeliveriesLiveMapProps) {
+export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapReady }: DeliveriesLiveMapProps) {
   const markers = useMemo(
     () => (delivery ? buildDeliveryMapMarkers(delivery) : []),
     [delivery]
@@ -310,7 +306,7 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onOpen,
     <LeafletBaseMap fill variant="uber" className="h-full w-full" center={PARIS_CENTER}>
       <MapApiBridge onMapReady={onMapReady} />
       <MapViewController delivery={delivery} />
-      {!delivery && <OverviewLayer deliveries={deliveries} onSelect={onSelect} onOpen={onOpen} />}
+      {!delivery && <OverviewLayer deliveries={deliveries} onSelect={onSelect} />}
 
       {delivery && !delivery.isHistorical && <DeliveryRouteLayer delivery={delivery} />}
 
@@ -337,7 +333,6 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onOpen,
           muted={mutedMarkers}
           status={marker.kind === "destination" && delivery ? getDispatchMapStatus(delivery) : undefined}
           onClick={marker.kind === "destination" && delivery ? () => onSelect?.(delivery.id) : undefined}
-          onDoubleClick={marker.kind === "destination" && delivery && onOpen ? () => onOpen(delivery.id) : undefined}
         />
       ))}
 
