@@ -20,9 +20,11 @@ import {
 import { CreateRecurringOrderForm } from "@/features/client-portal/create-recurring-order-form";
 import { DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import { formatRecurrenceInterval } from "@/lib/constants/recurrence";
-import { formatDate } from "@/lib/utils";
-import { Plus, RefreshCw, Pause, Play, Package, Bike } from "lucide-react";
+import { fullDateLabel, relativeDayLabel } from "@/lib/format/relative-day";
+import { Plus, RefreshCw, Pause, Play, Package, Bike, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
+
+type RecurringItem = NonNullable<ReturnType<typeof usePortalRecurringOrders>["data"]>[number];
 
 const STATUS_LABELS = {
   ACTIVE: "Active",
@@ -70,6 +72,9 @@ export default function RecurringOrdersPage() {
     );
   }
 
+  const current = recurring?.filter((item) => item.status !== "CANCELLED") ?? [];
+  const finished = recurring?.filter((item) => item.status === "CANCELLED") ?? [];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -79,14 +84,20 @@ export default function RecurringOrdersPage() {
             Planifiez des livraisons régulières — achats ou courses collecte → livraison
           </p>
         </div>
-        <Button variant="brand" onClick={() => setShowForm(!showForm)} className="max-md:w-full sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
+        <Button
+          variant="brand"
+          onClick={() => setShowForm(!showForm)}
+          aria-expanded={showForm}
+          aria-controls="recurring-form"
+          className="max-md:w-full sm:w-auto"
+        >
+          <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
           Nouvelle récurrence
         </Button>
       </div>
 
       {showForm && (
-        <Card>
+        <Card id="recurring-form">
           <CardHeader>
             <CardTitle className="text-base">Configurer une récurrence</CardTitle>
             <CardDescription>
@@ -102,94 +113,155 @@ export default function RecurringOrdersPage() {
         </Card>
       )}
 
-      <div className="space-y-3">
-        {recurring?.map((item) => {
-          const isCourier = item.deliveryCategory === "COURIER";
-          const CategoryIcon = isCourier ? Bike : Package;
-          const courierPickups = recurringPickupStopsToRoute(resolveRecurringPickupStops(item));
-          return (
-            <Card key={item.id}>
-              <CardContent className="space-y-4 p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <RefreshCw className="h-4 w-4 text-brand" />
-                      <p className="font-medium">{item.label}</p>
-                      <Badge variant={item.status === "ACTIVE" ? "success" : "secondary"}>
-                        {STATUS_LABELS[item.status]}
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <CategoryIcon className="h-3 w-3" />
-                        {DELIVERY_CATEGORY_LABELS[item.deliveryCategory ?? "STANDARD"]}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {formatRecurrenceInterval(
-                        item.intervalValue ?? 1,
-                        item.intervalUnit ?? "WEEKS"
-                      )}
-                      {" — "}Prochaine : {formatDate(item.nextRunAt, { timeZone: "UTC" })}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Du {formatDate(item.startAt, { timeZone: "UTC" })}{" "}
-                      {item.endAt
-                        ? ` au ${formatDate(item.endAt, { timeZone: "UTC" })}`
-                        : " (sans date de fin)"}
-                    </p>
-                    <DeliveryRouteDisplay
-                      category={item.deliveryCategory ?? "STANDARD"}
-                      pickups={courierPickups.length ? courierPickups : undefined}
-                      pickup={
-                        !courierPickups.length && item.pickupAddress
-                          ? {
-                              address: item.pickupAddress,
-                              city: item.pickupCity,
-                              postalCode: item.pickupPostalCode,
-                              instructions: item.pickupInstructions,
-                            }
-                          : null
-                      }
-                      destination={{
-                        address: item.shippingAddress,
-                        city: item.shippingCity,
-                        postalCode: item.shippingPostalCode,
-                        instructions: item.deliveryInstructions,
-                      }}
-                      compact
-                    />
-                    {!isCourier && item.items.length > 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        {item.items.map((i) => `${i.name} × ${i.quantity}`).join(", ")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    {item.status === "ACTIVE" ? (
-                      <Button variant="outline" size="sm" onClick={() => toggleStatus(item.id, "PAUSED")}>
-                        <Pause className="mr-1 h-3 w-3" /> Pause
-                      </Button>
-                    ) : item.status === "PAUSED" ? (
-                      <Button variant="outline" size="sm" onClick={() => toggleStatus(item.id, "ACTIVE")}>
-                        <Play className="mr-1 h-3 w-3" /> Reprendre
-                      </Button>
-                    ) : null}
-                    {item.status !== "CANCELLED" && (
-                      <Button variant="ghost" size="sm" onClick={() => toggleStatus(item.id, "CANCELLED")}>
-                        Terminer
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-        {recurring?.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            Aucune commande récurrente configurée.
+      {current.length > 0 && (
+        <ul className="space-y-3" aria-label="Récurrences en cours">
+          {current.map((item) => (
+            <li key={item.id}>
+              <RecurringCard item={item} onStatusChange={toggleStatus} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {recurring?.length === 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Aucune commande récurrente configurée.
+        </p>
+      )}
+
+      {finished.length > 0 && (
+        <details className="group rounded-2xl border border-border bg-card">
+          <summary className="cursor-pointer rounded-2xl px-5 py-4 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            Récurrences terminées ({finished.length})
+          </summary>
+          <ul className="space-y-3 px-3 pb-3">
+            {finished.map((item) => (
+              <li key={item.id}>
+                <RecurringCard item={item} onStatusChange={toggleStatus} />
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+/** « Demain », « 3 nov. » ; en milieu de phrase sans majuscule. */
+function dayLabel(value: string, inline = false): string {
+  const label = relativeDayLabel(value);
+  return inline ? label.charAt(0).toLowerCase() + label.slice(1) : label;
+}
+
+function RecurringCard({
+  item,
+  onStatusChange,
+}: {
+  item: RecurringItem;
+  onStatusChange: (id: string, status: "ACTIVE" | "PAUSED" | "CANCELLED") => void;
+}) {
+  const isCourier = item.deliveryCategory === "COURIER";
+  const CategoryIcon = isCourier ? Bike : Package;
+  const courierPickups = recurringPickupStopsToRoute(resolveRecurringPickupStops(item));
+  const frequency = formatRecurrenceInterval(item.intervalValue ?? 1, item.intervalUnit ?? "WEEKS");
+  const period = item.endAt
+    ? `du ${dayLabel(item.startAt, true)} au ${dayLabel(item.endAt, true)}`
+    : `depuis le ${dayLabel(item.startAt, true)}, sans date de fin`;
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-foreground">{item.label}</h2>
+              <Badge variant={item.status === "ACTIVE" ? "success" : "secondary"}>
+                {STATUS_LABELS[item.status]}
+              </Badge>
+              <Badge variant="outline" className="gap-1">
+                <CategoryIcon className="h-3 w-3" aria-hidden="true" />
+                {DELIVERY_CATEGORY_LABELS[item.deliveryCategory ?? "STANDARD"]}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {frequency}, {period}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {item.status === "ACTIVE" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStatusChange(item.id, "PAUSED")}
+                aria-label={`Mettre en pause « ${item.label} »`}
+              >
+                <Pause className="mr-1 h-3 w-3" aria-hidden="true" /> Pause
+              </Button>
+            ) : item.status === "PAUSED" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStatusChange(item.id, "ACTIVE")}
+                aria-label={`Reprendre « ${item.label} »`}
+              >
+                <Play className="mr-1 h-3 w-3" aria-hidden="true" /> Reprendre
+              </Button>
+            ) : null}
+            {item.status !== "CANCELLED" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onStatusChange(item.id, "CANCELLED")}
+                aria-label={`Terminer « ${item.label} »`}
+              >
+                Terminer
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {item.status === "ACTIVE" && (
+          <p className="flex items-center gap-2 rounded-xl bg-[#f5f8f6] px-3 py-2.5 text-sm">
+            <CalendarClock className="h-4 w-4 shrink-0 text-[#08783f]" aria-hidden="true" />
+            <span className="text-muted-foreground">Prochaine livraison</span>
+            <time dateTime={item.nextRunAt} title={fullDateLabel(item.nextRunAt)} className="font-medium text-foreground">
+              {dayLabel(item.nextRunAt)}
+            </time>
           </p>
         )}
-      </div>
-    </div>
+        {item.status === "PAUSED" && (
+          <p className="rounded-xl bg-[#f5f8f6] px-3 py-2.5 text-sm text-muted-foreground">
+            En pause : aucune livraison n&apos;est créée tant que vous ne la reprenez pas.
+          </p>
+        )}
+
+        <DeliveryRouteDisplay
+          category={item.deliveryCategory ?? "STANDARD"}
+          pickups={courierPickups.length ? courierPickups : undefined}
+          pickup={
+            !courierPickups.length && item.pickupAddress
+              ? {
+                  address: item.pickupAddress,
+                  city: item.pickupCity,
+                  postalCode: item.pickupPostalCode,
+                  instructions: item.pickupInstructions,
+                }
+              : null
+          }
+          destination={{
+            address: item.shippingAddress,
+            city: item.shippingCity,
+            postalCode: item.shippingPostalCode,
+            instructions: item.deliveryInstructions,
+          }}
+          compact
+        />
+        {!isCourier && item.items.length > 0 && (
+          <p className="text-sm text-muted-foreground">
+            {item.items.map((i) => `${i.name} × ${i.quantity}`).join(", ")}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
