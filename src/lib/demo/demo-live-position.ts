@@ -7,6 +7,20 @@ export const DEMO_POSITION_CYCLE_MS = 12 * 60 * 1000;
 /** Une position plus récente que ce délai n'est pas réécrite (lectures rapprochées). */
 export const DEMO_POSITION_MIN_INTERVAL_MS = 10 * 1000;
 
+/**
+ * Retard fictif du dernier signal par livreur de démo, dans l'ordre du roster : en direct (0),
+ * signal perdu depuis 3 min (position estimée) ou depuis 15 min (dernière position connue).
+ */
+export const DEMO_SIGNAL_LAG_SECONDS = [0, 0, 180, 0, 900] as const;
+const DEMO_SIGNAL_LAG_MAX_SECONDS = 3600;
+
+/** Retard lu dans les réglages du livreur ; 0 si absent ou invalide, plafonné à une heure. */
+export function demoSignalLagSeconds(settings: unknown): number {
+  const raw = (settings as { demoSignalLagSeconds?: unknown } | null)?.demoSignalLagSeconds;
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return 0;
+  return Math.min(DEMO_SIGNAL_LAG_MAX_SECONDS, Math.max(0, Math.round(raw)));
+}
+
 const PARIS_CENTER: Point = { latitude: 48.8566, longitude: 2.3522 };
 
 /** Seules les entreprises de démo (vitrine, pool, sessions) peuvent recevoir des positions simulées. */

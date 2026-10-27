@@ -3,6 +3,7 @@ import { trackingService } from "@/domains/tracking/tracking.policy";
 import { fetchOsrmRoute } from "@/lib/maps/osrm-route";
 import {
   DEMO_POSITION_MIN_INTERVAL_MS,
+  demoSignalLagSeconds,
   demoTripProgress,
   demoTripStart,
   isDemoCompanyForSimulation,
@@ -37,6 +38,8 @@ async function demoTripRoute(start: Point, target: Point): Promise<[number, numb
 /**
  * Démo uniquement : fait rouler les livreurs des missions démarrées sur le vrai itinéraire
  * que trace la carte (vers la collecte pour une course, vers l'adresse pour une commande).
+ * Un livreur à retard de signal (`demoSignalLagSeconds`) reçoit la position qu'il avait à ce
+ * moment-là, datée d'autant : les cartes le montrent estimé puis « Signal perdu », comme en réel.
  * Sans effet hors des entreprises de démo. Renvoie le nombre de positions écrites.
  */
 export async function advanceDemoDriverPositions(companyId: string, now = new Date()): Promise<number> {
@@ -76,11 +79,14 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
     if (seen.has(driverId)) continue;
     seen.add(driverId);
 
-    // Position récente et service actif : rien à réécrire. Juste après une réinitialisation,
-    // la position existe mais le service n'est pas encore actif : on l'active tout de suite.
+    // Position à jour (à son retard près) et service actif : rien à réécrire. Juste après une
+    // réinitialisation, la position existe mais le service n'est pas encore actif : on l'active.
     const trackingActive = trackingService(mission.driver?.settings).active;
     const lastUpdate = mission.driver?.driverLocation?.updatedAt;
-    if (trackingActive && lastUpdate && now.getTime() - lastUpdate.getTime() < DEMO_POSITION_MIN_INTERVAL_MS) continue;
+    const lagMs = demoSignalLagSeconds(mission.driver?.settings) * 1000;
+    // Jamais avant le départ : le signal doit appartenir à la mission en cours.
+    const signalAt = new Date(Math.max(now.getTime() - lagMs, mission.missionStartedAt!.getTime() + 1000));
+    if (trackingActive && lastUpdate && Math.abs(signalAt.getTime() - lastUpdate.getTime()) < DEMO_POSITION_MIN_INTERVAL_MS) continue;
 
     // Même cible que le tracé de la carte : la collecte d'abord pour une course.
     const target: Point =
@@ -88,7 +94,7 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
         ? { latitude: mission.pickupLatitude, longitude: mission.pickupLongitude }
         : { latitude: mission.latitude!, longitude: mission.longitude! };
     const route = await demoTripRoute(demoTripStart(target), target);
-    const position = pointAlongPolyline(route, demoTripProgress(mission.missionStartedAt!, now));
+    const position = pointAlongPolyline(route, demoTripProgress(mission.missionStartedAt!, signalAt));
 
     // Le suivi n'est visible que si le service du livreur est actif (même règle qu'en réel).
     if (!trackingActive) {
@@ -106,8 +112,8 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
 
     await prisma.driverLocation.upsert({
       where: { driverId },
-      create: { driverId, ...position, accuracy: 12 },
-      update: { ...position, accuracy: 12 },
+      create: { driverId, ...position, accuracy: 12, updatedAt: signalAt },
+      update: { ...position, accuracy: 12, updatedAt: signalAt },
     });
     written += 1;
   }

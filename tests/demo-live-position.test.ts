@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
+import * as policy from "../src/domains/tracking/tracking.policy";
+import * as live from "../src/lib/demo/demo-live-position";
+import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "../src/lib/validations/driver-location-settings";
 import {
   DEMO_POSITION_CYCLE_MS,
+  DEMO_SIGNAL_LAG_SECONDS,
+  demoSignalLagSeconds,
   demoTripProgress,
   demoTripStart,
   isDemoCompanyForSimulation,
@@ -58,4 +65,60 @@ test("un espace démo préparé avec une autre version du scénario est considé
   const pool = readFileSync("src/domains/demo/demo-pool.service.ts", "utf8");
   assert.match(pool, /await queueOutdatedDemoPoolEnvironments\(now, poolKey\);/);
   assert.match(pool, /await ensureDemoSessionRosterUsers\(companyId\);\n\s*await resetDemoScenario\(companyId, now/);
+});
+
+test("démo : retard du signal lu dans les réglages, borné, absent par défaut", () => {
+  assert.equal(demoSignalLagSeconds({ demoSignalLagSeconds: 180 }), 180);
+  for (const settings of [null, {}, { demoSignalLagSeconds: "180" }, { demoSignalLagSeconds: Number.NaN }]) assert.equal(demoSignalLagSeconds(settings), 0);
+  assert.equal(demoSignalLagSeconds({ demoSignalLagSeconds: -5 }), 0);
+  assert.equal(demoSignalLagSeconds({ demoSignalLagSeconds: 99_999 }), 3600);
+});
+
+test("démo : trois livreurs en direct, un estimé, un au signal perdu", () => {
+  const threshold = DEFAULT_DRIVER_LOCATION_SETTINGS.onlineThresholdSeconds;
+  assert.equal(DEMO_SIGNAL_LAG_SECONDS.filter((lag) => lag === 0).length, 3);
+  assert.equal(DEMO_SIGNAL_LAG_SECONDS.filter((lag) => lag > threshold && lag <= policy.ESTIMATION_MAX_SECONDS).length, 1);
+  assert.equal(DEMO_SIGNAL_LAG_SECONDS.filter((lag) => lag > policy.ESTIMATION_MAX_SECONDS).length, 1);
+});
+
+function loadPositionsService(company: { isDemo: boolean; slug: string }, driverSettings: Record<string, unknown>, lastUpdate: Date | null) {
+  const writes: any[] = [];
+  const startedAt = new Date(Date.now() - 30 * 60_000);
+  const prisma = {
+    company: { findUnique: async () => company },
+    delivery: { findMany: async () => [{ driverId: "driver", deliveryCategory: "STANDARD", missionStartedAt: startedAt, latitude: 48.85, longitude: 2.35, pickupLatitude: null, pickupLongitude: null, driver: { settings: driverSettings, driverLocation: lastUpdate ? { updatedAt: lastUpdate } : null } }] },
+    user: { update: async (args: any) => { writes.push(["user", args]); } },
+    driverLocation: { upsert: async (args: any) => { writes.push(["location", args]); } },
+  };
+  const deps: Record<string, unknown> = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/lib/maps/osrm-route": { fetchOsrmRoute: async () => null }, "@/lib/demo/demo-live-position": live };
+  const exportsObject = {};
+  const sandbox = { module: { exports: exportsObject }, exports: exportsObject, Date, Math, Error, Map, Set, Promise, setTimeout, console, require: (id: string) => { assert.ok(id in deps, id); return deps[id]; } };
+  runInNewContext(ts.transpileModule(readFileSync("src/domains/demo/demo-live-positions.service.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, sandbox);
+  return { service: sandbox.module.exports as any, writes, startedAt };
+}
+const activeService = (extra: Record<string, unknown> = {}) => ({ trackingService: { active: true, startedAt: new Date(Date.now() - 3600_000).toISOString() }, ...extra });
+
+test("démo : un livreur à retard reçoit la position qu'il avait alors, datée d'autant", async () => {
+  const { service, writes, startedAt } = loadPositionsService({ isDemo: true, slug: "logiexpress-demo-pool-2" }, activeService({ demoSignalLagSeconds: 180 }), null);
+  const now = new Date();
+  assert.equal(await service.advanceDemoDriverPositions("c", now), 1);
+  const upsert = writes.find((w) => w[0] === "location")[1];
+  assert.equal(+upsert.update.updatedAt, +now - 180_000);
+  const expected = live.pointAlongPolyline([[live.demoTripStart({ latitude: 48.85, longitude: 2.35 }).latitude, live.demoTripStart({ latitude: 48.85, longitude: 2.35 }).longitude], [48.85, 2.35]], live.demoTripProgress(startedAt, new Date(+now - 180_000)));
+  assert.ok(Math.abs(upsert.update.latitude - expected.latitude) < 1e-9);
+});
+
+test("démo : position déjà au bon retard non réécrite ; jamais datée avant le départ", async () => {
+  const now = new Date();
+  const upToDate = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService({ demoSignalLagSeconds: 180 }), new Date(+now - 182_000));
+  assert.equal(await upToDate.service.advanceDemoDriverPositions("c", now), 0);
+  const tooLong = loadPositionsService({ isDemo: true, slug: "logiexpress-demo" }, activeService({ demoSignalLagSeconds: 3600 }), null);
+  await tooLong.service.advanceDemoDriverPositions("c", now);
+  assert.equal(+tooLong.writes.find((w) => w[0] === "location")[1].update.updatedAt, +tooLong.startedAt + 1000);
+});
+
+test("démo : hors entreprise de démo, aucun retard ni position simulés", async () => {
+  const { service, writes } = loadPositionsService({ isDemo: false, slug: "transports-martin" }, activeService({ demoSignalLagSeconds: 180 }), null);
+  assert.equal(await service.advanceDemoDriverPositions("c"), 0);
+  assert.equal(writes.length, 0);
 });

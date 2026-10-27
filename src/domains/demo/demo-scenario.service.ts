@@ -25,6 +25,7 @@ import {
 } from "@/lib/order-reference";
 import { getPrimaryCourierPickupFields } from "@/lib/order/courier-pickups";
 import { demoInvoiceLineItems } from "@/domains/demo/demo-invoice-lines";
+import { DEMO_SIGNAL_LAG_SECONDS } from "@/lib/demo/demo-live-position";
 
 interface DemoActors {
   companyId: string;
@@ -610,6 +611,20 @@ async function ensureDemoDriverLocations(drivers: Array<{ id: string }>) {
   }));
 }
 
+/** Fige le retard fictif du signal de chaque livreur de démo (en direct, estimé ou perdu). */
+async function applyDemoSignalLags(drivers: Array<{ id: string; settings: Prisma.JsonValue | null }>) {
+  await Promise.all(drivers.map((driver, index) => {
+    const settings =
+      driver.settings && typeof driver.settings === "object" && !Array.isArray(driver.settings)
+        ? { ...(driver.settings as Record<string, unknown>) }
+        : {};
+    return prisma.user.update({
+      where: { id: driver.id },
+      data: { settings: { ...settings, demoSignalLagSeconds: DEMO_SIGNAL_LAG_SECONDS[index] ?? 0 } as Prisma.InputJsonValue },
+    });
+  }));
+}
+
 async function purgeDemoTransactionalData(companyId: string) {
   const drivers = await prisma.user.findMany({
     where: { companyId, role: { systemRole: "DRIVER" } },
@@ -1002,6 +1017,7 @@ export async function resetDemoScenario(
   await Promise.all([
     ensureDemoDriverLocations(drivers),
     ensureDemoClientAddresses(clients),
+    applyDemoSignalLags(drivers),
   ]);
   await applyDemoDispatchDrivers(
     companyId,
