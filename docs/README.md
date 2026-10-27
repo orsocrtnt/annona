@@ -47,3 +47,11 @@ Cet index distingue la documentation courante des preuves datées. En cas de con
 `docs/rapports/YYYY-MM-DD/` contient les résultats obtenus à une date précise. `docs/operations/` contient les procédures propres à une fonctionnalité. Une réussite ancienne ne garantit pas qu'une régression ultérieure est absente ; utiliser les commandes de vérification courantes avant de conclure.
 
 Les documents de rapport ne doivent contenir aucun secret, cookie, e-mail de fixture ou chaîne de connexion. Les sorties partageables se trouvent sous `outputs/` et doivent respecter la même règle.
+
+## Contexte des agents — règle GitHub uniquement
+
+Tous les agents lisent et modifient le contexte du dépôt uniquement. Aucune recherche Google Drive/Docs/Sheets/Notion, copie externe ou miroir n'est autorisé pour un travail de développement. Voir `../AGENTS.md` et `../.cursor/rules/contexte-markdown.mdc`.
+
+Les documents juridiques présents sous `legal/` peuvent être des audits, des propositions ou des validations encore ouvertes : ne pas les traiter comme des contrats signés. Toute pièce externe indispensable ou information manquante est signalée au fondateur pour traitement séparé dans ChatGPT.
+
+La TODO personnelle Notion (45 actions) et `TODO.md` (78 tâches techniques) ont des périmètres distincts et ne sont pas synchronisées.

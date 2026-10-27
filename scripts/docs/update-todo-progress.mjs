@@ -1,19 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, isAbsolute, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 
 const root = process.cwd();
 const todoPath = resolve(root, "TODO.md");
 const sharePath = resolve(root, "outputs/TODO-TutelLiv-vente.md");
-const copiesConfigPath = resolve(root, ".todo-share-paths.local.json");
-// Configuration propre à cet ordinateur : absente en CI et jamais versionnée.
-const extraCopies = existsSync(copiesConfigPath)
-  ? JSON.parse(readFileSync(copiesConfigPath, "utf8"))
-  : [];
-if (!Array.isArray(extraCopies) || extraCopies.some((path) =>
-  typeof path !== "string" || !isAbsolute(path) || basename(path) !== "TODO-TutelLiv-vente.md"
-)) {
-  throw new Error("TODO_SHARE_PATHS_INVALID");
-}
 const startMarker = "<!-- TODO_PROGRESS_START -->";
 const endMarker = "<!-- TODO_PROGRESS_END -->";
 
@@ -59,7 +49,6 @@ if (blockPattern.test(todo)) {
 
 const todoChanged = writeIfChanged(todoPath, todo);
 const shareChanged = writeIfChanged(sharePath, todo);
-const extraCopiesChanged = [...new Set(extraCopies)].filter((path) => writeIfChanged(path, todo)).length;
 
 console.log(JSON.stringify({
   total,
@@ -68,6 +57,4 @@ console.log(JSON.stringify({
   percent,
   todoChanged,
   shareChanged,
-  extraCopies: extraCopies.length,
-  extraCopiesChanged,
 }));

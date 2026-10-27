@@ -1,20 +1,27 @@
 ---
-description: Lire et republier la TODO et le contexte projet en Markdown sur GitHub et Drive
+description: Lire et mettre à jour la TODO et le contexte exclusivement dans le dépôt GitHub (aucune recherche ni publication Drive)
 alwaysApply: true
 ---
 
-# Contexte en Markdown
+# Contexte technique uniquement dans le dépôt
 
-Lire le statut et le contexte dans les fichiers Markdown du dépôt. Ne pas les lire dans un PDF, un Word, un Google Doc ou la TODO personnelle du fondateur.
+Lire le contexte et les statuts dans les fichiers Markdown présents dans `orsocrtnt/tutelliv-v2` sur `preproduction`. Ne jamais utiliser Google Drive, Docs, Sheets, Notion, un PDF ou un Word pour rechercher un contexte, relire une TODO ou publier une copie : le fondateur gère ces ressources séparément dans ChatGPT.
 
-Source unique : `TODO.md`. Contexte à tenir aligné : `AGENTS.md`, `docs/README.md`, `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, `docs/SAAS_OFFERS_ARCHITECTURE.md`, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`.
+## Sources canoniques
 
-Après chaque modification de l’un de ces fichiers :
+- Priorités, statuts et critères de sortie : `TODO.md` (source unique).
+- Consignes agents : `AGENTS.md`, `docs/CONVENTIONS.md`, `.cursor/rules/`.
+- Index des références locales : `docs/README.md`.
+- Produit et commerce : `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, `docs/SAAS_OFFERS_ARCHITECTURE.md`, `docs/VISION_PRODUIT_COMMERCIALE.md`.
+- Architecture et opérations : `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/RBAC.md`, `docs/OPERATIONS.md`, `docs/operations/`.
+- Design : `docs/DESIGN_SYSTEM.md`. Juridique et limites : `docs/legal/`.
+- Preuves historiques : `docs/rapports/`, à vérifier selon leur date.
 
-1. Lancer `npm run todo:progress` si `TODO.md` a changé.
-2. Pousser uniquement ces Markdown sur `preproduction` de `orsocrtnt/tutelliv-v2`. Ne pas embarquer le reste du working tree, un secret, ou un fichier sous `outputs/`.
-3. Écraser le fichier Drive déjà créé, sans en ajouter un autre. Dossier [Contexte MD](https://drive.google.com/drive/folders/1f4oEqJnHm2LkSBG20GclValeTQOdAdVR). Texte `text/markdown`, sans conversion en Doc, Word ou PDF. Vérifier que la relecture est identique au dépôt.
+## Après une tâche
 
-Identifiants : `AGENTS.md` `1yqusgfeJlOvyDckqN8pFcfbZuDJnlRzL` ; `docs-README.md` `1RyVjp266KwfEGJVhTQn5jEyuF20Brlam` ; `ARCHITECTURE.md` `1sLbi2ICsA8s1kwGRW330M4CVQzcq3cma` ; `OPERATIONS.md` `1iHbBfWoXVwQvPm7Os_Qep6iB-RGLJTQW`. Créer `TODO.md`, `DECISIONS_PRODUIT_COMMERCIALES.md` et `SAAS_OFFERS_ARCHITECTURE.md` au premier envoi, puis conserver leur identifiant ici.
+1. Modifier le code, les tests, les documents pertinents et la case de `TODO.md` seulement si les critères sont réellement vérifiés.
+2. Exécuter `npm run todo:progress` si `TODO.md` a changé ; ce script ne doit écrire que dans le dépôt local et n'envoie rien vers Drive/Notion.
+3. Commit/push vers `preproduction` uniquement selon les autorisations de `AGENTS.md`. L'exception de publication autonome ne concerne que les Markdown de suivi/documents canoniques qui viennent d'être modifiés ; ne jamais embarquer des secrets, fichiers `outputs/`, changements utilisateur ni autres fichiers sans autorisation.
+4. Ne pas faire de recherche Drive, d'export, d'upload, de miroir externe ni de seconde mise à jour de TODO. Aucun statut Notion ou document Drive n'est synchronisé automatiquement.
 
-Les PDF et Word déjà sur Drive restent des archives. La TODO personnelle du fondateur ne se recouvre pas avec `TODO.md`.
+Si une pièce contractuelle extérieure ou une décision absente du dépôt est indispensable, noter le blocage et le transmettre au fondateur pour traitement dans ChatGPT. Ne pas chercher à récupérer cette pièce de manière autonome.

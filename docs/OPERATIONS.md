@@ -64,9 +64,9 @@ npm run test:v1
 
 `npm run todo:progress` recalcule la jauge depuis les cases principales de `TODO.md` et synchronise `outputs/TODO-TutelLiv-vente.md`. Ce calcul s'exécute aussi avant `npm run docs:verify`. Le pourcentage compte les tâches terminées sans pondérer leur taille ; il ne mesure pas la préparation commerciale du produit.
 
-Pour les copies externes consultées sur cet ordinateur, `.todo-share-paths.local.json` contient une liste JSON de chemins absolus vers des fichiers nommés `TODO-TutelLiv-vente.md`. Ce réglage local est ignoré par Git et absent en CI. Les copies enregistrées sont synchronisées par les mêmes commandes ; une erreur d'écriture interrompt le contrôle pour éviter un statut périmé silencieux. Toujours modifier la source `TODO.md`, car une copie est remplacée par la source lors de la synchronisation.
+Les anciens chemins de partage externes sont obsolètes. La commande de progression et les contrôles de documentation ne lisent ni n'écrivent hors du dépôt.
 
-La lecture courante se fait dans ce Markdown, pas dans un PDF ou un Word. Après modification, le même fichier est republié en `.md` dans le dossier Drive `Contexte MD`, et poussé sur `preproduction`. Règle : `.cursor/rules/contexte-markdown.mdc`.
+La lecture courante se fait exclusivement dans ce Markdown du dépôt, pas dans Drive, Notion, PDF ou Word. Après modification, seul le fichier versionné est mis à jour sur `preproduction`, conformément aux autorisations Git de `AGENTS.md`. Aucune copie externe n'est publiée. Règle : `.cursor/rules/contexte-markdown.mdc`.
 
 ## Démonstration
 
