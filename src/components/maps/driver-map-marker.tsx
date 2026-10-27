@@ -34,7 +34,8 @@ function createDriverIcon(
   name: string,
   isSelected: boolean,
   isOnline: boolean,
-  updatedAt: string | null
+  updatedAt: string | null,
+  showLabel = true
 ) {
   const { firstName, lastName } = splitName(name);
   const dotSize = isSelected ? DOT_SELECTED : DOT_SIZE;
@@ -84,6 +85,7 @@ function createDriverIcon(
         box-shadow:0 6px 20px rgba(0,0,0,0.10);
         text-align:center;
         white-space:nowrap;
+        display:${showLabel ? "block" : "none"};
       ">${nameBlock}</div>
     </div>
   `;
@@ -104,6 +106,8 @@ interface DriverMapMarkerProps {
   isOnline?: boolean;
   updatedAt?: string | null;
   onSelect?: () => void;
+  /** Vue éloignée : la pastille seule, sans l'étiquette du nom. */
+  showLabel?: boolean;
 }
 
 export function DriverMapMarker({
@@ -114,10 +118,11 @@ export function DriverMapMarker({
   isOnline = false,
   updatedAt = null,
   onSelect,
+  showLabel = true,
 }: DriverMapMarkerProps) {
   const icon = useMemo(
-    () => createDriverIcon(name, isSelected, isOnline, updatedAt),
-    [name, isSelected, isOnline, updatedAt]
+    () => createDriverIcon(name, isSelected, isOnline, updatedAt, showLabel),
+    [name, isSelected, isOnline, updatedAt, showLabel]
   );
 
   return (
@@ -125,7 +130,8 @@ export function DriverMapMarker({
       position={[latitude, longitude]}
       icon={icon}
       eventHandlers={{ click: () => onSelect?.() }}
-      zIndexOffset={isSelected ? 1000 : 0}
+      // Au-dessus des épingles et de leurs fiches : le livreur reste toujours visible.
+      zIndexOffset={isSelected ? 1100 : 900}
     />
   );
 }

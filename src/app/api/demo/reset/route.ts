@@ -4,7 +4,7 @@ import { resetDemoScenario } from "@/domains/demo/demo-scenario.service";
 import { setDemoPersonaCookie } from "@/lib/demo/persona-cookie";
 import { isAccountActive } from "@/lib/auth/account-access";
 import { DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
-import { getDemoPersonaUser } from "@/domains/demo/demo-users.service";
+import { ensureDemoSessionRosterUsers, getDemoPersonaUser } from "@/domains/demo/demo-users.service";
 import { extractPermissionSlugs } from "@/domains/user/user.service";
 import { getDemoSessionCompanyId } from "@/domains/demo/demo-session.service";
 import { getSessionSaasAccess } from "@/domains/saas/saas-session";
@@ -28,6 +28,8 @@ export async function POST() {
     return NextResponse.json({ error: "Compte indisponible" }, { status: 403 });
   }
 
+  // Roster à jour (livreurs ajoutés au scénario) avant de recréer les livraisons : upserts idempotents.
+  await ensureDemoSessionRosterUsers(sessionCompanyId);
   const result = await resetDemoScenario(sessionCompanyId, new Date(), {
     ensureCanonicalRoster: false,
   });

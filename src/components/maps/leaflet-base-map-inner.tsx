@@ -183,6 +183,7 @@ export function LeafletBaseMapInner({
         minZoom={MAP_TILES.minZoom}
         maxZoom={MAP_TILES.maxZoom}
         scrollWheelZoom
+        zoomSnap={0.25}
         style={{ height: "100%", width: "100%" }}
         zoomControl={false}
         attributionControl={false}

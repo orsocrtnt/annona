@@ -129,6 +129,7 @@ export function DeliveryOverviewMarker({
   reference,
   status,
   subtitle,
+  showCallout: calloutAllowed = true,
   onSelect,
 }: {
   latitude: number;
@@ -136,10 +137,12 @@ export function DeliveryOverviewMarker({
   reference: string;
   status: DispatchMapStatusKey;
   subtitle?: string;
+  /** Faux en vue éloignée : l'épingle seule, pour ne pas couvrir la carte de fiches. */
+  showCallout?: boolean;
   onSelect: () => void;
 }) {
   // Les missions qui demandent l'attention (retard) ou qui bougent (en route) portent leur fiche.
-  const showCallout = status === "late" || status === "route";
+  const showCallout = calloutAllowed && (status === "late" || status === "route");
   const icon = useMemo(
     () =>
       L.divIcon({
@@ -162,6 +165,48 @@ export function DeliveryOverviewMarker({
       keyboard
       eventHandlers={{ click: onSelect, keypress: onSelect }}
       zIndexOffset={status === "late" ? 600 : 400}
+    />
+  );
+}
+
+/** Bulle de regroupement : nombre de livraisons, pastille rouge s'il y a un retard. */
+export function DeliveryClusterMarker({
+  latitude,
+  longitude,
+  count,
+  hasLate,
+  onSelect,
+}: {
+  latitude: number;
+  longitude: number;
+  count: number;
+  hasLate: boolean;
+  onSelect: () => void;
+}) {
+  const icon = useMemo(() => {
+    const size = Math.min(56, 34 + count * 3);
+    return L.divIcon({
+      className: "delivery-point-marker",
+      html: `<div style="position:relative;width:0;height:0;overflow:visible;cursor:pointer;">
+          <div style="position:absolute;left:0;top:0;width:${size}px;height:${size}px;transform:translate(-50%,-50%);border-radius:50%;background:${MAP_VISUAL_THEME.ink};color:#ffffff;display:flex;align-items:center;justify-content:center;font:650 ${count > 9 ? 14 : 13}px/1 Inter,system-ui,sans-serif;box-shadow:0 0 0 5px rgba(255,255,255,0.85),0 8px 20px rgba(14,19,16,0.22);">${count}${
+            hasLate
+              ? `<span style="position:absolute;right:-1px;top:-1px;width:12px;height:12px;border-radius:50%;background:${MAP_VISUAL_THEME.danger};box-shadow:0 0 0 2px #ffffff;"></span>`
+              : ""
+          }</div>
+        </div>`,
+      iconSize: [1, 1],
+      iconAnchor: [0, 0],
+    });
+  }, [count, hasLate]);
+
+  return (
+    <Marker
+      position={[latitude, longitude]}
+      icon={icon}
+      title={`${count} livraisons${hasLate ? ", dont au moins une en retard" : ""} — zoomer sur la zone`}
+      keyboard
+      eventHandlers={{ click: onSelect, keypress: onSelect }}
+      zIndexOffset={700}
     />
   );
 }

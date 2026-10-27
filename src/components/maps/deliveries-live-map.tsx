@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as LeafletMap } from "leaflet";
-import { Polyline, useMap } from "react-leaflet";
+import { Polyline, useMap, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import { clusterProjectedPoints } from "@/lib/maps/cluster-points";
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
 import {
   buildDeliveryMapMarkers,
@@ -15,7 +17,11 @@ import {
   getDispatchMapFitPadding,
   fitMapPointsWithPadding,
 } from "@/lib/maps/map-fit-padding";
-import { DeliveryOverviewMarker, DeliveryPointMarker } from "@/components/maps/delivery-point-marker";
+import {
+  DeliveryClusterMarker,
+  DeliveryOverviewMarker,
+  DeliveryPointMarker,
+} from "@/components/maps/delivery-point-marker";
 import { getDispatchMapStatus } from "@/features/back-office/dispatch-map-status";
 import { DriverMapMarker } from "@/components/maps/driver-map-marker";
 import { LeafletBaseMap, PARIS_CENTER } from "@/components/maps/leaflet-base-map";
@@ -171,20 +177,68 @@ function OverviewLayer({
     [located.map((d) => d.id).join(), [...drivers.keys()].join()]
   );
 
+  const map = useMap();
+  const [zoom, setZoom] = useState(() => map.getZoom());
+  useMapEvents({ zoomend: () => setZoom(map.getZoom()), moveend: () => setZoom(map.getZoom()) });
+  // Le premier cadrage (contrôleur enfant) précède l'abonnement : resynchroniser après les cadrages.
+  useEffect(() => {
+    const timers = [0, ...FIT_RETRY_DELAYS].map((ms) => window.setTimeout(() => setZoom(map.getZoom()), ms + 20));
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [map, points]);
+  // Au-delà du zoom 13, chaque livraison garde son épingle ; en dessous, regroupement par zone.
+  const clusters = useMemo(
+    () =>
+      clusterProjectedPoints(
+        located.map((delivery) => {
+          const point = map.project([delivery.destination!.latitude, delivery.destination!.longitude], zoom);
+          return { item: delivery, x: point.x, y: point.y };
+        }),
+        zoom >= 13 ? 1 : 64
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : identifiants et zoom
+    [located.map((d) => d.id).join(), zoom, map]
+  );
+
   return (
     <>
       <OverviewViewController points={points} />
-      {located.map((delivery) => (
-        <DeliveryOverviewMarker
-          key={delivery.id}
-          latitude={delivery.destination!.latitude}
-          longitude={delivery.destination!.longitude}
-          reference={delivery.reference}
-          status={getDispatchMapStatus(delivery)}
-          subtitle={delivery.driverName ?? undefined}
-          onSelect={() => onSelect?.(delivery.id)}
-        />
-      ))}
+      {clusters.map((cluster) => {
+        if (cluster.items.length === 1) {
+          const delivery = cluster.items[0]!;
+          return (
+            <DeliveryOverviewMarker
+              key={delivery.id}
+              latitude={delivery.destination!.latitude}
+              longitude={delivery.destination!.longitude}
+              reference={delivery.reference}
+              status={getDispatchMapStatus(delivery)}
+              subtitle={delivery.driverName ?? undefined}
+              showCallout={zoom >= 11}
+              onSelect={() => onSelect?.(delivery.id)}
+            />
+          );
+        }
+        const center = map.unproject([cluster.x, cluster.y], zoom);
+        const bounds = L.latLngBounds(cluster.items.map((d) => [d.destination!.latitude, d.destination!.longitude] as [number, number]));
+        return (
+          <DeliveryClusterMarker
+            key={cluster.items.map((d) => d.id).join("-")}
+            latitude={center.lat}
+            longitude={center.lng}
+            count={cluster.items.length}
+            hasLate={cluster.items.some((d) => getDispatchMapStatus(d) === "late")}
+            onSelect={() => {
+              // Même marges que le cadrage d'ensemble : la liste de gauche ne masque aucune épingle.
+              const padding = getDispatchMapFitPadding(map);
+              map.flyToBounds(bounds, {
+                paddingTopLeft: L.point(padding.left + 40, padding.top + 120),
+                paddingBottomRight: L.point(padding.right + 56, padding.bottom + 40),
+                maxZoom: 14,
+              });
+            }}
+          />
+        );
+      })}
       {[...drivers.values()].map((delivery) => (
         <DriverMapMarker
           key={delivery.driverId}
@@ -193,6 +247,7 @@ function OverviewLayer({
           longitude={delivery.driverLocation!.longitude}
           isOnline={delivery.driverLocation!.isOnline}
           updatedAt={delivery.driverLocation!.updatedAt}
+          showLabel={zoom >= 11}
           onSelect={() => onSelect?.(delivery.id)}
         />
       ))}

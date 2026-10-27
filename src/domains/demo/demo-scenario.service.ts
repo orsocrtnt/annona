@@ -42,6 +42,8 @@ interface TrackingSeed {
 
 interface ScenarioItem {
   label: string;
+  /** Livreur imposé (index dans DEMO_FIXTURE_DRIVERS) ; sinon rotation. */
+  driverIndex?: number;
   deliveryCategory: DeliveryCategory;
   orderStatus: OrderStatus;
   deliveryStatus: DeliveryStatus;
@@ -68,6 +70,37 @@ interface ScenarioItem {
   supportTicket?: { subject: string; message: string };
 }
 
+type Coordinates = { latitude: number; longitude: number };
+
+/**
+ * Coordonnées fixes des adresses de démo : la carte n'attend pas le géocodage en ligne,
+ * qui peut échouer ou expirer. Clé : « adresse|code postal ».
+ */
+const DEMO_ADDRESS_COORDINATES: Record<string, Coordinates> = {
+  "12 Rue de Rivoli|75001": { latitude: 48.8556, longitude: 2.3591 },
+  "45 Avenue des Champs-Élysées|75008": { latitude: 48.87, longitude: 2.307 },
+  "8 Boulevard Haussmann|75009": { latitude: 48.8738, longitude: 2.3337 },
+  "22 Rue de la Roquette|75011": { latitude: 48.8547, longitude: 2.3727 },
+  "5 Place de la Bastille|75012": { latitude: 48.8532, longitude: 2.3691 },
+  "18 Rue de Vaugirard|75015": { latitude: 48.849, longitude: 2.3366 },
+  "2 Rue du Louvre|75001": { latitude: 48.8605, longitude: 2.3414 },
+  "14 Avenue de la République|92100": { latitude: 48.838, longitude: 2.242 },
+  "27 Rue Gabriel Péri|92300": { latitude: 48.893, longitude: 2.287 },
+  "30 Rue de la Boétie|75008": { latitude: 48.8735, longitude: 2.3112 },
+  "1 Rue Jules Rimet|93200": { latitude: 48.9244, longitude: 2.3601 },
+  "17 Rue du Docteur Bouchut|69003": { latitude: 45.7606, longitude: 4.8597 },
+  "10 Rue de la République|69002": { latitude: 45.764, longitude: 4.8357 },
+  "Grand'Place|59100": { latitude: 50.6905, longitude: 3.1817 },
+  "60 Avenue Charles de Gaulle|92200": { latitude: 48.8846, longitude: 2.2697 },
+  "12 Rue Lepic|75018": { latitude: 48.8846, longitude: 2.3337 },
+  "Quai du Port|13002": { latitude: 43.2965, longitude: 5.3698 },
+  "Avenue de Paris|94300": { latitude: 48.8475, longitude: 2.437 },
+};
+
+function demoCoordinates(place: { address: string; postalCode: string } | undefined): Coordinates | null {
+  return place ? DEMO_ADDRESS_COORDINATES[`${place.address}|${place.postalCode}`] ?? null : null;
+}
+
 function hoursFromNow(hours: number, referenceDate: Date = new Date()): Date {
   return new Date(referenceDate.getTime() + hours * 60 * 60 * 1000);
 }
@@ -76,6 +109,7 @@ function buildScenario(): ScenarioItem[] {
   return [
     {
       label: "Livrée + facture payée",
+      driverIndex: 0,
       deliveryCategory: "STANDARD",
       orderStatus: "DELIVERED",
       deliveryStatus: "DELIVERED",
@@ -108,12 +142,14 @@ function buildScenario(): ScenarioItem[] {
     },
     {
       label: "En livraison (suivi actif)",
+      driverIndex: 0,
       deliveryCategory: "STANDARD",
       orderStatus: "IN_DELIVERY",
       deliveryStatus: "IN_DELIVERY",
       assignDriver: true,
       requestedDeliveryDateOffsetHours: -4,
       estimatedArrivalOffsetHours: 2,
+      missionStartedAtOffsetHours: -1,
       shipping: {
         address: "45 Avenue des Champs-Élysées",
         city: "Paris",
@@ -199,6 +235,7 @@ function buildScenario(): ScenarioItem[] {
     },
     {
       label: "Course simple — en achat",
+      driverIndex: 1,
       deliveryCategory: "COURIER",
       orderStatus: "PURCHASING",
       deliveryStatus: "PURCHASING",
@@ -234,6 +271,7 @@ function buildScenario(): ScenarioItem[] {
     },
     {
       label: "Course — collectes multiples",
+      driverIndex: 0,
       deliveryCategory: "COURIER",
       orderStatus: "ASSIGNED",
       deliveryStatus: "ASSIGNED",
@@ -283,6 +321,7 @@ function buildScenario(): ScenarioItem[] {
     },
     {
       label: "Commande multi-articles",
+      driverIndex: 1,
       deliveryCategory: "STANDARD",
       orderStatus: "ASSIGNED",
       deliveryStatus: "ASSIGNED",
@@ -305,6 +344,123 @@ function buildScenario(): ScenarioItem[] {
       tracking: [
         { label: "Commande reçue", offsetHours: -4 },
         { label: "Assignée au chauffeur", offsetHours: -2 },
+      ],
+    },
+    // Carte « suivi en direct » : plusieurs livreurs en route, dans plusieurs villes.
+    {
+      label: "En route — Saint-Denis",
+      driverIndex: 3,
+      deliveryCategory: "STANDARD",
+      orderStatus: "IN_DELIVERY",
+      deliveryStatus: "IN_DELIVERY",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: 3,
+      estimatedArrivalOffsetHours: 1,
+      missionStartedAtOffsetHours: -0.4,
+      shipping: { address: "1 Rue Jules Rimet", city: "Saint-Denis", postalCode: "93200" },
+      items: [{ name: "Matériel événementiel", quantity: 3, unitPrice: 42.0 }],
+      tracking: [
+        { label: "Commande reçue", offsetHours: -3 },
+        { label: "En livraison", description: "Le chauffeur est en route", offsetHours: -0.4 },
+      ],
+    },
+    {
+      label: "Course en route — Lyon",
+      driverIndex: 2,
+      deliveryCategory: "COURIER",
+      orderStatus: "IN_DELIVERY",
+      deliveryStatus: "IN_DELIVERY",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: 2,
+      estimatedArrivalOffsetHours: 1,
+      missionStartedAtOffsetHours: -0.6,
+      shipping: { address: "10 Rue de la République", city: "Lyon", postalCode: "69002" },
+      pickupStops: [
+        {
+          label: "Collecte — Part-Dieu",
+          address: "17 Rue du Docteur Bouchut",
+          city: "Lyon",
+          postalCode: "69003",
+          items: [{ name: "Pli urgent", quantity: 1, unitPrice: 18.0 }],
+        },
+      ],
+      tracking: [
+        { label: "Course reçue", offsetHours: -2 },
+        { label: "En livraison", description: "Collecte faite, en route", offsetHours: -0.3 },
+      ],
+    },
+    {
+      label: "En route — Lille vers Roubaix",
+      driverIndex: 4,
+      deliveryCategory: "STANDARD",
+      orderStatus: "IN_DELIVERY",
+      deliveryStatus: "IN_DELIVERY",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: 4,
+      estimatedArrivalOffsetHours: 1,
+      missionStartedAtOffsetHours: -0.5,
+      shipping: { address: "Grand'Place", city: "Roubaix", postalCode: "59100" },
+      items: [{ name: "Palette textile", quantity: 1, unitPrice: 95.0 }],
+      tracking: [
+        { label: "Commande reçue", offsetHours: -5 },
+        { label: "En livraison", description: "Départ de l'entrepôt de Lille", offsetHours: -0.5 },
+      ],
+    },
+    {
+      label: "Assignée en retard",
+      driverIndex: 1,
+      deliveryCategory: "STANDARD",
+      orderStatus: "ASSIGNED",
+      deliveryStatus: "ASSIGNED",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: -3,
+      estimatedArrivalOffsetHours: 1,
+      shipping: { address: "60 Avenue Charles de Gaulle", city: "Neuilly-sur-Seine", postalCode: "92200" },
+      items: [{ name: "Dossier juridique", quantity: 1, unitPrice: 35.0 }],
+      notes: "Créneau dépassé — mission pas encore démarrée",
+      tracking: [
+        { label: "Commande reçue", offsetHours: -8 },
+        { label: "Assignée au chauffeur", offsetHours: -5 },
+      ],
+    },
+    {
+      label: "Sans livreur — Montmartre",
+      deliveryCategory: "STANDARD",
+      orderStatus: "PENDING",
+      deliveryStatus: "PENDING",
+      assignDriver: false,
+      requestedDeliveryDateOffsetHours: 3,
+      scheduledAtOffsetHours: 3,
+      shipping: { address: "12 Rue Lepic", city: "Paris", postalCode: "75018" },
+      items: [{ name: "Fleurs — commande boutique", quantity: 2, unitPrice: 28.0 }],
+      tracking: [{ label: "Commande reçue", description: "En attente d'assignation chauffeur", offsetHours: -1 }],
+    },
+    {
+      label: "Sans livreur — Marseille",
+      deliveryCategory: "STANDARD",
+      orderStatus: "PENDING",
+      deliveryStatus: "PENDING",
+      assignDriver: false,
+      requestedDeliveryDateOffsetHours: 6,
+      scheduledAtOffsetHours: 6,
+      shipping: { address: "Quai du Port", city: "Marseille", postalCode: "13002" },
+      items: [{ name: "Colis agence Sud", quantity: 4, unitPrice: 22.0 }],
+      tracking: [{ label: "Commande reçue", description: "Agence de Marseille", offsetHours: -2 }],
+    },
+    {
+      label: "À démarrer — Vincennes",
+      driverIndex: 3,
+      deliveryCategory: "STANDARD",
+      orderStatus: "ASSIGNED",
+      deliveryStatus: "ASSIGNED",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: 5,
+      estimatedArrivalOffsetHours: 5,
+      shipping: { address: "Avenue de Paris", city: "Vincennes", postalCode: "94300" },
+      items: [{ name: "Fournitures médicales", quantity: 2, unitPrice: 54.0 }],
+      tracking: [
+        { label: "Commande reçue", offsetHours: -2 },
+        { label: "Assignée au chauffeur", offsetHours: -1 },
       ],
     },
   ];
@@ -362,6 +518,9 @@ const CLIENT_ADDRESS_SEEDS = [
 const DRIVER_LOCATION_SEEDS = [
   { latitude: 48.8698, longitude: 2.3078 },
   { latitude: 48.8532, longitude: 2.3691 },
+  { latitude: 45.7606, longitude: 4.8597 },
+  { latitude: 48.9081, longitude: 2.3359 },
+  { latitude: 50.6366, longitude: 3.0705 },
 ] as const;
 
 async function applyDemoDispatchDrivers(companyId: string, driverIds: string[]) {
@@ -577,6 +736,9 @@ async function createScenarioDelivery(
       )
     : null;
 
+  const destinationCoordinates = demoCoordinates(scenario.shipping);
+  const pickupCoordinates = isCourier ? demoCoordinates(firstPickup) : null;
+
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
       data: {
@@ -654,6 +816,10 @@ async function createScenarioDelivery(
         address: scenario.shipping.address,
         city: scenario.shipping.city,
         postalCode: scenario.shipping.postalCode,
+        latitude: destinationCoordinates?.latitude ?? null,
+        longitude: destinationCoordinates?.longitude ?? null,
+        pickupLatitude: pickupCoordinates?.latitude ?? null,
+        pickupLongitude: pickupCoordinates?.longitude ?? null,
         driverId: scenario.assignDriver ? actors.driverId : null,
         driverName: scenario.assignDriver
           ? formatDriverDisplayName(actors.driverName)
@@ -798,7 +964,9 @@ export async function resetDemoScenario(
     await Promise.all(batch.map(async (scenario, batchIndex) => {
       const index = start + batchIndex;
       const client = clients[index % clients.length] ?? firstClient;
-      const driver = drivers[index % drivers.length] ?? firstDriver;
+      const driver =
+        (scenario.driverIndex != null ? drivers[scenario.driverIndex] : drivers[index % drivers.length]) ??
+        firstDriver;
       await createScenarioDelivery(
         {
           companyId,
