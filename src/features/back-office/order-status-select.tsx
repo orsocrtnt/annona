@@ -101,7 +101,8 @@ export function OrderStatusSelect({
             onValueChange={(v) => setStatus(v as UpdateOrderStatusInput["status"])}
           >
             <SelectTrigger aria-label="Nouveau statut de la commande">
-              <SelectValue />
+              {/* Libellé explicite : le statut actuel n'est pas toujours dans la liste modifiable. */}
+              <SelectValue>{getFulfillmentStatusLabel(status, deliveryCategory)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {editableStatuses.map((s) => (

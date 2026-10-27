@@ -15,6 +15,7 @@ import { OrderStatusSelect } from "@/features/back-office/order-status-select";
 import { OrderInvoiceForm } from "@/features/back-office/order-invoice-form";
 import { DeliveryAdminPanel } from "@/features/back-office/delivery-admin-panel";
 import { DeleteOrderButton } from "@/features/back-office/delete-order-button";
+import { OrderSummary } from "@/features/back-office/order-summary";
 import { OrderStatusBadge } from "@/features/client-portal/status-badges";
 import { formatCurrency } from "@/features/client-portal/utils";
 import { formatClientFromParts } from "@/lib/format/person-labels";
@@ -43,10 +44,6 @@ export default function CompanyOrderDetailPage() {
     );
   }
 
-  const clientName = formatClientFromParts(
-    order.customer,
-    order.customerEmail ?? undefined
-  );
   const courierPickups = getCourierPickupStops(order);
   const canDeleteOrder =
     order.status === "QUOTE_REQUESTED" &&
@@ -63,10 +60,8 @@ export default function CompanyOrderDetailPage() {
               Retour
             </Link>
           </Button>
-          <h1 className="text-2xl font-semibold tracking-tight">{order.reference}</h1>
-          <p className="mt-1 text-muted-foreground">
-            {clientName} — {formatDate(order.createdAt)}
-          </p>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Commande</p>
+          <h1 className="text-lg font-semibold tracking-tight tabular-nums">{order.reference}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <OrderStatusBadge status={order.status} deliveryCategory={order.deliveryCategory} />
@@ -80,6 +75,8 @@ export default function CompanyOrderDetailPage() {
           )}
         </div>
       </div>
+
+      <OrderSummary order={order} />
 
       {order.deliveryCategory === "SPECIAL_MISSION" && (
         <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
