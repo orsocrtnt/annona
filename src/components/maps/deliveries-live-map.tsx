@@ -249,6 +249,7 @@ function OverviewLayer({
           latitude={delivery.driverLocation!.latitude}
           longitude={delivery.driverLocation!.longitude}
           isOnline={delivery.driverLocation!.isOnline}
+          estimated={delivery.driverLocation!.estimated}
           updatedAt={delivery.driverLocation!.updatedAt}
           showLabel={zoom >= 13}
           onSelect={() => onSelect?.(delivery.id)}
@@ -345,6 +346,7 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapRe
           longitude={delivery.driverLocation.longitude}
           isSelected={Boolean(delivery.missionStartedAt)}
           isOnline={delivery.driverLocation.isOnline}
+          estimated={delivery.driverLocation.estimated}
           updatedAt={delivery.driverLocation.updatedAt}
         />
       )}

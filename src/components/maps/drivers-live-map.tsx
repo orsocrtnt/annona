@@ -23,15 +23,6 @@ interface DriversLiveMapProps {
   height?: number;
 }
 
-function formatLastSeen(updatedAt: string | null) {
-  if (!updatedAt) return "Position inconnue";
-  const sec = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 1000);
-  if (sec < 15) return "À l'instant";
-  if (sec < 60) return `Il y a ${sec}s`;
-  const min = Math.floor(sec / 60);
-  return `Il y a ${min} min`;
-}
-
 function MapApiBridge({ onMapReady }: { onMapReady?: (api: DriversMapApi) => void }) {
   const map = useMap();
 
@@ -213,6 +204,7 @@ export function DriversLiveMap({
           longitude={driver.longitude!}
           isSelected={selectedId === driver.id}
           isOnline={driver.isOnline}
+          estimated={driver.estimated}
           updatedAt={driver.updatedAt}
           onSelect={() => onSelect?.(driver.id)}
         />
@@ -221,4 +213,3 @@ export function DriversLiveMap({
   );
 }
 
-export { formatLastSeen };
