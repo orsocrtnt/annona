@@ -31,3 +31,20 @@ export function deriveOperationalAlerts(order: Order, messages: Message[], canAc
     return { ...source, orderId: order.id, reference: order.reference, state, acknowledged, resolution, canAct: canAct && !sourceClosed && !resolution };
   });
 }
+
+type AlertTargetOrder = {
+  shippingAddress?: string | null;
+  shippingCity?: string | null;
+  customer?: { firstName: string; lastName: string } | null;
+  deliveries: Array<{ id: string; address?: string | null; city?: string | null }>;
+};
+
+/** Qui et où, pour lire une alerte sans déchiffrer ses références (liste des alertes). */
+export function describeAlertTarget(order: AlertTargetOrder, deliveryId: string | null) {
+  const delivery = deliveryId ? order.deliveries.find(d => d.id === deliveryId) : undefined;
+  const street = (delivery?.address ?? order.shippingAddress ?? "").trim();
+  const city = (delivery?.city ?? order.shippingCity ?? "").trim();
+  const place = [street, city && !street.toLowerCase().includes(city.toLowerCase()) ? city : ""].filter(Boolean).join(", ");
+  const customerName = order.customer ? `${order.customer.firstName} ${order.customer.lastName}`.trim() : "";
+  return { customerName: customerName || null, place: place || null };
+}

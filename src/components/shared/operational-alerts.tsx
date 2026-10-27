@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildDispatchTargetHref } from "@/features/back-office/dispatch-focus";
+import { alertCountLabel, alertDeadlineLabel, alertKindLabel } from "@/lib/operational-alerts-display";
 type ActionLog = { body: string; authorName: string; createdAt: string };
 type Alert = { id: string; orderId: string; deliveryId: string | null; reference: string; title: string; detail: string; deadline: string | null; internal: boolean; state: string; acknowledged: ActionLog | null; resolution: ActionLog | null; canAct: boolean };
 const labels: Record<string, string> = { OPEN: "À traiter", ACKNOWLEDGED: "Prise en compte", RESOLVED: "Résolue", CLOSED: "Clôturée — mission terminée" };
@@ -13,15 +14,26 @@ async function request<T>(url: string, input?: unknown): Promise<T> {
   const response = await fetch(url, input ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) } : {});
   const json = await response.json(); if (!response.ok) throw new AlertRequestError(json.error ?? "Alertes indisponibles.", response.status); return json.data;
 }
+const ALERTS_PREVIEW = 3;
+type AlertRow = Pick<Alert, "id" | "orderId" | "deliveryId" | "reference" | "title" | "deadline" | "state"> & { customerName?: string | null; place?: string | null };
+// Une alerte se lit comme une phrase : type, client, lieu, échéance. Les références restent pour les lecteurs d'écran et l'infobulle.
+function AlertRowContent({ row, dispatch }: { row: AlertRow; dispatch: boolean }) {
+  const late = row.id.startsWith("late:");
+  const details = [row.place, alertDeadlineLabel(row.deadline)].filter(Boolean).join(" · ");
+  const Icon = late ? Clock : AlertTriangle;
+  return <><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#b3352a] ring-1 ring-[#f5dedb]" aria-hidden="true"><Icon className="h-4 w-4" /></span><span className="min-w-0 flex-1"><span className="block truncate font-medium text-foreground"><span className="text-[#b3352a]">{alertKindLabel(row)}</span>{row.customerName ? ` · ${row.customerName}` : ""}</span>{details && <span className="block text-xs text-[#545d57] max-sm:line-clamp-2 sm:truncate">{details}</span>}</span><span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-medium text-[#8a2a20] ring-1 ring-[#f5dedb] max-sm:hidden" aria-hidden="true">{labels[row.state]}</span><span className="sr-only">{`, ${labels[row.state]}, commande ${row.reference} — ${dispatch ? "ouvrir dans le dispatch" : "ouvrir la commande"}`}</span><ChevronRight className="h-4 w-4 shrink-0 text-[#b3352a]" aria-hidden="true" /></>;
+}
 export function OperationalAlertsInbox({ onOpen, enableDispatchTargets = false }: { onOpen: (id: string) => void; enableDispatchTargets?: boolean }) {
-  const query = useQuery({ queryKey: ["operational-alerts"], queryFn: () => request<{ alerts: Alert[]; hasMore: boolean }>("/api/operational-alerts"), refetchInterval: 10_000, retry: false });
+  const [expanded, setExpanded] = useState(false);
+  const query = useQuery({ queryKey: ["operational-alerts"], queryFn: () => request<{ alerts: AlertRow[]; hasMore: boolean }>("/api/operational-alerts"), refetchInterval: 10_000, retry: false });
   if (query.error instanceof AlertRequestError && query.error.status === 403) return null;
   if (query.error) return <p role="alert" className="mb-3 text-sm text-destructive">Alertes opérationnelles indisponibles. Actualisez la page.</p>;
   const rows = query.data?.alerts ?? [];
   if (!rows.length && !query.data?.hasMore) return null;
+  const visible = expanded ? rows : rows.slice(0, ALERTS_PREVIEW);
   // Direction Menthe (maquette pastel) : carte blanche, une ligne teintée par alerte.
-  const rowClass = "flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-[#f5dedb] bg-[linear-gradient(160deg,#fdecea_0%,#fffafa_70%)] px-4 py-2.5 text-left text-sm leading-snug transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
-  return <div className="mb-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5" aria-label="Alertes opérationnelles"><div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fde3e0] text-[#c43b2f]"><AlertTriangle className="h-[18px] w-[18px]" aria-hidden="true" /></span><div><p className="font-semibold">{rows.length} alerte(s) opérationnelle(s) à suivre</p><p className="text-xs text-muted-foreground">Lire une notification ne résout pas une alerte.</p></div></div><div className="mt-3 grid min-w-0 gap-2">{rows.map(row => enableDispatchTargets && row.deliveryId ? <Link key={row.id} href={buildDispatchTargetHref(row.deliveryId, true)} className={rowClass}><span className="min-w-0 break-words">{row.reference} — {row.title} · {labels[row.state]} — ouvrir dans le dispatch</span><ChevronRight className="h-4 w-4 shrink-0 text-[#c43b2f]" aria-hidden="true" /></Link> : <button key={row.id} type="button" className={rowClass} onClick={() => onOpen(row.orderId)}><span className="min-w-0 break-words">{row.reference} — {row.title} · {labels[row.state]}</span><ChevronRight className="h-4 w-4 shrink-0 text-[#c43b2f]" aria-hidden="true" /></button>)}</div>{query.data?.hasMore && <p className="mt-3 text-sm text-muted-foreground">Liste limitée aux 100 dossiers récents. Consultez les alertes des autres dossiers depuis leur commande.</p>}</div>;
+  const rowClass = "flex min-h-12 w-full min-w-0 items-center gap-3 rounded-xl border border-[#f5dedb] bg-[linear-gradient(160deg,#fdecea_0%,#fffafa_70%)] px-3 py-2 text-left text-sm leading-snug transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2";
+  return <section className="mb-6 min-w-0 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5" aria-labelledby="operational-alerts-title"><div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#fde3e0] text-[#b3352a]" aria-hidden="true"><AlertTriangle className="h-[18px] w-[18px]" /></span><div><h2 id="operational-alerts-title" className="font-semibold">{alertCountLabel(rows.length)}</h2><p className="text-xs text-muted-foreground">Lire une notification ne résout pas une alerte.</p></div></div><ul className="mt-3 grid min-w-0 gap-2">{visible.map(row => <li key={row.id} className="min-w-0">{enableDispatchTargets && row.deliveryId ? <Link href={buildDispatchTargetHref(row.deliveryId, true)} className={rowClass} title={`Commande ${row.reference}`}><AlertRowContent row={row} dispatch /></Link> : <button type="button" className={rowClass} title={`Commande ${row.reference}`} onClick={() => onOpen(row.orderId)}><AlertRowContent row={row} dispatch={false} /></button>}</li>)}</ul>{rows.length > ALERTS_PREVIEW && <button type="button" className="mt-2 rounded-lg px-2 py-1.5 text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>{expanded ? "Afficher moins" : `Afficher les ${rows.length - ALERTS_PREVIEW} autres`}</button>}{query.data?.hasMore && <p className="mt-3 text-sm text-muted-foreground">Liste limitée aux 100 dossiers récents. Consultez les alertes des autres dossiers depuis leur commande.</p>}</section>;
 }
 export function OrderOperationalAlerts({ orderId }: { orderId: string }) {
   const cache = useQueryClient(); const [notes, setNotes] = useState<Record<string, string>>({}); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
