@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { TONE_CLASSES, resolveTone, type Tone } from "@/components/ui/tone";
 import type { DashboardCategoryCounts } from "@/lib/dashboard/dashboard-types";
 import { Package } from "lucide-react";
 
@@ -80,18 +81,78 @@ export function CategoryCard({
   );
 }
 
+const DONUT_RADIUS = 42;
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+
+/** Répartition des missions du jour, en tons encre (les diagrammes suivent la direction Encre). */
+export function TodayDonut({
+  segments,
+}: {
+  segments: { label: string; value: number; color: string }[];
+}) {
+  const total = segments.reduce((sum, segment) => sum + segment.value, 0);
+  const visible = segments.filter((segment) => segment.value > 0);
+  const gap = visible.length > 1 ? 2 : 0;
+  let offset = 0;
+
+  return (
+    <figure className="flex items-center gap-5">
+      <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0 -rotate-90" aria-hidden="true">
+        <circle cx="50" cy="50" r={DONUT_RADIUS} fill="none" stroke="#eef1ee" strokeWidth="10" />
+        {visible.map((segment) => {
+          const length = (segment.value / total) * DONUT_CIRCUMFERENCE;
+          const dash = Math.max(length - gap, 0);
+          const circle = (
+            <circle
+              key={segment.label}
+              cx="50"
+              cy="50"
+              r={DONUT_RADIUS}
+              fill="none"
+              stroke={segment.color}
+              strokeWidth="10"
+              strokeDasharray={`${dash} ${DONUT_CIRCUMFERENCE - dash}`}
+              strokeDashoffset={-offset}
+            />
+          );
+          offset += length;
+          return circle;
+        })}
+      </svg>
+      <figcaption className="space-y-2">
+        <p>
+          <span className="text-2xl font-semibold tracking-tight">{total}</span>{" "}
+          <span className="text-sm text-muted-foreground">mission{total > 1 ? "s" : ""}</span>
+        </p>
+        <ul className="space-y-1 text-xs text-muted-foreground">
+          {segments.map((segment) => (
+            <li key={segment.label} className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: segment.color }} />
+              {segment.label} · <span className="font-medium text-foreground">{segment.value}</span>
+            </li>
+          ))}
+        </ul>
+      </figcaption>
+    </figure>
+  );
+}
+
 export function TodayMetric({
   label,
   counts,
   variant,
+  tone,
   onClick,
 }: {
   label: string;
   counts: DashboardCategoryCounts;
   variant?: "late";
+  tone?: Tone;
   onClick?: () => void;
 }) {
   const isClickable = counts.total > 0 && onClick;
+  const toneClasses = TONE_CLASSES[resolveTone(tone, counts.total)];
+  const surface = cn("rounded-xl border p-4", toneClasses.surface);
 
   const inner = (
     <>
@@ -99,7 +160,7 @@ export function TodayMetric({
       <p
         className={cn(
           "mt-1 text-2xl font-semibold",
-          variant === "late" && counts.total > 0 ? "text-destructive" : "text-foreground"
+          variant === "late" && counts.total > 0 ? "text-[#c43b2f]" : toneClasses.value
         )}
       >
         {counts.total}
@@ -118,16 +179,14 @@ export function TodayMetric({
   );
 
   if (!isClickable) {
-    return (
-      <div className="rounded-lg border border-border/60 bg-muted/20 p-4">{inner}</div>
-    );
+    return <div className={surface}>{inner}</div>;
   }
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-lg border border-border/60 bg-muted/20 p-4 text-left transition-colors hover:border-brand/30 hover:bg-muted/40"
+      className={cn(surface, "w-full text-left transition-shadow hover:shadow-md")}
     >
       {inner}
     </button>

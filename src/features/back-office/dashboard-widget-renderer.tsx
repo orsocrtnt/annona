@@ -17,6 +17,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
+import { TONE_CLASSES } from "@/components/ui/tone";
 import { DASHBOARD_PERIOD_LABELS } from "@/lib/dashboard/period-stats";
 import type { DashboardWidgetLayout, DashboardWidgetType } from "@/lib/dashboard/dashboard-layout";
 import { useDashboardContext, useWidgetPeriod } from "@/features/back-office/dashboard-context";
@@ -25,7 +26,12 @@ import {
   STATUS_ROWS,
   STATUS_WIDGET_MAP,
 } from "@/features/back-office/dashboard-drill-down";
-import { CategoryCard, ClickableCount, TodayMetric } from "@/features/back-office/dashboard-shared";
+import {
+  CategoryCard,
+  ClickableCount,
+  TodayDonut,
+  TodayMetric,
+} from "@/features/back-office/dashboard-shared";
 import { useDriverLiveLocations } from "@/features/back-office/dispatch-map-hooks";
 import { lockedOfferReason } from "@/domains/saas/saas-access";
 import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
@@ -54,15 +60,19 @@ function PeriodToggle() {
   const { period, setPeriod } = useDashboardContext();
 
   return (
-    <div className="inline-flex rounded-lg border border-border bg-muted/30 p-1">
+    <div className="inline-flex rounded-xl bg-muted p-1">
       {PERIOD_OPTIONS.map((option) => (
         <button
           key={option.key}
           type="button"
+          aria-pressed={period === option.key}
           onClick={() => setPeriod(option.key)}
           className={cn(
-            buttonVariants({ variant: period === option.key ? "default" : "ghost", size: "sm" }),
-            "rounded-md"
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "rounded-lg",
+            period === option.key
+              ? "bg-card text-foreground shadow-sm hover:bg-card"
+              : "text-muted-foreground"
           )}
         >
           {option.label}
@@ -81,7 +91,7 @@ function AlertsRowWidget() {
         label="En retard"
         value={dashboard.alerts.late}
         icon={AlertTriangle}
-        className={dashboard.alerts.late > 0 ? "border-destructive/40" : undefined}
+        tone="critical"
         onClick={() =>
           openDrillDown({
             scope: "alert",
@@ -93,6 +103,7 @@ function AlertsRowWidget() {
       />
       <StatCard
         label="Sans livreur"
+        tone="warning"
         value={dashboard.alerts.unassigned}
         icon={Package}
         onClick={() =>
@@ -105,6 +116,7 @@ function AlertsRowWidget() {
       />
       <StatCard
         label="Assignées non démarrées"
+        tone="info"
         value={dashboard.alerts.assignedNotStarted}
         icon={UserCheck}
         onClick={() =>
@@ -117,6 +129,7 @@ function AlertsRowWidget() {
       />
       <StatCard
         label="En cours de route"
+        tone="success"
         value={dashboard.alerts.inProgress}
         icon={Truck}
         onClick={() =>
@@ -138,7 +151,7 @@ function AlertLateWidget() {
       label="En retard"
       value={dashboard.alerts.late}
       icon={AlertTriangle}
-      className={dashboard.alerts.late > 0 ? "border-destructive/40" : undefined}
+      tone="critical"
       onClick={() =>
         openDrillDown({
           scope: "alert",
@@ -156,6 +169,7 @@ function AlertUnassignedWidget() {
   return (
     <StatCard
       label="Sans livreur"
+      tone="warning"
       value={dashboard.alerts.unassigned}
       icon={Package}
       onClick={() =>
@@ -174,6 +188,7 @@ function AlertAssignedNotStartedWidget() {
   return (
     <StatCard
       label="Assignées non démarrées"
+      tone="info"
       value={dashboard.alerts.assignedNotStarted}
       icon={UserCheck}
       onClick={() =>
@@ -192,6 +207,7 @@ function AlertInProgressWidget() {
   return (
     <StatCard
       label="En cours de route"
+      tone="success"
       value={dashboard.alerts.inProgress}
       icon={Truck}
       onClick={() =>
@@ -214,10 +230,11 @@ function TodaySummaryWidget() {
         <CardTitle className="text-base">Aujourd&apos;hui</CardTitle>
         <CardDescription>Résumé des missions du jour — cliquez pour voir le détail</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="grid gap-6 xl:grid-cols-[1fr_auto] xl:items-center">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <TodayMetric
             label="Livrées"
+            tone="success"
             counts={dashboard.today.delivered}
             onClick={() =>
               openDrillDown({
@@ -229,6 +246,7 @@ function TodaySummaryWidget() {
           />
           <TodayMetric
             label="En cours"
+            tone="info"
             counts={dashboard.today.inProgress}
             onClick={() =>
               openDrillDown({
@@ -251,6 +269,7 @@ function TodaySummaryWidget() {
           />
           <TodayMetric
             label="En retard"
+            tone="critical"
             counts={{ standard: 0, courier: 0, total: dashboard.today.late }}
             variant="late"
             onClick={() =>
@@ -263,6 +282,13 @@ function TodaySummaryWidget() {
             }
           />
         </div>
+        <TodayDonut
+          segments={[
+            { label: "Livrées", value: dashboard.today.delivered.total, color: "#0e1310" },
+            { label: "En cours", value: dashboard.today.inProgress.total, color: "#7f8883" },
+            { label: "Restantes", value: dashboard.today.remaining.total, color: "#d5dbd7" },
+          ]}
+        />
       </CardContent>
     </Card>
   );
@@ -371,7 +397,7 @@ function PlanningCategoriesSection({
         counts={periodStats.total}
         field="standard"
         icon={Package}
-        accentClass="border-rose-200 bg-rose-50/80"
+        accentClass={TONE_CLASSES.warning.surface}
         onClick={() =>
           openDrillDown({
             scope: "period",
@@ -385,7 +411,7 @@ function PlanningCategoriesSection({
         counts={periodStats.total}
         field="courier"
         icon={Bike}
-        accentClass="border-blue-200 bg-blue-50/80"
+        accentClass={TONE_CLASSES.info.surface}
         onClick={() =>
           openDrillDown({
             scope: "period",
@@ -399,7 +425,7 @@ function PlanningCategoriesSection({
         counts={periodStats.total}
         field="total"
         icon={Truck}
-        accentClass="border-border bg-muted/20"
+        accentClass={TONE_CLASSES.neutral.surface}
         onClick={() =>
           openDrillDown({
             scope: "period",

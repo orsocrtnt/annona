@@ -1,11 +1,14 @@
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "./card";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { TONE_CLASSES, resolveTone, type Tone } from "./tone";
 import type { DashboardStat } from "@/types";
 
 interface StatCardProps extends DashboardStat {
   className?: string;
   onClick?: () => void;
+  /** Teinte d'état (direction Menthe). Une alerte critique à zéro reste neutre. */
+  tone?: Tone;
 }
 
 export function StatCard({
@@ -16,17 +19,26 @@ export function StatCard({
   icon: Icon,
   className,
   onClick,
+  tone,
 }: StatCardProps) {
   const isPositive = change !== undefined && change >= 0;
   const numericValue = typeof value === "number" ? value : Number(value);
   const isClickable = Boolean(onClick) && numericValue > 0;
+  const toneClasses = tone ? TONE_CLASSES[resolveTone(tone, numericValue)] : null;
 
   const content = (
     <CardContent className="p-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
-          <p className="text-3xl font-semibold tracking-tight text-foreground">{value}</p>
+          <p
+            className={cn(
+              "text-3xl font-semibold tracking-tight",
+              toneClasses ? toneClasses.value : "text-foreground"
+            )}
+          >
+            {value}
+          </p>
           {(change !== undefined || changeLabel) && (
             <div className="flex items-center gap-1.5">
               {change !== undefined && (
@@ -57,8 +69,13 @@ export function StatCard({
           )}
         </div>
         {Icon && (
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-subtle">
-            <Icon className="h-5 w-5 text-brand" />
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-xl",
+              toneClasses ? toneClasses.icon : "bg-brand-subtle text-brand"
+            )}
+          >
+            <Icon className="h-5 w-5" />
           </div>
         )}
       </div>
@@ -67,7 +84,7 @@ export function StatCard({
 
   if (!isClickable) {
     return (
-      <Card className={cn("overflow-hidden", className)}>
+      <Card className={cn("overflow-hidden", toneClasses?.surface, className)}>
         {content}
       </Card>
     );
@@ -77,6 +94,7 @@ export function StatCard({
     <Card
       className={cn(
         "overflow-hidden transition-colors hover:border-brand/40 hover:shadow-md",
+        toneClasses?.surface,
         className
       )}
     >
