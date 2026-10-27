@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import { getClientInvoiceById } from "@/domains/invoice/invoice.service";
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
+import { readCompanyLogo } from "@/domains/company/company-logo.service";
 import { generateInvoicePdf } from "@/lib/pdf/invoice-pdf";
 import type { InvoiceLineItem } from "@/lib/validations/invoice";
 
@@ -24,9 +25,13 @@ export async function GET(
     return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
   }
 
-  const billing = invoice.companyId
-    ? await getCompanyBillingSettings(invoice.companyId)
-    : null;
+  const [billing, companyLogoPng] = invoice.companyId
+    ? await Promise.all([
+        getCompanyBillingSettings(invoice.companyId),
+        // Un logo absent ou illisible ne bloque jamais le relevé : le nom s'affiche à la place.
+        readCompanyLogo(invoice.companyId).catch(() => null),
+      ])
+    : [null, null];
 
   const rawLines = Array.isArray(invoice.lineItems)
     ? (invoice.lineItems as unknown as InvoiceLineItem[])
@@ -38,6 +43,7 @@ export async function GET(
     status: invoice.status,
     createdAt: invoice.createdAt,
     dueDate: invoice.dueDate,
+    paidAt: invoice.paidAt,
     amount: Number(invoice.amount),
     lineItems: rawLines.map((l) => ({
       label: l.label,
@@ -47,6 +53,7 @@ export async function GET(
     notes: invoice.notes,
     orderReference: invoice.order?.reference ?? null,
     company: invoice.company ?? {},
+    companyLogoPng,
     customerName: `${user.firstName} ${user.lastName}`.trim(),
     customerEmail: user.email,
     footerNote: billing?.invoice.footerNote ?? null,
