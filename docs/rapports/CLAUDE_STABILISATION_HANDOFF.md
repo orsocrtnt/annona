@@ -73,3 +73,10 @@ Méthode : la version d'avant la refonte (`dc99755`) a tourné en parallèle sur
 
 ## Prochaine action
 Proposer au propriétaire un découpage des commits locaux (travail Codex préexistant d'un côté, corrections de stabilisation de l'autre), puis décider de la publication.
+
+## DA « E · Menthe » (26/10, commits locaux, rien de poussé)
+- Commits : `ec9f9e2` travail préexistant · `50f9af1` refonte reconstituée · `aa62839` stabilisation · `bc5e046` coque Menthe (bouton vert #00D46A texte encre, barre latérale blanche + logo, Inter seule) · `b4e20b0` dashboard (teintes d'urgence `src/components/ui/tone.ts`, donut du jour, alertes en carte) · `d4dda1e` tendances (`src/lib/dashboard/trends.ts`).
+- Tendances exactes uniquement : retards et livraisons vs hier à la même heure, livraisons par heure. Pas de tendance « sans livreur / assignées / en route » : aucune heure de passage de statut en base (il faudrait une colonne, donc une migration).
+- Limites connues : jour et heures calculés sur le fuseau du serveur (préexistant, `startOfToday`) ; requête tendances plafonnée à 200 lignes comme les autres requêtes du dashboard ; avertissement d'hydratation Radix intermittent sur le menu du compte (préexistant).
+- Vérifié à chaque étape : `npm run check` (498/498 à la fin), E2E 3 rôles + navbar 3/3, captures desktop et 390 px.
+- Suite prévue : autres pages du back-office, portail client et espace livreur (barre Apple encore noire), puis mode Dark.
