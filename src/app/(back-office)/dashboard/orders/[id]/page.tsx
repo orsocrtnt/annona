@@ -233,7 +233,7 @@ export default function CompanyOrderDetailPage() {
             <p>{order.customer.email}</p>
             {order.customer.phone && <p>{order.customer.phone}</p>}
             {order.customer.id && (
-              <Link href={`/dashboard/clients/${order.customer.id}`} className="text-brand hover:underline">
+              <Link href={`/dashboard/clients/${order.customer.id}`} className="text-brand underline underline-offset-2 hover:decoration-2">
                 Voir le profil client complet →
               </Link>
             )}

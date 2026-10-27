@@ -466,7 +466,7 @@ export function DispatchSettingsForm() {
                           <Label className="text-xs">Ou zones tarifaires (Facturation)</Label>
                           <p className="text-xs text-muted-foreground">
                             Alternative aux codes postaux : cochez les zones définies dans{" "}
-                            <Link href="/settings/billing" className="text-brand hover:underline">
+                            <Link href="/settings/billing" className="text-brand underline underline-offset-2 hover:decoration-2">
                               Facturation
                             </Link>
                             . Un livreur est éligible si le code postal OU la zone correspond.
@@ -654,7 +654,7 @@ export function DispatchSettingsForm() {
           {zones.length === 0 ? (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               Aucune zone tarifaire — configurez-les dans{" "}
-              <Link href="/settings/billing" className="text-brand hover:underline">
+              <Link href="/settings/billing" className="text-brand underline underline-offset-2 hover:decoration-2">
                 Facturation
               </Link>{" "}
               pour activer le dispatch par zone.

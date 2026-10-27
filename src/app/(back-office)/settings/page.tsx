@@ -80,7 +80,7 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Paramètres</h1>
         <p className="mt-1 text-muted-foreground">
           Options proposées aux clients. Les règles dispatch se configurent dans le{" "}
-          <Link href="/dispatch" className="text-brand hover:underline">
+          <Link href="/dispatch" className="text-brand underline underline-offset-2 hover:decoration-2">
             centre de dispatch
           </Link>
           .

@@ -156,7 +156,7 @@ function OrdersFootnoteWidget() {
   return (
     <p className="text-center text-sm text-muted-foreground">
       {orderCount} commande{orderCount > 1 ? "s" : ""} au total —{" "}
-      <Link href="/portal/orders" className="text-brand hover:underline">
+      <Link href="/portal/orders" className="text-brand underline underline-offset-2 hover:decoration-2">
         voir mes commandes
       </Link>
     </p>

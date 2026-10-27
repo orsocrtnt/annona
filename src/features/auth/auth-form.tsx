@@ -313,7 +313,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           )}
 
           {(mode === "reset-password" || (mode === "register" && success)) && (
-            <p className="mt-4 text-sm"><Link href={success ? "/login" : passwordLink?.type === "signup" ? "/register" : "/forgot-password"} className="text-brand hover:underline">{success ? "Se connecter" : passwordLink?.type === "signup" ? "Reprendre l’inscription" : "Demander un nouveau lien"}</Link></p>
+            <p className="mt-4 text-sm"><Link href={success ? "/login" : passwordLink?.type === "signup" ? "/register" : "/forgot-password"} className="text-brand underline underline-offset-2 hover:decoration-2">{success ? "Se connecter" : passwordLink?.type === "signup" ? "Reprendre l’inscription" : "Demander un nouveau lien"}</Link></p>
           )}
 
           {mode === "login" && (

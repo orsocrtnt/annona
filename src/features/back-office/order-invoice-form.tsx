@@ -179,7 +179,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
       <Card>
         <CardContent className="p-5 text-sm text-muted-foreground">
           Impossible de charger les tarifs. Vérifiez votre connexion ou configurez-les dans{" "}
-          <Link href="/settings" className="text-brand hover:underline">
+          <Link href="/settings" className="text-brand underline underline-offset-2 hover:decoration-2">
             Paramètres
           </Link>
           .
@@ -282,7 +282,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         {!hasTariffs ? (
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
             Aucun tarif configuré.{" "}
-            <Link href="/settings" className="text-brand hover:underline">
+            <Link href="/settings" className="text-brand underline underline-offset-2 hover:decoration-2">
               Configurez vos zones et tarifs
             </Link>{" "}
             dans les paramètres.
