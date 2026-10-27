@@ -46,27 +46,27 @@ COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02 et les pilo
 
 Liste unique des actions qui ne peuvent pas être faites par un agent, classées par urgence. Mise à jour le 27 octobre 2026 ; un agent la tient à jour et la retire ligne par ligne quand l'action est constatée.
 
+Fait le 27 octobre 2026 sur instruction du propriétaire : relecture de la branche `todo/agent2-backlog`, application en préproduction des migrations `contact_messages` puis `sales_codes` (aucun écart avec le schéma), puis fusion dans `preproduction`.
+
 **Urgent — sécurité et chaîne de livraison**
 1. Changer le mot de passe de l'ancienne base de développement `wlomrzil…`, exposé dans un journal d'outil le 26 octobre. → ENV-2
-2. Relire puis pousser la branche locale `todo/agent2-backlog` (worktree `TutelLiv-GPT-agent2`) et la fusionner dans `preproduction`. La CI y est rouge depuis le 26 octobre (`docs:verify`, faille critique `maplibre-gl`) ; les deux corrections ne sont que locales. → CI, MAP-3
-3. **Ordre impératif :** après relecture, faire appliquer sur la préproduction les migrations `20261027090000_contact_messages` puis `20261027120000_sales_codes`, **puis seulement** fusionner. Les deux sont additives et sans effet sur le code actuel. À l'inverse, le code de la branche lit la nouvelle colonne du brouillon d'inscription : déployé sans `sales_codes`, il casserait l'inscription et l'activation ; sans `contact_messages`, `/api/contact` répond 503. → GROWTH-1, SALES-1
-4. Réactiver le projet Supabase de développement en pause, ou en créer un autre, puis mettre à jour `.env.local`. En attendant, toute recette locale passe par `.env.preproduction.local`. → ENV-2
-5. Vérifier dans Vercel → Settings → Functions la région des fonctions de préproduction (hypothèse `iad1` alors que la base est à Paris) ; l'accès Vercel de l'agent n'est pas autorisé pour l'équipe `tutelliv`. → ENV-2, PERF-02
+2. Réactiver le projet Supabase de développement en pause, ou en créer un autre, puis mettre à jour `.env.local`. En attendant, toute recette locale passe par `.env.preproduction.local`. → ENV-2
+3. Vérifier dans Vercel → Settings → Functions la région des fonctions de préproduction (hypothèse `iad1` alors que la base est à Paris) ; l'accès Vercel de l'agent n'est pas autorisé pour l'équipe `tutelliv`. → ENV-2, PERF-02
 
 **Décisions produit** — toutes prises le 27 octobre 2026 (voir `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, section C10) : impayé et changement de formule pendant la découverte (SAAS-04), refus d'une baisse avec ressources en excès et journal d'abonnement autorisé sur préproduction (SAAS-03), un code permanent par commercial (SALES-1), Contact stocké dans le back-office plateforme (GROWTH-1), seuils 80/100/120 % et Business (SAAS-02), sessions de test démo libérées après une heure.
 
 Complément du même jour : une résiliation pendant la découverte la termine immédiatement (SAAS-04), la migration des codes commerciaux est autorisée (application en préproduction après fusion, SALES-1) et un compte super-administrateur temporaire peut être créé sur la préproduction pour les recettes navigateur, puis supprimé.
 
 **Ressources et comptes**
-6. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
-7. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
-8. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
-9. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
+4. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
+5. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
+6. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
+7. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
 
 **Juridique et terrain**
-10. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
-11. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
-12. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
+8. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
+9. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
+10. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
 
 ### Dépendances fournisseur ou validation extérieure
 
