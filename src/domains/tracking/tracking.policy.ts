@@ -10,7 +10,8 @@ export function missionIsTrackable(mission: { status: string; missionStartedAt: 
 }
 /** Hypothèses de l'estimation quand le signal se perd : ligne droite à vitesse urbaine, puis arrêt. */
 export const ESTIMATION_SPEED_KMH = 25;
-export const ESTIMATION_MAX_SECONDS = 10 * 60;
+/** Au-delà, le signal est perdu : le livreur s'arrête au point estimé atteint. */
+export const ESTIMATION_MAX_SECONDS = 3 * 60;
 export type TrackingPoint = { latitude: number; longitude: number };
 const isPoint = (lat: number | null | undefined, lng: number | null | undefined): boolean => Number.isFinite(lat) && Number.isFinite(lng) && lat != null && lng != null;
 function distanceKm(a: TrackingPoint, b: TrackingPoint) {
@@ -35,9 +36,16 @@ export function trackingTarget(mission: TrackingTargetMission): TrackingPoint | 
   if (stop) return { latitude: stop.latitude!, longitude: stop.longitude! };
   return isPoint(mission.pickupLatitude, mission.pickupLongitude) ? { latitude: mission.pickupLatitude!, longitude: mission.pickupLongitude! } : null;
 }
-export type TrackingPosition = { state: "NOT_STARTED" | "ENDED" | "OFF_DUTY" | "ABSENT" | "STALE" | "FRESH"; latitude: number | null; longitude: number | null; accuracy: number | null; updatedAt: string | null; expiresAt: string | null; estimated: boolean };
+/** Trajet supposé depuis le dernier relevé : l'interface fait avancer le livreur entre deux signaux. */
+export type TrackingMotion = { from: TrackingPoint; target: TrackingPoint; since: string };
+/** Position supposée à l'instant `nowMs` : avance vers la cible, puis s'arrête une fois le signal perdu. */
+export function motionPositionAt(motion: TrackingMotion, nowMs: number): TrackingPoint {
+  const elapsedSeconds = Math.min(Math.max(0, (nowMs - Date.parse(motion.since)) / 1000), ESTIMATION_MAX_SECONDS);
+  return estimatePosition(motion.from, motion.target, elapsedSeconds);
+}
+export type TrackingPosition = { state: "NOT_STARTED" | "ENDED" | "OFF_DUTY" | "ABSENT" | "STALE" | "FRESH"; latitude: number | null; longitude: number | null; accuracy: number | null; updatedAt: string | null; expiresAt: string | null; estimated: boolean; motion: TrackingMotion | null };
 export function trackingPosition(mission: { status: string; missionStartedAt: Date | string | null; completedAt?: Date | string | null }, driver: { status: string; settings: unknown; driverLocation: { latitude: number; longitude: number; accuracy?: number | null; updatedAt: Date } | null } | null, thresholdSeconds: number, now = new Date(), target: TrackingPoint | null = null): TrackingPosition {
-  const empty = { latitude: null, longitude: null, accuracy: null, updatedAt: null, expiresAt: null, estimated: false };
+  const empty = { latitude: null, longitude: null, accuracy: null, updatedAt: null, expiresAt: null, estimated: false, motion: null };
   if (["DELIVERED", "FAILED", "CANCELLED", "INVOICED", "PAID"].includes(mission.status) || mission.completedAt) return { ...empty, state: "ENDED" };
   if (!missionIsTrackable(mission)) return { ...empty, state: "NOT_STARTED" };
   const service = trackingService(driver?.settings);
@@ -46,16 +54,17 @@ export function trackingPosition(mission: { status: string; missionStartedAt: Da
   const begins = Math.max(+new Date(mission.missionStartedAt!), Date.parse(service.startedAt!));
   if (!loc || +loc.updatedAt < begins || +loc.updatedAt > +now || !Number.isFinite(loc.latitude) || !Number.isFinite(loc.longitude)) return { ...empty, state: "ABSENT" };
   const expiresAt = new Date(+loc.updatedAt + thresholdSeconds * 1000).toISOString();
+  const updatedAt = loc.updatedAt.toISOString();
+  const motion = target ? { from: { latitude: loc.latitude, longitude: loc.longitude }, target, since: updatedAt } : null;
   if (+now >= Date.parse(expiresAt)) {
-    // Signal perdu : position estimée vers la prochaine étape pendant 10 min, puis dernière position connue.
-    const elapsedSeconds = (+now - +loc.updatedAt) / 1000;
-    if (target && elapsedSeconds <= ESTIMATION_MAX_SECONDS) {
-      const estimate = estimatePosition(loc, target, elapsedSeconds);
-      return { state: "STALE", ...estimate, accuracy: null, updatedAt: loc.updatedAt.toISOString(), expiresAt, estimated: true };
+    // Signal périmé : position estimée vers la prochaine étape pendant 3 min, puis arrêt au point atteint (signal perdu).
+    if (motion) {
+      const estimated = (+now - +loc.updatedAt) / 1000 <= ESTIMATION_MAX_SECONDS;
+      return { state: "STALE", ...motionPositionAt(motion, +now), accuracy: null, updatedAt, expiresAt, estimated, motion };
     }
-    return { state: "STALE", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt: loc.updatedAt.toISOString(), expiresAt, estimated: false };
+    return { state: "STALE", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt, expiresAt, estimated: false, motion: null };
   }
-  return { state: "FRESH", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt: loc.updatedAt.toISOString(), expiresAt, estimated: false };
+  return { state: "FRESH", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt, expiresAt, estimated: false, motion };
 }
 /** These historical labels represent planned stops, not completed actions. */
 export function isPlannedTrackingEvent(event: { label: string }) { return event.label === "Livraison" || /^Collecte(?:\s|$)/.test(event.label); }

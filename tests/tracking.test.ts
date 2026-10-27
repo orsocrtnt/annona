@@ -27,16 +27,33 @@ test("TRACK-2 : estimation en ligne droite à 25 km/h, plafonnée à la cible", 
   assert.deepEqual({ ...policy.estimatePosition(from, target, 0) }, { ...from });
   assert.deepEqual({ ...policy.estimatePosition(from, from, 120) }, { ...from });
 });
-test("TRACK-2 : signal perdu, estimation pendant 10 min puis dernière position connue", () => {
+test("TRACK-2 : signal périmé, estimation pendant 3 min puis arrêt au point atteint", () => {
   const lost = (seconds: number) => ({ ...driver, driverLocation: { ...from, accuracy: 8, updatedAt: new Date(+now - seconds * 1000) } });
   const startedEarlier = { ...mission, missionStartedAt: new Date(+now - 3600_000) };
   const longService = { trackingService: { active: true, startedAt: new Date(+now - 3600_000).toISOString() } };
   const at = (seconds: number, t: typeof target | null = target) => policy.trackingPosition(startedEarlier, { ...lost(seconds), settings: longService }, 45, now, t);
   const estimated = at(120); assert.equal(estimated.state, "STALE"); assert.equal(estimated.estimated, true); assert.ok(estimated.latitude! > from.latitude && estimated.latitude! < target.latitude); assert.equal(estimated.accuracy, null); assert.equal(estimated.updatedAt, lost(120).driverLocation.updatedAt.toISOString());
-  assert.equal(at(600).estimated, true);
-  const cut = at(601); assert.equal(cut.estimated, false); assert.equal(cut.latitude, from.latitude); assert.equal(cut.accuracy, 8);
-  const noTarget = at(120, null); assert.equal(noTarget.estimated, false); assert.equal(noTarget.latitude, from.latitude);
+  const limit = at(180); assert.equal(limit.estimated, true);
+  const stopped = at(181), later = at(3600);
+  assert.equal(stopped.estimated, false); assert.equal(later.estimated, false);
+  assert.equal(stopped.latitude, limit.latitude, "arrêt au point estimé atteint, sans retour en arrière"); assert.equal(later.latitude, limit.latitude);
+  assert.ok(stopped.latitude! > from.latitude);
+  const noTarget = at(120, null); assert.equal(noTarget.estimated, false); assert.equal(noTarget.latitude, from.latitude); assert.equal(noTarget.motion, null);
   assert.equal(policy.trackingPosition(startedEarlier, { ...lost(10), settings: longService }, 45, now, target).estimated, false, "signal frais : jamais d'estimation");
+});
+test("TRACK-2 : trajectoire exposée pour avancer entre deux signaux, depuis le dernier relevé", () => {
+  const startedEarlier = { ...mission, missionStartedAt: new Date(+now - 3600_000) };
+  const service = { trackingService: { active: true, startedAt: new Date(+now - 3600_000).toISOString() } };
+  const fix = new Date(+now - 10_000);
+  const fresh = policy.trackingPosition(startedEarlier, { ...driver, settings: service, driverLocation: { ...from, accuracy: 8, updatedAt: fix } }, 45, now, target);
+  assert.equal(fresh.state, "FRESH"); assert.equal(fresh.latitude, from.latitude, "en direct : le relevé tel quel");
+  assert.deepEqual({ ...fresh.motion!.from }, { ...from }); assert.deepEqual({ ...fresh.motion!.target }, { ...target }); assert.equal(fresh.motion!.since, fix.toISOString());
+  const in60 = policy.motionPositionAt(fresh.motion!, +fix + 60_000), in120 = policy.motionPositionAt(fresh.motion!, +fix + 120_000);
+  assert.ok(in60.latitude > from.latitude && in120.latitude > in60.latitude, "avance avec le temps");
+  assert.deepEqual({ ...policy.motionPositionAt(fresh.motion!, +fix + 3600_000) }, { ...policy.motionPositionAt(fresh.motion!, +fix + 180_000) }, "plafonnée à 3 min");
+  assert.deepEqual({ ...policy.motionPositionAt(fresh.motion!, +fix - 5000) }, { ...from }, "horloge en retard : jamais avant le relevé");
+  const stale = policy.trackingPosition(startedEarlier, { ...driver, settings: service, driverLocation: { ...from, accuracy: 8, updatedAt: new Date(+now - 100_000) } }, 45, now, target);
+  assert.deepEqual({ latitude: stale.latitude, longitude: stale.longitude }, { ...policy.motionPositionAt(stale.motion!, +now) }, "serveur et interface calculent le même point");
 });
 test("TRACK-2 : prochaine étape selon le statut et le type de mission", () => {
   const base = { latitude: 48.9, longitude: 2.4, pickupLatitude: 48.7, pickupLongitude: 2.2, order: { stops: [{ latitude: null, longitude: null }, { latitude: 48.75, longitude: 2.25 }] } };
