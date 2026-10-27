@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**52 tâches terminées sur 80 — 65 %**
+**53 tâches terminées sur 80 — 66 %**
 
-`█████████████░░░░░░░` · 28 tâches restantes
+`█████████████░░░░░░░` · 27 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -27,9 +27,9 @@ Revue du 26 octobre 2026 : les cinq tâches précédemment recommandées (valida
 
 | Ordre | Tâche | Pourquoi maintenant | Dépendance réelle | Modèle conseillé |
 |---:|---|---|---|---|
-| 1 | **DISPATCH-3 — auto-dispatch sous transaction** | Le premier essai ONBOARD-1 avec dispatch automatique a expiré dans une transaction Prisma de 5 s ; à reproduire et corriger avant les pilotes. | Aucune pour la reproduction locale. | GPT‑6.1 Sol · effort élevé |
+| 1 | **DATA-02 — complétude de l'export** | L'inventaire liste des modèles absents du contrat d'export ; la complétude technique ne dépend pas de la politique juridique. | Politique de conservation finale : LEGAL-1. | GPT‑6.1 Sol · effort élevé |
 | 2 | **ENV-2 / CI — chaîne verte** | La CI `preproduction` est rouge (documentation, faille `maplibre-gl`) ; corrections locales faites le 27 octobre, à pousser. | Push et cible de développement : propriétaire. | GPT‑6 Luna · effort faible |
-| 3 | **DATA-02 — complétude de l'export** | L'inventaire liste des modèles absents du contrat d'export ; la complétude technique ne dépend pas de la politique juridique. | Politique de conservation finale : LEGAL-1. | GPT‑6.1 Sol · effort élevé |
+| 3 | **SAAS-02 — alertes de consommation** | Les compteurs existent ; des alertes de seuil sans doublon peuvent être testées localement si la règle est documentée comme provisoire. | Seuils définitifs : propriétaire. | GPT‑6.1 Sol · effort moyen |
 | 4 | **SAAS-03 — premières mutations** | Les vues sont livrées ; les actions serveur peuvent être construites sur l'adaptateur fictif selon les règles C7. | Réconciliation fournisseur : compte Stripe de test. | GPT‑6 Astra · effort élevé |
 | 5 | **PERF-02 — PostgreSQL local** | Le harnais reste en mémoire ; le PostgreSQL isolé déjà utilisé par SAAS-01B permet de mesurer Prisma et le pool sans coût. | Charge préproduction : accord du propriétaire. | GPT‑6 Astra · effort élevé |
 
@@ -37,7 +37,7 @@ COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02 et les pilo
 
 ### Chemins critiques
 
-- **Pilotes :** DEMO-2, OPS-03B et ADMIN-1 terminés ; DISPATCH-3 + tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
+- **Pilotes :** DEMO-2, OPS-03B, ADMIN-1 et DISPATCH-3 terminés ; tranche pilote d'ONBOARD-1 → SEC-05/EMAIL réels + MOB-01C + validation LEGAL-1/DATA-02 → V1-GO → PILOT-1 → PILOT-2. Les comptes et droits peuvent être créés manuellement ; SAAS-01B/03/04 et SALES-1 ne bloquent pas ce chemin.
 - **Inscription autonome :** SIGNUP-1 avec paiement fictif sur SAAS-01A est terminé ; SAAS-01B, SAAS-03 (lecture), SAAS-04, SALES-1 (noyau), SAAS-02 (lecture) et GROWTH-1 (pages publiques) ont une tranche locale → compte Stripe de test pour clore SAAS-01B → mutations SAAS-03 → persistance SALES-1 → Contact/légal GROWTH-1 → RELEASE-1. ONBOARD-1 est partagé avec le chemin pilote.
 - **Validation économique :** COST-1 documentaire est terminée ; PERF-02 et les pilotes doivent maintenant remplacer les hypothèses par des mesures. Les règles C7 sont confirmées ; OFFER-1 confronte encore prix, coûts et acceptation au marché.
 - **Design :** direction « Menthe » retenue le 26 octobre 2026 (Light menthe, Dark encre + pastel ; `DESIGN.md`). DESIGN-1 la propage aux trois espaces et ajoute le mode Dark, puis MAP-3, UX-03 et UX-04 s'appliquent seulement aux parcours essentiels. La refonte globale ne bloque ni le SaaS ni les portes techniques des pilotes.
@@ -119,7 +119,7 @@ Ces réussites ne valident pas le GPS terrain, la charge, la conformité du PDF 
 
 Priorités réconciliées le 22 octobre 2026 pour les tâches encore ouvertes. Le niveau indique l'ordre du travail interne ; les validations extérieures sont suivies séparément et ne doivent pas immobiliser les tâches indépendantes :
 
-- **P0 — Débloquer les pilotes et garder la chaîne verte :** ENV-2, DISPATCH-3, tranche pilote d'ONBOARD-1. La phase documentaire COST-1, DEMO-2, OPS-03B, SIGNUP-1, SAAS-01A, ADMIN-1, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable ou CI rouge redevient P0.
+- **P0 — Débloquer les pilotes et garder la chaîne verte :** ENV-2, tranche pilote d'ONBOARD-1. La phase documentaire COST-1, DEMO-2, OPS-03B, SIGNUP-1, SAAS-01A, ADMIN-1, ENV-1, CI-1, DB-1, OPS-03A et les principales frontières SEC sont terminées ; toute régression mesurable ou CI rouge redevient P0.
 - **P1 — Fermer la fiabilité et le libre-service testable :** SEC-05, EMAIL, SAAS-01B, SAAS-03, SAAS-04, SALES-1, SAAS-02, PERF-02.
 - **P2 — Expérience et préparation opérationnelle :** DESIGN-1, MAP-3, UX-03, UX-04, GROWTH-1, V1-GO, OFFER-1, COST-1 (phase mesurée).
 - **P3 — Validation extérieure et terrain :** LEGAL-1, DATA-02, MOB-01C, PROD-02, PROD-04, PILOT-1, PILOT-2, RELEASE-1.
@@ -146,17 +146,16 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 - **Absent du code au 21 octobre :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet. *Au 26 octobre, tous ont une tranche locale (voir SAAS-01B/02/03/04, SALES-1, COST-1, ADMIN-1) sauf les factures d'abonnement et l'attribution commerciale persistée.*
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
-## Matrice des 28 tâches ouvertes
+## Matrice des 27 tâches ouvertes
 
-Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées, prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
+Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées (DISPATCH-3 close le 27 octobre), prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
 
 | Tâche | Jalon | Travail restant et prochain incrément | Dépendance / parallélisation | Complexité · modèle |
 |---|---|---|---|---|
 | ENV-2 | A+B | Rendre `.env.local` joignable (projet de développement en pause) et changer son mot de passe exposé. | Propriétaire ; contournement documenté par `.env.preproduction.local`. | Faible · GPT‑6 Luna |
-| DISPATCH-3 | A | Reproduire l'expiration de la transaction Prisma de 5 s de l'auto-dispatch, corriger et tester. | Local ; précède la validation pilote d'ONBOARD-1. | Élevée · GPT‑6.1 Sol |
 | SEC-05 | A+B | Code et 32 tests locaux faits ; recette avec envoi réel, expiration et réception. | Domaine/expéditeur. | Moyenne · GPT‑6.1 Sol |
 | EMAIL | A+B | Modèles et transport de test faits ; envoi réel, erreurs fournisseur et réception. | Domaine/Resend. | Moyenne · GPT‑6.1 Sol |
-| ONBOARD-1 | A+B | Tranche technique qualifiée ; essai par un pilote réel, temps humain, invitations réelles, décision d'import. | Pilotes + EMAIL ; DISPATCH-3 local avant. | Élevée · GPT‑6.1 Sol |
+| ONBOARD-1 | A+B | Tranche technique qualifiée ; essai par un pilote réel, temps humain, invitations réelles, décision d'import. | Pilotes + EMAIL. | Élevée · GPT‑6.1 Sol |
 | MOB-01C | A | Exécuter GPS, verrouillage, refus et reprise sur iPhone/Android réels. | Appareils/opérateur. | Moyenne · GPT‑6.1 Sol |
 | DESIGN-1 | A+B | Propager la direction Menthe aux pages restantes et ajouter le mode Dark. | Local ; validation visuelle du propriétaire. | Élevée · GPT‑6.1 Sol |
 | MAP-3 | A | Plan vectoriel Menthe livré ; validation visuelle et cas sans réseau. | Après DESIGN-1 ; propriétaire. | Moyenne · GPT‑6.1 Sol |
@@ -387,13 +386,19 @@ Le client utilise son espace pour commander ; l’administrateur organise et le 
 
   Source / dépendance / blocage : terminée. Revue visuelle groupée possible plus tard à la demande du propriétaire ; elle ne bloque pas le comportement validé.
 
-- [ ] **DISPATCH-3 — Qualifier l'auto-dispatch dans sa transaction.** Le premier essai interne d'ONBOARD-1 avec dispatch automatique a expiré dans une transaction Prisma interactive de 5 secondes (nettoyage confirmé, parcours manuel réussi ensuite). Reproduire localement, identifier ce qui allonge la transaction (requêtes séquentielles, appels réseau, verrous) et la rendre bornée sans perdre l'atomicité ni l'idempotence d'OPS-02B.
+- [x] **DISPATCH-3 — Qualifier l'auto-dispatch dans sa transaction.** Le premier essai interne d'ONBOARD-1 avec dispatch automatique a expiré dans une transaction Prisma interactive de 5 secondes (nettoyage confirmé, parcours manuel réussi ensuite). Reproduire localement, identifier ce qui allonge la transaction (requêtes séquentielles, appels réseau, verrous) et la rendre bornée sans perdre l'atomicité ni l'idempotence d'OPS-02B.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
   Terminé quand : la cause est identifiée et reproduite par un test ; l'auto-dispatch ne fait plus d'appel lent dans la transaction ou utilise un délai justifié ; un échec reste explicite, sans affectation partielle ni doublon de job ; la tranche ONBOARD-1 avec dispatch automatique réussit sur la préproduction autorisée.
 
   Source / dépendance / blocage : ajoutée lors de la revue du 26 octobre 2026 depuis la note ONBOARD-1 du 23 octobre. Aucune dépendance extérieure pour la reproduction et la correction locales.
+
+  Terminé le 2026-10-27. Cause : la transaction de création de commande (standard/coursier, et missions spéciales) gardait le délai Prisma par défaut de 5 s, alors qu'elle enchaîne une dizaine d'allers-retours séquentiels (droits SaaS, commande, usage, articles, livraison, job). Depuis le poste local, chaque requête vers la préproduction coûte environ 550 ms via le pooler. Ce n'est pas la logique d'auto-dispatch, exécutée hors transaction par le job. Reproduction sur la préproduction autorisée sans la correction : `ONBOARD1_AUTO_DISPATCH=1` (nouvelle variante de `scripts/onboard1/connected.ts`) échoue en `P2028` « timeout 5000 ms, 5128 ms passed ». Correction : `{ maxWait: 10_000, timeout: 30_000 }`, déjà la convention des autres transactions de `order.service.ts`. L'atomicité et l'unicité du job ne changent pas.
+
+  Validation : `tests/order-atomicity.test.ts` 10/10, dont deux nouveaux tests qui échouent sans la correction (délai 5 000 ms inférieur au budget mesuré de 5 500 ms) ; pannes injectées sans écriture partielle et double envoi sans doublon de job toujours verts. `npm run check` 515/515. Recette connectée sur préproduction avec auto-dispatch : 39,9 s, création de commande 9,9 s, un job `AUTO_DISPATCH`, résidu nul. Sans auto-dispatch : 39,1 s, résidu nul.
+
+  Limite consignée pour PERF-02 : 21 autres transactions interactives gardent le délai de 5 s (dont l'activation d'inscription `signup.service.ts:871`, la facturation sandbox, le support et les données client). Elles ne posent problème que si l'application est loin de la base (poste local, ou fonctions Vercel hors de Paris, voir ENV-2). À mesurer avant de les modifier.
 
 - [x] **BILL-02 — Séparer livraison et facturation.** Préserver l'état logistique et sa date lors de la facturation ; contrôler une permission dédiée ; préparer la reprise des données existantes.
 
@@ -553,7 +558,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Validation : 17 tests ciblés, `npm run check` **345/345**, build **106 pages**, recette pilote manuel **3 → 6 → 7 → 8 terminées + 1 passée sur 9** en **36 626 ms automatisées**, zéro résidu. Chrome réel sur build local : coordonnées invalides/sauvegardées, passage/reprise, retour arrière, rechargement, reconnexion, ancien lien dashboard, compte terminé, lecture seule, refus client/livreur ; mobile 390 × 844 sans débordement et zéro erreur JavaScript. Raccord connecté SIGNUP-1 rejoué sur comptes fictifs. Rapport `docs/rapports/2026-10-23/onboard1-pilot-technique.md`, procédure `docs/operations/onboard1/README.md`, preuves `outputs/onboard1/`.
 
-  Reste avant de cocher : exécution par un pilote réel, mesure du temps humain et des interventions, réception/renvoi réels des invitations avec SEC-05/EMAIL, décision sur un éventuel format d’import (aucun import exposé). Un premier essai interne avec dispatch automatique a expiré dans une transaction Prisma de 5 secondes ; nettoyage confirmé, parcours manuel réussi ensuite, option automatique non qualifiée par cette tranche. La tâche reste ouverte ; aucune validation terrain ni clôture globale n’est déduite des recettes techniques.
+  Reste avant de cocher : exécution par un pilote réel, mesure du temps humain et des interventions, réception/renvoi réels des invitations avec SEC-05/EMAIL, décision sur un éventuel format d’import (aucun import exposé). Un premier essai interne avec dispatch automatique a expiré dans une transaction Prisma de 5 secondes ; nettoyage confirmé, parcours manuel réussi ensuite, option automatique non qualifiée par cette tranche. Corrigé et requalifié le 2026-10-27 par DISPATCH-3 (variante `ONBOARD1_AUTO_DISPATCH=1` réussie sur préproduction). La tâche reste ouverte ; aucune validation terrain ni clôture globale n’est déduite des recettes techniques.
 
 - [x] **UX-02 — Reproduire et corriger la navigation d’inscription.** Tester le lien /login → /register après chargement, retour et cache ; préserver l’inscription qui fonctionne en accès direct.
 

@@ -40,6 +40,7 @@ function fixture(failureStage: FailureStage) {
     jobKicks: [] as string[],
     usage: [] as string[],
   };
+  const transactionOptions: Array<{ maxWait?: number; timeout?: number } | undefined> = [];
   let orderSequence = 0;
   let stopSequence = 0;
   let itemSequence = 0;
@@ -103,7 +104,11 @@ function fixture(failureStage: FailureStage) {
             order.idempotencyKey === where.idempotencyKey
         ) ?? null,
     },
-    $transaction: async (callback: (client: typeof tx) => Promise<unknown>) => {
+    $transaction: async (
+      callback: (client: typeof tx) => Promise<unknown>,
+      options?: { maxWait?: number; timeout?: number }
+    ) => {
+      transactionOptions.push(options);
       const snapshot = Object.fromEntries(
         Object.entries(state).map(([key, rows]) => [key, [...rows]])
       ) as typeof state;
@@ -196,7 +201,7 @@ function fixture(failureStage: FailureStage) {
     }
   );
 
-  return { service, state };
+  return { service, state, transactionOptions };
 }
 
 const standardInput = {
@@ -277,6 +282,29 @@ for (const [label, input] of [
     assert.equal(f.state.addresses.length, label === "standard" ? 1 : 0);
     assert.equal(f.state.jobs.length, 1);
     assert.deepEqual(f.state.jobKicks, ["job-1"]);
+  });
+}
+
+// Délai Prisma par défaut d'une transaction interactive. Mesure ONBOARD-1 : environ dix
+// allers-retours séquentiels à ~550 ms via le pooler distant dépassent ce délai (DISPATCH-3).
+const PRISMA_DEFAULT_TRANSACTION_TIMEOUT_MS = 5_000;
+const REMOTE_ORDER_TRANSACTION_BUDGET_MS = 10 * 550;
+
+for (const [label, input] of [
+  ["standard", standardInput],
+  ["coursier", courierInput],
+] as const) {
+  test(`création ${label} avec dispatch automatique : délai de transaction adapté à la base distante`, async () => {
+    const f = fixture(null);
+    await f.service.createClientOrder("client-a", "company-a", "client@example.com", input);
+    assert.equal(f.transactionOptions.length, 1);
+    const timeout = f.transactionOptions[0]?.timeout ?? PRISMA_DEFAULT_TRANSACTION_TIMEOUT_MS;
+    assert.ok(
+      timeout >= REMOTE_ORDER_TRANSACTION_BUDGET_MS,
+      `délai ${timeout} ms inférieur au budget mesuré ${REMOTE_ORDER_TRANSACTION_BUDGET_MS} ms`
+    );
+    assert.ok((f.transactionOptions[0]?.maxWait ?? 0) >= 10_000);
+    assert.equal(f.state.jobs.length, 1, "le job d'auto-dispatch reste dans la même transaction");
   });
 }
 

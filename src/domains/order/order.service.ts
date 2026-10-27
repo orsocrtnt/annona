@@ -533,7 +533,7 @@ export async function createClientOrder(
         });
         await recordOrderCreatedUsage(tx, { companyId, orderId: order.id });
         return order;
-      });
+      }, { maxWait: 10_000, timeout: 30_000 });
     } catch (error) {
       if (idempotencyKey && requestFingerprint && isUniqueConstraintError(error)) {
         const existing = await findIdempotentOrder(
@@ -763,7 +763,9 @@ export async function createClientOrder(
         : null;
 
       return { order, delivery, operationJobId: operationJob?.id ?? null };
-    });
+    // Une dizaine d'allers-retours séquentiels : le délai Prisma par défaut (5 s) expirait
+    // sur la base distante avec le dispatch automatique (ONBOARD-1, DISPATCH-3).
+    }, { maxWait: 10_000, timeout: 30_000 });
   } catch (error) {
     if (idempotencyKey && requestFingerprint && isUniqueConstraintError(error)) {
       const existing = await findIdempotentOrder(

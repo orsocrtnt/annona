@@ -16,6 +16,8 @@ import { DEFAULT_DISPATCH_SETTINGS } from "../../src/lib/validations/dispatch-se
 
 const outputPath = resolve(process.argv[2] ?? "outputs/onboard1/connected.json");
 const fixtureKey = `onboard1-${randomUUID()}`;
+// DISPATCH-3 : rejoue la même tranche avec la fonction auto_dispatch du pilote.
+const autoDispatch = process.env.ONBOARD1_AUTO_DISPATCH === "1";
 
 async function roleIds() {
   const roles = await Promise.all(
@@ -87,7 +89,7 @@ async function run() {
     },
   });
   await activateManualPilot({ companyId: company.id, startsAt: new Date(),
-    endsAt: new Date(Date.now() + 86_400_000), features: [], limits: { admins: 1, drivers: 1, dispatchers: 1, monthlyOrders: 10 } });
+    endsAt: new Date(Date.now() + 86_400_000), features: autoDispatch ? ["auto_dispatch"] : [], limits: { admins: 1, drivers: 1, dispatchers: 1, monthlyOrders: 10 } });
   await updateOnboardingCompanyProfile(company.id, { name: "ONBOARD-1 — entreprise fictive", email: `contact@${fixtureKey}.invalid`, phone: "", address: "1 rue du Test", city: "Paris", country: "FR" });
   await updateOnboardingPreference(company.id, { step: "collaborators", skipped: true });
   const afterConfiguration = await getCompanyOnboardingStatus(company.id);
@@ -154,6 +156,10 @@ async function run() {
     },
     { idempotencyKey: `${fixtureKey}:order` }
   );
+  const autoDispatchJobs = await prisma.operationJob.count({
+    where: { companyId: company.id, type: "AUTO_DISPATCH" },
+  });
+  assert.equal(autoDispatchJobs, autoDispatch ? 1 : 0, "AUTO_DISPATCH_JOB_MISMATCH");
   const afterOrder = await getCompanyOnboardingStatus(company.id);
   assert.equal(afterOrder.completedSteps, 7);
   const createOrderMs = performance.now() - orderStartedAt;
@@ -214,6 +220,7 @@ async function run() {
       freshServerReadIdentical: true,
       invalidPreferenceNoMutation: true,
       pilotSaasAccess: true,
+      autoDispatchJobEnqueued: autoDispatch,
     },
   };
 }
