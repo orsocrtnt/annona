@@ -54,17 +54,20 @@ Liste unique des actions qui ne peuvent pas être faites par un agent, classées
 
 **Décisions produit** — toutes prises le 27 octobre 2026 (voir `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, section C10) : impayé et changement de formule pendant la découverte (SAAS-04), refus d'une baisse avec ressources en excès et journal d'abonnement autorisé sur préproduction (SAAS-03), un code permanent par commercial (SALES-1), Contact stocké dans le back-office plateforme (GROWTH-1), seuils 80/100/120 % et Business (SAAS-02), sessions de test démo libérées après une heure.
 
+**Décision encore ouverte**
+5. SAAS-04 : si le client résilie pendant l'essai premium, l'essai continue-t-il jusqu'à la fin de l'accès payé (comportement actuel) ou s'arrête-t-il à la demande de résiliation ?
+
 **Ressources et comptes**
-5. Confirmer l'autorisation de la migration additive des codes commerciaux sur préproduction. → SALES-1
-6. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
-7. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
-8. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
-9. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
+6. Confirmer l'autorisation de la migration additive des codes commerciaux sur préproduction. → SALES-1
+7. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
+8. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
+9. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
+10. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
 
 **Juridique et terrain**
-10. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
-11. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
-12. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
+11. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
+12. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
+13. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
 
 ### Dépendances fournisseur ou validation extérieure
 
@@ -1050,6 +1053,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Affichage local ajouté le 2026-10-25 dans « Mon abonnement » : tant que la découverte Starter/Pro est active, l'API de lecture expose uniquement son échéance et les quatre fonctions éligibles, puis l'encart disparaît exactement à J60. L'écran précise que quotas et facturation restent inchangés ; Business reste exclu. Vérifié : `npm run test:saas04` 4/4 et `npm run check` 375/375. La recette Playwright a démarré mais reste bloquée avant navigation par le DNS Supabase (`ENOTFOUND`, connexion 401), sans contournement. La case reste ouverte uniquement pour les règles d'impayé et de changement de formule pendant la découverte, qui nécessitent une décision du propriétaire.
 
   Revue du 2026-10-27 : une souscription confirmée par l'adaptateur `stripe-sandbox` n'ouvre aucune découverte (`saas.service.ts`, test `saas04` qui l'exige). Ce n'est pas un oubli : avec Stripe, impayé et changement de formule deviennent possibles et leur règle pendant la découverte n'est pas décidée. Le raccord Stripe suivra cette décision ; aucun code modifié.
+
+  Décision C10 appliquée le 2026-10-27 (`docs/DECISIONS_PRODUIT_COMMERCIALES.md`). Une souscription confirmée par `stripe-sandbox` ouvre désormais les mêmes 60 jours ; un adaptateur inconnu n'en ouvre aucun. Le premier échec de paiement met fin à la découverte, définitivement : la projection Stripe ramène `premiumDiscoveryEndsAt` à la date de l'échec, et une régularisation ne la rouvre pas. Les droits et « Mon abonnement » appliquent la coupure dès que l'échec est enregistré, même avant la projection, et les règles d'impayé habituelles continuent de s'appliquer au compte. Un changement de formule garde la date de fin ; Business n'a pas de découverte. Vérifié : `npm run test:saas04` 7/7 (4 nouveaux cas), `npm run test:saas03`, `npm run test:saas01b` (PostgreSQL local, doublure Stripe) et `npm run check`. La case reste ouverte : la règle d'annulation pendant la découverte n'est pas encore décidée.
 
 - [ ] **SALES-1 — Tracer l'origine des ventes et calculer les commissions.** Associer un code/lien et un commercial à l'inscription, figer les éléments de souscription initiale, conserver le niveau **apporteur 15 % / accompagné 25 % / autonome 35 %**, puis calculer pendant douze mois maximum une commission théorique sur les seuls montants HT réellement encaissés et éligibles. Les options ou changements ultérieurs n'ajoutent pas de commission. Aucun versement automatisé ni CRM complexe.
 

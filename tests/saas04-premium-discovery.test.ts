@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   PREMIUM_DISCOVERY_DAYS,
   PREMIUM_DISCOVERY_FEATURES,
+  premiumDiscoveryEndAfterPaymentFailure,
   premiumDiscoveryEndsAtForPaidSignup,
   resolveCompanySaasAccess,
 } from "../src/domains/saas/saas.service";
@@ -127,23 +128,27 @@ function subscriptionAccount(planCode: PlanCode, premiumDiscoveryEndsAt: Date | 
   };
 }
 
-test("SAAS-04 : le faux paiement ouvre exactement 60 jours pour Starter/Pro", () => {
+test("SAAS-04 : un paiement confirmé (fictif ou Stripe sandbox) ouvre exactement 60 jours pour Starter/Pro", () => {
   const startsAt = new Date("2026-01-01T12:30:00.000Z");
   const expectedEnd = new Date(startsAt.getTime() + PREMIUM_DISCOVERY_DAYS * DAY_MS);
 
   for (const planCode of ["STARTER", "PRO"] as const) {
-    assert.equal(
-      premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode, paymentAdapter: "fake" })?.toISOString(),
-      expectedEnd.toISOString()
-    );
+    for (const paymentAdapter of ["fake", "stripe-sandbox"]) {
+      assert.equal(
+        premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode, paymentAdapter })?.toISOString(),
+        expectedEnd.toISOString(),
+        `${planCode} / ${paymentAdapter}`
+      );
+    }
   }
   assert.equal(
     premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "BUSINESS", paymentAdapter: "fake" }),
     null
   );
   assert.equal(
-    premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "STARTER", paymentAdapter: "stripe-sandbox" }),
-    null
+    premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "STARTER", paymentAdapter: "stripe-live" }),
+    null,
+    "un adaptateur inconnu n'ouvre aucune découverte"
   );
   assert.equal(
     premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "PRO", paymentAdapter: null }),
@@ -292,4 +297,67 @@ test("SAAS-04 : fonctions incluses/achetées conservées, Business et pilote dis
   assert.equal(pilotAccess.premiumDiscovery, null);
   assert.deepEqual(sortedFeatures(pilotAccess), ["admin_gps"]);
   assert.deepEqual(pilotAccess.limits, { drivers: 3, admins: 1, dispatchers: 1, monthlyOrders: 50 });
+});
+
+test("SAAS-04 (C10) : le premier impayé met fin à la découverte, définitivement", async () => {
+  const startsAt = new Date("2026-01-01T00:00:00.000Z");
+  const endsAt = premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "STARTER", paymentAdapter: "stripe-sandbox" })!;
+  const failedAt = "2026-01-20T08:00:00.000Z";
+
+  assert.equal(premiumDiscoveryEndAfterPaymentFailure(endsAt, failedAt)?.toISOString(), failedAt);
+  assert.equal(premiumDiscoveryEndAfterPaymentFailure(endsAt, null), endsAt, "sans impayé, rien ne change");
+  assert.equal(
+    premiumDiscoveryEndAfterPaymentFailure(endsAt, "2026-04-01T00:00:00.000Z"),
+    endsAt,
+    "un impayé après la fin ne prolonge jamais la découverte"
+  );
+  assert.equal(premiumDiscoveryEndAfterPaymentFailure(null, failedAt), null, "aucune découverte n'est créée");
+  assert.equal(premiumDiscoveryEndAfterPaymentFailure(endsAt, "pas une date"), endsAt);
+
+  // Impayé enregistré mais pas encore projeté : la découverte est déjà coupée.
+  const unpaid = commercial({ planCode: "STARTER", startsAt, premiumDiscoveryEndsAt: endsAt });
+  unpaid.snapshot = { billingFailedAt: failedAt };
+  const afterFailure = await resolveCompanySaasAccess("company-a", new Date("2026-01-21T00:00:00.000Z"), database(unpaid));
+  assert.equal(afterFailure.premiumDiscovery, null);
+  assert.deepEqual(sortedFeatures(afterFailure), []);
+  assert.equal(afterFailure.status, "PAST_DUE", "les règles d'impayé habituelles s'appliquent au compte");
+  const beforeFailure = await resolveCompanySaasAccess("company-a", new Date("2026-01-19T00:00:00.000Z"), database(unpaid));
+  assert.deepEqual(sortedFeatures(beforeFailure), [...PREMIUM_DISCOVERY_FEATURES].sort());
+
+  // Régularisé ensuite : la fin projetée reste celle de l'impayé, la découverte ne revient pas.
+  const regularised = commercial({
+    planCode: "STARTER",
+    startsAt,
+    premiumDiscoveryEndsAt: premiumDiscoveryEndAfterPaymentFailure(endsAt, failedAt),
+  });
+  const later = await resolveCompanySaasAccess("company-a", new Date("2026-01-25T00:00:00.000Z"), database(regularised));
+  assert.equal(later.premiumDiscovery, null);
+  assert.equal(later.status, "ACTIVE");
+
+  const billingSource = readFileSync("src/domains/billing/billing.service.ts", "utf8");
+  assert.match(
+    billingSource,
+    /premiumDiscoveryEndsAt: premiumDiscoveryEndAfterPaymentFailure\(subscription\.premiumDiscoveryEndsAt, state\.failedAt\)/,
+    "la projection Stripe enregistre la fin anticipée"
+  );
+});
+
+test("SAAS-04 (C10) : « Mon abonnement » n'affiche plus la découverte après un impayé", () => {
+  const startsAt = new Date("2026-01-01T00:00:00.000Z");
+  const endsAt = premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "STARTER", paymentAdapter: "stripe-sandbox" })!;
+  const account = subscriptionAccount("STARTER", endsAt);
+  const at = new Date("2026-01-21T00:00:00.000Z");
+  assert.ok(buildSubscriptionView(account as never, at)?.premiumDiscovery, "affichée tant qu'aucun impayé");
+  (account.state as Record<string, unknown>).failedAt = "2026-01-20T08:00:00.000Z";
+  assert.equal(buildSubscriptionView(account as never, at)?.premiumDiscovery, null);
+});
+
+test("SAAS-04 (C10) : un changement de formule garde la date de fin ; Business n'a pas de découverte", async () => {
+  const startsAt = new Date("2026-01-01T00:00:00.000Z");
+  const endsAt = premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "STARTER", paymentAdapter: "fake" })!;
+  const at = new Date("2026-02-01T00:00:00.000Z");
+  const asPro = await resolveCompanySaasAccess("company-a", at, database(commercial({ planCode: "PRO", startsAt, premiumDiscoveryEndsAt: endsAt })));
+  assert.equal(asPro.premiumDiscovery?.endsAt.toISOString(), endsAt.toISOString());
+  const asBusiness = await resolveCompanySaasAccess("company-a", at, database(commercial({ planCode: "BUSINESS", startsAt, premiumDiscoveryEndsAt: endsAt })));
+  assert.equal(asBusiness.premiumDiscovery, null, "tout est inclus en Business");
 });

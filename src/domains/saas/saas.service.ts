@@ -27,10 +27,28 @@ export function premiumDiscoveryEndsAtForPaidSignup(input: {
   if (!Number.isFinite(input.startsAt.getTime())) {
     throw new Error("SAAS_DISCOVERY_START_INVALID");
   }
-  if (input.paymentAdapter !== "fake" || !["STARTER", "PRO"].includes(input.planCode)) {
+  // Décision C10 : impayé et changement de formule pendant la découverte sont tranchés ;
+  // la souscription confirmée par Stripe sandbox ouvre donc la même découverte.
+  if (!PAID_DISCOVERY_ADAPTERS.has(input.paymentAdapter ?? "") || !["STARTER", "PRO"].includes(input.planCode)) {
     return null;
   }
   return new Date(input.startsAt.getTime() + PREMIUM_DISCOVERY_DAYS * 86_400_000);
+}
+
+const PAID_DISCOVERY_ADAPTERS = new Set(["fake", "stripe-sandbox"]);
+
+/**
+ * Décision C10 : la découverte s'arrête définitivement au premier échec de paiement.
+ * Renvoie la fin à enregistrer, sans jamais prolonger ni rouvrir une découverte.
+ */
+export function premiumDiscoveryEndAfterPaymentFailure(
+  discoveryEndsAt: Date | null,
+  failedAt: string | null
+): Date | null {
+  if (!discoveryEndsAt || !failedAt) return discoveryEndsAt;
+  const failure = Date.parse(failedAt);
+  if (!Number.isFinite(failure) || failure >= discoveryEndsAt.getTime()) return discoveryEndsAt;
+  return new Date(failure);
 }
 
 type DbClient = Prisma.TransactionClient | typeof prisma;
@@ -308,7 +326,11 @@ export async function resolveCompanySaasAccess(
   if (!assignment) throw new Error("SAAS_PLAN_ASSIGNMENT_REQUIRED");
   const plan = planSnapshotFromJson(assignment.snapshot);
   const features = new Set(plan.features);
-  const discoveryEndsAt = subscription.premiumDiscoveryEndsAt;
+  // Un échec de paiement enregistré met fin à la découverte, même avant sa projection.
+  const discoveryEndsAt = premiumDiscoveryEndAfterPaymentFailure(
+    subscription.premiumDiscoveryEndsAt,
+    Number.isFinite(failedAt) ? new Date(failedAt).toISOString() : null
+  );
   const discoveryActive =
     (plan.planCode === "STARTER" || plan.planCode === "PRO") &&
     discoveryEndsAt instanceof Date &&

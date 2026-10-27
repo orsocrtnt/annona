@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { activateSignupJourney, type SignupCatalog, type SignupOptionSelection } from "@/domains/signup/signup.service";
-import { snapshotPlan } from "@/domains/saas/saas.service";
+import { premiumDiscoveryEndAfterPaymentFailure, snapshotPlan } from "@/domains/saas/saas.service";
 import { changeTiming, initialBillingState, makeBillingContract, monthlyUsageAmount, reconcileBilling, reminderDays, type BillingContract, type BillingState } from "./billing-core";
 import { StripeSandboxProvider, type SandboxBillingProvider } from "./stripe-sandbox";
 
@@ -230,7 +230,7 @@ export class BillingService {
           await tx.saasSubscriptionItem.create({ data: { subscriptionId: subscription.id, optionId: option.id, code: option.code, kind: option.kind, source: old?.source ?? "ADDED_LATER", quantity: selection.quantity, unitPriceCents: line.unitHtCents, effectiveFrom: now, snapshot: json({ schemaVersion: 1, featureKey: option.featureKey, optionCode: option.code, billingInterval: contract.quote.billingInterval, unitPriceCents: line.unitHtCents }) } });
         }
       }
-      await tx.saasSubscription.update({ where: { id: subscription.id }, data: { status: state.status, billingInterval: contract.quote.billingInterval, catalogVersionId: contract.catalog.id, providerSubscriptionId: account.providerSubscriptionId, providerCustomerId: account.providerCustomerId, currentPeriodStart: new Date(state.periodStart!), currentPeriodEnd: new Date(state.periodEnd!), cancelAtPeriodEnd: state.cancelAtPeriodEnd, endedAt: state.status === "CANCELLED" ? new Date(state.periodEnd!) : null, snapshot: json({ ...previous, billingContractHash: contract.hash, billingFailedAt: state.failedAt, billingAccountId: accountId, quote: contract.quote }) } });
+      await tx.saasSubscription.update({ where: { id: subscription.id }, data: { status: state.status, billingInterval: contract.quote.billingInterval, catalogVersionId: contract.catalog.id, providerSubscriptionId: account.providerSubscriptionId, providerCustomerId: account.providerCustomerId, currentPeriodStart: new Date(state.periodStart!), currentPeriodEnd: new Date(state.periodEnd!), cancelAtPeriodEnd: state.cancelAtPeriodEnd, endedAt: state.status === "CANCELLED" ? new Date(state.periodEnd!) : null, premiumDiscoveryEndsAt: premiumDiscoveryEndAfterPaymentFailure(subscription.premiumDiscoveryEndsAt, state.failedAt), snapshot: json({ ...previous, billingContractHash: contract.hash, billingFailedAt: state.failedAt, billingAccountId: accountId, quote: contract.quote }) } });
       await tx.saasBillingAccount.update({ where: { id: accountId }, data: { subscriptionId: subscription.id } });
     });
   }

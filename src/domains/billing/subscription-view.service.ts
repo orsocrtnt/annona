@@ -1,6 +1,6 @@
 import { prisma } from "@/services/prisma/client";
 import { SAAS_FEATURE_LABELS } from "@/domains/saas/saas-access";
-import { PREMIUM_DISCOVERY_FEATURES } from "@/domains/saas/saas.service";
+import { PREMIUM_DISCOVERY_FEATURES, premiumDiscoveryEndAfterPaymentFailure } from "@/domains/saas/saas.service";
 import type { SubscriptionView } from "./subscription-view.types";
 
 type JsonRecord = Record<string, unknown>;
@@ -127,7 +127,10 @@ export function buildSubscriptionView(
       }
     : null;
   const status = text(state.status, 40) ?? account.subscription.status;
-  const discoveryEndsAt = account.subscription.premiumDiscoveryEndsAt;
+  const discoveryEndsAt = premiumDiscoveryEndAfterPaymentFailure(
+    account.subscription.premiumDiscoveryEndsAt,
+    text(state.failedAt, 40)
+  );
   const premiumDiscovery =
     (planCode === "STARTER" || planCode === "PRO") &&
     discoveryEndsAt instanceof Date &&
