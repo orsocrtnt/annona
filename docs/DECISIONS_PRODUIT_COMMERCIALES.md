@@ -126,6 +126,23 @@ La durée maximale envisagée est de douze mois. La base de calcul porte uniquem
 
 La V1 doit conserver une attribution auditable et permettre un calcul explicable. Elle ne doit pas devenir un CRM complet.
 
+## C10 — Décisions du propriétaire du 27 octobre 2026
+
+Réponses données au questionnaire de l'agent ; elles débloquent SAAS-02/03/04, SALES-1, GROWTH-1 et la recette locale.
+
+| Sujet | Décision | Tâche |
+|---|---|---|
+| Impayé pendant les 60 jours de découverte premium | La découverte s'arrête au premier échec de paiement : les fonctions premium d'essai sont retirées immédiatement. Les règles d'impayé habituelles (J14 restreint, J30 lecture seule) continuent de s'appliquer au compte. | SAAS-04 |
+| Changement de formule pendant la découverte | La découverte garde sa date de fin (J60) en cas de montée ou de baisse ; un passage à Business la rend sans objet puisque tout y est inclus. | SAAS-04 |
+| Baisse de formule avec ressources en excès | Refusée tant que des livreurs, administrateurs ou dispatchers dépassent les limites de la formule visée. Le client voit les comptes à désactiver lui-même ; rien n'est supprimé ni désactivé automatiquement. | SAAS-03 |
+| Journal d'abonnement | Migration additive autorisée, appliquée à la seule préproduction. Elle trace qui fait quoi et quand avant toute modification d'abonnement par le client. Jamais en production sans nouvelle décision. | SAAS-03 |
+| Codes commerciaux | Un code permanent par commercial, créé par le super-administrateur, lié à son niveau (apporteur, accompagné, autonome), sans date de fin et désactivable à tout moment. | SALES-1 |
+| Formulaire Contact | Les messages sont stockés et lus dans le back-office plateforme (super-administrateur), sans dépendre du domaine e-mail. | GROWTH-1 |
+| Alertes de consommation plateforme | 80 %, 100 % et 120 % des commandes incluses ; pour Business, alerte dès deux fois les commandes incluses ou 40 livreurs actifs. | SAAS-02 |
+| Pool de démonstration | Garder 6 espaces, mais libérer automatiquement les sessions de test après une heure au lieu de huit. | DEMO-2 (suivi ENV-2) |
+
+Le choix d'un Contact stocké implique sa propre table : additive, préproduction seulement, comme le journal d'abonnement. La migration des codes commerciaux n'est pas encore autorisée explicitement ; elle doit l'être avant d'être appliquée.
+
 ## Éléments encore non confirmés
 
 - identité juridique, SIREN, TVA et adresse de l'éditeur ;

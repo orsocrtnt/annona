@@ -52,24 +52,19 @@ Liste unique des actions qui ne peuvent pas être faites par un agent, classées
 3. Réactiver le projet Supabase de développement en pause, ou en créer un autre, puis mettre à jour `.env.local`. En attendant, toute recette locale passe par `.env.preproduction.local`. → ENV-2
 4. Vérifier dans Vercel → Settings → Functions la région des fonctions de préproduction (hypothèse `iad1` alors que la base est à Paris) ; l'accès Vercel de l'agent n'est pas autorisé pour l'équipe `tutelliv`. → ENV-2, PERF-02
 
-**Décisions produit (débloquent du code local)**
-5. SAAS-04 : règle d'impayé et de changement de formule pendant les 60 jours de découverte ; elle conditionne aussi l'ouverture de la découverte aux souscriptions Stripe.
-6. SAAS-03 : sort d'une baisse de formule bloquée par des dépassements (refus ou planification au renouvellement), remplacement d'une option incompatible, et accord pour une migration additive « journal d'abonnement » avant toute modification par le client.
-7. SALES-1 : émission, propriété et expiration des codes commerciaux.
-8. GROWTH-1 : destination des messages du formulaire Contact.
-9. SAAS-02 : seuils d'alerte de coût et de consommation.
-10. Pool de démonstration de préproduction : 6 espaces loués 8 h chacun, saturés quand plusieurs agents testent en parallèle. Augmenter la taille ou raccourcir les locations de test.
+**Décisions produit** — toutes prises le 27 octobre 2026 (voir `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, section C10) : impayé et changement de formule pendant la découverte (SAAS-04), refus d'une baisse avec ressources en excès et journal d'abonnement autorisé sur préproduction (SAAS-03), un code permanent par commercial (SALES-1), Contact stocké dans le back-office plateforme (GROWTH-1), seuils 80/100/120 % et Business (SAAS-02), sessions de test démo libérées après une heure.
 
 **Ressources et comptes**
-11. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
-12. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
-13. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
-14. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
+5. Confirmer l'autorisation de la migration additive des codes commerciaux sur préproduction. → SALES-1
+6. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
+7. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
+8. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
+9. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
 
 **Juridique et terrain**
-15. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
-16. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
-17. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
+10. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
+11. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
+12. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
 
 ### Dépendances fournisseur ou validation extérieure
 
