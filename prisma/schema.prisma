@@ -1076,6 +1076,7 @@ enum PlatformAccessResource {
   OPERATION_JOBS
   INCIDENTS
   ACCESS_EVENTS
+  CONTACT_MESSAGES
 }
 
 /// Lecture plateforme journalisée. Aucune relation, aucune donnée personnelle.
@@ -1093,4 +1094,21 @@ model PlatformAccessEvent {
   @@index([expiresAt])
   @@index([actorId])
   @@map("platform_access_events")
+}
+
+/// Message du formulaire Contact public (GROWTH-1, décision C10), lu par le super-administrateur.
+/// L'adresse IP n'est jamais stockée : seule une empreinte HMAC sert à limiter le débit.
+model ContactMessage {
+  id         String   @id @default(cuid())
+  name       String
+  email      String
+  company    String?
+  phone      String?
+  message    String
+  sourceHash String   @map("source_hash")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([sourceHash, createdAt])
+  @@map("contact_messages")
 }

@@ -36,8 +36,9 @@
 - `RecurringOrder` : modèle et planification de commandes récurrentes.
 - `DemoPoolEnvironment` : stock de démonstrations préconstruites, location exclusive et recyclage durable.
 - `PlatformAccessEvent` : journal minimal et expirant des lectures de la supervision plateforme, sans relation ni donnée personnelle.
+- `ContactMessage` : message du formulaire Contact public, lu par le super-administrateur ; l'adresse IP n'est jamais stockée, seulement une empreinte HMAC pour limiter le débit.
 
-Le schéma comprend 35 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 36 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
 
 ## Relations essentielles
 
@@ -84,7 +85,7 @@ Seule `db:generate` fait partie du travail local courant. Toutes les autres comm
 
 ## État des migrations et de la sécurité
 
-Le dépôt contient dix-sept migrations reproductibles, de la baseline initiale au journal d'accès plateforme (`prisma/migrations/`). Elles ont été appliquées uniquement à la préproduction autorisée. Le contrôle en lecture seule du 26 octobre 2026 y retrouve dix-sept migrations terminées, 35 tables applicatives, RLS active sur chacune et aucun droit direct public.
+Le dépôt contient dix-huit migrations reproductibles, de la baseline initiale aux messages Contact (`prisma/migrations/`). Les dix-sept premières ont été appliquées uniquement à la préproduction autorisée ; `20261027090000_contact_messages` n'est appliquée nulle part tant que la branche n'est pas fusionnée (validée sur PostgreSQL local jetable : zéro écart, RLS active, aucun droit public). Le contrôle en lecture seule du 26 octobre 2026 y retrouve dix-sept migrations terminées, 35 tables applicatives, RLS active sur chacune et aucun droit direct public.
 
 Les 35 tables ont RLS active et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau. Le catalogue SaaS actif et les entreprises historiques migrées en compatibilité `LEGACY` ne créent aucun abonnement payant implicite. Les brouillons d'inscription et événements de paiement restent eux aussi exclusivement accessibles par le serveur.
 

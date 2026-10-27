@@ -43,10 +43,11 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | SaasBillingAccount | partagée | signupId | non |
 | SaasBillingOperation | technique | accountId | non |
 | PlatformAccessEvent | plateforme | actorId, sans companyId | non |
+| ContactMessage | plateforme | aucune, prospect avant tout compte | non |
 
 ## Absents de l'export
 
-Ces modèles ne sont pas dans `exportCompanyData` : SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise).
+Ces modèles ne sont pas dans `exportCompanyData` : SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent, ContactMessage. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise).
 
 Role et OperationJob n'y sont que partiels : le rôle est recopié par son nom sur l'utilisateur, le job est recopié sans sa charge ni son erreur.
 

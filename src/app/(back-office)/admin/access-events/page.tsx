@@ -22,6 +22,7 @@ const RESOURCES = [
   "OPERATION_JOBS",
   "INCIDENTS",
   "ACCESS_EVENTS",
+  "CONTACT_MESSAGES",
 ] as const;
 
 const DECISIONS = [

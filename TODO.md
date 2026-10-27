@@ -49,25 +49,26 @@ Liste unique des actions qui ne peuvent pas être faites par un agent, classées
 **Urgent — sécurité et chaîne de livraison**
 1. Changer le mot de passe de l'ancienne base de développement `wlomrzil…`, exposé dans un journal d'outil le 26 octobre. → ENV-2
 2. Relire puis pousser la branche locale `todo/agent2-backlog` (worktree `TutelLiv-GPT-agent2`) et la fusionner dans `preproduction`. La CI y est rouge depuis le 26 octobre (`docs:verify`, faille critique `maplibre-gl`) ; les deux corrections ne sont que locales. → CI, MAP-3
-3. Réactiver le projet Supabase de développement en pause, ou en créer un autre, puis mettre à jour `.env.local`. En attendant, toute recette locale passe par `.env.preproduction.local`. → ENV-2
-4. Vérifier dans Vercel → Settings → Functions la région des fonctions de préproduction (hypothèse `iad1` alors que la base est à Paris) ; l'accès Vercel de l'agent n'est pas autorisé pour l'équipe `tutelliv`. → ENV-2, PERF-02
+3. Après fusion, faire appliquer sur la préproduction la migration `20261027090000_contact_messages` (table des messages Contact) : sans elle, `/api/contact` répond 503 et la lecture plateforme des messages est indisponible. → GROWTH-1
+4. Réactiver le projet Supabase de développement en pause, ou en créer un autre, puis mettre à jour `.env.local`. En attendant, toute recette locale passe par `.env.preproduction.local`. → ENV-2
+5. Vérifier dans Vercel → Settings → Functions la région des fonctions de préproduction (hypothèse `iad1` alors que la base est à Paris) ; l'accès Vercel de l'agent n'est pas autorisé pour l'équipe `tutelliv`. → ENV-2, PERF-02
 
 **Décisions produit** — toutes prises le 27 octobre 2026 (voir `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, section C10) : impayé et changement de formule pendant la découverte (SAAS-04), refus d'une baisse avec ressources en excès et journal d'abonnement autorisé sur préproduction (SAAS-03), un code permanent par commercial (SALES-1), Contact stocké dans le back-office plateforme (GROWTH-1), seuils 80/100/120 % et Business (SAAS-02), sessions de test démo libérées après une heure.
 
 **Décision encore ouverte**
-5. SAAS-04 : si le client résilie pendant l'essai premium, l'essai continue-t-il jusqu'à la fin de l'accès payé (comportement actuel) ou s'arrête-t-il à la demande de résiliation ?
+6. SAAS-04 : si le client résilie pendant l'essai premium, l'essai continue-t-il jusqu'à la fin de l'accès payé (comportement actuel) ou s'arrête-t-il à la demande de résiliation ?
 
 **Ressources et comptes**
-6. Confirmer l'autorisation de la migration additive des codes commerciaux sur préproduction. → SALES-1
-7. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
-8. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
-9. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
-10. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
+7. Confirmer l'autorisation de la migration additive des codes commerciaux sur préproduction. → SALES-1
+8. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
+9. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
+10. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
+11. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
 
 **Juridique et terrain**
-11. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
-12. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
-13. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
+12. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
+13. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
+14. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
 
 ### Dépendances fournisseur ou validation extérieure
 
@@ -190,7 +191,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | SAAS-02 | B+C | Lecture revenu/consommation et alertes C10 (API) faites ; affichage des alertes, réconciliation paiements, rétention, conversion. | Stripe de test ; recette navigateur super-admin. | Élevée · GPT‑6.1 Sol |
 | PERF-02 | A+B | Harnais en mémoire et PostgreSQL local jetable faits (27 octobre) ; routes Next locales, puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
 | COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
-| GROWTH-1 | B | Tarifs, Fonctionnalités et Démonstration faits ; Contact protégé et pages légales. | Destination Contact : propriétaire ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
+| GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration et Contact (API + page, 27 octobre) faits ; écran de lecture Contact, pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
 | RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon. | Très élevée · GPT‑6 Astra |
 | SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée. | Moyenne · GPT‑6.1 Sol |
 
@@ -1134,6 +1135,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Tranche locale du 2026-10-25, démonstration : page publique `/demonstration`. Elle distingue la démo du pilote, de la découverte premium et de la souscription. Le bouton reprend la connexion démo existante seulement si le compte démo est déjà en base. Aucune session n'est créée par cette page. GROWTH-1 reste ouvert.
 
   Porte locale du 2026-10-25 : `docs/operations/growth01/ACCEPTANCE.md`. Les parcours anonymes Accueil, Fonctionnalités, Tarifs, Démonstration, Inscription et Connexion se rejoignent. Le contact public, les pages légales validées et le domaine restent dehors. GROWTH-1 reste ouvert.
+  Contact du 2026-10-27, décision C10. Page `/contact` et `POST /api/contact` avec validation stricte, pot de miel, limites par source et globales en base, et une IP jamais stockée (empreinte HMAC seulement). Les messages vont dans une nouvelle table `contact_messages` (RLS, aucun droit public), lue par `GET /api/admin/contact-messages`, réservé au super-administrateur et journalisé. La migration a été validée sur un PostgreSQL local jetable (zéro écart, RLS, aucun droit public) et n'est **appliquée nulle part**. Vérifié : `tests/growth01-contact.test.ts` 6/6, `npm run test:admin01` 88/88, `npm run check` 532/532, build CI sans secret, recette Chrome locale complète (`docs/operations/growth01/ACCEPTANCE.md`). Restent : l'écran de lecture dans le back-office, l'application de la migration après fusion, la durée de conservation (LEGAL-1), les pages légales et le domaine.
 
 - [x] **ADMIN-1 — Étendre la supervision interne du SaaS.** Compléter l'espace SUPER_ADMIN existant pour consulter entreprises, état de souscription/pilote, droits/options, consommation, paiements réconciliés, alertes techniques, tickets et incidents. Prévoir recherche, filtres et accès au détail strictement audité, sans devenir un CRM.
 

@@ -7,6 +7,7 @@ const expected = [
   "access-events/route.ts",
   "companies/[id]/route.ts",
   "companies/route.ts",
+  "contact-messages/route.ts",
   "incidents/route.ts",
   "operation-jobs/route.ts",
   "overview/route.ts",

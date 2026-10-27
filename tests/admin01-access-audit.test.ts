@@ -25,6 +25,7 @@ const routes = [
   ["src/app/api/admin/operation-jobs/route.ts", "@/domains/admin/operation-jobs.service", "OPERATION_JOBS", true],
   ["src/app/api/admin/incidents/route.ts", "@/domains/admin/incidents.service", "INCIDENTS", true],
   ["src/app/api/admin/access-events/route.ts", "@/domains/admin/platform-access.service", "ACCESS_EVENTS", true],
+  ["src/app/api/admin/contact-messages/route.ts", "@/domains/growth/contact.service", "CONTACT_MESSAGES", true],
 ] as const;
 
 const allowedKeys = ["actorId", "decision", "expiresAt", "id", "method", "occurredAt", "resource", "role"];

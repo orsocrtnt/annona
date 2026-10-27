@@ -11,7 +11,7 @@ const display = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-type GrowthPage = "fonctionnalites" | "tarifs" | "demonstration";
+type GrowthPage = "fonctionnalites" | "tarifs" | "demonstration" | "contact";
 
 export function GrowthShell({
   active,
@@ -47,6 +47,7 @@ export function GrowthShell({
             <Link href="/register" className="hover:text-[#243447] hover:underline hover:underline-offset-4">Créer un compte</Link>
             <Link href="/login/client" className="hover:text-[#243447] hover:underline hover:underline-offset-4">Espace client</Link>
             <Link href="/login/driver" className="hover:text-[#243447] hover:underline hover:underline-offset-4">Espace chauffeur</Link>
+            <Link href="/contact" className="hover:text-[#243447] hover:underline hover:underline-offset-4">Contact</Link>
           </div>
         </div>
       </footer>
