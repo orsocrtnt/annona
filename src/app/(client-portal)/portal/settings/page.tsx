@@ -146,6 +146,7 @@ export default function ClientSettingsPage() {
                         onClick={() =>
                           updateAddress.mutate({ id: addr.id, data: { isDefault: true } })
                         }
+                        aria-label={`Définir ${addr.label} comme adresse par défaut`}
                       >
                         Par défaut
                       </Button>
@@ -154,8 +155,10 @@ export default function ClientSettingsPage() {
                       variant="ghost"
                       size="icon-sm"
                       onClick={() => deleteAddress.mutate(addr.id)}
+                      aria-label={`Supprimer l'adresse ${addr.label}`}
+                      title={`Supprimer l'adresse ${addr.label}`}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>

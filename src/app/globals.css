@@ -285,3 +285,9 @@
   from { transform: translate(-50%, -50%) scale(0.7); opacity: 0.9; }
   to { transform: translate(-50%, -50%) scale(1.45); opacity: 0; }
 }
+
+/* Cases et boutons radio natifs aux couleurs de la marque (vert profond : coche blanche lisible). */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #0b8a45;
+}

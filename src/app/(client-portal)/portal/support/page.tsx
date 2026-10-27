@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { withoutRolePrefix } from "@/lib/format/person-labels";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,8 +104,10 @@ export default function ClientSupportPage() {
                 <Phone className="h-6 w-6 text-brand" />
               </div>
               <div>
-                <p className="font-medium">Chauffeur — {contacts.driver.deliveryReference}</p>
-                <p className="text-sm text-muted-foreground">{contacts.driver.name}</p>
+                <p className="font-medium">Votre livreur</p>
+                <p className="text-sm text-muted-foreground">
+                  {withoutRolePrefix(contacts.driver.name)} · <span className="tabular-nums">{contacts.driver.deliveryReference}</span>
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Disponible si livraison en cours ou livrée depuis moins de 24h
                 </p>
