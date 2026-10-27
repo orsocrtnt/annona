@@ -95,6 +95,8 @@ export async function getCompanyClientDetail(companyId: string, clientId: string
           totalAmount: true,
           source: true,
           createdAt: true,
+          shippingAddress: true,
+          shippingCity: true,
           deliveries: { select: { id: true, reference: true, status: true } },
         },
         orderBy: { createdAt: "desc" },
