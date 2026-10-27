@@ -14,7 +14,7 @@ L'entreprise modèle permanente reste séparée. Les anciennes sessions DEMO-1 r
 
 - `PREPARING` : construction initiale ou worker en cours ;
 - `READY` : scénario complet disponible ;
-- `LEASED` : réservé à une seule empreinte de session jusqu'à huit heures ;
+- `LEASED` : réservé à une seule empreinte de session jusqu'à huit heures, ou une heure pour une recette automatisée qui envoie `demoTestSession: true` à la connexion (décision C10 du 27 octobre 2026 ; les cinq recettes Playwright démo l'envoient) ;
 - `RECYCLING` : recyclage demandé et reprenable ;
 - `QUARANTINED` : incohérence ou ressource externe, aucune nouvelle attribution.
 

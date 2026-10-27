@@ -107,6 +107,7 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
   let sessionPreparations = 0;
   let poolUnavailable = false;
   let resolvedCompanyId: string | null = null;
+  const sessionOptions: unknown[] = [];
   class DemoPoolUnavailableError extends Error {
     code = "DEMO_POOL_BUSY";
     retryAfterSeconds = 5;
@@ -140,7 +141,8 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
       },
     },
     "@/domains/demo/demo-session.service": {
-      ensureDemoSessionForLogin: async () => {
+      ensureDemoSessionForLogin: async (_base: string, _key: string | undefined, options: unknown) => {
+        sessionOptions.push(options);
         sessionPreparations++;
         if (poolUnavailable) throw new DemoPoolUnavailableError();
         return "session-company";
@@ -168,6 +170,20 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
   const busy = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body: "{}" }));
   assert.equal(busy.status, 503); assert.equal(sessionPreparations, 3);
   assert.equal(signOuts, 2); assert.equal(cookieClears, 4);
+
+  // Décision C10 : seule une recette qui l'annonce explicitement obtient une location d'une heure.
+  poolUnavailable = false;
+  for (const body of ['{"demoTestSession":true}', '{"demoTestSession":"true"}']) {
+    const flagged = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body }));
+    assert.equal(flagged.status, 200);
+  }
+  assert.deepEqual(JSON.parse(JSON.stringify(sessionOptions)), [
+    { testSession: false },
+    { testSession: false },
+    { testSession: false },
+    { testSession: true },
+    { testSession: false },
+  ]);
 });
 
 test("compteurs agrégés : états actifs, date logistique, client/entreprise restent isolés", async (t) => {

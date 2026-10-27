@@ -5,6 +5,7 @@ import {
   demoPoolLeaseKeyHash,
   demoSessionIdFromRequestKey,
   DEMO_POOL_LEASE_MS,
+  DEMO_POOL_TEST_LEASE_MS,
   DEMO_POOL_RETRY_AFTER_SECONDS,
 } from "../src/domains/demo/demo-pool.service";
 
@@ -22,6 +23,12 @@ test("DEMO-2 : clé navigateur idempotente, opaque et strictement validée", () 
 
 test("DEMO-2 : durée, attente explicite et stock minimal sont codés côté serveur", () => {
   assert.equal(DEMO_POOL_LEASE_MS, 8 * 60 * 60 * 1000);
+  assert.equal(DEMO_POOL_TEST_LEASE_MS, 60 * 60 * 1000, "C10 : une recette libère son espace après une heure");
+  const sessionService = readFileSync("src/domains/demo/demo-session.service.ts", "utf8");
+  assert.match(sessionService, /leaseMs: options\.testSession \? DEMO_POOL_TEST_LEASE_MS : DEMO_POOL_LEASE_MS/);
+  for (const spec of ["navbar", "v1-roles", "v1-operational", "support", "saas03"]) {
+    assert.match(readFileSync(`tests/e2e/${spec}.spec.ts`, "utf8"), /demoTestSession: true/, `${spec} annonce une recette`);
+  }
   assert.equal(DEMO_POOL_RETRY_AFTER_SECONDS, 5);
   const service = readFileSync("src/domains/demo/demo-pool.service.ts", "utf8");
   const migration = readFileSync("prisma/migrations/20261022090000_demo_pool/migration.sql", "utf8");

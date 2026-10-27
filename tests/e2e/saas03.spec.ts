@@ -26,6 +26,7 @@ test("SAAS-03 : vue lecture seule, clic, retour, rechargement et mobile sans Str
     data: {
       email: "demo@tutelliv.fr",
       password: "Demo2026!",
+      demoTestSession: true,
       accountType: "company",
     },
   });

@@ -902,6 +902,8 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
 
 Prospection, entretiens et pilotes différés à sa demande ; aucune prise de contact prévue. Conserver leurs critères, sans les considérer validés par les tests internes.
 
+  Location des recettes du 2026-10-27, décision C10 : une connexion démo qui envoie `demoTestSession: true` réserve son espace une heure au lieu de huit. Les cinq recettes Playwright démo l'envoient. Seule la valeur booléenne `true` est acceptée, et l'indicateur ne peut que raccourcir la session de celui qui l'envoie. Les humains gardent huit heures. Vérifié : harnais de connexion (indicateur vrai, chaîne, absent), `tests/demo-pool.test.ts`, `npm run check` 525/525. Limite : pas exercé sur la préproduction, dont le pool est saturé par d'autres sessions.
+
 - [x] **PROD-01 — Confirmer le segment et le pays.** Entreprises françaises de coursiers et livraison express B2B, idéalement 5–20 livreurs et clients professionnels récurrents ; 3–5 livreurs en cible secondaire et structures plus importantes via Business. Priorité Paris/Île-de-France et Marseille/Bouches-du-Rhône. Acheteur principal : dirigeant ou responsable d'exploitation ; dispatcher prescripteur et utilisateur quotidien.
 
   **Modèle conseillé : GPT‑6 Astra · effort moyen.**

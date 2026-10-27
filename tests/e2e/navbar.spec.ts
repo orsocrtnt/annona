@@ -33,6 +33,7 @@ test("la barre Apple reste identique dans le portail client, du bureau au mobile
     data: {
       email: "demo@tutelliv.fr",
       password: "Demo2026!",
+      demoTestSession: true,
       accountType: "company",
     },
   });

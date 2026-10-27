@@ -231,6 +231,7 @@ test("V1-GO : double clic, course complète et échec motivé concordant", async
       data: {
         email: "demo@tutelliv.fr",
         password: "Demo2026!",
+        demoTestSession: true,
         accountType: "company",
       },
     });

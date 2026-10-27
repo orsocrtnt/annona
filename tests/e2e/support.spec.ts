@@ -18,6 +18,7 @@ test("SUPPORT-1 : ticket client, réponse staff, notification et résolution vis
       data: {
         email: "demo@tutelliv.fr",
         password: "Demo2026!",
+        demoTestSession: true,
         accountType: "company",
       },
     });

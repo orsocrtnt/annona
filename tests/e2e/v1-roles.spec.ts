@@ -21,6 +21,7 @@ test("TEST-2 : les trois r√¥les, le suivi, la facture, les refus et une panne r√
     data: {
       email: "demo@tutelliv.fr",
       password: "Demo2026!",
+      demoTestSession: true,
       accountType: "company",
     },
   });

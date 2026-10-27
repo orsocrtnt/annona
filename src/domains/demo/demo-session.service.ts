@@ -11,6 +11,8 @@ import { DEFAULT_DISPATCH_SETTINGS } from "@/lib/validations/dispatch-settings";
 import { demoRetentionSettings, demoSessionExpiry } from "@/lib/demo/retention";
 import { AccountUnavailableError } from "@/lib/auth/account-access";
 import {
+  DEMO_POOL_LEASE_MS,
+  DEMO_POOL_TEST_LEASE_MS,
   demoSessionIdFromRequestKey,
   getActiveDemoPoolLease,
   leaseDemoPoolEnvironment,
@@ -143,7 +145,8 @@ export async function ensureDemoSessionEnvironment(
 
 export async function ensureDemoSessionForLogin(
   baseCompanyId: string,
-  requestKey?: string
+  requestKey?: string,
+  options: { testSession?: boolean } = {}
 ): Promise<string> {
   const { getDemoSessionCookie, setDemoSessionCookie } = await import(
     "@/lib/demo/persona-cookie"
@@ -170,7 +173,9 @@ export async function ensureDemoSessionForLogin(
   const sessionId = requestKey
     ? demoSessionIdFromRequestKey(requestKey)
     : createDemoSessionId();
-  const lease = await leaseDemoPoolEnvironment(sessionId);
+  const lease = await leaseDemoPoolEnvironment(sessionId, {
+    leaseMs: options.testSession ? DEMO_POOL_TEST_LEASE_MS : DEMO_POOL_LEASE_MS,
+  });
   await setDemoSessionCookie(sessionId);
   return lease.companyId;
 }

@@ -111,6 +111,9 @@ export async function POST(request: Request) {
     const requestKey = typeof (body as { demoRequestKey?: unknown }).demoRequestKey === "string"
       ? (body as { demoRequestKey: string }).demoRequestKey
       : undefined;
+    // Recette automatisée : location raccourcie à une heure (décision C10). Sans privilège :
+    // l'indicateur ne peut que raccourcir la session de celui qui l'envoie.
+    const demoTestSession = (body as { demoTestSession?: unknown }).demoTestSession === true;
     let sessionCompanyId: string | undefined;
     let user: Awaited<ReturnType<typeof syncUserFromSupabase>>;
 
@@ -121,7 +124,7 @@ export async function POST(request: Request) {
       try {
         const [baseUser, leasedCompanyId] = await Promise.all([
           getUserByAuthId(authUser.id),
-          ensureDemoSessionForLogin("authenticated-demo", requestKey),
+          ensureDemoSessionForLogin("authenticated-demo", requestKey, { testSession: demoTestSession }),
         ]);
         if (!baseUser) throw new UserNotProvisionedError();
         user = baseUser;

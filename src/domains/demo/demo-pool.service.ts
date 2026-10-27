@@ -17,6 +17,8 @@ import {
 } from "@/domains/data-lifecycle/demo-cleanup.service";
 
 export const DEMO_POOL_LEASE_MS = 8 * 60 * 60 * 1000;
+/** Décision C10 : une session de recette automatisée libère son espace après une heure. */
+export const DEMO_POOL_TEST_LEASE_MS = 60 * 60 * 1000;
 export const DEMO_POOL_RETRY_AFTER_SECONDS = 5;
 const RECYCLE_LOCK_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_RECYCLE_ATTEMPTS = 3;
@@ -283,9 +285,10 @@ export async function queueExpiredDemoPoolLeases(now = new Date(), poolKey = DEM
 
 export async function leaseDemoPoolEnvironment(
   sessionId: string,
-  options: { now?: Date; poolKey?: string } = {}
+  options: { now?: Date; poolKey?: string; leaseMs?: number } = {}
 ): Promise<Lease> {
   const now = options.now ?? new Date();
+  const leaseMs = options.leaseMs ?? DEMO_POOL_LEASE_MS;
   const poolKey = options.poolKey ?? DEMO_POOL_KEY;
   const leaseKeyHash = demoPoolLeaseKeyHash(sessionId);
   await queueExpiredDemoPoolLeases(now, poolKey);
@@ -312,7 +315,7 @@ export async function leaseDemoPoolEnvironment(
           select: { id: true, companyId: true },
         });
         if (!candidate) throw new DemoPoolUnavailableError();
-        const expiresAt = new Date(now.getTime() + DEMO_POOL_LEASE_MS);
+        const expiresAt = new Date(now.getTime() + leaseMs);
         const claimed = await tx.demoPoolEnvironment.updateMany({
           where: { id: candidate.id, state: "READY", leaseKeyHash: null },
           data: {
