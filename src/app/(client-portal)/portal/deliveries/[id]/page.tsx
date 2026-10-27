@@ -11,12 +11,13 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePortalDelivery } from "@/features/client-portal/hooks";
 import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
-import { formatEta } from "@/features/client-portal/utils";
+import { etaDayLabel, formatEta } from "@/features/client-portal/utils";
 import dynamic from "next/dynamic";
 import { DeliveryRouteDisplay } from "@/components/shared/delivery-route-display";
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { isLegacyFakeTrackingCoord } from "@/lib/geocoding";
-import { formatDriverFromParts } from "@/lib/format/person-labels";
+import { formatDriverFromParts, withoutRolePrefix } from "@/lib/format/person-labels";
+import { dateTimeLabel } from "@/lib/format/relative-day";
 import { ArrowLeft, Truck, Clock, Phone } from "lucide-react";
 import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
 
@@ -89,7 +90,7 @@ export default function ClientDeliveryDetailPage() {
             <CardTitle className="text-base">Itinéraire</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <MissionAcknowledgement {...delivery} />
+            <MissionAcknowledgement {...delivery} compact />
             <DeliveryRouteDisplay
               category={category}
               pickups={courierPickups.length ? courierPickups : undefined}
@@ -114,7 +115,7 @@ export default function ClientDeliveryDetailPage() {
               <div className="space-y-1 border-t border-border pt-4">
                 <div className="flex items-center gap-3">
                   <Truck className="h-4 w-4 text-muted-foreground" />
-                  <span>{formatDriverFromParts(delivery.driver, delivery.driverName)}</span>
+                  <span>Livreur : {withoutRolePrefix(formatDriverFromParts(delivery.driver, delivery.driverName))}</span>
                 </div>
                 {delivery.driver?.phone ? (
                   <a
@@ -132,7 +133,7 @@ export default function ClientDeliveryDetailPage() {
             {delivery.estimatedArrival && (
               <div className="flex items-center gap-3 border-t border-border pt-4">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Arrivée estimée : {formatEta(delivery.estimatedArrival)}</span>
+                <span>Arrivée estimée {etaDayLabel(delivery.estimatedArrival)} à {formatEta(delivery.estimatedArrival)}</span>
               </div>
             )}
             {(delivery.status === "DELIVERED" || delivery.status === "FAILED") && (
@@ -166,7 +167,8 @@ export default function ClientDeliveryDetailPage() {
               {delivery.trackingEvents?.map((event, i) => (
                 <div key={event.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className={`h-3 w-3 rounded-full ${i === (delivery.trackingEvents?.length ?? 0) - 1 ? "bg-brand" : "bg-border"}`} />
+                    {/* Étapes passées en encre, la dernière en vert : l'avancement se lit sans les dates. */}
+                    <div className={`h-3 w-3 rounded-full ${i === (delivery.trackingEvents?.length ?? 0) - 1 ? "bg-primary ring-4 ring-primary/20" : "bg-[#0e1310]"}`} aria-hidden="true" />
                     {i < (delivery.trackingEvents?.length ?? 0) - 1 && (
                       <div className="w-px flex-1 bg-border" />
                     )}
@@ -177,7 +179,7 @@ export default function ClientDeliveryDetailPage() {
                       <p className="text-xs text-muted-foreground">{event.description}</p>
                     )}
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {new Date(event.occurredAt).toLocaleString("fr-FR")}
+                      <time dateTime={event.occurredAt}>{dateTimeLabel(event.occurredAt)}</time>
                     </p>
                   </div>
                 </div>

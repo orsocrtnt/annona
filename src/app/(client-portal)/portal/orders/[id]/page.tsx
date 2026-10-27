@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { OrderTracking } from "@/components/shared/order-tracking";
 import { OrderConversation } from "@/components/shared/order-conversation";
+import { OrderProgressTrack } from "@/components/shared/order-progress-track";
+import { orderProgress } from "@/lib/orders/progress";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -57,7 +59,8 @@ export default function ClientOrderDetailPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{order.reference}</h1>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Commande</p>
+          <h1 className="text-2xl font-semibold tracking-tight tabular-nums">{order.reference}</h1>
           <p className="mt-1 text-muted-foreground">Passée le {formatDate(order.createdAt)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -65,6 +68,11 @@ export default function ClientOrderDetailPage() {
           {canReorderPortalOrder(order) && <ReorderOrderButton orderId={order.id} />}
         </div>
       </div>
+
+      {/* Où en est la commande, sans lire de statut technique. */}
+      <section aria-label="Avancement" className="rounded-2xl border border-border bg-card px-5 pb-5 pt-1 shadow-sm">
+        <OrderProgressTrack progress={orderProgress(order.status, order.deliveryCategory)} />
+      </section>
 
       {(order.shippingAddress || order.deliveryCategory === "COURIER") &&
         order.deliveryCategory !== "SPECIAL_MISSION" && (
@@ -192,9 +200,12 @@ export default function ClientOrderDetailPage() {
                 <Link
                   key={d.id}
                   href={`/portal/deliveries/${d.id}`}
-                  className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/50"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <span className="text-sm font-medium">{d.reference}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium">Suivre la livraison</span>
+                    <span className="block text-xs tabular-nums text-muted-foreground">{d.reference}</span>
+                  </span>
                   <DeliveryStatusBadge
                     status={d.status}
                     deliveryCategory={order.deliveryCategory}
