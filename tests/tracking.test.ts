@@ -32,7 +32,7 @@ test("TRACK-2 : sans itinéraire, le livreur reste à son dernier relevé, jamai
   assert.deepEqual({ latitude: held.latitude, longitude: held.longitude }, from);
   assert.deepEqual({ ...policy.motionPositionAt(held.motion!, +now + 60_000) }, from);
 });
-test("TRACK-2 : signal périmé, conduite le long de la route pendant 3 min puis arrêt au point atteint", () => {
+test("TRACK-2 : signal périmé, conduite le long de la route pendant 3 min puis position masquée", () => {
   const at = (seconds: number, t: typeof target | null = target) => policy.trackingPosition(startedEarlier, lostFor(seconds), 45, now, t, t ? road : null);
   const early = at(60); assert.equal(early.estimated, true); assert.ok(onRoad(early) && early.latitude! > from.latitude, JSON.stringify(early));
   const limit = at(180); assert.equal(limit.estimated, true);
@@ -40,8 +40,9 @@ test("TRACK-2 : signal périmé, conduite le long de la route pendant 3 min puis
   assert.equal(early.accuracy, null); assert.equal(early.updatedAt, lostFor(60).driverLocation.updatedAt.toISOString());
   const stopped = at(181), later = at(3600);
   assert.equal(stopped.estimated, false); assert.equal(later.estimated, false);
-  assert.deepEqual([stopped.latitude, stopped.longitude], [limit.latitude, limit.longitude], "arrêt au point atteint, sans retour en arrière");
-  assert.deepEqual([later.latitude, later.longitude], [limit.latitude, limit.longitude]);
+  assert.deepEqual([stopped.latitude, stopped.longitude], [null, null], "plus aucune position après le plafond");
+  assert.deepEqual([later.latitude, later.longitude], [null, null]);
+  assert.equal(stopped.motion, null); assert.equal(later.motion, null);
   const noTarget = at(120, null); assert.equal(noTarget.estimated, false); assert.equal(noTarget.latitude, from.latitude); assert.equal(noTarget.motion, null);
   assert.equal(policy.trackingPosition(startedEarlier, lostFor(10), 45, now, target, road).estimated, false, "signal frais : jamais d'estimation");
 });
@@ -67,6 +68,14 @@ test("TRACK-2 : prochaine étape selon le statut et le type de mission", () => {
   assert.equal(policy.trackingTarget({ ...base, status: "ASSIGNED", deliveryCategory: "STANDARD" }), null);
   assert.equal(policy.trackingTarget({ status: "IN_DELIVERY", latitude: null, longitude: null }), null);
   assert.equal(policy.trackingTarget({ status: "ASSIGNED", deliveryCategory: "COURIER", order: { stops: [] } }), null);
+});
+test("TRACK-2 : après trois minutes sans signal, aucune coordonnée ni trajectoire n'est encore exposée", () => {
+  const hidden = policy.trackingPosition(startedEarlier, lostFor(policy.ESTIMATION_MAX_SECONDS + 1), 45, now, target, road);
+  assert.equal(hidden.state, "STALE");
+  assert.equal(hidden.latitude, null);
+  assert.equal(hidden.longitude, null);
+  assert.equal(hidden.motion, null);
+  assert.equal(hidden.estimated, false);
 });
 test("TRACK-1 : mission affectée sans départ et états terminaux ne révèlent aucune position", () => {
   for (const status of ["PENDING", "ASSIGNED"]) assert.equal(policy.trackingPosition({ ...mission, status, missionStartedAt: null }, driver, 45, now).state, "NOT_STARTED");

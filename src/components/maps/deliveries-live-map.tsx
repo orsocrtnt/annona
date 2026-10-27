@@ -282,7 +282,7 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
     setUnavailable(false);
     const initial = setTimeout(() => {
       // Même file que les marqueurs : jamais refusé pour deux requêtes trop rapprochées.
-      void requestQueuedRoute(waypoints).then((coords) => {
+      void requestQueuedRoute(waypoints, controller.signal).then((coords) => {
         if (!controller.signal.aborted) { setRoute(coords ?? []); setUnavailable(!coords); }
       });
     }, 0);

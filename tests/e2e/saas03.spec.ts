@@ -121,7 +121,7 @@ test("SAAS-03 : changement de formule avec aperçu, comptes en excès bloquants,
     json: { data: { ...subscription, management: "SELF_SERVICE", canCancel: true, canChange: true, cancelAtPeriodEnd: false } },
   }));
   await page.route("**/api/billing", async (route) => {
-    if (route.request().method() === "GET") return route.fulfill({ json: { plans, current: { planCode: "PRO", billingInterval: "MONTHLY", selections: [{ code: "AUTO_DISPATCH", quantity: 1 }] } } });
+    if (route.request().method() === "GET") return route.fulfill({ json: { plans, options: [{ code: "AUTO_DISPATCH", featureKey: "auto_dispatch", applicablePlans: ["STARTER"] }], current: { planCode: "PRO", billingInterval: "MONTHLY", selections: [{ code: "AUTO_DISPATCH", quantity: 1 }] } } });
     const body = route.request().postDataJSON() as Record<string, unknown> & { selection: { planCode: string } };
     posts.push(body);
     if (body.action === "preview" && body.selection.planCode === "STARTER") {
@@ -156,5 +156,5 @@ test("SAAS-03 : changement de formule avec aperçu, comptes en excès bloquants,
   const changes = posts.filter((post) => post.action === "change");
   expect(changes).toHaveLength(2);
   expect(changes[1]!.key).toBe(changes[0]!.key);
-  expect(changes[0]).toMatchObject({ confirmed: true, confirmedTotalCents: 12345, prorationDate: 1793100000, selection: { planCode: "BUSINESS", billingInterval: "MONTHLY", selections: [{ code: "AUTO_DISPATCH", quantity: 1 }] } });
+  expect(changes[0]).toMatchObject({ confirmed: true, confirmedTotalCents: 12345, prorationDate: 1793100000, selection: { planCode: "BUSINESS", billingInterval: "MONTHLY", selections: [] } });
 });

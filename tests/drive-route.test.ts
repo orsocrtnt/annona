@@ -70,11 +70,17 @@ test("itinéraire serveur : échec des fournisseurs, pas de nouvel essai avant 3
 function loadProvider(responses: Record<string, unknown>) {
   const urls: string[] = [];
   const provider = moduleAt("src/lib/maps/drive-route-provider.ts", {
-    "@/lib/maps/provider-config": config,
+    "@/lib/maps/provider-config": { ...config, serverRouteProviderConfig: () => ({ osrmUrl: "https://osrm.test", ignUrl: "https://ign.test/navigation/itineraire" }) },
     "@/lib/maps/provider-request": { fetchProviderJson: async (url: string) => { urls.push(url); const key = Object.keys(responses).find((k) => url.includes(k)); const response = key === undefined ? undefined : responses[key]; if (response === undefined || response instanceof Error) throw response ?? new Error("HTTP 503"); return response; } },
   });
   return { provider, urls };
 }
+
+test("fournisseur serveur : aucun GPS n'est envoyé sans endpoint privé explicitement configuré", () => {
+  assert.equal(config.serverRouteProviderConfig({}), null);
+  assert.equal(config.serverRouteProviderConfig({ osrmUrl: "http://router.example" }), null, "HTTPS obligatoire");
+  assert.deepEqual(config.serverRouteProviderConfig({ osrmUrl: "https://router.example/" }), { osrmUrl: "https://router.example", ignUrl: null });
+});
 
 test("fournisseur : OSRM avec grands carrefours (au moins quatre branches)", async () => {
   const osrm = { code: "Ok", routes: [{ geometry: { coordinates: [[2.35, 48.85], [2.35, 48.86]] }, legs: [{ steps: [{ intersections: [{ location: [2.35, 48.852], bearings: [0, 90, 180] }, { location: [2.35, 48.855], bearings: [0, 90, 180, 270] }] }] }] }] };

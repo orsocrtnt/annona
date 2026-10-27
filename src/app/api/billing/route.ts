@@ -5,7 +5,7 @@ import { prisma } from "@/services/prisma/client";
 import { sandboxBilling } from "@/domains/billing/billing.service";
 import { getActiveSignupCatalog } from "@/domains/signup/signup.service";
 import { makeBillingContract, type BillingState } from "@/domains/billing/billing-core";
-import { assessBillingContractChange } from "@/domains/billing/plan-change.service";
+import { assessBillingContractChange, normalizePlanChangeSelections } from "@/domains/billing/plan-change.service";
 
 const selection = z.object({ planCode: z.enum(["STARTER", "PRO", "BUSINESS"]), billingInterval: z.enum(["MONTHLY", "ANNUAL"]), selections: z.array(z.object({ code: z.string().min(1).max(80), quantity: z.number().int().min(1).max(500) }).strict()).max(30) }).strict();
 const inputSchema = z.discriminatedUnion("action", [
@@ -31,9 +31,10 @@ export async function GET() {
   // Formules proposées au changement : catalogue actif, prix HT seulement ; la sélection actuelle garde ses options.
   const catalog = await getActiveSignupCatalog().catch(() => null);
   const plans = catalog?.plans.map((plan) => ({ code: plan.code, name: plan.name, monthlyPriceCents: plan.monthlyPriceCents, annualPriceCents: plan.annualPriceCents })) ?? [];
+  const options = catalog?.options.map((option) => ({ code: option.code, featureKey: option.featureKey, applicablePlans: option.applicablePlans })) ?? [];
   const active = (auth.account.state as unknown as BillingState | null)?.activeContract;
   const current = active ? { planCode: active.quote.planCode, billingInterval: active.quote.billingInterval, selections: active.quote.selections } : null;
-  return NextResponse.json({ state: auth.account.state, operations, plans, current }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ state: auth.account.state, operations, plans, options, current }, { headers: { "Cache-Control": "no-store" } });
 }
 export async function POST(request: Request) {
   const auth = await context();
@@ -49,7 +50,8 @@ export async function POST(request: Request) {
       return NextResponse.json(result);
     }
     const catalog = await getActiveSignupCatalog();
-    const target = makeBillingContract(catalog, input.selection.planCode, input.selection.billingInterval, input.selection.selections);
+    const targetSelections = normalizePlanChangeSelections(catalog, input.selection.planCode, input.selection.selections);
+    const target = makeBillingContract(catalog, input.selection.planCode, input.selection.billingInterval, targetSelections);
     const current = (auth.account.state as unknown as BillingState | null)?.activeContract;
     if (!current) return NextResponse.json({ error: "Abonnement non actif" }, { status: 409 });
     if (current.hash === target.hash) return NextResponse.json({ error: "Cette formule est déjà la vôtre.", code: "PLAN_CHANGE_NOOP" }, { status: 409 });

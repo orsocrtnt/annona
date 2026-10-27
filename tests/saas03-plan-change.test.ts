@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assessPlanChange, type PlanChangeInput, type PlanChangeTarget } from "../src/domains/billing/plan-change";
-import { assessBillingContractChange } from "../src/domains/billing/plan-change.service";
+import { assessBillingContractChange, normalizePlanChangeSelections } from "../src/domains/billing/plan-change.service";
 
 // Valeurs du catalogue C9 actif (prisma/migrations/*_catalog_c8_prices et *_catalog_c9_business).
 const STARTER: PlanChangeTarget = {
@@ -73,6 +73,22 @@ test("SAAS-03 : Starter → Pro est immédiat après prorata ; l'option incluse 
   assert.deepEqual(result.blockers, []);
   assert.equal(result.orderOverage, null);
   assert.equal(result.allowed, true);
+});
+
+test("SAAS-03 : la cible retire les options incompatibles ou déjà incluses", () => {
+  const catalog = {
+    plans: [STARTER, PRO, BUSINESS],
+    options: [autoDispatch, clientGps, adminExtra],
+  } as never;
+  assert.deepEqual(normalizePlanChangeSelections(catalog, "PRO", [
+    { code: "AUTO_DISPATCH", quantity: 1 },
+    { code: "CLIENT_GPS", quantity: 1 },
+    { code: "ADMIN_EXTRA", quantity: 2 },
+  ]), [
+    { code: "CLIENT_GPS", quantity: 1 },
+    { code: "ADMIN_EXTRA", quantity: 2 },
+  ]);
+  assert.deepEqual(normalizePlanChangeSelections(catalog, "BUSINESS", [{ code: "CLIENT_GPS", quantity: 1 }]), []);
 });
 
 test("SAAS-03 : Business → Pro garde les sièges compatibles et plafonne au maximum de la cible", () => {

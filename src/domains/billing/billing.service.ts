@@ -24,9 +24,16 @@ export type BillingCommand =
   | { kind: "REFUND"; invoiceId: string; amountCents: number; reason: string; actorId: string }
   | { kind: "USAGE"; periodId: string; amountHtCents: number; start: string; end: string };
 
-const RELEASED_ON_REJECTION = new Set<BillingCommand["kind"]>(["CHANGE", "CANCEL", "REFUND"]);
-/** Échecs certains : refus 4xx du fournisseur, ou changement vide détecté avant tout appel. */
-const DEFINITIVE_FAILURES = new Set(["BILLING_PROVIDER_REJECTED", "BILLING_CHANGE_EMPTY"]);
+/**
+ * Une mutation fournisseur composée (CHANGE/CANCEL) peut avoir réussi en partie avant un 4xx :
+ * elle reste verrouillée jusqu'au rapprochement. Seuls un changement vide avant appel et un
+ * remboursement atomique/idempotent peuvent être libérés avec certitude.
+ */
+export function canReleaseRejectedOperation(kind: BillingCommand["kind"], error: unknown): error is Error {
+  if (!(error instanceof Error)) return false;
+  if (error.message === "BILLING_CHANGE_EMPTY") return kind === "CHANGE";
+  return error.message === "BILLING_PROVIDER_REJECTED" && kind === "REFUND";
+}
 
 /** Webhooks simultanés : PostgreSQL refuse l'une des écritures (40001, 40P01). Seule la transaction locale est rejouée, jamais un appel fournisseur. */
 export function isWriteConflict(error: unknown) {
@@ -155,7 +162,7 @@ export class BillingService {
     } catch (error) {
       // Échec certain d'une demande d'opérateur : rien n'est appliqué, le verrou est rendu.
       // Une panne réseau ou 5xx garde le verrou : seul le rejeu de la même clé peut conclure.
-      if (error instanceof Error && DEFINITIVE_FAILURES.has(error.message) && RELEASED_ON_REJECTION.has(input.kind)) {
+      if (canReleaseRejectedOperation(input.kind, error)) {
         await this.db.$transaction([
           this.db.saasBillingOperation.update({ where: { id: operationId }, data: { status: "FAILED", result: { code: error.message }, completedAt: new Date() } }),
           this.db.saasBillingAccount.updateMany({ where: { id: accountId, pendingOperationId: operationId }, data: { pendingOperationId: null, revision: { increment: 1 } } }),

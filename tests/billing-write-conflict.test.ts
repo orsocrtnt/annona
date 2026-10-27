@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isWriteConflict, retryOnWriteConflict } from "../src/domains/billing/billing.service";
+import { canReleaseRejectedOperation, isWriteConflict, retryOnWriteConflict } from "../src/domains/billing/billing.service";
 
 const conflict = Object.assign(new Error("Raw query failed. Code: `40001`. Message: `could not serialize access due to concurrent update`"), { code: "P2010", meta: { code: "40001" } });
 
@@ -29,4 +29,11 @@ test("SAAS-01B : une autre erreur n'est jamais rejouée, un conflit persistant f
   calls = 0;
   await assert.rejects(retryOnWriteConflict(async () => { calls++; throw conflict; }, 4, async () => {}), /40001/);
   assert.equal(calls, 4);
+});
+
+test("SAAS-01B : une opération Stripe en plusieurs étapes reste verrouillée après un refus", () => {
+  assert.equal(canReleaseRejectedOperation("CHANGE", new Error("BILLING_PROVIDER_REJECTED")), false);
+  assert.equal(canReleaseRejectedOperation("CANCEL", new Error("BILLING_PROVIDER_REJECTED")), false);
+  assert.equal(canReleaseRejectedOperation("REFUND", new Error("BILLING_PROVIDER_REJECTED")), true, "un remboursement est un appel idempotent unique");
+  assert.equal(canReleaseRejectedOperation("REFUND", new Error("BILLING_PROVIDER_UNAVAILABLE")), false);
 });

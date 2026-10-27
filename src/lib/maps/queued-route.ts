@@ -15,23 +15,28 @@ const pointKey = (point: { latitude: number; longitude: number }) => `${point.la
  * Itinéraire routier passant par `waypoints`, en file avec tous les autres appels de la page
  * (une requête par seconde) et mis en cache. null si le service ne répond pas.
  */
-export function requestQueuedRoute(waypoints: RouteWaypoint[]): Promise<LatLng[] | null> {
+export function requestQueuedRoute(waypoints: RouteWaypoint[], signal?: AbortSignal): Promise<LatLng[] | null> {
+  if (signal?.aborted) return Promise.resolve(null);
   const key = waypoints.map(pointKey).join(">");
   const cached = routeCache.get(key);
   if (cached) return Promise.resolve(cached);
+  let attempted = false;
   const run = routeQueue.then(async () => {
+    if (signal?.aborted) return null;
     // Une requête trop rapprochée d'un autre appel de la page renvoie null : un seul nouvel essai.
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const route = await fetchOsrmRoute(waypoints);
+      attempted = true;
+      const route = await fetchOsrmRoute(waypoints, signal);
+      if (signal?.aborted) return null;
       if (route && route.length >= 2) {
         if (routeCache.size >= ROUTE_CACHE_LIMIT) routeCache.delete(routeCache.keys().next().value!);
         routeCache.set(key, route);
         return route;
       }
-      if (attempt === 0) await wait(ROUTE_REQUEST_SPACING_MS);
+      if (attempt === 0 && !signal?.aborted) await wait(ROUTE_REQUEST_SPACING_MS);
     }
     return null;
   });
-  routeQueue = run.then(() => wait(ROUTE_REQUEST_SPACING_MS), () => wait(ROUTE_REQUEST_SPACING_MS));
+  routeQueue = run.then(() => attempted ? wait(ROUTE_REQUEST_SPACING_MS) : undefined, () => attempted ? wait(ROUTE_REQUEST_SPACING_MS) : undefined);
   return run;
 }

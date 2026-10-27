@@ -60,7 +60,7 @@ Sur Checkout, décocher « Enregistrer mes informations avec Link », sinon un n
 npm run billing:refund -- --invoice in_… --amount 1000 --operator ops@tutelliv.fr --reason "Motif d'au moins dix caractères"
 ```
 
-Sans `--apply`, le script affiche la facture, le montant remboursable et la clé, sans rien envoyer. Avec `--apply`, il exige un opérateur `SUPER_ADMIN` actif, journalise motif, montant et opérateur dans `saas_billing_operations`, puis rapproche l'état. La clé dérive du contenu de la demande : une relance identique renvoie le même remboursement. Le script npm lit `.env.local` ; pour une autre cible, lancer `tsx scripts/saas01b/refund.ts` avec son propre fichier d'environnement.
+Sans `--apply`, le script affiche la facture, le montant remboursable et la clé, sans rien envoyer. Avec `--apply`, il exige `TUTELLIV_OPERATOR_ACCESS_TOKEN`, session Supabase personnelle et temporaire d'un `SUPER_ADMIN` actif ; l'adresse passée en argument n'est jamais une preuve d'identité. Il rapproche Stripe avant la décision, journalise motif, montant et acteur authentifié, applique le remboursement puis exige un nouveau rapprochement réussi. La clé dépend uniquement de la facture et du montant : modifier le motif ne permet pas de doubler une opération. Le script npm lit `.env.local` ; pour une autre cible, lancer `tsx scripts/saas01b/refund.ts` avec son propre fichier d'environnement.
 
 ## Limites
 

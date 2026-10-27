@@ -52,10 +52,11 @@ export function trackingPosition(mission: { status: string; missionStartedAt: Da
   const updatedAt = loc.updatedAt.toISOString();
   const motion = target ? { from: { latitude: loc.latitude, longitude: loc.longitude }, target, since: updatedAt, route } : null;
   if (+now >= Date.parse(expiresAt)) {
-    // Signal périmé : position estimée vers la prochaine étape pendant 3 min, puis arrêt au point atteint (signal perdu).
+    const ageSeconds = (+now - +loc.updatedAt) / 1000;
+    if (ageSeconds > ESTIMATION_MAX_SECONDS) return { ...empty, state: "STALE", updatedAt, expiresAt };
+    // Signal périmé : position estimée vers la prochaine étape pendant trois minutes maximum.
     if (motion) {
-      const estimated = (+now - +loc.updatedAt) / 1000 <= ESTIMATION_MAX_SECONDS;
-      return { state: "STALE", ...motionPositionAt(motion, +now), accuracy: null, updatedAt, expiresAt, estimated, motion };
+      return { state: "STALE", ...motionPositionAt(motion, +now), accuracy: null, updatedAt, expiresAt, estimated: true, motion };
     }
     return { state: "STALE", latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy ?? null, updatedAt, expiresAt, estimated: false, motion: null };
   }

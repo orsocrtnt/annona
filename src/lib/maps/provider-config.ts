@@ -44,6 +44,24 @@ export const ROUTE_REFRESH_MS = 30_000;
 export const ROUTE_BASE_URL = process.env.NEXT_PUBLIC_OSRM_URL || "https://router.project-osrm.org";
 export const GEOCODING_URL = process.env.GEOCODING_URL || "https://data.geopf.fr/geocodage/search";
 
+function privateHttpsEndpoint(value: string | undefined) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.href.replace(/\/$/, "") : null;
+  } catch { return null; }
+}
+
+/** Le serveur n'envoie des positions réelles qu'à des endpoints explicitement approuvés. */
+export function serverRouteProviderConfig(values: { osrmUrl?: string; ignUrl?: string } = {
+  osrmUrl: process.env.DRIVE_ROUTE_OSRM_URL,
+  ignUrl: process.env.DRIVE_ROUTE_IGN_URL,
+}) {
+  const osrmUrl = privateHttpsEndpoint(values.osrmUrl);
+  const ignUrl = privateHttpsEndpoint(values.ignUrl);
+  return osrmUrl || ignUrl ? { osrmUrl, ignUrl } : null;
+}
+
 export function isValidCoordinate(lat: unknown, lng: unknown): boolean {
   return typeof lat === "number" && typeof lng === "number" && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 }

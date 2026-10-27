@@ -8,7 +8,7 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import type { SubscriptionView } from "@/domains/billing/subscription-view.types";
 import { SAAS_FEATURE_LABELS } from "@/domains/saas/saas-access";
 import { cn } from "@/lib/utils";
-import { subscriptionApi, type BillingInterval, type BillingPlanCode, type BillingSelection, type ChangePreview } from "./subscription-api";
+import { compatiblePlanSelections, subscriptionApi, type BillingInterval, type BillingPlanCode, type BillingSelection, type ChangePreview } from "./subscription-api";
 
 const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 const formatMoney = (cents: number) => money.format(cents / 100);
@@ -41,7 +41,11 @@ export function SubscriptionChange({ subscription, endsAtLabel }: { subscription
   const [key, setKey] = useState(() => crypto.randomUUID());
   const catalog = useQuery({ queryKey: ["company", "subscription", "plans"], queryFn: subscriptionApi.plans, enabled: open, retry: false });
   const current = catalog.data?.current ?? null;
-  const selection: BillingSelection | null = planCode && current ? { planCode, billingInterval: interval, selections: current.selections } : null;
+  const selection: BillingSelection | null = planCode && current ? {
+    planCode,
+    billingInterval: interval,
+    selections: compatiblePlanSelections(planCode, current.selections, catalog.data?.options ?? []),
+  } : null;
   const isCurrent = (code: BillingPlanCode) => current?.planCode === code && current.billingInterval === interval;
   const preview = useQuery({
     queryKey: ["company", "subscription", "preview", planCode, interval],
@@ -84,7 +88,7 @@ export function SubscriptionChange({ subscription, endsAtLabel }: { subscription
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Changer de formule</DialogTitle>
-            <DialogDescription>Formule actuelle : {subscription.formula.name}. Vos options sont conservées.</DialogDescription>
+            <DialogDescription>Formule actuelle : {subscription.formula.name}. Les options compatibles sont conservées.</DialogDescription>
           </DialogHeader>
           {catalog.isError && <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{catalog.error.message}</p>}
           {catalog.data && <div className="space-y-4">

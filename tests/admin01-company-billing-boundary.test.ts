@@ -89,12 +89,13 @@ function billingDependencies(calls: string[], role: string, companyId: string | 
       },
     },
     "@/domains/signup/signup.service": {
-      getActiveSignupCatalog: async () => { calls.push("catalog"); return { code: "C9-2026-10-24", plans: [] }; },
+      getActiveSignupCatalog: async () => { calls.push("catalog"); return { code: "C9-2026-10-24", plans: [], options: [] }; },
     },
     "@/domains/billing/billing-core": {
       makeBillingContract: () => { calls.push("contract"); return { hash: "contract-target", quote: { totalCents: 7900 } }; },
     },
     "@/domains/billing/plan-change.service": {
+      normalizePlanChangeSelections: (_catalog: unknown, _planCode: string, selections: unknown[]) => selections,
       assessBillingContractChange: async (assessedCompanyId: string) => {
         calls.push(`assess:${assessedCompanyId}`);
         return { blockers, lostFeatures: [], droppedItems: [], orderOverage: null };

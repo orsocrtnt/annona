@@ -4,6 +4,13 @@ export type BillingPlanCode = "STARTER" | "PRO" | "BUSINESS";
 export type BillingInterval = "MONTHLY" | "ANNUAL";
 export type BillingSelection = { planCode: BillingPlanCode; billingInterval: BillingInterval; selections: Array<{ code: string; quantity: number }> };
 export type BillingPlan = { code: BillingPlanCode; name: string; monthlyPriceCents: number; annualPriceCents: number };
+export type BillingOption = { code: string; featureKey: string | null; applicablePlans: BillingPlanCode[] };
+export function compatiblePlanSelections(planCode: BillingPlanCode, selections: BillingSelection["selections"], options: BillingOption[]) {
+  return selections.filter((selection) => {
+    const option = options.find((candidate) => candidate.code === selection.code);
+    return Boolean(option?.applicablePlans.includes(planCode));
+  });
+}
 export type ChangePreview = {
   totalCents: number;
   currency: string;
@@ -37,7 +44,7 @@ export const subscriptionApi = {
     const response = await fetch("/api/billing", { cache: "no-store" });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.error ?? "Formules indisponibles");
-    return body as { plans: BillingPlan[]; current: BillingSelection | null };
+    return body as { plans: BillingPlan[]; options: BillingOption[]; current: BillingSelection | null };
   },
   preview: (selection: BillingSelection) => postBilling<ChangePreview>({ action: "preview", selection }),
   /** La clé reste la même pour toutes les tentatives d'une même confirmation : jamais deux changements. */

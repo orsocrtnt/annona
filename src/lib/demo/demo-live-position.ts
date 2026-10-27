@@ -61,7 +61,7 @@ export function demoTripProgress(missionStartedAt: Date, now: Date): number {
 
 type DemoLoop = { start: number; timeline: DriveTimeline; duration: number };
 /** Trajets simulés en mémoire : plan de conduite et boucles déjà calculées, par mission. */
-const demoTrips = new Map<string, { plan: DrivePlan; loops: DemoLoop[] }>();
+const demoTrips = new Map<string, { plans: [DrivePlan, DrivePlan]; loops: DemoLoop[] }>();
 const DEMO_TRIPS_LIMIT = 200;
 const DEMO_LOOP_MAX_SECONDS = 3600;
 const DEMO_MAX_LOOPS = 500;
@@ -76,7 +76,14 @@ export function demoDrivePosition(route: DriveRoute, missionStartedAt: Date, at:
   let trip = demoTrips.get(key);
   if (!trip) {
     const track = buildRouteTrack(route.points);
-    trip = { plan: buildDrivePlan({ points: slicePath(track, track.length * 0.08, track.length * 0.9), lights: route.lights }), loops: [] };
+    const forward = slicePath(track, track.length * 0.08, track.length * 0.9);
+    trip = {
+      plans: [
+        buildDrivePlan({ points: forward, lights: route.lights }),
+        buildDrivePlan({ points: [...forward].reverse(), lights: [...route.lights].reverse() }),
+      ],
+      loops: [],
+    };
     if (demoTrips.size >= DEMO_TRIPS_LIMIT) demoTrips.delete(demoTrips.keys().next().value!);
     demoTrips.set(key, trip);
   }
@@ -86,7 +93,7 @@ export function demoDrivePosition(route: DriveRoute, missionStartedAt: Date, at:
     if (loop) return positionAt(loop.timeline, (atMs - loop.start) / 1000);
     const last = trip.loops[trip.loops.length - 1];
     const start = last ? last.start + last.duration * 1000 : startMs;
-    const timeline = simulateDrive(trip.plan, start, DEMO_LOOP_MAX_SECONDS);
+    const timeline = simulateDrive(trip.plans[trip.loops.length % 2]!, start, DEMO_LOOP_MAX_SECONDS);
     trip.loops.push({ start, timeline, duration: Math.max(1, timelineDuration(timeline)) });
   }
   const last = trip.loops[trip.loops.length - 1]!;

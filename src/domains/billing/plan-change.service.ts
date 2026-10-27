@@ -3,6 +3,19 @@ import { prisma } from "@/services/prisma/client";
 import { assessPlanChange, type PlanChangeAssessment, type SeatResource } from "./plan-change";
 import type { BillingContract } from "./billing-core";
 
+export function normalizePlanChangeSelections(
+  catalog: BillingContract["catalog"],
+  planCode: BillingContract["quote"]["planCode"],
+  selections: BillingContract["quote"]["selections"],
+) {
+  const plan = catalog.plans.find((candidate) => candidate.code === planCode);
+  if (!plan) throw new Error("PLAN_CHANGE_PLAN_UNKNOWN");
+  return selections.filter((selection) => {
+    const option = catalog.options.find((candidate) => candidate.code === selection.code);
+    return Boolean(option?.applicablePlans.includes(planCode) && (!option.featureKey || !plan.includedFeatures.includes(option.featureKey)));
+  });
+}
+
 /** Mêmes rôles facturés que le moteur de droits (mini-admins comptés comme dispatchers). */
 const METERED_ROLES: Record<SeatResource, SystemRole[]> = {
   drivers: ["DRIVER"],
