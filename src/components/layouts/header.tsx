@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { getInitials } from "@/lib/utils";
 import { Menu, LogOut, Settings } from "lucide-react";
 import type { BreadcrumbItem } from "@/types";
+import Image from "next/image";
 import Link from "next/link";
 
 interface HeaderProps {
@@ -80,9 +81,9 @@ export function Header({ breadcrumbs, className, premium = false }: HeaderProps)
         <>
           <Link
             href="/"
-            className="text-[15px] font-semibold tracking-[-0.04em] text-[#0e1310] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a] lg:hidden"
+            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a] lg:hidden"
           >
-            TutelLiv
+            <Image src="/brand/logo-horizontal-fond-clair.png" alt="TutelLiv" width={94} height={28} priority />
           </Link>
           <p className="hidden text-sm font-medium text-[#667069] lg:block">
             Centre de pilotage

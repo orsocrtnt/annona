@@ -32,7 +32,7 @@ export function BackOfficeLayout({
   const mapSidebarWidth = sidebarCollapsed ? 104 : 292;
 
   return (
-    <div className="dashboard-v2-shell min-h-screen bg-[#f8f9f7]">
+    <div className="dashboard-v2-shell min-h-screen bg-background">
       <Sidebar items={navItems} footer={sidebarFooter} premium />
       <MobileNav items={navItems} premium />
 

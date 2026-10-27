@@ -18,9 +18,12 @@ test("la coque Glass Light V2 couvre tout le back-office", () => {
   assert.match(shell, /<MobileNav items=\{navItems\} premium \/>/);
   assert.match(shell, /<Header breadcrumbs=\{breadcrumbs\} premium \/>/);
   assert.match(shell, /OrderMessagesInbox enableDispatchTargets/);
-  assert.match(sidebar, /bg-\[#0e1310\]/);
+  // Direction Menthe : barre latérale blanche avec le logo officiel, page active en vert, police Inter seule.
+  assert.match(sidebar, /bg-white text-\[#0e1310\]/);
+  assert.doesNotMatch(sidebar, /bg-\[#0e1310\]/);
   assert.match(sidebar, /bg-\[#00d46a\]/);
-  assert.match(rootLayout, /Sora/);
+  assert.match(sidebar, /\/brand\/logo-horizontal-fond-clair\.png/);
+  assert.doesNotMatch(rootLayout, /Sora/);
 });
 
 test("le dashboard garde ses widgets de pilotage et leurs détails", () => {
@@ -39,9 +42,11 @@ test("le dashboard garde ses widgets de pilotage et leurs détails", () => {
 test("les jetons du thème suivent la palette TutelLiv, sans le bleu historique", () => {
   const styles = read("src/app/globals.css");
 
-  assert.match(styles, /--color-primary: #0e1310;/);
+  // Bouton principal vert de la charte avec texte encre (contraste suffisant, contrairement au blanc sur vert).
+  assert.match(styles, /--color-primary: #00d46a;/);
+  assert.match(styles, /--color-primary-foreground: #0e1310;/);
   assert.match(styles, /--color-ring: #00d46a;/);
   assert.match(styles, /--color-brand: #08783f;/);
-  assert.match(styles, /--color-background: #f8f9f7;/);
+  assert.match(styles, /--color-background: #f5f8f6;/);
   assert.doesNotMatch(styles, /#0066ff|#0052cc|#e6f0ff/i);
 });

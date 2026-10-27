@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* Palette TutelLiv (DESIGN.md) : encre pour l'action, vert réservé à l'activité et au focus. */
-  --color-background: #f8f9f7;
+  /* Palette TutelLiv, direction Menthe : vert de la charte pour l'action (texte encre), surfaces blanches. */
+  --color-background: #f5f8f6;
   --color-foreground: #0e1310;
   --color-card: #ffffff;
   --color-card-foreground: #0e1310;
   --color-popover: #ffffff;
   --color-popover-foreground: #0e1310;
-  --color-primary: #0e1310;
-  --color-primary-foreground: #ffffff;
+  --color-primary: #00d46a;
+  --color-primary-foreground: #0e1310;
+  --color-primary-hover: #00c262;
   --color-secondary: #f3f5f2;
   --color-secondary-foreground: #0e1310;
   --color-muted: #f3f5f2;
@@ -116,7 +117,6 @@
 }
 
 .dashboard-v2-shell {
-  font-family: var(--font-dashboard), ui-sans-serif, system-ui, sans-serif;
   color: #0e1310;
 }
 

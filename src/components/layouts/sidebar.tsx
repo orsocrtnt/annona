@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -48,8 +49,8 @@ function SidebarNavLink({
             "h-[18px] w-[18px] shrink-0",
             premium
               ? isActive
-                ? "text-[#07110b]"
-                : "text-white/52 group-hover:text-white"
+                ? "text-[#0e1310]"
+                : "text-[#7b8780] group-hover:text-[#0e1310]"
               : isActive
                 ? "text-brand"
                 : "text-muted-foreground group-hover:text-foreground"
@@ -80,7 +81,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       className={cn(
         "fixed z-40 flex flex-col transition-all duration-300",
         premium
-          ? "bottom-3 left-3 top-[calc(var(--demo-banner-height,0px)+12px)] rounded-3xl border border-white/10 bg-[#0e1310] text-white shadow-[0_22px_65px_rgba(14,19,16,0.2)]"
+          ? "bottom-3 left-3 top-[calc(var(--demo-banner-height,0px)+12px)] rounded-3xl border border-[#e4ebe6] bg-white text-[#0e1310] shadow-[0_10px_30px_rgba(15,50,30,0.06)]"
           : "inset-y-0 left-0 border-r border-border bg-card",
         sidebarCollapsed ? (premium ? "w-[80px]" : "w-[72px]") : (premium ? "w-[264px]" : "w-64"),
         "hidden lg:flex"
@@ -89,16 +90,22 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       <div
         className={cn(
           "flex h-16 items-center justify-between px-4",
-          premium ? "border-b border-white/8" : "border-b border-border"
+          premium ? "border-b border-[#eef2ef]" : "border-b border-border"
         )}
       >
         {premium ? (
           !sidebarCollapsed && (
             <Link
               href="/"
-              className="flex min-h-11 min-w-0 items-center text-lg font-semibold tracking-[-0.04em] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a]"
+              className="flex min-h-11 min-w-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a]"
             >
-              {APP_NAME}
+              <Image
+                src="/brand/logo-horizontal-fond-clair.png"
+                alt={APP_NAME}
+                width={118}
+                height={35}
+                priority
+              />
             </Link>
           )
         ) : (
@@ -119,7 +126,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
               ? "flex h-11 w-11 items-center justify-center rounded-full transition-colors"
               : "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
             premium
-              ? "text-white/45 hover:bg-white/10 hover:text-white"
+              ? "text-[#7b8780] hover:bg-[#f1f5f2] hover:text-[#0e1310]"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
             sidebarCollapsed && "mx-auto"
           )}
@@ -140,8 +147,8 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
               premium ? "min-h-11 rounded-xl py-2" : "rounded-lg py-2.5",
               premium
                 ? isActive
-                  ? "bg-[#00d46a] text-[#07110b] shadow-[0_8px_24px_rgba(0,212,106,0.2)]"
-                  : "text-white/58 hover:bg-white/[0.075] hover:text-white"
+                  ? "bg-[#00d46a] text-[#0e1310] shadow-[0_6px_18px_rgba(0,212,106,0.22)]"
+                  : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310]"
                 : isActive
                   ? "bg-brand-subtle text-brand"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -189,7 +196,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       </ScrollArea>
 
       {footer && !sidebarCollapsed && (
-        <div className={cn("p-4", premium ? "border-t border-white/8" : "border-t border-border")}>{footer}</div>
+        <div className={cn("p-4", premium ? "border-t border-[#eef2ef]" : "border-t border-border")}>{footer}</div>
       )}
     </aside>
   );

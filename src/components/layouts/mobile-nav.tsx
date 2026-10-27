@@ -52,14 +52,14 @@ export function MobileNav({ items, premium = false }: MobileNavProps) {
       <DialogContent
         className={cn(
           "left-0 top-[var(--demo-banner-height,0px)] h-[calc(100dvh-var(--demo-banner-height,0px))] w-72 max-w-[85vw] translate-x-0 translate-y-0 content-start gap-0 border-y-0 border-l-0 p-4 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden",
-          premium ? "rounded-r-[28px] border-white/10 bg-[#0e1310] text-white" : "rounded-none bg-card"
+          premium ? "rounded-r-[28px] border-[#e4ebe6] bg-white text-[#0e1310]" : "rounded-none bg-card"
         )}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           document.querySelector<HTMLElement>('[aria-label="Ouvrir le menu"]')?.focus();
         }}
       >
-        <DialogTitle className={cn("mb-6 pr-10 text-lg", premium && "text-white")}>Navigation</DialogTitle>
+        <DialogTitle className="mb-6 pr-10 text-lg">Navigation</DialogTitle>
         <DialogDescription className="sr-only">
           Accédez aux rubriques de votre espace entreprise.
         </DialogDescription>
@@ -72,8 +72,8 @@ export function MobileNav({ items, premium = false }: MobileNavProps) {
               premium && "min-h-11",
               premium
                 ? isActive
-                  ? "bg-[#00d46a] text-[#07110b]"
-                  : "text-white/60 hover:bg-white/10 hover:text-white"
+                  ? "bg-[#00d46a] text-[#0e1310]"
+                  : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310]"
                 : isActive
                   ? "bg-brand-subtle text-brand"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
