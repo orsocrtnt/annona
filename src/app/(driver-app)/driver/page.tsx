@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { StatCard } from "@/components/ui/stat-card";
+import { TableDriverDayCell } from "@/components/shared/table-cells";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useDriverMissions } from "@/features/driver/hooks";
 import { MissionCard } from "@/features/driver/mission-card";
 import { useAuth } from "@/hooks/use-auth";
-import { Package, Truck, CheckCircle } from "lucide-react";
+import { Truck } from "lucide-react";
 
 export default function DriverDashboardPage() {
   const { user } = useAuth();
@@ -46,11 +46,13 @@ export default function DriverDashboardPage() {
         <p className="text-sm text-muted-foreground">Vos missions assignées par le dispatch</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 max-md:grid-cols-1">
-        <StatCard label="À faire" value={stats?.assigned ?? 0} icon={Package} />
-        <StatCard label="En cours" value={stats?.inTransit ?? 0} icon={Truck} />
-        <StatCard label="Livrées" value={stats?.deliveredToday ?? 0} icon={CheckCircle} />
-      </div>
+      {/* Une phrase et une barre plutôt que trois compteurs. */}
+      <section aria-label="Ma journée" className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <p className="mb-2 text-sm font-semibold text-foreground">Ma journée</p>
+        <TableDriverDayCell
+          day={{ delivered: stats?.deliveredToday ?? 0, inTransit: stats?.inTransit ?? 0, toDo: stats?.assigned ?? 0 }}
+        />
+      </section>
 
       {inProgressMissions.length > 0 ? (
         <div className="space-y-3">

@@ -5,8 +5,7 @@ import { formatClientFromParts, formatDriverFromParts } from "@/lib/format/perso
 import { formatDate } from "@/lib/utils";
 import { formatPlace } from "@/lib/format/place";
 import { fullDateLabel, relativeDayLabel } from "@/lib/format/relative-day";
-import { TableDueCell, TableIdentityCell, TableRelativeDateCell } from "@/components/shared/table-cells";
-import { driverDaySegments, driverDaySentence, type DriverDay } from "@/lib/dispatch/workload-bars";
+import { TableDriverDayCell, TableDueCell, TableIdentityCell, TableRelativeDateCell } from "@/components/shared/table-cells";
 import { cn } from "@/lib/utils";
 import type { CompanyOrder } from "./types";
 
@@ -178,26 +177,5 @@ export function TableLastSeenCell({ date }: { date?: string | null }) {
   );
 }
 
-/** Journée d'un livreur : barre livrées / en cours / à faire, et la même chose en mots. */
-export function TableDriverDayCell({ day, actions }: { day: DriverDay; actions?: number }) {
-  const segments = driverDaySegments(day);
-  return (
-    <div className="min-w-[10rem]">
-      <p className="text-sm text-foreground">{driverDaySentence(day)}</p>
-      {segments.total > 0 && (
-        <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
-          <span className="h-full bg-[#0e1310]" style={{ width: `${segments.delivered}%` }} />
-          <span className="h-full bg-[#00a855]" style={{ width: `${segments.inTransit}%` }} />
-          <span className="h-full bg-[#c9d3cd]" style={{ width: `${segments.toDo}%` }} />
-        </div>
-      )}
-      {actions ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {actions} action{actions > 1 ? "s" : ""} enregistrée{actions > 1 ? "s" : ""}
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
-export { TableDueCell, TableIdentityCell, TableRelativeDateCell };
+export { TableDriverDayCell, TableDueCell, TableIdentityCell, TableRelativeDateCell };

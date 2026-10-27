@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Clock } from "lucide-react";
 import { fullDateLabel, relativeDayLabel } from "@/lib/format/relative-day";
 import { isOrderOverdue } from "@/lib/orders/overdue";
+import { driverDaySegments, driverDaySentence, type DriverDay } from "@/lib/dispatch/workload-bars";
 
 /**
  * Cellules de tableau partagées par le back-office et le portail : une ligne se
@@ -71,6 +72,28 @@ export function TableDueCell({
           En retard
         </span>
       )}
+    </div>
+  );
+}
+
+/** Journée d'un livreur : barre livrées / en cours / à faire, et la même chose en mots. */
+export function TableDriverDayCell({ day, actions }: { day: DriverDay; actions?: number }) {
+  const segments = driverDaySegments(day);
+  return (
+    <div className="min-w-[10rem]">
+      <p className="text-sm text-foreground">{driverDaySentence(day)}</p>
+      {segments.total > 0 && (
+        <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
+          <span className="h-full bg-[#0e1310]" style={{ width: `${segments.delivered}%` }} />
+          <span className="h-full bg-[#00a855]" style={{ width: `${segments.inTransit}%` }} />
+          <span className="h-full bg-[#c9d3cd]" style={{ width: `${segments.toDo}%` }} />
+        </div>
+      )}
+      {actions ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {actions} action{actions > 1 ? "s" : ""} enregistrée{actions > 1 ? "s" : ""}
+        </p>
+      ) : null}
     </div>
   );
 }

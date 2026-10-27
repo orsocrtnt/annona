@@ -8,10 +8,9 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
-import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { Home, MapPin, User } from "lucide-react";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
-import { AppleNavbar } from "@/components/navigation/apple-navbar";
+import { AppleNavbar, AppleNavbarBrand } from "@/components/navigation/apple-navbar";
 
 const bottomNav = [
   { title: "Accueil", href: "/driver", icon: Home },
@@ -60,27 +59,21 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
 
   return (
     <div className="relative min-h-screen bg-background pb-24">
-      <AppleNavbar maxWidthClassName="max-w-lg" innerClassName="justify-between">
-        <div className="flex min-w-0 items-center gap-3">
+      <AppleNavbar tone="light" maxWidthClassName="max-w-lg" innerClassName="justify-between">
+        <AppleNavbarBrand href="/driver" tone="light" />
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="min-w-0 text-right">
+            <p className="truncate text-sm font-medium leading-none text-[#0e1310]">
+              {user ? `${user.firstName} ${user.lastName}`.trim() : "Livreur"}
+            </p>
+            <p className="mt-1 truncate text-xs text-[#68726b]">Espace livreur</p>
+          </div>
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-[#dce7ef] text-xs font-semibold text-[#243447]">
-              {user ? getInitials(user.firstName, user.lastName) : "D"}
+            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white">
+              {user ? getInitials(user.firstName, user.lastName) : "L"}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="truncate text-sm font-medium leading-none text-white">
-              {user
-                ? formatDriverFromParts(
-                    { firstName: user.firstName, lastName: user.lastName },
-                    null
-                  )
-                : "Livreur"}
-            </p>
-            <p className="mt-0.5 truncate text-xs text-white/45">
-              État GPS et synchronisation affichés ci-dessous
-            </p>
-          </div>
         </div>
       </AppleNavbar>
 

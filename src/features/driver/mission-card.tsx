@@ -33,7 +33,7 @@ import {
   PackageCheck,
   Play,
 } from "lucide-react";
-import { formatClientFromParts } from "@/lib/format/person-labels";
+import { formatClientFromParts, withoutRolePrefix } from "@/lib/format/person-labels";
 import { toast } from "sonner";
 import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -268,25 +268,30 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
     <>
       <Card>
         <CardContent className="space-y-3 p-4">
-        <OrderTrackingTrigger orderId={mission.orderId} />
-        <OrderConversationTrigger orderId={mission.orderId} />
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">{mission.reference}</span>
+          {/* Qui livrer d'abord ; la référence reste en petit (support, recherche). L'app ne montre
+              que les missions du livreur connecté : pas de ligne « Responsable : vous ». */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-foreground">
+                {withoutRolePrefix(formatClientFromParts(mission.order.customer, mission.order.customerEmail))}
+              </p>
+              <span className="text-xs tabular-nums text-muted-foreground">{mission.reference}</span>
+            </div>
             <DeliveryStatusBadge
               status={mission.status}
               deliveryCategory={mission.deliveryCategory}
             />
           </div>
-          <p className="text-sm">Responsable : {mission.driverName ?? "Vous"}</p>
-          <MissionAcknowledgement {...mission} />
+          <MissionAcknowledgement {...mission} compact />
+          <div className="flex flex-wrap gap-2">
+            <OrderTrackingTrigger orderId={mission.orderId} />
+            <OrderConversationTrigger orderId={mission.orderId} />
+          </div>
           {showActions && (
             <MissionStepper status={mission.status} category={mission.deliveryCategory} />
           )}
           <div>
-            <p className="font-medium">
-              {formatClientFromParts(mission.order.customer, mission.order.customerEmail)}
-            </p>
-            <div className="mt-2">
+            <div className="mt-1">
               <DeliveryRouteDisplay
                 category={mission.deliveryCategory}
                 compact
