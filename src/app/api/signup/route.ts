@@ -16,6 +16,7 @@ function publicError(error: unknown) {
   if (code === "SIGNUP_EDIT_IDENTITY_FAILED") return { status: 503, error: "Impossible de rouvrir cette étape pour le moment." };
   if (code === "AUTH_RATE_LIMITED") return { status: 429, error: "Trop de demandes. Réessayez dans quelques minutes." };
   if (["AUTH_EMAIL_NOT_CONFIGURED", "AUTH_EMAIL_FAILED"].includes(code)) return { status: 503, error: "La vérification e-mail est temporairement indisponible." };
+  if (code === "SALES_CODE_INVALID") return { status: 400, error: "Ce code commercial n’est pas reconnu ou n’est plus actif." };
   if (code === "SIGNUP_RESUME_INVALID") return { status: 401, error: "Cette inscription a expiré. Recommencez en quelques instants." };
   if (code.includes("INVALID") || code.includes("EXCEEDED") || code.includes("LOCKED")) return { status: 400, error: "Les choix transmis ne sont pas disponibles pour cette offre." };
   return { status: 502, error: "L'inscription est temporairement indisponible." };

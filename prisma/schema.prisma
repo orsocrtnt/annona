@@ -314,6 +314,7 @@ model Company {
   supportTickets       SupportTicket[]
   operationJobs        OperationJob[]
   saasSubscription     SaasSubscription?
+  salesAttribution     SalesAttribution?
   saasUsagePeriods     SaasUsagePeriod[]
   saasUsageEvents      SaasUsageEvent[]
   saasSeatReservations SaasSeatReservation[]
@@ -361,9 +362,13 @@ model SignupJourney {
   createdAt          DateTime              @default(now()) @map("created_at")
   updatedAt          DateTime              @updatedAt @map("updated_at")
 
+  salesCodeId        String?               @map("sales_code_id")
+  salesCode          SalesCode?            @relation(fields: [salesCodeId], references: [id], onDelete: Restrict)
+
   paymentEvents SignupPaymentEvent[]
   billingAccount SaasBillingAccount?
 
+  @@index([salesCodeId])
   @@index([email, status])
   @@index([catalogVersionId])
   @@index([siren, status])
@@ -1077,6 +1082,7 @@ enum PlatformAccessResource {
   INCIDENTS
   ACCESS_EVENTS
   CONTACT_MESSAGES
+  SALES_CODES
 }
 
 /// Lecture plateforme journalisée. Aucune relation, aucune donnée personnelle.
@@ -1111,4 +1117,68 @@ model ContactMessage {
   @@index([createdAt])
   @@index([sourceHash, createdAt])
   @@map("contact_messages")
+}
+
+enum SalesCommissionLevel {
+  REFERRER
+  ASSISTED
+  AUTONOMOUS
+}
+
+/// SALES-1, décision C10 : un code permanent par commercial, créé par le super-administrateur,
+/// sans date de fin et désactivable. L'adresse du commercial est unique : un seul code chacun.
+model SalesCode {
+  id           String               @id @default(cuid())
+  code         String               @unique
+  sellerName   String               @map("seller_name")
+  sellerEmail  String               @unique @map("seller_email")
+  level        SalesCommissionLevel
+  createdById  String               @map("created_by_id")
+  disabledAt   DateTime?            @map("disabled_at")
+  disabledById String?              @map("disabled_by_id")
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  signupJourneys SignupJourney[]
+  attributions   SalesAttribution[]
+
+  @@map("sales_codes")
+}
+
+/// Attribution figée à l'activation : niveau, taux, fenêtre de douze mois et lignes initiales.
+model SalesAttribution {
+  id            String               @id @default(cuid())
+  companyId     String               @unique @map("company_id")
+  company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salesCodeId   String               @map("sales_code_id")
+  salesCode     SalesCode            @relation(fields: [salesCodeId], references: [id], onDelete: Restrict)
+  signupId      String               @unique @map("signup_id")
+  level         SalesCommissionLevel
+  rateBps       Int                  @map("rate_bps")
+  attributedAt  DateTime             @map("attributed_at")
+  eligibleUntil DateTime             @map("eligible_until")
+  snapshot      Json
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  commissionEntries SalesCommissionEntry[]
+
+  @@index([salesCodeId, attributedAt])
+  @@map("sales_attributions")
+}
+
+/// Commission théorique d'un règlement, clé déterministe ; aucun versement automatisé.
+model SalesCommissionEntry {
+  id              String           @id
+  attributionId   String           @map("attribution_id")
+  attribution     SalesAttribution @relation(fields: [attributionId], references: [id], onDelete: Cascade)
+  settlementKey   String           @map("settlement_key")
+  explanation     String
+  eligibleHtCents Int              @map("eligible_ht_cents")
+  rateBps         Int              @map("rate_bps")
+  commissionCents Int              @map("commission_cents")
+  receivedAt      DateTime         @map("received_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  @@unique([attributionId, settlementKey])
+  @@index([receivedAt])
+  @@map("sales_commission_entries")
 }

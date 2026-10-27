@@ -1,0 +1,152 @@
+import { createHash, randomInt } from "node:crypto";
+import { Prisma, type SalesCommissionLevel } from "@prisma/client";
+import { z } from "zod";
+import { prisma } from "@/services/prisma/client";
+import type { SignupCatalog, SignupQuote } from "@/domains/signup/signup.service";
+import { createSalesAttributionSnapshot } from "./commission-core";
+
+/**
+ * SALES-1, décision C10 : un code permanent par commercial, créé par le super-administrateur,
+ * lié à son niveau, sans date de fin et désactivable à tout moment.
+ */
+export const SALES_CODE_PATTERN = /^[A-Z]{2,8}-[A-HJ-NP-Z2-9]{4}$/;
+const SUFFIX_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+export const salesCodeCreateSchema = z.object({
+  sellerName: z.string().trim().min(2).max(120),
+  sellerEmail: z.string().trim().toLowerCase().email().max(200),
+  level: z.enum(["REFERRER", "ASSISTED", "AUTONOMOUS"]),
+}).strict();
+
+type SalesCodeDatabase = Pick<typeof prisma, "salesCode">;
+
+/** Saisie publique : casse et espaces ignorés ; tout autre format est refusé. */
+export function normalizeSalesCode(raw: string) {
+  const code = raw.trim().toUpperCase();
+  return SALES_CODE_PATTERN.test(code) ? code : null;
+}
+
+export function generateSalesCode(sellerName: string, random: (max: number) => number = randomInt) {
+  const letters = sellerName.normalize("NFD").replace(/[^A-Za-z]/g, "").toUpperCase();
+  const prefix = (letters.length >= 2 ? letters : "TL").slice(0, 8);
+  let suffix = "";
+  for (let index = 0; index < 4; index += 1) suffix += SUFFIX_ALPHABET[random(SUFFIX_ALPHABET.length)];
+  return `${prefix}-${suffix}`;
+}
+
+function uniqueTarget(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") return null;
+  const target = error.meta?.target;
+  return Array.isArray(target) ? target.join(",") : String(target ?? "");
+}
+
+export async function createSalesCode(
+  raw: unknown,
+  actorId: string,
+  options: { db?: SalesCodeDatabase; random?: (max: number) => number } = {}
+) {
+  const parsed = salesCodeCreateSchema.safeParse(raw);
+  if (!parsed.success) return { status: "invalid", field: String(parsed.error.issues[0]?.path[0] ?? "") } as const;
+  const db = options.db ?? prisma;
+  // Un suffixe aléatoire peut entrer en collision : trois essais, puis échec explicite.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const created = await db.salesCode.create({
+        data: { ...parsed.data, code: generateSalesCode(parsed.data.sellerName, options.random), createdById: actorId },
+        select: { id: true, code: true, sellerName: true, sellerEmail: true, level: true, disabledAt: true, createdAt: true },
+      });
+      return { status: "created", salesCode: created } as const;
+    } catch (error) {
+      const target = uniqueTarget(error);
+      if (target?.includes("seller_email") || target?.includes("sellerEmail")) return { status: "seller_has_code" } as const;
+      if (!target?.includes("code")) throw error;
+    }
+  }
+  throw new Error("SALES_CODE_GENERATION_EXHAUSTED");
+}
+
+export async function disableSalesCode(id: string, actorId: string, now = new Date(), db: SalesCodeDatabase = prisma) {
+  const { count } = await db.salesCode.updateMany({
+    where: { id, disabledAt: null },
+    data: { disabledAt: now, disabledById: actorId },
+  });
+  if (count === 1) return { status: "disabled" } as const;
+  const existing = await db.salesCode.findUnique({ where: { id }, select: { id: true } });
+  return existing ? ({ status: "already_disabled" } as const) : ({ status: "not_found" } as const);
+}
+
+/** Code saisi pendant l'inscription : seul un code existant et actif est accepté. */
+export async function resolveActiveSalesCodeId(raw: string, db: SalesCodeDatabase = prisma) {
+  const code = normalizeSalesCode(raw);
+  if (!code) throw new Error("SALES_CODE_INVALID");
+  const found = await db.salesCode.findUnique({ where: { code }, select: { id: true, disabledAt: true } });
+  if (!found || found.disabledAt) throw new Error("SALES_CODE_INVALID");
+  return found.id;
+}
+
+/** Mêmes lignes et mêmes codes que le contrat de facturation (`makeBillingContract`). */
+export function initialSalesLines(
+  quote: Pick<SignupQuote, "planCode" | "planName" | "planPriceCents" | "billingInterval" | "selections">,
+  options: SignupCatalog["options"]
+) {
+  return [
+    { code: `plan:${quote.planCode}`, name: quote.planName, quantity: 1, unitHtCents: quote.planPriceCents },
+    ...quote.selections.map((selection) => {
+      const option = options.find((candidate) => candidate.code === selection.code);
+      if (!option) throw new Error("SALES_LINE_INVALID");
+      return {
+        code: option.code,
+        name: option.name,
+        quantity: selection.quantity,
+        unitHtCents: quote.billingInterval === "ANNUAL" ? option.annualPriceCents : option.monthlyPriceCents,
+      };
+    }),
+  ];
+}
+
+/**
+ * Fige l'attribution dans la transaction d'activation. Un code désactivé entre-temps n'attribue
+ * rien, et une attribution impossible à figer ne bloque jamais l'activation d'un client qui a payé.
+ */
+export async function attributeSignupSale(
+  tx: Pick<Prisma.TransactionClient, "salesCode" | "salesAttribution">,
+  input: {
+    signupId: string;
+    salesCodeId: string | null;
+    companyId: string;
+    quote: SignupQuote;
+    options: SignupCatalog["options"];
+    now: Date;
+  }
+) {
+  if (!input.salesCodeId) return { status: "none" } as const;
+  const code = await tx.salesCode.findUnique({ where: { id: input.salesCodeId }, select: { id: true, level: true, disabledAt: true } });
+  if (!code || code.disabledAt) return { status: "code_disabled" } as const;
+  let snapshot: ReturnType<typeof createSalesAttributionSnapshot>;
+  try {
+    const lines = initialSalesLines(input.quote, input.options);
+    snapshot = createSalesAttributionSnapshot({
+      sellerReference: code.id,
+      level: code.level as SalesCommissionLevel,
+      startsAt: input.now,
+      initialContractHash: createHash("sha256").update(JSON.stringify({ quote: input.quote, lines })).digest("hex"),
+      initialLines: lines,
+    });
+  } catch (error) {
+    console.error("[sales] attribution non figée", { signupId: input.signupId, code: error instanceof Error ? error.message : "UNKNOWN" });
+    return { status: "snapshot_failed" } as const;
+  }
+  await tx.salesAttribution.create({
+    data: {
+      companyId: input.companyId,
+      salesCodeId: code.id,
+      signupId: input.signupId,
+      level: snapshot.level,
+      rateBps: snapshot.rateBps,
+      attributedAt: input.now,
+      eligibleUntil: new Date(snapshot.eligibleUntil),
+      snapshot: snapshot as unknown as Prisma.InputJsonValue,
+    },
+  });
+  return { status: "attributed", rateBps: snapshot.rateBps } as const;
+}

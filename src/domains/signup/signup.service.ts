@@ -15,6 +15,7 @@ import {
   kickOperationJob,
 } from "@/domains/operations/operation-job.service";
 import { sendTransactionalEmail } from "@/lib/email/transactional-email";
+import { attributeSignupSale, resolveActiveSalesCodeId } from "@/domains/sales/sales-code.service";
 
 export const SIGNUP_COOKIE = "tutelliv-signup-resume";
 export const SIGNUP_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -161,6 +162,7 @@ function publicJourney(journey: NonNullable<JourneyRecord>) {
     paymentConfirmed: Boolean(journey.paymentConfirmedAt),
     activated: Boolean(journey.activatedAt),
     choicesEditable: !signupChoicesLocked(journey),
+    salesCodeApplied: Boolean(journey.salesCodeId),
   };
 }
 
@@ -250,13 +252,22 @@ export function buildSignupQuote(
   };
 }
 
+/** SALES-1 : absent = inchangé, vide ou `null` = retiré, sinon un code actif obligatoire. */
+async function salesCodeChange(salesCode: string | null | undefined) {
+  if (salesCode === undefined) return {};
+  if (salesCode === null || salesCode.trim() === "") return { salesCodeId: null };
+  return { salesCodeId: await resolveActiveSalesCodeId(salesCode) };
+}
+
 export async function createSignupJourney(input: {
   planCode: SaasPlanCode;
   billingInterval: SaasBillingInterval;
   optionSelections: SignupOptionSelection[];
+  salesCode?: string | null;
 }) {
   const catalog = await getActiveSignupCatalog();
   const quote = buildSignupQuote(catalog, input.planCode, input.billingInterval, input.optionSelections);
+  const salesCode = await salesCodeChange(input.salesCode);
   const resumeToken = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SIGNUP_TTL_SECONDS * 1000);
   const journey = await prisma.signupJourney.create({
@@ -268,6 +279,7 @@ export async function createSignupJourney(input: {
       optionSelections: quote.selections,
       quoteSnapshot: quote as unknown as Prisma.InputJsonValue,
       expiresAt,
+      ...salesCode,
     },
   });
   return { resumeToken, journey: publicJourney(journey) };
@@ -325,9 +337,11 @@ export async function updateSignupSelection(resumeToken: string, input: {
   planCode: SaasPlanCode;
   billingInterval: SaasBillingInterval;
   optionSelections: SignupOptionSelection[];
+  salesCode?: string | null;
 }) {
   const journey = await requireJourney(resumeToken);
   if (signupChoicesLocked(journey)) throw new Error("SIGNUP_SELECTION_LOCKED");
+  const salesCode = await salesCodeChange(input.salesCode);
   const catalog = await prisma.saasCatalogVersion.findUnique({
     where: { id: journey.catalogVersionId },
     include: { plans: true, options: true },
@@ -341,6 +355,7 @@ export async function updateSignupSelection(resumeToken: string, input: {
       billingInterval: input.billingInterval,
       optionSelections: quote.selections,
       quoteSnapshot: quote as unknown as Prisma.InputJsonValue,
+      ...salesCode,
     },
   });
   return publicJourney(updated);
@@ -988,6 +1003,14 @@ export async function activateSignupJourney(signupId: string) {
           companyId: company.id,
           settings: { onboardingRequired: true },
         },
+      });
+      await attributeSignupSale(tx, {
+        signupId: journey.id,
+        salesCodeId: journey.salesCodeId,
+        companyId: company.id,
+        quote,
+        options: catalog.options,
+        now,
       });
       await tx.signupJourney.update({
         where: { id: journey.id },

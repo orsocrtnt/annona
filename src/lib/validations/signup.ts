@@ -32,6 +32,7 @@ const signupSelectionFields = {
   planCode: z.enum(["STARTER", "PRO", "BUSINESS"]),
   billingInterval: z.enum(["MONTHLY", "ANNUAL"]),
   optionSelections: z.array(optionSelection).max(20).default([]),
+  salesCode: z.string().trim().max(24, "Le code commercial est trop long.").nullable().optional(),
 };
 
 export const signupSelectionSchema = z.union([

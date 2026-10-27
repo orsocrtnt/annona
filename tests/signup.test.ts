@@ -27,6 +27,13 @@ function loadSignupService(overrides: Record<string, unknown> = {}) {
       kickOperationJob: () => undefined,
     },
     "@/lib/email/transactional-email": { sendTransactionalEmail: () => ({}) },
+    "@/domains/sales/sales-code.service": {
+      attributeSignupSale: async () => ({ status: "none" }),
+      resolveActiveSalesCodeId: async (raw: string) => {
+        if (raw.trim().toUpperCase() !== "CAMILLER-BBBB") throw new Error("SALES_CODE_INVALID");
+        return "sales-code-1";
+      },
+    },
     ...overrides,
   };
   const source = ts.transpileModule(readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8"), {
@@ -814,6 +821,19 @@ test("SIGNUP-1 : l’offre et l’identité restent corrigeables jusqu’au paie
   const quoted = await service.updateSignupSelection(resumeToken, { planCode: "PRO", billingInterval: "ANNUAL", optionSelections: [] });
   assert.equal(quoted.planCode, "PRO");
   assert.equal(quoted.choicesEditable, true);
+  assert.equal(quoted.salesCodeApplied, false);
+  // SALES-1 : le code est résolu côté serveur ; absent = inchangé, vide = retiré.
+  const withCode = await service.updateSignupSelection(resumeToken, { planCode: "PRO", billingInterval: "ANNUAL", optionSelections: [], salesCode: " camiller-bbbb " });
+  assert.equal(withCode.salesCodeApplied, true);
+  assert.equal((row as Record<string, unknown>).salesCodeId, "sales-code-1");
+  assert.equal("salesCodeId" in withCode, false, "l'identifiant interne n'est pas renvoyé");
+  assert.equal((await service.updateSignupSelection(resumeToken, { planCode: "PRO", billingInterval: "MONTHLY", optionSelections: [] })).salesCodeApplied, true);
+  await assert.rejects(
+    () => service.updateSignupSelection(resumeToken, { planCode: "PRO", billingInterval: "MONTHLY", optionSelections: [], salesCode: "INCONNU-DDDD" }),
+    /SALES_CODE_INVALID/,
+  );
+  assert.equal((row as Record<string, unknown>).salesCodeId, "sales-code-1", "un code refusé ne remplace rien");
+  assert.equal((await service.updateSignupSelection(resumeToken, { planCode: "PRO", billingInterval: "ANNUAL", optionSelections: [], salesCode: "" })).salesCodeApplied, false);
   const renamed = await service.updateSignupIdentityDetails(resumeToken, {
     firstName: "Ada",
     lastName: "Martin",

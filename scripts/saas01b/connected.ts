@@ -77,7 +77,8 @@ async function main() {
   await db.role.upsert({ where: { slug: "company-admin" }, create: { slug: "company-admin", name: "Company admin", systemRole: "COMPANY_ADMIN" }, update: {} });
   const run = Date.now().toString(36), token = `saas01b-${run}`;
   const contract = core.makeBillingContract(catalog, "STARTER", "MONTHLY", []);
-  const journey = await db.signupJourney.create({ data: { resumeTokenHash: createHash("sha256").update(token).digest("hex"), status: "EMAIL_VERIFIED", emailVerifiedAt: new Date(), authUserId: `auth-${run}`, email: `saas01b-${run}@example.invalid`, firstName: "Test", lastName: "Billing", companyName: `SAAS01B ${run}`, siren: run.slice(-9).padStart(9, "0"), billingAddress: "1 rue fictive", billingPostalCode: "75001", billingCity: "Paris", catalogVersionId: catalog.id, planCode: "STARTER", billingInterval: "MONTHLY", optionSelections: [], quoteSnapshot: json(contract.quote), expiresAt: new Date(Date.now() + 86400000) } });
+  const salesCode = await db.salesCode.create({ data: { code: `SAAS-${run.slice(-4).toUpperCase()}`, sellerName: "Commercial fictif", sellerEmail: `seller-${run}@example.invalid`, level: "AUTONOMOUS", createdById: "test-operator" } });
+  const journey = await db.signupJourney.create({ data: { salesCodeId: salesCode.id, resumeTokenHash: createHash("sha256").update(token).digest("hex"), status: "EMAIL_VERIFIED", emailVerifiedAt: new Date(), authUserId: `auth-${run}`, email: `saas01b-${run}@example.invalid`, firstName: "Test", lastName: "Billing", companyName: `SAAS01B ${run}`, siren: run.slice(-9).padStart(9, "0"), billingAddress: "1 rue fictive", billingPostalCode: "75001", billingCity: "Paris", catalogVersionId: catalog.id, planCode: "STARTER", billingInterval: "MONTHLY", optionSelections: [], quoteSnapshot: json(contract.quote), expiresAt: new Date(Date.now() + 86400000) } });
   const provider = new TestProvider(), billing = new BillingService(provider, db);
   provider.failAfterCheckout = true;
   await assert.rejects(billing.checkout(token), /UNAVAILABLE/);
@@ -101,6 +102,11 @@ async function main() {
   assert.equal(await db.signupPaymentEvent.count({ where: { signupId: journey.id } }), 1);
   assert.equal(await db.saasBillingOperation.count({ where: { id: `event:evt_${run}` } }), 1);
   checked("verified payment activates once; repeated event/payment idempotent");
+  const attributions = await db.salesAttribution.findMany({ where: { signupId: journey.id } });
+  assert.equal(attributions.length, 1);
+  assert.equal(attributions[0]!.salesCodeId, salesCode.id); assert.equal(attributions[0]!.rateBps, 3500);
+  assert.deepEqual((attributions[0]!.snapshot as { eligibleLines: unknown[] }).eligibleLines, JSON.parse(JSON.stringify(contract.lines)));
+  checked("sales code attribution frozen once at activation (35 %, initial lines)");
   const target = core.makeBillingContract(catalog, "PRO", "MONTHLY", []);
   provider.failAfterChange = true;
   const change = { kind: "CHANGE" as const, target, prorationDate: Math.floor(Date.now() / 1000), confirmedTotalCents: 1200, actorId: "test-operator" };

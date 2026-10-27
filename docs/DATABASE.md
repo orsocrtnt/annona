@@ -27,6 +27,7 @@
 - `SaasSeatReservation` : réservation atomique d'une place pendant une invitation concurrente.
 - `SaasBillingAccount`, `SaasBillingOperation` : journal sandbox Stripe, commandes idempotentes et rapprochement.
 - `SignupJourney`, `SignupPaymentEvent` : brouillon d'inscription autonome et événements de paiement idempotents.
+- `SalesCode`, `SalesAttribution`, `SalesCommissionEntry` : code commercial permanent par commercial, attribution figée à l'activation (niveau, taux, lignes initiales, douze mois) et commissions théoriques par règlement, sans versement automatisé.
 
 ### Client et exploitation
 
@@ -38,7 +39,7 @@
 - `PlatformAccessEvent` : journal minimal et expirant des lectures de la supervision plateforme, sans relation ni donnée personnelle.
 - `ContactMessage` : message du formulaire Contact public, lu par le super-administrateur ; l'adresse IP n'est jamais stockée, seulement une empreinte HMAC pour limiter le débit.
 
-Le schéma comprend 36 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 39 modèles Prisma. Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
 
 ## Relations essentielles
 
@@ -46,6 +47,7 @@ Le schéma comprend 36 modèles Prisma. Les anciens enum `INVOICED` et `PAID` ex
 Company
 ├── User ── Role ── RolePermission ── Permission
 ├── SaasSubscription
+├── SalesAttribution ── SalesCode / SalesCommissionEntry
 │     ├── SaasPlanAssignment ── SaasPlan ── SaasCatalogVersion
 │     ├── SaasSubscriptionItem ── SaasOption
 │     ├── SaasUsagePeriod ── SaasUsageEvent
@@ -85,7 +87,7 @@ Seule `db:generate` fait partie du travail local courant. Toutes les autres comm
 
 ## État des migrations et de la sécurité
 
-Le dépôt contient dix-huit migrations reproductibles, de la baseline initiale aux messages Contact (`prisma/migrations/`). Les dix-sept premières ont été appliquées uniquement à la préproduction autorisée ; `20261027090000_contact_messages` n'est appliquée nulle part tant que la branche n'est pas fusionnée (validée sur PostgreSQL local jetable : zéro écart, RLS active, aucun droit public). Le contrôle en lecture seule du 26 octobre 2026 y retrouve dix-sept migrations terminées, 35 tables applicatives, RLS active sur chacune et aucun droit direct public.
+Le dépôt contient dix-neuf migrations reproductibles, de la baseline initiale aux codes commerciaux (`prisma/migrations/`). Les dix-sept premières ont été appliquées uniquement à la préproduction autorisée ; `20261027090000_contact_messages` et `20261027120000_sales_codes` ne sont appliquées nulle part (chacune validée sur PostgreSQL local jetable : zéro écart, RLS active, aucun droit public). Elles doivent l'être **avant** le déploiement de la branche qui les accompagne : additives, elles ne gênent pas le code actuel, alors que le nouveau code lit `signup_journeys.sales_code_id`. Le contrôle en lecture seule du 26 octobre 2026 y retrouve dix-sept migrations terminées, 35 tables applicatives, RLS active sur chacune et aucun droit direct public.
 
 Les 35 tables ont RLS active et aucun droit direct pour `anon`, `authenticated` ou `PUBLIC`. Prisma utilise une connexion serveur privilégiée ; l'isolation applicative reste donc obligatoire. Toute nouvelle table doit être auditée de nouveau. Le catalogue SaaS actif et les entreprises historiques migrées en compatibilité `LEGACY` ne créent aucun abonnement payant implicite. Les brouillons d'inscription et événements de paiement restent eux aussi exclusivement accessibles par le serveur.
 
