@@ -398,7 +398,7 @@ Le client utilise son espace pour commander ; l’administrateur organise et le 
 
   Validation : `tests/order-atomicity.test.ts` 10/10, dont deux nouveaux tests qui échouent sans la correction (délai 5 000 ms inférieur au budget mesuré de 5 500 ms) ; pannes injectées sans écriture partielle et double envoi sans doublon de job toujours verts. `npm run check` 515/515. Recette connectée sur préproduction avec auto-dispatch : 39,9 s, création de commande 9,9 s, un job `AUTO_DISPATCH`, résidu nul. Sans auto-dispatch : 39,1 s, résidu nul.
 
-  Limite consignée pour PERF-02 : 21 autres transactions interactives gardent le délai de 5 s (dont l'activation d'inscription `signup.service.ts:871`, la facturation sandbox, le support et les données client). Elles ne posent problème que si l'application est loin de la base (poste local, ou fonctions Vercel hors de Paris, voir ENV-2). À mesurer avant de les modifier.
+  Limite consignée pour PERF-02 : 21 autres transactions interactives gardent le délai de 5 s (dont l'activation d'inscription `signup.service.ts:871`, la facturation sandbox, le support et les données client). Elles ne posent problème que si l'application est loin de la base (poste local, ou fonctions Vercel hors de Paris, voir ENV-2). À mesurer avant de les modifier. Contrôle du 2026-10-27 : la recette connectée SIGNUP-1, activation d'inscription comprise, réussit depuis le poste local sur la préproduction, sans résidu. Cette transaction tient donc dans ses 5 s.
 
 - [x] **BILL-02 — Séparer livraison et facturation.** Préserver l'état logistique et sa date lors de la facturation ; contrôler une permission dédiée ; préparer la reprise des données existantes.
 
