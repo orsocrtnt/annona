@@ -40,6 +40,27 @@ Les 12 commandes par entreprise sont les seules données matérialisées. Le rel
 
 Cette extrapolation est bornée et séparée des p50/p95 : elle n'établit aucune capacité de base de données, de réseau, de stockage, de fournisseur cartographique, de Realtime ou de serveur Next. L'application ne crée actuellement aucun canal Realtime fournisseur; le flux associé est donc seulement un fan-out mémoire local.
 
+## PostgreSQL local jetable (2026-10-27)
+
+```bash
+npm run test:perf02:postgres
+```
+
+La commande démarre un PostgreSQL 15 Homebrew isolé (`127.0.0.1:55441`, base `perf02`, répertoire temporaire), y pousse le schéma Prisma, mesure, puis arrête et supprime la base. La mesure refuse toute autre base (`PERF02_REMOTE_DATABASE_FORBIDDEN`, test `tests/perf02-postgres-guard.test.ts`) et pointe le géocodage vers un port local fermé : aucun appel réseau. Sortie `outputs/perf02/postgres-local.json`.
+
+Elle exerce le vrai code applicatif avec le pool de 5 connexions. Elle crée 10 entreprises fictives, chacune avec un pilote `auto_dispatch` et 5 livreurs. À chaque niveau de concurrence (1, 4, 8, 16), elle lance 48 créations de commande (`createClientOrder`, transaction et job compris), 48 lectures du tableau de commandes (`getCompanyOrders`) et 48 lectures de la carte dispatch (`getDispatchDriversMap`). Elle contrôle ensuite que chaque entreprise relit exactement ses propres commandes.
+
+Mesure du 27 octobre 2026 (MacBook, PostgreSQL 15.14 Homebrew), sans aucune erreur :
+
+| Concurrence | Création p50 / p95 | Débit création | Tableau p95 | Carte dispatch p95 |
+|---:|---|---:|---:|---:|
+| 1 | 6,9 / 13,0 ms | 119/s | 2,2 ms | 2,7 ms |
+| 4 | 13,3 / 24,0 ms | 277/s | 3,0 ms | 4,2 ms |
+| 8 | 25,2 / 30,5 ms | 303/s | 4,0 ms | 16,6 ms |
+| 16 | 59,2 / 91,7 ms | 230/s | 6,3 ms | 9,0 ms |
+
+Au-delà de 5 opérations simultanées, la latence de création croît à peu près proportionnellement : les opérations attendent une connexion libre du pool, sans erreur. Base locale sans réseau : ces chiffres mesurent le coût Prisma/PostgreSQL et la file du pool, pas l'aller-retour vers Supabase. Une création de commande enchaîne une dizaine d'allers-retours séquentiels, donc sa durée réelle approche 10 × la latence réseau vers la base. Exemples : environ 5,5 s depuis le poste local (≈ 550 ms par requête, DISPATCH-3), environ 1 s si les fonctions Vercel tournaient hors de Paris (≈ 90 ms, hypothèse non vérifiée, voir ENV-2). Ce sont des ordres de grandeur, pas des mesures d'hébergement.
+
 ## Suite autorisée
 
 Avant les pilotes, rejouer le même protocole sur un PostgreSQL/Prisma réellement isolé et expressément autorisé, avec serveur Next local contrôlé, puis sur préproduction seulement après autorisation écrite et dans un plafond de charge défini. Mesurer alors les mêmes p50/p95, le pool réel, les fichiers, les jobs et l'absence de fuite A/B. Ces mesures manquent encore : PERF-02 reste ouverte.
