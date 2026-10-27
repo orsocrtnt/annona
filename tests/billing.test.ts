@@ -149,6 +149,11 @@ test("SAAS-01B : cron inerte hors sandbox, inscription conservée si Checkout in
   assert.match(cron, /SIGNUP_PAYMENT_ADAPTER !== "stripe-sandbox"/);
   assert.match(cron, /skipped: true/);
   assert.match(vercel, /\/api\/cron\/billing/);
+  // Offre Vercel Hobby : un cron plus fréquent qu'une fois par jour fait échouer tout déploiement.
+  for (const { path, schedule } of (JSON.parse(vercel) as { crons: Array<{ path: string; schedule: string }> }).crons) {
+    const [minute, hour] = schedule.split(" ");
+    assert.match(`${minute} ${hour}`, /^\d{1,2} \d{1,2}$/, `${path} : au plus une fois par jour (${schedule})`);
+  }
   assert.match(ui, /get\("payment"\) === "cancelled"/);
   assert.match(readFileSync(resolve("src/domains/billing/stripe-sandbox.ts"), "utf8"), /\/register\?payment=cancelled/);
   assert.match(ui, /Le paiement sandbox a été interrompu\. Votre inscription est conservée\./);

@@ -9,7 +9,7 @@ test("PERF-02 Next : l'environnement mesuré n'hérite d'aucun secret ni service
   const env = nextLocalEnv({
     PATH: "/usr/bin",
     HOME: "/home/test",
-    DATABASE_URL: "postgresql://postgres:secret@aws-0-eu-west-3.pooler.supabase.com:6543/postgres",
+    DATABASE_URL: "postgresql://postgres@remote-db.example.invalid:6543/postgres",
     SUPABASE_SERVICE_ROLE_KEY: "real-service-role",
     STRIPE_SECRET_KEY: "sk_test_secret",
     NEXT_PUBLIC_SUPABASE_URL: "https://real.supabase.co",
@@ -19,7 +19,7 @@ test("PERF-02 Next : l'environnement mesuré n'hérite d'aucun secret ni service
   assert.equal(new URL(env.NEXT_PUBLIC_SUPABASE_URL!).hostname.endsWith(".invalid"), true);
   assert.equal(new URL(env.NEXT_PUBLIC_APP_URL!).hostname, "127.0.0.1");
   assert.equal(env.PATH, "/usr/bin");
-  assert.ok(!JSON.stringify(env).includes("secret") && !JSON.stringify(env).includes("real"));
+  assert.ok(!JSON.stringify(env).includes("secret") && !JSON.stringify(env).includes("real") && !JSON.stringify(env).includes("remote-db"));
   assert.ok(!("STRIPE_SECRET_KEY" in env));
 });
 

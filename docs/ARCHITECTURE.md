@@ -90,6 +90,7 @@ La V1 exporte les documents de prestation `Invoice` par `/api/invoices/export` a
 Le dépôt contient une configuration Vercel, mais aucune publication n'est implicite :
 
 - `/api/cron/recurring-orders` chaque jour à 06:00 ;
+- `/api/cron/billing` chaque jour à 06:10 (rapprochement de la facturation sandbox ; les webhooks restent la voie principale). L'offre Hobby refuse tout déploiement dont un cron tourne plus d'une fois par jour : la cadence horaire initiale avait fait échouer les déploiements de préproduction du 27 octobre 2026. Vercel n'exécute de toute façon les crons que sur la production. `tests/billing.test.ts` garde cette limite ;
 - `/api/cron/operations` reste protégée et appelable, sans planification Vercel intégrée sur l'offre Hobby. La cadence minute exige une offre ou un planificateur compatible avant les pilotes.
 
 La préproduction prévue utilise la branche `preproduction`, une Preview Vercel et un projet Supabase distinct. La procédure et les garde-fous sont décrits dans [`operations/preproduction/README.md`](operations/preproduction/README.md).
