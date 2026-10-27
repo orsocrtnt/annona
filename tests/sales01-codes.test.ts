@@ -140,9 +140,15 @@ test("SALES-1 attribution : figée à l'activation, sans bloquer un client qui a
     active: { id: "active", level: "ASSISTED", disabledAt: null },
     disabled: { id: "disabled", level: "AUTONOMOUS", disabledAt: new Date("2026-01-30T00:00:00.000Z") },
   };
+  const savepoints: string[] = [];
   const tx = {
+    $executeRaw: async (strings: TemplateStringsArray) => { savepoints.push(strings.join("")); return 0; },
     salesCode: { findUnique: async ({ where }: { where: { id: string } }) => codes[where.id] ?? null },
-    salesAttribution: { create: async ({ data }: { data: Record<string, unknown> }) => { attributions.push(data); return data; } },
+    salesAttribution: { create: async ({ data }: { data: Record<string, unknown> }) => {
+      if (data.signupId === "signup-db-down") throw Object.assign(new Error("relation absente"), { code: "P2021" });
+      attributions.push(data);
+      return data;
+    } },
   } as never;
   const base = { signupId: "signup-1", companyId: "company-1", quote, options: catalog.options, now };
 
@@ -177,6 +183,18 @@ test("SALES-1 attribution : figée à l'activation, sans bloquer un client qui a
   }
   assert.equal(attributions.length, 1, "aucune attribution partielle");
   assert.equal(errors.length, 1);
+
+  // Une erreur SQL n'annule que le point de sauvegarde, jamais la transaction d'activation.
+  savepoints.length = 0;
+  console.error = (...args: unknown[]) => { errors.push(args); };
+  try {
+    assert.deepEqual(await attributeSignupSale(tx, { ...base, signupId: "signup-db-down", salesCodeId: "active" }), { status: "attribution_failed" });
+  } finally {
+    console.error = originalError;
+  }
+  assert.deepEqual(savepoints, ["SAVEPOINT sales_writes", "ROLLBACK TO SAVEPOINT sales_writes"]);
+  assert.match(JSON.stringify(errors.at(-1)), /P2021/);
+  assert.ok(!JSON.stringify(errors.at(-1)).includes("relation absente"), "seul le code d'erreur est journalisé");
 });
 
 test("SALES-1 inscription : code saisi côté serveur, attribution dans la transaction d'activation", () => {

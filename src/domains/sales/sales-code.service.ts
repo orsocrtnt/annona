@@ -105,12 +105,39 @@ export function initialSalesLines(
   ];
 }
 
+type SavepointClient = Pick<Prisma.TransactionClient, "$executeRaw">;
+
+/**
+ * Les écritures commerciales partagent la transaction de facturation ou d'activation : une erreur
+ * SQL l'annulerait entière, et un try/catch JavaScript ne la rattrape pas. Le point de sauvegarde
+ * n'annule que ces écritures ; l'erreur est journalisée par son seul code.
+ */
+async function isolateSalesWrites<T, F>(
+  tx: SavepointClient,
+  label: string,
+  context: Record<string, string>,
+  fallback: F,
+  run: () => Promise<T>
+): Promise<T | F> {
+  await tx.$executeRaw`SAVEPOINT sales_writes`;
+  try {
+    const result = await run();
+    await tx.$executeRaw`RELEASE SAVEPOINT sales_writes`;
+    return result;
+  } catch (error) {
+    await tx.$executeRaw`ROLLBACK TO SAVEPOINT sales_writes`;
+    const code = error && typeof error === "object" && "code" in error ? String(error.code) : "UNKNOWN";
+    console.error(`[sales] ${label}`, { ...context, code });
+    return fallback;
+  }
+}
+
 /**
  * Fige l'attribution dans la transaction d'activation. Un code désactivé entre-temps n'attribue
- * rien, et une attribution impossible à figer ne bloque jamais l'activation d'un client qui a payé.
+ * rien, et une attribution impossible à figer ou à écrire ne bloque jamais l'activation d'un client qui a payé.
  */
 export async function attributeSignupSale(
-  tx: Pick<Prisma.TransactionClient, "salesCode" | "salesAttribution">,
+  tx: Pick<Prisma.TransactionClient, "salesCode" | "salesAttribution" | "$executeRaw">,
   input: {
     signupId: string;
     salesCodeId: string | null;
@@ -121,6 +148,20 @@ export async function attributeSignupSale(
   }
 ) {
   if (!input.salesCodeId) return { status: "none" } as const;
+  const salesCodeId = input.salesCodeId;
+  return isolateSalesWrites(
+    tx,
+    "attribution non écrite",
+    { signupId: input.signupId },
+    { status: "attribution_failed" } as const,
+    () => writeSignupAttribution(tx, { ...input, salesCodeId })
+  );
+}
+
+async function writeSignupAttribution(
+  tx: Pick<Prisma.TransactionClient, "salesCode" | "salesAttribution">,
+  input: Parameters<typeof attributeSignupSale>[1] & { salesCodeId: string }
+) {
   const code = await tx.salesCode.findUnique({ where: { id: input.salesCodeId }, select: { id: true, level: true, disabledAt: true } });
   if (!code || code.disabledAt) return { status: "code_disabled" } as const;
   let snapshot: ReturnType<typeof createSalesAttributionSnapshot>;
@@ -197,9 +238,18 @@ export async function listSalesCodes(
 
 /**
  * Appelée dans la transaction de projection de la facturation : ajoute les écritures manquantes
- * de l'entreprise attribuée. Une erreur de calcul est journalisée et ne bloque jamais l'abonnement.
+ * de l'entreprise attribuée. Une erreur de calcul ou d'écriture est journalisée et ne bloque
+ * jamais l'abonnement ; les écritures manquantes sont reprises au rapprochement suivant.
  */
 export async function recordSalesCommissions(
+  tx: Pick<Prisma.TransactionClient, "salesAttribution" | "salesCommissionEntry" | "$executeRaw">,
+  companyId: string,
+  invoices: CommissionInvoice[]
+) {
+  return isolateSalesWrites(tx, "commissions non écrites", { companyId }, 0, () => writeSalesCommissions(tx, companyId, invoices));
+}
+
+async function writeSalesCommissions(
   tx: Pick<Prisma.TransactionClient, "salesAttribution" | "salesCommissionEntry">,
   companyId: string,
   invoices: CommissionInvoice[]

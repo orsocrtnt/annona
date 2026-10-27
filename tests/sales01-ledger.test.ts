@@ -88,10 +88,13 @@ test("SALES-1 commissions : remboursement repris au prorata, cumulatif et idempo
 
 test("SALES-1 commissions : enregistrement dans la projection, sans jamais bloquer la facturation", async () => {
   const created: Array<Record<string, unknown>> = [];
-  const tx = (found: unknown) => ({
+  const savepoints: string[] = [];
+  const tx = (found: unknown, failWrite = false) => ({
+    $executeRaw: async (strings: TemplateStringsArray) => { savepoints.push(strings.join("")); return 0; },
     salesAttribution: { findUnique: async () => found },
     salesCommissionEntry: { createMany: async ({ data, skipDuplicates }: { data: Array<Record<string, unknown>>; skipDuplicates: boolean }) => {
       assert.equal(skipDuplicates, true);
+      if (failWrite) throw Object.assign(new Error("verrou"), { code: "P2034" });
       created.push(...data);
       return { count: data.length };
     } },
@@ -111,5 +114,17 @@ test("SALES-1 commissions : enregistrement dans la projection, sans jamais bloqu
     console.error = original;
   }
   assert.equal(logged.length, 1, "règle d'arrondi absente : journalisée, rien d'écrit");
+  assert.equal(created.length, 1);
+
+  // Erreur SQL à l'écriture : le point de sauvegarde est annulé, la projection continue.
+  savepoints.length = 0;
+  console.error = (...args: unknown[]) => { logged.push(args); };
+  try {
+    assert.equal(await recordSalesCommissions(tx({ id: "attr-3", snapshot: attribution, commissionEntries: [] }, true), "company-3", [initial]), 0);
+  } finally {
+    console.error = original;
+  }
+  assert.deepEqual(savepoints, ["SAVEPOINT sales_writes", "ROLLBACK TO SAVEPOINT sales_writes"]);
+  assert.match(JSON.stringify(logged.at(-1)), /P2034/);
   assert.equal(created.length, 1);
 });
