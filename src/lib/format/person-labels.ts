@@ -64,3 +64,8 @@ export function formatPersonNameByRole(
   if (systemRole === "CLIENT") return formatClientDisplayName(name);
   return name;
 }
+
+/** Nom seul, sans « Client » / « Livreur » : quand le libellé du champ dit déjà le rôle. */
+export function withoutRolePrefix(name: string | null | undefined): string {
+  return stripPrefix(stripPrefix(name ?? "", CLIENT_PREFIX), DRIVER_PREFIX);
+}

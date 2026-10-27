@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { OperationalAlertsInbox, OrderOperationalAlerts } from "@/components/shared/operational-alerts";
+import { dateTimeLabel } from "@/lib/format/relative-day";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,7 +44,7 @@ export function OrderConversation({ orderId }: { orderId: string }) {
   if (query.error) return <p role="alert" className="rounded border p-4">{query.error.message}</p>;
   if (!data) return <p className="p-4">Chargement des échanges…</p>;
   return <Card id="messages">
-    <CardHeader><CardTitle className="text-base">Échanges opérationnels — {data.reference}</CardTitle><p className="text-sm text-muted-foreground">Messages partagés avec le client, l’administration et le chauffeur affecté. Actualisation toutes les 10 secondes.</p></CardHeader>
+    <CardHeader><CardTitle className="text-base">Échanges</CardTitle><p className="text-sm text-muted-foreground">Messages partagés avec le client, l’administration et le chauffeur affecté. Actualisation toutes les 10 secondes.</p></CardHeader>
     <CardContent className="space-y-4">
       <OrderOperationalAlerts orderId={orderId} />
       {data.unread > 0 && <div className="flex flex-wrap items-center gap-2" role="status"><strong>{data.unread} nouveau(x) message(s)</strong><Button variant="outline" size="sm" onClick={markRead}>Marquer ces messages comme lus</Button></div>}
@@ -51,7 +52,7 @@ export function OrderConversation({ orderId }: { orderId: string }) {
       <div className="max-h-[45vh] space-y-3 overflow-y-auto" aria-label="Fil des échanges">
         {!data.messages.length && <p className="text-sm text-muted-foreground">Aucun échange pour cette commande.</p>}
         {data.messages.map(message => <article key={message.id} className={`rounded-lg border p-3 ${message.internal ? "border-amber-400 bg-amber-50 text-slate-900" : "bg-muted/30"}`}>
-          <div className="flex flex-wrap gap-x-2 text-xs"><strong>{message.authorName}</strong><span>{roles[message.authorRole] ?? "Équipe"}</span><time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString("fr-FR")}</time><strong>{message.internal ? "Note interne — administration uniquement" : kinds[message.kind]}</strong></div>
+          <div className="flex flex-wrap gap-x-2 text-xs"><strong>{message.authorName}</strong><span>{roles[message.authorRole] ?? "Équipe"}</span><time dateTime={message.createdAt}>{dateTimeLabel(message.createdAt)}</time><strong>{message.internal ? "Note interne — administration uniquement" : kinds[message.kind]}</strong></div>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm">{message.body}</p>
         </article>)}
       </div>

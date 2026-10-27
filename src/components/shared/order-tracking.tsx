@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TRACKING_POLL_MS, type TrackingPosition } from "@/domains/tracking/tracking.policy";
+import { dateTimeLabel, elapsedLabel } from "@/lib/format/relative-day";
+import { withoutRolePrefix } from "@/lib/format/person-labels";
 import type { getOrderTracking } from "@/domains/tracking/tracking.service";
 type Tracking = Awaited<ReturnType<typeof getOrderTracking>>;
 const positionLabels: Record<TrackingPosition["state"], string> = { NOT_STARTED: "Position non partagée : mission non démarrée.", ENDED: "Suivi arrêté : mission terminée.", OFF_DUTY: "Position non partagée : service arrêté.", ABSENT: "Position absente : aucun signal reçu pour cette mission et ce service.", STALE: "Position périmée : aucun signal récent, coordonnées masquées.", FRESH: "Dernière position reçue" };
-function date(value: string) { return new Date(value).toLocaleString("fr-FR"); }
+const date = dateTimeLabel;
 export function OrderTracking({ orderId }: { orderId: string }) {
   const cache = useQueryClient();
   const [now, setNow] = useState(Date.now());
@@ -29,14 +31,14 @@ export function OrderTracking({ orderId }: { orderId: string }) {
   if (!data) return <p role="status" aria-live="polite" className="p-4">Chargement du suivi…</p>;
   // Advance server time by elapsed local time; clock skew cannot prolong freshness.
   const serverNow = Date.parse(data.serverTime) + Math.max(0, now - query.dataUpdatedAt);
-  return <Card id="tracking" aria-label="Suivi partagé" aria-busy={query.isFetching}><CardHeader><CardTitle className="break-words text-base">Suivi partagé — {data.reference}</CardTitle><p className="text-sm text-muted-foreground">Commande : {data.statusLabel}. Vérifié le <time dateTime={data.serverTime}>{date(data.serverTime)}</time>. Actualisation toutes les 10 secondes lorsque cette page est visible.</p></CardHeader>
+  return <Card id="tracking" aria-label="Suivi partagé" aria-busy={query.isFetching}><CardHeader><CardTitle className="text-base">Suivi partagé</CardTitle><p className="text-sm text-muted-foreground"><span className="tabular-nums">{data.reference}</span> · {data.statusLabel} · vérifié le <time dateTime={data.serverTime}>{date(data.serverTime)}</time>. Actualisé toutes les 10 secondes lorsque cette page est visible.</p></CardHeader>
     <CardContent className="space-y-5">{data.deliveries.map(delivery => {
       const position = delivery.position;
       const state = position.state === "FRESH" && position.expiresAt && serverNow >= Date.parse(position.expiresAt) ? "STALE" : position.state;
       return <section key={delivery.id} className="min-w-0 space-y-3 rounded-lg border p-3 sm:p-4" aria-label={`Mission ${delivery.reference}`}>
-        <div><h3 className="font-semibold">{delivery.reference} — {delivery.statusLabel}</h3><p className="text-sm">Responsable actuel : {delivery.driverName || "Non affecté"}</p><p className="text-xs text-muted-foreground">État mis à jour le <time dateTime={delivery.updatedAt}>{date(delivery.updatedAt)}</time></p></div>
+        <div><h3 className="font-semibold">{delivery.statusLabel}</h3><p className="text-sm">Livreur : {withoutRolePrefix(delivery.driverName) || "pas encore affecté"}</p><p className="text-xs text-muted-foreground">État mis à jour le <time dateTime={delivery.updatedAt}>{date(delivery.updatedAt)}</time> · <span className="tabular-nums">{delivery.reference}</span></p></div>
         <p className="text-sm">{delivery.missionAcceptedAt ? `Prise en charge confirmée le ${date(delivery.missionAcceptedAt)}.` : "Prise en charge non confirmée."} {delivery.missionStartedAt ? `Départ le ${date(delivery.missionStartedAt)}.` : "Mission non démarrée."}</p>
-        <div className="rounded bg-muted/40 p-3 text-sm" role="status"><strong>{positionLabels[state]}</strong>{position.updatedAt && <p>Signal reçu le <time dateTime={position.updatedAt}>{date(position.updatedAt)}</time>.</p>}{state === "FRESH" && <p>Latitude {position.latitude?.toFixed(5)}, longitude {position.longitude?.toFixed(5)}{position.accuracy != null ? ` · précision annoncée ±${Math.round(position.accuracy)} m` : " · précision inconnue"}.</p>}<p className="mt-1 text-xs text-muted-foreground">Partage limité au service ouvert et à la mission démarrée. Ce signal daté ne garantit pas un suivi permanent.</p></div>
+        <div className="rounded bg-muted/40 p-3 text-sm" role="status"><strong>{positionLabels[state]}</strong>{position.updatedAt && <p>Signal reçu <time dateTime={position.updatedAt} title={date(position.updatedAt)}>{elapsedLabel(position.updatedAt, serverNow)}</time>{state === "FRESH" && <span title={`Latitude ${position.latitude?.toFixed(5)}, longitude ${position.longitude?.toFixed(5)}`}>{position.accuracy != null ? ` · précision ±${Math.round(position.accuracy)} m` : " · précision inconnue"}</span>}.</p>}<p className="mt-1 text-xs text-muted-foreground">Partage limité au service ouvert et à la mission démarrée. Ce signal daté ne garantit pas un suivi permanent.</p></div>
         <div><h4 className="text-sm font-medium">Chronologie des actions</h4>{!delivery.timeline.length && <p className="text-sm text-muted-foreground">Aucune action enregistrée.</p>}<ol className="mt-2 space-y-2">{delivery.timeline.map(event => <li key={event.id} className="border-l-2 pl-3 text-sm"><strong>{event.label}</strong> — <time dateTime={event.occurredAt}>{date(event.occurredAt)}</time>{event.description && <p className="whitespace-pre-wrap text-muted-foreground">{event.description}</p>}</li>)}</ol></div>
       </section>;
     })}</CardContent></Card>;

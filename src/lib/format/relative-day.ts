@@ -29,3 +29,26 @@ export function fullDateLabel(value: string | Date): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : fullDate.format(date);
 }
+
+const dateTimeFormat = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE });
+
+/** « 27 oct. 2026 à 14:30 » : une seule forme de date-heure dans les fiches, à l'heure de Paris. */
+export function dateTimeLabel(value: string | Date): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const parts = dateTimeFormat.formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${get("day")} ${get("month")} ${get("year")} à ${get("hour")}:${get("minute")}`;
+}
+
+/** « à l'instant », « il y a 25 s », « il y a 3 min », « il y a 2 h », puis la date. */
+export function elapsedLabel(value: string | Date, now: number | Date = Date.now()): string {
+  const date = new Date(value);
+  const seconds = Math.floor((new Date(now).getTime() - date.getTime()) / 1000);
+  if (Number.isNaN(seconds)) return "—";
+  if (seconds < 10) return "à l'instant";
+  if (seconds < 60) return `il y a ${seconds} s`;
+  if (seconds < 3600) return `il y a ${Math.floor(seconds / 60)} min`;
+  if (seconds < 86_400) return `il y a ${Math.floor(seconds / 3600)} h`;
+  return `le ${dateTimeLabel(date)}`;
+}

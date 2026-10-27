@@ -38,3 +38,23 @@ test("le lieu n'ajoute la ville que si l'adresse ne la contient pas", async () =
   assert.equal(formatPlace("8 rue Oberkampf, 75011 Paris", "Paris"), "8 rue Oberkampf, 75011 Paris");
   assert.equal(formatPlace(null, " "), null);
 });
+
+test("date-heure unique des fiches et ancienneté d'un signal", async () => {
+  const { dateTimeLabel, elapsedLabel } = await import("../src/lib/format/relative-day");
+  assert.equal(dateTimeLabel("2026-10-27T13:30:00Z"), "27 oct. 2026 à 14:30");
+  assert.equal(dateTimeLabel("x"), "—");
+  const t = Date.parse("2026-10-27T10:00:00Z");
+  assert.equal(elapsedLabel(new Date(t - 4_000), t), "à l'instant");
+  assert.equal(elapsedLabel(new Date(t - 25_000), t), "il y a 25 s");
+  assert.equal(elapsedLabel(new Date(t - 3 * 60_000), t), "il y a 3 min");
+  assert.equal(elapsedLabel(new Date(t - 2 * 3_600_000), t), "il y a 2 h");
+  assert.equal(elapsedLabel("2026-10-25T09:00:00Z", t), "le 25 oct. 2026 à 10:00");
+});
+
+test("le nom seul, sans le rôle en préfixe", async () => {
+  const { withoutRolePrefix } = await import("../src/lib/format/person-labels");
+  assert.equal(withoutRolePrefix("Livreur Jean Dupont"), "Jean Dupont");
+  assert.equal(withoutRolePrefix("Client Sophie Martin"), "Sophie Martin");
+  assert.equal(withoutRolePrefix("Karim Benali"), "Karim Benali");
+  assert.equal(withoutRolePrefix(null), "");
+});

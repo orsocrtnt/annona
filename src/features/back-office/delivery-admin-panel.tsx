@@ -147,7 +147,8 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Gestion livraison — {delivery.reference}</CardTitle>
+        <CardTitle className="text-base">Gérer la livraison</CardTitle>
+        <p className="text-xs tabular-nums text-muted-foreground">{delivery.reference}</p>
       </CardHeader>
       <CardContent className="space-y-6">
             <MissionAcknowledgement {...delivery} />
@@ -160,8 +161,9 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Statut">
             <Select value={status} onValueChange={(v) => setStatus(v as DeliveryStatus)}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger aria-label="Statut de la livraison">
+                {/* « Assigné » est exclu de la liste : on affiche quand même le statut courant. */}
+                <SelectValue>{getFulfillmentStatusLabel(status, deliveryCategory)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {ADMIN_EDITABLE_STATUSES.filter(
