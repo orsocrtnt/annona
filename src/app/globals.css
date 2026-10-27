@@ -115,6 +115,48 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes dashboardRouteReveal {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.dashboard-v2-shell {
+  font-family: var(--font-dashboard), ui-sans-serif, system-ui, sans-serif;
+  color: #0e1310;
+}
+
+.dashboard-v2-route-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: dashboardRouteReveal 800ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+}
+
+.dashboard-v2-alerts [aria-label="Alertes opérationnelles"],
+.dashboard-v2-alerts [aria-label="Nouveaux échanges"] {
+  border-color: rgb(14 19 16 / 7%);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: none;
+  color: #0e1310;
+}
+
+.dashboard-v2-alerts [aria-label="Alertes opérationnelles"] > div > a,
+.dashboard-v2-alerts [aria-label="Alertes opérationnelles"] > div > button {
+  border-color: rgb(14 19 16 / 8%);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-v2-route-line {
+    stroke-dashoffset: 0;
+  }
+}
+
 @keyframes stepLinkLoading {
   0% {
     background-position: 200% 50%;

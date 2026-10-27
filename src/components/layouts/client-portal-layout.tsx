@@ -1,22 +1,43 @@
 "use client";
-import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import {
+  FileText,
+  HeadphonesIcon,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  RefreshCw,
+  Settings,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
+
+import {
+  AppleNavbar,
+  AppleNavbarBrand,
+  AppleNavbarLink,
+  AppleNavbarLinks,
+  appleNavbarIconButtonClass,
+} from "@/components/navigation/apple-navbar";
+import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
 import { applyOfferNavLocks } from "@/features/saas/offer-nav";
 import { useOfferAccess } from "@/features/saas/use-offer-access";
+import { useAuth } from "@/hooks/use-auth";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
-import { getInitials } from "@/lib/utils";
-import { APP_NAME } from "@/lib/constants";
-import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
-import {
-  Package2, LayoutDashboard, ShoppingBag, Truck,
-  FileText, HeadphonesIcon, LogOut, Settings, RefreshCw,
-} from "lucide-react";
+import { cn, getInitials } from "@/lib/utils";
 
 const navItems = [
   { title: "Tableau de bord", href: "/portal", icon: LayoutDashboard },
@@ -28,104 +49,160 @@ const navItems = [
   { title: "Paramètres", href: "/portal/settings", icon: Settings },
 ];
 
+type PortalNavItem = (typeof navItems)[number] & {
+  disabled?: boolean;
+  disabledReason?: string;
+};
+
 interface ClientPortalLayoutProps {
   children: React.ReactNode;
 }
 
-function PortalHeader({ overlay = false }: { overlay?: boolean }) {
-  const { user, logout } = useAuth();
-
-  return (
-    <header
-      className={cn(
-        "shrink-0 backdrop-blur-xl",
-        overlay
-          ? "border-b border-white/50 bg-white/70"
-          : "border-b border-border bg-card/80"
-      )}
-    >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 max-md:h-14 lg:px-6">
-        <Link href="/portal" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
-            <Package2 className="h-4 w-4" />
-          </div>
-          <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
-        </Link>
-
-        <div className="flex items-center gap-3">
-          <PortalNotificationsBell />
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-brand-subtle text-brand text-xs">
-              {user ? getInitials(user.firstName, user.lastName) : "C"}
-            </AvatarFallback>
-          </Avatar>
-          <Button variant="ghost" size="icon-sm" onClick={logout} aria-label="Se déconnecter">
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </header>
-  );
+function isPortalItemActive(pathname: string, href: string) {
+  return pathname === href || (href !== "/portal" && pathname.startsWith(href));
 }
 
-function PortalNavLink({
+function PortalDesktopNavLink({
   item,
   isActive,
 }: {
-  item: (typeof navItems)[number] & { disabled?: boolean; disabledReason?: string };
+  item: PortalNavItem;
+  isActive: boolean;
+}) {
+  const prefetchHandlers = useNavQueryPrefetch(item.href);
+
+  return (
+    <AppleNavbarLink
+      href={item.href}
+      active={isActive}
+      disabled={item.disabled}
+      disabledReason={item.disabledReason}
+      {...(item.disabled ? {} : prefetchHandlers)}
+    >
+      {item.title}
+    </AppleNavbarLink>
+  );
+}
+
+function PortalMobileNavLink({
+  item,
+  isActive,
+}: {
+  item: PortalNavItem;
   isActive: boolean;
 }) {
   const prefetchHandlers = useNavQueryPrefetch(item.href);
   const Icon = item.icon;
 
+  if (item.disabled) {
+    return (
+      <DropdownMenuItem
+        disabled
+        title={item.disabledReason}
+        className="min-h-11 rounded-xl px-3 text-white/35 data-[disabled]:opacity-100"
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+        {item.title}
+      </DropdownMenuItem>
+    );
+  }
+
   return (
-    <Link
-      href={item.href}
-      aria-current={isActive ? "page" : undefined}
-      aria-disabled={item.disabled || undefined}
-      title={item.disabledReason}
-      {...(item.disabled ? {} : prefetchHandlers)}
-      className={cn(
-        "flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
-        "max-md:px-2.5 max-md:py-2 max-md:text-xs",
-        isActive
-          ? "bg-brand text-white shadow-sm"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground"
-      )}
+    <DropdownMenuItem
+      asChild
+      className="min-h-11 cursor-pointer rounded-xl px-3 text-white/75 focus:bg-white/10 focus:text-white"
     >
-      <Icon className="h-4 w-4" />
-      {item.title}
-    </Link>
+      <Link href={item.href} aria-current={isActive ? "page" : undefined} {...prefetchHandlers}>
+        <Icon className="h-4 w-4" aria-hidden />
+        <span>{item.title}</span>
+        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> : null}
+      </Link>
+    </DropdownMenuItem>
   );
 }
 
-function PortalNav({ compact = false, overlay = false }: { compact?: boolean; overlay?: boolean }) {
+function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
   const pathname = usePathname();
   const saas = useOfferAccess();
   const items = applyOfferNavLocks(navItems, saas);
+  const { user, logout } = useAuth();
 
   return (
-    <nav
-      aria-label="Navigation de l'espace client"
-      className={cn(
-        "flex gap-1 overflow-x-auto rounded-xl border p-1",
-        overlay
-          ? "border-white/60 bg-white/75 backdrop-blur-xl shadow-sm"
-          : "border-border bg-card",
-        !compact && "mb-8"
-      )}
+    <AppleNavbar
+      sticky={!overlay}
+      maxWidthClassName="max-w-7xl"
+      className={overlay ? "pointer-events-auto" : undefined}
     >
-      {items.map((item) => {
-        const isActive =
-          pathname === item.href ||
-          (item.href !== "/portal" && pathname.startsWith(item.href));
-        return (
-          <PortalNavLink key={item.href} item={item} isActive={isActive} />
-        );
-      })}
-    </nav>
+      <AppleNavbarBrand href="/portal" />
+
+      <AppleNavbarLinks
+        ariaLabel="Navigation de l’espace client"
+        className="absolute left-1/2 hidden -translate-x-1/2 xl:flex"
+      >
+        {items.map((item) => (
+          <PortalDesktopNavLink
+            key={item.href}
+            item={item}
+            isActive={isPortalItemActive(pathname, item.href)}
+          />
+        ))}
+      </AppleNavbarLinks>
+
+      <div className="ml-auto flex items-center gap-1">
+        <PortalNotificationsBell className="text-white/70 hover:bg-white/[0.08] hover:text-white" />
+
+        <div
+          className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]"
+          title={user ? `${user.firstName} ${user.lastName}` : "Compte client"}
+        >
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={user?.avatarUrl ?? undefined} />
+            <AvatarFallback className="bg-[#dce7ef] text-[10px] font-semibold text-[#243447]">
+              {user ? getInitials(user.firstName, user.lastName) : "C"}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={logout}
+          aria-label="Se déconnecter"
+          className={appleNavbarIconButtonClass}
+        >
+          <LogOut className="h-4 w-4" aria-hidden />
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(appleNavbarIconButtonClass, "xl:hidden")}
+              aria-label="Ouvrir la navigation client"
+            >
+              <Menu className="h-5 w-5" aria-hidden />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            sideOffset={8}
+            className="w-72 rounded-2xl border-white/10 bg-[#15171f] p-2 text-white shadow-2xl"
+          >
+            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-white/45">
+              Espace client
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-white/10" />
+            {items.map((item) => (
+              <PortalMobileNavLink
+                key={item.href}
+                item={item}
+                isActive={isPortalItemActive(pathname, item.href)}
+              />
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </AppleNavbar>
   );
 }
 
@@ -136,20 +213,16 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
   if (mapFullscreen) {
     return (
       <div
-        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:calc(4rem+1.5rem+2.875rem)] max-md:[--portal-chrome:calc(3.5rem+0.75rem+2.25rem)]"
+        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:4.75rem]"
         data-portal-map-page
       >
-        <main id="main-content" tabIndex={-1} className="absolute inset-0 z-0"><OrderMessagesInbox />{children}</main>
+        <main id="main-content" tabIndex={-1} className="absolute inset-0 z-0">
+          <OrderMessagesInbox />
+          {children}
+        </main>
 
         <div className="pointer-events-none absolute inset-x-0 top-0 z-30">
-          <div className="pointer-events-auto">
-            <PortalHeader overlay />
-          </div>
-          <div className="pointer-events-auto px-4 pt-6 pb-3 max-md:pt-3 max-md:pb-2 lg:px-6">
-            <div className="mx-auto max-w-6xl">
-              <PortalNav compact overlay />
-            </div>
-          </div>
+          <PortalNavbar overlay />
         </div>
       </div>
     );
@@ -157,13 +230,13 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
 
   return (
     <div className="min-h-screen bg-surface-subtle">
-      <div className="sticky top-[var(--demo-banner-height,0px)] z-30">
-        <PortalHeader />
-      </div>
+      <PortalNavbar />
 
       <div className="mx-auto max-w-6xl px-4 py-6 max-md:px-3 max-md:py-4 lg:px-6">
-        <PortalNav />
-        <main id="main-content" tabIndex={-1}><OrderMessagesInbox />{children}</main>
+        <main id="main-content" tabIndex={-1}>
+          <OrderMessagesInbox />
+          {children}
+        </main>
       </div>
     </div>
   );

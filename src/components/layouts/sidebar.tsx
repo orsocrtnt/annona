@@ -14,6 +14,7 @@ import type { NavItem } from "@/types";
 interface SidebarProps {
   items: NavItem[];
   footer?: React.ReactNode;
+  premium?: boolean;
 }
 
 function SidebarNavLink({
@@ -21,11 +22,13 @@ function SidebarNavLink({
   isActive,
   sidebarCollapsed,
   className,
+  premium,
 }: {
   item: NavItem;
   isActive: boolean;
   sidebarCollapsed: boolean;
   className: string;
+  premium: boolean;
 }) {
   const prefetchHandlers = useNavQueryPrefetch(item.href);
   const Icon = item.icon;
@@ -43,7 +46,13 @@ function SidebarNavLink({
         <Icon
           className={cn(
             "h-[18px] w-[18px] shrink-0",
-            isActive ? "text-brand" : "text-muted-foreground group-hover:text-foreground"
+            premium
+              ? isActive
+                ? "text-[#07110b]"
+                : "text-white/52 group-hover:text-white"
+              : isActive
+                ? "text-brand"
+                : "text-muted-foreground group-hover:text-foreground"
           )}
         />
       )}
@@ -61,7 +70,7 @@ function SidebarNavLink({
   );
 }
 
-export function Sidebar({ items, footer }: SidebarProps) {
+export function Sidebar({ items, footer, premium = false }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const allHrefs = items.map((item) => item.href);
@@ -69,25 +78,49 @@ export function Sidebar({ items, footer }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-card transition-all duration-300",
-        sidebarCollapsed ? "w-[72px]" : "w-64",
+        "fixed z-40 flex flex-col transition-all duration-300",
+        premium
+          ? "bottom-3 left-3 top-[calc(var(--demo-banner-height,0px)+12px)] rounded-3xl border border-white/10 bg-[#0e1310] text-white shadow-[0_22px_65px_rgba(14,19,16,0.2)]"
+          : "inset-y-0 left-0 border-r border-border bg-card",
+        sidebarCollapsed ? (premium ? "w-[80px]" : "w-[72px]") : (premium ? "w-[264px]" : "w-64"),
         "hidden lg:flex"
       )}
     >
-      <div className="flex h-16 items-center justify-between border-b border-border px-4">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
-            <Package2 className="h-4 w-4" />
-          </div>
-          {!sidebarCollapsed && (
-            <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
-          )}
-        </Link>
+      <div
+        className={cn(
+          "flex h-16 items-center justify-between px-4",
+          premium ? "border-b border-white/8" : "border-b border-border"
+        )}
+      >
+        {premium ? (
+          !sidebarCollapsed && (
+            <Link
+              href="/"
+              className="flex min-h-11 min-w-0 items-center text-lg font-semibold tracking-[-0.04em] text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a]"
+            >
+              {APP_NAME}
+            </Link>
+          )
+        ) : (
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
+              <Package2 className="h-4 w-4" />
+            </div>
+            {!sidebarCollapsed && (
+              <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
+            )}
+          </Link>
+        )}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           aria-label={sidebarCollapsed ? "Déplier le menu" : "Replier le menu"}
           className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+            premium
+              ? "flex h-11 w-11 items-center justify-center rounded-full transition-colors"
+              : "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+            premium
+              ? "text-white/45 hover:bg-white/10 hover:text-white"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
             sidebarCollapsed && "mx-auto"
           )}
         >
@@ -97,16 +130,21 @@ export function Sidebar({ items, footer }: SidebarProps) {
         </button>
       </div>
 
-      <ScrollArea className="flex-1 px-3 py-4">
-        <nav aria-label="Navigation principale" className="space-y-1">
+      <ScrollArea className={cn("flex-1 px-3", premium ? "py-3" : "py-4")}>
+        <nav aria-label="Navigation principale" className={cn("space-y-1", premium && "space-y-0.5")}>
           {items.map((item) => {
             const isActive = isNavItemActive(pathname, item.href, allHrefs);
             const Icon = item.icon;
             const className = cn(
-              "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-              isActive
-                ? "bg-brand-subtle text-brand"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              "group flex items-center gap-3 px-3 text-sm font-medium transition-all duration-200",
+              premium ? "min-h-11 rounded-xl py-2" : "rounded-lg py-2.5",
+              premium
+                ? isActive
+                  ? "bg-[#00d46a] text-[#07110b] shadow-[0_8px_24px_rgba(0,212,106,0.2)]"
+                  : "text-white/58 hover:bg-white/[0.075] hover:text-white"
+                : isActive
+                  ? "bg-brand-subtle text-brand"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               item.disabled && "cursor-not-allowed opacity-50"
             );
 
@@ -143,6 +181,7 @@ export function Sidebar({ items, footer }: SidebarProps) {
                 isActive={isActive}
                 sidebarCollapsed={sidebarCollapsed}
                 className={className}
+                premium={premium}
               />
             );
           })}
@@ -150,7 +189,7 @@ export function Sidebar({ items, footer }: SidebarProps) {
       </ScrollArea>
 
       {footer && !sidebarCollapsed && (
-        <div className="border-t border-border p-4">{footer}</div>
+        <div className={cn("p-4", premium ? "border-t border-white/8" : "border-t border-border")}>{footer}</div>
       )}
     </aside>
   );

@@ -11,6 +11,7 @@ import { getInitials } from "@/lib/utils";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { Home, MapPin, User } from "lucide-react";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
+import { AppleNavbar } from "@/components/navigation/apple-navbar";
 
 const bottomNav = [
   { title: "Accueil", href: "/driver", icon: Home },
@@ -59,16 +60,16 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
 
   return (
     <div className="relative min-h-screen bg-background pb-24">
-      <header className="sticky top-[var(--demo-banner-height,0px)] z-30 flex h-14 items-center justify-between border-b border-border bg-card/80 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-        <div className="flex items-center gap-3">
+      <AppleNavbar maxWidthClassName="max-w-lg" innerClassName="justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-brand-subtle text-brand text-xs">
+            <AvatarFallback className="bg-[#dce7ef] text-xs font-semibold text-[#243447]">
               {user ? getInitials(user.firstName, user.lastName) : "D"}
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-sm font-medium leading-none">
+            <p className="truncate text-sm font-medium leading-none text-white">
               {user
                 ? formatDriverFromParts(
                     { firstName: user.firstName, lastName: user.lastName },
@@ -76,12 +77,12 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
                   )
                 : "Livreur"}
             </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-white/45">
               État GPS et synchronisation affichés ci-dessous
             </p>
           </div>
         </div>
-      </header>
+      </AppleNavbar>
 
       <main id="main-content" tabIndex={-1}><DriverServiceControl /><OrderMessagesInbox />{children}</main>
 

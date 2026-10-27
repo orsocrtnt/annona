@@ -7,10 +7,11 @@ import { isNavItemActive } from "@/lib/navigation/is-nav-item-active";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { useUIStore } from "@/stores/ui.store";
 import type { NavItem } from "@/types";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 interface MobileNavProps {
   items: NavItem[];
+  premium?: boolean;
 }
 
 function MobileNavLink({
@@ -41,7 +42,7 @@ function MobileNavLink({
   );
 }
 
-export function MobileNav({ items }: MobileNavProps) {
+export function MobileNav({ items, premium = false }: MobileNavProps) {
   const pathname = usePathname();
   const { mobileNavOpen, setMobileNavOpen } = useUIStore();
   const allHrefs = items.map((item) => item.href);
@@ -49,22 +50,33 @@ export function MobileNav({ items }: MobileNavProps) {
   return (
     <Dialog open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
       <DialogContent
-        className="left-0 top-0 h-[100dvh] w-72 max-w-[85vw] translate-x-0 translate-y-0 content-start gap-0 rounded-none border-y-0 border-l-0 bg-card p-4 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden"
+        className={cn(
+          "left-0 top-0 h-[100dvh] w-72 max-w-[85vw] translate-x-0 translate-y-0 content-start gap-0 border-y-0 border-l-0 p-4 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden",
+          premium ? "rounded-r-[28px] border-white/10 bg-[#0e1310] text-white" : "rounded-none bg-card"
+        )}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           document.querySelector<HTMLElement>('[aria-label="Ouvrir le menu"]')?.focus();
         }}
       >
-        <DialogTitle className="mb-6 pr-10 text-lg">Navigation</DialogTitle>
+        <DialogTitle className={cn("mb-6 pr-10 text-lg", premium && "text-white")}>Navigation</DialogTitle>
+        <DialogDescription className="sr-only">
+          Accédez aux rubriques de votre espace entreprise.
+        </DialogDescription>
         <nav aria-label="Navigation mobile" className="space-y-1">
           {items.map((item) => {
             const isActive = isNavItemActive(pathname, item.href, allHrefs);
             const Icon = item.icon;
             const className = cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-brand-subtle text-brand"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              premium && "min-h-11",
+              premium
+                ? isActive
+                  ? "bg-[#00d46a] text-[#07110b]"
+                  : "text-white/60 hover:bg-white/10 hover:text-white"
+                : isActive
+                  ? "bg-brand-subtle text-brand"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               item.disabled && "cursor-not-allowed opacity-50"
             );
 

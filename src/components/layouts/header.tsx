@@ -1,6 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import {
+  AppleNavbar,
+  appleNavbarIconButtonClass,
+} from "@/components/navigation/apple-navbar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -17,23 +21,24 @@ import Link from "next/link";
 interface HeaderProps {
   breadcrumbs?: BreadcrumbItem[];
   className?: string;
+  premium?: boolean;
 }
 
-export function Header({ breadcrumbs, className }: HeaderProps) {
+export function Header({ breadcrumbs, className, premium = false }: HeaderProps) {
   const { toggleMobileNav } = useUIStore();
   const { user, logout } = useAuth();
 
-  return (
-    <header
-      className={cn(
-        "sticky top-[var(--demo-banner-height,0px)] z-30 flex h-16 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-xl lg:px-6",
-        className
-      )}
-    >
+  const content = (
+    <>
       <Button
         variant="ghost"
         size="icon-sm"
-        className="lg:hidden"
+        className={cn(
+          premium
+            ? "h-11 w-11 rounded-full text-[#0e1310] hover:bg-black/[0.055]"
+            : appleNavbarIconButtonClass,
+          "lg:hidden"
+        )}
         onClick={toggleMobileNav}
         aria-label="Ouvrir le menu"
       >
@@ -41,23 +46,48 @@ export function Header({ breadcrumbs, className }: HeaderProps) {
       </Button>
 
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Fil d'Ariane" className="hidden items-center gap-1.5 text-sm md:flex">
+        <nav
+          aria-label="Fil d'Ariane"
+          className={cn(
+            "hidden items-center gap-1.5 text-sm md:flex",
+            premium ? "text-[#667069]" : "text-white/55"
+          )}
+        >
           {breadcrumbs.map((item, i) => (
             <div key={i} className="flex items-center gap-1.5">
-              {i > 0 && <span className="text-muted-foreground">/</span>}
+              {i > 0 && <span className={premium ? "text-black/25" : "text-white/30"}>/</span>}
               {item.href ? (
                 <Link
                   href={item.href}
-                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  className={cn(
+                    "rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2",
+                    premium
+                      ? "hover:text-[#0e1310] focus-visible:ring-[#00d46a]"
+                      : "hover:text-white focus-visible:ring-white/80"
+                  )}
                 >
                   {item.label}
                 </Link>
               ) : (
-                <span className="font-medium text-foreground">{item.label}</span>
+                <span className={cn("font-medium", premium ? "text-[#0e1310]" : "text-white")}>{item.label}</span>
               )}
             </div>
           ))}
         </nav>
+      )}
+
+      {premium && (
+        <>
+          <Link
+            href="/"
+            className="text-[15px] font-semibold tracking-[-0.04em] text-[#0e1310] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d46a] lg:hidden"
+          >
+            TutelLiv
+          </Link>
+          <p className="hidden text-sm font-medium text-[#667069] lg:block">
+            Centre de pilotage
+          </p>
+        </>
       )}
 
       <div className="ml-auto flex items-center gap-2">
@@ -65,21 +95,29 @@ export function Header({ breadcrumbs, className }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <button
               aria-label="Ouvrir le menu du compte"
-              className="flex items-center gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className={cn(
+                "flex items-center gap-2.5 px-1.5 pr-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2",
+                premium
+                  ? "min-h-11 rounded-full border border-black/[0.07] bg-white/72 text-[#0e1310] shadow-[0_8px_30px_rgba(14,19,16,0.06)] hover:bg-white focus-visible:ring-[#00d46a]"
+                  : "min-h-10 rounded-xl border border-white/10 bg-white/[0.06] text-white hover:bg-white/[0.1] focus-visible:ring-white/80"
+              )}
             >
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.avatarUrl ?? undefined} />
-                <AvatarFallback className="bg-brand-subtle text-brand text-xs">
-                  {user
-                    ? getInitials(user.firstName, user.lastName)
-                    : "U"}
+                <AvatarFallback
+                  className={cn(
+                    "text-xs font-semibold",
+                    premium ? "bg-[#0e1310] text-white" : "bg-[#dce7ef] text-[#243447]"
+                  )}
+                >
+                  {user ? getInitials(user.firstName, user.lastName) : "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="hidden text-left md:block">
                 <p className="text-sm font-medium leading-none">
                   {user ? `${user.firstName} ${user.lastName}` : "Utilisateur"}
                 </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className={cn("mt-0.5 text-xs", premium ? "text-[#5f6962]" : "text-white/45")}>
                   {user?.role.name ?? "—"}
                 </p>
               </div>
@@ -102,6 +140,27 @@ export function Header({ breadcrumbs, className }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </>
+  );
+
+  if (premium) {
+    return (
+      <header
+        className={cn(
+          "sticky top-[var(--demo-banner-height,0px)] z-30 px-3 pt-3 lg:px-8 lg:pt-4",
+          className
+        )}
+      >
+        <div className="mx-auto flex h-14 max-w-[1480px] items-center gap-3 rounded-[18px] border border-white/70 bg-white/64 px-3 shadow-[0_12px_44px_rgba(14,19,16,0.055)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/58 lg:px-4">
+          {content}
+        </div>
+      </header>
+    );
+  }
+
+  return (
+    <AppleNavbar className={className} maxWidthClassName="max-w-none">
+      {content}
+    </AppleNavbar>
   );
 }
