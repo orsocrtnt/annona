@@ -352,9 +352,9 @@ export function CreateOrderForm({
                 </div>
 
                 {addresses && addresses.length > 0 && (
-                  <FormField label="Adresse enregistrée">
+                  <FormField label="Adresse enregistrée" htmlFor="order-stop-saved-address">
                     <Select onValueChange={(id) => applyAddress(id, "stop")}>
-                      <SelectTrigger>
+                      <SelectTrigger id="order-stop-saved-address">
                         <SelectValue placeholder="Choisir une adresse..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -578,12 +578,12 @@ export function CreateOrderForm({
                   </div>
 
                   {addresses && addresses.length > 0 && (
-                    <FormField label="Adresse enregistrée">
+                    <FormField label="Adresse enregistrée" htmlFor="order-pickup-saved-address">
                       <Select
                         key={`pickup-address-${pickupStopFields[activePickupIndex].id}`}
                         onValueChange={(id) => applyAddress(id, "pickupStop")}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="order-pickup-saved-address">
                           <SelectValue placeholder="Choisir une adresse..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -649,9 +649,9 @@ export function CreateOrderForm({
           <div className="space-y-4">
             <h3 className="font-medium">{isCourier ? "Adresse de livraison" : "Livraison"}</h3>
             {addresses && addresses.length > 0 && (
-              <FormField label="Adresse enregistrée">
+              <FormField label="Adresse enregistrée" htmlFor="order-shipping-saved-address">
                 <Select onValueChange={(id) => applyAddress(id, "shipping")}>
-                  <SelectTrigger>
+                  <SelectTrigger id="order-shipping-saved-address">
                     <SelectValue placeholder="Choisir une adresse..." />
                   </SelectTrigger>
                   <SelectContent>

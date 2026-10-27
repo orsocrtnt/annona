@@ -337,12 +337,12 @@ export function CreateRecurringOrderForm({
               </div>
 
               {addresses && addresses.length > 0 && (
-                <FormField label="Adresse enregistrée">
+                <FormField label="Adresse enregistrée" htmlFor="recurring-pickup-saved-address">
                   <Select
                     key={`pickup-address-${pickupStopFields[activePickupIndex].id}`}
                     onValueChange={(id) => applyAddress(id, "pickupStop")}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="recurring-pickup-saved-address">
                       <SelectValue placeholder="Choisir une adresse..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -410,9 +410,9 @@ export function CreateRecurringOrderForm({
       <div className="space-y-4">
         <h3 className="font-medium">Adresse de livraison</h3>
         {addresses && addresses.length > 0 && (
-          <FormField label="Adresse enregistrée">
+          <FormField label="Adresse enregistrée" htmlFor="recurring-shipping-saved-address">
             <Select onValueChange={(id) => applyAddress(id, "shipping")}>
-              <SelectTrigger>
+              <SelectTrigger id="recurring-shipping-saved-address">
                 <SelectValue placeholder="Choisir une adresse..." />
               </SelectTrigger>
               <SelectContent>

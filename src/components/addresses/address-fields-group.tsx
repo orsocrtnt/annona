@@ -146,9 +146,15 @@ export function AddressFieldsGroup({
               aria-describedby={addressError ? `${addressInputId}-error` : undefined}
               placeholder={addressPlaceholder}
               autoComplete="off"
+              role="combobox"
               aria-autocomplete="list"
-              aria-expanded={open}
+              aria-expanded={open && suggestions.length > 0}
               aria-controls={listId}
+              aria-activedescendant={
+                open && highlightedIndex >= 0 && highlightedIndex < suggestions.length
+                  ? `${listId}-${highlightedIndex}`
+                  : undefined
+              }
               onChange={(event) => updateField("address", event.target.value)}
               onFocus={() => {
                 if (values.address.trim().length >= 3) setOpen(true);
@@ -156,7 +162,7 @@ export function AddressFieldsGroup({
               onKeyDown={handleAddressKeyDown}
             />
             {loading && (
-              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-hidden="true" />
             )}
           </div>
         </FormField>
@@ -165,24 +171,25 @@ export function AddressFieldsGroup({
           <ul
             id={listId}
             role="listbox"
+            aria-label="Suggestions d'adresse"
             className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-background py-1 shadow-lg"
           >
             {suggestions.map((suggestion, index) => (
-              <li key={suggestion.id} role="option" aria-selected={highlightedIndex === index}>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-muted/70",
-                    highlightedIndex === index && "bg-muted/70"
-                  )}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => applySuggestion(suggestion)}
-                >
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                  <span>
-                    <span className="block font-medium">{suggestion.label}</span>
-                  </span>
-                </button>
+              // Combobox : le focus reste dans le champ (flèches + Entrée) ; une option se choisit aussi au clic.
+              <li
+                key={suggestion.id}
+                id={`${listId}-${index}`}
+                role="option"
+                aria-selected={highlightedIndex === index}
+                className={cn(
+                  "flex w-full cursor-pointer items-start gap-2 px-3 py-2 text-left text-sm hover:bg-muted/70",
+                  highlightedIndex === index && "bg-muted/70"
+                )}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applySuggestion(suggestion)}
+              >
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+                <span className="block font-medium">{suggestion.label}</span>
               </li>
             ))}
           </ul>
