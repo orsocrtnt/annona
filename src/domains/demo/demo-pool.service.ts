@@ -6,6 +6,7 @@ import {
   DEMO_POOL_COMPANY_PREFIX,
   DEMO_POOL_KEY,
   DEMO_POOL_MIN_READY,
+  isDemoScenarioOutdated,
 } from "@/lib/demo/constants";
 import { DEFAULT_DISPATCH_SETTINGS } from "@/lib/validations/dispatch-settings";
 import { ensureDemoSessionRosterUsers } from "@/domains/demo/demo-users.service";
@@ -411,6 +412,8 @@ export async function recycleDemoPoolEnvironment(
       environment.poolKey,
       options.assertStorageEmpty ?? assertDemoStorageEmpty
     );
+    // Roster à jour (livreurs ajoutés au scénario) avant de recréer les livraisons.
+    await ensureDemoSessionRosterUsers(companyId);
     await resetDemoScenario(companyId, now, { ensureCanonicalRoster: false });
     await prisma.demoPoolEnvironment.update({
       where: { id: environment.id },
@@ -463,6 +466,21 @@ export async function recoverStaleDemoPoolWorkers(now = new Date(), poolKey = DE
   return result.count;
 }
 
+/** Espaces libres préparés avec une ancienne version du scénario : à recycler. */
+export async function queueOutdatedDemoPoolEnvironments(now = new Date(), poolKey = DEMO_POOL_KEY): Promise<number> {
+  const ready = await prisma.demoPoolEnvironment.findMany({
+    where: { poolKey, state: "READY", leaseKeyHash: null },
+    select: { id: true, company: { select: { settings: true } } },
+  });
+  const outdated = ready.filter((environment) => isDemoScenarioOutdated(environment.company.settings));
+  if (outdated.length === 0) return 0;
+  const result = await prisma.demoPoolEnvironment.updateMany({
+    where: { id: { in: outdated.map((environment) => environment.id) }, state: "READY", leaseKeyHash: null },
+    data: { state: "RECYCLING", recycleRequestedAt: now, lastFailureCode: null },
+  });
+  return result.count;
+}
+
 export async function maintainDemoPool(options: {
   now?: Date;
   poolKey?: string;
@@ -473,6 +491,7 @@ export async function maintainDemoPool(options: {
   const poolKey = options.poolKey ?? DEMO_POOL_KEY;
   const limit = Math.max(1, Math.min(options.limit ?? 3, 10));
   await queueExpiredDemoPoolLeases(now, poolKey);
+  await queueOutdatedDemoPoolEnvironments(now, poolKey);
   await recoverStaleDemoPoolWorkers(now, poolKey);
   const queued = await prisma.demoPoolEnvironment.findMany({
     where: { poolKey, state: "RECYCLING" },

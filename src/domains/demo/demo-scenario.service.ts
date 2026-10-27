@@ -15,6 +15,7 @@ import {
 import {
   DEMO_FIXTURE_CLIENTS,
   DEMO_FIXTURE_DRIVERS,
+  DEMO_SCENARIO_VERSION,
 } from "@/lib/demo/constants";
 import { createAdminClient } from "@/services/supabase/admin";
 import { formatDriverDisplayName } from "@/lib/format/person-labels";
@@ -1017,6 +1018,16 @@ export async function resetDemoScenario(
     companyId,
     drivers.map((driver) => driver.id)
   );
+
+  // Marque la version du scénario : la maintenance du pool recycle les espaces dépassés.
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
+  const settings = company?.settings && typeof company.settings === "object" && !Array.isArray(company.settings)
+    ? (company.settings as Record<string, unknown>)
+    : {};
+  await prisma.company.update({
+    where: { id: companyId },
+    data: { settings: { ...settings, demoScenarioVersion: DEMO_SCENARIO_VERSION } },
+  });
 
   return { deliveries: scenarios.length };
 }

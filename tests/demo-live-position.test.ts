@@ -48,3 +48,14 @@ test("les routes des cartes avancent les positions de démo sans bloquer la lect
     assert.match(source, /advanceDemoDriverPositions\(companyId\)\.catch\(/, file);
   }
 });
+
+test("un espace démo préparé avec une autre version du scénario est considéré comme dépassé", async () => {
+  const { DEMO_SCENARIO_VERSION, isDemoScenarioOutdated } = await import("../src/lib/demo/constants");
+  assert.equal(isDemoScenarioOutdated({ demoScenarioVersion: DEMO_SCENARIO_VERSION }), false);
+  assert.equal(isDemoScenarioOutdated({ demoScenarioVersion: "ancienne" }), true);
+  assert.equal(isDemoScenarioOutdated({}), true, "espace préparé avant le marquage");
+  assert.equal(isDemoScenarioOutdated(null), true);
+  const pool = readFileSync("src/domains/demo/demo-pool.service.ts", "utf8");
+  assert.match(pool, /await queueOutdatedDemoPoolEnvironments\(now, poolKey\);/);
+  assert.match(pool, /await ensureDemoSessionRosterUsers\(companyId\);\n\s*await resetDemoScenario\(companyId, now/);
+});

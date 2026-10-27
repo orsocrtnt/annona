@@ -42,6 +42,19 @@ export const DEMO_POOL_COMPANY_PREFIX = `${DEMO_COMPANY_SLUG}-pool-`;
 export const DEMO_POOL_KEY = "public";
 export const DEMO_POOL_MIN_READY = 3;
 
+/**
+ * Version du scénario de démo. À changer à chaque modification du scénario : les espaces
+ * du pool préparés avec une autre version sont recyclés par la maintenance du pool.
+ */
+export const DEMO_SCENARIO_VERSION = "2026-10-26-paris";
+
+export function isDemoScenarioOutdated(settings: unknown): boolean {
+  const marker = settings && typeof settings === "object" && !Array.isArray(settings)
+    ? (settings as Record<string, unknown>).demoScenarioVersion
+    : undefined;
+  return marker !== DEMO_SCENARIO_VERSION;
+}
+
 export type DemoPersona = "admin" | "client" | "driver";
 
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
