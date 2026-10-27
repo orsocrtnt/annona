@@ -46,27 +46,25 @@ COST-1 documentaire est terminée ; sa phase mesurée attend PERF-02 et les pilo
 
 Liste unique des actions qui ne peuvent pas être faites par un agent, classées par urgence. Mise à jour le 27 octobre 2026 ; un agent la tient à jour et la retire ligne par ligne quand l'action est constatée.
 
-Fait le 27 octobre 2026 sur instruction du propriétaire : relecture de la branche `todo/agent2-backlog`, application en préproduction des migrations `contact_messages` puis `sales_codes` (aucun écart avec le schéma), puis fusion dans `preproduction`.
+Fait le 27 octobre 2026 sur instruction du propriétaire : relecture de la branche `todo/agent2-backlog`, application en préproduction des migrations `contact_messages` puis `sales_codes` (aucun écart avec le schéma), puis fusion dans `preproduction`. Le même jour, toujours sur instruction : fonctions Vercel de préproduction passées de `iad1` à Paris (`cdg1`), et projet Supabase de développement réactivé (la copie `tutelliv-restore-rehearsal` a été mise en pause pour libérer la place du plan gratuit, sans rien supprimer).
 
 **Urgent — sécurité et chaîne de livraison**
-1. Changer le mot de passe de l'ancienne base de développement `wlomrzil…`, exposé dans un journal d'outil le 26 octobre. → ENV-2
-2. Réactiver le projet Supabase de développement en pause, ou en créer un autre, puis mettre à jour `.env.local`. En attendant, toute recette locale passe par `.env.preproduction.local`. → ENV-2
-3. Vérifier dans Vercel → Settings → Functions la région des fonctions de préproduction (hypothèse `iad1` alors que la base est à Paris) ; l'accès Vercel de l'agent n'est pas autorisé pour l'équipe `tutelliv`. → ENV-2, PERF-02
+1. **Maintenant, le projet est de nouveau actif :** changer le mot de passe de la base de développement `wlomrzil…` (Supabase → Project Settings → Database → Reset database password), exposé dans un journal d'outil le 26 octobre. Mettre ensuite la nouvelle adresse dans `.env.local` du dossier principal (celui de l'agent design), ou laisser un agent le faire pendant une pause de l'agent design. → ENV-2
 
 **Décisions produit** — toutes prises le 27 octobre 2026 (voir `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, section C10) : impayé et changement de formule pendant la découverte (SAAS-04), refus d'une baisse avec ressources en excès et journal d'abonnement autorisé sur préproduction (SAAS-03), un code permanent par commercial (SALES-1), Contact stocké dans le back-office plateforme (GROWTH-1), seuils 80/100/120 % et Business (SAAS-02), sessions de test démo libérées après une heure.
 
 Complément du même jour : une résiliation pendant la découverte la termine immédiatement (SAAS-04), la migration des codes commerciaux est autorisée (application en préproduction après fusion, SALES-1) et un compte super-administrateur temporaire peut être créé sur la préproduction pour les recettes navigateur, puis supprimé.
 
 **Ressources et comptes**
-4. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
-5. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
-6. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
-7. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
+2. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
+3. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
+4. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
+5. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
 
 **Juridique et terrain**
-8. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
-9. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
-10. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
+6. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
+7. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
+8. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
 
 ### Dépendances fournisseur ou validation extérieure
 
@@ -251,6 +249,8 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
   Terminé quand : le mot de passe exposé est changé ; `.env.local` pointe vers une cible de développement joignable, distincte de la préproduction et de la production ; `npm run dev` permet une connexion démo et `npm run test:e2e` démarre sans contournement ; aucun secret n'est versionné.
 
   Source / dépendance / blocage : ajoutée lors de la revue du 26 octobre 2026 à partir de `docs/rapports/CLAUDE_STABILISATION_HANDOFF.md` (E2). Action du propriétaire : réactiver le projet gratuit en pause ou en créer un autre. Contournement en attendant : lancer l'application avec `.env.preproduction.local` sur la préproduction autorisée (commande dans le rapport de passation).
+
+  Avancement du 2026-10-27, sur instruction du propriétaire. **Région** : les fonctions de préproduction tournaient en `iad1` (Washington) pour une base à Paris. `vercel.json` les fixe désormais en `cdg1`. Ce réglage est versionné : la production `main` ne change pas tant qu'elle n'est pas fusionnée. Test : `tests/env2-vercel-region.test.ts`. Mesure sur le déploiement protégé, 12 appels `GET /api/signup` après chauffe, tous en 200 : médiane **886 ms avant, 332 ms après**. **Projet de développement** : `wlomrzil…` est réactivé (`ACTIVE_HEALTHY`) ; `tutelliv-restore-rehearsal` est en pause pour respecter les deux projets actifs du plan gratuit, sans suppression. Son schéma reste celui d'avant la base de migrations : 20 tables sans historique Prisma, 57 entreprises fictives, 25 comptes. Le code actuel en attend 39. Restent, dans cet ordre : changer le mot de passe exposé (tableau de bord, propriétaire), mettre `.env.local` à jour, puis mettre le schéma à niveau (marquer la migration initiale comme appliquée après comparaison, puis `migrate deploy`). **Constat** : le `.env.local` du dossier de l'agent 2 contient une clé Stripe de test valide (`livemode: false`, EUR, aucun client), vérifiée en lecture seule ; son origine reste à confirmer avant de lever le blocage Stripe de SAAS-01B.
 
 - [x] **SEC-02 — Bloquer les références étrangères dans le support.** Vérifier entreprise ET client pour relatedOrderId et relatedDeliveryId avant insertion et lecture.
 

@@ -59,7 +59,7 @@ Mesure du 27 octobre 2026 (MacBook, PostgreSQL 15.14 Homebrew), sans aucune erre
 | 8 | 25,2 / 30,5 ms | 303/s | 4,0 ms | 16,6 ms |
 | 16 | 59,2 / 91,7 ms | 230/s | 6,3 ms | 9,0 ms |
 
-Au-delà de 5 opérations simultanées, la latence de création croît à peu près proportionnellement : les opérations attendent une connexion libre du pool, sans erreur. Base locale sans réseau : ces chiffres mesurent le coût Prisma/PostgreSQL et la file du pool, pas l'aller-retour vers Supabase. Une création de commande enchaîne une dizaine d'allers-retours séquentiels, donc sa durée réelle approche 10 × la latence réseau vers la base. Exemples : environ 5,5 s depuis le poste local (≈ 550 ms par requête, DISPATCH-3), environ 1 s si les fonctions Vercel tournaient hors de Paris (≈ 90 ms, hypothèse non vérifiée, voir ENV-2). Ce sont des ordres de grandeur, pas des mesures d'hébergement.
+Au-delà de 5 opérations simultanées, la latence de création croît à peu près proportionnellement : les opérations attendent une connexion libre du pool, sans erreur. Base locale sans réseau : ces chiffres mesurent le coût Prisma/PostgreSQL et la file du pool, pas l'aller-retour vers Supabase. Une création de commande enchaîne une dizaine d'allers-retours séquentiels, donc sa durée réelle approche 10 × la latence réseau vers la base. Exemples : environ 5,5 s depuis le poste local (≈ 550 ms par requête, DISPATCH-3), environ 1 s avec des fonctions Vercel hors de Paris (≈ 90 ms ; constaté le 27 octobre 2026 : la préproduction tournait en `iad1`, désormais en `cdg1`, voir ENV-2). Ce sont des ordres de grandeur, pas des mesures d'hébergement.
 
 ## Serveur Next local, routes publiques (2026-10-27)
 
