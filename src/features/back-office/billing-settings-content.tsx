@@ -61,8 +61,9 @@ function CourierPricingSection({
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label>Forfait de prise en charge (€)</Label>
+            <Label htmlFor="billing-base-price">Forfait de prise en charge (€)</Label>
             <Input
+              id="billing-base-price"
               type="number"
               min="0"
               step="0.01"
@@ -71,8 +72,9 @@ function CourierPricingSection({
             />
           </div>
           <div className="space-y-1">
-            <Label>Prix au km (€)</Label>
+            <Label htmlFor="billing-price-per-km">Prix au km (€)</Label>
             <Input
+              id="billing-price-per-km"
               type="number"
               min="0"
               step="0.01"
@@ -81,8 +83,9 @@ function CourierPricingSection({
             />
           </div>
           <div className="space-y-1">
-            <Label>Minimum facturable (€)</Label>
+            <Label htmlFor="billing-minimum-price">Minimum facturable (€)</Label>
             <Input
+              id="billing-minimum-price"
               type="number"
               min="0"
               step="0.01"
@@ -91,8 +94,9 @@ function CourierPricingSection({
             />
           </div>
           <div className="space-y-1">
-            <Label>Km inclus dans le forfait</Label>
+            <Label htmlFor="billing-included-km">Km inclus dans le forfait</Label>
             <Input
+              id="billing-included-km"
               type="number"
               min="0"
               step="0.1"
@@ -101,8 +105,9 @@ function CourierPricingSection({
             />
           </div>
           <div className="space-y-1">
-            <Label>Majoration nuit (%)</Label>
+            <Label htmlFor="billing-night-surcharge">Majoration nuit (%)</Label>
             <Input
+              id="billing-night-surcharge"
               type="number"
               min="0"
               max="100"
@@ -114,8 +119,9 @@ function CourierPricingSection({
             />
           </div>
           <div className="space-y-1">
-            <Label>Majoration week-end (%)</Label>
+            <Label htmlFor="billing-weekend-surcharge">Majoration week-end (%)</Label>
             <Input
+              id="billing-weekend-surcharge"
               type="number"
               min="0"
               max="100"
@@ -206,8 +212,9 @@ function InvoiceGeneralSection({
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label>TVA (%)</Label>
+          <Label htmlFor="billing-vat-rate">TVA (%)</Label>
           <Input
+            id="billing-vat-rate"
             type="number"
             min="0"
             max="100"
@@ -217,8 +224,9 @@ function InvoiceGeneralSection({
           />
         </div>
         <div className="space-y-1">
-          <Label>Délai de paiement (jours)</Label>
+          <Label htmlFor="billing-due-days">Délai de paiement (jours)</Label>
           <Input
+            id="billing-due-days"
             type="number"
             min="1"
             max="365"
@@ -230,16 +238,18 @@ function InvoiceGeneralSection({
           />
         </div>
         <div className="space-y-1 sm:col-span-2">
-          <Label>Préfixe des références</Label>
+          <Label htmlFor="billing-reference-prefix">Préfixe des références</Label>
           <Input
+            id="billing-reference-prefix"
             placeholder="FAC"
             value={invoice.referencePrefix}
             onChange={(e) => updateInvoice({ referencePrefix: e.target.value.toUpperCase() })}
           />
         </div>
         <div className="space-y-1 sm:col-span-2">
-          <Label>Note de pied de page (optionnel)</Label>
+          <Label htmlFor="billing-footer-note">Note de pied de page (optionnel)</Label>
           <Input
+            id="billing-footer-note"
             placeholder="Merci pour votre confiance."
             value={invoice.footerNote}
             onChange={(e) => updateInvoice({ footerNote: e.target.value })}
