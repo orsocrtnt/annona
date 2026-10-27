@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**56 tâches terminées sur 80 — 70 %**
+**57 tâches terminées sur 81 — 70 %**
 
 `██████████████░░░░░░` · 24 tâches restantes
 
@@ -473,6 +473,16 @@ Statuts ET localisation sont demandés. Leur présence dans le code ne suffit pa
   Validation : 157 tests, types/lint sans erreur bloquante, build de 96 pages et recette connectée réussis. Service fermé et absence de mission refusés 409 sans écriture ; signal frais, périmé sans coordonnées, redevenu frais puis hors service vérifiés depuis les rôles chauffeur/client. Permission, réseau et réponses invalides injectés côté client et rendus avec annonces accessibles. Toutes les fixtures Auth/base supprimées ; empreinte des préexistants identique. Rapport `docs/rapports/2026-10-14/mob01a.md`, règles `docs/operations/mob01a/README.md`, preuve `outputs/mob01a/connected-final.json`.
 
   Limites : téléphones physiques, écran verrouillé et arrière-plan restent MOB-01C ; coupures d'actions métier MOB-01B ; pannes du fournisseur cartographique MAP-2. Suite : UX-01.
+
+- [x] **TRACK-2 — Dernier signal des livreurs et position estimée entre deux signaux.** Afficher sur toutes les cartes l'âge du dernier signal et garder le livreur visible quand le signal se perd, avec une position estimée clairement signalée.
+
+  Terminé quand : « En direct » (vert) ou « Il y a X min » (jaune) sous le nom, rafraîchi seul ; au-delà du seuil de fraîcheur pendant une mission, position estimée en ligne droite vers la prochaine étape à 25 km/h pendant 10 min au plus, puis dernière position connue marquée « Signal perdu » ; marqueur estimé distinct ; visible par l'administration, le dispatch et le client ; démo avec livreurs en direct, estimé et au signal perdu.
+
+  Résultat vérifié le 2026-10-27 (décisions du propriétaire du même jour) : `trackingTarget` choisit la prochaine étape (destination en livraison ou course collectée, première collecte localisée d'une course en route, aucune sinon) et `trackingPosition` renvoie en STALE la position estimée (`estimated`) ou la dernière connue, au lieu de coordonnées nulles. Cartes des chauffeurs, du dispatch et du portail, et suivi de commande, branchés sans changer droits ni périmètre (service ouvert et mission démarrée toujours exigés, fin de mission/service masque toujours). Marqueur : libellé du signal rafraîchi toutes les 30 s, pastille verte ou jaune (plus de rouge), point translucide à bordure pointillée pour l'estimation. Suivi de commande : « Position estimée », « Signal interrompu », « Signal perdu ». Page Fonctionnalités alignée. Démo : retard fictif figé par livreur au reset (0, 0, 3 min, 0, 15 min), simulation datée d'autant, réservée aux entreprises de démo.
+
+  Validation : `npm run check` vert (634 tests, types, lint) ; tests de la règle (mi-chemin, plafond, coupure à 10 min, sans cible, choix de la cible), des trois services, des libellés et de la démo. Navigateur sur la préproduction en démo (espace recyclé normalement) : carte des chauffeurs 3 « En direct », 1 « Il y a 3 min · Position estimée » en pointillés, 1 « Il y a 15 min · Signal perdu », clic sur le marqueur estimé ; carte dispatch identique ; portail client avec livreur au signal perdu et suivi « Signal perdu : dernière position connue. » ; 0 erreur console ; axe 0 sur la carte des chauffeurs et le portail, ordinateur et 390 px.
+
+  Limites : estimation en ligne droite, pas sur la route ; elle n'avance qu'à chaque actualisation (10 s). Aucun GPS physique (MOB-01C). Les retards démo s'appliquent au prochain recyclage normal de chaque espace (version du scénario inchangée, pas de réinitialisation implicite). Le client démo n'a pas de livraison au livreur estimé : ce cas côté portail est couvert par les tests de service et par la carte dispatch. Préexistant hors périmètre : contraste 4,44:1 des pastilles orange du panneau `/dispatch/map` (`dispatch-map-status.ts`). Branche locale `feat/suivi-position-estimee`, non poussée.
 
   Visibilité : appliquer les droits de TRACK-1 ; aucune carte globale des autres clients pour un client, ni suivi hors mission/service sous couvert de centralisation.
 
@@ -1456,3 +1466,5 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-23 — SIGNUP-1 vérifiée après reprise externe : 315 tests, types/lint, garde préproduction, scanner de secrets, build de 106 pages, CI distante, Preview et recette connectée passent avec nettoyage exact. Le clic réel Entreprise → Options → Entreprise conserve les saisies ; un saut vers une étape future sans enregistrer les options, découvert pendant la recette, est désormais interdit. Supabase conserve un intervalle fournisseur de 60 s tant qu'aucun SMTP personnalisé n'est configuré.
 
 - 2026-10-23 — OPS-03B terminée : la préproduction protégée est sondée depuis Supabase toutes les trente minutes grâce à un jeton Vercel dédié conservé dans Vault. Baseline réelle HTTP 200 et dépendances `ok`, panne fictive alertée en 80 ms, reprise réelle alertée en 1 369 ms, état final sain et un seul cron actif. Le schéma privé est inaccessible à `anon` et `authenticated`, le scanner trouve zéro secret et aucune donnée métier n'a été mutée. Le canal e-mail réel reste suivi séparément dans EMAIL. Rapport `docs/rapports/2026-10-23/ops03b-preproduction-monitor.md`.
+
+- 2026-10-27 — TRACK-2 terminée : dernier signal sous le nom du livreur sur toutes les cartes, position estimée 10 min vers la prochaine étape puis « Signal perdu », démo en direct/estimé/perdu. `npm run check` vert (634 tests) ; contrôle navigateur démo des trois cartes et du suivi client, axe et console à 0. Aucune migration ni push. Suite : MOB-01C pour le GPS physique.

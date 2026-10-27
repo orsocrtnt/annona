@@ -10,7 +10,7 @@ Une coordonnée obtenue localement ne signifie pas qu'elle est partagée. L'inte
 
 - Aucun observateur GPS n'est démarré lorsque le service est fermé ou qu'aucune mission n'est démarrée.
 - Le suivi est actif uniquement pendant un service ouvert et une mission en cours. La fréquence et le seuil de fraîcheur utilisent les réglages validés de l'entreprise.
-- Sans nouvelle confirmation avant le seuil, l'état chauffeur devient « position périmée ». Les vues partagées masquent déjà les coordonnées périmées selon la même règle serveur.
+- Sans nouvelle confirmation avant le seuil, l'état chauffeur devient « position périmée ». Les vues partagées appliquent la même règle serveur : depuis TRACK-2, position estimée puis dernière position connue, signalées comme telles.
 - La fermeture du service arrête l'observateur côté navigateur, supprime la position serveur et fait refuser toute publication tardive. La fin de mission applique la même protection serveur.
 - Le retour du réseau tente immédiatement de republier la dernière position locale ; un nouvel échec reste affiché.
 
