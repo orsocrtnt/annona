@@ -1,12 +1,11 @@
 import Link from "next/link";
 import type { DeliveryCategory } from "@prisma/client";
-import { Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatClientFromParts, formatDriverFromParts } from "@/lib/format/person-labels";
 import { formatDate } from "@/lib/utils";
 import { formatPlace } from "@/lib/format/place";
 import { fullDateLabel, relativeDayLabel } from "@/lib/format/relative-day";
-import { isOrderOverdue } from "@/lib/orders/overdue";
+import { TableDueCell, TableIdentityCell, TableRelativeDateCell } from "@/components/shared/table-cells";
 import { driverDaySegments, driverDaySentence, type DriverDay } from "@/lib/dispatch/workload-bars";
 import { cn } from "@/lib/utils";
 import type { CompanyOrder } from "./types";
@@ -117,83 +116,14 @@ export function plainClientName(order: {
   return name || order.customerEmail?.trim() || "Client non renseigné";
 }
 
-/**
- * Une ligne se reconnaît à son client et à son adresse ; la référence reste en
- * petit dessous, pour la recherche et les échanges avec le support.
- */
-export function TableIdentityCell({
-  href,
-  client,
-  place,
-  reference,
-}: {
-  href: string;
-  client: string;
-  place: string | null;
-  reference: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group block min-w-0 rounded-md py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
-    >
-      <span className="block truncate font-medium text-foreground group-hover:underline" title={client}>
-        {client}
-      </span>
-      {place && (
-        <span className="block truncate text-xs text-muted-foreground" title={place}>
-          {place}
-        </span>
-      )}
-      <span className="block truncate text-xs tabular-nums text-muted-foreground">{reference}</span>
-    </Link>
-  );
-}
-
 export function TableOrderCell({ order }: { order: CompanyOrder }) {
   return (
     <TableIdentityCell
       href={`/dashboard/orders/${order.id}`}
-      client={plainClientName(order)}
-      place={formatPlace(order.shippingAddress ?? order.pickupAddress, order.shippingCity)}
+      title={plainClientName(order)}
+      subtitle={formatPlace(order.shippingAddress ?? order.pickupAddress, order.shippingCity)}
       reference={order.reference}
     />
-  );
-}
-
-export function TableRelativeDateCell({ date }: { date: string }) {
-  return (
-    <time dateTime={date} title={fullDateLabel(date)} className="whitespace-nowrap text-muted-foreground">
-      {relativeDayLabel(date)}
-    </time>
-  );
-}
-
-/** Échéance ; un retard se voit sans lire la date (texte + icône, pas la couleur seule). */
-export function TableDueCell({
-  status,
-  date,
-  deadline,
-}: {
-  status: string;
-  date?: string | null;
-  /** Échéance qui fait foi pour le retard (date demandée par le client), si différente de la date affichée. */
-  deadline?: string | null;
-}) {
-  if (!date) return <span className="text-muted-foreground">—</span>;
-  const late = isOrderOverdue(status, deadline ?? date);
-  return (
-    <div className="whitespace-nowrap">
-      <time dateTime={date} title={fullDateLabel(date)} className={late ? "font-medium text-[#b3352a]" : undefined}>
-        {relativeDayLabel(date, undefined, { withTime: true })}
-      </time>
-      {late && (
-        <span className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#b3352a]">
-          <Clock className="h-3 w-3" aria-hidden="true" />
-          En retard
-        </span>
-      )}
-    </div>
   );
 }
 
@@ -269,3 +199,5 @@ export function TableDriverDayCell({ day, actions }: { day: DriverDay; actions?:
     </div>
   );
 }
+
+export { TableDueCell, TableIdentityCell, TableRelativeDateCell };

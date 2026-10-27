@@ -12,7 +12,6 @@ import { OrderStatusBadge } from "@/features/client-portal/status-badges";
 import { DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/features/client-portal/utils";
-import { formatDate } from "@/lib/utils";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { ShoppingBag, Plus, History } from "lucide-react";
 import type { TableColumn } from "@/types";
@@ -23,16 +22,20 @@ import {
   type OrderHistoryQuery,
 } from "@/lib/query/order-history";
 import { ACTIVE_ORDER_STATUSES } from "@/lib/constants/order-status";
+import { TableDueCell, TableIdentityCell, TableRelativeDateCell } from "@/components/shared/table-cells";
+import { formatPlace } from "@/lib/format/place";
 
 const columns: TableColumn<PortalOrder>[] = [
   {
+    // L'adresse identifie la commande ; la référence reste en petit dessous.
     key: "reference",
-    header: "Référence",
-    sortable: true,
+    header: "Commande",
     cell: (row) => (
-      <Link href={`/portal/orders/${row.id}`} className="font-medium text-brand hover:underline">
-        {row.reference}
-      </Link>
+      <TableIdentityCell
+        href={`/portal/orders/${row.id}`}
+        title={formatPlace(row.shippingAddress ?? row.pickupAddress, row.shippingCity) ?? DELIVERY_CATEGORY_LABELS[row.deliveryCategory ?? "STANDARD"]}
+        reference={row.reference}
+      />
     ),
   },
     {
@@ -46,11 +49,17 @@ const columns: TableColumn<PortalOrder>[] = [
     ),
   },
   {
+    key: "requestedDeliveryDate",
+    header: "Livraison prévue",
+    hideOnMobile: true,
+    cell: (row) => <TableDueCell status={row.status} date={row.requestedDeliveryDate} />,
+  },
+  {
     key: "createdAt",
-    header: "Date",
+    header: "Créée",
     sortable: true,
     hideOnMobile: true,
-    cell: (row) => formatDate(row.createdAt),
+    cell: (row) => <TableRelativeDateCell date={row.createdAt} />,
   },
   { key: "itemCount", header: "Articles", sortable: true, hideOnMobile: true },
   {

@@ -57,8 +57,8 @@ export function getDispatchColumns(): TableColumn<CompanyDelivery>[] {
       cell: (row) => (
         <TableIdentityCell
           href={`/dashboard/orders/${row.order.id}`}
-          client={plainClientName(row.order)}
-          place={getAddress(row) || null}
+          title={plainClientName(row.order)}
+          subtitle={getAddress(row) || null}
           reference={row.reference}
         />
       ),

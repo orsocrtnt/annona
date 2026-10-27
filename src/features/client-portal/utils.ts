@@ -25,3 +25,11 @@ export function etaDayLabel(date: string | null, now = new Date()): string {
   if (label === "Aujourd'hui" || label === "Hier" || label === "Demain") return label.toLowerCase();
   return `le ${label}`;
 }
+
+/** « Facture d'aujourd'hui », « Facture d'hier », « Facture du 27 oct. ». */
+export function invoiceTitle(createdAt: string, now = new Date()): string {
+  const label = relativeDayLabel(createdAt, now);
+  if (label === "Aujourd'hui") return "Facture d'aujourd'hui";
+  if (label === "Hier") return "Facture d'hier";
+  return `Facture du ${label}`;
+}

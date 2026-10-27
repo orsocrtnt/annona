@@ -13,7 +13,6 @@ import {
   ReorderOrderButton,
 } from "@/features/client-portal/reorder-order-button";
 import { formatCurrency } from "@/features/client-portal/utils";
-import { formatDate } from "@/lib/utils";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { History, ArrowLeft } from "lucide-react";
 import type { TableColumn } from "@/types";
@@ -24,20 +23,20 @@ import {
   type OrderHistoryQuery,
 } from "@/lib/query/order-history";
 import { HISTORY_ORDER_STATUSES } from "@/lib/constants/order-status";
+import { TableIdentityCell, TableRelativeDateCell } from "@/components/shared/table-cells";
+import { formatPlace } from "@/lib/format/place";
 
 const columns: TableColumn<PortalOrder>[] = [
   {
+    // L'adresse identifie la commande ; la référence reste en petit dessous.
     key: "reference",
-    header: "Référence",
-    sortable: true,
+    header: "Commande",
     cell: (row) => (
-      <Link
+      <TableIdentityCell
         href={`/portal/orders/${row.id}`}
-        className="font-medium text-brand hover:underline"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {row.reference}
-      </Link>
+        title={formatPlace(row.shippingAddress ?? row.pickupAddress, row.shippingCity) ?? "Commande"}
+        reference={row.reference}
+      />
     ),
   },
   {
@@ -45,7 +44,7 @@ const columns: TableColumn<PortalOrder>[] = [
     header: "Date",
     sortable: true,
     hideOnMobile: true,
-    cell: (row) => formatDate(row.createdAt),
+    cell: (row) => <TableRelativeDateCell date={row.createdAt} />,
   },
   { key: "itemCount", header: "Articles", sortable: true, hideOnMobile: true },
   {

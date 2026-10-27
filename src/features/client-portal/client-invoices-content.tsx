@@ -12,8 +12,8 @@ import {
   canReorderPortalOrder,
   ReorderOrderButton,
 } from "@/features/client-portal/reorder-order-button";
-import { formatCurrency } from "@/features/client-portal/utils";
-import { formatDate } from "@/lib/utils";
+import { formatCurrency, invoiceTitle } from "@/features/client-portal/utils";
+import { TableIdentityCell } from "@/components/shared/table-cells";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { FileText } from "lucide-react";
 import type { TableColumn } from "@/types";
@@ -39,28 +39,19 @@ export function ClientInvoicesContent({ initialInvoices }: ClientInvoicesContent
 
   const columns: TableColumn<PortalInvoice>[] = [
     {
-      key: "reference",
-      header: "Référence",
+      // « Facture du 27 oct. » plutôt qu'une référence ; la référence reste en petit dessous.
+      key: "createdAt",
+      header: "Facture",
       sortable: true,
-      className: "min-w-[8.5rem]",
+      className: "min-w-[9rem]",
       cell: (row) => (
-        <Link
+        <TableIdentityCell
           href={`/portal/invoices/${row.id}`}
-          className="font-medium text-brand hover:underline"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {row.reference}
-        </Link>
+          title={invoiceTitle(row.createdAt)}
+          reference={row.reference}
+        />
       ),
     },
-  {
-    key: "createdAt",
-    header: "Date",
-    sortable: true,
-    hideOnMobile: true,
-    className: "whitespace-nowrap",
-    cell: (row) => formatDate(row.createdAt),
-  },
     {
       key: "amount",
       header: "Montant",

@@ -67,3 +67,10 @@ test("la prochaine livraison dit son jour, pas seulement l'heure", async () => {
   assert.equal(etaDayLabel("2026-10-30T13:30:00Z", now), "le 30 oct.");
   assert.equal(etaDayLabel(null, now), "Aucune livraison prévue");
 });
+
+test("une facture se titre par sa date", async () => {
+  const { invoiceTitle } = await import("../src/features/client-portal/utils");
+  assert.equal(invoiceTitle("2026-10-27T08:00:00Z", now), "Facture d'aujourd'hui");
+  assert.equal(invoiceTitle("2026-10-26T08:00:00Z", now), "Facture d'hier");
+  assert.equal(invoiceTitle("2026-10-20T08:00:00Z", now), "Facture du 20 oct.");
+});
