@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageLoader } from "@/components/ui/loader";
 import { CompanyOnboardingProfile } from "@/features/back-office/onboarding-company-profile";
+import { CompanyLogoCard } from "@/features/back-office/company-logo-card";
 import { useAuthStore } from "@/stores/auth.store";
 import type { CompanyOnboardingStatus } from "@/domains/onboarding/onboarding.service";
 
@@ -100,6 +101,7 @@ export function OnboardingContent() {
 
       {readOnly && <Alert><AlertDescription>Ce compte est en lecture seule. Votre avancement reste consultable.</AlertDescription></Alert>}
       <CompanyOnboardingProfile key={JSON.stringify(data.companyProfile)} profile={data.companyProfile} readOnly={readOnly} />
+      <CompanyLogoCard readOnly={readOnly} title="Ajoutez votre logo" optional />
       {preference.error && <Alert variant="destructive" role="alert"><AlertDescription>{preference.error.message}</AlertDescription></Alert>}
       <div className="space-y-3" aria-label="Étapes de démarrage">
         {data.steps.map((step, index) => (

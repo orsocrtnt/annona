@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireAuth, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import {
+  companyHasLogo,
   readCompanyLogo,
   removeCompanyLogo,
   setCompanyLogo,
@@ -23,12 +24,19 @@ function logoError(error: unknown) {
   return NextResponse.json({ error: "Impossible d’enregistrer le logo pour le moment." }, { status: 500 });
 }
 
-/** Logo de l'entreprise de l'utilisateur connecté (équipe, client ou chauffeur), servi en privé. */
-export async function GET() {
+/**
+ * Logo de l'entreprise de l'utilisateur connecté (équipe, client ou chauffeur), servi en privé.
+ * `?meta=1` : seulement `{ hasLogo }`, pour ne demander l'image que si elle existe.
+ */
+export async function GET(request: Request) {
   const auth = await requireAuth();
   if ("error" in auth) return auth.error;
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+
+  if (new URL(request.url).searchParams.has("meta")) {
+    return NextResponse.json({ data: { hasLogo: await companyHasLogo(companyId) }, success: true });
+  }
 
   const png = await readCompanyLogo(companyId);
   if (!png) return NextResponse.json({ error: "Aucun logo" }, { status: 404 });

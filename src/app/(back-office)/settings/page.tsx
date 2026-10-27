@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loader";
+import { CompanyLogoCard } from "@/features/back-office/company-logo-card";
+import { useAuthStore } from "@/stores/auth.store";
 import { DELIVERY_CATEGORY_DESCRIPTIONS, DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import {
   useCompanyDeliveryOptions,
@@ -40,6 +42,7 @@ const CATEGORY_ICONS = {
 export default function SettingsPage() {
   const { data: options, isLoading } = useCompanyDeliveryOptions();
   const updateOptions = useUpdateCompanyDeliveryOptions();
+  const readOnly = useAuthStore((state) => state.saas?.canMutate === false);
   const [local, setLocal] = useState(options?.deliveryCategories);
 
   useEffect(() => {
@@ -86,6 +89,8 @@ export default function SettingsPage() {
           .
         </p>
       </div>
+
+      <CompanyLogoCard readOnly={readOnly} />
 
       <Card>
         <CardHeader>

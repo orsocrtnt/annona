@@ -51,6 +51,12 @@ export async function removeCompanyLogo(companyId: string) {
   }
 }
 
+/** Présence d'un logo, sans télécharger le fichier (affichage conditionnel côté interface). */
+export async function companyHasLogo(companyId: string): Promise<boolean> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { logoUrl: true } });
+  return isCompanyLogoPath(company?.logoUrl, companyId);
+}
+
 /** PNG du logo de l'entreprise, ou null (aucun logo, espace démo, fichier illisible). */
 export async function readCompanyLogo(companyId: string): Promise<Buffer | null> {
   const company = await prisma.company.findUnique({

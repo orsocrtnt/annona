@@ -6,7 +6,7 @@ import test from "node:test";
 import ts from "typescript";
 
 type Res = { status: number; body?: unknown; headers?: Record<string, string> };
-type Route = { GET(): Promise<Res>; POST(request: Request): Promise<Res>; DELETE(): Promise<Res> };
+type Route = { GET(request: Request): Promise<Res>; POST(request: Request): Promise<Res>; DELETE(): Promise<Res> };
 
 function loadRoute(options: { role?: string; serviceError?: string; logo?: Buffer | null } = {}) {
   const calls: string[] = [];
@@ -30,6 +30,7 @@ function loadRoute(options: { role?: string; serviceError?: string; logo?: Buffe
       setCompanyLogo: async () => { calls.push("set"); if (options.serviceError) throw new Error(options.serviceError); return { width: 480, height: 96 }; },
       removeCompanyLogo: async () => { calls.push("remove"); },
       readCompanyLogo: async () => options.logo ?? null,
+      companyHasLogo: async () => Boolean(options.logo),
     },
     "@/lib/storage/company-logo": { MAX_LOGO_UPLOAD_BYTES: 2 * 1024 * 1024 },
   };
@@ -38,7 +39,7 @@ function loadRoute(options: { role?: string; serviceError?: string; logo?: Buffe
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   runInNewContext(js, {
-    Error, Number, Buffer, Uint8Array, File, Promise, console: { error: () => undefined },
+    Error, Number, Buffer, Uint8Array, File, Promise, URL, console: { error: () => undefined },
     exports: loaded.exports, module: loaded, require: (id: string) => deps[id],
   });
   return { route: loaded.exports as Route, calls };
@@ -78,10 +79,19 @@ test("un envoi valide renvoie la taille du logo enregistré", async () => {
   assert.deepEqual(calls, ["set"]);
 });
 
+const get = (query = "") => new Request(`http://local.test/api/company/logo${query}`);
+
 test("le logo se lit en PNG privé, ou 404 s'il n'y en a pas", async () => {
-  assert.equal((await loadRoute({ logo: null }).route.GET()).status, 404);
-  const res = await loadRoute({ logo: Buffer.from("png") }).route.GET();
+  assert.equal((await loadRoute({ logo: null }).route.GET(get())).status, 404);
+  const res = await loadRoute({ logo: Buffer.from("png") }).route.GET(get());
   assert.equal(res.status, 200);
   assert.equal(res.headers?.["Content-Type"], "image/png");
   assert.match(res.headers?.["Cache-Control"] ?? "", /^private/);
+});
+
+test("la lecture méta dit seulement s'il y a un logo, toujours en 200", async () => {
+  const none = await loadRoute({ logo: null }).route.GET(get("?meta=1"));
+  assert.equal(none.status, 200);
+  assert.match(JSON.stringify(none.body), /"hasLogo":false/);
+  assert.match(JSON.stringify((await loadRoute({ logo: Buffer.from("png") }).route.GET(get("?meta=1"))).body), /"hasLogo":true/);
 });
