@@ -19,6 +19,8 @@ interface DataGridProps<T> {
   searchable?: boolean;
   searchPlaceholder?: string;
   searchKey?: keyof T;
+  /** Texte cherché par ligne, quand une seule colonne ne suffit pas (client, adresse, référence…). */
+  searchText?: (row: T) => string;
   pageSize?: number;
   paginate?: boolean;
   showResultCount?: boolean;
@@ -39,6 +41,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   searchable = true,
   searchPlaceholder = "Rechercher...",
   searchKey,
+  searchText,
   pageSize = 10,
   paginate = true,
   showResultCount = true,
@@ -66,10 +69,10 @@ export function DataGrid<T extends Record<string, unknown>>({
 
   const filtered = React.useMemo(() => {
     let result = [...data];
-    if (search && searchKey) {
+    if (search && (searchText || searchKey)) {
       const q = search.toLowerCase();
       result = result.filter((row) =>
-        String(row[searchKey]).toLowerCase().includes(q)
+        (searchText ? searchText(row) : String(row[searchKey!])).toLowerCase().includes(q)
       );
     }
     if (sortKey) {
@@ -81,7 +84,7 @@ export function DataGrid<T extends Record<string, unknown>>({
       });
     }
     return result;
-  }, [data, search, searchKey, sortKey, sortDir]);
+  }, [data, search, searchKey, searchText, sortKey, sortDir]);
 
   const totalPages = paginate ? Math.ceil(filtered.length / pageSize) : 1;
   const targetPage = React.useMemo(

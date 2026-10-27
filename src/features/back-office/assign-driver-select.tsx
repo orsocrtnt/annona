@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isSoftIneligibilityMessage } from "@/lib/dispatch/driver-eligibility";
-import { formatDriverFromParts } from "@/lib/format/person-labels";
+import { formatDriverFromParts, withoutRolePrefix } from "@/lib/format/person-labels";
 import { useAssignDelivery, useUnassignDelivery } from "./hooks";
 import { TABLE_SELECT_TRIGGER_CLASS } from "./table-ui";
 import {
@@ -239,7 +239,10 @@ export function AssignDriverSelect({
             disabled={assign.isPending}
           >
             <SelectTrigger aria-label="Assigner un chauffeur" className={TABLE_SELECT_TRIGGER_CLASS}>
-              <SelectValue placeholder={selectableCount > 0 ? "Chauffeur" : "Aucun compatible"} />
+              {/* Le livreur affecté n'est pas toujours dans la liste filtrée : on affiche quand même son nom. */}
+              <SelectValue placeholder={selectableCount > 0 ? "Chauffeur" : "Aucun compatible"}>
+                {driverId && assignedLabel ? withoutRolePrefix(assignedLabel) : undefined}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent align="start" className="max-h-48 min-w-[8.5rem]">
               <DriverSelectItems

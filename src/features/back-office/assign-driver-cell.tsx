@@ -11,7 +11,7 @@ interface AssignDriverCellProps {
 export function AssignDriverCell({ delivery }: AssignDriverCellProps) {
   return (
     <div className="space-y-1">
-    <MissionAcknowledgement {...delivery} />
+    <MissionAcknowledgement {...delivery} compact />
     <AssignDriverSelect
       deliveryId={delivery.id}
       status={delivery.status}

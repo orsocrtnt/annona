@@ -19,12 +19,13 @@ import {
 } from "@/features/back-office/dispatch-settings-hooks";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
-import { getDispatchColumns } from "@/features/back-office/dispatch-columns";
+import { dispatchSearchText, getDispatchColumns } from "@/features/back-office/dispatch-columns";
 import { MapPin, Radio, RefreshCw, Settings2, Sparkles, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DeliveryCategory } from "@prisma/client";
 import type { TableColumn } from "@/types";
+import type { CompanyDelivery } from "@/features/back-office/types";
 import { resolveDispatchFocus } from "@/features/back-office/dispatch-focus";
 import { lockedOfferReason } from "@/domains/saas/saas-access";
 import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
@@ -365,8 +366,8 @@ function DispatcherDashboardContent() {
                 <DataGrid
                   data={queue as unknown as Record<string, unknown>[]}
                   columns={columns as unknown as TableColumn<Record<string, unknown>>[]}
-                  searchKey="reference"
-                  searchPlaceholder="Rechercher une livraison..."
+                  searchText={(row) => dispatchSearchText(row as unknown as CompanyDelivery)}
+                  searchPlaceholder="Client, adresse ou référence…"
                   pageSize={15}
                   emptyTitle="Aucune livraison en attente"
                   emptyDescription="Les nouvelles commandes clients apparaîtront ici."

@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { AssignDriverCell } from "./assign-driver-cell";
 import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
 import {
-  formatClientName,
   ORDER_TABLE_COL,
-  TableDateCell,
+  plainClientName,
+  TableDueCell,
+  TableIdentityCell,
   TableTypeBadge,
   tableSelectWrapper,
 } from "./table-ui";
@@ -42,21 +42,25 @@ function getAddress(delivery: CompanyDelivery) {
     .join(", ");
 }
 
+/** Recherche de la file : référence, client et adresse, comme ce que la ligne affiche. */
+export function dispatchSearchText(row: CompanyDelivery): string {
+  return [row.reference, row.order.reference, plainClientName(row.order), getAddress(row)].join(" ");
+}
+
 export function getDispatchColumns(): TableColumn<CompanyDelivery>[] {
   return [
     {
+      // Client et adresse d'abord (collecte → destination pour une course), la référence en petit.
       key: "reference",
-      header: "Réf.",
-      sortable: true,
-      className: ORDER_TABLE_COL.reference,
+      header: "Livraison",
+      className: ORDER_TABLE_COL.order,
       cell: (row) => (
-        <Link
+        <TableIdentityCell
           href={`/dashboard/orders/${row.order.id}`}
-          className="block truncate font-medium text-brand hover:underline"
-          title={row.reference}
-        >
-          {row.reference}
-        </Link>
+          client={plainClientName(row.order)}
+          place={getAddress(row) || null}
+          reference={row.reference}
+        />
       ),
     },
     {
@@ -69,45 +73,18 @@ export function getDispatchColumns(): TableColumn<CompanyDelivery>[] {
       ),
     },
     {
-      key: "client",
-      header: "Client",
-      hideOnMobile: true,
-      className: ORDER_TABLE_COL.client,
-      cell: (row) => {
-        const label = formatClientName(row.order);
-        return (
-          <span className="block truncate" title={label}>
-            {label}
-          </span>
-        );
-      },
-    },
-    {
-      key: "address",
-      header: "Adresse",
-      hideOnMobile: true,
-      className: ORDER_TABLE_COL.address,
-      cell: (row) => {
-        const label = getAddress(row);
-        return (
-          <span className="block truncate text-muted-foreground" title={label}>
-            {label}
-          </span>
-        );
-      },
-    },
-    {
       key: "scheduledAt",
-      header: "Date",
+      header: "Prévue",
       sortable: true,
       hideOnMobile: true,
-      className: ORDER_TABLE_COL.createdAt,
-      cell: (row) =>
-        row.scheduledAt ? (
-          <TableDateCell date={row.scheduledAt} />
-        ) : (
-          <TableDateCell date={row.createdAt} />
-        ),
+      className: ORDER_TABLE_COL.deliveryDate,
+      cell: (row) => (
+        <TableDueCell
+          status={row.status}
+          date={row.scheduledAt ?? row.order.requestedDeliveryDate ?? row.createdAt}
+          deadline={row.order.requestedDeliveryDate}
+        />
+      ),
     },
     {
       key: "status",

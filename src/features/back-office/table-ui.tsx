@@ -108,21 +108,32 @@ export function tableSelectWrapper(className?: string) {
 }
 
 /** Nom du client tel quel : la colonne dit déjà « Client », pas besoin du préfixe. */
-function plainClientName(order: Pick<CompanyOrder, "customer" | "customerEmail">): string {
+export function plainClientName(order: {
+  customer?: { firstName: string; lastName: string } | null;
+  customerEmail?: string | null;
+}): string {
   const name = order.customer ? `${order.customer.firstName} ${order.customer.lastName}`.trim() : "";
   return name || order.customerEmail?.trim() || "Client non renseigné";
 }
 
 /**
- * Une commande se reconnaît à son client et à son adresse ; la référence reste en
+ * Une ligne se reconnaît à son client et à son adresse ; la référence reste en
  * petit dessous, pour la recherche et les échanges avec le support.
  */
-export function TableOrderCell({ order }: { order: CompanyOrder }) {
-  const client = plainClientName(order);
-  const place = formatPlace(order.shippingAddress ?? order.pickupAddress, order.shippingCity);
+export function TableIdentityCell({
+  href,
+  client,
+  place,
+  reference,
+}: {
+  href: string;
+  client: string;
+  place: string | null;
+  reference: string;
+}) {
   return (
     <Link
-      href={`/dashboard/orders/${order.id}`}
+      href={href}
       className="group block min-w-0 rounded-md py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
     >
       <span className="block truncate font-medium text-foreground group-hover:underline" title={client}>
@@ -133,8 +144,19 @@ export function TableOrderCell({ order }: { order: CompanyOrder }) {
           {place}
         </span>
       )}
-      <span className="block truncate text-xs tabular-nums text-muted-foreground">{order.reference}</span>
+      <span className="block truncate text-xs tabular-nums text-muted-foreground">{reference}</span>
     </Link>
+  );
+}
+
+export function TableOrderCell({ order }: { order: CompanyOrder }) {
+  return (
+    <TableIdentityCell
+      href={`/dashboard/orders/${order.id}`}
+      client={plainClientName(order)}
+      place={formatPlace(order.shippingAddress ?? order.pickupAddress, order.shippingCity)}
+      reference={order.reference}
+    />
   );
 }
 
@@ -146,11 +168,19 @@ export function TableRelativeDateCell({ date }: { date: string }) {
   );
 }
 
-/** Échéance demandée ; un retard se voit sans lire la date (texte + icône, pas la couleur seule). */
-export function TableDeliveryDueCell({ order }: { order: CompanyOrder }) {
-  const date = order.requestedDeliveryDate;
+/** Échéance ; un retard se voit sans lire la date (texte + icône, pas la couleur seule). */
+export function TableDueCell({
+  status,
+  date,
+  deadline,
+}: {
+  status: string;
+  date?: string | null;
+  /** Échéance qui fait foi pour le retard (date demandée par le client), si différente de la date affichée. */
+  deadline?: string | null;
+}) {
   if (!date) return <span className="text-muted-foreground">—</span>;
-  const late = isOrderOverdue(order.status, date);
+  const late = isOrderOverdue(status, deadline ?? date);
   return (
     <div className="whitespace-nowrap">
       <time dateTime={date} title={fullDateLabel(date)} className={late ? "font-medium text-[#b3352a]" : undefined}>
@@ -164,4 +194,8 @@ export function TableDeliveryDueCell({ order }: { order: CompanyOrder }) {
       )}
     </div>
   );
+}
+
+export function TableDeliveryDueCell({ order }: { order: CompanyOrder }) {
+  return <TableDueCell status={order.status} date={order.requestedDeliveryDate} />;
 }
