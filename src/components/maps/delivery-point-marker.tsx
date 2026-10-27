@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import { Marker } from "react-leaflet";
 import type { DeliveryMapMarkerKind } from "@/features/back-office/dispatch-delivery-map-state";
@@ -9,6 +9,35 @@ import {
   type DispatchMapStatusKey,
 } from "@/features/back-office/dispatch-map-status";
 import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+
+/** Délai d'attente d'un second clic : au-delà, c'est un clic simple. */
+const DOUBLE_CLICK_DELAY_MS = 250;
+
+/**
+ * Clic simple et double-clic distincts sur un repère : le clic simple attend brièvement,
+ * un double-clic l'annule. Sans gestion du double-clic, le clic part immédiatement.
+ */
+function useMarkerClicks(onClick?: () => void, onDoubleClick?: () => void) {
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return useMemo(
+    () => ({
+      click: () => {
+        if (!onDoubleClick) return onClick?.();
+        clearTimeout(timer.current);
+        timer.current = setTimeout(() => onClick?.(), DOUBLE_CLICK_DELAY_MS);
+      },
+      dblclick: () => {
+        clearTimeout(timer.current);
+        onDoubleClick?.();
+      },
+      keypress: (event: L.LeafletKeyboardEvent) => {
+        if (event.originalEvent.key === "Enter") onClick?.();
+      },
+    }),
+    [onClick, onDoubleClick]
+  );
+}
 
 function escapeHtml(text: string) {
   return text
@@ -95,6 +124,10 @@ interface DeliveryPointMarkerProps {
   isSelected?: boolean;
   muted?: boolean;
   status?: DispatchMapStatusKey;
+  /** Clic sur la destination sélectionnée : la désélectionner. */
+  onClick?: () => void;
+  /** Double-clic : ouvrir tous les détails de la livraison. */
+  onDoubleClick?: () => void;
 }
 
 export function DeliveryPointMarker({
@@ -107,7 +140,10 @@ export function DeliveryPointMarker({
   isSelected = false,
   muted = false,
   status,
+  onClick,
+  onDoubleClick,
 }: DeliveryPointMarkerProps) {
+  const eventHandlers = useMarkerClicks(onClick, onDoubleClick);
   const icon = useMemo(
     () => createPointIcon(kind, label, subtitle, stepIndex, isSelected, muted, status),
     [kind, label, subtitle, stepIndex, isSelected, muted, status]
@@ -117,6 +153,9 @@ export function DeliveryPointMarker({
     <Marker
       position={[latitude, longitude]}
       icon={icon}
+      interactive={Boolean(onClick || onDoubleClick)}
+      title={onDoubleClick ? "Clic : désélectionner · double-clic : voir le détail" : undefined}
+      eventHandlers={eventHandlers}
       zIndexOffset={kind === "destination" ? 500 : kind === "pickup" ? 400 : 300}
     />
   );
@@ -131,6 +170,7 @@ export function DeliveryOverviewMarker({
   subtitle,
   showCallout: calloutAllowed = true,
   onSelect,
+  onOpen,
 }: {
   latitude: number;
   longitude: number;
@@ -140,7 +180,10 @@ export function DeliveryOverviewMarker({
   /** Faux en vue éloignée : l'épingle seule, pour ne pas couvrir la carte de fiches. */
   showCallout?: boolean;
   onSelect: () => void;
+  /** Double-clic : ouvrir tous les détails de la livraison. */
+  onOpen?: () => void;
 }) {
+  const eventHandlers = useMarkerClicks(onSelect, onOpen);
   // Les missions qui demandent l'attention (retard) ou qui bougent (en route) portent leur fiche.
   const showCallout = calloutAllowed && (status === "late" || status === "route");
   const icon = useMemo(
@@ -161,9 +204,9 @@ export function DeliveryOverviewMarker({
     <Marker
       position={[latitude, longitude]}
       icon={icon}
-      title={`${reference} · ${getDispatchMapStatusMeta(status).label}`}
+      title={`${reference} · ${getDispatchMapStatusMeta(status).label} — clic : sélectionner · double-clic : voir le détail`}
       keyboard
-      eventHandlers={{ click: onSelect, keypress: onSelect }}
+      eventHandlers={eventHandlers}
       zIndexOffset={status === "late" ? 600 : 400}
     />
   );

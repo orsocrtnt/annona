@@ -83,15 +83,28 @@ function DispatchMapContent() {
     setSelectedId(requestedDeliveryAvailable ? requestedDeliveryId : null);
   }, [requestedDeliveryAvailable, requestedDeliveryId]);
 
+  // Un second clic sur la livraison sélectionnée (carte ou liste) la désélectionne.
   const handleSelect = useCallback(
     (id: string) => {
-      setSelectedId(id);
+      const deselect = id === selectedId;
+      setSelectedId(deselect ? null : id);
       const params = new URLSearchParams(searchParams.toString());
-      params.set("delivery", id);
+      if (deselect) params.delete("delivery");
+      else params.set("delivery", id);
       params.delete("focus");
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams, selectedId]
+  );
+
+  // Double-clic : la fiche complète de la commande (suivi, articles, échanges).
+  const handleOpen = useCallback(
+    (id: string) => {
+      const delivery = deliveries.find((d) => d.id === id);
+      if (delivery) router.push(`/dashboard/orders/${delivery.orderId}`);
+    },
+    [deliveries, router]
   );
 
   const selectedDelivery = useMemo(
@@ -114,6 +127,7 @@ function DispatchMapContent() {
           delivery={selectedDelivery}
           deliveries={visibleDeliveries}
           onSelect={handleSelect}
+          onOpen={handleOpen}
           onMapReady={setMapApi}
         />
       </div>
@@ -123,6 +137,7 @@ function DispatchMapContent() {
           deliveries={visibleDeliveries}
           selectedId={selectedId}
           onSelect={handleSelect}
+          onOpen={handleOpen}
           focusSelectedId={requestedDeliveryAvailable ? requestedDeliveryId : null}
         />
       </div>
