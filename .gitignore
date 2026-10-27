@@ -12,6 +12,9 @@
 /coverage
 /outputs/
 
+# worker MapLibre copié au postinstall
+/public/vendor/maplibre-gl-worker.mjs
+
 # next.js
 /.next/
 /out/

@@ -511,6 +511,8 @@ Statuts ET localisation sont demandés. Leur présence dans le code ne suffit pa
 
   Support de revue préparé le 2026-10-18 : critères et captures disponibles dans `docs/operations/map3/REVIEW.md`. Une nouvelle série homogène admin/client/livreur sera produite sur préproduction avec mission active ; la case reste ouverte jusqu'à l'accord du propriétaire.
 
+  Sécurité du fond vectoriel du 2026-10-27 : `maplibre-gl` 5.24.0, ajouté avec le plan Menthe, porte une faille XSS critique (GHSA-jrc7-96c5-q579, versions ≤ 6.4.0) qui fait échouer `npm run audit:prod` et donc la CI. Passage en 6.13.0 (corrigée, publiée depuis trois semaines ; le plugin Leaflet accepte la v6). La v6 cherche son worker à côté de son module, chemin introuvable une fois empaqueté par Next : carte vide et « Worker failed to load » constatés dans Chrome. Le worker autonome est désormais copié au postinstall vers `public/vendor/` (ignoré par Git) et désigné par `setWorkerUrl`. Vérifié : `npm run audit:prod` 0 vulnérabilité, `npm run check` 513/513, build CI sans secret, `npm ci` recrée le worker, Chrome réel sur la préproduction autorisée en dev (Turbopack) et en build de production : fond Menthe affiché sur la carte chauffeurs et la carte livraison avec 14 repères, aucune erreur hors favicon 404 préexistant. Aucune validation visuelle de MAP-3 n'en est déduite.
+
 - [x] **MOB-01B — Rendre les actions résistantes au réseau faible.** File de reprise adaptée, idempotence et état en attente pour statuts et photos ; éviter doubles validations.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**

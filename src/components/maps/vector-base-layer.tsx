@@ -5,6 +5,7 @@ import { useMap } from "react-leaflet";
 import { maplibreGL } from "@maplibre/maplibre-gl-leaflet";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { configureMaplibreWorker } from "@/lib/maps/maplibre-worker";
 import { MAP_VECTOR, PROVIDER_TIMEOUT_MS } from "@/lib/maps/provider-config";
 import { toMentheStyle } from "@/lib/maps/menthe-style";
 import { ProviderTileLayer } from "@/components/maps/provider-tile-layer";
@@ -46,6 +47,7 @@ export function BaseMapLayer({ onModeChange }: { onModeChange?: (mode: "vector" 
     loadMentheStyle(styleUrl)
       .then((style) => {
         if (cancelled) return;
+        configureMaplibreWorker();
         layer = maplibreGL({ style, attributionControl: false });
         layer.addTo(map);
         setMode("vector");

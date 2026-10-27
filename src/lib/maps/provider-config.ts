@@ -31,6 +31,13 @@ export function vectorStyleConfig(url: string | undefined = process.env.NEXT_PUB
 }
 
 export const MAP_VECTOR = vectorStyleConfig();
+
+/** Worker MapLibre copié au postinstall (scripts/maps/copy-maplibre-worker.mjs) et servi depuis `public/`. */
+export const MAPLIBRE_WORKER_PATH = "/vendor/maplibre-gl-worker.mjs";
+
+export function maplibreWorkerUrl(version: string) {
+  return `${MAPLIBRE_WORKER_PATH}?v=${encodeURIComponent(version)}`;
+}
 export const PROVIDER_TIMEOUT_MS = 8_000;
 export const TILE_TIMEOUT_MS = 10_000;
 export const ROUTE_REFRESH_MS = 30_000;
