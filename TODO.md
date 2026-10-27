@@ -322,6 +322,8 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
   Source / dépendance / limite : Terminé ; procédure `docs/operations/db1/README.md`, rapport `docs/rapports/2026-10-21/db1-migration-restore.md`, preuves sans secret sous `outputs/db1/`. Toute migration destructive future doit disposer de sa propre reprise vérifiée.
 
+  Garde de régression du 2026-10-27 : `tests/db1-migration-security.test.ts` lit les 19 migrations. Il vérifie que les tables publiques créées correspondent exactement aux `@@map` du schéma, et que chacune active la RLS et retire tous les droits à `PUBLIC`, `anon` et `authenticated` (forme simple ou bloc conditionnel). Il vérifie aussi qu'aucune `CREATE POLICY` ni aucun `GRANT` vers ces rôles n'apparaît. Contrôle du même jour, en lecture seule : l'écart entre la base de préproduction et le schéma de la branche (`prisma migrate diff --from-url`) est identique, instruction par instruction, aux deux migrations en attente (`contact_messages`, `sales_codes`). Rejouer toute la chaîne sur un PostgreSQL vierge reste impossible, car elle exige les extensions Supabase `http`, `pg_cron` et le schéma `storage`. Vérifié : 3/3, et chaque règle échoue bien quand on retire la RLS ou un REVOKE, ou qu'on ajoute un GRANT ou une table sans modèle.
+
 ## 2 — Remplacer la coordination par e-mail
 
 Le client utilise son espace pour commander ; l’administrateur organise et le livreur prend en charge. Un ticket support seul ne prouve pas que les échanges de mission sont couverts.
