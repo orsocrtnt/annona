@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**55 tâches terminées sur 80 — 69 %**
+**56 tâches terminées sur 80 — 70 %**
 
-`██████████████░░░░░░` · 25 tâches restantes
+`██████████████░░░░░░` · 24 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -180,7 +180,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | OFFER-1 | A+B | Confronter au marché la grille et les limites. | Prospects/pilotes. | Moyenne · GPT‑6 Astra |
 | PILOT-1 | A | Recruter, contractualiser et conduire trois pilotes quatre semaines. | Portes A–C et autorisation de contact. | Moyenne · GPT‑6.1 Sol |
 | PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1. | Moyenne · GPT‑6 Astra |
-| SAAS-01B | B | Recette réelle en mode test faite le 27 octobre : Checkout, refus, 3D Secure, webhooks, renouvellements, impayé, changement, résiliation, remboursement. | Validation du propriétaire ; tarification adaptative à désactiver. | Très élevée · GPT‑6 Astra |
+| SAAS-01B | B | Recette réelle en mode test faite le 27 octobre : Checkout, refus, 3D Secure, webhooks, renouvellements, impayé, changement, résiliation, remboursement. | Tarification adaptative à désactiver (propriétaire). | Très élevée · GPT‑6 Astra |
 | SAAS-03 | B | Lecture et API de changement/résiliation (sandbox, journalisées) faites ; refus C10 des baisses en excès (27 octobre). Restent écran, export, abonnements sans compte de facturation. | Compte Stripe de test ; recette navigateur. | Très élevée · GPT‑6 Astra |
 | SALES-1 | B | Tout est fait et prouvé localement (27 octobre) : codes, écran super-admin, lien d'inscription, attribution figée, commissions et historique. Reste la vérification en préproduction. | Application de la migration avant fusion. | Élevée · GPT‑6 Astra |
 | SAAS-02 | B+C | Lecture revenu/consommation et alertes C10 faites, affichées et recettées (27 octobre) ; réconciliation paiements, rétention, conversion. | Stripe de test. | Élevée · GPT‑6.1 Sol |
@@ -1010,7 +1010,7 @@ Prospection, entretiens et pilotes différés à sa demande ; aucune prise de co
 
 Développer l'architecture et les scénarios en environnement fictif sans activer de paiement réel. Les inconnues commerciales restent configurables jusqu'à arbitrage ; les intégrations multiples ou fonctions sans lien avec le problème prioritaire restent différées.
 
-- [ ] **SAAS-01B — Intégrer paiement et facturation SaaS en environnement fictif.** Brancher Stripe comme premier fournisseur étudié derrière l'adaptateur de paiement de SIGNUP-1. Gérer abonnement mensuel/annuel, options, utilisateurs supplémentaires, dépassements facturés sur la période, renouvellement, changement, paiement échoué, résiliation, remboursement décidé et historique. Les droits suivent uniquement des événements serveur vérifiés et idempotents. Distinguer facture/justificatif du fournisseur de paiement et obligations françaises de facturation électronique.
+- [x] **SAAS-01B — Intégrer paiement et facturation SaaS en environnement fictif.** Brancher Stripe comme premier fournisseur étudié derrière l'adaptateur de paiement de SIGNUP-1. Gérer abonnement mensuel/annuel, options, utilisateurs supplémentaires, dépassements facturés sur la période, renouvellement, changement, paiement échoué, résiliation, remboursement décidé et historique. Les droits suivent uniquement des événements serveur vérifiés et idempotents. Distinguer facture/justificatif du fournisseur de paiement et obligations françaises de facturation électronique.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -1024,7 +1024,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Avancement local du 2026-10-24 : adaptateur `stripe-sandbox` derrière SIGNUP-1, journal durable, C9 Business 20/50/9 €, webhooks signés, cron inerte tant que l’adaptateur reste `fake`. Vérifié : `npm run check` 358/358, `npm run test:saas01b` (PostgreSQL isolé Homebrew `127.0.0.1:55439`, y compris crash d’usage sans fermer la période), `npm run test:saas01b:e2e` 3/3 Chrome sans réseau Stripe, notice `?payment=cancelled` visible. **Aucun compte Stripe n’existe encore** : la case reste ouverte jusqu’à Checkout/webhooks réels en mode test. Rapport `docs/rapports/2026-10-24/saas-01b.md`, procédure `docs/operations/saas01b/README.md`.
 
-  Recette Stripe en mode test du 2026-10-27, sur instruction du propriétaire, contre `tutelliv-dev` et `stripe listen` vers le port 3108. Passés : Checkout carte 4242 (entreprise activée seulement après facture payée de 94,80 € TTC), abandon sur Stripe (inscription conservée), carte refusée et 3D Secure, signature absente ou forgée (400), événement rejoué sans effet, changement Starter → Pro → Business avec prorata payé et consentement au centime, résiliation en fin de période, remboursement partiel par `npm run billing:refund` (opérateur plateforme, motif journalisé, relance sans double remboursement), et par horloge de test : renouvellement payé, renouvellement refusé (`PAST_DUE`, droits non prolongés), régularisation. Trois défauts corrigés : un changement vers la formule active verrouillait le compte pour toujours ; les webhooks simultanés produisaient des conflits d'écriture (503) ; une demande appliquée pouvait répondre en erreur. Restent : quelques 503 isolés en local, dus à des transactions de plus de 5 s entre ce poste et la base de Paris (Stripe les rejoue) ; les relances J3…J30 se calculent sur l'heure réelle et ne se vérifient donc pas par horloge de test. Les critères de la case sont remplis ; elle attend la validation du propriétaire.
+  Recette Stripe en mode test du 2026-10-27, sur instruction du propriétaire, contre `tutelliv-dev` et `stripe listen` vers le port 3108. Passés : Checkout carte 4242 (entreprise activée seulement après facture payée de 94,80 € TTC), abandon sur Stripe (inscription conservée), carte refusée et 3D Secure, signature absente ou forgée (400), événement rejoué sans effet, changement Starter → Pro → Business avec prorata payé et consentement au centime, résiliation en fin de période, remboursement partiel par `npm run billing:refund` (opérateur plateforme, motif journalisé, relance sans double remboursement), et par horloge de test : renouvellement payé, renouvellement refusé (`PAST_DUE`, droits non prolongés), régularisation. Trois défauts corrigés : un changement vers la formule active verrouillait le compte pour toujours ; les webhooks simultanés produisaient des conflits d'écriture (503) ; une demande appliquée pouvait répondre en erreur. Restent : quelques 503 isolés en local, dus à des transactions de plus de 5 s entre ce poste et la base de Paris (Stripe les rejoue) ; les relances J3…J30 se calculent sur l'heure réelle et ne se vérifient donc pas par horloge de test. Les critères de la case sont remplis ; cochée sur validation du propriétaire le 27 octobre 2026.
 
 - [ ] **SAAS-03 — Permettre la gestion autonome de l'abonnement.** Ajouter « Mon abonnement » pour afficher formule, périodicité, options, consommations, alertes et historique ; ajouter/supprimer une option, changer de formule ou de périodicité, gérer le moyen de paiement, consulter les documents, résilier et lancer l'export DATA-02. Toute dépense supplémentaire exige un récapitulatif et une confirmation explicite ; une rétrogradation impossible explique les dépassements à résoudre.
 
