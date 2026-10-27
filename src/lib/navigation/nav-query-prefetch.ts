@@ -96,8 +96,10 @@ const ROUTE_PREFETCH: Record<string, RoutePrefetch> = {
     queryFn: backOfficeApi.getSupportTickets,
   },
   "/dispatch": {
-    queryKey: ["company", "dispatch", "overview"],
-    queryFn: backOfficeApi.getDispatchOverview,
+    // Même clé que useDispatchOverview() ; appel explicite, sinon le contexte React Query
+    // devient le paramètre « livraison » (« ?delivery=[object Object] »).
+    queryKey: ["company", "dispatch", "overview", null],
+    queryFn: () => backOfficeApi.getDispatchOverview(),
   },
   "/dispatch/map": {
     queryKey: ["company", "dispatch", "map"],
