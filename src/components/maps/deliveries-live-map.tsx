@@ -247,7 +247,7 @@ function OverviewLayer({
           longitude={delivery.driverLocation!.longitude}
           isOnline={delivery.driverLocation!.isOnline}
           updatedAt={delivery.driverLocation!.updatedAt}
-          showLabel={zoom >= 11}
+          showLabel={zoom >= 13}
           onSelect={() => onSelect?.(delivery.id)}
         />
       ))}

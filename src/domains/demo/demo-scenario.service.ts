@@ -87,14 +87,14 @@ const DEMO_ADDRESS_COORDINATES: Record<string, Coordinates> = {
   "14 Avenue de la République|92100": { latitude: 48.838, longitude: 2.242 },
   "27 Rue Gabriel Péri|92300": { latitude: 48.893, longitude: 2.287 },
   "30 Rue de la Boétie|75008": { latitude: 48.8735, longitude: 2.3112 },
-  "1 Rue Jules Rimet|93200": { latitude: 48.9244, longitude: 2.3601 },
-  "17 Rue du Docteur Bouchut|69003": { latitude: 45.7606, longitude: 4.8597 },
-  "10 Rue de la République|69002": { latitude: 45.764, longitude: 4.8357 },
-  "Grand'Place|59100": { latitude: 50.6905, longitude: 3.1817 },
-  "60 Avenue Charles de Gaulle|92200": { latitude: 48.8846, longitude: 2.2697 },
+  "120 Rue de la Convention|75015": { latitude: 48.8388, longitude: 2.2905 },
+  "20 Boulevard Diderot|75012": { latitude: 48.8443, longitude: 2.3744 },
+  "15 Rue des Martyrs|75009": { latitude: 48.879, longitude: 2.3402 },
+  "8 Place de la Nation|75011": { latitude: 48.8483, longitude: 2.3958 },
+  "25 Rue de Passy|75016": { latitude: 48.8573, longitude: 2.2786 },
   "12 Rue Lepic|75018": { latitude: 48.8846, longitude: 2.3337 },
-  "Quai du Port|13002": { latitude: 43.2965, longitude: 5.3698 },
-  "Avenue de Paris|94300": { latitude: 48.8475, longitude: 2.437 },
+  "50 Rue de Belleville|75020": { latitude: 48.8722, longitude: 2.3844 },
+  "18 Rue Mouffetard|75005": { latitude: 48.8429, longitude: 2.3497 },
 };
 
 function demoCoordinates(place: { address: string; postalCode: string } | undefined): Coordinates | null {
@@ -346,9 +346,9 @@ function buildScenario(): ScenarioItem[] {
         { label: "Assignée au chauffeur", offsetHours: -2 },
       ],
     },
-    // Carte « suivi en direct » : plusieurs livreurs en route, dans plusieurs villes.
+    // Carte « suivi en direct » : plusieurs livreurs en route, toutes les missions à Paris.
     {
-      label: "En route — Saint-Denis",
+      label: "En route — Convention",
       driverIndex: 3,
       deliveryCategory: "STANDARD",
       orderStatus: "IN_DELIVERY",
@@ -357,7 +357,7 @@ function buildScenario(): ScenarioItem[] {
       requestedDeliveryDateOffsetHours: 3,
       estimatedArrivalOffsetHours: 1,
       missionStartedAtOffsetHours: -0.4,
-      shipping: { address: "1 Rue Jules Rimet", city: "Saint-Denis", postalCode: "93200" },
+      shipping: { address: "120 Rue de la Convention", city: "Paris", postalCode: "75015" },
       items: [{ name: "Matériel événementiel", quantity: 3, unitPrice: 42.0 }],
       tracking: [
         { label: "Commande reçue", offsetHours: -3 },
@@ -365,7 +365,7 @@ function buildScenario(): ScenarioItem[] {
       ],
     },
     {
-      label: "Course en route — Lyon",
+      label: "Course en route — Gare de Lyon",
       driverIndex: 2,
       deliveryCategory: "COURIER",
       orderStatus: "IN_DELIVERY",
@@ -374,13 +374,13 @@ function buildScenario(): ScenarioItem[] {
       requestedDeliveryDateOffsetHours: 2,
       estimatedArrivalOffsetHours: 1,
       missionStartedAtOffsetHours: -0.6,
-      shipping: { address: "10 Rue de la République", city: "Lyon", postalCode: "69002" },
+      shipping: { address: "15 Rue des Martyrs", city: "Paris", postalCode: "75009" },
       pickupStops: [
         {
-          label: "Collecte — Part-Dieu",
-          address: "17 Rue du Docteur Bouchut",
-          city: "Lyon",
-          postalCode: "69003",
+          label: "Collecte — Gare de Lyon",
+          address: "20 Boulevard Diderot",
+          city: "Paris",
+          postalCode: "75012",
           items: [{ name: "Pli urgent", quantity: 1, unitPrice: 18.0 }],
         },
       ],
@@ -390,7 +390,7 @@ function buildScenario(): ScenarioItem[] {
       ],
     },
     {
-      label: "En route — Lille vers Roubaix",
+      label: "En route — Nation",
       driverIndex: 4,
       deliveryCategory: "STANDARD",
       orderStatus: "IN_DELIVERY",
@@ -399,11 +399,11 @@ function buildScenario(): ScenarioItem[] {
       requestedDeliveryDateOffsetHours: 4,
       estimatedArrivalOffsetHours: 1,
       missionStartedAtOffsetHours: -0.5,
-      shipping: { address: "Grand'Place", city: "Roubaix", postalCode: "59100" },
+      shipping: { address: "8 Place de la Nation", city: "Paris", postalCode: "75011" },
       items: [{ name: "Palette textile", quantity: 1, unitPrice: 95.0 }],
       tracking: [
         { label: "Commande reçue", offsetHours: -5 },
-        { label: "En livraison", description: "Départ de l'entrepôt de Lille", offsetHours: -0.5 },
+        { label: "En livraison", description: "Départ de l'entrepôt", offsetHours: -0.5 },
       ],
     },
     {
@@ -415,7 +415,7 @@ function buildScenario(): ScenarioItem[] {
       assignDriver: true,
       requestedDeliveryDateOffsetHours: -3,
       estimatedArrivalOffsetHours: 1,
-      shipping: { address: "60 Avenue Charles de Gaulle", city: "Neuilly-sur-Seine", postalCode: "92200" },
+      shipping: { address: "25 Rue de Passy", city: "Paris", postalCode: "75016" },
       items: [{ name: "Dossier juridique", quantity: 1, unitPrice: 35.0 }],
       notes: "Créneau dépassé — mission pas encore démarrée",
       tracking: [
@@ -436,19 +436,19 @@ function buildScenario(): ScenarioItem[] {
       tracking: [{ label: "Commande reçue", description: "En attente d'assignation chauffeur", offsetHours: -1 }],
     },
     {
-      label: "Sans livreur — Marseille",
+      label: "Sans livreur — Belleville",
       deliveryCategory: "STANDARD",
       orderStatus: "PENDING",
       deliveryStatus: "PENDING",
       assignDriver: false,
       requestedDeliveryDateOffsetHours: 6,
       scheduledAtOffsetHours: 6,
-      shipping: { address: "Quai du Port", city: "Marseille", postalCode: "13002" },
-      items: [{ name: "Colis agence Sud", quantity: 4, unitPrice: 22.0 }],
-      tracking: [{ label: "Commande reçue", description: "Agence de Marseille", offsetHours: -2 }],
+      shipping: { address: "50 Rue de Belleville", city: "Paris", postalCode: "75020" },
+      items: [{ name: "Colis boutique", quantity: 4, unitPrice: 22.0 }],
+      tracking: [{ label: "Commande reçue", offsetHours: -2 }],
     },
     {
-      label: "À démarrer — Vincennes",
+      label: "À démarrer — Mouffetard",
       driverIndex: 3,
       deliveryCategory: "STANDARD",
       orderStatus: "ASSIGNED",
@@ -456,7 +456,7 @@ function buildScenario(): ScenarioItem[] {
       assignDriver: true,
       requestedDeliveryDateOffsetHours: 5,
       estimatedArrivalOffsetHours: 5,
-      shipping: { address: "Avenue de Paris", city: "Vincennes", postalCode: "94300" },
+      shipping: { address: "18 Rue Mouffetard", city: "Paris", postalCode: "75005" },
       items: [{ name: "Fournitures médicales", quantity: 2, unitPrice: 54.0 }],
       tracking: [
         { label: "Commande reçue", offsetHours: -2 },
@@ -518,9 +518,9 @@ const CLIENT_ADDRESS_SEEDS = [
 const DRIVER_LOCATION_SEEDS = [
   { latitude: 48.8698, longitude: 2.3078 },
   { latitude: 48.8532, longitude: 2.3691 },
-  { latitude: 45.7606, longitude: 4.8597 },
-  { latitude: 48.9081, longitude: 2.3359 },
-  { latitude: 50.6366, longitude: 3.0705 },
+  { latitude: 48.8443, longitude: 2.3744 },
+  { latitude: 48.8467, longitude: 2.3016 },
+  { latitude: 48.8566, longitude: 2.3897 },
 ] as const;
 
 async function applyDemoDispatchDrivers(companyId: string, driverIds: string[]) {

@@ -48,8 +48,11 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
     if (seen.has(driverId)) continue;
     seen.add(driverId);
 
+    // Position récente et service actif : rien à réécrire. Juste après une réinitialisation,
+    // la position existe mais le service n'est pas encore actif : on l'active tout de suite.
+    const trackingActive = trackingService(mission.driver?.settings).active;
     const lastUpdate = mission.driver?.driverLocation?.updatedAt;
-    if (lastUpdate && now.getTime() - lastUpdate.getTime() < DEMO_POSITION_MIN_INTERVAL_MS) continue;
+    if (trackingActive && lastUpdate && now.getTime() - lastUpdate.getTime() < DEMO_POSITION_MIN_INTERVAL_MS) continue;
 
     const destination = { latitude: mission.latitude!, longitude: mission.longitude! };
     const pickup =
@@ -59,7 +62,7 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
     const position = demoDriverPosition(demoStartPoint(destination, pickup), destination, mission.missionStartedAt!, now);
 
     // Le suivi n'est visible que si le service du livreur est actif (même règle qu'en réel).
-    if (!trackingService(mission.driver?.settings).active) {
+    if (!trackingActive) {
       const settings = (mission.driver?.settings ?? {}) as Record<string, unknown>;
       await prisma.user.update({
         where: { id: driverId },
