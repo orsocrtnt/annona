@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**54 tâches terminées sur 80 — 68 %**
+**55 tâches terminées sur 80 — 69 %**
 
-`██████████████░░░░░░` · 26 tâches restantes
+`██████████████░░░░░░` · 25 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -1064,7 +1064,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Résiliation, complément C10 du 2026-10-27 : une résiliation demandée pendant la découverte la termine immédiatement, même si la période payée continue. La projection Stripe ramène `premiumDiscoveryEndsAt` au moment où elle constate la demande ; droits et « Mon abonnement » la coupent dès que `cancelAtPeriodEnd` est vrai, et une résiliation annulée ensuite ne la rouvre pas. L'abonnement, les fonctions de la formule et la création de commandes restent actifs jusqu'à la fin de la période payée. Vérifié : `npm run test:saas04` 8/8, `npm run test:saas01b` (13 contrôles, PostgreSQL local, doublure Stripe), `npm run test:saas03` 11/11 et `npm run check`. Tous les critères de sortie sont prouvés : case cochée. Limite connue : la recette avec un vrai compte Stripe de test reste suivie dans SAAS-01B.
 
-- [ ] **SALES-1 — Tracer l'origine des ventes et calculer les commissions.** Associer un code/lien et un commercial à l'inscription, figer les éléments de souscription initiale, conserver le niveau **apporteur 15 % / accompagné 25 % / autonome 35 %**, puis calculer pendant douze mois maximum une commission théorique sur les seuls montants HT réellement encaissés et éligibles. Les options ou changements ultérieurs n'ajoutent pas de commission. Aucun versement automatisé ni CRM complexe.
+- [x] **SALES-1 — Tracer l'origine des ventes et calculer les commissions.** Associer un code/lien et un commercial à l'inscription, figer les éléments de souscription initiale, conserver le niveau **apporteur 15 % / accompagné 25 % / autonome 35 %**, puis calculer pendant douze mois maximum une commission théorique sur les seuls montants HT réellement encaissés et éligibles. Les options ou changements ultérieurs n'ajoutent pas de commission. Aucun versement automatisé ni CRM complexe.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -1087,6 +1087,13 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Commissions et historique du 2026-10-27, décisions du même jour (reprise au prorata ; ventilation selon le contrat initial). `commission-ledger.ts` produit une écriture par facture et par état (ouverte, payée, impayée, annulée), avec un motif explicite : payée et commissionnée, non payée, hors des douze mois, changement ou consommation, contrat modifié, paiement partiel, facture non reconnue. Un remboursement ajoute une reprise négative au prorata, cumulative, plafonnée et arrondie au centime supérieur. Les clés sont déterministes et l'insertion ignore les doublons : un rejeu ne crée rien. La fenêtre part de la période de la première facture, donc le 13e paiement mensuel est exclu. La projection de facturation enregistre ces écritures dans sa transaction ; une erreur de calcul est journalisée sans bloquer l'abonnement. L'écran « Codes commerciaux » ouvre l'historique d'un code (entreprise, niveau, période, écritures, total net) via `GET /api/admin/sales-codes/[id]`, journalisé sous la nouvelle ressource `SALES_COMMISSIONS` (ajoutée à la migration SALES-1, toujours non appliquée, revalidée sur base vierge : zéro écart, RLS active, aucun droit public), sans aucun identifiant de facture Stripe. Vérifié : `npm run test:sales01` 24/24, `npm run test:admin01` 88/88, `npm run test:saas01b` (15 contrôles dont le grand livre réel : 35 % du paiement initial, changement et consommation à zéro, reprise de 0,30 € sur 1 € TTC remboursé, rejeu sans doublon), `npm run check` et build CI. Recette Chrome avec un super-administrateur temporaire de préproduction (supprimé, 0 trace) sur PostgreSQL local : total net 24,30 €, reprise et impayé lisibles, aucun identifiant de facture renvoyé, code désactivé consultable, lecture journalisée. **Tous les critères de sortie sont prouvés localement.** La case attend l'application de la migration en préproduction et une vérification sur place ; la recette avec un vrai compte Stripe de test reste suivie dans SAAS-01B.
 
   Relecture avant fusion du 2026-10-27 : aucun bloquant. Correctif : l'attribution (activation) et les écritures de commission (projection de facturation) partageaient la transaction appelante, et une erreur SQL l'aurait annulée entière, ce qu'un try/catch ne rattrape pas. Elles passent désormais sous un point de sauvegarde PostgreSQL. Une erreur n'annule que ces écritures, elle est journalisée par son seul code, et les commissions manquantes sont reprises au rapprochement suivant. Vérifié : tests 34/34 (cas d'erreur base de données ajoutés). Banc SAAS-01B sur PostgreSQL réel, 15/15. Preuve sur PostgreSQL jetable : la table des écritures supprimée provoque une vraie erreur P2021, et la transaction appelante est quand même validée. Points mineurs relevés et laissés en suite : un code appliqué ne peut qu'être remplacé, pas retiré, depuis l'assistant ; aucune limite de débit sur la saisie d'un code (impact faible, un code réel attaché à sa propre inscription).
+
+  Terminé le 2026-10-27 en préproduction. Migrations appliquées avant la fusion, puis code fusionné et déployé (`fba1537`, CI verte, déploiement Vercel réussi). Recette Chrome sur le déploiement protégé, avec un super-administrateur temporaire, sans erreur de page :
+  - code créé (Apporteur · 15 %, actif), historique vide explicite ;
+  - lien `/register?code=` pré-rempli ; code inconnu refusé sans brouillon ; code valide lié au brouillon en base ; l'API publique n'expose que `salesCodeApplied` ;
+  - désactivation affichée, puis code désactivé refusé à l'inscription (390 px, sans débordement) ;
+  - journal d'accès : `SALES_CODES` POST, PATCH et GET, `SALES_COMMISSIONS` GET.
+  Nettoyage vérifié en SQL : brouillon, code de test et compte supprimés, aucune trace (0 compte de recette, 0 code, 3 brouillons comme avant). Hors recette : les commissions sur factures réelles attendent un compte Stripe de test (SAAS-01B) ; leur calcul est prouvé sur le banc local.
 
 - [ ] **SAAS-02 — Mesurer le revenu et la santé du SaaS.** Séparer revenu abonnement, frais et coûts des factures de livraison ; activation, rétention, conversion et consommation par entreprise. Mesurer commandes, livreurs et options, y compris l'usage Business annoncé illimité, avec alertes de coût sans plafond caché.
 
