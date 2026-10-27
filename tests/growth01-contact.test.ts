@@ -22,19 +22,48 @@ const valid = { name: "Camille Martin", email: " Camille@Example.invalid ", comp
 function memoryDb(existing: Array<{ sourceHash: string; createdAt: Date }> = []) {
   const rows = [...existing] as Array<Record<string, unknown> & { sourceHash: string; createdAt: Date }>;
   const counts: Array<Record<string, unknown>> = [];
+  const events: string[] = [];
+  // Comme PostgreSQL : un tour de boucle entre lecture et écriture laisse les envois s'entrelacer.
+  const tick = () => new Promise((done) => setImmediate(done));
+  const contactMessage = {
+    count: async ({ where }: { where: { sourceHash?: string; createdAt: { gte: Date } } }) => {
+      counts.push(where);
+      events.push("count");
+      await tick();
+      return rows.filter((row) => row.createdAt >= where.createdAt.gte && (!where.sourceHash || row.sourceHash === where.sourceHash)).length;
+    },
+    create: async ({ data }: { data: Record<string, unknown> & { sourceHash: string } }) => {
+      events.push("create");
+      await tick();
+      rows.push({ ...data, createdAt: now });
+      return data;
+    },
+  };
+  // Verrou consultatif simulé : acquis par la requête brute, relâché à la fin de la transaction.
+  let tail: Promise<void> = Promise.resolve();
   return {
     rows,
     counts,
+    events,
     db: {
-      contactMessage: {
-        count: async ({ where }: { where: { sourceHash?: string; createdAt: { gte: Date } } }) => {
-          counts.push(where);
-          return rows.filter((row) => row.createdAt >= where.createdAt.gte && (!where.sourceHash || row.sourceHash === where.sourceHash)).length;
-        },
-        create: async ({ data }: { data: Record<string, unknown> & { sourceHash: string } }) => {
-          rows.push({ ...data, createdAt: now });
-          return data;
-        },
+      contactMessage,
+      $transaction: async <T>(fn: (tx: unknown) => Promise<T>) => {
+        let release = () => {};
+        const tx = {
+          contactMessage,
+          $queryRaw: async (strings: TemplateStringsArray) => {
+            events.push(`lock:${strings.join("?")}`);
+            const previous = tail;
+            tail = new Promise<void>((done) => { release = done; });
+            await previous;
+            return [{ locked: 1 }];
+          },
+        };
+        try {
+          return await fn(tx);
+        } finally {
+          release();
+        }
       },
     } as never,
   };
@@ -85,6 +114,21 @@ test("GROWTH-1 contact : 3 messages par source et 50 au total par heure glissant
 
   const flood = memoryDb(Array.from({ length: CONTACT_GLOBAL_LIMIT }, (_, index) => ({ sourceHash: `other-${index}`, createdAt: now })));
   assert.deepEqual(await submitContactMessage(valid, "192.0.2.11", { now, secret, db: flood.db }), { status: "rate_limited" });
+});
+
+test("GROWTH-1 contact : des envois simultanés ne dépassent ni la limite par source ni la limite globale", async () => {
+  // PERF-02 du 27 octobre : 56 envois acceptés sur une rafale de 60 pour une limite de 50.
+  const burst = memoryDb();
+  const results = await Promise.all(Array.from({ length: 8 }, () => submitContactMessage(valid, "192.0.2.20", { now, secret, db: burst.db })));
+  assert.equal(results.filter((result) => result.status === "accepted").length, CONTACT_SOURCE_LIMIT);
+  assert.equal(burst.rows.length, CONTACT_SOURCE_LIMIT);
+  assert.match(burst.events[0]!, /^lock:SELECT 1 AS locked FROM pg_advisory_xact_lock\(hashtext\('tutelliv:contact-rate-limit'\)\)$/);
+  assert.ok(burst.events.every((event, index) => event !== "count" || burst.events.slice(0, index).some((earlier) => earlier.startsWith("lock:"))), "aucun comptage hors verrou");
+
+  const global = memoryDb(Array.from({ length: CONTACT_GLOBAL_LIMIT - 2 }, (_, index) => ({ sourceHash: `other-${index}`, createdAt: now })));
+  const spread = await Promise.all(Array.from({ length: 8 }, (_, index) => submitContactMessage(valid, `192.0.2.${30 + index}`, { now, secret, db: global.db })));
+  assert.equal(spread.filter((result) => result.status === "accepted").length, 2);
+  assert.equal(global.rows.length, CONTACT_GLOBAL_LIMIT);
 });
 
 test("GROWTH-1 contact : empreinte à secret obligatoire et source lue sur le proxy", async () => {

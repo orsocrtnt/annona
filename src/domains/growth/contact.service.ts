@@ -28,6 +28,7 @@ export type ContactSubmitResult =
   | { status: "rate_limited" };
 
 type ContactDatabase = Pick<typeof prisma, "contactMessage">;
+type ContactWriteDatabase = Pick<typeof prisma, "contactMessage" | "$transaction">;
 
 /** L'adresse IP n'est jamais stockée : seule cette empreinte HMAC sert au débit. */
 export function contactSourceHash(source: string, secret: string) {
@@ -48,7 +49,7 @@ export function contactSourceFromHeaders(headers: Headers) {
 export async function submitContactMessage(
   raw: unknown,
   source: string,
-  options: { now?: Date; secret?: string; db?: ContactDatabase } = {}
+  options: { now?: Date; secret?: string; db?: ContactWriteDatabase } = {}
 ): Promise<ContactSubmitResult> {
   const parsed = contactMessageSchema.safeParse(raw);
   if (!parsed.success) return { status: "invalid", field: String(parsed.error.issues[0]?.path[0] ?? "") };
@@ -60,14 +61,19 @@ export async function submitContactMessage(
   const now = options.now ?? new Date();
   const sourceHash = contactSourceHash(source, options.secret ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "");
   const since = new Date(now.getTime() - CONTACT_WINDOW_MS);
-  const [fromSource, total] = await Promise.all([
-    db.contactMessage.count({ where: { sourceHash, createdAt: { gte: since } } }),
-    db.contactMessage.count({ where: { createdAt: { gte: since } } }),
-  ]);
-  if (fromSource >= CONTACT_SOURCE_LIMIT || total >= CONTACT_GLOBAL_LIMIT) return { status: "rate_limited" };
+  // Verrou consultatif de transaction : sans lui, des envois simultanés lisaient le même
+  // compte et dépassaient les limites (PERF-02 : 56 acceptés pour 50).
+  return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext('tutelliv:contact-rate-limit'))`;
+    const [fromSource, total] = await Promise.all([
+      tx.contactMessage.count({ where: { sourceHash, createdAt: { gte: since } } }),
+      tx.contactMessage.count({ where: { createdAt: { gte: since } } }),
+    ]);
+    if (fromSource >= CONTACT_SOURCE_LIMIT || total >= CONTACT_GLOBAL_LIMIT) return { status: "rate_limited" } as const;
 
-  await db.contactMessage.create({ data: { ...data, sourceHash } });
-  return { status: "accepted" };
+    await tx.contactMessage.create({ data: { ...data, sourceHash } });
+    return { status: "accepted" } as const;
+  });
 }
 
 export function parseContactListParams(params: URLSearchParams) {

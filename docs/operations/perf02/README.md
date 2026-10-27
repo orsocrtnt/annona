@@ -82,11 +82,11 @@ Mesure du 27 octobre 2026 (MacBook, Node 20.19, PostgreSQL 15 Homebrew), sans au
 | `/contact` | statique | 1,3 / 2,1 ms | 9,7 / 11,2 ms | 1 575/s |
 | `/register` | statique | 0,9 / 1,2 ms | 6,9 / 7,2 ms | 2 303/s |
 | `GET /api/signup` | dynamique, catalogue en base | 3,0 / 5,0 ms | 19,3 / 22,9 ms | 719/s |
-| `POST /api/contact` refusé (429) | dynamique, 2 comptages | 2,2 / 3,1 ms | 26,3 / 28,0 ms | 604/s |
+| `POST /api/contact` refusé (429) | dynamique, verrou + 2 comptages | 3,1 / 4,0 ms | 36,2 / 53,1 ms | 428/s |
 
 Lecture : les pages publiques sont prérendues et ne touchent pas la base. Conséquence : `/tarifs` affiche le catalogue lu au moment du build, et un changement de prix demande un nouveau déploiement. À 16 requêtes simultanées, la latence croît avec la file d'attente du serveur Node unique, sans erreur. Seules l'API d'inscription et Contact interrogent PostgreSQL à chaque requête. Comme pour la mesure précédente, ces chiffres excluent l'aller-retour réseau vers Supabase et le démarrage à froid des fonctions Vercel.
 
-**Défaut mis en évidence :** la rafale de 60 envois Contact simultanés en a accepté **56** pour une limite globale de 50, et 56 messages ont été écrits. Le comptage puis l'écriture ne sont pas atomiques : des envois concurrents lisent le même compte. Le même écart vaut pour la limite de 3 par source. Correction suivie dans GROWTH-1.
+**Défaut mis en évidence puis corrigé :** la première mesure a accepté **56** envois Contact sur une rafale de 60 simultanés, pour une limite globale de 50. Le comptage puis l'écriture n'étaient pas atomiques : des envois concurrents lisaient le même compte, et le même écart valait pour la limite de 3 par source. Correction : comptage et écriture se font dans une transaction, sous un verrou consultatif PostgreSQL (`pg_advisory_xact_lock`). Mesure rejouée : **50 acceptés, 10 refusés, 50 écrits**. Prix de la sérialisation : le refus 429 passe de 28 à 53 ms en p95 à 16 requêtes simultanées, ce qui est négligeable pour un formulaire limité à 50 envois par heure. Ligne Contact du tableau : mesure après correction.
 
 ## Suite autorisée
 
