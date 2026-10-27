@@ -137,7 +137,8 @@ export default function UsersPage() {
   const rows = useMemo(() => {
     const mapped = (users ?? []).map((u) => ({
       ...u,
-      name: formatPersonNameByRole(u.firstName, u.lastName, u.role.systemRole),
+      // Le rôle a sa colonne : le nom s'affiche sans préfixe « Client » / « Livreur ».
+      name: `${u.firstName} ${u.lastName}`.trim(),
       miniAdminTitle:
         u.role.systemRole === "MINI_ADMIN"
           ? parseMiniAdminSettings(u.settings).title

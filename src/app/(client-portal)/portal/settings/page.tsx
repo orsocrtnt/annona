@@ -20,7 +20,7 @@ import {
 import { customerAddressSchema, type CustomerAddressInput } from "@/lib/validations/address";
 import { clientSettingsSchema, type ClientSettingsInput } from "@/lib/validations/settings";
 import { toast } from "sonner";
-import { MapPin, Trash2, AlertCircle, Bell } from "lucide-react";
+import { MapPin, Trash2, Bell } from "lucide-react";
 
 const DEFAULT_SETTINGS: ClientSettingsInput = {
   emailNotifications: true,
@@ -109,7 +109,6 @@ export default function ClientSettingsPage() {
         <CardContent className="space-y-4">
           {addressesError ? (
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between gap-4">
                 <span>
                   {addressesErrorMsg instanceof Error
@@ -200,7 +199,6 @@ export default function ClientSettingsPage() {
         <CardContent>
           {settingsError ? (
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between gap-4">
                 <span>
                   {settingsErrorMsg instanceof Error

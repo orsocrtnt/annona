@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, CheckCircle2, Circle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,7 +71,8 @@ export function OnboardingContent() {
             <div>
               <CardTitle className="text-base">Avancement</CardTitle>
               <CardDescription>
-                {data.completedSteps} étape(s) terminée(s), {data.skippedSteps} passée(s) sur {data.totalSteps}
+                {data.completedSteps} étape{data.completedSteps > 1 ? "s" : ""} terminée{data.completedSteps > 1 ? "s" : ""} sur {data.totalSteps}
+                {data.skippedSteps > 0 ? ` · ${data.skippedSteps} passée${data.skippedSteps > 1 ? "s" : ""}` : ""}
               </CardDescription>
             </div>
             <span className="text-2xl font-semibold tabular-nums">{progress}%</span>
@@ -140,7 +141,6 @@ export function OnboardingContent() {
       </div>
 
       <Alert>
-        <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Limites du pilote interne</AlertTitle>
         <AlertDescription className="space-y-1">
           <p>

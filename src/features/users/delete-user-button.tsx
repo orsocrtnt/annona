@@ -69,8 +69,9 @@ export function DeleteUserButton({
         className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
         onClick={() => setOpen(true)}
         title={`Supprimer ${userName}`}
+        aria-label={`Supprimer ${userName}`}
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

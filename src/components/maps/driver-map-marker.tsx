@@ -5,6 +5,7 @@ import L from "leaflet";
 import { Marker } from "react-leaflet";
 import { getDriverPresenceColor } from "@/lib/driver-presence";
 import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import { withoutRolePrefix } from "@/lib/format/person-labels";
 
 function escapeHtml(text: string) {
   return text
@@ -15,7 +16,8 @@ function escapeHtml(text: string) {
 }
 
 function splitName(fullName: string) {
-  const trimmed = fullName.trim();
+  // Le nom arrive parfois préfixé (« Livreur Jean Dupont ») : sans cela l'étiquette affichait « Livreur » / « Jean Dupont ».
+  const trimmed = withoutRolePrefix(fullName);
   const space = trimmed.indexOf(" ");
   if (space === -1) return { firstName: trimmed, lastName: "" };
   return {
