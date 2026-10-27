@@ -115,7 +115,8 @@ export async function getCompanyClientDetail(companyId: string, clientId: string
         orderBy: { createdAt: "desc" },
         take: 50,
       },
-      invoices: {
+      // Noms des relations du schéma (User.invoicesAsCustomer / User.supportTickets).
+      invoicesAsCustomer: {
         where: { companyId },
         select: {
           id: true,
@@ -138,7 +139,7 @@ export async function getCompanyClientDetail(companyId: string, clientId: string
         orderBy: { createdAt: "desc" },
         take: 20,
       },
-      tickets: {
+      supportTickets: {
         where: { companyId },
         select: {
           id: true,
@@ -197,5 +198,7 @@ export async function getCompanyClientDetail(companyId: string, clientId: string
       : []),
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
-  return { client, activityToday, todayEvents };
+  // La fiche attend `invoices` et `tickets` : même forme qu'avant, relations valides.
+  const { invoicesAsCustomer, supportTickets, ...profile } = client;
+  return { client: { ...profile, invoices: invoicesAsCustomer, tickets: supportTickets }, activityToday, todayEvents };
 }
