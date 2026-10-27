@@ -218,6 +218,9 @@ const COMPANY_ORDER_HISTORY_SELECT = {
   shippingAddress: true,
   shippingCity: true,
   pickupAddress: true,
+  // Codes postaux lus par le sélecteur de chauffeur (zones de dispatch) : sans eux, « Aucun compatible ».
+  shippingPostalCode: true,
+  pickupPostalCode: true,
   customerEmail: true,
   customer: { select: { firstName: true, lastName: true, email: true } },
   deliveries: {
@@ -227,6 +230,8 @@ const COMPANY_ORDER_HISTORY_SELECT = {
       status: true,
       driverId: true,
       driverName: true,
+      postalCode: true,
+      pickupPostalCode: true,
       missionStartedAt: true,
       missionAcceptedAt: true,
       driver: { select: { id: true, firstName: true, lastName: true } },
