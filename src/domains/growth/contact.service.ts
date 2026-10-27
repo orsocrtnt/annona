@@ -35,8 +35,13 @@ export function contactSourceHash(source: string, secret: string) {
   return createHmac("sha256", secret).update(`contact-source:${source}`).digest("hex");
 }
 
+/**
+ * Vercel écrase x-forwarded-for avec la seule adresse du client. Derrière un proxy qui
+ * ajoute au lieu d'écraser, les adresses de gauche viennent du client : seule la dernière,
+ * posée par le proxy le plus proche, sert de source.
+ */
 export function contactSourceFromHeaders(headers: Headers) {
-  const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const forwarded = headers.get("x-forwarded-for")?.split(",").map((entry) => entry.trim()).filter(Boolean).at(-1);
   return forwarded || headers.get("x-real-ip")?.trim() || "unknown";
 }
 

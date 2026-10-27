@@ -91,9 +91,23 @@ test("GROWTH-1 contact : empreinte à secret obligatoire et source lue sur le pr
   assert.notEqual(contactSourceHash("192.0.2.1", "a"), contactSourceHash("192.0.2.1", "b"));
   assert.match(contactSourceHash("192.0.2.1", secret), /^[a-f0-9]{64}$/);
   await assert.rejects(submitContactMessage(valid, "192.0.2.1", { now, secret: "", db: memoryDb().db }), /CONTACT_SOURCE_SECRET_MISSING/);
-  assert.equal(contactSourceFromHeaders(new Headers({ "x-forwarded-for": "203.0.113.5, 10.0.0.1" })), "203.0.113.5");
+  // Vercel écrase l'en-tête : une seule adresse, celle du client.
+  assert.equal(contactSourceFromHeaders(new Headers({ "x-forwarded-for": "203.0.113.5" })), "203.0.113.5");
+  assert.equal(contactSourceFromHeaders(new Headers({ "x-forwarded-for": "203.0.113.5, 198.51.100.7 " })), "198.51.100.7");
   assert.equal(contactSourceFromHeaders(new Headers({ "x-real-ip": "203.0.113.6" })), "203.0.113.6");
+  assert.equal(contactSourceFromHeaders(new Headers({ "x-forwarded-for": " , ", "x-real-ip": "203.0.113.6" })), "203.0.113.6");
   assert.equal(contactSourceFromHeaders(new Headers()), "unknown");
+});
+
+test("GROWTH-1 contact : une adresse forgée à gauche de x-forwarded-for ne contourne pas le débit", async () => {
+  // Derrière un proxy qui ajoute au lieu d'écraser, seule l'adresse de droite est fiable.
+  const { db } = memoryDb();
+  const results = [];
+  for (let index = 0; index < CONTACT_SOURCE_LIMIT + 1; index += 1) {
+    const source = contactSourceFromHeaders(new Headers({ "x-forwarded-for": `192.0.2.${index}, 198.51.100.7` }));
+    results.push((await submitContactMessage(valid, source, { now, secret, db })).status);
+  }
+  assert.deepEqual(results, [...Array(CONTACT_SOURCE_LIMIT).fill("accepted"), "rate_limited"]);
 });
 
 test("GROWTH-1 contact : la boîte plateforme pagine sans exposer l'empreinte", async () => {

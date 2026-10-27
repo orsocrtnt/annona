@@ -24,3 +24,4 @@ Date : 2026-10-25. Cette porte ne clôt pas GROWTH-1.
 
 GROWTH-1 reste ouvert.
 - Boîte Contact (2026-10-27) : `/admin/contact`, réservée au super-administrateur, lecture seule et paginée. Recette Chrome locale : messages du plus récent au plus ancien, contenu HTML affiché comme texte, empreinte de source jamais exposée.
+- Débit Contact (2026-10-27) : la source est la dernière adresse de `x-forwarded-for`, posée par le proxy le plus proche, puis `x-real-ip`. Une adresse forgée à gauche ne crée plus une nouvelle source : 4ᵉ envoi refusé (`tests/growth01-contact.test.ts`). Sur Vercel, qui écrase l'en-tête, le comportement est inchangé.
