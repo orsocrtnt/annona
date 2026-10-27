@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -37,6 +45,17 @@ export default function RecurringOrdersPage() {
   const createRecurring = useCreateRecurringOrder();
   const updateRecurring = useUpdateRecurringOrder();
   const [showForm, setShowForm] = useState(false);
+  // « Terminer » est irréversible : la carte demande, la fenêtre confirme.
+  const [finishTarget, setFinishTarget] = useState<RecurringItem | null>(null);
+  const [finishOpen, setFinishOpen] = useState(false);
+  const cancelFinishRef = useRef<HTMLButtonElement>(null);
+  const finishReturnFocusRef = useRef<HTMLElement | null>(null);
+
+  const requestFinish = (item: RecurringItem) => {
+    finishReturnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setFinishTarget(item);
+    setFinishOpen(true);
+  };
 
   const onSubmit = async (data: Parameters<typeof createRecurring.mutateAsync>[0]) => {
     try {
@@ -54,9 +73,16 @@ export default function RecurringOrdersPage() {
     try {
       await updateRecurring.mutateAsync({ id, data: { status } });
       toast.success("Statut mis à jour");
+      return true;
     } catch {
       toast.error("Mise à jour impossible");
+      return false;
     }
+  };
+
+  const confirmFinish = async () => {
+    if (!finishTarget) return;
+    if (await toggleStatus(finishTarget.id, "CANCELLED")) setFinishOpen(false);
   };
 
   if (isInitialQueryLoading(isLoading, recurring)) return <PageSkeleton />;
@@ -117,7 +143,7 @@ export default function RecurringOrdersPage() {
         <ul className="space-y-3" aria-label="Récurrences en cours">
           {current.map((item) => (
             <li key={item.id}>
-              <RecurringCard item={item} onStatusChange={toggleStatus} />
+              <RecurringCard item={item} onStatusChange={toggleStatus} onRequestFinish={requestFinish} />
             </li>
           ))}
         </ul>
@@ -137,12 +163,46 @@ export default function RecurringOrdersPage() {
           <ul className="space-y-3 px-3 pb-3">
             {finished.map((item) => (
               <li key={item.id}>
-                <RecurringCard item={item} onStatusChange={toggleStatus} />
+                <RecurringCard item={item} onStatusChange={toggleStatus} onRequestFinish={requestFinish} />
               </li>
             ))}
           </ul>
         </details>
       )}
+
+      <Dialog open={finishOpen} onOpenChange={setFinishOpen}>
+        {finishTarget && (
+          <DialogContent
+            onOpenAutoFocus={(event) => {
+              // Action irréversible : le focus part sur « Annuler », pas sur la confirmation.
+              event.preventDefault();
+              cancelFinishRef.current?.focus();
+            }}
+            onCloseAutoFocus={(event) => {
+              // Retour au bouton « Terminer » ; s'il a disparu (récurrence terminée), au contenu principal.
+              event.preventDefault();
+              const target = finishReturnFocusRef.current;
+              (target?.isConnected ? target : document.getElementById("main-content"))?.focus();
+            }}
+          >
+            <DialogHeader>
+              <DialogTitle>Terminer « {finishTarget.label} » ?</DialogTitle>
+              <DialogDescription>
+                Cette action est irréversible : aucune nouvelle livraison ne sera créée pour cette
+                récurrence et elle ne pourra pas être reprise. Les livraisons déjà créées sont conservées.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button ref={cancelFinishRef} variant="ghost" onClick={() => setFinishOpen(false)}>
+                Annuler
+              </Button>
+              <Button variant="destructive" onClick={() => void confirmFinish()} loading={updateRecurring.isPending}>
+                Terminer la récurrence
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }
@@ -156,9 +216,11 @@ function dayLabel(value: string, inline = false): string {
 function RecurringCard({
   item,
   onStatusChange,
+  onRequestFinish,
 }: {
   item: RecurringItem;
   onStatusChange: (id: string, status: "ACTIVE" | "PAUSED" | "CANCELLED") => void;
+  onRequestFinish: (item: RecurringItem) => void;
 }) {
   const isCourier = item.deliveryCategory === "COURIER";
   const CategoryIcon = isCourier ? Bike : Package;
@@ -211,7 +273,7 @@ function RecurringCard({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => onStatusChange(item.id, "CANCELLED")}
+                onClick={() => onRequestFinish(item)}
                 aria-label={`Terminer « ${item.label} »`}
               >
                 Terminer
