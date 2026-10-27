@@ -78,6 +78,9 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[#ececea]">
+      <h1 className="sr-only">
+        {target ? `Itinéraire — ${target.label} : ${target.address}` : "Itinéraire de la mission"}
+      </h1>
       <div className="absolute inset-0">
         <DriverNavigationMap
           position={position}
@@ -93,7 +96,7 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
         <div className="pointer-events-auto flex items-center gap-2">
           <Button variant="secondary" size="default" className="shadow-md" asChild>
             <Link href="/driver/missions">
-              <ArrowLeft className="mr-1.5 h-4 w-4" />
+              <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden="true" />
               Missions
             </Link>
           </Button>
@@ -107,7 +110,7 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
                 void loadRoute();
               }}
             >
-              <LocateFixed className="mr-1.5 h-4 w-4" />
+              <LocateFixed className="mr-1.5 h-4 w-4" aria-hidden="true" />
               Me recentrer
             </Button>
           )}
@@ -131,7 +134,7 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
           {!navigation.canNavigate ? (
             <div className="rounded-2xl bg-white/95 p-4 shadow-lg">
               <p className="text-sm font-medium">{navigation.unavailableReason}</p>
-              {googleMapsUrl && <a className="mt-3 block underline" href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ouvrir l’adresse dans Google Maps</a>}
+              {googleMapsUrl && <a className="mt-3 block rounded-sm underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ouvrir l’adresse dans Google Maps<span className="sr-only"> (nouvel onglet)</span></a>}
               <Button variant="outline" size="lg" className="mt-3 w-full" asChild>
                 <Link href="/driver/missions">Retour aux missions</Link>
               </Button>
@@ -139,16 +142,19 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
           ) : (
             <>
               <p className="rounded-xl border border-black/10 bg-white/95 px-3 py-2 text-center text-[11px] text-muted-foreground shadow">
-                Gardez Tutelliv ouvert · durée indicative hors trafic
+                Gardez TutelLiv ouvert · durée indicative hors trafic
               </p>
               <div className="rounded-2xl border border-black/10 bg-white/95 p-3 shadow-lg">
-                <p className="line-clamp-2 text-sm text-foreground">{target?.address}</p>
+                {/* L'étape (collecte, livraison) en repère, l'adresse en tête : c'est elle qu'on cherche. */}
+                {target?.label && <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{target.label}</p>}
+                <p className="line-clamp-2 text-base font-semibold text-foreground">{target?.address}</p>
                 <div className="mt-2 flex gap-2">
                   {googleMapsUrl && (
                     <Button variant="outline" size="default" className="flex-1" asChild>
                       <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="mr-1.5 h-4 w-4" />
+                        <ExternalLink className="mr-1.5 h-4 w-4" aria-hidden="true" />
                         Google Maps
+                        <span className="sr-only"> (nouvel onglet)</span>
                       </a>
                     </Button>
                   )}

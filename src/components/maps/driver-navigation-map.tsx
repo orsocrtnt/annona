@@ -132,11 +132,14 @@ export function DriverNavigationMap({
             iconSize: [18, 18],
             iconAnchor: [9, 9],
           })}
+          // Repère d'affichage seul : ni focusable ni « bouton » sans nom pour les lecteurs d'écran.
+          keyboard={false}
+          interactive={false}
         />
       )}
 
       {position && (
-        <Marker position={[position.latitude, position.longitude]} icon={driverIcon} zIndexOffset={1000} />
+        <Marker position={[position.latitude, position.longitude]} icon={driverIcon} zIndexOffset={1000} keyboard={false} interactive={false} />
       )}
     </LeafletBaseMap>
   );
