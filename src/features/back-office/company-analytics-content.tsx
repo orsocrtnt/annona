@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BarChart3, Package, CheckCircle2, Clock, UserX, Receipt } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -10,6 +11,8 @@ import { useCompanyAnalytics } from "@/features/back-office/hooks";
 import { formatCurrency } from "@/features/client-portal/utils";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { cn } from "@/lib/utils";
+import { collectedShare, volumeSummary } from "@/lib/analytics/summary";
+import { withoutRolePrefix } from "@/lib/format/person-labels";
 
 function percent(value: number | null) {
   if (value == null) return "—";
@@ -38,14 +41,13 @@ export function CompanyAnalyticsContent() {
   }
 
   const maxVolume = Math.max(1, ...data.dailyVolume.map((row) => row.count));
-  const stats = [
-    { label: "Livraisons créées", value: String(data.deliveriesCreated), icon: Package },
-    { label: "Livrées", value: String(data.delivered), icon: CheckCircle2 },
-    { label: "À l’heure", value: percent(data.onTimeRate), icon: Clock },
-    { label: "En retard maintenant", value: String(data.lateNow), icon: Clock },
-    { label: "Sans livreur", value: String(data.unassigned), icon: UserX },
-    { label: "Facturé", value: formatCurrency(data.invoicedAmount), icon: Receipt },
-  ];
+  const volume = volumeSummary(data.dailyVolume);
+  const share = collectedShare(data.collectedAmount, data.pendingInvoiceAmount);
+  const maxClient = Math.max(1, ...data.topClients.map((client) => client.deliveries));
+  // Axe des dates : chaque jour sur 7 jours, trois repères sur 30 jours.
+  const axis = days === 7
+    ? data.dailyVolume.map((row) => row.date)
+    : [data.dailyVolume[0]?.date, data.dailyVolume[Math.floor(data.dailyVolume.length / 2)]?.date, data.dailyVolume.at(-1)?.date].filter(Boolean) as string[];
 
   return (
     <div className="space-y-8">
@@ -56,12 +58,13 @@ export function CompanyAnalyticsContent() {
             Volume, ponctualité et facturation sur les {days} derniers jours
           </p>
         </div>
-        <div className="flex gap-1 rounded-lg border border-border p-1">
+        <div className="flex w-fit gap-1 rounded-xl border border-border bg-card p-1" role="group" aria-label="Période">
           {([7, 30] as const).map((option) => (
             <Button
               key={option}
               size="sm"
               variant={days === option ? "brand" : "ghost"}
+              aria-pressed={days === option}
               onClick={() => setDays(option)}
             >
               {option} jours
@@ -71,61 +74,88 @@ export function CompanyAnalyticsContent() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
-            </CardContent>
-          </Card>
-        ))}
+        <StatCard label="Livraisons créées" value={data.deliveriesCreated} icon={Package} />
+        <StatCard label="Livrées" value={data.delivered} icon={CheckCircle2} tone="success" />
+        <StatCard label="À l’heure" value={percent(data.onTimeRate)} icon={Clock} />
+        <StatCard label="En retard maintenant" value={data.lateNow} icon={Clock} tone="critical" />
+        <StatCard label="Sans livreur" value={data.unassigned} icon={UserX} tone="warning" />
+        <StatCard label="Facturé" value={formatCurrency(data.invoicedAmount)} icon={Receipt} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Volume quotidien</CardTitle>
-            <CardDescription>Livraisons créées par jour</CardDescription>
+            <CardDescription>
+              {volume.total
+                ? `${volume.total} livraison${volume.total > 1 ? "s" : ""} créée${volume.total > 1 ? "s" : ""} · pic de ${volume.peak!.count} le ${dayLabel(volume.peak!.date, 30)}`
+                : "Aucune livraison créée sur la période"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex h-40 items-end gap-1">
+            {/* Chaque colonne prend toute la hauteur : sans cela la barre (en %) retombait à zéro. */}
+            <div className="flex h-40 items-end gap-1" aria-hidden="true">
               {data.dailyVolume.map((row) => (
-                <div key={row.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                <div key={row.date} className="flex h-full min-w-0 flex-1 flex-col justify-end">
                   <div
-                    className={cn("w-full rounded-sm bg-brand/80", row.count === 0 && "bg-muted")}
-                    style={{ height: `${Math.max(4, (row.count / maxVolume) * 100)}%` }}
+                    className={cn("w-full rounded-t-[3px]", row.count === 0 ? "bg-[#eef1ef]" : "bg-[#0e1310]")}
+                    style={{ height: `${Math.max(3, (row.count / maxVolume) * 100)}%` }}
                     title={`${dayLabel(row.date, days)} : ${row.count}`}
                   />
-                  {days === 7 ? (
-                    <span className="text-[10px] text-muted-foreground">{dayLabel(row.date, days)}</span>
-                  ) : null}
                 </div>
               ))}
             </div>
+            <div className="mt-2 flex justify-between text-[11px] text-muted-foreground" aria-hidden="true">
+              {axis.map((date) => (
+                <span key={date}>{dayLabel(date, days)}</span>
+              ))}
+            </div>
+            <table className="sr-only">
+              <caption>Livraisons créées par jour</caption>
+              <tbody>
+                {data.dailyVolume.filter((row) => row.count > 0).map((row) => (
+                  <tr key={row.date}>
+                    <th scope="row">{dayLabel(row.date, 30)}</th>
+                    <td>{row.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Encaissement</CardTitle>
-            <CardDescription>Factures émises sur la période</CardDescription>
+            <CardDescription>
+              {share == null ? "Aucune facture émise sur la période" : `${share} % de ce qui a été facturé est encaissé`}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Encaissé</span>
-              <span className="font-medium">{formatCurrency(data.collectedAmount)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">En attente</span>
-              <span className="font-medium">{formatCurrency(data.pendingInvoiceAmount)}</span>
-            </div>
-            <div className="flex justify-between border-t border-border pt-3">
-              <span className="text-muted-foreground">Total facturé</span>
-              <span className="font-semibold">{formatCurrency(data.invoicedAmount)}</span>
-            </div>
+          <CardContent className="space-y-4 text-sm">
+            {share != null && (
+              <div className="flex h-2.5 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
+                <span className="h-full bg-[#0e1310]" style={{ width: `${share}%` }} />
+                <span className="h-full bg-[#f2b84b]" style={{ width: `${100 - share}%` }} />
+              </div>
+            )}
+            <dl className="space-y-2">
+              <div className="flex items-center justify-between">
+                <dt className="inline-flex items-center gap-2 text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full bg-[#0e1310]" aria-hidden="true" /> Encaissé
+                </dt>
+                <dd className="font-medium tabular-nums">{formatCurrency(data.collectedAmount)}</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="inline-flex items-center gap-2 text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full bg-[#f2b84b]" aria-hidden="true" /> En attente
+                </dt>
+                <dd className="font-medium tabular-nums">{formatCurrency(data.pendingInvoiceAmount)}</dd>
+              </div>
+              <div className="flex items-center justify-between border-t border-border pt-2">
+                <dt className="text-muted-foreground">Total facturé</dt>
+                <dd className="font-semibold tabular-nums">{formatCurrency(data.invoicedAmount)}</dd>
+              </div>
+            </dl>
           </CardContent>
         </Card>
       </div>
@@ -133,17 +163,23 @@ export function CompanyAnalyticsContent() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Clients les plus actifs</CardTitle>
-          <CardDescription>Nombre de livraisons créées</CardDescription>
+          <CardDescription>Livraisons créées sur la période</CardDescription>
         </CardHeader>
         <CardContent>
           {data.topClients.length === 0 ? (
             <p className="text-sm text-muted-foreground">Aucune livraison sur cette période.</p>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="space-y-3">
               {data.topClients.map((client) => (
-                <li key={client.name} className="flex items-center justify-between py-2 text-sm">
-                  <span>{client.name}</span>
-                  <span className="font-medium">{client.deliveries}</span>
+                <li key={client.name} className="grid grid-cols-[minmax(0,10rem)_1fr_auto] items-center gap-3 text-sm">
+                  <span className="truncate">{withoutRolePrefix(client.name)}</span>
+                  <span className="h-2 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
+                    <span className="block h-full rounded-full bg-[#0e1310]" style={{ width: `${(client.deliveries / maxClient) * 100}%` }} />
+                  </span>
+                  <span className="font-medium tabular-nums">
+                    {client.deliveries}
+                    <span className="sr-only"> livraison{client.deliveries > 1 ? "s" : ""}</span>
+                  </span>
                 </li>
               ))}
             </ul>
