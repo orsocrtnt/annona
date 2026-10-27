@@ -61,6 +61,19 @@ test("avec un logo d'entreprise, il est intégré en tête ; illisible, le relev
   assert.ok(pdfText(broken).includes("LogiExpress"));
 });
 
+test("sous le montant, une phrase dit où en est le paiement", async () => {
+  const pending = { ...base, status: "PENDING", paidAt: null, dueDate: new Date("2026-11-26T09:00:00Z") };
+  assert.ok(pdfText(await generateInvoicePdf(base)).includes("Paiement reçu le 25 octobre 2026"));
+  assert.ok(pdfText(await generateInvoicePdf(pending)).includes("À régler avant le 26 novembre 2026"));
+  assert.ok(pdfText(await generateInvoicePdf({ ...pending, status: "OVERDUE" })).includes("Échéance dépassée depuis le 26 novembre 2026"));
+});
+
+test("un relevé sans ligne le dit au lieu d'afficher un tableau vide", async () => {
+  const content = pdfText(await generateInvoicePdf({ ...base, lineItems: [] }));
+  assert.ok(content.includes("Aucune ligne détaillée pour ce relevé."));
+  assert.ok(content.includes("89,90"));
+});
+
 test("une ligne sans montant lisible affiche « — », jamais « NaN »", async () => {
   const pdf = await generateInvoicePdf({ ...base, lineItems: [{ label: "Ancienne ligne", amount: undefined as unknown as number, quantity: 2 }] });
   const content = pdfText(pdf);
