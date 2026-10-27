@@ -133,6 +133,7 @@ Réponses données au questionnaire de l'agent ; elles débloquent SAAS-02/03/04
 | Sujet | Décision | Tâche |
 |---|---|---|
 | Impayé pendant les 60 jours de découverte premium | La découverte s'arrête au premier échec de paiement : les fonctions premium d'essai sont retirées immédiatement. Les règles d'impayé habituelles (J14 restreint, J30 lecture seule) continuent de s'appliquer au compte. | SAAS-04 |
+| Résiliation pendant la découverte (complément du même jour) | La découverte s'arrête dès la demande de résiliation, même si la période payée continue ; elle ne revient pas si la résiliation est annulée. L'abonnement et les fonctions de la formule restent actifs jusqu'à la fin de la période payée. | SAAS-04 |
 | Changement de formule pendant la découverte | La découverte garde sa date de fin (J60) en cas de montée ou de baisse ; un passage à Business la rend sans objet puisque tout y est inclus. | SAAS-04 |
 | Baisse de formule avec ressources en excès | Refusée tant que des livreurs, administrateurs ou dispatchers dépassent les limites de la formule visée. Le client voit les comptes à désactiver lui-même ; rien n'est supprimé ni désactivé automatiquement. | SAAS-03 |
 | Journal d'abonnement | Migration additive autorisée, appliquée à la seule préproduction. Jamais en production sans nouvelle décision. Constat du 27 octobre : les actions d'abonnement sandbox sont déjà journalisées avec leur auteur dans `SaasBillingOperation`, donc aucune migration n'a été créée. | SAAS-03 |
@@ -141,7 +142,7 @@ Réponses données au questionnaire de l'agent ; elles débloquent SAAS-02/03/04
 | Alertes de consommation plateforme | 80 %, 100 % et 120 % des commandes incluses ; pour Business, alerte dès deux fois les commandes incluses ou 40 livreurs actifs. | SAAS-02 |
 | Pool de démonstration | Garder 6 espaces, mais libérer automatiquement les sessions de test après une heure au lieu de huit. | DEMO-2 (suivi ENV-2) |
 
-Le choix d'un Contact stocké implique sa propre table : additive, préproduction seulement, comme le journal d'abonnement. La migration des codes commerciaux n'est pas encore autorisée explicitement ; elle doit l'être avant d'être appliquée.
+Le choix d'un Contact stocké implique sa propre table : additive, préproduction seulement, comme le journal d'abonnement. Complément du même jour : la migration additive des codes commerciaux est autorisée, appliquée à la préproduction seulement après relecture et fusion de la branche ; un compte super-administrateur temporaire peut être créé sur la préproduction pour les recettes navigateur, puis supprimé.
 
 ## Éléments encore non confirmés
 

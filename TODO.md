@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**53 tâches terminées sur 80 — 66 %**
+**54 tâches terminées sur 80 — 68 %**
 
-`█████████████░░░░░░░` · 27 tâches restantes
+`██████████████░░░░░░` · 26 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -55,20 +55,18 @@ Liste unique des actions qui ne peuvent pas être faites par un agent, classées
 
 **Décisions produit** — toutes prises le 27 octobre 2026 (voir `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, section C10) : impayé et changement de formule pendant la découverte (SAAS-04), refus d'une baisse avec ressources en excès et journal d'abonnement autorisé sur préproduction (SAAS-03), un code permanent par commercial (SALES-1), Contact stocké dans le back-office plateforme (GROWTH-1), seuils 80/100/120 % et Business (SAAS-02), sessions de test démo libérées après une heure.
 
-**Décision encore ouverte**
-6. SAAS-04 : si le client résilie pendant l'essai premium, l'essai continue-t-il jusqu'à la fin de l'accès payé (comportement actuel) ou s'arrête-t-il à la demande de résiliation ?
+Complément du même jour : une résiliation pendant la découverte la termine immédiatement (SAAS-04), la migration des codes commerciaux est autorisée (application en préproduction après fusion, SALES-1) et un compte super-administrateur temporaire peut être créé sur la préproduction pour les recettes navigateur, puis supprimé.
 
 **Ressources et comptes**
-7. Confirmer l'autorisation de la migration additive des codes commerciaux sur préproduction. → SALES-1
-8. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
-9. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
-10. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
-11. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
+6. Créer un compte Stripe gratuit en mode test et fournir ses clés de test. → SAAS-01B, SAAS-03, SAAS-02
+7. Acheter le domaine retenu, choisir et configurer l'expéditeur, donner l'accès au fournisseur d'e-mails. → SEC-05, EMAIL
+8. Mettre à disposition un iPhone, un Android et un trajet fictif supervisé. → MOB-01C, puis V1-GO
+9. Autoriser, si souhaité, une charge mesurée sur la préproduction (sans dépense). → PERF-02, COST-1
 
 **Juridique et terrain**
-12. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
-13. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
-14. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
+10. Créer ou identifier la structure éditrice et faire valider contrats, RGPD, GPS, photos, conservation et sous-traitants par les professionnels compétents. → LEGAL-1, DATA-02, V1-GO
+11. Recruter et autoriser dix entretiens. → PROD-02, OFFER-1
+12. Sélectionner les trois entreprises pilotes, autoriser les contacts et signer le protocole. → PILOT-1, ONBOARD-1
 
 ### Dépendances fournisseur ou validation extérieure
 
@@ -186,7 +184,6 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1. | Moyenne · GPT‑6 Astra |
 | SAAS-01B | B | Adaptateur sandbox, journal et webhooks signés faits ; Checkout/webhooks réels en mode test. | Compte Stripe de test. | Très élevée · GPT‑6 Astra |
 | SAAS-03 | B | Lecture et API de changement/résiliation (sandbox, journalisées) faites ; refus C10 des baisses en excès (27 octobre). Restent écran, export, abonnements sans compte de facturation. | Compte Stripe de test ; recette navigateur. | Très élevée · GPT‑6 Astra |
-| SAAS-04 | B | Droits et affichage faits pour le paiement `fake` ; l'exclusion de `stripe-sandbox` est volontaire et testée tant que les règles d'impayé/changement de formule ne sont pas décidées. | Décision propriétaire, puis raccord Stripe. | Élevée · GPT‑6.1 Sol |
 | SALES-1 | B | Noyau de calcul fait ; persistance, codes/liens et raccord SIGNUP-1. | Décision propriétaire sur les codes. | Élevée · GPT‑6 Astra |
 | SAAS-02 | B+C | Lecture revenu/consommation et alertes C10 (API) faites ; affichage des alertes, réconciliation paiements, rétention, conversion. | Stripe de test ; recette navigateur super-admin. | Élevée · GPT‑6.1 Sol |
 | PERF-02 | A+B | Harnais en mémoire et PostgreSQL local jetable faits (27 octobre) ; routes Next locales, puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
@@ -1043,7 +1040,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Correction et branchement du 2026-10-27, décision C10. Les mutations existent déjà pour les abonnements Stripe sandbox : `POST /api/billing` (aperçu, changement, résiliation), réservé à `COMPANY_ADMIN`, idempotent, avec confirmation explicite. Elles sont journalisées avec leur auteur dans `SaasBillingOperation`, donc la migration « journal » n'est pas nécessaire et n'a pas été créée. Ajout : un changement de formule qui laisserait des comptes en excès est refusé immédiatement (409 `PLAN_CHANGE_SEATS_EXCEEDED`, dépassements listés) avant tout appel au fournisseur, et l'aperçu renvoie l'évaluation. Ce contrôle n'est jamais plus permissif que celui du renouvellement. Vérifié : `npm run test:saas03` 11/11, `npm run test:admin01` 88/88, `npm run check`, calcul réel en lecture seule sur la préproduction recoupé par SQL. Restent ouverts : les abonnements à paiement fictif ou manuel, sans compte de facturation (la route répond 404), la réconciliation avec un vrai compte Stripe de test, l'export DATA-02 depuis « Mon abonnement », l'écran des actions et sa recette navigateur.
 
-- [ ] **SAAS-04 — Appliquer les 60 jours de découverte premium.** Pour une nouvelle souscription payante Starter ou Pro, ouvrir temporairement les fonctions logicielles premium éligibles, sans relever les quotas et sans inclure automatiquement le support humain prioritaire. Afficher la date de fin et les fonctions concernées ; à l'échéance, retirer seulement les droits non inclus/non achetés, sans facturation automatique.
+- [x] **SAAS-04 — Appliquer les 60 jours de découverte premium.** Pour une nouvelle souscription payante Starter ou Pro, ouvrir temporairement les fonctions logicielles premium éligibles, sans relever les quotas et sans inclure automatiquement le support humain prioritaire. Afficher la date de fin et les fonctions concernées ; à l'échéance, retirer seulement les droits non inclus/non achetés, sans facturation automatique.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -1060,6 +1057,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Revue du 2026-10-27 : une souscription confirmée par l'adaptateur `stripe-sandbox` n'ouvre aucune découverte (`saas.service.ts`, test `saas04` qui l'exige). Ce n'est pas un oubli : avec Stripe, impayé et changement de formule deviennent possibles et leur règle pendant la découverte n'est pas décidée. Le raccord Stripe suivra cette décision ; aucun code modifié.
 
   Décision C10 appliquée le 2026-10-27 (`docs/DECISIONS_PRODUIT_COMMERCIALES.md`). Une souscription confirmée par `stripe-sandbox` ouvre désormais les mêmes 60 jours ; un adaptateur inconnu n'en ouvre aucun. Le premier échec de paiement met fin à la découverte, définitivement : la projection Stripe ramène `premiumDiscoveryEndsAt` à la date de l'échec, et une régularisation ne la rouvre pas. Les droits et « Mon abonnement » appliquent la coupure dès que l'échec est enregistré, même avant la projection, et les règles d'impayé habituelles continuent de s'appliquer au compte. Un changement de formule garde la date de fin ; Business n'a pas de découverte. Vérifié : `npm run test:saas04` 7/7 (4 nouveaux cas), `npm run test:saas03`, `npm run test:saas01b` (PostgreSQL local, doublure Stripe) et `npm run check`. La case reste ouverte : la règle d'annulation pendant la découverte n'est pas encore décidée.
+
+  Résiliation, complément C10 du 2026-10-27 : une résiliation demandée pendant la découverte la termine immédiatement, même si la période payée continue. La projection Stripe ramène `premiumDiscoveryEndsAt` au moment où elle constate la demande ; droits et « Mon abonnement » la coupent dès que `cancelAtPeriodEnd` est vrai, et une résiliation annulée ensuite ne la rouvre pas. L'abonnement, les fonctions de la formule et la création de commandes restent actifs jusqu'à la fin de la période payée. Vérifié : `npm run test:saas04` 8/8, `npm run test:saas01b` (13 contrôles, PostgreSQL local, doublure Stripe), `npm run test:saas03` 11/11 et `npm run check`. Tous les critères de sortie sont prouvés : case cochée. Limite connue : la recette avec un vrai compte Stripe de test reste suivie dans SAAS-01B.
 
 - [ ] **SALES-1 — Tracer l'origine des ventes et calculer les commissions.** Associer un code/lien et un commercial à l'inscription, figer les éléments de souscription initiale, conserver le niveau **apporteur 15 % / accompagné 25 % / autonome 35 %**, puis calculer pendant douze mois maximum une commission théorique sur les seuls montants HT réellement encaissés et éligibles. Les options ou changements ultérieurs n'ajoutent pas de commission. Aucun versement automatisé ni CRM complexe.
 

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   PREMIUM_DISCOVERY_DAYS,
   PREMIUM_DISCOVERY_FEATURES,
+  premiumDiscoveryEndAfterCancellation,
   premiumDiscoveryEndAfterPaymentFailure,
   premiumDiscoveryEndsAtForPaidSignup,
   resolveCompanySaasAccess,
@@ -337,7 +338,7 @@ test("SAAS-04 (C10) : le premier impayé met fin à la découverte, définitivem
   const billingSource = readFileSync("src/domains/billing/billing.service.ts", "utf8");
   assert.match(
     billingSource,
-    /premiumDiscoveryEndsAt: premiumDiscoveryEndAfterPaymentFailure\(subscription\.premiumDiscoveryEndsAt, state\.failedAt\)/,
+    /premiumDiscoveryEndsAt: premiumDiscoveryEndAfterCancellation\(premiumDiscoveryEndAfterPaymentFailure\(subscription\.premiumDiscoveryEndsAt, state\.failedAt\), state\.cancelAtPeriodEnd, new Date\(\)\)/,
     "la projection Stripe enregistre la fin anticipée"
   );
 });
@@ -360,4 +361,33 @@ test("SAAS-04 (C10) : un changement de formule garde la date de fin ; Business n
   assert.equal(asPro.premiumDiscovery?.endsAt.toISOString(), endsAt.toISOString());
   const asBusiness = await resolveCompanySaasAccess("company-a", at, database(commercial({ planCode: "BUSINESS", startsAt, premiumDiscoveryEndsAt: endsAt })));
   assert.equal(asBusiness.premiumDiscovery, null, "tout est inclus en Business");
+});
+
+test("SAAS-04 (C10) : une résiliation demandée pendant la découverte la termine immédiatement", async () => {
+  const startsAt = new Date("2026-01-01T00:00:00.000Z");
+  const endsAt = premiumDiscoveryEndsAtForPaidSignup({ startsAt, planCode: "PRO", paymentAdapter: "stripe-sandbox" })!;
+  const at = new Date("2026-01-15T00:00:00.000Z");
+
+  assert.equal(premiumDiscoveryEndAfterCancellation(endsAt, true, at)?.toISOString(), at.toISOString());
+  assert.equal(premiumDiscoveryEndAfterCancellation(endsAt, false, at), endsAt, "sans résiliation, rien ne change");
+  assert.equal(premiumDiscoveryEndAfterCancellation(endsAt, true, new Date("2026-04-01T00:00:00.000Z")), endsAt, "jamais de prolongation");
+  assert.equal(premiumDiscoveryEndAfterCancellation(null, true, at), null, "aucune découverte n'est créée");
+
+  // Résiliée en fin de période : l'abonnement reste actif, mais plus l'essai.
+  const cancelled = { ...commercial({ planCode: "PRO", startsAt, premiumDiscoveryEndsAt: endsAt }), cancelAtPeriodEnd: true };
+  const access = await resolveCompanySaasAccess("company-a", at, database(cancelled));
+  assert.equal(access.premiumDiscovery, null);
+  assert.deepEqual(sortedFeatures(access), [...planMatrix.PRO.features].sort(), "les fonctions de la formule restent");
+  assert.equal(access.status, "ACTIVE", "la période payée continue");
+  assert.equal(access.canCreateOrders, true);
+
+  // Une fin déjà projetée par la résiliation n'est pas rouverte si la résiliation est annulée.
+  const resumed = commercial({ planCode: "PRO", startsAt, premiumDiscoveryEndsAt: premiumDiscoveryEndAfterCancellation(endsAt, true, at) });
+  const later = await resolveCompanySaasAccess("company-a", new Date("2026-01-20T00:00:00.000Z"), database(resumed));
+  assert.equal(later.premiumDiscovery, null);
+
+  const account = subscriptionAccount("PRO", endsAt);
+  assert.ok(buildSubscriptionView(account as never, at)?.premiumDiscovery, "affichée avant la résiliation");
+  (account.state as Record<string, unknown>).cancelAtPeriodEnd = true;
+  assert.equal(buildSubscriptionView(account as never, at)?.premiumDiscovery, null, "« Mon abonnement » la retire dès la demande");
 });

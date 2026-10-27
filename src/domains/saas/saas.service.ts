@@ -51,6 +51,19 @@ export function premiumDiscoveryEndAfterPaymentFailure(
   return new Date(failure);
 }
 
+/**
+ * Décision C10 (complément) : une résiliation demandée pendant la découverte la termine
+ * immédiatement, même si la période payée continue. Ne prolonge ni ne rouvre jamais.
+ */
+export function premiumDiscoveryEndAfterCancellation(
+  discoveryEndsAt: Date | null,
+  cancelRequested: boolean,
+  at: Date
+): Date | null {
+  if (!discoveryEndsAt || !cancelRequested || at.getTime() >= discoveryEndsAt.getTime()) return discoveryEndsAt;
+  return new Date(at.getTime());
+}
+
 type DbClient = Prisma.TransactionClient | typeof prisma;
 
 type PlanSnapshot = {
@@ -326,10 +339,14 @@ export async function resolveCompanySaasAccess(
   if (!assignment) throw new Error("SAAS_PLAN_ASSIGNMENT_REQUIRED");
   const plan = planSnapshotFromJson(assignment.snapshot);
   const features = new Set(plan.features);
-  // Un échec de paiement enregistré met fin à la découverte, même avant sa projection.
-  const discoveryEndsAt = premiumDiscoveryEndAfterPaymentFailure(
-    subscription.premiumDiscoveryEndsAt,
-    Number.isFinite(failedAt) ? new Date(failedAt).toISOString() : null
+  // Un échec de paiement ou une résiliation demandée met fin à la découverte.
+  const discoveryEndsAt = premiumDiscoveryEndAfterCancellation(
+    premiumDiscoveryEndAfterPaymentFailure(
+      subscription.premiumDiscoveryEndsAt,
+      Number.isFinite(failedAt) ? new Date(failedAt).toISOString() : null
+    ),
+    subscription.cancelAtPeriodEnd,
+    at
   );
   const discoveryActive =
     (plan.planCode === "STARTER" || plan.planCode === "PRO") &&
