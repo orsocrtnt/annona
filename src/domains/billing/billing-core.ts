@@ -35,6 +35,8 @@ export type BillingInvoice = {
   currency: "EUR"; subtotalCents: number; taxCents: number; totalCents: number; paidCents: number;
   refundedCents: number; periodStart: string; periodEnd: string; dueAt: string;
   reason: string; taxSource: string; documentUrl: string | null;
+  /** Date d'encaissement chez le fournisseur ; absente des factures relues avant le 27 octobre 2026. */
+  paidAt?: string | null;
 };
 export type ProviderSnapshot = {
   subscriptionId: string; customerId: string; live: false; status: string;

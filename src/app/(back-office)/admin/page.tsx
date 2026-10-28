@@ -95,12 +95,12 @@ function SaasHealthPanel() {
         <div>
           <h2 id="saas-health-title" className="text-xl font-semibold tracking-tight">Santé SaaS · lecture seule</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Mesures observées pour {monthFormat.format(new Date(data.period.startsAt))}, sans réconciliation fournisseur.
+            Mesures observées pour {monthFormat.format(new Date(data.period.startsAt))} dans le journal local ; le rapprochement avec le fournisseur se fait à part.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <Card><CardHeader><CardDescription>Abonnements confirmés HT</CardDescription><CardTitle>{formatCurrency(data.revenue.subscriptionPaidHtCents / 100)}</CardTitle><CardDescription>journal local · + {formatCurrency(data.revenue.usagePaidHtCents / 100)} de dépassements</CardDescription></CardHeader></Card>
+          <Card><CardHeader><CardDescription>Abonnements confirmés HT</CardDescription><CardTitle>{formatCurrency(data.revenue.subscriptionPaidHtCents / 100)}</CardTitle><CardDescription>journal local · + {formatCurrency(data.revenue.usagePaidHtCents / 100)} de dépassements{data.revenue.refundedHtCents > 0 ? ` · − ${formatCurrency(data.revenue.refundedHtCents / 100)} remboursés, net ${formatCurrency(data.revenue.netPaidHtCents / 100)}` : ""}</CardDescription></CardHeader></Card>
           <Card><CardHeader><CardDescription>Nouvelles activations</CardDescription><CardTitle>{data.activation.newSubscriptions}</CardTitle></CardHeader></Card>
           <Card><CardHeader><CardDescription>Commandes mesurées</CardDescription><CardTitle>{data.consumption.orders}</CardTitle></CardHeader></Card>
           <Card><CardHeader><CardDescription>Livreurs actifs ou invités</CardDescription><CardTitle>{data.consumption.drivers}</CardTitle></CardHeader></Card>
@@ -175,7 +175,7 @@ function SaasHealthPanel() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               {data.definitions.map((definition) => <li key={definition}>• {definition}</li>)}
               {data.revenue.ignoredRecords > 0 && <li>• {data.revenue.ignoredRecords} écriture(s) incomplète(s) exclue(s) du calcul.</li>}
-              {data.revenue.refundedInvoicesObserved > 0 && <li>• {data.revenue.refundedInvoicesObserved} facture(s) avec remboursement observé ; montant HT non déduit.</li>}
+              {data.revenue.refundedInvoicesObserved > 0 && <li>• {data.revenue.refundedInvoicesObserved} facture(s) avec remboursement observé ; ceux du mois sont déduits du net.</li>}
             </ul>
           </CardContent>
         </Card>

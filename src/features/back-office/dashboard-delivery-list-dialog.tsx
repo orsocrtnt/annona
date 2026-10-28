@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getCompactStatusLabel } from "@/lib/constants/order-status";
 import type { DashboardDeliveryItem } from "@/lib/dashboard/dashboard-types";
-import { buildDispatchTargetHref } from "@/features/back-office/dispatch-focus";
 
 interface DashboardDeliveryListDialogProps {
   open: boolean;
@@ -20,7 +19,6 @@ interface DashboardDeliveryListDialogProps {
   title: string;
   description?: string;
   items: DashboardDeliveryItem[];
-  focusLate?: boolean;
 }
 
 export function DashboardDeliveryListDialog({
@@ -29,7 +27,6 @@ export function DashboardDeliveryListDialog({
   title,
   description,
   items,
-  focusLate = false,
 }: DashboardDeliveryListDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,7 +78,7 @@ export function DashboardDeliveryListDialog({
                   )}
                 </div>
                 <Link
-                  href={buildDispatchTargetHref(delivery.id, focusLate)}
+                  href={`/dashboard/deliveries/${encodeURIComponent(delivery.id)}`}
                   className={buttonVariants({ variant: "outline", size: "sm" })}
                   onClick={() => onOpenChange(false)}
                 >

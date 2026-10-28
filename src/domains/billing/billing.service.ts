@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { activateSignupJourney, type SignupCatalog, type SignupOptionSelection } from "@/domains/signup/signup.service";
@@ -25,14 +25,17 @@ export type BillingCommand =
   | { kind: "USAGE"; periodId: string; amountHtCents: number; start: string; end: string };
 
 /**
- * Une mutation fournisseur composée (CHANGE/CANCEL) peut avoir réussi en partie avant un 4xx :
- * elle reste verrouillée jusqu'au rapprochement. Seuls un changement vide avant appel et un
- * remboursement atomique/idempotent peuvent être libérés avec certitude.
+ * Libère le verrou seulement quand rien n'a été appliqué chez le fournisseur : changement vide ou
+ * conflit détectés avant tout appel, ou refus de la première étape. Après une étape appliquée,
+ * l'adaptateur lève BILLING_PARTIAL_EFFECT : l'opération reste verrouillée pour rapprochement manuel.
+ * Paiement initial et dépassements restent verrouillés : seul le rejeu de leur clé peut conclure.
  */
+const RELEASED_KINDS = new Set<BillingCommand["kind"]>(["CHANGE", "CANCEL", "REFUND"]);
+const NOTHING_APPLIED = new Set(["BILLING_PROVIDER_REJECTED", "BILLING_CHANGE_CONFLICT"]);
 export function canReleaseRejectedOperation(kind: BillingCommand["kind"], error: unknown): error is Error {
   if (!(error instanceof Error)) return false;
   if (error.message === "BILLING_CHANGE_EMPTY") return kind === "CHANGE";
-  return error.message === "BILLING_PROVIDER_REJECTED" && kind === "REFUND";
+  return NOTHING_APPLIED.has(error.message) && RELEASED_KINDS.has(kind);
 }
 
 /** Webhooks simultanés : PostgreSQL refuse l'une des écritures (40001, 40P01). Seule la transaction locale est rejouée, jamais un appel fournisseur. */
@@ -184,6 +187,26 @@ export class BillingService {
       await tx.saasBillingAccount.update({ where: { id: accountId }, data: { pendingOperationId: null, revision: { increment: 1 }, state: json(updatedState), ...(input.kind === "CHECKOUT" ? { checkoutId: String(data.id), providerCustomerId: String(data.customerId) } : {}) } });
     });
     return object(json(result));
+  }
+  /**
+   * Session du portail Stripe (moyen de paiement, factures). Journalisée avec son auteur ;
+   * le lien, porteur d'accès, n'est jamais enregistré. Aucun verrou : rien n'est modifié chez nous.
+   */
+  async paymentPortal(accountId: string, actorId: string) {
+    const account = await this.db.saasBillingAccount.findUniqueOrThrow({ where: { id: accountId } });
+    const state = stateOf(account.state);
+    if (!actorId || !account.providerSubscriptionId || !state.activeContract || state.status === "CANCELLED") throw new Error("BILLING_NOT_ACTIVE");
+    const operationId = `portal:${randomUUID()}`;
+    await this.db.saasBillingOperation.create({ data: { id: operationId, accountId, kind: "PAYMENT_PORTAL", input: json({ command: { kind: "PAYMENT_PORTAL", actorId } }), attempts: 1 } });
+    try {
+      const { url } = await this.provider.paymentPortal(account.providerSubscriptionId, accountId, operationId);
+      await this.db.saasBillingOperation.update({ where: { id: operationId }, data: { status: "DONE", result: { opened: true }, completedAt: new Date() } });
+      return { url };
+    } catch (error) {
+      const code = error instanceof Error && /^BILLING_[A-Z_]+$/.test(error.message) ? error.message : "BILLING_PROVIDER_UNAVAILABLE";
+      await this.db.saasBillingOperation.update({ where: { id: operationId }, data: { status: "FAILED", result: { code }, completedAt: new Date() } });
+      throw new Error(code);
+    }
   }
   async preview(accountId: string, target: BillingContract, prorationDate: number) {
     const account = await this.db.saasBillingAccount.findUniqueOrThrow({ where: { id: accountId } });

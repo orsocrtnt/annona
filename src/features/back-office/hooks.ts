@@ -45,6 +45,16 @@ export function useCompanyOrder(id: string) {
   });
 }
 
+export function useCompanyDelivery(id: string) {
+  return useQuery({
+    queryKey: ["company", "deliveries", id],
+    queryFn: () => backOfficeApi.getDelivery(id),
+    enabled: !!id,
+    // Livraison absente, d'une autre entreprise (404) ou rôle sans droit (403) : pas de relance.
+    retry: (failures, error) => !["Livraison introuvable", "Accès refusé"].includes(error.message) && failures < 3,
+  });
+}
+
 export function useDispatchOverview(deliveryId?: string | null) {
   return useQuery({
     queryKey: ["company", "dispatch", "overview", deliveryId ?? null],

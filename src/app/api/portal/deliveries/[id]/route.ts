@@ -2,7 +2,20 @@ import { trackingTimeline } from "@/domains/tracking/tracking.policy";
 import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import { getClientDeliveryById } from "@/domains/delivery/delivery.service";
+import { deliveryTiming } from "@/domains/delivery/delivery-timing";
 import { getPodPhotoSignedUrl } from "@/lib/storage/pod";
+
+function clientTiming(delivery: NonNullable<Awaited<ReturnType<typeof getClientDeliveryById>>>) {
+  const { dueAt, late, lateByMinutes } = deliveryTiming({
+    status: delivery.status,
+    requestedDeliveryDate: delivery.order?.requestedDeliveryDate ?? null,
+    completedAt: delivery.completedAt,
+    driverId: delivery.driverId,
+    missionAcceptedAt: delivery.missionAcceptedAt,
+    hasProof: Boolean(delivery.podPhotoPath),
+  });
+  return { dueAt, late, lateByMinutes };
+}
 
 export async function GET(
   _request: Request,
@@ -28,6 +41,8 @@ export async function GET(
       ...safeDelivery,
       trackingEvents: trackingTimeline(delivery.trackingEvents),
       podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, delivery.companyId, delivery.id),
+      // Même règle de retard que l'équipe (UX-03) ; la prochaine action reste interne.
+      timing: clientTiming(delivery),
     },
     success: true,
   });

@@ -10,12 +10,12 @@ import { SAAS_FEATURE_LABELS } from "@/domains/saas/saas-access";
 import { cn } from "@/lib/utils";
 import { compatiblePlanSelections, subscriptionApi, type BillingInterval, type BillingPlanCode, type BillingSelection, type ChangePreview } from "./subscription-api";
 
-const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
-const formatMoney = (cents: number) => money.format(cents / 100);
-const per = (interval: BillingInterval) => (interval === "ANNUAL" ? "an" : "mois");
+export const money = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+export const formatMoney = (cents: number) => money.format(cents / 100);
+export const per = (interval: BillingInterval) => (interval === "ANNUAL" ? "an" : "mois");
 const RESOURCES = { drivers: "comptes livreurs", admins: "comptes administrateurs", dispatchers: "comptes dispatchers" } as const;
 
-function Recap({ preview, endsAtLabel }: { preview: ChangePreview; endsAtLabel: string }) {
+export function Recap({ preview, endsAtLabel }: { preview: ChangePreview; endsAtLabel: string }) {
   const { blockers, lostFeatures, orderOverage } = preview.assessment;
   return <div className="space-y-3 text-sm" data-subscription-change-recap="true">
     {blockers.length > 0 && <div role="alert" className="space-y-1 rounded-lg bg-destructive/10 p-3 text-destructive">

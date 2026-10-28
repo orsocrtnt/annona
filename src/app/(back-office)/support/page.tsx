@@ -85,7 +85,11 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
               Commande {ticket.relatedOrder.reference}
             </Link>
           ) : null}
-          {ticket.relatedDelivery ? <span>Livraison {ticket.relatedDelivery.reference}</span> : null}
+          {ticket.relatedDelivery ? (
+            <Link className="font-medium text-brand hover:underline" href={`/dashboard/deliveries/${ticket.relatedDelivery.id}`}>
+              Livraison {ticket.relatedDelivery.reference}
+            </Link>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -36,9 +36,12 @@ function load(file: string, role: string, calls: string[], missing = false) {
       getCompanyDeliveries: async () => { calls.push("list"); return [{ id: "delivery-1" }]; },
       getCompanyDeliveryById: async () => {
         calls.push("detail");
-        return missing ? null : { id: "delivery-1", podPhotoPath: "pod.jpg", reference: "L-1" };
+        return missing ? null : { id: "delivery-1", podPhotoPath: "pod.jpg", reference: "L-1", status: "IN_DELIVERY", order: { requestedDeliveryDate: null } };
       },
       adminUpdateDelivery: async () => { calls.push("patch"); return null; },
+    },
+    "@/domains/delivery/delivery-timing": {
+      deliveryTiming: (input: { hasProof: boolean }) => { calls.push(`timing:${input.hasProof}`); return { late: false }; },
     },
     "@/lib/validations/delivery": { adminUpdateDeliverySchema: { safeParse: () => ({ success: false }) } },
     "@/lib/storage/pod": {

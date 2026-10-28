@@ -54,6 +54,17 @@ Le secret affiché par `stripe listen --print-secret` reste stable d'une session
 
 Sur Checkout, décocher « Enregistrer mes informations avec Link », sinon un numéro de téléphone est exigé. Hors zone euro, Stripe propose le dollar tant que la tarification adaptative (Adaptive Pricing) est active.
 
+## Verrou d'une opération refusée (2026-10-27)
+
+Une opération en cours pose un verrou sur le compte de facturation (`pendingOperationId`) : aucune autre opération ne passe tant qu'il est posé. Le verrou n'est rendu après un refus que lorsque rien n'a été appliqué chez Stripe :
+
+- changement vide (`BILLING_CHANGE_EMPTY`) ou conflit (`BILLING_CHANGE_CONFLICT`) détectés avant tout appel qui modifie l'abonnement ;
+- refus (`BILLING_PROVIDER_REJECTED`) de la première étape d'un changement, d'une résiliation ou d'un remboursement.
+
+Un changement au renouvellement crée d'abord un calendrier, puis le complète. Une résiliation libère d'abord un calendrier existant, puis programme la fin. Si une étape est refusée après une étape déjà appliquée, l'adaptateur lève `BILLING_PARTIAL_EFFECT` : le verrou reste posé et l'opération demande un rapprochement manuel (constater l'état chez Stripe, puis clore l'opération et rendre le verrou). Une panne réseau ou une erreur 5xx garde aussi le verrou ; le rejeu de la même clé conclut. Le paiement initial et les dépassements ne sont jamais libérés sur refus.
+
+Correctif de la consolidation `a44721a` : elle gardait le verrou après tout refus d'un changement ou d'une résiliation. La reprise rejouait alors la même clé, Stripe renvoyait le même refus, puis, après 23 h, le compte restait bloqué (`BILLING_MANUAL_RECONCILIATION_REQUIRED`) sans changement ni résiliation possibles. Preuves : `tests/billing-write-conflict.test.ts`, `tests/saas01b-partial-effect.test.ts` (refus à chaque étape d'un calendrier et d'une résiliation) et `npm run test:saas01b`, qui passe de nouveau avec 17 contrôles, dont l'effet partiel qui garde le verrou.
+
 ## Remboursement opérateur
 
 ```bash

@@ -91,11 +91,10 @@ function DispatchMapContent() {
     setSelectedId(requestedDeliveryAvailable ? requestedDeliveryId : null);
   }, [requestedDeliveryAvailable, requestedDeliveryId]);
 
-  // Double-clic : la fiche complète de la commande (suivi, articles, échanges).
+  // Double-clic : la fiche de la livraison (UX-03), qui donne aussi accès à sa commande.
   const openDetails = useCallback(
     (id: string) => {
-      const delivery = deliveries.find((d) => d.id === id);
-      if (delivery) router.push(`/dashboard/orders/${delivery.orderId}`);
+      if (deliveries.some((d) => d.id === id)) router.push(`/dashboard/deliveries/${id}`);
     },
     [deliveries, router]
   );

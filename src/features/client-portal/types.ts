@@ -76,6 +76,8 @@ export interface PortalDelivery {
   orderId: string;
   reference: string;
   status: DeliveryStatus;
+  /** Fiche livraison uniquement : échéance et retard selon la règle serveur (UX-03). */
+  timing?: { dueAt: string | null; late: boolean; lateByMinutes: number | null };
   deliveryCategory?: DeliveryCategory;
   address: string;
   city: string | null;

@@ -17,6 +17,7 @@ import { DeliveryRouteDisplay } from "@/components/shared/delivery-route-display
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { isLegacyFakeTrackingCoord } from "@/lib/geocoding";
 import { formatDriverFromParts, withoutRolePrefix } from "@/lib/format/person-labels";
+import { formatLateness } from "@/lib/format/lateness";
 import { dateTimeLabel } from "@/lib/format/relative-day";
 import { ArrowLeft, Truck, Clock, Phone } from "lucide-react";
 import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
@@ -77,8 +78,17 @@ export default function ClientDeliveryDetailPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{delivery.reference}</h1>
+          {delivery.timing?.dueAt && (
+            <p className="mt-1 text-sm" data-delivery-due="true">
+              <span className="text-muted-foreground">Prévue le</span>{" "}
+              <time dateTime={delivery.timing.dueAt} className="font-medium">{dateTimeLabel(delivery.timing.dueAt)}</time>
+              {delivery.timing.late && delivery.timing.lateByMinutes !== null && (
+                <span className="font-medium text-destructive"> · en retard de {formatLateness(delivery.timing.lateByMinutes)}</span>
+              )}
+            </p>
+          )}
           {delivery.order && (
-            <p className="mt-1 text-muted-foreground">Commande {delivery.order.reference}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Commande {delivery.order.reference}</p>
           )}
         </div>
         <DeliveryStatusBadge status={delivery.status} deliveryCategory={category} />

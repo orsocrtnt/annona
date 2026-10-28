@@ -5,21 +5,18 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   CalendarClock,
   CheckCircle2,
-  Home,
-  LifeBuoy,
   MapPin,
-  MapPinned,
   MousePointerClick,
-  Package,
   Plus,
-  Receipt,
   Warehouse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CityStreets } from "@/features/landing/product-tour/city-map";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
-import { SpaceSidebar, type SpaceNavItem } from "@/features/landing/product-tour/space-sidebar";
+import { clientNav } from "@/features/landing/product-tour/space-nav";
+import { SpaceSidebar } from "@/features/landing/product-tour/space-sidebar";
+import { TourBubble } from "@/features/landing/product-tour/tour-bubble";
 import { useTypewriter } from "@/features/landing/product-tour/typing";
 import {
   GESTURE_RESULT_DELAY_MS,
@@ -31,13 +28,8 @@ const INTRO_DURATIONS_MS = [700] as const;
 /** Le formulaire s'ouvre une fois la fenêtre agrandie. */
 const ENLARGE_MS = 700;
 
-const NAV: readonly SpaceNavItem[] = [
-  { icon: Home, label: "Accueil", active: true },
-  { icon: Package, label: "Commandes" },
-  { icon: MapPinned, label: "Suivi" },
-  { icon: Receipt, label: "Factures" },
-  { icon: LifeBuoy, label: "Support" },
-];
+
+const NAV = clientNav("Accueil");
 
 const FIELDS = [
   { icon: Warehouse, label: "Retrait", placeholder: "Adresse de retrait", value: TOUR_ORDER.pickup },
@@ -116,6 +108,10 @@ function OrderPanel({
         })}
       </ul>
 
+      <TourBubble key={ordered ? "sent" : "form"} className="bottom-28 right-6" delay={ordered ? 0.1 : 0.8}>
+        {ordered ? "Reçue au dispatch, en direct." : "Pas d'appel, pas d'e-mail."}
+      </TourBubble>
+
       <div className="mt-auto pt-3">
         {ordered ? (
           <motion.p
@@ -175,13 +171,18 @@ export function SceneClientOrder({ onDone, onStart, onReset, reducedMotion }: Sc
   const [ordered, setOrdered] = useState(false);
   useDelayedCall(starting, reducedMotion ? 0 : ENLARGE_MS, () => setFormOpen(true));
   const ready = intro >= INTRO_DURATIONS_MS.length;
-  useDelayedCall(ordered, GESTURE_RESULT_DELAY_MS, onDone);
+  useDelayedCall(ordered, GESTURE_RESULT_DELAY_MS + 800, onDone);
 
   return (
     <div className="flex h-full">
       <SpaceSidebar items={NAV} />
 
       <div className="relative flex min-w-0 flex-1 flex-col">
+        {ready && !starting && (
+          <TourBubble key="home" className="bottom-[124px] left-6">
+            Vos clients commandent seuls.
+          </TourBubble>
+        )}
         <div className="flex items-center justify-between gap-2 px-3 py-3 sm:px-4">
           <div className="min-w-0 leading-tight">
             <p className="truncate text-sm font-semibold">Mon espace</p>

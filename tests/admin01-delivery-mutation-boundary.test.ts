@@ -46,6 +46,7 @@ function load(file: string, role: string, calls: string[], fail?: string) {
       assignDeliverySchema: { safeParse: () => { calls.push("parse"); return { success: true, data: { driverId: "driver-1", force: false } }; } },
     },
     "@/lib/storage/pod": { getPodPhotoSignedUrl: async () => { calls.push("sign"); return null; } },
+    "@/domains/delivery/delivery-timing": { deliveryTiming: () => ({ late: false }) },
   };
   runInNewContext(source, {
     Error, exports: module.exports, module,

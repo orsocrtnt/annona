@@ -11,6 +11,7 @@ import {
 import type {
   CompanyClient,
   CompanyDelivery,
+  CompanyDeliveryDetail,
   CompanyDriver,
   CompanyOrder,
   CompanyOrderStats,
@@ -39,6 +40,7 @@ export const backOfficeApi = {
   getOrders: (query: OrderHistoryQuery) =>
     fetchJson<OrderHistoryPage<CompanyOrder>>(`/api/orders?${orderHistorySearchParams(query)}`),
   getOrder: (id: string) => fetchJson<CompanyOrder>(`/api/orders/${id}`),
+  getDelivery: (id: string) => fetchJson<CompanyDeliveryDetail>(`/api/deliveries/${encodeURIComponent(id)}`),
   getOrderStats: () => fetchJson<CompanyOrderStats>("/api/orders/stats"),
   getDeliveries: (unassignedOnly = false) =>
     fetchJson<CompanyDelivery[]>(`/api/deliveries${unassignedOnly ? "?unassigned=true" : ""}`),

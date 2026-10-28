@@ -268,8 +268,9 @@ test("liste missions : aucune dépendance à la signature Storage lente", async 
   const deps: Record<string, unknown> = {
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": { requireDriverRole: async () => ({ context: { user: { id: "driver", companyId: "a", company: { settings: {} } } } }) },
-    "@/domains/delivery/delivery.service": { getDriverMissions: async () => [{ id: "mission", podPhotoPath: "private" }], getAvailableDeliveriesForDriver: async () => [], getDriverStats: async () => ({}) },
+    "@/domains/delivery/delivery.service": { getDriverMissions: async () => [{ id: "mission", podPhotoPath: "private", order: { requestedDeliveryDate: null } }], getAvailableDeliveriesForDriver: async () => [], getDriverStats: async () => ({}) },
     "@/domains/company/dispatch-settings.service": { parseDispatchSettings: () => ({}) },
+    "@/domains/delivery/delivery-timing": { deliveryTiming: () => ({ dueAt: null, late: false, lateByMinutes: null, nextAction: null }) },
     "@/lib/storage/pod": { isPodPhotoPathForDelivery: () => true, getPodPhotoSignedUrl: () => assert.fail("Storage ne doit pas être appelé pour lire la liste") },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/driver/missions/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;

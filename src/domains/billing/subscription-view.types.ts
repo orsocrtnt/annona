@@ -15,7 +15,8 @@ export type SubscriptionView = {
   } | null;
   status: string;
   alerts: Array<{ code: string; label: string }>;
-  history: Array<{ type: "operation" | "invoice"; label: string; status: string; occurredAt: string; amountCents?: number }>;
+  /** `documentUrl` : page de la facture chez Stripe, seulement pour une adresse `invoice.stripe.com`. */
+  history: Array<{ type: "operation" | "invoice"; label: string; status: string; occurredAt: string; amountCents?: number; documentUrl?: string }>;
   /** SELF_SERVICE : compte de facturation en ligne ; TUTELLIV_TEAM : changements par l'équipe TutelLiv. */
   management: "SELF_SERVICE" | "TUTELLIV_TEAM";
   /** Résiliation déjà demandée : l'abonnement court jusqu'à la fin de la période payée. */
@@ -24,6 +25,8 @@ export type SubscriptionView = {
   canCancel: boolean;
   /** Changement de formule possible : actif, sans résiliation ni changement déjà en attente. */
   canChange: boolean;
+  /** Portail Stripe du moyen de paiement : compte en ligne activé, non résilié définitivement. */
+  canManagePaymentMethod: boolean;
 };
 
 /** Plafond de commandes des pilotes et formules sans limite (entier PostgreSQL maximal). */

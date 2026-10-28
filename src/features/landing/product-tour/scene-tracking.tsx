@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Check, CheckCircle2, RotateCcw } from "lucide-react";
+import { Check, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CityMap } from "@/features/landing/product-tour/city-map";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
+import { TourBubble, TourBubbles } from "@/features/landing/product-tour/tour-bubble";
 import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
+import { GESTURE_RESULT_DELAY_MS, useDelayedCall } from "@/features/landing/product-tour/use-timeline";
 
 const RIDE_DURATION_MS = 6500;
 const RIDE_MINUTES = 12;
@@ -30,17 +31,18 @@ function useRideProgress(reducedMotion: boolean): number {
   return reducedMotion ? 1 : progress;
 }
 
-/** ④ Espace client : le livreur avance sur la carte jusqu'à la livraison. */
-export function SceneTracking({ reducedMotion, onRestart }: SceneProps & { onRestart: () => void }) {
+/** ④ Espace client : le livreur avance sur la carte jusqu'à l'adresse, puis la remise commence. */
+export function SceneTracking({ onDone, reducedMotion }: SceneProps) {
   const progress = useRideProgress(reducedMotion);
   const delivered = progress >= 1;
+  useDelayedCall(delivered, GESTURE_RESULT_DELAY_MS + 300, onDone);
   const minutes = Math.max(1, Math.ceil(RIDE_MINUTES * (1 - progress)));
 
   const timeline = [
     { label: "Commandée", done: true },
     { label: "Attribuée à Karim", done: true },
     { label: "En route", done: delivered, active: !delivered },
-    { label: "Livrée", done: delivered },
+    { label: "Arrivé", done: delivered },
   ];
 
   return (
@@ -56,12 +58,20 @@ export function SceneTracking({ reducedMotion, onRestart }: SceneProps & { onRes
             delivered ? "bg-[#e6f8ee] text-[#0e1310]" : "bg-[#eaf2ff] text-[#1d4f9e]"
           )}
         >
-          {delivered ? "Livrée" : "En route"}
+          {delivered ? "Arrivé" : "En route"}
         </span>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
         <CityMap variant="client" showRoute progress={progress} />
+        <TourBubbles className="left-4 top-4">
+          <TourBubble className="relative">Le client suit. Il n&apos;appelle plus.</TourBubble>
+          {progress >= 0.4 && (
+            <TourBubble className="relative" delay={0.1}>
+              Heure d&apos;arrivée en direct.
+            </TourBubble>
+          )}
+        </TourBubbles>
       </div>
 
       <div className="border-t border-black/[0.06] bg-white px-4 py-3 sm:px-5">
@@ -70,28 +80,11 @@ export function SceneTracking({ reducedMotion, onRestart }: SceneProps & { onRes
             <div className="product-tour-in">
               <p className="flex items-center gap-2 text-sm font-bold">
                 <CheckCircle2 className="h-5 w-5 text-[#00a854]" aria-hidden />
-                Commande livrée
+                Karim est arrivé
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Remis à {TOUR_ORDER.client} · preuve de livraison enregistrée
+                {TOUR_ORDER.dropoff} · remise en cours
               </p>
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={onRestart}
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 text-xs font-semibold transition-colors hover:bg-[#f0f4f1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-                  Rejouer
-                </button>
-                <Link
-                  href="/demonstration"
-                  className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0e1310] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#232a26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Voir la démo complète
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-                </Link>
-              </div>
             </div>
           ) : (
             <>

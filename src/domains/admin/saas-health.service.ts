@@ -105,6 +105,10 @@ export type SaasHealthIndicators = {
     usagePaidHtCents: number;
     ignoredRecords: number;
     refundedInvoicesObserved: number;
+    /** Remboursements des factures comptées dans le mois, ventilés en HT au prorata (provisoire). */
+    refundedHtCents: number;
+    /** Abonnements et dépassements HT, remboursements déduits. */
+    netPaidHtCents: number;
   };
   activation: { commercialSubscriptions: number; newSubscriptions: number };
   consumption: {
@@ -170,6 +174,7 @@ export function buildSaasHealthIndicators(
   let usagePaidHtCents = 0;
   let ignoredRecords = 0;
   let refundedInvoicesObserved = 0;
+  let refundedHtCents = 0;
   const seenInvoices = new Set<string>();
 
   for (const account of sources.billingAccounts) {
@@ -206,7 +211,10 @@ export function buildSaasHealthIndicators(
         subscriptionPaidHtCents += subtotalCents;
       } else {
         ignoredRecords++;
+        continue;
       }
+      // Le fournisseur ne donne pas la date du remboursement : il suit le mois de sa facture.
+      if (refundedCents > 0 && totalCents > 0) refundedHtCents += Math.round((refundedCents * subtotalCents) / totalCents);
     }
   }
 
@@ -312,6 +320,8 @@ export function buildSaasHealthIndicators(
       usagePaidHtCents,
       ignoredRecords,
       refundedInvoicesObserved,
+      refundedHtCents,
+      netPaidHtCents: subscriptionPaidHtCents + usagePaidHtCents - refundedHtCents,
     },
     activation: {
       commercialSubscriptions: sources.subscriptions.filter((subscription) => subscription.kind === "COMMERCIAL").length,
@@ -325,8 +335,8 @@ export function buildSaasHealthIndicators(
       "Période : mois civil UTC ; commandes issues des compteurs SaaS et options/sièges observés à la date de lecture.",
       "SaaS : montant HT brut des factures marquées payées dont l’échéance est dans le mois, complété par les faux paiements confirmés sans compte de facturation.",
       "Factures de livraison : indicateur séparé ; elles ne sont jamais incluses dans le montant SaaS.",
-      "Remboursements non déduits : le journal ne persiste pas leur ventilation HT ni leur date comptable.",
-      "Lecture locale non réconciliée avec un fournisseur ; aucun taux de conversion, rétention, coût ou marge n’est déduit.",
+      "Remboursements : déduits dans le mois de leur facture, faute de date de remboursement chez le fournisseur ; HT ventilé au prorata de la facture, à titre provisoire et sans validation comptable.",
+      "Lecture locale : le rapprochement facture par facture avec le fournisseur se lance par `npm run saas02:reconcile` ; aucun taux de conversion, rétention, coût ou marge n’est déduit.",
       "Alertes (décision C10) : 80, 100 et 120 % des commandes incluses du mois ; Business dès deux fois les commandes incluses ou 40 livreurs actifs ou invités. Calculées à la lecture, une seule par entreprise et par nature.",
     ],
   };

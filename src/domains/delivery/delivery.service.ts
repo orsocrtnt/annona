@@ -198,6 +198,7 @@ export async function getClientDeliveryById(
           shippingCity: true,
           shippingPostalCode: true,
           deliveryInstructions: true,
+          requestedDeliveryDate: true,
           pickupAddress: true,
           pickupCity: true,
           pickupPostalCode: true,
@@ -298,6 +299,7 @@ export async function getCompanyDeliveryById(companyId: string, deliveryId: stri
           shippingCity: true,
           shippingPostalCode: true,
           deliveryInstructions: true,
+          requestedDeliveryDate: true,
           customerEmail: true,
           customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
           items: {
@@ -611,6 +613,7 @@ const DRIVER_MISSION_ORDER_INCLUDE = {
       itemCount: true,
       notes: true,
       deliveryInstructions: true,
+      requestedDeliveryDate: true,
       customerEmail: true,
       customer: { select: { firstName: true, lastName: true, phone: true } },
       items: {

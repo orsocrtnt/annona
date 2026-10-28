@@ -12,6 +12,11 @@ function str(value: unknown): string { if (typeof value !== "string" || !value) 
 function num(value: unknown): number { if (typeof value !== "number" || !Number.isSafeInteger(value)) throw new Error("BILLING_PROVIDER_RESPONSE_INVALID"); return value; }
 function id(value: unknown): string { return typeof value === "string" ? value : str(object(value).id); }
 function iso(value: unknown) { return new Date(num(value) * 1000).toISOString(); }
+function paidAt(invoice: JsonObject) {
+  const transitions = invoice.status_transitions;
+  const at = transitions && typeof transitions === "object" ? (transitions as JsonObject).paid_at : null;
+  return typeof at === "number" ? iso(at) : null;
+}
 function encode(input: JsonObject) {
   const params = new URLSearchParams();
   function append(prefix: string, value: unknown) {
@@ -56,7 +61,10 @@ export interface SandboxBillingProvider {
   cancel(subscriptionId: string, key: string): Promise<{ cancelAtPeriodEnd: true }>;
   refund(invoiceId: string, amountCents: number, key: string): Promise<{ refundId: string }>;
   usage(accountId: string, subscriptionId: string, amountHtCents: number, vatRateBps: number, period: { start: string; end: string }, key: string): Promise<{ invoiceId: string }>;
+  paymentPortal(subscriptionId: string, accountId: string, key: string): Promise<{ url: string }>;
 }
+/** Portail client limité au moyen de paiement et aux factures : formule et résiliation restent journalisées par TutelLiv. */
+export const PAYMENT_PORTAL_CONFIGURATION = "payment-method-v1";
 /** Version pinned: snapshot webhooks are only wakeups; all monetary state is retrieved server-side. */
 export class StripeSandboxProvider implements SandboxBillingProvider {
   constructor(private readonly fetcher: typeof fetch = fetch, private readonly env: NodeJS.ProcessEnv = process.env) { assertStripeSandbox(env); }
@@ -94,9 +102,13 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
     const price = await this.request("POST", "prices", { product: product.id, currency: "eur", unit_amount: contract.quote.totalHtCents, tax_behavior: "exclusive", recurring: { interval: contract.quote.billingInterval === "ANNUAL" ? "year" : "month" }, metadata: { contract_hash: contract.hash } }, `tutelliv:price:${contract.hash}`);
     return str(price.id);
   }
-  async checkout(accountId: string, email: string, contract: BillingContract, key: string) {
+  private origin() {
     const origin = new URL(this.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
     if (!["https:", "http:"].includes(origin.protocol) || (origin.protocol === "http:" && !["localhost", "127.0.0.1"].includes(origin.hostname))) throw new Error("BILLING_RETURN_URL_INVALID");
+    return origin;
+  }
+  async checkout(accountId: string, email: string, contract: BillingContract, key: string) {
+    const origin = this.origin();
     const customer = await this.request("POST", "customers", { email, metadata: { tutelliv_account: accountId } }, `${key}:customer`);
     const price = await this.price(contract);
     const taxRates = await this.tax(contract.quote.vatRateBps);
@@ -142,7 +154,7 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
       const periods = (recurring.length ? recurring : lines).map((line) => object(line.period));
       const start = metadata.usage_start ?? (periods.length ? iso(Math.min(...periods.map((p) => num(p.start)))) : iso(invoice.period_start));
       const end = metadata.usage_end ?? (periods.length ? iso(Math.max(...periods.map((p) => num(p.end)))) : iso(invoice.period_end));
-      invoices.push({ id: str(invoice.id), subscriptionId, status, currency: "EUR", subtotalCents: subtotal, taxCents: total - subtotal, totalCents: total, paidCents: num(invoice.amount_paid), refundedCents, periodStart: str(start), periodEnd: str(end), dueAt: iso(invoice.due_date ?? invoice.created), reason: metadata.usage_start ? "usage" : str(invoice.billing_reason), taxSource: `stripe:${invoice.id}:tax_rates:simulated`, documentUrl: typeof invoice.hosted_invoice_url === "string" ? invoice.hosted_invoice_url : null });
+      invoices.push({ id: str(invoice.id), subscriptionId, status, currency: "EUR", subtotalCents: subtotal, taxCents: total - subtotal, totalCents: total, paidCents: num(invoice.amount_paid), refundedCents, periodStart: str(start), periodEnd: str(end), dueAt: iso(invoice.due_date ?? invoice.created), reason: metadata.usage_start ? "usage" : str(invoice.billing_reason), taxSource: `stripe:${invoice.id}:tax_rates:simulated`, documentUrl: typeof invoice.hosted_invoice_url === "string" ? invoice.hosted_invoice_url : null, paidAt: paidAt(invoice) });
     }
     const items = array(object(subscription.items).data);
     const hash = items.length === 1 ? object(object(items[0]!.price).metadata ?? {}).contract_hash : null;
@@ -165,23 +177,33 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
     const result = await this.request("POST", `subscriptions/${encodeURIComponent(subscriptionId)}`, { items: [{ id: item.id, price }], payment_behavior: "pending_if_incomplete", proration_behavior: "always_invoice", proration_date: prorationDate }, key);
     return { invoiceId: id(result.latest_invoice) };
   }
+  /** Après une première étape appliquée, un refus n'est plus un échec sans effet : le verrou doit rester. */
+  private async afterFirstEffect<T>(run: () => Promise<T>): Promise<T> {
+    try { return await run(); }
+    catch (error) {
+      if (error instanceof Error && error.message === "BILLING_PROVIDER_REJECTED") throw new Error("BILLING_PARTIAL_EFFECT");
+      throw error;
+    }
+  }
   async schedule(subscriptionId: string, target: BillingContract, key: string) {
     const subscription = await this.request("GET", `subscriptions/${encodeURIComponent(subscriptionId)}`);
     if (subscription.pending_update || subscription.cancel_at_period_end) throw new Error("BILLING_CHANGE_CONFLICT");
     const schedule = await this.request("POST", "subscription_schedules", { from_subscription: subscriptionId }, `${key}:create`);
     const phase = object(schedule.current_phase);
     const items = array(object(subscription.items).data);
-    const price = await this.price(target);
-    await this.request("POST", `subscription_schedules/${encodeURIComponent(str(schedule.id))}`, { end_behavior: "release", phases: [
+    await this.afterFirstEffect(async () => this.request("POST", `subscription_schedules/${encodeURIComponent(str(schedule.id))}`, { end_behavior: "release", phases: [
       { start_date: phase.start_date, end_date: phase.end_date, items: items.map((item) => ({ price: id(item.price), quantity: num(item.quantity) })), default_tax_rates: await this.tax(target.quote.vatRateBps), proration_behavior: "none" },
-      { items: [{ price, quantity: 1 }], iterations: 1, default_tax_rates: await this.tax(target.quote.vatRateBps), proration_behavior: "none" },
-    ] }, `${key}:update`);
+      { items: [{ price: await this.price(target), quantity: 1 }], iterations: 1, default_tax_rates: await this.tax(target.quote.vatRateBps), proration_behavior: "none" },
+    ] }, `${key}:update`));
     return { scheduleId: str(schedule.id) };
   }
   async cancel(subscriptionId: string, key: string) {
     const subscription = await this.request("GET", `subscriptions/${encodeURIComponent(subscriptionId)}`);
-    if (subscription.schedule) await this.request("POST", `subscription_schedules/${encodeURIComponent(id(subscription.schedule))}/release`, {}, `${key}:release`);
-    await this.request("POST", `subscriptions/${encodeURIComponent(subscriptionId)}`, { cancel_at_period_end: true }, key);
+    const cancel = () => this.request("POST", `subscriptions/${encodeURIComponent(subscriptionId)}`, { cancel_at_period_end: true }, key);
+    if (subscription.schedule) {
+      await this.request("POST", `subscription_schedules/${encodeURIComponent(id(subscription.schedule))}/release`, {}, `${key}:release`);
+      await this.afterFirstEffect(cancel);
+    } else await cancel();
     return { cancelAtPeriodEnd: true as const };
   }
   async refund(invoiceId: string, amountCents: number, key: string) {
@@ -197,5 +219,35 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
     await this.request("POST", "invoiceitems", { customer: id(subscription.customer), invoice: invoice.id, amount: cents(amountHtCents), currency: "eur", description: `Dépassements mensuels ${period.start} — ${period.end}`, period: { start: Date.parse(period.start) / 1000, end: Date.parse(period.end) / 1000 } }, `${key}:item`);
     await this.request("POST", `invoices/${encodeURIComponent(str(invoice.id))}/finalize`, { auto_advance: true }, `${key}:finalize`);
     return { invoiceId: str(invoice.id) };
+  }
+  // Une clé d'idempotence expire après 24 h : la configuration est retrouvée par sa métadonnée, jamais dupliquée.
+  private async portalConfiguration() {
+    const existing = (await this.list("billing_portal/configurations", { active: true }))
+      .find((configuration) => object(configuration.metadata ?? {}).tutelliv_portal === PAYMENT_PORTAL_CONFIGURATION);
+    if (existing) return str(existing.id);
+    const created = await this.request("POST", "billing_portal/configurations", {
+      business_profile: { headline: "TutelLiv — moyen de paiement et factures (sandbox)" },
+      features: {
+        payment_method_update: { enabled: true },
+        invoice_history: { enabled: true },
+        customer_update: { enabled: false },
+        subscription_cancel: { enabled: false },
+        subscription_update: { enabled: false },
+      },
+      metadata: { tutelliv_portal: PAYMENT_PORTAL_CONFIGURATION },
+    }, `tutelliv:portal-configuration:${PAYMENT_PORTAL_CONFIGURATION}`);
+    return str(created.id);
+  }
+  async paymentPortal(subscriptionId: string, accountId: string, key: string) {
+    const subscription = await this.request("GET", `subscriptions/${encodeURIComponent(subscriptionId)}`);
+    if (object(subscription.metadata).tutelliv_account !== accountId) throw new Error("BILLING_TENANT_MISMATCH");
+    const session = await this.request("POST", "billing_portal/sessions", {
+      customer: id(subscription.customer),
+      configuration: await this.portalConfiguration(),
+      return_url: new URL("/settings/subscription", this.origin()).href,
+    }, key);
+    const url = str(session.url);
+    if (new URL(url).protocol !== "https:" || new URL(url).hostname !== "billing.stripe.com") throw new Error("BILLING_PORTAL_URL_INVALID");
+    return { url };
   }
 }

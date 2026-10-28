@@ -10,6 +10,8 @@ import { UNLIMITED_MONTHLY_ORDERS, type SubscriptionView } from "@/domains/billi
 import { subscriptionApi } from "./subscription-api";
 import { SubscriptionCancel } from "./subscription-cancel";
 import { SubscriptionChange } from "./subscription-change";
+import { SubscriptionOptions } from "./subscription-options";
+import { SubscriptionPaymentMethod } from "./subscription-payment-method";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" });
 const discoveryDateFormat = new Intl.DateTimeFormat("fr-FR", {
@@ -126,12 +128,14 @@ export function SubscriptionContent() {
       <CardHeader><CardTitle>Historique</CardTitle><CardDescription>Opérations et factures connues, sans données fournisseur.</CardDescription></CardHeader>
       <CardContent>
         {data.history.length === 0 ? <p className="text-sm text-muted-foreground">Aucun historique disponible.</p> : <ol className="space-y-3 text-sm">
-          {data.history.map((entry, index) => <li key={`${entry.type}-${entry.occurredAt}-${index}`} className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-b pb-3 last:border-0"><span>{entry.label} · {entry.status}</span><span className="text-muted-foreground">{formatDate(entry.occurredAt)}{entry.amountCents !== undefined ? ` · ${formatMoney(entry.amountCents)}` : ""}</span></li>)}
+          {data.history.map((entry, index) => <li key={`${entry.type}-${entry.occurredAt}-${index}`} className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-b pb-3 last:border-0"><span>{entry.label} · {entry.status}</span><span className="text-muted-foreground">{formatDate(entry.occurredAt)}{entry.amountCents !== undefined ? ` · ${formatMoney(entry.amountCents)}` : ""}{entry.documentUrl && <> · <a href={entry.documentUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline underline-offset-4">Voir la facture<span className="sr-only"> (nouvel onglet)</span></a></>}</span></li>)}
         </ol>}
       </CardContent>
     </Card>
 
+    {data.management === "SELF_SERVICE" && <SubscriptionPaymentMethod subscription={data} />}
     {data.management === "SELF_SERVICE" && <SubscriptionChange subscription={data} endsAtLabel={formatDate(data.period.endsAt)} />}
+    {data.management === "SELF_SERVICE" && <SubscriptionOptions subscription={data} endsAtLabel={formatDate(data.period.endsAt)} />}
     {data.management === "SELF_SERVICE" && <SubscriptionCancel subscription={data} endsAtLabel={formatDate(data.period.endsAt)} />}
   </div>;
 }

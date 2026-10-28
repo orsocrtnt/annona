@@ -24,6 +24,8 @@ export interface DriverMission {
   completedAt: string | null;
   missionStartedAt: string | null;
   missionAcceptedAt: string | null;
+  /** Échéance et retard selon la règle serveur (UX-03). */
+  timing?: { dueAt: string | null; late: boolean; lateByMinutes: number | null };
   updatedAt: string;
   driverId: string | null;
   driverName: string | null;

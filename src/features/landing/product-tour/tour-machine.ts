@@ -1,13 +1,16 @@
-/** Parcours imposé de la mini-démo du hero : client → dispatch → livreur → suivi. */
-export type TourStep = "order" | "dispatch" | "driver" | "tracking";
+/** Parcours imposé de la mini-démo du hero : de la commande du client au suivi des paiements. */
+export type TourStep = "order" | "dispatch" | "driver" | "tracking" | "proof" | "receipt" | "invoices";
 
-export const TOUR_STEPS: readonly TourStep[] = ["order", "dispatch", "driver", "tracking"];
+export const TOUR_STEPS: readonly TourStep[] = ["order", "dispatch", "driver", "tracking", "proof", "receipt", "invoices"];
 
 export const TOUR_STEP_LABELS: Record<TourStep, string> = {
-  order: "Client",
-  dispatch: "Admin",
+  order: "Commande",
+  dispatch: "Dispatch",
   driver: "Livreur",
   tracking: "Suivi",
+  proof: "Preuve",
+  receipt: "Facture",
+  invoices: "Paiements",
 };
 
 /** `reached` = étape la plus avancée déjà atteinte ; on peut y revenir, jamais la dépasser. */
@@ -33,4 +36,20 @@ export function goToStep(state: TourState, step: TourStep): TourState {
 
 export function restartTour(): TourState {
   return initialTourState();
+}
+
+/** Sous-étapes du dispatch : la file avant le clic, la répartition, puis le résultat. */
+export type DispatchPhase = "before" | "during" | "after";
+
+export const DISPATCH_PHASES: readonly DispatchPhase[] = ["before", "during", "after"];
+
+export const DISPATCH_PHASE_LABELS: Record<DispatchPhase, string> = {
+  before: "Avant",
+  during: "Pendant",
+  after: "Après",
+};
+
+export function dispatchPhase(launched: boolean, placed: number, total: number): DispatchPhase {
+  if (!launched) return "before";
+  return placed >= total ? "after" : "during";
 }

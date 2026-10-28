@@ -117,6 +117,51 @@ export interface CompanyDelivery {
   driver: { id: string; firstName: string; lastName: string } | null;
 }
 
+/** Fiche livraison du back-office (`GET /api/deliveries/[id]`), filtrée par entreprise côté serveur. */
+export interface CompanyDeliveryDetail {
+  id: string;
+  reference: string;
+  status: DeliveryStatus;
+  address: string;
+  city: string | null;
+  postalCode: string | null;
+  pickupAddress?: string | null;
+  pickupCity?: string | null;
+  pickupPostalCode?: string | null;
+  driverId: string | null;
+  driverName: string | null;
+  missionStartedAt: string | null;
+  missionAcceptedAt: string | null;
+  completedAt: string | null;
+  scheduledAt: string | null;
+  estimatedArrival?: string | null;
+  createdAt: string;
+  podPhotoUrl: string | null;
+  podFailureCode?: string | null;
+  podNote?: string | null;
+  trackingEvents: { id: string; label: string; description?: string | null; occurredAt: string }[];
+  /** Règle serveur unique (`deliveryTiming`) : échéance, retard et prochaine action. */
+  timing: { dueAt: string | null; late: boolean; lateByMinutes: number | null; nextAction: { code: string; label: string } | null };
+  driver: { id: string; firstName: string; lastName: string; phone: string | null; email: string } | null;
+  order: {
+    id: string;
+    reference: string;
+    status: string;
+    totalAmount: string | number;
+    deliveryCategory?: DeliveryCategory | null;
+    pickupAddress?: string | null;
+    pickupCity?: string | null;
+    pickupPostalCode?: string | null;
+    shippingAddress: string | null;
+    shippingCity: string | null;
+    shippingPostalCode: string | null;
+    deliveryInstructions: string | null;
+    customerEmail: string | null;
+    customer: { id: string; firstName: string; lastName: string; email: string; phone: string | null } | null;
+    items: { id: string; name: string; quantity: number; unitPrice: string | number }[];
+  };
+}
+
 export interface CompanyDriver {
   id: string;
   firstName: string;

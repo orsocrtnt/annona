@@ -12,6 +12,7 @@ const inputSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("preview"), selection }).strict(),
   z.object({ action: z.literal("change"), selection, key: z.string().min(8).max(160), prorationDate: z.number().int(), confirmedTotalCents: z.number().int().min(0).max(99_999_999), confirmed: z.literal(true) }).strict(),
   z.object({ action: z.literal("cancel"), key: z.string().min(8).max(160), confirmed: z.literal(true) }).strict(),
+  z.object({ action: z.literal("portal") }).strict(),
 ]);
 async function context() {
   const auth = await requireStaffRole("settings:read");
@@ -30,8 +31,16 @@ export async function GET() {
   const operations = await prisma.saasBillingOperation.findMany({ where: { accountId: auth.account.id }, orderBy: { createdAt: "desc" }, take: 100, select: { id: true, kind: true, status: true, createdAt: true, completedAt: true } });
   // Formules proposées au changement : catalogue actif, prix HT seulement ; la sélection actuelle garde ses options.
   const catalog = await getActiveSignupCatalog().catch(() => null);
-  const plans = catalog?.plans.map((plan) => ({ code: plan.code, name: plan.name, monthlyPriceCents: plan.monthlyPriceCents, annualPriceCents: plan.annualPriceCents })) ?? [];
-  const options = catalog?.options.map((option) => ({ code: option.code, featureKey: option.featureKey, applicablePlans: option.applicablePlans })) ?? [];
+  const plans = catalog?.plans.map((plan) => ({
+    code: plan.code, name: plan.name, monthlyPriceCents: plan.monthlyPriceCents, annualPriceCents: plan.annualPriceCents,
+    includedFeatures: plan.includedFeatures,
+    seats: {
+      DRIVER_SEAT: { included: plan.includedDriverSeats, max: plan.unlimitedDriverSeats ? null : plan.maxDriverSeats },
+      ADMIN_SEAT: { included: plan.includedAdminSeats, max: plan.maxAdminSeats },
+      DISPATCHER_SEAT: { included: plan.includedDispatcherSeats, max: plan.maxDispatcherSeats },
+    },
+  })) ?? [];
+  const options = catalog?.options.map((option) => ({ code: option.code, name: option.name, kind: option.kind, featureKey: option.featureKey, applicablePlans: option.applicablePlans, monthlyPriceCents: option.monthlyPriceCents, annualPriceCents: option.annualPriceCents })) ?? [];
   const active = (auth.account.state as unknown as BillingState | null)?.activeContract;
   const current = active ? { planCode: active.quote.planCode, billingInterval: active.quote.billingInterval, selections: active.quote.selections } : null;
   return NextResponse.json({ state: auth.account.state, operations, plans, options, current }, { headers: { "Cache-Control": "no-store" } });
@@ -43,6 +52,12 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Demande invalide" }, { status: 400 });
   try {
     const billing = sandboxBilling(), input = parsed.data;
+    if (input.action === "portal") {
+      // Moyen de paiement et factures chez Stripe ; rien n'est modifié chez TutelLiv avant le webhook.
+      const portal = await billing.paymentPortal(auth.account.id, auth.actorId).catch(() => null);
+      if (!portal) return NextResponse.json({ error: "Gestion du moyen de paiement indisponible. Réessayez dans un instant." }, { status: 409 });
+      return NextResponse.json(portal, { headers: { "Cache-Control": "no-store" } });
+    }
     if (input.action === "cancel") {
       const result = await billing.command(auth.account.id, input.key, { kind: "CANCEL", actorId: auth.actorId });
       // La demande est appliquée : un rapprochement en échec est repris par le webhook ou le cron.

@@ -9,21 +9,26 @@ export const TOUR_ORDER = {
   slot: "14 h – 16 h",
 } as const;
 
-export type TourDriver = {
-  name: string;
-  status: string;
-  verdict: "chosen" | "rejected";
-  reason: string;
-};
+/** Livreurs de la démo : chacun a sa colonne, où le dispatcher dépose ses commandes. */
+export const TOUR_LANES = [
+  { driver: "Karim", area: "Paris Est", detail: "À 1,1 km" },
+  { driver: "Lucas", area: "Paris Nord", detail: "À 2,3 km" },
+  { driver: "Sofia", area: "Paris Sud", detail: "À 0,9 km" },
+] as const;
 
-/** Reflète les critères du dispatch automatique réel : disponibilité, zone, charge. */
-export const TOUR_DRIVERS: readonly TourDriver[] = [
-  { name: "Sofia", status: "En tournée", verdict: "rejected", reason: "Charge complète · 4/4" },
-  { name: "Lucas", status: "Disponible", verdict: "rejected", reason: "Zone Paris Ouest" },
-  { name: "Karim", status: "Disponible", verdict: "chosen", reason: "Zone « Paris Est »" },
+export type TourQueuedOrder = { number: string; place: string; driver: string; grouped?: boolean };
+
+/** File d'attente avant le dispatch, dans l'ordre d'arrivée ; #1042 et #1043 sont voisines (11e). */
+export const TOUR_QUEUE: readonly TourQueuedOrder[] = [
+  { number: TOUR_ORDER.number, place: "Roquette, 11e", driver: "Karim", grouped: true },
+  { number: "#1044", place: "Batignolles, 17e", driver: "Lucas" },
+  { number: "#1043", place: "Oberkampf, 11e", driver: "Karim", grouped: true },
+  { number: "#1045", place: "Alésia, 14e", driver: "Sofia" },
 ];
 
-export const TOUR_DISPATCH_REASON = "Zone « Paris Est »";
+export const TOUR_PROOF = { recipient: "M. Durand", time: "14 h 21" } as const;
+
+export const TOUR_INVOICE = { number: "F-2026-1042", amount: "38,00 €" } as const;
 
 export type TourInterlude = { space: "company" | "driver" | "client"; title: string; text: string };
 
@@ -31,6 +36,9 @@ const INTERLUDES: Partial<Record<`${TourStep}>${TourStep}`, TourInterlude>> = {
   "order>dispatch": { space: "company", title: "Pendant ce temps, côté entreprise…", text: "La commande arrive au dispatch" },
   "dispatch>driver": { space: "driver", title: "Côté livreur…", text: "Karim reçoit la mission" },
   "driver>tracking": { space: "client", title: "Retour côté client…", text: "Il suit sa livraison en direct" },
+  "tracking>proof": { space: "driver", title: "Côté livreur…", text: "Karim arrive et prouve la livraison" },
+  "proof>receipt": { space: "client", title: "Côté client…", text: "Livraison confirmée, facture reçue" },
+  "receipt>invoices": { space: "company", title: "Côté entreprise…", text: "Les paiements se suivent tout seuls" },
 };
 
 /** Carton affiché quand un geste fait passer d'un espace au suivant ; aucun en arrière ni sur place. */

@@ -33,7 +33,9 @@ import {
   PackageCheck,
   Play,
 } from "lucide-react";
+import { formatLateness } from "@/lib/format/lateness";
 import { formatClientFromParts, withoutRolePrefix } from "@/lib/format/person-labels";
+import { dateTimeLabel } from "@/lib/format/relative-day";
 import { toast } from "sonner";
 import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -276,6 +278,15 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                 {withoutRolePrefix(formatClientFromParts(mission.order.customer, mission.order.customerEmail))}
               </p>
               <span className="text-xs tabular-nums text-muted-foreground">{mission.reference}</span>
+              {mission.timing?.dueAt && mission.status !== "DELIVERED" && mission.status !== "FAILED" && (
+                <p className="text-xs" data-mission-due="true">
+                  <span className="text-muted-foreground">À livrer avant </span>
+                  <time dateTime={mission.timing.dueAt} className="font-medium">{dateTimeLabel(mission.timing.dueAt)}</time>
+                  {mission.timing.late && mission.timing.lateByMinutes !== null && (
+                    <span className="font-medium text-destructive"> · en retard de {formatLateness(mission.timing.lateByMinutes)}</span>
+                  )}
+                </p>
+              )}
             </div>
             <DeliveryStatusBadge
               status={mission.status}

@@ -3,12 +3,14 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
+  TOUR_STEPS,
   advanceTour,
+  dispatchPhase,
   goToStep,
   initialTourState,
   restartTour,
 } from "../src/features/landing/product-tour/tour-machine";
-import { TOUR_DRIVERS, interludeFor } from "../src/features/landing/product-tour/tour-data";
+import { TOUR_LANES, TOUR_QUEUE, interludeFor } from "../src/features/landing/product-tour/tour-data";
 import { TOUR_ROUTE, pointAlongRoute } from "../src/features/landing/product-tour/city-route";
 import { typingDelays } from "../src/features/landing/product-tour/typing";
 
@@ -22,8 +24,12 @@ test("un double geste n'avance qu'une seule fois", () => {
 });
 
 test("la dernière étape ne va pas plus loin", () => {
-  const last = { current: 3, reached: 3 };
-  assert.deepEqual(advanceTour(last, "tracking"), last);
+  const last = { current: 6, reached: 6 };
+  assert.deepEqual(advanceTour(last, "invoices"), last);
+});
+
+test("le parcours compte 7 étapes, de la commande aux paiements", () => {
+  assert.deepEqual([...TOUR_STEPS], ["order", "dispatch", "driver", "tracking", "proof", "receipt", "invoices"]);
 });
 
 test("on revient sur une étape vue sans perdre la progression", () => {
@@ -44,10 +50,17 @@ test("rejouer remet la démo au début", () => {
   assert.deepEqual(restartTour(), { current: 0, reached: 0 });
 });
 
-test("le dispatcher retient un seul livreur : Karim", () => {
-  const chosen = TOUR_DRIVERS.filter((driver) => driver.verdict === "chosen");
-  assert.equal(chosen.length, 1);
-  assert.equal(chosen[0]?.name, "Karim");
+test("le dispatcher répartit chaque commande en attente vers un livreur de la démo", () => {
+  const drivers = new Set<string>(TOUR_LANES.map((lane) => lane.driver));
+  assert.ok(TOUR_QUEUE.length >= 4);
+  assert.ok(TOUR_QUEUE.every((order) => drivers.has(order.driver)));
+  assert.equal(new Set(TOUR_QUEUE.map((order) => order.driver)).size, TOUR_LANES.length);
+});
+
+test("les deux commandes voisines du 11e sont regroupées pour Karim, dont #1042", () => {
+  const grouped = TOUR_QUEUE.filter((order) => order.grouped);
+  assert.deepEqual(grouped.map((order) => order.driver), ["Karim", "Karim"]);
+  assert.ok(grouped.some((order) => order.number === "#1042"));
 });
 
 test("le hero affiche la mini-démo à la place de la capture du tableau de bord", () => {
@@ -80,7 +93,7 @@ test("le trajet de la démo suit plusieurs rues", () => {
 });
 
 test("la fin de la démo renvoie vers la démonstration complète", () => {
-  const scene = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/scene-tracking.tsx", import.meta.url)), "utf8");
+  const scene = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/scene-invoices.tsx", import.meta.url)), "utf8");
   assert.match(scene, /href="\/demonstration"/);
   assert.match(scene, /Rejouer/);
 });
@@ -89,6 +102,9 @@ test("chaque changement d'espace par un geste annonce l'espace suivant", () => {
   assert.match(interludeFor("order", "dispatch")?.title ?? "", /côté entreprise/);
   assert.match(interludeFor("dispatch", "driver")?.title ?? "", /Côté livreur/);
   assert.match(interludeFor("driver", "tracking")?.title ?? "", /Retour côté client/);
+  assert.equal(interludeFor("tracking", "proof")?.space, "driver");
+  assert.equal(interludeFor("proof", "receipt")?.space, "client");
+  assert.equal(interludeFor("receipt", "invoices")?.space, "company");
 });
 
 test("aucun carton sans changement d'étape ou en revenant en arrière", () => {
@@ -110,4 +126,17 @@ test("la frappe marque une pause après un espace", () => {
 
 test("la frappe est identique pour une même graine", () => {
   assert.deepEqual(typingDelays("Ivry-sur-Seine", 5), typingDelays("Ivry-sur-Seine", 5));
+});
+
+test("le dispatch passe par avant, pendant puis après", () => {
+  assert.equal(dispatchPhase(false, 0, 4), "before");
+  assert.equal(dispatchPhase(true, 0, 4), "during");
+  assert.equal(dispatchPhase(true, 3, 4), "during");
+  assert.equal(dispatchPhase(true, 4, 4), "after");
+});
+
+test("après le dispatch, le visiteur passe à la suite lui-même", () => {
+  const scene = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/scene-dispatch.tsx", import.meta.url)), "utf8");
+  assert.match(scene, /Passer à la suite/);
+  assert.doesNotMatch(scene, /useDelayedCall\([^;]*onDone/);
 });

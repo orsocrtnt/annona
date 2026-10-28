@@ -75,6 +75,7 @@ function operationLabel(kind: string): string | null {
     CANCEL: "Résiliation demandée",
     REFUND: "Remboursement traité",
     USAGE: "Dépassement de commandes facturé",
+    PAYMENT_PORTAL: "Accès au moyen de paiement",
   } as Record<string, string>)[kind] ?? null;
 }
 
@@ -94,6 +95,18 @@ function invoiceLabel(reason: string) {
     subscription_update: "Facture de changement d’abonnement",
     subscription_usage: "Facture de dépassement de commandes",
   } as Record<string, string>)[reason] ?? "Facture d’abonnement";
+}
+
+/** Seule la page de facture hébergée par Stripe est proposée ; toute autre adresse est ignorée. */
+function invoiceDocumentUrl(value: unknown) {
+  const url = text(value, 2_000);
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && parsed.hostname === "invoice.stripe.com" && !parsed.username && !parsed.password ? parsed.href : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function invoiceStatus(status: string) {
@@ -223,6 +236,7 @@ export function buildSubscriptionView(
         status: invoiceStatus(rawStatus),
         occurredAt: new Date(occurredAt).toISOString(),
         amountCents: total,
+        ...(invoiceDocumentUrl(value?.documentUrl) ? { documentUrl: invoiceDocumentUrl(value?.documentUrl) } : {}),
         internalKey: `invoice:${id}`,
       }];
     }),
@@ -251,6 +265,7 @@ export function buildSubscriptionView(
     cancelAtPeriodEnd,
     canCancel: (status === "ACTIVE" || status === "PAST_DUE") && !cancelAtPeriodEnd,
     canChange: status === "ACTIVE" && !cancelAtPeriodEnd && !record(state.pendingChange),
+    canManagePaymentMethod: status !== "CANCELLED",
   };
 }
 
@@ -308,6 +323,7 @@ export function buildManagedSubscriptionView(
     cancelAtPeriodEnd,
     canCancel: false,
     canChange: false,
+    canManagePaymentMethod: false,
   };
 }
 

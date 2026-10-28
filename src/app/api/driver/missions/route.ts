@@ -6,6 +6,7 @@ import {
   getDriverStats,
 } from "@/domains/delivery/delivery.service";
 import { parseDispatchSettings } from "@/domains/company/dispatch-settings.service";
+import { deliveryTiming } from "@/domains/delivery/delivery-timing";
 import { isPodPhotoPathForDelivery } from "@/lib/storage/pod";
 
 export async function GET() {
@@ -28,8 +29,18 @@ export async function GET() {
 
   const safeMissions = missions.map((mission) => {
     const { podPhotoPath, ...safeMission } = mission;
+    // Même règle de retard que l'équipe et le client (UX-03) ; la prochaine action reste interne.
+    const { dueAt, late, lateByMinutes } = deliveryTiming({
+      status: mission.status,
+      requestedDeliveryDate: mission.order.requestedDeliveryDate,
+      completedAt: mission.completedAt,
+      driverId: mission.driverId,
+      missionAcceptedAt: mission.missionAcceptedAt,
+      hasProof: Boolean(podPhotoPath),
+    });
     return {
       ...safeMission,
+      timing: { dueAt, late, lateByMinutes },
       podPhotoUrl: podPhotoPath && isPodPhotoPathForDelivery(podPhotoPath, companyId, mission.id)
         ? `/api/driver/missions/${encodeURIComponent(mission.id)}/proof` : null,
     };

@@ -31,9 +31,15 @@ test("SAAS-01B : une autre erreur n'est jamais rejouée, un conflit persistant f
   assert.equal(calls, 4);
 });
 
-test("SAAS-01B : une opération Stripe en plusieurs étapes reste verrouillée après un refus", () => {
-  assert.equal(canReleaseRejectedOperation("CHANGE", new Error("BILLING_PROVIDER_REJECTED")), false);
-  assert.equal(canReleaseRejectedOperation("CANCEL", new Error("BILLING_PROVIDER_REJECTED")), false);
-  assert.equal(canReleaseRejectedOperation("REFUND", new Error("BILLING_PROVIDER_REJECTED")), true, "un remboursement est un appel idempotent unique");
-  assert.equal(canReleaseRejectedOperation("REFUND", new Error("BILLING_PROVIDER_UNAVAILABLE")), false);
+test("SAAS-01B : le verrou n'est rendu que si rien n'a été appliqué chez le fournisseur", () => {
+  for (const kind of ["CHANGE", "CANCEL", "REFUND"] as const) {
+    assert.equal(canReleaseRejectedOperation(kind, new Error("BILLING_PROVIDER_REJECTED")), true, `${kind} : refus de la première étape`);
+    assert.equal(canReleaseRejectedOperation(kind, new Error("BILLING_PARTIAL_EFFECT")), false, `${kind} : une étape déjà appliquée garde le verrou`);
+    assert.equal(canReleaseRejectedOperation(kind, new Error("BILLING_PROVIDER_UNAVAILABLE")), false, `${kind} : panne, seul le rejeu conclut`);
+  }
+  assert.equal(canReleaseRejectedOperation("CHANGE", new Error("BILLING_CHANGE_CONFLICT")), true, "conflit détecté avant tout appel");
+  assert.equal(canReleaseRejectedOperation("CHANGE", new Error("BILLING_CHANGE_EMPTY")), true);
+  for (const kind of ["CHECKOUT", "USAGE"] as const) {
+    assert.equal(canReleaseRejectedOperation(kind, new Error("BILLING_PROVIDER_REJECTED")), false, `${kind} : rejeu de la clé uniquement`);
+  }
 });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
+import { deliveryTiming } from "@/domains/delivery/delivery-timing";
 import {
   adminUpdateDelivery,
   getCompanyDeliveryById,
@@ -33,6 +34,14 @@ export async function GET(
     data: {
       ...safeDelivery,
       podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, delivery.id),
+      timing: deliveryTiming({
+        status: delivery.status,
+        requestedDeliveryDate: delivery.order.requestedDeliveryDate,
+        completedAt: delivery.completedAt,
+        driverId: delivery.driverId,
+        missionAcceptedAt: delivery.missionAcceptedAt,
+        hasProof: Boolean(podPhotoPath),
+      }),
     },
     success: true,
   });

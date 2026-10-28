@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   buildSaasHealthIndicators,
@@ -98,9 +99,28 @@ test("SAAS-02 : revenu SaaS HT séparé, activation et faux paiement dédupliqu�
   assert.equal(result.revenue.usagePaidHtCents, 1_000);
   assert.equal(result.revenue.ignoredRecords, 1);
   assert.equal(result.revenue.refundedInvoicesObserved, 1);
+  assert.equal(result.revenue.refundedHtCents, 0, "le remboursement de septembre ne touche pas octobre");
+  assert.equal(result.revenue.netPaidHtCents, 26_800);
   assert.deepEqual(result.activation, { commercialSubscriptions: 2, newSubscriptions: 1 });
   assert.ok(result.definitions.some((definition) => definition.includes("Factures de livraison")));
-  assert.ok(result.definitions.some((definition) => definition.includes("Remboursements non déduits")));
+  assert.ok(result.definitions.some((definition) => definition.includes("Remboursements : déduits dans le mois de leur facture")));
+});
+
+test("SAAS-02 : les remboursements du mois sont déduits du net, ventilés en HT au prorata", () => {
+  const input = sources();
+  const state = input.billingAccounts[0]!.state as { invoices: Array<Record<string, unknown>> };
+  // Moitié de la facture Pro remboursée : 10 740 TTC, soit 8 950 HT ; dépassement remboursé en entier.
+  state.invoices[0]!.refundedCents = 10_740;
+  state.invoices[1]!.refundedCents = 1_200;
+  const result = buildSaasHealthIndicators(input, at);
+  assert.equal(result.revenue.subscriptionPaidHtCents, 25_800, "le brut reste inchangé");
+  assert.equal(result.revenue.refundedHtCents, 8_950 + 1_000);
+  assert.equal(result.revenue.netPaidHtCents, 25_800 + 1_000 - 9_950);
+  assert.equal(result.revenue.refundedInvoicesObserved, 3);
+
+  const page = readFileSync(resolve("src/app/(back-office)/admin/page.tsx"), "utf8");
+  assert.match(page, /remboursés, net/);
+  assert.doesNotMatch(page, /montant HT non déduit|sans réconciliation fournisseur/);
 });
 
 test("SAAS-02 : commandes, livreurs et options sont mesurés par formule, Business compris", () => {

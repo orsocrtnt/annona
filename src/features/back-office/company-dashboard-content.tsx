@@ -24,7 +24,6 @@ import {
   DashboardCustomizeDrawer,
 } from "@/features/back-office/dashboard-customize-drawer";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
-import { isLateDashboardDrillDown } from "@/features/back-office/dashboard-drill-down";
 
 export function CompanyDashboardContent() {
   const { data: dashboard, isLoading, error } = useCompanyDashboard();
@@ -117,7 +116,6 @@ function CompanyDashboardView() {
         title={drillDown?.title ?? ""}
         description={drillDown?.description}
         items={drillDownItems}
-        focusLate={isLateDashboardDrillDown(drillDown)}
       />
 
       <DashboardCustomizeDrawer open={customizeOpen} onOpenChange={setCustomizeOpen} />

@@ -322,6 +322,29 @@
   }
 }
 
+/* Bulle explicative : liseré vert, ombre portée et halo qui pulse deux fois à l'apparition. */
+.product-tour-bubble {
+  box-shadow:
+    0 0 0 1px rgb(0 212 106 / 50%),
+    0 16px 40px rgb(14 19 16 / 28%);
+  animation: productTourBubbleGlow 1.3s ease-out 2 both;
+}
+
+@keyframes productTourBubbleGlow {
+  from {
+    box-shadow:
+      0 0 0 1px rgb(0 212 106 / 50%),
+      0 0 0 0 rgb(0 212 106 / 55%),
+      0 16px 40px rgb(14 19 16 / 28%);
+  }
+  to {
+    box-shadow:
+      0 0 0 1px rgb(0 212 106 / 50%),
+      0 0 0 14px rgb(0 212 106 / 0%),
+      0 16px 40px rgb(14 19 16 / 28%);
+  }
+}
+
 .product-tour-caret {
   animation: productTourCaret 1s steps(1) infinite;
 }
@@ -353,6 +376,7 @@
   .home-landing-reveal,
   .product-tour-in,
   .product-tour-pulse,
+  .product-tour-bubble,
   .product-tour-halo {
     animation: none;
   }

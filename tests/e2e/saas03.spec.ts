@@ -158,3 +158,116 @@ test("SAAS-03 : changement de formule avec aperçu, comptes en excès bloquants,
   expect(changes[1]!.key).toBe(changes[0]!.key);
   expect(changes[0]).toMatchObject({ confirmed: true, confirmedTotalCents: 12345, prorationDate: 1793100000, selection: { planCode: "BUSINESS", billingInterval: "MONTHLY", selections: [] } });
 });
+
+test("SAAS-03 : facture ouverte chez Stripe et moyen de paiement géré par le portail, après une erreur", async ({ page }) => {
+  const login = await page.request.post("/api/auth/login", {
+    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+  });
+  expect(login.status()).toBe(200);
+  const invoiceUrl = "https://invoice.stripe.com/i/acct_fixture/test_browser";
+  const portalUrl = "https://billing.stripe.com/p/session/test_browser_fixture";
+  const posts: Array<Record<string, unknown>> = [];
+  await page.route("**/api/billing/subscription", (route) => route.fulfill({
+    json: { data: {
+      ...subscription,
+      management: "SELF_SERVICE",
+      canCancel: true,
+      canChange: false,
+      canManagePaymentMethod: true,
+      cancelAtPeriodEnd: false,
+      history: [{ ...subscription.history[0], status: "En attente de paiement", documentUrl: invoiceUrl }],
+    } },
+    headers: { "Cache-Control": "no-store" },
+  }));
+  await page.route("**/api/billing", async (route) => {
+    posts.push(route.request().postDataJSON());
+    if (posts.length === 1) return route.fulfill({ status: 409, json: { error: "Gestion du moyen de paiement indisponible. Réessayez dans un instant." } });
+    return route.fulfill({ json: { url: portalUrl } });
+  });
+  // Seul le portail de la fixture est servi ; toute autre requête Stripe fait échouer la recette.
+  await page.route("**/*stripe*", async (route) => {
+    throw new Error(`Requête Stripe interdite : ${route.request().url()}`);
+  });
+  await page.route("https://billing.stripe.com/**", async (route) => {
+    if (route.request().url() !== portalUrl) throw new Error(`Requête Stripe interdite : ${route.request().url()}`);
+    return route.fulfill({ contentType: "text/html", body: "<title>Portail Stripe fixture</title><h1>Portail Stripe fixture</h1>" });
+  });
+
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/settings/subscription");
+    const invoiceLink = page.getByRole("link", { name: /Voir la facture/ });
+    await expect(invoiceLink).toHaveAttribute("href", invoiceUrl);
+    await expect(invoiceLink).toHaveAttribute("target", "_blank");
+    await expect(invoiceLink).toHaveAttribute("rel", "noopener noreferrer");
+
+    const manage = page.getByRole("button", { name: "Gérer le moyen de paiement" });
+    await expect(manage).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    await manage.click();
+    await expect(page.getByRole("alert").filter({ hasText: "Gestion du moyen de paiement indisponible" })).toBeVisible();
+    await manage.click();
+    await page.waitForURL(portalUrl);
+    await expect(page.getByRole("heading", { name: "Portail Stripe fixture" })).toBeVisible();
+    expect(posts).toEqual([{ action: "portal" }, { action: "portal" }]);
+  } finally {
+    await page.request.post("/api/auth/logout").catch(() => undefined);
+  }
+});
+
+test("SAAS-03 : ajout d'une option et de comptes avec aperçu unique, plafond respecté, puis confirmation", async ({ page }) => {
+  const login = await page.request.post("/api/auth/login", {
+    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+  });
+  expect(login.status()).toBe(200);
+  const seats = { DRIVER_SEAT: { included: 5, max: 7 }, ADMIN_SEAT: { included: 1, max: 1 }, DISPATCHER_SEAT: { included: 0, max: 0 } };
+  const posts: Array<Record<string, unknown>> = [];
+  await page.route("**/api/billing/subscription", (route) => route.fulfill({
+    json: { data: { ...subscription, formula: { code: "STARTER", name: "Starter" }, management: "SELF_SERVICE", canCancel: true, canChange: true, cancelAtPeriodEnd: false } },
+  }));
+  await page.route("**/api/billing", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: {
+      plans: [{ code: "STARTER", name: "Starter", monthlyPriceCents: 7900, annualPriceCents: 79000, includedFeatures: [], seats }],
+      options: [
+        { code: "AUTO_DISPATCH", name: "Dispatch automatique", kind: "OPTION", featureKey: "auto_dispatch", applicablePlans: ["STARTER"], monthlyPriceCents: 2900, annualPriceCents: 34800 },
+        { code: "DRIVER_STARTER", name: "Livreur supplémentaire", kind: "DRIVER_SEAT", featureKey: null, applicablePlans: ["STARTER"], monthlyPriceCents: 900, annualPriceCents: 10800 },
+        { code: "DRIVER_BUSINESS", name: "Livreur Business", kind: "DRIVER_SEAT", featureKey: null, applicablePlans: ["BUSINESS"], monthlyPriceCents: 900, annualPriceCents: 10800 },
+      ],
+      current: { planCode: "STARTER", billingInterval: "MONTHLY", selections: [] },
+    } });
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    posts.push(body);
+    if (body.action === "preview") return route.fulfill({ json: { totalCents: 4560, currency: "EUR", timing: "immediate", prorationDate: 1793100000, quote: { totalTtcCents: 15240, billingInterval: "MONTHLY" }, assessment: { blockers: [], lostFeatures: [], orderOverage: null } } });
+    return route.fulfill({ json: { timing: "immediate", invoiceId: "in_fixture" } });
+  });
+  await page.route("**/*stripe*", async (route) => {
+    throw new Error(`Requête Stripe interdite : ${route.request().url()}`);
+  });
+
+  try {
+    await page.goto("/settings/subscription");
+    await page.getByRole("button", { name: "Modifier les options" }).click();
+    const dialog = page.getByRole("dialog", { name: "Modifier les options" });
+    await expect(dialog.getByText("Livreur Business")).toHaveCount(0);
+    await dialog.getByRole("checkbox", { name: "Dispatch automatique" }).check();
+    const addDriver = dialog.getByRole("button", { name: "Ajouter un compte : Livreur supplémentaire" });
+    await addDriver.click();
+    await addDriver.click();
+    await expect(addDriver).toBeDisabled();
+    await expect(dialog.getByText("À payer aujourd’hui")).toBeVisible();
+    const previews = posts.filter((post) => post.action === "preview");
+    expect(previews).toHaveLength(1);
+    expect(previews[0]).toMatchObject({ selection: { planCode: "STARTER", billingInterval: "MONTHLY", selections: [{ code: "AUTO_DISPATCH", quantity: 1 }, { code: "DRIVER_STARTER", quantity: 2 }] } });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await dialog.getByRole("button", { name: "Payer 45,60 € et appliquer" }).click();
+    await expect(dialog).toHaveCount(0);
+    const changes = posts.filter((post) => post.action === "change");
+    expect(changes).toHaveLength(1);
+    expect(changes[0]).toMatchObject({ confirmed: true, confirmedTotalCents: 4560, selection: previews[0]!.selection });
+  } finally {
+    await page.request.post("/api/auth/logout").catch(() => undefined);
+  }
+});

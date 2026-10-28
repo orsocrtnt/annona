@@ -24,6 +24,7 @@ class TestProvider implements SandboxBillingProvider {
   failAfterChange = false;
   failAfterUsage = false;
   rejectNextChange = false;
+  partialNextSchedule = false;
   rejectedCalls = 0;
   async checkout(account: string, _email: string, contract: BillingContract, key: string) {
     const existing = this.effects.get(key);
@@ -38,6 +39,7 @@ class TestProvider implements SandboxBillingProvider {
     return result;
   }
   async checkoutSubscription(id: string) { return this.accounts.get(id)!; }
+  async paymentPortal(): Promise<{ url: string }> { throw new Error("BILLING_PORTAL_NOT_SIMULATED"); }
   async snapshot(sub: string, _account: string) { return json(this.states.get(sub)!) as ProviderSnapshot; }
   payInitial(sub: string) {
     const state = this.states.get(sub)!, contract = this.contracts.get(sub)!;
@@ -54,7 +56,10 @@ class TestProvider implements SandboxBillingProvider {
     if (this.failAfterChange) { this.failAfterChange = false; throw new Error("BILLING_PROVIDER_UNAVAILABLE"); }
     return result;
   }
-  async schedule(sub: string, _target: BillingContract, key: string) { return { scheduleId: `schedule_${sub}_${key}` }; }
+  async schedule(sub: string, _target: BillingContract, key: string) {
+    if (this.partialNextSchedule) { this.partialNextSchedule = false; throw new Error("BILLING_PARTIAL_EFFECT"); }
+    return { scheduleId: `schedule_${sub}_${key}` };
+  }
   async cancel(sub: string) { this.states.get(sub)!.cancelAtPeriodEnd = true; return { cancelAtPeriodEnd: true as const }; }
   async refund(invoiceId: string, amount: number, key: string) {
     const existing = this.effects.get(key); if (existing) return existing as { refundId: string };
@@ -161,6 +166,23 @@ async function main() {
   await restarted.reconcile(account.id); await restarted.reconcile(account.id);
   assert.deepEqual(await ledger(), entries);
   checked(`sales commissions ledger: 35 % of initial, later change/usage at zero, refund prorata, replay-safe (${entries.length} entries)`);
+  // Effet partiel chez le fournisseur : le verrou reste posé, aucune autre opération ne passe.
+  const partialAccount = await db.saasBillingAccount.findUniqueOrThrow({ where: { id: account.id } });
+  const partialState = partialAccount.state as unknown as { activeContract: BillingContract; status: string; pendingChange: unknown; cancelAtPeriodEnd: boolean };
+  if (partialState.status === "ACTIVE" && !partialState.pendingChange && !partialState.cancelAtPeriodEnd && !partialAccount.pendingOperationId) {
+    provider.partialNextSchedule = true;
+    const downgrade = { kind: "CHANGE" as const, target: core.makeBillingContract(catalog, "STARTER", "MONTHLY", []), prorationDate: Math.floor(Date.now() / 1000), confirmedTotalCents: 0, actorId: "test-operator" };
+    await assert.rejects(restarted.command(account.id, "change-partial", downgrade), /PARTIAL_EFFECT/);
+    const locked = await db.saasBillingAccount.findUniqueOrThrow({ where: { id: account.id } });
+    assert.ok(locked.pendingOperationId, "un effet partiel garde le verrou");
+    await assert.rejects(restarted.command(account.id, "cancel-after-partial", { kind: "CANCEL", actorId: "test-operator" }), /CONCURRENT/);
+    // Rapprochement manuel simulé : l'opérateur constate l'état fournisseur, clôt l'opération et rend le verrou.
+    await db.$transaction([
+      db.saasBillingOperation.update({ where: { id: locked.pendingOperationId! }, data: { status: "FAILED", result: { code: "BILLING_PARTIAL_EFFECT" }, completedAt: new Date() } }),
+      db.saasBillingAccount.update({ where: { id: account.id }, data: { pendingOperationId: null } }),
+    ]);
+    checked("partial provider effect keeps the lock until manual reconciliation");
+  } else throw new Error("SAAS01B_PARTIAL_PRECONDITION");
   await restarted.command(account.id, "cancel-end", { kind: "CANCEL", actorId: "test-operator" });
   await restarted.reconcile(account.id);
   assert.equal((await db.saasSubscription.findUniqueOrThrow({ where: { id: updated.id } })).cancelAtPeriodEnd, true);

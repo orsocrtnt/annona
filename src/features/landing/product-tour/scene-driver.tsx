@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Bell, CornerUpLeft, MousePointerClick, Navigation, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CityMap } from "@/features/landing/product-tour/city-map";
+import { PhoneFrame } from "@/features/landing/product-tour/phone-frame";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
+import { TourBubble } from "@/features/landing/product-tour/tour-bubble";
 import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
 import {
   GESTURE_RESULT_DELAY_MS,
@@ -140,35 +142,25 @@ export function SceneDriver({ onDone, reducedMotion }: SceneProps) {
   useDelayedCall(navigating, NAVIGATION_VIEW_MS, onDone);
 
   return (
-    <div className="flex h-full items-center justify-center gap-8 px-4 py-4">
-      <div className="hidden max-w-[150px] lg:block">
-        <p className="text-xs font-semibold text-muted-foreground">App livreur</p>
-        <p className="mt-1 text-sm leading-snug">
-          Karim reçoit la mission sur son téléphone, sans appel ni message.
-        </p>
-      </div>
-
-      <div className="flex h-full w-[230px] shrink-0 flex-col overflow-hidden rounded-[30px] border-[6px] border-[#0e1310] bg-[#f5f8f6] shadow-[0_20px_50px_rgba(14,19,16,0.18)]">
-        <div className="flex items-center justify-between bg-white px-4 pb-1 pt-1.5 text-[10px] font-semibold" aria-hidden>
-          <span>14:02</span>
-          <span className="h-1.5 w-10 rounded-full bg-[#0e1310]" />
-          <span>5G</span>
-        </div>
-
-        <div className="relative min-h-0 flex-1">
-          {navigating ? (
-            <NavigationView />
-          ) : (
-            <MissionDetails
-              phase={phase}
-              ready={ready}
-              accepted={accepted}
-              onAccept={() => setAccepted(true)}
-              onNavigate={() => setNavigating(true)}
-            />
-          )}
-        </div>
-      </div>
+    <div className="relative flex h-full items-center justify-center px-4 py-4">
+      <PhoneFrame time="14:02">
+        {navigating ? (
+          <NavigationView />
+        ) : (
+          <MissionDetails
+            phase={phase}
+            ready={ready}
+            accepted={accepted}
+            onAccept={() => setAccepted(true)}
+            onNavigate={() => setNavigating(true)}
+          />
+        )}
+      </PhoneFrame>
+      {phase >= 2 && (
+        <TourBubble key={navigating ? "gps" : accepted ? "accepted" : "mission"} className="left-6 top-8">
+          {navigating ? "GPS lancé en un geste." : accepted ? "Le client le voit aussitôt." : "Mission reçue, sans un appel."}
+        </TourBubble>
+      )}
     </div>
   );
 }

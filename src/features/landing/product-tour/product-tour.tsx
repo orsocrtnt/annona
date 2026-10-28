@@ -8,6 +8,9 @@ import { GuideCursor } from "@/features/landing/product-tour/guide-cursor";
 import { SceneClientOrder } from "@/features/landing/product-tour/scene-client-order";
 import { SceneDispatch } from "@/features/landing/product-tour/scene-dispatch";
 import { SceneDriver } from "@/features/landing/product-tour/scene-driver";
+import { SceneInvoices } from "@/features/landing/product-tour/scene-invoices";
+import { SceneProof } from "@/features/landing/product-tour/scene-proof";
+import { SceneReceipt } from "@/features/landing/product-tour/scene-receipt";
 import { SceneTracking } from "@/features/landing/product-tour/scene-tracking";
 import { interludeFor, type TourInterlude } from "@/features/landing/product-tour/tour-data";
 import {
@@ -37,6 +40,9 @@ const SCENE_TITLES: Record<TourStep, string> = {
   dispatch: "Espace entreprise : le dispatcher intelligent attribue la livraison",
   driver: "App livreur : le livreur reçoit la mission et lance la navigation",
   tracking: "Espace client : le client suit sa livraison sur la carte",
+  proof: "App livreur : le livreur prend la preuve de livraison",
+  receipt: "Espace client : livraison confirmée et facture reçue par e-mail",
+  invoices: "Espace entreprise : suivi des paiements et relance des impayés",
 };
 
 const SPACE_LABELS: Record<TourStep, string> = {
@@ -44,6 +50,9 @@ const SPACE_LABELS: Record<TourStep, string> = {
   dispatch: "Espace entreprise · Dispatch",
   driver: "App livreur",
   tracking: "Espace client · Suivi",
+  proof: "App livreur",
+  receipt: "Espace client · Commandes",
+  invoices: "Espace entreprise · Facturation",
 };
 
 const INTERLUDE_ICONS = { company: Building2, driver: Truck, client: UserRound } as const;
@@ -313,9 +322,10 @@ export function ProductTour() {
                   {step === "order" && <SceneClientOrder {...sceneProps} />}
                   {step === "dispatch" && <SceneDispatch {...sceneProps} />}
                   {step === "driver" && <SceneDriver {...sceneProps} />}
-                  {step === "tracking" && (
-                    <SceneTracking {...sceneProps} onRestart={reset} />
-                  )}
+                  {step === "tracking" && <SceneTracking {...sceneProps} />}
+                  {step === "proof" && <SceneProof {...sceneProps} />}
+                  {step === "receipt" && <SceneReceipt {...sceneProps} />}
+                  {step === "invoices" && <SceneInvoices {...sceneProps} onRestart={reset} />}
                 </>
               )}
             </motion.div>
@@ -323,7 +333,7 @@ export function ProductTour() {
           <GuideCursor stage={stage} hidden={reducedMotion || interlude !== null} />
         </div>
 
-        <ol aria-label="Étapes de la démonstration" className="grid grid-cols-4 gap-1 px-1 pb-0.5 pt-1.5">
+        <ol aria-label="Étapes de la démonstration" className="grid grid-cols-7 gap-1 px-1 pb-0.5 pt-1.5">
           {TOUR_STEPS.map((item, index) => {
             const isCurrent = index === state.current;
             const locked = index > state.reached;
@@ -333,9 +343,10 @@ export function ProductTour() {
                   type="button"
                   disabled={locked}
                   aria-current={isCurrent ? "step" : undefined}
+                  aria-label={`${index + 1}. ${TOUR_STEP_LABELS[item]}`}
                   onClick={() => navigate(goToStep(state, item))}
                   className={cn(
-                    "relative flex w-full items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none sm:gap-1.5 sm:px-2.5",
+                    "relative flex w-full items-center justify-center gap-1 rounded-lg px-0.5 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
                     !isCurrent && !locked && "text-muted-foreground hover:bg-[#f0f4f1]",
                     locked && "cursor-not-allowed text-muted-foreground/50"
                   )}
@@ -357,7 +368,10 @@ export function ProductTour() {
                   >
                     {index + 1}
                   </span>
-                  <span className="relative">{TOUR_STEP_LABELS[item]}</span>
+                  {/* Numéros seuls au repos ; libellés quand la fenêtre est agrandie. */}
+                  <span className={cn("relative whitespace-nowrap", frame && started ? "inline" : "hidden")}>
+                    {TOUR_STEP_LABELS[item]}
+                  </span>
                 </button>
               </li>
             );
