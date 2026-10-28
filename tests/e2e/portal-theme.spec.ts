@@ -178,7 +178,7 @@ test("navigation client portail ↔ dashboard : le Dark ne déborde pas et ne cl
   expect(await page.evaluate(() => typeof (window as unknown as { __frames?: unknown }).__frames)).toBe("object");
 });
 
-test("les boutons de la barre du portail font 44 px sans grandir la barre (56 px)", async ({ page }) => {
+test("les boutons de la barre du portail font 44 px sans grandir la barre (58 px)", async ({ page }) => {
   await openPortal(page);
   for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 844 });
@@ -189,7 +189,8 @@ test("les boutons de la barre du portail font 44 px sans grandir la barre (56 px
       expect(box?.width, `${name} à ${width}px`).toBeGreaterThanOrEqual(44);
     }
     const bar = await page.locator("header").first().locator("> div").first().boundingBox();
-    expect(bar?.height, `hauteur de barre à ${width}px`).toBeLessThanOrEqual(56);
+    // Hauteur mesurée sur preproduction (capture de référence) : 58 px, bordures comprises.
+    expect(bar?.height, `hauteur de barre à ${width}px`).toBeLessThanOrEqual(58);
   }
 });
 
