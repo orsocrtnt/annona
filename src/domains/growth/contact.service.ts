@@ -1,5 +1,5 @@
-import { createHmac } from "node:crypto";
 import { z } from "zod";
+import { abuseFingerprint, getAbuseHmacSecret } from "@/lib/security/abuse-hmac";
 import { prisma } from "@/services/prisma/client";
 
 /** GROWTH-1, décision C10 : messages Contact stockés et lus dans le back-office plateforme. */
@@ -33,7 +33,7 @@ type ContactWriteDatabase = Pick<typeof prisma, "contactMessage" | "$transaction
 /** L'adresse IP n'est jamais stockée : seule cette empreinte HMAC sert au débit. */
 export function contactSourceHash(source: string, secret: string) {
   if (!secret) throw new Error("CONTACT_SOURCE_SECRET_MISSING");
-  return createHmac("sha256", secret).update(`contact-source:${source}`).digest("hex");
+  return abuseFingerprint("contact-source", source, secret);
 }
 
 /**
@@ -59,7 +59,8 @@ export async function submitContactMessage(
 
   const db = options.db ?? prisma;
   const now = options.now ?? new Date();
-  const sourceHash = contactSourceHash(source, options.secret ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "");
+  // Secret dédié CONTACT_HMAC_SECRET, repli sur la clé service (voir abuse-hmac.ts).
+  const sourceHash = contactSourceHash(source, options.secret ?? getAbuseHmacSecret());
   const since = new Date(now.getTime() - CONTACT_WINDOW_MS);
   // Verrou consultatif de transaction : sans lui, des envois simultanés lisaient le même
   // compte et dépassaient les limites (PERF-02 : 56 acceptés pour 50).

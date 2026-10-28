@@ -3,20 +3,14 @@ import { prisma } from "@/services/prisma/client";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import { hydrateUserWithRole, getUserByAuthId } from "@/domains/user/user.service";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
-import { slugify } from "@/lib/utils";
-import type { SystemRole, UserStatus } from "@prisma/client";
+import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 import { getMiniAdminHomePath } from "@/lib/permissions/mini-admin";
 
-export type AccountType = "company";
-
+/** Prénom et nom ne sont jamais lus depuis user_metadata, modifiable par l'utilisateur. */
 interface SyncUserInput {
   authId: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  accountType?: AccountType;
-  companyName?: string;
 }
 
 export class UserNotProvisionedError extends Error {
@@ -53,11 +47,11 @@ export async function syncUserFromSupabase(
     assertAccountActive(await hydrateUserWithRole(existingByEmail));
     const user = await prisma.user.update({
       where: { id: existingByEmail.id },
+      // Rattachement initial du compte préparé (invitation, import) : l'identité saisie
+      // par l'administrateur est conservée.
       data: {
         authId: input.authId,
         email,
-        firstName: input.firstName,
-        lastName: input.lastName,
         lastLoginAt: new Date(),
       },
       include: { company: true },
@@ -66,65 +60,10 @@ export async function syncUserFromSupabase(
     return hydrateUserWithRole(user);
   }
 
-  // Seuls les administrateurs d'entreprise peuvent s'inscrire eux-mêmes
-  if (input.accountType !== "company") {
-    throw new UserNotProvisionedError();
-  }
-
-  const role = await prisma.role.findUnique({ where: { slug: "company-admin" } });
-  if (!role) throw new Error("Role company-admin not found. Run db:seed first.");
-
-  const userCount = await prisma.user.count();
-  let company = userCount === 0
-    ? await prisma.company.findFirst({
-        where: { status: { in: ["ACTIVE", "TRIAL"] } },
-        orderBy: { createdAt: "asc" },
-      })
-    : null;
-
-  if (!company) {
-    const startsAt = new Date();
-    const name =
-      input.companyName?.trim() ||
-      email.split("@")[1]?.split(".")[0] ||
-      "Mon entreprise";
-    company = await prisma.company.create({
-      data: {
-        name,
-        slug: `${slugify(name)}-${Date.now()}`,
-        status: "TRIAL",
-        saasSubscription: {
-          create: {
-            kind: "LEGACY",
-            status: "ACTIVE",
-            startsAt,
-            currentPeriodStart: startsAt,
-            snapshot: {
-              schemaVersion: 1,
-              mode: "LEGACY",
-              reason: "SELF_SIGNUP_BEFORE_AUTONOMOUS_BILLING",
-            },
-          },
-        },
-      },
-    });
-  }
-
-  const user = await prisma.user.create({
-    data: {
-      authId: input.authId,
-      email,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      status: "ACTIVE" as UserStatus,
-      roleId: role.id,
-      companyId: company.id,
-      lastLoginAt: new Date(),
-    },
-    include: { company: true },
-  });
-
-  return hydrateUserWithRole(user);
+  // Aucun provisionnement à partir des métadonnées Supabase, modifiables par
+  // l'utilisateur : une entreprise et son abonnement ne naissent que du parcours
+  // d'inscription vérifié côté serveur (SignupJourney), de la démo ou du back-office.
+  throw new UserNotProvisionedError();
 }
 
 export function getDashboardPathForRole(role: SystemRole, settings?: unknown): string {

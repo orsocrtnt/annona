@@ -59,7 +59,7 @@ function assertRecurringCategory(
   category: import("@prisma/client").DeliveryCategory
 ): asserts category is "STANDARD" | "COURIER" {
   if (category === "SPECIAL_MISSION") {
-    throw new Error("Les missions spéciales ne peuvent pas être récurrentes");
+    throw new Error("RECURRING_SPECIAL_MISSION_UNSUPPORTED");
   }
 }
 

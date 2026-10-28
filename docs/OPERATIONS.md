@@ -31,6 +31,7 @@ Créer `.env.local` seulement s'il n'existe pas. `npm ci` utilise le lockfile et
 - `DIRECT_URL` : opérations directes de schéma ;
 - `CRON_SECRET` : secret partagé pour les deux routes cron.
 - `OPS_HEALTH_SECRET` : accès distinct au diagnostic profond `/api/health?deep=1`.
+- `CONTACT_HMAC_SECRET` : secret des empreintes anti-abus (formulaire Contact, échecs de connexion) ; repli sur `SUPABASE_SERVICE_ROLE_KEY` s'il est absent. Le changer remet seulement les compteurs à zéro.
 
 ### Optionnelles
 
@@ -132,6 +133,12 @@ Vérifier l'accès réseau, la validité de `DATABASE_URL`, le mode/port du pool
 ### Réponses 401 ou 403
 
 401 indique généralement une session absente ou invalide. 403 indique un rôle ou une permission insuffisante. Vérifier le compte, son entreprise, leurs statuts et la persona démo avant de modifier les gardes.
+
+Une mutation (`POST`, `PUT`, `PATCH`, `DELETE`) dont l'en-tête `Origin` ne correspond ni à l'hôte appelé ni à `NEXT_PUBLIC_APP_URL` reçoit 403 « Origine de la requête refusée. » dès le middleware ; le webhook Stripe et les crons en sont exemptés. Un compte Supabase sans profil en base n'est jamais provisionné à la connexion : seule l'inscription vérifiée (`SignupJourney`), la démo ou le back-office créent une entreprise.
+
+### Réponse 429 à la connexion
+
+Sur 15 minutes glissantes, `/api/auth/login` répond 429 avec `Retry-After` au-delà de 5 échecs pour un même couple e-mail + source, de 20 pour un e-mail toutes sources confondues ou de 30 pour une source. Compromis assumé : un tiers qui connaît une adresse ne peut verrouiller la victime que depuis sa propre source, ou par une attaque distribuée sur 20 essais ; la victime garde ses essais depuis la sienne. Sans adresse IP (ni `x-forwarded-for` ni `x-real-ip`), seule la limite par e-mail s'applique, pour ne pas créer de compteur global. Une connexion réussie remet à zéro les compteurs e-mail et e-mail + source, pas celui de la source. La limite repose sur la table `auth_login_failures` (migration `20261028180000_auth_login_failures`) : tant qu'elle n'est pas appliquée, la connexion reste permise et l'échec du contrôle est journalisé.
 
 ### Invitations ou récupération indisponibles
 

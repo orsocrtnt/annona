@@ -8,7 +8,7 @@ import { enqueueOperationJob } from "@/domains/operations/operation-job.service"
 export type ConversationActor = { id: string; companyId: string | null; role: SystemRole; permissions: string[]; name: string };
 export type MessageInput = { body: string; kind: string; internal: boolean; requestKey: string };
 export class ConversationError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  constructor(public status: number, message: string) { super(message); this.name = "ConversationError"; }
 }
 export function isConversationStaff(actor: ConversationActor) { return STAFF_ROLES.includes(actor.role); }
 export function conversationScope(actor: ConversationActor): Prisma.OrderWhereInput {

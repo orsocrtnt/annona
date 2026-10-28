@@ -22,23 +22,14 @@ export interface ServerAuthContext {
 
 async function resolveUserFromAuthId(
   authId: string,
-  metadata?: Record<string, string>,
   email?: string
 ): Promise<ServerAuthContext | null> {
   // Aucun cache inter-requêtes : une modification validée en base est relue
   // dès la prochaine requête, indépendamment de l'instance qui la reçoit.
   let user = await getUserByAuthId(authId);
   if (!user && email) {
-    const meta = metadata ?? {};
-    const isCompanyAccount = meta.account_type === "company" || Boolean(meta.company_name);
     try {
-      user = await syncUserFromSupabase({
-        authId, email,
-        firstName: meta.first_name ?? meta.firstName ?? "Utilisateur",
-        lastName: meta.last_name ?? meta.lastName ?? "",
-        accountType: isCompanyAccount ? "company" : undefined,
-        companyName: meta.company_name,
-      });
+      user = await syncUserFromSupabase({ authId, email });
     } catch (error) {
       if (error instanceof UserNotProvisionedError || error instanceof AccountUnavailableError) return null;
       throw error;
@@ -83,7 +74,6 @@ const loadAuthContext = cache(async (): Promise<ServerAuthContext | null> => {
 
   return resolveUserFromAuthId(
     authUser.id,
-    authUser.user_metadata as Record<string, string>,
     authUser.email ?? undefined
   );
 });

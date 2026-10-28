@@ -43,6 +43,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ data: recurring, success: true }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "RECURRING_SPECIAL_MISSION_UNSUPPORTED") {
+      return NextResponse.json(
+        { error: "Les missions spéciales ne peuvent pas être récurrentes." },
+        { status: 400 }
+      );
+    }
     if (error instanceof Error && error.message === "DELIVERY_CATEGORY_DISABLED") {
       return NextResponse.json(
         { error: "Ce type de livraison n'est pas disponible" },

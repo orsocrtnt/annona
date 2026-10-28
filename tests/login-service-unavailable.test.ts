@@ -16,6 +16,8 @@ function loadLoginRoute(signIn: () => Promise<SignInResult>, syncUser: () => Pro
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value },
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: signIn, signOut: async () => undefined } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
+    "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
+    "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": { syncUserFromSupabase: syncUser, getDashboardPathForRole: () => "/dashboard", UserNotProvisionedError: class extends Error {} },
     "@/domains/user/user.service": { extractPermissionSlugs: () => [], getUserByAuthId: async () => null, updateLastLogin: async () => undefined },
     "@/lib/demo/constants": { isDemoLoginEmail: () => false, DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },

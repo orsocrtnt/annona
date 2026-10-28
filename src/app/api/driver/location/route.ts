@@ -1,7 +1,7 @@
 import { ConversationError } from "@/domains/order-conversation/order-conversation.service";
 import { NextResponse } from "next/server";
 import { requireDriverRole } from "@/lib/api/auth-guard";
-import { withApiHandler } from "@/lib/api/route-handler";
+import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import { upsertDriverLocation } from "@/domains/driver/driver-location.service";
 import { updateDriverLocationSchema } from "@/lib/validations/driver-location";
 
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const auth = await requireDriverRole();
     if ("error" in auth) return auth.error;
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const parsed = updateDriverLocationSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(

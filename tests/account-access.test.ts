@@ -19,7 +19,7 @@ import { prisma } from "../src/services/prisma/client";
 // React cache is identity here: each call represents a new HTTP request.
 function load<T>(file: string, dependencies: Record<string, unknown>): T {
   const module = { exports: {} };
-  const deps = { "server-only": {}, "next/server": { NextResponse }, ...dependencies };
+  const deps = { "server-only": {}, "next/server": { NextResponse, after: () => undefined }, ...dependencies };
   const source = ts.transpileModule(readFileSync(resolve(file), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(source, { Error, console, exports: module.exports, module, require: (id: string) => {
     assert.ok(id in deps, `Unexpected dependency ${id}`);
@@ -155,7 +155,7 @@ for (const byEmail of [false, true]) {
     t.mock.method(prisma, "$queryRaw", async () => [{ id: "r", system_role: "MINI_ADMIN" }]);
     replace(t, prisma.rolePermission, "findMany", async () => []);
     t.mock.method(prisma, "$transaction", async () => assert.fail("no linking allowed"));
-    await assert.rejects(authService.syncUserFromSupabase({ authId: "auth", email: u.email, firstName: "Test", lastName: "Local" }), access.AccountUnavailableError);
+    await assert.rejects(authService.syncUserFromSupabase({ authId: "auth", email: u.email }), access.AccountUnavailableError);
   });
 }
 
@@ -164,7 +164,7 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
     let current = user("COMPANY_ADMIN");
     const authUser = { id: "auth", email: current.email, email_confirmed_at: "2026-09-28", user_metadata: {} };
     const post = load<{ POST: (r: Request) => Promise<Response> }>(`src/app/api/auth/${file}/route.ts`, {
-      "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation,
+      zod: await import("zod"), "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation,
       "@/lib/auth/normalize-email": normalize,
       "@/services/supabase/server": { createClient: async () => ({ auth: {
         signInWithPassword: async () => ({ data: { user: authUser }, error: null }),
@@ -172,6 +172,8 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
       } }) },
       "@/services/supabase/admin": { createAdminClient: () => assert.fail("unexpected admin call") },
       "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
+      "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
+      "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
       "@/domains/auth/auth.service": { ...authService, syncUserFromSupabase: async () => structuredClone(current) },
       "@/domains/user/user.service": { ...userService, getUserPermissions: async () => userService.extractPermissionSlugs(current) },
       "@/lib/demo/constants": constants, "@/lib/demo/persona-cookie": {},
@@ -185,7 +187,8 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
       },
       "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
     }).POST;
-    const request = () => new Request("http://local", { method: "POST", body: JSON.stringify({ email: current.email, password: "local-test-only" }) });
+    // /api/auth/sync n'accepte aucun champ (SEC-4) ; /api/auth/login attend les identifiants.
+    const request = () => new Request("http://local", { method: "POST", body: JSON.stringify(file === "sync" ? {} : { email: current.email, password: "local-test-only" }) });
     assert.equal((await post(request())).status, 200);
     current.status = "SUSPENDED";
     assert.equal((await post(request())).status, 403);

@@ -1,5 +1,6 @@
 import { resolveOnboardingLoginPath } from "@/domains/onboarding/onboarding.service";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { assertAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
 import { createClient } from "@/services/supabase/server";
 import {
@@ -7,11 +8,21 @@ import {
   getDashboardPathForRole,
   UserNotProvisionedError,
 } from "@/domains/auth/auth.service";
-import type { AccountType } from "@/domains/auth/auth.service";
 import { getUserPermissions } from "@/domains/user/user.service";
+
+// Aucun champ accepté : le profil vient uniquement de la base, jamais du client.
+const syncBodySchema = z.object({}).strict();
+
+function parseJson(raw: string): unknown {
+  try { return JSON.parse(raw); } catch { return null; }
+}
 
 export async function POST(request: Request) {
   try {
+    const raw = await request.text().catch(() => "");
+    if (raw.trim() && !syncBodySchema.safeParse(parseJson(raw)).success) {
+      return NextResponse.json({ error: "Requête de synchronisation invalide." }, { status: 400 });
+    }
     const supabase = await createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
 
@@ -19,21 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const body = (await request.json().catch(() => ({}))) as {
-      accountType?: AccountType;
-    };
-
-    const metadata = authUser.user_metadata as Record<string, string>;
-    const accountType = body.accountType ?? (metadata.account_type as AccountType | undefined);
-
-    const user = await syncUserFromSupabase({
-      authId: authUser.id,
-      email: authUser.email,
-      firstName: metadata.first_name ?? metadata.firstName ?? "Utilisateur",
-      lastName: metadata.last_name ?? metadata.lastName ?? "",
-      accountType: accountType ?? (metadata.company_name ? "company" : undefined),
-      companyName: metadata.company_name,
-    });
+    const user = await syncUserFromSupabase({ authId: authUser.id, email: authUser.email });
 
     assertAccountActive(user);
     const permissions = await getUserPermissions(authUser.id);

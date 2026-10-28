@@ -1195,3 +1195,15 @@ model SalesCommissionEntry {
   @@index([receivedAt])
   @@map("sales_commission_entries")
 }
+
+/// SEC-2 : échecs de connexion récents, identifiés par une empreinte HMAC de l'e-mail
+/// normalisé ou de la source (jamais la valeur brute). Purgés au-delà de 15 minutes.
+model AuthLoginFailure {
+  id        String   @id @default(cuid())
+  keyHash   String   @map("key_hash")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([keyHash, createdAt])
+  @@index([createdAt])
+  @@map("auth_login_failures")
+}

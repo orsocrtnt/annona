@@ -193,6 +193,8 @@ test("connexion : e-mail non confirmé refusé sans appel administrateur", async
     "@/lib/auth/normalize-email": { normalizeEmail: (s: string) => s.trim().toLowerCase() },
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: async () => ({ data: { user: null }, error: { code: "email_not_confirmed" } }) } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
+    "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
+    "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": {}, "@/domains/user/user.service": {},
     "@/lib/demo/constants": demo, "@/lib/demo/persona-cookie": {},
     "@/domains/demo/demo-auth.service": {}, "@/domains/demo/demo-scenario.service": {}, "@/domains/demo/demo-provision.service": {},
@@ -224,28 +226,26 @@ test("déconnexion : nettoyer l'état local après succès, signaler un échec f
   }
 });
 
-test("confirmation d'inscription : création seulement après jeton vérifié, aucune réécriture du mot de passe", async (t) => {
+// SEC-1 : hors parcours géré, account_type=company (métadonnée modifiable) ne provisionne rien.
+test("confirmation d'inscription hors parcours géré : refusée sans provisionnement ni réécriture", async (t) => {
   configured(t); const f = fixture(true);
-  await f.service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" });
-  assert.equal(f.provisions(), 1); assert.equal(f.writes(), 0);
-  assert.deepEqual(f.signouts, ["global", "local"]);
   await assert.rejects(f.service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" }), /AUTH_LINK_INVALID/);
-  assert.equal(f.provisions(), 1);
+  assert.equal(f.provisions(), 0); assert.equal(f.writes(), 0);
+  assert.deepEqual(f.signouts, ["local"]);
 });
-test("confirmation Supabase par défaut : la session du fragment reprend l'inscription", async (t) => {
+test("confirmation Supabase par défaut hors parcours géré : session du fragment refusée sans provisionnement", async (t) => {
   configured(t); const f = fixture(true);
-  const result = await f.service.finishPasswordLink({
+  await assert.rejects(f.service.finishPasswordLink({
     accessToken: "access-token-test-not-a-real-secret",
     refreshToken: "refresh-token-test-not-a-real-secret",
     type: "signup",
-  });
-  assert.equal(JSON.stringify(result), "{}");
-  assert.equal(f.provisions(), 1);
+  }), /AUTH_LINK_INVALID/);
+  assert.equal(f.provisions(), 0);
   assert.equal(JSON.stringify(f.sessions), JSON.stringify([{
     access_token: "access-token-test-not-a-real-secret",
     refresh_token: "refresh-token-test-not-a-real-secret",
   }]));
-  assert.deepEqual(f.signouts, ["global", "local"]);
+  assert.deepEqual(f.signouts, ["local"]);
 });
 test("SIGNUP-1 : la session du modèle Supabase reprend le brouillon sans provisionnement anticipé", async (t) => {
   configured(t);
@@ -275,24 +275,4 @@ test("SIGNUP-1 : la session du modèle Supabase reprend le brouillon sans provis
   assert.equal(result.signupResumeToken, "resume-token-high-entropy");
   assert.equal(JSON.stringify(calls), JSON.stringify([{ draftId: "draft-1", linkToken: "link-token-high-entropy", authUserId: "auth-managed", email: "managed@example.test" }]));
   assert.deepEqual(signouts, ["global", "local"]);
-});
-test("inscription : demande de confirmation sans profil ni session retournée ; auto-confirmation refusée", async (t) => {
-  configured(t); let automaticSession = false; let signouts = 0;
-  const service = load<typeof import("../src/domains/auth/provision-company-admin")>("src/domains/auth/provision-company-admin.ts", {
-    "@/lib/auth/email-links": links,
-    "@/lib/auth/normalize-email": { normalizeEmail: (s: string) => s.trim().toLowerCase() },
-    "@/services/supabase/password-link": { createPasswordLinkClient: () => ({ auth: {
-      signUp: async (args: { email: string; options: { emailRedirectTo: string; data: { account_type: string } } }) => {
-        assert.equal(args.email, "test@example.com"); assert.equal(args.options.data.account_type, "company");
-        assert.equal(args.options.emailRedirectTo, "https://app.example.com/reset-password");
-        return { data: { session: automaticSession ? {} : null }, error: null };
-      },
-      signOut: async () => { signouts++; return { error: null }; },
-    } }) },
-  });
-  const args = { email: " TEST@EXAMPLE.COM ", password: "TestLocal123!", firstName: "Test", lastName: "Local" };
-  assert.equal(JSON.stringify(await service.provisionCompanyAdmin(args)), '{"verificationRequired":true}');
-  automaticSession = true;
-  await assert.rejects(service.provisionCompanyAdmin(args), /AUTH_EMAIL_CONFIRMATION_REQUIRED/);
-  assert.equal(signouts, 1);
 });

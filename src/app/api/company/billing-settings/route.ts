@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { withApiHandler } from "@/lib/api/route-handler";
+import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import {
   getCompanyBillingSettings,
   updateCompanyBillingSettings,
@@ -36,7 +36,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
     }
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const parsed = companyBillingSettingsSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(

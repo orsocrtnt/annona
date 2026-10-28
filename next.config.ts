@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
+import { buildSecurityHeaders } from "./src/lib/security/security-headers";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["leaflet", "react-leaflet"],
+  async headers() {
+    return [{ source: "/:path*", headers: buildSecurityHeaders() }];
+  },
   experimental: {
     staleTimes: {
       dynamic: 60,

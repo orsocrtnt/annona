@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import * as zod from "zod";
 import { NextResponse } from "next/server";
 import {
   PLATFORM_ACCESS_RESOURCES,
@@ -48,6 +49,7 @@ function load(file: string, service: string, role: string, calls: string[], even
     Error, URL, console, exports: module.exports, module,
     require: (id: string) => {
       if (id === "next/server") return { NextResponse };
+      if (id === "zod") return zod;
       if (id === "@/lib/api/auth-guard") return {
         requireStaffRole: async (permission: string) => {
           calls.push(`staff:${permission}`);

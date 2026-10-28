@@ -1,5 +1,4 @@
 import { createPasswordLinkClient } from "@/services/supabase/password-link";
-import { syncUserFromSupabase } from "@/domains/auth/auth.service";
 import { getUserByAuthId } from "@/domains/user/user.service";
 import { isAccountActive } from "@/lib/auth/account-access";
 import { prisma } from "@/services/prisma/client";
@@ -46,16 +45,9 @@ export async function finishPasswordLink(input: PasswordLinkInput): Promise<{ si
         if (signOutError) throw new Error("AUTH_PASSWORD_FAILED");
         return { signupResumeToken: managed.resumeToken };
       }
-      if (user || !data.user.email || data.user.user_metadata?.account_type !== "company") throw new Error("AUTH_LINK_INVALID");
-      const { error: signOutError } = await client.auth.signOut({ scope: "global" });
-      if (signOutError) throw new Error("AUTH_PASSWORD_FAILED");
-      await syncUserFromSupabase({
-        authId: data.user.id, email: data.user.email,
-        firstName: data.user.user_metadata.first_name ?? "Utilisateur",
-        lastName: data.user.user_metadata.last_name ?? "",
-        accountType: "company", companyName: data.user.user_metadata.company_name,
-      });
-      return {};
+      // Hors parcours géré, un lien de confirmation ne provisionne rien : les
+      // métadonnées (account_type, company_name) sont contrôlées par l'utilisateur.
+      throw new Error("AUTH_LINK_INVALID");
     }
     const pending = user?.status === "PENDING_VERIFICATION";
     if (!user || !isAccountActive(pending ? { ...user, status: "ACTIVE" } : user) ||
