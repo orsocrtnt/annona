@@ -186,7 +186,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | SAAS-02 | B+C | Lecture revenu/consommation et alertes C10 faites, affichées et recettées (27 octobre) ; réconciliation paiements, rétention, conversion. | Stripe de test. | Élevée · GPT‑6.1 Sol |
 | PERF-02 | A+B | Harnais en mémoire et PostgreSQL local jetable faits (27 octobre) ; routes Next locales, puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
 | COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
-| GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration, Contact et sa boîte de lecture faits (27 octobre) ; pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
+| GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration, Contact et sa boîte de lecture faits (27 octobre). Mini-démo interactive du hero faite le 27 octobre (client → dispatcher intelligent → livreur → suivi, `src/features/landing/product-tour/`, spec et plan dans `docs/superpowers/`) : `npm run check` vert, parcours navigateur 1440/390 et mouvement réduit verts ; revue visuelle propriétaire à faire. Reste : pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
 | RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon. | Très élevée · GPT‑6 Astra |
 | SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée. | Moyenne · GPT‑6.1 Sol |
 

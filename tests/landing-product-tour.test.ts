@@ -77,3 +77,9 @@ test("un trajet d'un seul point garde le marqueur sur ce point", () => {
 test("le trajet de la démo suit plusieurs rues", () => {
   assert.ok(TOUR_ROUTE.length >= 5);
 });
+
+test("la fin de la démo renvoie vers la démonstration complète", () => {
+  const scene = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/scene-tracking.tsx", import.meta.url)), "utf8");
+  assert.match(scene, /href="\/demonstration"/);
+  assert.match(scene, /Rejouer/);
+});

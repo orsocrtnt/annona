@@ -5,12 +5,14 @@ import { cn } from "@/lib/utils";
 import { SceneClientOrder } from "@/features/landing/product-tour/scene-client-order";
 import { SceneDispatch } from "@/features/landing/product-tour/scene-dispatch";
 import { SceneDriver } from "@/features/landing/product-tour/scene-driver";
+import { SceneTracking } from "@/features/landing/product-tour/scene-tracking";
 import {
   TOUR_STEP_LABELS,
   TOUR_STEPS,
   advanceTour,
   goToStep,
   initialTourState,
+  restartTour,
   type TourStep,
 } from "@/features/landing/product-tour/tour-machine";
 import { usePrefersReducedMotion } from "@/features/landing/product-tour/use-timeline";
@@ -28,23 +30,6 @@ const SCENE_TITLES: Record<TourStep, string> = {
   driver: "App livreur : le livreur reçoit la mission et lance la navigation",
   tracking: "Espace client : le client suit sa livraison sur la carte",
 };
-
-function PendingScene({ step, onDone }: SceneProps & { step: TourStep }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-      <p className="text-sm text-muted-foreground">{SCENE_TITLES[step]}</p>
-      {step !== "tracking" && (
-        <button
-          type="button"
-          onClick={onDone}
-          className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
-        >
-          Continuer
-        </button>
-      )}
-    </div>
-  );
-}
 
 /** Mini-démo du hero : le visiteur fait lui-même chaque geste du parcours d'une livraison. */
 export function ProductTour() {
@@ -127,7 +112,9 @@ export function ProductTour() {
         {step === "order" && <SceneClientOrder key={step} {...sceneProps} />}
         {step === "dispatch" && <SceneDispatch key={step} {...sceneProps} />}
         {step === "driver" && <SceneDriver key={step} {...sceneProps} />}
-        {step === "tracking" && <PendingScene key={step} step={step} {...sceneProps} />}
+        {step === "tracking" && (
+          <SceneTracking key={step} {...sceneProps} onRestart={() => setState(restartTour())} />
+        )}
       </div>
     </figure>
   );
