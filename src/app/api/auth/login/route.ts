@@ -122,7 +122,6 @@ export async function POST(request: Request) {
       await supabase.auth.signOut({ scope: "local" });
       return NextResponse.json({ error: "Confirmez votre adresse e-mail avant de vous connecter." }, { status: 403 });
     }
-    const metadata = authUser.user_metadata as Record<string, string>;
 
     const isDemoAccount = isDemoLoginEmail(authUser.email!);
     const requestKey = typeof (body as { demoRequestKey?: unknown }).demoRequestKey === "string"
@@ -154,8 +153,6 @@ export async function POST(request: Request) {
       user = await syncUserFromSupabase({
         authId: authUser.id,
         email: authUser.email!,
-        firstName: metadata.first_name ?? metadata.firstName ?? "Utilisateur",
-        lastName: metadata.last_name ?? metadata.lastName ?? "",
       });
     }
 

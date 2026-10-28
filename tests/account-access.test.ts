@@ -155,7 +155,7 @@ for (const byEmail of [false, true]) {
     t.mock.method(prisma, "$queryRaw", async () => [{ id: "r", system_role: "MINI_ADMIN" }]);
     replace(t, prisma.rolePermission, "findMany", async () => []);
     t.mock.method(prisma, "$transaction", async () => assert.fail("no linking allowed"));
-    await assert.rejects(authService.syncUserFromSupabase({ authId: "auth", email: u.email, firstName: "Test", lastName: "Local" }), access.AccountUnavailableError);
+    await assert.rejects(authService.syncUserFromSupabase({ authId: "auth", email: u.email }), access.AccountUnavailableError);
   });
 }
 

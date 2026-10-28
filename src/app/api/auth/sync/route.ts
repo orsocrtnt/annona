@@ -30,13 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const metadata = authUser.user_metadata as Record<string, string>;
-    const user = await syncUserFromSupabase({
-      authId: authUser.id,
-      email: authUser.email,
-      firstName: metadata.first_name ?? metadata.firstName ?? "Utilisateur",
-      lastName: metadata.last_name ?? metadata.lastName ?? "",
-    });
+    const user = await syncUserFromSupabase({ authId: authUser.id, email: authUser.email });
 
     assertAccountActive(user);
     const permissions = await getUserPermissions(authUser.id);

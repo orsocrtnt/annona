@@ -13,6 +13,7 @@ import {
   loginAttemptKeys,
   settleLoginAttempt,
   startLoginAttempt,
+  type LoginAttemptKeys,
 } from "../src/domains/auth/login-rate-limit.service";
 import * as limiter from "../src/domains/auth/login-rate-limit.service";
 

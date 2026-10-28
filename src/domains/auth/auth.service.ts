@@ -7,11 +7,10 @@ import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 import { getMiniAdminHomePath } from "@/lib/permissions/mini-admin";
 
+/** Prénom et nom ne sont jamais lus depuis user_metadata, modifiable par l'utilisateur. */
 interface SyncUserInput {
   authId: string;
   email: string;
-  firstName: string;
-  lastName: string;
 }
 
 export class UserNotProvisionedError extends Error {
@@ -48,11 +47,11 @@ export async function syncUserFromSupabase(
     assertAccountActive(await hydrateUserWithRole(existingByEmail));
     const user = await prisma.user.update({
       where: { id: existingByEmail.id },
+      // Rattachement initial du compte préparé (invitation, import) : l'identité saisie
+      // par l'administrateur est conservée.
       data: {
         authId: input.authId,
         email,
-        firstName: input.firstName,
-        lastName: input.lastName,
         lastLoginAt: new Date(),
       },
       include: { company: true },

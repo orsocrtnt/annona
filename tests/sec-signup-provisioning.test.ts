@@ -38,15 +38,15 @@ const FORGED_METADATA = { account_type: "company", company_name: "Entreprise pir
 type AuthService = typeof import("../src/domains/auth/auth.service");
 
 // Service réel chargé isolément ; toute écriture de provisionnement est journalisée et refusée.
-function authFixture(existing: UserWithRole | null = null) {
+function authFixture(existing: UserWithRole | null = null, byEmail: UserWithRole | null = null) {
   const writes: string[] = [];
   const updates: Array<{ data: Record<string, unknown> }> = [];
   let links = 0;
   const refuse = (name: string) => async () => { writes.push(name); throw new Error(`${name} interdit`); };
   const prisma = {
     user: {
-      findFirst: async () => null, count: async () => 0, create: refuse("user.create"),
-      update: async (args: { data: Record<string, unknown> }) => { updates.push(args); return existing; },
+      findFirst: async () => byEmail ? structuredClone(byEmail) : null, count: async () => 0, create: refuse("user.create"),
+      update: async (args: { data: Record<string, unknown> }) => { updates.push(args); return existing ?? byEmail; },
     },
     company: { findFirst: async () => { writes.push("company.findFirst"); return { id: "first-company" }; }, create: refuse("company.create") },
     saasSubscription: { create: refuse("subscription.create") },
@@ -141,6 +141,15 @@ test("garde serveur : session confirmée sans profil et métadonnées falsifiée
     "@/lib/auth/account-access": access, "@/lib/demo/constants": constants,
   });
   assert.equal(await server.getServerAuth(), null);
+  assert.deepEqual(f.writes, []);
+});
+
+test("rattachement par e-mail : authId lié, prénom et nom de la base conservés (métadonnées ignorées)", async () => {
+  const invited = user("DRIVER");
+  const f = authFixture(null, invited);
+  await f.service.syncUserFromSupabase({ ...FORGED_INPUT, email: invited.email, firstName: "Pirate", lastName: "Renommé" } as Parameters<AuthService["syncUserFromSupabase"]>[0]);
+  assert.equal(f.updates.length, 1);
+  assert.deepEqual(Object.keys(f.updates[0]!.data).sort(), ["authId", "email", "lastLoginAt"]);
   assert.deepEqual(f.writes, []);
 });
 
