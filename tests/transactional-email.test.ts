@@ -181,4 +181,3 @@ test("C4 : refus HTTP explicite du fournisseur = certain ; expiration, réseau o
   assert.equal(emailSendOutcome(new Error("inattendue")), "unknown");
   assert.equal(emailSendOutcome("texte"), "unknown");
 });
-

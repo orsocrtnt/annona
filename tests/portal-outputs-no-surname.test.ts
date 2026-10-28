@@ -166,4 +166,3 @@ test("C3 : filet « Livreur <Nom…> » jusqu'à la ponctuation ou au tiret, par
     assert.equal(redactClientTimeline([{ label: "Information", description }])[0]!.description, expected, description);
   }
 });
-

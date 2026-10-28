@@ -212,4 +212,3 @@ test("C4 : refus 4xx certain — réservation libérée, une nouvelle relance es
   assert.equal(click?.duplicate, false, "R1 (créée il y a 30 h) ne bloque plus : nouvelle relance");
   assert.equal(db.reminders.length, 2);
 });
-
