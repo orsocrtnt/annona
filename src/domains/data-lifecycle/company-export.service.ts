@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type Invoice, type RecurringOrder } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 
 /**
@@ -8,266 +8,497 @@ import { prisma } from "@/services/prisma/client";
  * les identifiants Supabase Auth, clés d'idempotence, empreintes de requête,
  * charges de jobs, erreurs internes et identifiants du fournisseur de paiement sont exclus.
  * `subscriptions` est un ajout compatible de la version 1 (clé supplémentaire).
+ *
+ * Les collections sont relues par pages (clé `createdAt`, `id`) dans une seule
+ * transaction en lecture répétable : l'instantané reste cohérent et la mémoire
+ * est bornée par une page, pas par la taille de l'entreprise.
  */
-export async function exportCompanyData(companyId: string) {
-  const exportedAt = new Date().toISOString();
-  const data = await prisma.$transaction(async (tx) => {
-    const company = await tx.company.findUnique({
-      where: { id: companyId },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logoUrl: true,
-        email: true,
-        phone: true,
-        address: true,
-        city: true,
-        country: true,
-        status: true,
-        isDemo: true,
-        settings: true,
-        createdAt: true,
-        updatedAt: true,
+export const COMPANY_EXPORT_PAGE_SIZE = 100;
+const COMPANY_EXPORT_PAGE_SIZE_MAX = 1_000;
+// Un export en flux d'une grosse entreprise dépasse la minute ; la lecture reste unique et cohérente.
+const COMPANY_EXPORT_TIMEOUT_MS = 10 * 60_000;
+
+const COMPANY_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  logoUrl: true,
+  email: true,
+  phone: true,
+  address: true,
+  city: true,
+  country: true,
+  status: true,
+  isDemo: true,
+  settings: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.CompanySelect;
+
+const USER_SELECT = {
+  id: true,
+  email: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  avatarUrl: true,
+  settings: true,
+  status: true,
+  role: { select: { name: true, slug: true, systemRole: true } },
+  createdAt: true,
+  updatedAt: true,
+  lastLoginAt: true,
+  addresses: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+  driverLocation: true,
+  notifications: {
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      type: true,
+      title: true,
+      body: true,
+      href: true,
+      readAt: true,
+      orderMessageId: true,
+      createdAt: true,
+    },
+  },
+} satisfies Prisma.UserSelect;
+
+const ORDER_SELECT = {
+  id: true,
+  companyId: true,
+  reference: true,
+  status: true,
+  source: true,
+  totalAmount: true,
+  itemCount: true,
+  notes: true,
+  deliveryCategory: true,
+  pickupAddress: true,
+  pickupCity: true,
+  pickupPostalCode: true,
+  pickupInstructions: true,
+  shippingAddress: true,
+  shippingCity: true,
+  shippingPostalCode: true,
+  deliveryInstructions: true,
+  requestedDeliveryDate: true,
+  missionDescription: true,
+  customerId: true,
+  customerEmail: true,
+  recurringOrderId: true,
+  createdAt: true,
+  updatedAt: true,
+  items: { orderBy: { id: "asc" } },
+  stops: { orderBy: [{ sequence: "asc" }, { id: "asc" }] },
+  deliveries: {
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    include: {
+      trackingEvents: {
+        orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
       },
-    });
-    if (!company) return null;
+    },
+  },
+  messages: {
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      authorId: true,
+      authorName: true,
+      authorRole: true,
+      body: true,
+      kind: true,
+      internal: true,
+      createdAt: true,
+    },
+  },
+  threadReads: {
+    orderBy: { id: "asc" },
+    select: { id: true, userId: true, seenAt: true, seenId: true },
+  },
+} satisfies Prisma.OrderSelect;
 
-    const [users, recurringOrders, orders, invoices, supportTickets, operationJobs, subscriptions] =
-      await Promise.all([
-        tx.user.findMany({
-          where: { companyId },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            avatarUrl: true,
-            settings: true,
-            status: true,
-            role: { select: { name: true, slug: true, systemRole: true } },
-            createdAt: true,
-            updatedAt: true,
-            lastLoginAt: true,
-            addresses: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
-            driverLocation: true,
-            notifications: {
-              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-              select: {
-                id: true,
-                type: true,
-                title: true,
-                body: true,
-                href: true,
-                readAt: true,
-                orderMessageId: true,
-                createdAt: true,
-              },
-            },
-          },
-        }),
-        tx.recurringOrder.findMany({
-          where: { companyId },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        }),
-        tx.order.findMany({
-          where: { companyId },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          select: {
-            id: true,
-            companyId: true,
-            reference: true,
-            status: true,
-            source: true,
-            totalAmount: true,
-            itemCount: true,
-            notes: true,
-            deliveryCategory: true,
-            pickupAddress: true,
-            pickupCity: true,
-            pickupPostalCode: true,
-            pickupInstructions: true,
-            shippingAddress: true,
-            shippingCity: true,
-            shippingPostalCode: true,
-            deliveryInstructions: true,
-            requestedDeliveryDate: true,
-            missionDescription: true,
-            customerId: true,
-            customerEmail: true,
-            recurringOrderId: true,
-            createdAt: true,
-            updatedAt: true,
-            items: { orderBy: { id: "asc" } },
-            stops: { orderBy: [{ sequence: "asc" }, { id: "asc" }] },
-            deliveries: {
-              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-              include: {
-                trackingEvents: {
-                  orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
-                },
-              },
-            },
-            messages: {
-              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-              select: {
-                id: true,
-                authorId: true,
-                authorName: true,
-                authorRole: true,
-                body: true,
-                kind: true,
-                internal: true,
-                createdAt: true,
-              },
-            },
-            threadReads: {
-              orderBy: { id: "asc" },
-              select: { id: true, userId: true, seenAt: true, seenId: true },
-            },
-          },
-        }),
-        tx.invoice.findMany({
-          where: { companyId },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        }),
-        tx.supportTicket.findMany({
-          where: { companyId },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          include: {
-            messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
-          },
-        }),
-        tx.operationJob.findMany({
-          where: { companyId },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          select: {
-            id: true,
-            jobKey: true,
-            type: true,
-            status: true,
-            attempts: true,
-            maxAttempts: true,
-            nextAttemptAt: true,
-            lockedAt: true,
-            completedAt: true,
-            createdAt: true,
-            updatedAt: true,
-          },
-        }),
-        // Contrat SaaS de l'entreprise : formules, options et consommation. Les identifiants
-        // du fournisseur de paiement, instantanés internes et journaux techniques restent exclus.
-        tx.saasSubscription.findMany({
-          where: { companyId },
-          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-          select: {
-            id: true,
-            kind: true,
-            status: true,
-            billingInterval: true,
-            startsAt: true,
-            currentPeriodStart: true,
-            currentPeriodEnd: true,
-            cancelAtPeriodEnd: true,
-            endedAt: true,
-            premiumDiscoveryEndsAt: true,
-            createdAt: true,
-            updatedAt: true,
-            planAssignments: {
-              orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
-              select: {
-                id: true,
-                effectiveFrom: true,
-                effectiveTo: true,
-                plan: { select: { code: true, name: true } },
-              },
-            },
-            items: {
-              orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
-              select: {
-                id: true,
-                code: true,
-                kind: true,
-                source: true,
-                quantity: true,
-                unitPriceCents: true,
-                effectiveFrom: true,
-                effectiveTo: true,
-              },
-            },
-            usagePeriods: {
-              orderBy: [{ startsAt: "asc" }, { id: "asc" }],
-              select: {
-                id: true,
-                startsAt: true,
-                endsAt: true,
-                includedOrders: true,
-                orderCount: true,
-                overageCount: true,
-                orderOverageUnitPriceCents: true,
-                closedAt: true,
-              },
-            },
-          },
-        }),
-      ]);
+const SUPPORT_TICKET_INCLUDE = {
+  messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+} satisfies Prisma.SupportTicketInclude;
 
-    return { company, users, recurringOrders, orders, invoices, supportTickets, operationJobs, subscriptions };
+const OPERATION_JOB_SELECT = {
+  id: true,
+  jobKey: true,
+  type: true,
+  status: true,
+  attempts: true,
+  maxAttempts: true,
+  nextAttemptAt: true,
+  lockedAt: true,
+  completedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.OperationJobSelect;
+
+// Contrat SaaS de l'entreprise : formules, options et consommation. Les identifiants
+// du fournisseur de paiement, instantanés internes et journaux techniques restent exclus.
+const SUBSCRIPTION_SELECT = {
+  id: true,
+  kind: true,
+  status: true,
+  billingInterval: true,
+  startsAt: true,
+  currentPeriodStart: true,
+  currentPeriodEnd: true,
+  cancelAtPeriodEnd: true,
+  endedAt: true,
+  premiumDiscoveryEndsAt: true,
+  createdAt: true,
+  updatedAt: true,
+  planAssignments: {
+    orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      effectiveFrom: true,
+      effectiveTo: true,
+      plan: { select: { code: true, name: true } },
+    },
+  },
+  items: {
+    orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      code: true,
+      kind: true,
+      source: true,
+      quantity: true,
+      unitPriceCents: true,
+      effectiveFrom: true,
+      effectiveTo: true,
+    },
+  },
+  usagePeriods: {
+    orderBy: [{ startsAt: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      includedOrders: true,
+      orderCount: true,
+      overageCount: true,
+      orderOverageUnitPriceCents: true,
+      closedAt: true,
+    },
+  },
+} satisfies Prisma.SaasSubscriptionSelect;
+
+export type ExportedCompany = Prisma.CompanyGetPayload<{ select: typeof COMPANY_SELECT }>;
+
+export interface CompanyExportRows {
+  users: Prisma.UserGetPayload<{ select: typeof USER_SELECT }>[];
+  recurringOrders: RecurringOrder[];
+  orders: Prisma.OrderGetPayload<{ select: typeof ORDER_SELECT }>[];
+  invoices: Invoice[];
+  supportTickets: Prisma.SupportTicketGetPayload<{ include: typeof SUPPORT_TICKET_INCLUDE }>[];
+  operationJobs: Prisma.OperationJobGetPayload<{ select: typeof OPERATION_JOB_SELECT }>[];
+  subscriptions: Prisma.SaasSubscriptionGetPayload<{ select: typeof SUBSCRIPTION_SELECT }>[];
+}
+
+export type CompanyExportCollection = keyof CompanyExportRows;
+
+export interface CompanyExportHeader {
+  schema: "tutelliv-company-export";
+  version: 1;
+  exportedAt: string;
+}
+
+export interface CompanyExportProofObject {
+  deliveryId: string;
+  deliveryReference: string;
+  objectKey: string;
+}
+
+export interface CompanyExportSummary extends CompanyExportHeader {
+  counts: Record<
+    | "users" | "addresses" | "notifications" | "recurringOrders" | "orders" | "items" | "stops"
+    | "deliveries" | "trackingEvents" | "orderMessages" | "orderThreadReads" | "invoices"
+    | "supportTickets" | "supportMessages" | "operationJobs" | "subscriptions" | "subscriptionPlans"
+    | "subscriptionItems" | "usagePeriods" | "proofObjects",
+    number
+  >;
+  externalAssets: { proofObjects: CompanyExportProofObject[]; note: string };
+}
+
+/**
+ * Reçoit l'entreprise puis chaque page, collection par collection, dans l'ordre de
+ * `data` ; chaque collection reçoit au moins une page, éventuellement vide.
+ */
+export interface CompanyExportVisitor {
+  start(header: CompanyExportHeader, company: ExportedCompany): Promise<void>;
+  page<C extends CompanyExportCollection>(collection: C, rows: CompanyExportRows[C]): Promise<void>;
+}
+
+type Keyset = { createdAt: Date; id: string };
+
+function pageWhere(companyId: string, after: Keyset | null) {
+  return after
+    ? { companyId, OR: [{ createdAt: { gt: after.createdAt } }, { createdAt: after.createdAt, id: { gt: after.id } }] }
+    : { companyId };
+}
+
+async function forEachPage<T extends Keyset>(
+  pageSize: number,
+  read: (after: Keyset | null) => Promise<T[]>,
+  handle: (rows: T[]) => Promise<void>
+) {
+  let after: Keyset | null = null;
+  for (;;) {
+    const rows = await read(after);
+    if (rows.length || after === null) await handle(rows);
+    if (rows.length < pageSize) return;
+    after = rows[rows.length - 1]!;
+  }
+}
+
+export async function visitCompanyExport(
+  companyId: string,
+  visitor: CompanyExportVisitor,
+  options: { pageSize?: number } = {}
+): Promise<CompanyExportSummary | null> {
+  const pageSize = options.pageSize ?? COMPANY_EXPORT_PAGE_SIZE;
+  if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > COMPANY_EXPORT_PAGE_SIZE_MAX) {
+    throw new Error("EXPORT_INVALID_PAGE_SIZE");
+  }
+  const header: CompanyExportHeader = {
+    schema: "tutelliv-company-export",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+  };
+  const counts: CompanyExportSummary["counts"] = {
+    users: 0,
+    addresses: 0,
+    notifications: 0,
+    recurringOrders: 0,
+    orders: 0,
+    items: 0,
+    stops: 0,
+    deliveries: 0,
+    trackingEvents: 0,
+    orderMessages: 0,
+    orderThreadReads: 0,
+    invoices: 0,
+    supportTickets: 0,
+    supportMessages: 0,
+    operationJobs: 0,
+    subscriptions: 0,
+    subscriptionPlans: 0,
+    subscriptionItems: 0,
+    usagePeriods: 0,
+    proofObjects: 0,
+  };
+  const proofObjects: CompanyExportProofObject[] = [];
+
+  const found = await prisma.$transaction(async (tx) => {
+    const company = await tx.company.findUnique({ where: { id: companyId }, select: COMPANY_SELECT });
+    if (!company) return false;
+    await visitor.start(header, company);
+
+    await forEachPage(
+      pageSize,
+      (after) => tx.user.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+        select: USER_SELECT,
+      }),
+      async (rows) => {
+        counts.users += rows.length;
+        for (const user of rows) {
+          counts.addresses += user.addresses.length;
+          counts.notifications += user.notifications.length;
+        }
+        await visitor.page("users", rows);
+      }
+    );
+    await forEachPage(
+      pageSize,
+      (after) => tx.recurringOrder.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+      }),
+      async (rows) => {
+        counts.recurringOrders += rows.length;
+        await visitor.page("recurringOrders", rows);
+      }
+    );
+    await forEachPage(
+      pageSize,
+      (after) => tx.order.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+        select: ORDER_SELECT,
+      }),
+      async (rows) => {
+        counts.orders += rows.length;
+        for (const order of rows) {
+          counts.items += order.items.length;
+          counts.stops += order.stops.length;
+          counts.deliveries += order.deliveries.length;
+          counts.orderMessages += order.messages.length;
+          counts.orderThreadReads += order.threadReads.length;
+          for (const delivery of order.deliveries) {
+            counts.trackingEvents += delivery.trackingEvents.length;
+            if (delivery.podPhotoPath) {
+              proofObjects.push({
+                deliveryId: delivery.id,
+                deliveryReference: delivery.reference,
+                objectKey: delivery.podPhotoPath,
+              });
+            }
+          }
+        }
+        await visitor.page("orders", rows);
+      }
+    );
+    await forEachPage(
+      pageSize,
+      (after) => tx.invoice.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+      }),
+      async (rows) => {
+        counts.invoices += rows.length;
+        await visitor.page("invoices", rows);
+      }
+    );
+    await forEachPage(
+      pageSize,
+      (after) => tx.supportTicket.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+        include: SUPPORT_TICKET_INCLUDE,
+      }),
+      async (rows) => {
+        counts.supportTickets += rows.length;
+        for (const ticket of rows) counts.supportMessages += ticket.messages.length;
+        await visitor.page("supportTickets", rows);
+      }
+    );
+    await forEachPage(
+      pageSize,
+      (after) => tx.operationJob.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+        select: OPERATION_JOB_SELECT,
+      }),
+      async (rows) => {
+        counts.operationJobs += rows.length;
+        await visitor.page("operationJobs", rows);
+      }
+    );
+    await forEachPage(
+      pageSize,
+      (after) => tx.saasSubscription.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+        select: SUBSCRIPTION_SELECT,
+      }),
+      async (rows) => {
+        counts.subscriptions += rows.length;
+        for (const subscription of rows) {
+          counts.subscriptionPlans += subscription.planAssignments.length;
+          counts.subscriptionItems += subscription.items.length;
+          counts.usagePeriods += subscription.usagePeriods.length;
+        }
+        await visitor.page("subscriptions", rows);
+      }
+    );
+    return true;
   }, {
     isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
     maxWait: 10_000,
-    timeout: 60_000,
+    timeout: COMPANY_EXPORT_TIMEOUT_MS,
   });
 
-  if (!data) return null;
-
-  const proofObjects = data.orders.flatMap((order) =>
-    order.deliveries
-      .filter((delivery) => Boolean(delivery.podPhotoPath))
-      .map((delivery) => ({
-        deliveryId: delivery.id,
-        deliveryReference: delivery.reference,
-        objectKey: delivery.podPhotoPath!,
-      }))
-  );
-  const counts = {
-    users: data.users.length,
-    addresses: data.users.reduce((sum, user) => sum + user.addresses.length, 0),
-    notifications: data.users.reduce((sum, user) => sum + user.notifications.length, 0),
-    recurringOrders: data.recurringOrders.length,
-    orders: data.orders.length,
-    items: data.orders.reduce((sum, order) => sum + order.items.length, 0),
-    stops: data.orders.reduce((sum, order) => sum + order.stops.length, 0),
-    deliveries: data.orders.reduce((sum, order) => sum + order.deliveries.length, 0),
-    trackingEvents: data.orders.reduce(
-      (sum, order) =>
-        sum + order.deliveries.reduce((deliverySum, delivery) => deliverySum + delivery.trackingEvents.length, 0),
-      0
-    ),
-    orderMessages: data.orders.reduce((sum, order) => sum + order.messages.length, 0),
-    orderThreadReads: data.orders.reduce((sum, order) => sum + order.threadReads.length, 0),
-    invoices: data.invoices.length,
-    supportTickets: data.supportTickets.length,
-    supportMessages: data.supportTickets.reduce((sum, ticket) => sum + ticket.messages.length, 0),
-    operationJobs: data.operationJobs.length,
-    subscriptions: data.subscriptions.length,
-    subscriptionPlans: data.subscriptions.reduce((sum, subscription) => sum + subscription.planAssignments.length, 0),
-    subscriptionItems: data.subscriptions.reduce((sum, subscription) => sum + subscription.items.length, 0),
-    usagePeriods: data.subscriptions.reduce((sum, subscription) => sum + subscription.usagePeriods.length, 0),
-    proofObjects: proofObjects.length,
-  };
-
+  if (!found) return null;
+  counts.proofObjects = proofObjects.length;
   return {
-    schema: "tutelliv-company-export",
-    version: 1,
-    exportedAt,
+    ...header,
     counts,
     externalAssets: {
       proofObjects,
       note: "Les fichiers binaires doivent être exportés séparément depuis le bucket privé.",
     },
-    data,
+  };
+}
+
+/** Export complet en mémoire, pour les recettes et les petites entreprises. */
+export async function exportCompanyData(companyId: string, options: { pageSize?: number } = {}) {
+  let company: ExportedCompany | null = null;
+  const data: CompanyExportRows = {
+    users: [],
+    recurringOrders: [],
+    orders: [],
+    invoices: [],
+    supportTickets: [],
+    operationJobs: [],
+    subscriptions: [],
+  };
+  const summary = await visitCompanyExport(companyId, {
+    async start(_header, exported) {
+      company = exported;
+    },
+    async page(collection, rows) {
+      (data[collection] as unknown[]).push(...rows);
+    },
+  }, options);
+  if (!summary || !company) return null;
+  const { counts, externalAssets, ...header } = summary;
+  return { ...header, counts, externalAssets, data: { company: company as ExportedCompany, ...data } };
+}
+
+/**
+ * Sérialise l'export au fil des pages, dans le même document v1 que `exportCompanyData`
+ * (`counts` et `externalAssets` sont écrits après `data`, une fois connus).
+ */
+export function createCompanyExportJsonWriter(write: (text: string) => Promise<void>) {
+  const done = new Set<CompanyExportCollection>();
+  let current: CompanyExportCollection | null = null;
+  let items = 0;
+  const closeCollection = () => (current === null ? "" : items ? "\n    ]" : "]");
+
+  const visitor: CompanyExportVisitor = {
+    async start(header, company) {
+      await write(
+        `{\n  "schema": ${JSON.stringify(header.schema)},\n  "version": ${header.version},\n` +
+          `  "exportedAt": ${JSON.stringify(header.exportedAt)},\n  "data": {\n    "company": ${JSON.stringify(company)}`
+      );
+    },
+    async page(collection, rows) {
+      if (collection !== current) {
+        if (done.has(collection)) throw new Error("EXPORT_COLLECTION_ORDER");
+        await write(`${closeCollection()},\n    ${JSON.stringify(collection)}: [`);
+        if (current) done.add(current);
+        current = collection;
+        items = 0;
+      }
+      if (!rows.length) return;
+      let text = "";
+      for (const row of rows) text += `${items++ ? "," : ""}\n      ${JSON.stringify(row)}`;
+      await write(text);
+    },
+  };
+
+  return {
+    visitor,
+    async finish(summary: CompanyExportSummary) {
+      await write(
+        `${closeCollection()}\n  },\n  "counts": ${JSON.stringify(summary.counts)},\n` +
+          `  "externalAssets": ${JSON.stringify(summary.externalAssets)}\n}\n`
+      );
+    },
   };
 }

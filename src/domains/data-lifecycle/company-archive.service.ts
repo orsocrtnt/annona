@@ -2,7 +2,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { lstat, mkdir, mkdtemp, open, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { exportCompanyData } from "@/domains/data-lifecycle/company-export.service";
+import {
+  createCompanyExportJsonWriter,
+  visitCompanyExport,
+  type CompanyExportHeader,
+  type CompanyExportSummary,
+  type CompanyExportVisitor,
+} from "@/domains/data-lifecycle/company-export.service";
 import { checkPodStorageHealth, isPodPhotoPathForDelivery, MAX_POD_BYTES } from "@/lib/storage/pod";
 
 // Technical ceilings, not retention policy. Binary downloads are sequential.
@@ -10,23 +16,17 @@ export const COMPANY_ARCHIVE_LIMITS = {
   maxProofs: 1_000,
   maxProofBytes: MAX_POD_BYTES,
   maxTotalProofBytes: 256 * 1024 * 1024,
-  maxJsonBytes: 10 * 1024 * 1024,
+  // company.json is streamed page by page: this caps the file on disk, not memory.
+  maxJsonBytes: 1024 * 1024 * 1024,
   downloadTimeoutMs: 30_000,
 } as const;
 type Limits = { [K in keyof typeof COMPANY_ARCHIVE_LIMITS]: number };
-export interface CompanyArchiveSnapshot {
-  schema: string;
-  version: number;
-  externalAssets: { proofObjects: { deliveryId: string; objectKey: string }[] };
-  data: {
-    company: { id: string };
-    orders: { id: string; companyId: string; deliveries: {
-      id: string; companyId: string; orderId: string; podPhotoPath: string | null;
-    }[] }[];
-  };
+interface ArchiveOrder {
+  id: string; companyId: string;
+  deliveries: { id: string; companyId: string; orderId: string; podPhotoPath: string | null }[];
 }
 interface Dependencies {
-  exportData: (companyId: string) => Promise<CompanyArchiveSnapshot | null>;
+  visitExport: (companyId: string, visitor: CompanyExportVisitor) => Promise<CompanyExportSummary | null>;
   checkStorage: () => Promise<void>;
   download: (objectKey: string, signal: AbortSignal) => Promise<Response>;
 }
@@ -43,36 +43,50 @@ async function downloadPrivateProof(objectKey: string, signal: AbortSignal) {
   });
 }
 
-function validateSnapshot(snapshot: CompanyArchiveSnapshot, companyId: string, limits: Limits) {
-  if (snapshot.schema !== "tutelliv-company-export" || snapshot.version !== 1 ||
-      snapshot.data.company.id !== companyId) throw new Error("ARCHIVE_COMPANY_MISMATCH");
+// Checks the streamed graph page by page, so the whole export is never held in memory.
+function createGraphGuard(companyId: string, limits: Limits) {
   const expected = new Map<string, string>();
   const orders = new Set<string>();
   const deliveries = new Set<string>();
-  for (const order of snapshot.data.orders) {
-    if (order.companyId !== companyId || orders.has(order.id)) throw new Error("ARCHIVE_ORDER_MISMATCH");
-    orders.add(order.id);
-    for (const delivery of order.deliveries) {
-      if (delivery.companyId !== companyId || delivery.orderId !== order.id || deliveries.has(delivery.id)) {
-        throw new Error("ARCHIVE_DELIVERY_MISMATCH");
+  let started = false;
+  return {
+    start(header: CompanyExportHeader, company: { id: string }) {
+      if (header.schema !== "tutelliv-company-export" || header.version !== 1 || company.id !== companyId) {
+        throw new Error("ARCHIVE_COMPANY_MISMATCH");
       }
-      deliveries.add(delivery.id);
-      if (delivery.podPhotoPath !== null) {
-        if (!isPodPhotoPathForDelivery(delivery.podPhotoPath, companyId, delivery.id)) {
-          throw new Error("ARCHIVE_INVALID_PROOF_PATH");
+      started = true;
+    },
+    orders(page: ArchiveOrder[]) {
+      for (const order of page) {
+        if (order.companyId !== companyId || orders.has(order.id)) throw new Error("ARCHIVE_ORDER_MISMATCH");
+        orders.add(order.id);
+        for (const delivery of order.deliveries) {
+          if (delivery.companyId !== companyId || delivery.orderId !== order.id || deliveries.has(delivery.id)) {
+            throw new Error("ARCHIVE_DELIVERY_MISMATCH");
+          }
+          deliveries.add(delivery.id);
+          if (delivery.podPhotoPath !== null) {
+            if (!isPodPhotoPathForDelivery(delivery.podPhotoPath, companyId, delivery.id)) {
+              throw new Error("ARCHIVE_INVALID_PROOF_PATH");
+            }
+            expected.set(delivery.id, delivery.podPhotoPath);
+            if (expected.size > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+          }
         }
-        expected.set(delivery.id, delivery.podPhotoPath);
       }
-    }
-  }
-  const proofs = snapshot.externalAssets.proofObjects;
-  if (proofs.length > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
-  if (expected.size !== proofs.length) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
-  for (const proof of proofs) {
-    if (expected.get(proof.deliveryId) !== proof.objectKey) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
-    expected.delete(proof.deliveryId);
-  }
-  return proofs;
+    },
+    proofs(summary: CompanyExportSummary) {
+      if (!started) throw new Error("ARCHIVE_COMPANY_MISMATCH");
+      const proofs = summary.externalAssets.proofObjects;
+      if (proofs.length > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+      if (expected.size !== proofs.length) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
+      for (const proof of proofs) {
+        if (expected.get(proof.deliveryId) !== proof.objectKey) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
+        expected.delete(proof.deliveryId);
+      }
+      return proofs;
+    },
+  };
 }
 
 async function digestFile(path: string) {
@@ -100,22 +114,47 @@ export async function exportCompanyArchive(
     throw new Error("ARCHIVE_PARENT_NOT_PRIVATE");
   }
   const dependencies = {
-    exportData: exportCompanyData, checkStorage: checkPodStorageHealth, download: downloadPrivateProof,
+    visitExport: visitCompanyExport, checkStorage: checkPodStorageHealth, download: downloadPrivateProof,
     ...options.dependencies,
   };
-  const snapshot = await dependencies.exportData(companyId);
-  if (!snapshot) throw new Error("ARCHIVE_COMPANY_NOT_FOUND");
-  // Validate the whole graph before the first Storage read, including deliveries without photos.
-  const proofs = validateSnapshot(snapshot, companyId, limits);
-  const json = JSON.stringify(snapshot, null, 2) + "\n";
-  if (Buffer.byteLength(json) > limits.maxJsonBytes) throw new Error("ARCHIVE_JSON_TOO_LARGE");
-  if (proofs.length) await dependencies.checkStorage();
   const staging = await mkdtemp(join(parent, ".partial-"));
   let published = false;
   try {
     await mkdir(join(staging, "proofs"), { mode: 0o700 });
-    await writeFile(join(staging, "company.json"), json, { mode: 0o600, flag: "wx" });
-    const entries = [{ path: "company.json", bytes: Buffer.byteLength(json), sha256: await digestFile(join(staging, "company.json")), deliveryId: null as string | null }];
+    // Validate the whole graph while writing company.json, before the first Storage read.
+    const guard = createGraphGuard(companyId, limits);
+    const jsonPath = join(staging, "company.json");
+    const jsonFile = await open(jsonPath, "wx", 0o600);
+    const jsonHash = createHash("sha256");
+    let jsonBytes = 0;
+    let summary: CompanyExportSummary | null;
+    try {
+      const writer = createCompanyExportJsonWriter(async (text) => {
+        const bytes = Buffer.from(text);
+        jsonBytes += bytes.byteLength;
+        if (jsonBytes > limits.maxJsonBytes) throw new Error("ARCHIVE_JSON_TOO_LARGE");
+        jsonHash.update(bytes);
+        await jsonFile.writeFile(bytes);
+      });
+      summary = await dependencies.visitExport(companyId, {
+        async start(header, company) {
+          guard.start(header, company);
+          await writer.visitor.start(header, company);
+        },
+        async page(collection, rows) {
+          if (collection === "orders") guard.orders(rows as ArchiveOrder[]);
+          await writer.visitor.page(collection, rows);
+        },
+      });
+      if (summary) await writer.finish(summary);
+      await jsonFile.sync();
+    } finally { await jsonFile.close(); }
+    if (!summary) throw new Error("ARCHIVE_COMPANY_NOT_FOUND");
+    const proofs = guard.proofs(summary);
+    const jsonSha256 = jsonHash.digest("hex");
+    if (await digestFile(jsonPath) !== jsonSha256) throw new Error("ARCHIVE_INTEGRITY_FAILED");
+    if (proofs.length) await dependencies.checkStorage();
+    const entries = [{ path: "company.json", bytes: jsonBytes, sha256: jsonSha256, deliveryId: null as string | null }];
     let totalProofBytes = 0;
     for (const [index, proof] of proofs.entries()) {
       const controller = new AbortController();

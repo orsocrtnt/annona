@@ -9,6 +9,7 @@ const fixedNow = "2026-10-25T12:00:00.000Z";
 
 type QueryArgs = {
   where?: Record<string, unknown>;
+  take?: number;
   orderBy?: unknown;
   select?: Record<string, unknown>;
   include?: Record<string, unknown>;
@@ -19,8 +20,18 @@ type ScopedValue = {
   value: Record<string, unknown>;
 };
 
+type ExportVisitor = {
+  start(header: unknown, company: unknown): Promise<void>;
+  page(collection: string, rows: unknown[]): Promise<void>;
+};
+
 type ExportModule = {
-  exportCompanyData(companyId: string): Promise<unknown>;
+  exportCompanyData(companyId: string, options?: { pageSize?: number }): Promise<unknown>;
+  visitCompanyExport(companyId: string, visitor: ExportVisitor, options?: { pageSize?: number }): Promise<unknown>;
+  createCompanyExportJsonWriter(write: (text: string) => Promise<void>): {
+    visitor: ExportVisitor;
+    finish(summary: unknown): Promise<void>;
+  };
 };
 
 class FixedDate extends Date {
@@ -369,9 +380,17 @@ function makeRepository() {
     record(model, args);
     const companyId = args.where?.companyId;
     assert.equal(typeof companyId, "string", `${model} doit être filtré par companyId`);
-    return (records[model] ?? [])
+    // Reproduit la pagination par clé (createdAt, id) que l'export envoie à PostgreSQL.
+    const keyset = args.where?.OR as
+      | [{ createdAt: { gt: string } }, { createdAt: string; id: { gt: string } }]
+      | undefined;
+    const key = (value: Record<string, unknown>) => `${String(value.createdAt ?? "")}\u0000${String(value.id)}`;
+    const rows = (records[model] ?? [])
       .filter((entry) => entry.companyId === companyId)
-      .map((entry) => normalize(entry.value));
+      .map((entry) => normalize(entry.value))
+      .filter((value) => !keyset || key(value) > `${keyset[1].createdAt}\u0000${keyset[1].id.gt}`)
+      .sort((left, right) => (key(left) < key(right) ? -1 : key(left) > key(right) ? 1 : 0));
+    return args.take === undefined ? rows : rows.slice(0, args.take);
   }
 
   const tx = {
@@ -398,14 +417,14 @@ function makeRepository() {
     ) {
       assertJsonEqual(
         options,
-        { isolationLevel: "RepeatableRead", maxWait: 10_000, timeout: 60_000 },
+        { isolationLevel: "RepeatableRead", maxWait: 10_000, timeout: 600_000 },
         "la transaction garde son niveau d'isolation et ses bornes"
       );
       return callback(tx);
     },
   };
 
-  return { calls, prisma };
+  return { calls, prisma, records };
 }
 
 function assertCurrentQueryContract(calls: Array<{ model: string; args: QueryArgs }>) {
@@ -602,4 +621,113 @@ test("une entreprise absente n'ouvre aucune autre catégorie", async () => {
 
   assert.equal(await service.exportCompanyData("company-missing"), null);
   assert.deepEqual(repository.calls.map((call) => call.model), ["company"]);
+});
+
+function orderFor(id: string, createdAt: string) {
+  return {
+    companyId: "company-a",
+    value: {
+      id,
+      companyId: "company-a",
+      reference: `CMD-${id}`,
+      createdAt,
+      items: [],
+      stops: [],
+      deliveries: [
+        {
+          id: `delivery-${id}`,
+          companyId: "company-a",
+          orderId: id,
+          reference: `LIV-${id}`,
+          podPhotoPath: null,
+          createdAt,
+          trackingEvents: [],
+        },
+      ],
+      messages: [],
+      threadReads: [],
+    },
+  };
+}
+
+test("l'export lit les collections par pages stables, sans doublon ni perte", async () => {
+  const repository = makeRepository();
+  const sameInstant = "2026-10-24T08:00:00.000Z";
+  // Deux commandes partagent l'horodatage de order-a : seule la clé (createdAt, id) les départage.
+  repository.records.order!.push(
+    orderFor("order-a2", sameInstant),
+    orderFor("order-0", sameInstant),
+    orderFor("order-c", "2026-10-24T09:00:00.000Z"),
+    orderFor("order-d", "2026-10-24T10:00:00.000Z")
+  );
+  const service = loadService(repository.prisma);
+
+  const result = normalize(await service.exportCompanyData("company-a", { pageSize: 2 })) as {
+    counts: Record<string, number>;
+    externalAssets: { proofObjects: unknown[] };
+    data: { orders: Array<{ id: string }> };
+  };
+
+  assert.deepEqual(
+    result.data.orders.map((order) => order.id),
+    ["order-0", "order-a", "order-a2", "order-c", "order-d"]
+  );
+  assert.equal(result.counts.orders, 5);
+  assert.equal(result.counts.deliveries, 5);
+  assert.equal(result.externalAssets.proofObjects.length, 1);
+
+  const orderCalls = repository.calls.filter((call) => call.model === "order");
+  assert.equal(orderCalls.length, 3, "cinq commandes en pages de deux : trois lectures");
+  for (const call of orderCalls) assert.equal(call.args.take, 2);
+  assertJsonEqual(orderCalls[0]?.args.where, { companyId: "company-a" }, "la première page n'a pas de curseur");
+  assertJsonEqual(
+    orderCalls[1]?.args.where,
+    {
+      companyId: "company-a",
+      OR: [{ createdAt: { gt: sameInstant } }, { createdAt: sameInstant, id: { gt: "order-a" } }],
+    },
+    "la page suivante reprend après la dernière clé lue, toujours dans l'entreprise"
+  );
+  for (const call of repository.calls.filter((entry) => entry.model !== "company")) {
+    assert.equal((call.args.where as { companyId?: unknown }).companyId, "company-a");
+  }
+  assert.doesNotMatch(JSON.stringify(result), /company-b|FOREIGN_B_SENTINEL/);
+});
+
+test("l'export en flux écrit le même document v1 que l'export en mémoire", async () => {
+  for (const pageSize of [1, 100]) {
+    const repository = makeRepository();
+    repository.records.order!.push(orderFor("order-c", "2026-10-24T09:00:00.000Z"));
+    repository.records.invoice = [];
+    const service = loadService(repository.prisma);
+    const expected = normalize(await service.exportCompanyData("company-a", { pageSize }));
+
+    const chunks: string[] = [];
+    const writer = service.createCompanyExportJsonWriter(async (text) => {
+      chunks.push(text);
+    });
+    const summary = await service.visitCompanyExport("company-a", writer.visitor, { pageSize });
+    await writer.finish(summary);
+    const text = chunks.join("");
+
+    assert.deepEqual(JSON.parse(text), expected, `pages de ${pageSize}`);
+    assert.match(text, /"invoices": \[\]/, "une collection vide reste un tableau");
+    assert.ok(text.endsWith("}\n"));
+    if (pageSize === 1) assert.ok(chunks.length > 10, "le document est écrit par morceaux, pas d'un bloc");
+  }
+});
+
+test("l'écrivain JSON refuse une collection rouverte et l'export refuse une taille de page hors bornes", async () => {
+  const repository = makeRepository();
+  const service = loadService(repository.prisma);
+  const writer = service.createCompanyExportJsonWriter(async () => undefined);
+  await writer.visitor.start({ schema: "tutelliv-company-export", version: 1, exportedAt: fixedNow }, { id: "company-a" });
+  await writer.visitor.page("users", []);
+  await writer.visitor.page("orders", []);
+  await assert.rejects(writer.visitor.page("users", []), /EXPORT_COLLECTION_ORDER/);
+
+  for (const pageSize of [0, 1.5, 1_001, Number.NaN]) {
+    await assert.rejects(service.exportCompanyData("company-a", { pageSize }), /EXPORT_INVALID_PAGE_SIZE/);
+  }
+  assert.equal(repository.calls.length, 0, "une taille invalide n'ouvre aucune lecture");
 });

@@ -5,7 +5,28 @@ import { chmod, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { exportCompanyArchive, type CompanyArchiveSnapshot } from "../src/domains/data-lifecycle/company-archive.service";
+import { exportCompanyArchive } from "../src/domains/data-lifecycle/company-archive.service";
+import type { CompanyExportSummary, CompanyExportVisitor } from "../src/domains/data-lifecycle/company-export.service";
+
+interface CompanyArchiveSnapshot {
+  schema: string; version: number;
+  externalAssets: { proofObjects: { deliveryId: string; objectKey: string }[] };
+  data: { company: { id: string }; orders: { id: string; companyId: string; deliveries: {
+    id: string; companyId: string; orderId: string; podPhotoPath: string | null;
+  }[] }[] };
+}
+const exportedAt = "2026-10-27T12:00:00.000Z";
+// Replays a fixture through the streaming export contract, one order per page.
+function replay(s: CompanyArchiveSnapshot) {
+  return async (_companyId: string, visitor: CompanyExportVisitor) => {
+    await visitor.start({ schema: s.schema, version: s.version, exportedAt } as never, s.data.company as never);
+    await visitor.page("users", []);
+    if (!s.data.orders.length) await visitor.page("orders", []);
+    for (const order of s.data.orders) await visitor.page("orders", [order] as never);
+    return { schema: s.schema, version: s.version, exportedAt, counts: { orders: s.data.orders.length },
+      externalAssets: s.externalAssets } as unknown as CompanyExportSummary;
+  };
+}
 
 function snapshot(): CompanyArchiveSnapshot {
   return {
@@ -21,7 +42,7 @@ async function context() {
   const data = snapshot();
   const reads: string[] = [];
   const dependencies = {
-    exportData: async () => data,
+    visitExport: async (companyId: string, visitor: CompanyExportVisitor) => replay(data)(companyId, visitor),
     checkStorage: async () => { reads.push("private-bucket"); },
     download: async (key: string, _signal: AbortSignal): Promise<Response> => { assert.equal(_signal.aborted, false); reads.push(key); return new Response("binary-proof"); },
   };
@@ -47,7 +68,10 @@ test("company archive preserves bytes and SHA256, private permissions and relati
       assert.equal((await stat(join(result.path, entry.path))).mode & 0o777, 0o600);
     }
     assert.equal(await readFile(join(result.path, "proofs/000001.png"), "utf8"), "binary-proof");
-    assert.deepEqual(JSON.parse(await readFile(join(result.path, "company.json"), "utf8")), c.data);
+    const companyJson = JSON.parse(await readFile(join(result.path, "company.json"), "utf8"));
+    assert.deepEqual(companyJson.data, { ...c.data.data, users: [] });
+    assert.deepEqual(companyJson.externalAssets, c.data.externalAssets);
+    assert.deepEqual([companyJson.schema, companyJson.version, companyJson.exportedAt], ["tutelliv-company-export", 1, exportedAt]);
     const verify = () => spawnSync(process.execPath, ["scripts/data02/verify-archive.mjs", result.path, result.manifestSha256], { encoding: "utf8" });
     assert.equal(verify().status, 0);
     await writeFile(join(result.path, "proofs/000001.png"), "tampered");
@@ -162,7 +186,7 @@ test("company archive allows empty proof set without Storage and refuses missing
     const result = await exportCompanyArchive("companyA", c.parent, { dependencies: c.dependencies });
     assert.equal(result.proofCount, 0);
     assert.deepEqual(c.reads, []);
-    await assert.rejects(exportCompanyArchive("companyA", c.parent, { dependencies: { exportData: async () => null } }), /ARCHIVE_COMPANY_NOT_FOUND/);
+    await assert.rejects(exportCompanyArchive("companyA", c.parent, { dependencies: { visitExport: async () => null } }), /ARCHIVE_COMPANY_NOT_FOUND/);
   } finally { await c.cleanup(); }
 });
 

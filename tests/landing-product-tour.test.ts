@@ -9,6 +9,7 @@ import {
   restartTour,
 } from "../src/features/landing/product-tour/tour-machine";
 import { TOUR_DRIVERS } from "../src/features/landing/product-tour/tour-data";
+import { TOUR_ROUTE, pointAlongRoute } from "../src/features/landing/product-tour/city-route";
 
 test("la démo avance d'une étape par geste", () => {
   assert.deepEqual(advanceTour(initialTourState(), "order"), { current: 1, reached: 1 });
@@ -53,4 +54,26 @@ test("le hero affiche la mini-démo à la place de la capture du tableau de bord
   assert.match(home, /<ProductTour \/>/);
   assert.doesNotMatch(home, /produit-tableau-de-bord\.webp/);
   assert.match(home, /produit-carte\.webp/);
+});
+
+test("le marqueur suit le trajet selon la distance parcourue", () => {
+  const route = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }];
+  assert.deepEqual(pointAlongRoute(route, 0), { x: 0, y: 0 });
+  assert.deepEqual(pointAlongRoute(route, 0.25), { x: 5, y: 0 });
+  assert.deepEqual(pointAlongRoute(route, 0.5), { x: 10, y: 0 });
+  assert.deepEqual(pointAlongRoute(route, 1), { x: 10, y: 10 });
+});
+
+test("le marqueur reste aux extrémités hors de [0, 1]", () => {
+  const route = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }];
+  assert.deepEqual(pointAlongRoute(route, -1), { x: 0, y: 0 });
+  assert.deepEqual(pointAlongRoute(route, 2), { x: 10, y: 10 });
+});
+
+test("un trajet d'un seul point garde le marqueur sur ce point", () => {
+  assert.deepEqual(pointAlongRoute([{ x: 3, y: 4 }], 0.5), { x: 3, y: 4 });
+});
+
+test("le trajet de la démo suit plusieurs rues", () => {
+  assert.ok(TOUR_ROUTE.length >= 5);
 });

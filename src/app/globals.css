@@ -284,10 +284,28 @@
   }
 }
 
+.product-tour-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: productTourHalo 1.8s ease-out infinite;
+}
+
+@keyframes productTourHalo {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-landing-reveal,
   .product-tour-in,
-  .product-tour-pulse {
+  .product-tour-pulse,
+  .product-tour-halo {
     animation: none;
   }
 }
