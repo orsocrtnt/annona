@@ -48,6 +48,10 @@ export async function POST(request: Request) {
         return intakeError("CATEGORY_DISABLED", "Ce type de livraison n'est pas activé pour votre entreprise.", 403);
       case "conflict":
         return intakeError("IDEMPOTENCY_CONFLICT", "Cette tentative correspond déjà à une autre commande. Relancez l'analyse.", 409);
+      case "saas_blocked":
+        return intakeError("SAAS_ORDER_BLOCKED", "Votre abonnement ne permet plus de créer de commandes. Consultez « Mon abonnement ».", 403);
+      case "saas_read_only":
+        return intakeError("SAAS_READ_ONLY", "Votre compte est en lecture seule : aucune nouvelle commande n'est possible.", 403);
     }
   });
 }

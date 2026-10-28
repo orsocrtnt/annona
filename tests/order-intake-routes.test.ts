@@ -187,6 +187,8 @@ test("INTAKE route création : refus métiers sans erreur 500", async () => {
     [{ status: "customer_inactive" }, 409],
     [{ status: "category_disabled" }, 403],
     [{ status: "conflict" }, 409],
+    [{ status: "saas_blocked" }, 403],
+    [{ status: "saas_read_only" }, 403],
     ["throw", 503],
   ];
   for (const [outcome, status] of cases) {

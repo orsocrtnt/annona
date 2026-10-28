@@ -566,3 +566,21 @@ test("INTAKE relecture 1 : une échéance sans mode dont l'extrait manque au mes
   assert.equal(second.deadline.confidence, "low");
   assert.ok(second.uncertainFields.includes("deadline"));
 });
+
+test("INTAKE relecture 2 : les refus métier de la création deviennent des statuts explicites", async () => {
+  const order = createClientOrderSchema.parse(buildOrderInputFromForm(draftToFormValues(buildOrderIntakeDraft(EMAIL_EXTRACTION, FIXTURES.email, NOW), 0)));
+  const memory = memoryDb({ users: CLIENTS });
+  for (const [code, status] of [["SAAS_ORDER_CREATION_BLOCKED", "saas_blocked"], ["SAAS_ACCOUNT_READ_ONLY", "saas_read_only"]] as const) {
+    const result = await createOrderFromIntake({ companyId: "company-a", customerId: "client-a", order, idempotencyKey: "intake-key-saas-1" }, {
+      db: memory.db as never,
+      assertCategory: async () => undefined,
+      createOrder: async () => { throw new Error(code); },
+    });
+    assert.equal(result.status, status, code);
+  }
+  await assert.rejects(createOrderFromIntake({ companyId: "company-a", customerId: "client-a", order, idempotencyKey: "intake-key-saas-2" }, {
+    db: memory.db as never,
+    assertCategory: async () => undefined,
+    createOrder: async () => { throw new Error("connection reset"); },
+  }), /connection reset/);
+});

@@ -80,9 +80,18 @@ export type CreateOrderFromIntakeResult =
   | { status: "customer_not_found" }
   | { status: "customer_inactive" }
   | { status: "category_disabled" }
-  | { status: "conflict" };
+  | { status: "conflict" }
+  | { status: "saas_blocked" }
+  | { status: "saas_read_only" };
 
 type CreateOrder = typeof createClientOrder;
+
+/** Refus métier connus de createClientOrder / assertCanCreateOrder ; le reste remonte comme panne. */
+const CREATE_ERROR_STATUSES: Record<string, "conflict" | "saas_blocked" | "saas_read_only"> = {
+  IDEMPOTENCY_KEY_REUSED: "conflict",
+  SAAS_ORDER_CREATION_BLOCKED: "saas_blocked",
+  SAAS_ACCOUNT_READ_ONLY: "saas_read_only",
+};
 
 /**
  * Crée la commande validée par un humain, pour le compte d'un client de l'entreprise.
@@ -130,7 +139,8 @@ export async function createOrderFromIntake(
     );
     return { status: "created", order: { id: order.id, reference: (order as { reference?: string }).reference } };
   } catch (error) {
-    if (error instanceof Error && error.message === "IDEMPOTENCY_KEY_REUSED") return { status: "conflict" };
+    const known = error instanceof Error ? CREATE_ERROR_STATUSES[error.message] : undefined;
+    if (known) return { status: known };
     throw error;
   }
 }
