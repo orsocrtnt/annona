@@ -46,7 +46,13 @@ export function ProductTour() {
 
   const currentIndex = state.current;
   useEffect(() => {
-    if (interacted) stage.current?.focus({ preventScroll: true });
+    const element = stage.current;
+    if (!interacted || !element) return;
+    // Ne reprend le focus que s'il est resté dans la démo ou s'est perdu sur la page.
+    const active = document.activeElement;
+    const tour = element.closest("figure");
+    if (active && active !== document.body && !tour?.contains(active)) return;
+    element.focus({ preventScroll: true });
   }, [interacted, currentIndex]);
 
   const sceneProps: SceneProps = { onDone, reducedMotion, interacted };
@@ -77,7 +83,7 @@ export function ProductTour() {
                     setState((previous) => goToStep(previous, item));
                   }}
                   className={cn(
-                    "flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none sm:px-2.5",
+                    "flex w-full items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none sm:gap-1.5 sm:px-2.5",
                     isCurrent && "bg-[#e6f8ee] text-[#0e1310]",
                     !isCurrent && !locked && "text-muted-foreground hover:bg-[#f0f4f1]",
                     locked && "cursor-not-allowed text-muted-foreground/50"
@@ -85,7 +91,7 @@ export function ProductTour() {
                 >
                   <span
                     className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded-full text-[10px]",
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px]",
                       isCurrent ? "bg-[#00d46a] text-[#0e1310]" : "bg-[#eef1ef]"
                     )}
                     aria-hidden

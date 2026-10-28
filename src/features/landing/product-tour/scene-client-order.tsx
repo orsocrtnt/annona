@@ -43,15 +43,15 @@ export function SceneClientOrder({ onDone, reducedMotion }: SceneProps) {
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col px-4 py-5 sm:px-8 sm:py-7">
+      <div className="flex flex-1 flex-col px-4 py-4 sm:px-8 sm:py-7">
         <p className="text-lg font-bold tracking-[-0.02em]">Nouvelle commande</p>
         <p className="mt-1 text-xs text-muted-foreground">Livraison standard · colis de 4 kg</p>
 
-        <ul className="mt-5 space-y-2.5">
+        <ul className="mt-3 space-y-2 sm:mt-5 sm:space-y-2.5">
           {FIELDS.map(({ icon: Icon, label, value }, index) => {
             const filled = phase > index;
             return (
-              <li key={label} className="flex items-center gap-3 rounded-xl border border-black/[0.07] bg-white px-3 py-2.5">
+              <li key={label} className="flex items-center gap-3 rounded-xl border border-black/[0.07] bg-white px-3 py-2 sm:py-2.5">
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.75} aria-hidden />
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
@@ -66,7 +66,7 @@ export function SceneClientOrder({ onDone, reducedMotion }: SceneProps) {
           })}
         </ul>
 
-        <div className="mt-auto pt-5">
+        <div className="mt-auto pt-3 sm:pt-5">
           {ordered ? (
             <p className="product-tour-in flex items-center justify-center gap-2 rounded-xl bg-[#e6f8ee] px-4 py-3 text-sm font-semibold text-[#0e1310]">
               <CheckCircle2 className="h-4 w-4 text-[#00a854]" aria-hidden />
