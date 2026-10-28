@@ -52,12 +52,12 @@ const neutral = (status: DispatchProximity["status"]): DispatchProximity => ({ s
 const rule = (driverId: string, priority: number) => dispatchSettings.normalizeDispatchDriverRule({ driverId, priority });
 const NO_NUMBERS_ABOUT_POSITION = /km|\d+\s?m\b|min|position/i;
 
-test("dispatch GPS : sans règle explicite, le livreur proche du retrait passe avant un livreur sans position", () => {
+test("dispatch GPS : sans règle, à charge égale, le livreur proche du retrait passe avant un livreur sans position", () => {
   const svc = load({});
-  const drivers = [{ id: "idle", assigned: 0 }, { id: "close", assigned: 1 }];
+  const drivers = [{ id: "idle", assigned: 0 }, { id: "close", assigned: 0 }];
   const pick = svc.resolveDriverForDelivery(delivery, settings, drivers, [], new Map([["close", near(900)], ["idle", neutral("NO_POSITION")]]));
   assert.equal(pick?.driverId, "close");
-  assert.match(pick!.reason, /plus proche du point de retrait/i);
+  assert.equal(pick!.reason, "Chauffeur le moins chargé (0 active(s)) · plus proche du point de retrait");
   assert.doesNotMatch(pick!.reason, NO_NUMBERS_ABOUT_POSITION, "raison stockée dans l'historique visible du client : aucune distance");
 });
 
@@ -142,7 +142,7 @@ function connectedFixture(options: { delivery?: Row; settings?: Row } = {}) {
   const svc = load({
     prisma,
     settings: { ...settings, ...options.settings },
-    drivers: [{ id: "offduty", assigned: 0 }, { id: "close", assigned: 1 }, { id: "idle", assigned: 0 }],
+    drivers: [{ id: "offduty", assigned: 0 }, { id: "close", assigned: 0 }, { id: "idle", assigned: 0 }],
     assign: async (...args: unknown[]) => { calls.push(`assign:${args[2]}:${(args[3] as Row).reason}`); current = { ...current, driverId: args[2], status: "ASSIGNED" }; },
   });
   return { svc, calls, userQueries };
@@ -215,4 +215,14 @@ test("dispatch GPS (P2) : « moins chargé » — la priorité réglée passe av
     assert.equal(pick?.driverId, "A", category);
     assert.doesNotMatch(pick!.reason, /plus proche/);
   }
+});
+
+test("dispatch GPS (P3) : sans règle, la charge passe avant la distance", () => {
+  const svc = load({});
+  const roomy = { ...settings, maxActiveDeliveriesPerDriver: 10 };
+  const drivers = [{ id: "A", assigned: 6 }, { id: "B", assigned: 0 }];
+  const proximities = new Map([["A", near(9000)], ["B", { status: "FAR" as const, distanceMeters: 11_000, positionAgeSeconds: 60 }]]);
+  const pick = svc.resolveDriverForDelivery(delivery, roomy, drivers, [], proximities);
+  assert.equal(pick?.driverId, "B");
+  assert.equal(pick?.reason, "Chauffeur le moins chargé (0 active(s))");
 });

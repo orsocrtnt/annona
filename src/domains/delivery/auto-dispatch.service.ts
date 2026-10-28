@@ -134,16 +134,22 @@ function pickByPriorityList(
   const sorted = [...drivers].sort(
     (a, b) =>
       courierPriority(a) - courierPriority(b) ||
-      compareDispatchProximity(proximities.get(a.id), proximities.get(b.id)) ||
-      activeLoad(a) - activeLoad(b)
+      activeLoad(a) - activeLoad(b) ||
+      // Départage seulement : priorité et charge sont égales.
+      compareDispatchProximity(proximities.get(a.id), proximities.get(b.id))
   );
 
   const picked = sorted[0]!;
+  const base = `Chauffeur le moins chargé (${activeLoad(picked)} active(s))`;
   return {
     driverId: picked.id,
-    reason: proximityDecided(sorted, proximities, (a, b) => courierPriority(a) === courierPriority(b))
-      ? `Livreur le ${PROXIMITY_REASON} (${activeLoad(picked)} active(s))`
-      : `Chauffeur le moins chargé (${activeLoad(picked)} active(s))`,
+    reason: proximityDecided(
+      sorted,
+      proximities,
+      (a, b) => courierPriority(a) === courierPriority(b) && activeLoad(a) === activeLoad(b)
+    )
+      ? `${base} · ${PROXIMITY_REASON}`
+      : base,
   };
 }
 
