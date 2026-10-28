@@ -14,6 +14,7 @@ import type { OrderIntakeDraft } from "@/domains/order-intake/order-intake.draft
 import {
   buildOrderInputFromForm,
   draftToFormValues,
+  updateIntakeStop,
   type IntakeFormStop,
   type IntakeFormValues,
 } from "@/domains/order-intake/order-intake.form";
@@ -149,7 +150,7 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
   const update = (patch: Partial<IntakeFormValues>) =>
     setForms((current) => current.map((form, index) => (index === active ? { ...form, ...patch } : form)));
   const updateStop = (stop: "pickup" | "delivery") => (key: keyof IntakeFormStop, value: string) =>
-    setForms((current) => current.map((form, index) => (index === active ? { ...form, [stop]: { ...form[stop], [key]: value } } : form)));
+    setForms((current) => updateIntakeStop(current, active, stop, key, value));
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -238,7 +239,7 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <StopFieldset legend="Enlèvement" prefix="pickup" values={values.pickup} extracted={draft.pickup}
+            <StopFieldset legend={deliveryCount > 1 ? "Enlèvement (commun aux livraisons)" : "Enlèvement"} prefix="pickup" values={values.pickup} extracted={draft.pickup}
               uncertain={uncertain} missing={missing} onChange={updateStop("pickup")} />
             <StopFieldset legend={`Livraison${deliveryCount > 1 ? ` ${active + 1}` : ""}`} prefix="delivery" values={values.delivery}
               extracted={draft.deliveries[active]} uncertain={uncertain} missing={missing} onChange={updateStop("delivery")} />

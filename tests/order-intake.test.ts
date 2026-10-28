@@ -12,7 +12,7 @@ import { OrderIntakeProviderError, type OrderIntakeModelProvider } from "../src/
 import { ORDER_INTAKE_DAILY_LIMIT, ORDER_INTAKE_HOURLY_LIMIT } from "../src/domains/order-intake/order-intake.usage";
 import { readOrderIntakeSettings, isOrderIntakeConfigured } from "../src/domains/order-intake/order-intake.settings";
 import { analyzeOrderMessage, createOrderFromIntake } from "../src/domains/order-intake/order-intake.service";
-import { buildOrderInputFromForm, draftToFormValues } from "../src/domains/order-intake/order-intake.form";
+import { buildOrderInputFromForm, draftToFormValues, updateIntakeStop } from "../src/domains/order-intake/order-intake.form";
 import { createClientOrderSchema } from "../src/lib/validations/order";
 
 // 28 octobre 2026, 14:00 à Paris (heure d'hiver, UTC+1).
@@ -584,6 +584,16 @@ test("INTAKE relecture 2 : les refus métier de la création deviennent des stat
     assertCategory: async () => undefined,
     createOrder: async () => { throw new Error("connection reset"); },
   }), /connection reset/);
+});
+
+test("INTAKE relecture 4 : l'enlèvement est partagé entre les livraisons, la livraison reste propre à l'onglet", () => {
+  const draft = buildOrderIntakeDraft(MULTI_EXTRACTION, FIXTURES.multi, NOW);
+  const forms = [0, 1].map((index) => draftToFormValues(draft, index));
+  const pickupFixed = updateIntakeStop(forms, 1, "pickup", "postalCode", "75006");
+  assert.deepEqual(pickupFixed.map((form) => form.pickup.postalCode), ["75006", "75006"]);
+  const deliveryFixed = updateIntakeStop(pickupFixed, 1, "delivery", "address", "22 avenue Kléber");
+  assert.deepEqual(deliveryFixed.map((form) => form.delivery.address), ["1 rue de la Paix", "22 avenue Kléber"]);
+  assert.equal(forms[0]?.pickup.postalCode, "75007", "état d'origine intact");
 });
 
 test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélectionné", async () => {

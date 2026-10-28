@@ -58,6 +58,22 @@ export function draftToFormValues(draft: OrderIntakeDraft, deliveryIndex: number
   };
 }
 
+/**
+ * Modifie un champ d'arrêt. L'enlèvement est commun à toutes les livraisons du message :
+ * une correction s'applique à chaque onglet. La livraison ne change que sur l'onglet actif.
+ */
+export function updateIntakeStop(
+  forms: IntakeFormValues[],
+  active: number,
+  stop: "pickup" | "delivery",
+  key: keyof IntakeFormStop,
+  value: string
+): IntakeFormValues[] {
+  return forms.map((form, index) =>
+    stop === "pickup" || index === active ? { ...form, [stop]: { ...form[stop], [key]: value } } : form
+  );
+}
+
 const clean = (value: string) => value.trim();
 const joinParts = (parts: string[]) => parts.map(clean).filter(Boolean).join(" · ") || undefined;
 
