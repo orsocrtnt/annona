@@ -69,7 +69,7 @@ function formatRate(rate: number): string {
   return rate.toFixed(2);
 }
 
-export function computeFacturXTotals(invoice: FacturXInvoice): FacturXTotals {
+export function computeFacturXTotals(invoice: Pick<FacturXInvoice, "lines" | "prepaidAmount">): FacturXTotals {
   const lineNetCents = invoice.lines.map((line) => toCents(line.quantity * line.unitPrice));
   const groups = new Map<string, FacturXVatBreakdown>();
   invoice.lines.forEach((line, index) => {
@@ -137,7 +137,7 @@ function checkLine(line: FacturXLine, index: number, issues: FacturXIssue[]) {
 }
 
 /** Liste les règles violées ; vide si la facture peut être générée. */
-export function checkFacturXInvoice(invoice: FacturXInvoice): FacturXIssue[] {
+export function checkFacturXInvoice(invoice: FacturXInvoice, precomputed?: FacturXTotals): FacturXIssue[] {
   const issues: FacturXIssue[] = [];
   if (blank(invoice.number)) issues.push({ rule: "BR-02", message: "Numéro de facture manquant." });
   if (!(invoice.issueDate instanceof Date) || Number.isNaN(invoice.issueDate.getTime())) {
@@ -181,7 +181,7 @@ export function checkFacturXInvoice(invoice: FacturXInvoice): FacturXIssue[] {
   }
 
   if (issues.length === 0) {
-    const totals = computeFacturXTotals(invoice);
+    const totals = precomputed ?? computeFacturXTotals(invoice);
     if (totals.prepaidCents < 0 || totals.prepaidCents > totals.grandTotalCents) {
       issues.push({ rule: "TL-ACOMPTE", message: "Montant déjà réglé négatif ou supérieur au total TTC." });
     }
@@ -281,9 +281,14 @@ function tradeTaxNode(invoice: FacturXInvoice, category: FacturXVatCategory, rat
  * pour ne jamais émettre un XML incohérent.
  */
 export function generateFacturXXml(invoice: FacturXInvoice): string {
-  const issues = checkFacturXInvoice(invoice);
-  if (issues.length) throw new FacturXValidationError(issues);
   const totals = computeFacturXTotals(invoice);
+  const issues = checkFacturXInvoice(invoice, totals);
+  if (issues.length) throw new FacturXValidationError(issues);
+  return serializeFacturXXml(invoice, totals);
+}
+
+/** Sérialisation seule, pour un appelant qui a déjà contrôlé la facture et calculé ses totaux (mapping). */
+export function serializeFacturXXml(invoice: FacturXInvoice, totals: FacturXTotals): string {
   const currency = invoice.currency;
 
   const lines = invoice.lines.map((line, index) =>

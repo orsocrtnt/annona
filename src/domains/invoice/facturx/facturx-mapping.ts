@@ -149,7 +149,7 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
       errors.push({ rule: "TL-TOTAL", message: "Le total de la facture ne correspond pas à la somme de ses lignes : export Factur-X refusé." });
     }
     if (vatLines.length === 1 && rate > 0 && errors.length === 0) {
-      const recomputed = computeFacturXTotals({ lines, vatExemptions: {} } as unknown as FacturXInvoice).taxTotalCents;
+      const recomputed = computeFacturXTotals({ lines }).taxTotalCents;
       const stored = cents(vatLines[0]!.amount * vatLines[0]!.quantity);
       if (recomputed !== stored) {
         errors.push({ rule: "TL-TVA", message: `TVA enregistrée (${(stored / 100).toFixed(2)} €) différente de ${rate} % du total HT (${(recomputed / 100).toFixed(2)} €).` });
