@@ -86,7 +86,7 @@ export function AppleNavbarBrand({
       >
         {/* Le nom est porté par le texte du lien (lecteurs d'écran, recherche par texte), le logo est décoratif. */}
         <Image src="/brand/logo-horizontal-fond-clair.png" alt="" aria-hidden width={104} height={31} priority className="dark:hidden" />
-        <Image src="/brand/logo-horizontal-fond-sombre.png" alt="" aria-hidden width={104} height={31} priority className="hidden dark:block" />
+        <Image src="/brand/logo-horizontal-fond-sombre.png" alt="" aria-hidden width={104} height={31} className="hidden dark:block" />
         <span className="sr-only">{label}</span>
       </Link>
     );
