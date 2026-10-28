@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**57 tâches terminées sur 90 — 63 %**
+**57 tâches terminées sur 91 — 63 %**
 
-`█████████████░░░░░░░` · 33 tâches restantes
+`█████████████░░░░░░░` · 34 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -197,6 +197,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | POD-2 | A | Implémenté et recetté (29 octobre) ; essai sur téléphone réel, règles pilotables depuis l'interface. | MOB-01C. | Élevée · GPT‑6.1 Sol |
 | OPS-FIAB | A+B | Implémenté (29 octobre) ; déclenchement réel du workflow, `after()` sur Vercel, Node 22, index en préproduction. | Propriétaire (secrets, Vercel). | Moyenne · GPT‑6 Luna |
 | SEC-AUDIT | A+B | Implémenté et recetté (29 octobre) ; CSP bloquante, migration et secrets de préproduction, rattachement par e-mail. | Propriétaire (migration, secrets). | Élevée · GPT‑6 Astra |
+| DISPATCH-4 | A | Outil de dispatch avancé : score pondéré réglable, temps de trajet réel, tournées, suggestions, réoptimisation. | Périmètre à cadrer avec le propriétaire. | Élevée · GPT‑6 Astra |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
@@ -1448,6 +1449,22 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Suite du 2026-10-29 : l'inventaire des routes à périmètre d'entreprise (`tests/admin01-tenant-api-boundary-inventory.test.ts`, `docs/operations/admin01/tenant-api-boundaries.md`) passe de 58 routes / 40 fichiers à 66 routes / 46 fichiers avec les chantiers du 28 octobre (Factur-X, relances, commande par message, preuve, réglages du portail) ; à recompter si une autre branche ajoute des routes `getCompanyId`. Tâche inchangée (terminée).
 
+- [ ] **DISPATCH-4 — Construire un outil de dispatch avancé.** Demande du propriétaire du 28 octobre 2026 : aller au-delà de l'auto-dispatch actuel, où la distance GPS ne sert qu'à départager deux livreurs à égalité (DEMO-3, tranche 3), pour proposer un vrai outil d'aide à l'affectation et d'organisation des tournées. Pistes à cadrer avec le propriétaire avant de coder (questionnaire) :
+  1. **Score d'affectation pondéré et réglable** : distance ou temps de trajet réel jusqu'au retrait, charge, priorités, zones, compétences ou véhicule, créneau promis au client ; poids modifiables par l'entreprise, avec explication lisible du choix (« pourquoi ce livreur »).
+  2. **Temps de trajet réel** au lieu de la distance à vol d'oiseau, via le service de trajet déjà utilisé (OSRM), avec cache et repli sans coût caché.
+  3. **Tournées** : regroupement des commandes voisines, ordre de passage optimisé, respect des créneaux et de la capacité (lien avec DEMO-3, tranche 10).
+  4. **Suggestions au dispatcher** : les 3 meilleurs livreurs proposés pour une commande, affectation en un clic, possibilité de forcer un choix manuel.
+  5. **Réoptimisation en direct** : retard, livreur indisponible ou commande urgente, avec une alerte et une nouvelle proposition.
+  6. **Mesure** : temps de dispatch, kilomètres à vide, retards évités ; comparaison avant/après sur une période.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  Terminé quand : le périmètre retenu par le propriétaire est livré par tranches testées ; chaque choix automatique est explicable et réglable ; aucune coordonnée de livreur n'est exposée au client ; transaction d'affectation courte (leçon de DISPATCH-3) ; tests métier sur les cas difficiles (DISPATCH-1), `npm run check` vert, recette navigateur et essai avec positions réelles.
+
+  Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026. S'appuie sur DEMO-3 tranche 3 (distance de départage, `src/lib/dispatch/dispatch-proximity.ts`) et sur les réglages de Règles dispatch. Périmètre et priorité des pistes : décision du propriétaire. Coûts du service de trajet : COST-1.
+
+  État : ouverte, non commencée.
+
 - [ ] **AUTH-ROLE — Refuser côté serveur les pages du mauvais rôle.** Aujourd'hui, le middleware vérifie seulement qu'une session existe (`src/middleware.ts`) et les layouts des espaces contrôlent le rôle dans le navigateur. Un client connecté qui ouvre `/dashboard`, `/dispatch` ou `/driver/missions` (ou un livreur qui ouvre `/portal/orders`) reçoit donc la page en HTTP 200 avant la redirection côté client. Les API restent protégées : `/api/invoices` renvoie 403 au client, au livreur et au dispatcher, et aucune fuite de données n'a été constatée.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
@@ -1496,7 +1513,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Reste : tout ce qui précède. Non testé par les recettes : analyse IA réelle, envoi réel d'e-mails, Stripe et Supabase Storage côté navigateur (aucune requête observée, donc aucun rapport CSP), mode hors ligne de la preuve et GPS réel (téléphone), MINI_ADMIN, 429 sur compte livreur ou client, thème Sombre de chaque page du portail à 390 px (couvert par la spécification verte), HSTS (développement).
 
-- [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.** Liste unique des actions que seul le propriétaire peut faire pour mettre en ligne les neuf chantiers intégrés le 28 octobre 2026. Aucune n'est faite à ce jour ; l'intégration `integration/2026-10-28` n'est pas poussée et la préproduction n'est pas mise à jour.
+- [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.** Liste unique des actions que seul le propriétaire peut faire pour mettre en ligne les neuf chantiers intégrés le 28 octobre 2026. Le 28 octobre 2026, l'intégration a été poussée sur `preproduction` (dd8a835, déploiement Vercel prêt, aucune erreur) et les cinq migrations ont été appliquées à la base de préproduction ; les autres actions ci-dessous restent à faire.
 
   **Modèle conseillé : GPT‑6 Luna · effort faible.**
 
