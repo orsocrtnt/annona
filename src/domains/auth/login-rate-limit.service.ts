@@ -8,7 +8,7 @@ export const LOGIN_RATE_WINDOW_MS = 15 * 60 * 1000;
 export const LOGIN_EMAIL_FAILURE_LIMIT = 5;
 export const LOGIN_SOURCE_FAILURE_LIMIT = 30;
 
-export type LoginAttemptKeys = { emailKey: string | null; sourceKey: string };
+export type LoginAttemptKeys = { emailKey: string | null; sourceKey: string | null };
 /** Tentative réservée : ses lignes comptent comme un échec tant qu'elle n'est pas soldée. */
 export type LoginAttempt = { keys: LoginAttemptKeys; ids: string[] };
 export type LoginAttemptGate =
@@ -17,9 +17,14 @@ export type LoginAttemptGate =
 type LoginAttemptDatabase = Pick<typeof prisma, "authLoginFailure" | "$transaction">;
 type LoginAttemptTx = Pick<Prisma.TransactionClient, "authLoginFailure" | "$queryRaw">;
 
+/** Valeur de `contactSourceFromHeaders` sans x-forwarded-for ni x-real-ip. */
+const UNKNOWN_SOURCE = "unknown";
+
 /**
  * Empreintes HMAC de l'e-mail normalisé et de la source. `trackEmail: false` sert au compte
  * de démonstration public : son e-mail ne doit pas pouvoir être verrouillé par un tiers.
+ * Source inconnue (dev, E2E, proxy sans en-tête) : pas de clé, sinon toutes les requêtes
+ * partageraient un seau global que n'importe qui pourrait remplir.
  */
 export function loginAttemptKeys(
   email: string,
@@ -28,14 +33,14 @@ export function loginAttemptKeys(
 ): LoginAttemptKeys {
   return {
     emailKey: options.trackEmail === false ? null : abuseFingerprint("login-email", normalizeEmail(email), options.secret),
-    sourceKey: abuseFingerprint("login-source", source, options.secret),
+    sourceKey: !source.trim() || source === UNKNOWN_SOURCE ? null : abuseFingerprint("login-source", source, options.secret),
   };
 }
 
 function limitedKeys(keys: LoginAttemptKeys) {
   return [
     keys.emailKey ? { keyHash: keys.emailKey, limit: LOGIN_EMAIL_FAILURE_LIMIT } : null,
-    { keyHash: keys.sourceKey, limit: LOGIN_SOURCE_FAILURE_LIMIT },
+    keys.sourceKey ? { keyHash: keys.sourceKey, limit: LOGIN_SOURCE_FAILURE_LIMIT } : null,
   ].filter((entry): entry is { keyHash: string; limit: number } => entry !== null);
 }
 

@@ -130,6 +130,14 @@ test("succès : réservation retirée et compteur e-mail remis à zéro ; panne 
   assert.equal(rows.length, LOGIN_EMAIL_FAILURE_LIMIT - 1);
 });
 
+test("source inconnue (sans x-forwarded-for) : aucun seau global, seule la limite par e-mail s'applique", async () => {
+  const { db, rows } = memoryDb();
+  for (const source of ["unknown", "", "  "]) assert.equal(keysFor("user@example.test", source).sourceKey, null, JSON.stringify(source));
+  for (let i = 0; i < LOGIN_SOURCE_FAILURE_LIMIT + 5; i++) await fail(db, keysFor(`user${i}@example.test`, "unknown"), at(0));
+  assert.equal((await beginLoginAttempt(keysFor("victim@example.test", "unknown"), { db, now: at(1) })).allowed, true);
+  assert.ok(rows.every((row) => row.keyHash !== keysFor("x@example.test", "unknown").sourceKey));
+});
+
 test("compte démo : seule la source est comptée, l'e-mail public ne peut pas être verrouillé", async () => {
   const { db, rows } = memoryDb();
   const keys = loginAttemptKeys("demo@example.test", "198.51.100.4", { secret: SECRET, trackEmail: false });
