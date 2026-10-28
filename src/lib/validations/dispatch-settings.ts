@@ -54,6 +54,21 @@ export const companyDispatchSettingsSchema = z.object({
   driverRules: z.array(dispatchDriverRuleSchema).default([]),
   zoneDriverMap: z.record(z.string(), z.string()).default({}),
   defaultDriverId: z.string().nullable().optional(),
+  /** DEMO-3 : la position récente des livreurs en service départage les choix implicites. */
+  gpsProximityEnabled: z.boolean().default(true),
+  /** Au-delà, la position du livreur est jugée périmée et n'est pas utilisée. */
+  gpsPositionMaxAgeMinutes: z
+    .number()
+    .int()
+    .min(1, "Minimum 1 minute")
+    .max(120, "Maximum 120 minutes")
+    .default(15),
+  /** Au-delà, un livreur n'est pas considéré comme proche du point de retrait. */
+  gpsMaxDistanceKm: z
+    .number()
+    .min(1, "Minimum 1 km")
+    .max(100, "Maximum 100 km")
+    .default(10),
 });
 
 export type DispatchStrategy = z.infer<typeof dispatchStrategySchema>;
@@ -82,6 +97,9 @@ export const DEFAULT_DISPATCH_SETTINGS: CompanyDispatchSettings = {
   driverRules: [],
   zoneDriverMap: {},
   defaultDriverId: null,
+  gpsProximityEnabled: true,
+  gpsPositionMaxAgeMinutes: 15,
+  gpsMaxDistanceKm: 10,
 };
 
 export const DISPATCH_STRATEGY_LABELS: Record<DispatchStrategy, string> = {
