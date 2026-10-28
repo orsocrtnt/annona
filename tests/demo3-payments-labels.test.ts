@@ -52,3 +52,14 @@ test("DEMO-3 écran : message après clic, y compris doublon et e-mail non confi
 test("DEMO-3 fiche commande : une facture en retard s'affiche comme émise (pas de nouveau formulaire)", () => {
   assert.equal(isInvoiceOutstanding("OVERDUE"), true);
 });
+
+test("DEMO-3 écran : une relance non envoyée rejouée n'est pas présentée comme « déjà relancée »", () => {
+  assert.deepEqual(reminderOutcomeMessage({ duplicate: true, reminder: { result: "NOT_SENT_EMAIL_NOT_CONFIGURED" } }), {
+    kind: "warning",
+    text: "Relance déjà tracée, toujours non envoyée : e-mail non configuré.",
+  });
+  assert.deepEqual(reminderOutcomeMessage({ duplicate: true, reminder: { result: "NOT_SENT_NO_RECIPIENT" } }), {
+    kind: "warning",
+    text: "Relance déjà tracée, toujours non envoyée : client sans e-mail.",
+  });
+});

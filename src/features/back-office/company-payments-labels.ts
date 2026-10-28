@@ -26,6 +26,14 @@ export function reminderOutcomeMessage(outcome: { duplicate: boolean; reminder: 
   kind: "success" | "info" | "warning";
   text: string;
 } {
+  // Une tentative non envoyée ne compte pas comme une relance : on dit qu'elle reste non envoyée.
+  const notSentReason: Record<string, string> = {
+    NOT_SENT_EMAIL_NOT_CONFIGURED: "e-mail non configuré",
+    NOT_SENT_NO_RECIPIENT: "client sans e-mail",
+  };
+  if (outcome.duplicate && notSentReason[outcome.reminder.result]) {
+    return { kind: "warning", text: `Relance déjà tracée, toujours non envoyée : ${notSentReason[outcome.reminder.result]}.` };
+  }
   if (outcome.duplicate) {
     return { kind: "info", text: "Déjà relancée dans les dernières 24 h : aucune nouvelle relance envoyée." };
   }
