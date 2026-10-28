@@ -4,6 +4,7 @@ import { withApiHandler } from "@/lib/api/route-handler";
 import { getCompanyDeliveries, getDriverDispatchWorkload } from "@/domains/delivery/delivery.service";
 import { getCompanyOrderStats } from "@/domains/order/order.service";
 import { parseDispatchSettings } from "@/domains/company/dispatch-settings.service";
+import { omitStoragePaths } from "@/domains/delivery/proof-links";
 
 export async function GET(request: Request) {
   return withApiHandler(async () => {
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      data: { deliveries, stats, settings, workload },
+      data: omitStoragePaths({ deliveries, stats, settings, workload }),
       success: true,
     });
   });

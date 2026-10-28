@@ -6,7 +6,7 @@ import {
   updateCompanyOrderStatus,
 } from "@/domains/order/order.service";
 import { updateOrderStatusSchema } from "@/lib/validations/order";
-import { withProofLinks } from "@/domains/delivery/proof-links";
+import { omitStoragePaths, withProofLinks } from "@/domains/delivery/proof-links";
 
 export async function GET(
   _request: Request,
@@ -31,7 +31,7 @@ export async function GET(
 
   const deliveries = order.deliveries.map((delivery) => withProofLinks("/api/deliveries", delivery));
 
-  return NextResponse.json({ data: { ...order, deliveries }, success: true });
+  return NextResponse.json({ data: omitStoragePaths({ ...order, deliveries }), success: true });
 }
 
 export async function PATCH(
@@ -123,7 +123,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json({ data: order, success: true });
+  return NextResponse.json({ data: omitStoragePaths(order), success: true });
 }
 
 export async function DELETE(

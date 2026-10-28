@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireDriverRole } from "@/lib/api/auth-guard";
 import { claimDeliveryByDriver } from "@/domains/delivery/delivery.service";
+import { omitStoragePaths } from "@/domains/delivery/proof-links";
 
 export async function POST(
   _request: Request,
@@ -21,7 +22,7 @@ export async function POST(
     if (!delivery) {
       return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
     }
-    return NextResponse.json({ data: delivery, success: true });
+    return NextResponse.json({ data: omitStoragePaths(delivery), success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "DISPATCH_ONLY") {
       return NextResponse.json(

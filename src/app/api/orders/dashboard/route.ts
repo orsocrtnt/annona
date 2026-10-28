@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { getCompanyOrders, getCompanyOrderStats } from "@/domains/order/order.service";
+import { omitStoragePaths } from "@/domains/delivery/proof-links";
 
 export async function GET() {
   return withApiHandler(async () => {
@@ -20,6 +21,6 @@ export async function GET() {
       getCompanyOrderStats(companyId),
     ]);
 
-    return NextResponse.json({ data: { orders, stats }, success: true });
+    return NextResponse.json({ data: omitStoragePaths({ orders, stats }), success: true });
   });
 }

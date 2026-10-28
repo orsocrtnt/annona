@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { getCompanyDriverDetail } from "@/domains/delivery/delivery.service";
+import { omitStoragePaths } from "@/domains/delivery/proof-links";
 
 export async function GET(
   _request: Request,
@@ -25,6 +26,6 @@ export async function GET(
       return NextResponse.json({ error: "Chauffeur introuvable" }, { status: 404 });
     }
 
-    return NextResponse.json({ data: detail, success: true });
+    return NextResponse.json({ data: omitStoragePaths(detail), success: true });
   });
 }

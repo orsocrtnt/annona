@@ -58,6 +58,7 @@ function guard(role: string, calls: string[]) {
 
 function deps(file: string, role: string, calls: string[]) {
   const base: Record<string, unknown> = {
+    "@/domains/delivery/proof-links": { omitStoragePaths: (value: unknown) => value },
     "next/server": { NextResponse },
     "@/lib/api/route-handler": { withApiHandler },
     "@/lib/api/auth-guard": guard(role, calls),

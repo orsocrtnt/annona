@@ -231,6 +231,7 @@ test("réglages réutilisés du contexte : nouveaux droits et valeurs relus à c
       "@/lib/api/route-handler": { withApiHandler: (fn: () => unknown) => fn() },
       "@/domains/delivery/delivery.service": { getCompanyDeliveries: async () => [], getDriverDispatchWorkload: async () => [] },
       "@/domains/order/order.service": { getCompanyOrderStats: async () => ({}) },
+      "@/domains/delivery/proof-links": { omitStoragePaths: (value: unknown) => value },
       "@/domains/company/dispatch-settings.service": { parseDispatchSettings: (raw: unknown) => raw },
       "@/domains/company/location-settings.service": { parseLocationSettings: (raw: unknown) => raw },
     };
