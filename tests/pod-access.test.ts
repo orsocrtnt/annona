@@ -104,6 +104,8 @@ function podRouteFixture(initialStatus: "PURCHASING" | "IN_DELIVERY" | "DELIVERE
       podFailureCode: initialStatus === "FAILED" ? "ABSENT" : null, podNote: initialStatus === "IN_DELIVERY" ? null : "note",
     },
     updateError: "" as string,
+    photoUploadError: "" as string,
+    signatureUploadError: "" as string,
     rules: { signatureRequired: false, emailToClient: true },
   };
   const calls = { uploads: 0, updates: 0, deletes: [] as string[], cleanups: 0, signs: 0, signatureUploads: 0, signatureDeletes: [] as string[], lastOptions: null as Record<string, unknown> | null };
@@ -131,7 +133,7 @@ function podRouteFixture(initialStatus: "PURCHASING" | "IN_DELIVERY" | "DELIVERE
         assert.equal(type, "image/png");
         if (!bytes.equals(png)) throw new Error("POD_INVALID_PHOTO");
       },
-      uploadPodPhoto: async () => { calls.uploads++; return "a/own-456.jpg"; },
+      uploadPodPhoto: async () => { if (state.photoUploadError) throw new Error(state.photoUploadError); calls.uploads++; return "a/own-456.jpg"; },
       deletePodPhoto: async (path: string) => { calls.deletes.push(path); },
       cleanupPodPhotoOrphans: async () => { calls.cleanups++; return { removed: 1 }; },
       getPodPhotoSignedUrl: async () => { calls.signs++; return "https://storage.invalid/signed"; },
@@ -142,7 +144,7 @@ function podRouteFixture(initialStatus: "PURCHASING" | "IN_DELIVERY" | "DELIVERE
       validatePodSignature: (bytes: Buffer, type: string) => {
         if (type !== "image/png" || !bytes.equals(png)) throw new Error("POD_SIGNATURE_INVALID");
       },
-      uploadPodSignature: async () => { calls.signatureUploads++; return "a/own-sig-1-00000000-0000-0000-0000-000000000000.png"; },
+      uploadPodSignature: async () => { if (state.signatureUploadError) throw new Error(state.signatureUploadError); calls.signatureUploads++; return "a/own-sig-1-00000000-0000-0000-0000-000000000000.png"; },
       deletePodSignature: async (path: string) => { calls.signatureDeletes.push(path); },
     },
     "@/domains/delivery/pod-evidence": podEvidence,
@@ -314,4 +316,25 @@ test("livreur réaffecté ou mission d'une autre entreprise : 404 avant toute le
   });
   const response = await route.PATCH(new Request("http://local", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "DELIVERED" }) }), driverParams);
   assert.equal(response.status, 404); assert.equal(uploads, 0);
+});
+
+test("ré-encodage refusé (photo ou signature illisible) : 4xx explicite non relançable, jamais 502, rien de conservé", async () => {
+  const photo = podRouteFixture();
+  photo.state.photoUploadError = "POD_INVALID_PHOTO";
+  const photoResponse = await photo.route.PATCH(photo.request("DELIVERED"), driverParams);
+  assert.equal(photoResponse.status, 400);
+  assert.match((await photoResponse.json()).error, /Photo invalide/);
+  assert.equal(photo.calls.updates, 0);
+
+  const signature = podRouteFixture();
+  signature.state.signatureUploadError = "POD_SIGNATURE_INVALID";
+  const signatureResponse = await signature.route.PATCH(signature.request("DELIVERED", { signature: signature.png, recipient: "Paul" }), driverParams);
+  assert.equal(signatureResponse.status, 400);
+  assert.match((await signatureResponse.json()).error, /Signature invalide/);
+  assert.equal(signature.calls.updates, 0);
+  assert.equal(signature.calls.deletes.length, 1, "la photo déjà envoyée est retirée");
+
+  const tooBig = podRouteFixture();
+  tooBig.state.photoUploadError = "POD_PHOTO_TOO_LARGE";
+  assert.equal((await tooBig.route.PATCH(tooBig.request("DELIVERED"), driverParams)).status, 413);
 });

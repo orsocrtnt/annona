@@ -419,6 +419,19 @@ export async function PATCH(
         { status: 400 }
       );
     }
+    // Fichier refusé au ré-encodage : erreur du client (4xx), jamais relancée par la file hors ligne.
+    if (error instanceof Error && error.message === "POD_INVALID_PHOTO") {
+      return NextResponse.json({ error: "Photo invalide. Reprenez la photo (JPEG ou PNG, 5 Mo maximum)." }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === "POD_SIGNATURE_INVALID") {
+      return NextResponse.json({ error: "Signature invalide. Signez de nouveau à l'écran." }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === "POD_PHOTO_TOO_LARGE") {
+      return NextResponse.json({ error: "Photo trop volumineuse. Limite : 5 Mo." }, { status: 413 });
+    }
+    if (error instanceof Error && error.message === "POD_SIGNATURE_TOO_LARGE") {
+      return NextResponse.json({ error: "Signature trop volumineuse." }, { status: 413 });
+    }
     if (error instanceof Error && error.message.startsWith("POD_")) {
       return NextResponse.json({ error: "Impossible d'enregistrer la photo." }, { status: 502 });
     }
