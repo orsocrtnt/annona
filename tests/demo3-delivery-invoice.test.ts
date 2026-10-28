@@ -163,17 +163,19 @@ test("DEMO-3 réglage : la facture à la livraison est désactivée par défaut"
   assert.equal(companyBillingSettingsSchema.parse({ ...DEFAULT_BILLING_SETTINGS, invoice: { ...withoutFlag, autoInvoiceOnDelivery: true } }).invoice.autoInvoiceOnDelivery, true);
 });
 
-test("DEMO-3 file : réglage désactivé, aucune tâche ; activé, une seule tâche par commande", async (t) => {
+test("DEMO-3 file : réglage désactivé, aucune tâche ; activé, une tâche par passage en « Livrée »", async (t) => {
   const off = fakeDatabase(t);
-  assert.equal(await queueDeliveryInvoiceJob(off.db as never, { companyId: "company_a", orderId: "order_1" }), null);
+  assert.equal(await queueDeliveryInvoiceJob(off.db as never, { companyId: "company_a", orderId: "order_1", passageKey: "evt_1" }), null);
   assert.equal(off.jobs.length, 0);
 
   const on = fakeDatabase(t, { autoInvoiceOnDelivery: true });
-  const first = await queueDeliveryInvoiceJob(on.db as never, { companyId: "company_a", orderId: "order_1" });
-  const second = await queueDeliveryInvoiceJob(on.db as never, { companyId: "company_a", orderId: "order_1" });
-  assert.equal(first?.id, second?.id);
+  const first = await queueDeliveryInvoiceJob(on.db as never, { companyId: "company_a", orderId: "order_1", passageKey: "evt_1" });
+  const replay = await queueDeliveryInvoiceJob(on.db as never, { companyId: "company_a", orderId: "order_1", passageKey: "evt_1" });
+  assert.equal(first?.id, replay?.id, "rejeu du même passage : même tâche");
   assert.equal(on.jobs.length, 1);
-  assert.equal(on.jobs[0]!.jobKey, "delivery-invoice:order_1");
+  assert.equal(on.jobs[0]!.jobKey, "delivery-invoice:order_1:evt_1");
+  await queueDeliveryInvoiceJob(on.db as never, { companyId: "company_a", orderId: "order_1", passageKey: "evt_2" });
+  assert.equal(on.jobs.length, 2, "nouveau passage : nouvelle tâche");
   assert.equal(on.jobs[0]!.type, "DELIVERY_INVOICE", "type de tâche dédié");
   assert.deepEqual(on.jobs[0]!.payload, { orderId: "order_1", companyId: "company_a" });
 });
@@ -310,13 +312,41 @@ test("DEMO-3 livreur : livraison échouée ou réglage désactivé, aucune tâch
   assert.equal(invoiceJobs(off.jobs).length, 0);
 });
 
-test("DEMO-3 administrateur : « Livrée » depuis la livraison, deux fois, une seule tâche de facture", async (t) => {
-  const { jobs, delivery, order } = fakeDatabase(t, { autoInvoiceOnDelivery: true, order: { status: "IN_DELIVERY" } });
+test("DEMO-3 administrateur : deux passages simultanés en « Livrée », deux tâches, une seule facture", async (t) => {
+  const { jobs, delivery, order, invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true, order: { status: "IN_DELIVERY" } });
   await adminUpdateDelivery("company_a", "delivery_1", { status: "DELIVERED" } as never);
   assert.equal(delivery.status, "DELIVERED");
   order.status = "DELIVERED";
   await adminUpdateDelivery("company_a", "delivery_1", { status: "DELIVERED" } as never);
-  assert.equal(invoiceJobs(jobs).length, 1);
+  assert.equal(invoiceJobs(jobs).length, 2);
+  assert.notEqual(invoiceJobs(jobs)[0]!.jobKey, invoiceJobs(jobs)[1]!.jobKey);
+
+  const results = await Promise.all(invoiceJobs(jobs).map((job) => runDeliveryInvoiceJob(job.payload as never)));
+  assert.deepEqual(results.map((result) => result.status).sort(), ["created", "skipped"]);
+  assert.equal(invoices.length, 1, "le contrôle sous verrou garantit une seule facture active");
+});
+
+test("DEMO-3 génération : après un passage ignoré, un nouveau passage en « Livrée » crée la facture", async (t) => {
+  const manual = { id: "manual", orderId: "order_1", status: "PENDING", amount: 99, reference: "FAC-MAN" };
+  const { jobs, order, invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true, invoices: [manual], order: { status: "IN_DELIVERY" } });
+  await updateCompanyOrderStatus("company_a", "order_1", "DELIVERED");
+  assert.deepEqual(await runDeliveryInvoiceJob(invoiceJobs(jobs)[0]!.payload as never), { status: "skipped", reason: "INVOICE_EXISTS" });
+
+  manual.status = "CANCELLED"; // facture manuelle annulée, commande remise en cours puis relivrée
+  order.status = "IN_DELIVERY";
+  await updateCompanyOrderStatus("company_a", "order_1", "DELIVERED");
+  assert.equal(invoiceJobs(jobs).length, 2);
+  assert.equal((await runDeliveryInvoiceJob(invoiceJobs(jobs)[1]!.payload as never)).status, "created");
+  assert.equal(invoices.filter((row) => row.status !== "CANCELLED").length, 1);
+});
+
+test("DEMO-3 génération : facture automatique et facture manuelle simultanées, une seule facture active", async (t) => {
+  const { invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true });
+  await Promise.all([
+    createDeliveredOrderInvoice("company_a", "order_1"),
+    createOrderInvoice("company_a", "order_1", { zoneId: ZONE.id, feeIds: [], includePurchases: false, customLines: [] }),
+  ]);
+  assert.equal(invoices.filter((row) => row.status !== "CANCELLED").length, 1);
 });
 
 test("DEMO-3 administrateur : « Livrée » depuis la commande met la facture en file", async (t) => {

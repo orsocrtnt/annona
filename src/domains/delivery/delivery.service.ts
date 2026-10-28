@@ -911,7 +911,7 @@ export async function updateDeliveryStatusByDriver(
     });
     // DEMO-3 : facture à la livraison inscrite en tâche durable (si l'entreprise l'a activée).
     const invoiceJob = status === "DELIVERED"
-      ? await queueDeliveryInvoiceJob(tx, { companyId: delivery.companyId, orderId: delivery.orderId })
+      ? await queueDeliveryInvoiceJob(tx, { companyId: delivery.companyId, orderId: delivery.orderId, passageKey: trackingEvent.id })
       : null;
 
     return { updated, notificationJobId: notificationJob?.id ?? null, invoiceJobId: invoiceJob?.id ?? null };
@@ -1305,9 +1305,9 @@ export async function adminUpdateDelivery(
           eventId: statusEventId,
         })
       : null;
-    // DEMO-3 : facture à la livraison ; la clé unique par commande absorbe un second « Livrée ».
-    const invoiceJob = input.status === "DELIVERED"
-      ? await queueDeliveryInvoiceJob(tx, { companyId, orderId: delivery.orderId })
+    // DEMO-3 : facture à la livraison, une tâche par passage ; une seule facture active par commande.
+    const invoiceJob = input.status === "DELIVERED" && statusEventId
+      ? await queueDeliveryInvoiceJob(tx, { companyId, orderId: delivery.orderId, passageKey: statusEventId })
       : null;
 
     return { updated, notificationJobId: notificationJob?.id ?? null, invoiceJobId: invoiceJob?.id ?? null };

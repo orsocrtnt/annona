@@ -1163,6 +1163,7 @@ export async function updateCompanyOrderStatus(
       }
     }
 
+    let passageKey: string | null = null;
     for (const delivery of order.deliveries) {
       const deliveryUpdate: {
         status: DeliveryStatus;
@@ -1185,6 +1186,7 @@ export async function updateCompanyOrderStatus(
           description: "Statut mis à jour par l'administrateur",
         },
       });
+      passageKey ??= trackingEvent.id;
       const notificationJob = await queueDeliveryStatusNotification(tx, {
         customerId: order.customerId,
         companyId,
@@ -1198,7 +1200,12 @@ export async function updateCompanyOrderStatus(
 
     // DEMO-3 : facture à la livraison inscrite en tâche durable (si l'entreprise l'a activée).
     if (status === "DELIVERED") {
-      const invoiceJob = await queueDeliveryInvoiceJob(tx, { companyId, orderId: order.id });
+      const invoiceJob = await queueDeliveryInvoiceJob(tx, {
+        companyId,
+        orderId: order.id,
+        // Événement de suivi du passage ; sans livraison, l'horodatage de la transition.
+        passageKey: passageKey ?? `at-${Date.now()}`,
+      });
       if (invoiceJob) operationJobIds.push(invoiceJob.id);
     }
 
