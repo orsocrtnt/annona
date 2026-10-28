@@ -80,7 +80,9 @@ Un refus renvoie `422` en texte brut : liste des données manquantes côté back
 | `factur-x.xml` embarqué, `/AF`, `/AFRelationship /Data`, `/EmbeddedFiles`, `text/xml`, `Params` | `tests/facturx-pdf.test.ts` |
 | XMP : `pdfaid:part 3`, `conformance B`, `fx:DocumentType`, `fx:ConformanceLevel`, `fx:Version`, schéma d'extension, concordance avec Info | `tests/facturx-pdf.test.ts` |
 | OutputIntent `GTS_PDFA1` + profil ICC sRGB chargé par LittleCMS (via sharp) | `tests/facturx-pdf.test.ts` |
-| Rendu visuel identique (flux de contenu, MediaBox, polices de chaque page) | `tests/facturx-pdf.test.ts` |
+| Incorporation sans retouche des pages (flux, MediaBox, polices) ; relevé classique identique (empreintes relevées avant la variante Factur-X) | `tests/facturx-pdf.test.ts` |
+| Mentions légales visibles de la variante Factur-X alignées sur le XML | `tests/facturx-mapping.test.ts` |
+| Écritures concurrentes de `settings` sans écrasement (réclamation `updatedAt`) | `tests/settings-claim.test.ts` |
 | Isolation entreprise/client et rôles (back-office, portail, réglages) | `tests/facturx-routes.test.ts`, `tests/facturx-mapping.test.ts` |
 
 ## 4. Limites — ce qui n'est PAS garanti
@@ -91,7 +93,11 @@ Un refus renvoie `422` en texte brut : liste des données manquantes côté back
 - **`AFRelationship /Data`** retenu ; les sources consultées divergent entre `Data` et `Alternative` pour la France : à confirmer avec la spécification FNFE en vigueur.
 - **Mentions françaises PMD/PMT/AAB** en notes `IncludedNote` selon l'usage FNFE ; la règle exacte du profil français (CIUS) reste à confirmer.
 - **Un seul taux de TVA par facture** côté TutelLiv (le générateur en gère plusieurs). Une facture sans ligne de TVA est traitée comme exonérée et exige un motif ; si la TVA arrondie vaut 0 € pour un taux non nul, ce cas est mal classé (montant inférieur à 3 centimes).
-- **BR-E-02** : une facture exonérée exige un n° de TVA vendeur ; le cas du représentant fiscal ou de l'identifiant fiscal BT-32 n'est pas géré.
+- **Franchise en base (293 B) sans n° de TVA** : BR-E-02 est satisfaite par l'identifiant fiscal BT-32 (`SpecifiedTaxRegistration`, schéma `FC`), saisi dans les réglages ou, à défaut, repris du SIREN avec un avertissement. Ce traitement est une hypothèse à confirmer avec la FNFE et la plateforme agréée ; le représentant fiscal (BG-11) n'est pas géré. Une facture avec TVA exige toujours le n° de TVA.
+- **Partie visible** : la variante Factur-X affiche les mentions portées par le XML (vendeur SIREN/SIRET/TVA ou BT-32, acheteur du XML, forme/capital/RCS, exonération, conditions, pénalités, indemnité de 40 €, escompte) et s'intitule « Facture ». Le relevé classique reste identique (empreintes de rendu vérifiées par `tests/facturx-pdf.test.ts`).
+- **Facture payée** : `TotalPrepaidAmount` = TTC et `DuePayableAmount` = 0. Le modèle n'enregistre pas de paiement partiel ; le générateur le sait, aucun écran ne le produit.
+- **Écritures concurrentes de `settings`** : les mentions Factur-X, l'identité client et les réglages de facturation passent par une réclamation sur `updatedAt` (`src/lib/database/claimed-settings-update.ts`, 409 après 3 tentatives). Les autres écrivains de `Company.settings`/`User.settings` (dispatch, localisation, tarifs, tableaux de bord, préférences client, démo) font encore une lecture-réécriture sans réclamation et peuvent en théorie écraser une écriture concurrente : à généraliser.
+- **Réglages stockés invalides** : lus champ par champ ; un champ invalide est écarté, signalé dans l'écran et en avertissement Factur-X, les autres sont conservés. L'enregistrement est bloqué tant que les réglages n'ont pas été lus.
 - **Ni avoir ni remise** dans le modèle TutelLiv : le générateur sait produire un avoir 381, aucun écran n'en crée.
 - **Acheteur** : sans identité de facturation, nom et adresse de livraison par défaut du client sont utilisés, pays supposé FR ; le SIREN client manquant n'est qu'un avertissement.
 - **Date d'émission = `createdAt`** de la facture ; un Factur-X régénéré porte une date de production nouvelle mais le même XML.
