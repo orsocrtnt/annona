@@ -104,7 +104,7 @@ Sous-agents :
 - client sans compte ;
 - Factur-X d'une facture en retard.
 
-**`npm run check` courant** : lancé par `lourd.sh` sur `agent/correctifs-codex` après le dernier commit de code **8b57200** (C1 inclus), code de sortie 0 :
+**`npm run check` courant** : lancé par `lourd.sh` sur `agent/correctifs-codex` après le dernier commit de code **b08578a** (C1 inclus), code de sortie 0 :
 - `tsc` sans erreur ;
 - `eslint src --max-warnings=0` sans erreur ni avertissement ;
 - **1139/1139 tests**, 0 échec.

@@ -57,7 +57,7 @@ Adaptés (effets de bord attendus) :
 - C2 : `order-conversation` et `order-atomicity` déclarent les nouvelles dépendances de leurs modules chargés en isolation.
 
 ### Check final
-`lourd.sh npm run check` après le dernier commit de code (**8b57200**) : exit 0, tsc et `eslint src` propres, **1139 tests, 1139 passés, 0 échec** (I1/I2 : 1125 après 35f9a62 ; base : 1108).
+`lourd.sh npm run check` après le dernier commit de code (**b08578a**) : exit 0, tsc et `eslint src` propres, **1139 tests, 1139 passés, 0 échec** (I1/I2 : 1125 après 35f9a62 ; base : 1108).
 
 ### SHA
 Du plus ancien au plus récent :
@@ -68,12 +68,14 @@ Du plus ancien au plus récent :
 - 8db1cbb (rapport I1/I2) ;
 - e31f704 (C2) ;
 - 2fcbfc3 (C1) ;
-- 8b57200 (doublures C2).
+- 8b57200 (doublures C2) ;
+- 3a046cd (rapports C1/C2) ;
+- b08578a (C1 : rejeu sans verrou).
 
 Le commit de cette mise à jour du rapport suit.
 
 ### Diff
-`git diff --stat fcc0a5c...HEAD | tail -1` avant le commit du rapport : `31 files changed, 1165 insertions(+), 99 deletions(-)`. La valeur après ce commit figure dans le message final.
+`git diff --stat fcc0a5c...HEAD | tail -1` après b08578a : `32 files changed, 1251 insertions(+), 102 deletions(-)`. La valeur après ce commit figure dans le message final.
 
 ### Non vérifié
 - Aucun clic navigateur (interdit) : interrupteur, tap 44 px, page livraison portail à recetter.
