@@ -14,7 +14,7 @@ import {
 } from "@/lib/constants/order-status";
 import { formatDriverDisplayName } from "@/lib/format/person-labels";
 import { getPortalShowDriverPhone } from "@/domains/company/portal-settings.service";
-import { clientDriverSelect, redactClientTimeline, toClientDriver } from "@/domains/delivery/client-driver";
+import { clientDriverSelect, loadCompanyDriverNames, redactClientTimeline, toClientDriver } from "@/domains/delivery/client-driver";
 import {
   assertDriverMissionProximityOrThrow,
   statusNeedsProximityCheck,
@@ -187,7 +187,10 @@ export async function getClientDeliveryById(
   deliveryId: string
 ) {
   await repairCourierDeliveryIfNeeded(deliveryId, customerId, companyId);
-  const showDriverPhone = await getPortalShowDriverPhone(companyId);
+  const [showDriverPhone, companyDrivers] = await Promise.all([
+    getPortalShowDriverPhone(companyId),
+    loadCompanyDriverNames(prisma, companyId),
+  ]);
 
   const delivery = await prisma.delivery.findFirst({
     where: { id: deliveryId, customerId, companyId },
@@ -223,7 +226,7 @@ export async function getClientDeliveryById(
   return {
     ...rest,
     driver: toClientDriver({ driver, driverName }, showDriverPhone),
-    trackingEvents: redactClientTimeline(trackingEvents, [driverName]),
+    trackingEvents: redactClientTimeline(trackingEvents, [...companyDrivers, driverName]),
   };
 }
 

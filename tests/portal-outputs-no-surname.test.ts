@@ -16,6 +16,9 @@ const EVENTS = [
   { id: "e1", label: "Information", description: "Karim Benali a confirmé la prise en charge", occurredAt: NOW, latitude: null, longitude: null },
   { id: "e2", label: "Prise en charge confirmée", description: "Livreur Karim Benali a confirmé la prise en charge, avant le départ.", occurredAt: NOW, latitude: null, longitude: null },
   { id: "e3", label: "Chauffeur réassigné", description: "Livreur Awa Diallo → Livreur Karim Benali", occurredAt: NOW, latitude: null, longitude: null },
+  // C3 : anciens livreurs (particule, inactif, trait d'union, majuscules), hors des libellés connus.
+  { id: "e4", label: "Assignée automatiquement", description: "Livraison confiée à Livreur Jean de La Fontaine — choix automatique", occurredAt: NOW, latitude: null, longitude: null },
+  { id: "e5", label: "Information", description: "Relais prévu : le livreur jean de la fontaine passe le colis à MARIE-CLAIRE DUPONT-MARTIN", occurredAt: NOW, latitude: null, longitude: null },
 ];
 const MESSAGES = [
   { id: "m1", requestKey: "k1", orderId: "o1", authorId: "drv1", authorName: "Karim Benali", authorRole: "DRIVER", body: "Je suis devant l'entrée", kind: "QUESTION", internal: false, createdAt: NOW },
@@ -54,7 +57,21 @@ function order(args: OrderArgs) {
   return { ...base, deliveries: [{ id: "d1", status: "IN_DELIVERY", completedAt: null, companyId: "company-a", driverId: "drv1", updatedAt: NOW }] };
 }
 
+// Livreurs de l'entreprise, y compris un inactif : tous sont masqués côté client.
+const COMPANY_DRIVERS = [
+  { firstName: "Karim", lastName: "Benali", status: "ACTIVE" },
+  { firstName: "Jean", lastName: "de La Fontaine", status: "INACTIVE" },
+  { firstName: "Marie-Claire", lastName: "Dupont-Martin", status: "ACTIVE" },
+  { firstName: "Awa", lastName: "Diallo", status: "INACTIVE" },
+];
+const driverQueries: Array<{ where?: Record<string, unknown> }> = [];
+
 function stubDatabase(t: import("node:test").TestContext, settings: Record<string, unknown>) {
+  driverQueries.length = 0;
+  stub(t, prisma.user, "findMany", async (args: { where?: Record<string, unknown> }) => {
+    driverQueries.push(args);
+    return COMPANY_DRIVERS.map(({ firstName, lastName }) => ({ firstName, lastName }));
+  });
   stub(t, prisma.company, "findUnique", async (args: { select?: Record<string, unknown> }) =>
     args.select?.users ? { name: "Acme", email: null, phone: null, users: [], settings } : { settings });
   stub(t, prisma.order, "findFirst", async (args: OrderArgs) => order(args));
@@ -84,6 +101,9 @@ for (const [label, settings] of [["téléphone visible", {}], ["téléphone masq
       const json = JSON.stringify(output);
       assert.equal(json.includes("Benali"), false, `${name} expose le nom de famille`);
       assert.equal(json.includes("Diallo"), false, `${name} expose le nom d'un autre livreur`);
+      for (const surname of ["Fontaine", "FONTAINE", "fontaine", "DUPONT", "Dupont", "MARTIN"]) {
+        assert.equal(json.includes(surname), false, `${name} expose « ${surname} » (ancien livreur)`);
+      }
       const phoneExpected = label === "téléphone visible" && /orders\/\[id\]|deliveries\/\[id\]|support/.test(name) && !name.startsWith("order-conversations");
       assert.equal(json.includes("33611223344"), phoneExpected, `${name} : téléphone selon le réglage`);
     }
@@ -94,6 +114,13 @@ for (const [label, settings] of [["téléphone visible", {}], ["téléphone masq
     assert.equal(steps[0]!.description, "Karim a confirmé la prise en charge");
     const conversation = outputs["order-conversations/[id]"] as { messages: Array<{ authorName: string }> };
     assert.equal(conversation.messages[0]!.authorName, "Karim");
+    assert.equal(steps[4]!.description, "Relais prévu : le livreur Jean passe le colis à Marie-Claire");
+    // Noms des livreurs de l'entreprise, inactifs compris, limités à l'entreprise.
+    assert.ok(driverQueries.length > 0);
+    for (const query of driverQueries) {
+      assert.equal(query.where?.companyId, "company-a");
+      assert.equal("status" in (query.where ?? {}), false, "inactifs compris");
+    }
   });
 }
 
@@ -117,3 +144,26 @@ test("C2 : chronologie client — nom complet connu réduit au prénom, insensib
   // Un nom de famille seul n'est pas un nom complet : une adresse n'est pas altérée.
   assert.equal(redacted[1]!.description, "1 rue Benali-Martin, Paris");
 });
+
+test("C3 : libellé d'affectation automatique vidé côté client (reproduction Codex)", () => {
+  const [event] = redactClientTimeline(
+    [{ label: "Assignée automatiquement", description: "Livraison confiée à Livreur Jean de La Fontaine — choix automatique" }],
+    ["Livreur Karim Benali"]
+  );
+  assert.equal(event!.description, null);
+});
+
+test("C3 : filet « Livreur <Nom…> » jusqu'à la ponctuation ou au tiret, particules comprises, premier mot gardé", () => {
+  const cases: Array<[string, string]> = [
+    ["Livraison confiée à Livreur Jean de La Fontaine — choix automatique", "Livraison confiée à Livreur Jean — choix automatique"],
+    ["Livreur Jean-Pierre d'Arc, en route", "Livreur Jean-Pierre, en route"],
+    ["Livreur Anne van der Berg - retard signalé", "Livreur Anne - retard signalé"],
+    ["Mission annulée — Livreur Paul du Pont — client absent", "Mission annulée — Livreur Paul — client absent"],
+    ["Livreur Awa Diallo → Livreur Karim Benali", "Livreur Awa → Livreur Karim"],
+    ["Pris en charge par Livreur LUC VON STEIN.", "Pris en charge par Livreur LUC."],
+  ];
+  for (const [description, expected] of cases) {
+    assert.equal(redactClientTimeline([{ label: "Information", description }])[0]!.description, expected, description);
+  }
+});
+

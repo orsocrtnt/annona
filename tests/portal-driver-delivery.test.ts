@@ -1,10 +1,16 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { after, before } from "node:test";
 import { getClientDeliveryById } from "../src/domains/delivery/delivery.service";
 import { getSupportContactsForClient } from "../src/domains/client-portal/support-contacts.service";
 import { prisma } from "../src/services/prisma/client";
 
 const DRIVER = { firstName: "Karim", lastName: "Benali", phone: "+33611223344" };
+
+// Noms des livreurs de l'entreprise (masquage C3) : aucun ici, sans base.
+const userDelegate = prisma.user as unknown as Record<string, unknown>;
+const originalUserFindMany = userDelegate.findMany;
+before(() => { userDelegate.findMany = async () => []; });
+after(() => { userDelegate.findMany = originalUserFindMany; });
 
 /** Simule Prisma : applique le `select` demandé sur la ligne complète, comme la vraie base. */
 function pick(row: Record<string, unknown>, select: Record<string, unknown> | undefined) {
