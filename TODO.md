@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**57 tâches terminées sur 91 — 63 %**
+**57 tâches terminées sur 93 — 61 %**
 
-`█████████████░░░░░░░` · 34 tâches restantes
+`████████████░░░░░░░░` · 36 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -198,6 +198,8 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | OPS-FIAB | A+B | Implémenté (29 octobre) ; déclenchement réel du workflow, `after()` sur Vercel, Node 22, index en préproduction. | Propriétaire (secrets, Vercel). | Moyenne · GPT‑6 Luna |
 | SEC-AUDIT | A+B | Implémenté et recetté (29 octobre) ; CSP bloquante, migration et secrets de préproduction, rattachement par e-mail. | Propriétaire (migration, secrets). | Élevée · GPT‑6 Astra |
 | DISPATCH-4 | A | Outil de dispatch avancé : score pondéré réglable, temps de trajet réel, tournées, suggestions, réoptimisation. | Périmètre à cadrer avec le propriétaire. | Élevée · GPT‑6 Astra |
+| CONFIG-MSG | A+B | Messages clairs quand une configuration échoue (cause et action), à commencer par Factur-X. | — | Moyenne · GPT‑6.1 Sol |
+| DESIGN-2 | A+B | Mode sombre sur tout le site (landing, back-office, admin, livreur) et carte sombre assortie. | Après DESIGN-1 ; validation du propriétaire. | Élevée · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
@@ -1462,6 +1464,31 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Terminé quand : le périmètre retenu par le propriétaire est livré par tranches testées ; chaque choix automatique est explicable et réglable ; aucune coordonnée de livreur n'est exposée au client ; transaction d'affectation courte (leçon de DISPATCH-3) ; tests métier sur les cas difficiles (DISPATCH-1), `npm run check` vert, recette navigateur et essai avec positions réelles.
 
   Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026. S'appuie sur DEMO-3 tranche 3 (distance de départage, `src/lib/dispatch/dispatch-proximity.ts`) et sur les réglages de Règles dispatch. Périmètre et priorité des pistes : décision du propriétaire. Coûts du service de trajet : COST-1.
+
+  État : ouverte, non commencée.
+
+- [ ] **CONFIG-MSG — Expliquer clairement pourquoi une configuration échoue.** Demande du propriétaire du 28 octobre 2026 : quand un réglage ou une fonction refuse de fonctionner pendant la configuration, l'écran doit dire précisément pourquoi et quoi faire, au lieu d'un message général. Cas constaté : en préproduction, le Factur-X d'une facture de démo restait indisponible côté client (« Votre prestataire doit compléter ses informations de facturation ») alors que les mentions légales étaient remplies. La vraie cause, trouvée en reproduisant le cas, était le « Motif d'exonération de TVA » manquant (règle EN 16931 BR-E-10 : les factures de démo sont sans TVA).
+  1. Factur-X : lister côté back-office chaque champ manquant, avec un lien direct vers le champ ; signaler dès l'enregistrement des mentions légales ce qui bloquera l'export (exonération de TVA pour des factures sans TVA, IBAN pour un paiement par virement…) ; côté client, garder un message sobre, sans détail interne.
+  2. Étendre la règle aux autres configurations : Stripe, e-mail, commande par message (clé absente), règles dispatch, preuve de livraison, invitations. Chaque refus de configuration affiche la cause et l'action attendue.
+  3. Préremplir ou proposer les mentions usuelles quand c'est sans risque, par exemple « TVA non applicable, art. 293 B du CGI » pour une entreprise sans TVA, à valider par l'utilisateur.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : chaque refus de configuration inventorié affiche sa cause et l'action à faire ; test par cas (champ manquant, format invalide, service non configuré) ; le parcours Factur-X de la démo aboutit en suivant uniquement les messages ; `npm run check` vert et recette navigateur.
+
+  Source / dépendance / blocage : essai du propriétaire en préproduction le 28 octobre 2026 ; FACTURX-1, INTAKE-1, POD-2, EMAIL.
+
+  État : ouverte, non commencée.
+
+- [ ] **DESIGN-2 — Étendre le mode sombre à tout le site.** Demande du propriétaire du 28 octobre 2026 : le mode sombre du portail client est jugé réussi ; l'étendre au site public (landing, tarifs, fonctionnalités, démonstration), au back-office et dispatch, à l'espace `/admin`, et vérifier l'app livreur (pas encore contrôlée par le propriétaire). Même direction « Encre + Pastel » que le portail, choix Clair / Sombre / Système mémorisé, sans éclair au chargement.
+  - **Carte en sombre** : le même plan que celui d'aujourd'hui, en version sombre et noire, assortie au thème (fond, routes, libellés, trajets et marqueurs lisibles), qui bascule avec le thème. Voir MAP-3.
+  - Retirer la limite actuelle du thème au seul `/portal/**` (`src/lib/theme.ts`, ThemeSync) espace par espace, en gardant le Light identique à aujourd'hui.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : chaque espace propose Clair / Sombre / Système ; contrastes AA vérifiés en Sombre ; carte sombre assortie dans les trois espaces ; captures Light et Dark à 390 et 1 280 px comparées et validées par le propriétaire ; aucune régression du Light ; `npm run check` vert.
+
+  Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026 ; suite de DESIGN-1 (tranche portail) et de MAP-3. Méthode : agent avec navigateur et captures de référence, comme pour le portail.
 
   État : ouverte, non commencée.
 
