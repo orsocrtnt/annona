@@ -90,3 +90,24 @@ commit local.
 
 Mode sombre de la démo (Light d'abord), traduction, vraie carte, connexion au back-end, refonte des
 autres sections de la landing.
+
+## Version 2 — validée le 27 octobre 2026
+
+Retour du propriétaire après essai : début plus explicite, changements d'espace impossibles à rater,
+saisie qui donne l'impression que l'utilisateur écrit, transitions très fluides.
+
+- **Dépendance** : ajout de `motion` (Motion, ex-Framer Motion), chargé uniquement par la démo ; remplace
+  la décision « aucune dépendance » de la version 1.
+- **Barre d'adresse** : « TutelLiv · Espace client / Espace entreprise / App livreur » (aucun domaine
+  inventé) ; l'indicateur d'étapes passe sous la scène.
+- **Cartons de transition** à chaque changement d'espace provoqué par un geste (~1,4 s, flou puis fondu) :
+  « Pendant ce temps, côté entreprise… La commande arrive au dispatch » ; « Côté livreur… Karim reçoit la
+  mission » ; « Retour côté client… Il suit sa livraison en direct ». Pas de carton lors d'une navigation
+  par l'indicateur ni pour « Rejouer ».
+- **① Espace client** : menu latéral (Accueil, Commandes, Suivi, Factures, Support ; icônes seules en
+  mobile), carte de 2 livraisons en cours, liste « Mes livraisons », bouton « Nouvelle commande » en haut
+  qui pulse. Au clic, le formulaire glisse en panneau ; saisie lettre par lettre (~45–70 ms, variations),
+  curseur clignotant, champ actif surligné, pause entre les champs ; puis « Commander ».
+- **② Espace entreprise** : menu latéral (Tableau de bord, Commandes, Dispatch actif, Chauffeurs,
+  Facturation) ; la carte #1042 glisse de « Sans livreur » à « À démarrer ».
+- **Mouvement réduit** : fondus courts, saisie instantanée, pas de ressorts.

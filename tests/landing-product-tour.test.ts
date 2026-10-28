@@ -8,7 +8,7 @@ import {
   initialTourState,
   restartTour,
 } from "../src/features/landing/product-tour/tour-machine";
-import { TOUR_DRIVERS } from "../src/features/landing/product-tour/tour-data";
+import { TOUR_DRIVERS, interludeFor } from "../src/features/landing/product-tour/tour-data";
 import { TOUR_ROUTE, pointAlongRoute } from "../src/features/landing/product-tour/city-route";
 
 test("la démo avance d'une étape par geste", () => {
@@ -82,4 +82,15 @@ test("la fin de la démo renvoie vers la démonstration complète", () => {
   const scene = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/scene-tracking.tsx", import.meta.url)), "utf8");
   assert.match(scene, /href="\/demonstration"/);
   assert.match(scene, /Rejouer/);
+});
+
+test("chaque changement d'espace par un geste annonce l'espace suivant", () => {
+  assert.match(interludeFor("order", "dispatch")?.title ?? "", /côté entreprise/);
+  assert.match(interludeFor("dispatch", "driver")?.title ?? "", /Côté livreur/);
+  assert.match(interludeFor("driver", "tracking")?.title ?? "", /Retour côté client/);
+});
+
+test("aucun carton sans changement d'étape ou en revenant en arrière", () => {
+  assert.equal(interludeFor("dispatch", "dispatch"), null);
+  assert.equal(interludeFor("tracking", "order"), null);
 });
