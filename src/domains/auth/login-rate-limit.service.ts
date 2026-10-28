@@ -3,12 +3,18 @@ import { prisma } from "@/services/prisma/client";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { abuseFingerprint } from "@/lib/security/abuse-hmac";
 
-/** SEC-2 : au plus 5 échecs par e-mail et 30 par source sur 15 minutes glissantes. */
+/**
+ * SEC-2, sur 15 minutes glissantes : 5 échecs par couple e-mail + source (clé principale),
+ * 20 par e-mail toutes sources confondues, 30 par source. La limite par e-mail seul reste
+ * haute : un tiers qui connaît l'adresse ne bloque la victime qu'au prix d'une attaque
+ * distribuée, et la victime garde ses 5 essais depuis sa propre source sinon.
+ */
 export const LOGIN_RATE_WINDOW_MS = 15 * 60 * 1000;
-export const LOGIN_EMAIL_FAILURE_LIMIT = 5;
+export const LOGIN_PAIR_FAILURE_LIMIT = 5;
+export const LOGIN_EMAIL_FAILURE_LIMIT = 20;
 export const LOGIN_SOURCE_FAILURE_LIMIT = 30;
 
-export type LoginAttemptKeys = { emailKey: string | null; sourceKey: string | null };
+export type LoginAttemptKeys = { pairKey: string | null; emailKey: string | null; sourceKey: string | null };
 /** Tentative réservée : ses lignes comptent comme un échec tant qu'elle n'est pas soldée. */
 export type LoginAttempt = { keys: LoginAttemptKeys; ids: string[] };
 export type LoginAttemptGate =
@@ -31,14 +37,18 @@ export function loginAttemptKeys(
   source: string,
   options: { secret?: string; trackEmail?: boolean } = {}
 ): LoginAttemptKeys {
+  const normalized = normalizeEmail(email);
+  const knownSource = source.trim() && source !== UNKNOWN_SOURCE ? source : null;
   return {
-    emailKey: options.trackEmail === false ? null : abuseFingerprint("login-email", normalizeEmail(email), options.secret),
-    sourceKey: !source.trim() || source === UNKNOWN_SOURCE ? null : abuseFingerprint("login-source", source, options.secret),
+    pairKey: knownSource ? abuseFingerprint("login-pair", `${normalized}|${knownSource}`, options.secret) : null,
+    emailKey: options.trackEmail === false ? null : abuseFingerprint("login-email", normalized, options.secret),
+    sourceKey: knownSource ? abuseFingerprint("login-source", knownSource, options.secret) : null,
   };
 }
 
 function limitedKeys(keys: LoginAttemptKeys) {
   return [
+    keys.pairKey ? { keyHash: keys.pairKey, limit: LOGIN_PAIR_FAILURE_LIMIT } : null,
     keys.emailKey ? { keyHash: keys.emailKey, limit: LOGIN_EMAIL_FAILURE_LIMIT } : null,
     keys.sourceKey ? { keyHash: keys.sourceKey, limit: LOGIN_SOURCE_FAILURE_LIMIT } : null,
   ].filter((entry): entry is { keyHash: string; limit: number } => entry !== null);
@@ -89,9 +99,9 @@ export async function beginLoginAttempt(
 }
 
 /**
- * Échec d'identifiants : la réservation reste comptée. Succès : elle est retirée et le
- * compteur de l'e-mail repart à zéro (celui de la source est conservé, sinon un compte valide
- * permettrait d'essayer d'autres adresses). Panne fournisseur : réservation retirée.
+ * Échec d'identifiants : la réservation reste comptée. Succès : elle est retirée et les
+ * compteurs e-mail et e-mail + source repartent à zéro (celui de la source est conservé, sinon
+ * un compte valide permettrait d'essayer d'autres adresses). Panne fournisseur : retirée.
  */
 export async function settleLoginAttempt(
   attempt: LoginAttempt | null,
@@ -107,8 +117,9 @@ export async function settleLoginAttempt(
       return;
     }
     await db.authLoginFailure.deleteMany({ where: { id: { in: attempt.ids } } });
-    if (outcome === "success" && attempt.keys.emailKey) {
-      await db.authLoginFailure.deleteMany({ where: { keyHash: { in: [attempt.keys.emailKey] } } });
+    const reset = [attempt.keys.pairKey, attempt.keys.emailKey].filter((key): key is string => Boolean(key));
+    if (outcome === "success" && reset.length) {
+      await db.authLoginFailure.deleteMany({ where: { keyHash: { in: reset } } });
     }
   } catch (error) {
     console.error("Login attempt settlement failed:", error instanceof Error ? error.message : "unknown");

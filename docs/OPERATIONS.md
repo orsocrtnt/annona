@@ -106,7 +106,7 @@ Une mutation (`POST`, `PUT`, `PATCH`, `DELETE`) dont l'en-tête `Origin` ne corr
 
 ### Réponse 429 à la connexion
 
-Au-delà de 5 échecs par e-mail ou 30 par source sur 15 minutes, `/api/auth/login` répond 429 avec `Retry-After`. Une connexion réussie remet à zéro le compteur de l'e-mail. La limite repose sur la table `auth_login_failures` (migration `20261028180000_auth_login_failures`) : tant qu'elle n'est pas appliquée, la connexion reste permise et l'échec du contrôle est journalisé.
+Sur 15 minutes glissantes, `/api/auth/login` répond 429 avec `Retry-After` au-delà de 5 échecs pour un même couple e-mail + source, de 20 pour un e-mail toutes sources confondues ou de 30 pour une source. Compromis assumé : un tiers qui connaît une adresse ne peut verrouiller la victime que depuis sa propre source, ou par une attaque distribuée sur 20 essais ; la victime garde ses essais depuis la sienne. Sans adresse IP (ni `x-forwarded-for` ni `x-real-ip`), seule la limite par e-mail s'applique, pour ne pas créer de compteur global. Une connexion réussie remet à zéro les compteurs e-mail et e-mail + source, pas celui de la source. La limite repose sur la table `auth_login_failures` (migration `20261028180000_auth_login_failures`) : tant qu'elle n'est pas appliquée, la connexion reste permise et l'échec du contrôle est journalisé.
 
 ### Invitations ou récupération indisponibles
 
