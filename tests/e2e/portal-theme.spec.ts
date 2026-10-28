@@ -35,7 +35,6 @@ test("le choix sombre est mémorisé, appliqué avant l'hydratation et survit au
   await openPortal(page);
 
   await page.getByTestId("theme-toggle").click();
-  await page.getByRole("menuitemradio", { name: "Sombre" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await bodyBackground(page)).toBe("rgb(20, 23, 22)");
 
@@ -58,7 +57,6 @@ test("le choix sombre est mémorisé, appliqué avant l'hydratation et survit au
   await page.screenshot({ path: test.info().outputPath("portail-sombre.png"), fullPage: true });
 
   await page.getByTestId("theme-toggle").click();
-  await page.getByRole("menuitemradio", { name: "Clair" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   expect(await bodyBackground(page)).toBe("rgb(245, 248, 246)");
 });
@@ -68,31 +66,18 @@ test("le basculement de thème se manœuvre au clavier et garde un focus visible
   const toggle = page.getByTestId("theme-toggle");
   await toggle.focus();
   await expect(toggle).toBeFocused();
-  await page.keyboard.press("Enter");
-  const dark = page.getByRole("menuitemradio", { name: "Sombre" });
-  const system = page.getByRole("menuitemradio", { name: "Système" });
-  await expect(dark).toBeVisible();
-  // Radix place le focus sur la première option à l'ouverture clavier.
-  await expect(system).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(page.getByRole("menuitemradio", { name: "Clair" })).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await expect(dark).toBeFocused();
-  // Focus visible : l'option atteinte au clavier porte un anneau (le fond accent seul est quasi invisible).
-  const ring = (name: string) => page.getByRole("menuitemradio", { name }).evaluate((el) => getComputedStyle(el).boxShadow);
-  expect(await ring("Sombre")).not.toBe("none");
-  expect(await ring("Clair")).toBe("none");
+  // Un appui bascule directement en Sombre, sans menu intermédiaire.
   await page.keyboard.press("Enter");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(toggle).toBeFocused();
-
-  // Échap ferme le menu sans rien choisir et rend le focus au bouton.
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  await expect(toggle).toHaveAccessibleName("Passer en mode clair");
+  // Focus visible au clavier.
+  expect(await toggle.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe("none");
+  // Un second appui revient en Clair.
   await page.keyboard.press("Enter");
-  await expect(dark).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("menu")).toHaveCount(0);
-  await expect(toggle).toBeFocused();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
 });
 
 test("les pages principales du portail restent lisibles en sombre et les cibles font au moins 44 px", async ({ page }) => {
@@ -134,7 +119,7 @@ test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème res
   const account = page.getByTestId("portal-mobile-account");
   await expect(account).toBeVisible();
   expect((await account.innerText()).trim().length).toBeGreaterThan(1);
-  await page.getByRole("menuitemradio", { name: "Sombre" }).click();
+  await page.getByRole("menuitem", { name: "Mode sombre" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
@@ -206,15 +191,9 @@ test("les boutons de la barre du portail font 44 px sans grandir la barre (58 px
   }
 });
 
-test("Sora s'applique aussi aux fenêtres Radix rendues dans <body> depuis le portail", async ({ page }) => {
+test("Sora s'applique au portail", async ({ page }) => {
   await openPortal(page);
   await expect(page.locator("html")).toHaveAttribute("data-portal", "");
   const heading = page.getByRole("heading", { level: 1 }).first();
   expect(await heading.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Sora/);
-  await page.getByTestId("theme-toggle").click();
-  const label = page.getByRole("menu").getByText("Affichage");
-  await expect(label).toBeVisible();
-  // Le menu est rendu dans <body>, hors de la div du portail.
-  expect(await label.evaluate((el) => el.closest("[data-portal-root]") === null)).toBe(true);
-  expect(await label.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Sora/);
 });

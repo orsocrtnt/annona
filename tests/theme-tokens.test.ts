@@ -137,14 +137,15 @@ test("ThemeSync est l'unique écrivain de data-theme, appliqué avant peinture, 
   for (const src of [hook, toggle]) {
     assert.doesNotMatch(src, /setAttribute|removeAttribute|documentElement/);
   }
-  assert.match(toggle, /DropdownMenuRadioGroup/);
-  assert.doesNotMatch(toggle, /role="menuitemradio"/);
+  // Un clic bascule Clair ↔ Sombre : plus de menu à trois choix.
+  assert.doesNotMatch(toggle, /DropdownMenuRadioGroup/);
+  assert.match(toggle, /setPreference\(effective === "dark" \? "light" : "dark"\)/);
 });
 
 test("la barre du portail tient à 320 px : thème et avatar passent dans le menu sous 640 px", () => {
   const layout = readFileSync(new URL("../src/components/layouts/client-portal-layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /<ThemeToggle className="max-sm:hidden"/);
-  assert.match(layout, /sm:hidden">[\s\S]*<ThemeRadioGroup/);
+  assert.match(layout, /sm:hidden">[\s\S]*<ThemeMenuItem/);
   // Le compte connecté (avatar, nom) masqué dans la barre est repris dans le menu mobile.
   assert.match(layout, /max-sm:hidden[\s\S]*<Avatar/);
   assert.match(layout, /className="sm:hidden" data-testid="portal-mobile-account">[\s\S]*<Avatar[\s\S]*user\.firstName/);

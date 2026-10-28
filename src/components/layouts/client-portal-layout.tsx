@@ -32,7 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeRadioGroup, ThemeToggle } from "@/components/theme/theme-toggle";
+import { ThemeMenuItem, ThemeToggle } from "@/components/theme/theme-toggle";
 import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
 import { applyOfferNavLocks } from "@/features/saas/offer-nav";
 import { useOfferAccess } from "@/features/saas/use-offer-access";
@@ -230,7 +230,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
             {/* Sous 640 px, le thème passe dans ce menu pour que la barre tienne à 320 px. */}
             <div className="sm:hidden">
               <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
-              <ThemeRadioGroup />
+              <ThemeMenuItem />
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
