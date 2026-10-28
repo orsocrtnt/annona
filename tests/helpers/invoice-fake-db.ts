@@ -5,7 +5,12 @@
  * `$transaction` sérialise les transactions (comme le verrou FOR UPDATE).
  */
 
+import { Prisma } from "@prisma/client";
+
 type Row = Record<string, unknown>;
+
+/** Seule requête brute simulée : le passage en retard (sans toucher updated_at). */
+const OVERDUE_SQL = /^UPDATE "invoices" SET "status" = 'OVERDUE'::"InvoiceStatus" WHERE "status" = 'PENDING'::"InvoiceStatus" AND "due_date" < \$1( AND "company_id" = \$2)?$/;
 
 export type FakeInvoice = {
   id: string;
@@ -115,6 +120,26 @@ export function createInvoiceFakeDb(seed: {
     async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]) {
       log.push(`lock:${strings.join("?").replace(/\s+/g, " ").trim()}:${values.join(",")}`);
       return [];
+    },
+    /** Requête brute exécutée, telle que Prisma l'enverrait (texte + paramètres). */
+    executed: [] as Array<{ sql: string; values: unknown[] }>,
+    beforeRawUpdate: null as null | (() => void),
+    async $executeRaw(strings: TemplateStringsArray, ...values: unknown[]) {
+      const query = Prisma.sql(strings, ...values);
+      const sql = query.text.replace(/\s+/g, " ").trim();
+      db.executed.push({ sql, values: query.values });
+      const match = OVERDUE_SQL.exec(sql);
+      if (!match) throw new Error(`SQL non simulé : ${sql}`);
+      db.beforeRawUpdate?.();
+      const [cutoff, companyId] = query.values as [Date, string | undefined];
+      let count = 0;
+      for (const row of invoices) {
+        if (row.status !== "PENDING" || !row.dueDate || row.dueDate.getTime() >= cutoff.getTime()) continue;
+        if (match[1] && row.companyId !== companyId) continue;
+        row.status = "OVERDUE"; // updated_at volontairement inchangé
+        count += 1;
+      }
+      return count;
     },
     async $transaction<T>(fn: (tx: unknown) => Promise<T>): Promise<T> {
       const run = queue.then(() => fn(db));

@@ -42,7 +42,7 @@ function fixture(status = "DELIVERED") {
       update: async ({ data }: { data: Record<string, unknown> }) => (invoice = { ...invoice, ...data }),
       findFirst: async ({ where }: { where: Record<string, unknown> }) => invoice && Object.entries(where).every(([k,v])=>invoice?.[k]===v) ? invoice : null,
       updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
-        if (!invoice || !Object.entries(where).every(([k,v])=>k === "updatedAt" ? +(invoice?.[k] as Date) === +(v as Date) : invoice?.[k] === v)) return { count: 0 };
+        if (!invoice || !Object.entries(where).every(([k,v])=>k === "updatedAt" ? +(invoice?.[k] as Date) === +(v as Date) : v && typeof v === "object" && "in" in v ? (v.in as unknown[]).includes(invoice?.[k]) : invoice?.[k] === v)) return { count: 0 };
         invoice = { ...invoice, ...data }; return { count: 1 };
       },
       findUniqueOrThrow: async () => invoice,

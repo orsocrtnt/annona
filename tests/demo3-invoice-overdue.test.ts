@@ -8,6 +8,7 @@ import {
 } from "../src/domains/invoice/invoice-due";
 import { markOverdueInvoices } from "../src/domains/invoice/invoice-overdue.service";
 import { markOrderInvoicePaid } from "../src/domains/invoice/invoice.service";
+import { updateCompanyOrderStatus } from "../src/domains/order/order.service";
 import { createInvoiceFakeDb, invoice } from "./helpers/invoice-fake-db";
 
 // 28 octobre 2026, 11 h à Paris (heure d'hiver depuis le 25 octobre : UTC+1).
@@ -90,16 +91,54 @@ test("DEMO-3 retard : passage idempotent et limité à l'entreprise demandée", 
 
 test("DEMO-3 retard : un paiement validé pendant le passage gagne (mise à jour conditionnelle)", async () => {
   const db = createInvoiceFakeDb({ invoices: [invoice({ id: "race" })] });
-  const original = db.invoice.updateMany;
-  // Le paiement est validé entre la lecture et l'écriture : PostgreSQL réévalue
-  // la condition sur la ligne verrouillée ; la facture payée ne doit pas être touchée.
-  db.invoice.updateMany = async (args) => {
-    db.invoices[0]!.status = "PAID";
-    return original(args);
-  };
+  // Le paiement est validé juste avant l'écriture : PostgreSQL réévalue la
+  // condition sur la ligne verrouillée ; la facture payée ne doit pas être touchée.
+  db.beforeRawUpdate = () => { db.invoices[0]!.status = "PAID"; };
 
   assert.equal(await markOverdueInvoices({ now: NOW }, db as never), 0);
   assert.equal(db.invoices[0]!.status, "PAID");
+});
+
+test("DEMO-3 retard : passage calculé par le système, sans toucher updated_at, en SQL paramétré", async () => {
+  const before = new Date("2026-09-20T10:00:00.000Z");
+  const db = createInvoiceFakeDb({ invoices: [invoice({ id: "late", updatedAt: before })] });
+
+  assert.equal(await markOverdueInvoices({ now: NOW, companyId: "company_a" }, db as never), 1);
+
+  assert.equal(db.invoices[0]!.status, "OVERDUE");
+  assert.equal(db.invoices[0]!.updatedAt.getTime(), before.getTime(), "updated_at inchangé");
+  const query = db.executed[0]!;
+  assert.doesNotMatch(query.sql, /updated_at/);
+  assert.deepEqual(query.values, [startOfParisDay(NOW), "company_a"], "valeurs passées en paramètres");
+});
+
+test("DEMO-3 retard : « Marquer payée » avec la version lue avant le passage réussit", async (t) => {
+  const row = invoice({ id: "inv_late", orderId: "order_1" });
+  const readBefore = row.updatedAt;
+  const db = createInvoiceFakeDb({ invoices: [row] });
+  await markOverdueInvoices({ now: NOW }, db as never);
+  replaceMethod(t, prisma, "$transaction", db.$transaction);
+  replaceMethod(t, prisma, "$queryRaw", db.$queryRaw);
+  replaceMethod(t, prisma, "invoice", db.invoice);
+
+  const paid = await markOrderInvoicePaid("company_a", "order_1", "inv_late", readBefore);
+  assert.equal(paid?.status, "PAID");
+});
+
+test("DEMO-3 retard : passage en retard entre la lecture et le paiement, le paiement passe", async (t) => {
+  const row = invoice({ id: "inv_race", orderId: "order_1" });
+  const db = createInvoiceFakeDb({ invoices: [row] });
+  const original = db.invoice.updateMany;
+  db.invoice.updateMany = async (args) => {
+    row.status = "OVERDUE"; // cron passé entre la lecture et la réclamation, updated_at intact
+    return original(args);
+  };
+  replaceMethod(t, prisma, "$transaction", db.$transaction);
+  replaceMethod(t, prisma, "$queryRaw", db.$queryRaw);
+  replaceMethod(t, prisma, "invoice", db.invoice);
+
+  const paid = await markOrderInvoicePaid("company_a", "order_1", "inv_race", row.updatedAt);
+  assert.equal(paid?.status, "PAID");
 });
 
 test("DEMO-3 retard : une facture en retard reste payable depuis la fiche commande", async (t) => {
@@ -124,4 +163,33 @@ test("DEMO-3 retard : une facture annulée ou brouillon reste non payable", asyn
     replaceMethod(t, prisma, "invoice", db.invoice);
     await assert.rejects(markOrderInvoicePaid("company_a", "order_1", row.id, row.updatedAt), /INVOICE_NOT_PAYABLE/);
   }
+});
+
+test("DEMO-3 retard : annulation de commande quand la facture passe en retard pendant l'annulation", async (t) => {
+  const updatedAt = new Date("2026-10-20T10:00:00.000Z");
+  const row = { id: "inv_1", status: "PENDING", companyId: "company_a", orderId: "order_1", updatedAt };
+  const order = { id: "order_1", companyId: "company_a", status: "PENDING", deliveryCategory: "STANDARD", customerId: "client_a", updatedAt, deliveries: [] as unknown[], invoices: [row] };
+  const tx = {
+    order: {
+      findFirst: async () => ({ ...order, invoices: [{ ...row }] }),
+      updateMany: async () => { order.status = "CANCELLED"; return { count: 1 }; },
+    },
+    invoice: {
+      updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+        row.status = "OVERDUE"; // cron passé entre la lecture et la réclamation, updated_at intact
+        const status = where.status as string | { in: string[] };
+        const statusOk = typeof status === "string" ? status === row.status : status.in.includes(row.status);
+        if (!statusOk || (where.updatedAt as Date).getTime() !== row.updatedAt.getTime()) return { count: 0 };
+        Object.assign(row, data);
+        return { count: 1 };
+      },
+      findFirst: async () => ({ status: row.status }),
+    },
+  };
+  replaceMethod(t, prisma, "$transaction", async (fn: (client: unknown) => Promise<unknown>) => fn(tx));
+  replaceMethod(t, prisma, "order", { ...tx.order, findFirst: async () => ({ ...order }) });
+
+  const result = await updateCompanyOrderStatus("company_a", "order_1", "CANCELLED");
+  assert.ok(result);
+  assert.equal(row.status, "CANCELLED");
 });

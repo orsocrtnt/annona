@@ -27,6 +27,7 @@ import {
 } from "@/domains/operations/operation-job.service";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
 import { queueDeliveryInvoiceJob } from "@/domains/invoice/delivery-invoice.service";
+import { isInvoiceOutstanding, OUTSTANDING_INVOICE_STATUSES } from "@/domains/invoice/invoice-due";
 import { getCancellationBlockReason } from "@/domains/delivery/dispatch-policy";
 import {
   ORDER_EXPORT_CHUNK_SIZE,
@@ -961,7 +962,8 @@ async function cancelCompanyOrderBeforeMissionStart(
           id: invoice.id,
           companyId,
           orderId,
-          status: invoice.status,
+          // Une facture passée en retard par le cron entre-temps reste annulable (updated_at intact).
+          status: isInvoiceOutstanding(invoice.status) ? { in: [...OUTSTANDING_INVOICE_STATUSES] } : invoice.status,
           updatedAt: invoice.updatedAt,
         },
         data: { status: "CANCELLED" },
