@@ -12,7 +12,7 @@ export function OrderProgressTrack({ progress }: { progress: OrderProgress }) {
       <p
         className={cn(
           "mt-5 rounded-xl px-3 py-2.5 text-sm font-medium",
-          progress.tone === "danger" ? "bg-[#fdecea] text-[#8a2a20]" : "bg-[#f1f3f2] text-foreground"
+          progress.tone === "danger" ? "bg-[#fdecea] text-[#8a2a20] dark:bg-error-subtle dark:text-error" : "bg-[#f1f3f2] text-foreground dark:bg-muted"
         )}
       >
         {progress.label}
@@ -27,7 +27,7 @@ export function OrderProgressTrack({ progress }: { progress: OrderProgress }) {
         return (
           <li key={step.key} className="min-w-0" aria-current={current ? "step" : undefined}>
             <span
-              className={cn("block h-1.5 rounded-full", done ? "bg-foreground" : current ? "bg-primary" : "bg-[#e4e8e5]")}
+              className={cn("block h-1.5 rounded-full", done ? "bg-foreground" : current ? "bg-primary" : "bg-[#e4e8e5] dark:bg-border")}
               aria-hidden="true"
             />
             <span
