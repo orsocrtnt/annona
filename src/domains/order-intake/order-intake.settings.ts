@@ -27,14 +27,25 @@ export async function getOrderIntakeSettings(companyId: string, db: SettingsDb =
   return readOrderIntakeSettings(company?.settings);
 }
 
-/** Écrit seulement la clé de la fonction ; les autres réglages de l'entreprise sont conservés. */
-export async function setOrderIntakeEnabled(companyId: string, enabled: boolean, db: SettingsDb = prisma) {
-  const company = await db.company.findUnique({ where: { id: companyId }, select: { settings: true } });
-  if (!company) throw new Error("COMPANY_NOT_FOUND");
-  const current = company.settings && typeof company.settings === "object" ? (company.settings as Record<string, unknown>) : {};
-  await db.company.update({
-    where: { id: companyId },
-    data: { settings: { ...current, [ORDER_INTAKE_SETTINGS_KEY]: { enabled } } },
-  });
+/**
+ * Écrit seulement la clé de la fonction, en une instruction : aucune lecture-réécriture ne peut
+ * écraser un autre réglage modifié en même temps. Des réglages absents ou non objets repartent de {}.
+ */
+export async function setOrderIntakeEnabled(
+  companyId: string,
+  enabled: boolean,
+  db: Pick<typeof prisma, "$executeRaw"> = prisma
+) {
+  const updated = await db.$executeRaw`
+    UPDATE "companies"
+    SET "settings" = jsonb_set(
+          CASE WHEN jsonb_typeof("settings") = 'object' THEN "settings" ELSE '{}'::jsonb END,
+          '{orderIntake}',
+          ${JSON.stringify({ enabled })}::jsonb,
+          true
+        ),
+        "updated_at" = CURRENT_TIMESTAMP
+    WHERE "id" = ${companyId}`;
+  if (updated === 0) throw new Error("COMPANY_NOT_FOUND");
   return { enabled };
 }

@@ -10,7 +10,7 @@ import { buildOrderIntakeDraft, normalizePhone, parseSender } from "../src/domai
 import { ORDER_INTAKE_SYSTEM_PROMPT, buildOrderIntakeUserContent } from "../src/domains/order-intake/order-intake.prompt";
 import { OrderIntakeProviderError, type OrderIntakeModelProvider } from "../src/domains/order-intake/order-intake.provider";
 import { ORDER_INTAKE_DAILY_LIMIT, ORDER_INTAKE_HOURLY_LIMIT } from "../src/domains/order-intake/order-intake.usage";
-import { readOrderIntakeSettings, isOrderIntakeConfigured } from "../src/domains/order-intake/order-intake.settings";
+import { readOrderIntakeSettings, isOrderIntakeConfigured, setOrderIntakeEnabled } from "../src/domains/order-intake/order-intake.settings";
 import { analyzeOrderMessage, createOrderFromIntake } from "../src/domains/order-intake/order-intake.service";
 import { buildOrderInputFromForm, draftToFormValues, updateIntakeStop } from "../src/domains/order-intake/order-intake.form";
 import { createClientOrderSchema } from "../src/lib/validations/order";
@@ -653,6 +653,27 @@ test("INTAKE relecture 7 : une date passée sans heure est passée (fin de journ
   const text = "Livraison le 27/10 au 5 place de la Défense";
   const draft = buildOrderIntakeDraft({ ...SMS_EXTRACTION, deadline: { ...base, date: "2026-10-27" } }, text, NOW);
   assert.ok(draft.uncertainFields.includes("deadline"));
+});
+
+test("INTAKE relecture 8 : l'activation modifie la seule clé orderIntake en une instruction atomique", async () => {
+  const calls: Array<{ sql: string; values: unknown[] }> = [];
+  const db = {
+    $executeRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => { calls.push({ sql: strings.join("?"), values }); return 1; },
+    company: {
+      findUnique: async () => assert.fail("aucune lecture préalable"),
+      update: async () => assert.fail("aucune réécriture complète des réglages"),
+    },
+  };
+  assert.deepEqual(await setOrderIntakeEnabled("company-a", true, db as never), { enabled: true });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0]!.sql, /UPDATE "companies"/);
+  assert.match(calls[0]!.sql, /jsonb_set\(/);
+  assert.match(calls[0]!.sql, /'\{orderIntake\}'/);
+  assert.match(calls[0]!.sql, /jsonb_typeof/);
+  assert.deepEqual(calls[0]!.values, [JSON.stringify({ enabled: true }), "company-a"]);
+
+  const missing = { ...db, $executeRaw: async () => 0 };
+  await assert.rejects(setOrderIntakeEnabled("company-x", false, missing as never), /COMPANY_NOT_FOUND/);
 });
 
 test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélectionné", async () => {
