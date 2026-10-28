@@ -249,10 +249,11 @@ export async function deliverInvoiceReminderJob(
   const now = deps.now ?? new Date();
   const found = await db.invoiceReminder.findFirst({
     where: { id: reminderId, companyId },
-    select: { id: true, invoiceId: true, invoice: { select: { companyId: true, customerId: true } } },
+    select: { id: true, invoiceId: true, result: true, invoice: { select: { companyId: true, customerId: true } } },
   });
-  // Relance supprimée ou d'une autre entreprise : rien à faire.
+  // Relance supprimée, d'une autre entreprise, ou déjà traitée : rien à faire (rejeu idempotent).
   if (!found || found.invoice.companyId !== companyId) return;
+  if (found.result !== "QUEUED" && found.result !== "SENDING") return;
   // Préférences lues avant le verrou (aucune écriture) ; appliquées après les contrôles de la facture.
   const settings = found.invoice.customerId
     ? await (deps.getClientSettings ?? getClientSettings)(found.invoice.customerId)
