@@ -45,3 +45,10 @@ Bordures `#333936`, popover `#212524`, fond gris jamais noir pur.
 - Carte des livraisons (`/portal/deliveries`) : le plan et ses panneaux flottants restent clairs en Dark (verre sur plan clair) ; un plan sombre relève de MAP-3.
 - Police : Inter seule reste en vigueur (le dashboard le teste) ; Sora de `DESIGN.md` n'a pas été introduite.
 - Non vérifié : tout rendu réel, les états chargement/erreur en Dark, le profil (composant hors périmètre), les pages hors `src/app/(client-portal)`.
+
+## Mise à jour après relecture
+
+- « Système » est désormais résolu en `light`/`dark` par le script d'initialisation et par `ThemeSync` (matchMedia + écouteur) ; un seul bloc de jetons Dark subsiste. `ThemeSync` est l'unique écrivain de `data-theme`, appliqué en `useLayoutEffect` à chaque changement de route (le Dark ne déborde plus sur les autres espaces). Le hook de préférence ne fait plus que lire et écrire le choix.
+- Typographie : Sora introduite pour les titres h1 à h3 du portail seulement (`portal-font.ts`, variable `--font-sora` posée par le layout du portail) ; les autres espaces gardent Inter seule. Les titres des fenêtres rendues dans un portail DOM (dialogues) restent en Inter.
+- Barre du portail : thème et avatar passent dans le menu mobile sous 640 px.
+- Les classes `dark:` préexistantes hors portail (bannières ambre du back-office, barre de démo) suivaient jusqu'ici l'OS sombre ; elles ne s'appliquent plus qu'au portail (le reste du produit est Light).
