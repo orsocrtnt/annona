@@ -6,6 +6,8 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as eligibility from "../src/lib/dispatch/driver-eligibility";
 import * as dispatchSettings from "../src/lib/validations/dispatch-settings";
+import * as proximity from "../src/lib/dispatch/dispatch-proximity";
+import * as trackingPolicy from "../src/domains/tracking/tracking.policy";
 
 type Row = Record<string, unknown>;
 function load<T>(file: string, deps: Record<string, unknown>): T {
@@ -46,7 +48,10 @@ function fixture(options: { failEvent?: boolean; race?: boolean } = {}) {
   } };
   const { acknowledgeDeliveryMissionByDriver: acknowledge } = load<{
     acknowledgeDeliveryMissionByDriver: (driver: string, company: string, id: string, input: { action: "accept" | "decline"; expectedUpdatedAt: Date; reason?: string }) => Promise<Row | null>;
-  }>("src/domains/delivery/acknowledge-delivery-mission.service.ts", { "@/services/prisma/client": { prisma } });
+  }>("src/domains/delivery/acknowledge-delivery-mission.service.ts", { "@/services/prisma/client": { prisma },
+    // Notification de prise en charge couverte par tests/mission-acceptance-notification.test.ts.
+    "@/domains/client-portal/notify.service": { queueDeliveryAcceptedNotification: async () => null },
+    "@/domains/operations/operation-job.service": { kickOperationJob: () => undefined } });
   const { startDeliveryMissionByDriver: start } = load<{
     startDeliveryMissionByDriver: (driver: string, company: string, id: string, expected?: Date) => Promise<Row | null>;
   }>("src/domains/delivery/start-delivery-mission.service.ts", { "@/services/prisma/client": { prisma } });
@@ -126,7 +131,7 @@ test("ACK : auto-dispatch traite la perte du libre choix comme conflit terminal"
   const { tryAutoAssignDelivery } = load<{
     tryAutoAssignDelivery: (company: string, id: string) => Promise<{ assigned: boolean; skippedReason: string }>;
   }>("src/domains/delivery/auto-dispatch.service.ts", {
-    "@/services/prisma/client": { prisma: { delivery: { findFirst: async () => ({ id: "delivery", driverId: null, status: "PENDING", deliveryCategory: "STANDARD", postalCode: "75001" }) } } },
+    "@/services/prisma/client": { prisma: { delivery: { findFirst: async () => ({ id: "delivery", driverId: null, status: "PENDING", deliveryCategory: "STANDARD", postalCode: "75001" }) }, user: { findMany: async () => [] } } },
     "@/domains/company/dispatch-settings.service": { getCompanyDispatchSettings: async () => settings },
     "@/domains/company/tariff-settings.service": { getCompanyTariffSettings: async () => ({ tariffZones: [] }) },
     "@/lib/tariff/find-tariff-zone": { findTariffZoneForPostalCode: () => null },
@@ -135,6 +140,8 @@ test("ACK : auto-dispatch traite la perte du libre choix comme conflit terminal"
       assignDeliveryToDriver: async () => { throw new Error("DELIVERY_NOT_AVAILABLE"); },
     },
     "@/lib/dispatch/driver-eligibility": eligibility,
+    "@/lib/dispatch/dispatch-proximity": proximity,
+    "@/domains/tracking/tracking.policy": trackingPolicy,
     "@/lib/query/list-limits": { AUTO_DISPATCH_QUEUE_TAKE: 100 },
     "@/lib/validations/dispatch-settings": dispatchSettings,
   });

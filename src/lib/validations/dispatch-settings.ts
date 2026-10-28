@@ -54,7 +54,43 @@ export const companyDispatchSettingsSchema = z.object({
   driverRules: z.array(dispatchDriverRuleSchema).default([]),
   zoneDriverMap: z.record(z.string(), z.string()).default({}),
   defaultDriverId: z.string().nullable().optional(),
+  /**
+   * DEMO-3 : la distance au retrait n'est qu'un départage, en dernier critère avant l'ordre
+   * stable (priorité réglée, zone et charge restent devant). Actif par défaut : seules les
+   * égalités changent d'issue.
+   */
+  gpsProximityEnabled: z.boolean().default(true),
+  /** Au-delà, la position du livreur est jugée périmée et n'est pas utilisée. */
+  gpsPositionMaxAgeMinutes: z
+    .number()
+    .int()
+    .min(1, "Minimum 1 minute")
+    .max(120, "Maximum 120 minutes")
+    .default(15),
+  /** Au-delà, un livreur n'est pas considéré comme proche du point de retrait. */
+  gpsMaxDistanceKm: z
+    .number()
+    .min(1, "Minimum 1 km")
+    .max(100, "Maximum 100 km")
+    .default(10),
 });
+
+export type GpsNumericSetting = "gpsPositionMaxAgeMinutes" | "gpsMaxDistanceKm";
+
+const GPS_INPUT_RULES: Record<GpsNumericSetting, { min: number; max: number; step: number }> = {
+  gpsPositionMaxAgeMinutes: { min: 1, max: 120, step: 1 },
+  gpsMaxDistanceKm: { min: 1, max: 100, step: 0.1 },
+};
+
+/** Saisie libre validée au blur : bornée, arrondie au pas ; `null` garde la valeur précédente. */
+export function parseGpsSettingInput(field: GpsNumericSetting, raw: string): number | null {
+  const text = raw.trim().replace(",", ".");
+  const value = Number(text);
+  if (!text || !Number.isFinite(value)) return null;
+  const { min, max, step } = GPS_INPUT_RULES[field];
+  const rounded = Number((Math.round(value / step) * step).toFixed(1));
+  return Math.min(max, Math.max(min, rounded));
+}
 
 export type DispatchStrategy = z.infer<typeof dispatchStrategySchema>;
 export type DispatchDriverStatus = z.infer<typeof dispatchDriverStatusSchema>;
@@ -82,6 +118,9 @@ export const DEFAULT_DISPATCH_SETTINGS: CompanyDispatchSettings = {
   driverRules: [],
   zoneDriverMap: {},
   defaultDriverId: null,
+  gpsProximityEnabled: true,
+  gpsPositionMaxAgeMinutes: 15,
+  gpsMaxDistanceKm: 10,
 };
 
 export const DISPATCH_STRATEGY_LABELS: Record<DispatchStrategy, string> = {
