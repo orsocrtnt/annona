@@ -27,6 +27,16 @@ export async function GET(request: Request) {
       });
       return NextResponse.json({ data: result, success: false }, { status: 503 });
     }
+    if (result.overdue > 0) {
+      await reportOperationalIncident({
+        source: "cron.operations",
+        fingerprint: "operation-jobs-overdue",
+        summary: "Des traitements opérationnels sont en attente depuis plus de 15 minutes.",
+        severity: "error",
+        context: result,
+      });
+      return NextResponse.json({ data: result, success: false }, { status: 503 });
+    }
     return NextResponse.json({ data: result, success: true });
   } catch (error) {
     await reportOperationalIncident({

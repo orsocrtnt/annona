@@ -280,6 +280,38 @@ test("deux passages du filet cron qui se chevauchent n'exécutent chaque tâche 
   assert.equal(idle.processed, 0);
 });
 
+test("le filet cron signale les tâches PENDING en retard de plus de 15 minutes", async () => {
+  const f = fixture({ failNotification: true });
+  f.addJob({
+    jobKey: "notification:delivery-late:DELIVERED",
+    type: "CLIENT_NOTIFICATION",
+    payload: { deliveryId: "delivery-late" },
+    nextAttemptAt: new Date(f.base.getTime() - 20 * 60_000),
+  });
+  f.addJob({
+    jobKey: "auto-dispatch:delivery-fresh",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-fresh" },
+    nextAttemptAt: new Date(f.base.getTime() + 60_000),
+  });
+  const result = await f.service.processDueOperationJobs(f.base);
+  // La tâche en échec est replanifiée dans le futur : elle n'est plus en retard.
+  assert.equal(result.overdue, 0);
+  const late = f.addJob({
+    jobKey: "auto-dispatch:delivery-stuck",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-stuck" },
+    nextAttemptAt: new Date(f.base.getTime() - 20 * 60_000),
+    status: "PROCESSING",
+    lockedAt: f.base,
+  });
+  assert.ok(late);
+  assert.equal(await f.service.countOverduePendingJobs(f.base), 0);
+  f.jobs[f.jobs.length - 1]!.status = "PENDING";
+  f.jobs[f.jobs.length - 1]!.lockedAt = null;
+  assert.equal(await f.service.countOverduePendingJobs(f.base), 1);
+});
+
 test("trois échecs bornés deviennent visibles sans boucle infinie", async () => {
   const f = fixture({ failNotification: true });
   const job = f.addJob({

@@ -146,6 +146,58 @@ test("un échec terminal du worker rend le cron non sain et déclenche un incide
   assert.equal(incidents[0]?.fingerprint, "operation-jobs-terminal-failure");
 });
 
+test("des tâches PENDING en retard après le passage du filet déclenchent un incident et un 503", async () => {
+  const incidents: Array<Record<string, unknown>> = [];
+  const route = load<typeof import("../src/app/api/cron/operations/route")>(
+    "src/app/api/cron/operations/route.ts",
+    {
+      "next/server": { NextResponse },
+      "@/domains/operations/operation-job.service": {
+        processDueOperationJobs: async () => ({ processed: 0, succeeded: 0, pending: 0, failed: 0, overdue: 3 }),
+      },
+      "@/lib/operations/incident-reporter": {
+        reportOperationalIncident: async (incident: Record<string, unknown>) => {
+          incidents.push(incident);
+          return { logged: true, webhook: "sent" };
+        },
+      },
+    },
+    { Request, Response, process: { env: { CRON_SECRET: "cron-secret" } } }
+  );
+  const response = await route.GET(new Request("https://test.invalid/api/cron/operations", {
+    headers: { authorization: "Bearer cron-secret" },
+  }));
+  assert.equal(response.status, 503);
+  assert.equal(incidents.length, 1);
+  assert.equal(incidents[0]?.fingerprint, "operation-jobs-overdue");
+  assert.equal((incidents[0]?.context as Record<string, unknown>).overdue, 3);
+});
+
+test("sans tâche en retard ni échec, le filet cron répond 200 sans incident", async () => {
+  const incidents: Array<Record<string, unknown>> = [];
+  const route = load<typeof import("../src/app/api/cron/operations/route")>(
+    "src/app/api/cron/operations/route.ts",
+    {
+      "next/server": { NextResponse },
+      "@/domains/operations/operation-job.service": {
+        processDueOperationJobs: async () => ({ processed: 0, succeeded: 0, pending: 0, failed: 0, overdue: 0 }),
+      },
+      "@/lib/operations/incident-reporter": {
+        reportOperationalIncident: async (incident: Record<string, unknown>) => {
+          incidents.push(incident);
+          return { logged: true, webhook: "sent" };
+        },
+      },
+    },
+    { Request, Response, process: { env: { CRON_SECRET: "cron-secret" } } }
+  );
+  const response = await route.GET(new Request("https://test.invalid/api/cron/operations", {
+    headers: { authorization: "Bearer cron-secret" },
+  }));
+  assert.equal(response.status, 200);
+  assert.equal(incidents.length, 0);
+});
+
 test("une erreur de requête non gérée produit un incident sans chemin réel ni en-têtes", async () => {
   const incidents: Array<Record<string, unknown>> = [];
   const instrumentation = load<typeof import("../src/instrumentation")>(

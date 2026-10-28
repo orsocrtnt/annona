@@ -4,6 +4,7 @@ import { assertSaasMutationFeature } from "@/domains/saas/saas.service";
 import { runAfterResponse } from "@/lib/operations/after-response";
 
 const OPERATION_JOB_TAKE = 50;
+const OPERATION_JOB_OVERDUE_MS = 15 * 60 * 1000;
 const OPERATION_JOB_LEASE_MS = 5 * 60 * 1000;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 30 * 60_000] as const;
 
@@ -239,7 +240,7 @@ export async function processDueOperationJobs(now = new Date()) {
     select: { id: true },
   });
 
-  const result = { processed: 0, succeeded: 0, pending: 0, failed: 0 };
+  const result = { processed: 0, succeeded: 0, pending: 0, failed: 0, overdue: 0 };
   for (const job of jobs) {
     const updated = await processOperationJob(job.id);
     if (!updated) continue;
@@ -248,7 +249,22 @@ export async function processDueOperationJobs(now = new Date()) {
     else if (updated.status === "FAILED") result.failed += 1;
     else result.pending += 1;
   }
+  result.overdue = await countOverduePendingJobs(now);
   return result;
+}
+
+/**
+ * Tâches PENDING dont l'échéance est dépassée depuis plus de
+ * OPERATION_JOB_OVERDUE_MS : le filet n'a pas pu les reprendre (cron arrêté,
+ * lot saturé, fonction gelée). Les tâches replanifiées plus tard ne comptent pas.
+ */
+export async function countOverduePendingJobs(now = new Date()) {
+  return prisma.operationJob.count({
+    where: {
+      status: "PENDING",
+      nextAttemptAt: { lte: new Date(now.getTime() - OPERATION_JOB_OVERDUE_MS) },
+    },
+  });
 }
 
 export async function getOperationJobHealth(companyId: string): Promise<OperationJobHealth> {
