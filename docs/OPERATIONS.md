@@ -96,6 +96,10 @@ Actions du propriétaire (aucune valeur n'est versionnée) :
    - `VERCEL_AUTOMATION_BYPASS_SECRET` : requis si la Protection des déploiements Vercel est active sur la préproduction. Le créer dans Vercel (Settings > Deployment Protection > Protection Bypass for Automation) ; il est envoyé dans l'en-tête `x-vercel-protection-bypass`. Laisser vide si la protection est désactivée.
 3. GitHub n'exécute les workflows planifiés que depuis la branche par défaut du dépôt (aujourd'hui `main`). Pour que le calendrier tourne, soit faire figurer ce fichier sur la branche par défaut, soit passer `preproduction` en branche par défaut. Le workflow ne cible que la préproduction, car il n'utilise que les secrets de l'environnement `preproduction`.
 
+Attention : dans Settings > Environments > `preproduction`, ne PAS restreindre « Deployment branches » à `preproduction` : les exécutions planifiées partent de la branche par défaut (`main`) et seraient bloquées. Laisser « All branches » (ou inclure `main`).
+
+Durée : la route déclare `maxDuration = 60` s (un lot de 50 tâches) et le workflow utilise `curl --max-time 70`, sans `--retry` (curl relancerait sur HTTP 500/503, or 503 signale un échec réel ; le passage suivant a lieu 5 minutes plus tard). Garder `--max-time` supérieur ou égal à `maxDuration` (test `operations-health`).
+
 Le workflow échoue avec une annotation explicite si `PREPROD_BASE_URL` ou `PREPROD_CRON_SECRET` manque ou si l'URL n'est pas en HTTPS. Il échoue aussi si la route répond autre chose que 200 : 401 = secret faux, 503 = tâches épuisées ou en retard, page de connexion Vercel = bypass manquant. Un échec envoie le courriel de notification GitHub Actions habituel : c'est l'alerte de base, sans service externe.
 
 Alertes : en plus du journal et du webhook d'incident existant, la route signale (`operation-jobs-overdue`, 503) toute tâche `PENDING` en retard de plus de 15 minutes après son passage, et (`operation-jobs-terminal-failure`) toute tâche en échec définitif.
@@ -105,7 +109,9 @@ Procédure de vérification :
 1. Déclencher le workflow à la main et vérifier « HTTP 200 » et le corps `{"data":{...},"success":true}` dans le journal.
 2. Après un passage planifié, contrôler dans l'onglet Actions qu'une exécution toutes les 5 minutes environ apparaît (GitHub peut retarder les crons de quelques minutes).
 3. Contrôle de bout en bout : créer une livraison avec auto-dispatch sur la préproduction et vérifier que la tâche passe à `SUCCEEDED` (page admin des tâches) ; `/api/health?deep=1` ne doit plus signaler de file `degraded`.
-4. Les migrations d'index (`20261028090000_fk_indexes`) sont à appliquer séparément, après accord du propriétaire.
+4. Les migrations d'index (`20261028090000_fk_indexes`) sont à appliquer séparément, après accord du propriétaire. Cette migration crée les index avec `CREATE INDEX IF NOT EXISTS` (non concurrent, verrou d'écriture le temps de la création) : acceptable sur une base de développement aux tables petites. En production avec un volume réel, créer ces index en `CREATE INDEX CONCURRENTLY IF NOT EXISTS`, hors transaction (une instruction par exécution, hors `prisma migrate deploy` en bloc).
+
+Le retard comprend les tâches `PENDING` dont l'échéance a plus de 15 minutes et les tâches `PROCESSING` dont le bail a expiré depuis plus de 15 minutes sans reprise. Un échec terminal et un retard simultanés émettent deux incidents distincts.
 
 ## Santé et incidents
 
