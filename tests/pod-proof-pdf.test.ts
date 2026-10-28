@@ -73,6 +73,13 @@ test("PDF : image illisible ou texte hors latin n'empêche pas le document", asy
   assert.equal(pdfSafeText("l’été – ok…"), "l'été - ok...");
 });
 
+test("PDF reproductible : mêmes données = mêmes octets, quelle que soit l'heure de génération", async () => {
+  const first = await buildProofPdf(base);
+  await new Promise((resolveWait) => setTimeout(resolveWait, 1100));
+  const second = await buildProofPdf(base);
+  assert.equal(Buffer.from(first).equals(Buffer.from(second)), true);
+});
+
 // --- Contrôle d'accès du service (entreprise et client) ---
 function loadService(deps: Record<string, unknown>) {
   const module = { exports: {} as typeof import("../src/domains/delivery/proof.service") };
@@ -108,7 +115,7 @@ function serviceFixture(row: Record<string, unknown> | null) {
 const deliveryRow = {
   id: "d1", reference: "LIV-1", companyId: "company-a", customerId: "client-a", address: "2 rue B", city: "Lyon", postalCode: "69001",
   pickupAddress: null, pickupCity: null, pickupPostalCode: null, driverName: "Luc", missionStartedAt: new Date(), completedAt: new Date(),
-  podOutcome: "SUCCESS", podPhotoPath: "company-a/d1-1.jpg", podFailureCode: null, podNote: null, podCapturedAt: new Date(),
+  podOutcome: "SUCCESS", podPhotoPath: "company-a/d1-1.jpg", podFailureCode: null, podNote: null, podCapturedAt: new Date("2025-03-04T09:30:00Z"),
   podSignaturePath: "company-a/d1-sig-1-x.png", podRecipientName: "Mme Martin", podSignatureRefusedReason: null,
   podLatitude: null, podLongitude: null, podPositionAt: null,
   customer: { firstName: "Alice", lastName: "D", email: "a@x.test" }, order: { reference: "CMD-1", customerEmail: null },
@@ -123,6 +130,7 @@ test("preuve : le back-office de l'entreprise obtient PDF, photo et signature (U
   assert.match(pdf.headers.get("content-disposition") ?? "", /preuve-LIV-1\.pdf/);
   assert.equal(pdf.headers.get("cache-control"), "private, no-store");
   const pdfBytes = new Uint8Array(await pdf.arrayBuffer());
+  assert.match((await pdfText(pdfBytes)).text, /Document généré le 4 mars 2025/, "l'horodatage du document est celui de la preuve, pas celui du téléchargement");
   assert.equal(Buffer.from(pdfBytes).subarray(0, 5).toString(), "%PDF-");
   const content = await pdfText(pdfBytes);
   assert.ok(content.text.includes("Mme Martin"));

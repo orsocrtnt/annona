@@ -97,7 +97,8 @@ export async function buildDeliveryProofPdf(scope: ProofScope): Promise<{ bytes:
       : null,
     note: delivery.podNote,
     photo,
-    generatedAt: new Date(),
+    // Horodatage stable : la date de la preuve, pas celle du téléchargement.
+    generatedAt: delivery.podCapturedAt ?? delivery.completedAt ?? new Date(0),
   });
   return { bytes, reference: delivery.reference };
 }

@@ -92,7 +92,9 @@ export async function buildProofPdf(data: ProofPdfData): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(pdfSafeText(`Preuve de livraison ${data.reference}`));
   doc.setProducer("TutelLiv");
+  // Dates fixes : le même PDF est reproduit à l'identique à chaque téléchargement.
   doc.setCreationDate(data.generatedAt);
+  doc.setModificationDate(data.generatedAt);
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const tutelliv = await doc.embedPng(Buffer.from(TUTELLIV_LOGO_PNG_BASE64, "base64"));
