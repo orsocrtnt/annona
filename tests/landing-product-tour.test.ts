@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   advanceTour,
@@ -44,4 +46,11 @@ test("le dispatcher retient un seul livreur : Karim", () => {
   const chosen = TOUR_DRIVERS.filter((driver) => driver.verdict === "chosen");
   assert.equal(chosen.length, 1);
   assert.equal(chosen[0]?.name, "Karim");
+});
+
+test("le hero affiche la mini-démo à la place de la capture du tableau de bord", () => {
+  const home = readFileSync(fileURLToPath(new URL("../src/features/landing/home-landing.tsx", import.meta.url)), "utf8");
+  assert.match(home, /<ProductTour \/>/);
+  assert.doesNotMatch(home, /produit-tableau-de-bord\.webp/);
+  assert.match(home, /produit-carte\.webp/);
 });

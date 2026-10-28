@@ -254,8 +254,40 @@
   }
 }
 
+/* Mini-démo produit du hero : apparition des éléments et geste attendu qui pulse. */
+.product-tour-in {
+  animation: productTourIn 0.35s ease-out both;
+}
+
+.product-tour-pulse {
+  animation: productTourPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes productTourIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes productTourPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(0 212 106 / 45%);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgb(0 212 106 / 0%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .home-landing-reveal {
+  .home-landing-reveal,
+  .product-tour-in,
+  .product-tour-pulse {
     animation: none;
   }
 }

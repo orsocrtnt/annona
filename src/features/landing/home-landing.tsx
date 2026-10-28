@@ -16,11 +16,12 @@ import {
 import { APP_NAME } from "@/lib/constants";
 import { DELIVERY_CATEGORY_LABELS, PORTAL_CATEGORY_DESCRIPTIONS } from "@/lib/constants/delivery";
 import { PublicTopNavbar } from "@/features/landing/public-top-navbar";
+import { ProductTour } from "@/features/landing/product-tour/product-tour";
 import { cn } from "@/lib/utils";
 
 /**
  * Accueil public — DA Menthe (planche « Landing en deux modes », version claire).
- * Uniquement des faits produit : captures réelles de l'application, aucun logo client,
+ * Uniquement des faits produit : mini-démo et captures réelles de l'application, aucun logo client,
  * aucun chiffre marketing non mesuré.
  */
 
@@ -168,11 +169,7 @@ export function HomeLanding() {
           </div>
 
           <div className="home-landing-reveal home-landing-reveal-2">
-            <ProductShot
-              src="/landing/produit-tableau-de-bord.webp"
-              alt="Tableau de bord TutelLiv : livraisons en retard, sans livreur, à démarrer et en route, puis la carte des livreurs en direct."
-              priority
-            />
+            <ProductTour />
           </div>
         </section>
 
