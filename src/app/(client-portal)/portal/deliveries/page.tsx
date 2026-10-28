@@ -10,7 +10,7 @@ const PortalDeliveriesMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-muted">
+      <div className="flex h-full w-full items-center justify-center bg-[#f0f0f0] dark:bg-muted">
         <PageLoader />
       </div>
     ),

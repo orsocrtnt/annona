@@ -101,7 +101,7 @@ function PortalMobileNavLink({
       <DropdownMenuItem
         disabled
         title={item.disabledReason}
-        className="min-h-11 rounded-xl px-3 text-text-tertiary data-[disabled]:opacity-100"
+        className="min-h-11 rounded-xl px-3 text-[#a3aca6] data-[disabled]:opacity-100 dark:text-text-tertiary"
       >
         <Icon className="h-4 w-4" aria-hidden />
         {item.title}
@@ -112,12 +112,12 @@ function PortalMobileNavLink({
   return (
     <DropdownMenuItem
       asChild
-      className="min-h-11 cursor-pointer rounded-xl px-3 text-text-secondary focus:bg-muted focus:text-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground"
+      className="min-h-11 cursor-pointer rounded-xl px-3 text-[#3d4540] focus:bg-[#f1f6f2] focus:text-[#0e1310] aria-[current=page]:font-semibold aria-[current=page]:text-[#0e1310] dark:text-text-secondary dark:focus:bg-muted dark:focus:text-foreground dark:aria-[current=page]:text-foreground"
     >
       <Link href={item.href} aria-current={isActive ? "page" : undefined} {...prefetchHandlers}>
         <Icon className="h-4 w-4" aria-hidden />
         <span>{item.title}</span>
-        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand" aria-hidden /> : null}
+        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#00a855] dark:bg-brand" aria-hidden /> : null}
       </Link>
     </DropdownMenuItem>
   );
@@ -152,17 +152,17 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       </AppleNavbarLinks>
 
       <div className="ml-auto flex items-center gap-1">
-        <PortalNotificationsBell className="text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground" />
+        <PortalNotificationsBell className="text-[#5f6a63] hover:bg-black/[0.05] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground" />
 
         <ThemeToggle className="max-sm:hidden" />
 
         <div
-          className="ml-0.5 flex h-11 w-11 items-center max-sm:hidden justify-center rounded-xl border border-border bg-card"
+          className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-black/[0.07] bg-white max-sm:hidden dark:border-border dark:bg-card"
           title={user ? `${user.firstName} ${user.lastName}` : "Compte client"}
         >
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-foreground text-xs font-semibold text-background">
+            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
               {user ? getInitials(user.firstName, user.lastName) : "C"}
             </AvatarFallback>
           </Avatar>
@@ -191,12 +191,12 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           <DropdownMenuContent
             align="end"
             sideOffset={8}
-            className="w-72 rounded-2xl border-border bg-popover p-2 text-popover-foreground shadow-[0_18px_50px_rgba(14,19,16,0.12)]"
+            className="w-72 rounded-2xl border-black/[0.07] bg-white p-2 text-[#0e1310] shadow-[0_18px_50px_rgba(14,19,16,0.12)] dark:border-border dark:bg-popover dark:text-popover-foreground dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
           >
-            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-[#68726b] dark:text-muted-foreground">
               Espace client
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-border" />
+            <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
             {items.map((item) => (
               <PortalMobileNavLink
                 key={item.href}
@@ -206,7 +206,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
             ))}
             {/* Sous 640 px, le thème passe dans ce menu pour que la barre tienne à 320 px. */}
             <div className="sm:hidden">
-              <DropdownMenuSeparator className="bg-border" />
+              <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
               <ThemeRadioGroup />
             </div>
           </DropdownMenuContent>
@@ -223,7 +223,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
   if (mapFullscreen) {
     return (
       <div
-        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-muted [--portal-chrome:4.75rem]"
+        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:4.75rem] dark:bg-muted"
         data-portal-map-page
       >
         <main id="main-content" tabIndex={-1} className="absolute inset-0 z-0">
