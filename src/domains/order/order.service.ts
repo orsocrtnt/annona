@@ -16,6 +16,8 @@ import {
 } from "@/lib/order-reference";
 import { formatStopAddress, getPrimaryCourierPickupFields } from "@/lib/order/courier-pickups";
 import { buildReorderFormValues } from "@/lib/order/reorder-template";
+import { getPortalShowDriverPhone } from "@/domains/company/portal-settings.service";
+import { clientDriverSelect, redactClientTimeline, toClientDriver } from "@/domains/delivery/client-driver";
 import {
   resolveDeliveryCoordinateFields,
   resolveStopCoordinates,
@@ -375,7 +377,8 @@ export async function exportOrderHistoryCsv(
 }
 
 export async function getClientOrderById(customerId: string, companyId: string, orderId: string) {
-  return prisma.order.findFirst({
+  const showDriverPhone = await getPortalShowDriverPhone(companyId);
+  const order = await prisma.order.findFirst({
     where: { id: orderId, customerId, companyId },
     include: {
       items: true,
@@ -383,12 +386,22 @@ export async function getClientOrderById(customerId: string, companyId: string, 
       deliveries: {
         include: {
           trackingEvents: { orderBy: { occurredAt: "asc" } },
+          // Client : prénom du livreur, téléphone selon le réglage, jamais le nom de famille.
+          driver: { select: clientDriverSelect(showDriverPhone) },
         },
       },
       invoices: true,
       company: { select: { name: true } },
     },
   });
+  if (!order) return null;
+  // Le nom complet stocké (driverName) ne sort pas ; la chronologie est réduite au prénom.
+  const deliveries = order.deliveries.map(({ driverName, driver, trackingEvents, ...delivery }) => ({
+    ...delivery,
+    driver: toClientDriver({ driver, driverName }, showDriverPhone),
+    trackingEvents: redactClientTimeline(trackingEvents, [driverName]),
+  }));
+  return { ...order, deliveries };
 }
 
 export async function getDeliveryReorderTemplate(

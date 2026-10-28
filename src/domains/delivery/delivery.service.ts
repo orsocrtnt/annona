@@ -223,7 +223,7 @@ export async function getClientDeliveryById(
   return {
     ...rest,
     driver: toClientDriver({ driver, driverName }, showDriverPhone),
-    trackingEvents: redactClientTimeline(trackingEvents),
+    trackingEvents: redactClientTimeline(trackingEvents, [driverName]),
   };
 }
 

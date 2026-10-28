@@ -1,4 +1,4 @@
-import { clientDriverLabel } from "@/domains/delivery/client-driver";
+import { clientDriverLabel, redactClientTimeline } from "@/domains/delivery/client-driver";
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
 import { resolveTrackingPosition } from "@/domains/tracking/tracking-position.service";
@@ -635,7 +635,11 @@ async function buildDeliveriesMapPayload(
           }
         : null;
 
-    const trackingSteps: DispatchMapTrackingStep[] = delivery.trackingEvents.map((e) => ({
+    // Client (prénom seul) : descriptions réduites au prénom ; le dispatch garde le nom complet.
+    const events = options?.driverFirstNameOnly
+      ? redactClientTimeline(delivery.trackingEvents, [delivery.driverName])
+      : delivery.trackingEvents;
+    const trackingSteps: DispatchMapTrackingStep[] = events.map((e) => ({
       id: e.id,
       label: e.label,
       description: e.description,

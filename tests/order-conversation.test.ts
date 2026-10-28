@@ -6,6 +6,7 @@ import ts from "typescript";
 import { Prisma } from "@prisma/client";
 import type { ConversationActor } from "../src/domains/order-conversation/order-conversation.service";
 import { filterMiniAdminPermissions } from "../src/lib/permissions/mini-admin";
+import * as clientDriver from "../src/domains/delivery/client-driver";
 import { createHash } from "node:crypto";
 
 const client: ConversationActor = { id: "client-a", companyId: "a", role: "CLIENT", permissions: ["dashboard:client"], name: "Client A" };
@@ -31,6 +32,7 @@ function fixture() {
     "node:crypto": { createHash }, "@prisma/client": { Prisma }, "@/services/prisma/client": { prisma: { ...tx, $transaction: async (fn: any) => fn(tx) } },
     "@/lib/permissions/rbac": { STAFF_ROLES: ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"] },
     "@/lib/permissions/mini-admin": { filterMiniAdminPermissions },
+    "@/domains/delivery/client-driver": clientDriver,
     "@/domains/operations/operation-job.service": { enqueueOperationJob: record("job.enqueue", () => ({ id: "job-a" })) },
   };
   runInNewContext(ts.transpileModule(readFileSync("src/domains/order-conversation/order-conversation.service.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module, exports: module.exports, Date, Error, Set, console, require: (id: string) => { assert.ok(id in deps, id); return deps[id]; } });

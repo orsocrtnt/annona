@@ -4,6 +4,7 @@ import { prisma } from "@/services/prisma/client";
 import { STAFF_ROLES } from "@/lib/permissions/rbac";
 import { filterMiniAdminPermissions } from "@/lib/permissions/mini-admin";
 import { enqueueOperationJob } from "@/domains/operations/operation-job.service";
+import { clientAuthorName } from "@/domains/delivery/client-driver";
 
 export type ConversationActor = { id: string; companyId: string | null; role: SystemRole; permissions: string[]; name: string };
 export type MessageInput = { body: string; kind: string; internal: boolean; requestKey: string };
@@ -61,7 +62,8 @@ export async function getOrderConversation(actor: ConversationActor, orderId: st
     if (beforeId && !before) throw new ConversationError(400, "Page inconnue.");
     const rows = await tx.orderMessage.findMany({ where: { ...base, ...(before ? { OR: [{ createdAt: { lt: before.createdAt } }, { createdAt: before.createdAt, id: { lt: before.id } }] } : {}) }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 51 });
     const hasMore = rows.length > 50;
-    const messages = rows.slice(0, 50).reverse().map(({ requestKey, ...message }) => { void requestKey; return message; });
+    // Client : un livreur n'apparaît que par son prénom (le back-office garde le nom complet).
+    const messages = rows.slice(0, 50).reverse().map(({ requestKey, ...message }) => { void requestKey; return actor.role === "CLIENT" ? { ...message, authorName: clientAuthorName(message.authorName, message.authorRole) } : message; });
     const read = await tx.orderThreadRead.findUnique({ where: { orderId_userId: { orderId, userId: actor.id } } });
     const unread = await tx.orderMessage.count({ where: { ...base, authorId: { not: actor.id }, ...after(read) } });
     return { orderId, reference: order.reference, messages, hasMore, unread, canWrite: canWrite(actor) && !conversationClosed(order), canNote: isConversationStaff(actor) && canWrite(actor), closed: conversationClosed(order), watermark: messages.at(-1)?.id ?? null };

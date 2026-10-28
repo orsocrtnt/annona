@@ -30,7 +30,7 @@ export async function getOrderTracking(actor: ConversationActor, orderId: string
   return { orderId: order.id, reference: order.reference, status: order.status, statusLabel: getFulfillmentStatusLabel(order.status, order.deliveryCategory), updatedAt: order.updatedAt.toISOString(), serverTime: now.toISOString(), deliveries: await Promise.all(order.deliveries.map(async d => ({
       id: d.id, reference: d.reference, status: d.status, statusLabel: getFulfillmentStatusLabel(d.status, d.deliveryCategory), driverName: d.driverId ? (actor.role === "CLIENT" ? clientDriverLabel(d.driverName) : d.driverName) : null,
       missionAcceptedAt: d.missionAcceptedAt?.toISOString() ?? null, missionStartedAt: d.missionStartedAt?.toISOString() ?? null, completedAt: d.completedAt?.toISOString() ?? null, updatedAt: d.updatedAt.toISOString(),
-      position: await resolveTrackingPosition(d.driverId, d, d.driver?.companyId === actor.companyId ? d.driver : null, threshold, now, trackingTarget({ ...d, order: { stops: order.stops } })), timeline: trackingTimeline(actor.role === "CLIENT" ? redactClientTimeline(d.trackingEvents) : d.trackingEvents),
+      position: await resolveTrackingPosition(d.driverId, d, d.driver?.companyId === actor.companyId ? d.driver : null, threshold, now, trackingTarget({ ...d, order: { stops: order.stops } })), timeline: trackingTimeline(actor.role === "CLIENT" ? redactClientTimeline(d.trackingEvents, [d.driverName]) : d.trackingEvents),
     }))) };
 }
 export async function getDriverService(driverId: string, companyId: string) {
