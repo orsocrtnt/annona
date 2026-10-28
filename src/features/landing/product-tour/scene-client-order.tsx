@@ -27,9 +27,9 @@ import {
   useTimeline,
 } from "@/features/landing/product-tour/use-timeline";
 
-const INTRO_DURATIONS_MS = [900] as const;
+const INTRO_DURATIONS_MS = [700] as const;
 /** Le formulaire s'ouvre une fois la fenêtre agrandie. */
-const ENLARGE_MS = 550;
+const ENLARGE_MS = 700;
 
 const NAV: readonly SpaceNavItem[] = [
   { icon: Home, label: "Accueil", active: true },
@@ -55,7 +55,7 @@ const HOME_DELIVERIES = [
 /** Les livraisons en cours du client sur le même plan que le suivi. */
 function HomeMap() {
   return (
-    <svg viewBox="70 40 300 210" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Carte de vos livraisons en cours" className="h-full w-full">
+    <svg viewBox="50 30 340 230" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Carte de vos livraisons en cours" className="h-full w-full">
       <CityStreets />
       {HOME_DELIVERIES.map((delivery) => (
         <g key={delivery.number} transform={`translate(${delivery.x} ${delivery.y})`}>
@@ -73,7 +73,17 @@ function HomeMap() {
   );
 }
 
-function OrderPanel({ onOrdered, ordered, reducedMotion }: { onOrdered: () => void; ordered: boolean; reducedMotion: boolean }) {
+function OrderPanel({
+  onOrdered,
+  onCancel,
+  ordered,
+  reducedMotion,
+}: {
+  onOrdered: () => void;
+  onCancel: () => void;
+  ordered: boolean;
+  reducedMotion: boolean;
+}) {
   const { typed, activeField, done } = useTypewriter(FIELD_TEXTS, true, reducedMotion);
 
   return (
@@ -119,17 +129,27 @@ function OrderPanel({ onOrdered, ordered, reducedMotion }: { onOrdered: () => vo
           </motion.p>
         ) : (
           <>
-            <button
-              type="button"
-              disabled={!done}
-              onClick={onOrdered}
-              className={cn(
-                "flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
-                done ? "product-tour-pulse" : "opacity-40"
-              )}
-            >
-              Commander
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex min-h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-[#f0f4f1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                data-tour-target
+                disabled={!done}
+                onClick={onOrdered}
+                className={cn(
+                  "flex min-h-11 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+                  done ? "product-tour-pulse" : "opacity-40"
+                )}
+              >
+                Créer la commande
+              </button>
+            </div>
             <p
               className={cn(
                 "mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-opacity duration-300 motion-reduce:transition-none",
@@ -138,7 +158,7 @@ function OrderPanel({ onOrdered, ordered, reducedMotion }: { onOrdered: () => vo
               aria-hidden={!done}
             >
               <MousePointerClick className="h-3.5 w-3.5" aria-hidden />
-              Cliquez pour commander
+              Cliquez sur « Créer la commande »
             </p>
           </>
         )}
@@ -148,7 +168,7 @@ function OrderPanel({ onOrdered, ordered, reducedMotion }: { onOrdered: () => vo
 }
 
 /** ① Espace client : l'accueil, puis « Nouvelle commande » ouvre le formulaire qui se tape tout seul. */
-export function SceneClientOrder({ onDone, onStart, reducedMotion }: SceneProps) {
+export function SceneClientOrder({ onDone, onStart, onReset, reducedMotion }: SceneProps) {
   const intro = useTimeline(INTRO_DURATIONS_MS, reducedMotion);
   const [starting, setStarting] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -164,12 +184,13 @@ export function SceneClientOrder({ onDone, onStart, reducedMotion }: SceneProps)
       <div className="relative flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between gap-2 px-3 py-3 sm:px-4">
           <div className="min-w-0 leading-tight">
-            <p className="text-[11px] text-muted-foreground">Bonjour</p>
-            <p className="truncate text-sm font-semibold">{TOUR_ORDER.client}</p>
+            <p className="truncate text-sm font-semibold">Mon espace</p>
+            <p className="truncate text-[11px] text-muted-foreground">Suivez vos commandes et livraisons</p>
           </div>
           <div className="relative flex flex-col items-end">
             <button
               type="button"
+              data-tour-target
               disabled={!ready || starting}
               onClick={() => {
                 setStarting(true);
@@ -242,7 +263,7 @@ export function SceneClientOrder({ onDone, onStart, reducedMotion }: SceneProps)
                 animate={{ x: 0 }}
                 transition={{ type: "spring", stiffness: 240, damping: 30 }}
               >
-                <OrderPanel ordered={ordered} reducedMotion={reducedMotion} onOrdered={() => setOrdered(true)} />
+                <OrderPanel ordered={ordered} reducedMotion={reducedMotion} onOrdered={() => setOrdered(true)} onCancel={onReset} />
               </motion.div>
             </>
           )}

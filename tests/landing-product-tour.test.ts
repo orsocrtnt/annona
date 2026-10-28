@@ -96,16 +96,16 @@ test("aucun carton sans changement d'étape ou en revenant en arrière", () => {
   assert.equal(interludeFor("tracking", "order"), null);
 });
 
-test("la frappe donne un délai par caractère, entre 45 et 130 ms", () => {
+test("la frappe donne un délai par caractère, entre 30 et 90 ms", () => {
   const delays = typingDelays("18 rue de la Roquette", 7);
   assert.equal(delays.length, "18 rue de la Roquette".length);
-  assert.ok(delays.every((delay) => delay >= 45 && delay <= 130));
+  assert.ok(delays.every((delay) => delay >= 30 && delay <= 90));
 });
 
 test("la frappe marque une pause après un espace", () => {
   const delays = typingDelays("ab cd", 3);
-  assert.ok((delays[3] ?? 0) >= 105);
-  assert.ok((delays[1] ?? 0) <= 70);
+  assert.ok((delays[3] ?? 0) >= 70);
+  assert.ok((delays[1] ?? 0) <= 50);
 });
 
 test("la frappe est identique pour une même graine", () => {

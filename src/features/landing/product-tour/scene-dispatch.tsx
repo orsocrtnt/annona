@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { BarChart3, Check, LayoutDashboard, MousePointerClick, Package, Radio, Receipt, Route, Truck, X } from "lucide-react";
+import { BarChart3, Check, LayoutDashboard, MapPin, MousePointerClick, Package, Radio, Receipt, Sparkles, Truck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { SpaceSidebar, type SpaceNavItem } from "@/features/landing/product-tour/space-sidebar";
@@ -13,12 +13,12 @@ import {
   useTimeline,
 } from "@/features/landing/product-tour/use-timeline";
 
-const ARRIVAL_DURATIONS_MS = [350, 450] as const;
+const ARRIVAL_DURATIONS_MS = [400, 550] as const;
 /** Un livreur examiné par intervalle, puis l'attribution. */
-const EXAMINE_DURATIONS_MS = [450, 450, 450, 400] as const;
+const EXAMINE_DURATIONS_MS = [520, 520, 520, 400] as const;
 const NOT_LAUNCHED: readonly number[] = [];
 /** Laisse voir la carte glisser et passer au bleu avant le carton suivant. */
-const ASSIGNED_VIEW_MS = GESTURE_RESULT_DELAY_MS + 600;
+const ASSIGNED_VIEW_MS = GESTURE_RESULT_DELAY_MS + 700;
 
 const NAV: readonly SpaceNavItem[] = [
   { icon: LayoutDashboard, label: "Tableau de bord" },
@@ -60,12 +60,12 @@ function OrderCard({ assigned }: { assigned: boolean }) {
 
 function Column({ title, tone, children }: { title: string; tone: "amber" | "blue"; children?: React.ReactNode }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-white p-2.5 ring-1 ring-black/[0.05]">
+    <div className="flex min-w-0 flex-col rounded-2xl bg-white p-2.5 ring-1 ring-black/[0.05]">
       <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
         <span className={cn("h-2 w-2 rounded-full", tone === "amber" ? "bg-[#f0a92e]" : "bg-[#3b82f6]")} aria-hidden />
         {title}
       </p>
-      <div className="min-h-[74px]">{children}</div>
+      <div className="flex min-h-[74px] flex-1 flex-col gap-2">{children}</div>
     </div>
   );
 }
@@ -130,23 +130,49 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
     <div className="flex h-full">
       <SpaceSidebar items={NAV} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between px-3 py-3 sm:px-4">
-          <div className="leading-tight">
-            <p className="text-xs text-muted-foreground">Espace entreprise</p>
-            <p className="text-sm font-semibold">Dispatch du jour</p>
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 sm:flex-nowrap sm:px-4">
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-sm font-semibold">Dispatch</p>
+            <p className="truncate text-[11px] text-muted-foreground">File d&apos;attente du jour</p>
           </div>
-          <span className="rounded-full bg-[#f0f4f1] px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-            Mardi
-          </span>
+          <div className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
+            <span title="Carte livraison" className="hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground sm:flex" aria-hidden>
+              <MapPin className="h-3.5 w-3.5" />
+            </span>
+            <span title="Carte chauffeurs" className="hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground sm:flex" aria-hidden>
+              <Truck className="h-3.5 w-3.5" />
+            </span>
+            <button
+              type="button"
+              data-tour-target
+              disabled={!ready || launched}
+              onClick={() => setLaunched(true)}
+              className={cn(
+                "flex min-h-8 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-2.5 text-[11px] font-semibold sm:flex-none text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+                ready && !launched ? "product-tour-pulse" : !ready && "opacity-40"
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Lancer le dispatcher intelligent
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-3 px-3 pb-3 sm:px-4 sm:pb-4">
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid min-h-0 flex-1 grid-cols-2 gap-2.5">
             <Column title="Sans livreur" tone="amber">
               {phase >= 1 && !assigned && <OrderCard assigned={false} />}
             </Column>
             <Column title="À démarrer" tone="blue">
               {assigned && <OrderCard assigned />}
+              <div className="hidden rounded-xl border border-[#cfe0fb] bg-[#f3f7ff] p-2.5 sm:block" aria-hidden>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold">#1039</p>
+                  <span className="shrink-0 rounded-full bg-[#dde9fd] px-1.5 py-0.5 text-[10px] font-semibold text-[#1d4f9e]">Lucas</span>
+                </div>
+                <p className="mt-1 truncate text-[11px] text-muted-foreground">Bureau Bastille</p>
+                <p className="truncate text-[11px] text-muted-foreground">Bastille, 4e · 11 h – 13 h</p>
+              </div>
             </Column>
           </div>
 
@@ -154,33 +180,21 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
             {launched ? (
               <DriverReview phase={examined} assigned={assigned} />
             ) : (
-              <>
+              <div className="flex h-full flex-col justify-center gap-2 py-2 text-center">
                 <p className="text-xs text-muted-foreground">
                   Le dispatcher choisit le livreur selon sa disponibilité, sa zone et sa charge.
                 </p>
-                <button
-                  type="button"
-                  disabled={!ready}
-                  onClick={() => setLaunched(true)}
-                  className={cn(
-                    "mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
-                    ready ? "product-tour-pulse" : "opacity-40"
-                  )}
-                >
-                  <Route className="h-4 w-4" aria-hidden />
-                  Lancer le dispatcher intelligent
-                </button>
                 <p
                   className={cn(
-                    "mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground transition-opacity motion-reduce:transition-none",
+                    "mx-auto flex items-center gap-1 rounded-lg bg-[#0e1310] px-2 py-1 text-[11px] font-semibold text-white shadow-lg transition-opacity duration-300 motion-reduce:transition-none",
                     ready ? "opacity-100" : "opacity-0"
                   )}
                   aria-hidden={!ready}
                 >
-                  <MousePointerClick className="h-3.5 w-3.5" aria-hidden />
-                  Cliquez pour attribuer la livraison
+                  <MousePointerClick className="h-3 w-3" aria-hidden />
+                  Cliquez sur « Lancer le dispatcher intelligent » en haut
                 </p>
-              </>
+              </div>
             )}
           </div>
         </div>

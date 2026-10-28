@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Building2, Lock, Truck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GuideCursor } from "@/features/landing/product-tour/guide-cursor";
 import { SceneClientOrder } from "@/features/landing/product-tour/scene-client-order";
 import { SceneDispatch } from "@/features/landing/product-tour/scene-dispatch";
 import { SceneDriver } from "@/features/landing/product-tour/scene-driver";
@@ -24,6 +25,8 @@ export type SceneProps = {
   onDone: () => void;
   /** Premier geste du visiteur : la fenêtre de la démo s'agrandit. */
   onStart: () => void;
+  /** « Annuler » : retour à l'écran de départ, fenêtre à sa taille. */
+  onReset: () => void;
   reducedMotion: boolean;
   /** Vrai dès le premier geste du visiteur : avant, on ne déplace jamais le focus. */
   interacted: boolean;
@@ -46,8 +49,40 @@ const SPACE_LABELS: Record<TourStep, string> = {
 const INTERLUDE_ICONS = { company: Building2, driver: Truck, client: UserRound } as const;
 
 /** Durée d'affichage d'un carton, fondus compris. */
-const INTERLUDE_MS = 1900;
-const REDUCED_INTERLUDE_MS = 1200;
+const INTERLUDE_MS = 2100;
+const REDUCED_INTERLUDE_MS = 1400;
+/**
+ * Fenêtre agrandie (écran large), calée sur la zone validée par le propriétaire : à 1440 px de large,
+ * x 382 → 1361 et y 112 → 734. Le texte du hero glisse à gauche dans l'espace restant.
+ */
+const EXPANDED_LEFT_RATIO = 0.265;
+const EXPANDED_RIGHT_RATIO = 0.055;
+const EXPANDED_MAX_WIDTH = 1100;
+const EXPANDED_TOP = 112;
+const EXPANDED_MAX_HEIGHT = 640;
+const PAGE_GUTTER = 24;
+const EXPAND_MS = 700;
+
+type Frame = { left: number; top: number; width: number; stageHeight: number; slotHeight: number };
+
+const EXPANDED_ATTRIBUTE = "data-tour-expanded";
+
+/** Décale le texte du hero (variables lues par globals.css) ; null le remet en place. */
+function shiftHeroText(frameLeft: number | null) {
+  const root = document.documentElement;
+  const text = document.querySelector<HTMLElement>(".home-hero-text");
+  if (frameLeft === null || !text) {
+    root.removeAttribute(EXPANDED_ATTRIBUTE);
+    return;
+  }
+  const restLeft = text.getBoundingClientRect().left - (root.hasAttribute(EXPANDED_ATTRIBUTE) ? new DOMMatrix(getComputedStyle(text).transform).m41 : 0);
+  const width = frameLeft - PAGE_GUTTER * 2;
+  root.style.setProperty("--tour-text-shift", `${PAGE_GUTTER - restLeft}px`);
+  root.style.setProperty("--tour-text-width", `${width}px`);
+  root.style.setProperty("--tour-title-size", `${Math.min(48, Math.floor(width / 5.8))}px`);
+  root.setAttribute(EXPANDED_ATTRIBUTE, "");
+}
+
 /** Courbe douce, sans rebond : sortie rapide, arrivée qui se pose. */
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
@@ -98,8 +133,14 @@ export function ProductTour() {
   const [interacted, setInteracted] = useState(false);
   const [interlude, setInterlude] = useState<TourInterlude | null>(null);
   const [started, setStarted] = useState(false);
+  /** Chaque visite d'une scène a sa propre clé : une scène en train de sortir n'est jamais réutilisée. */
+  const [visit, setVisit] = useState(0);
   const reducedMotion = usePrefersReducedMotion();
   const stage = useRef<HTMLDivElement>(null);
+  const slot = useRef<HTMLDivElement>(null);
+  const figure = useRef<HTMLElement>(null);
+  /** Taille de la fenêtre détachée de sa colonne ; null tant qu'elle y est rangée. */
+  const [frame, setFrame] = useState<Frame | null>(null);
   const step = TOUR_STEPS[state.current] ?? "order";
   const interludeMs = reducedMotion ? REDUCED_INTERLUDE_MS : INTERLUDE_MS;
 
@@ -107,6 +148,7 @@ export function ProductTour() {
     setInteracted(true);
     const next = TOUR_STEPS[TOUR_STEPS.indexOf(step) + 1];
     if (next) setInterlude(interludeFor(step, next));
+    setVisit((previous) => previous + 1);
     setState((previous) => advanceTour(previous, step));
   }, [step]);
 
@@ -123,32 +165,107 @@ export function ProductTour() {
     element.focus({ preventScroll: true });
   }, [interacted, showing]);
 
-  const onStart = useCallback(() => setStarted(true), []);
-  const sceneProps: SceneProps = { onDone, onStart, reducedMotion, interacted };
+  /** Position cible (relative à la colonne) et défilement final : la fenêtre entière, sans défilement manuel. */
+  const expandedFrame = useCallback((): { frame: Frame; scrollTop: number; viewportLeft: number } | null => {
+    const column = slot.current?.getBoundingClientRect();
+    const box = figure.current;
+    const area = stage.current;
+    if (!column || !box || !area || window.innerWidth < 1024) return null;
+    const viewportWidth = document.documentElement.clientWidth;
+    const right = viewportWidth - Math.max(PAGE_GUTTER, Math.round(viewportWidth * EXPANDED_RIGHT_RATIO));
+    const width = Math.min(EXPANDED_MAX_WIDTH, right - Math.round(viewportWidth * EXPANDED_LEFT_RATIO));
+    const viewportLeft = right - width;
+    const height = Math.min(EXPANDED_MAX_HEIGHT, window.innerHeight - EXPANDED_TOP - PAGE_GUTTER * 2);
+    const chrome = box.offsetHeight - area.offsetHeight;
+    const columnTop = column.top + window.scrollY;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const scrollTop = Math.min(Math.max(0, columnTop - EXPANDED_TOP), Math.max(0, maxScroll));
+    return {
+      frame: {
+        left: viewportLeft - column.left,
+        top: EXPANDED_TOP + scrollTop - columnTop,
+        width,
+        stageHeight: Math.max(area.offsetHeight, height - chrome),
+        slotHeight: column.height,
+      },
+      scrollTop,
+      viewportLeft,
+    };
+  }, []);
+
+  const onStart = useCallback(() => {
+    setStarted(true);
+    const target = expandedFrame();
+    const column = slot.current?.getBoundingClientRect();
+    if (!target || !column || !stage.current) return;
+    // Détache la fenêtre à sa place actuelle, puis l'agrandit à l'image suivante : transition continue.
+    setFrame({ left: 0, top: 0, width: column.width, stageHeight: stage.current.offsetHeight, slotHeight: column.height });
+    requestAnimationFrame(() => requestAnimationFrame(() => setFrame(target.frame)));
+    shiftHeroText(target.viewportLeft);
+    if (Math.abs(window.scrollY - target.scrollTop) > 2) {
+      window.scrollTo({ top: target.scrollTop, behavior: reducedMotion ? "auto" : "smooth" });
+    }
+  }, [expandedFrame, reducedMotion]);
+
+  useEffect(() => {
+    if (!started) return;
+    const onResize = () =>
+      setFrame((current) => {
+        const target = current ? expandedFrame() : null;
+        shiftHeroText(target ? target.viewportLeft : null);
+        return target ? target.frame : current;
+      });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [started, expandedFrame]);
+
+  useEffect(() => () => shiftHeroText(null), []);
 
   const navigate = (next: typeof state) => {
     setInteracted(true);
     setInterlude(null);
+    setVisit((previous) => previous + 1);
     setState(next);
   };
 
+  /** Retour à l'écran de départ : la fenêtre rétrécit, puis reprend sa place dans la colonne. */
+  const reset = () => {
+    setStarted(false);
+    navigate(restartTour());
+    shiftHeroText(null);
+    const column = slot.current?.getBoundingClientRect();
+    if (!frame || !column) return;
+    setFrame({ ...frame, left: 0, top: 0, width: column.width, stageHeight: 460 });
+    setTimeout(() => setFrame(null), reducedMotion ? 0 : EXPAND_MS);
+  };
+
+  const sceneProps: SceneProps = { onDone, onStart, onReset: reset, reducedMotion, interacted };
+
   return (
     <MotionConfig reducedMotion="user">
+      <div ref={slot} className="relative" style={frame ? { height: frame.slotHeight } : undefined}>
       <figure
+        ref={figure}
         aria-label="Démonstration interactive du parcours d'une livraison"
         data-started={started ? "true" : "false"}
+        style={frame ? { left: frame.left, top: frame.top, width: frame.width } : undefined}
         className={cn(
-          "relative z-10 origin-center overflow-hidden rounded-[22px] border border-black/[0.07] bg-white p-1.5 transition-[scale,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:origin-right",
-          started
-            ? "scale-[1.02] shadow-[0_40px_110px_rgba(14,19,16,0.2)] lg:scale-[1.07]"
-            : "shadow-[0_30px_80px_rgba(14,19,16,0.12)]"
+          "z-30 overflow-hidden rounded-[22px] border border-black/[0.07] bg-white p-1.5 transition-[left,top,width,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+          frame ? "absolute" : "relative w-full",
+          started ? "shadow-[0_40px_110px_rgba(14,19,16,0.2)]" : "shadow-[0_30px_80px_rgba(14,19,16,0.12)]"
         )}
       >
         <div className="flex items-center gap-3 px-2 py-2 sm:px-3">
-          <div className="hidden items-center gap-1.5 sm:flex" aria-hidden>
-            <span className="h-2.5 w-2.5 rounded-full bg-[#e4e8e5]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#e4e8e5]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#e4e8e5]" />
+          <div className="hidden items-center gap-1.5 sm:flex">
+            <button
+              type="button"
+              onClick={reset}
+              aria-label="Fermer la démonstration et revenir au début"
+              title="Revenir au début"
+              className="h-2.5 w-2.5 rounded-full bg-[#ff5f57] transition-transform hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" aria-hidden />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" aria-hidden />
           </div>
           <div className="mx-auto flex h-7 min-w-0 max-w-[280px] flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-lg bg-[#f0f4f1] px-3 text-xs font-medium text-muted-foreground">
             <Lock className="h-3 w-3 shrink-0" aria-hidden />
@@ -177,16 +294,17 @@ export function ProductTour() {
         <div
           ref={stage}
           tabIndex={-1}
-          className="relative h-[420px] overflow-hidden rounded-[16px] bg-[#f5f8f6] focus:outline-none sm:h-[460px]"
+          style={frame ? { height: frame.stageHeight } : undefined}
+          className="relative h-[420px] overflow-hidden rounded-[16px] bg-[#f5f8f6] transition-[height] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] focus:outline-none motion-reduce:transition-none sm:h-[460px]"
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={showing}
+              key={`${showing}-${visit}`}
               className="absolute inset-0"
               initial={{ opacity: 0, scale: 1.02, filter: "blur(6px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, scale: 0.98, filter: "blur(6px)" }}
-              transition={{ duration: 0.42, ease: EASE_OUT }}
+              transition={{ duration: 0.45, ease: EASE_OUT }}
             >
               {interlude ? (
                 <InterludeCard interlude={interlude} durationMs={interludeMs} />
@@ -196,18 +314,13 @@ export function ProductTour() {
                   {step === "dispatch" && <SceneDispatch {...sceneProps} />}
                   {step === "driver" && <SceneDriver {...sceneProps} />}
                   {step === "tracking" && (
-                    <SceneTracking
-                      {...sceneProps}
-                      onRestart={() => {
-                        setStarted(false);
-                        navigate(restartTour());
-                      }}
-                    />
+                    <SceneTracking {...sceneProps} onRestart={reset} />
                   )}
                 </>
               )}
             </motion.div>
           </AnimatePresence>
+          <GuideCursor stage={stage} hidden={reducedMotion || interlude !== null} />
         </div>
 
         <ol aria-label="Étapes de la démonstration" className="grid grid-cols-4 gap-1 px-1 pb-0.5 pt-1.5">
@@ -251,6 +364,7 @@ export function ProductTour() {
           })}
         </ol>
       </figure>
+      </div>
     </MotionConfig>
   );
 }

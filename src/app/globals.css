@@ -284,6 +284,44 @@
   }
 }
 
+/* Curseur guide : mime un clic sur le geste attendu. */
+.product-tour-cursor-tap {
+  transform-origin: 2px 2px;
+  animation: productTourCursorTap 1.8s ease-in-out 0.9s infinite;
+}
+
+.product-tour-cursor-ripple {
+  opacity: 0;
+  animation: productTourCursorRipple 1.8s ease-out 0.9s infinite;
+}
+
+@keyframes productTourCursorTap {
+  0%,
+  30%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(0.82);
+  }
+}
+
+@keyframes productTourCursorRipple {
+  0%,
+  10% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  20% {
+    opacity: 0.9;
+  }
+  60%,
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
 .product-tour-caret {
   animation: productTourCaret 1s steps(1) infinite;
 }
@@ -344,4 +382,50 @@
 input[type="checkbox"],
 input[type="radio"] {
   accent-color: #0b8a45;
+}
+
+/* Hero : quand la mini-démo s'agrandit, le texte glisse à gauche et se resserre (variables posées par la démo). */
+@media (min-width: 1024px) {
+  .home-hero-text {
+    max-width: 48rem;
+    transition:
+      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      max-width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .home-hero-title {
+    transition: font-size 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .home-hero-promises {
+    max-height: 20rem;
+    transition:
+      opacity 0.4s ease,
+      max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+      margin-top 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  html[data-tour-expanded] .home-hero-text {
+    transform: translateX(var(--tour-text-shift));
+    max-width: var(--tour-text-width);
+  }
+
+  html[data-tour-expanded] .home-hero-title {
+    font-size: var(--tour-title-size);
+  }
+
+  html[data-tour-expanded] .home-hero-promises {
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-text,
+  .home-hero-title,
+  .home-hero-promises {
+    transition: none;
+  }
 }

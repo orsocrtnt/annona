@@ -111,3 +111,28 @@ saisie qui donne l'impression que l'utilisateur écrit, transitions très fluide
 - **② Espace entreprise** : menu latéral (Tableau de bord, Commandes, Dispatch actif, Chauffeurs,
   Facturation) ; la carte #1042 glisse de « Sans livreur » à « À démarrer ».
 - **Mouvement réduit** : fondus courts, saisie instantanée, pas de ressorts.
+- **Ajustements du 27 octobre (après essai)** : fenêtre agrandie au premier clic sur « Nouvelle commande »
+  (et remise à sa taille par « Rejouer ») ; durées allongées (carton 2,8 s, pause après geste 1,3 s,
+  trajet 8 s) ; boutons placés comme dans le produit : « Mon espace » + « Nouvelle commande » en haut à
+  droite, formulaire terminé par « Annuler » / « Créer la commande » ; « Lancer le dispatcher intelligent »
+  dans la barre d'outils du dispatch (à côté de « Carte livraison » / « Carte chauffeurs ») ; côté livreur,
+  deux gestes réels dans la carte de mission : « Prendre en charge » puis « Naviguer ».
+- **Recette** : chaque étape vérifiée sous Chrome et WebKit (Safari), page rechargée, en mouvement normal
+  et réduit.
+
+## Version 3 — validée le 27 octobre 2026
+
+- **Agrandissement** : fenêtre calée sur la zone dessinée par le propriétaire (à 1440 px : x 382 → 1361,
+  y 112 → 734, proportions conservées ailleurs) ; le texte du hero glisse à gauche et se resserre ;
+  « Annuler », la pastille rouge et « Rejouer » ramènent à l'écran de départ.
+- **Parcours en 7 étapes** : ① client commande → ② dispatcher intelligent → ③ livreur prend en charge et
+  navigue → ④ client suit en direct → ⑤ livreur : preuve de livraison (photo + nom) → ⑥ client : livré,
+  preuve et facture reçue par e-mail → ⑦ entreprise : factures payées / en attente / en retard, « Relancer ».
+- **Bulles explicatives** dans la fenêtre, quelques mots chacune, sans texte long.
+- **Dispatcher intelligent** : il analyse GPS, disponibilité, charge et trajets, regroupe #1042 avec #1039
+  (même secteur) et confie la tournée à Karim. Bulle « Fini le dispatch à la main. » et chrono du temps de
+  décision réel dans la démo ; aucun chiffre marketing non mesuré.
+- **Décision du propriétaire (27 octobre 2026)** : l'envoi de facture par e-mail, la relance des impayés et le
+  dispatcher GPS / trajets optimisés / regroupements sont montrés comme disponibles alors qu'ils ne sont pas
+  encore construits (voir la note « Smart Dispatch »). Le risque commercial a été signalé ; le propriétaire
+  l'assume. À réaligner si ces fonctions ne sont pas livrées avant la mise en ligne.

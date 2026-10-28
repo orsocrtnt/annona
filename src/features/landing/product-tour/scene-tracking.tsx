@@ -8,7 +8,7 @@ import { CityMap } from "@/features/landing/product-tour/city-map";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
 
-const RIDE_DURATION_MS = 6000;
+const RIDE_DURATION_MS = 6500;
 const RIDE_MINUTES = 12;
 
 function useRideProgress(reducedMotion: boolean): number {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, CornerUpLeft, MousePointerClick, Navigation } from "lucide-react";
+import { Bell, CornerUpLeft, MousePointerClick, Navigation, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CityMap } from "@/features/landing/product-tour/city-map";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
@@ -12,11 +12,26 @@ import {
   useTimeline,
 } from "@/features/landing/product-tour/use-timeline";
 
-const ARRIVAL_DURATIONS_MS = [450, 550, 450] as const;
+const ARRIVAL_DURATIONS_MS = [450, 600, 450] as const;
 /** La vue GPS reste affichée un peu plus longtemps qu'un simple résultat de geste. */
 const NAVIGATION_VIEW_MS = GESTURE_RESULT_DELAY_MS * 2;
 
-function MissionDetails({ phase }: { phase: number }) {
+const gestureButton =
+  "flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none";
+
+function MissionDetails({
+  phase,
+  ready,
+  accepted,
+  onAccept,
+  onNavigate,
+}: {
+  phase: number;
+  ready: boolean;
+  accepted: boolean;
+  onAccept: () => void;
+  onNavigate: () => void;
+}) {
   return (
     <div className="flex h-full flex-col px-3 pb-3 pt-2">
       <p className="text-[11px] text-muted-foreground">Bonjour Karim</p>
@@ -31,7 +46,13 @@ function MissionDetails({ phase }: { phase: number }) {
 
       {phase >= 2 && (
         <div className="product-tour-in mt-2 rounded-xl border border-black/[0.07] bg-white p-2.5">
-          <ol className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold">{TOUR_ORDER.number}</p>
+            <span className="rounded-full bg-[#eaf2ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#1d4f9e]">
+              {accepted ? "Prise en charge" : "Attribuée"}
+            </span>
+          </div>
+          <ol className="mt-2 space-y-2">
             <li className="flex gap-2">
               <span className="mt-1 h-2 w-2 shrink-0 rounded-sm bg-[#0e1310]" aria-hidden />
               <div className="min-w-0 leading-tight">
@@ -47,8 +68,49 @@ function MissionDetails({ phase }: { phase: number }) {
               </div>
             </li>
           </ol>
+
+          <div className="mt-2.5 flex flex-col gap-1.5">
+            {accepted ? (
+              <>
+                <span className={cn(gestureButton, "bg-primary text-primary-foreground")} aria-hidden>
+                  <Play className="h-3.5 w-3.5" />
+                  Commencer la mission
+                </span>
+                <button type="button" data-tour-target onClick={onNavigate} className={cn(gestureButton, "product-tour-pulse border border-border bg-white")}>
+                  <Navigation className="h-3.5 w-3.5" aria-hidden />
+                  Naviguer
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  data-tour-target
+                  disabled={!ready}
+                  onClick={onAccept}
+                  className={cn(gestureButton, "bg-primary text-primary-foreground", ready ? "product-tour-pulse" : "opacity-40")}
+                >
+                  Prendre en charge
+                </button>
+                <span className={cn(gestureButton, "border border-border font-medium text-muted-foreground")} aria-hidden>
+                  Refuser / indisponible
+                </span>
+              </>
+            )}
+          </div>
         </div>
       )}
+
+      <p
+        className={cn(
+          "mt-auto flex items-center justify-center gap-1 pt-2 text-[10px] text-muted-foreground transition-opacity duration-300 motion-reduce:transition-none",
+          ready ? "opacity-100" : "opacity-0"
+        )}
+        aria-hidden={!ready}
+      >
+        <MousePointerClick className="h-3 w-3" aria-hidden />
+        {accepted ? "Cliquez sur « Naviguer »" : "Cliquez sur « Prendre en charge »"}
+      </p>
     </div>
   );
 }
@@ -69,9 +131,10 @@ function NavigationView() {
   );
 }
 
-/** ③ App livreur : la mission arrive, le visiteur démarre la navigation. */
+/** ③ App livreur : la mission arrive, le visiteur la prend en charge puis lance la navigation. */
 export function SceneDriver({ onDone, reducedMotion }: SceneProps) {
   const phase = useTimeline(ARRIVAL_DURATIONS_MS, reducedMotion);
+  const [accepted, setAccepted] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const ready = phase >= ARRIVAL_DURATIONS_MS.length;
   useDelayedCall(navigating, NAVIGATION_VIEW_MS, onDone);
@@ -93,35 +156,18 @@ export function SceneDriver({ onDone, reducedMotion }: SceneProps) {
         </div>
 
         <div className="relative min-h-0 flex-1">
-          {navigating ? <NavigationView /> : <MissionDetails phase={phase} />}
+          {navigating ? (
+            <NavigationView />
+          ) : (
+            <MissionDetails
+              phase={phase}
+              ready={ready}
+              accepted={accepted}
+              onAccept={() => setAccepted(true)}
+              onNavigate={() => setNavigating(true)}
+            />
+          )}
         </div>
-
-        {!navigating && (
-          <div className="bg-white px-3 pb-3 pt-2">
-            <button
-              type="button"
-              disabled={!ready}
-              onClick={() => setNavigating(true)}
-              className={cn(
-                "flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
-                ready ? "product-tour-pulse" : "opacity-40"
-              )}
-            >
-              <Navigation className="h-3.5 w-3.5" aria-hidden />
-              Démarrer la navigation
-            </button>
-            <p
-              className={cn(
-                "mt-1.5 flex items-center justify-center gap-1 text-[10px] text-muted-foreground transition-opacity motion-reduce:transition-none",
-                ready ? "opacity-100" : "opacity-0"
-              )}
-              aria-hidden={!ready}
-            >
-              <MousePointerClick className="h-3 w-3" aria-hidden />
-              Cliquez pour partir
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

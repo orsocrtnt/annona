@@ -129,9 +129,9 @@ export function HomeLanding() {
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         {/* Promesse + produit */}
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 lg:pb-24">
-          <div>
+          <div className="home-hero-text">
             <Eyebrow className="home-landing-reveal home-landing-reveal-1">Pilotage des livraisons B2B</Eyebrow>
-            <h1 className="home-landing-reveal home-landing-reveal-1 mt-6 text-[clamp(2.75rem,7vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em]">
+            <h1 className="home-hero-title home-landing-reveal home-landing-reveal-1 mt-6 text-[clamp(2.75rem,7vw,4.25rem)] font-bold leading-[0.98] tracking-[-0.04em]">
               Simplifiez.
               <br />
               Suivez. <span className="text-brand">Livrez.</span>
@@ -140,7 +140,7 @@ export function HomeLanding() {
               {APP_NAME} réunit commandes, dispatch, suivi et factures sur une seule plateforme, avec
               un espace pour votre équipe, vos clients et vos chauffeurs.
             </p>
-            <div className="home-landing-reveal home-landing-reveal-3 mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="home-landing-reveal home-landing-reveal-3 mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link href="/demonstration" className={primaryCta}>
                 Voir la démo
                 <ArrowRight className={arrow} aria-hidden />
@@ -150,7 +150,7 @@ export function HomeLanding() {
               </Link>
             </div>
 
-            <ul className="home-landing-reveal home-landing-reveal-3 mt-10 grid gap-5 sm:grid-cols-3">
+            <ul className="home-hero-promises home-landing-reveal home-landing-reveal-3 mt-10 grid gap-5 sm:grid-cols-3">
               {promises.map(({ icon: Icon, title, text }) => (
                 <li key={title} className="flex gap-3 sm:block">
                   <span

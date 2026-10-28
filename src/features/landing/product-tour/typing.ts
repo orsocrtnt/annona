@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 
-const BASE_DELAY_MS = 45;
-const JITTER_MS = 25;
+const BASE_DELAY_MS = 32;
+const JITTER_MS = 16;
 /** Pause plus longue au début d'un mot, comme quelqu'un qui tape vraiment. */
-const WORD_PAUSE_MS = 60;
+const WORD_PAUSE_MS = 40;
 /** Pause avant de commencer à remplir chaque champ. */
-const FIELD_PAUSE_MS = 450;
+const FIELD_PAUSE_MS = 300;
 
-/** Délai (ms) avant chaque caractère : 45–70 ms, +60 ms après un espace ou une ponctuation. Déterministe. */
+/** Délai (ms) avant chaque caractère : 32–48 ms, +40 ms après un espace ou une ponctuation. Déterministe. */
 export function typingDelays(text: string, seed = 1): number[] {
   let state = seed >>> 0 || 1;
   const random = () => {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /** Pause entre le résultat d'un geste et le passage à la scène suivante. */
-export const GESTURE_RESULT_DELAY_MS = 900;
+export const GESTURE_RESULT_DELAY_MS = 1000;
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
