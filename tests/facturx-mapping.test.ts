@@ -211,6 +211,9 @@ test("assemblage : refus sans générer de PDF ; succès avec XML embarqué ; r�
   assert.match(String(staff.body), /Le PDF classique de la facture reste téléchargeable/);
   const client = facturXHttpResult(refused, "FAC-2026-0042", "client");
   assert.doesNotMatch(String(client.body), /SIREN|TL-/, "le client ne voit pas le détail interne");
+  assert.match(String(client.body), /Votre prestataire doit compléter/);
+  const cancelled = await buildFacturXPdf({ source: source({ invoice: { status: "CANCELLED" } }), renderClassicPdf: render, now });
+  assert.match(String(facturXHttpResult(cancelled, "FAC-2026-0042", "client").body), /Facture annulée/, "statut expliqué au client");
 
   const ok = await buildFacturXPdf({ source: source(), renderClassicPdf: render, now });
   assert.ok(ok.ok);

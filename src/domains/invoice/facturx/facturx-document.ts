@@ -52,10 +52,11 @@ export function facturXHttpResult(result: FacturXDocumentResult, reference: stri
       body: result.pdf,
     };
   }
+  const statusIssue = result.errors.find((issue) => issue.rule === "TL-STATUT");
   const lines =
     audience === "staff"
       ? result.errors.map((issue) => `- ${issue.message} [${issue.rule}]`)
-      : ["Votre prestataire doit compléter ses informations de facturation avant de pouvoir émettre ce format."];
+      : [statusIssue ? statusIssue.message : "Votre prestataire doit compléter ses informations de facturation avant de pouvoir émettre ce format."];
   return {
     status: 422,
     headers: { ...common, "Content-Type": "text/plain; charset=utf-8" },
