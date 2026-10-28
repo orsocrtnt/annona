@@ -217,12 +217,8 @@ export async function processOperationJob(jobId: string, now?: Date) {
 export function kickOperationJob(jobId: string) {
   // after() garde la fonction Vercel vivante jusqu'à la fin du traitement ;
   // le filet /api/cron/operations reprend de toute façon les tâches restées PENDING.
-  runAfterResponse(async () => {
-    try {
-      await processOperationJob(jobId);
-    } catch (error) {
-      console.error("[operation-job] lancement", jobId, safeError(error));
-    }
+  runAfterResponse(() => processOperationJob(jobId), {
+    log: (...args) => console.error("[operation-job] lancement", jobId, ...args.map((a) => String(a).replace(/[\r\n]+/g, " ").slice(0, 500))),
   });
 }
 
