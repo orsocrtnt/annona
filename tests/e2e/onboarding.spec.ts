@@ -11,6 +11,16 @@ import { DEFAULT_DISPATCH_SETTINGS } from "../../src/lib/validations/dispatch-se
 import { activateManualPilot } from "../../src/domains/saas/saas.service";
 
 test("ONBOARD-1 : pilote manuel, choix persistant après retour, rechargement et reconnexion", async ({ page }) => {
+  // Recette écrite pour la préproduction isolée (garde ci-dessous) : sur la base de développement
+  // ENV-2, elle est ignorée explicitement plutôt que d'échouer à chaque `npm run test:e2e` local.
+  const devTarget = (() => {
+    try {
+      return JSON.parse(execFileSync(process.execPath, ["--import", "tsx", "scripts/env2/verify-dev-env.ts"], { encoding: "utf8" })).passed === true;
+    } catch {
+      return false; // Garde ENV-2 en échec : la cible n'est pas tutelliv-dev.
+    }
+  })();
+  test.skip(devTarget, "ONBOARD-1 vise la préproduction isolée, pas tutelliv-dev");
   test.setTimeout(240_000);
   const isolation = JSON.parse(execFileSync(process.execPath, ["--import", "tsx", "scripts/ci/verify-preproduction-env.ts"], { encoding: "utf8" }));
   assert.equal(isolation.passed, true, "PREPRODUCTION_ISOLATION_FAILED");

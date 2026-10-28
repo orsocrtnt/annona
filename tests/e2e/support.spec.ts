@@ -117,5 +117,7 @@ test("SUPPORT-1 : ticket client, réponse staff, notification et résolution vis
       ]);
       expect({ tickets, notifications }).toEqual({ tickets: 0, notifications: 0 });
     }
+    // Rend l'espace de démo au pool : sans déconnexion, il reste loué une heure.
+    await page.request.post("/api/auth/logout").catch(() => undefined);
   }
 });

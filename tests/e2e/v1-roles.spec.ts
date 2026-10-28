@@ -13,7 +13,9 @@ test.afterEach(async ({ page }) => {
 test("TEST-2 : les trois rôles, le suivi, la facture, les refus et une panne réseau", async ({
   page,
 }) => {
-  test.setTimeout(120_000);
+  // Trois rôles et une panne simulée : depuis un poste local, la base distante allonge chaque appel,
+  // et la panne s'affiche après les trois relances de React Query (environ 15 s).
+  test.setTimeout(240_000);
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
 

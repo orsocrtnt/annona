@@ -527,6 +527,8 @@ test("V1-GO : double clic, course complète et échec motivé concordant", async
     mkdirSync(outputDirectory, { recursive: true });
     writeFileSync(outputPath, `${JSON.stringify(output, null, 2)}\n`, "utf8");
     await prisma.$disconnect();
+    // Après le nettoyage seulement : la déconnexion rend l'espace de démo au pool et lance son recyclage.
+    await page.request.post("/api/auth/logout").catch(() => undefined);
   }
   if (scenarioError) throw scenarioError;
   expect(clean).toBeTruthy();
