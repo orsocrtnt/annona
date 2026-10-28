@@ -277,6 +277,7 @@ model ClientNotification {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([userId, createdAt])
+  @@index([orderMessageId])
   @@map("client_notifications")
 }
 
@@ -466,6 +467,7 @@ model RolePermission {
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
+  @@index([permissionId])
   @@map("role_permissions")
 }
 
@@ -573,6 +575,7 @@ model SaasSubscription {
 
   @@index([status])
   @@index([kind])
+  @@index([catalogVersionId])
   @@map("saas_subscriptions")
 }
 
@@ -589,6 +592,7 @@ model SaasPlanAssignment {
 
   @@index([subscriptionId, effectiveFrom])
   @@index([subscriptionId, effectiveTo])
+  @@index([planId])
   @@map("saas_plan_assignments")
 }
 
@@ -610,6 +614,7 @@ model SaasSubscriptionItem {
 
   @@index([subscriptionId, effectiveFrom])
   @@index([subscriptionId, effectiveTo])
+  @@index([optionId])
   @@map("saas_subscription_items")
 }
 
@@ -655,6 +660,7 @@ model SaasUsageEvent {
   @@unique([orderId, kind])
   @@index([companyId, createdAt])
   @@index([usagePeriodId, kind])
+  @@index([subscriptionId])
   @@map("saas_usage_events")
 }
 
@@ -670,6 +676,7 @@ model SaasSeatReservation {
   createdAt      DateTime         @default(now()) @map("created_at")
 
   @@index([companyId, role, expiresAt])
+  @@index([subscriptionId])
   @@map("saas_seat_reservations")
 }
 
@@ -890,6 +897,7 @@ model Invoice {
   @@index([companyId])
   @@index([customerId])
   @@index([status])
+  @@index([orderId])
   @@map("invoices")
 }
 
@@ -920,6 +928,8 @@ model SupportTicket {
   @@index([customerId])
   @@index([companyId])
   @@index([status])
+  @@index([relatedDeliveryId])
+  @@index([relatedOrderId])
   @@map("support_tickets")
 }
 
@@ -1013,6 +1023,7 @@ model OrderMessage {
 
   @@unique([orderId, authorId, requestKey])
   @@index([orderId, createdAt, id])
+  @@index([authorId])
   @@map("order_messages")
 }
 
@@ -1026,6 +1037,7 @@ model OrderThreadRead {
   seenId  String   @map("seen_id")
 
   @@unique([orderId, userId])
+  @@index([userId])
   @@map("order_thread_reads")
 }
 
