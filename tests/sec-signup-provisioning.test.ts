@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
@@ -142,6 +142,12 @@ test("garde serveur : session confirmée sans profil et métadonnées falsifiée
   });
   assert.equal(await server.getServerAuth(), null);
   assert.deepEqual(f.writes, []);
+});
+
+test("code mort de l'ancienne auto-inscription supprimé (provisionCompanyAdmin, syncAuth)", () => {
+  for (const file of ["src/domains/auth/provision-company-admin.ts", "src/lib/auth/sync-auth.ts"]) {
+    assert.equal(existsSync(file), false, file);
+  }
 });
 
 test("lien de confirmation hors parcours géré : refusé même avec account_type company", async () => {

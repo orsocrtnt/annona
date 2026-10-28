@@ -276,23 +276,3 @@ test("SIGNUP-1 : la session du modèle Supabase reprend le brouillon sans provis
   assert.equal(JSON.stringify(calls), JSON.stringify([{ draftId: "draft-1", linkToken: "link-token-high-entropy", authUserId: "auth-managed", email: "managed@example.test" }]));
   assert.deepEqual(signouts, ["global", "local"]);
 });
-test("inscription : demande de confirmation sans profil ni session retournée ; auto-confirmation refusée", async (t) => {
-  configured(t); let automaticSession = false; let signouts = 0;
-  const service = load<typeof import("../src/domains/auth/provision-company-admin")>("src/domains/auth/provision-company-admin.ts", {
-    "@/lib/auth/email-links": links,
-    "@/lib/auth/normalize-email": { normalizeEmail: (s: string) => s.trim().toLowerCase() },
-    "@/services/supabase/password-link": { createPasswordLinkClient: () => ({ auth: {
-      signUp: async (args: { email: string; options: { emailRedirectTo: string; data: { account_type: string } } }) => {
-        assert.equal(args.email, "test@example.com"); assert.equal(args.options.data.account_type, "company");
-        assert.equal(args.options.emailRedirectTo, "https://app.example.com/reset-password");
-        return { data: { session: automaticSession ? {} : null }, error: null };
-      },
-      signOut: async () => { signouts++; return { error: null }; },
-    } }) },
-  });
-  const args = { email: " TEST@EXAMPLE.COM ", password: "TestLocal123!", firstName: "Test", lastName: "Local" };
-  assert.equal(JSON.stringify(await service.provisionCompanyAdmin(args)), '{"verificationRequired":true}');
-  automaticSession = true;
-  await assert.rejects(service.provisionCompanyAdmin(args), /AUTH_EMAIL_CONFIRMATION_REQUIRED/);
-  assert.equal(signouts, 1);
-});
