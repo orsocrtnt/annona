@@ -250,15 +250,20 @@ export async function processDueOperationJobs(now = new Date()) {
 }
 
 /**
- * Tâches PENDING dont l'échéance est dépassée depuis plus de
- * OPERATION_JOB_OVERDUE_MS : le filet n'a pas pu les reprendre (cron arrêté,
- * lot saturé, fonction gelée). Les tâches replanifiées plus tard ne comptent pas.
+ * Tâches PENDING dont l'échéance est dépassée, ou PROCESSING au bail expiré,
+ * depuis plus de OPERATION_JOB_OVERDUE_MS : le filet n'a pas pu les reprendre
+ * (cron arrêté, lot saturé, fonction gelée). Les tâches replanifiées plus tard
+ * ne comptent pas.
  */
 export async function countOverduePendingJobs(now = new Date()) {
+  const threshold = new Date(now.getTime() - OPERATION_JOB_OVERDUE_MS);
   return prisma.operationJob.count({
     where: {
-      status: "PENDING",
-      nextAttemptAt: { lte: new Date(now.getTime() - OPERATION_JOB_OVERDUE_MS) },
+      OR: [
+        { status: "PENDING", nextAttemptAt: { lte: threshold } },
+        // Bail expiré depuis longtemps et jamais repris (fonction gelée, lot plein).
+        { status: "PROCESSING", lockedAt: { lte: threshold } },
+      ],
     },
   });
 }

@@ -312,6 +312,25 @@ test("le filet cron signale les tâches PENDING en retard de plus de 15 minutes"
   assert.equal(await f.service.countOverduePendingJobs(f.base), 1);
 });
 
+test("le retard compte aussi les tâches PROCESSING dont le bail a expiré sans reprise", async () => {
+  const f = fixture();
+  f.addJob({
+    jobKey: "auto-dispatch:delivery-frozen",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-frozen" },
+    status: "PROCESSING",
+    lockedAt: new Date(f.base.getTime() - 30 * 60_000),
+  });
+  f.addJob({
+    jobKey: "auto-dispatch:delivery-running",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-running" },
+    status: "PROCESSING",
+    lockedAt: new Date(f.base.getTime() - 60_000),
+  });
+  assert.equal(await f.service.countOverduePendingJobs(f.base), 1);
+});
+
 test("trois échecs bornés deviennent visibles sans boucle infinie", async () => {
   const f = fixture({ failNotification: true });
   const job = f.addJob({
