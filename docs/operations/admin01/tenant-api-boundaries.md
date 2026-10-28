@@ -10,6 +10,7 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | Chemin | Méthode | Permission | Rôles |
 | --- | --- | --- | --- |
 | src/app/api/back-office/analytics/route.ts | GET | analytics:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/back-office/courier-statements/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/back-office/dashboard/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/billing/route.ts | GET | settings:read | COMPANY_ADMIN |
 | src/app/api/billing/route.ts | POST | settings:read | COMPANY_ADMIN |
