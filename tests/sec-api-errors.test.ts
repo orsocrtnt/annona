@@ -30,6 +30,14 @@ test("code métier interne non répertorié : jamais renvoyé brut", async (t) =
   assert.equal(body.error, "Erreur interne du serveur");
 });
 
+test("message égal à une clé héritée d'Object (constructor, toString) : message générique", async (t) => {
+  for (const message of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
+    const { status, body } = await run(t, new Error(message));
+    assert.equal(status, 500, message);
+    assert.equal(body.error, "Erreur interne du serveur", message);
+  }
+});
+
 test("valeur non Error levée : message générique", async (t) => {
   const { status, body } = await run(t, "secret-string");
   assert.equal(status, 500);

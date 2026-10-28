@@ -30,8 +30,7 @@ export function resolveApiError(error: unknown): { status: number; message: stri
     if (error.name === "ZodError") return { status: 400, message: "Données invalides." };
     // request.json() sur un corps mal formé.
     if (error instanceof SyntaxError) return { status: 400, message: "Requête invalide." };
-    const known = KNOWN_ERROR_CODES[error.message];
-    if (known) return known;
+    if (Object.hasOwn(KNOWN_ERROR_CODES, error.message)) return KNOWN_ERROR_CODES[error.message]!;
   }
   return { status: 500, message: INTERNAL_ERROR_MESSAGE };
 }
