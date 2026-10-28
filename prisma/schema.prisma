@@ -319,6 +319,7 @@ model Company {
   saasUsagePeriods     SaasUsagePeriod[]
   saasUsageEvents      SaasUsageEvent[]
   saasSeatReservations SaasSeatReservation[]
+  orderIntakeUsage     OrderIntakeUsage[]
   demoPoolEnvironment  DemoPoolEnvironment?
   signupJourney        SignupJourney?
 
@@ -1212,4 +1213,26 @@ model AuthLoginFailure {
   @@index([keyHash, createdAt])
   @@index([createdAt])
   @@map("auth_login_failures")
+}
+
+enum OrderIntakeUsageStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+/// Commande par message IA : journal minimal d'usage et base du quota par entreprise.
+/// Ni texte du message, ni expéditeur, ni utilisateur : seulement l'issue et les jetons.
+model OrderIntakeUsage {
+  id           String                 @id @default(cuid())
+  companyId    String                 @map("company_id")
+  company      Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status       OrderIntakeUsageStatus @default(PENDING)
+  model        String
+  inputTokens  Int                    @default(0) @map("input_tokens")
+  outputTokens Int                    @default(0) @map("output_tokens")
+  createdAt    DateTime               @default(now()) @map("created_at")
+
+  @@index([companyId, createdAt])
+  @@map("order_intake_usage")
 }

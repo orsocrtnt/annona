@@ -27,7 +27,7 @@ L’espace administration et dispatch est utilisé sur ordinateur pendant l’ex
 - SaaS Next.js multi-entreprise avec rôles et permissions contrôlés côté serveur.
 - Données réelles disponibles pour les volumes par période, les statuts, les retards, les listes détaillées et les cartes de missions ou de chauffeurs.
 - Aucune série temporelle quotidienne n’est fournie au dashboard actuel ; aucune courbe chronologique ne doit être inventée.
-- La création de commande appartient au portail client ; l’espace administrateur actuel ne crée pas directement de nouvelle livraison.
+- La création de commande se fait d’abord dans le portail client. Depuis la décision C11 du 28 octobre 2026, le back-office peut aussi créer une commande pour le compte d’un client choisi, mais uniquement depuis le flux « commande par message », après validation du dispatcher (`orders:create`, `source = ADMIN`). Il n’existe pas d’autre formulaire de création côté administrateur.
 - La refonte ne modifie ni règles métier, ni dispatch, ni contrats API, ni schéma de données.
 - Les autres espaces client, chauffeur et plateforme restent hors du périmètre de cette première refonte.
 

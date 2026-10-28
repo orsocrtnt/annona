@@ -156,6 +156,12 @@ Réponses données au questionnaire de l'agent ; elles débloquent SAAS-02/03/04
 
 Le choix d'un Contact stocké implique sa propre table : additive, préproduction seulement, comme le journal d'abonnement. Complément du même jour : la migration additive des codes commerciaux est autorisée, appliquée à la préproduction seulement après relecture et fusion de la branche ; un compte super-administrateur temporaire peut être créé sur la préproduction pour les recettes navigateur, puis supprimé.
 
+## C11 — Décision du propriétaire du 28 octobre 2026
+
+| Sujet | Décision | Tâche |
+| --- | --- | --- |
+| Création de commande côté back-office | Acceptée pour le compte d'un client choisi, depuis le flux « commande par message » uniquement, après relecture et validation du dispatcher. Rôles : `COMPANY_ADMIN`, `MINI_ADMIN` (module Commandes) et `DISPATCHER`, avec la permission `orders:create`. La commande porte `source = ADMIN`. Elle passe par le service de création existant (géocodage, contrôles d'abonnement, idempotence). Le client doit être un compte actif de l'entreprise. La fonction reste désactivée tant que la clé serveur et l'activation par l'entreprise manquent. | INTAKE-1 |
+
 ## Éléments encore non confirmés
 
 - identité juridique, SIREN, TVA et adresse de l'éditeur ;
