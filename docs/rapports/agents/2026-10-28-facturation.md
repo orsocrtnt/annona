@@ -104,10 +104,10 @@ Sous-agents :
 - client sans compte ;
 - Factur-X d'une facture en retard.
 
-**`npm run check` final** : lancé par `lourd.sh` après le dernier commit de code **b73f868**, code de sortie 0 :
+**`npm run check` courant** : lancé par `lourd.sh` sur `agent/correctifs-codex` après le dernier commit de code **8b57200** (C1 inclus), code de sortie 0 :
 - `tsc` sans erreur ;
 - `eslint src --max-warnings=0` sans erreur ni avertissement ;
-- **997/997 tests**, 0 échec (la base comptait 934 tests).
+- **1139/1139 tests**, 0 échec.
 
 Les fichiers de test, hors du périmètre lint de `check`, sont passés à part avec `eslint --max-warnings=0` : propre.
 
@@ -126,7 +126,7 @@ Les fichiers de test, hors du périmètre lint de `check`, sont passés à part 
 - la croissance du volume au-delà de 100 factures n'a pas été mesurée (pas de pagination : un message renvoie vers les filtres et l'export comptable).
 
 **Auto-relecture** : le diff complet a été relu. Points notés et acceptés :
-- (a) Le passage en retard modifie `updatedAt`. Un administrateur qui marque payée une facture affichée avant le passage reçoit le 409 existant « Rechargez-la ». Ce comportement est voulu : c'est la réclamation optimiste existante.
+- (a) Sans objet depuis le point 3 ci-dessous : le SQL final du passage en retard ne modifie pas `updated_at`.
 - (b) Corrigé après relecture : la liste n'écrit plus en base.
 - (c) Une entreprise qui active la facture à la livraison sans zone tarifaire verra des tâches FAILED (`DELIVERY_INVOICE_EMPTY`, non relancées). C'est voulu (« jamais silencieuse »), à expliquer à l'activation.
 - (d) La réémission manuelle d'une facture OVERDUE la repasse en PENDING avec une nouvelle échéance, sans trace dédiée. C'est la sémantique existante de la réémission.
@@ -138,7 +138,7 @@ Les fichiers de test, hors du périmètre lint de `check`, sont passés à part 
   - tentatives non envoyées sans plafond (désormais une trace par jour et par résultat) ;
   - `sentById` exposé par la route (retiré) ;
   - `error.message` Prisma dans l'incident cron (message fixe).
-- Accepté : e-mail envoyé avant la mise à jour du résultat. En cas de mort du processus entre les deux, le rejeu renvoie le même e-mail, dédoublonné par la clé d'idempotence Resend. L'identifiant de la route n'est pas validé en format (requêtes paramétrées, 404 générique).
+- Accepté : e-mail envoyé avant la mise à jour du résultat. En cas de mort du processus entre les deux, le rejeu renvoie le même e-mail, dédoublonné par la clé d'idempotence Resend (une clé par relance, conservée par C1 ci-dessous). L'identifiant de la route n'est pas validé en format (requêtes paramétrées, 404 générique).
 
 **Délais choisis** :
 - retard à partir du lendemain du jour d'échéance, heure de Paris ;
@@ -173,3 +173,33 @@ Notes : le test du libellé d'exploitation (`tests/admin01-operation-jobs.test.t
 SHA ajoutés : e76f9a7, fcc4a52, 0882de4, c06f113, 2de0712, 4b56fd9, 9e58157, 37d2d98, 0a09a81, 1e3068a, puis le commit de cette mise à jour.
 
 Toujours non vérifié : clic navigateur, spec E2E non lancée, migration non appliquée (dont l'`ALTER TYPE`), SQL brut du passage en retard jamais exécuté sur PostgreSQL réel (simulé par un fake qui contrôle le texte exact et les paramètres), e-mails réels.
+
+## C1 — deux relances pouvaient partir en même temps pour une même facture (audit Codex, 29/10)
+
+**Défaut.** La création d'une relance était sous verrou, mais pas le contrôle `superseding` ni l'envoi. Chaque relance a sa propre clé fournisseur, et le blocage à la création se fondait sur `createdAt`. Scénario : une ancienne relance R1, encore QUEUED et créée il y a plus de 24 h, est remise en file. Après son contrôle `superseding`, mais avant l'envoi, l'administrateur clique « Relancer » : R2 est créée (R1 trop ancienne pour bloquer), et les deux e-mails partent.
+
+**Correction** (2fcbfc3, `src/domains/invoice/invoice-reminder.service.ts`) : une réservation d'envoi par facture.
+- Avant l'envoi, une transaction courte prend `SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended('invoice-reminder:' || $invoiceId::text, 0))`, en SQL paramétré. Elle relit la relance et la facture, puis vérifie :
+  - qu'aucune relance plus récente n'existe ;
+  - qu'aucune autre relance n'est SENDING ou SENT dans les 24 h (sinon `SKIPPED_SUPERSEDED`) ;
+  - que la facture est toujours due, que le destinataire existe et que les préférences du client l'autorisent.
+- Elle passe ensuite CETTE relance en `SENDING`. Le champ `completedAt` porte alors l'heure de réservation : aucune migration.
+- L'e-mail part hors transaction. La relance passe ensuite en `SENT`, uniquement si la réservation lui appartient toujours.
+- Si le fournisseur échoue, la réservation est rendue (`QUEUED`) et l'erreur relancée : la tâche durable rejouera. Le résultat affiché devient `FAILED` quand la tâche est épuisée (mécanisme existant).
+- Réservation orpheline (processus arrêté pendant l'envoi) : la tâche de la même relance la reprend après **5 minutes**. Ce délai est celui du bail des tâches durables, bien au-delà du délai d'envoi (10 s) et très en deçà de la fenêtre d'idempotence du fournisseur (24 h). Avant ce délai, la tâche échoue en `INVOICE_REMINDER_SEND_IN_PROGRESS` et sera rejouée. La reprise réutilise la clé d'idempotence de la relance, `client-notification:invoice-reminder:<id>`, dérivée de la relance et non de l'événement. Un e-mail déjà accepté par le fournisseur n'est donc pas renvoyé.
+- Bouton « Relancer » : il prend le même verrou consultatif, en plus du `FOR UPDATE` existant. Il refuse proprement (rejeu de la relance existante, `duplicate: true`) tant qu'une relance est `SENDING`, sur une fenêtre de 24 h à partir de la réservation : l'e-mail est peut-être parti. Libellé « Relance en cours d'envoi » et message « Une relance est en cours d'envoi : aucune nouvelle relance envoyée. » (`src/features/back-office/company-payments-labels.ts`).
+
+**Tests** (`tests/c1-invoice-reminder-reservation.test.ts`, 9 tests, et `tests/demo3-payments-labels.test.ts`, 1 test). Rouge avant le code : 7 tests sur 9 + le libellé. Le test de l'entrelacement exact donnait **2 e-mails au lieu de 1**. Vert après le code. Couverture :
+- l'entrelacement exact R1 / R2 : au plus un envoi, et le clic est refusé ;
+- l'entrelacement inverse : seule R2 part ;
+- le bouton refusé pendant SENDING ;
+- une réservation encore valide : rejouée sans envoi ;
+- R1 orpheline expirée : reprise possible, même clé ;
+- une autre relance réservée ou envoyée dans les 24 h : aucun envoi ;
+- une facture payée entre-temps, y compris en reprise : aucun envoi ;
+- une panne du fournisseur : retour en QUEUED puis envoi au rejeu.
+
+`tests/demo3-invoice-reminder.test.ts` reste vert (23/23).
+
+**Non vérifié (C1)** : le verrou consultatif et la réservation sont simulés par la base en mémoire, qui sérialise les transactions, et n'ont pas été exécutés sur PostgreSQL réel. La déduplication par clé d'idempotence du fournisseur n'a pas été vérifiée avec un envoi réel.
+
