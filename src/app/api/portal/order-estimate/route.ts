@@ -4,11 +4,12 @@ import { requireClientRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { estimateCourierPrice } from "@/domains/company/courier-estimate.service";
 
-const text = z.string().max(500).nullish();
+// Champ absent ou null : null pour le service d'estimation.
+const text = z.string().max(500).nullish().transform((value) => value ?? null);
 const estimateSchema = z.object({
   pickupAddress: text, pickupCity: text, pickupPostalCode: text,
   shippingAddress: text, shippingCity: text, shippingPostalCode: text,
-  requestedDeliveryDate: z.string().max(40).nullish(),
+  requestedDeliveryDate: z.string().max(40).nullish().transform((value) => value ?? null),
 }).strict();
 
 export async function POST(request: Request) {
@@ -26,20 +27,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Données d'estimation invalides." }, { status: 400 });
     }
     const body = parsed.data;
-    const str = (v: string | null | undefined) => v ?? null;
 
     const result = await estimateCourierPrice(companyId, {
-      pickup: {
-        address: str(body.pickupAddress),
-        city: str(body.pickupCity),
-        postalCode: str(body.pickupPostalCode),
-      },
-      shipping: {
-        address: str(body.shippingAddress),
-        city: str(body.shippingCity),
-        postalCode: str(body.shippingPostalCode),
-      },
-      requestedDeliveryDate: str(body.requestedDeliveryDate),
+      pickup: { address: body.pickupAddress, city: body.pickupCity, postalCode: body.pickupPostalCode },
+      shipping: { address: body.shippingAddress, city: body.shippingCity, postalCode: body.shippingPostalCode },
+      requestedDeliveryDate: body.requestedDeliveryDate,
     });
 
     return NextResponse.json({ data: result, success: true });
