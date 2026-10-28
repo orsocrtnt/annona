@@ -15,6 +15,22 @@ import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
 // explicite ; le --max-time du workflow GitHub doit rester supérieur ou égal.
 export const maxDuration = 60;
 
+/** Passage en retard indépendant des tâches durables : exécuté dans tous les cas, échec signalé. */
+async function runOverdueInvoiceSweep(): Promise<number | null> {
+  try {
+    return await markOverdueInvoices();
+  } catch {
+    // Message fixe : une erreur Prisma peut contenir des valeurs de requête.
+    await reportOperationalIncident({
+      source: "cron.operations",
+      fingerprint: "invoice-overdue-sweep-failure",
+      summary: "Passage des factures en retard impossible",
+      severity: "error",
+    });
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
@@ -23,20 +39,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
+  const overdueInvoices = await runOverdueInvoiceSweep();
   try {
     const jobs = await processDueOperationJobs();
-    let overdueInvoices: number | null = null;
-    try {
-      overdueInvoices = await markOverdueInvoices();
-    } catch {
-      // Message fixe : une erreur Prisma peut contenir des valeurs de requête.
-      await reportOperationalIncident({
-        source: "cron.operations",
-        fingerprint: "invoice-overdue-sweep-failure",
-        summary: "Passage des factures en retard impossible",
-        severity: "error",
-      });
-    }
     const result = { ...jobs, overdueInvoices };
     // Les deux conditions sont évaluées : un échec terminal ne masque pas un retard.
     if (result.failed > 0) {

@@ -8,14 +8,14 @@ import { NextResponse } from "next/server";
 
 type Incident = Record<string, unknown>;
 
-function loadCron(sweep: () => Promise<number>, incidents: Incident[], jobs = { processed: 0, succeeded: 0, pending: 0, failed: 0, overdue: 0 }) {
+function loadCron(sweep: () => Promise<number>, incidents: Incident[], jobs: Record<string, number> | (() => Promise<never>) = { processed: 0, succeeded: 0, pending: 0, failed: 0, overdue: 0 }) {
   const testModule = { exports: {} as { GET: (request: Request) => Promise<Response> } };
   const js = ts.transpileModule(readFileSync(resolve("src/app/api/cron/operations/route.ts"), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const deps: Record<string, unknown> = {
     "next/server": { NextResponse },
-    "@/domains/operations/operation-job.service": { processDueOperationJobs: async () => jobs },
+    "@/domains/operations/operation-job.service": { processDueOperationJobs: typeof jobs === "function" ? jobs : async () => jobs },
     "@/domains/invoice/invoice-overdue.service": { markOverdueInvoices: sweep },
     "@/lib/operations/incident-reporter": {
       reportOperationalIncident: async (incident: Incident) => {
@@ -71,4 +71,16 @@ test("DEMO-3 cron : un échec du passage en retard est signalé sans bloquer les
   assert.equal(body.data.processed, 3, "les tâches ont bien été traitées");
   assert.equal(body.data.overdueInvoices, null);
   assert.deepEqual(incidents.map((incident) => incident.fingerprint), ["invoice-overdue-sweep-failure"]);
+});
+
+test("DEMO-3 cron : le passage en retard s'exécute même si le traitement des tâches plante", async () => {
+  const incidents: Incident[] = [];
+  let sweeps = 0;
+  const route = loadCron(async () => { sweeps += 1; return 1; }, incidents, async () => { throw new Error("worker down"); });
+
+  const response = await route.GET(authorized());
+
+  assert.equal(sweeps, 1);
+  assert.equal(response.status, 500);
+  assert.deepEqual(incidents.map((incident) => incident.fingerprint), ["operation-jobs-worker-crash"]);
 });
