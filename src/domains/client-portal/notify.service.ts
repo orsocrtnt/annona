@@ -36,6 +36,16 @@ type DeliveryNotificationPayload = {
   deliveryId: string;
 };
 
+/** DEMO-3 : le livreur a accepté la mission (bouton « Prendre en charge »). */
+type DeliveryAcceptedNotificationPayload = {
+  kind: "DELIVERY_ACCEPTED";
+  customerId: string;
+  companyId: string;
+  reference: string;
+  deliveryId: string;
+  acceptedAt: string;
+};
+
 type InvoiceNotificationPayload = {
   kind: "INVOICE";
   customerId: string;
@@ -47,14 +57,20 @@ type InvoiceNotificationPayload = {
 
 type ClientNotificationJobPayload =
   | DeliveryNotificationPayload
+  | DeliveryAcceptedNotificationPayload
   | InvoiceNotificationPayload;
+
+const ACCEPTED_COPY = {
+  title: "Prise en charge",
+  body: (ref: string) => `Votre livreur a pris en charge ${ref}.`,
+};
 
 const DELIVERY_COPY: Partial<
   Record<DeliveryStatus, { title: string; body: (ref: string) => string }>
 > = {
   ASSIGNED: {
     title: "Chauffeur assigné",
-    body: (ref) => `Un chauffeur a pris en charge ${ref}.`,
+    body: (ref) => `Un chauffeur a été assigné à ${ref}.`,
   },
   PURCHASING: {
     title: "Courses en cours",
@@ -177,6 +193,34 @@ export async function queueDeliveryStatusNotification(
   });
 }
 
+export async function queueDeliveryAcceptedNotification(
+  db: NotificationDatabase,
+  input: {
+    customerId: string | null;
+    companyId: string;
+    reference: string;
+    deliveryId: string;
+    acceptedAt: Date;
+  }
+) {
+  if (!input.customerId) return null;
+  const acceptedAt = input.acceptedAt.toISOString();
+  return enqueueOperationJob(db, {
+    // Une acceptation = une date : un rejeu garde la tâche, une nouvelle acceptation en crée une.
+    jobKey: `client-notification:delivery:${input.deliveryId}:accepted:${acceptedAt}`,
+    type: "CLIENT_NOTIFICATION",
+    companyId: input.companyId,
+    payload: {
+      kind: "DELIVERY_ACCEPTED",
+      customerId: input.customerId,
+      companyId: input.companyId,
+      reference: input.reference,
+      deliveryId: input.deliveryId,
+      acceptedAt,
+    },
+  });
+}
+
 export async function queueInvoiceIssuedNotification(
   db: NotificationDatabase,
   input: {
@@ -224,6 +268,15 @@ function parseNotificationPayload(payload: Prisma.JsonValue): ClientNotification
     return { kind: "DELIVERY", customerId, companyId, reference, deliveryId, status };
   }
 
+  if (value.kind === "DELIVERY_ACCEPTED") {
+    const deliveryId = typeof value.deliveryId === "string" ? value.deliveryId : null;
+    const acceptedAt = typeof value.acceptedAt === "string" ? value.acceptedAt : null;
+    if (!deliveryId || !acceptedAt || !Number.isFinite(Date.parse(acceptedAt))) {
+      throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
+    }
+    return { kind: "DELIVERY_ACCEPTED", customerId, companyId, reference, deliveryId, acceptedAt };
+  }
+
   if (value.kind === "INVOICE") {
     const invoiceId = typeof value.invoiceId === "string" ? value.invoiceId : null;
     const amount = typeof value.amount === "number" ? value.amount : null;
@@ -240,9 +293,9 @@ export async function deliverClientNotificationJob(
 ) {
   const payload = parseNotificationPayload(rawPayload);
   const settings = await getClientSettings(payload.customerId);
-  const enabled = payload.kind === "DELIVERY"
-    ? settings.deliveryAlerts
-    : settings.invoiceAlerts;
+  const enabled = payload.kind === "INVOICE"
+    ? settings.invoiceAlerts
+    : settings.deliveryAlerts;
   if (!enabled) return;
 
   const user = await prisma.user.findFirst({
@@ -250,6 +303,32 @@ export async function deliverClientNotificationJob(
     select: { email: true },
   });
   if (!user) return;
+
+  if (payload.kind === "DELIVERY_ACCEPTED") {
+    const delivery = await prisma.delivery.findFirst({
+      where: {
+        id: payload.deliveryId,
+        customerId: payload.customerId,
+        companyId: payload.companyId,
+      },
+      select: { id: true, missionAcceptedAt: true },
+    });
+    // Refus ou nouvelle acceptation depuis la mise en file : cette prise en charge n'est plus vraie.
+    if (delivery?.missionAcceptedAt?.getTime() !== Date.parse(payload.acceptedAt)) return;
+    const body = ACCEPTED_COPY.body(payload.reference);
+    await insertNotification(eventKey, {
+      userId: payload.customerId,
+      type: "DELIVERY",
+      title: ACCEPTED_COPY.title,
+      body,
+      href: `/portal/deliveries/${payload.deliveryId}`,
+      email:
+        settings.emailNotifications && user.email
+          ? { to: user.email, subject: `${ACCEPTED_COPY.title} — ${payload.reference}`, text: body }
+          : undefined,
+    });
+    return;
+  }
 
   if (payload.kind === "DELIVERY") {
     const delivery = await prisma.delivery.findFirst({

@@ -48,7 +48,10 @@ function fixture(options: { failEvent?: boolean; race?: boolean } = {}) {
   } };
   const { acknowledgeDeliveryMissionByDriver: acknowledge } = load<{
     acknowledgeDeliveryMissionByDriver: (driver: string, company: string, id: string, input: { action: "accept" | "decline"; expectedUpdatedAt: Date; reason?: string }) => Promise<Row | null>;
-  }>("src/domains/delivery/acknowledge-delivery-mission.service.ts", { "@/services/prisma/client": { prisma } });
+  }>("src/domains/delivery/acknowledge-delivery-mission.service.ts", { "@/services/prisma/client": { prisma },
+    // Notification de prise en charge couverte par tests/mission-acceptance-notification.test.ts.
+    "@/domains/client-portal/notify.service": { queueDeliveryAcceptedNotification: async () => null },
+    "@/domains/operations/operation-job.service": { kickOperationJob: () => undefined } });
   const { startDeliveryMissionByDriver: start } = load<{
     startDeliveryMissionByDriver: (driver: string, company: string, id: string, expected?: Date) => Promise<Row | null>;
   }>("src/domains/delivery/start-delivery-mission.service.ts", { "@/services/prisma/client": { prisma } });
