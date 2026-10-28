@@ -92,10 +92,11 @@ function fakeDatabase(t: TestContext, options: {
       findUnique: async ({ where }: { where: Row }) => (where.id === company.id ? { ...company } : null),
     },
     order: {
-      findFirst: async ({ where }: { where: Row }) =>
-        where.id === order.id && where.companyId === order.companyId
-          ? { ...order, invoices: invoices.filter((row) => row.orderId === order.id) }
-          : null,
+      findFirst: async ({ where, include }: { where: Row; include?: { invoices?: { where?: { status?: { not: string } } } } }) => {
+        if (where.id !== order.id || where.companyId !== order.companyId) return null;
+        const excluded = include?.invoices?.where?.status?.not;
+        return { ...order, invoices: invoices.filter((row) => row.orderId === order.id && row.status !== excluded) };
+      },
       findUniqueOrThrow: async () => ({ ...order }),
       updateMany: async ({ where, data }: { where: Row; data: Row }) => {
         if (where.status !== undefined && where.status !== order.status) return { count: 0 };
@@ -116,7 +117,9 @@ function fakeDatabase(t: TestContext, options: {
     driverLocation: { findUnique: async () => null },
     trackingEvent: { create: async () => ({ id: `evt_${++sequence}` }) },
     invoice: {
-      findMany: async ({ where }: { where: Row }) => invoices.filter((row) => row.orderId === where.orderId),
+      findMany: async ({ where }: { where: Row }) => invoices.filter((row) =>
+        row.orderId === where.orderId
+        && (where.status === undefined || (row.status !== (where.status as { not: string }).not))),
       create: async ({ data }: { data: Row }) => {
         const row = { id: `inv_${++sequence}`, ...data };
         invoices.push(row);
@@ -221,6 +224,16 @@ test("DEMO-3 génération : une facture saisie à la main n'est jamais doublée 
   assert.deepEqual(await createDeliveredOrderInvoice("company_a", "order_1"), { status: "skipped", reason: "INVOICE_EXISTS" });
   assert.equal(invoices.length, 1);
   assert.equal(invoices[0]!.amount, 99);
+});
+
+test("DEMO-3 génération : une facture annulée ne bloque pas, comme le flux manuel", async (t) => {
+  const cancelled = { id: "cancelled", orderId: "order_1", status: "CANCELLED", amount: 99, reference: "FAC-OLD" };
+  const { invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true, invoices: [cancelled] });
+  assert.equal((await createDeliveredOrderInvoice("company_a", "order_1")).status, "created");
+  assert.equal(invoices.length, 2);
+  assert.equal(invoices[0]!.status, "CANCELLED", "l'annulée reste annulée");
+  assert.equal(invoices[1]!.status, "PENDING");
+  assert.notEqual(invoices[1]!.reference, "FAC-OLD", "référence unique");
 });
 
 test("DEMO-3 génération : réglage coupé entre la livraison et le traitement, rien n'est créé", async (t) => {

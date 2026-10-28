@@ -199,8 +199,9 @@ export type DeliveredOrderInvoiceResult =
  * DEMO-3 : facture émise automatiquement pour une commande livrée, avec les mêmes
  * valeurs par défaut que le formulaire manuel (zone suggérée par le code postal,
  * achats validés par le livreur, délai de paiement de l'entreprise). Une facture
- * par commande, comme aujourd'hui : si la commande en a déjà une (manuelle ou
- * automatique, quel que soit son statut), rien n'est créé ni modifié.
+ * active par commande, comme le flux manuel : si la commande en a déjà une non
+ * annulée (manuelle ou automatique), rien n'est créé ni modifié ; une facture
+ * annulée ne bloque pas.
  */
 export async function createDeliveredOrderInvoice(
   companyId: string,
@@ -208,7 +209,7 @@ export async function createDeliveredOrderInvoice(
 ): Promise<DeliveredOrderInvoiceResult> {
   const order = await prisma.order.findFirst({
     where: { id: orderId, companyId },
-    include: { items: true, invoices: { select: { id: true } } },
+    include: { items: true, invoices: { where: { status: { not: "CANCELLED" } }, select: { id: true } } },
   });
   if (!order) return { status: "skipped", reason: "ORDER_NOT_FOUND" };
   if (order.status !== "DELIVERED") return { status: "skipped", reason: "ORDER_NOT_DELIVERED" };
@@ -241,7 +242,7 @@ export async function createDeliveredOrderInvoice(
   const outcome = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "orders" WHERE id = ${order.id} AND company_id = ${companyId} FOR UPDATE`;
     // Revérifié sous verrou : deux traitements concurrents ne créent jamais deux factures.
-    const existing = await tx.invoice.findMany({ where: { orderId: order.id } });
+    const existing = await tx.invoice.findMany({ where: { orderId: order.id, status: { not: "CANCELLED" } } });
     if (existing.length > 0) return null;
     const invoice = await tx.invoice.create({
       data: {
