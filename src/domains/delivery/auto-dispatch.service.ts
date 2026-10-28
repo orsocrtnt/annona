@@ -305,46 +305,6 @@ function proximitiesFromDrivers(
   );
 }
 
-/**
- * Positions lues hors de toute transaction (leçon DISPATCH-3), limitées aux livreurs
- * actifs de l'entreprise ; seuls les livreurs en service ont une position utilisée.
- */
-async function loadDriverProximities(
-  companyId: string,
-  delivery: DeliveryForDispatch,
-  driverIds: string[],
-  settings: CompanyDispatchSettings,
-  now = new Date()
-): Promise<Map<string, DispatchProximity>> {
-  const pickup = getDispatchPickupPoint(delivery);
-  const rows = settings.gpsProximityEnabled && driverIds.length > 0
-    ? await prisma.user.findMany({
-        where: { companyId, id: { in: driverIds }, status: "ACTIVE", role: { systemRole: "DRIVER" } },
-        select: {
-          id: true,
-          settings: true,
-          driverLocation: { select: { latitude: true, longitude: true, updatedAt: true } },
-        },
-      })
-    : [];
-  const byId = new Map(rows.map((row) => [row.id, row]));
-  return new Map(
-    driverIds.map((driverId) => {
-      const row = byId.get(driverId);
-      return [
-        driverId,
-        computeDispatchProximity({
-          settings,
-          pickup,
-          onDuty: row ? trackingService(row.settings).active : false,
-          position: row?.driverLocation ?? null,
-          now,
-        }),
-      ];
-    })
-  );
-}
-
 export async function tryAutoAssignDelivery(
   companyId: string,
   deliveryId: string,
@@ -528,17 +488,19 @@ export async function getEligibleDriversForDelivery(
   });
   if (!delivery) return null;
 
-  const [settings, drivers, tariffSettings] = await Promise.all([
+  const [settings, positioned, tariffSettings] = await Promise.all([
     getCompanyDispatchSettings(companyId),
-    getCompanyDriversWithActivity(companyId),
+    getCompanyDriversWithActivity(companyId, { withDispatchPosition: true }),
     getCompanyTariffSettings(companyId),
   ]);
-  const proximities = await loadDriverProximities(
-    companyId,
-    delivery,
-    drivers.map((driver) => driver.id),
-    settings
-  );
+  // L'option GPS s'applique ici (statut DISABLED) ; état de service et position ne sortent pas.
+  const proximities = proximitiesFromDrivers(delivery, positioned, settings);
+  const drivers = positioned.map((row): DriverActivity => {
+    const driver: Partial<typeof row> = { ...row };
+    delete driver.settings;
+    delete driver.driverLocation;
+    return driver as DriverActivity;
+  });
 
   return drivers.map((driver) => {
     const reasons = getDriverEligibilityReasons(

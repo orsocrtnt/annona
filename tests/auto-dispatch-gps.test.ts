@@ -304,3 +304,17 @@ test("dispatch GPS (P5) : la file lit les positions une fois par passage et les 
   for (const call of assigns) assert.match(call, /^assign:close:.*plus proche du point de retrait$/, "positions réutilisées pour chaque livraison");
   assert.equal(f.calls.includes("positions-separate"), false);
 });
+
+test("dispatch GPS (P6) : éligibles — positions lues dans le Promise.all, option appliquée ensuite, rien de brut renvoyé", async () => {
+  const f = connectedFixture();
+  const rows = await f.svc.getEligibleDriversForDelivery("company", "d1");
+  assert.deepEqual(f.driverQueries, ["drivers+positions"]);
+  assert.equal(f.calls.includes("positions-separate"), false);
+  for (const row of rows!) {
+    assert.equal("settings" in (row.driver as Row), false);
+    assert.equal("driverLocation" in (row.driver as Row), false);
+  }
+  const off = connectedFixture({ settings: { gpsProximityEnabled: false } });
+  const offRows = await off.svc.getEligibleDriversForDelivery("company", "d1");
+  assert.deepEqual(offRows!.map((row) => (row.proximity as DispatchProximity).status), ["DISABLED", "DISABLED", "DISABLED"]);
+});
