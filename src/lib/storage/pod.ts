@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/services/supabase/admin";
-import { stripPodPhotoMetadata } from "@/lib/storage/pod-image";
+import { sanitizePodPhoto } from "@/lib/storage/pod-image";
 
 export const POD_BUCKET = "delivery-pods";
 export const SIGNED_URL_SECONDS = 5 * 60;
@@ -126,13 +126,14 @@ export async function uploadPodPhoto(params: {
   validatePodPhoto(params.bytes, params.contentType);
   if (![params.companyId, params.deliveryId].every((id) => /^[A-Za-z0-9_-]+$/.test(id))) throw new Error("POD_INVALID_PATH");
   // Aucune métadonnée (EXIF, position GPS) ne doit être conservée dans le bucket.
-  const clean = await stripPodPhotoMetadata(params.bytes, params.contentType);
+  const clean = await sanitizePodPhoto(params.bytes, params.contentType, MAX_POD_BYTES);
   await ensurePodBucket();
-  const ext = params.contentType.includes("png") ? "png" : "jpg";
+  // Le type final peut changer (repli en JPEG si le PNG ré-encodé dépasse la limite).
+  const ext = clean.contentType === "image/png" ? "png" : "jpg";
   const path = `${params.companyId}/${params.deliveryId}-${Date.now()}-${randomUUID()}.${ext}`;
   const supabase = createAdminClient();
-  const { error } = await supabase.storage.from(POD_BUCKET).upload(path, clean, {
-    contentType: params.contentType,
+  const { error } = await supabase.storage.from(POD_BUCKET).upload(path, clean.bytes, {
+    contentType: clean.contentType,
     upsert: false,
   });
   if (error) throw new Error(`POD_UPLOAD: ${error.message}`);
