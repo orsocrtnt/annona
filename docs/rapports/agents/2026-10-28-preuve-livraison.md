@@ -15,7 +15,7 @@ Branche `agent/preuve-livraison`, base `9234600` (preproduction). Le worktree av
 
 ## À faire par le propriétaire
 
-- Appliquer la migration `prisma/migrations/20261028090000_pod_signature/migration.sql` (colonnes nullables sur `deliveries`, table déjà sous RLS). Non appliquée.
+- Appliquer la migration `prisma/migrations/20261028120000_pod_signature/migration.sql` (colonnes nullables sur `deliveries`, table déjà sous RLS). Non appliquée.
 - Aucun bucket à créer : la signature réutilise `delivery-pods`.
 - Recette navigateur et téléphone réel (canvas tactile, hors ligne, PDF) : non faite. Spec `tests/e2e/pod-proof.spec.ts` écrite, non lancée.
 
