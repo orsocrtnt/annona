@@ -134,6 +134,8 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       tone="light"
       sticky={!overlay}
       maxWidthClassName="max-w-7xl"
+      // Boutons à 44 px : marge verticale réduite pour garder la barre de preproduction (56 px).
+      innerClassName="py-1.5"
       className={overlay ? "pointer-events-auto" : undefined}
     >
       <AppleNavbarBrand href="/portal" tone="light" />
@@ -173,7 +175,8 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           size="icon-touch"
           onClick={logout}
           aria-label="Se déconnecter"
-          className={appleNavbarIconButtonLightClass}
+          // La classe partagée fixe h-10 w-10 ; h-11 w-11 placé après l'emporte (cible 44 px).
+          className={cn(appleNavbarIconButtonLightClass, "h-11 w-11")}
         >
           <LogOut className="h-4 w-4" aria-hidden />
         </Button>
@@ -182,7 +185,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className={cn(appleNavbarIconButtonLightClass, "xl:hidden")}
+              className={cn(appleNavbarIconButtonLightClass, "h-11 w-11 xl:hidden")}
               aria-label="Ouvrir la navigation client"
             >
               <Menu className="h-5 w-5" aria-hidden />

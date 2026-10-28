@@ -113,3 +113,18 @@ test("la navigation client portail vers un autre espace retire le thème sombre"
   await page.goto("/");
   expect(await page.locator("html").getAttribute("data-theme")).toBeNull();
 });
+
+test("les boutons de la barre du portail font 44 px sans grandir la barre (56 px)", async ({ page }) => {
+  await openPortal(page);
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    const names = width < 1280 ? ["Se déconnecter", "Ouvrir la navigation client", "Notifications"] : ["Se déconnecter", "Notifications"];
+    for (const name of names) {
+      const box = await page.getByRole("button", { name, exact: true }).boundingBox();
+      expect(box?.height, `${name} à ${width}px`).toBeGreaterThanOrEqual(44);
+      expect(box?.width, `${name} à ${width}px`).toBeGreaterThanOrEqual(44);
+    }
+    const bar = await page.locator("header").first().locator("> div").first().boundingBox();
+    expect(bar?.height, `hauteur de barre à ${width}px`).toBeLessThanOrEqual(56);
+  }
+});
