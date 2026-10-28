@@ -293,3 +293,14 @@ test("dispatch GPS (P4) : la liste des livreurs ne charge la position et l'état
   assert.equal("driverLocation" in plain[0]!, false);
   assert.equal("driverLocation" in withPosition[0]!, true);
 });
+
+test("dispatch GPS (P5) : la file lit les positions une fois par passage et les réutilise", async () => {
+  const f = connectedFixture({ pending: ["d1", "d2", "d3"] });
+  const run = await f.svc.runAutoDispatchQueue("company");
+  assert.equal(run.assigned, 3);
+  assert.deepEqual(f.driverQueries, ["drivers+positions", "drivers", "drivers"], "charge relue à chaque livraison, positions une seule fois");
+  const assigns = f.calls.filter((c) => c.startsWith("assign"));
+  assert.equal(assigns.length, 3);
+  for (const call of assigns) assert.match(call, /^assign:close:.*plus proche du point de retrait$/, "positions réutilisées pour chaque livraison");
+  assert.equal(f.calls.includes("positions-separate"), false);
+});

@@ -274,10 +274,14 @@ export function resolveDriverForDelivery(
   return null;
 }
 
-type DriverWithDispatchPosition = DriverActivity & {
+type DriverDispatchPosition = {
   settings?: unknown;
   driverLocation?: { latitude: number; longitude: number; updatedAt: Date } | null;
 };
+type DriverWithDispatchPosition = DriverActivity & DriverDispatchPosition;
+
+/** Un passage de file : les positions sont lues une fois, la charge à chaque livraison. */
+export type AutoDispatchPass = { positions?: Map<string, DriverDispatchPosition> };
 
 /** Seuls les livreurs en service ont une position utilisée ; le reste est neutre. */
 function proximitiesFromDrivers(
@@ -343,7 +347,8 @@ async function loadDriverProximities(
 
 export async function tryAutoAssignDelivery(
   companyId: string,
-  deliveryId: string
+  deliveryId: string,
+  pass?: AutoDispatchPass
 ): Promise<AutoDispatchResult> {
   const settings = await getCompanyDispatchSettings(companyId);
   if (!settings.enabled) {
@@ -381,13 +386,23 @@ export async function tryAutoAssignDelivery(
     return { deliveryId, assigned: false, skippedReason: "Statut non éligible" };
   }
 
-  // Positions lues avec la liste des livreurs, hors transaction (leçon DISPATCH-3).
-  const [drivers, tariffSettings] = await Promise.all([
-    settings.gpsProximityEnabled
+  // Positions lues avec la liste des livreurs, hors transaction (leçon DISPATCH-3),
+  // sauf si le passage de file les a déjà lues.
+  const readPositions = settings.gpsProximityEnabled && !pass?.positions;
+  const [loaded, tariffSettings] = await Promise.all([
+    readPositions
       ? getCompanyDriversWithActivity(companyId, { withDispatchPosition: true })
       : getCompanyDriversWithActivity(companyId),
     getCompanyTariffSettings(companyId),
   ]);
+  const known = pass?.positions;
+  const drivers: DriverWithDispatchPosition[] =
+    !readPositions && known ? loaded.map((driver) => ({ ...driver, ...known.get(driver.id) })) : loaded;
+  if (readPositions && pass) {
+    pass.positions = new Map(
+      drivers.map((driver) => [driver.id, { settings: driver.settings, driverLocation: driver.driverLocation ?? null }])
+    );
+  }
 
   if (drivers.length === 0) {
     return { deliveryId, assigned: false, skippedReason: "Aucun chauffeur actif" };
@@ -482,8 +497,9 @@ export async function runAutoDispatchQueue(companyId: string) {
   let assigned = 0;
   let skipped = 0;
 
+  const pass: AutoDispatchPass = {};
   for (const delivery of sorted) {
-    const result = await tryAutoAssignDelivery(companyId, delivery.id);
+    const result = await tryAutoAssignDelivery(companyId, delivery.id, pass);
     results.push(result);
     if (result.assigned) assigned += 1;
     else skipped += 1;
