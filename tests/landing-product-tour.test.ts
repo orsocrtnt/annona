@@ -10,6 +10,7 @@ import {
 } from "../src/features/landing/product-tour/tour-machine";
 import { TOUR_DRIVERS, interludeFor } from "../src/features/landing/product-tour/tour-data";
 import { TOUR_ROUTE, pointAlongRoute } from "../src/features/landing/product-tour/city-route";
+import { typingDelays } from "../src/features/landing/product-tour/typing";
 
 test("la démo avance d'une étape par geste", () => {
   assert.deepEqual(advanceTour(initialTourState(), "order"), { current: 1, reached: 1 });
@@ -93,4 +94,20 @@ test("chaque changement d'espace par un geste annonce l'espace suivant", () => {
 test("aucun carton sans changement d'étape ou en revenant en arrière", () => {
   assert.equal(interludeFor("dispatch", "dispatch"), null);
   assert.equal(interludeFor("tracking", "order"), null);
+});
+
+test("la frappe donne un délai par caractère, entre 45 et 130 ms", () => {
+  const delays = typingDelays("18 rue de la Roquette", 7);
+  assert.equal(delays.length, "18 rue de la Roquette".length);
+  assert.ok(delays.every((delay) => delay >= 45 && delay <= 130));
+});
+
+test("la frappe marque une pause après un espace", () => {
+  const delays = typingDelays("ab cd", 3);
+  assert.ok((delays[3] ?? 0) >= 105);
+  assert.ok((delays[1] ?? 0) <= 70);
+});
+
+test("la frappe est identique pour une même graine", () => {
+  assert.deepEqual(typingDelays("Ivry-sur-Seine", 5), typingDelays("Ivry-sur-Seine", 5));
 });

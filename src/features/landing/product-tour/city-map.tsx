@@ -35,6 +35,22 @@ const PARKS = [
 
 const routePath = TOUR_ROUTE.map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`).join(" ");
 
+/** Décor commun : fond, parcs, Seine et rues. */
+export function CityStreets() {
+  return (
+    <>
+      <rect x="-400" y="-300" width="1200" height="900" fill="#eef4f0" />
+      {PARKS.map((park) => (
+        <rect key={`${park.x}-${park.y}`} {...park} rx="8" fill="#d6efdf" />
+      ))}
+      <path d="M-400 176 H0 C 110 160, 210 236, 400 200 H800" fill="none" stroke="#cfe3f1" strokeWidth="18" strokeLinecap="round" />
+      {STREETS.map((street) => (
+        <path key={street} d={street} fill="none" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" />
+      ))}
+    </>
+  );
+}
+
 /** Plan de ville dessiné, aux couleurs Menthe : aucune tuile réseau. */
 export function CityMap({ progress, showRoute, variant }: CityMapProps) {
   const position = pointAlongRoute(TOUR_ROUTE, progress);
@@ -60,14 +76,7 @@ export function CityMap({ progress, showRoute, variant }: CityMapProps) {
       }
       className="h-full w-full bg-[#eef4f0]"
     >
-      <rect x="-400" y="-300" width="1200" height="900" fill="#eef4f0" />
-      {PARKS.map((park) => (
-        <rect key={`${park.x}-${park.y}`} {...park} rx="8" fill="#d6efdf" />
-      ))}
-      <path d="M-400 176 H0 C 110 160, 210 236, 400 200 H800" fill="none" stroke="#cfe3f1" strokeWidth="18" strokeLinecap="round" />
-      {STREETS.map((street) => (
-        <path key={street} d={street} fill="none" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" />
-      ))}
+      <CityStreets />
 
       {showRoute && (
         <>

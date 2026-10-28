@@ -284,6 +284,16 @@
   }
 }
 
+.product-tour-caret {
+  animation: productTourCaret 1s steps(1) infinite;
+}
+
+@keyframes productTourCaret {
+  50% {
+    opacity: 0;
+  }
+}
+
 .product-tour-halo {
   transform-box: fill-box;
   transform-origin: center;
