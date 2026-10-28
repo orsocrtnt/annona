@@ -111,10 +111,19 @@
   }
 }
 
-/* Verre : retombe sur une surface opaque si l'utilisateur réduit la transparence. */
+/*
+ * Verre du portail (barre `data-glass`, panneaux de carte `--map-glass-*`) : surface opaque, sans flou,
+ * si l'utilisateur réduit la transparence. Règle hors couche : elle l'emporte sur les utilitaires Tailwind.
+ * Portée `:root[data-theme]` (espaces migrés) : les autres espaces gardent leur rendu actuel.
+ */
 @media (prefers-reduced-transparency: reduce) {
-  .glass {
+  :root[data-theme] {
+    --map-glass-bg: var(--color-card);
+    --map-glass-blur: none;
+  }
+  :root[data-theme] [data-glass] {
     background-color: var(--color-card);
+    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }

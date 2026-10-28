@@ -88,7 +88,15 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
 });
 
 test("le verre respecte prefers-reduced-transparency et le mouvement prefers-reduced-motion", () => {
-  assert.match(css, /@media \(prefers-reduced-transparency: reduce\)/);
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  const reduced = between("@media (prefers-reduced-transparency: reduce) {", "\n}\n");
+  // Les sélecteurs visés doivent exister dans le code : barre et barre d'action (data-glass), cartes (--map-glass-*).
+  assert.match(reduced, /:root\[data-theme\] \[data-glass\] \{[^}]*backdrop-filter: none/);
+  assert.match(reduced, /--map-glass-blur: none/);
+  assert.match(read("src/components/navigation/apple-navbar.tsx"), /data-glass\s+className=\{cn\(\s+light/);
+  assert.match(read("src/features/client-portal/create-order-form.tsx"), /data-glass className="sticky/);
+  assert.match(read("src/components/maps/map-glass-styles.ts"), /backdropFilter: "var\(--map-glass-blur, blur\(8px\)\)"/);
+  assert.doesNotMatch(reduced, /\.glass\b/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 

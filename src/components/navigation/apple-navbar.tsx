@@ -38,6 +38,7 @@ export function AppleNavbar({
       )}
     >
       <div
+        data-glass
         className={cn(
           light
             ? "relative mx-auto flex min-h-14 items-center gap-2 overflow-visible rounded-[18px] border border-black/[0.07] bg-white/80 px-2.5 py-2 text-[#0e1310] shadow-[0_12px_44px_rgba(14,19,16,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/72 dark:border-white/10 dark:bg-card/85 dark:text-foreground dark:shadow-[0_12px_44px_rgba(0,0,0,0.35)] dark:supports-[backdrop-filter]:bg-card/80 sm:px-3"
