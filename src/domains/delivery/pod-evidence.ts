@@ -10,6 +10,13 @@ export const proofRulesSchema = z.object({
   emailToClient: z.boolean().default(true),
 });
 export type ProofRules = z.infer<typeof proofRulesSchema>;
+
+/** Mise à jour partielle : seuls les champs fournis changent, aucun défaut n'est réappliqué aux champs omis. */
+export const proofRulesPatchSchema = z
+  .object({ signatureRequired: z.boolean().optional(), emailToClient: z.boolean().optional() })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, "Aucun paramètre à modifier");
+export type ProofRulesPatch = z.infer<typeof proofRulesPatchSchema>;
 export const DEFAULT_PROOF_RULES: ProofRules = { signatureRequired: false, emailToClient: true };
 
 export function parseProofRules(raw: unknown): ProofRules {

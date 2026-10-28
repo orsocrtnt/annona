@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { getCompanyProofRules, updateCompanyProofRules } from "@/domains/delivery/proof-settings.service";
-import { proofRulesSchema } from "@/domains/delivery/pod-evidence";
+import { proofRulesPatchSchema } from "@/domains/delivery/pod-evidence";
 
 export async function GET() {
   const auth = await requireStaffRole("settings:read");
@@ -28,7 +28,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 
-  const parsed = proofRulesSchema.safeParse(await request.json().catch(() => null));
+  const parsed = proofRulesPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Paramètres de preuve invalides", details: parsed.error.flatten() }, { status: 400 });
   }
