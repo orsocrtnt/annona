@@ -135,3 +135,10 @@ test("la barre du portail tient à 320 px : thème et avatar passent dans le men
   assert.match(layout, /<ThemeToggle className="max-sm:hidden"/);
   assert.match(layout, /sm:hidden">[\s\S]*<ThemeRadioGroup/);
 });
+
+test("Sora (titres DESIGN.md) est chargée par le seul portail ; le layout racine garde Inter", () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  assert.match(read("src/app/(client-portal)/portal-font.ts"), /Sora\(/);
+  assert.match(read("src/app/(client-portal)/layout.tsx"), /sora\.variable[\s\S]*h1,h2,h3/);
+  assert.doesNotMatch(read("src/app/layout.tsx"), /Sora/);
+});
