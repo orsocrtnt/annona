@@ -11,7 +11,9 @@ import { buildMiniAdminSettings, type MiniAdminModuleId } from "../../src/lib/pe
  * Comptes de recette navigateur par rôle, sur la base de développement uniquement (ENV-2).
  * La démo n'offre que les personas administrateur, client et livreur : ces comptes couvrent
  * le dispatcher, le mini-admin et le super-admin. Ils sont rattachés à l'entreprise modèle
- * « LogiExpress Démo », hors du pool de démo, et supprimés par `cleanup`.
+ * « LogiExpress Démo », hors du pool de démo, et supprimés par `cleanup`. Deux administrateurs
+ * supplémentaires sont rattachés aux deux entreprises de recette les plus récentes ayant un
+ * compte de facturation Stripe de test (essai A/B de SAAS-03).
  *
  *   npm run e2e:role-accounts -- setup    # crée ou réarme, écrit outputs/e2e-role-accounts.json
  *   npm run e2e:role-accounts -- cleanup  # supprime comptes et manifeste
@@ -19,19 +21,21 @@ import { buildMiniAdminSettings, type MiniAdminModuleId } from "../../src/lib/pe
 export const ROLE_ACCOUNTS_MANIFEST = resolve("outputs/e2e-role-accounts.json");
 
 type Account = {
-  key: "dispatcher" | "miniAdminDispatch" | "miniAdminSupport" | "superAdmin";
+  key: "dispatcher" | "miniAdminDispatch" | "miniAdminSupport" | "superAdmin" | "billingAdminA" | "billingAdminB";
   email: string;
-  roleSlug: "dispatcher" | "mini-admin" | "super-admin";
+  roleSlug: "dispatcher" | "mini-admin" | "super-admin" | "company-admin";
   firstName: string;
   modules?: MiniAdminModuleId[];
-  company: boolean;
+  company: "template" | "billingA" | "billingB" | null;
 };
 
 const ACCOUNTS: Account[] = [
-  { key: "dispatcher", email: "e2e-role-dispatcher@tutelliv.fr", roleSlug: "dispatcher", firstName: "Dispatch", company: true },
-  { key: "miniAdminDispatch", email: "e2e-role-mini-dispatch@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniDispatch", modules: ["dispatch", "delivery-map"], company: true },
-  { key: "miniAdminSupport", email: "e2e-role-mini-support@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniSupport", modules: ["support"], company: true },
-  { key: "superAdmin", email: "e2e-role-super-admin@tutelliv.fr", roleSlug: "super-admin", firstName: "SuperAdmin", company: false },
+  { key: "dispatcher", email: "e2e-role-dispatcher@tutelliv.fr", roleSlug: "dispatcher", firstName: "Dispatch", company: "template" },
+  { key: "miniAdminDispatch", email: "e2e-role-mini-dispatch@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniDispatch", modules: ["dispatch", "delivery-map"], company: "template" },
+  { key: "miniAdminSupport", email: "e2e-role-mini-support@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniSupport", modules: ["support"], company: "template" },
+  { key: "superAdmin", email: "e2e-role-super-admin@tutelliv.fr", roleSlug: "super-admin", firstName: "SuperAdmin", company: null },
+  { key: "billingAdminA", email: "e2e-role-billing-a@tutelliv.fr", roleSlug: "company-admin", firstName: "FacturationA", company: "billingA" },
+  { key: "billingAdminB", email: "e2e-role-billing-b@tutelliv.fr", roleSlug: "company-admin", firstName: "FacturationB", company: "billingB" },
 ];
 
 const prisma = new PrismaClient();
@@ -52,9 +56,20 @@ async function templateCompanyId() {
   return company.id;
 }
 
+async function billingCompanyIds() {
+  const companies = await prisma.company.findMany({
+    where: { isDemo: false, saasSubscription: { is: { kind: "COMMERCIAL", status: "ACTIVE", billingAccount: { isNot: null } } } },
+    orderBy: { createdAt: "desc" },
+    take: 2,
+    select: { id: true },
+  });
+  if (companies.length < 2) throw new Error("BILLING_COMPANIES_MISSING");
+  return { billingA: companies[0]!.id, billingB: companies[1]!.id };
+}
+
 async function setup() {
   const admin = supabaseAdmin();
-  const companyId = await templateCompanyId();
+  const companies: Record<string, string> = { template: await templateCompanyId(), ...(await billingCompanyIds()) };
   const manifest: Record<string, { email: string; password: string }> = {};
 
   for (const account of ACCOUNTS) {
@@ -69,7 +84,7 @@ async function setup() {
       if (error) throw new Error(`AUTH_UPDATE_FAILED:${account.key}`);
       await prisma.user.update({
         where: { email: account.email },
-        data: { roleId: role.id, companyId: account.company ? companyId : null, status: "ACTIVE", settings },
+        data: { roleId: role.id, companyId: account.company ? companies[account.company] : null, status: "ACTIVE", settings },
       });
     } else {
       const { data, error } = await admin.auth.admin.createUser({
@@ -87,7 +102,7 @@ async function setup() {
             firstName: account.firstName,
             lastName: "E2E",
             roleId: role.id,
-            companyId: account.company ? companyId : null,
+            companyId: account.company ? companies[account.company] : null,
             status: "ACTIVE",
             settings,
           },

@@ -61,3 +61,14 @@ Preuves : `tests/saas03-payment-portal.test.ts` (configuration limitée et réut
 Aucune nouvelle route : la sélection passe par l'aperçu puis par le changement existants de `POST /api/billing`, avec la même formule et la même périodicité. Le serveur reste juge : devis (`SIGNUP_*_LIMIT_EXCEEDED`, option incluse), sièges en excès (409 `PLAN_CHANGE_SEATS_EXCEEDED`), moment d'effet (`changeTiming` : un ajout est immédiat après prorata, un retrait prend effet au renouvellement), consentement au montant exact, clé idempotente et journal `SaasBillingOperation`. L'aperçu n'est demandé qu'une fois les clics terminés (400 ms), pour ne pas multiplier les appels au fournisseur. `GET /api/billing` expose désormais le nom, le type et les prix de chaque option, ainsi que les sièges inclus et maximaux de chaque formule, sans identifiant interne.
 
 Preuves : `tests/saas03-options.test.ts` (plafonds identiques au devis serveur, API sans identifiant interne) et `tests/e2e/saas03.spec.ts` (option cochée et deux comptes ajoutés, bouton + bloqué au plafond, un seul aperçu, montant confirmé, 390 px). Aperçu réel sur le compte Stripe de test : ajout du dispatch automatique à un Starter mensuel, immédiat, 34,52 € TTC au prorata.
+
+## Isolement A/B (2026-10-28)
+
+`tests/e2e/saas03-isolation.spec.ts` joue l'essai avec deux administrateurs temporaires de deux entreprises de recette, chacune avec un compte Stripe de test (`npm run e2e:role-accounts -- setup`, puis `cleanup`). Les comptes sont rattachés aux deux entreprises de recette les plus récentes ayant un abonnement commercial actif ; sur `tutelliv-dev`, A avait 2 factures et B 3.
+
+- Une requête qui ajoute `accountId` ou `companyId` est refusée (400) : le compte de facturation vient toujours de l'entreprise de session.
+- L'ouverture du portail par A renvoie une session `billing.stripe.com` et s'inscrit dans le journal de A, pas dans celui de B.
+- Aucune facture de A n'apparaît dans l'API ni dans les liens de « Mon abonnement » de B.
+
+Résultat du 28 octobre sur le serveur de développement : 1/1. Reste pour SAAS-03 : l'export depuis l'écran, qui attend un canal de remise chiffré (DATA-02).
+
