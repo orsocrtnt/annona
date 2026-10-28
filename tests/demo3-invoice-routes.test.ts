@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 type Handler = (request: Request, context?: { params: Promise<{ id: string }> }) => Promise<Response>;
 
 function load(file: string, role: string, calls: string[], service: Record<string, unknown> = {}, emailConfigured = true) {
-  const module = { exports: {} as { GET?: Handler; POST?: Handler } };
+  const loaded = { exports: {} as { GET?: Handler; POST?: Handler } };
   const source = ts.transpileModule(readFileSync(file, "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
@@ -46,13 +46,13 @@ function load(file: string, role: string, calls: string[], service: Record<strin
     "@/domains/client-portal/notify.service": { getEmailDeliveryConfigured: () => emailConfigured },
   };
   runInNewContext(source, {
-    Error, Response, URL, console, exports: module.exports, module,
+    Error, Response, URL, console, exports: loaded.exports, module: loaded,
     require: (id: string) => {
       assert.ok(id in dependencies, `Unexpected dependency ${id}`);
       return dependencies[id];
     },
   });
-  return module.exports;
+  return loaded.exports;
 }
 
 const LIST = "src/app/api/invoices/route.ts";

@@ -52,19 +52,19 @@ function loadService(calls: string[], options: { failInvoice?: boolean } = {}) {
       },
     },
   };
-  const module = { exports: {} as typeof import("../src/domains/operations/operation-job.service") };
+  const loaded = { exports: {} as typeof import("../src/domains/operations/operation-job.service") };
   const js = ts.transpileModule(readFileSync(resolve("src/domains/operations/operation-job.service.ts"), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   runInNewContext(js, {
     Date, Error, Promise, Set, console: { error: () => undefined },
-    exports: module.exports, module,
+    exports: loaded.exports, module: loaded,
     require: (id: string) => {
       assert.ok(id in deps, `Unexpected dependency ${id}`);
       return deps[id];
     },
   });
-  return { service: module.exports, job };
+  return { service: loaded.exports, job };
 }
 
 test("DEMO-3 tâches : une relance de facture part par son propre traitement", async () => {

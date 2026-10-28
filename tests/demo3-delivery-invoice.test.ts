@@ -154,7 +154,8 @@ test("DEMO-3 réglage : la facture à la livraison est désactivée par défaut"
   assert.equal(parseBillingSettings({}).invoice.autoInvoiceOnDelivery, false);
   assert.equal(parseBillingSettings(undefined).invoice.autoInvoiceOnDelivery, false);
   assert.equal(DEFAULT_BILLING_SETTINGS.invoice.autoInvoiceOnDelivery, false);
-  const { autoInvoiceOnDelivery: _omitted, ...withoutFlag } = DEFAULT_BILLING_SETTINGS.invoice;
+  const withoutFlag: Partial<typeof DEFAULT_BILLING_SETTINGS.invoice> = { ...DEFAULT_BILLING_SETTINGS.invoice };
+  delete withoutFlag.autoInvoiceOnDelivery;
   assert.equal(companyBillingSettingsSchema.parse({ ...DEFAULT_BILLING_SETTINGS, invoice: withoutFlag }).invoice.autoInvoiceOnDelivery, false);
   assert.equal(companyBillingSettingsSchema.parse({ ...DEFAULT_BILLING_SETTINGS, invoice: { ...withoutFlag, autoInvoiceOnDelivery: true } }).invoice.autoInvoiceOnDelivery, true);
 });
