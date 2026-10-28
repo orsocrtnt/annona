@@ -37,12 +37,16 @@ test("DEMO-3 liste : factures de l'entreprise seulement, compteurs payées / en 
   assert.equal(db.invoices.find((row) => row.id === "foreign")?.status, "PENDING", "aucun effet sur une autre entreprise");
 });
 
-test("DEMO-3 liste : la consultation passe d'abord en retard les factures échues de l'entreprise", async () => {
-  const result = await listCompanyInvoices("company_a", { status: "OVERDUE", now: NOW }, seed() as never);
+test("DEMO-3 liste : retard calculé à la lecture, sans écrire en base (cron arrêté)", async () => {
+  const db = seed();
+  const result = await listCompanyInvoices("company_a", { status: "OVERDUE", now: NOW }, db as never);
   const late = result.invoices.find((row) => row.id === "late");
-  assert.equal(late?.status, "OVERDUE");
+  assert.equal(late?.status, "OVERDUE", "affichée en retard");
   assert.equal(late?.daysOverdue, 12);
   assert.deepEqual(result.invoices.map((row) => row.status), ["OVERDUE", "OVERDUE", "OVERDUE"]);
+  assert.equal(db.invoices.find((row) => row.id === "late")?.status, "PENDING", "statut stocké inchangé : seul le cron écrit");
+  assert.equal(db.executed.length, 0, "aucune requête d'écriture");
+  assert.equal(db.log.some((line) => line.startsWith("invoice.updateMany")), false);
 });
 
 test("DEMO-3 liste : filtres par statut", async () => {

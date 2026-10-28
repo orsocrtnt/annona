@@ -1,8 +1,7 @@
-import type { InvoiceStatus, PrismaClient } from "@prisma/client";
+import type { InvoiceStatus, Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { COMPANY_INVOICES_TAKE } from "@/lib/query/list-limits";
-import { invoiceDaysOverdue, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
-import { markOverdueInvoices } from "@/domains/invoice/invoice-overdue.service";
+import { invoiceDaysOverdue, isInvoiceOutstanding, startOfParisDay } from "@/domains/invoice/invoice-due";
 import { effectiveReminderResult, reminderBlocksNewOne } from "@/domains/invoice/invoice-reminder.service";
 
 export const COMPANY_INVOICE_FILTERS = ["ALL", "PENDING", "OVERDUE", "PAID"] as const;
@@ -11,6 +10,7 @@ export type CompanyInvoiceFilter = (typeof COMPANY_INVOICE_FILTERS)[number];
 export type CompanyInvoiceRow = {
   id: string;
   reference: string;
+  /** Statut affiché : PENDING échue = OVERDUE (calculé à la lecture). */
   status: InvoiceStatus;
   amount: number;
   dueDate: string | null;
@@ -33,9 +33,10 @@ export type CompanyInvoiceList = {
 type ListDatabase = Pick<PrismaClient, "invoice">;
 
 /**
- * Paiements côté entreprise (DEMO-3). La consultation passe d'abord en retard les
- * factures échues de l'entreprise (même mise à jour conditionnelle que le cron),
- * pour que la liste soit juste même si le filet cron n'est pas encore passé.
+ * Paiements côté entreprise (DEMO-3). Lecture seule : une facture PENDING dont le
+ * jour d'échéance (Paris) est passé s'affiche et se filtre « en retard », avec le
+ * même calcul que le passage en retard ; seul le cron enregistre le statut. La
+ * liste reste donc juste même si le cron est arrêté.
  */
 export async function listCompanyInvoices(
   companyId: string,
@@ -43,11 +44,24 @@ export async function listCompanyInvoices(
   db: ListDatabase = prisma
 ): Promise<CompanyInvoiceList> {
   const now = options.now ?? new Date();
-  await markOverdueInvoices({ companyId, now }, db);
+  const cutoff = startOfParisDay(now);
+  const overdue: Prisma.InvoiceWhereInput = {
+    OR: [{ status: "OVERDUE" }, { status: "PENDING", dueDate: { lt: cutoff } }],
+  };
+  const pending: Prisma.InvoiceWhereInput = {
+    status: "PENDING",
+    OR: [{ dueDate: null }, { dueDate: { gte: cutoff } }],
+  };
+  const filters: Record<CompanyInvoiceFilter, Prisma.InvoiceWhereInput> = {
+    ALL: {},
+    PENDING: pending,
+    OVERDUE: overdue,
+    PAID: { status: "PAID" },
+  };
 
-  const [rows, groups] = await Promise.all([
+  const [rows, paidCount, pendingCount, overdueCount] = await Promise.all([
     db.invoice.findMany({
-      where: { companyId, ...(options.status === "ALL" ? {} : { status: options.status }) },
+      where: { companyId, ...filters[options.status] },
       orderBy: { createdAt: "desc" },
       take: COMPANY_INVOICES_TAKE,
       select: {
@@ -68,33 +82,28 @@ export async function listCompanyInvoices(
         },
       },
     }),
-    db.invoice.groupBy({
-      by: ["status"],
-      where: { companyId, status: { in: ["PAID", "PENDING", "OVERDUE"] } },
-      _count: { _all: true },
-    }),
+    db.invoice.count({ where: { companyId, ...filters.PAID } }),
+    db.invoice.count({ where: { companyId, ...pending } }),
+    db.invoice.count({ where: { companyId, ...overdue } }),
   ]);
 
-  const counts = { PAID: 0, PENDING: 0, OVERDUE: 0 };
-  for (const group of groups) {
-    if (group.status in counts) counts[group.status as keyof typeof counts] = group._count._all;
-  }
-
   return {
-    counts,
+    counts: { PAID: paidCount, PENDING: pendingCount, OVERDUE: overdueCount },
     limit: COMPANY_INVOICES_TAKE,
     invoices: rows.map((row) => {
       const last = row.reminders[0] ?? null;
       const outstanding = isInvoiceOutstanding(row.status);
+      const status: InvoiceStatus =
+        row.status === "PENDING" && row.dueDate && row.dueDate < cutoff ? "OVERDUE" : row.status;
       return {
         id: row.id,
         reference: row.reference,
-        status: row.status,
+        status,
         amount: Number(row.amount),
         dueDate: row.dueDate?.toISOString() ?? null,
         paidAt: row.paidAt?.toISOString() ?? null,
         createdAt: row.createdAt.toISOString(),
-        daysOverdue: row.status === "OVERDUE" ? invoiceDaysOverdue(row.dueDate, now) : 0,
+        daysOverdue: status === "OVERDUE" ? invoiceDaysOverdue(row.dueDate, now) : 0,
         customerName: row.customer ? `${row.customer.firstName} ${row.customer.lastName}`.trim() : null,
         orderId: row.orderId,
         orderReference: row.order?.reference ?? null,

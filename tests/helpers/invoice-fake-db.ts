@@ -158,6 +158,9 @@ export function createInvoiceFakeDb(seed: {
           .map(withInvoiceRelations);
         return args.take ? rows.slice(0, args.take) : rows;
       },
+      async count(args: { where: Row }) {
+        return invoices.filter((invoice) => matches(invoice, args.where)).length;
+      },
       async groupBy(args: { where: Row }) {
         const counts = new Map<string, number>();
         for (const invoice of invoices.filter((row) => matches(row, args.where))) {
