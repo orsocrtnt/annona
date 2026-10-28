@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processDueOperationJobs } from "@/domains/operations/operation-job.service";
+import { markOverdueInvoices } from "@/domains/invoice/invoice-overdue.service";
 import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
 
 /**
@@ -7,6 +8,8 @@ import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
  * une interruption. Appelée toutes les 5 minutes par GitHub Actions
  * (.github/workflows/cron-operations.yml) avec le même CRON_SECRET que les
  * commandes récurrentes.
+ * DEMO-3 : passe aussi en retard les factures PENDING échues (mise à jour
+ * conditionnelle idempotente) ; un échec est signalé sans bloquer les tâches.
  */
 // Un lot de 50 tâches (dispatch, e-mails) doit pouvoir finir : durée maximale
 // explicite ; le --max-time du workflow GitHub doit rester supérieur ou égal.
@@ -21,7 +24,19 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await processDueOperationJobs();
+    const jobs = await processDueOperationJobs();
+    let overdueInvoices: number | null = null;
+    try {
+      overdueInvoices = await markOverdueInvoices();
+    } catch (error) {
+      await reportOperationalIncident({
+        source: "cron.operations",
+        fingerprint: "invoice-overdue-sweep-failure",
+        summary: error instanceof Error ? error.message : "Passage des factures en retard impossible",
+        severity: "error",
+      });
+    }
+    const result = { ...jobs, overdueInvoices };
     // Les deux conditions sont évaluées : un échec terminal ne masque pas un retard.
     if (result.failed > 0) {
       await reportOperationalIncident({
@@ -41,7 +56,7 @@ export async function GET(request: Request) {
         context: result,
       });
     }
-    if (result.failed > 0 || result.overdue > 0) {
+    if (result.failed > 0 || result.overdue > 0 || overdueInvoices === null) {
       return NextResponse.json({ data: result, success: false }, { status: 503 });
     }
     return NextResponse.json({ data: result, success: true });
