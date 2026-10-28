@@ -156,6 +156,24 @@ test("source inconnue (sans x-forwarded-for) : aucun seau global, seule la limit
   assert.ok(rows.every((row) => row.keyHash !== keysFor("x@example.test", "unknown").sourceKey));
 });
 
+test("purge des échecs expirés occasionnelle, pas à chaque échec", async () => {
+  const { db, events, rows } = memoryDb();
+  const keys = keysFor("victim@example.test", "198.51.100.30");
+  for (let i = 0; i < 3; i++) {
+    const gate = await beginLoginAttempt(keys, { db, now: at(i) });
+    assert.ok(gate.allowed);
+    await settleLoginAttempt(gate.attempt, "failure", { db, now: at(i), random: () => 0.5 });
+  }
+  assert.equal(events.filter((event) => event === "purge").length, 0);
+  const later = new Date(at(0).getTime() + LOGIN_RATE_WINDOW_MS + 5 * 60_000);
+  const gate = await beginLoginAttempt(keys, { db, now: later });
+  assert.ok(gate.allowed);
+  await settleLoginAttempt(gate.attempt, "failure", { db, now: later, random: () => 0.001 });
+  assert.equal(events.filter((event) => event === "purge").length, 1);
+  assert.equal(rows.every((row) => row.createdAt >= at(0)), true);
+  assert.equal(rows.filter((row) => row.createdAt < new Date(later.getTime() - LOGIN_RATE_WINDOW_MS)).length, 0);
+});
+
 test("compte démo : seule la source est comptée, l'e-mail public ne peut pas être verrouillé", async () => {
   const { db, rows } = memoryDb();
   const keys = loginAttemptKeys("demo@example.test", "198.51.100.4", { secret: SECRET, trackEmail: false });

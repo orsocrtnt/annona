@@ -13,6 +13,8 @@ export const LOGIN_RATE_WINDOW_MS = 15 * 60 * 1000;
 export const LOGIN_PAIR_FAILURE_LIMIT = 5;
 export const LOGIN_EMAIL_FAILURE_LIMIT = 20;
 export const LOGIN_SOURCE_FAILURE_LIMIT = 30;
+/** Un échec sur 50 en moyenne purge les lignes expirées (index created_at). */
+export const LOGIN_PURGE_PROBABILITY = 0.02;
 
 export type LoginAttemptKeys = { pairKey: string | null; emailKey: string | null; sourceKey: string | null };
 /** Tentative réservée : ses lignes comptent comme un échec tant qu'elle n'est pas soldée. */
@@ -124,14 +126,17 @@ export async function startLoginAttempt(
 export async function settleLoginAttempt(
   attempt: LoginAttempt | null,
   outcome: "failure" | "success" | "cancelled",
-  options: { now?: Date; db?: LoginAttemptDatabase } = {}
+  options: { now?: Date; db?: LoginAttemptDatabase; random?: () => number } = {}
 ): Promise<void> {
   if (!attempt) return;
   const db = options.db ?? prisma;
   const now = options.now ?? new Date();
   try {
     if (outcome === "failure") {
-      await db.authLoginFailure.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - LOGIN_RATE_WINDOW_MS) } } });
+      // Les lignes expirées ne comptent plus (fenêtre bornée) : purge occasionnelle suffisante.
+      if ((options.random ?? Math.random)() < LOGIN_PURGE_PROBABILITY) {
+        await db.authLoginFailure.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - LOGIN_RATE_WINDOW_MS) } } });
+      }
       return;
     }
     await db.authLoginFailure.deleteMany({ where: { id: { in: attempt.ids } } });
