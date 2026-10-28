@@ -159,6 +159,9 @@ function fixture(failureStage: FailureStage) {
         }),
       },
       "@/lib/order/reorder-template": { buildReorderFormValues: () => ({}) },
+      // Lecture client seulement (getClientOrderById) : hors des parcours de création testés ici.
+      "@/domains/company/portal-settings.service": { getPortalShowDriverPhone: async () => true },
+      "@/domains/delivery/client-driver": {},
       "@/domains/delivery/delivery-coordinates": {
         resolveDeliveryCoordinateFields: async () => ({
           latitude: 1,
