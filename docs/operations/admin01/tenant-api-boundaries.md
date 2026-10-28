@@ -2,7 +2,7 @@
 
 Inventaire du 2026-10-25. Il recense les `route.ts` hors `src/app/api/admin` qui appellent `getCompanyId`. Il décrit la permission et le `requireRole` écrits dans la méthode, ou dans une fonction du même fichier appelée par cette méthode. Il n'ajoute aucune garde et ne choisit aucun rôle.
 
-33 fichiers, 46 méthodes.
+37 fichiers, 53 méthodes (compte vérifié par `tests/admin01-tenant-api-boundary-inventory.test.ts` ; le 28 octobre 2026, ajout des trois routes `src/app/api/orders/intake/**` de la commande par message).
 
 Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas listée. C'est le cas de `conversationAuth` et de `requireSupportStaff`. Un refus écrit par comparaison directe du rôle, sans `requireRole`, est noté « aucun ».
 
@@ -54,6 +54,10 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/orders/[id]/route.ts | DELETE | orders:update | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/dashboard/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/export/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/orders/intake/analyze/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/orders/intake/orders/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/orders/intake/route.ts | GET | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/orders/intake/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/orders/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/stats/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/users/[id]/route.ts | PATCH | users:update | COMPANY_ADMIN, MINI_ADMIN |
