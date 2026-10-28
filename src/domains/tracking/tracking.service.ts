@@ -1,7 +1,7 @@
 import { prisma } from "@/services/prisma/client";
 import { conversationScope, ConversationError, transaction, type ConversationActor } from "@/domains/order-conversation/order-conversation.service";
 import { getFulfillmentStatusLabel } from "@/lib/constants/order-status";
-import { clientDriverLabel, redactClientTimeline } from "@/domains/delivery/client-driver";
+import { clientDriverLabel, loadCompanyDriverNames, redactClientTimeline } from "@/domains/delivery/client-driver";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema } from "@/lib/validations/driver-location-settings";
 import { trackingService, trackingTarget, trackingTimeline } from "./tracking.policy";
 import { resolveTrackingPosition } from "./tracking-position.service";
@@ -9,7 +9,7 @@ import { resolveTrackingPosition } from "./tracking-position.service";
 export async function getOrderTracking(actor: ConversationActor, orderId: string) {
   const scope = conversationScope(actor);
   // Lecture en transaction ; l'itinéraire des livreurs est résolu après, sans garder la connexion.
-  const { order, threshold } = await transaction(async tx => {
+  const { order, threshold, companyDrivers } = await transaction(async tx => {
     const order = await tx.order.findFirst({ where: { id: orderId, ...scope }, select: {
       id: true, reference: true, status: true, deliveryCategory: true, updatedAt: true,
       company: { select: { settings: true } },
@@ -24,13 +24,15 @@ export async function getOrderTracking(actor: ConversationActor, orderId: string
     const raw = (order.company.settings as { locationTracking?: unknown } | null)?.locationTracking;
     const config = driverLocationSettingsSchema.safeParse(raw ?? {});
     const threshold = config.success ? config.data.onlineThresholdSeconds : DEFAULT_DRIVER_LOCATION_SETTINGS.onlineThresholdSeconds;
-    return { order, threshold };
+    // Client : noms de tous les livreurs de l'entreprise (inactifs compris), réduits au prénom.
+    const companyDrivers = actor.role === "CLIENT" ? await loadCompanyDriverNames(tx, actor.companyId!) : [];
+    return { order, threshold, companyDrivers };
   });
   const now = new Date();
   return { orderId: order.id, reference: order.reference, status: order.status, statusLabel: getFulfillmentStatusLabel(order.status, order.deliveryCategory), updatedAt: order.updatedAt.toISOString(), serverTime: now.toISOString(), deliveries: await Promise.all(order.deliveries.map(async d => ({
       id: d.id, reference: d.reference, status: d.status, statusLabel: getFulfillmentStatusLabel(d.status, d.deliveryCategory), driverName: d.driverId ? (actor.role === "CLIENT" ? clientDriverLabel(d.driverName) : d.driverName) : null,
       missionAcceptedAt: d.missionAcceptedAt?.toISOString() ?? null, missionStartedAt: d.missionStartedAt?.toISOString() ?? null, completedAt: d.completedAt?.toISOString() ?? null, updatedAt: d.updatedAt.toISOString(),
-      position: await resolveTrackingPosition(d.driverId, d, d.driver?.companyId === actor.companyId ? d.driver : null, threshold, now, trackingTarget({ ...d, order: { stops: order.stops } })), timeline: trackingTimeline(actor.role === "CLIENT" ? redactClientTimeline(d.trackingEvents, [d.driverName]) : d.trackingEvents),
+      position: await resolveTrackingPosition(d.driverId, d, d.driver?.companyId === actor.companyId ? d.driver : null, threshold, now, trackingTarget({ ...d, order: { stops: order.stops } })), timeline: trackingTimeline(actor.role === "CLIENT" ? redactClientTimeline(d.trackingEvents, [...companyDrivers, d.driverName]) : d.trackingEvents),
     }))) };
 }
 export async function getDriverService(driverId: string, companyId: string) {

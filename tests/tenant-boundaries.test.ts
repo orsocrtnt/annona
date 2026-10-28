@@ -45,6 +45,8 @@ test("toutes les lectures client sensibles exigent propriétaire ET entreprise",
 
   // Réglage du portail (téléphone du livreur) lu par la fiche livraison : défaut, sans base.
   replaceMethod(t, prisma.company, "findUnique", async () => ({ settings: {} }) as never);
+  // Noms des livreurs de l'entreprise (masquage C3), sans base.
+  replaceMethod(t, prisma.user, "findMany", async () => [] as never);
   replaceMethod(t, prisma.order, "findFirst", async (args: { where: Where }) => {
     orderDetails.push(args.where);
     return null as never;
@@ -103,6 +105,8 @@ test("toutes les lectures client sensibles exigent propriétaire ET entreprise",
 
 test("carte client et mission chauffeur conservent la frontière d’entreprise", async (t) => {
   const deliveryQueries: Where[] = [];
+  // Noms des livreurs de l'entreprise (masquage C3), sans base.
+  replaceMethod(t, prisma.user, "findMany", async () => [] as never);
   replaceMethod(t, prisma.delivery, "findMany", async (args: { where: Where }) => {
     deliveryQueries.push(args.where);
     return [] as never;

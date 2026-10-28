@@ -106,7 +106,7 @@ function fixture() {
   let order: any = { id: "o", reference: "CMD", status: "IN_DELIVERY", deliveryCategory: "STANDARD", updatedAt: now, company: { settings: {} }, deliveries: [{ id: "d", ...mission, reference: "LIV", driverId: "driver", driverName: "Responsable", deliveryCategory: "STANDARD", updatedAt: now, missionAcceptedAt: null, driver: user, trackingEvents: [{ id: "e", label: "Livré", description: null, occurredAt: now, latitude: 1 }] }] };
   let foundMission: any = { id: "d", updatedAt: now }; let claim = 1;
   const db: any = {
-    user: { findFirst: async (args: any) => { calls.push(["user", args]); return user; }, updateMany: async (args: any) => { calls.push(["userUpdate", args]); return { count: claim }; } },
+    user: { findFirst: async (args: any) => { calls.push(["user", args]); return user; }, findMany: async (args: any) => { calls.push(["drivers", args]); return []; }, updateMany: async (args: any) => { calls.push(["userUpdate", args]); return { count: claim }; } },
     order: { findFirst: async (args: any) => { calls.push(["order", args]); return order; } },
     delivery: { findFirst: async (args: any) => { calls.push(["mission", args]); return foundMission; }, updateMany: async (args: any) => { calls.push(["missionUpdate", args]); return { count: claim }; } },
     driverLocation: { deleteMany: async (args: any) => { calls.push(["deleteLocation", args]); }, upsert: async (args: any) => { calls.push(["location", args]); return { updatedAt: now }; } },

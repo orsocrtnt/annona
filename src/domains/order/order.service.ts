@@ -17,7 +17,7 @@ import {
 import { formatStopAddress, getPrimaryCourierPickupFields } from "@/lib/order/courier-pickups";
 import { buildReorderFormValues } from "@/lib/order/reorder-template";
 import { getPortalShowDriverPhone } from "@/domains/company/portal-settings.service";
-import { clientDriverSelect, redactClientTimeline, toClientDriver } from "@/domains/delivery/client-driver";
+import { clientDriverSelect, loadCompanyDriverNames, redactClientTimeline, toClientDriver } from "@/domains/delivery/client-driver";
 import {
   resolveDeliveryCoordinateFields,
   resolveStopCoordinates,
@@ -377,7 +377,10 @@ export async function exportOrderHistoryCsv(
 }
 
 export async function getClientOrderById(customerId: string, companyId: string, orderId: string) {
-  const showDriverPhone = await getPortalShowDriverPhone(companyId);
+  const [showDriverPhone, companyDrivers] = await Promise.all([
+    getPortalShowDriverPhone(companyId),
+    loadCompanyDriverNames(prisma, companyId),
+  ]);
   const order = await prisma.order.findFirst({
     where: { id: orderId, customerId, companyId },
     include: {
@@ -399,7 +402,7 @@ export async function getClientOrderById(customerId: string, companyId: string, 
   const deliveries = order.deliveries.map(({ driverName, driver, trackingEvents, ...delivery }) => ({
     ...delivery,
     driver: toClientDriver({ driver, driverName }, showDriverPhone),
-    trackingEvents: redactClientTimeline(trackingEvents, [driverName]),
+    trackingEvents: redactClientTimeline(trackingEvents, [...companyDrivers, driverName]),
   }));
   return { ...order, deliveries };
 }

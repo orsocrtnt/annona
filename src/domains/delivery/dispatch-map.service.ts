@@ -1,4 +1,4 @@
-import { clientDriverLabel, redactClientTimeline } from "@/domains/delivery/client-driver";
+import { clientDriverLabel, loadCompanyDriverNames, redactClientTimeline, type KnownDriverName } from "@/domains/delivery/client-driver";
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
 import { resolveTrackingPosition } from "@/domains/tracking/tracking-position.service";
@@ -482,7 +482,7 @@ function resolveDeliveryStops(delivery: MapDeliveryRecord, coordsByKey: Map<stri
 async function buildDeliveriesMapPayload(
   deliveries: MapDeliveryRecord[],
   onlineThresholdSeconds: number,
-  options?: { isHistorical?: boolean; exposeTrackingCoordinates?: boolean; /** Vue client : « Livreur Prénom » seulement. */ driverFirstNameOnly?: boolean }
+  options?: { isHistorical?: boolean; exposeTrackingCoordinates?: boolean; /** Vue client : « Livreur Prénom » seulement. */ driverFirstNameOnly?: boolean; /** Vue client : livreurs de l'entreprise à réduire au prénom. */ clientDriverNames?: KnownDriverName[] }
 ): Promise<{ deliveries: DispatchMapDelivery[]; points: DispatchMapPoint[] }> {
   const isHistorical = options?.isHistorical ?? false;
   const now = new Date();
@@ -637,7 +637,7 @@ async function buildDeliveriesMapPayload(
 
     // Client (prénom seul) : descriptions réduites au prénom ; le dispatch garde le nom complet.
     const events = options?.driverFirstNameOnly
-      ? redactClientTimeline(delivery.trackingEvents, [delivery.driverName])
+      ? redactClientTimeline(delivery.trackingEvents, [...(options.clientDriverNames ?? []), delivery.driverName])
       : delivery.trackingEvents;
     const trackingSteps: DispatchMapTrackingStep[] = events.map((e) => ({
       id: e.id,
@@ -754,7 +754,7 @@ export async function getClientDeliveriesMap(
   companyId: string,
   onlineThresholdSeconds = DEFAULT_DRIVER_LOCATION_SETTINGS.onlineThresholdSeconds
 ): Promise<{ active: DispatchMapDelivery[]; history: DispatchMapDelivery[] }> {
-  const [activeRecords, historyRecords] = await Promise.all([
+  const [activeRecords, historyRecords, clientDriverNames] = await Promise.all([
     fetchActiveMapDeliveries({ customerId, companyId }),
     findManyMapDeliveries({
       where: {
@@ -765,11 +765,12 @@ export async function getClientDeliveriesMap(
       orderBy: [{ completedAt: "desc" }, { createdAt: "desc" }],
       take: CLIENT_MAP_HISTORY_LIMIT,
     }),
+    loadCompanyDriverNames(prisma, companyId),
   ]);
 
   const [activePayload, historyPayload] = await Promise.all([
-    buildDeliveriesMapPayload(activeRecords, onlineThresholdSeconds, { isHistorical: false, exposeTrackingCoordinates: false, driverFirstNameOnly: true }),
-    buildDeliveriesMapPayload(historyRecords, onlineThresholdSeconds, { isHistorical: true, exposeTrackingCoordinates: false, driverFirstNameOnly: true }),
+    buildDeliveriesMapPayload(activeRecords, onlineThresholdSeconds, { isHistorical: false, exposeTrackingCoordinates: false, driverFirstNameOnly: true, clientDriverNames }),
+    buildDeliveriesMapPayload(historyRecords, onlineThresholdSeconds, { isHistorical: true, exposeTrackingCoordinates: false, driverFirstNameOnly: true, clientDriverNames }),
   ]);
 
   return {

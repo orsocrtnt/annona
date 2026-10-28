@@ -67,6 +67,19 @@ function safeHeader(value: string, max: number) {
   return value.replace(/[\r\n]+/g, " ").trim().slice(0, max);
 }
 
+const PROVIDER_REJECTION = /^EMAIL_PROVIDER_HTTP_\d{3}$/;
+
+/**
+ * Issue d'un envoi en échec (C4) :
+ * - "rejected" : refus certain, réponse HTTP explicite du fournisseur (4xx ou 5xx) ; rien n'est parti ;
+ * - "unknown" : expiration, erreur réseau, réponse illisible ou erreur non qualifiée ; le fournisseur
+ *   a peut-être accepté l'e-mail. Seule une reprise avec la même clé d'idempotence est sûre.
+ */
+export function emailSendOutcome(error: unknown): "rejected" | "unknown" {
+  if (error instanceof Error && (error as { providerRejected?: unknown }).providerRejected === true) return "rejected";
+  return error instanceof Error && PROVIDER_REJECTION.test(error.message) ? "rejected" : "unknown";
+}
+
 export async function sendTransactionalEmail(
   input: TransactionalEmailInput,
   options: SendOptions = {}
@@ -119,7 +132,8 @@ export async function sendTransactionalEmail(
     }
   );
   if (!response.ok) {
-    throw new Error(`EMAIL_PROVIDER_HTTP_${response.status}`);
+    // Réponse explicite du fournisseur : refus certain (l'en-tête Idempotency-Key est toujours envoyé).
+    throw Object.assign(new Error(`EMAIL_PROVIDER_HTTP_${response.status}`), { providerRejected: true });
   }
   return {
     status: "sent" as const,

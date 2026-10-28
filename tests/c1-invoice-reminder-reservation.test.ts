@@ -6,6 +6,7 @@ import {
   reminderBlocksNewOne,
   remindInvoice,
 } from "../src/domains/invoice/invoice-reminder.service";
+import { emailSendOutcome } from "../src/lib/email/transactional-email";
 import { createInvoiceFakeDb, invoice, type FakeInvoice, type FakeReminder } from "./helpers/invoice-fake-db";
 
 // C1 : réservation d'envoi par facture. Une seule relance peut être en cours d'envoi (SENDING)
@@ -148,3 +149,67 @@ test("C1 : panne du fournisseur — la réservation est libérée (QUEUED) pour 
   await deliver();
   assert.equal(r("r1")?.result, "SENT");
 });
+
+// C4 : issue d'envoi ambiguë. Le fournisseur accepte l'e-mail, mais la réponse se perd (expiration).
+function lostResponse() {
+  return Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
+}
+
+test("C4 : acceptation avec réponse perdue — R1 reste SENDING et un clic ne crée aucune R2", async () => {
+  const { db, deliver, remind, r } = setup();
+  const sentKeys: string[] = [];
+  const deps = {
+    db: db as never, now: NOW,
+    getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
+    send: async (input: { idempotencyKey: string }) => { sentKeys.push(input.idempotencyKey); throw lostResponse(); },
+  };
+  await assert.rejects(
+    deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, deps),
+    /timeout/
+  );
+  assert.equal(r("r1")?.result, "SENDING", "réservation gardée : l'e-mail est peut-être parti");
+  assert.equal(r("r1")?.completedAt?.getTime(), NOW.getTime());
+
+  const click = await remind();
+  assert.equal(click?.duplicate, true);
+  assert.equal(click?.reminder.result, "SENDING");
+  assert.equal(db.reminders.length, 1, "aucune R2");
+  // Rejeu de la tâche avant expiration : rien ne part.
+  await assert.rejects(deliver(), /INVOICE_REMINDER_SEND_IN_PROGRESS/);
+  assert.equal(sentKeys.length, 1);
+  assert.equal(emailSendOutcome(lostResponse()), "unknown");
+});
+
+test("C4 : reprise après expiration de la réservation — même clé d'idempotence, puis SENT", async () => {
+  const { db, sent, r } = setup();
+  const settings = async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true });
+  const payload = { kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never;
+  const keys: string[] = [];
+  await assert.rejects(deliverInvoiceReminderJob(payload, KEY, {
+    db: db as never, now: NOW, getClientSettings: settings,
+    send: async (input: { idempotencyKey: string }) => { keys.push(input.idempotencyKey); throw lostResponse(); },
+  }));
+  const later = new Date(NOW.getTime() + (INVOICE_REMINDER_SENDING_TTL_MINUTES + 1) * 60_000);
+  await deliverInvoiceReminderJob(payload, "autre-cle-de-tache", {
+    db: db as never, now: later, getClientSettings: settings,
+    send: async (input: { idempotencyKey: string }) => { keys.push(input.idempotencyKey); return { status: "sent" }; },
+  });
+  assert.deepEqual(keys, [KEY, KEY], "le fournisseur déduplique : un seul e-mail");
+  assert.equal(r("r1")?.result, "SENT");
+  assert.equal(sent.length, 0);
+});
+
+test("C4 : refus 4xx certain — réservation libérée, une nouvelle relance est possible", async () => {
+  const { db, remind, r } = setup();
+  await assert.rejects(deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
+    db: db as never, now: NOW,
+    getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
+    send: async () => { throw Object.assign(new Error("EMAIL_PROVIDER_HTTP_422"), { name: "Error" }); },
+  }), /EMAIL_PROVIDER_HTTP_422/);
+  assert.equal(r("r1")?.result, "QUEUED");
+  assert.equal(r("r1")?.completedAt, null);
+  const click = await remind();
+  assert.equal(click?.duplicate, false, "R1 (créée il y a 30 h) ne bloque plus : nouvelle relance");
+  assert.equal(db.reminders.length, 2);
+});
+

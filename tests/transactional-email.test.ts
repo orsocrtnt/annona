@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  emailSendOutcome,
   getTransactionalEmailConfiguration,
   sendTransactionalEmail,
 } from "../src/lib/email/transactional-email";
@@ -160,3 +161,24 @@ test("un mode désactivé n'appelle jamais le fournisseur, même au rejeu", asyn
   assert.deepEqual(await sendTransactionalEmail(input, options), { status: "disabled", mode: "disabled" });
   assert.equal(calls, 0);
 });
+
+test("C4 : refus HTTP explicite du fournisseur = certain ; expiration, réseau ou erreur inconnue = issue inconnue", async () => {
+  const input = { to: "client@example.test", subject: "Rappel", text: "Texte", idempotencyKey: "invoice-reminder:r1" };
+  const failure = async (fetcher: Parameters<typeof sendTransactionalEmail>[1] extends infer O ? O extends { fetcher?: infer F } ? F : never : never) =>
+    sendTransactionalEmail(input, { env: baseEnv, fetcher }).then(() => assert.fail("doit échouer"), (error: unknown) => error);
+
+  for (const status of [400, 422, 429, 500, 503]) {
+    const error = await failure(async () => ({ ok: false, status }));
+    assert.equal((error as Error).message, `EMAIL_PROVIDER_HTTP_${status}`);
+    assert.equal(emailSendOutcome(error), "rejected", String(status));
+  }
+  const timeout = Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
+  for (const thrown of [timeout, new TypeError("fetch failed")]) {
+    const error = await failure(async () => { throw thrown; });
+    assert.equal(emailSendOutcome(error), "unknown", (thrown as Error).name);
+  }
+  // Toute erreur non qualifiée (réponse illisible, bogue) reste une issue inconnue : jamais libérée.
+  assert.equal(emailSendOutcome(new Error("inattendue")), "unknown");
+  assert.equal(emailSendOutcome("texte"), "unknown");
+});
+
