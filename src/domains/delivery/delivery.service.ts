@@ -1317,21 +1317,45 @@ function emptyDriverStats() {
   };
 }
 
-export async function getCompanyDriversWithActivity(companyId: string) {
+const DRIVER_ACTIVITY_SELECT = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  lastLoginAt: true,
+} satisfies Prisma.UserSelect;
+
+/** Réservé à l'auto-dispatch : état de service et dernière position, jamais renvoyés tels quels. */
+const DRIVER_DISPATCH_POSITION_SELECT = {
+  ...DRIVER_ACTIVITY_SELECT,
+  settings: true,
+  driverLocation: { select: { latitude: true, longitude: true, updatedAt: true } },
+} satisfies Prisma.UserSelect;
+
+type DriverActivityRow = Prisma.UserGetPayload<{ select: typeof DRIVER_ACTIVITY_SELECT }> &
+  ReturnType<typeof emptyDriverStats>;
+type DriverDispatchPositionRow = Prisma.UserGetPayload<{ select: typeof DRIVER_DISPATCH_POSITION_SELECT }> &
+  ReturnType<typeof emptyDriverStats>;
+
+export async function getCompanyDriversWithActivity(
+  companyId: string,
+  options: { withDispatchPosition: true }
+): Promise<DriverDispatchPositionRow[]>;
+// Dernière surcharge : celle que `ReturnType` retient pour les appelants existants.
+export async function getCompanyDriversWithActivity(companyId: string): Promise<DriverActivityRow[]>;
+export async function getCompanyDriversWithActivity(
+  companyId: string,
+  options?: { withDispatchPosition?: boolean }
+): Promise<Array<DriverActivityRow | DriverDispatchPositionRow>> {
   const today = startOfToday();
 
-  const drivers = await prisma.user.findMany({
-    where: { companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
-      lastLoginAt: true,
-    },
-    orderBy: { firstName: "asc" },
-  });
+  // Une seule requête utilisateurs, même filtre ; la position n'est lue que sur demande.
+  const where = { companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } } satisfies Prisma.UserWhereInput;
+  const drivers: Array<Prisma.UserGetPayload<{ select: typeof DRIVER_ACTIVITY_SELECT }> & Partial<Pick<DriverDispatchPositionRow, "settings" | "driverLocation">>> =
+    options?.withDispatchPosition
+      ? await prisma.user.findMany({ where, select: DRIVER_DISPATCH_POSITION_SELECT, orderBy: { firstName: "asc" } })
+      : await prisma.user.findMany({ where, select: DRIVER_ACTIVITY_SELECT, orderBy: { firstName: "asc" } });
 
   if (drivers.length === 0) return [];
 

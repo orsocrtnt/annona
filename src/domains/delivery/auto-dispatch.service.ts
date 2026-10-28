@@ -274,6 +274,33 @@ export function resolveDriverForDelivery(
   return null;
 }
 
+type DriverWithDispatchPosition = DriverActivity & {
+  settings?: unknown;
+  driverLocation?: { latitude: number; longitude: number; updatedAt: Date } | null;
+};
+
+/** Seuls les livreurs en service ont une position utilisée ; le reste est neutre. */
+function proximitiesFromDrivers(
+  delivery: DeliveryForDispatch,
+  drivers: DriverWithDispatchPosition[],
+  settings: CompanyDispatchSettings,
+  now = new Date()
+): Map<string, DispatchProximity> {
+  const pickup = getDispatchPickupPoint(delivery);
+  return new Map(
+    drivers.map((driver) => [
+      driver.id,
+      computeDispatchProximity({
+        settings,
+        pickup,
+        onDuty: trackingService(driver.settings).active,
+        position: driver.driverLocation ?? null,
+        now,
+      }),
+    ])
+  );
+}
+
 /**
  * Positions lues hors de toute transaction (leçon DISPATCH-3), limitées aux livreurs
  * actifs de l'entreprise ; seuls les livreurs en service ont une position utilisée.
@@ -354,8 +381,11 @@ export async function tryAutoAssignDelivery(
     return { deliveryId, assigned: false, skippedReason: "Statut non éligible" };
   }
 
+  // Positions lues avec la liste des livreurs, hors transaction (leçon DISPATCH-3).
   const [drivers, tariffSettings] = await Promise.all([
-    getCompanyDriversWithActivity(companyId),
+    settings.gpsProximityEnabled
+      ? getCompanyDriversWithActivity(companyId, { withDispatchPosition: true })
+      : getCompanyDriversWithActivity(companyId),
     getCompanyTariffSettings(companyId),
   ]);
 
@@ -363,12 +393,7 @@ export async function tryAutoAssignDelivery(
     return { deliveryId, assigned: false, skippedReason: "Aucun chauffeur actif" };
   }
 
-  const proximities = await loadDriverProximities(
-    companyId,
-    delivery,
-    drivers.map((driver) => driver.id),
-    settings
-  );
+  const proximities = proximitiesFromDrivers(delivery, drivers, settings);
   const pick = resolveDriverForDelivery(
     delivery,
     settings,
