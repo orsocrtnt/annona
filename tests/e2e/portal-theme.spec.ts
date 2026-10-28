@@ -21,10 +21,12 @@ const bodyBackground = (page: Page) => page.evaluate(() => getComputedStyle(docu
 test("le portail suit le thème du système par défaut, clair puis sombre", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await openPortal(page);
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   expect(await bodyBackground(page)).toBe("rgb(245, 248, 246)");
 
+  // Le thème du système est suivi en direct tant que la préférence reste « Système ».
   await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await bodyBackground(page)).toBe("rgb(20, 23, 22)");
 });
 
@@ -77,13 +79,37 @@ test("les pages principales du portail restent lisibles en sombre et les cibles 
 
   for (const path of ["/portal/orders", "/portal/recurring", "/portal/invoices", "/portal/settings"]) {
     await page.goto(path);
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "system");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await expect(page.locator("main")).toBeVisible();
   }
 });
 
 test("les autres espaces ne sont pas assombris par le thème du système", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  expect(await page.locator("html").getAttribute("data-theme")).toBeNull();
+});
+
+test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème reste accessible", async ({ page }) => {
+  await openPortal(page);
+  for (const width of [320, 375, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.reload();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, `débordement horizontal à ${width}px`).toBeLessThanOrEqual(0);
+    const header = page.locator("header").first();
+    const bar = await header.locator("> div").first().boundingBox();
+    expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeLessThanOrEqual(width);
+  }
+  await page.getByRole("button", { name: "Ouvrir la navigation client" }).click();
+  await page.getByRole("menuitemradio", { name: "Sombre" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});
+
+test("la navigation client portail vers un autre espace retire le thème sombre", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await openPortal(page);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.goto("/");
   expect(await page.locator("html").getAttribute("data-theme")).toBeNull();
 });

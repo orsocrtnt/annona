@@ -32,7 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { ThemeRadioGroup, ThemeToggle } from "@/components/theme/theme-toggle";
 import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
 import { applyOfferNavLocks } from "@/features/saas/offer-nav";
 import { useOfferAccess } from "@/features/saas/use-offer-access";
@@ -154,10 +154,10 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       <div className="ml-auto flex items-center gap-1">
         <PortalNotificationsBell className="text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground" />
 
-        <ThemeToggle />
+        <ThemeToggle className="max-sm:hidden" />
 
         <div
-          className="ml-0.5 flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-card"
+          className="ml-0.5 flex h-11 w-11 items-center max-sm:hidden justify-center rounded-xl border border-border bg-card"
           title={user ? `${user.firstName} ${user.lastName}` : "Compte client"}
         >
           <Avatar className="h-7 w-7">
@@ -204,6 +204,11 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
                 isActive={isPortalItemActive(pathname, item.href)}
               />
             ))}
+            {/* Sous 640 px, le thème passe dans ce menu pour que la barre tienne à 320 px. */}
+            <div className="sm:hidden">
+              <DropdownMenuSeparator className="bg-border" />
+              <ThemeRadioGroup />
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
