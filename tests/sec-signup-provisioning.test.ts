@@ -17,7 +17,7 @@ import * as constants from "../src/lib/demo/constants";
 // Seul le parcours SignupJourney vérifié côté serveur crée une entreprise.
 function load<T>(file: string, dependencies: Record<string, unknown>): T {
   const module = { exports: {} };
-  const deps = { "server-only": {}, "next/server": { NextResponse }, ...dependencies };
+  const deps = { "server-only": {}, "next/server": { NextResponse, after: () => undefined }, ...dependencies };
   const source = ts.transpileModule(readFileSync(resolve(file), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(source, { Error, console, exports: module.exports, module, require: (id: string) => {
     assert.ok(id in deps, `Unexpected dependency ${id}`);
@@ -84,6 +84,8 @@ function routeDeps(authUser: unknown, service: AuthService) {
       signOut: async () => ({ error: null }),
     } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
+    "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), checkLoginRateLimit: async () => ({ allowed: true }), recordLoginFailure: async () => {}, clearLoginFailures: async () => {} },
+    "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": service,
     "@/domains/user/user.service": { ...userService, getUserPermissions: async () => [] },
     "@/lib/demo/constants": constants, "@/lib/demo/persona-cookie": {},

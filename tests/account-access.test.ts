@@ -19,7 +19,7 @@ import { prisma } from "../src/services/prisma/client";
 // React cache is identity here: each call represents a new HTTP request.
 function load<T>(file: string, dependencies: Record<string, unknown>): T {
   const module = { exports: {} };
-  const deps = { "server-only": {}, "next/server": { NextResponse }, ...dependencies };
+  const deps = { "server-only": {}, "next/server": { NextResponse, after: () => undefined }, ...dependencies };
   const source = ts.transpileModule(readFileSync(resolve(file), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(source, { Error, console, exports: module.exports, module, require: (id: string) => {
     assert.ok(id in deps, `Unexpected dependency ${id}`);
@@ -172,6 +172,8 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
       } }) },
       "@/services/supabase/admin": { createAdminClient: () => assert.fail("unexpected admin call") },
       "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
+      "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), checkLoginRateLimit: async () => ({ allowed: true }), recordLoginFailure: async () => {}, clearLoginFailures: async () => {} },
+      "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
       "@/domains/auth/auth.service": { ...authService, syncUserFromSupabase: async () => structuredClone(current) },
       "@/domains/user/user.service": { ...userService, getUserPermissions: async () => userService.extractPermissionSlugs(current) },
       "@/lib/demo/constants": constants, "@/lib/demo/persona-cookie": {},

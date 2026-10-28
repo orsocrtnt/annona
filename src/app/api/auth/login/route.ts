@@ -29,6 +29,13 @@ import {
   requestDemoPoolRecycle,
 } from "@/domains/demo/demo-pool.service";
 import { getSessionSaasAccess } from "@/domains/saas/saas-session";
+import {
+  checkLoginRateLimit,
+  clearLoginFailures,
+  loginAttemptKeys,
+  recordLoginFailure,
+} from "@/domains/auth/login-rate-limit.service";
+import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
 
 const SERVICE_UNAVAILABLE_MESSAGE =
   "Service de connexion momentanément indisponible. Réessayez dans quelques instants.";
@@ -73,8 +80,18 @@ export async function POST(request: Request) {
 
     const { email, password } = parsed.data;
     const normalizedEmail = normalizeEmail(email);
-
-    const supabase = await createClient();
+    // SEC-2 : contrôle avant Supabase ; réponse identique que le compte existe ou non.
+    const attemptKeys = loginAttemptKeys(normalizedEmail, contactSourceFromHeaders(request.headers), {
+      trackEmail: !isDemoLoginEmail(normalizedEmail),
+    });
+    const [rateLimit, supabase] = await Promise.all([checkLoginRateLimit(attemptKeys), createClient()]);
+    if (!rateLimit.allowed) {
+      const minutes = Math.ceil(rateLimit.retryAfterSeconds / 60);
+      return NextResponse.json(
+        { error: `Trop de tentatives de connexion. Réessayez dans ${minutes} minute${minutes > 1 ? "s" : ""}.` },
+        { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+      );
+    }
 
     const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
@@ -88,11 +105,14 @@ export async function POST(request: Request) {
     }
 
     if (signInError || !signInData.user?.email) {
+      await recordLoginFailure(attemptKeys);
       return NextResponse.json(
         { error: "Email ou mot de passe incorrect." },
         { status: 401 }
       );
     }
+
+    after(async () => { await clearLoginFailures(attemptKeys); });
 
     const authUser = signInData.user;
     if (!authUser.email_confirmed_at) {
