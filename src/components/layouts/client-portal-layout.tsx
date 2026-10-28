@@ -196,6 +196,26 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
             sideOffset={8}
             className="w-72 rounded-2xl border-black/[0.07] bg-white p-2 text-[#0e1310] shadow-[0_18px_50px_rgba(14,19,16,0.12)] dark:border-border dark:bg-popover dark:text-popover-foreground dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
           >
+            {/* Sous 640 px, l'avatar quitte la barre : le compte connecté est repris en tête du menu. */}
+            <div className="sm:hidden" data-testid="portal-mobile-account">
+              <div className="flex items-center gap-3 px-3 py-2">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user?.avatarUrl ?? undefined} alt="" />
+                  <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
+                    {user ? getInitials(user.firstName, user.lastName) : "C"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {user ? `${user.firstName} ${user.lastName}` : "Compte client"}
+                  </p>
+                  {user?.email ? (
+                    <p className="truncate text-xs text-[#68726b] dark:text-muted-foreground">{user.email}</p>
+                  ) : null}
+                </div>
+              </div>
+              <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
+            </div>
             <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-[#68726b] dark:text-muted-foreground">
               Espace client
             </DropdownMenuLabel>

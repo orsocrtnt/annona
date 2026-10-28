@@ -134,6 +134,9 @@ test("la barre du portail tient à 320 px : thème et avatar passent dans le men
   const layout = readFileSync(new URL("../src/components/layouts/client-portal-layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /<ThemeToggle className="max-sm:hidden"/);
   assert.match(layout, /sm:hidden">[\s\S]*<ThemeRadioGroup/);
+  // Le compte connecté (avatar, nom) masqué dans la barre est repris dans le menu mobile.
+  assert.match(layout, /max-sm:hidden[\s\S]*<Avatar/);
+  assert.match(layout, /className="sm:hidden" data-testid="portal-mobile-account">[\s\S]*<Avatar[\s\S]*user\.firstName/);
 });
 
 test("Sora (titres DESIGN.md) est chargée par le seul portail ; le layout racine garde Inter", () => {

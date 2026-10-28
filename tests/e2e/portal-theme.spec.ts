@@ -102,6 +102,10 @@ test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème res
     expect((bar?.x ?? 0) + (bar?.width ?? 0)).toBeLessThanOrEqual(width);
   }
   await page.getByRole("button", { name: "Ouvrir la navigation client" }).click();
+  // L'avatar quitte la barre sous 640 px : le compte connecté doit être repris dans le menu.
+  const account = page.getByTestId("portal-mobile-account");
+  await expect(account).toBeVisible();
+  expect((await account.innerText()).trim().length).toBeGreaterThan(1);
   await page.getByRole("menuitemradio", { name: "Sombre" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
