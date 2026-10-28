@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
-import { withApiHandler } from "@/lib/api/route-handler";
+import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import {
   getPortalDashboardLayout,
   resetPortalDashboardLayout,
@@ -23,7 +23,7 @@ export async function PATCH(request: Request) {
     const auth = await requireClientRole();
     if ("error" in auth) return auth.error;
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const parsed = portalDashboardLayoutSchema.safeParse(body);
 
     if (!parsed.success) {

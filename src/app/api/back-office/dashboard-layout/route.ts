@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { withApiHandler } from "@/lib/api/route-handler";
+import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import {
   getDashboardLayout,
   resetDashboardLayout,
@@ -27,7 +27,7 @@ export async function PATCH(request: Request) {
     const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
     if (denied) return denied;
 
-    const body = await request.json();
+    const body = await readJsonBody(request);
     const parsed = dashboardLayoutSchema.safeParse(body);
 
     if (!parsed.success) {

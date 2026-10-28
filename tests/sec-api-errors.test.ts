@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { ApiRouteError, withApiHandler } from "../src/lib/api/route-handler";
+import { ApiRouteError, readJsonBody, withApiHandler } from "../src/lib/api/route-handler";
+import { ConversationError } from "../src/domains/order-conversation/order-conversation.service";
+import { InvalidSupportReferenceError } from "../src/domains/support/support.service";
 
 // SEC-3 : seules les erreurs métier connues sont renvoyées au client ;
 // le détail technique reste dans le journal serveur.
@@ -65,17 +67,39 @@ test("codes connus : traduits en français avec le bon statut", async (t) => {
   }
 });
 
-test("ZodError et JSON invalide : 400 sans détail interne", async (t) => {
+test("ZodError : 400 sans détail interne", async (t) => {
   const parsed = z.object({ id: z.string() }).strict().safeParse({ id: 1, extra: true });
   assert.equal(parsed.success, false);
   const zod = await run(t, parsed.error);
   assert.equal(zod.status, 400);
   assert.equal(zod.body.error, "Données invalides.");
-  let syntax: unknown;
-  try { JSON.parse("{"); } catch (error) { syntax = error; }
-  const json = await run(t, syntax);
-  assert.equal(json.status, 400);
-  assert.doesNotMatch(json.body.error, /JSON at position|Unexpected/);
+});
+
+test("corps de requête mal formé lu par readJsonBody : 400 ; JSON.parse de données serveur : 500", async (t) => {
+  let bodyError: unknown;
+  try { await readJsonBody(new Request("http://local", { method: "POST", body: "{" })); } catch (error) { bodyError = error; }
+  assert.ok(bodyError instanceof ApiRouteError);
+  const body = await run(t, bodyError);
+  assert.equal(body.status, 400);
+  assert.doesNotMatch(body.body.error, /JSON at position|Unexpected/);
+  assert.deepEqual(await readJsonBody(new Request("http://local", { method: "POST", body: '{"a":1}' })), { a: 1 });
+  let serverSyntax: unknown;
+  try { JSON.parse("{corrompu"); } catch (error) { serverSyntax = error; }
+  const server = await run(t, serverSyntax);
+  assert.equal(server.status, 500);
+  assert.equal(server.body.error, "Erreur interne du serveur");
+});
+
+test("erreurs métier nommées : message français et statut conservés au lieu d'un 500 générique", async (t) => {
+  const support = await run(t, new InvalidSupportReferenceError());
+  assert.equal(support.status, 404);
+  assert.equal(support.body.error, "Référence introuvable");
+  const conversation = await run(t, new ConversationError(403, "Accès aux échanges refusé."));
+  assert.equal(conversation.status, 403);
+  assert.equal(conversation.body.error, "Accès aux échanges refusé.");
+  const recurring = await run(t, new Error("RECURRING_SPECIAL_MISSION_UNSUPPORTED"));
+  assert.equal(recurring.status, 400);
+  assert.match(recurring.body.error, /missions spéciales/);
 });
 
 test("succès : réponse inchangée", async () => {
