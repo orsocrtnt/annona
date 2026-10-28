@@ -2,7 +2,7 @@ import { trackingTimeline } from "@/domains/tracking/tracking.policy";
 import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import { getClientOrderById } from "@/domains/order/order.service";
-import { getPodPhotoSignedUrl } from "@/lib/storage/pod";
+import { withProofLinks } from "@/domains/delivery/proof-links";
 
 export async function GET(
   _request: Request,
@@ -22,15 +22,11 @@ export async function GET(
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
   }
 
-  const deliveries = await Promise.all(order.deliveries
+  const deliveries = order.deliveries
     .filter(d => d.companyId === companyId && d.customerId === auth.context.user.id)
-    .map(async d => {
-      const { podPhotoPath, ...safeDelivery } = d;
-      return {
-        ...safeDelivery,
-        trackingEvents: trackingTimeline(d.trackingEvents),
-        podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, d.id),
-      };
+    .map(d => ({
+      ...withProofLinks("/api/portal/deliveries", d),
+      trackingEvents: trackingTimeline(d.trackingEvents),
     }));
   return NextResponse.json({ data: { ...order, deliveries }, success: true });
 }

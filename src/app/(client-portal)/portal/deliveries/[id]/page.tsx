@@ -153,6 +153,10 @@ export default function ClientDeliveryDetailPage() {
                   photoUrl={delivery.podPhotoUrl}
                   failureCode={delivery.podFailureCode}
                   note={delivery.podNote}
+                  signatureUrl={delivery.podSignatureUrl}
+                  pdfUrl={delivery.podPdfUrl}
+                  recipientName={delivery.podRecipientName}
+                  signatureRefusedReason={delivery.podSignatureRefusedReason}
                 />
               </div>
             )}

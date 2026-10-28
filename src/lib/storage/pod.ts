@@ -192,3 +192,12 @@ export async function getPodPhotoSignedUrl(path: string | null | undefined, comp
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
 }
+
+/** Octets de la photo de preuve (pour le PDF). Null si le chemin n'appartient pas à cette entreprise et cette livraison. */
+export async function downloadPodPhoto(path: string | null | undefined, companyId: string, deliveryId: string) {
+  if (!path || !isPodPhotoPathForDelivery(path, companyId, deliveryId)) return null;
+  await ensurePodBucket();
+  const { data, error } = await createAdminClient().storage.from(POD_BUCKET).download(path);
+  if (error || !data) return null;
+  return Buffer.from(await data.arrayBuffer());
+}

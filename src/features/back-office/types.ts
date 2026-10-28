@@ -139,6 +139,10 @@ export interface CompanyDeliveryDetail {
   podPhotoUrl: string | null;
   podFailureCode?: string | null;
   podNote?: string | null;
+  podSignatureUrl?: string | null;
+  podPdfUrl?: string | null;
+  podRecipientName?: string | null;
+  podSignatureRefusedReason?: string | null;
   trackingEvents: { id: string; label: string; description?: string | null; occurredAt: string }[];
   /** Règle serveur unique (`deliveryTiming`) : échéance, retard et prochaine action. */
   timing: { dueAt: string | null; late: boolean; lateByMinutes: number | null; nextAction: { code: string; label: string } | null };

@@ -11,6 +11,7 @@ import { getClientOrderStats, getCompanyOrderStats } from "../src/domains/order/
 import { getUserByAuthId } from "../src/domains/user/user.service";
 import { resolveDatabaseUrl } from "../src/lib/database/connection-url";
 import { OPERATIONAL_QUERY_DEFAULTS, QUERY_STALE_MS } from "../src/lib/query/defaults";
+import * as proofLinksModule from "../src/domains/delivery/proof-links";
 
 function replace(t: TestContext, obj: object, key: string, fn: unknown) {
   const previous = Reflect.get(obj, key); Reflect.set(obj, key, fn);
@@ -253,6 +254,7 @@ test("photo différée : propriétaire/entreprise relus, URL privée seulement a
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": { requireDriverRole: async () => denied ? { error: new Response(null, { status: 401 }) } : { context: { user: { id: "driver", companyId: "a" } } } },
     "@/services/prisma/client": { prisma: { delivery: { findFirst: async ({ where }: { where: Record<string, string> }) => { reads++; assert.equal(JSON.stringify(where), JSON.stringify({ id: "mission", driverId: "driver", companyId: "a" })); return owned ? { podPhotoPath: "private" } : null; } } } },
+    "@/domains/delivery/proof-links": proofLinksModule,
     "@/lib/storage/pod": { getPodPhotoSignedUrl: async () => { signs++; return "https://storage.fixture.invalid/signed"; } },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/driver/missions/[id]/proof/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;

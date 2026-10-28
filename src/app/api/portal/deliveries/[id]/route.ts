@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import { getClientDeliveryById } from "@/domains/delivery/delivery.service";
 import { deliveryTiming } from "@/domains/delivery/delivery-timing";
-import { getPodPhotoSignedUrl } from "@/lib/storage/pod";
+import { withProofLinks } from "@/domains/delivery/proof-links";
 
 function clientTiming(delivery: NonNullable<Awaited<ReturnType<typeof getClientDeliveryById>>>) {
   const { dueAt, late, lateByMinutes } = deliveryTiming({
@@ -35,12 +35,10 @@ export async function GET(
     return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
   }
 
-  const { podPhotoPath, ...safeDelivery } = delivery;
   return NextResponse.json({
     data: {
-      ...safeDelivery,
+      ...withProofLinks("/api/portal/deliveries", delivery),
       trackingEvents: trackingTimeline(delivery.trackingEvents),
-      podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, delivery.companyId, delivery.id),
       // Même règle de retard que l'équipe (UX-03) ; la prochaine action reste interne.
       timing: clientTiming(delivery),
     },

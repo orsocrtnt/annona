@@ -4,6 +4,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { NextResponse } from "next/server";
+import * as proofLinksModule from "../src/domains/delivery/proof-links";
 
 function load(file: string, role: string, calls: string[], fail?: string) {
   const module = { exports: {} as {
@@ -45,6 +46,7 @@ function load(file: string, role: string, calls: string[], fail?: string) {
       adminUpdateDeliverySchema: { safeParse: () => { calls.push("parse"); return { success: true, data: { status: "CANCELLED" } }; } },
       assignDeliverySchema: { safeParse: () => { calls.push("parse"); return { success: true, data: { driverId: "driver-1", force: false } }; } },
     },
+    "@/domains/delivery/proof-links": proofLinksModule,
     "@/lib/storage/pod": { getPodPhotoSignedUrl: async () => { calls.push("sign"); return null; } },
     "@/domains/delivery/delivery-timing": { deliveryTiming: () => ({ late: false }) },
   };

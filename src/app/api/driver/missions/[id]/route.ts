@@ -10,7 +10,6 @@ import { DriverProximityError } from "@/domains/delivery/driver-proximity.servic
 import {
   cleanupPodPhotoOrphans,
   deletePodPhoto,
-  getPodPhotoSignedUrl,
   MAX_POD_BYTES,
   MAX_POD_REQUEST_BYTES,
   uploadPodPhoto,
@@ -52,10 +51,15 @@ export async function GET(
   return NextResponse.json({
     data: {
       ...safeMission,
-      podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, mission.id),
+      podPhotoUrl: driverProofUrl(podPhotoPath, mission.id),
     },
     success: true,
   });
+}
+
+/** Lien interne : l'URL signée (5 minutes) est générée par `/proof` au moment de l'affichage. */
+function driverProofUrl(path: string | null | undefined, deliveryId: string) {
+  return path ? `/api/driver/missions/${encodeURIComponent(deliveryId)}/proof` : null;
 }
 
 async function parseDriverStatusPayload(request: Request) {
@@ -278,7 +282,7 @@ export async function PATCH(
     const { podPhotoPath, ...safeReplayWithSignature } = replay;
     const safeReplay = withoutSignaturePath(safeReplayWithSignature);
     return NextResponse.json({
-      data: { ...safeReplay, podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, replay.id) },
+      data: { ...safeReplay, podPhotoUrl: driverProofUrl(podPhotoPath, replay.id) },
       success: true,
       replay: true,
     });
@@ -296,7 +300,7 @@ export async function PATCH(
     const { podPhotoPath, ...safeReplayWithSignature } = replay;
     const safeReplay = withoutSignaturePath(safeReplayWithSignature);
     return NextResponse.json({
-      data: { ...safeReplay, podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, replay.id) },
+      data: { ...safeReplay, podPhotoUrl: driverProofUrl(podPhotoPath, replay.id) },
       success: true,
       replay: true,
     });
@@ -355,7 +359,7 @@ export async function PATCH(
     const { podPhotoPath: storedPath, ...safeMissionWithSignature } = mission;
     const safeMission = withoutSignaturePath(safeMissionWithSignature);
     return NextResponse.json({
-      data: { ...safeMission, podPhotoUrl: await getPodPhotoSignedUrl(storedPath, companyId, mission.id) },
+      data: { ...safeMission, podPhotoUrl: driverProofUrl(storedPath, mission.id) },
       success: true,
       replay: false,
     });
