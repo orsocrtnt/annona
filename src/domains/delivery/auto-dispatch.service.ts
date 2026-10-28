@@ -49,8 +49,6 @@ export type AutoDispatchResult = {
   driverId?: string;
   reason?: string;
   skippedReason?: string;
-  /** Distance au retrait et âge de la position du livreur choisi ; jamais ses coordonnées. */
-  proximity?: DispatchProximity;
 };
 
 /** Sans chiffre : la raison est recopiée dans l'historique, visible du client. */
@@ -411,7 +409,6 @@ export async function tryAutoAssignDelivery(
     assigned: true,
     driverId: pick.driverId,
     reason: pick.reason,
-    proximity: proximities.get(pick.driverId),
   };
 }
 

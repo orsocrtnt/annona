@@ -170,15 +170,12 @@ function connectedFixture(options: { delivery?: Row; settings?: Row; pending?: s
   return { svc, calls, driverQueries };
 }
 
-test("dispatch GPS : positions lues hors transaction, restreintes à l'entreprise, distance et âge dans la réponse", async () => {
+test("dispatch GPS (P9) : positions lues hors transaction ; ni distance ni âge dans le résultat d'affectation", async () => {
   const f = connectedFixture();
   const result = await f.svc.tryAutoAssignDelivery("company", "d1");
   assert.equal(result.assigned, true);
   assert.equal(result.driverId, "close");
-  const proximity = result.proximity as DispatchProximity;
-  assert.equal(proximity.status, "NEAR");
-  assert.ok(proximity.distanceMeters! > 1000 && proximity.distanceMeters! < 1200);
-  assert.ok(proximity.positionAgeSeconds! >= 89 && proximity.positionAgeSeconds! <= 95);
+  assert.equal("proximity" in result, false, "aucun écran ne le lit : rien n'est exposé dans les résultats de file");
   assert.deepEqual(f.calls.map((c) => c.split(":")[0]), ["drivers+positions", "assign"], "une seule requête livreurs, distances avant l'affectation, une seule affectation");
   assert.doesNotMatch(f.calls[1]!, NO_NUMBERS_ABOUT_POSITION);
   assert.doesNotMatch(JSON.stringify(result), /latitude|longitude|48\.8|2\.36/);
@@ -198,7 +195,7 @@ test("dispatch GPS : critère désactivé → positions non lues, ancien choix",
   const f = connectedFixture({ settings: { gpsProximityEnabled: false } });
   const result = await f.svc.tryAutoAssignDelivery("company", "d1");
   assert.equal(result.driverId, "offduty", "ancien algorithme : premier des moins chargés");
-  assert.equal((result.proximity as DispatchProximity).status, "DISABLED");
+  assert.doesNotMatch(String(result.reason), /plus proche/);
   assert.deepEqual(f.calls.map((c) => c.split(":")[0]), ["drivers", "assign"], "critère coupé : positions non lues");
 });
 
@@ -207,7 +204,7 @@ test("dispatch GPS : retrait non géolocalisé → repli sur les critères actue
   const result = await f.svc.tryAutoAssignDelivery("company", "d1");
   assert.equal(result.assigned, true);
   assert.equal(result.driverId, "offduty");
-  assert.equal((result.proximity as DispatchProximity).status, "OFF_DUTY");
+  assert.doesNotMatch(String(result.reason), /plus proche/);
 });
 
 test("dispatch GPS : éligibles du dispatcher avec distance et âge, sans coordonnées ni livreur étranger", async () => {
@@ -216,6 +213,8 @@ test("dispatch GPS : éligibles du dispatcher avec distance et âge, sans coordo
   assert.ok(rows);
   const byId = new Map(rows.map((row) => [(row.driver as Row).id as string, row.proximity as DispatchProximity]));
   assert.equal(byId.get("close")?.status, "NEAR");
+  assert.ok(byId.get("close")!.distanceMeters! > 1000 && byId.get("close")!.distanceMeters! < 1200);
+  assert.ok(byId.get("close")!.positionAgeSeconds! >= 89 && byId.get("close")!.positionAgeSeconds! <= 95);
   assert.equal(byId.get("offduty")?.status, "OFF_DUTY");
   assert.equal(byId.get("offduty")?.distanceMeters, null);
   assert.equal(byId.get("idle")?.status, "NO_POSITION");
@@ -317,4 +316,10 @@ test("dispatch GPS (P6) : éligibles — positions lues dans le Promise.all, opt
   const off = connectedFixture({ settings: { gpsProximityEnabled: false } });
   const offRows = await off.svc.getEligibleDriversForDelivery("company", "d1");
   assert.deepEqual(offRows!.map((row) => (row.proximity as DispatchProximity).status), ["DISABLED", "DISABLED", "DISABLED"]);
+});
+
+test("dispatch GPS (P9) : la file ne renvoie aucune donnée de position", async () => {
+  const f = connectedFixture({ pending: ["d1", "d2"] });
+  const run = await f.svc.runAutoDispatchQueue("company");
+  assert.doesNotMatch(JSON.stringify(run), /proximity|distance|positionAge/);
 });
