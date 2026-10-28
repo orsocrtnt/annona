@@ -10,6 +10,7 @@ import {
   type CompanyExportVisitor,
 } from "@/domains/data-lifecycle/company-export.service";
 import { checkPodStorageHealth, isPodPhotoPathForDelivery, MAX_POD_BYTES } from "@/lib/storage/pod";
+import { isPodSignaturePathForDelivery } from "@/lib/storage/pod-signature";
 
 // Technical ceilings, not retention policy. Binary downloads are sequential.
 export const COMPANY_ARCHIVE_LIMITS = {
@@ -23,7 +24,7 @@ export const COMPANY_ARCHIVE_LIMITS = {
 type Limits = { [K in keyof typeof COMPANY_ARCHIVE_LIMITS]: number };
 interface ArchiveOrder {
   id: string; companyId: string;
-  deliveries: { id: string; companyId: string; orderId: string; podPhotoPath: string | null }[];
+  deliveries: { id: string; companyId: string; orderId: string; podPhotoPath: string | null; podSignaturePath?: string | null }[];
 }
 interface Dependencies {
   visitExport: (companyId: string, visitor: CompanyExportVisitor) => Promise<CompanyExportSummary | null>;
@@ -69,7 +70,14 @@ function createGraphGuard(companyId: string, limits: Limits) {
             if (!isPodPhotoPathForDelivery(delivery.podPhotoPath, companyId, delivery.id)) {
               throw new Error("ARCHIVE_INVALID_PROOF_PATH");
             }
-            expected.set(delivery.id, delivery.podPhotoPath);
+            expected.set(`${delivery.id}:photo`, delivery.podPhotoPath);
+            if (expected.size > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+          }
+          if (delivery.podSignaturePath) {
+            if (!isPodSignaturePathForDelivery(delivery.podSignaturePath, companyId, delivery.id)) {
+              throw new Error("ARCHIVE_INVALID_PROOF_PATH");
+            }
+            expected.set(`${delivery.id}:signature`, delivery.podSignaturePath);
             if (expected.size > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
           }
         }
@@ -81,8 +89,9 @@ function createGraphGuard(companyId: string, limits: Limits) {
       if (proofs.length > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
       if (expected.size !== proofs.length) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
       for (const proof of proofs) {
-        if (expected.get(proof.deliveryId) !== proof.objectKey) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
-        expected.delete(proof.deliveryId);
+        const key = `${proof.deliveryId}:${proof.kind ?? "photo"}`;
+        if (expected.get(key) !== proof.objectKey) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
+        expected.delete(key);
       }
       return proofs;
     },

@@ -379,7 +379,7 @@ async function assertPoolRecycleSafe(
   if (company.logoUrl) throw new DemoPoolSafetyError("EXTERNAL_ASSET_REFERENCE");
   const userIds = company.users.map((user) => user.id);
   const [photos, pdfs, runningJobs, crossTenant] = await Promise.all([
-    prisma.delivery.count({ where: { companyId, podPhotoPath: { not: null } } }),
+    prisma.delivery.count({ where: { companyId, OR: [{ podPhotoPath: { not: null } }, { podSignaturePath: { not: null } }] } }),
     prisma.invoice.count({ where: { companyId, pdfUrl: { not: null } } }),
     prisma.operationJob.count({ where: { companyId, status: { in: ["PENDING", "PROCESSING"] } } }),
     prisma.$transaction((tx) => hasCrossTenantDemoReference(tx, companyId, userIds)),

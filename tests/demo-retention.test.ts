@@ -45,7 +45,7 @@ function harness(t: TestContext) {
   const calls: string[] = [];
   const counts: Record<string, number> = {};
   const tx = Object.fromEntries(["order", "delivery", "invoice", "recurringOrder", "supportTicket", "orderMessage", "orderThreadRead", "clientNotification", "orderItem", "supportTicketMessage", "operationJob"].map((name) => [name, {
-    count: async () => counts[name] ?? 0,
+    count: async (args?: unknown) => (counts[name] ?? 0) + (name === "delivery" && JSON.stringify(args ?? {}).includes("podSignaturePath") ? counts.deliverySignature ?? 0 : 0),
     deleteMany: async () => { calls.push(`delete:${name}`); return { count: 1 }; },
   }]));
   Object.assign(tx, {
@@ -85,7 +85,7 @@ test("demo cleanup rejects an unexpected Auth identity and any changed roster", 
 
 test("demo cleanup blocks cross-tenant cascades, external assets and running jobs", async (t) => {
   const h = harness(t);
-  for (const [model, reason] of [["order", "CROSS_TENANT_REFERENCE"], ["supportTicketMessage", "CROSS_TENANT_REFERENCE"], ["orderItem", "CROSS_TENANT_REFERENCE"], ["clientNotification", "CROSS_TENANT_REFERENCE"], ["delivery", "EXTERNAL_ASSET_REFERENCE"], ["invoice", "EXTERNAL_ASSET_REFERENCE"], ["operationJob", "UNFINISHED_JOBS"]]) {
+  for (const [model, reason] of [["order", "CROSS_TENANT_REFERENCE"], ["supportTicketMessage", "CROSS_TENANT_REFERENCE"], ["orderItem", "CROSS_TENANT_REFERENCE"], ["clientNotification", "CROSS_TENANT_REFERENCE"], ["delivery", "EXTERNAL_ASSET_REFERENCE"], ["deliverySignature", "EXTERNAL_ASSET_REFERENCE"], ["invoice", "EXTERNAL_ASSET_REFERENCE"], ["operationJob", "UNFINISHED_JOBS"]]) {
     h.counts[model!] = 1;
     assert.equal((await cleanupExpiredDemoSession(h.c.id, h.options)).reason, reason);
     delete h.counts[model!];

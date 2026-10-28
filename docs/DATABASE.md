@@ -110,3 +110,12 @@ La préproduction, la baseline et la restauration fournisseur sont terminées. L
 ## Export de sortie d'une entreprise
 
 Le socle DATA-02 ajoute un export JSON versionné du graphe d'une entreprise dans `src/domains/data-lifecycle/company-export.service.ts`. Il exclut les identifiants Auth et les clés internes, et produit un manifeste des preuves privées à extraire séparément. La procédure et ses limites sont dans `operations/data02/README.md` ; aucune suppression générique d'entreprise existante n'est exposée.
+
+### Preuve de livraison : signature, position et conservation (POD-2)
+
+- Colonnes de `deliveries` ajoutées par `20261028090000_pod_signature` : `pod_signature_path`, `pod_recipient_name`, `pod_signature_refused_reason`, `pod_latitude`, `pod_longitude`, `pod_position_at`. La signature (PNG aplati sur fond blanc) est stockée dans le bucket privé existant `delivery-pods`, sous `companyId/deliveryId-sig-<horodatage>-<uuid>.png` ; aucun nouveau bucket.
+- Export et archive DATA-02 : le JSON exporte déjà ces colonnes avec la livraison ; le manifeste `externalAssets.proofObjects` liste désormais la signature (`kind: "signature"`, la photo n'a pas de `kind`) et l'archive la télécharge dans `proofs/` avec le même contrôle de chemin (entreprise et livraison) et le même manifeste SHA256 (`proofCount` compte photos et signatures).
+- Purge de démonstration (`demo-cleanup`, `demo-pool`, inventaire hérité) : une signature compte comme une référence externe, au même titre que la photo, et bloque le recyclage tant que l'objet Storage existe.
+- Durée de conservation : la signature suit exactement le sort de la photo et de la livraison. Aucune durée n'est encore validée (projet `operations/data02/RETENTION_POLICY_DRAFT.md` : durée nécessaire au suivi et aux contestations, jusqu'à cinq ans si la preuve commerciale le justifie) et aucun purgeur général n'existe : ne présenter aucune durée comme effective. La position (`pod_latitude`, `pod_longitude`) est une donnée de géolocalisation du livreur : à aligner sur la décision GPS (point 7 de `legal/README.md`) avant données réelles.
+- Les photos sont ré-encodées côté serveur (EXIF, dont la position GPS, supprimé) ; les liens Storage ne sont jamais renvoyés par l'API : ils sont générés à la demande (5 minutes) par les routes `.../proof/photo` et `.../proof/signature`.
+- Règles par entreprise : `companies.settings.proofRules` = `{ signatureRequired: false, emailToClient: true }` (défauts), via `GET/PATCH /api/company/proof-rules`. La signature est donc facultative par défaut.

@@ -159,7 +159,7 @@ async function cleanupManagedDemoSession(companyId: string, options: {
         })) block("NON_SYNTHETIC_OR_CHANGED_ROSTER");
 
         const [photos, pdfs, runningJobs] = await Promise.all([
-          tx.delivery.count({ where: { companyId, podPhotoPath: { not: null } } }),
+          tx.delivery.count({ where: { companyId, OR: [{ podPhotoPath: { not: null } }, { podSignaturePath: { not: null } }] } }),
           tx.invoice.count({ where: { companyId, pdfUrl: { not: null } } }),
           tx.operationJob.count({ where: { companyId, status: { in: ["PENDING", "PROCESSING"] } } }),
         ]);
