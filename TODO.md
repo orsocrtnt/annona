@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**57 tâches terminées sur 94 — 61 %**
+**57 tâches terminées sur 95 — 60 %**
 
-`████████████░░░░░░░░` · 37 tâches restantes
+`████████████░░░░░░░░` · 38 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -201,6 +201,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | CONFIG-MSG | A+B | Messages clairs quand une configuration échoue (cause et action), à commencer par Factur-X. | — | Moyenne · GPT‑6.1 Sol |
 | DESIGN-2 | A+B | Mode sombre sur tout le site (landing, back-office, admin, livreur) et carte sombre assortie. | Après DESIGN-1 ; validation du propriétaire. | Élevée · GPT‑6.1 Sol |
 | FACTURX-SAISIE | A+B | Champs exigés par le Factur-X obligatoires et bloquants dès l'enregistrement des mentions légales. | — | Moyenne · GPT‑6.1 Sol |
+| LANDING-2 | A+B | Landing et page de connexion refaites : minimalistes, très visuelles (Apple, Tesla, Uber), claires et efficaces. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
@@ -1503,6 +1504,21 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Terminé quand : il est impossible d'enregistrer des mentions qui feraient ensuite échouer l'export Factur-X ; chaque champ manquant ou invalide a son message ; test serveur et formulaire par champ ; recette navigateur : après un enregistrement accepté, le téléchargement Factur-X réussit du premier coup ; `npm run check` vert.
 
   Source / dépendance / blocage : essai du propriétaire du 28 octobre 2026 ; à mener avec CONFIG-MSG et FACTURX-1.
+
+  État : ouverte, non commencée.
+
+- [ ] **LANDING-2 — Refaire la landing et la page de connexion, minimalistes et très visuelles.** Demande du propriétaire du 28 octobre 2026. La page de connexion est jugée laide. La landing est une « bonne base », mais elle a trop de texte et en fait trop. Objectif : quelque chose de plus original, qui reste efficace et « tac tac ». Le visiteur doit comprendre en quelques secondes ce que fait TutelLiv, pourquoi il est là, ce que l'outil va lui apporter, et où se connecter, voir la démo ou contacter quelqu'un. Tous les sujets sont abordés, mais de façon très claire et minimaliste.
+  - **Inspiration** : Apple, Tesla, Uber. Grands visuels produit (les trois espaces : dispatch, portail client, app livreur), peu de mots, une idée par écran, beaucoup d'air, mouvement sobre. Le propriétaire laisse carte blanche et attend une proposition originale, pas un modèle de SaaS générique.
+  - **Landing** : une promesse en une phrase, une preuve visuelle immédiate (produit en action), 3 ou 4 bénéfices au plus, la mini-démo (DEMO-3) mise en valeur, les tarifs en un coup d'œil, un contact facile, et des appels à l'action toujours visibles (Démo, Se connecter, Contact).
+  - **Connexion** : page sobre et belle, cohérente avec la landing, rapide sur mobile, avec les messages d'erreur clairs (CONFIG-MSG) et l'accès à la démo.
+  - Mode clair et mode sombre (DESIGN-2). Accessibilité AA, cibles de 44 px, performances préservées.
+  - Méthode : 2 ou 3 directions visuelles montrées au propriétaire (captures ou maquettes) avant de coder ; agent avec navigateur et captures avant/après ; skills de design du dépôt (impeccable, modern-frontend, apple-design).
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : direction validée par le propriétaire ; landing et connexion livrées en Light et Dark, à 390 et 1 280 px ; chaque information clé (ce qu'on fait, bénéfices, démo, connexion, contact, tarifs) est trouvable en moins de 5 secondes ; aucune promesse au-delà de ce que le produit fait réellement (GROWTH-1) ; scores Lighthouse au moins égaux à aujourd'hui ; `npm run check` vert et recette navigateur.
+
+  Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026 ; prolonge GROWTH-1 et la mini-démo DEMO-3 ; mode sombre avec DESIGN-2. Choix de la direction visuelle : propriétaire (questionnaire).
 
   État : ouverte, non commencée.
 
