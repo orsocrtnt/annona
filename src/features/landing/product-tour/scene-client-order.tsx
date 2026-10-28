@@ -8,15 +8,17 @@ import {
   MapPin,
   MousePointerClick,
   Plus,
+  Receipt,
+  Truck,
   Warehouse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CityStreets } from "@/features/landing/product-tour/city-map";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
-import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
+import { TOUR_INVOICE, TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
 import { clientNav } from "@/features/landing/product-tour/space-nav";
 import { SpaceSidebar } from "@/features/landing/product-tour/space-sidebar";
-import { TourBubble } from "@/features/landing/product-tour/tour-bubble";
+import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { useTypewriter } from "@/features/landing/product-tour/typing";
 import {
   GESTURE_RESULT_DELAY_MS,
@@ -29,7 +31,7 @@ const INTRO_DURATIONS_MS = [700] as const;
 const ENLARGE_MS = 700;
 
 
-const NAV = clientNav("Accueil");
+const NAV = clientNav("Tableau de bord");
 
 const FIELDS = [
   { icon: Warehouse, label: "Retrait", placeholder: "Adresse de retrait", value: TOUR_ORDER.pickup },
@@ -42,6 +44,20 @@ const FIELD_TEXTS = FIELDS.map((field) => field.value);
 const HOME_DELIVERIES = [
   { number: "#1038", place: "Bureau Bastille", status: "En route", x: 256, y: 168, live: true },
   { number: "#1040", place: "Studio Oberkampf", status: "Livrée", x: 176, y: 96, live: false },
+] as const;
+
+const HOME_ACTIVITY = [
+  { text: "#1038 prise en charge par Lucas", when: "Aujourd'hui · 11 h 05" },
+  { text: "#1040 livrée, preuve photo jointe", when: "Hier · 16 h 42" },
+  { text: "Facture F-2026-1031 payée", when: "Hier · 09 h 10" },
+] as const;
+
+/** Tableau de bord du client (démo) : ce qu'il suit d'un coup d'œil avant de commander. */
+const HOME_KPIS = [
+  { label: "En cours", value: "1", icon: Truck, tone: "bg-[#eaf2ff] text-[#1d4f9e]" },
+  { label: "Livrées ce mois", value: "14", icon: CheckCircle2, tone: "bg-[#e6f8ee] text-[#00a854]" },
+  { label: "Prochain créneau", value: TOUR_ORDER.slot, icon: CalendarClock, tone: "bg-[#f0f4f1] text-[#0e1310]" },
+  { label: "À régler", value: TOUR_INVOICE.amount, icon: Receipt, tone: "bg-[#fff1d6] text-[#a8660b]" },
 ] as const;
 
 /** Les livraisons en cours du client sur le même plan que le suivi. */
@@ -108,9 +124,12 @@ function OrderPanel({
         })}
       </ul>
 
-      <TourBubble key={ordered ? "sent" : "form"} className="bottom-28 right-6" delay={ordered ? 0.1 : 0.8}>
-        {ordered ? "Reçue au dispatch, en direct." : "Pas d'appel, pas d'e-mail."}
-      </TourBubble>
+      <GuideSpot
+        id="order-form"
+        corner="br"
+        className="bottom-28 right-6"
+        lines={[ordered ? "Reçue au dispatch, en direct." : "Pas d'appel, pas d'e-mail."]}
+      />
 
       <div className="mt-auto pt-3">
         {ordered ? (
@@ -171,24 +190,20 @@ export function SceneClientOrder({ onDone, onStart, onReset, reducedMotion }: Sc
   const [ordered, setOrdered] = useState(false);
   useDelayedCall(starting, reducedMotion ? 0 : ENLARGE_MS, () => setFormOpen(true));
   const ready = intro >= INTRO_DURATIONS_MS.length;
-  useDelayedCall(ordered, GESTURE_RESULT_DELAY_MS + 800, onDone);
+  // Laisse lire « Reçue au dispatch, en direct. » avant de passer au dispatch.
+  useDelayedCall(ordered, GESTURE_RESULT_DELAY_MS + 2600, onDone);
 
   return (
     <div className="flex h-full">
       <SpaceSidebar items={NAV} />
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        {ready && !starting && (
-          <TourBubble key="home" className="bottom-[124px] left-6">
-            Vos clients commandent seuls.
-          </TourBubble>
-        )}
         <div className="flex items-center justify-between gap-2 px-3 py-3 sm:px-4">
           <div className="min-w-0 leading-tight">
-            <p className="truncate text-sm font-semibold">Mon espace</p>
-            <p className="truncate text-[11px] text-muted-foreground">Suivez vos commandes et livraisons</p>
+            <p className="truncate text-sm font-semibold">Bonjour, {TOUR_ORDER.client}</p>
+            <p className="truncate text-[11px] text-muted-foreground">Votre espace client</p>
           </div>
-          <div className="relative flex flex-col items-end">
+          <div className="relative flex shrink-0 flex-col items-end">
             <button
               type="button"
               data-tour-target
@@ -198,7 +213,7 @@ export function SceneClientOrder({ onDone, onStart, onReset, reducedMotion }: Sc
                 onStart();
               }}
               className={cn(
-                "flex min-h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+                "flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
                 ready && !starting ? "product-tour-pulse" : !ready && "opacity-40"
               )}
             >
@@ -208,40 +223,76 @@ export function SceneClientOrder({ onDone, onStart, onReset, reducedMotion }: Sc
           </div>
         </div>
 
-        <div className="relative mx-3 min-h-0 flex-1 overflow-hidden rounded-2xl ring-1 ring-black/[0.05] sm:mx-4">
-          <HomeMap />
-          <p
-            className={cn(
-              "absolute right-2 top-2 flex items-center gap-1 rounded-lg bg-[#0e1310] px-2 py-1 text-[11px] font-semibold text-white shadow-lg transition-opacity duration-300 motion-reduce:transition-none",
-              ready && !starting ? "opacity-100" : "opacity-0"
-            )}
-            aria-hidden={!ready || starting}
-          >
-            <MousePointerClick className="h-3 w-3" aria-hidden />
-            Cliquez sur « Nouvelle commande »
-          </p>
-        </div>
-
-        <div className="mx-3 my-3 rounded-2xl bg-white p-2.5 ring-1 ring-black/[0.05] sm:mx-4">
-          <p className="px-1 text-xs font-semibold">Mes livraisons</p>
-          <ul className="mt-1.5 space-y-1">
-            {HOME_DELIVERIES.map((delivery) => (
-              <li key={delivery.number} className="flex items-center justify-between gap-2 rounded-lg px-1 py-1 text-xs">
-                <span className="min-w-0 truncate">
-                  <span className="font-semibold">{delivery.number}</span>
-                  <span className="text-muted-foreground"> · {delivery.place}</span>
+        <div className="@container flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3 sm:px-4 sm:pb-4">
+          <ul className="grid grid-cols-2 gap-2 @lg:grid-cols-4" aria-label="Vos livraisons en chiffres">
+            {HOME_KPIS.map(({ label, value, icon: Icon, tone }) => (
+              <li key={label} className="flex items-center gap-2 rounded-xl bg-white px-2.5 py-2 ring-1 ring-black/[0.05]">
+                <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg", tone)} aria-hidden>
+                  <Icon className="h-3.5 w-3.5" strokeWidth={2} />
                 </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                    delivery.live ? "bg-[#e6f8ee] text-[#0e1310]" : "bg-[#f0f4f1] text-muted-foreground"
-                  )}
-                >
-                  {delivery.status}
-                </span>
+                <div className="min-w-0 leading-tight">
+                  <p className="truncate text-sm font-bold tracking-[-0.02em]">{value}</p>
+                  <p className="truncate text-[10px] text-muted-foreground">{label}</p>
+                </div>
               </li>
             ))}
           </ul>
+
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 @lg:grid-cols-[1.25fr_1fr]">
+            <div className="relative min-h-[120px] overflow-hidden rounded-2xl ring-1 ring-black/[0.05]">
+              <HomeMap />
+              {ready && !starting && (
+                <GuideSpot id="order-home" corner="bl" className="bottom-3 left-3" lines={["Vos clients commandent seuls."]} />
+              )}
+              <p className="absolute left-2 top-2 rounded-md bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold">Suivi en direct</p>
+            </div>
+
+            <div className="flex min-h-0 flex-col gap-2.5">
+              <div className="rounded-2xl bg-white p-2.5 ring-1 ring-black/[0.05]">
+                <p className="px-1 text-xs font-semibold">Mes livraisons</p>
+                <ul className="mt-1.5 space-y-1">
+                  {HOME_DELIVERIES.map((delivery) => (
+                    <li key={delivery.number} className="flex items-center justify-between gap-2 rounded-lg px-1 py-1 text-xs">
+                      <span className="min-w-0 truncate">
+                        <span className="font-semibold">{delivery.number}</span>
+                        <span className="text-muted-foreground"> · {delivery.place}</span>
+                      </span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                          delivery.live ? "bg-[#e6f8ee] text-[#0e1310]" : "bg-[#f0f4f1] text-muted-foreground"
+                        )}
+                      >
+                        {delivery.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="hidden items-center gap-2 rounded-2xl bg-white p-2.5 ring-1 ring-black/[0.05] @lg:flex">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#f0f4f1]" aria-hidden>
+                  <Receipt className="h-3.5 w-3.5" strokeWidth={2} />
+                </span>
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate text-xs font-semibold">Dernière facture</p>
+                  <p className="truncate text-[10px] text-muted-foreground">F-2026-1031 · 52,00 €</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-[#e6f8ee] px-2 py-0.5 text-[10px] font-semibold">Payée</span>
+              </div>
+              <div className="hidden min-h-0 flex-1 overflow-hidden rounded-2xl bg-white p-2.5 ring-1 ring-black/[0.05] @lg:block">
+                <p className="px-1 text-xs font-semibold">Activité récente</p>
+                <ol className="mt-2 space-y-2.5 border-l border-[#e4e8e5] pl-3">
+                  {HOME_ACTIVITY.map((event) => (
+                    <li key={event.text} className="relative text-[11px] leading-tight">
+                      <span className="absolute -left-[16.5px] top-1 h-2 w-2 rounded-full bg-[#00d46a] ring-2 ring-white" aria-hidden />
+                      <p className="font-medium">{event.text}</p>
+                      <p className="text-[10px] text-muted-foreground">{event.when}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </div>
         </div>
 
         <AnimatePresence>

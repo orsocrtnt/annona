@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { CityMap } from "@/features/landing/product-tour/city-map";
 import { PhoneFrame } from "@/features/landing/product-tour/phone-frame";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
-import { TourBubble } from "@/features/landing/product-tour/tour-bubble";
+import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
 import {
   GESTURE_RESULT_DELAY_MS,
@@ -156,11 +156,11 @@ export function SceneDriver({ onDone, reducedMotion }: SceneProps) {
           />
         )}
       </PhoneFrame>
-      {phase >= 2 && (
-        <TourBubble key={navigating ? "gps" : accepted ? "accepted" : "mission"} className="left-6 top-8">
-          {navigating ? "GPS lancé en un geste." : accepted ? "Le client le voit aussitôt." : "Mission reçue, sans un appel."}
-        </TourBubble>
-      )}
+      <GuideSpot
+        id="driver"
+        className="left-6 top-8"
+        lines={[navigating ? "GPS lancé en un geste." : accepted ? "Le client le voit aussitôt." : "Mission reçue, sans un appel."]}
+      />
     </div>
   );
 }

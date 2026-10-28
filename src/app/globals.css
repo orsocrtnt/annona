@@ -287,61 +287,128 @@
 /* Curseur guide : mime un clic sur le geste attendu. */
 .product-tour-cursor-tap {
   transform-origin: 2px 2px;
-  animation: productTourCursorTap 1.8s ease-in-out 0.9s infinite;
+  animation: productTourCursorTap 3.6s ease-in-out 0.9s infinite;
 }
 
 .product-tour-cursor-ripple {
   opacity: 0;
-  animation: productTourCursorRipple 1.8s ease-out 0.9s infinite;
+  animation: productTourCursorRipple 3.6s ease-out 0.9s infinite;
 }
 
+/* Un clic mimé toutes les 3,6 s : le reste du temps, la souris reste posée sur le bouton. */
 @keyframes productTourCursorTap {
   0%,
-  30%,
+  15%,
   100% {
     transform: scale(1);
   }
-  15% {
+  7.5% {
     transform: scale(0.82);
   }
 }
 
 @keyframes productTourCursorRipple {
   0%,
-  10% {
+  5% {
     opacity: 0;
     transform: scale(0.4);
   }
-  20% {
+  10% {
     opacity: 0.9;
   }
-  60%,
+  30%,
   100% {
     opacity: 0;
     transform: scale(1.6);
   }
 }
 
-/* Bulle explicative : liseré vert, ombre portée et halo qui pulse deux fois à l'apparition. */
-.product-tour-bubble {
+/* Bulle-guide : verre fumé éclairé par le haut, liseré menthe, ombre teintée qui la fait flotter. */
+.product-tour-guide {
   box-shadow:
-    0 0 0 1px rgb(0 212 106 / 50%),
-    0 16px 40px rgb(14 19 16 / 28%);
-  animation: productTourBubbleGlow 1.3s ease-out 2 both;
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    inset 0 0 0 1px rgb(0 212 106 / 38%),
+    0 10px 28px rgb(0 212 106 / 16%),
+    0 18px 40px rgb(14 19 16 / 22%);
 }
 
-@keyframes productTourBubbleGlow {
+.product-tour-guide-sheen {
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 10%) 0%, rgb(255 255 255 / 0%) 55%),
+    radial-gradient(120% 160% at 0% 0%, rgb(0 212 106 / 22%) 0%, rgb(0 212 106 / 0%) 55%);
+}
+
+/* Éclat de lumière en diagonale : une fois à l'ouverture, en boucle sur la bulle-bouton. */
+.product-tour-guide-shine,
+.product-tour-guide-shine-loop {
+  background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 22%) 50%, transparent 62%) no-repeat;
+  background-size: 260% 100%;
+  background-position: 130% 0;
+}
+
+.product-tour-guide-shine {
+  animation: productTourGuideShine 1.1s ease-out 0.35s 1 both;
+}
+
+.product-tour-guide-shine-loop {
+  animation: productTourGuideShine 2.8s ease-in-out 0.6s infinite;
+}
+
+@keyframes productTourGuideShine {
+  0% {
+    background-position: 130% 0;
+  }
+  45%,
+  100% {
+    background-position: -30% 0;
+  }
+}
+
+/* Halo vert qui pulse deux fois quand la bulle s'ouvre à un nouvel endroit. */
+.product-tour-guide-glow {
+  animation: productTourGuideGlow 1.3s ease-out 0.2s 2 both;
+}
+
+@keyframes productTourGuideGlow {
   from {
-    box-shadow:
-      0 0 0 1px rgb(0 212 106 / 50%),
-      0 0 0 0 rgb(0 212 106 / 55%),
-      0 16px 40px rgb(14 19 16 / 28%);
+    box-shadow: 0 0 0 0 rgb(0 212 106 / 55%);
   }
   to {
-    box-shadow:
-      0 0 0 1px rgb(0 212 106 / 50%),
-      0 0 0 14px rgb(0 212 106 / 0%),
-      0 16px 40px rgb(14 19 16 / 28%);
+    box-shadow: 0 0 0 14px rgb(0 212 106 / 0%);
+  }
+}
+
+.product-tour-guide-glow-loop {
+  animation: productTourGuideGlow 1.4s ease-out infinite;
+}
+
+/* Goutte : reflet spéculaire en haut à gauche, comme une perle d'eau. */
+.product-tour-drop {
+  background-image: radial-gradient(circle at 32% 28%, rgb(255 255 255 / 75%) 0 18%, rgb(255 255 255 / 0%) 46%);
+  box-shadow:
+    inset 0 -2px 3px rgb(0 120 60 / 35%),
+    0 4px 10px rgb(0 168 84 / 40%);
+}
+
+/* Bulle-bouton de l'écran d'accueil : bat comme un cœur (double battement). */
+.product-tour-heartbeat {
+  animation: productTourHeartbeat 1.4s ease-in-out infinite;
+}
+
+@keyframes productTourHeartbeat {
+  0%,
+  52%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.07);
+  }
+  24% {
+    transform: scale(0.99);
+  }
+  36% {
+    transform: scale(1.05);
   }
 }
 
@@ -376,7 +443,11 @@
   .home-landing-reveal,
   .product-tour-in,
   .product-tour-pulse,
-  .product-tour-bubble,
+  .product-tour-guide-glow,
+  .product-tour-guide-glow-loop,
+  .product-tour-guide-shine,
+  .product-tour-guide-shine-loop,
+  .product-tour-heartbeat,
   .product-tour-halo {
     animation: none;
   }

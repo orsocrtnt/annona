@@ -136,3 +136,9 @@ saisie qui donne l'impression que l'utilisateur écrit, transitions très fluide
   dispatcher GPS / trajets optimisés / regroupements sont montrés comme disponibles alors qu'ils ne sont pas
   encore construits (voir la note « Smart Dispatch »). Le risque commercial a été signalé ; le propriétaire
   l'assume. À réaligner si ces fonctions ne sont pas livrées avant la mise en ligne.
+
+## V4 — Dispatch en deux temps, bulle-guide unique et écran d'accueil (27 octobre 2026)
+
+- **Dispatch** : sous-étapes « Avant » (file de 4 commandes, bulles « 4 commandes, 3 livreurs. », « À la main : appels, tableur, oublis. », « Ici, un seul clic. ») puis « Après » (critères cochés un à un, répartition, tournée groupée, chrono réel). Sous « Après », les bulles de la répartition restent et celles du résultat s'ajoutent. Pas de passage automatique : bouton « Passer à la suite ».
+- **Bulle-guide** : une seule bulle pour toute la démo (`guide-bubble.tsx`). Les scènes posent un emplacement invisible (`GuideSpot`) ; la bulle se rétracte en goutte, glisse en s'étirant dans le sens du trajet, puis s'ouvre à la taille de son texte. Fond anthracite `#2b3530`, sans icône. Masquée sur mobile, sans déplacement en mouvement réduit.
+- **Écran d'accueil** : avant le lancement, la vraie capture du tableau de bord, légèrement assombrie, avec le bouton « Livrez votre premier colis » (choix du propriétaire) et « Démo interactive · sans inscription ». Le clic agrandit la fenêtre et ouvre l'espace client ; « Annuler », la pastille rouge et « Rejouer » y ramènent.

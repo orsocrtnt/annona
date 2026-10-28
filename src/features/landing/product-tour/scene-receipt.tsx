@@ -8,7 +8,7 @@ import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { ProofPhoto } from "@/features/landing/product-tour/proof-photo";
 import { clientNav } from "@/features/landing/product-tour/space-nav";
 import { SpaceSidebar } from "@/features/landing/product-tour/space-sidebar";
-import { TourBubble, TourBubbles } from "@/features/landing/product-tour/tour-bubble";
+import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { TOUR_INVOICE, TOUR_ORDER, TOUR_PROOF } from "@/features/landing/product-tour/tour-data";
 import {
   GESTURE_RESULT_DELAY_MS,
@@ -16,7 +16,7 @@ import {
   useTimeline,
 } from "@/features/landing/product-tour/use-timeline";
 
-const NAV = clientNav("Commandes");
+const NAV = clientNav("Mes commandes");
 /** La preuve s'affiche, puis l'e-mail de facture arrive. */
 const ARRIVAL_DURATIONS_MS = [400, 900] as const;
 
@@ -119,14 +119,12 @@ export function SceneReceipt({ onDone, reducedMotion }: SceneProps) {
         </p>
 
         {mailArrived && (
-          <TourBubbles className="bottom-12 right-6 items-end">
-            <TourBubble className="relative">Facture envoyée automatiquement.</TourBubble>
-            {opened && (
-              <TourBubble className="relative" delay={0.2}>
-                Zéro saisie, zéro oubli.
-              </TourBubble>
-            )}
-          </TourBubbles>
+          <GuideSpot
+            id="receipt"
+            corner="br"
+            className="bottom-12 right-6"
+            lines={["Facture envoyée automatiquement.", ...(opened ? ["Zéro saisie, zéro oubli."] : [])]}
+          />
         )}
       </div>
     </div>

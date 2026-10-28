@@ -5,7 +5,7 @@ import { Check, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CityMap } from "@/features/landing/product-tour/city-map";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
-import { TourBubble, TourBubbles } from "@/features/landing/product-tour/tour-bubble";
+import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
 import { GESTURE_RESULT_DELAY_MS, useDelayedCall } from "@/features/landing/product-tour/use-timeline";
 
@@ -64,14 +64,11 @@ export function SceneTracking({ onDone, reducedMotion }: SceneProps) {
 
       <div className="relative min-h-0 flex-1">
         <CityMap variant="client" showRoute progress={progress} />
-        <TourBubbles className="left-4 top-4">
-          <TourBubble className="relative">Le client suit. Il n&apos;appelle plus.</TourBubble>
-          {progress >= 0.4 && (
-            <TourBubble className="relative" delay={0.1}>
-              Heure d&apos;arrivée en direct.
-            </TourBubble>
-          )}
-        </TourBubbles>
+        <GuideSpot
+          id="tracking"
+          className="left-4 top-4"
+          lines={["Le client suit. Il n'appelle plus.", ...(progress >= 0.4 ? ["Heure d'arrivée en direct."] : [])]}
+        />
       </div>
 
       <div className="border-t border-black/[0.06] bg-white px-4 py-3 sm:px-5">

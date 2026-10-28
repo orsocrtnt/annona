@@ -9,11 +9,18 @@ type Target = { x: number; y: number };
 const LOOKUP_MS = 250;
 
 function findTarget(stage: HTMLElement): Target | null {
-  const element = stage.querySelector<HTMLButtonElement>("[data-tour-target]:not(:disabled)");
+  // Seul un geste réellement visible compte : un bouton caché sous l'écran d'accueil est ignoré.
+  const element = [...stage.querySelectorAll<HTMLButtonElement>("[data-tour-target]:not(:disabled)")]
+    .reverse()
+    .find((candidate) => {
+      const box = candidate.getBoundingClientRect();
+      if (box.width === 0) return false;
+      const top = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return top !== null && candidate.contains(top);
+    });
   if (!element) return null;
   const box = element.getBoundingClientRect();
   const frame = stage.getBoundingClientRect();
-  if (box.width === 0) return null;
   // Pointe de la flèche un peu à droite du centre, comme une vraie main sur la souris.
   return { x: box.left - frame.left + box.width * 0.62, y: box.top - frame.top + box.height * 0.6 };
 }
@@ -41,9 +48,9 @@ export function GuideCursor({ stage, hidden }: { stage: RefObject<HTMLDivElement
       {visible && target && (
         <motion.div
           key="guide-cursor"
-          className="pointer-events-none absolute left-0 top-0 z-30"
-          initial={{ opacity: 0, x: target.x + 70, y: target.y + 60 }}
-          animate={{ opacity: 1, x: target.x, y: target.y }}
+          className="pointer-events-none absolute left-0 top-0 z-[60]"
+          initial={{ opacity: 0, scale: 0.8, x: target.x, y: target.y }}
+          animate={{ opacity: 1, scale: 1, x: target.x, y: target.y }}
           exit={{ opacity: 0, transition: { duration: 0.2 } }}
           transition={{ type: "spring", stiffness: 70, damping: 16, mass: 1 }}
           aria-hidden

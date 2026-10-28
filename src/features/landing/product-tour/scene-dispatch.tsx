@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { companyNav } from "@/features/landing/product-tour/space-nav";
 import { SpaceSidebar } from "@/features/landing/product-tour/space-sidebar";
-import { TourBubble } from "@/features/landing/product-tour/tour-bubble";
+import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { TOUR_LANES, TOUR_QUEUE, type TourQueuedOrder } from "@/features/landing/product-tour/tour-data";
 import {
-  DISPATCH_PHASES,
-  DISPATCH_PHASE_LABELS,
+  DISPATCH_STEP_LABELS,
   dispatchPhase,
+  dispatchStepIndex,
   type DispatchPhase,
 } from "@/features/landing/product-tour/tour-machine";
 import { useDelayedCall, useTimeline } from "@/features/landing/product-tour/use-timeline";
@@ -62,14 +62,14 @@ function OrderChip({ order, placed }: { order: TourQueuedOrder; placed: boolean 
   );
 }
 
-/** Avant · Pendant · Après : où en est le dispatch. */
+/** Avant · Après : où en est le dispatch. */
 function PhaseSteps({ phase }: { phase: DispatchPhase }) {
-  const current = DISPATCH_PHASES.indexOf(phase);
+  const current = dispatchStepIndex(phase);
   return (
-    <ol className="hidden grid-cols-3 gap-1 rounded-xl bg-white p-1 ring-1 ring-black/[0.05] sm:grid" aria-label="Étapes du dispatch">
-      {DISPATCH_PHASES.map((step, index) => (
+    <ol className="hidden grid-cols-2 gap-1 rounded-xl bg-white p-1 ring-1 ring-black/[0.05] sm:grid" aria-label="Étapes du dispatch">
+      {DISPATCH_STEP_LABELS.map((label, index) => (
         <li
-          key={step}
+          key={label}
           aria-current={index === current ? "step" : undefined}
           className={cn(
             "relative flex items-center justify-center gap-1 rounded-lg py-1 text-[10px] font-semibold transition-colors duration-300",
@@ -81,7 +81,7 @@ function PhaseSteps({ phase }: { phase: DispatchPhase }) {
           )}
           <span className="relative flex items-center gap-1">
             {index < current && <Check className="h-2.5 w-2.5 text-[#00a854]" strokeWidth={3} aria-hidden />}
-            {DISPATCH_PHASE_LABELS[step]}
+            {label}
           </span>
         </li>
       ))}
@@ -107,12 +107,15 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
 
   const placed = new Set(TOUR_QUEUE.slice(0, placedCount).map((order) => order.number));
   const waiting = TOUR_QUEUE.filter((order) => !placed.has(order.number));
-  const bubbles = [
-    ...PHASE_BUBBLES[phase],
-    ...(phase === "during" && placedCount >= GROUPED_VISIBLE_AT
-      ? [{ text: `${GROUPED_ORDERS.join(" et ")} voisines : même tournée.`, delay: 0.1 }]
-      : []),
-  ];
+  // Sous « Après », les bulles de la répartition restent et celles du résultat s'ajoutent dessous.
+  const bubbles =
+    phase === "before"
+      ? PHASE_BUBBLES.before
+      : [
+          ...PHASE_BUBBLES.during,
+          ...(placedCount >= GROUPED_VISIBLE_AT ? [{ text: `${GROUPED_ORDERS.join(" et ")} voisines : même tournée.`, delay: 0.1 }] : []),
+          ...(phase === "after" ? PHASE_BUBBLES.after : []),
+        ];
   // Chrono réel de la répartition dans la démo, du clic à la dernière commande déposée.
   useDelayedCall(phase === "after", 0, () => setDecidedInMs(launchedAt === null ? null : performance.now() - launchedAt));
 
@@ -247,14 +250,7 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
 
           <aside aria-label="Explications du dispatch" className="flex shrink-0 flex-col gap-2 sm:w-[200px] lg:w-[220px]">
             <PhaseSteps phase={phase} />
-            <div key={phase} className="hidden flex-col gap-2 sm:flex">
-              {(launched || arrival >= 1) &&
-                bubbles.map((bubble) => (
-                  <TourBubble key={bubble.text} delay={bubble.delay} className="relative max-w-none">
-                    {bubble.text}
-                  </TourBubble>
-                ))}
-            </div>
+            {(launched || arrival >= 1) && <GuideSpot id="dispatch" lines={bubbles} className="relative block h-0 w-full" />}
             {canContinue && (
               <motion.button
                 type="button"
@@ -263,7 +259,7 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 26 }}
-                className="product-tour-pulse flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0e1310] px-3 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="product-tour-pulse mt-auto flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0e1310] px-3 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Passer à la suite
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />

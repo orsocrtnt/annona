@@ -6,6 +6,7 @@ import {
   TOUR_STEPS,
   advanceTour,
   dispatchPhase,
+  dispatchStepIndex,
   goToStep,
   initialTourState,
   restartTour,
@@ -13,6 +14,15 @@ import {
 import { TOUR_LANES, TOUR_QUEUE, interludeFor } from "../src/features/landing/product-tour/tour-data";
 import { TOUR_ROUTE, pointAlongRoute } from "../src/features/landing/product-tour/city-route";
 import { typingDelays } from "../src/features/landing/product-tour/typing";
+import {
+  guideOnTarget,
+  guideOpen,
+  guideTravel,
+  spotPoint,
+  travelHeading,
+  type GuidePlace,
+  type GuideState,
+} from "../src/features/landing/product-tour/guide-spot";
 
 test("la démo avance d'une étape par geste", () => {
   assert.deepEqual(advanceTour(initialTourState(), "order"), { current: 1, reached: 1 });
@@ -135,8 +145,85 @@ test("le dispatch passe par avant, pendant puis après", () => {
   assert.equal(dispatchPhase(true, 4, 4), "after");
 });
 
+test("la répartition et son résultat s'affichent ensemble sous « Après »", () => {
+  assert.equal(dispatchStepIndex("before"), 0);
+  assert.equal(dispatchStepIndex("during"), 1);
+  assert.equal(dispatchStepIndex("after"), 1);
+});
+
 test("après le dispatch, le visiteur passe à la suite lui-même", () => {
   const scene = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/scene-dispatch.tsx", import.meta.url)), "utf8");
   assert.match(scene, /Passer à la suite/);
   assert.doesNotMatch(scene, /useDelayedCall\([^;]*onDone/);
+});
+
+test("la bulle-guide se pose sur le coin indiqué de son emplacement, relatif à la scène", () => {
+  const frame = { left: 100, top: 50 };
+  const box = { left: 120, top: 80, right: 320, bottom: 90 };
+  assert.deepEqual(spotPoint(box, frame, "tl"), { x: 20, y: 30 });
+  assert.deepEqual(spotPoint(box, frame, "tr"), { x: 220, y: 30 });
+  assert.deepEqual(spotPoint(box, frame, "bl"), { x: 20, y: 40 });
+  assert.deepEqual(spotPoint(box, frame, "br"), { x: 220, y: 40 });
+  assert.deepEqual(spotPoint(box, frame, "c"), { x: 120, y: 35 });
+});
+
+test("la goutte s'étire dans la direction de son trajet", () => {
+  assert.equal(travelHeading({ x: 0, y: 0 }, { x: 10, y: 0 }), 0);
+  assert.equal(travelHeading({ x: 0, y: 0 }, { x: 0, y: 10 }), 90);
+  assert.equal(travelHeading({ x: 10, y: 0 }, { x: 0, y: 0 }), 180);
+  assert.equal(travelHeading({ x: 5, y: 5 }, { x: 5, y: 5 }), 0);
+});
+
+test("avant le lancement, le tableau de bord entreprise invite à livrer un premier colis", () => {
+  const tour = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/product-tour.tsx", import.meta.url)), "utf8");
+  const cover = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/tour-cover.tsx", import.meta.url)), "utf8");
+  assert.match(tour, /\{!started && \(\s*<TourCover/);
+  assert.match(cover, /<CoverDashboard \/>/);
+  assert.match(cover, /Livrez votre premier colis/);
+});
+
+const place = (id: string, x: number, y: number, lines: string[] = ["Texte."]): GuidePlace => ({
+  id,
+  x,
+  y,
+  corner: "tl",
+  width: 0,
+  lines: lines.map((text) => ({ text })),
+});
+const opened = (at: GuidePlace): GuideState => ({ mode: "open", place: at, heading: 0, trip: 1 });
+
+test("la bulle-guide apparaît en goutte sur son premier emplacement", () => {
+  const first = place("cover", 40, 30);
+  assert.deepEqual(guideOnTarget({ mode: "drop", place: null, heading: 0, trip: 0 }, first), { mode: "drop", place: first, heading: 0, trip: 0 });
+});
+
+test("ouverte, la bulle reste ouverte quand son emplacement change seulement de texte", () => {
+  const next = place("dispatch", 10, 10, ["A.", "B."]);
+  assert.deepEqual(guideOnTarget(opened(place("dispatch", 10, 10, ["A."])), next), { ...opened(next) });
+});
+
+test("ouverte, la bulle se rétracte sur place avant de partir ailleurs", () => {
+  const here = place("order-home", 10, 300);
+  const state = guideOnTarget(opened(here), place("order-form", 600, 280));
+  assert.equal(state.mode, "drop");
+  assert.equal(state.place, here);
+});
+
+test("la goutte part vers le nouvel emplacement et s'étire dans le sens du trajet", () => {
+  const state = guideTravel({ mode: "drop", place: place("a", 0, 0), heading: 0, trip: 1 }, place("b", 0, 100));
+  assert.equal(state.place?.id, "b");
+  assert.equal(state.heading, 90);
+  assert.equal(state.trip, 2);
+});
+
+test("la goutte s'ouvre seulement si l'emplacement a du texte", () => {
+  const silent = place("interlude", 300, 200, []);
+  assert.equal(guideOpen({ mode: "drop", place: silent, heading: 0, trip: 3 }, silent).mode, "drop");
+  const talk = place("driver", 20, 30);
+  assert.equal(guideOpen({ mode: "drop", place: talk, heading: 0, trip: 3 }, talk).mode, "open");
+});
+
+test("entre deux étapes, la bulle se rétracte en goutte sur place et attend le message suivant", () => {
+  const here = place("proof", 20, 30);
+  assert.deepEqual(guideOnTarget(opened(here), null), { ...opened(here), mode: "drop" });
 });

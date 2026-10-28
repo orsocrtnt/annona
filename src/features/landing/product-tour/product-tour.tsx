@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Building2, Lock, Truck, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GuideBubble } from "@/features/landing/product-tour/guide-bubble";
 import { GuideCursor } from "@/features/landing/product-tour/guide-cursor";
 import { SceneClientOrder } from "@/features/landing/product-tour/scene-client-order";
 import { SceneDispatch } from "@/features/landing/product-tour/scene-dispatch";
@@ -12,6 +13,7 @@ import { SceneInvoices } from "@/features/landing/product-tour/scene-invoices";
 import { SceneProof } from "@/features/landing/product-tour/scene-proof";
 import { SceneReceipt } from "@/features/landing/product-tour/scene-receipt";
 import { SceneTracking } from "@/features/landing/product-tour/scene-tracking";
+import { TourCover } from "@/features/landing/product-tour/tour-cover";
 import { interludeFor, type TourInterlude } from "@/features/landing/product-tour/tour-data";
 import {
   TOUR_STEP_LABELS,
@@ -94,6 +96,8 @@ function shiftHeroText(frameLeft: number | null) {
 
 /** Courbe douce, sans rebond : sortie rapide, arrivée qui se pose. */
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+/** Le temps que la bulle redevienne une boule avant le changement d'écran. */
+const LEAVE_MS = 550;
 
 function InterludeCard({ interlude, durationMs }: { interlude: TourInterlude; durationMs: number }) {
   const Icon = INTERLUDE_ICONS[interlude.space];
@@ -153,13 +157,17 @@ export function ProductTour() {
   const step = TOUR_STEPS[state.current] ?? "order";
   const interludeMs = reducedMotion ? REDUCED_INTERLUDE_MS : INTERLUDE_MS;
 
-  const onDone = useCallback(() => {
+  /** Fin d'étape : la bulle se remet d'abord en boule, puis l'écran change. */
+  const [leaving, setLeaving] = useState(false);
+  const onDone = useCallback(() => setLeaving(true), []);
+  useDelayedCall(leaving, reducedMotion ? 0 : LEAVE_MS, () => {
+    setLeaving(false);
     setInteracted(true);
     const next = TOUR_STEPS[TOUR_STEPS.indexOf(step) + 1];
     if (next) setInterlude(interludeFor(step, next));
     setVisit((previous) => previous + 1);
     setState((previous) => advanceTour(previous, step));
-  }, [step]);
+  });
 
   useDelayedCall(interlude !== null, interludeMs, () => setInterlude(null));
 
@@ -203,6 +211,7 @@ export function ProductTour() {
   }, []);
 
   const onStart = useCallback(() => {
+    if (started) return;
     setStarted(true);
     const target = expandedFrame();
     const column = slot.current?.getBoundingClientRect();
@@ -214,7 +223,7 @@ export function ProductTour() {
     if (Math.abs(window.scrollY - target.scrollTop) > 2) {
       window.scrollTo({ top: target.scrollTop, behavior: reducedMotion ? "auto" : "smooth" });
     }
-  }, [expandedFrame, reducedMotion]);
+  }, [started, expandedFrame, reducedMotion]);
 
   useEffect(() => {
     if (!started) return;
@@ -233,6 +242,7 @@ export function ProductTour() {
   const navigate = (next: typeof state) => {
     setInteracted(true);
     setInterlude(null);
+    setLeaving(false);
     setVisit((previous) => previous + 1);
     setState(next);
   };
@@ -246,6 +256,12 @@ export function ProductTour() {
     if (!frame || !column) return;
     setFrame({ ...frame, left: 0, top: 0, width: column.width, stageHeight: 460 });
     setTimeout(() => setFrame(null), reducedMotion ? 0 : EXPAND_MS);
+  };
+
+  /** Départ depuis l'écran d'accueil : la fenêtre s'agrandit et le focus reste dans la démo. */
+  const startFromCover = () => {
+    onStart();
+    stage.current?.focus({ preventScroll: true });
   };
 
   const sceneProps: SceneProps = { onDone, onStart, onReset: reset, reducedMotion, interacted };
@@ -280,14 +296,14 @@ export function ProductTour() {
             <Lock className="h-3 w-3 shrink-0" aria-hidden />
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
-                key={step}
+                key={started ? step : "cover"}
                 initial={{ y: 8, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -8, opacity: 0 }}
                 transition={{ duration: 0.3, ease: EASE_OUT }}
                 className="truncate"
               >
-                TutelLiv · <span className="text-foreground">{SPACE_LABELS[step]}</span>
+                TutelLiv · <span className="text-foreground">{started ? SPACE_LABELS[step] : "Tableau de bord"}</span>
               </motion.span>
             </AnimatePresence>
           </div>
@@ -330,7 +346,13 @@ export function ProductTour() {
               )}
             </motion.div>
           </AnimatePresence>
+          <GuideBubble stage={stage} reducedMotion={reducedMotion} collapsed={leaving} actions={{ start: startFromCover }} />
           <GuideCursor stage={stage} hidden={reducedMotion || interlude !== null} />
+          <AnimatePresence>
+            {!started && (
+              <TourCover key="cover" onStart={startFromCover} />
+            )}
+          </AnimatePresence>
         </div>
 
         <ol aria-label="Étapes de la démonstration" className="grid grid-cols-7 gap-1 px-1 pb-0.5 pt-1.5">

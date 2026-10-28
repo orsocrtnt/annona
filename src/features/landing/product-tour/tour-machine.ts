@@ -41,13 +41,12 @@ export function restartTour(): TourState {
 /** Sous-étapes du dispatch : la file avant le clic, la répartition, puis le résultat. */
 export type DispatchPhase = "before" | "during" | "after";
 
-export const DISPATCH_PHASES: readonly DispatchPhase[] = ["before", "during", "after"];
+/** Sous-étapes affichées : la répartition et son résultat se lisent ensemble sous « Après ». */
+export const DISPATCH_STEP_LABELS = ["Avant", "Après"] as const;
 
-export const DISPATCH_PHASE_LABELS: Record<DispatchPhase, string> = {
-  before: "Avant",
-  during: "Pendant",
-  after: "Après",
-};
+export function dispatchStepIndex(phase: DispatchPhase): number {
+  return phase === "before" ? 0 : 1;
+}
 
 export function dispatchPhase(launched: boolean, placed: number, total: number): DispatchPhase {
   if (!launched) return "before";

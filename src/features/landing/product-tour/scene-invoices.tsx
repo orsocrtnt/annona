@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { companyNav } from "@/features/landing/product-tour/space-nav";
 import { SpaceSidebar } from "@/features/landing/product-tour/space-sidebar";
-import { TourBubble, TourBubbles } from "@/features/landing/product-tour/tour-bubble";
+import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { TOUR_INVOICE, TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
 import { useDelayedCall, useTimeline } from "@/features/landing/product-tour/use-timeline";
 
@@ -16,6 +16,8 @@ const NAV = companyNav("Facturation");
 const INTRO_DURATIONS_MS = [600] as const;
 /** Laisse voir « Relance envoyée » avant la carte de fin. */
 const END_CARD_DELAY_MS = 1600;
+/** Durée de lecture du dernier message, sous la carte de fin. */
+const FAREWELL_MS = 4000;
 
 type InvoiceRow = { number: string; client: string; amount: string; status: "paid" | "pending" | "late" };
 
@@ -38,6 +40,9 @@ export function SceneInvoices({ reducedMotion, onRestart }: SceneProps & { onRes
   const [finished, setFinished] = useState(false);
   const ready = intro >= INTRO_DURATIONS_MS.length;
   useDelayedCall(reminded, reducedMotion ? 300 : END_CARD_DELAY_MS, () => setFinished(true));
+  // Le dernier message reste lisible sous la carte de fin, puis la bulle va se reposer.
+  const [resting, setResting] = useState(false);
+  useDelayedCall(finished, reducedMotion ? 0 : FAREWELL_MS, () => setResting(true));
 
   return (
     <div className="relative flex h-full">
@@ -113,23 +118,14 @@ export function SceneInvoices({ reducedMotion, onRestart }: SceneProps & { onRes
           Cliquez sur « Relancer »
         </p>
 
-        {ready && (
-          <TourBubbles className="bottom-14 left-6">
-            {reminded ? (
-              <TourBubble key="sent" className="relative" delay={0.1}>
-                Relance partie. Rien à écrire.
-              </TourBubble>
-            ) : (
-              <>
-                <TourBubble key="sorted" className="relative">
-                  Payées, en attente, en retard : tout est trié.
-                </TourBubble>
-                <TourBubble key="late" className="relative" delay={1}>
-                  Impayés repérés. Relance en un clic.
-                </TourBubble>
-              </>
-            )}
-          </TourBubbles>
+        {/* Après la relance, la bulle attend en goutte : son dernier message s'affiche une seule fois, sous la carte de fin. */}
+        {ready && !reminded && (
+          <GuideSpot
+            id="invoices"
+            corner="bl"
+            className="bottom-14 left-6"
+            lines={["Payées, en attente, en retard : tout est trié.", { text: "Impayés repérés. Relance en un clic.", delay: 1 }]}
+          />
         )}
       </div>
 
@@ -140,12 +136,17 @@ export function SceneInvoices({ reducedMotion, onRestart }: SceneProps & { onRes
           transition={{ duration: 0.4 }}
           className="absolute inset-0 z-30 flex items-center justify-center bg-[#f5f8f6]/80 p-6 backdrop-blur-sm"
         >
+          {/* Fin du parcours : la bulle se referme et repart doucement se poser en goutte en bas à droite. */}
+          {resting && <GuideSpot id="end" lines={[]} slow className="bottom-5 right-5" />}
           <motion.div
             initial={{ y: 16, scale: 0.97 }}
             animate={{ y: 0, scale: 1 }}
             transition={{ type: "spring", stiffness: 240, damping: 24 }}
-            className="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-[0_24px_60px_rgba(14,19,16,0.18)]"
+            className="relative w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-[0_24px_60px_rgba(14,19,16,0.18)]"
           >
+            {!resting && (
+              <GuideSpot id="farewell" corner="c" lines={["Relance partie. Rien à écrire."]} className="left-1/2 top-[calc(100%+32px)]" />
+            )}
             <p className="text-lg font-bold tracking-[-0.02em]">De la commande au paiement.</p>
             <p className="mt-1 text-sm text-muted-foreground">Une seule plateforme, sans tableur.</p>
             <div className="mt-4 flex gap-2">

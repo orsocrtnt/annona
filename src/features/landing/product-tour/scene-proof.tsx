@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { PhoneFrame } from "@/features/landing/product-tour/phone-frame";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { ProofPhoto } from "@/features/landing/product-tour/proof-photo";
-import { TourBubble, TourBubbles } from "@/features/landing/product-tour/tour-bubble";
+import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { TOUR_ORDER, TOUR_PROOF } from "@/features/landing/product-tour/tour-data";
 import { useTypewriter } from "@/features/landing/product-tour/typing";
 import {
@@ -105,14 +105,11 @@ export function SceneProof({ onDone, reducedMotion }: SceneProps) {
         </div>
       </PhoneFrame>
       {photoTaken && (
-        <TourBubbles className="left-6 top-8">
-          <TourBubble className="relative">Preuve photo horodatée.</TourBubble>
-          {named && (
-            <TourBubble className="relative" delay={0.2}>
-              Fini les litiges « pas reçu ».
-            </TourBubble>
-          )}
-        </TourBubbles>
+        <GuideSpot
+          id="proof"
+          className="left-6 top-8"
+          lines={["Preuve photo horodatée.", ...(named ? ["Fini les litiges « pas reçu »."] : [])]}
+        />
       )}
     </div>
   );

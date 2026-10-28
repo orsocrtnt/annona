@@ -1,12 +1,27 @@
-import { BarChart3, Home, LayoutDashboard, LifeBuoy, MapPinned, Package, Radio, Receipt, Truck } from "lucide-react";
+import {
+  BarChart3,
+  FileText,
+  HeadphonesIcon,
+  LayoutDashboard,
+  Package,
+  Radio,
+  Receipt,
+  RefreshCw,
+  Settings,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 import type { SpaceNavItem } from "@/features/landing/product-tour/space-sidebar";
 
+/** Les onglets réels du portail client (`client-portal-layout.tsx`). */
 const CLIENT_ITEMS = [
-  { icon: Home, label: "Accueil" },
-  { icon: Package, label: "Commandes" },
-  { icon: MapPinned, label: "Suivi" },
-  { icon: Receipt, label: "Factures" },
-  { icon: LifeBuoy, label: "Support" },
+  { icon: LayoutDashboard, label: "Tableau de bord" },
+  { icon: ShoppingBag, label: "Mes commandes" },
+  { icon: RefreshCw, label: "Récurrentes" },
+  { icon: Truck, label: "Livraisons" },
+  { icon: FileText, label: "Factures" },
+  { icon: HeadphonesIcon, label: "Support" },
+  { icon: Settings, label: "Paramètres" },
 ] as const;
 
 const COMPANY_ITEMS = [

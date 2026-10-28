@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**57 tâches terminées sur 81 — 70 %**
+**57 tâches terminées sur 82 — 70 %**
 
-`██████████████░░░░░░` · 24 tâches restantes
+`██████████████░░░░░░` · 25 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -187,6 +187,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | PERF-02 | A+B | Harnais en mémoire et PostgreSQL local jetable faits (27 octobre) ; routes Next locales, puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
 | COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
 | GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration, Contact et sa boîte de lecture faits (27 octobre). Mini-démo interactive du hero faite le 27 octobre (client → dispatcher intelligent → livreur → suivi, `src/features/landing/product-tour/`, spec et plan dans `docs/superpowers/`) : `npm run check` vert, parcours navigateur 1440/390 et mouvement réduit verts ; revue visuelle propriétaire à faire. Reste : pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
+| DEMO-3 | A+B | Rendre réel ce que montre la mini-démo : Paiements avec « Relancer » (absent), facture à la livraison, GPS au dispatch, arrivée estimée en direct, notification de prise en charge, réceptionnaire, créneau, tableaux de bord ; tournées et push ensuite. | EMAIL pour la relance réelle ; migrations pour réceptionnaire et créneau. | Élevée · GPT‑6.1 Sol |
 | RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon. | Très élevée · GPT‑6 Astra |
 | SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée. | Moyenne · GPT‑6.1 Sol |
 
@@ -1206,6 +1207,26 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Débit Contact durci le 2026-10-27 : la source de la limite par heure est désormais la **dernière** adresse de `x-forwarded-for`, puis `x-real-ip`. Avant, la première adresse était lue. Vercel écrase cet en-tête et la préproduction n'était donc pas contournable, mais derrière un proxy qui ajoute sa propre adresse, la première vient du client : en la faisant varier, un robot pouvait ignorer la limite de 3 par source et épuiser à lui seul la limite globale de 50 par heure, ce qui fermait le formulaire à tout le monde pendant une heure. Limite connue : avec plusieurs proxys qui ajoutent chacun une adresse, tous les visiteurs partageraient la même source, ce qui bloque trop au lieu de laisser passer. Vérifié : `tests/growth01-contact.test.ts` 8/8 (adresse forgée refusée au 4ᵉ envoi), typecheck.
 
   Limite Contact atomique du 2026-10-27 : la mesure PERF-02 du serveur Next a montré 56 envois acceptés sur une rafale de 60 simultanés, pour une limite globale de 50. Des envois concurrents lisaient le même compte avant d'écrire, ce qui permettait aussi de dépasser les 3 envois par source. Le comptage et l'écriture se font désormais dans une transaction, sous un verrou consultatif PostgreSQL de transaction (`pg_advisory_xact_lock`), compatible avec le pooler de Supabase en mode transaction. Aucun schéma n'est modifié. Vérifié : `tests/growth01-contact.test.ts` 9/9 (8 envois simultanés d'une source : 3 acceptés ; à deux places de la limite globale : 2 acceptés). Mesure rejouée sur PostgreSQL réel : 50 acceptés, 10 refusés, 50 écrits.
+
+- [ ] **DEMO-3 — Rendre réel ce que la mini-démo du site montre.** Revue du 28 octobre 2026 (code de `preproduction` comparé aux 7 étapes de `src/features/landing/product-tour/`) : 3 points disponibles, 8 partiels, 1 absent. Le propriétaire a choisi de montrer ces fonctions comme disponibles (spec `docs/superpowers/specs/2026-10-27-landing-product-tour-design.md`) ; cette tâche comble l'écart, par tranches livrées et testées une à une, dans cet ordre :
+  1. **Paiements côté entreprise (absent)** : liste des factures payées / en attente / en retard, passage automatique en retard avec le nombre de jours, bouton « Relancer » qui envoie un e-mail au client et trace la relance. Aujourd'hui l'onglet Facturation ne mène qu'aux réglages et le statut `OVERDUE` n'est jamais posé.
+  2. **Facture créée à la livraison** : générer la facture au passage en « Livrée » et réutiliser l'e-mail existant (`notify.service.ts`) ; aujourd'hui elle est créée à la main.
+  3. **Distance GPS dans le dispatcher** : prendre en compte la position des livreurs et la distance au retrait dans l'auto-dispatch (aujourd'hui : priorité, charge, code postal).
+  4. **Arrivée estimée en direct côté client** : livreur qui avance sur la carte du portail et « arrive dans X min » calculé par le service de trajet ; aujourd'hui l'heure affichée est l'heure planifiée.
+  5. **Notification « prise en charge »** au client quand le livreur accepte la mission.
+  6. **Nom du réceptionnaire** dans la preuve de livraison, en base et dans le portail.
+  7. **Créneau horaire à la commande** (champ en base, choix dans le formulaire, « Prochain créneau » côté client) ; poids du colis si retenu.
+  8. **Tableau de bord client** : « Montant à régler », « Dernière facture », activité récente, carte.
+  9. **Tableau de bord entreprise** : retards affichés en permanence et graphique sur 7 jours.
+  10. **Regroupement en tournées** des commandes voisines, puis **push « Nouvelle mission »** au livreur.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : chaque tranche a ses tests métier, `npm run check` vert et un clic réel en navigateur ; chaque phrase de la démo correspond à un comportement vérifiable du produit, ou la démo est ajustée avec l'accord du propriétaire.
+
+  Source / dépendance / blocage : revue du 28 octobre 2026 ; e-mails réels de la tranche 1 liés à EMAIL ; tranches 6 et 7 avec changement de schéma (migration à évaluer avant exécution) ; tranche 10 (tournées, push) à confirmer par le propriétaire avant de démarrer.
+
+  Statut de planification : ouverte, non commencée.
 
 - [x] **ADMIN-1 — Étendre la supervision interne du SaaS.** Compléter l'espace SUPER_ADMIN existant pour consulter entreprises, état de souscription/pilote, droits/options, consommation, paiements réconciliés, alertes techniques, tickets et incidents. Prévoir recherche, filtres et accès au détail strictement audité, sans devenir un CRM.
 
