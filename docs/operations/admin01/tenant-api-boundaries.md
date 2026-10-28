@@ -18,8 +18,12 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/clients/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/company/billing-settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/billing-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/clients/[id]/invoice-identity/route.ts | GET | settings:read | COMPANY_ADMIN |
+| src/app/api/company/clients/[id]/invoice-identity/route.ts | PUT | settings:update | COMPANY_ADMIN |
 | src/app/api/company/dispatch/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/dispatch/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/einvoicing/route.ts | GET | settings:read | COMPANY_ADMIN |
+| src/app/api/company/einvoicing/route.ts | PATCH | settings:update | COMPANY_ADMIN |
 | src/app/api/company/location-settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/location-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/logo/route.ts | GET | aucun | aucun |
