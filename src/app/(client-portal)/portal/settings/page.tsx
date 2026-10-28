@@ -115,7 +115,7 @@ export default function ClientSettingsPage() {
                     ? addressesErrorMsg.message
                     : "Impossible de charger les adresses"}
                 </span>
-                <Button variant="outline" size="sm" onClick={() => refetchAddresses()}>
+                <Button variant="outline" size="touch" onClick={() => refetchAddresses()}>
                   Réessayer
                 </Button>
               </AlertDescription>
@@ -142,7 +142,7 @@ export default function ClientSettingsPage() {
                     {!addr.isDefault && (
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="touch"
                         onClick={() =>
                           updateAddress.mutate({ id: addr.id, data: { isDefault: true } })
                         }
@@ -153,7 +153,7 @@ export default function ClientSettingsPage() {
                     )}
                     <Button
                       variant="ghost"
-                      size="icon-sm"
+                      size="icon-touch"
                       onClick={() => deleteAddress.mutate(addr.id)}
                       aria-label={`Supprimer l'adresse ${addr.label}`}
                       title={`Supprimer l'adresse ${addr.label}`}
@@ -179,7 +179,7 @@ export default function ClientSettingsPage() {
                   <Input placeholder="Ville" {...addressForm.register("city")} />
                   <Input placeholder="Code postal" {...addressForm.register("postalCode")} />
                 </div>
-                <Button type="submit" variant="outline" size="sm" loading={createAddress.isPending}>
+                <Button type="submit" variant="outline" size="touch" loading={createAddress.isPending}>
                   Ajouter
                 </Button>
               </form>
@@ -208,7 +208,7 @@ export default function ClientSettingsPage() {
                     ? settingsErrorMsg.message
                     : "Impossible de charger les alertes"}
                 </span>
-                <Button variant="outline" size="sm" onClick={() => refetchSettings()}>
+                <Button variant="outline" size="touch" onClick={() => refetchSettings()}>
                   Réessayer
                 </Button>
               </AlertDescription>

@@ -31,10 +31,10 @@ export function PortalNotificationsBell({ className }: { className?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon-sm" aria-label="Notifications" className={cn("relative", className)}>
+        <Button variant="ghost" size="icon-touch" aria-label="Notifications" className={cn("relative", className)}>
           <Bell className="h-4 w-4" />
           {unread.length > 0 ? (
-            <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white">
+            <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white dark:text-primary-foreground">
               {unread.length > 9 ? "9+" : unread.length}
             </span>
           ) : null}

@@ -265,7 +265,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-11 w-11"
           disabled={!canMoveFirst}
           onClick={onMoveFirst}
           aria-label="Mettre en premier"
@@ -277,7 +277,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-11 w-11"
           disabled={!canMoveUp}
           onClick={onMoveUp}
           aria-label="Monter"
@@ -289,7 +289,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-11 w-11"
           disabled={!canMoveDown}
           onClick={onMoveDown}
           aria-label="Descendre"
@@ -327,8 +327,8 @@ function WidgetToggleRow({
           aria-checked={visible}
           onClick={() => onToggle(!visible)}
           className={cn(
-            "mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-            visible ? "bg-brand" : "bg-muted"
+            "relative mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors after:absolute after:-inset-3 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            visible ? "bg-brand" : "bg-foreground/30"
           )}
         >
           <span

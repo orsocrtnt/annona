@@ -278,7 +278,7 @@ export function CreateOrderForm({
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="touch"
                 onClick={() => {
                   appendStop({
                     label: `Adresse ${stopFields.length + 1}`,
@@ -429,7 +429,7 @@ export function CreateOrderForm({
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="touch"
                     onClick={() => appendItem({ name: "", quantity: 1, estimatedPrice: undefined })}
                   >
                     <Plus className="mr-1 h-4 w-4" />
@@ -469,7 +469,7 @@ export function CreateOrderForm({
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-touch"
                         aria-label={`Supprimer l'article ${index + 1}`}
                         className="mb-0.5 shrink-0"
                         onClick={() => removeItem(index)}
@@ -493,7 +493,7 @@ export function CreateOrderForm({
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="touch"
                   onClick={() => {
                     const nextIndex = pickupStopFields.length;
                     appendPickupStop({

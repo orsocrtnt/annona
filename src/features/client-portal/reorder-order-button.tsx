@@ -39,10 +39,10 @@ export function ReorderOrderButton({
   return (
     <Button
       variant="outline"
-      size="sm"
+      size="touch"
       className={cn(
         fullWidth && "w-full",
-        compact && "h-8 shrink-0 whitespace-nowrap px-2.5 text-xs",
+        compact && "h-11 shrink-0 whitespace-nowrap px-2.5 text-xs",
         className
       )}
       asChild

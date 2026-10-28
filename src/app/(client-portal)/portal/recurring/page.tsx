@@ -253,7 +253,7 @@ function RecurringCard({
             {item.status === "ACTIVE" ? (
               <Button
                 variant="outline"
-                size="sm"
+                size="touch"
                 onClick={() => onStatusChange(item.id, "PAUSED")}
                 aria-label={`Mettre en pause « ${item.label} »`}
               >
@@ -262,7 +262,7 @@ function RecurringCard({
             ) : item.status === "PAUSED" ? (
               <Button
                 variant="outline"
-                size="sm"
+                size="touch"
                 onClick={() => onStatusChange(item.id, "ACTIVE")}
                 aria-label={`Reprendre « ${item.label} »`}
               >
@@ -272,7 +272,7 @@ function RecurringCard({
             {item.status !== "CANCELLED" && (
               <Button
                 variant="ghost"
-                size="sm"
+                size="touch"
                 onClick={() => onRequestFinish(item)}
                 aria-label={`Terminer « ${item.label} »`}
               >
@@ -283,8 +283,8 @@ function RecurringCard({
         </div>
 
         {item.status === "ACTIVE" && (
-          <p className="flex items-center gap-2 rounded-xl bg-[#f5f8f6] px-3 py-2.5 text-sm">
-            <CalendarClock className="h-4 w-4 shrink-0 text-[#08783f]" aria-hidden="true" />
+          <p className="flex items-center gap-2 rounded-xl bg-background px-3 py-2.5 text-sm">
+            <CalendarClock className="h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
             <span className="text-muted-foreground">Prochaine livraison</span>
             <time dateTime={item.nextRunAt} title={fullDateLabel(item.nextRunAt)} className="font-medium text-foreground">
               {dayLabel(item.nextRunAt)}
@@ -292,7 +292,7 @@ function RecurringCard({
           </p>
         )}
         {item.status === "PAUSED" && (
-          <p className="rounded-xl bg-[#f5f8f6] px-3 py-2.5 text-sm text-muted-foreground">
+          <p className="rounded-xl bg-background px-3 py-2.5 text-sm text-muted-foreground">
             En pause : aucune livraison n&apos;est créée tant que vous ne la reprenez pas.
           </p>
         )}

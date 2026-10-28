@@ -170,7 +170,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
 
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="icon-touch"
           onClick={logout}
           aria-label="Se déconnecter"
           className={appleNavbarIconButtonLightClass}

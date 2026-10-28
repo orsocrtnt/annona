@@ -178,7 +178,7 @@ export default function ClientDeliveryDetailPage() {
                 <div key={event.id} className="flex gap-3">
                   <div className="flex flex-col items-center">
                     {/* Étapes passées en encre, la dernière en vert : l'avancement se lit sans les dates. */}
-                    <div className={`h-3 w-3 rounded-full ${i === (delivery.trackingEvents?.length ?? 0) - 1 ? "bg-primary ring-4 ring-primary/20" : "bg-[#0e1310]"}`} aria-hidden="true" />
+                    <div className={`h-3 w-3 rounded-full ${i === (delivery.trackingEvents?.length ?? 0) - 1 ? "bg-primary ring-4 ring-primary/20" : "bg-foreground"}`} aria-hidden="true" />
                     {i < (delivery.trackingEvents?.length ?? 0) - 1 && (
                       <div className="w-px flex-1 bg-border" />
                     )}

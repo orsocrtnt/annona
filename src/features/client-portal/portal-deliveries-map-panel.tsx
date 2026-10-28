@@ -145,7 +145,7 @@ export function PortalDeliveriesMapPanel({
         aria-expanded={open}
         aria-controls="portal-deliveries-panel"
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-white">
           {tab === "history" ? <History className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
         </div>
         <div className="min-w-0 flex-1">
@@ -183,7 +183,7 @@ export function PortalDeliveriesMapPanel({
                 aria-pressed={tab === "active"}
                 onClick={() => setTab("active")}
                 className={cn(
-                  "rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
+                  "min-h-11 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "active"
                     ? "bg-black text-white shadow-sm"
                     : "text-muted-foreground hover:bg-white"
@@ -196,7 +196,7 @@ export function PortalDeliveriesMapPanel({
                 aria-pressed={tab === "history"}
                 onClick={() => setTab("history")}
                 className={cn(
-                  "rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
+                  "min-h-11 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "history"
                     ? "bg-black text-white shadow-sm"
                     : "text-muted-foreground hover:bg-white"

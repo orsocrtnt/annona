@@ -79,7 +79,7 @@ export default function InvoiceDetailPage() {
             Pour la commande{" "}
             <Link
               href={`/portal/orders/${invoice.order.id}`}
-              className="rounded-sm font-medium text-[#08783f] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-sm font-medium text-brand underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {invoice.order.reference}
             </Link>
@@ -174,7 +174,7 @@ export default function InvoiceDetailPage() {
 
 function InvoiceFact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="min-w-0 rounded-xl bg-[#f5f8f6] px-3 py-2.5">
+    <div className="min-w-0 rounded-xl bg-background px-3 py-2.5">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 truncate text-sm font-medium text-foreground">{children}</dd>
     </div>
