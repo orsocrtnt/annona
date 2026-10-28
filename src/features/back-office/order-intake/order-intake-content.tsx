@@ -59,7 +59,7 @@ function ActivationCard({ enabled, configured }: { enabled: boolean; configured:
           conservation chez le fournisseur, transferts hors Union européenne) n&apos;est pas encore validée.
         </p>
         {!enabled && (
-          <label className="flex items-start gap-2">
+          <label className="flex min-h-11 items-center gap-2">
             <input type="checkbox" className="mt-0.5 h-4 w-4" checked={acknowledged}
               onChange={(event) => setAcknowledged(event.target.checked)} aria-describedby={noticeId} />
             J&apos;ai lu cette information et j&apos;active la fonction pour mon entreprise.
@@ -73,6 +73,7 @@ function ActivationCard({ enabled, configured }: { enabled: boolean; configured:
         </div>
         <Button
           type="button"
+          className="min-h-11"
           variant={enabled ? "outline" : "default"}
           disabled={toggle.isPending || (!enabled && !acknowledged)}
           onClick={() => toggle.mutate(!enabled)}
@@ -204,7 +205,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
               {analyze.isPending && <p className="text-sm text-muted-foreground">Analyse en cours…</p>}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="submit" disabled={!available || analyze.isPending || !text.trim()}>
+              <Button type="submit" className="min-h-11" disabled={!available || analyze.isPending || !text.trim()}>
                 {analyze.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
                 Analyser
               </Button>

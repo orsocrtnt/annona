@@ -324,6 +324,21 @@ test("INTAKE interface : points d'entrée, états, accessibilité et clic unique
   assert.match(api, /"Idempotency-Key"/);
 });
 
+test("INTAKE interface : chaque cible cliquable fait au moins 44 px (min-h-11)", () => {
+  const files = [
+    "src/features/back-office/order-intake/order-intake-content.tsx",
+    "src/features/back-office/order-intake/order-intake-draft-form.tsx",
+  ];
+  for (const file of files) {
+    const source = readFileSync(file, "utf8");
+    const targets = [...source.matchAll(/<(Button|label)\b[^>]*>/gs)].map((match) => match[0]);
+    assert.ok(targets.length > 0, file);
+    for (const tag of targets) assert.match(tag, /min-h-11/, `${file} : ${tag.slice(0, 60)}`);
+  }
+  assert.match(readFileSync("src/features/back-office/company-orders-content.tsx", "utf8"), /href="\/dashboard\/orders\/intake"[^>]*min-h-11/s);
+  assert.match(readFileSync("src/app/(back-office)/dispatch/page.tsx", "utf8"), /href="\/dispatch\/intake"[^>]*min-h-11/s);
+});
+
 test("INTAKE configuration : clé fictive documentée, sous-traitant et mention affichée", () => {
   const example = readFileSync(".env.example", "utf8");
   assert.match(example, /^ANTHROPIC_API_KEY=$/m);

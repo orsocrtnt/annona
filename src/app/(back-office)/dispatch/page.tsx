@@ -148,7 +148,7 @@ function DispatcherDashboardContent() {
         <div className="flex flex-wrap gap-2">
           {/* Commande par message : le mini-admin passe par Commandes, seul espace de son module. */}
           {role !== "MINI_ADMIN" && permissions.includes("orders:create") && (
-            <Link href="/dispatch/intake" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Link href="/dispatch/intake" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-h-11")}>
               <MessageSquareText className="h-4 w-4" />
               Depuis un message
             </Link>

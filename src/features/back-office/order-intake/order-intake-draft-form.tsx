@@ -196,6 +196,7 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
               <Button
                 key={index}
                 type="button"
+                className="min-h-11"
                 variant={index === active ? "default" : "outline"}
                 aria-pressed={index === active}
                 onClick={() => { setActive(index); setErrors([]); }}
@@ -258,7 +259,7 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
               <Input value={values.deadlineLabel} onChange={(event) => update({ deadlineLabel: event.target.value })} placeholder="ex. avant 15:00" />
             </FormField>
             <div className="flex items-end pb-2">
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex min-h-11 items-center gap-2 text-sm">
                 <input type="checkbox" checked={values.urgent} onChange={(event) => update({ urgent: event.target.checked })} className="h-4 w-4" />
                 Urgent
               </label>
@@ -305,7 +306,7 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={createOrder.isPending || Boolean(createdHere)}>
+            <Button type="submit" className="min-h-11" disabled={createOrder.isPending || Boolean(createdHere)}>
               {createOrder.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
               {createdHere ? "Commande créée" : "Créer la commande"}
             </Button>

@@ -10,6 +10,7 @@ import { OrderHistoryTable } from "@/components/shared/order-history-table";
 import { useCompanyOrders } from "@/features/back-office/hooks";
 import { getCompanyOrderColumns } from "@/features/back-office/company-order-columns";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
+import { cn } from "@/lib/utils";
 import {
   ORDER_HISTORY_DEFAULT_PAGE_SIZE,
   type OrderHistoryPage,
@@ -44,7 +45,7 @@ export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProp
             Retrouvez toutes les commandes, filtrez l&apos;historique et exportez le résultat complet.
           </p>
         </div>
-        <Link href="/dashboard/orders/intake" className={buttonVariants({ variant: "outline" })}>
+        <Link href="/dashboard/orders/intake" className={cn(buttonVariants({ variant: "outline" }), "min-h-11")}>
           <MessageSquareText className="h-4 w-4" />
           Nouvelle commande depuis un message
         </Link>
