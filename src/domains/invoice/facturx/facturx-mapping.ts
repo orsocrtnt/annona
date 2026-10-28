@@ -221,6 +221,8 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
         : {},
     payment: einvoicing.iban ? { typeCode: "58", iban: einvoicing.iban, bic: einvoicing.bic } : undefined,
     paymentReference: invoice.reference,
+    // Facture réglée : le Factur-X porte le montant payé et un solde nul (BT-113, BT-115).
+    prepaidAmount: invoice.status === "PAID" ? invoice.amount : undefined,
   };
 
   for (const issue of checkFacturXInvoice(facturx)) {

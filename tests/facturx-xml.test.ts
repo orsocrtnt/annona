@@ -238,3 +238,27 @@ test("règles EN 16931 : génération refusée avec la liste des règles violée
 test("le générateur est déterministe : même facture, même XML", () => {
   assert.equal(generateFacturXXml(invoice()), generateFacturXXml(invoice()));
 });
+
+test("facture payée : TotalPrepaidAmount = TTC et DuePayableAmount = 0 (BR-CO-16), sans conditions requises", () => {
+  const inv = invoice({ prepaidAmount: 30 });
+  const totals = computeFacturXTotals(inv);
+  assert.equal(totals.prepaidCents, 3000);
+  assert.equal(totals.duePayableCents, 0);
+  const xml = generateFacturXXml(inv);
+  assert.deepEqual(amount(xml, "TotalPrepaidAmount"), ["30.00"]);
+  assert.deepEqual(amount(xml, "DuePayableAmount"), ["0.00"]);
+  const summary = xml.slice(xml.indexOf("<ram:SpecifiedTradeSettlementHeaderMonetarySummation>"));
+  assert.ok(summary.indexOf("<ram:GrandTotalAmount>") < summary.indexOf("<ram:TotalPrepaidAmount>"));
+  assert.ok(summary.indexOf("<ram:TotalPrepaidAmount>") < summary.indexOf("<ram:DuePayableAmount>"));
+  assert.deepEqual(checkFacturXInvoice({ ...inv, dueDate: null, paymentTerms: undefined }), [], "BR-CO-25 ne s'applique pas à un montant dû nul");
+  // Acompte partiel (le générateur le gère ; le modèle TutelLiv n'enregistre pas de paiement partiel).
+  const partial = generateFacturXXml(invoice({ prepaidAmount: 10 }));
+  assert.deepEqual(amount(partial, "DuePayableAmount"), ["20.00"]);
+  assert.ok(checkFacturXInvoice(invoice({ prepaidAmount: 31 })).some((issue) => issue.rule === "TL-ACOMPTE"));
+});
+
+test("facture non payée : pas de TotalPrepaidAmount, montant dû = TTC", () => {
+  const xml = generateFacturXXml(invoice());
+  assert.deepEqual(amount(xml, "TotalPrepaidAmount"), []);
+  assert.deepEqual(amount(xml, "DuePayableAmount"), ["30.00"]);
+});

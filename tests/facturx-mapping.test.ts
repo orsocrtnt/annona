@@ -245,3 +245,13 @@ test("validation des réglages : TVA cohérente avec le SIREN, IBAN à clé vali
   assert.equal(JSON.stringify(einvoicingSettingsSchema.parse({ legalForm: "  ", rcs: "" })), "{}");
   assert.ok(!clientInvoiceIdentitySchema.safeParse({ address: "3 avenue", postalCode: "69002", city: "Lyon", siren: "12345" }).success);
 });
+
+test("statut PAID : la facture Factur-X indique le montant déjà réglé et un solde nul", () => {
+  const paid = mapInvoiceToFacturX(source({ invoice: { status: "PAID" } }));
+  assert.ok(paid.ok);
+  assert.equal(paid.invoice.prepaidAmount, 30);
+  assert.deepEqual(xmlTexts(generateFacturXXml(paid.invoice), "ram:DuePayableAmount"), ["0.00"]);
+  const pending = mapInvoiceToFacturX(source());
+  assert.ok(pending.ok);
+  assert.equal(pending.invoice.prepaidAmount, undefined);
+});

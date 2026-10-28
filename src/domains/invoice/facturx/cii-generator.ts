@@ -87,6 +87,7 @@ export function computeFacturXTotals(invoice: FacturXInvoice): FacturXTotals {
   // Ni remise ni frais de pied de facture dans ce périmètre : BR-CO-13 → base = total des lignes.
   const taxBasisTotalCents = lineTotalCents;
   const grandTotalCents = taxBasisTotalCents + taxTotalCents;
+  const prepaidCents = invoice.prepaidAmount ? toCents(invoice.prepaidAmount) : 0;
   return {
     lineNetCents,
     breakdown,
@@ -94,8 +95,9 @@ export function computeFacturXTotals(invoice: FacturXInvoice): FacturXTotals {
     taxBasisTotalCents,
     taxTotalCents,
     grandTotalCents,
-    // Pas d'acompte ni d'arrondi (BT-113/BT-114) : BR-CO-16 → montant dû = TTC.
-    duePayableCents: grandTotalCents,
+    prepaidCents,
+    // Pas d'arrondi (BT-114) : BR-CO-16 → montant dû = TTC − déjà réglé (BT-113).
+    duePayableCents: grandTotalCents - prepaidCents,
   };
 }
 
@@ -178,6 +180,9 @@ export function checkFacturXInvoice(invoice: FacturXInvoice): FacturXIssue[] {
 
   if (issues.length === 0) {
     const totals = computeFacturXTotals(invoice);
+    if (totals.prepaidCents < 0 || totals.prepaidCents > totals.grandTotalCents) {
+      issues.push({ rule: "TL-ACOMPTE", message: "Montant déjà réglé négatif ou supérieur au total TTC." });
+    }
     if (totals.duePayableCents > 0 && !invoice.dueDate && blank(invoice.paymentTerms)) {
       issues.push({ rule: "BR-CO-25", message: "Montant dû positif : date d'échéance ou conditions de paiement requises." });
     }
@@ -332,6 +337,7 @@ export function generateFacturXXml(invoice: FacturXInvoice): string {
             leaf("ram:TaxBasisTotalAmount", formatCents(totals.taxBasisTotalCents)),
             leaf("ram:TaxTotalAmount", formatCents(totals.taxTotalCents), { currencyID: currency }),
             leaf("ram:GrandTotalAmount", formatCents(totals.grandTotalCents)),
+            totals.prepaidCents > 0 && leaf("ram:TotalPrepaidAmount", formatCents(totals.prepaidCents)),
             leaf("ram:DuePayableAmount", formatCents(totals.duePayableCents)),
           ]),
           invoice.precedingInvoice &&

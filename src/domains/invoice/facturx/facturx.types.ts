@@ -105,6 +105,8 @@ export interface FacturXInvoice {
   payment?: FacturXPaymentMeans;
   /** BT-83 */
   paymentReference?: string;
+  /** BT-113 : montant déjà réglé (facture payée), en euros */
+  prepaidAmount?: number;
 }
 
 export interface FacturXIssue {
@@ -127,5 +129,6 @@ export interface FacturXTotals {
   taxBasisTotalCents: number;
   taxTotalCents: number;
   grandTotalCents: number;
+  prepaidCents: number;
   duePayableCents: number;
 }
