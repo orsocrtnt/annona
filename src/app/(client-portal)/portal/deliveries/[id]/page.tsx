@@ -16,7 +16,6 @@ import dynamic from "next/dynamic";
 import { DeliveryRouteDisplay } from "@/components/shared/delivery-route-display";
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { isLegacyFakeTrackingCoord } from "@/lib/geocoding";
-import { formatDriverFromParts, withoutRolePrefix } from "@/lib/format/person-labels";
 import { formatLateness } from "@/lib/format/lateness";
 import { dateTimeLabel } from "@/lib/format/relative-day";
 import { ArrowLeft, Truck, Clock, Phone } from "lucide-react";
@@ -121,22 +120,20 @@ export default function ClientDeliveryDetailPage() {
               }}
             />
 
-            {(delivery.driver || delivery.driverName) && (
+            {delivery.driver && (
               <div className="space-y-1 border-t border-border pt-4">
                 <div className="flex items-center gap-3">
                   <Truck className="h-4 w-4 text-muted-foreground" />
-                  <span>Livreur : {withoutRolePrefix(formatDriverFromParts(delivery.driver, delivery.driverName))}</span>
+                  <span>Livreur : {delivery.driver.firstName}</span>
                 </div>
-                {delivery.driver?.phone ? (
+                {delivery.driver.phone ? (
                   <a
                     href={`tel:${delivery.driver.phone}`}
                     className="ml-7 flex items-center gap-1 text-sm text-brand hover:underline"
                   >
                     <Phone className="h-3 w-3" /> {delivery.driver.phone}
                   </a>
-                ) : (
-                  <p className="ml-7 text-sm text-muted-foreground">Téléphone non renseigné</p>
-                )}
+                ) : null}
               </div>
             )}
 

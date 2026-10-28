@@ -13,6 +13,8 @@ import {
   getFulfillmentStatusLabel,
 } from "@/lib/constants/order-status";
 import { formatDriverDisplayName } from "@/lib/format/person-labels";
+import { getPortalShowDriverPhone } from "@/domains/company/portal-settings.service";
+import { clientDriverSelect, redactClientTimeline, toClientDriver } from "@/domains/delivery/client-driver";
 import {
   assertDriverMissionProximityOrThrow,
   statusNeedsProximityCheck,
@@ -185,8 +187,9 @@ export async function getClientDeliveryById(
   deliveryId: string
 ) {
   await repairCourierDeliveryIfNeeded(deliveryId, customerId, companyId);
+  const showDriverPhone = await getPortalShowDriverPhone(companyId);
 
-  return prisma.delivery.findFirst({
+  const delivery = await prisma.delivery.findFirst({
     where: { id: deliveryId, customerId, companyId },
     include: {
       order: {
@@ -209,11 +212,19 @@ export async function getClientDeliveryById(
       },
       trackingEvents: { orderBy: { occurredAt: "asc" } },
       company: { select: { name: true, phone: true, email: true } },
-      driver: {
-        select: { firstName: true, lastName: true, phone: true },
-      },
+      // Client : prénom du livreur, téléphone selon le réglage de l'entreprise, jamais le nom de famille.
+      driver: { select: clientDriverSelect(showDriverPhone) },
     },
   });
+  if (!delivery) return null;
+
+  // Le nom complet stocké (driverName) ne sort pas : le client reçoit seulement `driver`.
+  const { driverName, driver, trackingEvents, ...rest } = delivery;
+  return {
+    ...rest,
+    driver: toClientDriver({ driver, driverName }, showDriverPhone),
+    trackingEvents: redactClientTimeline(trackingEvents, [driverName]),
+  };
 }
 
 const COMPANY_DELIVERY_INCLUDE = {

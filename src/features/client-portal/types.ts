@@ -115,7 +115,8 @@ export interface PortalDelivery {
     }[];
   };
   company?: { name: string; phone: string | null; email: string | null };
-  driver?: { firstName: string; lastName: string; phone: string | null } | null;
+  /** Prénom du livreur ; téléphone seulement si l'entreprise ne l'a pas masqué. */
+  driver?: { firstName: string; phone?: string | null } | null;
   trackingEvents?: {
     id: string;
     label: string;

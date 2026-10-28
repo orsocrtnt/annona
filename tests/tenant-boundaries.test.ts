@@ -43,6 +43,8 @@ test("toutes les lectures client sensibles exigent propriétaire ET entreprise",
   const invoiceDetails: Where[] = [];
   const invoiceLists: Where[] = [];
 
+  // Réglage du portail (téléphone du livreur) lu par la fiche livraison : défaut, sans base.
+  replaceMethod(t, prisma.company, "findUnique", async () => ({ settings: {} }) as never);
   replaceMethod(t, prisma.order, "findFirst", async (args: { where: Where }) => {
     orderDetails.push(args.where);
     return null as never;

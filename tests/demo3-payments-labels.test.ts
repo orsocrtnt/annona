@@ -64,3 +64,11 @@ test("DEMO-3 écran : une relance non envoyée rejouée n'est pas présentée co
     text: "Relance déjà tracée, toujours non envoyée : client sans e-mail.",
   });
 });
+
+test("C1 écran : relance réservée (SENDING) affichée « en cours d'envoi », clic refusé avec un message clair", () => {
+  assert.deepEqual(reminderResultLabel("SENDING"), { label: "Relance en cours d'envoi", tone: "success" });
+  assert.deepEqual(reminderOutcomeMessage({ duplicate: true, reminder: { result: "SENDING" } }), {
+    kind: "info",
+    text: "Une relance est en cours d'envoi : aucune nouvelle relance envoyée.",
+  });
+});

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { updateDriverDeliveryStatusSchema } from "../src/lib/validations/delivery";
 import { syncTrackingDetail } from "../src/lib/tracking/cache";
 import * as policy from "../src/domains/tracking/tracking.policy";
+import * as clientDriver from "../src/domains/delivery/client-driver";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema } from "../src/lib/validations/driver-location-settings";
 const now = new Date("2026-10-12T12:00:00Z");
 const mission = { status: "IN_DELIVERY", missionStartedAt: new Date(+now - 60000), completedAt: null as Date | null };
@@ -110,7 +111,7 @@ function fixture() {
     delivery: { findFirst: async (args: any) => { calls.push(["mission", args]); return foundMission; }, updateMany: async (args: any) => { calls.push(["missionUpdate", args]); return { count: claim }; } },
     driverLocation: { deleteMany: async (args: any) => { calls.push(["deleteLocation", args]); }, upsert: async (args: any) => { calls.push(["location", args]); return { updatedAt: now }; } },
   };
-  const deps = { "@/services/prisma/client": { prisma: db }, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(db), conversationScope: (actor: any) => ({ companyId: actor.companyId, ...(actor.role === "CLIENT" ? { customerId: actor.id } : {}) }) }, "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s }, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema }, "./tracking.policy": policy, "@/domains/tracking/tracking.policy": policy, "./tracking-position.service": resolver, "@/domains/tracking/tracking-position.service": resolver, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s } };
+  const deps = { "@/services/prisma/client": { prisma: db }, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(db), conversationScope: (actor: any) => ({ companyId: actor.companyId, ...(actor.role === "CLIENT" ? { customerId: actor.id } : {}) }) }, "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s }, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema }, "./tracking.policy": policy, "@/domains/tracking/tracking.policy": policy, "@/domains/delivery/client-driver": clientDriver, "./tracking-position.service": resolver, "@/domains/tracking/tracking-position.service": resolver, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s } };
   return { service: moduleAt("src/domains/tracking/tracking.service.ts", deps), location: moduleAt("src/domains/driver/driver-location.service.ts", deps), calls, user, order, noUser: () => { user = null; }, noOrder: () => { order = null; }, noMission: () => { foundMission = null; }, conflict: () => { claim = 0; } };
 }
 const actor = { id: "client", companyId: "a", role: "CLIENT", permissions: ["dashboard:client"] };
@@ -163,7 +164,7 @@ test("TRACK-1 carte chauffeurs : destination ne devient jamais position, signal 
     "@/domains/delivery/delivery.service": { repairCourierDeliveryIfNeeded: async () => {} },
     "@/domains/driver/driver-location.service": { getCompanyDriverLocations: async () => locations },
     "@/domains/company/location-settings.service": { getCompanyLocationSettings: async () => DEFAULT_DRIVER_LOCATION_SETTINGS },
-    "@/domains/tracking/tracking.policy": policy,
+    "@/domains/tracking/tracking.policy": policy, "@/domains/delivery/client-driver": clientDriver,
     "@/domains/tracking/tracking-position.service": resolver,
     "@/lib/geocoding": { geocodeManyCapped: async () => new Map(), isLegacyFakeTrackingCoord: () => false },
     "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s },
@@ -220,7 +221,7 @@ test("TRACK-2 services : signal perdu depuis 2 min, livreur gardé et estimé su
   const assertEstimated = (point: { latitude: number | null; estimated: boolean }) => { assert.equal(point.estimated, true); assert.ok(point.latitude! > 48.8 && point.latitude! < 48.9, String(point.latitude)); };
 
   const prisma = { user: { findMany: async () => [{ id: "driver", firstName: "D", lastName: "A", status: "ACTIVE", settings: lostDriver.settings, driverLocation: lostDriver.driverLocation, deliveriesAsDriver: [delivery], _count: { deliveriesAsDriver: 1 } }] }, delivery: { findMany: async () => [delivery] } };
-  const common = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/domains/tracking/tracking-position.service": resolver, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS }, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s, formatClientFromParts: () => "Client" } };
+  const common = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/domains/delivery/client-driver": clientDriver, "@/domains/tracking/tracking-position.service": resolver, "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS }, "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s, formatClientFromParts: () => "Client" } };
   const location = moduleAt("src/domains/driver/driver-location.service.ts", { ...common, "@/domains/order-conversation/order-conversation.service": { ConversationError, transaction: (fn: any) => fn(prisma) } });
   const [live] = await location.getCompanyDriverLocations("a", 45);
   assertEstimated(live); assert.equal(live.isOnline, false); assert.equal(live.positionState, "STALE"); assert.equal(live.updatedAt, lostAt.toISOString());

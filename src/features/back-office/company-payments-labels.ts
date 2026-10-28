@@ -10,6 +10,7 @@ export function invoiceRowStatusLabel(row: { status: InvoiceStatus; daysOverdue:
 
 const REMINDER_LABELS: Record<string, { label: string; tone: PaymentTone }> = {
   QUEUED: { label: "Relance en cours d'envoi", tone: "success" },
+  SENDING: { label: "Relance en cours d'envoi", tone: "success" },
   SENT: { label: "Relance envoyée", tone: "success" },
   FAILED: { label: "Échec d'envoi de la relance", tone: "error" },
   NOT_SENT_EMAIL_NOT_CONFIGURED: { label: "Relance non envoyée : e-mail non configuré", tone: "warning" },
@@ -34,6 +35,9 @@ export function reminderOutcomeMessage(outcome: { duplicate: boolean; reminder: 
   };
   if (outcome.duplicate && notSentReason[outcome.reminder.result]) {
     return { kind: "warning", text: `Relance déjà tracée, toujours non envoyée : ${notSentReason[outcome.reminder.result]}.` };
+  }
+  if (outcome.duplicate && outcome.reminder.result === "SENDING") {
+    return { kind: "info", text: "Une relance est en cours d'envoi : aucune nouvelle relance envoyée." };
   }
   if (outcome.duplicate) {
     return { kind: "info", text: "Déjà relancée dans les dernières 24 h : aucune nouvelle relance envoyée." };
