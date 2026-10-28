@@ -30,6 +30,8 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/logo/route.ts | GET | aucun | aucun |
 | src/app/api/company/logo/route.ts | POST | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/logo/route.ts | DELETE | settings:update | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/portal-settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/portal-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/proof-rules/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/proof-rules/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |

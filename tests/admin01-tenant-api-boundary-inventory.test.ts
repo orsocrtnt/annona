@@ -73,8 +73,8 @@ function documented() {
 test("ADMIN-1 inventaire entreprise : chaque route avec getCompanyId est documentée", () => {
   const found = discover();
   const listed = documented();
-  assert.equal(found.length, 64);
-  assert.equal(new Set(found.map((row) => row.file)).size, 45);
+  assert.equal(found.length, 66);
+  assert.equal(new Set(found.map((row) => row.file)).size, 46);
   assert.deepEqual(listed, found);
   const note = readFileSync(inventoryPath, "utf8");
   assert.equal(note.includes("conversationAuth"), true);
