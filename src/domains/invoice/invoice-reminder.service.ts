@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { enqueueOperationJob, kickOperationJob } from "@/domains/operations/operation-job.service";
 import { getClientSettings } from "@/domains/client-portal/settings.service";
-import { sendTransactionalEmail } from "@/lib/email/transactional-email";
+import { emailSendOutcome, sendTransactionalEmail } from "@/lib/email/transactional-email";
 import { invoiceDaysOverdue, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 
 /**
@@ -15,8 +15,9 @@ import { invoiceDaysOverdue, isInvoiceOutstanding } from "@/domains/invoice/invo
  * - L'e-mail part par une tâche durable CLIENT_NOTIFICATION (reprise par le cron).
  * - Réservation d'envoi par facture (C1) : sous le verrou consultatif de la facture, une relance
  *   passe SENDING avant l'envoi ; aucune autre relance de la facture ne peut alors être créée ni
- *   envoyée. L'e-mail part hors transaction, puis la relance passe SENT (ou revient QUEUED si le
- *   fournisseur échoue, pour le rejeu de la tâche durable ; FAILED quand la tâche est épuisée).
+ *   envoyée. L'e-mail part hors transaction, puis la relance passe SENT. Un refus certain du
+ *   fournisseur la rend QUEUED (rejeu de la tâche durable ; FAILED quand la tâche est épuisée) ;
+ *   une issue inconnue (C4 : expiration, réseau) la laisse SENDING jusqu'à la reprise, même clé.
  *   Pendant SENDING, `completedAt` porte l'heure de la réservation (pas de migration).
  */
 export const INVOICE_REMINDER_COOLDOWN_HOURS = 24;
@@ -330,8 +331,13 @@ export async function deliverInvoiceReminderJob(
       idempotencyKey: invoiceReminderIdempotencyKey(reservation.reminderId),
     });
   } catch (error) {
-    // Panne du fournisseur : la réservation est rendue, la tâche durable rejouera (même clé).
-    await db.invoiceReminder.updateMany({ where: held, data: { result: "QUEUED", completedAt: null } });
+    // Refus certain du fournisseur : rien n'est parti, la réservation est rendue (rejeu, même clé).
+    // Issue inconnue (expiration, réseau) : l'e-mail est peut-être parti. La réservation SENDING est
+    // gardée ; la reprise se fera avec la même clé, après expiration ou par le rejeu de la tâche, et
+    // « Relancer » refuse d'ici là.
+    if (emailSendOutcome(error) === "rejected") {
+      await db.invoiceReminder.updateMany({ where: held, data: { result: "QUEUED", completedAt: null } });
+    }
     throw error;
   }
   await db.invoiceReminder.updateMany({
