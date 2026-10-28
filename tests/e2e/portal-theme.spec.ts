@@ -39,9 +39,21 @@ test("le choix sombre est mémorisé, appliqué avant l'hydratation et survit au
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await bodyBackground(page)).toBe("rgb(20, 23, 22)");
 
+  // Avant la première peinture du rechargement : le premier requestAnimationFrame voit déjà le Dark.
+  await page.addInitScript(() => {
+    requestAnimationFrame(() => {
+      (window as unknown as { __firstFrame: unknown }).__firstFrame = {
+        theme: document.documentElement.getAttribute("data-theme"),
+        bg: document.body ? getComputedStyle(document.body).backgroundColor : null,
+      };
+    });
+  });
   await page.reload();
   // Le script d'initialisation pose l'attribut dès le premier rendu (aucun flash clair).
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const first = await page.evaluate(() => (window as unknown as { __firstFrame: { theme: string; bg: string | null } }).__firstFrame);
+  expect(first.theme).toBe("dark");
+  if (first.bg) expect(first.bg).toBe("rgb(20, 23, 22)");
   expect(await page.evaluate(() => localStorage.getItem("tutelliv-theme"))).toBe("dark");
   await page.screenshot({ path: test.info().outputPath("portail-sombre.png"), fullPage: true });
 
