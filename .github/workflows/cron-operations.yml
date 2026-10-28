@@ -47,7 +47,10 @@ jobs:
       - name: Appeler la route de reprise
         run: |
           url="${PREPROD_BASE_URL%/}/api/cron/operations"
-          args=(--silent --show-error --max-time 60 --retry 2 --retry-delay 5
+          # --max-time (70 s) dépasse maxDuration de la route (60 s) pour ne pas couper
+          # un lot en cours. Aucun --retry : curl relancerait sur HTTP 500/503, or 503 est
+          # le signal d'échec de la route (le prochain passage a lieu 5 minutes plus tard).
+          args=(--silent --show-error --max-time 70
             --output response.json --write-out '%{http_code}'
             -H "Authorization: Bearer ${PREPROD_CRON_SECRET}")
           # Protection des déploiements Vercel : « Protection Bypass for Automation ».
