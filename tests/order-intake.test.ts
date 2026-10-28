@@ -114,6 +114,7 @@ function memoryDb(options: { settings?: unknown; usage?: Row[]; users?: UserRow[
     const email = where.email as { equals: string } | undefined;
     if (email && email.equals.toLowerCase() !== user.email.toLowerCase()) return false;
     if (where.phone && !user.phone) return false;
+    if (where.status && where.status !== user.status) return false;
     return true;
   };
   const select = (user: UserRow) => ({ id: user.id, email: user.email, phone: user.phone, firstName: user.firstName, lastName: user.lastName, status: user.status });
@@ -583,4 +584,17 @@ test("INTAKE relecture 2 : les refus métier de la création deviennent des stat
     assertCategory: async () => undefined,
     createOrder: async () => { throw new Error("connection reset"); },
   }), /connection reset/);
+});
+
+test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélectionné", async () => {
+  for (const status of ["INACTIVE", "SUSPENDED", "PENDING_VERIFICATION"]) {
+    const memory = memoryDb({ users: [{ ...CLIENTS[0]!, status }] });
+    for (const sender of ["sophie.leroy@cabinet-martin.example", "06 12 34 56 78"]) {
+      const result = await analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.sms, sender }, { db: memory.db as never, env: ENV, now: NOW, provider: fakeProvider(SMS_EXTRACTION) });
+      assert.equal(result.status, "ok");
+      if (result.status !== "ok") continue;
+      assert.equal(result.draft.customerMatch, null, `${status} ${sender}`);
+      assert.ok(result.draft.missingFields.includes("customer"));
+    }
+  }
 });

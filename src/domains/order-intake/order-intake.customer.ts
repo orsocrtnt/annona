@@ -9,7 +9,7 @@ const displayName = (user: { firstName: string; lastName: string; email: string 
 
 /**
  * Rapproche l'expéditeur d'un client de l'entreprise de la session, et d'elle seule.
- * Seuls les comptes CLIENT sont candidats ; deux candidats pour un même numéro ne donnent rien.
+ * Seuls les comptes CLIENT actifs sont candidats (les seuls proposés dans la liste du formulaire) ; deux candidats pour un même numéro ne donnent rien.
  */
 export async function matchCustomerBySender(
   companyId: string,
@@ -22,6 +22,7 @@ export async function matchCustomerBySender(
       where: {
         companyId,
         role: { systemRole: "CLIENT" },
+        status: "ACTIVE",
         email: { equals: parsed.email, mode: "insensitive" },
       },
       select: { id: true, email: true, firstName: true, lastName: true },
@@ -31,7 +32,7 @@ export async function matchCustomerBySender(
   if (parsed.phone) {
     // Les numéros sont stockés sous des formats variés : comparaison après normalisation.
     const candidates = await db.user.findMany({
-      where: { companyId, role: { systemRole: "CLIENT" }, phone: { not: null } },
+      where: { companyId, role: { systemRole: "CLIENT" }, status: "ACTIVE", phone: { not: null } },
       select: { id: true, email: true, firstName: true, lastName: true, phone: true },
       take: PHONE_SCAN_LIMIT,
     });
