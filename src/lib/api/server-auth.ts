@@ -30,14 +30,11 @@ async function resolveUserFromAuthId(
   let user = await getUserByAuthId(authId);
   if (!user && email) {
     const meta = metadata ?? {};
-    const isCompanyAccount = meta.account_type === "company" || Boolean(meta.company_name);
     try {
       user = await syncUserFromSupabase({
         authId, email,
         firstName: meta.first_name ?? meta.firstName ?? "Utilisateur",
         lastName: meta.last_name ?? meta.lastName ?? "",
-        accountType: isCompanyAccount ? "company" : undefined,
-        companyName: meta.company_name,
       });
     } catch (error) {
       if (error instanceof UserNotProvisionedError || error instanceof AccountUnavailableError) return null;

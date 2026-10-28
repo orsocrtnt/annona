@@ -224,28 +224,26 @@ test("déconnexion : nettoyer l'état local après succès, signaler un échec f
   }
 });
 
-test("confirmation d'inscription : création seulement après jeton vérifié, aucune réécriture du mot de passe", async (t) => {
+// SEC-1 : hors parcours géré, account_type=company (métadonnée modifiable) ne provisionne rien.
+test("confirmation d'inscription hors parcours géré : refusée sans provisionnement ni réécriture", async (t) => {
   configured(t); const f = fixture(true);
-  await f.service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" });
-  assert.equal(f.provisions(), 1); assert.equal(f.writes(), 0);
-  assert.deepEqual(f.signouts, ["global", "local"]);
   await assert.rejects(f.service.finishPasswordLink({ tokenHash: input.tokenHash, type: "signup" }), /AUTH_LINK_INVALID/);
-  assert.equal(f.provisions(), 1);
+  assert.equal(f.provisions(), 0); assert.equal(f.writes(), 0);
+  assert.deepEqual(f.signouts, ["local"]);
 });
-test("confirmation Supabase par défaut : la session du fragment reprend l'inscription", async (t) => {
+test("confirmation Supabase par défaut hors parcours géré : session du fragment refusée sans provisionnement", async (t) => {
   configured(t); const f = fixture(true);
-  const result = await f.service.finishPasswordLink({
+  await assert.rejects(f.service.finishPasswordLink({
     accessToken: "access-token-test-not-a-real-secret",
     refreshToken: "refresh-token-test-not-a-real-secret",
     type: "signup",
-  });
-  assert.equal(JSON.stringify(result), "{}");
-  assert.equal(f.provisions(), 1);
+  }), /AUTH_LINK_INVALID/);
+  assert.equal(f.provisions(), 0);
   assert.equal(JSON.stringify(f.sessions), JSON.stringify([{
     access_token: "access-token-test-not-a-real-secret",
     refresh_token: "refresh-token-test-not-a-real-secret",
   }]));
-  assert.deepEqual(f.signouts, ["global", "local"]);
+  assert.deepEqual(f.signouts, ["local"]);
 });
 test("SIGNUP-1 : la session du modèle Supabase reprend le brouillon sans provisionnement anticipé", async (t) => {
   configured(t);

@@ -136,7 +136,6 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       body: JSON.stringify({
         email: normalizedEmail,
         password: data.password,
-        accountType: loginContext === "company" ? "company" : undefined,
         demoRequestKey,
       }),
     });

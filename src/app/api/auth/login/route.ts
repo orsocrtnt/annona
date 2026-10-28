@@ -9,7 +9,6 @@ import {
   getDashboardPathForRole,
   UserNotProvisionedError,
 } from "@/domains/auth/auth.service";
-import type { AccountType } from "@/domains/auth/auth.service";
 import {
   extractPermissionSlugs,
   getUserByAuthId,
@@ -74,7 +73,6 @@ export async function POST(request: Request) {
 
     const { email, password } = parsed.data;
     const normalizedEmail = normalizeEmail(email);
-    const accountType = (body as { accountType?: AccountType }).accountType;
 
     const supabase = await createClient();
 
@@ -102,10 +100,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Confirmez votre adresse e-mail avant de vous connecter." }, { status: 403 });
     }
     const metadata = authUser.user_metadata as Record<string, string>;
-    const resolvedAccountType =
-      accountType ??
-      (metadata.account_type as AccountType | undefined) ??
-      (metadata.company_name ? "company" : undefined);
 
     const isDemoAccount = isDemoLoginEmail(authUser.email!);
     const requestKey = typeof (body as { demoRequestKey?: unknown }).demoRequestKey === "string"
@@ -139,8 +133,6 @@ export async function POST(request: Request) {
         email: authUser.email!,
         firstName: metadata.first_name ?? metadata.firstName ?? "Utilisateur",
         lastName: metadata.last_name ?? metadata.lastName ?? "",
-        accountType: resolvedAccountType,
-        companyName: metadata.company_name,
       });
     }
 

@@ -7,10 +7,9 @@ import {
   getDashboardPathForRole,
   UserNotProvisionedError,
 } from "@/domains/auth/auth.service";
-import type { AccountType } from "@/domains/auth/auth.service";
 import { getUserPermissions } from "@/domains/user/user.service";
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const supabase = await createClient();
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -19,20 +18,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const body = (await request.json().catch(() => ({}))) as {
-      accountType?: AccountType;
-    };
-
     const metadata = authUser.user_metadata as Record<string, string>;
-    const accountType = body.accountType ?? (metadata.account_type as AccountType | undefined);
-
     const user = await syncUserFromSupabase({
       authId: authUser.id,
       email: authUser.email,
       firstName: metadata.first_name ?? metadata.firstName ?? "Utilisateur",
       lastName: metadata.last_name ?? metadata.lastName ?? "",
-      accountType: accountType ?? (metadata.company_name ? "company" : undefined),
-      companyName: metadata.company_name,
     });
 
     assertAccountActive(user);

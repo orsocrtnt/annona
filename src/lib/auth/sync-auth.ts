@@ -1,10 +1,10 @@
 import type { UserWithRole } from "@/types";
 
-export async function syncAuth(accountType?: "company") {
+export async function syncAuth() {
   const res = await fetch("/api/auth/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(accountType ? { accountType } : {}),
+    body: "{}",
   });
   const json = await res.json();
   if (!res.ok) {
