@@ -620,8 +620,7 @@ export function DispatchSettingsForm() {
               <div>
                 <p className="text-sm font-medium">Tenir compte de la position GPS</p>
                 <p className="text-xs text-muted-foreground">
-                  Sans priorité ni zone imposée, le livreur en service le plus proche du point de retrait
-                  passe d&apos;abord. Sans position récente, les critères habituels s&apos;appliquent.
+                  À égalité, le livreur en service le plus proche du retrait est choisi.
                 </p>
               </div>
             </label>

@@ -130,3 +130,10 @@ test("GPS (contrôle statique) : l'écran des règles dispatch expose les trois 
   assert.match(source, /value=\{local\.gpsPositionMaxAgeMinutes\}/);
   assert.match(source, /value=\{local\.gpsMaxDistanceKm\}/);
 });
+
+test("GPS (P7, contrôle statique) : le texte d'aide décrit un départage, pas une priorité", async () => {
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync("src/features/back-office/dispatch-settings-form.tsx", "utf8");
+  assert.match(source, /À égalité, le livreur en service le plus proche du retrait est choisi\./);
+  assert.doesNotMatch(source, /passe d&apos;abord/);
+});
