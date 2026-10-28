@@ -318,6 +318,19 @@ test("livreur réaffecté ou mission d'une autre entreprise : 404 avant toute le
   assert.equal(response.status, 404); assert.equal(uploads, 0);
 });
 
+test("rejeu d'une preuve déjà enregistrée : accepté même si l'entreprise a rendu la signature obligatoire entre-temps", async () => {
+  const f = podRouteFixture("DELIVERED");
+  f.state.rules = { signatureRequired: true, emailToClient: true };
+  const replay = await f.route.PATCH(f.request("DELIVERED", { note: "note" }), driverParams);
+  assert.equal(replay.status, 200);
+  assert.equal((await replay.json()).replay, true);
+  assert.deepEqual([f.calls.updates, f.calls.uploads, f.calls.signatureUploads], [0, 0, 0]);
+  // Une première clôture, elle, reste soumise à la règle en vigueur.
+  const first = podRouteFixture();
+  first.state.rules = { signatureRequired: true, emailToClient: true };
+  assert.equal((await first.route.PATCH(first.request("DELIVERED"), driverParams)).status, 400);
+});
+
 test("ré-encodage refusé (photo ou signature illisible) : 4xx explicite non relançable, jamais 502, rien de conservé", async () => {
   const photo = podRouteFixture();
   photo.state.photoUploadError = "POD_INVALID_PHOTO";

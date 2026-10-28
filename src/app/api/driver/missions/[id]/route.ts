@@ -255,25 +255,6 @@ export async function PATCH(
     return NextResponse.json({ error: "Indiquez le motif d'échec." }, { status: 400 });
   }
 
-  let evidence = { recipientName: null as string | null, signatureRefusedReason: null as string | null };
-  if (terminal) {
-    try {
-      evidence = assertPodEvidence({
-        status: parsed.data.status as "DELIVERED" | "FAILED",
-        rules: await getCompanyProofRules(existing.companyId),
-        hasSignature: Boolean(raw.podSignature),
-        recipientName: parsed.data.podRecipientName,
-        signatureRefusedReason: parsed.data.podSignatureRefusedReason,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (isPodEvidenceError(message)) {
-        return NextResponse.json({ error: POD_EVIDENCE_MESSAGES[message], code: message }, { status: 400 });
-      }
-      throw error;
-    }
-  }
-
   // Une réponse réseau peut être perdue après la transaction. Le rejeu du même
   // palier est alors un succès de lecture et ne crée ni événement ni notification.
   if (!terminal && existing.status === parsed.data.status) {
@@ -304,6 +285,26 @@ export async function PATCH(
       success: true,
       replay: true,
     });
+  }
+
+  // Règles évaluées après les rejeux idempotents : un rejeu valide reste accepté même si la règle a changé.
+  let evidence = { recipientName: null as string | null, signatureRefusedReason: null as string | null };
+  if (terminal) {
+    try {
+      evidence = assertPodEvidence({
+        status: parsed.data.status as "DELIVERED" | "FAILED",
+        rules: await getCompanyProofRules(existing.companyId),
+        hasSignature: Boolean(raw.podSignature),
+        recipientName: parsed.data.podRecipientName,
+        signatureRefusedReason: parsed.data.podSignatureRefusedReason,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (isPodEvidenceError(message)) {
+        return NextResponse.json({ error: POD_EVIDENCE_MESSAGES[message], code: message }, { status: 400 });
+      }
+      throw error;
+    }
   }
 
   let podPhotoPath: string | undefined;
