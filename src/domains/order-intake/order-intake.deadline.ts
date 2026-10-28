@@ -97,6 +97,8 @@ export function resolveDeadline(deadline: IntakeDeadlineExtraction, now: Date): 
 
   const date = day ? `${day.year}-${pad(day.month)}-${pad(day.day)}` : null;
   const instant = day && time ? parisWallTimeToUtc(day, time) : null;
+  // Sans heure, la journée est passée une fois minuit franchi à Paris.
+  const endOfDay = day && !time ? parisWallTimeToUtc(addDays(day, 1), { hour: 0, minute: 0 }) : null;
   const modeLabel = deadline.mode ? MODE_LABELS[deadline.mode] : null;
   let label: string | null = null;
   if (date) {
@@ -114,7 +116,9 @@ export function resolveDeadline(deadline: IntakeDeadlineExtraction, now: Date): 
     endTime: endTime?.text ?? null,
     iso: instant ? instant.toISOString() : null,
     label,
-    isPast: instant ? instant.getTime() < now.getTime() : false,
+    isPast: instant
+      ? instant.getTime() < now.getTime()
+      : endOfDay ? endOfDay.getTime() <= now.getTime() : false,
     confidence: deadline.confidence,
     source: deadline.source,
   };

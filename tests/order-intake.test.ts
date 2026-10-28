@@ -644,6 +644,17 @@ test("INTAKE relecture 6 : changer de client avec la même clé ne crée pas de 
   assert.equal(same.status, "created");
 });
 
+test("INTAKE relecture 7 : une date passée sans heure est passée (fin de journée à Paris)", () => {
+  const base = { mode: null, dayOffset: null, time: null, endTime: null, confidence: "high" as const, source: "le 27/10" };
+  assert.equal(resolveDeadline({ ...base, date: "2026-10-27" }, NOW).isPast, true);
+  assert.equal(resolveDeadline({ ...base, date: "2026-10-28" }, NOW).isPast, false, "aujourd'hui n'est pas passé");
+  // 23:30 UTC le 28 = 00:30 le 29 à Paris : le 28 est alors passé.
+  assert.equal(resolveDeadline({ ...base, date: "2026-10-28" }, new Date("2026-10-28T23:30:00.000Z")).isPast, true);
+  const text = "Livraison le 27/10 au 5 place de la Défense";
+  const draft = buildOrderIntakeDraft({ ...SMS_EXTRACTION, deadline: { ...base, date: "2026-10-27" } }, text, NOW);
+  assert.ok(draft.uncertainFields.includes("deadline"));
+});
+
 test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélectionné", async () => {
   for (const status of ["INACTIVE", "SUSPENDED", "PENDING_VERIFICATION"]) {
     const memory = memoryDb({ users: [{ ...CLIENTS[0]!, status }] });
