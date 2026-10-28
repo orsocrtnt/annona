@@ -69,6 +69,17 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 - **Flux futurs** : identité du payeur, factures, encaissements, incidents et tickets selon les choix définitifs.
 - **À obtenir** : fiche complète pour chaque fournisseur effectivement retenu ; ne pas publier ces candidats comme des sous-traitants actifs.
 
+## F10 — Anthropic : commande par message (fonction facultative)
+
+- **État constaté (28 octobre 2026)** : code présent sur la branche `agent/commande-ia`, **désactivé par défaut**. Il faut à la fois la variable serveur `ANTHROPIC_API_KEY` et une activation explicite par l'administration de l'entreprise. Aucune clé n'est configurée et aucun appel réel n'a été effectué. Fonctionnement : [order-intake](../operations/order-intake/README.md).
+- **Finalité** : transformer un message reçu (e-mail, SMS, WhatsApp) collé par un dispatcher en brouillon de commande, relu et validé par un humain avant toute création.
+- **Données envoyées** : le texte collé, qui peut contenir des noms, téléphones, e-mails et adresses de tiers (donneur d'ordre, contacts d'enlèvement et de livraison) ; l'expéditeur déclaré s'il est saisi ; la date du jour. Ne sont pas envoyés : identifiants TutelLiv, fiches clients, coordonnées GPS, historique de commandes.
+- **Conservation côté TutelLiv** : le texte et l'expéditeur ne sont pas stockés. Seul un journal d'usage est conservé (entreprise, modèle, issue, nombre de jetons, horodatage) pour le quota et le coût ; sa durée de conservation reste à fixer (LEGAL-1).
+- **Conservation côté fournisseur** : **INCONNUE dans ce dossier**. Durée de rétention des entrées et sorties de l'API, usage éventuel pour l'entraînement, région de traitement et transferts hors EEE (fournisseur établi aux États-Unis) restent à vérifier dans les conditions et le DPA applicables au compte réellement souscrit.
+- **Rôle proposé** : sous-traitant ultérieur pour cette finalité, à qualifier.
+- **Mention affichée** : l'écran d'activation indique que le texte est transmis au sous-traitant Anthropic et qu'aucune validation juridique n'est acquise.
+- **À obtenir** : entité contractante, DPA et version, rétention et éventuelle option de non-conservation, région et mécanisme de transfert, sous-traitants ultérieurs, information des personnes dont les coordonnées figurent dans les messages transmis.
+
 ## Décision d'autorisation
 
 **Recommandation** : aucune fiche n'est marquée « validée ». Recueillir les pièces, confronter les flux au navigateur/serveur sur préproduction, puis faire qualifier les rôles, transferts et exigences contractuelles par le juriste. Une autorisation de sous-traitance ultérieure et une procédure d'information des changements doivent être organisées lorsqu'elles sont applicables. [CNIL — bonnes pratiques responsable/sous-traitant](https://www.cnil.fr/fr/responsable-de-traitement-et-sous-traitant-6-bonnes-pratiques-pour-respecter-les-donnees).

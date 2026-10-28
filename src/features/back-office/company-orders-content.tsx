@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -13,7 +15,7 @@ import {
   type OrderHistoryPage,
   type OrderHistoryQuery,
 } from "@/lib/query/order-history";
-import { Package } from "lucide-react";
+import { MessageSquareText, Package } from "lucide-react";
 import type { TableColumn } from "@/types";
 import type { CompanyOrder } from "@/features/back-office/types";
 import { AccountingExportForm } from "@/features/back-office/accounting-export-form";
@@ -35,11 +37,17 @@ export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProp
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Commandes</h1>
-        <p className="mt-1 text-muted-foreground">
-          Retrouvez toutes les commandes, filtrez l&apos;historique et exportez le résultat complet.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Commandes</h1>
+          <p className="mt-1 text-muted-foreground">
+            Retrouvez toutes les commandes, filtrez l&apos;historique et exportez le résultat complet.
+          </p>
+        </div>
+        <Link href="/dashboard/orders/intake" className={buttonVariants({ variant: "outline" })}>
+          <MessageSquareText className="h-4 w-4" />
+          Nouvelle commande depuis un message
+        </Link>
       </div>
 
       {error ? (
