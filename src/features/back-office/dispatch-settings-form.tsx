@@ -610,6 +610,59 @@ export function DispatchSettingsForm() {
             </div>
           </label>
 
+          <div className="space-y-3 rounded-lg border border-dashed p-3">
+            <label className="flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                checked={local.gpsProximityEnabled}
+                onChange={(e) => setLocal({ ...local, gpsProximityEnabled: e.target.checked })}
+              />
+              <div>
+                <p className="text-sm font-medium">Tenir compte de la position GPS</p>
+                <p className="text-xs text-muted-foreground">
+                  Sans priorité ni zone imposée, le livreur en service le plus proche du point de retrait
+                  passe d&apos;abord. Sans position récente, les critères habituels s&apos;appliquent.
+                </p>
+              </div>
+            </label>
+            {local.gpsProximityEnabled && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="gps-max-age">Position récente si moins de (minutes)</Label>
+                  <Input
+                    id="gps-max-age"
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={local.gpsPositionMaxAgeMinutes}
+                    onChange={(e) =>
+                      setLocal({
+                        ...local,
+                        gpsPositionMaxAgeMinutes: Math.min(120, Math.max(1, Math.round(Number(e.target.value)) || 1)),
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gps-max-distance">Proche du retrait si moins de (km)</Label>
+                  <Input
+                    id="gps-max-distance"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={local.gpsMaxDistanceKm}
+                    onChange={(e) =>
+                      setLocal({
+                        ...local,
+                        gpsMaxDistanceKm: Math.min(100, Math.max(1, Number(e.target.value) || 1)),
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label>Types auto-assignés</Label>
             <div className="flex flex-wrap gap-3">

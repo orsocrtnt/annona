@@ -120,3 +120,13 @@ test("GPS : comparaison — proche avant neutre, le plus proche d'abord, neutres
   assert.equal(compareDispatchProximity(undefined, none), 0);
   assert.equal(compareDispatchProximity(near1, { ...near1 }), 0);
 });
+
+test("GPS (contrôle statique) : l'écran des règles dispatch expose les trois réglages avec les bornes du schéma", async () => {
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync("src/features/back-office/dispatch-settings-form.tsx", "utf8");
+  assert.match(source, /checked=\{local\.gpsProximityEnabled\}/);
+  assert.match(source, /id="gps-max-age"[\s\S]{0,80}min=\{1\}[\s\S]{0,40}max=\{120\}/);
+  assert.match(source, /id="gps-max-distance"[\s\S]{0,80}min=\{1\}[\s\S]{0,40}max=\{100\}/);
+  assert.match(source, /value=\{local\.gpsPositionMaxAgeMinutes\}/);
+  assert.match(source, /value=\{local\.gpsMaxDistanceKm\}/);
+});
