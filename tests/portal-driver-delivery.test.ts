@@ -87,3 +87,20 @@ test("I2 : contacts d'assistance → prénom, téléphone selon le réglage", as
     assert.equal(JSON.stringify(contacts).includes("Benali"), false);
   }
 });
+
+test("I2 : la carte du portail ne montre que « Livreur Prénom »", async (t) => {
+  const { getClientDeliveriesMap } = await import("../src/domains/delivery/dispatch-map.service");
+  const record = {
+    id: "d1", reference: "LIV-1", status: "IN_DELIVERY", deliveryCategory: "STANDARD",
+    address: "1 rue A", city: "Paris", postalCode: "75001", pickupAddress: null, pickupCity: null, pickupPostalCode: null,
+    latitude: 48.85, longitude: 2.35, pickupLatitude: null, pickupLongitude: null,
+    driverId: "drv1", driverName: "Karim Benali", missionStartedAt: new Date(), missionAcceptedAt: new Date(), completedAt: null, createdAt: new Date(),
+    customer: { firstName: "Cli", lastName: "Ent" }, driver: null, trackingEvents: [], estimatedArrival: null,
+    order: { id: "o1", requestedDeliveryDate: null, customerEmail: null, customer: { firstName: "Cli", lastName: "Ent" }, items: [], stops: [] },
+  };
+  stub(t, prisma.delivery, "findMany", async () => [record]);
+  const map = await getClientDeliveriesMap("client-a", "company-a");
+  const serialized = JSON.stringify(map);
+  assert.equal(serialized.includes("Benali"), false);
+  assert.equal(map.active[0]?.driverName, "Livreur Karim");
+});

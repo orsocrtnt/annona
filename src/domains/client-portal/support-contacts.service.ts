@@ -1,6 +1,7 @@
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryStatus } from "@prisma/client";
-import { formatDriverFromParts } from "@/lib/format/person-labels";
+import { getPortalShowDriverPhone } from "@/domains/company/portal-settings.service";
+import { clientDriverSelect, toClientDriver } from "@/domains/delivery/client-driver";
 
 const DRIVER_CONTACT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -49,6 +50,8 @@ export async function getSupportContactsForClient(
 
   let delivery = null;
   let driver = null;
+  // Client : prénom du livreur, téléphone selon le réglage de l'entreprise, jamais le nom de famille.
+  const showDriverPhone = await getPortalShowDriverPhone(companyId);
 
   if (deliveryId) {
     delivery = await prisma.delivery.findFirst({
@@ -59,17 +62,15 @@ export async function getSupportContactsForClient(
         status: true,
         completedAt: true,
         driverName: true,
-        driver: {
-          select: { firstName: true, lastName: true, phone: true },
-        },
+        driver: { select: clientDriverSelect(showDriverPhone) },
       },
     });
 
     if (delivery && isDriverContactEligible(delivery.status, delivery.completedAt)) {
       const d = delivery.driver;
       driver = {
-        name: formatDriverFromParts(d, delivery.driverName),
-        phone: d?.phone ?? null,
+        name: toClientDriver({ driver: d, driverName: delivery.driverName }, showDriverPhone)?.firstName ?? "Livreur",
+        phone: toClientDriver({ driver: d }, showDriverPhone)?.phone ?? null,
         deliveryReference: delivery.reference,
       };
     }
@@ -92,9 +93,7 @@ export async function getSupportContactsForClient(
         status: true,
         completedAt: true,
         driverName: true,
-        driver: {
-          select: { firstName: true, lastName: true, phone: true },
-        },
+        driver: { select: clientDriverSelect(showDriverPhone) },
       },
     });
 
@@ -102,17 +101,22 @@ export async function getSupportContactsForClient(
       delivery = activeDelivery;
       const d = activeDelivery.driver;
       driver = {
-        name: formatDriverFromParts(d, activeDelivery.driverName),
-        phone: d?.phone ?? null,
+        name: toClientDriver({ driver: d, driverName: activeDelivery.driverName }, showDriverPhone)?.firstName ?? "Livreur",
+        phone: toClientDriver({ driver: d }, showDriverPhone)?.phone ?? null,
         deliveryReference: activeDelivery.reference,
       };
     }
   }
 
+  // Le nom complet et la fiche du livreur ne sortent pas : seul `driver` (prénom, téléphone) est exposé.
+  const publicDelivery = delivery
+    ? { id: delivery.id, reference: delivery.reference, status: delivery.status, completedAt: delivery.completedAt }
+    : null;
+
   return {
     recommended: driver ? ("DRIVER" as const) : ("ADMIN" as const),
     admin,
     driver,
-    delivery,
+    delivery: publicDelivery,
   };
 }

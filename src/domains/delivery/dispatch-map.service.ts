@@ -1,3 +1,4 @@
+import { clientDriverLabel } from "@/domains/delivery/client-driver";
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
 import { resolveTrackingPosition } from "@/domains/tracking/tracking-position.service";
@@ -145,7 +146,8 @@ function resolveCustomerName(delivery: {
   return formatClientFromParts(customer, delivery.order.customerEmail) || null;
 }
 
-function resolveDriverName(driverName: string | null | undefined) {
+function resolveDriverName(driverName: string | null | undefined, firstNameOnly = false) {
+  if (firstNameOnly) return clientDriverLabel(driverName);
   return driverName ? formatDriverDisplayName(driverName) : null;
 }
 
@@ -480,7 +482,7 @@ function resolveDeliveryStops(delivery: MapDeliveryRecord, coordsByKey: Map<stri
 async function buildDeliveriesMapPayload(
   deliveries: MapDeliveryRecord[],
   onlineThresholdSeconds: number,
-  options?: { isHistorical?: boolean; exposeTrackingCoordinates?: boolean }
+  options?: { isHistorical?: boolean; exposeTrackingCoordinates?: boolean; /** Vue client : « Livreur Prénom » seulement. */ driverFirstNameOnly?: boolean }
 ): Promise<{ deliveries: DispatchMapDelivery[]; points: DispatchMapPoint[] }> {
   const isHistorical = options?.isHistorical ?? false;
   const now = new Date();
@@ -617,7 +619,7 @@ async function buildDeliveriesMapPayload(
   for (const [index, delivery] of deliveries.entries()) {
     const { destCoords, pickupCoords, pickupAddress, pickups } = resolvedStops[index]!;
     const destAddress = formatAddress([delivery.address, delivery.postalCode, delivery.city]);
-    const driverName = resolveDriverName(delivery.driverName);
+    const driverName = resolveDriverName(delivery.driverName, options?.driverFirstNameOnly);
     const customerName = resolveCustomerName(delivery);
     const position = positions[index]!;
     // Frais, estimé ou dernier connu : le livreur reste sur la carte tant que la mission est suivie.
@@ -762,8 +764,8 @@ export async function getClientDeliveriesMap(
   ]);
 
   const [activePayload, historyPayload] = await Promise.all([
-    buildDeliveriesMapPayload(activeRecords, onlineThresholdSeconds, { isHistorical: false, exposeTrackingCoordinates: false }),
-    buildDeliveriesMapPayload(historyRecords, onlineThresholdSeconds, { isHistorical: true, exposeTrackingCoordinates: false }),
+    buildDeliveriesMapPayload(activeRecords, onlineThresholdSeconds, { isHistorical: false, exposeTrackingCoordinates: false, driverFirstNameOnly: true }),
+    buildDeliveriesMapPayload(historyRecords, onlineThresholdSeconds, { isHistorical: true, exposeTrackingCoordinates: false, driverFirstNameOnly: true }),
   ]);
 
   return {

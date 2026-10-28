@@ -15,4 +15,11 @@ export const companySettingsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
+  getPortalSettings: () => fetchJson<{ portalShowDriverPhone: boolean }>("/api/company/portal-settings"),
+  updatePortalSettings: (data: { portalShowDriverPhone: boolean }) =>
+    fetchJson<{ portalShowDriverPhone: boolean }>("/api/company/portal-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
 };

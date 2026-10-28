@@ -21,3 +21,21 @@ export function useUpdateCompanyDeliveryOptions() {
     },
   });
 }
+
+export function useCompanyPortalSettings() {
+  return useQuery({
+    queryKey: ["company", "settings", "portal"],
+    queryFn: companySettingsApi.getPortalSettings,
+  });
+}
+
+export function useUpdateCompanyPortalSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { portalShowDriverPhone: boolean }) => companySettingsApi.updatePortalSettings(data),
+    onSuccess: (data) => {
+      qc.setQueryData(["company", "settings", "portal"], data);
+      qc.invalidateQueries({ queryKey: ["portal", "deliveries"] });
+    },
+  });
+}

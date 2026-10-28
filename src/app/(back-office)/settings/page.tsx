@@ -10,7 +10,9 @@ import { useAuthStore } from "@/stores/auth.store";
 import { DELIVERY_CATEGORY_DESCRIPTIONS, DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import {
   useCompanyDeliveryOptions,
+  useCompanyPortalSettings,
   useUpdateCompanyDeliveryOptions,
+  useUpdateCompanyPortalSettings,
 } from "@/features/back-office/company-settings-hooks";
 import type { DeliveryCategory } from "@prisma/client";
 import { Package, Bike, Sparkles } from "lucide-react";
@@ -42,6 +44,8 @@ const CATEGORY_ICONS = {
 export default function SettingsPage() {
   const { data: options, isLoading } = useCompanyDeliveryOptions();
   const updateOptions = useUpdateCompanyDeliveryOptions();
+  const { data: portal } = useCompanyPortalSettings();
+  const updatePortal = useUpdateCompanyPortalSettings();
   const readOnly = useAuthStore((state) => state.saas?.canMutate === false);
   const [local, setLocal] = useState(options?.deliveryCategories);
 
@@ -61,6 +65,17 @@ export default function SettingsPage() {
     try {
       await updateOptions.mutateAsync({ deliveryCategories: local });
       toast.success("Options client mises à jour");
+    } catch (error) {
+      toast.error("Enregistrement impossible", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  };
+
+  const handleDriverPhone = async (portalShowDriverPhone: boolean) => {
+    try {
+      await updatePortal.mutateAsync({ portalShowDriverPhone });
+      toast.success(portalShowDriverPhone ? "Téléphone du livreur visible par les clients" : "Téléphone du livreur masqué aux clients");
     } catch (error) {
       toast.error("Enregistrement impossible", {
         description: error instanceof Error ? error.message : undefined,
@@ -140,6 +155,27 @@ export default function SettingsPage() {
           >
             Enregistrer les options
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Livreur dans l&apos;espace client</CardTitle>
+          <CardDescription>
+            Vos clients voient toujours le prénom du livreur, jamais son nom de famille.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border p-3">
+            <input
+              type="checkbox"
+              className="h-5 w-5 shrink-0"
+              checked={portal?.portalShowDriverPhone ?? true}
+              disabled={!portal || readOnly || updatePortal.isPending}
+              onChange={(event) => handleDriverPhone(event.target.checked)}
+            />
+            <span className="text-sm font-medium">Afficher le téléphone du livreur aux clients</span>
+          </label>
         </CardContent>
       </Card>
     </div>
