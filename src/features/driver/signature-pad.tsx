@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  canvasBackingSize,
+  exportSize,
+  isSignatureExportable,
+  pointerToCanvas,
+} from "./signature-geometry";
 
 /** Largeur d'export : la signature reste légère (hors ligne) tout en restant lisible sur le PDF. */
 const EXPORT_WIDTH = 800;
-/** Un tracé trop court (point isolé, effleurement) n'est pas une signature. */
-const MIN_STROKE_POINTS = 8;
 
 export type SignaturePadValue = Blob | null;
 
@@ -22,31 +26,55 @@ export function SignaturePad({ disabled, onChange }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const pointsRef = useRef(0);
+  const onChangeRef = useRef(onChange);
   const [hasInk, setHasInk] = useState(false);
 
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  /** (Re)dimensionne le canevas sur sa taille de mise en page ; redessiner est impossible, la signature est donc remise à zéro. */
   const setup = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    const { width, height } = canvas.getBoundingClientRect();
-    canvas.width = Math.round(width * ratio);
-    canvas.height = Math.round(height * ratio);
+    // clientWidth/clientHeight ignorent les transformations d'animation du dialogue (contrairement à getBoundingClientRect).
+    const size = canvasBackingSize({ width: canvas.clientWidth, height: canvas.clientHeight }, window.devicePixelRatio);
+    if (!size) return;
+    if (canvas.width === size.width && canvas.height === size.height) return;
+    canvas.width = size.width;
+    canvas.height = size.height;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#111111";
+    if (ctx) {
+      ctx.setTransform(size.width / canvas.clientWidth, 0, 0, size.height / canvas.clientHeight, 0, 0);
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "#111111";
+    }
+    if (pointsRef.current > 0) {
+      pointsRef.current = 0;
+      setHasInk(false);
+      onChangeRef.current(null);
+    }
   }, []);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     setup();
+    const observer = new ResizeObserver(() => setup());
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, [setup]);
 
   const position = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const canvas = event.currentTarget;
+    return pointerToCanvas(
+      canvas.getBoundingClientRect(),
+      { width: canvas.clientWidth, height: canvas.clientHeight },
+      event.clientX,
+      event.clientY
+    );
   };
 
   const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -75,27 +103,36 @@ export function SignaturePad({ disabled, onChange }: SignaturePadProps) {
 
   const exportBlob = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || pointsRef.current < MIN_STROKE_POINTS) {
-      onChange(null);
+    const target = canvas ? exportSize({ width: canvas.width, height: canvas.height }, EXPORT_WIDTH) : null;
+    if (
+      !canvas ||
+      !target ||
+      !isSignatureExportable({ points: pointsRef.current, width: target.width, height: target.height })
+    ) {
+      onChangeRef.current(null);
       return;
     }
-    const scale = Math.min(1, EXPORT_WIDTH / canvas.width);
     const out = document.createElement("canvas");
-    out.width = Math.max(1, Math.round(canvas.width * scale));
-    out.height = Math.max(1, Math.round(canvas.height * scale));
+    out.width = target.width;
+    out.height = target.height;
     const ctx = out.getContext("2d");
     if (!ctx) {
-      onChange(null);
+      onChangeRef.current(null);
       return;
     }
-    ctx.drawImage(canvas, 0, 0, out.width, out.height);
-    out.toBlob((blob) => onChange(blob), "image/png");
-  }, [onChange]);
+    ctx.drawImage(canvas, 0, 0, target.width, target.height);
+    out.toBlob((blob) => onChangeRef.current(blob), "image/png");
+  }, []);
 
   const endStroke = () => {
     if (!drawingRef.current) return;
     drawingRef.current = false;
-    if (pointsRef.current >= MIN_STROKE_POINTS) setHasInk(true);
+    const canvas = canvasRef.current;
+    const target = canvas ? exportSize({ width: canvas.width, height: canvas.height }, EXPORT_WIDTH) : null;
+    const exportable = Boolean(
+      target && isSignatureExportable({ points: pointsRef.current, width: target.width, height: target.height })
+    );
+    setHasInk(exportable);
     exportBlob();
   };
 
@@ -110,7 +147,7 @@ export function SignaturePad({ disabled, onChange }: SignaturePadProps) {
     }
     pointsRef.current = 0;
     setHasInk(false);
-    onChange(null);
+    onChangeRef.current(null);
   };
 
   return (
