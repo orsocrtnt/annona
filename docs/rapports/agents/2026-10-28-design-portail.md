@@ -46,6 +46,14 @@ Bordures `#333936`, popover `#212524`, fond gris jamais noir pur.
 - Police : Inter seule reste en vigueur (le dashboard le teste) ; Sora de `DESIGN.md` n'a pas été introduite.
 - Non vérifié : tout rendu réel, les états chargement/erreur en Dark, le profil (composant hors périmètre), les pages hors `src/app/(client-portal)`.
 
+## Inventaire `dark:` hors portail (accepté par l'orchestrateur)
+
+Avant la redéfinition de la variante `dark:`, ces classes suivaient `prefers-color-scheme` partout : bannière ambre de `(back-office)/dashboard/orders/[id]/page.tsx`, `company-order-columns.tsx`, `dispatch-settings-form.tsx`, `subscription-content.tsx` et la barre de démonstration `features/demo/demo-mode-bar.tsx`. Elles ne s'appliquent plus que dans le portail : hors portail, le rendu Light prévu est la cible.
+
+## Passe impeccable (craft-floor, polish, critique)
+
+Le détecteur `impeccable detect` sur le portail a donné 3 avis de taille de texte hors échelle (10 et 11 px), corrigés. Le portail est ensuite propre. La critique complète (sous-agents A et B, navigateur) n'a pas été exécutée faute de rendu : lecture du code seulement.
+
 ## Mise à jour après relecture
 
 - « Système » est désormais résolu en `light`/`dark` par le script d'initialisation et par `ThemeSync` (matchMedia + écouteur) ; un seul bloc de jetons Dark subsiste. `ThemeSync` est l'unique écrivain de `data-theme`, appliqué en `useLayoutEffect` à chaque changement de route (le Dark ne déborde plus sur les autres espaces). Le hook de préférence ne fait plus que lire et écrire le choix.
