@@ -48,11 +48,11 @@ export type InvoiceReminderView = {
   channel: string;
   result: string;
   createdAt: Date;
-  sentById: string | null;
 };
 
+/** Vue renvoyée à la route : ni auteur ni tâche (identifiants internes). */
 function view(row: InvoiceReminderView): InvoiceReminderView {
-  return { id: row.id, channel: row.channel, result: row.result, createdAt: row.createdAt, sentById: row.sentById };
+  return { id: row.id, channel: row.channel, result: row.result, createdAt: row.createdAt };
 }
 
 function hasUsableEmail(customer: { email: string; companyId: string | null } | null, companyId: string) {
@@ -96,6 +96,19 @@ export async function remindInvoice(
       : hasUsableEmail(invoice.customer, input.companyId)
         ? "QUEUED"
         : "NOT_SENT_NO_RECIPIENT";
+    if (result !== "QUEUED") {
+      // Même tentative non envoyée dans le délai : rejouée, pas de nouvelle trace (pas de croissance par clics).
+      const sameAttempt = await tx.invoiceReminder.findFirst({
+        where: {
+          invoiceId: invoice.id,
+          companyId: input.companyId,
+          result,
+          createdAt: { gte: new Date(now.getTime() - COOLDOWN_MS) },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (sameAttempt) return { reminder: view(sameAttempt), duplicate: true, jobId: null };
+    }
     const reminder = await tx.invoiceReminder.create({
       data: {
         invoiceId: invoice.id,

@@ -28,11 +28,12 @@ export async function GET(request: Request) {
     let overdueInvoices: number | null = null;
     try {
       overdueInvoices = await markOverdueInvoices();
-    } catch (error) {
+    } catch {
+      // Message fixe : une erreur Prisma peut contenir des valeurs de requête.
       await reportOperationalIncident({
         source: "cron.operations",
         fingerprint: "invoice-overdue-sweep-failure",
-        summary: error instanceof Error ? error.message : "Passage des factures en retard impossible",
+        summary: "Passage des factures en retard impossible",
         severity: "error",
       });
     }

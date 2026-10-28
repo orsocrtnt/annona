@@ -234,3 +234,13 @@ test("DEMO-3 relance (envoi) : une tâche d'une autre entreprise ne lit rien et 
   assert.equal(sent.length, 0);
   await assert.rejects(deliver({ kind: "INVOICE_REMINDER" }), /INVOICE_REMINDER_PAYLOAD_INVALID/);
 });
+
+test("DEMO-3 relance : clics répétés sans e-mail configuré, une seule trace « non envoyée » par jour", async () => {
+  const { db, remind } = setup([invoice({ id: "inv" })]);
+  const first = await remind({ emailConfigured: false });
+  const second = await remind({ emailConfigured: false });
+  assert.equal(second?.duplicate, true);
+  assert.equal(second?.reminder.id, first?.reminder.id);
+  assert.equal(db.reminders.length, 1);
+  assert.equal("sentById" in (second?.reminder ?? {}), false, "identifiant interne non exposé");
+});
