@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import * as validation from "../src/lib/validations/delivery";
 import * as codes from "../src/lib/pod/codes";
 import * as podImage from "../src/lib/storage/pod-image";
+import * as podEvidence from "../src/domains/delivery/pod-evidence";
 
 function load<T>(file: string, deps: Record<string, unknown>): T {
   const module = { exports: {} };
@@ -84,6 +85,9 @@ test("PATCH livreur réel simulé : un chemin JSON ne peut ni devenir une preuve
     "@/domains/delivery/driver-proximity.service": { DriverProximityError: class extends Error {} },
     "@/lib/storage/pod": { MAX_POD_BYTES: 5 * 1024 * 1024, MAX_POD_REQUEST_BYTES: 6 * 1024 * 1024, validatePodPhoto: () => {}, uploadPodPhoto: async () => { uploadCalls++; return "path"; }, deletePodPhoto: async () => {}, cleanupPodPhotoOrphans: async () => ({ removed: 0 }), getPodPhotoSignedUrl: async () => null },
     "@/lib/pod/codes": codes,
+    "@/lib/storage/pod-signature": { MAX_SIGNATURE_BYTES: 300 * 1024, uploadPodSignature: async () => "x", deletePodSignature: async () => {}, validatePodSignature: () => {} },
+    "@/domains/delivery/pod-evidence": podEvidence,
+    "@/domains/delivery/proof-settings.service": { getCompanyProofRules: async () => podEvidence.DEFAULT_PROOF_RULES },
   });
   const request = () => new Request("http://local", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "DELIVERED", podPhotoPath: "b/victim-123.jpg" }) });
   assert.equal((await route.PATCH(request(), { params: Promise.resolve({ id: "own" }) })).status, 400);
@@ -100,8 +104,9 @@ function podRouteFixture(initialStatus: "PURCHASING" | "IN_DELIVERY" | "DELIVERE
       podFailureCode: initialStatus === "FAILED" ? "ABSENT" : null, podNote: initialStatus === "IN_DELIVERY" ? null : "note",
     },
     updateError: "" as string,
+    rules: { signatureRequired: false, emailToClient: true },
   };
-  const calls = { uploads: 0, updates: 0, deletes: [] as string[], cleanups: 0, signs: 0 };
+  const calls = { uploads: 0, updates: 0, deletes: [] as string[], cleanups: 0, signs: 0, signatureUploads: 0, signatureDeletes: [] as string[], lastOptions: null as Record<string, unknown> | null };
   const mission = () => ({ id: "own", ...state.existing, order: {} });
   const route = load<typeof import("../src/app/api/driver/missions/[id]/route")>("src/app/api/driver/missions/[id]/route.ts", {
     "next/server": { NextResponse },
@@ -112,7 +117,9 @@ function podRouteFixture(initialStatus: "PURCHASING" | "IN_DELIVERY" | "DELIVERE
       updateDeliveryStatusByDriver: async (_driver: string, _id: string, status: string, options: Record<string, unknown>) => {
         calls.updates++;
         if (state.updateError) throw new Error(state.updateError);
-        state.existing = { ...state.existing, status: status as typeof state.existing.status, podOutcome: options.podOutcome as string, podPhotoPath: options.podPhotoPath as string, podFailureCode: (options.podFailureCode as string) ?? null, podNote: (options.podNote as string) ?? null };
+        calls.lastOptions = options;
+        state.existing = { ...state.existing, status: status as typeof state.existing.status, podOutcome: options.podOutcome as string, podPhotoPath: options.podPhotoPath as string, podFailureCode: (options.podFailureCode as string) ?? null, podNote: (options.podNote as string) ?? null,
+          podSignaturePath: (options.podSignaturePath as string) ?? null, podRecipientName: (options.podRecipientName as string) ?? null, podSignatureRefusedReason: (options.podSignatureRefusedReason as string) ?? null } as typeof state.existing;
         return mission();
       },
     },
@@ -130,9 +137,24 @@ function podRouteFixture(initialStatus: "PURCHASING" | "IN_DELIVERY" | "DELIVERE
       getPodPhotoSignedUrl: async () => { calls.signs++; return "https://storage.invalid/signed"; },
     },
     "@/lib/pod/codes": codes,
+    "@/lib/storage/pod-signature": {
+      MAX_SIGNATURE_BYTES: 300 * 1024,
+      validatePodSignature: (bytes: Buffer, type: string) => {
+        if (type !== "image/png" || !bytes.equals(png)) throw new Error("POD_SIGNATURE_INVALID");
+      },
+      uploadPodSignature: async () => { calls.signatureUploads++; return "a/own-sig-1-00000000-0000-0000-0000-000000000000.png"; },
+      deletePodSignature: async (path: string) => { calls.signatureDeletes.push(path); },
+    },
+    "@/domains/delivery/pod-evidence": podEvidence,
+    "@/domains/delivery/proof-settings.service": { getCompanyProofRules: async () => state.rules },
   });
-  const request = (status: "DELIVERED" | "FAILED", options?: { note?: string; failureCode?: string; bytes?: Buffer }) => {
+  const request = (status: "DELIVERED" | "FAILED", options?: { note?: string; failureCode?: string; bytes?: Buffer; signature?: Buffer | "oversized" | "svg"; recipient?: string; refusal?: string }) => {
     const form = new FormData();
+    if (options?.signature === "oversized") form.set("signature", new Blob([new Uint8Array(300 * 1024 + 1)], { type: "image/png" }), "s.png");
+    else if (options?.signature === "svg") form.set("signature", new Blob([new Uint8Array([...png])], { type: "image/svg+xml" }), "s.svg");
+    else if (options?.signature) form.set("signature", new Blob([new Uint8Array([...options.signature])], { type: "image/png" }), "s.png");
+    if (options?.recipient) form.set("podRecipientName", options.recipient);
+    if (options?.refusal) form.set("podSignatureRefusedReason", options.refusal);
     form.set("status", status); form.set("podOutcome", status === "FAILED" ? "FAILED" : "SUCCESS");
     if (options?.note) form.set("podNote", options.note);
     if (options?.failureCode) form.set("podFailureCode", options.failureCode);
@@ -192,4 +214,104 @@ test("MOB-01B : rejeuer un palier déjà validé ne crée aucune seconde mutatio
   assert.equal(body.replay, true);
   assert.equal(f.calls.updates, 0);
   assert.equal(f.calls.uploads, 0);
+});
+
+const driverParams = { params: Promise.resolve({ id: "own" }) };
+
+test("signature PNG + réceptionnaire : stockée, rattachée à la livraison, chemin jamais renvoyé", async () => {
+  const f = podRouteFixture();
+  const response = await f.route.PATCH(f.request("DELIVERED", { signature: f.png, recipient: "Mme Martin" }), driverParams);
+  assert.equal(response.status, 200);
+  assert.equal(f.calls.signatureUploads, 1);
+  assert.equal(f.calls.lastOptions?.podRecipientName, "Mme Martin");
+  assert.match(String(f.calls.lastOptions?.podSignaturePath), /own-sig-/);
+  assert.equal(JSON.stringify(await response.json()).includes("sig-"), false);
+});
+
+test("signature sans nom du réceptionnaire : refusée avant tout stockage", async () => {
+  const f = podRouteFixture();
+  const response = await f.route.PATCH(f.request("DELIVERED", { signature: f.png }), driverParams);
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).code, "POD_RECIPIENT_REQUIRED");
+  assert.deepEqual([f.calls.signatureUploads, f.calls.uploads, f.calls.updates], [0, 0, 0]);
+});
+
+test("signature requise par l'entreprise : absente refusée, refus de signer motivé accepté", async () => {
+  const f = podRouteFixture();
+  f.state.rules = { signatureRequired: true, emailToClient: true };
+  const absent = await f.route.PATCH(f.request("DELIVERED"), driverParams);
+  assert.equal(absent.status, 400);
+  assert.equal((await absent.json()).code, "POD_SIGNATURE_REQUIRED");
+  assert.equal(f.calls.updates, 0);
+  const noReason = await f.route.PATCH(f.request("DELIVERED", { refusal: "x" }), driverParams);
+  assert.equal(noReason.status, 400);
+  const refused = await f.route.PATCH(f.request("DELIVERED", { refusal: "Le destinataire refuse de signer" }), driverParams);
+  assert.equal(refused.status, 200);
+  assert.equal(f.calls.signatureUploads, 0);
+  assert.equal(f.calls.lastOptions?.podSignatureRefusedReason, "Le destinataire refuse de signer");
+});
+
+test("signature facultative par défaut : livraison sans signature acceptée", async () => {
+  const f = podRouteFixture();
+  assert.equal((await f.route.PATCH(f.request("DELIVERED"), driverParams)).status, 200);
+});
+
+test("signature et refus de signer ensemble, ou signature sur un échec : refusés", async () => {
+  const f = podRouteFixture();
+  const both = await f.route.PATCH(f.request("DELIVERED", { signature: f.png, recipient: "Paul", refusal: "refus" }), driverParams);
+  assert.equal((await both.json()).code, "POD_SIGNATURE_CONFLICT");
+  const failed = podRouteFixture();
+  const onFailure = await failed.route.PATCH(failed.request("FAILED", { failureCode: "ABSENT", signature: failed.png, recipient: "Paul" }), driverParams);
+  assert.equal(onFailure.status, 400);
+  assert.equal((await onFailure.json()).code, "POD_SIGNATURE_NOT_ALLOWED");
+  assert.equal(failed.calls.signatureUploads, 0);
+});
+
+test("signature trop grosse ou type invalide : 413 / 400 sans stockage", async () => {
+  const f = podRouteFixture();
+  assert.equal((await f.route.PATCH(f.request("DELIVERED", { signature: "oversized", recipient: "Paul" }), driverParams)).status, 413);
+  assert.equal((await f.route.PATCH(f.request("DELIVERED", { signature: "svg", recipient: "Paul" }), driverParams)).status, 400);
+  assert.equal((await f.route.PATCH(f.request("DELIVERED", { signature: Buffer.from("pas un png"), recipient: "Paul" }), driverParams)).status, 400);
+  assert.deepEqual([f.calls.signatureUploads, f.calls.uploads, f.calls.updates], [0, 0, 0]);
+});
+
+test("transaction en échec : la signature envoyée est supprimée avec la photo", async () => {
+  const f = podRouteFixture();
+  f.state.updateError = "DELIVERY_STATUS_CONFLICT";
+  const response = await f.route.PATCH(f.request("DELIVERED", { signature: f.png, recipient: "Paul" }), driverParams);
+  assert.equal(response.status, 409);
+  assert.equal(f.calls.signatureUploads, 1);
+  assert.equal(f.calls.signatureDeletes.length, 1);
+});
+
+test("double envoi (mode hors ligne rejoué) : même signature = replay sans second stockage, autre nom = 409", async () => {
+  const f = podRouteFixture();
+  const first = await f.route.PATCH(f.request("DELIVERED", { signature: f.png, recipient: "Paul" }), driverParams);
+  assert.equal(first.status, 200);
+  const replay = await f.route.PATCH(f.request("DELIVERED", { signature: f.png, recipient: "Paul" }), driverParams);
+  assert.equal((await replay.json()).replay, true);
+  assert.equal(f.calls.signatureUploads, 1);
+  const other = await f.route.PATCH(f.request("DELIVERED", { signature: f.png, recipient: "Jacques" }), driverParams);
+  assert.equal(other.status, 409);
+});
+
+test("livreur réaffecté ou mission d'une autre entreprise : 404 avant toute lecture de pièce", async () => {
+  let uploads = 0;
+  const route = load<typeof import("../src/app/api/driver/missions/[id]/route")>("src/app/api/driver/missions/[id]/route.ts", {
+    "next/server": { NextResponse },
+    "@/lib/api/auth-guard": { requireDriverRole: async () => ({ context: { user: { id: "ancien-livreur", companyId: "a" } } }) },
+    "@/services/prisma/client": { prisma: { delivery: { findFirst: async ({ where }: { where: Record<string, string> }) => {
+      assert.equal(where.driverId, "ancien-livreur"); assert.equal(where.companyId, "a"); return null;
+    } } } },
+    "@/domains/delivery/delivery.service": { getDriverMissionById: async () => null, updateDeliveryStatusByDriver: async () => { uploads++; } },
+    "@/lib/validations/delivery": validation,
+    "@/domains/delivery/driver-proximity.service": { DriverProximityError: class extends Error {} },
+    "@/lib/storage/pod": { MAX_POD_BYTES: 1, MAX_POD_REQUEST_BYTES: 1, uploadPodPhoto: async () => { uploads++; } },
+    "@/lib/pod/codes": codes,
+    "@/lib/storage/pod-signature": { MAX_SIGNATURE_BYTES: 1, uploadPodSignature: async () => { uploads++; } },
+    "@/domains/delivery/pod-evidence": podEvidence,
+    "@/domains/delivery/proof-settings.service": { getCompanyProofRules: async () => podEvidence.DEFAULT_PROOF_RULES },
+  });
+  const response = await route.PATCH(new Request("http://local", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "DELIVERED" }) }), driverParams);
+  assert.equal(response.status, 404); assert.equal(uploads, 0);
 });

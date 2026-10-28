@@ -4,7 +4,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { driverApi } from "./api";
 import { useDriverLocationSettings } from "./location-settings-hooks";
 import { useDriverActionQueue } from "./driver-action-queue-provider";
-import type { PodFailureCode } from "@/lib/pod/codes";
+import type { DriverPodPayload } from "./offline-action-queue";
+
+/** Règles de preuve de l'entreprise (signature requise ou non), mises en cache pour le mode hors ligne. */
+export function useDriverProofRules() {
+  return useQuery({
+    queryKey: ["driver", "proof-rules"],
+    queryFn: () => driverApi.getProofRules(),
+    staleTime: 10 * 60_000,
+    gcTime: 24 * 60 * 60_000,
+  });
+}
 
 export function useDriverMissions() {
   const { data: locationSettings } = useDriverLocationSettings();
@@ -74,12 +84,7 @@ export function useUpdateMissionStatus() {
       confirmOutOfRange?: boolean;
       latitude?: number;
       longitude?: number;
-      pod?: {
-        outcome: "SUCCESS" | "FAILED";
-        photo: Blob | null;
-        failureCode?: PodFailureCode;
-        note?: string;
-      };
+      pod?: DriverPodPayload;
     }) =>
       actionQueue.submit(id, {
         status,

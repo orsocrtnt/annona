@@ -1,4 +1,5 @@
 import type { DriverMission, DriverStats } from "./types";
+import type { DriverPodPayload } from "./offline-action-queue";
 import type { ProximityTargetKind } from "@/lib/maps/driver-proximity";
 import type { MissionProximityResult } from "@/domains/delivery/driver-proximity.service";
 
@@ -147,6 +148,8 @@ export const driverApi = {
     }),
   startMission: (id: string, expectedUpdatedAt: string) =>
     fetchJson<DriverMission>(`/api/driver/missions/${id}/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ expectedUpdatedAt }) }),
+  getProofRules: () => fetchJson<{ signatureRequired: boolean }>("/api/driver/proof-rules"),
+
   updateMissionStatus: (
     id: string,
     status: "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED",
@@ -155,12 +158,7 @@ export const driverApi = {
       confirmOutOfRange?: boolean;
       latitude?: number;
       longitude?: number;
-      pod?: {
-        outcome: "SUCCESS" | "FAILED";
-        photo?: Blob | null;
-        failureCode?: string;
-        note?: string;
-      };
+      pod?: Omit<DriverPodPayload, "photo" | "failureCode"> & { photo?: Blob | null; failureCode?: string };
     }
   ) => {
     if (options?.pod && (status === "DELIVERED" || status === "FAILED")) {
@@ -175,6 +173,11 @@ export const driverApi = {
       if (options.pod.photo) {
         form.set("photo", options.pod.photo, "proof.jpg");
       }
+      if (options.pod.recipientName) form.set("podRecipientName", options.pod.recipientName);
+      if (options.pod.signatureRefusedReason) {
+        form.set("podSignatureRefusedReason", options.pod.signatureRefusedReason);
+      }
+      if (options.pod.signature) form.set("signature", options.pod.signature, "signature.png");
       return fetchJson<DriverMission>(`/api/driver/missions/${id}`, {
         method: "PATCH",
         body: form,

@@ -2,18 +2,24 @@ import type { PodFailureCode } from "@/lib/pod/codes";
 
 export type QueuedDriverStatus = "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED";
 
+export type DriverPodPayload = {
+  outcome: "SUCCESS" | "FAILED";
+  photo: Blob | null;
+  failureCode?: PodFailureCode;
+  note?: string;
+  /** Signature PNG (null si absente) : conservée dans IndexedDB avec la photo quand le livreur est hors ligne. */
+  signature?: Blob | null;
+  recipientName?: string;
+  signatureRefusedReason?: string;
+};
+
 export type QueuedDriverActionPayload = {
   status: QueuedDriverStatus;
   purchaseItems?: { id: string; unitPrice: number }[];
   confirmOutOfRange?: boolean;
   latitude?: number;
   longitude?: number;
-  pod?: {
-    outcome: "SUCCESS" | "FAILED";
-    photo: Blob | null;
-    failureCode?: PodFailureCode;
-    note?: string;
-  };
+  pod?: DriverPodPayload;
 };
 
 export type QueuedDriverAction = {

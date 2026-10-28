@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/services/supabase/admin";
 import { stripPodPhotoMetadata } from "@/lib/storage/pod-image";
 
-const POD_BUCKET = "delivery-pods";
+export const POD_BUCKET = "delivery-pods";
 export const SIGNED_URL_SECONDS = 5 * 60;
 export const MAX_POD_BYTES = 5 * 1024 * 1024;
 export const MAX_POD_REQUEST_BYTES = MAX_POD_BYTES + 512 * 1024;
@@ -20,7 +20,7 @@ function validDimensions(width: number, height: number) {
     height <= MAX_POD_DIMENSION && width * height <= MAX_POD_PIXELS;
 }
 
-function validPng(bytes: Buffer) {
+export function validPng(bytes: Buffer) {
   if (bytes.length < 45 || !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return false;
   let offset = 8;
   let sawHeader = false;
@@ -95,7 +95,7 @@ export async function checkPodStorageHealth() {
   if (data.public) throw new Error("POD_STORAGE_PUBLIC");
 }
 
-async function ensurePodBucket() {
+export async function ensurePodBucket() {
   if (!bucketReady) {
     bucketReady = (async () => {
       const supabase = createAdminClient();

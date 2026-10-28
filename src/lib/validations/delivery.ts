@@ -23,6 +23,8 @@ export const updateDriverDeliveryStatusSchema = z.object({
   podOutcome: z.enum(["SUCCESS", "FAILED"]).optional(),
   podFailureCode: z.enum(POD_FAILURE_CODES).optional(),
   podNote: z.string().max(400).optional(),
+  podRecipientName: z.string().max(200).optional(),
+  podSignatureRefusedReason: z.string().max(300).optional(),
 });
 
 export const adminUpdateDeliverySchema = z.object({

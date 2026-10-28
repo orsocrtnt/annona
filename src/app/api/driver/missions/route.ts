@@ -7,6 +7,7 @@ import {
 } from "@/domains/delivery/delivery.service";
 import { parseDispatchSettings } from "@/domains/company/dispatch-settings.service";
 import { deliveryTiming } from "@/domains/delivery/delivery-timing";
+import { withoutSignaturePath } from "@/domains/delivery/pod-evidence";
 import { isPodPhotoPathForDelivery } from "@/lib/storage/pod";
 
 export async function GET() {
@@ -28,7 +29,8 @@ export async function GET() {
   ]);
 
   const safeMissions = missions.map((mission) => {
-    const { podPhotoPath, ...safeMission } = mission;
+    const { podPhotoPath, ...safeMissionWithSignature } = mission;
+    const safeMission = withoutSignaturePath(safeMissionWithSignature);
     // Même règle de retard que l'équipe et le client (UX-03) ; la prochaine action reste interne.
     const { dueAt, late, lateByMinutes } = deliveryTiming({
       status: mission.status,
