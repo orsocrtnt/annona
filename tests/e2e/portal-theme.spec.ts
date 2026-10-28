@@ -126,12 +126,56 @@ test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème res
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-test("la navigation client portail vers un autre espace retire le thème sombre", async ({ page }) => {
+/** Enregistre, à chaque image (avant peinture), le chemin, le thème et la présence du portail. */
+async function recordFrames(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { __frames: { path: string; theme: string | null; portal: boolean; sora: boolean }[] };
+    w.__frames = [];
+    const tick = () => {
+      w.__frames.push({
+        path: location.pathname,
+        theme: document.documentElement.getAttribute("data-theme"),
+        portal: document.querySelector("[data-portal-root]") !== null,
+        sora: document.documentElement.hasAttribute("data-portal"),
+      });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+const frames = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __frames: { path: string; theme: string | null; portal: boolean; sora: boolean }[] }).__frames);
+
+async function switchPersona(page: Page, label: "Administrateur" | "Client") {
+  await page.getByRole("combobox", { name: "Changer de vue de démonstration" }).click();
+  await page.getByRole("option", { name: label }).click();
+}
+
+test("navigation client portail ↔ dashboard : le Dark ne déborde pas et ne clignote pas", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await openPortal(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.goto("/");
+
+  // Portail → dashboard par clic (barre de démonstration, router.push) : aucun rechargement complet.
+  await recordFrames(page);
+  await switchPersona(page, "Administrateur");
+  await page.waitForURL("**/dashboard");
+  await expect(page.locator("[data-portal-root]")).toHaveCount(0);
   expect(await page.locator("html").getAttribute("data-theme")).toBeNull();
+  expect(await page.locator("html").getAttribute("data-portal")).toBeNull();
+  let seen = await frames(page);
+  expect(seen.length).toBeGreaterThan(0);
+  expect(seen.filter((f) => !f.portal && (f.theme === "dark" || f.sora)), "image hors portail en Dark ou en Sora").toEqual([]);
+
+  // Dashboard → portail : le Dark est posé dès la première image du portail (aucun éclair clair).
+  await recordFrames(page);
+  await switchPersona(page, "Client");
+  await page.waitForURL("**/portal");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  seen = await frames(page);
+  expect(seen.filter((f) => f.portal && f.theme !== "dark"), "image du portail sans le Dark").toEqual([]);
+  // Le recorder a survécu : les deux trajets étaient des navigations client, pas des chargements de page.
+  expect(await page.evaluate(() => typeof (window as unknown as { __frames?: unknown }).__frames)).toBe("object");
 });
 
 test("les boutons de la barre du portail font 44 px sans grandir la barre (56 px)", async ({ page }) => {
