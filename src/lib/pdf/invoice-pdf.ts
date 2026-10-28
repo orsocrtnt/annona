@@ -28,6 +28,21 @@ export interface InvoicePdfData {
   customerName?: string | null;
   customerEmail?: string | null;
   footerNote?: string | null;
+  /**
+   * Variante Factur-X uniquement : mentions légales visibles, alignées sur le XML embarqué.
+   * Absent : rendu du relevé classique strictement inchangé.
+   */
+  legal?: InvoicePdfLegalMentions;
+}
+
+export interface InvoicePdfLegalMentions {
+  /** Nature du document (« Facture »). */
+  documentLabel: string;
+  seller: { name: string; lines: string[] };
+  buyer: { name: string; lines: string[] };
+  /** Mentions obligatoires : forme/capital/RCS, exonération, conditions, pénalités, indemnité, escompte. */
+  mentions: string[];
+  footer: string;
 }
 
 /* Couleurs TutelLiv (DA Menthe). */
@@ -100,8 +115,10 @@ function roundedRect(page: PDFPage, x: number, y: number, width: number, height:
 }
 
 export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Array> {
+  const legal = data.legal;
+  const documentLabel = legal?.documentLabel ?? "Relevé de prestation";
   const doc = await PDFDocument.create();
-  doc.setTitle(`Relevé de prestation ${data.reference}`);
+  doc.setTitle(`${documentLabel} ${data.reference}`);
   doc.setCreator("TutelLiv");
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -174,14 +191,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   };
   const accent = () => page.drawRectangle({ x: 0, y: PAGE[1] - 4, width: PAGE[0], height: 4, color: MINT });
 
-  const companyName = data.company.name?.trim() || "Entreprise";
+  const companyName = legal?.seller.name.trim() || data.company.name?.trim() || "Entreprise";
   const statusLabel = INVOICE_STATUS_LABELS[data.status as InvoiceStatus] ?? data.status;
   const tone = STATUS_TONE[data.status] ?? NEUTRAL_TONE;
 
   // ── En-tête : identité de l'entreprise à gauche, nature et référence du document à droite ──
   accent();
   const top = 790;
-  const referenceWidth = Math.max(widthOf(data.reference, { size: 12, bold: true }), widthOf("RELEVÉ DE PRESTATION", LABEL));
+  const referenceWidth = Math.max(widthOf(data.reference, { size: 12, bold: true }), widthOf(documentLabel.toUpperCase(), LABEL));
   let headerBottom: number;
   if (companyLogo) {
     const scale = Math.min(170 / companyLogo.width, 52 / companyLogo.height, 1);
@@ -195,7 +212,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     for (const line of lines.slice(0, 2)) { text(line, MARGIN, y, { size, bold: true }); y -= size + 4; }
     headerBottom = y + size;
   }
-  labelRight("Relevé de prestation", RIGHT, top);
+  labelRight(documentLabel, RIGHT, top);
   textRight(data.reference, RIGHT, top - 18, { size: 12, bold: true });
 
   // ── Montant, statut et phrase de paiement ──
@@ -228,16 +245,23 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     }
     return rowY;
   };
-  const billedTo = [
-    data.customerName ? { value: data.customerName, strong: true } : null,
-    data.customerEmail ? { value: data.customerEmail } : null,
-  ].filter((row): row is { value: string; strong?: boolean } => Boolean(row));
-  const issuedBy = [
-    { value: companyName, strong: true },
-    data.company.address ? { value: data.company.address } : null,
-    data.company.city ? { value: data.company.city } : null,
-    data.company.email ? { value: data.company.email } : null,
-  ].filter((row): row is { value: string; strong?: boolean } => Boolean(row));
+  type Row = { value: string; strong?: boolean };
+  const billedTo = (legal
+    ? [{ value: legal.buyer.name, strong: true }, ...legal.buyer.lines.map((value) => ({ value })), data.customerEmail ? { value: data.customerEmail } : null]
+    : [
+        data.customerName ? { value: data.customerName, strong: true } : null,
+        data.customerEmail ? { value: data.customerEmail } : null,
+      ]
+  ).filter((row): row is Row => Boolean(row));
+  const issuedBy = (legal
+    ? [{ value: companyName, strong: true }, ...legal.seller.lines.map((value) => ({ value })), data.company.email ? { value: data.company.email } : null]
+    : [
+        { value: companyName, strong: true },
+        data.company.address ? { value: data.company.address } : null,
+        data.company.city ? { value: data.company.city } : null,
+        data.company.email ? { value: data.company.email } : null,
+      ]
+  ).filter((row): row is Row => Boolean(row));
   let colBottom = block(MARGIN, 150, "Facturé à", billedTo.length ? billedTo : [{ value: "—" }]);
   colBottom = Math.min(colBottom, block(COL_B, 150, "Émis par", issuedBy));
 
@@ -274,7 +298,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     page = doc.addPage(PAGE);
     accent();
     y = top;
-    label("Relevé de prestation", MARGIN, y);
+    label(documentLabel, MARGIN, y);
     textRight(data.reference, RIGHT, y, { size: 9, bold: true });
     y -= 44;
     if (table) tableHeader();
@@ -326,6 +350,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   };
   if (data.notes) note("Note", data.notes, INK);
   if (data.footerNote) note("Message", data.footerNote, MUTED);
+  if (legal?.mentions.length) note("Mentions légales", legal.mentions.join("\n"), MUTED);
 
   // ── Pied de page : édité avec TutelLiv, mention légale, pagination ──
   const logoWidth = 50;
@@ -334,9 +359,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     page = current;
     hairline(68);
     page.drawImage(tutelliv, { x: MARGIN, y: 42, width: logoWidth, height: logoHeight });
-    text("Relevé édité avec TutelLiv", MARGIN + logoWidth + 10, 48, { size: 7.5, color: MUTED });
+    text(legal ? "Facture éditée avec TutelLiv" : "Relevé édité avec TutelLiv", MARGIN + logoWidth + 10, 48, { size: 7.5, color: MUTED });
     textRight(`Page ${index + 1}/${doc.getPageCount()}`, RIGHT, 48, { size: 7.5, color: MUTED });
-    text("Document de suivi opérationnel — ne constitue pas une facture électronique réglementaire.", MARGIN, 28, { size: 6.5, color: SOFT });
+    text(legal?.footer ?? "Document de suivi opérationnel — ne constitue pas une facture électronique réglementaire.", MARGIN, 28, { size: 6.5, color: SOFT });
   }
 
   return doc.save();

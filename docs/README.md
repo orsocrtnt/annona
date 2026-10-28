@@ -16,6 +16,7 @@ Cet index distingue la documentation courante des preuves datées. En cas de con
 - [`AUTH_EMAIL_SETUP.md`](AUTH_EMAIL_SETUP.md) — activation des invitations et récupérations ;
 - [`DECISIONS_PRODUIT_COMMERCIALES.md`](DECISIONS_PRODUIT_COMMERCIALES.md) — segment, exclusions, offres, pilotes et commissions confirmés ;
 - [`SAAS_OFFERS_ARCHITECTURE.md`](SAAS_OFFERS_ARCHITECTURE.md) — architecture préparatoire des offres, quotas, droits et commissions ;
+- [`FACTURX.md`](FACTURX.md) — factures de livraison au format Factur-X : profil, contrôles, limites et point d'extension plateforme agréée ;
 - [`legal/README.md`](legal/README.md) — dossier préparatoire France pour la revue juridique, responsabilités, fournisseurs, inconnues et porte avant données réelles ;
 - [`operations/map-providers.md`](operations/map-providers.md) — fournisseurs cartographiques ;
 - [`operations/test2/README.md`](operations/test2/README.md) — recette reproductible ;

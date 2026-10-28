@@ -16,7 +16,7 @@ import type { CompanyOrder } from "./types";
 import { useCompanyTariffSettings } from "./tariff-settings-hooks";
 import { backOfficeApi } from "./api";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { Download, FileText, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -208,6 +208,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
               Payée le {formatDate(existingInvoice.paidAt)}
             </p>
           )}
+          <InvoiceDownloadLinks invoiceId={existingInvoice.id} />
         </CardContent>
       </Card>
     );
@@ -257,6 +258,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
               Échéance : {formatDate(existingInvoice.dueDate)}
             </p>
           )}
+          <InvoiceDownloadLinks invoiceId={existingInvoice.id} />
         </CardContent>
       </Card>
     );
@@ -430,5 +432,30 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Téléchargements du relevé : PDF classique et PDF Factur-X (XML CII embarqué). */
+function InvoiceDownloadLinks({ invoiceId }: { invoiceId: string }) {
+  const { can, isRole } = usePermissions();
+  if (!can("invoices:read") || !isRole(["COMPANY_ADMIN", "MINI_ADMIN"])) return null;
+  const base = `/api/invoices/${encodeURIComponent(invoiceId)}/pdf`;
+  return (
+    <div className="flex flex-wrap gap-2 pt-1" data-testid="invoice-downloads">
+      <Button variant="outline" size="sm" asChild>
+        <a href={base} target="_blank" rel="noopener noreferrer">
+          <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+          PDF
+          <span className="sr-only"> (nouvel onglet)</span>
+        </a>
+      </Button>
+      <Button variant="outline" size="sm" asChild>
+        <a href={`${base}?format=facturx`} target="_blank" rel="noopener noreferrer">
+          <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+          Factur-X
+          <span className="sr-only"> (PDF avec données de facture électronique, nouvel onglet)</span>
+        </a>
+      </Button>
+    </div>
   );
 }

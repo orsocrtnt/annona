@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useCompanyClient } from "@/features/back-office/hooks";
 import { DeliveryStatusBadge, OrderStatusBadge, TicketStatusBadge } from "@/features/client-portal/status-badges";
 import { ActivityList, PersonHeader, RecordRow, RelativeTime } from "@/features/back-office/detail-ui";
+import { ClientInvoiceIdentityCard } from "@/features/back-office/client-invoice-identity-card";
 import { formatPlace } from "@/lib/format/place";
 import { formatCurrency } from "@/features/client-portal/utils";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
@@ -109,6 +110,8 @@ export default function CompanyClientDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ClientInvoiceIdentityCard clientId={client.id} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

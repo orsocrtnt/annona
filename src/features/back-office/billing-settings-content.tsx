@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/loader";
+import { EinvoicingSettingsCard } from "@/features/back-office/einvoicing-settings-card";
 import { TariffSettingsForm } from "@/features/back-office/tariff-settings-form";
 import {
   useCompanyBillingSettings,
@@ -329,6 +330,8 @@ export function BillingSettingsContent() {
       >
         Enregistrer la facturation
       </Button>
+
+      {tab === "general" && <EinvoicingSettingsCard />}
     </div>
   );
 }
