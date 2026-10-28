@@ -174,8 +174,8 @@ test("DEMO-3 file : réglage désactivé, aucune tâche ; activé, une seule tâ
   assert.equal(first?.id, second?.id);
   assert.equal(on.jobs.length, 1);
   assert.equal(on.jobs[0]!.jobKey, "delivery-invoice:order_1");
-  assert.equal(on.jobs[0]!.type, "CLIENT_NOTIFICATION");
-  assert.deepEqual(on.jobs[0]!.payload, { kind: "DELIVERY_INVOICE", orderId: "order_1", companyId: "company_a" });
+  assert.equal(on.jobs[0]!.type, "DELIVERY_INVOICE", "type de tâche dédié");
+  assert.deepEqual(on.jobs[0]!.payload, { orderId: "order_1", companyId: "company_a" });
 });
 
 test("DEMO-3 génération : commande livrée, une facture émise avec zone, TVA, échéance et e-mail existant", async (t) => {
@@ -254,7 +254,8 @@ test("DEMO-3 génération : livraison échouée ou commande d'une autre entrepri
 
 test("DEMO-3 génération : sans zone ni achat, l'erreur est explicite (tâche en échec visible)", async (t) => {
   const { invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true, order: { shippingPostalCode: "69001" } });
-  await assert.rejects(createDeliveredOrderInvoice("company_a", "order_1"), /DELIVERY_INVOICE_EMPTY/);
+  await assert.rejects(createDeliveredOrderInvoice("company_a", "order_1"), (error: Error & { permanent?: boolean }) =>
+    error.message === "DELIVERY_INVOICE_EMPTY" && error.permanent === true);
   assert.equal(invoices.length, 0);
 });
 
@@ -267,8 +268,9 @@ test("DEMO-3 génération : client sans compte, la facture est émise sans e-mai
 
 test("DEMO-3 tâche : charge utile contrôlée, entreprise et commande transmises", async (t) => {
   const { invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true });
-  await assert.rejects(runDeliveryInvoiceJob({ kind: "DELIVERY_INVOICE" }), /DELIVERY_INVOICE_PAYLOAD_INVALID/);
-  await runDeliveryInvoiceJob({ kind: "DELIVERY_INVOICE", orderId: "order_1", companyId: "company_a" });
+  await assert.rejects(runDeliveryInvoiceJob({}), (error: Error & { permanent?: boolean }) =>
+    error.message === "DELIVERY_INVOICE_PAYLOAD_INVALID" && error.permanent === true);
+  await runDeliveryInvoiceJob({ orderId: "order_1", companyId: "company_a" });
   assert.equal(invoices.length, 1);
 });
 
@@ -322,5 +324,5 @@ test("DEMO-3 administrateur : « Livrée » depuis la commande met la facture en
   await updateCompanyOrderStatus("company_a", "order_1", "DELIVERED");
   assert.equal(order.status, "DELIVERED");
   assert.equal(invoiceJobs(jobs).length, 1);
-  assert.deepEqual(invoiceJobs(jobs)[0]!.payload, { kind: "DELIVERY_INVOICE", orderId: "order_1", companyId: "company_a" });
+  assert.deepEqual(invoiceJobs(jobs)[0]!.payload, { orderId: "order_1", companyId: "company_a" });
 });

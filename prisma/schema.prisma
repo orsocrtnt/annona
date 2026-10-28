@@ -108,6 +108,7 @@ enum OrderSource {
 enum OperationJobType {
   AUTO_DISPATCH
   CLIENT_NOTIFICATION
+  DELIVERY_INVOICE
 }
 
 enum OperationJobStatus {

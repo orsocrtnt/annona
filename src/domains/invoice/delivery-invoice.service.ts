@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { enqueueOperationJob } from "@/domains/operations/operation-job.service";
+import { enqueueOperationJob, permanentJobError } from "@/domains/operations/operation-job.service";
 import { parseBillingSettings } from "@/domains/company/billing-settings.service";
 import { createDeliveredOrderInvoice } from "@/domains/invoice/invoice.service";
 
@@ -11,8 +11,6 @@ import { createDeliveredOrderInvoice } from "@/domains/invoice/invoice.service";
  * la requête du livreur ; une erreur reste visible sur la tâche (lastError,
  * santé des traitements, incident cron) et la tâche est rejouée.
  */
-export const DELIVERY_INVOICE_JOB_KIND = "DELIVERY_INVOICE";
-
 type QueueDatabase = Pick<Prisma.TransactionClient, "company" | "operationJob">;
 
 export async function queueDeliveryInvoiceJob(
@@ -27,9 +25,9 @@ export async function queueDeliveryInvoiceJob(
   if (!parseBillingSettings(stored.billing).invoice.autoInvoiceOnDelivery) return null;
   return enqueueOperationJob(db, {
     jobKey: `delivery-invoice:${input.orderId}`,
-    type: "CLIENT_NOTIFICATION",
+    type: "DELIVERY_INVOICE",
     companyId: input.companyId,
-    payload: { kind: DELIVERY_INVOICE_JOB_KIND, orderId: input.orderId, companyId: input.companyId },
+    payload: { orderId: input.orderId, companyId: input.companyId },
   });
 }
 
@@ -37,6 +35,6 @@ export async function runDeliveryInvoiceJob(payload: Prisma.JsonValue) {
   const value = payload && typeof payload === "object" && !Array.isArray(payload) ? payload : {};
   const orderId = typeof value.orderId === "string" ? value.orderId : null;
   const companyId = typeof value.companyId === "string" ? value.companyId : null;
-  if (!orderId || !companyId) throw new Error("DELIVERY_INVOICE_PAYLOAD_INVALID");
+  if (!orderId || !companyId) throw permanentJobError("DELIVERY_INVOICE_PAYLOAD_INVALID");
   return createDeliveredOrderInvoice(companyId, orderId);
 }

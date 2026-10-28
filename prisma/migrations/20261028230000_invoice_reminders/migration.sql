@@ -1,4 +1,7 @@
--- DEMO-3 : trace des relances de factures de livraison (additive, aucune donnée existante modifiée).
+-- DEMO-3 : trace des relances de factures de livraison et type de tâche « facture à la livraison »
+-- (additive, aucune donnée existante modifiée).
+ALTER TYPE "OperationJobType" ADD VALUE 'DELIVERY_INVOICE';
+
 CREATE TABLE "invoice_reminders" (
     "id" TEXT NOT NULL,
     "channel" TEXT NOT NULL DEFAULT 'EMAIL',

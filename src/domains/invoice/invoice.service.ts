@@ -8,7 +8,7 @@ import {
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
 import { CLIENT_INVOICES_TAKE } from "@/lib/query/list-limits";
 import { queueInvoiceIssuedNotification } from "@/domains/client-portal/notify.service";
-import { kickOperationJob } from "@/domains/operations/operation-job.service";
+import { kickOperationJob, permanentJobError } from "@/domains/operations/operation-job.service";
 import { isInvoiceOutstanding, OUTSTANDING_INVOICE_STATUSES } from "@/domains/invoice/invoice-due";
 
 function generateInvoiceReference(prefix: string) {
@@ -234,9 +234,10 @@ export async function createDeliveredOrderInvoice(
     },
     billing.invoice.vatRate
   );
-  if (lineItems.length === 0) throw new Error("DELIVERY_INVOICE_EMPTY");
+  // Erreurs permanentes : rejouer ne changerait rien, la tâche passe directement en échec visible.
+  if (lineItems.length === 0) throw permanentJobError("DELIVERY_INVOICE_EMPTY");
   const amount = computeInvoiceTotal(lineItems);
-  if (amount > 99_999_999.99) throw new Error("INVOICE_AMOUNT_TOO_LARGE");
+  if (amount > 99_999_999.99) throw permanentJobError("INVOICE_AMOUNT_TOO_LARGE");
   const dueDate = new Date(Date.now() + billing.invoice.defaultDueDays * 24 * 60 * 60 * 1000);
 
   const outcome = await prisma.$transaction(async (tx) => {

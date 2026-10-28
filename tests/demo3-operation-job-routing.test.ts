@@ -7,7 +7,7 @@ import ts from "typescript";
 
 type Row = Record<string, unknown>;
 
-function loadService(calls: string[], options: { failInvoice?: boolean } = {}) {
+function loadService(calls: string[], options: { failInvoice?: "permanent" | "transient" } = {}) {
   const job: Row = {
     id: "job-1",
     jobKey: "",
@@ -48,7 +48,8 @@ function loadService(calls: string[], options: { failInvoice?: boolean } = {}) {
     "@/domains/invoice/delivery-invoice.service": {
       runDeliveryInvoiceJob: async (payload: Row) => {
         calls.push(`delivery-invoice:${payload.orderId}`);
-        if (options.failInvoice) throw new Error("DELIVERY_INVOICE_EMPTY");
+        if (options.failInvoice === "permanent") throw Object.assign(new Error("DELIVERY_INVOICE_EMPTY"), { permanent: true });
+        if (options.failInvoice === "transient") throw new Error("connexion perdue");
       },
     },
   };
@@ -57,7 +58,7 @@ function loadService(calls: string[], options: { failInvoice?: boolean } = {}) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   runInNewContext(js, {
-    Date, Error, Promise, Set, console: { error: () => undefined },
+    Date, Error, Object, Promise, Set, console: { error: () => undefined },
     exports: loaded.exports, module: loaded,
     require: (id: string) => {
       assert.ok(id in deps, `Unexpected dependency ${id}`);
@@ -79,15 +80,27 @@ test("DEMO-3 tâches : une relance de facture part par son propre traitement", a
   assert.equal(result?.status, "SUCCEEDED");
 });
 
-test("DEMO-3 tâches : la facture à la livraison passe par une tâche durable et son échec reste visible", async () => {
+test("DEMO-3 tâches : la facture à la livraison a son propre type et une erreur permanente n'est pas relancée", async () => {
   const calls: string[] = [];
-  const { service, job } = loadService(calls, { failInvoice: true });
-  job.jobKey = "delivery-invoice:order_1";
-  job.payload = { kind: "DELIVERY_INVOICE", orderId: "order_1", companyId: "company_a" };
+  const { service, job } = loadService(calls, { failInvoice: "permanent" });
+  job.type = "DELIVERY_INVOICE";
+  job.jobKey = "delivery-invoice:order_1:evt_1";
+  job.payload = { orderId: "order_1", companyId: "company_a" };
 
   const result = await service.processOperationJob("job-1", new Date("2026-10-28T10:00:00.000Z"));
 
   assert.deepEqual(calls, ["delivery-invoice:order_1"]);
-  assert.equal(result?.status, "PENDING", "rejouée plus tard");
-  assert.equal(result?.lastError, "DELIVERY_INVOICE_EMPTY", "erreur journalisée sur la tâche");
+  assert.equal(result?.status, "FAILED", "échec définitif dès la première tentative");
+  assert.equal(result?.attempts, 1);
+  assert.equal(result?.lastError, "DELIVERY_INVOICE_EMPTY", "erreur visible sur la tâche");
+});
+
+test("DEMO-3 tâches : une erreur passagère de la facture à la livraison est rejouée", async () => {
+  const calls: string[] = [];
+  const { service, job } = loadService(calls, { failInvoice: "transient" });
+  job.type = "DELIVERY_INVOICE";
+  job.payload = { orderId: "order_1", companyId: "company_a" };
+  const result = await service.processOperationJob("job-1", new Date("2026-10-28T10:00:00.000Z"));
+  assert.equal(result?.status, "PENDING");
+  assert.equal(result?.lastError, "connexion perdue");
 });

@@ -102,3 +102,9 @@ test("ADMIN-1 jobs : accès refusé avant lecture et aucune écriture", async ()
   assert.equal(ok.headers.get("cache-control"), "no-store");
   assert.deepEqual(reads, ["read"]);
 });
+
+test("DEMO-3 jobs : la facture à la livraison est un type filtrable dans l'exploitation", () => {
+  assert.ok("query" in parseOperationJobListParams(new URLSearchParams("type=DELIVERY_INVOICE")));
+  const page = readFileSync("src/app/(back-office)/admin/operations/page.tsx", "utf8");
+  assert.match(page, /value: "DELIVERY_INVOICE", label: "Facture à la livraison"/);
+});

@@ -31,6 +31,15 @@ function retryAt(attempts: number, now: Date) {
   return new Date(now.getTime() + delay);
 }
 
+/** Erreur qu'un nouvel essai ne corrigerait pas : la tâche passe en échec sans être relancée. */
+export function permanentJobError(message: string) {
+  return Object.assign(new Error(message), { permanent: true });
+}
+
+function isPermanentJobError(error: unknown) {
+  return Boolean(error && typeof error === "object" && (error as { permanent?: unknown }).permanent === true);
+}
+
 function safeError(error: unknown) {
   const message = error instanceof Error ? error.message : "Erreur inconnue";
   return message.replace(/[\r\n]+/g, " ").slice(0, 500);
@@ -120,21 +129,23 @@ async function executeJob(job: OperationJob) {
       await deliverOrderMessageNotification(messageId);
       return;
     }
-    // DEMO-3 : relance de facture et facture créée à la livraison (e-mail au client).
+    // DEMO-3 : relance de facture (e-mail au client).
     if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
       const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");
       await deliverInvoiceReminderJob(job.payload, job.jobKey);
-      return;
-    }
-    if (readString(job.payload, "kind") === "DELIVERY_INVOICE") {
-      const { runDeliveryInvoiceJob } = await import("@/domains/invoice/delivery-invoice.service");
-      await runDeliveryInvoiceJob(job.payload);
       return;
     }
     const { deliverClientNotificationJob } = await import(
       "@/domains/client-portal/notify.service"
     );
     await deliverClientNotificationJob(job.payload, job.jobKey);
+    return;
+  }
+
+  if (job.type === "DELIVERY_INVOICE") {
+    // DEMO-3 : facture émise après le passage en « Livrée », hors de la transition.
+    const { runDeliveryInvoiceJob } = await import("@/domains/invoice/delivery-invoice.service");
+    await runDeliveryInvoiceJob(job.payload);
     return;
   }
 
@@ -206,7 +217,7 @@ export async function processOperationJob(jobId: string, now?: Date) {
     return prisma.operationJob.findUnique({ where: { id: jobId } });
   } catch (error) {
     const failedAt = now ?? new Date();
-    const terminal = claimed.attempts >= claimed.maxAttempts;
+    const terminal = claimed.attempts >= claimed.maxAttempts || isPermanentJobError(error);
     await prisma.operationJob.updateMany({
       where: {
         id: jobId,
