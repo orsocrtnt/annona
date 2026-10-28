@@ -145,3 +145,21 @@ test("Sora (titres DESIGN.md) est chargée par le seul portail ; le layout racin
   assert.match(read("src/app/(client-portal)/layout.tsx"), /sora\.variable[\s\S]*h1,h2,h3/);
   assert.doesNotMatch(read("src/app/layout.tsx"), /Sora/);
 });
+
+test("verre des cartes : valeurs historiques en repli hors portail, surfaces sombres en Dark", async () => {
+  const { mapGlassCardStyle, mapGlassButtonStyle } = await import("../src/components/maps/map-glass-styles");
+  // Hors portail, aucune variable --map-glass-* n'existe : le repli doit être la valeur de preproduction.
+  assert.equal(mapGlassCardStyle.background, "var(--map-glass-bg, rgba(255, 255, 255, 0.97))");
+  assert.equal(mapGlassCardStyle.backdropFilter, "var(--map-glass-blur, blur(8px))");
+  assert.equal(mapGlassCardStyle.border, "1px solid var(--map-glass-border, rgba(10, 10, 10, 0.10))");
+  assert.equal(mapGlassCardStyle.boxShadow, "var(--map-glass-shadow, 0 8px 28px rgba(0, 0, 0, 0.10))");
+  assert.equal(mapGlassButtonStyle.background, "var(--map-glass-button-bg, #ffffff)");
+  assert.equal(mapGlassButtonStyle.color, "var(--map-glass-button-fg, #111111)");
+  const darkBlock = between(':root[data-theme="dark"] {', "}");
+  for (const name of ["--map-glass-bg", "--map-glass-border", "--map-glass-shadow", "--map-glass-button-bg", "--map-glass-button-fg"]) {
+    assert.match(darkBlock, new RegExp(`${name}:`), `${name} absent du Dark`);
+  }
+  // Le texte atténué du Dark (#a3aca6) doit rester lisible sur la surface de verre sombre (#1c1f1e).
+  assert.ok(ratio(dark.get("--color-muted-foreground")!, "#1c1f1e") >= 4.5);
+  assert.match(darkBlock, /--map-glass-bg: rgb\(28 31 30 \/ 0\.94\)/);
+});

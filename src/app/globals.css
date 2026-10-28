@@ -95,6 +95,12 @@
   --color-warning-subtle: #3a2f1c;
   --color-error: #f08a82;
   --color-error-subtle: #3d2523;
+  /* Panneaux et boutons flottants des cartes (map-glass-styles.ts) : surfaces sombres sur le plan. */
+  --map-glass-bg: rgb(28 31 30 / 0.94);
+  --map-glass-border: rgb(255 255 255 / 0.1);
+  --map-glass-shadow: 0 8px 28px rgb(0 0 0 / 0.45);
+  --map-glass-button-bg: #1c1f1e;
+  --map-glass-button-fg: #eef1ef;
   color-scheme: dark;
 }
 

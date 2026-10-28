@@ -5,14 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
 import { isPurchasingPhase } from "@/features/back-office/dispatch-delivery-map-state";
 import { mapGlassCardStyle } from "@/components/maps/map-glass-styles";
-
-/** Panneaux flottants du portail : verre sur jetons (le plan reste clair, le texte suit le thème). */
-const portalGlassCardStyle = {
-  ...mapGlassCardStyle,
-  background: "color-mix(in srgb, var(--color-card) 97%, transparent)",
-  border: "1px solid var(--color-border)",
-  color: "var(--color-card-foreground)",
-} as const;
 import { cn } from "@/lib/utils";
 import { ChevronDown, History, Package, ShoppingBag, Truck } from "lucide-react";
 import { ReorderOrderButton } from "@/features/client-portal/reorder-order-button";
@@ -29,8 +21,8 @@ interface PortalDeliveriesMapPanelProps {
 
 function deliveryBadgeClasses(category: DeliveryCategory) {
   return category === "COURIER"
-    ? "border-border bg-muted text-foreground"
-    : "border-foreground bg-foreground text-background";
+    ? "border-zinc-300 bg-zinc-100 text-zinc-900 dark:border-border dark:bg-muted dark:text-foreground"
+    : "border-black bg-black text-white dark:border-foreground dark:bg-foreground dark:text-background";
 }
 
 function formatHistoryDate(value: string | null) {
@@ -61,11 +53,11 @@ function DeliveryListItem({
       className={cn(
         "w-full rounded-xl border p-3 transition-all",
         isSelected
-          ? "border-foreground bg-card shadow-[inset_3px_0_0_var(--color-foreground)]"
-          : "border-border bg-card/90 hover:border-foreground/40 hover:bg-card"
+          ? "border-black bg-white shadow-[inset_3px_0_0_#111111] dark:border-foreground dark:bg-card dark:shadow-[inset_3px_0_0_var(--color-foreground)]"
+          : "border-zinc-200 bg-white/90 hover:border-zinc-400 hover:bg-white dark:border-border dark:bg-card/90 dark:hover:border-foreground/40 dark:hover:bg-card"
       )}
     >
-      <button type="button" onClick={onSelect} className="w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <button type="button" onClick={onSelect} className="w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:focus-visible:ring-ring dark:focus-visible:ring-offset-card">
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium">{delivery.reference}</span>
           <Badge className={deliveryBadgeClasses(delivery.deliveryCategory)}>
@@ -100,7 +92,7 @@ function DeliveryListItem({
           <p className="mt-2 text-xs text-muted-foreground">{delivery.driverName}</p>
         )}
 
-        <p className="mt-1 text-xs font-semibold text-foreground">{delivery.statusLabel}</p>
+        <p className="mt-1 text-xs font-semibold text-zinc-900 dark:text-foreground">{delivery.statusLabel}</p>
 
         {isHistorical && historyDate && (
           <p className="mt-1 text-xs text-muted-foreground">Terminée le {historyDate}</p>
@@ -149,11 +141,11 @@ export function PortalDeliveriesMapPanel({
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-opacity hover:opacity-95"
-        style={portalGlassCardStyle}
+        style={mapGlassCardStyle}
         aria-expanded={open}
         aria-controls="portal-deliveries-panel"
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-foreground text-background">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-foreground dark:text-background">
           {tab === "history" ? <History className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
         </div>
         <div className="min-w-0 flex-1">
@@ -182,10 +174,10 @@ export function PortalDeliveriesMapPanel({
         <div
           id="portal-deliveries-panel"
           className="mt-2 max-h-[min(420px,50vh)] overflow-hidden rounded-2xl"
-          style={portalGlassCardStyle}
+          style={mapGlassCardStyle}
         >
-          <div className="border-b border-border p-2">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+          <div className="border-b border-black/10 p-2 dark:border-border">
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-muted">
               <button
                 type="button"
                 aria-pressed={tab === "active"}
@@ -193,8 +185,8 @@ export function PortalDeliveriesMapPanel({
                 className={cn(
                   "min-h-11 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "active"
-                    ? "bg-foreground text-background shadow-sm"
-                    : "text-muted-foreground hover:bg-card"
+                    ? "bg-black text-white shadow-sm dark:bg-foreground dark:text-background"
+                    : "text-muted-foreground hover:bg-white dark:hover:bg-card"
                 )}
               >
                 En cours ({activeDeliveries.length})
@@ -206,8 +198,8 @@ export function PortalDeliveriesMapPanel({
                 className={cn(
                   "min-h-11 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "history"
-                    ? "bg-foreground text-background shadow-sm"
-                    : "text-muted-foreground hover:bg-card"
+                    ? "bg-black text-white shadow-sm dark:bg-foreground dark:text-background"
+                    : "text-muted-foreground hover:bg-white dark:hover:bg-card"
                 )}
               >
                 Historique ({historyDeliveries.length})

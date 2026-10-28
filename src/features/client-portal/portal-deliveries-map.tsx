@@ -136,7 +136,7 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
         <button
           type="button"
           aria-label="Zoomer"
-          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:focus-visible:ring-ring dark:focus-visible:ring-offset-background"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomIn()}
         >
@@ -145,7 +145,7 @@ export function PortalDeliveriesMap({ fullscreen = true, height = 480 }: PortalD
         <button
           type="button"
           aria-label="Dézoomer"
-          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:focus-visible:ring-ring dark:focus-visible:ring-offset-background"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomOut()}
         >
