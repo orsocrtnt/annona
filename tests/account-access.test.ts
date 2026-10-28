@@ -172,7 +172,7 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
       } }) },
       "@/services/supabase/admin": { createAdminClient: () => assert.fail("unexpected admin call") },
       "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
-      "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), beginLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
+      "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
       "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
       "@/domains/auth/auth.service": { ...authService, syncUserFromSupabase: async () => structuredClone(current) },
       "@/domains/user/user.service": { ...userService, getUserPermissions: async () => userService.extractPermissionSlugs(current) },

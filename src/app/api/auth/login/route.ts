@@ -30,9 +30,8 @@ import {
 } from "@/domains/demo/demo-pool.service";
 import { getSessionSaasAccess } from "@/domains/saas/saas-session";
 import {
-  beginLoginAttempt,
-  loginAttemptKeys,
   settleLoginAttempt,
+  startLoginAttempt,
 } from "@/domains/auth/login-rate-limit.service";
 import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
 
@@ -80,10 +79,14 @@ export async function POST(request: Request) {
     const { email, password } = parsed.data;
     const normalizedEmail = normalizeEmail(email);
     // SEC-2 : contrôle avant Supabase ; réponse identique que le compte existe ou non.
-    const attemptKeys = loginAttemptKeys(normalizedEmail, contactSourceFromHeaders(request.headers), {
-      trackEmail: !isDemoLoginEmail(normalizedEmail),
-    });
-    const [rateLimit, supabase] = await Promise.all([beginLoginAttempt(attemptKeys), createClient()]);
+    const [rateLimit, supabase] = await Promise.all([
+      startLoginAttempt({
+        email: normalizedEmail,
+        source: contactSourceFromHeaders(request.headers),
+        trackEmail: !isDemoLoginEmail(normalizedEmail),
+      }),
+      createClient(),
+    ]);
     if (!rateLimit.allowed) {
       const minutes = Math.ceil(rateLimit.retryAfterSeconds / 60);
       return NextResponse.json(

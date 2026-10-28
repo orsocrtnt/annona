@@ -122,7 +122,7 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
       signOut: async () => { signOuts++; },
     } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
-    "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), beginLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
+    "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
     "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": { syncUserFromSupabase: async () => user, getDashboardPathForRole: () => "/dashboard", UserNotProvisionedError: class extends Error {} },
     "@/domains/user/user.service": {

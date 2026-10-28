@@ -12,8 +12,9 @@ import {
   beginLoginAttempt,
   loginAttemptKeys,
   settleLoginAttempt,
-  type LoginAttemptKeys,
+  startLoginAttempt,
 } from "../src/domains/auth/login-rate-limit.service";
+import * as limiter from "../src/domains/auth/login-rate-limit.service";
 
 // SEC-2 : limitation des échecs de connexion. Chaque tentative est réservée (comptage puis
 // insertion sous verrou consultatif) avant Supabase, puis soldée : échec conservé, succès
@@ -177,7 +178,7 @@ test("base indisponible (migration non appliquée) : connexion permise, erreur j
 });
 
 // Route : le contrôle précède Supabase, la réponse ne dépend pas de l'existence du compte.
-function loadLoginRoute(options: { blocked?: number; signIn: "ok" | "invalid" | "down"; demo?: boolean }) {
+function loadLoginRoute(options: { blocked?: number; signIn: "ok" | "invalid" | "down"; demo?: boolean; realLimiter?: boolean }) {
   const calls: string[] = [];
   const afterTasks: Array<() => Promise<void>> = [];
   const user = { id: "u", email: "user@example.test", companyId: "a", company: { isDemo: false }, role: { systemRole: "CLIENT" }, settings: null };
@@ -195,12 +196,11 @@ function loadLoginRoute(options: { blocked?: number; signIn: "ok" | "invalid" | 
       },
       signOut: async () => ({ error: null }),
     } }) },
-    "@/domains/auth/login-rate-limit.service": {
-      loginAttemptKeys: (email: string, source: string, opts: { trackEmail?: boolean }) => {
-        calls.push(`keys:${email}:${source}:${opts.trackEmail === false ? "source-only" : "email"}`);
-        return { pairKey: "pair-key", emailKey: opts.trackEmail === false ? null : "email-key", sourceKey: "source-key" } satisfies LoginAttemptKeys;
+    "@/domains/auth/login-rate-limit.service": options.realLimiter ? limiter : {
+      startLoginAttempt: async ({ email, source, trackEmail }: { email: string; source: string; trackEmail: boolean }) => {
+        calls.push(`begin:${email}:${source}:${trackEmail ? "email" : "source-only"}`);
+        return options.blocked ? { allowed: false, retryAfterSeconds: options.blocked } : { allowed: true, attempt: { ids: ["r1"] } };
       },
-      beginLoginAttempt: async () => { calls.push("begin"); return options.blocked ? { allowed: false, retryAfterSeconds: options.blocked } : { allowed: true, attempt: { ids: ["r1"] } }; },
       settleLoginAttempt: async (_attempt: unknown, outcome: string) => { calls.push(`settle:${outcome}`); },
     },
     "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "203.0.113.10" },
@@ -233,17 +233,17 @@ test("route : bloquée -> 429 en français avec Retry-After, Supabase jamais app
   const body = await response.json();
   assert.match(body.error, /Trop de tentatives.*10 minutes/);
   assert.doesNotMatch(JSON.stringify(body), /introuvable|inexistant|existe/);
-  assert.deepEqual(route.calls, ["keys:user@example.test:203.0.113.10:email", "begin"]);
+  assert.deepEqual(route.calls, ["begin:user@example.test:203.0.113.10:email"]);
 });
 
 test("route : échec d'identifiants conservé, panne Supabase annulée, succès soldé", async () => {
   const invalid = loadLoginRoute({ signIn: "invalid" });
   assert.equal((await invalid.POST(loginRequest())).status, 401);
-  assert.deepEqual(invalid.calls.slice(1), ["begin", "signIn", "settle:failure"]);
+  assert.deepEqual(invalid.calls.slice(1), ["signIn", "settle:failure"]);
 
   const down = loadLoginRoute({ signIn: "down" });
   assert.equal((await down.POST(loginRequest())).status, 503);
-  assert.deepEqual(down.calls.slice(1), ["begin", "signIn", "settle:cancelled"]);
+  assert.deepEqual(down.calls.slice(1), ["signIn", "settle:cancelled"]);
 
   const ok = loadLoginRoute({ signIn: "ok" });
   assert.equal((await ok.POST(loginRequest())).status, 200);
@@ -255,5 +255,30 @@ test("route : échec d'identifiants conservé, panne Supabase annulée, succès 
 test("route : compte démo public limité par source seulement", async () => {
   const route = loadLoginRoute({ signIn: "invalid", demo: true });
   await route.POST(loginRequest("demo@example.test"));
-  assert.equal(route.calls[0], "keys:demo@example.test:203.0.113.10:source-only");
+  assert.equal(route.calls[0], "begin:demo@example.test:203.0.113.10:source-only");
+});
+
+function withoutSecrets(t: test.TestContext) {
+  for (const key of ["CONTACT_HMAC_SECRET", "SUPABASE_SERVICE_ROLE_KEY"]) {
+    const previous = process.env[key];
+    delete process.env[key];
+    t.after(() => { if (previous !== undefined) process.env[key] = previous; });
+  }
+}
+
+test("secret HMAC absent : tentative permise sans réservation, erreur journalisée", async (t) => {
+  withoutSecrets(t);
+  const logged: unknown[] = [];
+  t.mock.method(console, "error", (...args: unknown[]) => { logged.push(args); });
+  const { db, rows } = memoryDb();
+  assert.deepEqual(await startLoginAttempt({ email: "user@example.test", source: "198.51.100.7", trackEmail: true }, { db }), { allowed: true, attempt: null });
+  assert.equal(rows.length, 0);
+  assert.equal(logged.length, 1);
+});
+
+test("route avec le vrai limiteur et sans secret : mauvais mot de passe -> 401, pas 500", async (t) => {
+  withoutSecrets(t);
+  t.mock.method(console, "error", () => {});
+  const route = loadLoginRoute({ signIn: "invalid", realLimiter: true });
+  assert.equal((await route.POST(loginRequest())).status, 401);
 });

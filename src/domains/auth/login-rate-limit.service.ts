@@ -99,6 +99,24 @@ export async function beginLoginAttempt(
 }
 
 /**
+ * Point d'entrée de la route : le calcul des empreintes fait partie du contrôle permissif.
+ * Secret HMAC absent ou autre erreur : connexion permise, erreur journalisée.
+ */
+export async function startLoginAttempt(
+  input: { email: string; source: string; trackEmail: boolean },
+  options: { now?: Date; db?: LoginAttemptDatabase; secret?: string } = {}
+): Promise<LoginAttemptGate> {
+  let keys: LoginAttemptKeys;
+  try {
+    keys = loginAttemptKeys(input.email, input.source, { secret: options.secret, trackEmail: input.trackEmail });
+  } catch (error) {
+    console.error("Login rate limit keys failed:", error instanceof Error ? error.message : "unknown");
+    return { allowed: true, attempt: null };
+  }
+  return beginLoginAttempt(keys, options);
+}
+
+/**
  * Échec d'identifiants : la réservation reste comptée. Succès : elle est retirée et les
  * compteurs e-mail et e-mail + source repartent à zéro (celui de la source est conservé, sinon
  * un compte valide permettrait d'essayer d'autres adresses). Panne fournisseur : retirée.
