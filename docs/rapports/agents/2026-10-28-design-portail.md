@@ -1,4 +1,68 @@
-# DESIGN-1, tranche portail client et mode Dark (agent Design, 28 octobre 2026)
+# DESIGN-1, tranche portail : reprise « voir puis corriger » (agent Design Opus, 28 octobre 2026)
+
+Branche `agent/design-portail`, worktree `agent-a0bddf0480f83815b`. Captures réelles (Chrome, Playwright) relues à l'écran, comparaison pixel à pixel avec preproduction.
+
+## 1. Skills et références
+`tutelliv-model-router`, `impeccable` (contexte chargé ; `craft-floor.md`, `critique.md` et `polish.md` lus en entier, appliqués sur les captures), `design:accessibility-review`, `tutelliv-recette`. La critique s'est faite dans un seul contexte, sans les sous-agents A et B : un seul agent d'exécution, conformément à `AGENTS.md`.
+
+## 2. Les 10 défauts
+| # | Statut | Commit | Preuve |
+|---|---|---|---|
+| 1 | corrigé | 5e4fa36 | `apres/portal_deliveries-dark-*.png`, test unitaire du verre |
+| 2 | corrigé | 26728a4, 5c896a4 | `apres/carte-statut-dark-390.png`, test « fond blanc + jeton → dark: » |
+| 3 | corrigé | a2da095, c3b88be, 91d5599 | E2E 44 px (390 et 1 280) ; barre de 58 px, comme preproduction |
+| 4 | corrigé | 61e0d68 | `apres/menu-mobile-{light,dark}-390.png`, E2E `portal-mobile-account` |
+| 5 | corrigé | f8fcfa9, 5e4fa36, 6e32da8 | dossier `diff/` : Light à moins de 1 % de la référence, hors améliorations volontaires et données de démonstration |
+| 6 | corrigé | 46537a8, 47b5977 | E2E : navigation par clic portail ↔ dashboard, enregistrement image par image, première image du rechargement en Dark |
+| 7 | corrigé | a2de04b | script généré depuis `resolveRootTheme`, équivalence testée dans `vm` (84 cas) |
+| 8 | corrigé | 009581d | E2E : titre du tiroir et libellé de menu (dans `<body>`) en Sora |
+| 9 | corrigé | 952404f | `[data-glass]` et `--map-glass-blur` ; le test vérifie les sélecteurs réellement posés |
+| 10 | corrigé | af95b33 | une seule constante `dropdownMenuItemClass` |
+
+Défauts trouvés sur capture et corrigés en plus : focus clavier invisible dans les menus (c32fe19) ; tiroir « Personnaliser » masqué par la barre de démonstration, bouton Fermer trop petit (eadfe3a) ; bannière d'erreur de la carte à 3,8:1 (4c90807) ; carte imbriquée dans le formulaire (6e32da8).
+
+## 3. Captures (`outputs/recette-agents/design/`, local)
+- `reference/` : 32 captures de preproduction en Light, à 390 et 1 280 px : 10 pages du portail, plus `/dashboard`, `/dispatch` et `/driver/missions` avec l'OS en clair puis en sombre.
+- `apres/` : les mêmes pages en Light et en Dark, plus les états d'erreur (commandes, carte), de chargement (factures), de liste vide (récurrentes), les menus mobiles et le tiroir.
+- `/portal/notifications` n'existe pas (404).
+
+Écarts volontaires du Light, chacun visible dans `diff/` :
+- cibles de 44 px : boutons `touch` ; « Commander à nouveau » ;
+- titres en Sora (prévu par `DESIGN.md`) ;
+- texte à 12 px minimum : initiales de l'avatar, badge ;
+- avatar masqué sous 640 px et repris dans le menu ;
+- barre d'action collante sur mobile dans le formulaire de commande ;
+- interrupteur éteint plus contrasté ;
+- bannière d'erreur de la carte plus contrastée.
+
+## 4. E2E
+`portal-theme.spec.ts` (9 tests) et `v1-roles.spec.ts` (1 test) : 10 réussis, 0 échec, sur le port 3110 avec la base `tutelliv-dev`.
+
+## 5. `npm run check`
+Code de sortie 0 ; 748 tests, 748 réussis.
+
+## 6. Diff
+`git diff --stat preproduction...HEAD` : 50 fichiers, +1 089, −144.
+
+## 7. Non vérifié
+- Lecteur d'écran et zoom à 200 %.
+- Hors portail, `prefers-reduced-transparency` n'est pas appliqué (choix de périmètre).
+- Libellés de la barre de statut de carte à 10 et 11 px : composant partagé avec le back-office.
+- L'état d'erreur des commandes n'a pas de bouton « Réessayer ».
+- Une ressource en 404 dans la console, déjà présente en preproduction.
+- `/portal/profile`.
+
+## 8. Nettoyage
+- Serveurs arrêtés : PID 76358 (référence) et le serveur de branche, deux fois. Les ports 3100 à 3129 sont libres.
+- Seuls les personas de démonstration ont été utilisés, déconnectés à chaque fin de script. Aucun compte `dev-role-accounts` n'a été créé et aucune donnée n'a été écrite.
+
+## 9. Texte proposé pour `TODO.md`
+« DESIGN-1, tranche portail : Light identique à preproduction (comparaison pixel, écarts volontaires listés), Dark Encre + Pastel recetté à l'écran sur 10 pages à 390 et 1 280 px, avec les états vide, chargement et erreur. Cartes, menus et tiroirs lisibles. Cibles de 44 px. Sora dans tout le portail. `prefers-reduced-transparency` effectif. E2E 10/10, check 748/748. Reste : lecteur d'écran, zoom 200 %, plan de carte sombre (MAP-3). »
+
+---
+
+# Historique : passe 1 (agent précédent, sans rendu)
+
 
 Branche `agent/design-portail`, partie de `preproduction` (9234600). Aucune règle métier, API, schéma ni donnée touchés ; présentation uniquement. Recette navigateur et captures : à faire par l'orchestrateur (rien n'a été lancé dans un navigateur).
 
