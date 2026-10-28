@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import * as podEvidence from "../src/domains/delivery/pod-evidence";
 
 type Row = Record<string, unknown>;
 
@@ -35,7 +36,7 @@ function fixture(settings?: {
   deliveryAlerts?: boolean;
   invoiceAlerts?: boolean;
   emailNotifications?: boolean;
-}) {
+}, options?: { companySettings?: unknown; appUrl?: string }) {
   const notifications = new Map<string, Row>();
   const emails: Array<{ idempotencyKey: string | null; body: string }> = [];
   const providerDeliveries = new Map<string, string>();
@@ -61,7 +62,7 @@ function fixture(settings?: {
         where.id === "delivery-a" &&
         where.customerId === "client-a" &&
         where.companyId === "company-a"
-          ? { id: where.id }
+          ? { id: where.id, company: { settings: options?.companySettings ?? {} } }
           : null,
     },
     invoice: {
@@ -101,6 +102,7 @@ function fixture(settings?: {
         },
       },
       "@/services/prisma/client": { prisma },
+      "@/domains/delivery/pod-evidence": podEvidence,
       "./settings.service": {
         getClientSettings: async () => ({
           deliveryAlerts: settings?.deliveryAlerts ?? true,
@@ -110,7 +112,7 @@ function fixture(settings?: {
       },
     },
     {
-      process: { env: {} },
+      process: { env: options?.appUrl ? { NEXT_PUBLIC_APP_URL: options.appUrl } : {} },
     }
   );
 
@@ -199,4 +201,36 @@ test("deux transitions légitimes vers le même statut ont deux tâches, un reje
   assert.equal(first?.id, replay?.id);
   assert.notEqual(first?.id, secondTransition?.id);
   assert.equal(f.jobs.size, 2);
+});
+
+test("preuve de livraison : livrée ou en échec, l'e-mail porte le lien du portail et la clé d'idempotence de l'événement", async () => {
+  for (const status of ["DELIVERED", "FAILED"] as const) {
+    const f = fixture(undefined, { appUrl: "https://app.tutelliv.test" });
+    const eventKey = `client-notification:delivery:delivery-a:${status}`;
+    await f.service.deliverClientNotificationJob({ ...payload, status }, eventKey);
+    assert.equal(f.emails.length, 1);
+    assert.equal(f.emails[0]?.idempotencyKey, eventKey);
+    assert.match(f.emails[0]!.body, /https:\/\/app\.tutelliv\.test\/portal\/deliveries\/delivery-a/);
+    assert.equal(f.notifications.size, 1);
+  }
+});
+
+test("preuve de livraison : l'entreprise peut couper l'e-mail, la notification dans l'application reste", async () => {
+  const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } }, appUrl: "https://app.tutelliv.test" });
+  await f.service.deliverClientNotificationJob(payload, "client-notification:delivery:delivery-a:off");
+  assert.equal(f.emails.length, 0);
+  assert.equal(f.notifications.size, 1);
+});
+
+test("preuve de livraison : le coupe-circuit de l'entreprise ne concerne pas les autres statuts", async () => {
+  const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } } });
+  await f.service.deliverClientNotificationJob({ ...payload, status: "IN_DELIVERY" }, "client-notification:delivery:delivery-a:transit");
+  assert.equal(f.emails.length, 1);
+});
+
+test("preuve de livraison : sans URL d'application, le message part sans lien (aucun lien inventé)", async () => {
+  const f = fixture();
+  await f.service.deliverClientNotificationJob(payload, "client-notification:delivery:delivery-a:nolink");
+  assert.equal(f.emails.length, 1);
+  assert.doesNotMatch(f.emails[0]!.body, /https?:/);
 });

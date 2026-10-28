@@ -10,6 +10,7 @@ import {
   sendTransactionalEmail,
 } from "@/lib/email/transactional-email";
 import { prisma } from "@/services/prisma/client";
+import { parseProofRules } from "@/domains/delivery/pod-evidence";
 import { getClientSettings } from "./settings.service";
 
 export type ClientNotificationType = "DELIVERY" | "INVOICE" | "SUPPORT";
@@ -257,11 +258,22 @@ export async function deliverClientNotificationJob(
         customerId: payload.customerId,
         companyId: payload.companyId,
       },
-      select: { id: true },
+      select: { id: true, company: { select: { settings: true } } },
     });
     if (!delivery) return;
     const copy = DELIVERY_COPY[payload.status]!;
     const body = copy.body(payload.reference);
+    // Livrée ou en échec : la preuve est envoyée au donneur d'ordre, sauf coupure par l'entreprise.
+    const isProofStatus = payload.status === "DELIVERED" || payload.status === "FAILED";
+    const proofRules = parseProofRules(
+      (delivery.company?.settings as Record<string, unknown> | null | undefined)?.proofRules
+    );
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
+    const emailBody =
+      isProofStatus && appUrl
+        ? `${body}\nPreuve de livraison (signature, photo, PDF) : ${appUrl}/portal/deliveries/${payload.deliveryId}`
+        : body;
+    const emailAllowed = !isProofStatus || proofRules.emailToClient;
     await insertNotification(eventKey, {
       userId: payload.customerId,
       type: "DELIVERY",
@@ -269,8 +281,8 @@ export async function deliverClientNotificationJob(
       body,
       href: `/portal/deliveries/${payload.deliveryId}`,
       email:
-        settings.emailNotifications && user.email
-          ? { to: user.email, subject: copy.title, text: body }
+        settings.emailNotifications && emailAllowed && user.email
+          ? { to: user.email, subject: copy.title, text: emailBody }
           : undefined,
     });
     return;
