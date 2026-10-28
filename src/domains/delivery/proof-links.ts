@@ -11,11 +11,10 @@ type ProofLinkRow = {
   podSignaturePath?: string | null;
 };
 
-const TERMINAL_STATUSES = ["DELIVERED", "FAILED", "INVOICED", "PAID"];
-
 export function proofLinks(basePath: string, row: ProofLinkRow) {
   const base = `${basePath}/${encodeURIComponent(row.id)}/proof`;
-  const hasProof = Boolean(row.podOutcome) || (row.status != null && TERMINAL_STATUSES.includes(row.status));
+  // Le PDF n'existe que si une preuve a été saisie (`podOutcome`) ; sinon la route répondrait 404.
+  const hasProof = Boolean(row.podOutcome);
   return {
     podPhotoUrl: row.podPhotoPath ? `${base}/photo` : null,
     podSignatureUrl: row.podSignaturePath ? `${base}/signature` : null,

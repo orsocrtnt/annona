@@ -21,6 +21,13 @@ test("omitStoragePaths retire les chemins de preuve à toute profondeur, sans to
   assert.equal(input.podPhotoPath, "a/d1-1.jpg", "l'entrée n'est pas modifiée");
 });
 
+test("lien PDF : affiché seulement si une preuve existe (le PDF répond 404 sans podOutcome)", () => {
+  assert.equal(proofLinks.proofLinks("/api/deliveries", { id: "d1", status: "DELIVERED" }).podPdfUrl, null);
+  assert.equal(proofLinks.proofLinks("/api/deliveries", { id: "d1", status: "PAID", podOutcome: null }).podPdfUrl, null);
+  assert.equal(proofLinks.proofLinks("/api/deliveries", { id: "d1", status: "FAILED", podOutcome: "FAILED" }).podPdfUrl, "/api/deliveries/d1/proof/pdf");
+  assert.equal(proofLinks.proofLinks("/api/portal/deliveries", { id: "d 2", podOutcome: "SUCCESS" }).podPdfUrl, "/api/portal/deliveries/d%202/proof/pdf");
+});
+
 // Routes qui renvoient des lignes de livraison issues de services sans `select` : toutes doivent filtrer.
 const ROUTES_RETURNING_DELIVERY_ROWS = [
   "src/app/api/deliveries/route.ts",
