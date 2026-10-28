@@ -8,6 +8,7 @@ import {
 import { resolveDeadline } from "../src/domains/order-intake/order-intake.deadline";
 import { buildOrderIntakeDraft, normalizePhone, parseSender } from "../src/domains/order-intake/order-intake.draft";
 import { ORDER_INTAKE_SYSTEM_PROMPT, buildOrderIntakeUserContent } from "../src/domains/order-intake/order-intake.prompt";
+import { matchCustomerBySender } from "../src/domains/order-intake/order-intake.customer";
 import { OrderIntakeProviderError, type OrderIntakeModelProvider } from "../src/domains/order-intake/order-intake.provider";
 import { ORDER_INTAKE_DAILY_LIMIT, ORDER_INTAKE_HOURLY_LIMIT } from "../src/domains/order-intake/order-intake.usage";
 import { readOrderIntakeSettings, isOrderIntakeConfigured, setOrderIntakeEnabled } from "../src/domains/order-intake/order-intake.settings";
@@ -165,6 +166,19 @@ function memoryDb(options: {
         return found ? select(found) : null;
       },
       findMany: async ({ where }: { where: Record<string, unknown> }) => users.filter((user) => matchesUser(user, where)).map(select),
+    },
+    // Rapprochement téléphone exécuté en SQL : la base mémoire rejoue le même filtre (entreprise,
+    // CLIENT actif, numéro normalisé), trié par identifiant et limité à deux lignes.
+    $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      events.push("phone-sql");
+      const sql = strings.join("?");
+      assert.match(sql, /regexp_replace/);
+      const [companyId, phone] = values as [string, string];
+      return users
+        .filter((user) => user.companyId === companyId && user.systemRole === "CLIENT" && user.status === "ACTIVE" && normalizePhone(user.phone) === phone)
+        .map((user) => ({ id: user.id }))
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .slice(0, 2);
     },
     // Lecture seule des commandes existantes : aucune méthode d'écriture n'est exposée.
     order: {
@@ -705,6 +719,37 @@ test("INTAKE relecture 9 : Retry-After suit la fenêtre réellement atteinte", a
   const daily = Array.from({ length: ORDER_INTAKE_DAILY_LIMIT }, (_, index) => ({ id: `d${index}`, companyId: "company-a", createdAt: minutesAgo(5 * 60 - index * 0.01), status: "SUCCEEDED" }));
   const day = await analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.sms }, { db: memoryDb({ usage: daily }).db as never, env: ENV, now: NOW, provider: fakeProvider(SMS_EXTRACTION) });
   assert.deepEqual(day, { status: "rate_limited", retryAfterSeconds: 19 * 3600 });
+});
+
+test("INTAKE relecture 10 : rapprochement par téléphone comparé en SQL, déterministe, sans charger les clients", async () => {
+  const queries: Array<{ sql: string; values: unknown[] }> = [];
+  const db = {
+    user: {
+      findMany: async () => assert.fail("aucun chargement de la liste des clients"),
+      findFirst: async ({ where }: { where: { id: string; companyId: string } }) =>
+        where.id === "client-a" && where.companyId === "company-a"
+          ? { id: "client-a", email: "sophie.leroy@cabinet-martin.example", firstName: "Sophie", lastName: "Leroy" }
+          : null,
+    },
+    $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      queries.push({ sql: strings.join("?"), values });
+      return [{ id: "client-a" }];
+    },
+  };
+  const match = await matchCustomerBySender("company-a", "+33 6 12 34 56 78", db as never);
+  assert.equal(match?.customerId, "client-a");
+  assert.equal(match?.matchedBy, "phone");
+  const { sql, values } = queries[0]!;
+  assert.match(sql, /regexp_replace/);
+  assert.match(sql, /"company_id" = \?/);
+  assert.match(sql, /"system_role" = 'CLIENT'/);
+  assert.match(sql, /"status" = 'ACTIVE'/);
+  assert.match(sql, /ORDER BY u\."id"/);
+  assert.match(sql, /LIMIT 2/);
+  assert.deepEqual(values, ["company-a", "0612345678"]);
+
+  const twins = { ...db, $queryRaw: async () => [{ id: "client-a" }, { id: "client-b" }] };
+  assert.equal(await matchCustomerBySender("company-a", "0612345678", twins as never), null);
 });
 
 test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélectionné", async () => {

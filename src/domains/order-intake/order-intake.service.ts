@@ -10,7 +10,7 @@ import { orderIntakeExtractionSchema, orderIntakeRequestSchema } from "./order-i
 import { ORDER_INTAKE_API_KEY_ENV, getOrderIntakeSettings, isOrderIntakeConfigured } from "./order-intake.settings";
 import { completeOrderIntakeCall, releaseOrderIntakeCall, reserveOrderIntakeCall } from "./order-intake.usage";
 
-type OrderIntakeDb = Pick<typeof prisma, "company" | "user" | "orderIntakeUsage" | "$transaction">;
+type OrderIntakeDb = Pick<typeof prisma, "company" | "user" | "orderIntakeUsage" | "$transaction" | "$queryRaw">;
 
 export type AnalyzeOrderMessageResult =
   | { status: "ok"; draft: OrderIntakeDraft }
