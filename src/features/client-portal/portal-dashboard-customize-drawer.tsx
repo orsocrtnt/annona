@@ -324,6 +324,7 @@ function WidgetToggleRow({
         <button
           type="button"
           role="switch"
+          aria-label={`Afficher : ${label}`}
           aria-checked={visible}
           onClick={() => onToggle(!visible)}
           className={cn(

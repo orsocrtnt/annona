@@ -46,7 +46,7 @@ export function PortalNotificationsBell({ className }: { className?: string }) {
           {unread.length > 0 ? (
             <button
               type="button"
-              className="text-xs font-normal text-brand hover:underline"
+              className="inline-flex min-h-11 items-center rounded-md px-2 text-xs font-normal text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => markRead.mutate(undefined)}
             >
               Tout marquer lu
