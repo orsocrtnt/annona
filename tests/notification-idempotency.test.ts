@@ -215,11 +215,14 @@ test("preuve de livraison : livrée ou en échec, l'e-mail porte le lien du port
   }
 });
 
-test("preuve de livraison : l'entreprise peut couper l'e-mail, la notification dans l'application reste", async () => {
-  const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } }, appUrl: "https://app.tutelliv.test" });
-  await f.service.deliverClientNotificationJob(payload, "client-notification:delivery:delivery-a:off");
-  assert.equal(f.emails.length, 0);
-  assert.equal(f.notifications.size, 1);
+test("preuve de livraison : l'entreprise coupe seulement le lien de preuve ; l'e-mail de statut part toujours", async () => {
+  for (const status of ["DELIVERED", "FAILED"] as const) {
+    const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } }, appUrl: "https://app.tutelliv.test" });
+    await f.service.deliverClientNotificationJob({ ...payload, status }, `client-notification:delivery:delivery-a:off-${status}`);
+    assert.equal(f.emails.length, 1, "l'information de livraison n'est pas supprimée");
+    assert.doesNotMatch(f.emails[0]!.body, /https?:/);
+    assert.equal(f.notifications.size, 1);
+  }
 });
 
 test("preuve de livraison : le coupe-circuit de l'entreprise ne concerne pas les autres statuts", async () => {

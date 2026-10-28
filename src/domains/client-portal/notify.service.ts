@@ -269,11 +269,11 @@ export async function deliverClientNotificationJob(
       (delivery.company?.settings as Record<string, unknown> | null | undefined)?.proofRules
     );
     const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
+    // `emailToClient=false` retire seulement le lien de preuve : le client reçoit toujours l'e-mail de statut.
     const emailBody =
-      isProofStatus && appUrl
+      isProofStatus && proofRules.emailToClient && appUrl
         ? `${body}\nPreuve de livraison (signature, photo, PDF) : ${appUrl}/portal/deliveries/${payload.deliveryId}`
         : body;
-    const emailAllowed = !isProofStatus || proofRules.emailToClient;
     await insertNotification(eventKey, {
       userId: payload.customerId,
       type: "DELIVERY",
@@ -281,7 +281,7 @@ export async function deliverClientNotificationJob(
       body,
       href: `/portal/deliveries/${payload.deliveryId}`,
       email:
-        settings.emailNotifications && emailAllowed && user.email
+        settings.emailNotifications && user.email
           ? { to: user.email, subject: copy.title, text: emailBody }
           : undefined,
     });
