@@ -14,7 +14,9 @@ import { isPodSignaturePathForDelivery } from "@/lib/storage/pod-signature";
 
 // Technical ceilings, not retention policy. Binary downloads are sequential.
 export const COMPANY_ARCHIVE_LIMITS = {
+  // Plafonds distincts : une photo et sa signature ne consomment pas le même quota.
   maxProofs: 1_000,
+  maxSignatures: 1_000,
   maxProofBytes: MAX_POD_BYTES,
   maxTotalProofBytes: 256 * 1024 * 1024,
   // company.json is streamed page by page: this caps the file on disk, not memory.
@@ -47,6 +49,7 @@ async function downloadPrivateProof(objectKey: string, signal: AbortSignal) {
 // Checks the streamed graph page by page, so the whole export is never held in memory.
 function createGraphGuard(companyId: string, limits: Limits) {
   const expected = new Map<string, string>();
+  const counts = { photo: 0, signature: 0 };
   const orders = new Set<string>();
   const deliveries = new Set<string>();
   let started = false;
@@ -71,14 +74,16 @@ function createGraphGuard(companyId: string, limits: Limits) {
               throw new Error("ARCHIVE_INVALID_PROOF_PATH");
             }
             expected.set(`${delivery.id}:photo`, delivery.podPhotoPath);
-            if (expected.size > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+            counts.photo += 1;
+            if (counts.photo > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
           }
           if (delivery.podSignaturePath) {
             if (!isPodSignaturePathForDelivery(delivery.podSignaturePath, companyId, delivery.id)) {
               throw new Error("ARCHIVE_INVALID_PROOF_PATH");
             }
             expected.set(`${delivery.id}:signature`, delivery.podSignaturePath);
-            if (expected.size > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+            counts.signature += 1;
+            if (counts.signature > limits.maxSignatures) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
           }
         }
       }
@@ -86,7 +91,10 @@ function createGraphGuard(companyId: string, limits: Limits) {
     proofs(summary: CompanyExportSummary) {
       if (!started) throw new Error("ARCHIVE_COMPANY_MISMATCH");
       const proofs = summary.externalAssets.proofObjects;
-      if (proofs.length > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+      if (proofs.filter((proof) => proof.kind !== "signature").length > limits.maxProofs ||
+        proofs.filter((proof) => proof.kind === "signature").length > limits.maxSignatures) {
+        throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+      }
       if (expected.size !== proofs.length) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
       for (const proof of proofs) {
         const key = `${proof.deliveryId}:${proof.kind ?? "photo"}`;
@@ -163,7 +171,9 @@ export async function exportCompanyArchive(
     const jsonSha256 = jsonHash.digest("hex");
     if (await digestFile(jsonPath) !== jsonSha256) throw new Error("ARCHIVE_INTEGRITY_FAILED");
     if (proofs.length) await dependencies.checkStorage();
-    const entries = [{ path: "company.json", bytes: jsonBytes, sha256: jsonSha256, deliveryId: null as string | null }];
+    const entries: Array<{ path: string; bytes: number; sha256: string; deliveryId: string | null; kind?: "photo" | "signature" }> = [
+      { path: "company.json", bytes: jsonBytes, sha256: jsonSha256, deliveryId: null },
+    ];
     let totalProofBytes = 0;
     for (const [index, proof] of proofs.entries()) {
       const controller = new AbortController();
@@ -204,7 +214,7 @@ export async function exportCompanyArchive(
         } finally { await file.close(); }
         const sha256 = hash.digest("hex");
         if (await digestFile(destination) !== sha256) throw new Error("ARCHIVE_INTEGRITY_FAILED");
-        entries.push({ path: relativePath, bytes, sha256, deliveryId: proof.deliveryId });
+        entries.push({ path: relativePath, bytes, sha256, deliveryId: proof.deliveryId, kind: proof.kind ?? "photo" });
       } catch (error) {
         if (controller.signal.aborted) throw new Error("ARCHIVE_DOWNLOAD_TIMEOUT");
         // Do not expose provider URLs, signed query parameters or response bodies.
@@ -218,7 +228,9 @@ export async function exportCompanyArchive(
     }
     const manifest = {
       schema: "tutelliv-company-archive", version: 1, complete: true, companyId,
-      createdAt: new Date().toISOString(), algorithm: "sha256", totalProofBytes, proofCount: proofs.length, entries,
+      createdAt: new Date().toISOString(), algorithm: "sha256", totalProofBytes, proofCount: proofs.length,
+      photoCount: proofs.filter((proof) => proof.kind !== "signature").length,
+      signatureCount: proofs.filter((proof) => proof.kind === "signature").length, entries,
     };
     await writeFile(join(staging, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n", { mode: 0o600, flag: "wx" });
     const manifestSha256 = await digestFile(join(staging, "manifest.json"));
