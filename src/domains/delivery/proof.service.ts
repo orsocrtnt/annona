@@ -40,7 +40,6 @@ async function loadProofDelivery(scope: ProofScope) {
       pickupAddress: true,
       pickupCity: true,
       pickupPostalCode: true,
-      driverName: true,
       missionStartedAt: true,
       completedAt: true,
       podOutcome: true,
@@ -57,7 +56,6 @@ async function loadProofDelivery(scope: ProofScope) {
       customer: { select: { firstName: true, lastName: true, email: true } },
       order: { select: { reference: true, customerEmail: true } },
       company: { select: { name: true } },
-      driver: { select: { firstName: true, lastName: true } },
     },
   });
 }
@@ -84,7 +82,7 @@ export async function buildDeliveryProofPdf(scope: ProofScope): Promise<{ bytes:
       ? addressLine(delivery.pickupAddress, delivery.pickupPostalCode, delivery.pickupCity)
       : null,
     deliveryAddress: addressLine(delivery.address, delivery.postalCode, delivery.city),
-    driverName: delivery.driverName ?? personName(delivery.driver),
+    // Le nom du livreur n'est volontairement pas transmis au donneur d'ordre (CNIL, docs/legal/SOURCES.md).
     pickedUpAt: delivery.missionStartedAt,
     completedAt: delivery.podCapturedAt ?? delivery.completedAt,
     position:

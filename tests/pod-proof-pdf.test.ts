@@ -122,7 +122,11 @@ test("preuve : le back-office de l'entreprise obtient PDF, photo et signature (U
   assert.equal(pdf.headers.get("content-type"), "application/pdf");
   assert.match(pdf.headers.get("content-disposition") ?? "", /preuve-LIV-1\.pdf/);
   assert.equal(pdf.headers.get("cache-control"), "private, no-store");
-  assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString(), "%PDF-");
+  const pdfBytes = new Uint8Array(await pdf.arrayBuffer());
+  assert.equal(Buffer.from(pdfBytes).subarray(0, 5).toString(), "%PDF-");
+  const content = await pdfText(pdfBytes);
+  assert.ok(content.text.includes("Mme Martin"));
+  assert.ok(!content.text.includes("Luc"), "le nom du livreur n'est pas transmis au donneur d'ordre");
   for (const kind of ["photo", "signature"]) {
     const redirect = await service.serveProofFile(kind, { companyId: "company-a", deliveryId: "d1" });
     assert.equal(redirect.status, 307);
