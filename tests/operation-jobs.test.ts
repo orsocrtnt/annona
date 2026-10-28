@@ -153,6 +153,7 @@ function fixture(options?: {
 
   const service = load<typeof import("../src/domains/operations/operation-job.service")>({
     "@/services/prisma/client": { prisma },
+    "@/lib/operations/after-response": { runAfterResponse: (task: () => Promise<unknown>) => void task() },
     "@/domains/saas/saas.service": { assertSaasMutationFeature: async () => ({}) },
     "@/domains/delivery/auto-dispatch.service": {
       tryAutoAssignDelivery: async (_companyId: string, deliveryId: string) => {
@@ -256,6 +257,78 @@ test("deux workers concurrents ne produisent qu'un effet", async () => {
 
   assert.deepEqual(f.executions, ["dispatch:delivery-3"]);
   assert.equal(f.jobs[0]?.status, "SUCCEEDED");
+});
+
+test("deux passages du filet cron qui se chevauchent n'exécutent chaque tâche qu'une fois", async () => {
+  const f = fixture();
+  for (const n of [1, 2, 3]) {
+    f.addJob({
+      jobKey: `auto-dispatch:delivery-cron-${n}`,
+      type: "AUTO_DISPATCH",
+      payload: { companyId: "company-a", deliveryId: `delivery-cron-${n}` },
+    });
+  }
+  const [a, b] = await Promise.all([
+    f.service.processDueOperationJobs(f.base),
+    f.service.processDueOperationJobs(f.base),
+  ]);
+  assert.equal(f.executions.length, 3);
+  assert.equal(new Set(f.executions).size, 3);
+  assert.equal(a.succeeded + b.succeeded, 3);
+  assert.ok(f.jobs.every((job) => job.status === "SUCCEEDED" && job.attempts === 1));
+  const idle = await f.service.processDueOperationJobs(f.base);
+  assert.equal(idle.processed, 0);
+});
+
+test("le filet cron signale les tâches PENDING en retard de plus de 15 minutes", async () => {
+  const f = fixture({ failNotification: true });
+  f.addJob({
+    jobKey: "notification:delivery-late:DELIVERED",
+    type: "CLIENT_NOTIFICATION",
+    payload: { deliveryId: "delivery-late" },
+    nextAttemptAt: new Date(f.base.getTime() - 20 * 60_000),
+  });
+  f.addJob({
+    jobKey: "auto-dispatch:delivery-fresh",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-fresh" },
+    nextAttemptAt: new Date(f.base.getTime() + 60_000),
+  });
+  const result = await f.service.processDueOperationJobs(f.base);
+  // La tâche en échec est replanifiée dans le futur : elle n'est plus en retard.
+  assert.equal(result.overdue, 0);
+  const late = f.addJob({
+    jobKey: "auto-dispatch:delivery-stuck",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-stuck" },
+    nextAttemptAt: new Date(f.base.getTime() - 20 * 60_000),
+    status: "PROCESSING",
+    lockedAt: f.base,
+  });
+  assert.ok(late);
+  assert.equal(await f.service.countOverduePendingJobs(f.base), 0);
+  f.jobs[f.jobs.length - 1]!.status = "PENDING";
+  f.jobs[f.jobs.length - 1]!.lockedAt = null;
+  assert.equal(await f.service.countOverduePendingJobs(f.base), 1);
+});
+
+test("le retard compte aussi les tâches PROCESSING dont le bail a expiré sans reprise", async () => {
+  const f = fixture();
+  f.addJob({
+    jobKey: "auto-dispatch:delivery-frozen",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-frozen" },
+    status: "PROCESSING",
+    lockedAt: new Date(f.base.getTime() - 30 * 60_000),
+  });
+  f.addJob({
+    jobKey: "auto-dispatch:delivery-running",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-running" },
+    status: "PROCESSING",
+    lockedAt: new Date(f.base.getTime() - 60_000),
+  });
+  assert.equal(await f.service.countOverduePendingJobs(f.base), 1);
 });
 
 test("trois échecs bornés deviennent visibles sans boucle infinie", async () => {

@@ -4,9 +4,14 @@ import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
 
 /**
  * Reprend les effets différés (dispatch et notifications) après une erreur ou
- * une interruption. À appeler chaque minute avec le même CRON_SECRET que les
+ * une interruption. Appelée toutes les 5 minutes par GitHub Actions
+ * (.github/workflows/cron-operations.yml) avec le même CRON_SECRET que les
  * commandes récurrentes.
  */
+// Un lot de 50 tâches (dispatch, e-mails) doit pouvoir finir : durée maximale
+// explicite ; le --max-time du workflow GitHub doit rester supérieur ou égal.
+export const maxDuration = 60;
+
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
@@ -17,6 +22,7 @@ export async function GET(request: Request) {
 
   try {
     const result = await processDueOperationJobs();
+    // Les deux conditions sont évaluées : un échec terminal ne masque pas un retard.
     if (result.failed > 0) {
       await reportOperationalIncident({
         source: "cron.operations",
@@ -25,6 +31,17 @@ export async function GET(request: Request) {
         severity: "critical",
         context: result,
       });
+    }
+    if (result.overdue > 0) {
+      await reportOperationalIncident({
+        source: "cron.operations",
+        fingerprint: "operation-jobs-overdue",
+        summary: "Des traitements opérationnels sont en attente depuis plus de 15 minutes.",
+        severity: "error",
+        context: result,
+      });
+    }
+    if (result.failed > 0 || result.overdue > 0) {
       return NextResponse.json({ data: result, success: false }, { status: 503 });
     }
     return NextResponse.json({ data: result, success: true });

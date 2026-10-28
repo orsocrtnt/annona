@@ -6,7 +6,7 @@ L'état et l'ordre du travail sont suivis dans [`TODO.md`](TODO.md). Les instruc
 
 ## Démarrage local
 
-Configuration vérifiée le 16 octobre 2026 avec Node.js 22.18 et npm 10.9. Node.js 20.19 ou 22 est recommandé.
+Version attendue : Node.js 22.18 (`.nvmrc`, champ `engines` de `package.json`, CI GitHub Actions), npm 10.9. Avec nvm : `nvm use`. Une autre version n'est pas bloquée (`engine-strict` désactivé) mais npm affiche un avertissement. Dans Vercel, régler « Node.js Version » du projet sur 22.x (action du propriétaire).
 
 ```bash
 npm ci

@@ -1,8 +1,10 @@
 import type { OperationJob, Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { assertSaasMutationFeature } from "@/domains/saas/saas.service";
+import { runAfterResponse } from "@/lib/operations/after-response";
 
 const OPERATION_JOB_TAKE = 50;
+const OPERATION_JOB_OVERDUE_MS = 15 * 60 * 1000;
 const OPERATION_JOB_LEASE_MS = 5 * 60 * 1000;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 30 * 60_000] as const;
 
@@ -213,8 +215,10 @@ export async function processOperationJob(jobId: string, now?: Date) {
 }
 
 export function kickOperationJob(jobId: string) {
-  void processOperationJob(jobId).catch((error) => {
-    console.error("[operation-job] lancement", jobId, safeError(error));
+  // after() garde la fonction Vercel vivante jusqu'à la fin du traitement ;
+  // le filet /api/cron/operations reprend de toute façon les tâches restées PENDING.
+  runAfterResponse(() => processOperationJob(jobId), {
+    log: (...args) => console.error("[operation-job] lancement", jobId, ...args.map((a) => String(a).replace(/[\r\n]+/g, " ").slice(0, 500))),
   });
 }
 
@@ -232,7 +236,7 @@ export async function processDueOperationJobs(now = new Date()) {
     select: { id: true },
   });
 
-  const result = { processed: 0, succeeded: 0, pending: 0, failed: 0 };
+  const result = { processed: 0, succeeded: 0, pending: 0, failed: 0, overdue: 0 };
   for (const job of jobs) {
     const updated = await processOperationJob(job.id);
     if (!updated) continue;
@@ -241,7 +245,27 @@ export async function processDueOperationJobs(now = new Date()) {
     else if (updated.status === "FAILED") result.failed += 1;
     else result.pending += 1;
   }
+  result.overdue = await countOverduePendingJobs(now);
   return result;
+}
+
+/**
+ * Tâches PENDING dont l'échéance est dépassée, ou PROCESSING au bail expiré,
+ * depuis plus de OPERATION_JOB_OVERDUE_MS : le filet n'a pas pu les reprendre
+ * (cron arrêté, lot saturé, fonction gelée). Les tâches replanifiées plus tard
+ * ne comptent pas.
+ */
+export async function countOverduePendingJobs(now = new Date()) {
+  const threshold = new Date(now.getTime() - OPERATION_JOB_OVERDUE_MS);
+  return prisma.operationJob.count({
+    where: {
+      OR: [
+        { status: "PENDING", nextAttemptAt: { lte: threshold } },
+        // Bail expiré depuis longtemps et jamais repris (fonction gelée, lot plein).
+        { status: "PROCESSING", lockedAt: { lte: threshold } },
+      ],
+    },
+  });
 }
 
 export async function getOperationJobHealth(companyId: string): Promise<OperationJobHealth> {
