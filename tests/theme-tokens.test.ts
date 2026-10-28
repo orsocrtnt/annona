@@ -188,3 +188,9 @@ test("cartes partagées : un fond blanc codé en dur avec un texte en jeton port
     }
   }
 });
+
+test("les entrées de menu simples et radio partagent une seule constante de classes", () => {
+  const src = readFileSync(new URL("../src/components/ui/dropdown-menu.tsx", import.meta.url), "utf8");
+  assert.equal(src.match(/focus:bg-accent focus:text-accent-foreground/g)?.length, 1);
+  assert.equal(src.match(/\bdropdownMenuItemClass,/g)?.length, 2);
+});
