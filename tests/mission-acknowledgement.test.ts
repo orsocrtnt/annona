@@ -6,6 +6,8 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as eligibility from "../src/lib/dispatch/driver-eligibility";
 import * as dispatchSettings from "../src/lib/validations/dispatch-settings";
+import * as proximity from "../src/lib/dispatch/dispatch-proximity";
+import * as trackingPolicy from "../src/domains/tracking/tracking.policy";
 
 type Row = Record<string, unknown>;
 function load<T>(file: string, deps: Record<string, unknown>): T {
@@ -126,7 +128,7 @@ test("ACK : auto-dispatch traite la perte du libre choix comme conflit terminal"
   const { tryAutoAssignDelivery } = load<{
     tryAutoAssignDelivery: (company: string, id: string) => Promise<{ assigned: boolean; skippedReason: string }>;
   }>("src/domains/delivery/auto-dispatch.service.ts", {
-    "@/services/prisma/client": { prisma: { delivery: { findFirst: async () => ({ id: "delivery", driverId: null, status: "PENDING", deliveryCategory: "STANDARD", postalCode: "75001" }) } } },
+    "@/services/prisma/client": { prisma: { delivery: { findFirst: async () => ({ id: "delivery", driverId: null, status: "PENDING", deliveryCategory: "STANDARD", postalCode: "75001" }) }, user: { findMany: async () => [] } } },
     "@/domains/company/dispatch-settings.service": { getCompanyDispatchSettings: async () => settings },
     "@/domains/company/tariff-settings.service": { getCompanyTariffSettings: async () => ({ tariffZones: [] }) },
     "@/lib/tariff/find-tariff-zone": { findTariffZoneForPostalCode: () => null },
@@ -135,6 +137,8 @@ test("ACK : auto-dispatch traite la perte du libre choix comme conflit terminal"
       assignDeliveryToDriver: async () => { throw new Error("DELIVERY_NOT_AVAILABLE"); },
     },
     "@/lib/dispatch/driver-eligibility": eligibility,
+    "@/lib/dispatch/dispatch-proximity": proximity,
+    "@/domains/tracking/tracking.policy": trackingPolicy,
     "@/lib/query/list-limits": { AUTO_DISPATCH_QUEUE_TAKE: 100 },
     "@/lib/validations/dispatch-settings": dispatchSettings,
   });
