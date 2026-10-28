@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**57 tâches terminées sur 93 — 61 %**
+**57 tâches terminées sur 94 — 61 %**
 
-`████████████░░░░░░░░` · 36 tâches restantes
+`████████████░░░░░░░░` · 37 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -200,6 +200,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | DISPATCH-4 | A | Outil de dispatch avancé : score pondéré réglable, temps de trajet réel, tournées, suggestions, réoptimisation. | Périmètre à cadrer avec le propriétaire. | Élevée · GPT‑6 Astra |
 | CONFIG-MSG | A+B | Messages clairs quand une configuration échoue (cause et action), à commencer par Factur-X. | — | Moyenne · GPT‑6.1 Sol |
 | DESIGN-2 | A+B | Mode sombre sur tout le site (landing, back-office, admin, livreur) et carte sombre assortie. | Après DESIGN-1 ; validation du propriétaire. | Élevée · GPT‑6.1 Sol |
+| FACTURX-SAISIE | A+B | Champs exigés par le Factur-X obligatoires et bloquants dès l'enregistrement des mentions légales. | — | Moyenne · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
@@ -1489,6 +1490,19 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Terminé quand : chaque espace propose Clair / Sombre / Système ; contrastes AA vérifiés en Sombre ; carte sombre assortie dans les trois espaces ; captures Light et Dark à 390 et 1 280 px comparées et validées par le propriétaire ; aucune régression du Light ; `npm run check` vert.
 
   Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026 ; suite de DESIGN-1 (tranche portail) et de MAP-3. Méthode : agent avec navigateur et captures de référence, comme pour le portail.
+
+  État : ouverte, non commencée.
+
+- [ ] **FACTURX-SAISIE — Rendre bloquants à l'enregistrement les champs qui bloquent la facture.** Constat du propriétaire du 28 octobre 2026 en préproduction : dans Réglages › Facturation › « Mentions légales et Factur-X » (`src/features/back-office/einvoicing-settings-card.tsx`), on peut enregistrer sans la mention des pénalités et de l'indemnité de retard (ni l'escompte, ni le motif d'exonération pour des factures sans TVA). L'enregistrement réussit, puis le téléchargement Factur-X est refusé plus tard. Ce qui empêche d'émettre la facture doit être signalé et bloquant au moment de la saisie.
+  - Marquer comme obligatoires les champs exigés par l'export : SIREN, adresse complète (rue, code postal, ville), pénalités de retard et indemnité de 40 €, escompte, motif d'exonération si l'entreprise facture sans TVA, IBAN et BIC si le paiement se fait par virement.
+  - Refuser l'enregistrement avec un message par champ, côté formulaire ET côté serveur (schéma Zod de `src/lib/validations/einvoicing.ts`), dès que l'entreprise active ou utilise la facture électronique. Une entreprise qui ne l'utilise pas n'est pas bloquée, mais voit ce qui manquerait.
+  - Mêmes règles pour l'identité de facturation du client, si l'export en dépend.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : il est impossible d'enregistrer des mentions qui feraient ensuite échouer l'export Factur-X ; chaque champ manquant ou invalide a son message ; test serveur et formulaire par champ ; recette navigateur : après un enregistrement accepté, le téléchargement Factur-X réussit du premier coup ; `npm run check` vert.
+
+  Source / dépendance / blocage : essai du propriétaire du 28 octobre 2026 ; à mener avec CONFIG-MSG et FACTURX-1.
 
   État : ouverte, non commencée.
 
