@@ -20,6 +20,7 @@ import {
 import { resolveCustomersByEmail } from "@/domains/order/resolve-customer";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
 import { kickOperationJob } from "@/domains/operations/operation-job.service";
+import { queueDeliveryInvoiceJob } from "@/domains/invoice/delivery-invoice.service";
 import { POD_FAILURE_LABELS, type PodFailureCode, type PodOutcome } from "@/lib/pod/codes";
 import { resolveDeliveryCoordinateFields } from "@/domains/delivery/delivery-coordinates";
 import {
@@ -816,7 +817,7 @@ export async function updateDeliveryStatusByDriver(
     }
   }
 
-  const { updated, notificationJobId } = await prisma.$transaction(async (tx) => {
+  const { updated, notificationJobId, invoiceJobId } = await prisma.$transaction(async (tx) => {
     const claim = await tx.delivery.updateMany({
       where: {
         id: deliveryId,
@@ -908,11 +909,16 @@ export async function updateDeliveryStatusByDriver(
       deliveryId: updated.id,
       eventId: trackingEvent.id,
     });
+    // DEMO-3 : facture à la livraison inscrite en tâche durable (si l'entreprise l'a activée).
+    const invoiceJob = status === "DELIVERED"
+      ? await queueDeliveryInvoiceJob(tx, { companyId: delivery.companyId, orderId: delivery.orderId })
+      : null;
 
-    return { updated, notificationJobId: notificationJob?.id ?? null };
+    return { updated, notificationJobId: notificationJob?.id ?? null, invoiceJobId: invoiceJob?.id ?? null };
   }, { maxWait: 10_000, timeout: 30_000 });
 
   if (notificationJobId) kickOperationJob(notificationJobId);
+  if (invoiceJobId) kickOperationJob(invoiceJobId);
 
   return updated;
 }
@@ -1156,7 +1162,7 @@ export async function adminUpdateDelivery(
     throw new Error("DELIVERY_MISSION_STARTED");
   }
 
-  const { updated, notificationJobId } = await prisma.$transaction(async (tx) => {
+  const { updated, notificationJobId, invoiceJobId } = await prisma.$transaction(async (tx) => {
     const deliveryData: Record<string, unknown> = {};
     const orderData: Record<string, unknown> = {};
 
@@ -1299,11 +1305,16 @@ export async function adminUpdateDelivery(
           eventId: statusEventId,
         })
       : null;
+    // DEMO-3 : facture à la livraison ; la clé unique par commande absorbe un second « Livrée ».
+    const invoiceJob = input.status === "DELIVERED"
+      ? await queueDeliveryInvoiceJob(tx, { companyId, orderId: delivery.orderId })
+      : null;
 
-    return { updated, notificationJobId: notificationJob?.id ?? null };
+    return { updated, notificationJobId: notificationJob?.id ?? null, invoiceJobId: invoiceJob?.id ?? null };
   }, { maxWait: 10_000, timeout: 30_000 });
 
   if (notificationJobId) kickOperationJob(notificationJobId);
+  if (invoiceJobId) kickOperationJob(invoiceJobId);
   return updated;
 }
 

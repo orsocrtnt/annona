@@ -26,6 +26,7 @@ import {
   kickOperationJob,
 } from "@/domains/operations/operation-job.service";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
+import { queueDeliveryInvoiceJob } from "@/domains/invoice/delivery-invoice.service";
 import { getCancellationBlockReason } from "@/domains/delivery/dispatch-policy";
 import {
   ORDER_EXPORT_CHUNK_SIZE,
@@ -1191,6 +1192,12 @@ export async function updateCompanyOrderStatus(
         eventId: trackingEvent.id,
       });
       if (notificationJob) operationJobIds.push(notificationJob.id);
+    }
+
+    // DEMO-3 : facture à la livraison inscrite en tâche durable (si l'entreprise l'a activée).
+    if (status === "DELIVERED") {
+      const invoiceJob = await queueDeliveryInvoiceJob(tx, { companyId, orderId: order.id });
+      if (invoiceJob) operationJobIds.push(invoiceJob.id);
     }
 
     if (acceptingQuote) {

@@ -142,8 +142,9 @@ export async function createOrderInvoice(
     if (currentInvoices.some((candidate) => candidate.status === "PAID")) {
       throw new Error("INVOICE_ALREADY_PAID");
     }
+    // Une facture en retard est réémise comme une facture en attente (jamais doublée).
     const existingDraft = currentInvoices.find(
-      (candidate) => candidate.status === "DRAFT" || candidate.status === "PENDING"
+      (candidate) => candidate.status === "DRAFT" || isInvoiceOutstanding(candidate.status)
     );
     let invoice;
 
@@ -188,6 +189,86 @@ export async function createOrderInvoice(
   if (notificationJobId) kickOperationJob(notificationJobId);
 
   return invoice;
+}
+
+export type DeliveredOrderInvoiceResult =
+  | { status: "created"; invoiceId: string }
+  | { status: "skipped"; reason: "ORDER_NOT_FOUND" | "ORDER_NOT_DELIVERED" | "INVOICE_EXISTS" | "SETTING_DISABLED" };
+
+/**
+ * DEMO-3 : facture émise automatiquement pour une commande livrée, avec les mêmes
+ * valeurs par défaut que le formulaire manuel (zone suggérée par le code postal,
+ * achats validés par le livreur, délai de paiement de l'entreprise). Une facture
+ * par commande, comme aujourd'hui : si la commande en a déjà une (manuelle ou
+ * automatique, quel que soit son statut), rien n'est créé ni modifié.
+ */
+export async function createDeliveredOrderInvoice(
+  companyId: string,
+  orderId: string
+): Promise<DeliveredOrderInvoiceResult> {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, companyId },
+    include: { items: true, invoices: { select: { id: true } } },
+  });
+  if (!order) return { status: "skipped", reason: "ORDER_NOT_FOUND" };
+  if (order.status !== "DELIVERED") return { status: "skipped", reason: "ORDER_NOT_DELIVERED" };
+  if (order.invoices.length > 0) return { status: "skipped", reason: "INVOICE_EXISTS" };
+
+  const [tariffs, billing] = await Promise.all([
+    getCompanyTariffSettings(companyId),
+    getCompanyBillingSettings(companyId),
+  ]);
+  // Réglage relu au moment du traitement : coupé entre-temps, rien n'est émis.
+  if (!billing.invoice.autoInvoiceOnDelivery) return { status: "skipped", reason: "SETTING_DISABLED" };
+
+  const zone = findTariffZoneForPostalCode(order.shippingPostalCode, tariffs.tariffZones);
+  const lineItems = buildInvoiceLineItems(
+    order,
+    tariffs,
+    {
+      zoneId: zone?.id,
+      feeIds: [],
+      includePurchases: order.items.some((item) => Number(item.unitPrice) > 0),
+      customLines: [],
+    },
+    billing.invoice.vatRate
+  );
+  if (lineItems.length === 0) throw new Error("DELIVERY_INVOICE_EMPTY");
+  const amount = computeInvoiceTotal(lineItems);
+  if (amount > 99_999_999.99) throw new Error("INVOICE_AMOUNT_TOO_LARGE");
+  const dueDate = new Date(Date.now() + billing.invoice.defaultDueDays * 24 * 60 * 60 * 1000);
+
+  const outcome = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "orders" WHERE id = ${order.id} AND company_id = ${companyId} FOR UPDATE`;
+    // Revérifié sous verrou : deux traitements concurrents ne créent jamais deux factures.
+    const existing = await tx.invoice.findMany({ where: { orderId: order.id } });
+    if (existing.length > 0) return null;
+    const invoice = await tx.invoice.create({
+      data: {
+        reference: generateInvoiceReference(billing.invoice.referencePrefix),
+        status: "PENDING",
+        amount,
+        lineItems: lineItems as unknown as Prisma.InputJsonValue,
+        notes: null,
+        dueDate,
+        companyId,
+        orderId: order.id,
+        customerId: order.customerId,
+      },
+    });
+    const notificationJob = await queueInvoiceIssuedNotification(tx, {
+      customerId: invoice.customerId,
+      companyId,
+      reference: invoice.reference,
+      invoiceId: invoice.id,
+      amount: Number(invoice.amount),
+    });
+    return { invoiceId: invoice.id, notificationJobId: notificationJob?.id ?? null };
+  }, { maxWait: 10_000, timeout: 30_000 });
+
+  if (!outcome) return { status: "skipped", reason: "INVOICE_EXISTS" };
+  if (outcome.notificationJobId) kickOperationJob(outcome.notificationJobId);
+  return { status: "created", invoiceId: outcome.invoiceId };
 }
 
 export async function getOrderInvoicePreview(

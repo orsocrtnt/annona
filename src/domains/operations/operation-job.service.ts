@@ -120,6 +120,17 @@ async function executeJob(job: OperationJob) {
       await deliverOrderMessageNotification(messageId);
       return;
     }
+    // DEMO-3 : relance de facture et facture créée à la livraison (e-mail au client).
+    if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
+      const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");
+      await deliverInvoiceReminderJob(job.payload, job.jobKey);
+      return;
+    }
+    if (readString(job.payload, "kind") === "DELIVERY_INVOICE") {
+      const { runDeliveryInvoiceJob } = await import("@/domains/invoice/delivery-invoice.service");
+      await runDeliveryInvoiceJob(job.payload);
+      return;
+    }
     const { deliverClientNotificationJob } = await import(
       "@/domains/client-portal/notify.service"
     );
