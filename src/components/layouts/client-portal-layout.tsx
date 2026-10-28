@@ -134,8 +134,8 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       tone="light"
       sticky={!overlay}
       maxWidthClassName="max-w-7xl"
-      // Boutons à 44 px : marge verticale réduite pour garder la barre de preproduction (56 px).
-      innerClassName="py-1.5"
+      // Boutons à 44 px : 44 + 2 × 5 + bordure 2 = 56 px, la hauteur de barre de preproduction.
+      innerClassName="py-[5px]"
       className={overlay ? "pointer-events-auto" : undefined}
     >
       <AppleNavbarBrand href="/portal" tone="light" />
