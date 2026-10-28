@@ -1,6 +1,7 @@
 import type { OperationJob, Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { assertSaasMutationFeature } from "@/domains/saas/saas.service";
+import { runAfterResponse } from "@/lib/operations/after-response";
 
 const OPERATION_JOB_TAKE = 50;
 const OPERATION_JOB_LEASE_MS = 5 * 60 * 1000;
@@ -213,8 +214,14 @@ export async function processOperationJob(jobId: string, now?: Date) {
 }
 
 export function kickOperationJob(jobId: string) {
-  void processOperationJob(jobId).catch((error) => {
-    console.error("[operation-job] lancement", jobId, safeError(error));
+  // after() garde la fonction Vercel vivante jusqu'à la fin du traitement ;
+  // le filet /api/cron/operations reprend de toute façon les tâches restées PENDING.
+  runAfterResponse(async () => {
+    try {
+      await processOperationJob(jobId);
+    } catch (error) {
+      console.error("[operation-job] lancement", jobId, safeError(error));
+    }
   });
 }
 
