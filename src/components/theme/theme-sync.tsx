@@ -13,7 +13,8 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
- * Unique propriétaire de `data-theme` sur <html>. Applique le thème de façon synchrone (avant peinture)
+ * Propriétaire de `data-theme` sur <html> après hydratation (THEME_INIT_SCRIPT le pose au premier
+ * chargement, avec la même règle resolveRootTheme). Applique le thème de façon synchrone (avant peinture)
  * à chaque changement de route, de préférence ou de thème du système, en lisant la préférence mémorisée
  * (jamais le snapshot serveur) pour ne pas écraser la valeur posée par le script d'initialisation.
  */

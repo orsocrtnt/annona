@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import vm from "node:vm";
 
 import {
   THEME_INIT_SCRIPT,
   THEME_STORAGE_KEY,
+  THEME_SCOPED_PATH_PREFIXES,
   applyThemeToRoot,
+  isThemePreference,
   isThemeScopedPath,
   resolveTheme,
 } from "../src/lib/theme";
@@ -193,4 +196,40 @@ test("les entrées de menu simples et radio partagent une seule constante de cla
   const src = readFileSync(new URL("../src/components/ui/dropdown-menu.tsx", import.meta.url), "utf8");
   assert.equal(src.match(/focus:bg-accent focus:text-accent-foreground/g)?.length, 1);
   assert.equal(src.match(/\bdropdownMenuItemClass,/g)?.length, 2);
+});
+
+test("le script d'initialisation et ThemeSync (applyThemeToRoot) décident pareil sur les mêmes cas", () => {
+  // Le script embarque le source de resolveRootTheme : aucune recopie manuelle de la règle.
+  assert.ok(THEME_INIT_SCRIPT.includes("resolveRootTheme"));
+  assert.ok(THEME_INIT_SCRIPT.includes(JSON.stringify(THEME_SCOPED_PATH_PREFIXES)));
+  const paths = ["/portal", "/portal/orders/new", "/portalx", "/portal-old", "/dashboard", "/", "/driver/missions"];
+  const stored = [null, "light", "dark", "system", "nimporte"];
+  for (const pathname of paths) {
+    for (const value of [...stored, "throws"]) {
+      for (const prefersDark of [true, false]) {
+        const attrs = new Map<string, string>();
+        const documentElement = { setAttribute: (k: string, v: string) => void attrs.set(k, v) };
+        vm.runInNewContext(THEME_INIT_SCRIPT, {
+          location: { pathname },
+          localStorage: {
+            getItem: () => {
+              if (value === "throws") throw new Error("stockage bloqué");
+              return value;
+            },
+          },
+          window: { matchMedia: (q: string) => ({ matches: q === "(prefers-color-scheme: dark)" && prefersDark }) },
+          document: { documentElement },
+        });
+        const synced = new Map<string, string>();
+        const pref = isThemePreference(value) ? value : "system"; // même repli que readThemePreference
+        applyThemeToRoot(
+          { setAttribute: (k, v) => void synced.set(k, v), removeAttribute: (k) => void synced.delete(k) },
+          pathname,
+          pref,
+          prefersDark
+        );
+        assert.equal(attrs.get("data-theme"), synced.get("data-theme"), `${pathname} ${value} ${prefersDark}`);
+      }
+    }
+  }
 });
