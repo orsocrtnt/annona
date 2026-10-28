@@ -155,29 +155,29 @@ function pickByLeastLoaded(
 ): { driverId: string; reason: string } | null {
   if (drivers.length === 0) return null;
 
+  // Avec ou sans priorisation des courses, le départage d'origine est la priorité réglée.
+  const rulePriority = (driver: DriverActivity) =>
+    priorityForDriver(driver.id, settings.driverRules) ?? 999;
   const sorted = [...drivers].sort((a, b) => {
     const loadDiff = activeLoad(a) - activeLoad(b);
     if (loadDiff !== 0) return loadDiff;
 
-    const proximityDiff = compareDispatchProximity(proximities.get(a.id), proximities.get(b.id));
-    if (proximityDiff !== 0) return proximityDiff;
+    const priorityDiff = rulePriority(a) - rulePriority(b);
+    if (priorityDiff !== 0) return priorityDiff;
 
-    if (settings.prioritizeCourier && category === "COURIER") {
-      const pa = priorityForDriver(a.id, settings.driverRules) ?? 999;
-      const pb = priorityForDriver(b.id, settings.driverRules) ?? 999;
-      return pa - pb;
-    }
-
-    const pa = priorityForDriver(a.id, settings.driverRules) ?? 999;
-    const pb = priorityForDriver(b.id, settings.driverRules) ?? 999;
-    return pa - pb;
+    // Départage seulement : charge et priorité réglée sont égales.
+    return compareDispatchProximity(proximities.get(a.id), proximities.get(b.id));
   });
 
   const picked = sorted[0]!;
   const base = `Moins chargé : ${activeLoad(picked)} livraison(s) active(s)`;
   return {
     driverId: picked.id,
-    reason: proximityDecided(sorted, proximities, (a, b) => activeLoad(a) === activeLoad(b))
+    reason: proximityDecided(
+      sorted,
+      proximities,
+      (a, b) => activeLoad(a) === activeLoad(b) && rulePriority(a) === rulePriority(b)
+    )
       ? `${base} · ${PROXIMITY_REASON}`
       : base,
   };

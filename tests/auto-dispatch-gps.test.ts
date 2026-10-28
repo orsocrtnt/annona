@@ -205,3 +205,14 @@ test("dispatch GPS : éligibles du dispatcher avec distance et âge, sans coordo
   assert.doesNotMatch(JSON.stringify(rows), /latitude|longitude|48\.8|2\.36/);
   assert.equal(await f.svc.getEligibleDriversForDelivery("other", "d1"), null, "autre entreprise : livraison introuvable");
 });
+
+test("dispatch GPS (P2) : « moins chargé » — la priorité réglée passe avant la distance à charge égale", () => {
+  const svc = load({});
+  const least = { ...settings, strategy: "LEAST_LOADED", driverRules: [rule("A", 1), rule("B", 5)] };
+  const drivers = [{ id: "A", assigned: 0 }, { id: "B", assigned: 0 }];
+  for (const category of ["STANDARD", "COURIER"]) {
+    const pick = svc.resolveDriverForDelivery({ ...delivery, deliveryCategory: category }, least, drivers, [], new Map([["B", near(150)]]));
+    assert.equal(pick?.driverId, "A", category);
+    assert.doesNotMatch(pick!.reason, /plus proche/);
+  }
+});
