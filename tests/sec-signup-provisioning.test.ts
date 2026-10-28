@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import * as zod from "zod";
 import { NextResponse } from "next/server";
 import type { SystemRole, UserWithRole } from "../src/types";
 import * as access from "../src/lib/auth/account-access";
@@ -75,7 +76,7 @@ test("synchronisation : accountType company et nom d'entreprise ne créent ni en
 
 function routeDeps(authUser: unknown, service: AuthService) {
   return {
-    "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation,
+    zod, "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation,
     "@/lib/auth/normalize-email": normalize,
     "@/services/supabase/server": { createClient: async () => ({ auth: {
       signInWithPassword: async () => ({ data: { user: authUser }, error: null }),
@@ -103,7 +104,9 @@ for (const file of ["login", "sync"] as const) {
       : [{}, { accountType: "company" }];
     for (const body of bodies) {
       const response = await POST(new Request("http://local", { method: "POST", body: JSON.stringify(body) }));
-      assert.ok(response.status === 403 || response.status === 400, `statut inattendu ${response.status}`);
+      // Sync n'accepte aucun champ (400) ; sinon le compte non provisionné est refusé (403).
+      const expected = file === "sync" && "accountType" in body ? 400 : 403;
+      assert.equal(response.status, expected, JSON.stringify(body));
     }
     assert.deepEqual(f.writes, []);
   });

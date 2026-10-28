@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { estimateCourierPrice } from "@/domains/company/courier-estimate.service";
+
+const text = z.string().max(500).nullish();
+const estimateSchema = z.object({
+  pickupAddress: text, pickupCity: text, pickupPostalCode: text,
+  shippingAddress: text, shippingCity: text, shippingPostalCode: text,
+  requestedDeliveryDate: z.string().max(40).nullish(),
+}).strict();
 
 export async function POST(request: Request) {
   return withApiHandler(async () => {
@@ -13,8 +21,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
     }
 
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    const str = (v: unknown) => (typeof v === "string" ? v : null);
+    const parsed = estimateSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Données d'estimation invalides." }, { status: 400 });
+    }
+    const body = parsed.data;
+    const str = (v: string | null | undefined) => v ?? null;
 
     const result = await estimateCourierPrice(companyId, {
       pickup: {

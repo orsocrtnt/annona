@@ -164,7 +164,7 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
     let current = user("COMPANY_ADMIN");
     const authUser = { id: "auth", email: current.email, email_confirmed_at: "2026-09-28", user_metadata: {} };
     const post = load<{ POST: (r: Request) => Promise<Response> }>(`src/app/api/auth/${file}/route.ts`, {
-      "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation,
+      zod: await import("zod"), "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation,
       "@/lib/auth/normalize-email": normalize,
       "@/services/supabase/server": { createClient: async () => ({ auth: {
         signInWithPassword: async () => ({ data: { user: authUser }, error: null }),
@@ -185,7 +185,8 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
       },
       "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
     }).POST;
-    const request = () => new Request("http://local", { method: "POST", body: JSON.stringify({ email: current.email, password: "local-test-only" }) });
+    // /api/auth/sync n'accepte aucun champ (SEC-4) ; /api/auth/login attend les identifiants.
+    const request = () => new Request("http://local", { method: "POST", body: JSON.stringify(file === "sync" ? {} : { email: current.email, password: "local-test-only" }) });
     assert.equal((await post(request())).status, 200);
     current.status = "SUSPENDED";
     assert.equal((await post(request())).status, 403);

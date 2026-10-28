@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { gatePlatformRead, gatePlatformWrite } from "@/lib/api/platform-access";
 import { disableSalesCode, getSalesCodeHistory } from "@/domains/sales/sales-code.service";
 
 const noStore = { "Cache-Control": "no-store" };
+const actionSchema = z.object({ action: z.literal("disable") }).strict();
 
 /** Historique des attributions et commissions théoriques d'un code. */
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
@@ -28,9 +30,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const blocked = await gatePlatformWrite(auth.context, denied, "SALES_CODES", "PATCH");
   if (blocked) return blocked;
 
-  const body = (await request.json().catch(() => null)) as { action?: unknown } | null;
+  const parsed = actionSchema.safeParse(await request.json().catch(() => null));
   const { id } = await context.params;
-  if (body?.action !== "disable" || !id || id.length > 64) {
+  if (!parsed.success || !id || id.length > 64) {
     return NextResponse.json({ error: "Action invalide" }, { status: 400, headers: noStore });
   }
   const result = await disableSalesCode(id, auth.context.user.id);

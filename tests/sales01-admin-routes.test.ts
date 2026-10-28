@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import * as zod from "zod";
 import { NextResponse } from "next/server";
 import { PLATFORM_ACCESS_UNAVAILABLE, gatePlatformWrite } from "../src/lib/api/platform-access";
 import type { PlatformAccessEvent } from "../src/domains/admin/platform-access.service";
@@ -24,6 +25,7 @@ function load(file: string, role: string, calls: string[], journal: "ok" | "fail
     URL, console, exports: module.exports, module,
     require: (id: string) => {
       if (id === "next/server") return { NextResponse };
+      if (id === "zod") return zod;
       if (id === "@/lib/api/auth-guard") return {
         requireStaffRole: async () => {
           calls.push("staff");
