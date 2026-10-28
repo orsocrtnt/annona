@@ -23,9 +23,9 @@ export function ProviderTileLayer() {
         tileerror: () => { failed.current = true; setUnavailable(true); },
         load: () => { clearTimeout(timer.current); if (!failed.current) setUnavailable(false); },
       }} />
-    {unavailable && <div role="status" className="absolute inset-x-3 top-1/2 z-[1200] mx-auto max-w-sm rounded-xl border border-black/10 bg-white/95 p-3 text-center text-sm text-foreground shadow-lg">
+    {unavailable && <div role="status" className="absolute inset-x-3 top-1/2 z-[1200] mx-auto max-w-sm rounded-xl border border-black/10 bg-white/95 p-3 text-center text-sm text-foreground shadow-lg dark:border-white/10 dark:bg-card/95">
       <p>Fond de carte indisponible. Les positions restent affichées.</p>
-      <button type="button" className="mt-2 min-h-11 rounded-lg bg-black px-4 font-medium text-white outline-none transition-colors hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2" onClick={() => { failed.current = false; setUnavailable(false); setAttempt(a => a + 1); }}>Réessayer la carte</button>
+      <button type="button" className="mt-2 min-h-11 rounded-lg bg-black px-4 font-medium text-white outline-none transition-colors hover:bg-zinc-800 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary-hover dark:focus-visible:ring-ring dark:focus-visible:ring-offset-card" onClick={() => { failed.current = false; setUnavailable(false); setAttempt(a => a + 1); }}>Réessayer la carte</button>
     </div>}
   </>;
 }

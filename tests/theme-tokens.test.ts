@@ -163,3 +163,20 @@ test("verre des cartes : valeurs historiques en repli hors portail, surfaces som
   assert.ok(ratio(dark.get("--color-muted-foreground")!, "#1c1f1e") >= 4.5);
   assert.match(darkBlock, /--map-glass-bg: rgb\(28 31 30 \/ 0\.94\)/);
 });
+
+test("cartes partagées : un fond blanc codé en dur avec un texte en jeton porte sa variante dark:", () => {
+  const files = [
+    "src/components/maps/provider-tile-layer.tsx",
+    "src/components/maps/deliveries-live-map.tsx",
+    "src/components/maps/delivery-map-status-bar.tsx",
+    "src/components/maps/leaflet-base-map.tsx",
+  ];
+  for (const file of files) {
+    const src = readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+    for (const [, classes] of src.matchAll(/"([^"]*\bbg-(?:white|\[#f0f0f0\])[^"]*)"/g)) {
+      // Texte de couleur fixe (attribution OSM en zinc) : lisible dans les deux thèmes, pas de variante requise.
+      if (/\btext-(?:zinc|black|white)\b|\btext-zinc-/.test(classes!)) continue;
+      assert.match(classes!, /\bdark:bg-/, `${file} : « ${classes} » sans variante dark:`);
+    }
+  }
+});
