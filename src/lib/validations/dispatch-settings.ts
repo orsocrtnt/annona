@@ -54,7 +54,11 @@ export const companyDispatchSettingsSchema = z.object({
   driverRules: z.array(dispatchDriverRuleSchema).default([]),
   zoneDriverMap: z.record(z.string(), z.string()).default({}),
   defaultDriverId: z.string().nullable().optional(),
-  /** DEMO-3 : la position récente des livreurs en service départage les choix implicites. */
+  /**
+   * DEMO-3 : la distance au retrait n'est qu'un départage, en dernier critère avant l'ordre
+   * stable (priorité réglée, zone et charge restent devant). Actif par défaut : seules les
+   * égalités changent d'issue.
+   */
   gpsProximityEnabled: z.boolean().default(true),
   /** Au-delà, la position du livreur est jugée périmée et n'est pas utilisée. */
   gpsPositionMaxAgeMinutes: z

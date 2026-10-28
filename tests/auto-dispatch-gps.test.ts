@@ -206,6 +206,31 @@ test("dispatch GPS : éligibles du dispatcher avec distance et âge, sans coordo
   assert.equal(await f.svc.getEligibleDriversForDelivery("other", "d1"), null, "autre entreprise : livraison introuvable");
 });
 
+test("dispatch GPS (P1) : des règles enregistrées sans champs GPS donnent la même affectation qu'avant hors égalité", () => {
+  const svc = load({ zone: { id: "z1", name: "Est" } });
+  const autoAssignCategories = { STANDARD: true, COURIER: true, SPECIAL_MISSION: false };
+  const stored = [
+    { enabled: true, strategy: "PRIORITY_LIST", autoAssignCategories },
+    { enabled: true, strategy: "PRIORITY_LIST", autoAssignCategories, driverRules: [rule("a", 1), rule("b", 2), rule("c", 3)] },
+    { enabled: true, strategy: "LEAST_LOADED", autoAssignCategories, driverRules: [rule("a", 1), rule("b", 5), rule("c", 3)] },
+    { enabled: true, strategy: "LEAST_LOADED", autoAssignCategories },
+    { enabled: true, strategy: "ZONE_THEN_PRIORITY", autoAssignCategories, zoneDriverMap: { z1: "c" } },
+  ];
+  const drivers = [{ id: "a", assigned: 0 }, { id: "b", assigned: 1 }, { id: "c", assigned: 2 }];
+  // Le plus proche est toujours le livreur que l'ancien algorithme ne choisirait pas.
+  const proximities = new Map([["a", neutral("NO_POSITION")], ["b", near(200)], ["c", near(300)]]);
+  for (const raw of stored) {
+    const parsed = dispatchSettings.companyDispatchSettingsSchema.parse(raw);
+    assert.equal(parsed.gpsProximityEnabled, true, "option active par défaut");
+    for (const category of ["STANDARD", "COURIER"]) {
+      const target = { ...delivery, deliveryCategory: category };
+      const before = svc.resolveDriverForDelivery(target, parsed, drivers, []);
+      const after = svc.resolveDriverForDelivery(target, parsed, drivers, [], proximities);
+      assert.deepEqual(after, before, `${raw.strategy} ${category} ${raw.driverRules ? "avec règles" : "sans règle"}`);
+    }
+  }
+});
+
 test("dispatch GPS (P2) : « moins chargé » — la priorité réglée passe avant la distance à charge égale", () => {
   const svc = load({});
   const least = { ...settings, strategy: "LEAST_LOADED", driverRules: [rule("A", 1), rule("B", 5)] };

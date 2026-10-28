@@ -3,8 +3,8 @@ import type { CompanyDispatchSettings } from "@/lib/validations/dispatch-setting
 
 /**
  * Proximité d'un livreur au point de retrait, calculée localement (haversine),
- * sans service de trajet. Seul `NEAR` donne un avantage ; les autres statuts
- * sont neutres : le livreur reste éligible et départagé par les critères habituels.
+ * sans service de trajet. Elle ne sert qu'à départager, après tous les critères
+ * de la stratégie. Seul `NEAR` donne un avantage ; les autres statuts sont neutres.
  */
 export type DispatchProximityStatus =
   | "NEAR"
