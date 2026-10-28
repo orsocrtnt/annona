@@ -329,12 +329,12 @@ function WidgetToggleRow({
           onClick={() => onToggle(!visible)}
           className={cn(
             "relative mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors after:absolute after:-inset-3 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-            visible ? "bg-brand" : "bg-foreground/30"
+            visible ? "bg-brand" : "bg-muted-foreground"
           )}
         >
           <span
             className={cn(
-              "block h-4 w-4 rounded-full bg-white shadow transition-transform",
+              "block h-4 w-4 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform dark:bg-card dark:ring-0",
               visible ? "translate-x-4" : "translate-x-0.5"
             )}
           />
