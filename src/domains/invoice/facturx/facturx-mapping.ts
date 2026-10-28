@@ -4,6 +4,7 @@
  * Chaque refus porte un message actionnable qui dit où compléter la donnée.
  */
 import { checkFacturXInvoice, computeFacturXTotals } from "@/domains/invoice/facturx/cii-generator";
+import { facturXUnavailableReason } from "@/domains/invoice/facturx/facturx-availability";
 import type { FacturXInvoice, FacturXIssue, FacturXLine, FacturXNote } from "@/domains/invoice/facturx/facturx.types";
 import type { ClientInvoiceIdentity, EinvoicingSettings } from "@/lib/validations/einvoicing";
 
@@ -109,8 +110,8 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
   const warnings: FacturXIssue[] = [];
   const { invoice, seller, einvoicing, buyer } = source;
 
-  if (invoice.status === "DRAFT") errors.push({ rule: "TL-STATUT", message: "Facture en brouillon : le Factur-X est disponible une fois la facture émise." });
-  if (invoice.status === "CANCELLED") errors.push({ rule: "TL-STATUT", message: "Facture annulée : aucun Factur-X n'est émis." });
+  const unavailable = facturXUnavailableReason(invoice.status);
+  if (unavailable) errors.push({ rule: "TL-STATUT", message: unavailable });
 
   // Lignes et TVA.
   const rawLines = parseLines(invoice.lineItems);

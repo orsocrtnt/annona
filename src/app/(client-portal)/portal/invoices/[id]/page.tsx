@@ -16,6 +16,7 @@ import {
   ReorderOrderButton,
 } from "@/features/client-portal/reorder-order-button";
 import { formatCurrency, invoiceLineTotal, invoiceTitle } from "@/features/client-portal/utils";
+import { facturXUnavailableReason } from "@/domains/invoice/facturx/facturx-availability";
 import { fullDateLabel, relativeDayLabel } from "@/lib/format/relative-day";
 import { ArrowLeft, FileText, Download } from "lucide-react";
 
@@ -159,13 +160,16 @@ export default function InvoiceDetailPage() {
             <span className="sr-only"> (nouvel onglet)</span>
           </a>
         </Button>
-        <Button variant="outline" asChild>
-          <a href={`/api/portal/invoices/${id}/pdf?format=facturx`} target="_blank" rel="noopener noreferrer">
-            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-            Factur-X
-            <span className="sr-only"> (PDF avec données de facture électronique, nouvel onglet)</span>
-          </a>
-        </Button>
+        {/* Brouillon ou annulée : aucun Factur-X émis, le bouton est masqué. */}
+        {!facturXUnavailableReason(invoice.status) && (
+          <Button variant="outline" asChild>
+            <a href={`/api/portal/invoices/${id}/pdf?format=facturx`} target="_blank" rel="noopener noreferrer">
+              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+              Factur-X
+              <span className="sr-only"> (PDF avec données de facture électronique, nouvel onglet)</span>
+            </a>
+          </Button>
+        )}
         {canReorderPortalOrder(invoice.order) && (
           <ReorderOrderButton orderId={invoice.order?.id} />
         )}

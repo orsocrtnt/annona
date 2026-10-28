@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
+import { facturXUnavailableReason } from "../src/domains/invoice/facturx/facturx-availability";
 import { generateFacturXXml } from "../src/domains/invoice/facturx/cii-generator";
 import { buildFacturXPdf, facturXHttpResult } from "../src/domains/invoice/facturx/facturx-document";
 import { mapInvoiceToFacturX, type FacturXSource } from "../src/domains/invoice/facturx/facturx-mapping";
@@ -160,6 +162,16 @@ test("client sans identité de facturation : adresse par défaut et avertissemen
   assert.deepEqual(result.invoice.buyer.address, { line1: "8 quai Imaginaire", postalCode: "33000", city: "Bordeaux", countryCode: "FR" });
   assert.deepEqual(result.warnings.map((w) => w.rule), ["TL-W-SIREN-CLIENT", "TL-W-IBAN"]);
   assert.equal(result.invoice.payment, undefined);
+});
+
+test("disponibilité du Factur-X par statut : même règle pour le bouton du portail et le mapping", () => {
+  assert.match(facturXUnavailableReason("DRAFT")!, /brouillon/);
+  assert.match(facturXUnavailableReason("CANCELLED")!, /annulée/);
+  for (const status of ["PENDING", "PAID", "OVERDUE"]) assert.equal(facturXUnavailableReason(status), null, status);
+  const page = readFileSync("src/app/(client-portal)/portal/invoices/[id]/page.tsx", "utf8");
+  assert.match(page, /facturXUnavailableReason\(invoice\.status\)/, "le portail masque le bouton selon le statut");
+  const cancelled = mapInvoiceToFacturX(source({ invoice: { status: "CANCELLED" } }));
+  assert.ok(!cancelled.ok && cancelled.errors[0]!.message === facturXUnavailableReason("CANCELLED"));
 });
 
 test("brouillon et facture annulée : pas de Factur-X", () => {
