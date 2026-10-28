@@ -12,7 +12,11 @@ function loadRenderer(readLogo: () => Promise<Buffer | null>) {
   const deps: Record<string, unknown> = {
     "@prisma/client": { Prisma: { PrismaClientKnownRequestError: class {} } },
     "@/domains/invoice/facturx/facturx-scope": {},
-    "@/domains/company/billing-settings.service": { getCompanyBillingSettings: async () => ({ invoice: { footerNote: "Merci" } }) },
+    // Le pied de page vient des réglages déjà chargés : aucune seconde lecture au rendu.
+    "@/domains/company/billing-settings.service": {
+      parseBillingSettings: () => ({ invoice: { footerNote: "Merci" } }),
+      getCompanyBillingSettings: async () => { throw new Error("seconde lecture des réglages"); },
+    },
     "@/domains/company/company-logo.service": { readCompanyLogo: readLogo },
     "@/lib/pdf/invoice-pdf": {
       generateInvoicePdf: async (data: (typeof received)[number]) => { received.push(data); return new Uint8Array([1]); },
@@ -31,7 +35,7 @@ function loadRenderer(readLogo: () => Promise<Buffer | null>) {
     companyId: "company_a",
     reference: "FAC-1",
     source: null,
-    pdf: { reference: "FAC-1", status: "PAID", createdAt: new Date(), paidAt: new Date("2026-10-25T09:00:00Z"), amount: 10, lineItems: [], company: { name: "Entreprise" } },
+    pdf: { reference: "FAC-1", status: "PAID", createdAt: new Date(), paidAt: new Date("2026-10-25T09:00:00Z"), amount: 10, lineItems: [], company: { name: "Entreprise" }, footerNote: "Merci" },
   };
   return { call: (legal?: unknown) => render(invoice, legal), received };
 }

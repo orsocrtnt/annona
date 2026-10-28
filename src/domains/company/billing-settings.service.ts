@@ -8,7 +8,7 @@ import {
   DEFAULT_INVOICE_GENERAL,
 } from "@/lib/validations/billing-settings";
 
-function parseBillingSettings(raw: unknown): CompanyBillingSettings {
+export function parseBillingSettings(raw: unknown): CompanyBillingSettings {
   const stored = (raw ?? {}) as Partial<CompanyBillingSettings>;
   return {
     courier: { ...DEFAULT_COURIER_PRICING, ...stored.courier },

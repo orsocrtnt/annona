@@ -2,7 +2,7 @@
  * Assemblage du PDF Factur-X (sans accès base) et réponse HTTP associée.
  * Le PDF classique reste la source visuelle ; le Factur-X y ajoute le XML et les métadonnées.
  */
-import { FACTURX_CONFORMANCE_LEVEL, generateFacturXXml } from "@/domains/invoice/facturx/cii-generator";
+import { FACTURX_CONFORMANCE_LEVEL, serializeFacturXXml } from "@/domains/invoice/facturx/cii-generator";
 import { mapInvoiceToFacturX, type FacturXSource } from "@/domains/invoice/facturx/facturx-mapping";
 import type { FacturXInvoice, FacturXIssue } from "@/domains/invoice/facturx/facturx.types";
 import { embedFacturXInPdf } from "@/lib/pdf/facturx-pdf";
@@ -48,7 +48,8 @@ export async function buildFacturXPdf(input: {
 }): Promise<FacturXDocumentResult> {
   const mapped = mapInvoiceToFacturX(input.source);
   if (!mapped.ok) return mapped;
-  const xml = generateFacturXXml(mapped.invoice);
+  // Déjà contrôlée et totalisée par le mapping : sérialisation sans recalcul.
+  const xml = serializeFacturXXml(mapped.invoice, mapped.totals);
   const pdf = await embedFacturXInPdf(await input.renderClassicPdf(facturXVisibleMentions(mapped.invoice)), {
     xml,
     documentDate: input.now,

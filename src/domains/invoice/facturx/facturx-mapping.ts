@@ -5,7 +5,7 @@
  */
 import { checkFacturXInvoice, computeFacturXTotals } from "@/domains/invoice/facturx/cii-generator";
 import { facturXUnavailableReason } from "@/domains/invoice/facturx/facturx-availability";
-import type { FacturXInvoice, FacturXIssue, FacturXLine, FacturXNote } from "@/domains/invoice/facturx/facturx.types";
+import type { FacturXInvoice, FacturXIssue, FacturXLine, FacturXNote, FacturXTotals } from "@/domains/invoice/facturx/facturx.types";
 import type { ClientInvoiceIdentity, EinvoicingSettings } from "@/lib/validations/einvoicing";
 
 export const RECOVERY_INDEMNITY_NOTE = "Indemnité forfaitaire pour frais de recouvrement en cas de retard de paiement : 40 €.";
@@ -51,7 +51,7 @@ export interface FacturXSource {
 }
 
 export type FacturXMappingResult =
-  | { ok: true; invoice: FacturXInvoice; warnings: FacturXIssue[] }
+  | { ok: true; invoice: FacturXInvoice; totals: FacturXTotals; warnings: FacturXIssue[] }
   | { ok: false; errors: FacturXIssue[]; warnings: FacturXIssue[] };
 
 const SELLER_HINT = "À compléter dans Réglages › Facturation › Mentions légales et Factur-X.";
@@ -118,6 +118,7 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
   let lines: FacturXLine[] = [];
   let category: "S" | "E" = "S";
   let rate = 0;
+  let storedVatCents: number | null = null;
   if (!rawLines) {
     errors.push({ rule: "TL-LIGNES", message: "Lignes de facture illisibles : régénérez la facture avant d'exporter le Factur-X." });
   } else {
@@ -148,13 +149,8 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
     if (storedTotal !== cents(invoice.amount)) {
       errors.push({ rule: "TL-TOTAL", message: "Le total de la facture ne correspond pas à la somme de ses lignes : export Factur-X refusé." });
     }
-    if (vatLines.length === 1 && rate > 0 && errors.length === 0) {
-      const recomputed = computeFacturXTotals({ lines }).taxTotalCents;
-      const stored = cents(vatLines[0]!.amount * vatLines[0]!.quantity);
-      if (recomputed !== stored) {
-        errors.push({ rule: "TL-TVA", message: `TVA enregistrée (${(stored / 100).toFixed(2)} €) différente de ${rate} % du total HT (${(recomputed / 100).toFixed(2)} €).` });
-      }
-    }
+    // TVA stockée, comparée plus bas aux totaux calculés une seule fois sur la facture construite.
+    if (vatLines.length === 1 && rate > 0 && errors.length === 0) storedVatCents = cents(vatLines[0]!.amount * vatLines[0]!.quantity);
   }
 
   // Mentions françaises obligatoires entre professionnels (art. L441-9 du Code de commerce).
@@ -236,7 +232,16 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
     prepaidAmount: invoice.status === "PAID" ? invoice.amount : undefined,
   };
 
-  for (const issue of checkFacturXInvoice(facturx)) {
+  const totals = computeFacturXTotals(facturx);
+  if (storedVatCents !== null && totals.taxTotalCents !== storedVatCents) {
+    // Placée en tête : c'est la cause première, avant toute règle dérivée.
+    errors.unshift({
+      rule: "TL-TVA",
+      message: `TVA enregistrée (${(storedVatCents / 100).toFixed(2)} €) différente de ${rate} % du total HT (${(totals.taxTotalCents / 100).toFixed(2)} €).`,
+    });
+  }
+
+  for (const issue of checkFacturXInvoice(facturx, totals)) {
     if (issue.rule === "BR-16" && errors.some((e) => e.rule === "TL-LIGNES")) continue;
     errors.push(HINTS[issue.rule] ? { ...issue, message: `${issue.message} ${HINTS[issue.rule]}` } : issue);
   }
@@ -249,5 +254,5 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
     warnings.push({ rule: "TL-W-REGLAGE-INVALIDE", message: `Réglages ignorés car invalides : ${source.einvoicingInvalidFields.join(", ")}. ${SELLER_HINT}` });
   }
 
-  return errors.length ? { ok: false, errors, warnings } : { ok: true, invoice: facturx, warnings };
+  return errors.length ? { ok: false, errors, warnings } : { ok: true, invoice: facturx, totals, warnings };
 }

@@ -6,7 +6,7 @@
 import { Prisma } from "@prisma/client";
 import type { FacturXSource } from "@/domains/invoice/facturx/facturx-mapping";
 import { companyClientWhere, facturXInvoiceWhere, type FacturXInvoiceScope } from "@/domains/invoice/facturx/facturx-scope";
-import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
+import { parseBillingSettings } from "@/domains/company/billing-settings.service";
 import { readCompanyLogo } from "@/domains/company/company-logo.service";
 import { generateInvoicePdf, type InvoicePdfData, type InvoicePdfLegalMentions } from "@/lib/pdf/invoice-pdf";
 import {
@@ -26,7 +26,7 @@ export interface LoadedFacturXInvoice {
   reference: string;
   /** null si la facture n'a plus de client rattaché. */
   source: FacturXSource | null;
-  pdf: Omit<InvoicePdfData, "companyLogoPng" | "footerNote">;
+  pdf: Omit<InvoicePdfData, "companyLogoPng" | "legal">;
 }
 
 export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<LoadedFacturXInvoice | null> {
@@ -133,6 +133,8 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
       company: { name: company.name, email: company.email, address: company.address, city: company.city },
       customerName: customer ? `${customer.firstName} ${customer.lastName}`.trim() : null,
       customerEmail: customer?.email ?? null,
+      // Pied de page lu dans les réglages déjà chargés : pas de seconde lecture de Company.settings.
+      footerNote: parseBillingSettings(asRecord(company.settings).billing).invoice.footerNote ?? null,
     },
   };
 }
@@ -142,12 +144,9 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
  * `legal` (variante Factur-X uniquement) ajoute les mentions légales visibles ; absent, rendu classique inchangé.
  */
 export async function renderClassicInvoicePdf(loaded: LoadedFacturXInvoice, legal?: InvoicePdfLegalMentions): Promise<Uint8Array> {
-  const [billing, companyLogoPng] = await Promise.all([
-    getCompanyBillingSettings(loaded.companyId),
-    // Un logo absent ou illisible ne bloque jamais le relevé.
-    readCompanyLogo(loaded.companyId).catch(() => null),
-  ]);
-  return generateInvoicePdf({ ...loaded.pdf, companyLogoPng, footerNote: billing.invoice.footerNote ?? null, legal });
+  // Un logo absent ou illisible ne bloque jamais le relevé.
+  const companyLogoPng = await readCompanyLogo(loaded.companyId).catch(() => null);
+  return generateInvoicePdf({ ...loaded.pdf, companyLogoPng, legal });
 }
 
 // ---------------------------------------------------------------------------
