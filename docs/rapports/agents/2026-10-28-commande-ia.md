@@ -44,6 +44,24 @@ Appel réel à l'API, qualité d'extraction sur de vrais messages, coût réel, 
 4. Faire activer la fonction par l'administration de l'entreprise.
 5. Faire qualifier la fiche F10 (contrat, rétention, transferts) avant toute donnée réelle.
 
+## Complément du 28 octobre : décision C11 et retours de relecture
+
+La décision C11 (création côté back-office acceptée) est consignée dans `docs/DECISIONS_PRODUIT_COMMERCIALES.md` et dans `PRODUCT.md`. Chaque retour de relecture a d'abord reçu un test rouge, puis un commit dédié :
+
+1. L'échéance est justifiée par son propre extrait, y compris quand le mode est absent.
+2. `SAAS_ORDER_CREATION_BLOCKED` et `SAAS_ACCOUNT_READ_ONLY` renvoient un 403 explicite. Le géocodage ne lève pas d'erreur.
+3. Seul un client actif est rapproché.
+4. L'enlèvement est commun à toutes les livraisons.
+5. L'expéditeur est placé dans le cadre `<expediteur>`.
+6. Une clé déjà utilisée pour un autre client renvoie un 409. Il reste une course théorique entre deux clients simultanés, car la contrainte d'unicité existante porte sur la paire (client, clé).
+7. Une date passée sans heure est signalée comme passée.
+8. L'activation est atomique (`jsonb_set`).
+9. Une clé refusée renvoie `INTAKE_NOT_CONFIGURED` et rend la place de quota ; le `Retry-After` dépend de la fenêtre atteinte.
+10. Le rapprochement par téléphone se fait en SQL, de façon déterministe.
+11. Toutes les cibles cliquables font au moins 44 px.
+
+Les requêtes SQL brutes (`jsonb_set`, `regexp_replace`) sont testées sur leur forme et leurs paramètres. Elles n'ont pas été exécutées sur PostgreSQL.
+
 ## Mise à jour proposée de `TODO.md` (non appliquée)
 
 > - [ ] **INTAKE-1 — Commande par message IA (coller un message)**. Code, tests locaux (30 tests dédiés, `npm run check` 765/765) et documentation sur `agent/commande-ia`. Restent : la décision sur la création côté back-office, la clé serveur, la migration `20261028100000_order_intake_usage`, une recette navigateur (spec écrite), un essai réel sur 20 messages anonymisés avec la mesure du coût, et la qualification de F10. Hors tranche : l'adresse e-mail de transfert et WhatsApp Business (`docs/operations/order-intake/README.md`).

@@ -20,8 +20,8 @@ Les commandes arrivent par e-mail, SMS ou WhatsApp et le dispatcher les ressaisi
 | Injection de prompt | Le message est encadré comme donnée (`<message>`), ses balises sont neutralisées ; aucun outil n'est déclaré ; sortie au format JSON Schema puis revalidée par un Zod strict (aucun champ en plus, aucune coordonnée, aucun identifiant) ; rien n'est créé sans clic. |
 | Coordonnées inventées | Le schéma n'a aucun champ de coordonnées ; le géocodage reste celui de `createClientOrder`. |
 | Mauvais client | Rapprochement par e-mail ou téléphone de l'expéditeur, comptes `CLIENT` de l'entreprise de la session uniquement ; un numéro partagé par deux clients ne donne rien. À la création, le client doit appartenir à l'entreprise et être actif. |
-| Double clic | Bouton désactivé pendant l'envoi + clé `Idempotency-Key` fixée par livraison à l'analyse : le service existant rend la même commande. |
-| Coût, abus | 60 analyses par heure et 300 par jour **par entreprise**, comptées sous verrou consultatif PostgreSQL (table `order_intake_usage`). |
+| Double clic | Bouton désactivé pendant l'envoi + clé `Idempotency-Key` fixée par livraison à l'analyse : le service existant rend la même commande. Une clé déjà utilisée dans l'entreprise pour un autre client est refusée (409), ce qui évite un doublon après une réponse perdue suivie d'un changement de client. |
+| Coût, abus | 60 analyses par heure et 300 par jour **par entreprise**, comptées sous verrou consultatif PostgreSQL (table `order_intake_usage`). `Retry-After` indique quand l'appel le plus ancien sort de la fenêtre atteinte. Une clé refusée ou un fournisseur saturé rendent la place réservée. |
 | Données personnelles | Le texte n'est jamais stocké ; le journal garde l'entreprise, le modèle, l'issue et les jetons. Sous-traitant documenté : `docs/legal/SOUS_TRAITANTS.md`, F10. |
 | Panne | Désactivée, non configurée, quota, refus du modèle ou réponse invalide : message clair, codes 403/429/422/502/503, jamais de 500 ni de détail interne. |
 
