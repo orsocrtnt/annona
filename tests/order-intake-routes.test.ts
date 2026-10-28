@@ -331,12 +331,12 @@ test("INTAKE interface : chaque cible cliquable fait au moins 44 px (min-h-11)",
   ];
   for (const file of files) {
     const source = readFileSync(file, "utf8");
-    const targets = [...source.matchAll(/<(Button|label)\b[^>]*>/gs)].map((match) => match[0]);
+    const targets = [...source.matchAll(/<(Button|label)\b[^>]*>/g)].map((match) => match[0]);
     assert.ok(targets.length > 0, file);
     for (const tag of targets) assert.match(tag, /min-h-11/, `${file} : ${tag.slice(0, 60)}`);
   }
-  assert.match(readFileSync("src/features/back-office/company-orders-content.tsx", "utf8"), /href="\/dashboard\/orders\/intake"[^>]*min-h-11/s);
-  assert.match(readFileSync("src/app/(back-office)/dispatch/page.tsx", "utf8"), /href="\/dispatch\/intake"[^>]*min-h-11/s);
+  assert.match(readFileSync("src/features/back-office/company-orders-content.tsx", "utf8"), /href="\/dashboard\/orders\/intake"[^>]*min-h-11/);
+  assert.match(readFileSync("src/app/(back-office)/dispatch/page.tsx", "utf8"), /href="\/dispatch\/intake"[^>]*min-h-11/);
 });
 
 test("INTAKE configuration : clé fictive documentée, sous-traitant et mention affichée", () => {
