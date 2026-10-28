@@ -9,6 +9,7 @@ import { getCompanyBillingSettings } from "@/domains/company/billing-settings.se
 import { CLIENT_INVOICES_TAKE } from "@/lib/query/list-limits";
 import { queueInvoiceIssuedNotification } from "@/domains/client-portal/notify.service";
 import { kickOperationJob } from "@/domains/operations/operation-job.service";
+import { isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 
 function generateInvoiceReference(prefix: string) {
   return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
@@ -270,9 +271,10 @@ export async function markOrderInvoicePaid(
     const invoice = await tx.invoice.findFirst({ where: { id: invoiceId, orderId, companyId } });
     if (!invoice) return null;
     if (invoice.status === "PAID") return invoice;
-    if (invoice.status !== "PENDING") throw new Error("INVOICE_NOT_PAYABLE");
+    // Une facture en retard reste à régler : elle se paie comme une facture en attente.
+    if (!isInvoiceOutstanding(invoice.status)) throw new Error("INVOICE_NOT_PAYABLE");
     const claim = await tx.invoice.updateMany({
-      where: { id: invoiceId, orderId, companyId, status: "PENDING", updatedAt: expectedUpdatedAt },
+      where: { id: invoiceId, orderId, companyId, status: invoice.status, updatedAt: expectedUpdatedAt },
       data: { status: "PAID", paidAt: new Date() },
     });
     if (claim.count !== 1) throw new Error("INVOICE_STATUS_CONFLICT");
