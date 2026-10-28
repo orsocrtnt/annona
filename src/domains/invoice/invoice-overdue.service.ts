@@ -19,5 +19,6 @@ export async function markOverdueInvoices(
 ): Promise<number> {
   const cutoff = startOfParisDay(options.now ?? new Date());
   const company = options.companyId ? Prisma.sql` AND "company_id" = ${options.companyId}` : Prisma.empty;
-  return db.$executeRaw`UPDATE "invoices" SET "status" = 'OVERDUE'::"InvoiceStatus" WHERE "status" = 'PENDING'::"InvoiceStatus" AND "due_date" < ${cutoff}${company}`;
+  // `due_date` est un timestamp UTC sans fuseau : comparaison explicite en UTC, quel que soit le fuseau de session.
+  return db.$executeRaw`UPDATE "invoices" SET "status" = 'OVERDUE'::"InvoiceStatus" WHERE "status" = 'PENDING'::"InvoiceStatus" AND "due_date" < (${cutoff}::timestamptz AT TIME ZONE 'UTC')${company}`;
 }

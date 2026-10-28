@@ -10,7 +10,7 @@ import { Prisma } from "@prisma/client";
 type Row = Record<string, unknown>;
 
 /** Seule requête brute simulée : le passage en retard (sans toucher updated_at). */
-const OVERDUE_SQL = /^UPDATE "invoices" SET "status" = 'OVERDUE'::"InvoiceStatus" WHERE "status" = 'PENDING'::"InvoiceStatus" AND "due_date" < \$1( AND "company_id" = \$2)?$/;
+const OVERDUE_SQL = /^UPDATE "invoices" SET "status" = 'OVERDUE'::"InvoiceStatus" WHERE "status" = 'PENDING'::"InvoiceStatus" AND "due_date" < \(\$1::timestamptz AT TIME ZONE 'UTC'\)( AND "company_id" = \$2)?$/;
 
 export type FakeInvoice = {
   id: string;
