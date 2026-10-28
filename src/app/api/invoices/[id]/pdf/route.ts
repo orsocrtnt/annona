@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildFacturXPdf, facturXHttpResult } from "@/domains/invoice/facturx/facturx-document";
+import { buildFacturXPdf, facturXHttpResult, safeFilename } from "@/domains/invoice/facturx/facturx-document";
 import { loadFacturXInvoice, renderClassicInvoicePdf } from "@/domains/invoice/facturx/facturx.service";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return new NextResponse(Buffer.from(pdf), {
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `inline; filename="${invoice.reference}.pdf"`,
+          "Content-Disposition": `inline; filename="${safeFilename(invoice.reference)}.pdf"`,
           "Cache-Control": "private, no-store",
           "X-Content-Type-Options": "nosniff",
         },

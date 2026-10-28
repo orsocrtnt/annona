@@ -37,8 +37,9 @@ function load(file: string, deps: Record<string, unknown>) {
 }
 
 // Deux entreprises, deux clients : chaque facture appartient à une entreprise et à un client.
-const INVOICES: Record<string, { companyId: string; customerId: string }> = {
+const INVOICES: Record<string, { companyId: string; customerId: string; reference?: string }> = {
   inv_a: { companyId: "company_a", customerId: "client_a" },
+  inv_q: { companyId: "company_a", customerId: "client_a", reference: 'FAC"; evil=1' },
   inv_a2: { companyId: "company_a", customerId: "client_a2" },
   inv_b: { companyId: "company_b", customerId: "client_b" },
 };
@@ -50,7 +51,7 @@ function fakeInvoiceService(calls: unknown[], facturxOk = true) {
       const row = INVOICES[scope.invoiceId];
       if (!row || row.companyId !== scope.companyId) return null;
       if (scope.customerId !== undefined && row.customerId !== scope.customerId) return null;
-      return { companyId: row.companyId, reference: `FAC-${scope.invoiceId}`, source: { ok: true }, pdf: {} };
+      return { companyId: row.companyId, reference: row.reference ?? `FAC-${scope.invoiceId}`, source: { ok: true }, pdf: {} };
     },
     renderClassicInvoicePdf: async () => new Uint8Array([1, 2, 3]),
     facturxOk,
@@ -59,6 +60,7 @@ function fakeInvoiceService(calls: unknown[], facturxOk = true) {
 
 function documentDeps(facturxOk: boolean) {
   return {
+    safeFilename: (reference: string) => reference.replace(/[^A-Za-z0-9._-]+/g, "_") || "facture",
     buildFacturXPdf: async () => (facturxOk ? { ok: true, pdf: new Uint8Array([9]), xml: "<x/>", warnings: [] } : { ok: false, errors: [{ rule: "TL-FR-SIREN", message: "SIREN de l'entreprise manquant." }], warnings: [] }),
     facturXHttpResult: (result: { ok: boolean }, reference: string, audience: string) =>
       result.ok
@@ -153,6 +155,19 @@ function portal(user: { id: string; companyId: string | null }, facturxOk = true
   const call = (id: string, query = "") => route.GET!(new Request(`http://local.test/api/portal/invoices/${id}/pdf${query}`), { params: Promise.resolve({ id }) });
   return { call, calls };
 }
+
+test("portail : PDF classique chargé comme le Factur-X (client propriétaire), nom de fichier assaini", async () => {
+  const { call, calls } = portal({ id: "client_a", companyId: "company_a" });
+  const classic = await call("inv_a");
+  assert.equal(classic.status, 200);
+  assert.equal(classic.headers["Content-Type"], "application/pdf");
+  assert.equal(classic.headers["Content-Disposition"], 'inline; filename="FAC-inv_a.pdf"');
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), { invoiceId: "inv_a", companyId: "company_a", customerId: "client_a" });
+  assert.equal((await call("inv_q")).headers["Content-Disposition"], 'inline; filename="FAC_evil_1.pdf"');
+  assert.equal((await call("inv_a2")).status, 404, "facture d'un autre client");
+  assert.equal((await call("inv_b")).status, 404, "facture d'une autre entreprise");
+  assert.equal((await backOffice("COMPANY_ADMIN").call("inv_q")).headers["Content-Disposition"], 'inline; filename="FAC_evil_1.pdf"');
+});
 
 test("portail : Factur-X limité au client propriétaire de la facture et à son entreprise", async () => {
   const { call, calls } = portal({ id: "client_a", companyId: "company_a" });

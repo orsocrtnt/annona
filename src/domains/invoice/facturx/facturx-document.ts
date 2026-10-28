@@ -63,7 +63,7 @@ export interface FacturXHttpResult {
   body: Uint8Array | string;
 }
 
-const safeFilename = (reference: string) => reference.replace(/[^A-Za-z0-9._-]+/g, "_") || "facture";
+export const safeFilename = (reference: string) => reference.replace(/[^A-Za-z0-9._-]+/g, "_") || "facture";
 
 /**
  * 200 : PDF Factur-X en pièce jointe.
