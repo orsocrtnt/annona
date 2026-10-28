@@ -101,7 +101,7 @@ const CREATE_ERROR_STATUSES: Record<string, "conflict" | "saas_blocked" | "saas_
 export async function createOrderFromIntake(
   input: { companyId: string; customerId: string; order: CreateClientOrderInput; idempotencyKey: string },
   deps: {
-    db?: Pick<typeof prisma, "company" | "user">;
+    db?: Pick<typeof prisma, "company" | "user" | "order">;
     createOrder?: CreateOrder;
     assertCategory?: typeof assertDeliveryCategoryEnabled;
   } = {}
@@ -121,6 +121,14 @@ export async function createOrderFromIntake(
   });
   if (!customer) return { status: "customer_not_found" };
   if (customer.status !== "ACTIVE") return { status: "customer_inactive" };
+
+  // L'unicité existante porte sur (client, clé) : une clé déjà utilisée dans l'entreprise pour un
+  // autre client signale un premier essai abouti (réponse perdue) suivi d'un changement de client.
+  const previous = await db.order.findFirst({
+    where: { companyId: input.companyId, idempotencyKey: input.idempotencyKey },
+    select: { customerId: true },
+  });
+  if (previous && previous.customerId !== customer.id) return { status: "conflict" };
 
   try {
     await assertCategory(input.companyId, input.order.deliveryCategory);

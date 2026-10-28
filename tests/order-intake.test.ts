@@ -100,7 +100,12 @@ type Row = Record<string, unknown> & { id: string; companyId: string; createdAt:
 type UserRow = { id: string; companyId: string; email: string; phone: string | null; firstName: string; lastName: string; status: string; systemRole: string };
 
 /** Base mémoire qui applique les filtres Prisma utilisés par le domaine (entreprise d'abord). */
-function memoryDb(options: { settings?: unknown; usage?: Row[]; users?: UserRow[] } = {}) {
+function memoryDb(options: {
+  settings?: unknown;
+  usage?: Row[];
+  users?: UserRow[];
+  orders?: Array<{ companyId: string; idempotencyKey: string; customerId: string }>;
+} = {}) {
   const usage: Row[] = [...(options.usage ?? [])];
   const users = options.users ?? [];
   const events: string[] = [];
@@ -150,6 +155,11 @@ function memoryDb(options: { settings?: unknown; usage?: Row[]; users?: UserRow[
         return found ? select(found) : null;
       },
       findMany: async ({ where }: { where: Record<string, unknown> }) => users.filter((user) => matchesUser(user, where)).map(select),
+    },
+    // Lecture seule des commandes existantes : aucune méthode d'écriture n'est exposée.
+    order: {
+      findFirst: async ({ where }: { where: { companyId: string; idempotencyKey: string } }) =>
+        (options.orders ?? []).find((order) => order.companyId === where.companyId && order.idempotencyKey === where.idempotencyKey) ?? null,
     },
     orderIntakeUsage,
     $transaction: async <T>(fn: (tx: unknown) => Promise<T>) => {
@@ -410,7 +420,7 @@ test("INTAKE injection : un message malveillant ne produit qu'un brouillon, jama
   const calm = await analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.injection }, { db: memory.db as never, env: ENV, now: NOW, provider: fakeProvider(extraction()) });
   assert.equal(calm.status, "ok");
   if (calm.status === "ok") assert.equal(calm.draft.deliveries.length, 0);
-  assert.equal("order" in memory.db, false);
+  assert.deepEqual(Object.keys(memory.db.order), ["findFirst"], "aucune écriture de commande possible");
   assert.deepEqual(created, []);
 });
 
@@ -609,6 +619,29 @@ test("INTAKE relecture 5 : l'expéditeur déclaré reste dans un cadre de donné
   assert.match(ORDER_INTAKE_SYSTEM_PROMPT, /<expediteur>/);
   const absent = buildOrderIntakeUserContent({ text: "2 plis", sender: null, now: NOW });
   assert.match(absent, /<expediteur>\s*non renseigné\s*<\/expediteur>/);
+});
+
+test("INTAKE relecture 6 : changer de client avec la même clé ne crée pas de doublon", async () => {
+  const order = createClientOrderSchema.parse(buildOrderInputFromForm(draftToFormValues(buildOrderIntakeDraft(EMAIL_EXTRACTION, FIXTURES.email, NOW), 0)));
+  const otherClient: UserRow = { ...CLIENTS[0]!, id: "client-c", email: "autre.client@example.invalid", phone: null };
+  // Première tentative réussie côté serveur pour client-a, réponse perdue (réseau) côté navigateur.
+  const memory = memoryDb({ users: [...CLIENTS, otherClient], orders: [{ companyId: "company-a", idempotencyKey: "intake-key-switch", customerId: "client-a" }] });
+  const calls: unknown[] = [];
+  const result = await createOrderFromIntake({ companyId: "company-a", customerId: "client-c", order, idempotencyKey: "intake-key-switch" }, {
+    db: memory.db as never,
+    assertCategory: async () => undefined,
+    createOrder: (async (...args: unknown[]) => { calls.push(args); return { id: "order-dup" }; }) as never,
+  });
+  assert.equal(result.status, "conflict");
+  assert.equal(calls.length, 0);
+
+  // Même client et même clé : le service existant rend la commande déjà créée.
+  const same = await createOrderFromIntake({ companyId: "company-a", customerId: "client-a", order, idempotencyKey: "intake-key-switch" }, {
+    db: memory.db as never,
+    assertCategory: async () => undefined,
+    createOrder: (async () => ({ id: "order-1" })) as never,
+  });
+  assert.equal(same.status, "created");
 });
 
 test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélectionné", async () => {

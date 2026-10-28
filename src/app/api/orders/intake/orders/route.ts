@@ -47,7 +47,11 @@ export async function POST(request: Request) {
       case "category_disabled":
         return intakeError("CATEGORY_DISABLED", "Ce type de livraison n'est pas activé pour votre entreprise.", 403);
       case "conflict":
-        return intakeError("IDEMPOTENCY_CONFLICT", "Cette tentative correspond déjà à une autre commande. Relancez l'analyse.", 409);
+        return intakeError(
+          "IDEMPOTENCY_CONFLICT",
+          "Une commande a déjà été créée par cette tentative (peut-être pour un autre client). Vérifiez la liste des commandes avant de relancer l'analyse.",
+          409
+        );
       case "saas_blocked":
         return intakeError("SAAS_ORDER_BLOCKED", "Votre abonnement ne permet plus de créer de commandes. Consultez « Mon abonnement ».", 403);
       case "saas_read_only":
