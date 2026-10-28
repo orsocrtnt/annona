@@ -148,7 +148,19 @@ export async function createOrderFromIntake(
       input.companyId,
       customer.email,
       { ...input.order, source: "ADMIN" },
-      { idempotencyKey: input.idempotencyKey }
+      {
+        idempotencyKey: input.idempotencyKey,
+        // Atomique : le verrou (entreprise, clé) est tenu jusqu'à la fin de la transaction de création,
+        // donc deux requêtes simultanées pour deux clients ne peuvent pas créer deux commandes.
+        beforeCreate: async (tx) => {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${input.companyId}::text || ':' || ${input.idempotencyKey}::text, 0))`;
+          const winner = await tx.order.findFirst({
+            where: { companyId: input.companyId, idempotencyKey: input.idempotencyKey },
+            select: { customerId: true },
+          });
+          if (winner && winner.customerId !== customer.id) throw new Error("IDEMPOTENCY_KEY_REUSED");
+        },
+      }
     );
     return { status: "created", order: { id: order.id, reference: (order as { reference?: string }).reference } };
   } catch (error) {

@@ -47,6 +47,11 @@ type CreateOrderOptions = CreateClientOrderInput & {
 
 type CreateOrderRequest = {
   idempotencyKey?: string;
+  /**
+   * Garde exécutée au début de la transaction de création (verrou + contrôle de doublon).
+   * Le géocodage et tout appel réseau restent avant la transaction.
+   */
+  beforeCreate?: (tx: Prisma.TransactionClient) => Promise<void>;
 };
 
 function canonicalize(value: unknown): unknown {
@@ -505,6 +510,7 @@ export async function createClientOrder(
 
     try {
       return await prisma.$transaction(async (tx) => {
+        await request.beforeCreate?.(tx);
         await assertCanCreateOrder(companyId, tx);
         const order = await tx.order.create({
           data: {
@@ -611,6 +617,7 @@ export async function createClientOrder(
   let transactionResult;
   try {
     transactionResult = await prisma.$transaction(async (tx) => {
+    await request.beforeCreate?.(tx);
     const saasAccess = await assertCanCreateOrder(companyId, tx);
     const createdOrder = await tx.order.create({
       data: {
