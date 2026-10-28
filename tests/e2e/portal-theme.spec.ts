@@ -132,3 +132,16 @@ test("les boutons de la barre du portail font 44 px sans grandir la barre (56 px
     expect(bar?.height, `hauteur de barre à ${width}px`).toBeLessThanOrEqual(56);
   }
 });
+
+test("Sora s'applique aussi aux fenêtres Radix rendues dans <body> depuis le portail", async ({ page }) => {
+  await openPortal(page);
+  await expect(page.locator("html")).toHaveAttribute("data-portal", "");
+  const heading = page.getByRole("heading", { level: 1 }).first();
+  expect(await heading.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Sora/);
+  await page.getByTestId("theme-toggle").click();
+  const label = page.getByRole("menu").getByText("Affichage");
+  await expect(label).toBeVisible();
+  // Le menu est rendu dans <body>, hors de la div du portail.
+  expect(await label.evaluate((el) => el.closest("[data-portal-root]") === null)).toBe(true);
+  expect(await label.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Sora/);
+});

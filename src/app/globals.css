@@ -138,6 +138,15 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  /*
+   * Titres en Sora (DESIGN.md), portail seulement : contenu du portail dès le rendu serveur
+   * ([data-portal-root]) et fenêtres Radix rendues dans <body> (html[data-portal], posé par le layout).
+   */
+  [data-portal-root] :is(h1, h2, h3),
+  html[data-portal] :is(h1, h2, h3, [data-slot="dropdown-menu-label"]) {
+    font-family: var(--font-sora), var(--font-sans);
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-font-smoothing: antialiased;

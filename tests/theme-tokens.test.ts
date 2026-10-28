@@ -153,7 +153,12 @@ test("la barre du portail tient à 320 px : thème et avatar passent dans le men
 test("Sora (titres DESIGN.md) est chargée par le seul portail ; le layout racine garde Inter", () => {
   const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
   assert.match(read("src/app/(client-portal)/portal-font.ts"), /Sora\(/);
-  assert.match(read("src/app/(client-portal)/layout.tsx"), /sora\.variable[\s\S]*h1,h2,h3/);
+  const portalLayout = read("src/app/(client-portal)/layout.tsx");
+  // Variable et attribut portés sur <html> : les fenêtres Radix rendues dans <body> héritent de Sora.
+  assert.match(portalLayout, /documentElement[\s\S]*classList\.add\(sora\.variable\)[\s\S]*setAttribute\("data-portal"/);
+  assert.match(portalLayout, /classList\.remove\(sora\.variable\)[\s\S]*removeAttribute\("data-portal"\)/);
+  assert.match(css, /html\[data-portal\] :is\(h1, h2, h3, \[data-slot="dropdown-menu-label"\]\) \{\s*font-family: var\(--font-sora\)/);
+  assert.match(read("src/components/ui/dropdown-menu.tsx"), /data-slot="dropdown-menu-label"/);
   assert.doesNotMatch(read("src/app/layout.tsx"), /Sora/);
 });
 
