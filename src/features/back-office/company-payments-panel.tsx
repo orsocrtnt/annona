@@ -16,6 +16,7 @@ import {
   reminderResultLabel,
 } from "@/features/back-office/company-payments-labels";
 import type { CompanyInvoiceFilter, CompanyInvoiceRow } from "@/domains/invoice/company-invoices.service";
+import { isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 import { cn, formatDate } from "@/lib/utils";
 
 const FILTERS: { key: CompanyInvoiceFilter; label: string }[] = [
@@ -57,7 +58,7 @@ function ReminderLine({ row }: { row: CompanyInvoiceRow }) {
 }
 
 function InvoiceRow({ row, onRemind, reminding }: { row: CompanyInvoiceRow; onRemind: (row: CompanyInvoiceRow) => void; reminding: boolean }) {
-  const outstanding = row.status === "PENDING" || row.status === "OVERDUE";
+  const outstanding = isInvoiceOutstanding(row.status);
   return (
     <li
       className={cn(
