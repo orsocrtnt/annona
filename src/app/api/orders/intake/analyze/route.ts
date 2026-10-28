@@ -2,6 +2,10 @@ import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guar
 import { analyzeOrderMessage } from "@/domains/order-intake/order-intake.service";
 import { intakeError, intakeJson, withIntakeErrors } from "../intake-http";
 
+function formatWait(seconds: number) {
+  return seconds >= 3600 ? `${Math.ceil(seconds / 3600)} h` : `${Math.max(1, Math.ceil(seconds / 60))} min`;
+}
+
 /**
  * Analyse un message collé et rend un brouillon éditable. Rien n'est créé ici.
  * Le message vient d'un tiers : il n'est jamais interprété comme une consigne.
@@ -32,7 +36,7 @@ export async function POST(request: Request) {
       case "rate_limited":
         return intakeError(
           "QUOTA_REACHED",
-          "Quota d'analyses atteint pour votre entreprise. Réessayez plus tard ou saisissez la commande à la main.",
+          `Quota d'analyses atteint pour votre entreprise. Réessayez dans ${formatWait(result.retryAfterSeconds)} ou saisissez la commande à la main.`,
           429,
           { "Retry-After": String(result.retryAfterSeconds) }
         );

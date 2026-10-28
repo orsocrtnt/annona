@@ -31,8 +31,21 @@ export async function reserveOrderIntakeCall(
       tx.orderIntakeUsage.count({ where: { companyId, createdAt: { gte: new Date(now.getTime() - HOUR_MS) } } }),
       tx.orderIntakeUsage.count({ where: { companyId, createdAt: { gte: new Date(now.getTime() - DAY_MS) } } }),
     ]);
-    if (lastHour >= ORDER_INTAKE_HOURLY_LIMIT || lastDay >= ORDER_INTAKE_DAILY_LIMIT) {
-      return { status: "rate_limited", retryAfterSeconds: 3600 } as const;
+    const exceeded = [
+      ...(lastHour >= ORDER_INTAKE_HOURLY_LIMIT ? [HOUR_MS] : []),
+      ...(lastDay >= ORDER_INTAKE_DAILY_LIMIT ? [DAY_MS] : []),
+    ];
+    if (exceeded.length > 0) {
+      // Une place se libère quand l'appel le plus ancien de la fenêtre en sort ; on retient la plus lointaine.
+      const waits = await Promise.all(exceeded.map(async (windowMs) => {
+        const oldest = await tx.orderIntakeUsage.findFirst({
+          where: { companyId, createdAt: { gte: new Date(now.getTime() - windowMs) } },
+          orderBy: { createdAt: "asc" },
+          select: { createdAt: true },
+        });
+        return oldest ? oldest.createdAt.getTime() + windowMs - now.getTime() : windowMs;
+      }));
+      return { status: "rate_limited", retryAfterSeconds: Math.max(1, Math.ceil(Math.max(...waits) / 1000)) } as const;
     }
     const row = await tx.orderIntakeUsage.create({
       data: { companyId, status: "PENDING", model },
@@ -40,6 +53,15 @@ export async function reserveOrderIntakeCall(
     });
     return { status: "reserved", id: row.id } as const;
   });
+}
+
+/** Rend la place réservée quand le fournisseur a refusé l'appel avant toute génération (aucun jeton). */
+export async function releaseOrderIntakeCall(id: string, db: Pick<typeof prisma, "orderIntakeUsage"> = prisma) {
+  try {
+    await db.orderIntakeUsage.delete({ where: { id } });
+  } catch (error) {
+    console.error("[order-intake] réservation non rendue", error instanceof Error ? error.name : "unknown");
+  }
 }
 
 export async function completeOrderIntakeCall(

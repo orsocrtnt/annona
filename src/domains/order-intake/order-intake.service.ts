@@ -8,7 +8,7 @@ import { buildOrderIntakeDraft, type OrderIntakeDraft } from "./order-intake.dra
 import { OrderIntakeProviderError, type OrderIntakeModelProvider, type OrderIntakeProviderErrorCode } from "./order-intake.provider";
 import { orderIntakeExtractionSchema, orderIntakeRequestSchema } from "./order-intake.schema";
 import { ORDER_INTAKE_API_KEY_ENV, getOrderIntakeSettings, isOrderIntakeConfigured } from "./order-intake.settings";
-import { completeOrderIntakeCall, reserveOrderIntakeCall } from "./order-intake.usage";
+import { completeOrderIntakeCall, releaseOrderIntakeCall, reserveOrderIntakeCall } from "./order-intake.usage";
 
 type OrderIntakeDb = Pick<typeof prisma, "company" | "user" | "orderIntakeUsage" | "$transaction">;
 
@@ -56,6 +56,11 @@ export async function analyzeOrderMessage(
     result = await provider.extract({ text, sender, now });
   } catch (error) {
     const known = error instanceof OrderIntakeProviderError ? error : null;
+    // Clé refusée ou fournisseur saturé : rien n'a été généré, la place de quota est rendue.
+    if (known?.code === "not_configured" || known?.code === "rate_limited") {
+      await releaseOrderIntakeCall(reservation.id, db);
+      return known.code === "not_configured" ? { status: "not_configured" } : { status: "provider_error", reason: known.code };
+    }
     await completeOrderIntakeCall(reservation.id, { status: "FAILED", ...(known?.usage ?? { inputTokens: 0, outputTokens: 0 }) }, db);
     return { status: "provider_error", reason: known?.code ?? "upstream" };
   }

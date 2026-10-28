@@ -136,6 +136,16 @@ function memoryDb(options: {
       usage.push(row);
       return { id: row.id };
     },
+    findFirst: async ({ where }: { where: { companyId: string; createdAt: { gte: Date } }; orderBy: { createdAt: "asc" } }) =>
+      usage
+        .filter((row) => row.companyId === where.companyId && row.createdAt >= where.createdAt.gte)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0] ?? null,
+    delete: async ({ where }: { where: { id: string } }) => {
+      events.push("release");
+      const index = usage.findIndex((entry) => entry.id === where.id);
+      assert.ok(index >= 0, "ligne d'usage inconnue");
+      return usage.splice(index, 1)[0];
+    },
     update: async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
       events.push(`complete:${String(data.status)}`);
       const row = usage.find((entry) => entry.id === where.id);
@@ -674,6 +684,27 @@ test("INTAKE relecture 8 : l'activation modifie la seule clé orderIntake en une
 
   const missing = { ...db, $executeRaw: async () => 0 };
   await assert.rejects(setOrderIntakeEnabled("company-x", false, missing as never), /COMPANY_NOT_FOUND/);
+});
+
+test("INTAKE relecture 9 : clé refusée par le fournisseur = non configurée, sans consommer le quota", async () => {
+  for (const code of ["not_configured", "rate_limited"] as const) {
+    const memory = memoryDb();
+    const provider: OrderIntakeModelProvider = { model: "fake-model", async extract() { throw new OrderIntakeProviderError(code, "refus"); } };
+    const result = await analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.sms }, { db: memory.db as never, env: ENV, now: NOW, provider });
+    assert.equal(result.status, code === "not_configured" ? "not_configured" : "provider_error", code);
+    assert.deepEqual(memory.usage, [], `${code} : réservation rendue`);
+  }
+});
+
+test("INTAKE relecture 9 : Retry-After suit la fenêtre réellement atteinte", async () => {
+  const minutesAgo = (minutes: number) => new Date(NOW.getTime() - minutes * 60_000);
+  const hourly = Array.from({ length: ORDER_INTAKE_HOURLY_LIMIT }, (_, index) => ({ id: `h${index}`, companyId: "company-a", createdAt: minutesAgo(10 - index * 0.1), status: "SUCCEEDED" }));
+  const hour = await analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.sms }, { db: memoryDb({ usage: hourly }).db as never, env: ENV, now: NOW, provider: fakeProvider(SMS_EXTRACTION) });
+  assert.deepEqual(hour, { status: "rate_limited", retryAfterSeconds: 50 * 60 });
+
+  const daily = Array.from({ length: ORDER_INTAKE_DAILY_LIMIT }, (_, index) => ({ id: `d${index}`, companyId: "company-a", createdAt: minutesAgo(5 * 60 - index * 0.01), status: "SUCCEEDED" }));
+  const day = await analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.sms }, { db: memoryDb({ usage: daily }).db as never, env: ENV, now: NOW, provider: fakeProvider(SMS_EXTRACTION) });
+  assert.deepEqual(day, { status: "rate_limited", retryAfterSeconds: 19 * 3600 });
 });
 
 test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélectionné", async () => {

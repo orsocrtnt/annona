@@ -129,6 +129,9 @@ test("INTAKE route analyse : chaque issue a un statut propre, aucune erreur 500 
     assert.equal(JSON.stringify(body).includes("order_intake_usage"), false);
     if (status === 429) assert.equal(response.headers.get("retry-after"), "3600");
   }
+  const daily = await analyzeRoute(DISPATCHER, { status: "rate_limited", retryAfterSeconds: 68400 }).POST(post("/api/orders/intake/analyze", { text: "urgent" }));
+  assert.equal(daily.headers.get("retry-after"), "68400");
+  assert.match(((await daily.json()) as { error: string }).error, /19 h/);
   const broken = await analyzeRoute(DISPATCHER, { status: "ok", draft: {} }).POST(
     new Request("http://local/api/orders/intake/analyze", { method: "POST", body: "{pas du json" })
   );
