@@ -8,6 +8,7 @@ import { DemoModeBar } from "@/features/demo/demo-mode-bar";
 import { NavigationProgress } from "@/components/navigation/navigation-progress";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { OPERATIONAL_QUERY_DEFAULTS } from "@/lib/query/defaults";
+import { ThemeSync } from "@/components/theme/theme-sync";
 import { SkipLink } from "@/components/accessibility/skip-link";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
+        <ThemeSync />
         <SkipLink />
         <NavigationProgress />
         <DemoModeBar />
