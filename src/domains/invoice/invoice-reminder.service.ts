@@ -27,6 +27,19 @@ export type InvoiceReminderResult =
 
 const BLOCKING_RESULTS: InvoiceReminderResult[] = ["QUEUED", "SENT"];
 
+type ReminderState = { result: string; createdAt: Date; operationJob?: { status: string } | null };
+
+/** Résultat affiché : une relance en file dont la tâche a définitivement échoué devient FAILED. */
+export function effectiveReminderResult(reminder: ReminderState): string {
+  return reminder.result === "QUEUED" && reminder.operationJob?.status === "FAILED" ? "FAILED" : reminder.result;
+}
+
+/** Vrai si cette relance interdit d'en envoyer une nouvelle maintenant (délai anti-doublon). */
+export function reminderBlocksNewOne(reminder: ReminderState, now: Date): boolean {
+  return (BLOCKING_RESULTS as string[]).includes(effectiveReminderResult(reminder))
+    && reminder.createdAt.getTime() >= now.getTime() - COOLDOWN_MS;
+}
+
 type ReminderDatabase = Pick<PrismaClient, "$transaction">;
 type ReminderTx = Pick<Prisma.TransactionClient, "invoice" | "invoiceReminder" | "operationJob" | "$queryRaw">;
 
@@ -74,7 +87,7 @@ export async function remindInvoice(
       orderBy: { createdAt: "desc" },
       include: { operationJob: { select: { status: true } } },
     });
-    if (recent && recent.operationJob?.status !== "FAILED") {
+    if (recent && reminderBlocksNewOne(recent, now)) {
       return { reminder: view(recent), duplicate: true, jobId: null };
     }
 
