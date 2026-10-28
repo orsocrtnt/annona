@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/services/supabase/middleware";
 import { AUTH_ROUTES } from "@/lib/constants";
+import { isCrossOriginMutation, isOriginCheckExempt } from "@/lib/security/origin-check";
 
 const PROTECTED_PREFIXES = [
   "/admin",
@@ -17,10 +18,14 @@ const PROTECTED_PREFIXES = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isCronRoute = pathname.startsWith("/api/cron/");
 
-  if (isCronRoute || pathname === "/api/billing/webhook") {
+  // Webhook Stripe et crons : authentifiés par signature ou secret, sans session.
+  if (isOriginCheckExempt(pathname)) {
     return NextResponse.next();
+  }
+
+  if (isCrossOriginMutation(request)) {
+    return NextResponse.json({ error: "Origine de la requête refusée." }, { status: 403 });
   }
 
   const { supabaseResponse, user } = await updateSession(request);
