@@ -58,13 +58,29 @@ test("le basculement de thème se manœuvre au clavier et garde un focus visible
   await expect(toggle).toBeFocused();
   await page.keyboard.press("Enter");
   const dark = page.getByRole("menuitemradio", { name: "Sombre" });
+  const system = page.getByRole("menuitemradio", { name: "Système" });
   await expect(dark).toBeVisible();
+  // Radix place le focus sur la première option à l'ouverture clavier.
+  await expect(system).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitemradio", { name: "Clair" })).toBeFocused();
   await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("ArrowDown");
+  await expect(dark).toBeFocused();
+  // Focus visible : l'option atteinte au clavier porte un anneau (le fond accent seul est quasi invisible).
+  const ring = (name: string) => page.getByRole("menuitemradio", { name }).evaluate((el) => getComputedStyle(el).boxShadow);
+  expect(await ring("Sombre")).not.toBe("none");
+  expect(await ring("Clair")).toBe("none");
   await page.keyboard.press("Enter");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(toggle).toBeFocused();
+
+  // Échap ferme le menu sans rien choisir et rend le focus au bouton.
+  await page.keyboard.press("Enter");
+  await expect(dark).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await expect(toggle).toBeFocused();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
 test("les pages principales du portail restent lisibles en sombre et les cibles font au moins 44 px", async ({ page }) => {

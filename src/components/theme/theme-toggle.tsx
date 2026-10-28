@@ -37,7 +37,7 @@ export function ThemeRadioGroup() {
         }}
       >
         {OPTIONS.map(({ value, label, icon: Icon }) => (
-          <DropdownMenuRadioItem key={value} value={value} className="min-h-11 cursor-pointer rounded-xl px-3">
+          <DropdownMenuRadioItem key={value} value={value} className="min-h-11 cursor-pointer rounded-xl px-3 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
             <Icon className="h-4 w-4" aria-hidden />
             <span>{label}</span>
             <DropdownMenuItemIndicator className="ml-auto">

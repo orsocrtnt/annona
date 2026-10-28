@@ -112,7 +112,7 @@ function PortalMobileNavLink({
   return (
     <DropdownMenuItem
       asChild
-      className="min-h-11 cursor-pointer rounded-xl px-3 text-[#3d4540] focus:bg-[#f1f6f2] focus:text-[#0e1310] aria-[current=page]:font-semibold aria-[current=page]:text-[#0e1310] dark:text-text-secondary dark:focus:bg-muted dark:focus:text-foreground dark:aria-[current=page]:text-foreground"
+      className="min-h-11 cursor-pointer rounded-xl px-3 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring text-[#3d4540] focus:bg-[#f1f6f2] focus:text-[#0e1310] aria-[current=page]:font-semibold aria-[current=page]:text-[#0e1310] dark:text-text-secondary dark:focus:bg-muted dark:focus:text-foreground dark:aria-[current=page]:text-foreground"
     >
       <Link href={item.href} aria-current={isActive ? "page" : undefined} {...prefetchHandlers}>
         <Icon className="h-4 w-4" aria-hidden />
