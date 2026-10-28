@@ -9,7 +9,7 @@ Branche `agent/preuve-livraison`, base `9234600` (preproduction). Le worktree av
 | 2 | Photos sans EXIF, URL à la demande | `src/lib/storage/pod-image.ts` (sharp : rotation appliquée aux pixels, aucune métadonnée, JPEG/PNG conservés). URL signées ramenées à 300 s. Plus aucune URL Storage dans les réponses d'API : liens internes `…/proof/photo|signature|pdf` qui signent au clic. |
 | 1 | Signature à l'écran | `signature-pad.tsx` (canvas tactile, « Effacer »), nom du réceptionnaire, refus de signer motivé. PNG validé (octets, 40–1600 x 40–800 px, 300 Ko), aplati sur blanc, stocké dans `delivery-pods` sous `companyId/deliveryId-sig-…png`. Hors ligne : la signature voyage dans la file IndexedDB existante. Règle par entreprise `settings.proofRules.signatureRequired` (défaut : facultative) ; `GET/PATCH /api/company/proof-rules`, `GET /api/driver/proof-rules`. |
 | 3 | PDF de preuve | `src/lib/pdf/proof-pdf.ts` + `proof.service.ts`. Routes back-office `/api/deliveries/[id]/proof/[kind]` et portail `/api/portal/deliveries/[id]/proof/[kind]` (entreprise et client de la session). Le nom du livreur n'y figure volontairement pas. |
-| 4 | Envoi au donneur d'ordre | Réutilise la tâche durable `CLIENT_NOTIFICATION` : l'e-mail livrée/échec porte le lien du portail, même clé d'idempotence qu'avant ; coupable via `proofRules.emailToClient` ; rien n'est envoyé si l'e-mail n'est pas configuré, la notification dans l'application reste. |
+| 4 | Envoi au donneur d'ordre | Réutilise la tâche durable `CLIENT_NOTIFICATION` : l'e-mail livrée/échec porte le lien du portail, même clé d'idempotence qu'avant ; `proofRules.emailToClient=false` retire seulement le lien de preuve (l'e-mail de statut part toujours) ; rien n'est envoyé si l'e-mail n'est pas configuré, la notification dans l'application reste. |
 | 5 | Relevés par coursier | `GET /api/back-office/courier-statements?from&to[&driverId][&format=csv]`, permission `drivers:read` (admin, mini-admin, dispatcher) : aucune nouvelle permission, donc aucun seed. Pas de page : export CSV (BOM, `;`, formules neutralisées) et JSON. |
 | 6 | Conservation | Export DATA-02 : manifeste des signatures (`kind: "signature"`). Archive : téléchargement et SHA256 des signatures. Purge démo : une signature bloque comme la photo. Durée documentée dans `docs/DATABASE.md` (aucune durée validée, aucun purgeur général). |
 
@@ -25,3 +25,15 @@ Branche `agent/preuve-livraison`, base `9234600` (preproduction). Le worktree av
 - Hors ligne, si la règle « signature requise » n'a jamais été chargée, le livreur peut enregistrer sans ; le serveur refuse alors à la reprise (action en échec visible).
 - Les listes qui renvoient une ligne de livraison brute peuvent exposer le chemin Storage de la signature (clé interne d'un bucket privé, sans lien) ; non exploitable mais à nettoyer avec le reste.
 - La position enregistrée est la dernière position connue du livreur : donnée de géolocalisation à aligner sur la décision GPS avant données réelles.
+
+## Corrections après relecture (2026-10-28)
+
+- Migration renommée `20261028120000_pod_signature`.
+- Plus aucun chemin Storage dans les réponses d'API (`omitStoragePaths`, test d'inventaire des routes).
+- Photo ou signature illisible au ré-encodage : 400/413 non relançable (plus de 502).
+- `PATCH /api/company/proof-rules` partiel, fusion SQL ciblée (`jsonb_set`), sans écraser les autres réglages.
+- Lien PDF seulement si `podOutcome` existe ; rejeux idempotents évalués avant les règles de l'entreprise.
+- Canevas : `ResizeObserver`, coordonnées indépendantes de l'animation, export bloqué si vide ou trop petit.
+- Taille de la photo contrôlée après ré-encodage (repli JPEG) ; archive DATA-02 : plafonds distincts, `kind`, `photoCount`, `signatureCount` au manifeste.
+- PDF reproductible (horodatage = date de la preuve) ; helpers de stockage uniques.
+- Revue `security-review` (sous-agent) : aucune vulnérabilité de confiance élevée. Remarque hors périmètre : `getClientDeliveryById` renvoie déjà le livreur (nom, téléphone) au portail.
