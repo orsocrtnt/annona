@@ -3,13 +3,15 @@ import { requireClientRole } from "@/lib/api/auth-guard";
 import { getClientInvoiceById } from "@/domains/invoice/invoice.service";
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
 import { readCompanyLogo } from "@/domains/company/company-logo.service";
+import { buildFacturXPdf, facturXHttpResult } from "@/domains/invoice/facturx/facturx-document";
+import { loadFacturXInvoice, renderClassicInvoicePdf } from "@/domains/invoice/facturx/facturx.service";
 import { generateInvoicePdf } from "@/lib/pdf/invoice-pdf";
 import type { InvoiceLineItem } from "@/lib/validations/invoice";
 
 export const runtime = "nodejs";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireClientRole();
@@ -20,6 +22,15 @@ export async function GET(
   }
 
   const { id } = await params;
+  if (new URL(request.url).searchParams.get("format") === "facturx") {
+    // Factur-X : facture de l'entreprise du client ET dont il est le client.
+    const loaded = await loadFacturXInvoice({ invoiceId: id, companyId, customerId: auth.context.user.id });
+    if (!loaded?.source) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
+    const result = await buildFacturXPdf({ source: loaded.source, renderClassicPdf: () => renderClassicInvoicePdf(loaded), now: new Date() });
+    const http = facturXHttpResult(result, loaded.reference, "client");
+    return new NextResponse(typeof http.body === "string" ? http.body : Buffer.from(http.body), { status: http.status, headers: http.headers });
+  }
+
   const invoice = await getClientInvoiceById(auth.context.user.id, companyId, id);
   if (!invoice) {
     return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });

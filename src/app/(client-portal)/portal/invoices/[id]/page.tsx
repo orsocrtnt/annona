@@ -159,6 +159,13 @@ export default function InvoiceDetailPage() {
             <span className="sr-only"> (nouvel onglet)</span>
           </a>
         </Button>
+        <Button variant="outline" asChild>
+          <a href={`/api/portal/invoices/${id}/pdf?format=facturx`} target="_blank" rel="noopener noreferrer">
+            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+            Factur-X
+            <span className="sr-only"> (PDF avec données de facture électronique, nouvel onglet)</span>
+          </a>
+        </Button>
         {canReorderPortalOrder(invoice.order) && (
           <ReorderOrderButton orderId={invoice.order?.id} />
         )}

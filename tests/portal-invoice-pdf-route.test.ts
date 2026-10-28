@@ -31,7 +31,7 @@ function loadRoute(readLogo: () => Promise<Buffer | null>) {
   const js = ts.transpileModule(readFileSync(resolve("src/app/api/portal/invoices/[id]/pdf/route.ts"), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
-  runInNewContext(js, { Array, Buffer, Number, Promise, exports: loaded.exports, module: loaded, require: (id: string) => deps[id] });
+  runInNewContext(js, { Array, Buffer, Number, Promise, URL, exports: loaded.exports, module: loaded, require: (id: string) => deps[id] });
   const route = loaded.exports as { GET(request: Request, ctx: { params: Promise<{ id: string }> }): Promise<Res> };
   return { call: () => route.GET(new Request("http://local.test"), { params: Promise.resolve({ id: "inv" }) }), received };
 }
