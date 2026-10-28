@@ -20,7 +20,9 @@ import {
   type CompanyDispatchSettings,
   type DispatchDriverRule,
   type DispatchStrategy,
+  type GpsNumericSetting,
   normalizeDispatchDriverRule,
+  parseGpsSettingInput,
 } from "@/lib/validations/dispatch-settings";
 import { DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import { useCompanyDrivers } from "./hooks";
@@ -61,13 +63,36 @@ export function DispatchSettingsForm() {
   const hasAutoDispatch = useHasOfferFeature("auto_dispatch");
   const [local, setLocal] = useState<CompanyDispatchSettings | null>(null);
   const [postalDrafts, setPostalDrafts] = useState<Record<string, string>>({});
+  const [gpsDrafts, setGpsDrafts] = useState<Partial<Record<GpsNumericSetting, string>>>({});
 
   useEffect(() => {
     if (settings) {
       setLocal(settings);
       setPostalDrafts({});
+      setGpsDrafts({});
     }
   }, [settings]);
+
+  const withGpsDrafts = (base: CompanyDispatchSettings): CompanyDispatchSettings => {
+    const next = { ...base };
+    for (const field of Object.keys(gpsDrafts) as GpsNumericSetting[]) {
+      const parsed = parseGpsSettingInput(field, gpsDrafts[field] ?? "");
+      if (parsed !== null) next[field] = parsed;
+    }
+    return next;
+  };
+
+  const commitGpsDraft = (field: GpsNumericSetting) => {
+    const draft = gpsDrafts[field];
+    if (!local || draft === undefined) return;
+    const parsed = parseGpsSettingInput(field, draft);
+    if (parsed !== null) setLocal({ ...local, [field]: parsed });
+    setGpsDrafts((drafts) => {
+      const next = { ...drafts };
+      delete next[field];
+      return next;
+    });
+  };
 
   const zones = tariffSettings?.tariffZones ?? [];
 
@@ -111,8 +136,9 @@ export function DispatchSettingsForm() {
     }
 
     try {
+      const toSave = withGpsDrafts(local);
       await updateSettings.mutateAsync(
-        hasAutoDispatch ? local : { ...local, enabled: false }
+        hasAutoDispatch ? toSave : { ...toSave, enabled: false }
       );
       toast.success("Règles de dispatch enregistrées");
     } catch (error) {
@@ -633,13 +659,11 @@ export function DispatchSettingsForm() {
                     type="number"
                     min={1}
                     max={120}
-                    value={local.gpsPositionMaxAgeMinutes}
-                    onChange={(e) =>
-                      setLocal({
-                        ...local,
-                        gpsPositionMaxAgeMinutes: Math.min(120, Math.max(1, Math.round(Number(e.target.value)) || 1)),
-                      })
-                    }
+                    step="1"
+                    inputMode="numeric"
+                    value={gpsDrafts.gpsPositionMaxAgeMinutes ?? String(local.gpsPositionMaxAgeMinutes)}
+                    onChange={(e) => setGpsDrafts({ ...gpsDrafts, gpsPositionMaxAgeMinutes: e.target.value })}
+                    onBlur={() => commitGpsDraft("gpsPositionMaxAgeMinutes")}
                   />
                 </div>
                 <div className="space-y-2">
@@ -649,13 +673,11 @@ export function DispatchSettingsForm() {
                     type="number"
                     min={1}
                     max={100}
-                    value={local.gpsMaxDistanceKm}
-                    onChange={(e) =>
-                      setLocal({
-                        ...local,
-                        gpsMaxDistanceKm: Math.min(100, Math.max(1, Number(e.target.value) || 1)),
-                      })
-                    }
+                    step="0.1"
+                    inputMode="decimal"
+                    value={gpsDrafts.gpsMaxDistanceKm ?? String(local.gpsMaxDistanceKm)}
+                    onChange={(e) => setGpsDrafts({ ...gpsDrafts, gpsMaxDistanceKm: e.target.value })}
+                    onBlur={() => commitGpsDraft("gpsMaxDistanceKm")}
                   />
                 </div>
               </div>

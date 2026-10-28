@@ -75,6 +75,23 @@ export const companyDispatchSettingsSchema = z.object({
     .default(10),
 });
 
+export type GpsNumericSetting = "gpsPositionMaxAgeMinutes" | "gpsMaxDistanceKm";
+
+const GPS_INPUT_RULES: Record<GpsNumericSetting, { min: number; max: number; step: number }> = {
+  gpsPositionMaxAgeMinutes: { min: 1, max: 120, step: 1 },
+  gpsMaxDistanceKm: { min: 1, max: 100, step: 0.1 },
+};
+
+/** Saisie libre validée au blur : bornée, arrondie au pas ; `null` garde la valeur précédente. */
+export function parseGpsSettingInput(field: GpsNumericSetting, raw: string): number | null {
+  const text = raw.trim().replace(",", ".");
+  const value = Number(text);
+  if (!text || !Number.isFinite(value)) return null;
+  const { min, max, step } = GPS_INPUT_RULES[field];
+  const rounded = Number((Math.round(value / step) * step).toFixed(1));
+  return Math.min(max, Math.max(min, rounded));
+}
+
 export type DispatchStrategy = z.infer<typeof dispatchStrategySchema>;
 export type DispatchDriverStatus = z.infer<typeof dispatchDriverStatusSchema>;
 export type DispatchDriverCategories = z.infer<typeof dispatchDriverCategoriesSchema>;

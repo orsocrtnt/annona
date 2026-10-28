@@ -127,8 +127,8 @@ test("GPS (contrôle statique) : l'écran des règles dispatch expose les trois 
   assert.match(source, /checked=\{local\.gpsProximityEnabled\}/);
   assert.match(source, /id="gps-max-age"[\s\S]{0,80}min=\{1\}[\s\S]{0,40}max=\{120\}/);
   assert.match(source, /id="gps-max-distance"[\s\S]{0,80}min=\{1\}[\s\S]{0,40}max=\{100\}/);
-  assert.match(source, /value=\{local\.gpsPositionMaxAgeMinutes\}/);
-  assert.match(source, /value=\{local\.gpsMaxDistanceKm\}/);
+  assert.match(source, /String\(local\.gpsPositionMaxAgeMinutes\)/);
+  assert.match(source, /String\(local\.gpsMaxDistanceKm\)/);
 });
 
 test("GPS (P7, contrôle statique) : le texte d'aide décrit un départage, pas une priorité", async () => {
@@ -136,4 +136,29 @@ test("GPS (P7, contrôle statique) : le texte d'aide décrit un départage, pas 
   const source = readFileSync("src/features/back-office/dispatch-settings-form.tsx", "utf8");
   assert.match(source, /À égalité, le livreur en service le plus proche du retrait est choisi\./);
   assert.doesNotMatch(source, /passe d&apos;abord/);
+});
+
+test("GPS (P8) : saisie libre validée au blur — bornes, arrondi au pas, valeur vide ou illisible ignorée", async () => {
+  const { parseGpsSettingInput } = await import("../src/lib/validations/dispatch-settings");
+  assert.equal(parseGpsSettingInput("gpsPositionMaxAgeMinutes", "20"), 20);
+  assert.equal(parseGpsSettingInput("gpsPositionMaxAgeMinutes", " 7,6 "), 8, "minutes entières");
+  assert.equal(parseGpsSettingInput("gpsPositionMaxAgeMinutes", "0"), 1);
+  assert.equal(parseGpsSettingInput("gpsPositionMaxAgeMinutes", "500"), 120);
+  assert.equal(parseGpsSettingInput("gpsMaxDistanceKm", "12,5"), 12.5);
+  assert.equal(parseGpsSettingInput("gpsMaxDistanceKm", "7.26"), 7.3, "pas de 0,1 km");
+  assert.equal(parseGpsSettingInput("gpsMaxDistanceKm", "0.2"), 1);
+  assert.equal(parseGpsSettingInput("gpsMaxDistanceKm", "1000"), 100);
+  for (const raw of ["", "  ", "abc", "-"]) assert.equal(parseGpsSettingInput("gpsMaxDistanceKm", raw), null, JSON.stringify(raw));
+  // Chaque valeur produite est acceptée par le schéma.
+  assert.doesNotThrow(() => companyDispatchSettingsSchema.parse({ ...settings, gpsMaxDistanceKm: parseGpsSettingInput("gpsMaxDistanceKm", "7.26") }));
+});
+
+test("GPS (P8, contrôle statique) : champs en texte, validés au blur et à l'enregistrement, pas de 0,1 km", async () => {
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync("src/features/back-office/dispatch-settings-form.tsx", "utf8");
+  assert.doesNotMatch(source, /gps(PositionMaxAgeMinutes|MaxDistanceKm): Math\.min/, "plus de bornage à chaque frappe");
+  assert.match(source, /id="gps-max-distance"[\s\S]{0,200}step="0\.1"/);
+  assert.match(source, /onBlur=\{\(\) => commitGpsDraft\("gpsPositionMaxAgeMinutes"\)\}/);
+  assert.match(source, /onBlur=\{\(\) => commitGpsDraft\("gpsMaxDistanceKm"\)\}/);
+  assert.match(source, /withGpsDrafts\(local\)/, "les saisies non validées sont appliquées à l'enregistrement");
 });
