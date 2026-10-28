@@ -77,17 +77,35 @@ function staffAuth(role: Role, companyId = "company_a") {
   };
 }
 
-function backOffice(role: Role, opts: { companyId?: string; facturxOk?: boolean } = {}) {
+function backOffice(role: Role, opts: { companyId?: string; facturxOk?: boolean; renderFails?: boolean } = {}) {
   const calls: unknown[] = [];
+  const handled = { count: 0 };
+  const service = fakeInvoiceService(calls);
+  if (opts.renderFails) service.renderClassicInvoicePdf = async () => { throw new Error("PDF_RENDER_DOWN"); };
   const route = load("src/app/api/invoices/[id]/pdf/route.ts", {
     "next/server": { NextResponse: FakeResponse },
     "@/lib/api/auth-guard": staffAuth(role, opts.companyId),
-    "@/domains/invoice/facturx/facturx.service": fakeInvoiceService(calls),
+    // Comme withApiHandler : toute exception devient une réponse JSON 500 formatée.
+    "@/lib/api/route-handler": {
+      withApiHandler: async (fn: () => Promise<Res>) => {
+        handled.count += 1;
+        try { return await fn(); } catch { return FakeResponse.json({ error: "Erreur serveur" }, { status: 500 }); }
+      },
+    },
+    "@/domains/invoice/facturx/facturx.service": service,
     "@/domains/invoice/facturx/facturx-document": documentDeps(opts.facturxOk ?? true),
   });
   const call = (id: string, query = "") => route.GET!(new Request(`http://local.test/api/invoices/${id}/pdf${query}`), { params: Promise.resolve({ id }) });
-  return { call, calls };
+  return { call, calls, handled };
 }
+
+test("back-office : la route passe par withApiHandler, une erreur de rendu donne un 500 formaté", async () => {
+  const { call, handled } = backOffice("COMPANY_ADMIN", { renderFails: true });
+  const res = await call("inv_a");
+  assert.equal(handled.count, 1);
+  assert.equal(res.status, 500);
+  assert.deepEqual(JSON.parse(JSON.stringify(res.body)), { error: "Erreur serveur" });
+});
 
 test("back-office : PDF classique par défaut, Factur-X sur demande, refus lisible en 422", async () => {
   const { call, calls } = backOffice("COMPANY_ADMIN");
