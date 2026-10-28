@@ -23,7 +23,8 @@ export type InvoiceReminderResult =
   | "NOT_SENT_EMAIL_NOT_CONFIGURED"
   | "NOT_SENT_NO_RECIPIENT"
   | "NOT_SENT_CLIENT_PREFERENCES"
-  | "NOT_SENT_INVOICE_SETTLED";
+  | "NOT_SENT_INVOICE_SETTLED"
+  | "SKIPPED_SUPERSEDED";
 
 const BLOCKING_RESULTS: InvoiceReminderResult[] = ["QUEUED", "SENT"];
 
@@ -216,6 +217,22 @@ export async function deliverInvoiceReminderJob(
       where: { id: reminder.id, result: "QUEUED" },
       data: { result, completedAt: now },
     });
+
+  // Tâche relancée tard (ex. reprise des tâches en échec) : jamais un second e-mail
+  // si une relance plus récente existe ou si une relance est partie dans les 24 h.
+  const superseding = await db.invoiceReminder.findFirst({
+    where: {
+      invoiceId: reminder.invoiceId,
+      companyId,
+      id: { not: reminder.id },
+      OR: [
+        { createdAt: { gt: reminder.createdAt } },
+        { result: "SENT", completedAt: { gte: new Date(now.getTime() - COOLDOWN_MS) } },
+      ],
+    },
+    select: { id: true },
+  });
+  if (superseding) return finish("SKIPPED_SUPERSEDED");
 
   const invoice = reminder.invoice;
   if (!isInvoiceOutstanding(invoice.status)) return finish("NOT_SENT_INVOICE_SETTLED");

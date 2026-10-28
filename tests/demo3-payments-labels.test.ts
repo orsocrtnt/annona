@@ -23,6 +23,7 @@ test("DEMO-3 écran : chaque résultat de relance a un libellé et un ton", () =
     NOT_SENT_NO_RECIPIENT: ["Relance non envoyée : client sans adresse e-mail", "warning"],
     NOT_SENT_CLIENT_PREFERENCES: ["Relance non envoyée : le client a désactivé ces e-mails", "warning"],
     NOT_SENT_INVOICE_SETTLED: ["Relance annulée : facture réglée entre-temps", "warning"],
+    SKIPPED_SUPERSEDED: ["Relance non envoyée : remplacée par une relance plus récente", "warning"],
   } as const;
   for (const [result, [label, tone]] of Object.entries(cases)) {
     assert.deepEqual(reminderResultLabel(result), { label, tone }, result);

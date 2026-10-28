@@ -5,7 +5,7 @@ import {
   deliverInvoiceReminderJob,
   remindInvoice,
 } from "../src/domains/invoice/invoice-reminder.service";
-import { createInvoiceFakeDb, invoice, type FakeInvoice } from "./helpers/invoice-fake-db";
+import { createInvoiceFakeDb, invoice, type FakeInvoice, type FakeReminder } from "./helpers/invoice-fake-db";
 
 const NOW = new Date("2026-10-28T10:00:00.000Z");
 const USERS = [
@@ -141,12 +141,12 @@ test("DEMO-3 relance : la facture d'une autre entreprise est introuvable et rien
   assert.equal(db.reminders.length, 0);
 });
 
-function deliverySetup(overrides: Partial<FakeInvoice> = {}, companyName = "Coursiers A") {
+function deliverySetup(overrides: Partial<FakeInvoice> = {}, companyName = "Coursiers A", others: FakeReminder[] = []) {
   const db = createInvoiceFakeDb({
     invoices: [invoice({ id: "inv", status: "OVERDUE", amount: 45, reference: "FAC-1027", dueDate: new Date("2026-10-16T09:00:00.000Z"), ...overrides })],
     users: USERS,
     companies: [{ id: "company_a", name: companyName, settings: {} }],
-    reminders: [{ id: "rem_1", invoiceId: "inv", companyId: "company_a", sentById: "admin_a", channel: "EMAIL", result: "QUEUED", operationJobId: "job_1", completedAt: null, createdAt: NOW }],
+    reminders: [{ id: "rem_1", invoiceId: "inv", companyId: "company_a", sentById: "admin_a", channel: "EMAIL", result: "QUEUED", operationJobId: "job_1", completedAt: null, createdAt: NOW }, ...others],
   });
   const sent: Array<{ to: string; subject: string; text: string; idempotencyKey: string }> = [];
   const prefs = { emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true };
@@ -243,4 +243,32 @@ test("DEMO-3 relance : clics répétés sans e-mail configuré, une seule trace 
   assert.equal(second?.reminder.id, first?.reminder.id);
   assert.equal(db.reminders.length, 1);
   assert.equal("sentById" in (second?.reminder ?? {}), false, "identifiant interne non exposé");
+});
+
+const otherReminder = (overrides: Partial<FakeReminder>): FakeReminder => ({
+  id: "rem_other", invoiceId: "inv", companyId: "company_a", sentById: "admin_a", channel: "EMAIL",
+  result: "QUEUED", operationJobId: null, completedAt: null, createdAt: NOW, ...overrides,
+});
+
+test("DEMO-3 relance (envoi) : une relance en échec relancée par l'exploitation n'envoie rien si une plus récente existe", async () => {
+  const later = otherReminder({ id: "rem_2", result: "SENT", createdAt: new Date(NOW.getTime() + 60_000), completedAt: new Date(NOW.getTime() + 61_000) });
+  const { db, sent, deliver } = deliverySetup({}, "Coursiers A", [later]);
+  await deliver();
+  assert.equal(sent.length, 0);
+  assert.equal(db.reminders.find((row) => row.id === "rem_1")?.result, "SKIPPED_SUPERSEDED");
+});
+
+test("DEMO-3 relance (envoi) : rien ne part si une relance a déjà été envoyée dans les 24 h", async () => {
+  const earlier = otherReminder({ id: "rem_0", result: "SENT", createdAt: new Date(NOW.getTime() - 3 * 3_600_000), completedAt: new Date(NOW.getTime() - 3 * 3_600_000) });
+  const { db, sent, deliver } = deliverySetup({}, "Coursiers A", [earlier]);
+  await deliver();
+  assert.equal(sent.length, 0);
+  assert.equal(db.reminders.find((row) => row.id === "rem_1")?.result, "SKIPPED_SUPERSEDED");
+});
+
+test("DEMO-3 relance (envoi) : une relance envoyée il y a plus de 24 h ne bloque pas l'envoi", async () => {
+  const old = otherReminder({ id: "rem_0", result: "SENT", createdAt: new Date(NOW.getTime() - 30 * 3_600_000), completedAt: new Date(NOW.getTime() - 30 * 3_600_000) });
+  const { sent, deliver } = deliverySetup({}, "Coursiers A", [old]);
+  await deliver();
+  assert.equal(sent.length, 1);
 });

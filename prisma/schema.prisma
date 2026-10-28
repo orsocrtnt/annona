@@ -915,7 +915,7 @@ model Invoice {
 
 /// DEMO-3 : trace d'une relance de facture (qui, quand, canal, résultat).
 /// result : QUEUED, SENT, NOT_SENT_EMAIL_NOT_CONFIGURED, NOT_SENT_NO_RECIPIENT,
-/// NOT_SENT_CLIENT_PREFERENCES, NOT_SENT_INVOICE_SETTLED.
+/// NOT_SENT_CLIENT_PREFERENCES, NOT_SENT_INVOICE_SETTLED, SKIPPED_SUPERSEDED.
 model InvoiceReminder {
   id          String    @id @default(cuid())
   channel     String    @default("EMAIL")

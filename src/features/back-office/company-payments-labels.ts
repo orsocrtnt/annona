@@ -16,6 +16,7 @@ const REMINDER_LABELS: Record<string, { label: string; tone: PaymentTone }> = {
   NOT_SENT_NO_RECIPIENT: { label: "Relance non envoyée : client sans adresse e-mail", tone: "warning" },
   NOT_SENT_CLIENT_PREFERENCES: { label: "Relance non envoyée : le client a désactivé ces e-mails", tone: "warning" },
   NOT_SENT_INVOICE_SETTLED: { label: "Relance annulée : facture réglée entre-temps", tone: "warning" },
+  SKIPPED_SUPERSEDED: { label: "Relance non envoyée : remplacée par une relance plus récente", tone: "warning" },
 };
 
 export function reminderResultLabel(result: string): { label: string; tone: PaymentTone } {
