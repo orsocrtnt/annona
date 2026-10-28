@@ -19,6 +19,8 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
 export type CompanyEinvoicingData = {
   identity: Record<keyof CompanyEinvoicingUpdate["identity"], string | null>;
   einvoicing: Partial<Record<keyof CompanyEinvoicingUpdate["einvoicing"], string>>;
+  /** Champs stockés invalides, écartés à la lecture : à ressaisir. */
+  invalidFields?: string[];
 };
 
 export function useCompanyEinvoicing(enabled: boolean) {

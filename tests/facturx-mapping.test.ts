@@ -13,6 +13,7 @@ import {
   einvoicingSettingsSchema,
   frenchVatNumberForSiren,
   isValidIban,
+  parseStoredEinvoicingSettings,
 } from "../src/lib/validations/einvoicing";
 import { xmlTexts, xmlWellFormednessErrors } from "./helpers/xml-wellformed";
 
@@ -296,6 +297,17 @@ test("partie visible du Factur-X : mentions légales vendeur/acheteur alignées 
 
   const classic = pdfText(await generateInvoicePdf(base));
   assert.ok(classic.includes("RELEVÉ DE PRESTATION") && !classic.includes("SIREN") && !classic.includes("MENTIONS LÉGALES"));
+});
+
+test("réglages stockés : un champ invalide est écarté et signalé, les autres sont conservés", () => {
+  const parsed = parseStoredEinvoicingSettings({ vatNumber: "FR44732829320", iban: "FR7630006000011234567890188", latePenaltyText: "Trois fois le taux légal.", bic: 42 });
+  assert.equal(parsed.settings.vatNumber, "FR44732829320");
+  assert.equal(parsed.settings.latePenaltyText, "Trois fois le taux légal.");
+  assert.equal(parsed.settings.iban, undefined);
+  assert.deepEqual(parsed.invalidFields, ["iban", "bic"]);
+  assert.deepEqual(parseStoredEinvoicingSettings("corrompu"), { settings: {}, invalidFields: [] });
+  const mapped = mapInvoiceToFacturX({ ...source(), einvoicingInvalidFields: ["iban"] });
+  assert.ok(mapped.ok && mapped.warnings.some((w) => w.rule === "TL-W-REGLAGE-INVALIDE" && /iban/.test(w.message)));
 });
 
 test("micro-coursier en franchise (293 B) sans n° de TVA : export possible avec BT-32, avertissement si déduit du SIREN", () => {

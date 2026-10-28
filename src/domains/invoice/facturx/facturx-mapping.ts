@@ -44,6 +44,8 @@ export interface FacturXSource {
   invoice: FacturXSourceInvoice;
   seller: FacturXSourceSeller;
   einvoicing: EinvoicingSettings;
+  /** Champs stockés écartés car invalides (lecture tolérante). */
+  einvoicingInvalidFields?: string[];
   buyer: FacturXSourceBuyer;
 }
 
@@ -242,6 +244,9 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
     warnings.push({ rule: "TL-W-SIREN-CLIENT", message: "SIREN du client absent : les plateformes agréées l'exigent pour une facture entre entreprises françaises." });
   }
   if (!einvoicing.iban) warnings.push({ rule: "TL-W-IBAN", message: "Aucun IBAN : la facture ne porte pas de coordonnées de virement." });
+  if (source.einvoicingInvalidFields?.length) {
+    warnings.push({ rule: "TL-W-REGLAGE-INVALIDE", message: `Réglages ignorés car invalides : ${source.einvoicingInvalidFields.join(", ")}. ${SELLER_HINT}` });
+  }
 
   return errors.length ? { ok: false, errors, warnings } : { ok: true, invoice: facturx, warnings };
 }

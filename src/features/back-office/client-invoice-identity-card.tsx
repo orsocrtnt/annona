@@ -23,7 +23,7 @@ const FIELDS = [
 export function ClientInvoiceIdentityCard({ clientId }: { clientId: string }) {
   const { isRole } = usePermissions();
   const isAdmin = isRole(["COMPANY_ADMIN"]);
-  const { data } = useClientInvoiceIdentity(clientId, isAdmin);
+  const { data, isSuccess } = useClientInvoiceIdentity(clientId, isAdmin);
   const update = useUpdateClientInvoiceIdentity(clientId);
   const [values, setValues] = useState<Record<string, string>>({ countryCode: "FR" });
 
@@ -65,7 +65,7 @@ export function ClientInvoiceIdentityCard({ clientId }: { clientId: string }) {
           </div>
         ))}
         <div className="sm:col-span-3">
-          <Button variant="brand" onClick={handleSave} disabled={update.isPending} loading={update.isPending}>
+          <Button variant="brand" onClick={handleSave} disabled={!isSuccess || update.isPending} loading={update.isPending}>
             Enregistrer l&apos;identité de facturation
           </Button>
         </div>

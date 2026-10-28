@@ -37,7 +37,7 @@ const FIELDS: Field[] = [
 export function EinvoicingSettingsCard() {
   const { isRole } = usePermissions();
   const isAdmin = isRole(["COMPANY_ADMIN"]);
-  const { data } = useCompanyEinvoicing(isAdmin);
+  const { data, isError } = useCompanyEinvoicing(isAdmin);
   const update = useUpdateCompanyEinvoicing();
   const [values, setValues] = useState<Record<string, string>>({});
 
@@ -90,8 +90,19 @@ export function EinvoicingSettingsCard() {
             />
           </div>
         ))}
+        {data?.invalidFields?.length ? (
+          <p className="text-sm text-destructive sm:col-span-2" role="alert">
+            Valeurs enregistrées illisibles, à ressaisir : {data.invalidFields.map((key) => FIELDS.find((f) => f.key === key)?.label ?? key).join(", ")}.
+          </p>
+        ) : null}
+        {isError && (
+          <p className="text-sm text-destructive sm:col-span-2" role="alert">
+            Lecture des mentions impossible : rechargez la page avant d&apos;enregistrer.
+          </p>
+        )}
         <div className="sm:col-span-2">
-          <Button variant="brand" onClick={handleSave} disabled={update.isPending} loading={update.isPending}>
+          {/* Jamais d'enregistrement avant lecture : un formulaire vide effacerait les mentions existantes. */}
+          <Button variant="brand" onClick={handleSave} disabled={!data || update.isPending} loading={update.isPending}>
             Enregistrer les mentions légales
           </Button>
         </div>

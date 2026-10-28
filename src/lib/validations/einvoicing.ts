@@ -114,10 +114,24 @@ export type CompanyLegalIdentity = z.infer<typeof companyLegalIdentitySchema>;
 export type CompanyEinvoicingUpdate = z.infer<typeof companyEinvoicingUpdateSchema>;
 export type ClientInvoiceIdentity = z.infer<typeof clientInvoiceIdentitySchema>;
 
-/** Lecture tolérante d'un JSON stocké : une valeur invalide est ignorée plutôt que de bloquer. */
-export function parseStoredEinvoicingSettings(raw: unknown): EinvoicingSettings {
-  const parsed = einvoicingSettingsSchema.safeParse(raw ?? {});
-  return parsed.success ? parsed.data : einvoicingSettingsSchema.parse({});
+/**
+ * Lecture tolérante, champ par champ, du JSON stocké : un champ invalide est écarté et signalé
+ * (`invalidFields`) sans faire perdre les autres réglages.
+ */
+export function parseStoredEinvoicingSettings(raw: unknown): { settings: EinvoicingSettings; invalidFields: string[] } {
+  const stored = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const settings: Record<string, unknown> = {};
+  const invalidFields: string[] = [];
+  for (const [key, schema] of Object.entries(einvoicingSettingsSchema.shape)) {
+    if (stored[key] === undefined || stored[key] === null) continue;
+    const parsed = schema.safeParse(stored[key]);
+    if (parsed.success) {
+      if (parsed.data !== undefined) settings[key] = parsed.data;
+    } else {
+      invalidFields.push(key);
+    }
+  }
+  return { settings: settings as EinvoicingSettings, invalidFields };
 }
 
 export function parseStoredClientInvoiceIdentity(raw: unknown): ClientInvoiceIdentity | null {

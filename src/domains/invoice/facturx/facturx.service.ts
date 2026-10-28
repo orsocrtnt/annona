@@ -75,6 +75,7 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
   const rawLines = Array.isArray(invoice.lineItems) ? (invoice.lineItems as Array<Record<string, unknown>>) : [];
   const customer = invoice.customer;
   const company = invoice.company;
+  const storedEinvoicing = parseStoredEinvoicingSettings(asRecord(company.settings).einvoicing);
 
   return {
     companyId: invoice.companyId,
@@ -102,7 +103,8 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
             billingCity: company.billingCity,
             country: company.country,
           },
-          einvoicing: parseStoredEinvoicingSettings(asRecord(company.settings).einvoicing),
+          einvoicing: storedEinvoicing.settings,
+          einvoicingInvalidFields: storedEinvoicing.invalidFields,
           buyer: {
             firstName: customer.firstName,
             lastName: customer.lastName,
@@ -167,7 +169,8 @@ export async function getCompanyEinvoicing(companyId: string) {
   });
   if (!company) return null;
   const { settings, ...identity } = company;
-  return { identity: { ...identity, country: identity.country ?? "FR" }, einvoicing: parseStoredEinvoicingSettings(asRecord(settings).einvoicing) };
+  const stored = parseStoredEinvoicingSettings(asRecord(settings).einvoicing);
+  return { identity: { ...identity, country: identity.country ?? "FR" }, einvoicing: stored.settings, invalidFields: stored.invalidFields };
 }
 
 export async function updateCompanyEinvoicing(companyId: string, input: CompanyEinvoicingUpdate) {
