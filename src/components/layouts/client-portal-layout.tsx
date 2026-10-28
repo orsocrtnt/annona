@@ -162,7 +162,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
         >
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-foreground text-[10px] font-semibold text-background">
+            <AvatarFallback className="bg-foreground text-xs font-semibold text-background">
               {user ? getInitials(user.firstName, user.lastName) : "C"}
             </AvatarFallback>
           </Avatar>

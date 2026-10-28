@@ -108,7 +108,7 @@ function DeliveryListItem({
 
         {purchasing && delivery.orderItems.length > 0 && (
           <div className="mt-3 space-y-1 rounded-lg bg-muted/40 p-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <ShoppingBag className="h-3 w-3" />
               Achats en cours
             </div>

@@ -34,7 +34,7 @@ export function PortalNotificationsBell({ className }: { className?: string }) {
         <Button variant="ghost" size="icon-touch" aria-label="Notifications" className={cn("relative", className)}>
           <Bell className="h-4 w-4" />
           {unread.length > 0 ? (
-            <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-white dark:text-primary-foreground">
+            <span className="absolute right-0.5 top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-xs font-semibold text-white dark:text-primary-foreground">
               {unread.length > 9 ? "9+" : unread.length}
             </span>
           ) : null}
@@ -71,7 +71,7 @@ export function PortalNotificationsBell({ className }: { className?: string }) {
                 >
                   <span className={cn("text-sm", !item.readAt && "font-medium")}>{item.title}</span>
                   <span className="text-xs text-muted-foreground">{item.body}</span>
-                  <span className="text-[10px] text-muted-foreground">{formatWhen(item.createdAt)}</span>
+                  <span className="text-xs text-muted-foreground">{formatWhen(item.createdAt)}</span>
                 </Link>
               </DropdownMenuItem>
             ))}
