@@ -156,11 +156,13 @@ export function checkFacturXInvoice(invoice: FacturXInvoice): FacturXIssue[] {
   invoice.lines.forEach((line, index) => checkLine(line, index, issues));
 
   const categories = new Set<FacturXVatCategory>(invoice.lines.map((line) => line.vatCategory));
-  if (categories.has("S") && blank(invoice.seller.vatNumber)) {
+  // BR-S-02 / BR-E-02 : n° de TVA (BT-31) ou identifiant fiscal (BT-32) ; représentant fiscal (BG-11) non géré.
+  const sellerTaxId = !blank(invoice.seller.vatNumber) || !blank(invoice.seller.taxRegistrationId);
+  if (categories.has("S") && !sellerTaxId) {
     issues.push({ rule: "BR-S-02", message: "N° de TVA intracommunautaire du vendeur requis pour facturer de la TVA." });
   }
   if (categories.has("E")) {
-    if (blank(invoice.seller.vatNumber)) issues.push({ rule: "BR-E-02", message: "N° de TVA du vendeur requis pour une facture exonérée." });
+    if (!sellerTaxId) issues.push({ rule: "BR-E-02", message: "N° de TVA ou identifiant fiscal (BT-32) du vendeur requis pour une facture exonérée." });
     if (blank(invoice.vatExemptions.E?.reason) && blank(invoice.vatExemptions.E?.code)) {
       issues.push({ rule: "BR-E-10", message: "Motif d'exonération de TVA manquant (ex. « TVA non applicable, art. 293 B du CGI »)." });
     }
@@ -257,6 +259,7 @@ function partyNode(name: string, party: FacturXParty, withLegalInfo: boolean): X
     ]),
     email && el("ram:URIUniversalCommunication", [leaf("ram:URIID", email, { schemeID: "EM" })]),
     vat && el("ram:SpecifiedTaxRegistration", [leaf("ram:ID", vat, { schemeID: "VA" })]),
+    withLegalInfo && clean(party.taxRegistrationId) && el("ram:SpecifiedTaxRegistration", [leaf("ram:ID", party.taxRegistrationId!.trim(), { schemeID: "FC" })]),
   ]);
 }
 

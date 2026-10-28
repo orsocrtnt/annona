@@ -21,6 +21,7 @@ const FIELDS: Field[] = [
   { key: "billingCity", group: "identity", label: "Ville" },
   { key: "country", group: "identity", label: "Pays (2 lettres)", placeholder: "FR" },
   { key: "vatNumber", group: "einvoicing", label: "N° de TVA intracommunautaire", placeholder: "FR12345678901" },
+  { key: "taxRegistrationId", group: "einvoicing", label: "Identifiant fiscal (sans n° de TVA)", placeholder: "Franchise en base : à défaut, le SIREN" },
   { key: "legalForm", group: "einvoicing", label: "Forme juridique", placeholder: "SAS, SARL, EI…" },
   { key: "shareCapital", group: "einvoicing", label: "Capital social", placeholder: "10 000 €" },
   { key: "rcs", group: "einvoicing", label: "Immatriculation (RCS / RM)", placeholder: "RCS Paris 123 456 789", wide: true },

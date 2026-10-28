@@ -46,6 +46,7 @@ function source(overrides: { invoice?: Partial<FacturXSource["invoice"]>; seller
     },
     einvoicing: {
       vatNumber: "FR44732829320",
+      taxRegistrationId: undefined,
       legalForm: "SAS",
       shareCapital: "10 000 €",
       rcs: "RCS Paris 732 829 320",
@@ -254,4 +255,20 @@ test("statut PAID : la facture Factur-X indique le montant déjà réglé et un 
   const pending = mapInvoiceToFacturX(source());
   assert.ok(pending.ok);
   assert.equal(pending.invoice.prepaidAmount, undefined);
+});
+
+test("micro-coursier en franchise (293 B) sans n° de TVA : export possible avec BT-32, avertissement si déduit du SIREN", () => {
+  const lineItems = [{ label: "Course", amount: 18, quantity: 1, sourceType: "ZONE" }];
+  const base = { invoice: { amount: 18, lineItems }, einvoicing: { vatNumber: undefined, vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } };
+  const derived = mapInvoiceToFacturX(source(base));
+  assert.ok(derived.ok, JSON.stringify(!derived.ok && derived.errors));
+  assert.equal(derived.invoice.seller.taxRegistrationId, "732829320");
+  assert.ok(derived.warnings.some((w) => w.rule === "TL-W-BT32-SIREN"));
+  const explicit = mapInvoiceToFacturX(source({ ...base, einvoicing: { ...base.einvoicing, taxRegistrationId: "1234567890123" } }));
+  assert.ok(explicit.ok);
+  assert.equal(explicit.invoice.seller.taxRegistrationId, "1234567890123");
+  assert.ok(!explicit.warnings.some((w) => w.rule === "TL-W-BT32-SIREN"));
+  // Facture avec TVA : le n° de TVA reste exigé (BT-32 non substituable côté TutelLiv).
+  const vat = mapInvoiceToFacturX(source({ einvoicing: { vatNumber: undefined, taxRegistrationId: "1234567890123" } }));
+  assert.ok(!vat.ok && vat.errors.some((e) => e.rule === "BR-S-02"));
 });

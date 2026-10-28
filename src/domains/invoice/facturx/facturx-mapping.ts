@@ -182,6 +182,12 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
   const notes = candidates.filter((note): note is FacturXNote => Boolean(note));
 
   const exemptionReason = einvoicing.vatExemptionReason;
+  const franchiseTaxId =
+    category === "E" && !einvoicing.vatNumber ? einvoicing.taxRegistrationId ?? (present(seller.siren) ? seller.siren : undefined) : undefined;
+  if (franchiseTaxId && !einvoicing.taxRegistrationId) {
+    warnings.push({ rule: "TL-W-BT32-SIREN", message: "Sans n° de TVA, l'identifiant fiscal (BT-32) reprend le SIREN : à confirmer avec votre plateforme ou votre expert-comptable." });
+  }
+
   const facturx: FacturXInvoice = {
     number: invoice.reference,
     typeCode: "380",
@@ -197,6 +203,8 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
       siren: seller.siren ?? undefined,
       siret: seller.siret ?? undefined,
       vatNumber: einvoicing.vatNumber,
+      // Franchise en base sans n° de TVA : BT-32 satisfait BR-E-02 (identifiant saisi, sinon SIREN — à confirmer FNFE).
+      taxRegistrationId: franchiseTaxId,
       email: seller.email ?? undefined,
       legalInfo: legalInfo || undefined,
       address: {

@@ -29,6 +29,8 @@ export interface FacturXParty {
   siret?: string;
   /** BT-31 / BT-48 : n° de TVA intracommunautaire */
   vatNumber?: string;
+  /** BT-32 : identifiant fiscal du vendeur (schéma FC), utile sans n° de TVA (franchise en base) */
+  taxRegistrationId?: string;
   /** BT-34 / BT-49 : adresse électronique (schéma EM) */
   email?: string;
   /** BT-33 : informations juridiques complémentaires (forme, capital, RCS) — vendeur uniquement */

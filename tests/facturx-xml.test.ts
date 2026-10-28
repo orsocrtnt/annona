@@ -262,3 +262,16 @@ test("facture non payée : pas de TotalPrepaidAmount, montant dû = TTC", () => 
   assert.deepEqual(amount(xml, "TotalPrepaidAmount"), []);
   assert.deepEqual(amount(xml, "DuePayableAmount"), ["30.00"]);
 });
+
+test("franchise en base sans n° de TVA : BR-E-02 satisfaite par l'identifiant fiscal BT-32 (schéma FC)", () => {
+  const franchise = invoice({
+    seller: { ...seller, vatNumber: undefined, taxRegistrationId: "732829320" },
+    lines: [{ id: "1", name: "Course", quantity: 1, unitPrice: 18, vatCategory: "E", vatRate: 0 }],
+    vatExemptions: { E: { reason: "TVA non applicable, art. 293 B du CGI", code: "VATEX-FR-FRANCHISE" } },
+  });
+  assert.deepEqual(checkFacturXInvoice(franchise), []);
+  const xml = generateFacturXXml(franchise);
+  assert.match(xml, /<ram:SpecifiedTaxRegistration>\s*<ram:ID schemeID="FC">732829320<\/ram:ID>/);
+  assert.doesNotMatch(xml, /schemeID="VA">FR44/);
+  assert.ok(checkFacturXInvoice({ ...franchise, seller: { ...seller, vatNumber: undefined } }).some((issue) => issue.rule === "BR-E-02"));
+});

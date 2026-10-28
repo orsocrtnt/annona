@@ -40,6 +40,8 @@ const sirenField = optionalText(20)
 /** Mentions légales et paramètres Factur-X de l'entreprise émettrice (Company.settings.einvoicing). */
 export const einvoicingSettingsSchema = z.object({
   vatNumber,
+  /** BT-32 : identifiant fiscal, pour une entreprise sans n° de TVA (franchise en base). */
+  taxRegistrationId: optionalText(30).transform(compact),
   legalForm: optionalText(60),
   shareCapital: optionalText(40),
   rcs: optionalText(120),
