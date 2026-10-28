@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { CityStreets } from "@/features/landing/product-tour/city-map";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
+import { SpaceSidebar, type SpaceNavItem } from "@/features/landing/product-tour/space-sidebar";
 import { useTypewriter } from "@/features/landing/product-tour/typing";
 import {
   GESTURE_RESULT_DELAY_MS,
@@ -27,14 +28,16 @@ import {
 } from "@/features/landing/product-tour/use-timeline";
 
 const INTRO_DURATIONS_MS = [900] as const;
+/** Le formulaire s'ouvre une fois la fenêtre agrandie. */
+const ENLARGE_MS = 550;
 
-const NAV = [
+const NAV: readonly SpaceNavItem[] = [
   { icon: Home, label: "Accueil", active: true },
   { icon: Package, label: "Commandes" },
   { icon: MapPinned, label: "Suivi" },
   { icon: Receipt, label: "Factures" },
   { icon: LifeBuoy, label: "Support" },
-] as const;
+];
 
 const FIELDS = [
   { icon: Warehouse, label: "Retrait", placeholder: "Adresse de retrait", value: TOUR_ORDER.pickup },
@@ -67,32 +70,6 @@ function HomeMap() {
         </g>
       ))}
     </svg>
-  );
-}
-
-function Sidebar() {
-  return (
-    <aside className="flex w-12 shrink-0 flex-col items-center gap-1 border-r border-black/[0.06] bg-white py-3 sm:w-[136px] sm:items-stretch sm:px-2.5">
-      <div className="mb-3 flex items-center gap-2 sm:px-1.5">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#00d46a] text-xs font-black text-[#0e1310]" aria-hidden>
-          T
-        </span>
-        <span className="hidden text-sm font-bold tracking-[-0.02em] sm:inline">TutelLiv</span>
-      </div>
-      {NAV.map(({ icon: Icon, label, ...item }) => (
-        <span
-          key={label}
-          className={cn(
-            "flex h-8 w-8 items-center justify-center gap-2 rounded-lg text-xs font-medium sm:h-auto sm:w-auto sm:justify-start sm:px-2 sm:py-1.5",
-            "active" in item ? "bg-[#e6f8ee] text-[#0e1310]" : "text-muted-foreground"
-          )}
-          aria-current={"active" in item ? "page" : undefined}
-        >
-          <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-          <span className="hidden sm:inline">{label}</span>
-        </span>
-      ))}
-    </aside>
   );
 }
 
@@ -171,16 +148,18 @@ function OrderPanel({ onOrdered, ordered, reducedMotion }: { onOrdered: () => vo
 }
 
 /** ① Espace client : l'accueil, puis « Nouvelle commande » ouvre le formulaire qui se tape tout seul. */
-export function SceneClientOrder({ onDone, reducedMotion }: SceneProps) {
+export function SceneClientOrder({ onDone, onStart, reducedMotion }: SceneProps) {
   const intro = useTimeline(INTRO_DURATIONS_MS, reducedMotion);
+  const [starting, setStarting] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [ordered, setOrdered] = useState(false);
+  useDelayedCall(starting, reducedMotion ? 0 : ENLARGE_MS, () => setFormOpen(true));
   const ready = intro >= INTRO_DURATIONS_MS.length;
   useDelayedCall(ordered, GESTURE_RESULT_DELAY_MS, onDone);
 
   return (
     <div className="flex h-full">
-      <Sidebar />
+      <SpaceSidebar items={NAV} />
 
       <div className="relative flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between gap-2 px-3 py-3 sm:px-4">
@@ -191,11 +170,14 @@ export function SceneClientOrder({ onDone, reducedMotion }: SceneProps) {
           <div className="relative flex flex-col items-end">
             <button
               type="button"
-              disabled={!ready || formOpen}
-              onClick={() => setFormOpen(true)}
+              disabled={!ready || starting}
+              onClick={() => {
+                setStarting(true);
+                onStart();
+              }}
               className={cn(
                 "flex min-h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
-                ready && !formOpen ? "product-tour-pulse" : !ready && "opacity-40"
+                ready && !starting ? "product-tour-pulse" : !ready && "opacity-40"
               )}
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
@@ -209,9 +191,9 @@ export function SceneClientOrder({ onDone, reducedMotion }: SceneProps) {
           <p
             className={cn(
               "absolute right-2 top-2 flex items-center gap-1 rounded-lg bg-[#0e1310] px-2 py-1 text-[11px] font-semibold text-white shadow-lg transition-opacity duration-300 motion-reduce:transition-none",
-              ready && !formOpen ? "opacity-100" : "opacity-0"
+              ready && !starting ? "opacity-100" : "opacity-0"
             )}
-            aria-hidden={!ready || formOpen}
+            aria-hidden={!ready || starting}
           >
             <MousePointerClick className="h-3 w-3" aria-hidden />
             Cliquez sur « Nouvelle commande »

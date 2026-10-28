@@ -22,6 +22,8 @@ import { useDelayedCall, usePrefersReducedMotion } from "@/features/landing/prod
 
 export type SceneProps = {
   onDone: () => void;
+  /** Premier geste du visiteur : la fenêtre de la démo s'agrandit. */
+  onStart: () => void;
   reducedMotion: boolean;
   /** Vrai dès le premier geste du visiteur : avant, on ne déplace jamais le focus. */
   interacted: boolean;
@@ -95,6 +97,7 @@ export function ProductTour() {
   const [state, setState] = useState(initialTourState);
   const [interacted, setInteracted] = useState(false);
   const [interlude, setInterlude] = useState<TourInterlude | null>(null);
+  const [started, setStarted] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
   const stage = useRef<HTMLDivElement>(null);
   const step = TOUR_STEPS[state.current] ?? "order";
@@ -120,7 +123,8 @@ export function ProductTour() {
     element.focus({ preventScroll: true });
   }, [interacted, showing]);
 
-  const sceneProps: SceneProps = { onDone, reducedMotion, interacted };
+  const onStart = useCallback(() => setStarted(true), []);
+  const sceneProps: SceneProps = { onDone, onStart, reducedMotion, interacted };
 
   const navigate = (next: typeof state) => {
     setInteracted(true);
@@ -132,7 +136,13 @@ export function ProductTour() {
     <MotionConfig reducedMotion="user">
       <figure
         aria-label="Démonstration interactive du parcours d'une livraison"
-        className="overflow-hidden rounded-[22px] border border-black/[0.07] bg-white p-1.5 shadow-[0_30px_80px_rgba(14,19,16,0.12)]"
+        data-started={started ? "true" : "false"}
+        className={cn(
+          "relative z-10 origin-center overflow-hidden rounded-[22px] border border-black/[0.07] bg-white p-1.5 transition-[scale,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:origin-right",
+          started
+            ? "scale-[1.02] shadow-[0_40px_110px_rgba(14,19,16,0.2)] lg:scale-[1.07]"
+            : "shadow-[0_30px_80px_rgba(14,19,16,0.12)]"
+        )}
       >
         <div className="flex items-center gap-3 px-2 py-2 sm:px-3">
           <div className="hidden items-center gap-1.5 sm:flex" aria-hidden>
@@ -186,7 +196,13 @@ export function ProductTour() {
                   {step === "dispatch" && <SceneDispatch {...sceneProps} />}
                   {step === "driver" && <SceneDriver {...sceneProps} />}
                   {step === "tracking" && (
-                    <SceneTracking {...sceneProps} onRestart={() => navigate(restartTour())} />
+                    <SceneTracking
+                      {...sceneProps}
+                      onRestart={() => {
+                        setStarted(false);
+                        navigate(restartTour());
+                      }}
+                    />
                   )}
                 </>
               )}
