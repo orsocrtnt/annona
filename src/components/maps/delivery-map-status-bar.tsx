@@ -135,7 +135,7 @@ export function DeliveryMapStatusBar({
                     "h-3 w-3 shrink-0 rounded-full border transition-all duration-300",
                     isCompleted && "border-black bg-black dark:border-foreground dark:bg-foreground",
                     isCurrent && "scale-110 border-black bg-black ring-4 ring-black/10 dark:border-foreground dark:bg-foreground dark:ring-white/15",
-                    isUpcoming && "border-zinc-300 bg-white dark:border-border dark:bg-card"
+                    isUpcoming && "border-zinc-300 bg-white dark:border-muted-foreground dark:bg-card"
                   )}
                 />
                 <span
