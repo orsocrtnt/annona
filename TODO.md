@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**57 tâches terminées sur 89 — 64 %**
+**57 tâches terminées sur 90 — 63 %**
 
-`█████████████░░░░░░░` · 32 tâches restantes
+`█████████████░░░░░░░` · 33 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -197,6 +197,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | POD-2 | A | Implémenté et recetté (29 octobre) ; essai sur téléphone réel, règles pilotables depuis l'interface. | MOB-01C. | Élevée · GPT‑6.1 Sol |
 | OPS-FIAB | A+B | Implémenté (29 octobre) ; déclenchement réel du workflow, `after()` sur Vercel, Node 22, index en préproduction. | Propriétaire (secrets, Vercel). | Moyenne · GPT‑6 Luna |
 | SEC-AUDIT | A+B | Implémenté et recetté (29 octobre) ; CSP bloquante, migration et secrets de préproduction, rattachement par e-mail. | Propriétaire (migration, secrets). | Élevée · GPT‑6 Astra |
+| AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
 
@@ -1446,6 +1447,16 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Contrôle en lecture seule du 2026-10-26 : les cinq migrations notées « en attente » ci-dessus ont été appliquées avec l'accord du propriétaire (rapport `docs/rapports/CLAUDE_STABILISATION_HANDOFF.md`). La préproduction compte dix-sept migrations terminées, 35 tables, RLS partout et aucun droit direct public.
 
   Suite du 2026-10-29 : l'inventaire des routes à périmètre d'entreprise (`tests/admin01-tenant-api-boundary-inventory.test.ts`, `docs/operations/admin01/tenant-api-boundaries.md`) passe de 58 routes / 40 fichiers à 66 routes / 46 fichiers avec les chantiers du 28 octobre (Factur-X, relances, commande par message, preuve, réglages du portail) ; à recompter si une autre branche ajoute des routes `getCompanyId`. Tâche inchangée (terminée).
+
+- [ ] **AUTH-ROLE — Refuser côté serveur les pages du mauvais rôle.** Aujourd'hui, le middleware vérifie seulement qu'une session existe (`src/middleware.ts`) et les layouts des espaces contrôlent le rôle dans le navigateur. Un client connecté qui ouvre `/dashboard`, `/dispatch` ou `/driver/missions` (ou un livreur qui ouvre `/portal/orders`) reçoit donc la page en HTTP 200 avant la redirection côté client. Les API restent protégées : `/api/invoices` renvoie 403 au client, au livreur et au dispatcher, et aucune fuite de données n'a été constatée.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  Terminé quand : chaque espace (back-office/dispatch, portail client, app livreur, `/admin`) refuse côté serveur un rôle non autorisé, par redirection 307 vers l'espace du rôle ou par refus explicite, sans rendre la page ; la démo et le changement de persona fonctionnent toujours ; tests unitaires de la règle et recette HTTP `redirect: "manual"` pour chaque couple rôle × espace ; `npm run check` vert.
+
+  Source / dépendance / blocage : recette serveur indépendante de Codex du 28 octobre 2026 (`outputs/recette-codex/rapport.md`, sur cda66cd). Défaut préexistant sur `preproduction` (9234600), non introduit par l'intégration. Prioritaire pour la série suivante.
+
+  État : ouverte, non commencée.
 
 - [ ] **RECETTE-2810 — Défauts mineurs de la recette du 28 octobre.** Reprendre les défauts mineurs et les points à trancher relevés par les deux recettes navigateur de l'intégration `integration/2026-10-28` (`outputs/recette-agents/integration/rapport.md` sur fcc0a5c et `outputs/recette-agents/integration-correctifs/rapport.md` sur 013d1fc puis 557e9d5), sans bloquer l'intégration : aucun défaut bloquant ni important n'a été relevé.
 
