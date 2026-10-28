@@ -731,3 +731,28 @@ test("l'écrivain JSON refuse une collection rouverte et l'export refuse une tai
   }
   assert.equal(repository.calls.length, 0, "une taille invalide n'ouvre aucune lecture");
 });
+
+test("POD-2 : l'export inventorie aussi la signature de chaque livraison, sans toucher aux photos", async () => {
+  const repository = makeRepository();
+  const signed = orderFor("order-sig", "2026-10-24T11:00:00.000Z");
+  Object.assign(signed.value.deliveries[0]!, {
+    podPhotoPath: null,
+    podSignaturePath: "company-a/delivery-order-sig-sig-1730000000000-123e4567-e89b-12d3-a456-426614174000.png",
+    podRecipientName: "Mme Martin",
+  });
+  repository.records.order!.push(signed);
+  const service = loadService(repository.prisma);
+
+  const result = normalize(await service.exportCompanyData("company-a")) as {
+    counts: Record<string, number>;
+    externalAssets: { proofObjects: Array<{ deliveryId: string; objectKey: string; kind?: string }> };
+    data: { orders: Array<{ id: string; deliveries: Array<{ podRecipientName?: string }> }> };
+  };
+  const signature = result.externalAssets.proofObjects.filter((proof) => proof.kind === "signature");
+  assert.deepEqual(signature.map((proof) => proof.deliveryId), ["delivery-order-sig"]);
+  assert.match(signature[0]!.objectKey, /^company-a\/delivery-order-sig-sig-/);
+  assert.equal(result.externalAssets.proofObjects.filter((proof) => proof.kind !== "signature").length, 1, "la photo existante reste seule dans la catégorie photo");
+  assert.equal(result.counts.proofObjects, 2);
+  const exported = result.data.orders.find((order) => order.id === "order-sig")!;
+  assert.equal(exported.deliveries[0]!.podRecipientName, "Mme Martin", "le nom du réceptionnaire est exporté avec la livraison");
+});

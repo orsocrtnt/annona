@@ -11,6 +11,7 @@ import { getClientOrderStats, getCompanyOrderStats } from "../src/domains/order/
 import { getUserByAuthId } from "../src/domains/user/user.service";
 import { resolveDatabaseUrl } from "../src/lib/database/connection-url";
 import { OPERATIONAL_QUERY_DEFAULTS, QUERY_STALE_MS } from "../src/lib/query/defaults";
+import * as proofLinksModule from "../src/domains/delivery/proof-links";
 
 function replace(t: TestContext, obj: object, key: string, fn: unknown) {
   const previous = Reflect.get(obj, key); Reflect.set(obj, key, fn);
@@ -232,6 +233,7 @@ test("réglages réutilisés du contexte : nouveaux droits et valeurs relus à c
       "@/lib/api/route-handler": { withApiHandler: (fn: () => unknown) => fn() },
       "@/domains/delivery/delivery.service": { getCompanyDeliveries: async () => [], getDriverDispatchWorkload: async () => [] },
       "@/domains/order/order.service": { getCompanyOrderStats: async () => ({}) },
+      "@/domains/delivery/proof-links": { omitStoragePaths: (value: unknown) => value },
       "@/domains/company/dispatch-settings.service": { parseDispatchSettings: (raw: unknown) => raw },
       "@/domains/company/location-settings.service": { parseLocationSettings: (raw: unknown) => raw },
     };
@@ -255,6 +257,7 @@ test("photo différée : propriétaire/entreprise relus, URL privée seulement a
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": { requireDriverRole: async () => denied ? { error: new Response(null, { status: 401 }) } : { context: { user: { id: "driver", companyId: "a" } } } },
     "@/services/prisma/client": { prisma: { delivery: { findFirst: async ({ where }: { where: Record<string, string> }) => { reads++; assert.equal(JSON.stringify(where), JSON.stringify({ id: "mission", driverId: "driver", companyId: "a" })); return owned ? { podPhotoPath: "private" } : null; } } } },
+    "@/domains/delivery/proof-links": proofLinksModule,
     "@/lib/storage/pod": { getPodPhotoSignedUrl: async () => { signs++; return "https://storage.fixture.invalid/signed"; } },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/driver/missions/[id]/proof/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
@@ -273,6 +276,7 @@ test("liste missions : aucune dépendance à la signature Storage lente", async 
     "@/domains/delivery/delivery.service": { getDriverMissions: async () => [{ id: "mission", podPhotoPath: "private", order: { requestedDeliveryDate: null } }], getAvailableDeliveriesForDriver: async () => [], getDriverStats: async () => ({}) },
     "@/domains/company/dispatch-settings.service": { parseDispatchSettings: () => ({}) },
     "@/domains/delivery/delivery-timing": { deliveryTiming: () => ({ dueAt: null, late: false, lateByMinutes: null, nextAction: null }) },
+    "@/domains/delivery/pod-evidence": { withoutSignaturePath: (row: unknown) => row },
     "@/lib/storage/pod": { isPodPhotoPathForDelivery: () => true, getPodPhotoSignedUrl: () => assert.fail("Storage ne doit pas être appelé pour lire la liste") },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/driver/missions/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;

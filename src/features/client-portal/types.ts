@@ -128,6 +128,10 @@ export interface PortalDelivery {
   podFailureCode?: string | null;
   podNote?: string | null;
   podOutcome?: string | null;
+  podSignatureUrl?: string | null;
+  podPdfUrl?: string | null;
+  podRecipientName?: string | null;
+  podSignatureRefusedReason?: string | null;
 }
 
 export interface PortalInvoiceLineItem {

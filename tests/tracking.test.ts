@@ -194,6 +194,8 @@ test("TRACK-1 transition : statut ASSIGNED exclu des entrées, 400 avant service
     "@/lib/validations/delivery": { updateDriverDeliveryStatusSchema },
     "@/domains/delivery/driver-proximity.service": { DriverProximityError: Error },
     "@/lib/storage/pod": {}, "@/lib/pod/codes": {},
+    "@/lib/storage/pod-signature": {}, "@/domains/delivery/pod-evidence": { isPodEvidenceError: () => false, POD_EVIDENCE_MESSAGES: {}, assertPodEvidence: () => ({}), withoutSignaturePath: (row: unknown) => row },
+    "@/domains/delivery/proof-settings.service": {},
   });
   const response = await route.PATCH(new Request("http://localhost", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "ASSIGNED" }) }), { params: Promise.resolve({ id: "d" }) });
   assert.equal(response.status, 400); assert.equal(mutations, 0);

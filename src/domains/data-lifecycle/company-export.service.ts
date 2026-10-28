@@ -213,6 +213,8 @@ export interface CompanyExportProofObject {
   deliveryId: string;
   deliveryReference: string;
   objectKey: string;
+  /** Absent pour la photo de preuve ; « signature » pour la signature du réceptionnaire. */
+  kind?: "signature";
 }
 
 export interface CompanyExportSummary extends CompanyExportHeader {
@@ -352,6 +354,14 @@ export async function visitCompanyExport(
                 deliveryId: delivery.id,
                 deliveryReference: delivery.reference,
                 objectKey: delivery.podPhotoPath,
+              });
+            }
+            if (delivery.podSignaturePath) {
+              proofObjects.push({
+                deliveryId: delivery.id,
+                deliveryReference: delivery.reference,
+                objectKey: delivery.podSignaturePath,
+                kind: "signature",
               });
             }
           }

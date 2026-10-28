@@ -800,6 +800,12 @@ model Delivery {
   podFailureCode    String?          @map("pod_failure_code")
   podNote           String?          @map("pod_note")
   podCapturedAt     DateTime?        @map("pod_captured_at")
+  podSignaturePath  String?          @map("pod_signature_path")
+  podRecipientName  String?          @map("pod_recipient_name")
+  podSignatureRefusedReason String?  @map("pod_signature_refused_reason")
+  podLatitude       Float?           @map("pod_latitude")
+  podLongitude      Float?           @map("pod_longitude")
+  podPositionAt     DateTime?        @map("pod_position_at")
 
   companyId  String  @map("company_id")
   company    Company @relation(fields: [companyId], references: [id])

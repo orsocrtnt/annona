@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { assignDeliveryToDriver } from "@/domains/delivery/delivery.service";
 import { assignDeliverySchema } from "@/lib/validations/delivery";
+import { omitStoragePaths } from "@/domains/delivery/proof-links";
 
 export async function PATCH(
   request: Request,
@@ -36,7 +37,7 @@ export async function PATCH(
     if (!delivery) {
       return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
     }
-    return NextResponse.json({ data: delivery, success: true });
+    return NextResponse.json({ data: omitStoragePaths(delivery), success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "DRIVER_NOT_FOUND") {
       return NextResponse.json({ error: "Chauffeur introuvable" }, { status: 404 });

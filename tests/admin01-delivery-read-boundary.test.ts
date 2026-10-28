@@ -4,6 +4,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { NextResponse } from "next/server";
+import * as proofLinksModule from "../src/domains/delivery/proof-links";
 
 function load(file: string, role: string, calls: string[], missing = false) {
   const module = { exports: {} as {
@@ -44,6 +45,7 @@ function load(file: string, role: string, calls: string[], missing = false) {
       deliveryTiming: (input: { hasProof: boolean }) => { calls.push(`timing:${input.hasProof}`); return { late: false }; },
     },
     "@/lib/validations/delivery": { adminUpdateDeliverySchema: { safeParse: () => ({ success: false }) } },
+    "@/domains/delivery/proof-links": proofLinksModule,
     "@/lib/storage/pod": {
       getPodPhotoSignedUrl: async () => { calls.push("sign"); return "https://signed.example/pod"; },
     },
@@ -107,8 +109,10 @@ test("ADMIN-1 livraisons : les trois rôles conservent la réponse", async () =>
       context(detailCalls)
     );
     assert.equal(detail.status, 200);
-    assert.equal(detailCalls.includes("sign"), true);
-    assert.equal((await detail.json()).data.podPhotoUrl, "https://signed.example/pod");
+    assert.equal(detailCalls.includes("sign"), false, "plus d'URL Storage dans la réponse : lien interne à la demande");
+    const detailData = (await detail.json()).data;
+    assert.equal(detailData.podPhotoUrl, "/api/deliveries/delivery-1/proof/photo");
+    assert.equal("podPhotoPath" in detailData, false);
   }
 
   const missing = await load("src/app/api/deliveries/[id]/route.ts", "COMPANY_ADMIN", [], true).GET!(

@@ -48,6 +48,7 @@ function load(file: string, role: string, calls: string[]) {
     "@/lib/validations/order-history": sink,
     "@/lib/validations/order": sink,
     "@/lib/storage/pod": sink,
+    "@/domains/delivery/proof-links": sink,
   };
   runInNewContext(source, {
     Error, URL, console, exports: module.exports, module,

@@ -41,6 +41,10 @@ interface DeliveryAdminPanelProps {
     podPhotoUrl?: string | null;
     podFailureCode?: string | null;
     podNote?: string | null;
+    podSignatureUrl?: string | null;
+    podPdfUrl?: string | null;
+    podRecipientName?: string | null;
+    podSignatureRefusedReason?: string | null;
   };
   deliveryCategory?: DeliveryCategory | null;
 }
@@ -135,6 +139,10 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
             photoUrl={delivery.podPhotoUrl}
             failureCode={delivery.podFailureCode}
             note={delivery.podNote}
+            signatureUrl={delivery.podSignatureUrl}
+            pdfUrl={delivery.podPdfUrl}
+            recipientName={delivery.podRecipientName}
+            signatureRefusedReason={delivery.podSignatureRefusedReason}
           />
           {delivery.trackingEvents && delivery.trackingEvents.length > 0 && (
             <TrackingTimeline events={delivery.trackingEvents} />
@@ -235,6 +243,10 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
             photoUrl={delivery.podPhotoUrl}
             failureCode={delivery.podFailureCode}
             note={delivery.podNote}
+            signatureUrl={delivery.podSignatureUrl}
+            pdfUrl={delivery.podPdfUrl}
+            recipientName={delivery.podRecipientName}
+            signatureRefusedReason={delivery.podSignatureRefusedReason}
           />
         )}
       </CardContent>

@@ -6,7 +6,7 @@ import {
   updateCompanyOrderStatus,
 } from "@/domains/order/order.service";
 import { updateOrderStatusSchema } from "@/lib/validations/order";
-import { getPodPhotoSignedUrl } from "@/lib/storage/pod";
+import { omitStoragePaths, withProofLinks } from "@/domains/delivery/proof-links";
 
 export async function GET(
   _request: Request,
@@ -29,17 +29,9 @@ export async function GET(
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
   }
 
-  const deliveries = await Promise.all(
-    order.deliveries.map(async (delivery) => {
-      const { podPhotoPath, ...safeDelivery } = delivery;
-      return {
-        ...safeDelivery,
-        podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, delivery.id),
-      };
-    })
-  );
+  const deliveries = order.deliveries.map((delivery) => withProofLinks("/api/deliveries", delivery));
 
-  return NextResponse.json({ data: { ...order, deliveries }, success: true });
+  return NextResponse.json({ data: omitStoragePaths({ ...order, deliveries }), success: true });
 }
 
 export async function PATCH(
@@ -131,7 +123,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json({ data: order, success: true });
+  return NextResponse.json({ data: omitStoragePaths(order), success: true });
 }
 
 export async function DELETE(

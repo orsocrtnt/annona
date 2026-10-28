@@ -13,6 +13,7 @@ function load(file: string, role: string, calls: string[], mode: "ok" | "missing
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
   const dependencies: Record<string, unknown> = {
+    "@/domains/delivery/proof-links": { omitStoragePaths: (value: unknown) => value },
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": {
       requireStaffRole: async (permission: string) => {

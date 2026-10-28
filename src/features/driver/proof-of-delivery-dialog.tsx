@@ -13,12 +13,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import { POD_FAILURE_CODES, POD_FAILURE_LABELS, type PodFailureCode } from "@/lib/pod/codes";
+import { SignaturePad } from "./signature-pad";
+import { useDriverProofRules } from "./hooks";
 
 export type PodDialogValue = {
   outcome: "SUCCESS" | "FAILED";
   photo: Blob | null;
   failureCode?: PodFailureCode;
   note?: string;
+  /** Nom du réceptionnaire et signature PNG (livraison réussie uniquement). */
+  recipientName?: string;
+  signature?: Blob | null;
+  signatureRefusedReason?: string;
 };
 
 interface ProofOfDeliveryDialogProps {
@@ -69,8 +75,26 @@ export function ProofOfDeliveryDialog({
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [failureCode, setFailureCode] = useState<PodFailureCode>("ABSENT");
   const [note, setNote] = useState("");
+  const recipientId = useId();
+  const refusalId = useId();
+  const [recipientName, setRecipientName] = useState("");
+  const [signature, setSignature] = useState<Blob | null>(null);
+  const [refusedToSign, setRefusedToSign] = useState(false);
+  const [refusalReason, setRefusalReason] = useState("");
+  const { data: proofRules } = useDriverProofRules();
 
   const success = outcome === "SUCCESS";
+  const signatureRequired = proofRules?.signatureRequired ?? false;
+  const name = recipientName.trim();
+  const reason = refusalReason.trim();
+  // Signature tracée (avec le nom) ou refus motivé ; facultatives sauf règle de l'entreprise.
+  const evidenceReady =
+    !success ||
+    (refusedToSign
+      ? reason.length >= 3
+      : signature
+        ? name.length >= 2
+        : !signatureRequired && (name.length === 0 || name.length >= 2));
 
   useEffect(
     () => () => {
@@ -87,12 +111,19 @@ export function ProofOfDeliveryDialog({
   };
 
   const handleConfirm = () => {
-    if (success && !photo) return;
+    if (success && (!photo || !evidenceReady)) return;
     onConfirm({
       outcome,
       photo,
       failureCode: success ? undefined : failureCode,
       note: note.trim() || undefined,
+      ...(success
+        ? {
+            recipientName: name || undefined,
+            signature: refusedToSign ? null : signature,
+            signatureRefusedReason: refusedToSign ? reason : undefined,
+          }
+        : {}),
     });
   };
 
@@ -105,6 +136,10 @@ export function ProofOfDeliveryDialog({
           setPreview(null);
           setPhoto(null);
           setNote("");
+          setRecipientName("");
+          setSignature(null);
+          setRefusedToSign(false);
+          setRefusalReason("");
         }
         onOpenChange(next);
       }}
@@ -174,6 +209,55 @@ export function ProofOfDeliveryDialog({
             )}
           </button>
 
+          {success ? (
+            <fieldset className="space-y-3 rounded-lg border border-border p-3">
+              <legend className="px-1 text-sm font-medium">
+                Réception{signatureRequired ? " (signature requise)" : ""}
+              </legend>
+              <label htmlFor={recipientId} className="block space-y-1 text-sm">
+                <span className="font-medium">
+                  Nom du réceptionnaire{signature || signatureRequired ? " *" : ""}
+                </span>
+                <input
+                  id={recipientId}
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  maxLength={120}
+                  autoComplete="off"
+                  aria-required={Boolean(signature) || signatureRequired}
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                />
+              </label>
+              {refusedToSign ? null : <SignaturePad disabled={loading} onChange={setSignature} />}
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={refusedToSign}
+                  onChange={(e) => {
+                    setRefusedToSign(e.target.checked);
+                    if (e.target.checked) setSignature(null);
+                  }}
+                  className="mt-1 h-4 w-4"
+                />
+                <span>Le destinataire refuse ou ne peut pas signer</span>
+              </label>
+              {refusedToSign ? (
+                <label htmlFor={refusalId} className="block space-y-1 text-sm">
+                  <span className="font-medium">Motif du refus de signer *</span>
+                  <input
+                    id={refusalId}
+                    value={refusalReason}
+                    onChange={(e) => setRefusalReason(e.target.value)}
+                    maxLength={200}
+                    autoComplete="off"
+                    aria-required="true"
+                    className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                  />
+                </label>
+              ) : null}
+            </fieldset>
+          ) : null}
+
           <label htmlFor={noteId} className="block space-y-1 text-sm">
             <span className="font-medium">Note</span>
             <textarea
@@ -197,7 +281,7 @@ export function ProofOfDeliveryDialog({
             variant={success ? "brand" : "destructive"}
             onClick={handleConfirm}
             loading={loading}
-            disabled={success && !photo}
+            disabled={success && (!photo || !evidenceReady)}
           >
             {success ? "Valider la livraison" : "Enregistrer l’échec"}
           </Button>

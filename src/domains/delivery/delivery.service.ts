@@ -749,6 +749,9 @@ export async function updateDeliveryStatusByDriver(
     podFailureCode?: PodFailureCode;
     podNote?: string;
     podPhotoPath?: string;
+    podSignaturePath?: string;
+    podRecipientName?: string | null;
+    podSignatureRefusedReason?: string | null;
   }
 ) {
   const delivery = await prisma.delivery.findFirst({
@@ -800,14 +803,16 @@ export async function updateDeliveryStatusByDriver(
   // Position à horodater sur l'événement de suivi : celle fournie, sinon la dernière connue du chauffeur.
   let eventLatitude = options?.latitude ?? null;
   let eventLongitude = options?.longitude ?? null;
+  let eventPositionAt: Date | null = eventLatitude != null && eventLongitude != null ? new Date() : null;
   if (eventLatitude == null || eventLongitude == null) {
     const lastLocation = await prisma.driverLocation.findUnique({
       where: { driverId },
-      select: { latitude: true, longitude: true },
+      select: { latitude: true, longitude: true, updatedAt: true },
     });
     if (lastLocation) {
       eventLatitude = lastLocation.latitude;
       eventLongitude = lastLocation.longitude;
+      eventPositionAt = lastLocation.updatedAt;
     }
   }
 
@@ -832,6 +837,13 @@ export async function updateDeliveryStatusByDriver(
               podFailureCode: status === "FAILED" ? options?.podFailureCode ?? null : null,
               podNote: options?.podNote?.trim() || null,
               podCapturedAt: new Date(),
+              podSignaturePath: status === "DELIVERED" ? options?.podSignaturePath ?? null : null,
+              podRecipientName: status === "DELIVERED" ? options?.podRecipientName?.trim() || null : null,
+              podSignatureRefusedReason:
+                status === "DELIVERED" ? options?.podSignatureRefusedReason?.trim() || null : null,
+              podLatitude: eventLatitude,
+              podLongitude: eventLongitude,
+              podPositionAt: eventLatitude != null ? eventPositionAt : null,
             }
           : {}),
       },

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { getCompanyDeliveries } from "@/domains/delivery/delivery.service";
+import { omitStoragePaths } from "@/domains/delivery/proof-links";
 
 export async function GET(request: Request) {
   return withApiHandler(async () => {
@@ -19,6 +20,6 @@ export async function GET(request: Request) {
     const unassignedOnly = searchParams.get("unassigned") === "true";
 
     const deliveries = await getCompanyDeliveries(companyId, { unassignedOnly });
-    return NextResponse.json({ data: deliveries, success: true });
+    return NextResponse.json({ data: omitStoragePaths(deliveries), success: true });
   });
 }

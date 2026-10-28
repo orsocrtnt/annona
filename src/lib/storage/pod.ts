@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { createAdminClient } from "@/services/supabase/admin";
+import { sanitizePodPhoto } from "@/lib/storage/pod-image";
 
-const POD_BUCKET = "delivery-pods";
-export const SIGNED_URL_SECONDS = 60 * 60;
+export const POD_BUCKET = "delivery-pods";
+export const SIGNED_URL_SECONDS = 5 * 60;
 export const MAX_POD_BYTES = 5 * 1024 * 1024;
 export const MAX_POD_REQUEST_BYTES = MAX_POD_BYTES + 512 * 1024;
 const MAX_POD_DIMENSION = 12_000;
@@ -14,12 +15,29 @@ export function isPodPhotoPathForDelivery(path: string, companyId: string, deliv
   return path.startsWith(prefix) && /^\d+(?:-[0-9a-f-]{36})?\.(jpg|png)$/.test(path.slice(prefix.length));
 }
 
+const SAFE_ID = /^[A-Za-z0-9_-]+$/;
+
+/** Chemin de la signature : même préfixe `companyId/deliveryId-` que la photo, infixe `sig-` pour les distinguer. */
+export function isPodSignaturePathForDelivery(path: string, companyId: string, deliveryId: string): boolean {
+  if (![companyId, deliveryId].every((id) => SAFE_ID.test(id))) return false;
+  const prefix = `${companyId}/${deliveryId}-sig-`;
+  return path.startsWith(prefix) && /^\d+-[0-9a-f-]{36}\.png$/.test(path.slice(prefix.length));
+}
+
+export type PodObjectKind = "photo" | "signature";
+
+export function isPodObjectPath(kind: PodObjectKind, path: string, companyId: string, deliveryId: string): boolean {
+  return kind === "signature"
+    ? isPodSignaturePathForDelivery(path, companyId, deliveryId)
+    : isPodPhotoPathForDelivery(path, companyId, deliveryId);
+}
+
 function validDimensions(width: number, height: number) {
   return width > 0 && height > 0 && width <= MAX_POD_DIMENSION &&
     height <= MAX_POD_DIMENSION && width * height <= MAX_POD_PIXELS;
 }
 
-function validPng(bytes: Buffer) {
+export function validPng(bytes: Buffer) {
   if (bytes.length < 45 || !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return false;
   let offset = 8;
   let sawHeader = false;
@@ -94,7 +112,7 @@ export async function checkPodStorageHealth() {
   if (data.public) throw new Error("POD_STORAGE_PUBLIC");
 }
 
-async function ensurePodBucket() {
+export async function ensurePodBucket() {
   if (!bucketReady) {
     bucketReady = (async () => {
       const supabase = createAdminClient();
@@ -116,19 +134,20 @@ async function ensurePodBucket() {
   await bucketReady;
 }
 
-export async function uploadPodPhoto(params: {
+/** Dépose un objet de preuve (déjà validé et nettoyé) sous le chemin propre à son type. */
+export async function putPodObject(params: {
+  kind: PodObjectKind;
   companyId: string;
   deliveryId: string;
   bytes: Buffer;
-  contentType: string;
+  contentType: "image/jpeg" | "image/png";
 }) {
-  validatePodPhoto(params.bytes, params.contentType);
-  if (![params.companyId, params.deliveryId].every((id) => /^[A-Za-z0-9_-]+$/.test(id))) throw new Error("POD_INVALID_PATH");
+  if (![params.companyId, params.deliveryId].every((id) => SAFE_ID.test(id))) throw new Error("POD_INVALID_PATH");
   await ensurePodBucket();
-  const ext = params.contentType.includes("png") ? "png" : "jpg";
-  const path = `${params.companyId}/${params.deliveryId}-${Date.now()}-${randomUUID()}.${ext}`;
-  const supabase = createAdminClient();
-  const { error } = await supabase.storage.from(POD_BUCKET).upload(path, params.bytes, {
+  const ext = params.contentType === "image/png" ? "png" : "jpg";
+  const infix = params.kind === "signature" ? "sig-" : "";
+  const path = `${params.companyId}/${params.deliveryId}-${infix}${Date.now()}-${randomUUID()}.${ext}`;
+  const { error } = await createAdminClient().storage.from(POD_BUCKET).upload(path, params.bytes, {
     contentType: params.contentType,
     upsert: false,
   });
@@ -136,11 +155,45 @@ export async function uploadPodPhoto(params: {
   return path;
 }
 
-export async function deletePodPhoto(path: string, companyId: string, deliveryId: string) {
-  if (!isPodPhotoPathForDelivery(path, companyId, deliveryId)) throw new Error("POD_INVALID_PATH");
+export async function removePodObject(kind: PodObjectKind, path: string, companyId: string, deliveryId: string) {
+  if (!isPodObjectPath(kind, path, companyId, deliveryId)) throw new Error("POD_INVALID_PATH");
   await ensurePodBucket();
   const { error } = await createAdminClient().storage.from(POD_BUCKET).remove([path]);
   if (error) throw new Error(`POD_DELETE: ${error.message}`);
+}
+
+/** Octets d'un objet de preuve. Null si le chemin n'appartient pas à cette entreprise, cette livraison et ce type. */
+export async function readPodObject(kind: PodObjectKind, path: string | null | undefined, companyId: string, deliveryId: string) {
+  if (!path || !isPodObjectPath(kind, path, companyId, deliveryId)) return null;
+  await ensurePodBucket();
+  const { data, error } = await createAdminClient().storage.from(POD_BUCKET).download(path);
+  if (error || !data) return null;
+  return Buffer.from(await data.arrayBuffer());
+}
+
+/** URL signée de courte durée, générée à la demande. Null si le chemin n'appartient pas à cette entreprise et cette livraison. */
+export async function signPodObject(kind: PodObjectKind, path: string | null | undefined, companyId: string, deliveryId: string) {
+  if (!path || !isPodObjectPath(kind, path, companyId, deliveryId)) return null;
+  await ensurePodBucket();
+  const { data, error } = await createAdminClient().storage.from(POD_BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS);
+  return error || !data?.signedUrl ? null : data.signedUrl;
+}
+
+export async function uploadPodPhoto(params: {
+  companyId: string;
+  deliveryId: string;
+  bytes: Buffer;
+  contentType: string;
+}) {
+  validatePodPhoto(params.bytes, params.contentType);
+  if (![params.companyId, params.deliveryId].every((id) => SAFE_ID.test(id))) throw new Error("POD_INVALID_PATH");
+  // Aucune métadonnée (EXIF, position GPS) ne doit être conservée dans le bucket ; la taille est contrôlée après ré-encodage.
+  const clean = await sanitizePodPhoto(params.bytes, params.contentType, MAX_POD_BYTES);
+  return putPodObject({ kind: "photo", companyId: params.companyId, deliveryId: params.deliveryId, ...clean });
+}
+
+export async function deletePodPhoto(path: string, companyId: string, deliveryId: string) {
+  return removePodObject("photo", path, companyId, deliveryId);
 }
 
 export async function cleanupPodPhotoOrphans(params: {
@@ -180,12 +233,10 @@ export async function cleanupPodPhotoOrphans(params: {
 }
 
 export async function getPodPhotoSignedUrl(path: string | null | undefined, companyId: string, deliveryId: string) {
-  if (!path || !isPodPhotoPathForDelivery(path, companyId, deliveryId)) return null;
-  await ensurePodBucket();
-  const supabase = createAdminClient();
-  const { data, error } = await supabase.storage
-    .from(POD_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_SECONDS);
-  if (error || !data?.signedUrl) return null;
-  return data.signedUrl;
+  return signPodObject("photo", path, companyId, deliveryId);
+}
+
+/** Octets de la photo de preuve (pour le PDF). */
+export async function downloadPodPhoto(path: string | null | undefined, companyId: string, deliveryId: string) {
+  return readPodObject("photo", path, companyId, deliveryId);
 }

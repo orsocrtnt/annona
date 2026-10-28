@@ -2,6 +2,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { requireDriverRole } from "@/lib/api/auth-guard";
 import { startDeliveryMissionByDriver } from "@/domains/delivery/start-delivery-mission.service";
+import { omitStoragePaths } from "@/domains/delivery/proof-links";
 
 export async function POST(
   request: Request,
@@ -21,7 +22,7 @@ export async function POST(
     if (!mission) {
       return NextResponse.json({ error: "Mission introuvable" }, { status: 404 });
     }
-    return NextResponse.json({ data: mission, success: true });
+    return NextResponse.json({ data: omitStoragePaths(mission), success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "MISSION_ACCEPTANCE_REQUIRED") {
       return NextResponse.json(

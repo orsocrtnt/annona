@@ -6,7 +6,7 @@ import {
   getCompanyDeliveryById,
 } from "@/domains/delivery/delivery.service";
 import { adminUpdateDeliverySchema } from "@/lib/validations/delivery";
-import { getPodPhotoSignedUrl } from "@/lib/storage/pod";
+import { omitStoragePaths, withProofLinks } from "@/domains/delivery/proof-links";
 
 export async function GET(
   _request: Request,
@@ -29,11 +29,10 @@ export async function GET(
     return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
   }
 
-  const { podPhotoPath, ...safeDelivery } = delivery;
+  const { podPhotoPath } = delivery;
   return NextResponse.json({
     data: {
-      ...safeDelivery,
-      podPhotoUrl: await getPodPhotoSignedUrl(podPhotoPath, companyId, delivery.id),
+      ...withProofLinks("/api/deliveries", delivery),
       timing: deliveryTiming({
         status: delivery.status,
         requestedDeliveryDate: delivery.order.requestedDeliveryDate,
@@ -115,5 +114,5 @@ export async function PATCH(
     return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json({ data: delivery, success: true });
+  return NextResponse.json({ data: omitStoragePaths(delivery), success: true });
 }

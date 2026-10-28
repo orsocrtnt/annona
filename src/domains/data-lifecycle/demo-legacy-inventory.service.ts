@@ -115,7 +115,7 @@ export async function inspectLegacyDemoSessions(
         },
       },
       deliveries: {
-        where: { podPhotoPath: { not: null } },
+        where: { OR: [{ podPhotoPath: { not: null } }, { podSignaturePath: { not: null } }] },
         select: { id: true },
         take: 1,
       },

@@ -10,6 +10,7 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | Chemin | Méthode | Permission | Rôles |
 | --- | --- | --- | --- |
 | src/app/api/back-office/analytics/route.ts | GET | analytics:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/back-office/courier-statements/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/back-office/dashboard/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/billing/route.ts | GET | settings:read | COMPANY_ADMIN |
 | src/app/api/billing/route.ts | POST | settings:read | COMPANY_ADMIN |
@@ -25,11 +26,14 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/logo/route.ts | GET | aucun | aucun |
 | src/app/api/company/logo/route.ts | POST | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/logo/route.ts | DELETE | settings:update | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/proof-rules/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/proof-rules/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/tariffs/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/tariffs/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/deliveries/[id]/assign/route.ts | PATCH | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/deliveries/[id]/proof/[kind]/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/[id]/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/[id]/route.ts | PATCH | deliveries:update | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
