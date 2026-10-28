@@ -184,7 +184,7 @@ export default function ClientOrderDetailPage() {
             {Number(order.totalAmount) > 0 && (
               <div className="flex justify-between border-t border-border pt-3 font-semibold">
                 <span>Total estimé</span>
-                <span>{formatCurrency(order.totalAmount)}</span>
+                <span className="tabular-nums">{formatCurrency(order.totalAmount)}</span>
               </div>
             )}
           </CardContent>

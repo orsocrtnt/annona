@@ -38,9 +38,10 @@ export function AppleNavbar({
       )}
     >
       <div
+        data-glass
         className={cn(
           light
-            ? "relative mx-auto flex min-h-14 items-center gap-2 overflow-visible rounded-[18px] border border-black/[0.07] bg-white/80 px-2.5 py-2 text-[#0e1310] shadow-[0_12px_44px_rgba(14,19,16,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/72 sm:px-3"
+            ? "relative mx-auto flex min-h-14 items-center gap-2 overflow-visible rounded-[18px] border border-black/[0.07] bg-white/80 px-2.5 py-2 text-[#0e1310] shadow-[0_12px_44px_rgba(14,19,16,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/72 dark:border-white/10 dark:bg-card/85 dark:text-foreground dark:shadow-[0_12px_44px_rgba(0,0,0,0.35)] dark:supports-[backdrop-filter]:bg-card/80 sm:px-3"
             : "relative mx-auto flex min-h-14 items-center gap-2 overflow-visible rounded-[18px] border border-white/[0.09] bg-[#101118]/[0.94] px-2.5 py-2 text-white shadow-[0_18px_50px_rgba(9,12,20,0.2)] backdrop-blur-2xl transition-[border-color,box-shadow] duration-500 ease-out hover:border-white/[0.15] hover:shadow-[0_22px_60px_rgba(9,12,20,0.28)] supports-[backdrop-filter]:bg-[#101118]/[0.92] motion-reduce:transition-none sm:px-3",
           maxWidthClassName,
           innerClassName
@@ -85,7 +86,8 @@ export function AppleNavbarBrand({
         )}
       >
         {/* Le nom est porté par le texte du lien (lecteurs d'écran, recherche par texte), le logo est décoratif. */}
-        <Image src="/brand/logo-horizontal-fond-clair.png" alt="" aria-hidden width={104} height={31} priority />
+        <Image src="/brand/logo-horizontal-fond-clair.png" alt="" aria-hidden width={104} height={31} priority className="dark:hidden" />
+        <Image src="/brand/logo-horizontal-fond-sombre.png" alt="" aria-hidden width={104} height={31} className="hidden dark:block" />
         <span className="sr-only">{label}</span>
       </Link>
     );
@@ -155,12 +157,12 @@ export function AppleNavbarLink({
     light ? "focus-visible:ring-ring" : "focus-visible:ring-white/80",
     light
       ? active
-        ? "font-semibold text-[#0e1310]"
-        : "text-[#5f6a63] hover:text-[#0e1310]"
+        ? "font-semibold text-[#0e1310] dark:text-foreground"
+        : "text-[#5f6a63] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:text-foreground"
       : active
         ? "text-white"
         : "text-white/55 hover:text-white",
-    disabled && (light ? "cursor-not-allowed text-[#a3aca6] hover:text-[#a3aca6]" : "cursor-not-allowed text-white/30 hover:text-white/30"),
+    disabled && (light ? "cursor-not-allowed text-[#a3aca6] hover:text-[#a3aca6] dark:text-text-tertiary dark:hover:text-text-tertiary" : "cursor-not-allowed text-white/30 hover:text-white/30"),
     className
   );
 
@@ -173,7 +175,7 @@ export function AppleNavbarLink({
             aria-hidden
             className={cn(
               "pointer-events-none absolute inset-x-2 bottom-[3px] origin-center scale-x-0 rounded-full bg-gradient-to-r from-transparent to-transparent opacity-0 transition-[transform,opacity] duration-300 ease-out group-hover:scale-x-100 group-hover:opacity-100 group-focus-visible:scale-x-100 group-focus-visible:opacity-100 motion-reduce:transition-none",
-              light ? "h-[2px] via-[#00a855]" : "h-px via-[#ff6847] shadow-[0_0_7px_rgba(255,91,57,0.9)]",
+              light ? "h-[2px] via-[#00a855] dark:via-brand" : "h-px via-[#ff6847] shadow-[0_0_7px_rgba(255,91,57,0.9)]",
               active && (light ? "scale-x-100 opacity-100" : "scale-x-100 opacity-80")
             )}
           />
@@ -181,7 +183,7 @@ export function AppleNavbarLink({
             aria-hidden
             className={cn(
               "pointer-events-none absolute -bottom-1 left-1/2 h-3 w-4/5 -translate-x-1/2 scale-x-50 rounded-full opacity-0 blur-md transition-[transform,opacity] duration-300 ease-out group-hover:scale-x-100 group-hover:opacity-100 group-focus-visible:scale-x-100 group-focus-visible:opacity-100 motion-reduce:transition-none",
-              light ? "bg-[#00d46a]/20" : "bg-[#ff5638]/25",
+              light ? "bg-[#00d46a]/20 dark:bg-brand/20" : "bg-[#ff5638]/25",
               active && "scale-x-100 opacity-60"
             )}
           />
@@ -218,4 +220,4 @@ export const appleNavbarActionClass =
 
 /** Variantes claires (espaces connectés, DA Menthe). */
 export const appleNavbarIconButtonLightClass =
-  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#5f6a63] transition-[background-color,color] duration-300 ease-out hover:bg-black/[0.05] hover:text-[#0e1310] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";
+  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#5f6a63] transition-[background-color,color] duration-300 ease-out hover:bg-black/[0.05] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";

@@ -293,7 +293,7 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
     };
   }, [waypoints]);
 
-  if (unavailable) return <div role="status" className="pointer-events-none absolute bottom-36 right-3 z-[1000] max-w-[80%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow">Itinéraire indisponible · positions seules</div>;
+  if (unavailable) return <div role="status" className="pointer-events-none absolute bottom-36 right-3 z-[1000] max-w-[80%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow dark:bg-card/95 dark:text-card-foreground">Itinéraire indisponible · positions seules</div>;
   if (route.length < 2) return null;
 
   return <>
@@ -323,11 +323,11 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapRe
         <DeliveryRouteLayer delivery={delivery} driverMoving={Boolean(showDriver && delivery.driverLocation?.motion)} />
       )}
 
-      {delivery && !delivery.destination && <div role="status" className="pointer-events-none absolute right-3 top-1/2 z-[1000] max-w-[85%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow">Adresse non localisée · position de livraison indisponible</div>}
+      {delivery && !delivery.destination && <div role="status" className="pointer-events-none absolute right-3 top-1/2 z-[1000] max-w-[85%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow dark:bg-card/95 dark:text-card-foreground">Adresse non localisée · position de livraison indisponible</div>}
 
       {phaseHint && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-[1000] flex justify-center px-4">
-          <p className="rounded-full bg-white/95 px-4 py-2 text-sm text-muted-foreground shadow-md">
+          <p className="rounded-full bg-white/95 px-4 py-2 text-sm text-muted-foreground shadow-md dark:bg-card/95">
             {phaseHint}
           </p>
         </div>

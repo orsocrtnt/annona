@@ -119,7 +119,7 @@ export function PortalDashboardCustomizeDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent side="right" className="flex w-full max-w-md flex-col p-0">
+      <DrawerContent side="right" className="top-[var(--demo-banner-height,0px)] flex h-auto w-full max-w-md flex-col p-0 [&>button:last-child]:right-2 [&>button:last-child]:top-2.5 [&>button:last-child]:rounded-xl [&>button:last-child]:p-3.5 [&>button:last-child]:focus-visible:ring-2 [&>button:last-child]:focus-visible:ring-ring">
         <DrawerHeader className="border-b px-6 py-5 pr-14">
           <DrawerTitle className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5" />
@@ -265,7 +265,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-11 w-11"
           disabled={!canMoveFirst}
           onClick={onMoveFirst}
           aria-label="Mettre en premier"
@@ -277,7 +277,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-11 w-11"
           disabled={!canMoveUp}
           onClick={onMoveUp}
           aria-label="Monter"
@@ -289,7 +289,7 @@ function LayoutOrderRow({
           type="button"
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-11 w-11"
           disabled={!canMoveDown}
           onClick={onMoveDown}
           aria-label="Descendre"
@@ -324,16 +324,17 @@ function WidgetToggleRow({
         <button
           type="button"
           role="switch"
+          aria-label={`Afficher : ${label}`}
           aria-checked={visible}
           onClick={() => onToggle(!visible)}
           className={cn(
-            "mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
-            visible ? "bg-brand" : "bg-muted"
+            "relative mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors after:absolute after:-inset-3 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            visible ? "bg-brand" : "bg-muted-foreground"
           )}
         >
           <span
             className={cn(
-              "block h-4 w-4 rounded-full bg-white shadow transition-transform",
+              "block h-4 w-4 rounded-full bg-white shadow ring-1 ring-black/10 transition-transform dark:bg-card dark:ring-0",
               visible ? "translate-x-4" : "translate-x-0.5"
             )}
           />

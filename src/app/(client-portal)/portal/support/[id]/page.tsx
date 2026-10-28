@@ -86,8 +86,8 @@ export default function ClientSupportTicketPage() {
                 className={cn(
                   "max-w-[85%] rounded-2xl border p-4",
                   message.isStaff
-                    ? "mr-auto rounded-bl-md border-border bg-[#f5f8f6]"
-                    : "ml-auto rounded-br-md border-[#bfe9d0] bg-[#eafaf1]"
+                    ? "mr-auto rounded-bl-md border-border bg-background"
+                    : "ml-auto rounded-br-md border-[#bfe9d0] bg-[#eafaf1] dark:border-success/30 dark:bg-success-subtle"
                 )}
               >
                 <p className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">

@@ -55,7 +55,7 @@ export function ClientInvoicesContent({ initialInvoices }: ClientInvoicesContent
     {
       key: "amount",
       header: "Montant",
-      className: "whitespace-nowrap",
+      className: "whitespace-nowrap tabular-nums",
       cell: (row) => formatCurrency(row.amount),
     },
     {

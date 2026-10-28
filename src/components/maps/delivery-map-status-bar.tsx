@@ -71,7 +71,7 @@ function StepConnector({
       <div
         className={cn(
           "absolute inset-0 rounded-full",
-          state === "completed" ? "bg-black" : state === "loading" ? "bg-zinc-400" : "bg-zinc-200",
+          state === "completed" ? "bg-black dark:bg-foreground" : state === "loading" ? "bg-zinc-400 dark:bg-muted-foreground" : "bg-zinc-200 dark:bg-border",
           isLoading && "delivery-step-connector-loading-track"
         )}
       />
@@ -79,7 +79,7 @@ function StepConnector({
       {isLoading && (
         <div
           className="delivery-step-connector-loading absolute inset-0 rounded-full"
-          style={{ background: "linear-gradient(90deg, transparent 0%, #111111 50%, transparent 100%)", backgroundSize: "200% 100%" }}
+          style={{ background: "linear-gradient(90deg, transparent 0%, var(--map-glass-button-fg, #111111) 50%, transparent 100%)", backgroundSize: "200% 100%" }}
         />
       )}
     </div>
@@ -133,16 +133,16 @@ export function DeliveryMapStatusBar({
                 <div
                   className={cn(
                     "h-3 w-3 shrink-0 rounded-full border transition-all duration-300",
-                    isCompleted && "border-black bg-black",
-                    isCurrent && "scale-110 border-black bg-black ring-4 ring-black/10",
-                    isUpcoming && "border-zinc-300 bg-white"
+                    isCompleted && "border-black bg-black dark:border-foreground dark:bg-foreground",
+                    isCurrent && "scale-110 border-black bg-black ring-4 ring-black/10 dark:border-foreground dark:bg-foreground dark:ring-white/15",
+                    isUpcoming && "border-zinc-300 bg-white dark:border-muted-foreground dark:bg-card"
                   )}
                 />
                 <span
                   className={cn(
                     "w-full px-0.5 text-center text-[10px] leading-tight transition-colors duration-300 sm:text-[11px]",
-                    isCurrent && "font-semibold text-black",
-                    isCompleted && "font-medium text-zinc-700",
+                    isCurrent && "font-semibold text-black dark:text-foreground",
+                    isCompleted && "font-medium text-zinc-700 dark:text-text-secondary",
                     isUpcoming && "text-muted-foreground/80"
                   )}
                 >

@@ -21,7 +21,7 @@ export function DeltaBadge({ delta }: { delta: StatDelta }) {
       <span
         className={cn(
           "whitespace-nowrap font-semibold",
-          isGood === null ? "text-muted-foreground" : isGood ? "text-brand" : "text-[#c43b2f]"
+          isGood === null ? "text-muted-foreground" : isGood ? "text-brand" : "text-[#c43b2f] dark:text-error"
         )}
       >
         {value > 0 ? `↑ +${value}` : value < 0 ? `↓ ${value}` : "="}

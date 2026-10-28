@@ -221,7 +221,7 @@ export function CreateOrderForm({
     <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
       {enabledCategories.length > 1 && (
         <div className="space-y-3">
-          <h3 className="font-medium">Type de demande</h3>
+          <h3 className="text-base font-semibold tracking-tight">Type de demande</h3>
           <div role="group" aria-label="Type de demande" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {enabledCategories.map((type) => {
               const selected = deliveryCategory === type;
@@ -274,11 +274,11 @@ export function CreateOrderForm({
 
           <div className="space-y-4 rounded-xl border border-brand/20 bg-brand-subtle/10 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-medium">Adresses concernées</h3>
+              <h3 className="text-base font-semibold tracking-tight">Adresses concernées</h3>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
+                size="touch"
                 onClick={() => {
                   appendStop({
                     label: `Adresse ${stopFields.length + 1}`,
@@ -425,11 +425,11 @@ export function CreateOrderForm({
             {!isCourier && (
               <>
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium">Articles</h3>
+                  <h3 className="text-base font-semibold tracking-tight">Articles</h3>
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    size="touch"
                     onClick={() => appendItem({ name: "", quantity: 1, estimatedPrice: undefined })}
                   >
                     <Plus className="mr-1 h-4 w-4" />
@@ -469,7 +469,7 @@ export function CreateOrderForm({
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon-touch"
                         aria-label={`Supprimer l'article ${index + 1}`}
                         className="mb-0.5 shrink-0"
                         onClick={() => removeItem(index)}
@@ -489,11 +489,11 @@ export function CreateOrderForm({
           {isCourier && (
             <div className="space-y-4 rounded-xl border border-brand/20 bg-brand-subtle/20 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-medium">Adresses de collecte</h3>
+                <h3 className="text-base font-semibold tracking-tight">Adresses de collecte</h3>
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
+                  size="touch"
                   onClick={() => {
                     const nextIndex = pickupStopFields.length;
                     appendPickupStop({
@@ -647,7 +647,7 @@ export function CreateOrderForm({
           )}
 
           <div className="space-y-4">
-            <h3 className="font-medium">{isCourier ? "Adresse de livraison" : "Livraison"}</h3>
+            <h3 className="text-base font-semibold tracking-tight">{isCourier ? "Adresse de livraison" : "Livraison"}</h3>
             {addresses && addresses.length > 0 && (
               <FormField label="Adresse enregistrée" htmlFor="order-shipping-saved-address">
                 <Select onValueChange={(id) => applyAddress(id, "shipping")}>
@@ -710,7 +710,7 @@ export function CreateOrderForm({
             </FormField>
             {!isCourier && (
               <>
-                <label className="flex min-h-8 items-center gap-2 text-sm">
+                <label className="flex min-h-11 items-center gap-3 text-sm">
                   <input className="h-5 w-5" type="checkbox" {...form.register("saveAddress")} />
                   Enregistrer cette adresse
                 </label>
@@ -737,9 +737,12 @@ export function CreateOrderForm({
         />
       )}
 
-      <Button type="submit" variant="brand" loading={loading}>
-        {resolvedSubmitLabel}
-      </Button>
+      {/* Une seule action principale, toujours à portée du pouce sur mobile. */}
+      <div data-glass className="sticky bottom-0 z-10 -mx-6 -mb-6 border-t border-border bg-card/95 px-6 py-3 backdrop-blur-xl sm:static sm:mx-0 sm:mb-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <Button type="submit" variant="brand" size="lg" loading={loading} className="w-full sm:w-auto">
+          {resolvedSubmitLabel}
+        </Button>
+      </div>
     </form>
   );
 }

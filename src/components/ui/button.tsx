@@ -29,6 +29,9 @@ const buttonVariants = cva(
         xl: "h-14 rounded-xl px-10 text-base font-semibold",
         icon: "h-10 w-10",
         "icon-sm": "h-8 w-8",
+        // Cibles tactiles >= 44 px (portail client, DESIGN-1) ; variantes ajoutées, les existantes ne changent pas.
+        touch: "h-11 px-4 text-sm",
+        "icon-touch": "h-11 w-11",
       },
     },
     defaultVariants: {

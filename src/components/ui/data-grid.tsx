@@ -213,7 +213,7 @@ export function DataGrid<T extends Record<string, unknown>>({
                     className={cn(
                       onRowClick && "cursor-pointer",
                       highlighted &&
-                        "bg-zinc-50 shadow-[inset_4px_0_0_#111111] outline-none ring-2 ring-inset ring-black"
+                        "bg-zinc-50 shadow-[inset_4px_0_0_#111111] outline-none ring-2 ring-inset ring-black dark:bg-muted dark:shadow-[inset_4px_0_0_var(--color-brand)] dark:ring-brand"
                     )}
                     onClick={() => onRowClick?.(row)}
                   >

@@ -21,7 +21,7 @@ const LeafletBaseMapInner = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="flex w-full items-center justify-center bg-[#f0f0f0] text-sm text-muted-foreground"
+        className="flex w-full items-center justify-center bg-[#f0f0f0] text-sm text-muted-foreground dark:bg-muted"
         style={{ height: 700 }}
       >
         Chargement…

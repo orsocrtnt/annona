@@ -32,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ThemeRadioGroup, ThemeToggle } from "@/components/theme/theme-toggle";
 import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
 import { applyOfferNavLocks } from "@/features/saas/offer-nav";
 import { useOfferAccess } from "@/features/saas/use-offer-access";
@@ -100,7 +101,7 @@ function PortalMobileNavLink({
       <DropdownMenuItem
         disabled
         title={item.disabledReason}
-        className="min-h-11 rounded-xl px-3 text-[#a3aca6] data-[disabled]:opacity-100"
+        className="min-h-11 rounded-xl px-3 text-[#a3aca6] data-[disabled]:opacity-100 dark:text-text-tertiary"
       >
         <Icon className="h-4 w-4" aria-hidden />
         {item.title}
@@ -111,12 +112,12 @@ function PortalMobileNavLink({
   return (
     <DropdownMenuItem
       asChild
-      className="min-h-11 cursor-pointer rounded-xl px-3 text-[#3d4540] focus:bg-[#f1f6f2] focus:text-[#0e1310] aria-[current=page]:font-semibold aria-[current=page]:text-[#0e1310]"
+      className="min-h-11 cursor-pointer rounded-xl px-3 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring text-[#3d4540] focus:bg-[#f1f6f2] focus:text-[#0e1310] aria-[current=page]:font-semibold aria-[current=page]:text-[#0e1310] dark:text-text-secondary dark:focus:bg-muted dark:focus:text-foreground dark:aria-[current=page]:text-foreground"
     >
       <Link href={item.href} aria-current={isActive ? "page" : undefined} {...prefetchHandlers}>
         <Icon className="h-4 w-4" aria-hidden />
         <span>{item.title}</span>
-        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#00a855]" aria-hidden /> : null}
+        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#00a855] dark:bg-brand" aria-hidden /> : null}
       </Link>
     </DropdownMenuItem>
   );
@@ -133,6 +134,8 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       tone="light"
       sticky={!overlay}
       maxWidthClassName="max-w-7xl"
+      // Boutons à 44 px : py-1.5 garde la hauteur rendue en preproduction (58 px, bordures comprises).
+      innerClassName="py-1.5"
       className={overlay ? "pointer-events-auto" : undefined}
     >
       <AppleNavbarBrand href="/portal" tone="light" />
@@ -151,15 +154,17 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       </AppleNavbarLinks>
 
       <div className="ml-auto flex items-center gap-1">
-        <PortalNotificationsBell className="text-[#5f6a63] hover:bg-black/[0.05] hover:text-[#0e1310]" />
+        <PortalNotificationsBell className="text-[#5f6a63] hover:bg-black/[0.05] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground" />
+
+        <ThemeToggle className="max-sm:hidden" />
 
         <div
-          className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-black/[0.07] bg-white"
+          className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-xl border border-black/[0.07] bg-white max-sm:hidden dark:border-border dark:bg-card"
           title={user ? `${user.firstName} ${user.lastName}` : "Compte client"}
         >
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-[#0e1310] text-[10px] font-semibold text-white">
+            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
               {user ? getInitials(user.firstName, user.lastName) : "C"}
             </AvatarFallback>
           </Avatar>
@@ -167,10 +172,11 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
 
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="icon-touch"
           onClick={logout}
           aria-label="Se déconnecter"
-          className={appleNavbarIconButtonLightClass}
+          // La classe partagée fixe h-10 w-10 ; h-11 w-11 placé après l'emporte (cible 44 px).
+          className={cn(appleNavbarIconButtonLightClass, "h-11 w-11")}
         >
           <LogOut className="h-4 w-4" aria-hidden />
         </Button>
@@ -179,7 +185,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className={cn(appleNavbarIconButtonLightClass, "xl:hidden")}
+              className={cn(appleNavbarIconButtonLightClass, "h-11 w-11 xl:hidden")}
               aria-label="Ouvrir la navigation client"
             >
               <Menu className="h-5 w-5" aria-hidden />
@@ -188,12 +194,32 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           <DropdownMenuContent
             align="end"
             sideOffset={8}
-            className="w-72 rounded-2xl border-black/[0.07] bg-white p-2 text-[#0e1310] shadow-[0_18px_50px_rgba(14,19,16,0.12)]"
+            className="w-72 rounded-2xl border-black/[0.07] bg-white p-2 text-[#0e1310] shadow-[0_18px_50px_rgba(14,19,16,0.12)] dark:border-border dark:bg-popover dark:text-popover-foreground dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
           >
-            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-[#68726b]">
+            {/* Sous 640 px, l'avatar quitte la barre : le compte connecté est repris en tête du menu. */}
+            <div className="sm:hidden" data-testid="portal-mobile-account">
+              <div className="flex items-center gap-3 px-3 py-2">
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user?.avatarUrl ?? undefined} alt="" />
+                  <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
+                    {user ? getInitials(user.firstName, user.lastName) : "C"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {user ? `${user.firstName} ${user.lastName}` : "Compte client"}
+                  </p>
+                  {user?.email ? (
+                    <p className="truncate text-xs text-[#68726b] dark:text-muted-foreground">{user.email}</p>
+                  ) : null}
+                </div>
+              </div>
+              <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
+            </div>
+            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-[#68726b] dark:text-muted-foreground">
               Espace client
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-black/[0.07]" />
+            <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
             {items.map((item) => (
               <PortalMobileNavLink
                 key={item.href}
@@ -201,6 +227,11 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
                 isActive={isPortalItemActive(pathname, item.href)}
               />
             ))}
+            {/* Sous 640 px, le thème passe dans ce menu pour que la barre tienne à 320 px. */}
+            <div className="sm:hidden">
+              <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
+              <ThemeRadioGroup />
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -215,7 +246,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
   if (mapFullscreen) {
     return (
       <div
-        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:4.75rem]"
+        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:4.75rem] dark:bg-muted"
         data-portal-map-page
       >
         <main id="main-content" tabIndex={-1} className="absolute inset-0 z-0">

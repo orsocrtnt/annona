@@ -65,7 +65,7 @@ test("MAP-3 : sélection, regroupements visuels et panne fournisseur restent exp
   assert.match(driverMarker, /isSelected \? MAP_VISUAL_THEME\.ink/);
   assert.match(driverMarker, /driver-map-pulse/);
   assert.match(dispatchPanel, /shadow-\[inset_3px_0_0_#00d46a\]/);
-  assert.match(portalPanel, /shadow-\[inset_3px_0_0_#111111\]/);
+  assert.match(portalPanel, /shadow-\[inset_3px_0_0_var\(--color-foreground\)\]/);
   assert.match(provider, /Fond de carte indisponible\. Les positions restent affichées\./);
   assert.match(provider, /bg-black[\s\S]*Réessayer la carte/);
 });

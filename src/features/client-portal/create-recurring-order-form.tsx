@@ -221,7 +221,7 @@ export function CreateRecurringOrderForm({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="touch"
               onClick={() => append({ name: "", quantity: 1, estimatedPrice: undefined })}
             >
               <Plus className="mr-1 h-4 w-4" /> Article
@@ -248,7 +248,7 @@ export function CreateRecurringOrderForm({
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon-touch"
                   className="mb-0.5 shrink-0"
                   onClick={() => remove(index)}
                 >
@@ -270,7 +270,7 @@ export function CreateRecurringOrderForm({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="touch"
               onClick={() => {
                 const nextIndex = pickupStopFields.length;
                 appendPickupStop({

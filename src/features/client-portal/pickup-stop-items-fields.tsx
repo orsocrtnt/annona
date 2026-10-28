@@ -52,7 +52,7 @@ export function PickupStopItemsFields({
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="touch"
           onClick={() => append({ name: "", quantity: 1, estimatedPrice: undefined })}
         >
           <Plus className="mr-1 h-4 w-4" />
@@ -106,7 +106,7 @@ export function PickupStopItemsFields({
             <Button
               type="button"
               variant="ghost"
-              size="icon-sm"
+              size="icon-touch"
               aria-label={`Supprimer l'article ${index + 1} de la collecte`}
               className="mb-0.5 shrink-0"
               onClick={() => remove(index)}

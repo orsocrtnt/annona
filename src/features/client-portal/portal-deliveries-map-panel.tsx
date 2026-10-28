@@ -21,8 +21,8 @@ interface PortalDeliveriesMapPanelProps {
 
 function deliveryBadgeClasses(category: DeliveryCategory) {
   return category === "COURIER"
-    ? "border-zinc-300 bg-zinc-100 text-zinc-900"
-    : "border-black bg-black text-white";
+    ? "border-zinc-300 bg-zinc-100 text-zinc-900 dark:border-border dark:bg-muted dark:text-foreground"
+    : "border-black bg-black text-white dark:border-foreground dark:bg-foreground dark:text-background";
 }
 
 function formatHistoryDate(value: string | null) {
@@ -53,11 +53,11 @@ function DeliveryListItem({
       className={cn(
         "w-full rounded-xl border p-3 transition-all",
         isSelected
-          ? "border-black bg-white shadow-[inset_3px_0_0_#111111]"
-          : "border-zinc-200 bg-white/90 hover:border-zinc-400 hover:bg-white"
+          ? "border-black bg-white shadow-[inset_3px_0_0_#111111] dark:border-foreground dark:bg-card dark:shadow-[inset_3px_0_0_var(--color-foreground)]"
+          : "border-zinc-200 bg-white/90 hover:border-zinc-400 hover:bg-white dark:border-border dark:bg-card/90 dark:hover:border-foreground/40 dark:hover:bg-card"
       )}
     >
-      <button type="button" onClick={onSelect} className="w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2">
+      <button type="button" onClick={onSelect} className="w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:focus-visible:ring-ring dark:focus-visible:ring-offset-card">
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium">{delivery.reference}</span>
           <Badge className={deliveryBadgeClasses(delivery.deliveryCategory)}>
@@ -92,7 +92,7 @@ function DeliveryListItem({
           <p className="mt-2 text-xs text-muted-foreground">{delivery.driverName}</p>
         )}
 
-        <p className="mt-1 text-xs font-semibold text-zinc-900">{delivery.statusLabel}</p>
+        <p className="mt-1 text-xs font-semibold text-zinc-900 dark:text-foreground">{delivery.statusLabel}</p>
 
         {isHistorical && historyDate && (
           <p className="mt-1 text-xs text-muted-foreground">Terminée le {historyDate}</p>
@@ -100,7 +100,7 @@ function DeliveryListItem({
 
         {purchasing && delivery.orderItems.length > 0 && (
           <div className="mt-3 space-y-1 rounded-lg bg-muted/40 p-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <ShoppingBag className="h-3 w-3" />
               Achats en cours
             </div>
@@ -145,7 +145,7 @@ export function PortalDeliveriesMapPanel({
         aria-expanded={open}
         aria-controls="portal-deliveries-panel"
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white dark:bg-foreground dark:text-background">
           {tab === "history" ? <History className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
         </div>
         <div className="min-w-0 flex-1">
@@ -176,17 +176,17 @@ export function PortalDeliveriesMapPanel({
           className="mt-2 max-h-[min(420px,50vh)] overflow-hidden rounded-2xl"
           style={mapGlassCardStyle}
         >
-          <div className="border-b border-black/10 p-2">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1">
+          <div className="border-b border-black/10 p-2 dark:border-border">
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-muted">
               <button
                 type="button"
                 aria-pressed={tab === "active"}
                 onClick={() => setTab("active")}
                 className={cn(
-                  "rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
+                  "min-h-11 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "active"
-                    ? "bg-black text-white shadow-sm"
-                    : "text-muted-foreground hover:bg-white"
+                    ? "bg-black text-white shadow-sm dark:bg-foreground dark:text-background"
+                    : "text-muted-foreground hover:bg-white dark:hover:bg-card"
                 )}
               >
                 En cours ({activeDeliveries.length})
@@ -196,10 +196,10 @@ export function PortalDeliveriesMapPanel({
                 aria-pressed={tab === "history"}
                 onClick={() => setTab("history")}
                 className={cn(
-                  "rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
+                  "min-h-11 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors",
                   tab === "history"
-                    ? "bg-black text-white shadow-sm"
-                    : "text-muted-foreground hover:bg-white"
+                    ? "bg-black text-white shadow-sm dark:bg-foreground dark:text-background"
+                    : "text-muted-foreground hover:bg-white dark:hover:bg-card"
                 )}
               >
                 Historique ({historyDeliveries.length})

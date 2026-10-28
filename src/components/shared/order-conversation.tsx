@@ -51,7 +51,7 @@ export function OrderConversation({ orderId }: { orderId: string }) {
       <div className="flex gap-2">{data.hasMore && <Button variant="outline" size="sm" onClick={() => setBefore(data.messages[0]?.id ?? null)}>Messages précédents</Button>}{before && <Button variant="outline" size="sm" onClick={() => setBefore(null)}>Derniers messages</Button>}</div>
       <div className="max-h-[45vh] space-y-3 overflow-y-auto" aria-label="Fil des échanges">
         {!data.messages.length && <p className="text-sm text-muted-foreground">Aucun échange pour cette commande.</p>}
-        {data.messages.map(message => <article key={message.id} className={`rounded-lg border p-3 ${message.internal ? "border-amber-400 bg-amber-50 text-slate-900" : "bg-muted/30"}`}>
+        {data.messages.map(message => <article key={message.id} className={`rounded-lg border p-3 ${message.internal ? "border-amber-400 bg-amber-50 text-slate-900 dark:border-warning/60 dark:bg-warning-subtle dark:text-foreground" : "bg-muted/30"}`}>
           <div className="flex flex-wrap gap-x-2 text-xs"><strong>{message.authorName}</strong><span>{roles[message.authorRole] ?? "Équipe"}</span><time dateTime={message.createdAt}>{dateTimeLabel(message.createdAt)}</time><strong>{message.internal ? "Note interne — administration uniquement" : kinds[message.kind]}</strong></div>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm">{message.body}</p>
         </article>)}

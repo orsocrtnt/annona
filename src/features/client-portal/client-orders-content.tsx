@@ -65,7 +65,7 @@ const columns: TableColumn<PortalOrder>[] = [
   {
     key: "totalAmount",
     header: "Total",
-    cell: (row) => formatCurrency(row.totalAmount),
+    cell: (row) => <span className="tabular-nums">{formatCurrency(row.totalAmount)}</span>,
   },
   {
     key: "status",
