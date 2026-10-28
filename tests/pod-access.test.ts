@@ -8,6 +8,7 @@ import ts from "typescript";
 import { NextResponse } from "next/server";
 import * as validation from "../src/lib/validations/delivery";
 import * as codes from "../src/lib/pod/codes";
+import * as podImage from "../src/lib/storage/pod-image";
 
 function load<T>(file: string, deps: Record<string, unknown>): T {
   const module = { exports: {} };
@@ -21,10 +22,11 @@ function storage(publicBucket = false) {
   const stored = ["delivery-123.jpg", "delivery-124.jpg", "other-125.jpg"];
   const pod = load<typeof import("../src/lib/storage/pod")>("src/lib/storage/pod.ts", {
     "node:crypto": { randomUUID },
+    "@/lib/storage/pod-image": podImage,
     "@/services/supabase/admin": { createAdminClient: () => ({ storage: {
       listBuckets: async () => { lookups++; return { data: [{ name: "delivery-pods", public: publicBucket }], error: null }; },
       from: () => ({
-        createSignedUrl: async (path: string, seconds: number) => { assert.equal(seconds, 3600); signed.push(path); return { data: { signedUrl: "https://storage.invalid/signed" }, error: null }; },
+        createSignedUrl: async (path: string, seconds: number) => { assert.equal(seconds, 300); signed.push(path); return { data: { signedUrl: "https://storage.invalid/signed" }, error: null }; },
         upload: async (path: string, _bytes: Buffer, options: { upsert: boolean }) => { assert.equal(options.upsert, false); uploads.push(path); return { error: null }; },
         list: async () => ({ data: stored.map(name => ({ name })), error: null }),
         remove: async (paths: string[]) => { removed.push(...paths); return { error: null }; },
