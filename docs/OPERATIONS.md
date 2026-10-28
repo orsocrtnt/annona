@@ -31,6 +31,7 @@ Créer `.env.local` seulement s'il n'existe pas. `npm ci` utilise le lockfile et
 - `DIRECT_URL` : opérations directes de schéma ;
 - `CRON_SECRET` : secret partagé pour les deux routes cron.
 - `OPS_HEALTH_SECRET` : accès distinct au diagnostic profond `/api/health?deep=1`.
+- `CONTACT_HMAC_SECRET` : secret des empreintes anti-abus (formulaire Contact, échecs de connexion) ; repli sur `SUPABASE_SERVICE_ROLE_KEY` s'il est absent. Le changer remet seulement les compteurs à zéro.
 
 ### Optionnelles
 
@@ -100,6 +101,12 @@ Vérifier l'accès réseau, la validité de `DATABASE_URL`, le mode/port du pool
 ### Réponses 401 ou 403
 
 401 indique généralement une session absente ou invalide. 403 indique un rôle ou une permission insuffisante. Vérifier le compte, son entreprise, leurs statuts et la persona démo avant de modifier les gardes.
+
+Une mutation (`POST`, `PUT`, `PATCH`, `DELETE`) dont l'en-tête `Origin` ne correspond ni à l'hôte appelé ni à `NEXT_PUBLIC_APP_URL` reçoit 403 « Origine de la requête refusée. » dès le middleware ; le webhook Stripe et les crons en sont exemptés. Un compte Supabase sans profil en base n'est jamais provisionné à la connexion : seule l'inscription vérifiée (`SignupJourney`), la démo ou le back-office créent une entreprise.
+
+### Réponse 429 à la connexion
+
+Au-delà de 5 échecs par e-mail ou 30 par source sur 15 minutes, `/api/auth/login` répond 429 avec `Retry-After`. Une connexion réussie remet à zéro le compteur de l'e-mail. La limite repose sur la table `auth_login_failures` (migration `20261028180000_auth_login_failures`) : tant qu'elle n'est pas appliquée, la connexion reste permise et l'échec du contrôle est journalisé.
 
 ### Invitations ou récupération indisponibles
 
