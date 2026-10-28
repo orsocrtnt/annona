@@ -8,37 +8,75 @@ import {
   LOGIN_EMAIL_FAILURE_LIMIT,
   LOGIN_RATE_WINDOW_MS,
   LOGIN_SOURCE_FAILURE_LIMIT,
-  checkLoginRateLimit,
-  clearLoginFailures,
+  beginLoginAttempt,
   loginAttemptKeys,
-  recordLoginFailure,
+  settleLoginAttempt,
   type LoginAttemptKeys,
 } from "../src/domains/auth/login-rate-limit.service";
 
-// SEC-2 : limitation des échecs de connexion par e-mail normalisé et par source hachée.
+// SEC-2 : limitation des échecs de connexion. Chaque tentative est réservée (comptage puis
+// insertion sous verrou consultatif) avant Supabase, puis soldée : échec conservé, succès
+// ou panne fournisseur retirés.
 const SECRET = "test-secret-not-a-real-key";
-type Row = { keyHash: string; createdAt: Date };
+type Row = { id: string; keyHash: string; createdAt: Date };
+type Db = NonNullable<Parameters<typeof beginLoginAttempt>[1]>["db"];
 function memoryDb() {
   const rows: Row[] = [];
-  const db = { authLoginFailure: {
+  const events: string[] = [];
+  let sequence = 0;
+  // Comme PostgreSQL : un tour de boucle entre lecture et écriture laisse les requêtes s'entrelacer.
+  const tick = () => new Promise((done) => setImmediate(done));
+  const locks = new Map<string, Promise<void>>();
+  const matches = (row: Row, where: { id?: { in: string[] }; keyHash?: { in: string[] }; createdAt?: { lt: Date } }) =>
+    (!where.id || where.id.in.includes(row.id)) && (!where.keyHash || where.keyHash.in.includes(row.keyHash)) && (!where.createdAt || row.createdAt < where.createdAt.lt);
+  const authLoginFailure = {
     findMany: async ({ where, orderBy, take }: { where: { keyHash: string; createdAt: { gte: Date } }; orderBy: { createdAt: "desc" }; take: number }) => {
       assert.equal(orderBy.createdAt, "desc");
+      await tick();
       return rows.filter((row) => row.keyHash === where.keyHash && row.createdAt >= where.createdAt.gte)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, take).map(({ createdAt }) => ({ createdAt }));
     },
-    createMany: async ({ data }: { data: Row[] }) => { rows.push(...data.map((row) => ({ ...row }))); return { count: data.length }; },
-    deleteMany: async ({ where }: { where: { keyHash?: string; createdAt?: { lt: Date } } }) => {
+    create: async ({ data }: { data: { keyHash: string; createdAt: Date } }) => {
+      await tick();
+      const row = { id: `row-${++sequence}`, ...data };
+      rows.push(row);
+      return { id: row.id };
+    },
+    deleteMany: async ({ where }: { where: Parameters<typeof matches>[1] }) => {
+      events.push(where.createdAt ? "purge" : "delete");
       const before = rows.length;
-      for (let i = rows.length - 1; i >= 0; i--) {
-        const row = rows[i]!;
-        if ((where.keyHash === undefined || row.keyHash === where.keyHash) && (!where.createdAt || row.createdAt < where.createdAt.lt)) rows.splice(i, 1);
-      }
+      for (let i = rows.length - 1; i >= 0; i--) if (matches(rows[i]!, where)) rows.splice(i, 1);
       return { count: before - rows.length };
     },
-  } };
-  return { rows, db: db as unknown as NonNullable<Parameters<typeof checkLoginRateLimit>[1]>["db"] };
+  };
+  const db = {
+    authLoginFailure,
+    $transaction: async <T>(fn: (tx: unknown) => Promise<T>) => {
+      const releases: Array<() => void> = [];
+      const tx = {
+        authLoginFailure,
+        $queryRaw: async (_strings: TemplateStringsArray, key: string) => {
+          events.push("lock");
+          const previous = locks.get(key) ?? Promise.resolve();
+          let release = () => {};
+          locks.set(key, previous.then(() => new Promise<void>((done) => { release = done; })));
+          await previous;
+          releases.push(release);
+          return [{ locked: 1 }];
+        },
+      };
+      try { return await fn(tx); } finally { releases.forEach((release) => release()); }
+    },
+  };
+  return { rows, events, db: db as unknown as Db };
 }
 const at = (minutes: number) => new Date(Date.UTC(2026, 9, 28, 10, 0) + minutes * 60_000);
+const keysFor = (email: string, source: string) => loginAttemptKeys(email, source, { secret: SECRET });
+async function fail(db: Db, keys: LoginAttemptKeys, now: Date) {
+  const gate = await beginLoginAttempt(keys, { db, now });
+  assert.equal(gate.allowed, true);
+  if (gate.allowed) await settleLoginAttempt(gate.attempt, "failure", { db, now });
+}
 
 test("empreintes : e-mail normalisé, aucune donnée brute, e-mail et source séparés", () => {
   const a = loginAttemptKeys(" Pirate@Example.TEST ", "203.0.113.7", { secret: SECRET });
@@ -46,69 +84,70 @@ test("empreintes : e-mail normalisé, aucune donnée brute, e-mail et source sé
   assert.equal(a.emailKey, b.emailKey);
   assert.notEqual(a.emailKey, a.sourceKey);
   assert.doesNotMatch(JSON.stringify(a), /pirate|example|203\.0/);
-  assert.notEqual(loginAttemptKeys("pirate@example.test", "203.0.113.7", { secret: "autre" }).emailKey, a.emailKey);
+  assert.notEqual(keysFor("pirate@example.test", "203.0.113.7").emailKey, loginAttemptKeys("pirate@example.test", "203.0.113.7", { secret: "autre" }).emailKey);
   assert.equal(loginAttemptKeys("demo@example.test", "203.0.113.7", { secret: SECRET, trackEmail: false }).emailKey, null);
 });
 
 test("e-mail : bloqué après la limite, Retry-After jusqu'à l'expiration, libéré ensuite", async () => {
   const { db } = memoryDb();
-  const keys = loginAttemptKeys("victim@example.test", "198.51.100.1", { secret: SECRET });
-  for (let i = 0; i < LOGIN_EMAIL_FAILURE_LIMIT; i++) {
-    assert.deepEqual(await checkLoginRateLimit(keys, { db, now: at(i) }), { allowed: true });
-    await recordLoginFailure(keys, { db, now: at(i) });
-  }
-  const blocked = await checkLoginRateLimit(keys, { db, now: at(LOGIN_EMAIL_FAILURE_LIMIT) });
+  const keys = keysFor("victim@example.test", "198.51.100.1");
+  for (let i = 0; i < LOGIN_EMAIL_FAILURE_LIMIT; i++) await fail(db, keys, at(i));
+  const blocked = await beginLoginAttempt(keys, { db, now: at(LOGIN_EMAIL_FAILURE_LIMIT) });
   assert.equal(blocked.allowed, false);
-  // Le plus ancien des 5 échecs (minute 0) expire à la fin de la fenêtre.
   assert.equal(!blocked.allowed && blocked.retryAfterSeconds, LOGIN_RATE_WINDOW_MS / 1000 - LOGIN_EMAIL_FAILURE_LIMIT * 60);
-  // Une autre source sur le même e-mail reste bloquée (attaque distribuée).
-  const otherSource = { ...keys, sourceKey: loginAttemptKeys("victim@example.test", "192.0.2.9", { secret: SECRET }).sourceKey };
-  assert.equal((await checkLoginRateLimit(otherSource, { db, now: at(LOGIN_EMAIL_FAILURE_LIMIT) })).allowed, false);
-  // Un autre e-mail depuis la même source reste permis sous la limite de source.
-  const otherEmail = loginAttemptKeys("other@example.test", "198.51.100.1", { secret: SECRET });
-  assert.equal((await checkLoginRateLimit(otherEmail, { db, now: at(LOGIN_EMAIL_FAILURE_LIMIT) })).allowed, true);
-  assert.equal((await checkLoginRateLimit(keys, { db, now: new Date(at(0).getTime() + LOGIN_RATE_WINDOW_MS + 1000) })).allowed, true);
+  const otherEmail = keysFor("other@example.test", "198.51.100.1");
+  assert.equal((await beginLoginAttempt(otherEmail, { db, now: at(LOGIN_EMAIL_FAILURE_LIMIT) })).allowed, true);
+  assert.equal((await beginLoginAttempt(keys, { db, now: new Date(at(0).getTime() + LOGIN_RATE_WINDOW_MS + 1000) })).allowed, true);
+});
+
+test("concurrence : 200 tentatives simultanées, seules les places de la limite passent", async () => {
+  const { db, rows } = memoryDb();
+  const keys = keysFor("victim@example.test", "198.51.100.9");
+  const gates = await Promise.all(Array.from({ length: 200 }, () => beginLoginAttempt(keys, { db, now: at(0) })));
+  assert.equal(gates.filter((gate) => gate.allowed).length, LOGIN_EMAIL_FAILURE_LIMIT);
+  assert.equal(rows.filter((row) => row.keyHash === keys.emailKey).length, LOGIN_EMAIL_FAILURE_LIMIT);
 });
 
 test("source : bloquée après la limite même en changeant d'e-mail ; un succès ne la remet pas à zéro", async () => {
   const { db } = memoryDb();
-  for (let i = 0; i < LOGIN_SOURCE_FAILURE_LIMIT; i++) {
-    await recordLoginFailure(loginAttemptKeys(`user${i}@example.test`, "198.51.100.2", { secret: SECRET }), { db, now: at(0) });
-  }
-  const fresh = loginAttemptKeys("fresh@example.test", "198.51.100.2", { secret: SECRET });
-  assert.equal((await checkLoginRateLimit(fresh, { db, now: at(1) })).allowed, false);
-  await clearLoginFailures(fresh, { db });
-  assert.equal((await checkLoginRateLimit(fresh, { db, now: at(1) })).allowed, false);
+  for (let i = 0; i < LOGIN_SOURCE_FAILURE_LIMIT; i++) await fail(db, keysFor(`user${i}@example.test`, "198.51.100.2"), at(0));
+  const fresh = keysFor("fresh@example.test", "198.51.100.2");
+  assert.equal((await beginLoginAttempt(fresh, { db, now: at(1) })).allowed, false);
 });
 
-test("succès : remet à zéro le compteur de l'e-mail ; échecs expirés purgés", async () => {
+test("succès : réservation retirée et compteur e-mail remis à zéro ; panne fournisseur non comptée", async () => {
   const { db, rows } = memoryDb();
-  const keys = loginAttemptKeys("victim@example.test", "198.51.100.3", { secret: SECRET });
-  for (let i = 0; i < LOGIN_EMAIL_FAILURE_LIMIT - 1; i++) await recordLoginFailure(keys, { db, now: at(0) });
-  await clearLoginFailures(keys, { db });
+  const keys = keysFor("victim@example.test", "198.51.100.3");
+  for (let i = 0; i < LOGIN_EMAIL_FAILURE_LIMIT - 1; i++) await fail(db, keys, at(0));
+  const success = await beginLoginAttempt(keys, { db, now: at(1) });
+  assert.ok(success.allowed);
+  await settleLoginAttempt(success.attempt, "success", { db, now: at(1) });
   assert.equal(rows.filter((row) => row.keyHash === keys.emailKey).length, 0);
   assert.equal(rows.filter((row) => row.keyHash === keys.sourceKey).length, LOGIN_EMAIL_FAILURE_LIMIT - 1);
-  await recordLoginFailure(keys, { db, now: new Date(at(0).getTime() + LOGIN_RATE_WINDOW_MS + 60_000) });
-  assert.equal(rows.length, 2, "seuls les deux échecs récents restent");
+  const down = await beginLoginAttempt(keys, { db, now: at(2) });
+  assert.ok(down.allowed);
+  await settleLoginAttempt(down.attempt, "cancelled", { db, now: at(2) });
+  assert.equal(rows.length, LOGIN_EMAIL_FAILURE_LIMIT - 1);
 });
 
 test("compte démo : seule la source est comptée, l'e-mail public ne peut pas être verrouillé", async () => {
   const { db, rows } = memoryDb();
   const keys = loginAttemptKeys("demo@example.test", "198.51.100.4", { secret: SECRET, trackEmail: false });
-  await recordLoginFailure(keys, { db, now: at(0) });
+  await fail(db, keys, at(0));
   assert.deepEqual(rows.map((row) => row.keyHash), [keys.sourceKey]);
 });
 
 test("base indisponible (migration non appliquée) : connexion permise, erreur journalisée", async (t) => {
   const logged: unknown[] = [];
   t.mock.method(console, "error", (...args: unknown[]) => { logged.push(args); });
-  const failing = { authLoginFailure: { findMany: async () => { throw new Error("relation does not exist"); }, createMany: async () => { throw new Error("down"); }, deleteMany: async () => { throw new Error("down"); } } };
-  const db = failing as unknown as NonNullable<Parameters<typeof checkLoginRateLimit>[1]>["db"];
-  const keys = loginAttemptKeys("victim@example.test", "198.51.100.5", { secret: SECRET });
-  assert.deepEqual(await checkLoginRateLimit(keys, { db }), { allowed: true });
-  await recordLoginFailure(keys, { db });
-  await clearLoginFailures(keys, { db });
-  assert.equal(logged.length, 3);
+  const failing = { $transaction: async () => { throw new Error("relation does not exist"); }, authLoginFailure: { deleteMany: async () => { throw new Error("down"); } } };
+  const db = failing as unknown as Db;
+  const keys = keysFor("victim@example.test", "198.51.100.5");
+  const gate = await beginLoginAttempt(keys, { db });
+  assert.deepEqual(gate, { allowed: true, attempt: null });
+  await settleLoginAttempt(null, "failure", { db });
+  await settleLoginAttempt({ keys, ids: ["x"] }, "success", { db });
+  assert.equal(logged.length, 2);
 });
 
 // Route : le contrôle précède Supabase, la réponse ne dépend pas de l'existence du compte.
@@ -135,9 +174,8 @@ function loadLoginRoute(options: { blocked?: number; signIn: "ok" | "invalid" | 
         calls.push(`keys:${email}:${source}:${opts.trackEmail === false ? "source-only" : "email"}`);
         return { emailKey: opts.trackEmail === false ? null : "email-key", sourceKey: "source-key" } satisfies LoginAttemptKeys;
       },
-      checkLoginRateLimit: async () => { calls.push("check"); return options.blocked ? { allowed: false, retryAfterSeconds: options.blocked } : { allowed: true }; },
-      recordLoginFailure: async () => { calls.push("failure"); },
-      clearLoginFailures: async () => { calls.push("clear"); },
+      beginLoginAttempt: async () => { calls.push("begin"); return options.blocked ? { allowed: false, retryAfterSeconds: options.blocked } : { allowed: true, attempt: { ids: ["r1"] } }; },
+      settleLoginAttempt: async (_attempt: unknown, outcome: string) => { calls.push(`settle:${outcome}`); },
     },
     "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "203.0.113.10" },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
@@ -169,23 +207,23 @@ test("route : bloquée -> 429 en français avec Retry-After, Supabase jamais app
   const body = await response.json();
   assert.match(body.error, /Trop de tentatives.*10 minutes/);
   assert.doesNotMatch(JSON.stringify(body), /introuvable|inexistant|existe/);
-  assert.deepEqual(route.calls, ["keys:user@example.test:203.0.113.10:email", "check"]);
+  assert.deepEqual(route.calls, ["keys:user@example.test:203.0.113.10:email", "begin"]);
 });
 
-test("route : échec d'identifiants compté, panne Supabase non comptée, succès remet à zéro", async () => {
+test("route : échec d'identifiants conservé, panne Supabase annulée, succès soldé", async () => {
   const invalid = loadLoginRoute({ signIn: "invalid" });
   assert.equal((await invalid.POST(loginRequest())).status, 401);
-  assert.deepEqual(invalid.calls.slice(1), ["check", "signIn", "failure"]);
+  assert.deepEqual(invalid.calls.slice(1), ["begin", "signIn", "settle:failure"]);
 
   const down = loadLoginRoute({ signIn: "down" });
   assert.equal((await down.POST(loginRequest())).status, 503);
-  assert.ok(!down.calls.includes("failure"));
+  assert.deepEqual(down.calls.slice(1), ["begin", "signIn", "settle:cancelled"]);
 
   const ok = loadLoginRoute({ signIn: "ok" });
   assert.equal((await ok.POST(loginRequest())).status, 200);
   await ok.runAfter();
-  assert.ok(ok.calls.includes("clear"));
-  assert.ok(!ok.calls.includes("failure"));
+  assert.ok(ok.calls.includes("settle:success"));
+  assert.ok(!ok.calls.includes("settle:failure"));
 });
 
 test("route : compte démo public limité par source seulement", async () => {

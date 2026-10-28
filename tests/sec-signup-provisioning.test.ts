@@ -84,7 +84,7 @@ function routeDeps(authUser: unknown, service: AuthService) {
       signOut: async () => ({ error: null }),
     } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
-    "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), checkLoginRateLimit: async () => ({ allowed: true }), recordLoginFailure: async () => {}, clearLoginFailures: async () => {} },
+    "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), beginLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
     "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": service,
     "@/domains/user/user.service": { ...userService, getUserPermissions: async () => [] },

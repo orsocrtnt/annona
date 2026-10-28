@@ -30,10 +30,9 @@ import {
 } from "@/domains/demo/demo-pool.service";
 import { getSessionSaasAccess } from "@/domains/saas/saas-session";
 import {
-  checkLoginRateLimit,
-  clearLoginFailures,
+  beginLoginAttempt,
   loginAttemptKeys,
-  recordLoginFailure,
+  settleLoginAttempt,
 } from "@/domains/auth/login-rate-limit.service";
 import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
 
@@ -84,7 +83,7 @@ export async function POST(request: Request) {
     const attemptKeys = loginAttemptKeys(normalizedEmail, contactSourceFromHeaders(request.headers), {
       trackEmail: !isDemoLoginEmail(normalizedEmail),
     });
-    const [rateLimit, supabase] = await Promise.all([checkLoginRateLimit(attemptKeys), createClient()]);
+    const [rateLimit, supabase] = await Promise.all([beginLoginAttempt(attemptKeys), createClient()]);
     if (!rateLimit.allowed) {
       const minutes = Math.ceil(rateLimit.retryAfterSeconds / 60);
       return NextResponse.json(
@@ -101,18 +100,19 @@ export async function POST(request: Request) {
 
     if (isAuthServiceUnavailable(signInError)) {
       console.error("Login auth provider unavailable:", signInError);
+      await settleLoginAttempt(rateLimit.attempt, "cancelled");
       return NextResponse.json({ error: SERVICE_UNAVAILABLE_MESSAGE }, { status: 503 });
     }
 
     if (signInError || !signInData.user?.email) {
-      await recordLoginFailure(attemptKeys);
+      await settleLoginAttempt(rateLimit.attempt, "failure");
       return NextResponse.json(
         { error: "Email ou mot de passe incorrect." },
         { status: 401 }
       );
     }
 
-    after(async () => { await clearLoginFailures(attemptKeys); });
+    after(async () => { await settleLoginAttempt(rateLimit.attempt, "success"); });
 
     const authUser = signInData.user;
     if (!authUser.email_confirmed_at) {

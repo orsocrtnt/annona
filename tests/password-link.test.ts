@@ -193,7 +193,7 @@ test("connexion : e-mail non confirmé refusé sans appel administrateur", async
     "@/lib/auth/normalize-email": { normalizeEmail: (s: string) => s.trim().toLowerCase() },
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: async () => ({ data: { user: null }, error: { code: "email_not_confirmed" } }) } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
-    "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), checkLoginRateLimit: async () => ({ allowed: true }), recordLoginFailure: async () => {}, clearLoginFailures: async () => {} },
+    "@/domains/auth/login-rate-limit.service": { loginAttemptKeys: () => ({ emailKey: "e", sourceKey: "s" }), beginLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
     "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": {}, "@/domains/user/user.service": {},
     "@/lib/demo/constants": demo, "@/lib/demo/persona-cookie": {},

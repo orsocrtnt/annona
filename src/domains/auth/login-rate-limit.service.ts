@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { abuseFingerprint } from "@/lib/security/abuse-hmac";
@@ -8,8 +9,13 @@ export const LOGIN_EMAIL_FAILURE_LIMIT = 5;
 export const LOGIN_SOURCE_FAILURE_LIMIT = 30;
 
 export type LoginAttemptKeys = { emailKey: string | null; sourceKey: string };
-export type LoginRateLimitResult = { allowed: true } | { allowed: false; retryAfterSeconds: number };
-type LoginAttemptDatabase = Pick<typeof prisma, "authLoginFailure">;
+/** Tentative réservée : ses lignes comptent comme un échec tant qu'elle n'est pas soldée. */
+export type LoginAttempt = { keys: LoginAttemptKeys; ids: string[] };
+export type LoginAttemptGate =
+  | { allowed: true; attempt: LoginAttempt | null }
+  | { allowed: false; retryAfterSeconds: number };
+type LoginAttemptDatabase = Pick<typeof prisma, "authLoginFailure" | "$transaction">;
+type LoginAttemptTx = Pick<Prisma.TransactionClient, "authLoginFailure" | "$queryRaw">;
 
 /**
  * Empreintes HMAC de l'e-mail normalisé et de la source. `trackEmail: false` sert au compte
@@ -26,8 +32,15 @@ export function loginAttemptKeys(
   };
 }
 
-async function retryAfter(db: LoginAttemptDatabase, keyHash: string, limit: number, now: Date) {
-  const recent = await db.authLoginFailure.findMany({
+function limitedKeys(keys: LoginAttemptKeys) {
+  return [
+    keys.emailKey ? { keyHash: keys.emailKey, limit: LOGIN_EMAIL_FAILURE_LIMIT } : null,
+    { keyHash: keys.sourceKey, limit: LOGIN_SOURCE_FAILURE_LIMIT },
+  ].filter((entry): entry is { keyHash: string; limit: number } => entry !== null);
+}
+
+async function retryAfter(tx: LoginAttemptTx, keyHash: string, limit: number, now: Date) {
+  const recent = await tx.authLoginFailure.findMany({
     where: { keyHash, createdAt: { gte: new Date(now.getTime() - LOGIN_RATE_WINDOW_MS) } },
     orderBy: { createdAt: "desc" },
     take: limit,
@@ -40,60 +53,59 @@ async function retryAfter(db: LoginAttemptDatabase, keyHash: string, limit: numb
 }
 
 /**
- * Lecture seule, avant tout appel à Supabase. La réponse ne dépend que des échecs comptés,
- * jamais de l'existence du compte. Base indisponible (ou migration non appliquée) : la
- * connexion reste permise, l'erreur est journalisée.
+ * Avant Supabase : comptage puis réservation sous verrou consultatif par clé (ordre trié,
+ * sans interblocage), si bien que des requêtes simultanées ne dépassent pas la limite. La
+ * réponse ne dépend que des échecs comptés, jamais de l'existence du compte. Base
+ * indisponible (ou migration non appliquée) : connexion permise, erreur journalisée.
  */
-export async function checkLoginRateLimit(
+export async function beginLoginAttempt(
   keys: LoginAttemptKeys,
   options: { now?: Date; db?: LoginAttemptDatabase } = {}
-): Promise<LoginRateLimitResult> {
+): Promise<LoginAttemptGate> {
   const db = options.db ?? prisma;
   const now = options.now ?? new Date();
+  const limited = limitedKeys(keys).sort((a, b) => a.keyHash.localeCompare(b.keyHash));
   try {
-    const [byEmail, bySource] = await Promise.all([
-      keys.emailKey ? retryAfter(db, keys.emailKey, LOGIN_EMAIL_FAILURE_LIMIT, now) : 0,
-      retryAfter(db, keys.sourceKey, LOGIN_SOURCE_FAILURE_LIMIT, now),
-    ]);
-    const wait = Math.max(byEmail, bySource);
-    return wait > 0 ? { allowed: false, retryAfterSeconds: wait } : { allowed: true };
+    return await db.$transaction(async (tx) => {
+      for (const { keyHash } of limited) {
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${keyHash}))`;
+      }
+      let wait = 0;
+      for (const { keyHash, limit } of limited) wait = Math.max(wait, await retryAfter(tx, keyHash, limit, now));
+      if (wait > 0) return { allowed: false, retryAfterSeconds: wait } as const;
+      const ids: string[] = [];
+      for (const { keyHash } of limited) ids.push((await tx.authLoginFailure.create({ data: { keyHash, createdAt: now }, select: { id: true } })).id);
+      return { allowed: true, attempt: { keys, ids } } as const;
+    });
   } catch (error) {
     console.error("Login rate limit check failed:", error instanceof Error ? error.message : "unknown");
-    return { allowed: true };
-  }
-}
-
-/** Enregistre un échec d'identifiants et purge les échecs sortis de la fenêtre. */
-export async function recordLoginFailure(
-  keys: LoginAttemptKeys,
-  options: { now?: Date; db?: LoginAttemptDatabase } = {}
-): Promise<void> {
-  const db = options.db ?? prisma;
-  const now = options.now ?? new Date();
-  const keyHashes = [keys.emailKey, keys.sourceKey].filter((key): key is string => Boolean(key));
-  try {
-    await Promise.all([
-      db.authLoginFailure.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - LOGIN_RATE_WINDOW_MS) } } }),
-      db.authLoginFailure.createMany({ data: keyHashes.map((keyHash) => ({ keyHash, createdAt: now })) }),
-    ]);
-  } catch (error) {
-    console.error("Login failure record failed:", error instanceof Error ? error.message : "unknown");
+    return { allowed: true, attempt: null };
   }
 }
 
 /**
- * Après une connexion réussie, seul le compteur de l'e-mail repart à zéro : celui de la
- * source est conservé, sinon un compte valide permettrait d'essayer d'autres adresses.
+ * Échec d'identifiants : la réservation reste comptée. Succès : elle est retirée et le
+ * compteur de l'e-mail repart à zéro (celui de la source est conservé, sinon un compte valide
+ * permettrait d'essayer d'autres adresses). Panne fournisseur : réservation retirée.
  */
-export async function clearLoginFailures(
-  keys: LoginAttemptKeys,
-  options: { db?: LoginAttemptDatabase } = {}
+export async function settleLoginAttempt(
+  attempt: LoginAttempt | null,
+  outcome: "failure" | "success" | "cancelled",
+  options: { now?: Date; db?: LoginAttemptDatabase } = {}
 ): Promise<void> {
-  if (!keys.emailKey) return;
+  if (!attempt) return;
   const db = options.db ?? prisma;
+  const now = options.now ?? new Date();
   try {
-    await db.authLoginFailure.deleteMany({ where: { keyHash: keys.emailKey } });
+    if (outcome === "failure") {
+      await db.authLoginFailure.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - LOGIN_RATE_WINDOW_MS) } } });
+      return;
+    }
+    await db.authLoginFailure.deleteMany({ where: { id: { in: attempt.ids } } });
+    if (outcome === "success" && attempt.keys.emailKey) {
+      await db.authLoginFailure.deleteMany({ where: { keyHash: { in: [attempt.keys.emailKey] } } });
+    }
   } catch (error) {
-    console.error("Login failure reset failed:", error instanceof Error ? error.message : "unknown");
+    console.error("Login attempt settlement failed:", error instanceof Error ? error.message : "unknown");
   }
 }
