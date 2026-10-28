@@ -84,7 +84,9 @@ export function buildOrderIntakeDraft(
   const haystack = normalizeForSearch(text);
   const pickup = verifyStop(extraction.pickup, haystack);
   const deliveries = extraction.deliveries.map((stop) => verifyStop(stop, haystack));
-  const deadline = resolveDeadline(verifyField({ ...extraction.deadline, value: extraction.deadline.mode }, haystack), now);
+  // La présence d'une date, d'un décalage ou d'une heure suffit : l'extrait doit les justifier, mode ou non.
+  const deadlineValue = extraction.deadline.date ?? extraction.deadline.dayOffset ?? extraction.deadline.time ?? extraction.deadline.mode;
+  const deadline = resolveDeadline(verifyField({ ...extraction.deadline, value: deadlineValue }, haystack), now);
   const urgency = verifyField(extraction.urgency, haystack);
   const packages = {
     description: verifyField(extraction.packages.description, haystack),

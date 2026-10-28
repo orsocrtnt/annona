@@ -551,3 +551,18 @@ test("INTAKE création : double clic sur « Créer », une seule commande, sourc
   });
   assert.equal(reused.status, "conflict");
 });
+
+// --- Retours de relecture ------------------------------------------------------------------------
+
+test("INTAKE relecture 1 : une échéance sans mode dont l'extrait manque au message est peu sûre", () => {
+  const invented = { ...SMS_EXTRACTION, deadline: { mode: null, dayOffset: 1, date: null, time: "09:00", endTime: null, confidence: "high" as const, source: "demain" } };
+  const draft = buildOrderIntakeDraft(invented, FIXTURES.sms, NOW);
+  assert.equal(draft.deadline.confidence, "low");
+  assert.equal(draft.deadline.source, null);
+  assert.ok(draft.uncertainFields.includes("deadline"));
+
+  const unsourced = { ...SMS_EXTRACTION, deadline: { mode: null, dayOffset: null, date: "2026-10-30", time: null, endTime: null, confidence: "high" as const, source: null } };
+  const second = buildOrderIntakeDraft(unsourced, FIXTURES.sms, NOW);
+  assert.equal(second.deadline.confidence, "low");
+  assert.ok(second.uncertainFields.includes("deadline"));
+});
