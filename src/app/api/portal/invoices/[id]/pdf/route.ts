@@ -26,7 +26,7 @@ export async function GET(
     // Factur-X : facture de l'entreprise du client ET dont il est le client.
     const loaded = await loadFacturXInvoice({ invoiceId: id, companyId, customerId: auth.context.user.id });
     if (!loaded?.source) return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
-    const result = await buildFacturXPdf({ source: loaded.source, renderClassicPdf: () => renderClassicInvoicePdf(loaded), now: new Date() });
+    const result = await buildFacturXPdf({ source: loaded.source, renderClassicPdf: (legal) => renderClassicInvoicePdf(loaded, legal), now: new Date() });
     const http = facturXHttpResult(result, loaded.reference, "client");
     return new NextResponse(typeof http.body === "string" ? http.body : Buffer.from(http.body), { status: http.status, headers: http.headers });
   }

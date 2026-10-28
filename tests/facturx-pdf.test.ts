@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -144,6 +145,25 @@ test("en-tête binaire, identifiant de fichier et génération déterministe", a
   assert.ok(id instanceof PDFArray && id.size() === 2, "identifiant de fichier /ID");
   const again = await embedFacturXInPdf(await generateInvoicePdf(classic), { xml: XML, documentDate: NOW });
   assert.ok(Buffer.from(again).equals(Buffer.from(facturx)));
+});
+
+/** Empreinte des flux de contenu décompressés de toutes les pages (rendu visuel). */
+async function contentFingerprint(bytes: Uint8Array) {
+  const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+  const hash = createHash("sha256");
+  for (const page of doc.getPages()) {
+    const value = page.node.Contents();
+    const streams = value instanceof PDFArray ? value.asArray().map((ref) => doc.context.lookup(ref, PDFStream)) : [value as PDFStream];
+    for (const stream of streams) hash.update(streamBytes(stream));
+  }
+  return hash.digest("hex");
+}
+
+test("le PDF classique (sans variante Factur-X) garde exactement le rendu d'avant la tranche Factur-X", async () => {
+  // Empreintes relevées sur le code de 6dc5c3b, avant l'ajout des mentions visibles propres au Factur-X.
+  assert.equal(await contentFingerprint(await generateInvoicePdf(classic)), "0a31f34372037762bb7363ab9fe683c0d0cd6d17fa44b17fd175668c9feeece3");
+  const rich = { ...classic, status: "PAID", paidAt: new Date("2026-10-28T09:00:00Z"), notes: "Livré à l'accueil", footerNote: "Merci pour votre confiance." };
+  assert.equal(await contentFingerprint(await generateInvoicePdf(rich)), "5b34b4f568bab5a370839d925f462a914ff738575edfd4cb743745f885e8d1c7");
 });
 
 test("un PDF qui contient déjà un factur-x.xml est refusé plutôt que doublé", async () => {

@@ -44,7 +44,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "private, no-store" },
     });
   }
-  const result = await buildFacturXPdf({ source: invoice.source, renderClassicPdf: () => renderClassicInvoicePdf(invoice), now: new Date() });
+  const result = await buildFacturXPdf({ source: invoice.source, renderClassicPdf: (legal) => renderClassicInvoicePdf(invoice, legal), now: new Date() });
   const http = facturXHttpResult(result, invoice.reference, "staff");
   return new NextResponse(typeof http.body === "string" ? http.body : Buffer.from(http.body), { status: http.status, headers: http.headers });
 }

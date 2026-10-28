@@ -5,7 +5,8 @@ import { generateFacturXXml } from "../src/domains/invoice/facturx/cii-generator
 import { buildFacturXPdf, facturXHttpResult } from "../src/domains/invoice/facturx/facturx-document";
 import { mapInvoiceToFacturX, type FacturXSource } from "../src/domains/invoice/facturx/facturx-mapping";
 import { companyClientWhere, facturXInvoiceWhere } from "../src/domains/invoice/facturx/facturx-scope";
-import { generateInvoicePdf } from "../src/lib/pdf/invoice-pdf";
+import { generateInvoicePdf, type InvoicePdfLegalMentions } from "../src/lib/pdf/invoice-pdf";
+import { pdfText } from "./helpers/pdf-text";
 import {
   clientInvoiceIdentitySchema,
   companyEinvoicingUpdateSchema,
@@ -255,6 +256,46 @@ test("statut PAID : la facture Factur-X indique le montant déjà réglé et un 
   const pending = mapInvoiceToFacturX(source());
   assert.ok(pending.ok);
   assert.equal(pending.invoice.prepaidAmount, undefined);
+});
+
+test("partie visible du Factur-X : mentions légales vendeur/acheteur alignées sur le XML ; PDF classique sans ces mentions", async () => {
+  const base = { reference: "FAC-2026-0042", status: "PENDING", createdAt: new Date("2026-10-27T09:00:00Z"), amount: 30, lineItems: [], company: { name: "Coursiers Fictifs" }, customerName: "Marie Client" };
+  const render = async (legal?: InvoicePdfLegalMentions) => generateInvoicePdf({ ...base, legal });
+  const now = new Date("2026-10-28T10:00:00Z");
+  const built = await buildFacturXPdf({ source: source(), renderClassicPdf: render, now });
+  assert.ok(built.ok);
+  const visible = pdfText(built.pdf);
+  for (const expected of [
+    "FACTURE",
+    "Coursiers Fictifs SAS",
+    "SIREN 732829320",
+    "TVA FR44732829320",
+    "75011 Paris",
+    "Client Démo SARL",
+    "SIREN 552100554",
+    "TVA FR96552100554",
+    "69002 Lyon",
+    "MENTIONS LÉGALES",
+    "SAS au capital de 10 000 € — RCS Paris 732 829 320",
+    "Pénalités de retard : trois fois le taux d'intérêt légal.",
+    "Indemnité forfaitaire pour frais de recouvrement en cas de retard de paiement : 40 €.",
+    "Pas d'escompte pour paiement anticipé.",
+    "Paiement au plus tard le 26/11/2026.",
+  ]) {
+    assert.ok(visible.includes(expected), `absent de la partie visible : ${expected}`);
+  }
+  assert.ok(!visible.includes("Marie Client"), "l'acheteur visible est celui du XML (raison sociale)");
+  assert.ok(!visible.includes("ne constitue pas une facture électronique réglementaire"));
+
+  const exempt = await buildFacturXPdf({
+    source: source({ invoice: { amount: 18, lineItems: [{ label: "Course", amount: 18, quantity: 1, sourceType: "ZONE" }] }, einvoicing: { vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } }),
+    renderClassicPdf: render,
+    now,
+  });
+  assert.ok(exempt.ok && pdfText(exempt.pdf).includes("TVA non applicable, art. 293 B du CGI"));
+
+  const classic = pdfText(await generateInvoicePdf(base));
+  assert.ok(classic.includes("RELEVÉ DE PRESTATION") && !classic.includes("SIREN") && !classic.includes("MENTIONS LÉGALES"));
 });
 
 test("micro-coursier en franchise (293 B) sans n° de TVA : export possible avec BT-32, avertissement si déduit du SIREN", () => {

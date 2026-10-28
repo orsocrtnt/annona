@@ -4,22 +4,52 @@
  */
 import { FACTURX_CONFORMANCE_LEVEL, generateFacturXXml } from "@/domains/invoice/facturx/cii-generator";
 import { mapInvoiceToFacturX, type FacturXSource } from "@/domains/invoice/facturx/facturx-mapping";
-import type { FacturXIssue } from "@/domains/invoice/facturx/facturx.types";
+import type { FacturXInvoice, FacturXIssue } from "@/domains/invoice/facturx/facturx.types";
 import { embedFacturXInPdf } from "@/lib/pdf/facturx-pdf";
+import type { InvoicePdfLegalMentions } from "@/lib/pdf/invoice-pdf";
 
 export type FacturXDocumentResult =
   | { ok: true; pdf: Uint8Array; xml: string; warnings: FacturXIssue[] }
   | { ok: false; errors: FacturXIssue[]; warnings: FacturXIssue[] };
 
+const euros = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+
+/** Mentions visibles du Factur-X, construites depuis le même modèle que le XML (document hybride cohérent). */
+export function facturXVisibleMentions(invoice: FacturXInvoice): InvoicePdfLegalMentions {
+  const partyLines = (party: FacturXInvoice["seller"]) =>
+    [
+      party.address.line1,
+      party.address.line2,
+      `${party.address.postalCode} ${party.address.city}${party.address.countryCode !== "FR" ? ` (${party.address.countryCode})` : ""}`,
+      party.siren && `SIREN ${party.siren}`,
+      party.siret && `SIRET ${party.siret}`,
+      party.vatNumber ? `TVA ${party.vatNumber}` : party.taxRegistrationId && `Identifiant fiscal ${party.taxRegistrationId}`,
+    ].filter((line): line is string => Boolean(line && line.trim()));
+
+  const exemptions = Object.values(invoice.vatExemptions).map((exemption) => exemption?.reason);
+  const notes = invoice.notes.filter((note) => note.subjectCode !== "AAI").map((note) => note.content);
+  const prepaid = invoice.prepaidAmount ? `Montant déjà réglé : ${euros.format(invoice.prepaidAmount)} — solde dû : ${euros.format(0)}.` : undefined;
+  return {
+    documentLabel: invoice.typeCode === "381" ? "Avoir" : "Facture",
+    seller: { name: invoice.seller.name, lines: partyLines(invoice.seller) },
+    buyer: { name: invoice.buyer.name, lines: partyLines({ ...invoice.buyer, siret: undefined, taxRegistrationId: undefined }) },
+    mentions: [invoice.seller.legalInfo, ...exemptions, invoice.paymentTerms, ...notes, prepaid].filter(
+      (line): line is string => Boolean(line && line.trim())
+    ),
+    footer: "Facture accompagnée de ses données structurées Factur-X (profil EN 16931), fichier factur-x.xml joint.",
+  };
+}
+
 export async function buildFacturXPdf(input: {
   source: FacturXSource;
-  renderClassicPdf: () => Promise<Uint8Array>;
+  /** Rendu du relevé ; reçoit les mentions légales visibles propres à la variante Factur-X. */
+  renderClassicPdf: (legal: InvoicePdfLegalMentions) => Promise<Uint8Array>;
   now: Date;
 }): Promise<FacturXDocumentResult> {
   const mapped = mapInvoiceToFacturX(input.source);
   if (!mapped.ok) return mapped;
   const xml = generateFacturXXml(mapped.invoice);
-  const pdf = await embedFacturXInPdf(await input.renderClassicPdf(), {
+  const pdf = await embedFacturXInPdf(await input.renderClassicPdf(facturXVisibleMentions(mapped.invoice)), {
     xml,
     documentDate: input.now,
     conformanceLevel: FACTURX_CONFORMANCE_LEVEL,

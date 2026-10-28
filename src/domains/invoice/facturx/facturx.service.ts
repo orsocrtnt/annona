@@ -8,7 +8,7 @@ import type { FacturXSource } from "@/domains/invoice/facturx/facturx-mapping";
 import { companyClientWhere, facturXInvoiceWhere, type FacturXInvoiceScope } from "@/domains/invoice/facturx/facturx-scope";
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
 import { readCompanyLogo } from "@/domains/company/company-logo.service";
-import { generateInvoicePdf, type InvoicePdfData } from "@/lib/pdf/invoice-pdf";
+import { generateInvoicePdf, type InvoicePdfData, type InvoicePdfLegalMentions } from "@/lib/pdf/invoice-pdf";
 import {
   parseStoredClientInvoiceIdentity,
   parseStoredEinvoicingSettings,
@@ -134,14 +134,17 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
   };
 }
 
-/** Relevé PDF actuel, avec le même logo et le même pied de page que la route du portail. */
-export async function renderClassicInvoicePdf(loaded: LoadedFacturXInvoice): Promise<Uint8Array> {
+/**
+ * Relevé PDF, avec le même logo et le même pied de page que la route du portail.
+ * `legal` (variante Factur-X uniquement) ajoute les mentions légales visibles ; absent, rendu classique inchangé.
+ */
+export async function renderClassicInvoicePdf(loaded: LoadedFacturXInvoice, legal?: InvoicePdfLegalMentions): Promise<Uint8Array> {
   const [billing, companyLogoPng] = await Promise.all([
     getCompanyBillingSettings(loaded.companyId),
     // Un logo absent ou illisible ne bloque jamais le relevé.
     readCompanyLogo(loaded.companyId).catch(() => null),
   ]);
-  return generateInvoicePdf({ ...loaded.pdf, companyLogoPng, footerNote: billing.invoice.footerNote ?? null });
+  return generateInvoicePdf({ ...loaded.pdf, companyLogoPng, footerNote: billing.invoice.footerNote ?? null, legal });
 }
 
 // ---------------------------------------------------------------------------
