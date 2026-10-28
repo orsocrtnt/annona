@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { THEME_INIT_SCRIPT, THEME_STORAGE_KEY, isThemeScopedPath } from "../src/lib/theme";
+import {
+  THEME_INIT_SCRIPT,
+  THEME_STORAGE_KEY,
+  applyThemeToRoot,
+  isThemeScopedPath,
+  resolveTheme,
+} from "../src/lib/theme";
 
 const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
 
@@ -19,7 +25,6 @@ function between(start: string, end: string): string {
 }
 
 const dark = tokens(between(':root[data-theme="dark"] {', "}"));
-const systemDark = tokens(between(':root[data-theme="system"] {', "}"));
 const light = tokens(between("@theme {", "--radius-sm"));
 
 function luminance(hex: string) {
@@ -34,9 +39,10 @@ function ratio(a: string, b: string) {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
-test("les jetons Dark couvrent tous les jetons sémantiques Light et restent identiques pour « system »", () => {
+test("les jetons Dark couvrent tous les jetons sémantiques Light, en un seul bloc", () => {
   for (const key of light.keys()) assert.ok(dark.has(key), `jeton Dark manquant : ${key}`);
-  assert.deepEqual([...systemDark.entries()], [...dark.entries()]);
+  assert.doesNotMatch(css, /data-theme="system"/);
+  assert.doesNotMatch(css, /prefers-color-scheme/);
 });
 
 test("contrastes WCAG AA du Light et du Dark", () => {
@@ -79,8 +85,6 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
   assert.match(THEME_INIT_SCRIPT, new RegExp(THEME_STORAGE_KEY));
   const layout = readFileSync(new URL("../src/app/layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /<head>[\s\S]*THEME_INIT_SCRIPT[\s\S]*<\/head>/);
-  // Aucun bloc Dark global sur :root nu ou sur prefers-color-scheme sans attribut.
-  assert.doesNotMatch(css, /@media \(prefers-color-scheme: dark\)\s*\{\s*:root\s*\{/);
 });
 
 test("le verre respecte prefers-reduced-transparency et le mouvement prefers-reduced-motion", () => {
@@ -91,4 +95,43 @@ test("le verre respecte prefers-reduced-transparency et le mouvement prefers-red
 test("le basculement de thème est présent dans la barre du portail", () => {
   const layout = readFileSync(new URL("../src/components/layouts/client-portal-layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /<ThemeToggle/);
+});
+
+test("applyThemeToRoot résout « système » et retire l'attribut hors des espaces migrés", () => {
+  const attrs = new Map<string, string>();
+  const root = {
+    setAttribute: (k: string, v: string) => void attrs.set(k, v),
+    removeAttribute: (k: string) => void attrs.delete(k),
+  };
+  assert.equal(resolveTheme("system", true), "dark");
+  assert.equal(resolveTheme("system", false), "light");
+  assert.equal(resolveTheme("light", true), "light");
+  applyThemeToRoot(root, "/portal/orders", "system", true);
+  assert.equal(attrs.get("data-theme"), "dark");
+  applyThemeToRoot(root, "/portal", "light", true);
+  assert.equal(attrs.get("data-theme"), "light");
+  // Navigation client vers un autre espace : l'attribut disparaît, le Dark ne déborde pas.
+  applyThemeToRoot(root, "/dashboard", "dark", true);
+  assert.equal(attrs.has("data-theme"), false);
+});
+
+test("ThemeSync est l'unique écrivain de data-theme, appliqué avant peinture, sans snapshot serveur", () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  const sync = read("src/components/theme/theme-sync.tsx");
+  const hook = read("src/components/theme/use-theme-preference.ts");
+  const toggle = read("src/components/theme/theme-toggle.tsx");
+  assert.match(sync, /useLayoutEffect/);
+  assert.match(sync, /\[pathname\]/);
+  assert.match(sync, /readThemePreference\(\)/);
+  for (const src of [hook, toggle]) {
+    assert.doesNotMatch(src, /setAttribute|removeAttribute|documentElement/);
+  }
+  assert.match(toggle, /DropdownMenuRadioGroup/);
+  assert.doesNotMatch(toggle, /role="menuitemradio"/);
+});
+
+test("la barre du portail tient à 320 px : thème et avatar passent dans le menu sous 640 px", () => {
+  const layout = readFileSync(new URL("../src/components/layouts/client-portal-layout.tsx", import.meta.url), "utf8");
+  assert.match(layout, /<ThemeToggle className="max-sm:hidden"/);
+  assert.match(layout, /sm:hidden">[\s\S]*<ThemeRadioGroup/);
 });

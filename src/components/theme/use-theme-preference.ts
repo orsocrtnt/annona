@@ -1,18 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
+import { useCallback, useSyncExternalStore } from "react";
 
-import {
-  THEME_STORAGE_KEY,
-  isThemePreference,
-  isThemeScopedPath,
-  type ThemePreference,
-} from "@/lib/theme";
+import { THEME_STORAGE_KEY, isThemePreference, type ThemePreference } from "@/lib/theme";
 
-const CHANGE_EVENT = "tutelliv-theme-change";
+export const THEME_CHANGE_EVENT = "tutelliv-theme-change";
 
-function readPreference(): ThemePreference {
+/** Lecture directe de la préférence mémorisée (jamais le snapshot serveur). */
+export function readThemePreference(): ThemePreference {
   try {
     const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
     return isThemePreference(raw) ? raw : "system";
@@ -21,26 +16,25 @@ function readPreference(): ThemePreference {
   }
 }
 
-function subscribe(onChange: () => void) {
-  window.addEventListener(CHANGE_EVENT, onChange);
+export function subscribeThemePreference(onChange: () => void) {
+  window.addEventListener(THEME_CHANGE_EVENT, onChange);
   window.addEventListener("storage", onChange);
   return () => {
-    window.removeEventListener(CHANGE_EVENT, onChange);
+    window.removeEventListener(THEME_CHANGE_EVENT, onChange);
     window.removeEventListener("storage", onChange);
   };
 }
 
-/** Préférence mémorisée + synchronisation de `data-theme` sur <html> pour les espaces migrés. */
+/**
+ * Lecture et écriture de la préférence seulement. L'attribut `data-theme` n'est jamais écrit ici :
+ * ThemeSync en est l'unique propriétaire.
+ */
 export function useThemePreference() {
-  const pathname = usePathname();
-  const preference = useSyncExternalStore<ThemePreference>(subscribe, readPreference, () => "system");
-  const scoped = isThemeScopedPath(pathname ?? "");
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (scoped) root.setAttribute("data-theme", preference);
-    else root.removeAttribute("data-theme");
-  }, [preference, scoped]);
+  const preference = useSyncExternalStore<ThemePreference>(
+    subscribeThemePreference,
+    readThemePreference,
+    () => "system"
+  );
 
   const setPreference = useCallback((next: ThemePreference) => {
     try {
@@ -48,7 +42,7 @@ export function useThemePreference() {
     } catch {
       /* stockage indisponible : le choix vaut pour la session seulement */
     }
-    window.dispatchEvent(new Event(CHANGE_EVENT));
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
   }, []);
 
   return { preference, setPreference };

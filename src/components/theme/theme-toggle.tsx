@@ -5,12 +5,13 @@ import { Check, Monitor, Moon, Sun } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuItemIndicator,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { ThemePreference } from "@/lib/theme";
+import { isThemePreference, type ThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 import { useThemePreference } from "./use-theme-preference";
@@ -21,8 +22,36 @@ const OPTIONS: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
   { value: "dark", label: "Sombre", icon: Moon },
 ];
 
-export function ThemeToggle({ className }: { className?: string }) {
+/** Groupe d'options à placer dans un DropdownMenuContent (menu du thème, menu mobile de navigation). */
+export function ThemeRadioGroup() {
   const { preference, setPreference } = useThemePreference();
+  return (
+    <>
+      <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+        Affichage
+      </DropdownMenuLabel>
+      <DropdownMenuRadioGroup
+        value={preference}
+        onValueChange={(value) => {
+          if (isThemePreference(value)) setPreference(value);
+        }}
+      >
+        {OPTIONS.map(({ value, label, icon: Icon }) => (
+          <DropdownMenuRadioItem key={value} value={value} className="min-h-11 cursor-pointer rounded-xl px-3">
+            <Icon className="h-4 w-4" aria-hidden />
+            <span>{label}</span>
+            <DropdownMenuItemIndicator className="ml-auto">
+              <Check className="h-4 w-4 text-brand" aria-hidden />
+            </DropdownMenuItemIndicator>
+          </DropdownMenuRadioItem>
+        ))}
+      </DropdownMenuRadioGroup>
+    </>
+  );
+}
+
+export function ThemeToggle({ className }: { className?: string }) {
+  const { preference } = useThemePreference();
   const Current = preference === "dark" ? Moon : preference === "light" ? Sun : Monitor;
 
   return (
@@ -41,23 +70,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-48 rounded-2xl p-2">
-        <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-          Affichage
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {OPTIONS.map(({ value, label, icon: Icon }) => (
-          <DropdownMenuItem
-            key={value}
-            role="menuitemradio"
-            aria-checked={preference === value}
-            onSelect={() => setPreference(value)}
-            className="min-h-11 cursor-pointer rounded-xl px-3"
-          >
-            <Icon className="h-4 w-4" aria-hidden />
-            <span>{label}</span>
-            {preference === value ? <Check className="ml-auto h-4 w-4 text-brand" aria-hidden /> : null}
-          </DropdownMenuItem>
-        ))}
+        <ThemeRadioGroup />
       </DropdownMenuContent>
     </DropdownMenu>
   );

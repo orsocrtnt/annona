@@ -55,10 +55,9 @@
 }
 
 /*
- * Mode Dark « Encre + Pastel » (DESIGN-1). Portée : seul un <html data-theme="dark|system"> l'active ;
- * le script de thème ne pose cet attribut que sur les espaces migrés (portail client pour l'instant),
- * donc le rendu Light des autres espaces reste identique. Les deux blocs doivent rester identiques
- * (vérifié par tests/theme-tokens.test.ts).
+ * Mode Dark « Encre + Pastel » (DESIGN-1). Portée : seul un <html data-theme="dark"> l'active ;
+ * le script de thème (puis ThemeSync) résout « système » avec matchMedia et ne pose l'attribut que sur
+ * les espaces migrés (portail client pour l'instant) : le rendu Light des autres espaces reste identique.
  */
 :root[data-theme="dark"] {
   --color-background: #141716;
@@ -99,56 +98,10 @@
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="system"] {
-    --color-background: #141716;
-    --color-foreground: #eef1ef;
-    --color-card: #1c1f1e;
-    --color-card-foreground: #eef1ef;
-    --color-popover: #212524;
-    --color-popover-foreground: #eef1ef;
-    --color-primary: #3dd68c;
-    --color-primary-foreground: #0e1310;
-    --color-primary-hover: #55e09e;
-    --color-secondary: #262a28;
-    --color-secondary-foreground: #eef1ef;
-    --color-muted: #262a28;
-    --color-muted-foreground: #a3aca6;
-    --color-accent: #1f3a2c;
-    --color-accent-foreground: #7be0ab;
-    --color-destructive: #e5736b;
-    --color-destructive-foreground: #1a0d0c;
-    --color-border: #333936;
-    --color-input: #3d4440;
-    --color-ring: #5bd99a;
-    --color-surface: #1c1f1e;
-    --color-surface-elevated: #212524;
-    --color-surface-subtle: #262a28;
-    --color-text-primary: #eef1ef;
-    --color-text-secondary: #b4bcb7;
-    --color-text-tertiary: #8b948e;
-    --color-brand: #5bd99a;
-    --color-brand-hover: #7be0ab;
-    --color-brand-subtle: #1f3a2c;
-    --color-success: #5bd99a;
-    --color-success-subtle: #1b3328;
-    --color-warning: #f0b45c;
-    --color-warning-subtle: #3a2f1c;
-    --color-error: #f08a82;
-    --color-error-subtle: #3d2523;
-    color-scheme: dark;
-  }
-}
-
 /* Variante Tailwind `dark:` pour les composants partagés : sans effet hors des espaces migrés. */
 @custom-variant dark {
   &:where([data-theme="dark"] *) {
     @slot;
-  }
-  @media (prefers-color-scheme: dark) {
-    &:where([data-theme="system"] *) {
-      @slot;
-    }
   }
 }
 

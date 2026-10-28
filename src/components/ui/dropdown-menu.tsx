@@ -45,6 +45,25 @@ const DropdownMenuItem = React.forwardRef<
 ));
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
+const DropdownMenuRadioItem = React.forwardRef<
+  React.ComponentRef<typeof DropdownMenuPrimitive.RadioItem>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
+>(({ className, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.RadioItem
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </DropdownMenuPrimitive.RadioItem>
+));
+DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
+
+const DropdownMenuItemIndicator = DropdownMenuPrimitive.ItemIndicator;
+
 const DropdownMenuSeparator = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
@@ -72,5 +91,5 @@ DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 export {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuGroup, DropdownMenuPortal,
-  DropdownMenuSub, DropdownMenuRadioGroup,
+  DropdownMenuSub, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuItemIndicator,
 };
