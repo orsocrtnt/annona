@@ -15,6 +15,7 @@ import { proposeLegacyDeliveryRecovery } from "../src/domains/invoice/legacy-bil
 import { getStatusBucket, isDeliveredStatus } from "../src/lib/dashboard/period-stats";
 import { filterMiniAdminPermissions } from "../src/lib/permissions/mini-admin";
 import type * as invoiceService from "../src/domains/invoice/invoice.service";
+import * as invoiceDue from "../src/domains/invoice/invoice-due";
 
 function replace(t: TestContext, target: object, key: string, fn: unknown) {
   const original = Reflect.get(target, key); Reflect.set(target, key, fn);
@@ -41,7 +42,7 @@ function fixture(status = "DELIVERED") {
       update: async ({ data }: { data: Record<string, unknown> }) => (invoice = { ...invoice, ...data }),
       findFirst: async ({ where }: { where: Record<string, unknown> }) => invoice && Object.entries(where).every(([k,v])=>invoice?.[k]===v) ? invoice : null,
       updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
-        if (!invoice || !Object.entries(where).every(([k,v])=>k === "updatedAt" ? +(invoice?.[k] as Date) === +(v as Date) : invoice?.[k] === v)) return { count: 0 };
+        if (!invoice || !Object.entries(where).every(([k,v])=>k === "updatedAt" ? +(invoice?.[k] as Date) === +(v as Date) : v && typeof v === "object" && "in" in v ? (v.in as unknown[]).includes(invoice?.[k]) : invoice?.[k] === v)) return { count: 0 };
         invoice = { ...invoice, ...data }; return { count: 1 };
       },
       findUniqueOrThrow: async () => invoice,
@@ -58,6 +59,7 @@ function fixture(status = "DELIVERED") {
     "@/lib/query/list-limits": {},
     "@/domains/client-portal/notify.service": { queueInvoiceIssuedNotification: async () => null },
     "@/domains/operations/operation-job.service": { kickOperationJob: () => {} },
+    "@/domains/invoice/invoice-due": invoiceDue,
   });
   return { service, delivery, order, invoice: () => invoice!, events: () => events };
 }

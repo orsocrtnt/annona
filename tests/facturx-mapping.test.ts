@@ -337,3 +337,13 @@ test("micro-coursier en franchise (293 B) sans n° de TVA : export possible avec
   const vat = mapInvoiceToFacturX(source({ einvoicing: { vatNumber: undefined, taxRegistrationId: "1234567890123" } }));
   assert.ok(!vat.ok && vat.errors.some((e) => e.rule === "BR-S-02"));
 });
+
+test("DEMO-3 : facture passée en retard — Factur-X complet (XML embarqué bien formé) et PDF classique « En retard »", async () => {
+  const render = async () => generateInvoicePdf({ reference: "FAC-2026-0042", status: "OVERDUE", createdAt: new Date("2026-09-27T09:00:00Z"), amount: 30, lineItems: [], company: { name: "Coursiers Fictifs" } });
+  const classic = await render();
+  assert.match(pdfText(classic), /En retard/);
+  const built = await buildFacturXPdf({ source: source({ invoice: { status: "OVERDUE" } }), renderClassicPdf: render, now: new Date("2026-10-28T10:00:00Z") });
+  assert.ok(built.ok);
+  assert.deepEqual(xmlWellFormednessErrors(built.xml), []);
+  assert.equal(facturXHttpResult(built, "FAC-2026-0042", "staff").status, 200);
+});

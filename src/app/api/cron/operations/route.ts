@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processDueOperationJobs } from "@/domains/operations/operation-job.service";
+import { markOverdueInvoices } from "@/domains/invoice/invoice-overdue.service";
 import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
 
 /**
@@ -7,10 +8,28 @@ import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
  * une interruption. Appelée toutes les 5 minutes par GitHub Actions
  * (.github/workflows/cron-operations.yml) avec le même CRON_SECRET que les
  * commandes récurrentes.
+ * DEMO-3 : passe aussi en retard les factures PENDING échues (mise à jour
+ * conditionnelle idempotente) ; un échec est signalé sans bloquer les tâches.
  */
 // Un lot de 50 tâches (dispatch, e-mails) doit pouvoir finir : durée maximale
 // explicite ; le --max-time du workflow GitHub doit rester supérieur ou égal.
 export const maxDuration = 60;
+
+/** Passage en retard indépendant des tâches durables : exécuté dans tous les cas, échec signalé. */
+async function runOverdueInvoiceSweep(): Promise<number | null> {
+  try {
+    return await markOverdueInvoices();
+  } catch {
+    // Message fixe : une erreur Prisma peut contenir des valeurs de requête.
+    await reportOperationalIncident({
+      source: "cron.operations",
+      fingerprint: "invoice-overdue-sweep-failure",
+      summary: "Passage des factures en retard impossible",
+      severity: "error",
+    });
+    return null;
+  }
+}
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -20,8 +39,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
+  const overdueInvoices = await runOverdueInvoiceSweep();
   try {
-    const result = await processDueOperationJobs();
+    const jobs = await processDueOperationJobs();
+    const result = { ...jobs, overdueInvoices };
     // Les deux conditions sont évaluées : un échec terminal ne masque pas un retard.
     if (result.failed > 0) {
       await reportOperationalIncident({
@@ -41,7 +62,7 @@ export async function GET(request: Request) {
         context: result,
       });
     }
-    if (result.failed > 0 || result.overdue > 0) {
+    if (result.failed > 0 || result.overdue > 0 || overdueInvoices === null) {
       return NextResponse.json({ data: result, success: false }, { status: 503 });
     }
     return NextResponse.json({ data: result, success: true });

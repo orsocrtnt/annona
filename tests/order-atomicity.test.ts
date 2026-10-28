@@ -195,6 +195,10 @@ function fixture(failureStage: FailureStage) {
       "@/domains/client-portal/notify.service": {
         queueDeliveryStatusNotification: async () => null,
       },
+      "@/domains/invoice/delivery-invoice.service": {
+        queueDeliveryInvoiceJob: async () => null,
+      },
+      "@/domains/invoice/invoice-due": { isInvoiceOutstanding: () => false, OUTSTANDING_INVOICE_STATUSES: ["PENDING", "OVERDUE"] },
       "@/domains/delivery/dispatch-policy": {
         getCancellationBlockReason: () => null,
       },

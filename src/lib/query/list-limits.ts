@@ -3,6 +3,7 @@ export const COMPANY_ORDERS_TAKE = 80;
 export const COMPANY_CLIENTS_TAKE = 80;
 export const COMPANY_DELIVERIES_TAKE = 80;
 export const COMPANY_USERS_TAKE = 100;
+export const COMPANY_INVOICES_TAKE = 100;
 export const CLIENT_ORDERS_TAKE = 50;
 export const CLIENT_DELIVERIES_TAKE = 50;
 export const CLIENT_INVOICES_TAKE = 50;

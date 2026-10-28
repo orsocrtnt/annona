@@ -26,6 +26,8 @@ import {
   kickOperationJob,
 } from "@/domains/operations/operation-job.service";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
+import { queueDeliveryInvoiceJob } from "@/domains/invoice/delivery-invoice.service";
+import { isInvoiceOutstanding, OUTSTANDING_INVOICE_STATUSES } from "@/domains/invoice/invoice-due";
 import { getCancellationBlockReason } from "@/domains/delivery/dispatch-policy";
 import {
   ORDER_EXPORT_CHUNK_SIZE,
@@ -960,7 +962,8 @@ async function cancelCompanyOrderBeforeMissionStart(
           id: invoice.id,
           companyId,
           orderId,
-          status: invoice.status,
+          // Une facture passée en retard par le cron entre-temps reste annulable (updated_at intact).
+          status: isInvoiceOutstanding(invoice.status) ? { in: [...OUTSTANDING_INVOICE_STATUSES] } : invoice.status,
           updatedAt: invoice.updatedAt,
         },
         data: { status: "CANCELLED" },
@@ -1160,6 +1163,7 @@ export async function updateCompanyOrderStatus(
       }
     }
 
+    let passageKey: string | null = null;
     for (const delivery of order.deliveries) {
       const deliveryUpdate: {
         status: DeliveryStatus;
@@ -1182,6 +1186,7 @@ export async function updateCompanyOrderStatus(
           description: "Statut mis à jour par l'administrateur",
         },
       });
+      passageKey ??= trackingEvent.id;
       const notificationJob = await queueDeliveryStatusNotification(tx, {
         customerId: order.customerId,
         companyId,
@@ -1191,6 +1196,17 @@ export async function updateCompanyOrderStatus(
         eventId: trackingEvent.id,
       });
       if (notificationJob) operationJobIds.push(notificationJob.id);
+    }
+
+    // DEMO-3 : facture à la livraison inscrite en tâche durable (si l'entreprise l'a activée).
+    if (status === "DELIVERED") {
+      const invoiceJob = await queueDeliveryInvoiceJob(tx, {
+        companyId,
+        orderId: order.id,
+        // Événement de suivi du passage ; sans livraison, l'horodatage de la transition.
+        passageKey: passageKey ?? `at-${Date.now()}`,
+      });
+      if (invoiceJob) operationJobIds.push(invoiceJob.id);
     }
 
     if (acceptingQuote) {

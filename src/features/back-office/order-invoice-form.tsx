@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { InvoiceStatusBadge } from "@/features/client-portal/status-badges";
 import { formatCurrency } from "@/features/client-portal/utils";
+import { isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 import { formatDate } from "@/lib/utils";
 import type { InvoiceLineItem } from "@/lib/validations/invoice";
 import type { CompanyOrder } from "./types";
@@ -86,8 +87,8 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
   const existingInvoice = order.invoices?.find((invoice) => invoice.status !== "CANCELLED");
   const existingLines = (existingInvoice?.lineItems ?? []) as InvoiceLineItem[];
   const isPaid = existingInvoice?.status === "PAID";
-  const isInvoiced =
-    existingInvoice?.status === "PENDING";
+  // Une facture en retard reste émise : on l'affiche, on ne propose pas d'en refaire une.
+  const isInvoiced = existingInvoice ? isInvoiceOutstanding(existingInvoice.status) : false;
 
   const suggestedZone = useMemo(() => {
     if (!tariffs || !order.shippingPostalCode) return null;

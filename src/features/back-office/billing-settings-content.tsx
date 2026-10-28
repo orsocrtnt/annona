@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/loader";
 import { EinvoicingSettingsCard } from "@/features/back-office/einvoicing-settings-card";
+import { CompanyPaymentsPanel } from "@/features/back-office/company-payments-panel";
 import { TariffSettingsForm } from "@/features/back-office/tariff-settings-form";
 import {
   useCompanyBillingSettings,
@@ -14,12 +15,13 @@ import {
 } from "@/features/back-office/billing-settings-hooks";
 import type { CompanyBillingSettings } from "@/lib/validations/billing-settings";
 import { cn } from "@/lib/utils";
-import { Bike, FileText, Receipt } from "lucide-react";
+import { Bike, FileText, Receipt, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
-type BillingTab = "courses" | "general";
+type BillingTab = "payments" | "courses" | "general";
 
 const TABS: { key: BillingTab; label: string; icon: typeof Bike }[] = [
+  { key: "payments", label: "Paiements", icon: Wallet },
   { key: "courses", label: "Courses", icon: Bike },
   { key: "general", label: "Factures", icon: FileText },
 ];
@@ -256,13 +258,44 @@ function InvoiceGeneralSection({
             onChange={(e) => updateInvoice({ footerNote: e.target.value })}
           />
         </div>
+        <div className="flex flex-col gap-4 rounded-lg border border-border p-4 max-md:items-start sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p id="billing-auto-invoice-label" className="text-sm font-medium">Émettre la facture à la livraison</p>
+            <p className="text-xs text-muted-foreground">
+              Dès qu&apos;une commande passe en « Livrée », la facture est émise avec la zone suggérée
+              et les achats validés, puis envoyée au client par e-mail. Désactivé : vous facturez à la main.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={invoice.autoInvoiceOnDelivery}
+            aria-labelledby="billing-auto-invoice-label"
+            onClick={() => updateInvoice({ autoInvoiceOnDelivery: !invoice.autoInvoiceOnDelivery })}
+            className="relative inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                invoice.autoInvoiceOnDelivery ? "bg-brand" : "bg-muted-foreground/30"
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
+                  invoice.autoInvoiceOnDelivery ? "translate-x-5" : "translate-x-0.5"
+                )}
+              />
+            </span>
+          </button>
+        </div>
       </CardContent>
     </Card>
   );
 }
 
 export function BillingSettingsContent() {
-  const [tab, setTab] = useState<BillingTab>("courses");
+  const [tab, setTab] = useState<BillingTab>("payments");
   const { data: settings, isLoading } = useCompanyBillingSettings();
   const updateSettings = useUpdateCompanyBillingSettings();
   const [local, setLocal] = useState<CompanyBillingSettings | null>(null);
@@ -290,7 +323,7 @@ export function BillingSettingsContent() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Facturation</h1>
         <p className="mt-1 text-muted-foreground">
-          Tarification des courses, zones, suppléments et paramètres de facture
+          Paiements, tarification des courses, zones, suppléments et paramètres de facture
         </p>
       </div>
 
@@ -316,20 +349,24 @@ export function BillingSettingsContent() {
         })}
       </div>
 
-      {tab === "courses" ? (
+      {tab === "payments" ? (
+        <CompanyPaymentsPanel />
+      ) : tab === "courses" ? (
         <CourierPricingSection local={local} setLocal={setLocal} />
       ) : (
         <InvoiceGeneralSection local={local} setLocal={setLocal} />
       )}
 
-      <Button
-        variant="brand"
-        disabled={updateSettings.isPending}
-        loading={updateSettings.isPending}
-        onClick={handleSave}
-      >
-        Enregistrer la facturation
-      </Button>
+      {tab !== "payments" && (
+        <Button
+          variant="brand"
+          disabled={updateSettings.isPending}
+          loading={updateSettings.isPending}
+          onClick={handleSave}
+        >
+          Enregistrer la facturation
+        </Button>
+      )}
 
       {tab === "general" && <EinvoicingSettingsCard />}
     </div>

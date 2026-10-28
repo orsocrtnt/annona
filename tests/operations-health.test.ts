@@ -22,6 +22,8 @@ function load<T>(file: string, deps: Record<string, unknown>, globals: Record<st
     exports: testModule.exports,
     module: testModule,
     require: (id: string) => {
+      // DEMO-3 : la route cron passe aussi les factures en retard (testé dans demo3-cron-overdue).
+      if (id === "@/domains/invoice/invoice-overdue.service" && !(id in deps)) return { markOverdueInvoices: async () => 0 };
       assert.ok(id in deps, `Unexpected dependency ${id}`);
       return deps[id];
     },

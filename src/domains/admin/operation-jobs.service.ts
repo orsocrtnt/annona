@@ -1,7 +1,7 @@
 import { prisma } from "@/services/prisma/client";
 
 const STATUSES = ["PENDING", "PROCESSING", "SUCCEEDED", "FAILED"] as const;
-const TYPES = ["AUTO_DISPATCH", "CLIENT_NOTIFICATION"] as const;
+const TYPES = ["AUTO_DISPATCH", "CLIENT_NOTIFICATION", "DELIVERY_INVOICE"] as const;
 const PAGE_SIZES = [25, 50, 100] as const;
 const PARAMS = ["q", "status", "type", "page", "pageSize"] as const;
 const STALE_AFTER_MS = 10 * 60_000;

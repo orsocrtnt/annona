@@ -108,6 +108,7 @@ enum OrderSource {
 enum OperationJobType {
   AUTO_DISPATCH
   CLIENT_NOTIFICATION
+  DELIVERY_INVOICE
 }
 
 enum OperationJobStatus {
@@ -254,6 +255,7 @@ model User {
   notifications        ClientNotification[]
   orderMessages        OrderMessage[]
   orderThreadReads     OrderThreadRead[]
+  invoiceRemindersSent InvoiceReminder[]
 
   @@index([companyId])
   @@index([roleId])
@@ -311,6 +313,7 @@ model Company {
   orders               Order[]
   deliveries           Delivery[]
   invoices             Invoice[]
+  invoiceReminders     InvoiceReminder[]
   recurringOrders      RecurringOrder[]
   supportTickets       SupportTicket[]
   operationJobs        OperationJob[]
@@ -872,6 +875,8 @@ model OperationJob {
   companyId String?  @map("company_id")
   company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  invoiceReminders InvoiceReminder[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -898,6 +903,8 @@ model Invoice {
   customerId String? @map("customer_id")
   customer   User?   @relation("CustomerInvoices", fields: [customerId], references: [id], onDelete: SetNull)
 
+  reminders InvoiceReminder[]
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -906,6 +913,33 @@ model Invoice {
   @@index([status])
   @@index([orderId])
   @@map("invoices")
+}
+
+/// DEMO-3 : trace d'une relance de facture (qui, quand, canal, résultat).
+/// result : QUEUED, SENT, NOT_SENT_EMAIL_NOT_CONFIGURED, NOT_SENT_NO_RECIPIENT,
+/// NOT_SENT_CLIENT_PREFERENCES, NOT_SENT_INVOICE_SETTLED, SKIPPED_SUPERSEDED.
+model InvoiceReminder {
+  id          String    @id @default(cuid())
+  channel     String    @default("EMAIL")
+  result      String
+  completedAt DateTime? @map("completed_at")
+
+  invoiceId      String        @map("invoice_id")
+  invoice        Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  companyId      String        @map("company_id")
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sentById       String?       @map("sent_by_id")
+  sentBy         User?         @relation(fields: [sentById], references: [id], onDelete: SetNull)
+  operationJobId String?       @map("operation_job_id")
+  operationJob   OperationJob? @relation(fields: [operationJobId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([invoiceId, createdAt])
+  @@index([companyId, createdAt])
+  @@index([sentById])
+  @@index([operationJobId])
+  @@map("invoice_reminders")
 }
 
 model SupportTicket {
