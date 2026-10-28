@@ -37,7 +37,15 @@ export async function PUT(request: Request, { params }: Params) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Données invalides" }, { status: 400 });
     }
     const { id } = await params;
-    const saved = await updateClientInvoiceIdentity(companyId, id, parsed.data);
+    let saved;
+    try {
+      saved = await updateClientInvoiceIdentity(companyId, id, parsed.data);
+    } catch (error) {
+      if (error instanceof Error && error.message === "SETTINGS_CONFLICT") {
+        return NextResponse.json({ error: "La fiche a changé pendant l'enregistrement. Rechargez puis réessayez." }, { status: 409 });
+      }
+      throw error;
+    }
     if (!saved) return NextResponse.json({ error: "Client introuvable" }, { status: 404 });
     return NextResponse.json({ data: saved, success: true });
   });

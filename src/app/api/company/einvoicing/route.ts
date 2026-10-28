@@ -41,6 +41,9 @@ export async function PATCH(request: Request) {
       if (error instanceof Error && error.message === "COMPANY_NOT_FOUND") {
         return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });
       }
+      if (error instanceof Error && error.message === "SETTINGS_CONFLICT") {
+        return NextResponse.json({ error: "Les réglages ont changé pendant l'enregistrement. Rechargez puis réessayez." }, { status: 409 });
+      }
       if (error instanceof Error && error.message === "COMPANY_IDENTITY_TAKEN") {
         return NextResponse.json({ error: "Ce SIREN ou ce SIRET est déjà utilisé par une autre entreprise." }, { status: 409 });
       }

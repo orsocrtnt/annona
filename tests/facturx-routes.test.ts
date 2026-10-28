@@ -194,6 +194,8 @@ test("mentions légales : données invalides (400) et SIREN déjà utilisé (409
   assert.equal(admin.calls.length, 0);
   const taken = einvoicing("COMPANY_ADMIN", async () => { throw new Error("COMPANY_IDENTITY_TAKEN"); });
   assert.equal((await taken.patch(validBody)).status, 409);
+  const conflict = einvoicing("COMPANY_ADMIN", async () => { throw new Error("SETTINGS_CONFLICT"); });
+  assert.equal((await conflict.patch(validBody)).status, 409);
 });
 
 function identity(role: Role, companyId = "company_a") {

@@ -15,6 +15,7 @@ import {
   type ClientInvoiceIdentity,
   type CompanyEinvoicingUpdate,
 } from "@/lib/validations/einvoicing";
+import { updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
 import { prisma } from "@/services/prisma/client";
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -174,31 +175,36 @@ export async function getCompanyEinvoicing(companyId: string) {
 }
 
 export async function updateCompanyEinvoicing(companyId: string, input: CompanyEinvoicingUpdate) {
-  return prisma.$transaction(async (tx) => {
-    const company = await tx.company.findUnique({ where: { id: companyId }, select: { settings: true } });
-    if (!company) throw new Error("COMPANY_NOT_FOUND");
-    const identity = input.identity;
-    try {
-      await tx.company.update({
-        where: { id: companyId },
-        data: {
-          legalName: identity.legalName ?? null,
-          siren: identity.siren ?? null,
-          siret: identity.siret ?? null,
-          billingAddress: identity.billingAddress ?? null,
-          billingPostalCode: identity.billingPostalCode ?? null,
-          billingCity: identity.billingCity ?? null,
-          country: identity.country,
-          // Clé dédiée : la route des réglages de facturation réécrit `settings.billing` en entier.
-          settings: { ...asRecord(company.settings), einvoicing: input.einvoicing } as Prisma.InputJsonValue,
-        },
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new Error("COMPANY_IDENTITY_TAKEN");
-      throw error;
-    }
-    return input;
+  const identity = input.identity;
+  // Réclamation sur updatedAt : une écriture concurrente de settings (billing…) n'est jamais écrasée.
+  const result = await updateSettingsWithClaim({
+    load: () => prisma.company.findUnique({ where: { id: companyId }, select: { settings: true, updatedAt: true } }),
+    apply: (current) => ({ ...current, einvoicing: input.einvoicing }),
+    save: async (settings, claim) => {
+      try {
+        const claimed = await prisma.company.updateMany({
+          where: { id: companyId, updatedAt: claim.expected },
+          data: {
+            legalName: identity.legalName ?? null,
+            siren: identity.siren ?? null,
+            siret: identity.siret ?? null,
+            billingAddress: identity.billingAddress ?? null,
+            billingPostalCode: identity.billingPostalCode ?? null,
+            billingCity: identity.billingCity ?? null,
+            country: identity.country,
+            settings: settings as Prisma.InputJsonValue,
+            updatedAt: claim.next,
+          },
+        });
+        return claimed.count === 1;
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new Error("COMPANY_IDENTITY_TAKEN");
+        throw error;
+      }
+    },
   });
+  if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
+  return input;
 }
 
 // ---------------------------------------------------------------------------
@@ -212,13 +218,17 @@ export async function getClientInvoiceIdentity(companyId: string, clientId: stri
 }
 
 export async function updateClientInvoiceIdentity(companyId: string, clientId: string, identity: ClientInvoiceIdentity) {
-  return prisma.$transaction(async (tx) => {
-    const client = await tx.user.findFirst({ where: companyClientWhere(companyId, clientId), select: { id: true, settings: true } });
-    if (!client) return null;
-    await tx.user.update({
-      where: { id: client.id },
-      data: { settings: { ...asRecord(client.settings), invoiceIdentity: identity } as Prisma.InputJsonValue },
-    });
-    return identity;
+  const where = companyClientWhere(companyId, clientId);
+  const result = await updateSettingsWithClaim({
+    load: () => prisma.user.findFirst({ where, select: { settings: true, updatedAt: true } }),
+    apply: (current) => ({ ...current, invoiceIdentity: identity }),
+    save: async (settings, claim) => {
+      const claimed = await prisma.user.updateMany({
+        where: { ...where, updatedAt: claim.expected },
+        data: { settings: settings as Prisma.InputJsonValue, updatedAt: claim.next },
+      });
+      return claimed.count === 1;
+    },
   });
+  return result === "saved" ? identity : null;
 }
