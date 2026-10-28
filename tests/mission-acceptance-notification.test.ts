@@ -113,6 +113,8 @@ test("prise en charge : notification dans l'application et e-mail, rejouées san
   assert.equal(row.type, "DELIVERY");
   assert.deepEqual([...new Set(f.emails.map((e) => e.idempotencyKey))], [eventKey], "même clé fournisseur au rejeu");
   assert.equal(f.emails[0]?.to, "client@example.test");
+  assert.equal(f.emails[0]?.subject, "Prise en charge", "sujet au format des e-mails de statut (titre seul)");
+  assert.equal(f.emails[0]?.text, row.body);
   assert.doesNotMatch(JSON.stringify([...f.notifications.values(), ...f.emails]), /latitude|longitude|\d+[,.]\d+\s?km/);
 });
 
