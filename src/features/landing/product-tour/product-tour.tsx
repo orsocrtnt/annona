@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { SceneClientOrder } from "@/features/landing/product-tour/scene-client-order";
+import { SceneDispatch } from "@/features/landing/product-tour/scene-dispatch";
+import { SceneDriver } from "@/features/landing/product-tour/scene-driver";
 import {
   TOUR_STEP_LABELS,
   TOUR_STEPS,
@@ -122,11 +124,10 @@ export function ProductTour() {
         tabIndex={-1}
         className="relative h-[420px] overflow-hidden rounded-[16px] bg-[#f5f8f6] focus:outline-none sm:h-[460px]"
       >
-        {step === "order" ? (
-          <SceneClientOrder key={step} {...sceneProps} />
-        ) : (
-          <PendingScene key={step} step={step} {...sceneProps} />
-        )}
+        {step === "order" && <SceneClientOrder key={step} {...sceneProps} />}
+        {step === "dispatch" && <SceneDispatch key={step} {...sceneProps} />}
+        {step === "driver" && <SceneDriver key={step} {...sceneProps} />}
+        {step === "tracking" && <PendingScene key={step} step={step} {...sceneProps} />}
       </div>
     </figure>
   );

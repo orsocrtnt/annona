@@ -1,0 +1,128 @@
+"use client";
+
+import { useState } from "react";
+import { Bell, CornerUpLeft, MousePointerClick, Navigation } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CityMap } from "@/features/landing/product-tour/city-map";
+import type { SceneProps } from "@/features/landing/product-tour/product-tour";
+import { TOUR_ORDER } from "@/features/landing/product-tour/tour-data";
+import {
+  GESTURE_RESULT_DELAY_MS,
+  useDelayedCall,
+  useTimeline,
+} from "@/features/landing/product-tour/use-timeline";
+
+const ARRIVAL_DURATIONS_MS = [450, 550, 450] as const;
+/** La vue GPS reste affichée un peu plus longtemps qu'un simple résultat de geste. */
+const NAVIGATION_VIEW_MS = GESTURE_RESULT_DELAY_MS * 2;
+
+function MissionDetails({ phase }: { phase: number }) {
+  return (
+    <div className="flex h-full flex-col px-3 pb-3 pt-2">
+      <p className="text-[11px] text-muted-foreground">Bonjour Karim</p>
+      <p className="text-sm font-bold">Mes missions</p>
+
+      {phase >= 1 && (
+        <div className="product-tour-in mt-2 flex items-center gap-2 rounded-xl bg-[#0e1310] px-2.5 py-2 text-white shadow-lg">
+          <Bell className="h-3.5 w-3.5 shrink-0 text-[#00d46a]" aria-hidden />
+          <p className="text-[11px] font-semibold leading-tight">Nouvelle mission · {TOUR_ORDER.number}</p>
+        </div>
+      )}
+
+      {phase >= 2 && (
+        <div className="product-tour-in mt-2 rounded-xl border border-black/[0.07] bg-white p-2.5">
+          <ol className="space-y-2">
+            <li className="flex gap-2">
+              <span className="mt-1 h-2 w-2 shrink-0 rounded-sm bg-[#0e1310]" aria-hidden />
+              <div className="min-w-0 leading-tight">
+                <p className="text-[10px] text-muted-foreground">Retrait</p>
+                <p className="truncate text-[11px] font-semibold">{TOUR_ORDER.pickup}</p>
+              </div>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#00d46a]" aria-hidden />
+              <div className="min-w-0 leading-tight">
+                <p className="text-[10px] text-muted-foreground">Livraison · {TOUR_ORDER.slot}</p>
+                <p className="text-[11px] font-semibold">{TOUR_ORDER.dropoff}</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NavigationView() {
+  return (
+    <div className="product-tour-in relative h-full">
+      <CityMap variant="driver" showRoute progress={0.04} />
+      <div className="absolute inset-x-2 top-2 flex items-center gap-2 rounded-xl bg-[#0e1310] px-2.5 py-2 text-white shadow-lg">
+        <CornerUpLeft className="h-4 w-4 shrink-0 text-[#00d46a]" aria-hidden />
+        <p className="text-[11px] font-semibold leading-tight">Dans 300 m, tournez à gauche</p>
+      </div>
+      <div className="absolute inset-x-2 bottom-2 rounded-xl bg-white px-2.5 py-2 shadow-lg ring-1 ring-black/[0.05]">
+        <p className="text-[11px] font-semibold">Arrivée vers 14 h 21</p>
+        <p className="text-[10px] text-muted-foreground">Rue de la Roquette, Paris 11e</p>
+      </div>
+    </div>
+  );
+}
+
+/** ③ App livreur : la mission arrive, le visiteur démarre la navigation. */
+export function SceneDriver({ onDone, reducedMotion }: SceneProps) {
+  const phase = useTimeline(ARRIVAL_DURATIONS_MS, reducedMotion);
+  const [navigating, setNavigating] = useState(false);
+  const ready = phase >= ARRIVAL_DURATIONS_MS.length;
+  useDelayedCall(navigating, NAVIGATION_VIEW_MS, onDone);
+
+  return (
+    <div className="flex h-full items-center justify-center gap-8 px-4 py-4">
+      <div className="hidden max-w-[150px] lg:block">
+        <p className="text-xs font-semibold text-muted-foreground">App livreur</p>
+        <p className="mt-1 text-sm leading-snug">
+          Karim reçoit la mission sur son téléphone, sans appel ni message.
+        </p>
+      </div>
+
+      <div className="flex h-full w-[230px] shrink-0 flex-col overflow-hidden rounded-[30px] border-[6px] border-[#0e1310] bg-[#f5f8f6] shadow-[0_20px_50px_rgba(14,19,16,0.18)]">
+        <div className="flex items-center justify-between bg-white px-4 pb-1 pt-1.5 text-[10px] font-semibold" aria-hidden>
+          <span>14:02</span>
+          <span className="h-1.5 w-10 rounded-full bg-[#0e1310]" />
+          <span>5G</span>
+        </div>
+
+        <div className="relative min-h-0 flex-1">
+          {navigating ? <NavigationView /> : <MissionDetails phase={phase} />}
+        </div>
+
+        {!navigating && (
+          <div className="bg-white px-3 pb-3 pt-2">
+            <button
+              type="button"
+              disabled={!ready}
+              onClick={() => setNavigating(true)}
+              className={cn(
+                "flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+                ready ? "product-tour-pulse" : "opacity-40"
+              )}
+            >
+              <Navigation className="h-3.5 w-3.5" aria-hidden />
+              Démarrer la navigation
+            </button>
+            <p
+              className={cn(
+                "mt-1.5 flex items-center justify-center gap-1 text-[10px] text-muted-foreground transition-opacity motion-reduce:transition-none",
+                ready ? "opacity-100" : "opacity-0"
+              )}
+              aria-hidden={!ready}
+            >
+              <MousePointerClick className="h-3 w-3" aria-hidden />
+              Cliquez pour partir
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

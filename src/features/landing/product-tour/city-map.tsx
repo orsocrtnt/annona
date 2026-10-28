@@ -7,18 +7,25 @@ type CityMapProps = {
   variant: "driver" | "client";
 };
 
+/** Les rues dépassent le cadre 400 × 300 : le cadrage « meet » peut montrer leurs abords. */
 const STREETS = [
-  "M0 62 H400",
-  "M0 140 H400",
-  "M0 214 H400",
-  "M0 268 H400",
-  "M96 0 V300",
-  "M176 0 V300",
-  "M256 0 V300",
-  "M336 0 V300",
-  "M0 20 L120 140",
-  "M256 140 L400 40",
+  "M-400 62 H800",
+  "M-400 140 H800",
+  "M-400 214 H800",
+  "M-400 268 H800",
+  "M16 -300 V600",
+  "M96 -300 V600",
+  "M176 -300 V600",
+  "M256 -300 V600",
+  "M336 -300 V600",
+  "M416 -300 V600",
+  "M-100 -100 L120 140",
+  "M256 140 L520 -40",
 ] as const;
+
+/** Suivi : tout le trajet ; navigation : zoom sur le livreur. */
+const CLIENT_VIEWBOX = "146 30 220 262";
+const DRIVER_VIEWBOX_SIZE = { width: 170, height: 230 } as const;
 
 const PARKS = [
   { x: 20, y: 76, width: 60, height: 50 },
@@ -36,24 +43,28 @@ export function CityMap({ progress, showRoute, variant }: CityMapProps) {
   const heading = (Math.atan2(ahead.y - behind.y, ahead.x - behind.x) * 180) / Math.PI + 90;
   const start = TOUR_ROUTE[0] ?? position;
   const end = TOUR_ROUTE[TOUR_ROUTE.length - 1] ?? position;
+  const viewBox =
+    variant === "client"
+      ? CLIENT_VIEWBOX
+      : `${position.x - DRIVER_VIEWBOX_SIZE.width / 2} ${position.y - DRIVER_VIEWBOX_SIZE.height * 0.7} ${DRIVER_VIEWBOX_SIZE.width} ${DRIVER_VIEWBOX_SIZE.height}`;
 
   return (
     <svg
-      viewBox="0 0 400 300"
-      preserveAspectRatio="xMidYMid slice"
+      viewBox={viewBox}
+      preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label={
         variant === "driver"
           ? "Navigation du livreur : trajet de l'entrepôt d'Ivry à la rue de la Roquette"
           : "Carte du suivi : le livreur avance vers l'adresse de livraison"
       }
-      className="h-full w-full"
+      className="h-full w-full bg-[#eef4f0]"
     >
-      <rect width="400" height="300" fill="#eef4f0" />
+      <rect x="-400" y="-300" width="1200" height="900" fill="#eef4f0" />
       {PARKS.map((park) => (
         <rect key={`${park.x}-${park.y}`} {...park} rx="8" fill="#d6efdf" />
       ))}
-      <path d="M0 176 C 110 160, 210 236, 400 200" fill="none" stroke="#cfe3f1" strokeWidth="18" strokeLinecap="round" />
+      <path d="M-400 176 H0 C 110 160, 210 236, 400 200 H800" fill="none" stroke="#cfe3f1" strokeWidth="18" strokeLinecap="round" />
       {STREETS.map((street) => (
         <path key={street} d={street} fill="none" stroke="#ffffff" strokeWidth="8" strokeLinecap="round" />
       ))}
