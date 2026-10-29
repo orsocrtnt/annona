@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import {
@@ -36,7 +37,7 @@ export async function PATCH(request: Request) {
   const parsed = companyTariffSettingsSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Données invalides", details: parsed.error.flatten() },
+      { error: zodIssueMessage(parsed.error, "Données invalides"), details: parsed.error.flatten() },
       { status: 400 }
     );
   }

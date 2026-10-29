@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { ConversationError } from "@/domains/order-conversation/order-conversation.service";
 import { NextResponse } from "next/server";
 import { requireDriverRole } from "@/lib/api/auth-guard";
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     const parsed = updateDriverLocationSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Données invalides" },
+        { error: zodIssueMessage(parsed.error, "Données invalides") },
         { status: 400 }
       );
     }

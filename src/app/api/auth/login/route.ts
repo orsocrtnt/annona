@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { resolveOnboardingLoginPath } from "@/domains/onboarding/onboarding.service";
 import { after, NextResponse } from "next/server";
 import { assertAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Données invalides" },
+        { error: zodIssueMessage(parsed.error, "Données invalides") },
         { status: 400 }
       );
     }

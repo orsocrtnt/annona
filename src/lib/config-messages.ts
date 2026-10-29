@@ -31,7 +31,7 @@ const RAW_ZOD_MESSAGE = /^(Invalid |Unrecognized key|Too (small|big)|Required|Ex
  * Message lisible d'un refus de validation : les messages écrits en français dans les schémas passent tels quels ;
  * un message brut de Zod (valeur d'énumération, type attendu, clé inconnue) devient cause + action, sans nom technique.
  */
-function readableMessage(message: string, label?: string): string {
+export function readableMessage(message: string, label?: string): string {
   if (!RAW_ZOD_MESSAGE.test(message)) return message;
   if (/^Invalid option|expected one of/i.test(message)) return "valeur non reconnue. Choisissez l'une des options proposées dans la page.";
   if (/expected number/i.test(message)) return "saisissez un nombre.";
@@ -67,4 +67,23 @@ export function billingFailureMessage(error: unknown, fallback: string): string 
   if (code === "BILLING_SANDBOX_REQUIRED" || code === "BILLING_WEBHOOK_SECRET_REQUIRED") return CONFIG_MESSAGES.PAYMENT_NOT_CONFIGURED;
   if (code === "BILLING_PROVIDER_UNAVAILABLE") return CONFIG_MESSAGES.PAYMENT_PROVIDER_UNAVAILABLE;
   return fallback;
+}
+
+/**
+ * Message d'un refus de validation pour le client : le premier message écrit en français dans le schéma passe tel quel ;
+ * un message brut de Zod devient une phrase française avec l'action à faire, jamais « Invalid input » ni « expected ».
+ * `labels` nomme le champ fautif (clé = premier élément du chemin).
+ */
+export function zodIssueMessage(
+  error: { issues: ReadonlyArray<{ message: string; path: ReadonlyArray<PropertyKey> }> },
+  fallback: string,
+  labels: Record<string, string> = {}
+): string {
+  const issue = error.issues[0];
+  if (!issue) return fallback;
+  const label = labels[String(issue.path[issue.path.length - 1] ?? "")] ?? labels[String(issue.path[0] ?? "")];
+  if (!RAW_ZOD_MESSAGE.test(issue.message)) return issue.message;
+  const message = readableMessage(issue.message, label);
+  if (label) return `${label} : ${message}`;
+  return `${message.charAt(0).toUpperCase()}${message.slice(1)}`;
 }

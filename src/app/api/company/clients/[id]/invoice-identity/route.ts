@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getClientInvoiceIdentity, updateClientInvoiceIdentity } from "@/domains/invoice/facturx/facturx.service";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
@@ -34,7 +35,7 @@ export async function PUT(request: Request, { params }: Params) {
 
     const parsed = clientInvoiceIdentitySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Données invalides" }, { status: 400 });
+      return NextResponse.json({ error: zodIssueMessage(parsed.error, "Données invalides") }, { status: 400 });
     }
     const { id } = await params;
     let saved;

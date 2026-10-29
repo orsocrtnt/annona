@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { prisma } from "@/services/prisma/client";
 import { createClientOrder } from "@/domains/order/order.service";
 import { assertDeliveryCategoryEnabled } from "@/domains/company/company-settings.service";
@@ -43,7 +44,7 @@ export async function analyzeOrderMessage(
   if (!isOrderIntakeConfigured(env)) return { status: "not_configured" };
 
   const parsed = orderIntakeRequestSchema.safeParse({ text: input.text, sender: input.sender ?? undefined });
-  if (!parsed.success) return { status: "invalid", message: parsed.error.issues[0]?.message ?? "Message invalide." };
+  if (!parsed.success) return { status: "invalid", message: zodIssueMessage(parsed.error, "Message invalide.") };
   const { text, sender } = parsed.data;
 
   const provider = deps.provider

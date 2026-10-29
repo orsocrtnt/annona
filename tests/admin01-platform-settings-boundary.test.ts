@@ -80,6 +80,7 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/lib/api/auth-guard": auth("SUPER_ADMIN"),
     "@/domains/company/company-settings.service": settingsService,
     "@/lib/validations/company-settings": validation,
+    "@/lib/config-messages": { zodIssueMessage: () => "invalide" },
   });
   const billing = load("src/app/api/company/billing-settings/route.ts", {
     "next/server": { NextResponse },
@@ -88,6 +89,8 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/domains/company/billing-settings.service": billingService,
     "@/domains/invoice/facturx/facturx.service": { getCompanyEinvoicing: async () => null },
     "@/domains/invoice/facturx/facturx-readiness": { checkSellerReadiness: () => [] },
+    "@/lib/validations/einvoicing": { readinessFieldErrors: () => ({}) },
+    "@/lib/config-messages": { zodIssueMessage: () => "invalide" },
     "@/lib/validations/billing-settings": validation,
   });
   function tracked(method: string) {
@@ -111,6 +114,7 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/lib/api/auth-guard": auth("DISPATCHER"),
     "@/domains/company/company-settings.service": settingsService,
     "@/lib/validations/company-settings": validation,
+    "@/lib/config-messages": { zodIssueMessage: () => "invalide" },
   });
   const dispatcherBilling = load("src/app/api/company/billing-settings/route.ts", {
     "next/server": { NextResponse },
@@ -119,6 +123,8 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/domains/company/billing-settings.service": billingService,
     "@/domains/invoice/facturx/facturx.service": { getCompanyEinvoicing: async () => null },
     "@/domains/invoice/facturx/facturx-readiness": { checkSellerReadiness: () => [] },
+    "@/lib/validations/einvoicing": { readinessFieldErrors: () => ({}) },
+    "@/lib/config-messages": { zodIssueMessage: () => "invalide" },
     "@/lib/validations/billing-settings": validation,
   });
   for (const response of [
@@ -136,6 +142,7 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/lib/api/auth-guard": auth("COMPANY_ADMIN"),
     "@/domains/company/company-settings.service": settingsService,
     "@/lib/validations/company-settings": validation,
+    "@/lib/config-messages": { zodIssueMessage: () => "invalide" },
   });
   const miniBilling = load("src/app/api/company/billing-settings/route.ts", {
     "next/server": { NextResponse },
@@ -144,6 +151,8 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/domains/company/billing-settings.service": billingService,
     "@/domains/invoice/facturx/facturx.service": { getCompanyEinvoicing: async () => null },
     "@/domains/invoice/facturx/facturx-readiness": { checkSellerReadiness: () => [] },
+    "@/lib/validations/einvoicing": { readinessFieldErrors: () => ({}) },
+    "@/lib/config-messages": { zodIssueMessage: () => "invalide" },
     "@/lib/validations/billing-settings": validation,
   });
   assert.equal((await companySettings.GET!()).status, 200);

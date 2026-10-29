@@ -207,7 +207,7 @@ function loadReal(file: string, overrides: Record<string, unknown>, cache: Recor
 /** Seule frontière simulée : Prisma (une entreprise en mémoire), l'authentification et la réponse HTTP. */
 function einvoicing(role: Role, stored: { einvoicing?: Record<string, unknown>; billing?: Record<string, unknown>; issuedInvoices?: number; failWrite?: "conflict" | "taken" } = {}) {
   const company = {
-    id: "company_a", legalName: null, siren: null, siret: null, billingAddress: null, billingPostalCode: null, billingCity: null, country: null,
+    id: "company_a", legalName: null, siren: "732829320", siret: null, billingAddress: "12 rue de l'Exemple", billingPostalCode: "75011", billingCity: "Paris", country: "FR",
     settings: { ...(stored.einvoicing ? { einvoicing: stored.einvoicing } : {}), ...(stored.billing ? { billing: { invoice: stored.billing } } : {}) } as Record<string, unknown>,
     updatedAt: new Date(1000),
   };
@@ -242,6 +242,7 @@ function einvoicing(role: Role, stored: { einvoicing?: Record<string, unknown>; 
   return { route, patch, patchBilling, writes, storedEinvoicing, company };
 }
 
+const MENTIONS = { latePenaltyText: "Trois fois le taux légal.", earlyPaymentDiscountText: "Pas d'escompte." };
 const validBody = {
   identity: { legalName: "Coursiers Fictifs SAS", siren: "732829320", siret: "73282932000074", billingAddress: "12 rue de l'Exemple", billingPostalCode: "75011", billingCity: "Paris", country: "FR" },
   einvoicing: { vatNumber: "FR44732829320", latePenaltyText: "Trois fois le taux d'intérêt légal.", earlyPaymentDiscountText: "Pas d'escompte." },
@@ -304,21 +305,32 @@ test("mentions légales : le taux de TVA des réglages décide de la mention exi
 });
 
 test("réglages de facturation : passer la TVA de 0 à 20 % avec la facture électronique activée et sans n° de TVA est refusé, clairement", async () => {
-  const sans = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true, vatExemptionReason: "TVA non applicable, art. 293 B du CGI" }, billing: { vatRate: 0 } });
+  const sans = einvoicing("COMPANY_ADMIN", { einvoicing: { ...MENTIONS, enabled: true, vatExemptionReason: "TVA non applicable, art. 293 B du CGI" }, billing: { vatRate: 0 } });
   const refused = await sans.patchBilling({ vatRate: 20 });
   assert.equal(refused.status, 400);
   assert.match((refused.body as { error: string }).error, /N° de TVA/);
   assert.equal(sans.writes.length, 0);
   assert.equal((await sans.patchBilling({ vatRate: 0 })).status, 200, "taux inchangé : jamais bloqué");
 
-  const inverse = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true, vatNumber: "FR44732829320" }, billing: { vatRate: 20 } });
+  const inverse = einvoicing("COMPANY_ADMIN", { einvoicing: { ...MENTIONS, enabled: true, vatNumber: "FR44732829320" }, billing: { vatRate: 20 } });
   const refusedInverse = await inverse.patchBilling({ vatRate: 0 });
   assert.equal(refusedInverse.status, 400);
   assert.match((refusedInverse.body as { error: string }).error, /exonération/);
 
+  const tenToTwenty = einvoicing("COMPANY_ADMIN", { einvoicing: { ...MENTIONS, enabled: true }, billing: { vatRate: 20 } });
+  const refusedTen = await tenToTwenty.patchBilling({ vatRate: 10 });
+  assert.equal(refusedTen.status, 400, "taux 20 % -> 10 % sans n° de TVA : configuration non prête");
+  assert.ok((refusedTen.body as { fieldErrors: Record<string, string> }).fieldErrors.vatNumber);
+  assert.equal((await tenToTwenty.patchBilling({ vatRate: 20 })).status, 200, "taux inchangé : accepté malgré des données héritées incomplètes");
+  assert.equal(tenToTwenty.writes.length, 1);
+  const invalidRate = await tenToTwenty.patchBilling({ vatRate: "abc" });
+  assert.equal(invalidRate.status, 400);
+  assert.match((invalidRate.body as { error: string }).error, /^Taux de TVA : saisissez un nombre/);
+  assert.doesNotMatch((invalidRate.body as { error: string }).error, /Invalid|expected/);
+
   const idle = einvoicing("COMPANY_ADMIN", { billing: { vatRate: 0 } });
   assert.equal((await idle.patchBilling({ vatRate: 20 })).status, 200, "facture électronique non activée : accepté");
-  const ok = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true, vatNumber: "FR44732829320" }, billing: { vatRate: 0 } });
+  const ok = einvoicing("COMPANY_ADMIN", { einvoicing: { ...MENTIONS, enabled: true, vatNumber: "FR44732829320" }, billing: { vatRate: 0 } });
   assert.equal((await ok.patchBilling({ vatRate: 20 })).status, 200);
 });
 
@@ -378,6 +390,7 @@ function identity(role: Role, companyId = "company_a") {
       updateClientInvoiceIdentity: async (company: string, clientId: string, value: unknown) => (clients[clientId] === company ? value : null),
     },
     "@/lib/validations/einvoicing": require("../src/lib/validations/einvoicing"),
+    "@/lib/config-messages": require("../src/lib/config-messages"),
   });
   const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
   return {

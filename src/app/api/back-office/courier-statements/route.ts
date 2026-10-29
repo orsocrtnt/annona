@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { courierStatementQuerySchema, courierStatementToCsv } from "@/domains/delivery/courier-statement";
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
   const parsed = courierStatementQuerySchema.safeParse(Object.fromEntries(url.searchParams));
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Période invalide", details: parsed.error.flatten() },
+      { error: zodIssueMessage(parsed.error, "Période invalide"), details: parsed.error.flatten() },
       { status: 400 }
     );
   }

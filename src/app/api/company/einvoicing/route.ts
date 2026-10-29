@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { checkSellerAdvisories, checkSellerReadiness } from "@/domains/invoice/facturx/facturx-readiness";
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
@@ -38,7 +39,7 @@ export async function PATCH(request: Request) {
     const parsed = companyEinvoicingUpdateSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
       return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Données invalides", fieldErrors: zodFieldErrors(parsed.error) },
+        { error: zodIssueMessage(parsed.error, "Données invalides"), fieldErrors: zodFieldErrors(parsed.error) },
         { status: 400 }
       );
     }

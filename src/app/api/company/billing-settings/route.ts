@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
@@ -8,6 +9,9 @@ import {
   updateCompanyBillingSettings,
 } from "@/domains/company/billing-settings.service";
 import { companyBillingSettingsSchema } from "@/lib/validations/billing-settings";
+import { readinessFieldErrors } from "@/lib/validations/einvoicing";
+
+const BILLING_FIELD_LABELS = { courier: "Tarifs course", invoice: "Facturation", vatRate: "Taux de TVA", defaultDueDays: "Délai de paiement", referencePrefix: "Préfixe des références" };
 
 export async function GET() {
   return withApiHandler(async () => {
@@ -43,22 +47,26 @@ export async function PATCH(request: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: parsed.error.issues[0]?.message ?? "Données invalides",
+          error: zodIssueMessage(parsed.error, "Données invalides", BILLING_FIELD_LABELS),
           details: parsed.error.flatten(),
         },
         { status: 400 }
       );
     }
 
-    // Le taux de TVA décide de la mention exigée par la facture électronique (n° de TVA ou motif d'exonération).
+    // Taux de TVA modifié avec la facture électronique activée : la configuration qui en résulte doit être prête
+    // (n° de TVA au-dessus de 0 %, motif d'exonération à 0 %). Un PATCH qui ne touche pas au taux n'est jamais bloqué.
     const einvoicing = await getCompanyEinvoicing(companyId);
     if (einvoicing?.einvoicing.enabled === true) {
       const previousRate = (await getCompanyBillingSettings(companyId)).invoice.vatRate;
-      if (previousRate > 0 !== parsed.data.invoice.vatRate > 0) {
-        const vatIssue = checkSellerReadiness({ ...einvoicing, vatRate: parsed.data.invoice.vatRate }).find((issue) => issue.rule === "BR-S-02" || issue.rule === "BR-E-10");
-        if (vatIssue) {
+      if (previousRate !== parsed.data.invoice.vatRate) {
+        const issues = checkSellerReadiness({ ...einvoicing, vatRate: parsed.data.invoice.vatRate });
+        if (issues.length > 0) {
           return NextResponse.json(
-            { error: `Enregistrement refusé : ${vatIssue.message} Renseignez-la d'abord dans « Mentions légales et Factur-X », ou désactivez la facture électronique.`, fieldErrors: { vatRate: vatIssue.message } },
+            {
+              error: `Enregistrement refusé : ${issues[0]!.message} Complétez d'abord « Mentions légales et Factur-X », ou désactivez la facture électronique.`,
+              fieldErrors: readinessFieldErrors(issues),
+            },
             { status: 400 }
           );
         }

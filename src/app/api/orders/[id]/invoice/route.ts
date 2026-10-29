@@ -1,3 +1,4 @@
+import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createOrderInvoice, markOrderInvoicePaid } from "@/domains/invoice/invoice.service";
@@ -21,7 +22,7 @@ export async function POST(
   const parsed = createOrderInvoiceSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Données invalides", details: parsed.error.flatten() },
+      { error: zodIssueMessage(parsed.error, "Données invalides"), details: parsed.error.flatten() },
       { status: 400 }
     );
   }
