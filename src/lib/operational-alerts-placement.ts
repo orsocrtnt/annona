@@ -35,7 +35,8 @@ export function alertModeForPath(space: AlertSpace, pathname: string): AlertMode
   return alertPlacementForPath(space, pathname).mode;
 }
 
-export type PlacedAlert = { missionActive?: boolean; orderId?: string; deliveryId?: string | null };
+/** orderDeliveryIds : livraisons de la commande de l'alerte (un incident porte sur la commande, pas sur une livraison). */
+export type PlacedAlert = { missionActive?: boolean; orderId?: string; deliveryId?: string | null; orderDeliveryIds?: string[] };
 
 /** Sépare les alertes affichées en haut de la page de celles rangées derrière l'accès « Alertes ». */
 export function splitAlertsForMode<T extends PlacedAlert>(rows: T[], mode: AlertMode, context?: AlertContext): { top: T[]; behindAccess: T[] } {
@@ -43,7 +44,7 @@ export function splitAlertsForMode<T extends PlacedAlert>(rows: T[], mode: Alert
   if (mode === "floating") return { top: [], behindAccess: rows };
   const onTop = mode === "mission"
     ? (row: T) => Boolean(row.missionActive)
-    : (row: T) => Boolean(context && ((context.orderId && row.orderId === context.orderId) || (context.deliveryId && row.deliveryId === context.deliveryId)));
+    : (row: T) => Boolean(context && ((context.orderId && row.orderId === context.orderId) || (context.deliveryId && (row.deliveryId === context.deliveryId || row.orderDeliveryIds?.includes(context.deliveryId)))));
   return { top: rows.filter(onTop), behindAccess: rows.filter(row => !onTop(row)) };
 }
 

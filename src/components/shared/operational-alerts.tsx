@@ -16,7 +16,7 @@ async function request<T>(url: string, input?: unknown): Promise<T> {
   const response = await fetch(url, input ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) } : {});
   const json = await response.json(); if (!response.ok) throw new AlertRequestError(json.error ?? "Alertes indisponibles.", response.status); return json.data;
 }
-type AlertRow = Pick<Alert, "id" | "orderId" | "deliveryId" | "reference" | "title" | "deadline" | "state"> & { customerName?: string | null; place?: string | null; missionActive?: boolean };
+type AlertRow = Pick<Alert, "id" | "orderId" | "deliveryId" | "reference" | "title" | "deadline" | "state"> & { customerName?: string | null; place?: string | null; missionActive?: boolean; orderDeliveryIds?: string[] };
 // Une alerte se lit comme une phrase : type, client, lieu, échéance. Les références restent pour les lecteurs d'écran et l'infobulle.
 function AlertRowContent({ row, dispatch }: { row: AlertRow; dispatch: boolean }) {
   const late = row.id.startsWith("late:");
