@@ -99,6 +99,7 @@ test("BILL : permissions dédiées émission et règlement ; commandes seules re
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": { requireStaffRole: async (permission: string) => permissions.includes(permission) ? { context: {} } : { error: NextResponse.json({}, { status: 403 }) }, requireRole: () => null, getCompanyId: () => "company" },
     "@/domains/invoice/invoice.service": { createOrderInvoice: async () => { calls++; return {}; }, markOrderInvoicePaid: async () => { calls++; return {}; } },
+    "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
     "@/lib/validations/invoice": invoiceValidation,
   });
   const request = (body: unknown) => new Request("http://test", { method: "POST", body: JSON.stringify(body) });

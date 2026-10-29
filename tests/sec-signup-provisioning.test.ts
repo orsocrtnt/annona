@@ -76,7 +76,7 @@ test("synchronisation : accountType company et nom d'entreprise ne créent ni en
 
 function routeDeps(authUser: unknown, service: AuthService) {
   return {
-    zod, "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation,
+    zod, "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation, "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
     "@/lib/auth/normalize-email": normalize,
     "@/services/supabase/server": { createClient: async () => ({ auth: {
       signInWithPassword: async () => ({ data: { user: authUser }, error: null }),

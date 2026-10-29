@@ -31,6 +31,7 @@ function load(spec: (typeof files)[number], role: string, calls: string[]) {
   }).outputText;
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse },
+    "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
     "@/lib/api/auth-guard": {
       requireStaffRole: async () => {
         calls.push("staff");

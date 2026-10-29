@@ -116,6 +116,7 @@ test("connexion démo : préparer une session isolée puis résoudre son adminis
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse, after: () => undefined },
     "@/lib/auth/account-access": { assertAccountActive: () => {}, AccountUnavailableError: class extends Error {} },
+    "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
     "@/lib/validations/auth": { loginSchema: { safeParse: () => ({ success: true, data: { email: "demo@fixture.invalid", password: "fixture-password" } }) } },
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value },
     "@/services/supabase/server": { createClient: async () => ({ auth: {

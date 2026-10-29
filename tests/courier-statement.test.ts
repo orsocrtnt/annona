@@ -67,6 +67,7 @@ function loadRoute(role: string, calls: Record<string, unknown>[]) {
   const js = ts.transpileModule(readFileSync(resolve("src/app/api/back-office/courier-statements/route.ts"), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const deps: Record<string, unknown> = {
     "next/server": { NextResponse },
+    "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
     "@/lib/api/auth-guard": {
       requireStaffRole: async (permission: string) => {
         calls.push({ permission });

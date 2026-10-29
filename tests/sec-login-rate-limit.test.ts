@@ -220,6 +220,7 @@ function loadLoginRoute(options: { blocked?: number; busy?: boolean; signIn: "ok
   const deps: Record<string, unknown> = {
     "next/server": { NextResponse, after: (task: () => Promise<void>) => { afterTasks.push(task); } },
     "@/lib/auth/account-access": { assertAccountActive: () => {}, AccountUnavailableError: class extends Error {} },
+    "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
     "@/lib/validations/auth": { loginSchema: { safeParse: (body: { email: string; password: string }) => ({ success: true, data: body }) } },
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value.trim().toLowerCase() },
     "@/services/supabase/server": { createClient: async () => ({ auth: {
