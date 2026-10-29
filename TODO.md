@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**71 tâches terminées sur 105 — 68 %**
+**72 tâches terminées sur 105 — 69 %**
 
-`██████████████░░░░░░` · 34 tâches restantes
+`██████████████░░░░░░` · 33 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -159,7 +159,7 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 - **Absent du code au 21 octobre :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet. *Au 26 octobre, tous ont une tranche locale (voir SAAS-01B/02/03/04, SALES-1, COST-1, ADMIN-1) sauf les factures d'abonnement et l'attribution commerciale persistée.*
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
-## Matrice des 34 tâches ouvertes
+## Matrice des 33 tâches ouvertes
 
 Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées (DISPATCH-3 close le 27 octobre), prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
 
@@ -193,8 +193,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | POD-2 | A | Implémenté et recetté (29 octobre) ; essai sur téléphone réel, règles pilotables depuis l'interface. | MOB-01C. | Élevée · GPT‑6.1 Sol |
 | OPS-FIAB | A+B | Implémenté (29 octobre) ; déclenchement réel du workflow, `after()` sur Vercel, Node 22, index en préproduction. | Propriétaire (secrets, Vercel). | Moyenne · GPT‑6 Luna |
 | SEC-AUDIT | A+B | Implémenté et recetté (29 octobre) ; CSP bloquante, migration et secrets de préproduction, rattachement par e-mail. | Propriétaire (migration, secrets). | Élevée · GPT‑6 Astra |
-| DISPATCH-4 | A | Outil de dispatch avancé : score pondéré réglable, temps de trajet réel, tournées, suggestions, réoptimisation. | Périmètre à cadrer avec le propriétaire. | Élevée · GPT‑6 Astra |
-| LANDING-2 | A+B | Landing remplacée par LANDING-3 (validée le 29 octobre) ; reste la page de connexion, minimaliste et très visuelle. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
+| DISPATCH-4 | A | Tranche 1 (3 meilleurs livreurs, temps de trajet, affectation en un clic) livrée et vérifiée ; restent les tournées, puis imprévus et mesure. | Aucune pour le code ; prix de l'option : propriétaire. | Élevée · GPT‑6 Astra |
 | MOBILE-WEB | A+B | Revoir toute l'application au format téléphone, dans le navigateur. | Après DESIGN-2, MAP-INTERACTION et UX-ALERTES. | Élevée · GPT‑6.1 Sol |
 | CROSS-BROWSER | A+B | Même rendu sur Edge, Safari, Firefox et Chrome (écart constaté sur Edge). | Après LANDING-2 et MOBILE-WEB ; capture de l'écart à fournir par le propriétaire. | Moyenne · GPT‑6.1 Sol |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
@@ -1485,6 +1484,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - **Offre** : grille actuelle conservée et testée. Piste du propriétaire : un seul « Dispatch automatique » rendu intelligent, un peu plus cher. Proposition de l'orchestrateur, à valider par le propriétaire avant tout changement de prix : une option unique « Dispatch intelligent » qui remplace le dispatch automatique, à 39 € au lieu de 29 € en Starter, toujours incluse en Pro et Business. L'offre pilote après les 4 semaines gratuites reste à décider (OFFER-1).
 
   État au 29 octobre 2026 : tranche 1 livrée (les 3 meilleurs livreurs avec un score expliqué, temps de trajet OSRM avec cache et repli, affectation en un clic sans double affectation, testée sur PostgreSQL réel, mode Suggestion / Automatique). Non vérifiée dans un navigateur : la spec `dispatch-suggestions` est obsolète. Restent à faire : les tournées et la tranche 2 (imprévus, mesure). Non cochée.
+  - Mise à jour du 29 octobre 2026 : la tranche 1 est vérifiée dans un navigateur, sur le build de production (spec `dispatch-suggestions` remise à jour par E2E-MAJ, verte). Le cadrage est complet ; seule décision restante, non bloquante : le prix de l'option « Dispatch intelligent » (39 € au lieu de 29 € en Starter). Prochaine tranche : les tournées (piste 3).
 
 - [x] **CONFIG-MSG — Expliquer clairement pourquoi une configuration échoue.** Demande du propriétaire du 28 octobre 2026 : quand un réglage ou une fonction refuse de fonctionner pendant la configuration, l'écran doit dire précisément pourquoi et quoi faire, au lieu d'un message général. Cas constaté : en préproduction, le Factur-X d'une facture de démo restait indisponible côté client (« Votre prestataire doit compléter ses informations de facturation ») alors que les mentions légales étaient remplies. La vraie cause, trouvée en reproduisant le cas, était le « Motif d'exonération de TVA » manquant (règle EN 16931 BR-E-10 : les factures de démo sont sans TVA).
   1. Factur-X : lister côté back-office chaque champ manquant, avec un lien direct vers le champ ; signaler dès l'enregistrement des mentions légales ce qui bloquera l'export (exonération de TVA pour des factures sans TVA, IBAN pour un paiement par virement…) ; côté client, garder un message sobre, sans détail interne.
@@ -1553,7 +1553,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   État : livrée et vérifiée le 29 octobre 2026. Si la facture électronique est activée : taux de TVA > 0 → n° de TVA obligatoire ; taux = 0 → motif d'exonération obligatoire ; le changement de taux est contrôlé ; une entreprise en PDF seul n'est jamais bloquée. Tests de routes ne simulant que Prisma ; E2E `facturx` 3/3 ; contre-vérification Codex OK.
 
-- [ ] **LANDING-2 — Refaire la landing et la page de connexion, minimalistes et très visuelles.** Demande du propriétaire du 28 octobre 2026. La page de connexion est jugée laide. La landing est une « bonne base », mais elle a trop de texte et en fait trop. Objectif : quelque chose de plus original, qui reste efficace et « tac tac ». Le visiteur doit comprendre en quelques secondes ce que fait TutelLiv, pourquoi il est là, ce que l'outil va lui apporter, et où se connecter, voir la démo ou contacter quelqu'un. Tous les sujets sont abordés, mais de façon très claire et minimaliste.
+- [x] **LANDING-2 — Refaire la landing et la page de connexion, minimalistes et très visuelles.** Demande du propriétaire du 28 octobre 2026. La page de connexion est jugée laide. La landing est une « bonne base », mais elle a trop de texte et en fait trop. Objectif : quelque chose de plus original, qui reste efficace et « tac tac ». Le visiteur doit comprendre en quelques secondes ce que fait TutelLiv, pourquoi il est là, ce que l'outil va lui apporter, et où se connecter, voir la démo ou contacter quelqu'un. Tous les sujets sont abordés, mais de façon très claire et minimaliste.
   - **Inspiration** : Apple, Tesla, Uber. Grands visuels produit (les trois espaces : dispatch, portail client, app livreur), peu de mots, une idée par écran, beaucoup d'air, mouvement sobre. Le propriétaire laisse carte blanche et attend une proposition originale, pas un modèle de SaaS générique.
   - **Landing** : une promesse en une phrase, une preuve visuelle immédiate (produit en action), 3 ou 4 bénéfices au plus, la mini-démo (DEMO-3) mise en valeur, les tarifs en un coup d'œil, un contact facile, et des appels à l'action toujours visibles (Démo, Se connecter, Contact).
   - **Connexion** : page sobre et belle, cohérente avec la landing, rapide sur mobile, avec les messages d'erreur clairs (CONFIG-MSG) et l'accès à la démo.
@@ -1567,6 +1567,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026 ; prolonge GROWTH-1 et la mini-démo DEMO-3 ; mode sombre avec DESIGN-2. Choix de la direction visuelle : propriétaire (questionnaire).
 
   État : livrée le 29 octobre 2026 (lot L2, direction « Ligne de mission » choisie par l'orchestrateur, connexion « Trois espaces »), **rejetée par le propriétaire** (« j'aime pas du tout »). Reprise dans LANDING-3.
+  - Close le 29 octobre 2026 : la landing est remplacée par LANDING-3 (validée) et le propriétaire valide la page de connexion actuelle telle quelle. Case cochée.
 
 - [ ] **MOBILE-WEB — Revoir toute l'application au format téléphone, dans le navigateur.** Demande du propriétaire du 29 octobre 2026 : passer en revue chaque page des trois espaces (administration et dispatch, portail client, app livreur), ainsi que le site public et `/admin`, sur un écran de téléphone (390 px, et 360 px pour les petits Android), dans le navigateur, sans application native.
   - Inventaire page par page : ce qui déborde, ce qui est trop petit à toucher (cibles d'au moins 44 px), les tableaux illisibles, les menus, les cartes, les formulaires et les modales.
