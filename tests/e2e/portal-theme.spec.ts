@@ -97,10 +97,10 @@ test("les pages principales du portail restent lisibles en sombre et les cibles 
   }
 });
 
-test("les autres espaces ne sont pas assombris par le thème du système", async ({ page }) => {
+test("le site public suit aussi le thème du système (LANDING-2 : plus aucun espace exclu du Sombre)", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
-  expect(await page.locator("html").getAttribute("data-theme")).toBeNull();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
 test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème reste accessible", async ({ page }) => {
@@ -123,9 +123,12 @@ test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème res
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-/** Enregistre, à chaque image (avant peinture), le chemin, le thème et la présence du portail. */
+/**
+ * Enregistre, à chaque image (avant peinture), le chemin, le thème et la présence du portail. Script
+ * d'initialisation : il repart à chaque chargement de document, dès la première image.
+ */
 async function recordFrames(page: Page) {
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     const w = window as unknown as { __frames: { path: string; theme: string | null; portal: boolean; sora: boolean }[] };
     w.__frames = [];
     const tick = () => {
@@ -153,7 +156,7 @@ test("navigation client portail ↔ dashboard : le Dark suit l'utilisateur sans 
   await openPortal(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
-  // Portail → dashboard par clic (barre de démonstration, router.push) : aucun rechargement complet.
+  // Portail → dashboard par la barre de démonstration : chargement complet depuis AUTH-ROLE (garde serveur).
   // DESIGN-2 : le back-office est migré, il reste en Dark à chaque image ; seule la police Sora est propre au portail.
   await recordFrames(page);
   await switchPersona(page, "Administrateur");
@@ -167,14 +170,12 @@ test("navigation client portail ↔ dashboard : le Dark suit l'utilisateur sans 
   expect(seen.filter((f) => !f.portal && f.sora), "image hors portail en Sora").toEqual([]);
 
   // Dashboard → portail : le Dark est posé dès la première image du portail (aucun éclair clair).
-  await recordFrames(page);
   await switchPersona(page, "Client");
   await page.waitForURL("**/portal");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   seen = await frames(page);
-  expect(seen.filter((f) => f.portal && f.theme !== "dark"), "image du portail sans le Dark").toEqual([]);
-  // Le recorder a survécu : les deux trajets étaient des navigations client, pas des chargements de page.
-  expect(await page.evaluate(() => typeof (window as unknown as { __frames?: unknown }).__frames)).toBe("object");
+  expect(seen.length).toBeGreaterThan(0);
+  expect(seen.filter((f) => f.theme !== "dark"), "image du portail sans le Dark").toEqual([]);
 });
 
 test("les boutons de la barre du portail font 44 px sans grandir la barre (58 px)", async ({ page }) => {

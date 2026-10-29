@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { Calculator } from "lucide-react";
 import { portalApi } from "./api";
 import { formatCurrency } from "./utils";
 
@@ -51,7 +51,7 @@ export function CourierEstimateBanner(props: CourierEstimateBannerProps) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-brand/30 bg-brand-subtle px-4 py-3">
       <div className="flex items-center gap-2 text-sm">
-        <Sparkles className="h-4 w-4 text-brand" />
+        <Calculator className="h-4 w-4 text-brand" aria-hidden />
         <div>
           <p className="font-medium text-foreground">Estimation indicative</p>
           {data.distanceKm != null && (

@@ -22,7 +22,7 @@ export async function PATCH(
   const parsed = assignDeliverySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Données invalides", details: parsed.error.flatten() },
+      { error: "Données invalides" },
       { status: 400 }
     );
   }

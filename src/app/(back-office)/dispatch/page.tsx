@@ -21,7 +21,7 @@ import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-w
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
 import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { dispatchSearchText, getDispatchColumns } from "@/features/back-office/dispatch-columns";
-import { MapPin, MessageSquareText, Radio, RefreshCw, Settings2, Sparkles, Truck } from "lucide-react";
+import { MapPin, MessageSquareText, Radio, RefreshCw, Route, Settings2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DeliveryCategory } from "@prisma/client";
@@ -182,7 +182,7 @@ function DispatcherDashboardContent() {
               title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
               onClick={handleAutoDispatch}
             >
-              <Sparkles className="mr-2 h-4 w-4" />
+              <Route className="mr-2 h-4 w-4" aria-hidden />
               Lancer auto-dispatch
             </Button>
           )}

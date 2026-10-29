@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { MISSING_TEST_DATA, readTestData } from "./helpers/test-data";
 
-// Spec écrite sans être lancée (tranche Factur-X du 28/10/2026). Comptes de recette créés sur la base
+// Tranche Factur-X du 28/10/2026, lancée sur le build de production le 29/10/2026. Comptes de recette créés sur la base
 // de développement par `npm run e2e:role-accounts -- setup` ; aucune donnée de production.
 type Account = { email: string; password: string };
 const accounts = (): Record<"billingAdminA" | "billingAdminB", Account> | null => {

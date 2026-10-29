@@ -33,7 +33,7 @@ export async function PATCH(request: Request) {
 
   const parsed = proofRulesPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: firstFieldMessage(parsed.error.flatten(), PROOF_RULE_LABELS, "Paramètres de preuve invalides : choisissez au moins un réglage à modifier."), details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: firstFieldMessage(parsed.error.flatten(), PROOF_RULE_LABELS, "Paramètres de preuve invalides : choisissez au moins un réglage à modifier.") }, { status: 400 });
   }
 
   try {

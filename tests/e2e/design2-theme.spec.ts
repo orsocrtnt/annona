@@ -90,10 +90,10 @@ test("back-office en Sombre : écrans principaux lisibles, tableau Chauffeurs su
   }
 });
 
-test("carte plein écran du dispatch : reste en Light tant que le plan sombre n'est pas livré", async ({ page }) => {
+test("carte plein écran du dispatch : suit le Sombre depuis le plan sombre du lot B", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await openAs(page, "admin", "/dispatch/map");
-  expect(await page.locator("html").getAttribute("data-theme")).toBeNull();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
 test("app livreur : bascule en un clic dans la barre et choix complet dans Profil", async ({ page }) => {
@@ -105,7 +105,8 @@ test("app livreur : bascule en un clic dans la barre et choix complet dans Profi
   await page.goto("/driver/profile");
   const field = page.getByTestId("theme-preference-field");
   await expect(field.getByRole("radio", { name: "Sombre" })).toBeChecked();
-  await field.getByText("Système").click();
+  // « Système » figure aussi dans l'aide sous le choix : viser l'étiquette du bouton radio.
+  await field.locator("label", { hasText: "Système" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   // Cible tactile de 44 px.
   const box = await field.locator("label").first().boundingBox();

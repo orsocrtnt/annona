@@ -15,7 +15,7 @@ import {
   useUpdateCompanyPortalSettings,
 } from "@/features/back-office/company-settings-hooks";
 import type { DeliveryCategory } from "@prisma/client";
-import { Package, Bike, Sparkles } from "lucide-react";
+import { Package, Bike, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES: DeliveryCategory[] = ["STANDARD", "COURIER", "SPECIAL_MISSION"];
@@ -38,7 +38,7 @@ const SETTINGS_CATEGORY_DESCRIPTIONS: Record<DeliveryCategory, string> = {
 const CATEGORY_ICONS = {
   STANDARD: Package,
   COURIER: Bike,
-  SPECIAL_MISSION: Sparkles,
+  SPECIAL_MISSION: Briefcase,
 } as const;
 
 export default function SettingsPage() {

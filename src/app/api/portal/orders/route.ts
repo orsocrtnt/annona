@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   const parsed = parseOrderHistoryQuery(request.url);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Filtres invalides", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: "Filtres invalides" }, { status: 400 });
   }
 
   const result = await listClientOrderHistory(auth.context.user.id, companyId, parsed.data);
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Données invalides", details: parsed.error.flatten() },
+      { error: "Données invalides" },
       { status: 400 }
     );
   }

@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   const parsed = parseOrderHistoryQuery(request.url);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Filtres invalides", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: "Filtres invalides" }, { status: 400 });
   }
   const csv = await exportOrderHistoryCsv(companyId, parsed.data, {
     customerId: auth.context.user.id,

@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**61 tâches terminées sur 104 — 59 %**
+**66 tâches terminées sur 105 — 63 %**
 
-`████████████░░░░░░░░` · 43 tâches restantes
+`█████████████░░░░░░░` · 39 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -203,10 +203,6 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | FACTURX-SAISIE | A+B | Champs exigés par le Factur-X obligatoires et bloquants dès l'enregistrement des mentions légales. | — | Moyenne · GPT‑6.1 Sol |
 | LANDING-2 | A+B | Landing et page de connexion refaites : minimalistes, très visuelles (Apple, Tesla, Uber), claires et efficaces. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
 | MOBILE-WEB | A+B | Revoir toute l'application au format téléphone, dans le navigateur. | Après DESIGN-2, MAP-INTERACTION et UX-ALERTES. | Élevée · GPT‑6.1 Sol |
-| E2E-MAJ | A | Remettre à jour les specs E2E jamais lancées ou devenues obsolètes au chantier du 29 octobre. | — | Moyenne · GPT‑6.1 Sol |
-| CONFIG-MSG-2 | A | Retirer ou traduire le champ `details` (messages Zod bruts) des réponses API. | — | Basse · GPT‑6.1 Sol |
-| MAP-UNIFY-2 | A+B | Le tableau de bord affiche encore deux cartes séparées : n'en garder qu'une, avec la bascule Livreurs / Livraisons. | Capture du propriétaire utile. | Moyenne · GPT‑6.1 Sol |
-| LANDING-3 | A+B | Refaire la landing (et revoir la connexion) : la version du 29 octobre ne plaît pas du tout au propriétaire. | Direction visuelle choisie PAR LE PROPRIÉTAIRE parmi des maquettes. | Élevée · GPT‑6.1 Sol |
 | CROSS-BROWSER | A+B | Même rendu sur Edge, Safari, Firefox et Chrome (écart constaté sur Edge). | Après LANDING-2 et MOBILE-WEB ; capture de l'écart à fournir par le propriétaire. | Moyenne · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
@@ -1588,7 +1584,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   État : livrée le 29 octobre 2026 (cibles de 44 px, champs de 16 px, tableaux en cartes sous md, ordinateur identique). E2E `mobile-web` **vert (6/6)** sur un build de production à 390 et 360 px : site public, back-office et dispatch, portail, livreur, `/admin` (passage du 29 octobre après-midi). Corrigés en route : logo de l'en-tête, bouton Réduire de la démo, liste « Statut du document » de l'export comptable qui débordait de 2 px, liens des tableaux (composant `TablePersonCell`, entreprises, abonnements), liens du support, retours et « Voir tout » du portail, e-mail et téléphone du support client. La spec relève désormais tous les défauts en un passage (`expect.soft`). Restent avant de cocher : le mode Sombre n'est pas couvert par la spec ; les marqueurs de carte (ancre Leaflet de 1 px) ne sont pas mesurés ; parcours cliqués de bout en bout sur téléphone et appareil réel non faits. Non cochée.
 
 
-- [ ] **MAP-UNIFY-2 — Une seule carte sur le tableau de bord, pour de vrai.** Constat du propriétaire du 29 octobre 2026, en préproduction (e4793e8) : il voit toujours deux cartes séparées. Le lot B annonçait une carte unique avec onglets Livreurs / Livraisons (`dashboard-map-panel.tsx`), et le regroupement de `map-drivers` et `map-deliveries` dans une disposition qui contient les deux. Pistes :
+- [x] **MAP-UNIFY-2 — Une seule carte sur le tableau de bord, pour de vrai.** Constat du propriétaire du 29 octobre 2026, en préproduction (e4793e8) : il voit toujours deux cartes séparées. Le lot B annonçait une carte unique avec onglets Livreurs / Livraisons (`dashboard-map-panel.tsx`), et le regroupement de `map-drivers` et `map-deliveries` dans une disposition qui contient les deux. Pistes :
   - une disposition enregistrée par l'entreprise, avec d'autres types de blocs carte ;
   - la section « missions actives », qui n'est peut-être pas le bloc `map-deliveries` ;
   - une autre page que le tableau de bord ;
@@ -1617,8 +1613,9 @@ Développer l'architecture et les scénarios en environnement fictif sans active
     - Mentions des sources de la carte (OpenStreetMap, fond, géocodage, itinéraires) repliées en un bouton « i » discret (cible de 44 px), ouvert au clic, fermé par Échap ou un second clic (`MapAttribution`, `provider-tile-layer.tsx`) : elles restent accessibles, comme l'exigent les licences, sans couvrir la carte. Vérifié dans Chromium (fermé, ouvert, Échap).
     - `npm run check` vert (1366/1366, puis 1365/1365 après les changements d'une autre session en parallèle).
   - Prochaine étape : après le push groupé, le propriétaire ouvre son tableau de bord et la page Carte en préproduction ; cocher si une seule carte apparaît.
+  - Validée par le propriétaire le 29 octobre 2026 : une seule carte avec la bascule Tout / Livreurs / Livraisons. Case cochée.
 
-- [ ] **LANDING-3 — Refaire la landing, direction choisie par le propriétaire.** Le 29 octobre 2026, le propriétaire a rejeté la landing livrée par LANDING-2 (« j'aime pas du tout »). L'orchestrateur avait choisi lui-même la direction « Ligne de mission », parmi 3 maquettes du lot L1 (`design-proposals/landing-2/`, dans le worktree `agent-l1-landing`). Méthode :
+- [x] **LANDING-3 — Refaire la landing, direction choisie par le propriétaire.** Le 29 octobre 2026, le propriétaire a rejeté la landing livrée par LANDING-2 (« j'aime pas du tout »). L'orchestrateur avait choisi lui-même la direction « Ligne de mission », parmi 3 maquettes du lot L1 (`design-proposals/landing-2/`, dans le worktree `agent-l1-landing`). Méthode :
   1. demander au propriétaire ce qui ne va pas et 2 ou 3 sites qu'il aime ;
   2. produire 3 maquettes très différentes ;
   3. le propriétaire choisit, et l'orchestrateur ne tranche pas ;
@@ -1658,7 +1655,9 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Reste à faire : le regard du propriétaire, une démo vraiment sombre si elle est souhaitée, puis la connexion (citée dans le tableau), non reprise ici.
 
-- [ ] **E2E-MAJ — Remettre à jour les specs E2E du chantier du 29 octobre.** Le passage final sur ec16e60 (build de production, navigateur `chromium-headless-shell`) a montré des échecs qui ne viennent pas du produit, vérifiés à la main :
+  Validée par le propriétaire le 29 octobre 2026 sur le vrai site. Case cochée. Hors de cette validation : la page de connexion reste à reprendre (LANDING-2, encore ouverte), et une démo vraiment sombre seulement si le propriétaire la demande.
+
+- [x] **E2E-MAJ — Remettre à jour les specs E2E du chantier du 29 octobre.** Le passage final sur ec16e60 (build de production, navigateur `chromium-headless-shell`) a montré des échecs qui ne viennent pas du produit, vérifiés à la main :
   - `nav-scroll` : le test fait défiler avant le chargement du contenu (la page mesure encore 720 px), et le cas portail se connecte avec le compte de démo de l'entreprise, que la protection par rôle renvoie vers `/dashboard`. Le produit remonte bien en haut et restaure la position au Retour (mesuré : 400 → 0 → 400).
   - `ux03-delivery:200` : le mini-admin sans module livraison est maintenant renvoyé vers `/support` ; le test attend encore « Livraison introuvable ».
   - `design2-theme:93` : la carte du dispatch passe désormais en sombre (correction du 29 octobre) ; le test exige encore le Clair. `design2-theme:108` : `getByText("Système")` trouve deux éléments.
@@ -1671,9 +1670,17 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : vérification finale du 29 octobre 2026.
 
-  État : ouverte, non commencée.
+  État : terminée le 29 octobre 2026. Build de production local (copie de travail détachée, `next build` puis `next start` sur 3110, base tutelliv-dev), `chromium-headless-shell`.
+  - `nav-scroll` : attente que la page soit assez haute avant de défiler ; cas portail en vue Client ; « Mes commandes » visé par son nom, en élément de menu sous 1 024 px ; attente fixe de 300 ms remplacée par deux images.
+  - `ux03-delivery` : le mini-admin sans module livraison est renvoyé vers `/support` (AUTH-ROLE).
+  - `design2-theme` : la carte du dispatch suit le Sombre ; « Système » visé par son étiquette.
+  - `portal-theme` : le site public suit désormais le Sombre (plus aucun espace exclu) ; le changement de vue de la barre de démo recharge la page (AUTH-ROLE), l'enregistrement des images passe donc par un script d'initialisation.
+  - `dispatch-suggestions` : la livraison de test est créée dans l'entreprise du pool réservée par la session (`/api/auth/session`), plus dans celle du compte permanent.
+  - `playwright.config.ts` : canal `chromium-headless-shell` par défaut sur Mac.
+  - Résultat : 33/33 sur `nav-scroll`, `ux03-delivery`, `design2-theme`, `portal-theme`, `dispatch-suggestions`, `facturx` ; 8/8 sur les specs jamais lancées `order-intake`, `demo3-payments`, `sec-hardening`. `npm run check` vert (1 367 tests). Comptes et données E2E supprimés après la passe.
+  - Limite : passe faite sous Node 20 (Node 22 de la CI non installé en local, voir ENV-2).
 
-- [ ] **CONFIG-MSG-2 — Ne plus renvoyer les messages Zod bruts dans `details`.** 28 routes de `src/app/api` répondent `details: parsed.error.flatten()`, avec des messages techniques en anglais. L'interface ne lit pas ce champ, et il ne contient ni secret ni donnée personnelle (relevé de Codex du 29 octobre).
+- [x] **CONFIG-MSG-2 — Ne plus renvoyer les messages Zod bruts dans `details`.** 28 routes de `src/app/api` répondent `details: parsed.error.flatten()`, avec des messages techniques en anglais. L'interface ne lit pas ce champ, et il ne contient ni secret ni donnée personnelle (relevé de Codex du 29 octobre).
 
   **Modèle conseillé : GPT‑6.1 Sol · effort bas.**
 
@@ -1681,7 +1688,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : vérification finale du 29 octobre 2026.
 
-  État : ouverte, non commencée.
+  État : terminée le 29 octobre 2026. Le champ `details` est retiré des 29 réponses de 28 routes (l'interface ne le lisait pas) ; elles gardent leur message français (`error`). Garde : `tests/config-msg-2-zod-details.test.ts` refuse toute route qui renvoie `flatten()`, `issues`, `errors`, `message` ou `format()` d'une erreur Zod. Vérifié sur le build de production : `PATCH /api/profile` invalide répond 400 `{"error":"Données invalides"}`. `npm run check` vert.
 
 - [ ] **CROSS-BROWSER — Même rendu sur tous les navigateurs courants.** Demande du propriétaire du 29 octobre 2026 : le site ne s'affiche pas pareil sur Edge que sur Chrome. L'écart exact reste à préciser, avec la page et une capture du propriétaire si possible. Aujourd'hui, les tests E2E ne tournent que sur Chrome (`playwright.config.ts`, canal `chrome`) ; WebKit et le Chromium de Playwright sont installés sur le Mac depuis le 29 octobre.
   - Ajouter des projets Playwright Firefox et WebKit (Safari), et lancer Edge par le canal `msedge` s'il est installé.
@@ -1709,6 +1716,30 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Preuves : `tests/auth-role-real-guard.test.ts` (vrai chemin, compte désactivé, entreprise suspendue, démo expirée) ; `tests/e2e/auth-role-pages.spec.ts` 7/7 ; vérificateur final : 307 en HTML, RSC et préchargement, 0 erreur console.
   - Limites acceptées : rôle gardé 5 s en mémoire par instance ; écrans déjà en cache client jusqu'à 180 s après le retrait d'un module ou une suspension (les API relisent la base à chaque appel).
   - Rapport : `docs/rapports/agents/2026-10-29-auth-role.md`.
+
+- [x] **ICONES-IA — Retirer les icônes « étincelles » partout.** Demande du propriétaire du 29 octobre 2026, capture à l'appui : il ne veut plus l'icône en étoiles scintillantes (`Sparkles` de lucide, souvent associée à l'IA), ni les icônes qui lui ressemblent (étoiles, baguette magique, éclats).
+  - Relevé du 29 octobre : `Sparkles` apparaît 16 fois dans 7 fichiers :
+    - `src/app/tarifs/page.tsx` ;
+    - `src/app/(back-office)/settings/page.tsx` ;
+    - `src/app/(back-office)/dispatch/page.tsx` ;
+    - `src/features/demo/demo-mode-bar.tsx` ;
+    - `src/features/landing/product-tour/scene-dispatch.tsx` (bouton « Lancer le dispatcher intelligent » de la mini-démo) ;
+    - `src/features/client-portal/courier-estimate-banner.tsx` ;
+    - `src/features/client-portal/create-order-form.tsx`.
+
+    Aucune icône `Sparkle`, `Wand`, `Stars` ni emoji ✨ n'a été trouvée.
+  - Pour chaque endroit : supprimer l'icône, ou la remplacer par une icône qui dit l'action (par exemple `Route` pour un dispatch, `Calculator` pour une estimation), sans effet « magique ».
+  - Ajouter un test de garde : plus aucun import de `Sparkles`, `Sparkle`, `WandSparkles`, `Wand2` ou `Stars` dans `src/`.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort bas.**
+
+  Terminé quand : plus aucune de ces icônes dans `src/` ; le test de garde passe ; les écrans concernés sont vérifiés dans le navigateur, en Clair et en Sombre ; `npm run check` est vert.
+
+  Source / dépendance / blocage : demande du propriétaire du 29 octobre 2026. Aucune dépendance.
+
+  État : ouverte, non commencée.
+  - Fait le 29 octobre 2026 : icônes `Sparkles` retirées ou remplacées dans les 7 fichiers. Bandeau « Des formules lisibles » et carte « Découverte » de `/tarifs` : icône supprimée. Mission spéciale (réglages et nouvelle commande) : `Briefcase`. Bouton « Lancer auto-dispatch » et bouton de la mini-démo : `Route`. Estimation indicative du portail : `Calculator`. Barre de démonstration : `FlaskConical`.
+  - Garde : `tests/icones-ia.test.ts` refuse `Sparkle(s)`, `WandSparkles`, `Wand`, `Stars` et l'emoji ✨ dans `src`. Vérifié sur le build de production : aucune icône étincelle sur `/`, `/tarifs`, `/dispatch`, `/settings` et `/portal/orders/new`, aucune erreur de page, nouvelle icône visible sur le dispatch. `npm run check` vert.
 
 - [ ] **RECETTE-2810 — Défauts mineurs de la recette du 28 octobre.** Reprendre les défauts mineurs et les points à trancher relevés par les deux recettes navigateur de l'intégration `integration/2026-10-28` (`outputs/recette-agents/integration/rapport.md` sur fcc0a5c et `outputs/recette-agents/integration-correctifs/rapport.md` sur 013d1fc puis 557e9d5), sans bloquer l'intégration : aucun défaut bloquant ni important n'a été relevé.
 

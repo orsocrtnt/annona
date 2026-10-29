@@ -212,8 +212,9 @@ test("UX-03 : un mini-admin sans module de livraison ne lit pas la fiche", async
   await loginAs(page, accounts!.miniAdminSupport);
   try {
     expect((await page.request.get(`/api/deliveries/${id}`)).status()).toBe(403);
+    // AUTH-ROLE : sans module livraison, le serveur renvoie la page vers l'accueil du mini-admin (/support).
     await page.goto(`/dashboard/deliveries/${id}`);
-    await expect(page.getByText("Livraison introuvable")).toBeVisible();
+    await expect(page).toHaveURL(/\/support$/);
     await expect(page.locator("[data-delivery-summary=true]")).toHaveCount(0);
   } finally {
     await page.request.post("/api/auth/logout").catch(() => undefined);

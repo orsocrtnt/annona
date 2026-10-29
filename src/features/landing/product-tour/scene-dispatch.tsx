@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LayoutGroup, motion } from "motion/react";
-import { ArrowRight, Check, Layers, MapPin, MousePointerClick, Sparkles, Timer, Truck } from "lucide-react";
+import { ArrowRight, Check, Layers, MapPin, MousePointerClick, Route, Timer, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SceneProps } from "@/features/landing/product-tour/product-tour";
 import { companyNav } from "@/features/landing/product-tour/space-nav";
@@ -145,7 +145,7 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
                 ready && !launched ? "product-tour-pulse" : !ready && "opacity-40"
               )}
             >
-              {phase === "after" ? <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} aria-hidden /> : <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+              {phase === "after" ? <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={3} aria-hidden /> : <Route className="h-3.5 w-3.5 shrink-0" aria-hidden />}
               {phase === "before" ? "Lancer le dispatcher intelligent" : phase === "during" ? "Répartition en cours…" : "Dispatch terminé"}
             </button>
           </div>

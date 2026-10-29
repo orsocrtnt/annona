@@ -37,7 +37,7 @@ export async function PATCH(request: Request) {
   const parsed = companyDeliveryOptionsSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: zodIssueMessage(parsed.error, "Données invalides"), details: parsed.error.flatten() },
+      { error: zodIssueMessage(parsed.error, "Données invalides") },
       { status: 400 }
     );
   }

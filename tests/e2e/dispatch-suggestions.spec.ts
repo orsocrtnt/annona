@@ -4,7 +4,7 @@ import { prisma } from "../../src/services/prisma/client";
 
 /**
  * DISPATCH-4 tranche 1 : suggestions de livreurs et affectation en un clic, sur tutelliv-dev.
- * Écrit le 2026-10-29, NON LANCÉ par l'agent (pas de serveur). Livraison E2E sans client
+ * Livraison E2E sans client
  * (aucune notification), supprimée en fin de test. Aucune position de livreur n'est créée :
  * le trajet est « inconnu » et aucun appel au service de trajet n'est fait.
  */
@@ -21,8 +21,9 @@ test("DISPATCH-4 : 3 suggestions expliquées, double clic sur « Affecter » = u
     expect(login.status()).toBe(200);
     expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);
 
-    const admin = await prisma.user.findFirstOrThrow({ where: { email: "demo@tutelliv.fr" }, select: { companyId: true } });
-    const companyId = admin.companyId!;
+    // La session de test réserve une entreprise du pool de démo : la livraison doit être créée dans celle-ci.
+    const session = (await (await page.request.get("/api/auth/session")).json()) as { user: { companyId: string } };
+    const companyId = session.user.companyId;
     const tag = randomUUID().slice(0, 8);
     const order = await prisma.order.create({
       data: { reference: `E2E-D4-UI-${tag}`, totalAmount: 10, companyId, shippingAddress: "1 rue E2E", shippingCity: "Paris", shippingPostalCode: "75011" },

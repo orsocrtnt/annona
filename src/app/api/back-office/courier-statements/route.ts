@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   const parsed = courierStatementQuerySchema.safeParse(Object.fromEntries(url.searchParams));
   if (!parsed.success) {
     return NextResponse.json(
-      { error: zodIssueMessage(parsed.error, "Période invalide"), details: parsed.error.flatten() },
+      { error: zodIssueMessage(parsed.error, "Période invalide") },
       { status: 400 }
     );
   }

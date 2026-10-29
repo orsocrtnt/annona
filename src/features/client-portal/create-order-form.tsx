@@ -17,7 +17,7 @@ import { usePortalAddresses } from "./hooks";
 import { usePortalDeliveryOptions } from "./delivery-options-hooks";
 import { PageLoader } from "@/components/ui/loader";
 import type { DeliveryCategory } from "@prisma/client";
-import { Plus, Trash2, Package, Bike, Sparkles } from "lucide-react";
+import { Plus, Trash2, Package, Bike, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PickupStopItemsFields } from "./pickup-stop-items-fields";
 import { CourierEstimateBanner } from "./courier-estimate-banner";
@@ -33,7 +33,7 @@ import {
 const CATEGORY_ICONS: Record<DeliveryCategory, typeof Package> = {
   STANDARD: Package,
   COURIER: Bike,
-  SPECIAL_MISSION: Sparkles,
+  SPECIAL_MISSION: Briefcase,
 };
 
 interface CreateOrderFormProps {

@@ -7,8 +7,8 @@ import { toast } from "sonner";
 import {
   Building2,
   ChevronLeft,
+  FlaskConical,
   RotateCcw,
-  Sparkles,
   Truck,
   UserRound,
 } from "lucide-react";
@@ -190,7 +190,7 @@ export function DemoModeBar() {
           aria-label="Afficher la barre de démonstration"
           title="Afficher la barre de démonstration"
         >
-          <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <FlaskConical className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
           <span className="text-[11px] font-medium tracking-wide text-amber-950 [writing-mode:vertical-rl] rotate-180 dark:text-amber-100">
             Démo
           </span>
@@ -205,7 +205,7 @@ export function DemoModeBar() {
           >
             <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-2 text-sm text-amber-950 dark:text-amber-100">
-                <Sparkles className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                <FlaskConical className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
                 <span className="font-medium">Environnement de démonstration</span>
                 <span className="hidden text-amber-800/80 sm:inline dark:text-amber-200/80">
                   — données fictives dans votre session isolée

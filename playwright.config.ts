@@ -27,7 +27,8 @@ export default defineConfig({
   use: {
     baseURL,
     headless: true,
-    channel: process.env.PLAYWRIGHT_CHANNEL || (process.platform === "darwin" ? "chrome" : undefined),
+    // Sur Mac, le Chrome du poste et le Chromium complet expirent au lancement : la coquille sans interface est fiable.
+    channel: process.env.PLAYWRIGHT_CHANNEL || (process.platform === "darwin" ? "chromium-headless-shell" : undefined),
     trace: "off",
     video: "off",
     screenshot: "only-on-failure",

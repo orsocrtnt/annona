@@ -48,7 +48,6 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         {
           error: zodIssueMessage(parsed.error, "Données invalides", BILLING_FIELD_LABELS),
-          details: parsed.error.flatten(),
         },
         { status: 400 }
       );

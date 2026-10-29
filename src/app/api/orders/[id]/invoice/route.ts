@@ -22,7 +22,7 @@ export async function POST(
   const parsed = createOrderInvoiceSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: zodIssueMessage(parsed.error, "Données invalides"), details: parsed.error.flatten() },
+      { error: zodIssueMessage(parsed.error, "Données invalides") },
       { status: 400 }
     );
   }

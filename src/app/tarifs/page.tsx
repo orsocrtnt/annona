@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronDown, Gauge, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Gauge, Users } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { toPublicPricing } from "@/domains/growth/public-pricing";
 import { getActiveSignupCatalog } from "@/domains/signup/signup.service";
@@ -53,7 +53,6 @@ export default async function TarifsPage() {
         <main id="main-content" tabIndex={-1} className="pb-20">
           <section className="mx-auto max-w-4xl px-5 pb-12 pt-14 text-center sm:px-6 sm:pb-16 sm:pt-20">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-brand shadow-sm">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
               Des formules lisibles
             </div>
             <h1 className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-bold tracking-[-0.04em] text-foreground sm:text-5xl lg:text-6xl">
@@ -172,7 +171,6 @@ export default async function TarifsPage() {
 
                   <div className="mt-3 min-h-24 rounded-2xl bg-[#0e1310] p-4 text-white dark:bg-secondary dark:ring-1 dark:ring-border">
                     <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-white/65">
-                      <Sparkles className="h-3.5 w-3.5" aria-hidden />
                       Découverte
                     </div>
                     <p className="mt-2 text-sm leading-6 text-white/85">

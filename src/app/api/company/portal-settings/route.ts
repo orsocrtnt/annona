@@ -30,7 +30,7 @@ export async function PATCH(request: Request) {
 
   const parsed = portalSettingsPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Réglage invalide", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: "Réglage invalide" }, { status: 400 });
   }
 
   try {

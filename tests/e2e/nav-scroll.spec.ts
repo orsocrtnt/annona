@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
-// UX-NAV-SCROLL (lot e-finitions) : écrite sans être lancée. Le défilement est celui du document dans
-// les quatre espaces ; on mesure donc `document.scrollingElement.scrollTop`.
+// UX-NAV-SCROLL (lot e-finitions). Le défilement est celui du document dans les quatre espaces ; on mesure
+// donc `document.scrollingElement.scrollTop`.
 // Comptes : `npm run e2e:role-accounts -- setup` (back-office), session de démonstration (portail).
 type Account = { email: string; password: string };
 const accounts = (): Record<"billingAdminA", Account> | null => {
@@ -15,6 +15,10 @@ const accounts = (): Record<"billingAdminA", Account> | null => {
 };
 const scrollTop = (page: Page) => page.evaluate(() => (document.scrollingElement ?? document.documentElement).scrollTop);
 const scrollDown = async (page: Page, y: number) => {
+  // Le contenu se charge après le premier rendu : attendre que la page soit assez haute pour défiler de `y`.
+  await expect
+    .poll(() => page.evaluate(() => (document.scrollingElement ?? document.documentElement).scrollHeight - window.innerHeight))
+    .toBeGreaterThanOrEqual(y);
   await page.evaluate((top) => (document.scrollingElement ?? document.documentElement).scrollTo({ top, behavior: "instant" }), y);
   await expect.poll(() => scrollTop(page)).toBeGreaterThan(50);
 };
@@ -68,12 +72,18 @@ for (const size of widths) {
       data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
     });
     expect(login.status()).toBe(200);
+    // Le compte de démonstration est administrateur : sans la vue Client, la protection par rôle renvoie vers /dashboard.
+    expect((await page.request.post("/api/demo/persona", { data: { persona: "client" } })).status()).toBe(200);
     try {
       await page.goto("/portal/settings");
       await scrollDown(page, 400);
-      const link = page.getByRole("link", { name: /Commandes/ }).first();
-      if (size.width < 1024 && !(await link.isVisible())) await page.getByRole("button", { name: /menu/i }).first().click();
-      await link.click();
+      // Sous 1 024 px, la navigation passe dans un menu : « Mes commandes » y est un élément de menu.
+      if (size.width < 1024) {
+        await page.getByRole("button", { name: "Ouvrir la navigation client" }).click();
+        await page.getByRole("menuitem", { name: "Mes commandes" }).click();
+      } else {
+        await page.getByRole("link", { name: "Mes commandes" }).first().click();
+      }
       await page.waitForURL(/\/portal\/orders/);
       await expect.poll(() => scrollTop(page)).toBe(0);
     } finally {
@@ -103,6 +113,7 @@ test("UX-NAV-SCROLL : un changement de recherche seul ne remonte pas", async ({ 
   await scrollDown(page, 500);
   const before = await scrollTop(page);
   await page.evaluate(() => window.history.pushState(null, "", `${window.location.pathname}?filtre=e2e`));
-  await page.waitForTimeout(300);
+  // Deux images suffisent à un éventuel retour en haut déclenché par la navigation.
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   expect(await scrollTop(page)).toBeGreaterThanOrEqual(before - 5);
 });
