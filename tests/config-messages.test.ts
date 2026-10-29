@@ -42,6 +42,9 @@ test("Factur-X refusé : le back-office reçoit la liste avec lien direct vers c
   assert.equal(staff.status, 422);
   assert.match(String(staff.body), /\/settings\/billing#einvoicing-latePenaltyText/);
   assert.match(String(staff.body), /\/settings\/billing#einvoicing-vatExemptionReason/);
+  const mini = facturXHttpResult({ ok: false, errors, warnings: [] } as never, "FAC-1", "staff", false);
+  assert.doesNotMatch(String(mini.body), /#einvoicing-|\/settings\//);
+  assert.match(String(mini.body), /administrateur principal/);
   const client = facturXHttpResult({ ok: false, errors, warnings: [] } as never, "FAC-1", "client");
   assert.doesNotMatch(String(client.body), /BR-E-10|TL-FR|settings|pénalités|exonération/);
   assert.match(String(client.body), /Contactez-le/);

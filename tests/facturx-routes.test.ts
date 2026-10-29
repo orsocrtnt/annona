@@ -214,7 +214,7 @@ test("mentions légales : incomplètes et facture électronique activée ou util
   const refused = await activated.patch({ ...incompleteBody, einvoicing: { enabled: true } });
   assert.equal(refused.status, 400);
   const fields = Object.keys((refused.body as { fieldErrors: Record<string, string> }).fieldErrors).sort();
-  assert.deepEqual(fields, ["billingAddress", "billingCity", "billingPostalCode", "earlyPaymentDiscountText", "latePenaltyText", "vatExemptionReason"]);
+  assert.deepEqual(fields, ["billingAddress", "billingCity", "billingPostalCode", "earlyPaymentDiscountText", "latePenaltyText"]);
   assert.equal(activated.calls.length, 0, "rien n'est enregistré");
 
   const used = einvoicing("COMPANY_ADMIN", undefined, true);

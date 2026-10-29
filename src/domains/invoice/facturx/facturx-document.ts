@@ -71,7 +71,7 @@ export const safeFilename = (reference: string) => reference.replace(/[^A-Za-z0-
  * 200 : PDF Factur-X en pièce jointe.
  * 422 : refus lisible en texte brut (le lien s'ouvre dans un nouvel onglet) ; le PDF classique reste disponible.
  */
-export function facturXHttpResult(result: FacturXDocumentResult, reference: string, audience: "staff" | "client"): FacturXHttpResult {
+export function facturXHttpResult(result: FacturXDocumentResult, reference: string, audience: "staff" | "client", settingsLinks = true): FacturXHttpResult {
   const common = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
   if (result.ok) {
     return {
@@ -89,7 +89,7 @@ export function facturXHttpResult(result: FacturXDocumentResult, reference: stri
     audience === "staff"
       ? result.errors.map((issue) => {
           const field = RULE_FIELD[issue.rule];
-          return `- ${issue.message} [${issue.rule}]${field ? `\n  Action : ${einvoicingFieldPath(field)}` : ""}`;
+          return `- ${issue.message} [${issue.rule}]${field && settingsLinks ? `\n  Action : ${einvoicingFieldPath(field)}` : ""}${field && !settingsLinks ? "\n  Action : demandez à l'administrateur principal de compléter ce champ (Réglages › Facturation)." : ""}`;
         })
       : [statusIssue ? statusIssue.message : "Votre prestataire doit compléter ses informations de facturation avant de pouvoir émettre ce format. Contactez-le pour qu'il le fasse ; en attendant, le PDF classique est disponible."];
   return {

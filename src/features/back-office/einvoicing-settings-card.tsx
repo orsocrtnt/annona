@@ -168,6 +168,11 @@ export function EinvoicingSettingsCard() {
                   {shown}
                 </p>
               )}
+              {!shown && evaluation.advisories.filter((a) => a.field === field.key).map((a) => (
+                <p key={a.field} data-testid={`einvoicing-${field.key}-advisory`} className="text-sm text-muted-foreground">
+                  {a.message}
+                </p>
+              ))}
               {suggestExemption && (
                 <button
                   type="button"

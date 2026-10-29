@@ -1,4 +1,4 @@
-import { checkSellerReadiness, type ReadinessGroup, type ReadinessIssue } from "@/domains/invoice/facturx/facturx-readiness";
+import { checkSellerAdvisories, checkSellerReadiness, type ReadinessAdvisory, type ReadinessGroup, type ReadinessIssue } from "@/domains/invoice/facturx/facturx-readiness";
 import { companyEinvoicingUpdateSchema, readinessFieldErrors, zodFieldErrors, type FieldErrors } from "@/lib/validations/einvoicing";
 
 export type EinvoicingFieldKey =
@@ -23,6 +23,8 @@ export interface FormEvaluation {
   errors: FieldErrors;
   /** Mentions qui manqueraient à l'export (liste d'information, bloquante seulement si `enforced`). */
   missing: ReadinessIssue[];
+  /** Avertissements non bloquants (TVA / exonération), affichés sous le champ concerné. */
+  advisories: ReadinessAdvisory[];
 }
 
 /** Mêmes règles que le serveur : schéma Zod de la route et checkSellerReadiness, sans copie. */
@@ -32,5 +34,6 @@ export function evaluateEinvoicingForm(values: Record<string, string>, enabled: 
   const errors: FieldErrors = parsed.success ? {} : zodFieldErrors(parsed.error);
   const missing = checkSellerReadiness({ identity: body.identity, einvoicing: body.einvoicing as Record<string, string> });
   if (enforced) for (const [field, message] of Object.entries(readinessFieldErrors(missing))) errors[field] ??= message;
-  return { errors, missing };
+  const advisories = checkSellerAdvisories({ einvoicing: body.einvoicing as Record<string, string> });
+  return { errors, missing, advisories };
 }

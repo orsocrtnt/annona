@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { mapInvoiceToFacturX, type FacturXSource } from "../src/domains/invoice/facturx/facturx-mapping";
-import { checkSellerReadiness, type ReadinessInput } from "../src/domains/invoice/facturx/facturx-readiness";
+import { checkSellerAdvisories, checkSellerReadiness, RULE_FIELD, type ReadinessInput } from "../src/domains/invoice/facturx/facturx-readiness";
 
 const complete = (): ReadinessInput => ({
   identity: { siren: "732829320", billingAddress: "12 rue de l'Exemple", billingPostalCode: "75011", billingCity: "Paris", country: "FR" },
@@ -15,9 +15,20 @@ const complete = (): ReadinessInput => ({
   },
 });
 
+function exportWithVat(input: ReadinessInput) {
+  const base = exportWithSource(input);
+  return mapInvoiceToFacturX({
+    ...base,
+    invoice: { ...base.invoice, amount: 30, lineItems: [
+      { label: "Course", amount: 25, quantity: 1, sourceType: "ZONE" },
+      { label: "TVA (20%)", amount: 5, quantity: 1, sourceType: "VAT" },
+    ] },
+  });
+}
+
 /** Facture sans TVA (catégorie E) : le cas franchise en base, le plus exigeant côté vendeur. */
-function exportWith(input: ReadinessInput) {
-  const source: FacturXSource = {
+function exportWithSource(input: ReadinessInput): FacturXSource {
+  return {
     invoice: {
       reference: "FAC-1", status: "PENDING", createdAt: new Date("2026-10-27T09:00:00Z"), dueDate: new Date("2026-11-26T09:00:00Z"),
       amount: 25, lineItems: [{ label: "Course", amount: 25, quantity: 1, sourceType: "ZONE" }], notes: null, orderReference: null,
@@ -38,7 +49,10 @@ function exportWith(input: ReadinessInput) {
     },
     buyer: { firstName: "M", lastName: "C", email: null, identity: null, defaultAddress: { address: "1 rue X", postalCode: "69001", city: "Lyon" } },
   };
-  return mapInvoiceToFacturX(source);
+}
+
+function exportWith(input: ReadinessInput) {
+  return mapInvoiceToFacturX(exportWithSource(input));
 }
 
 test("mentions complètes : aucun manque et l'export aboutit", () => {
@@ -54,7 +68,6 @@ const CASES: Array<[string, (i: ReadinessInput) => void, string]> = [
   ["ville", (i) => { i.identity.billingCity = ""; }, "billingCity"],
   ["pénalités", (i) => { i.einvoicing.latePenaltyText = ""; }, "latePenaltyText"],
   ["escompte", (i) => { i.einvoicing.earlyPaymentDiscountText = " "; }, "earlyPaymentDiscountText"],
-  ["motif d'exonération", (i) => { i.einvoicing.vatExemptionReason = ""; }, "vatExemptionReason"],
 ];
 
 for (const [name, mutate, field] of CASES) {
@@ -69,11 +82,35 @@ for (const [name, mutate, field] of CASES) {
   });
 }
 
-test("entreprise avec n° de TVA : le motif d'exonération n'est pas exigé à l'enregistrement", () => {
+test("limite acceptée 1 : n° de TVA sans motif d'exonération = avertissement, pas blocage ; une facture sans TVA est refusée à l'export avec le bon champ", () => {
   const input = complete();
   input.einvoicing.vatNumber = "FR44732829320";
   input.einvoicing.vatExemptionReason = "";
+  assert.deepEqual(checkSellerReadiness(input), [], "non bloquant");
+  assert.deepEqual(checkSellerAdvisories(input).map((a) => a.field), ["vatExemptionReason"]);
+  const exported = exportWith(input); // facture sans ligne de TVA => catégorie E
+  assert.ok(!exported.ok);
+  if (!exported.ok) {
+    assert.ok(exported.errors.some((e) => e.rule === "BR-E-10" && /Réglages/.test(e.message)));
+    assert.equal(RULE_FIELD["BR-E-10"], "vatExemptionReason");
+  }
+});
+
+test("limite acceptée 2 : ni n° de TVA ni identifiant fiscal = avertissement ; une facture avec TVA est refusée à l'export (BR-S-02) avec le bon champ", () => {
+  const input = complete();
+  input.einvoicing.vatNumber = "";
   assert.deepEqual(checkSellerReadiness(input), []);
+  assert.deepEqual(checkSellerAdvisories(input).map((a) => a.field), ["vatNumber"]);
+  const withVat = exportWithVat(input);
+  assert.ok(!withVat.ok);
+  if (!withVat.ok) assert.ok(withVat.errors.some((e) => e.rule === "BR-S-02"));
+  assert.equal(RULE_FIELD["BR-S-02"], "vatNumber");
+});
+
+test("aucun avertissement quand tout est renseigné", () => {
+  const input = complete();
+  input.einvoicing.vatNumber = "FR44732829320";
+  assert.deepEqual(checkSellerAdvisories(input), []);
 });
 
 test("IBAN sans BIC : non bloquant (simple avertissement à l'export)", () => {
@@ -94,5 +131,5 @@ test("sans IBAN : pas de virement, ni IBAN ni BIC exigés", () => {
 
 test("réglages hérités entièrement vides : tous les manques listés, sans exception", () => {
   const issues = checkSellerReadiness({ identity: {}, einvoicing: {} });
-  assert.deepEqual(issues.map((i) => i.field).sort(), ["billingAddress", "billingCity", "billingPostalCode", "country", "earlyPaymentDiscountText", "latePenaltyText", "siren", "vatExemptionReason"]);
+  assert.deepEqual(issues.map((i) => i.field).sort(), ["billingAddress", "billingCity", "billingPostalCode", "country", "earlyPaymentDiscountText", "latePenaltyText", "siren"]);
 });

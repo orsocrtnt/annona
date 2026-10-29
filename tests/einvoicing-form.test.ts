@@ -15,7 +15,7 @@ test("formulaire complet : aucune erreur, même activé", () => {
   assert.deepEqual(e.missing, []);
 });
 
-for (const [field, label] of [["siren", "SIREN"], ["billingAddress", "rue"], ["billingPostalCode", "code postal"], ["billingCity", "ville"], ["latePenaltyText", "pénalités"], ["earlyPaymentDiscountText", "escompte"], ["vatExemptionReason", "motif"]] as const) {
+for (const [field, label] of [["siren", "SIREN"], ["billingAddress", "rue"], ["billingPostalCode", "code postal"], ["billingCity", "ville"], ["latePenaltyText", "pénalités"], ["earlyPaymentDiscountText", "escompte"]] as const) {
   test(`champ manquant (${label}) : message sur ${field} si bloquant, simple signalement sinon`, () => {
     const values = { ...full(), [field]: "  " };
     const blocking = evaluateEinvoicingForm(values, true, true);
@@ -45,4 +45,13 @@ test("corps envoyé : activation transmise seulement si cochée, pays FR par dé
   assert.equal("enabled" in buildEinvoicingBody(full(), false).einvoicing, false);
   assert.equal(buildEinvoicingBody({ ...full(), country: "" }, true).einvoicing.enabled, true);
   assert.equal(buildEinvoicingBody({ ...full(), country: "" }, true).identity.country, "FR");
+});
+
+test("exonération / n° de TVA : avertissements non bloquants dans le formulaire, même activé", () => {
+  const noReason = evaluateEinvoicingForm({ ...full(), vatNumber: "FR44732829320", vatExemptionReason: "" }, true, true);
+  assert.deepEqual(noReason.errors, {});
+  assert.deepEqual(noReason.advisories.map((a) => a.field), ["vatExemptionReason"]);
+  const noVat = evaluateEinvoicingForm(full(), true, true);
+  assert.deepEqual(noVat.errors, {});
+  assert.deepEqual(noVat.advisories.map((a) => a.field), ["vatNumber"]);
 });

@@ -27,6 +27,7 @@ export interface ReadinessInput {
   };
   einvoicing: {
     vatNumber?: string | null;
+    taxRegistrationId?: string | null;
     latePenaltyText?: string | null;
     earlyPaymentDiscountText?: string | null;
     vatExemptionReason?: string | null;
@@ -56,15 +57,6 @@ export function checkSellerReadiness({ identity, einvoicing }: ReadinessInput): 
   if (blank(einvoicing.earlyPaymentDiscountText)) {
     add("einvoicing", "earlyPaymentDiscountText", "TL-FR-ESCOMPTE", "Conditions d'escompte manquantes (ex. « Pas d'escompte pour paiement anticipé. »).");
   }
-  // Sans n° de TVA, les factures sont émises sans TVA : le motif d'exonération est exigé (BR-E-10).
-  if (blank(einvoicing.vatNumber) && blank(einvoicing.vatExemptionReason)) {
-    add(
-      "einvoicing",
-      "vatExemptionReason",
-      "BR-E-10",
-      `Motif d'exonération de TVA manquant : sans n° de TVA, vos factures sont sans TVA (ex. « ${SUGGESTED_VAT_EXEMPTION_REASON} »).`
-    );
-  }
   return issues;
 }
 
@@ -88,3 +80,34 @@ export const RULE_FIELD: Record<string, string> = {
 
 /** Lien direct vers le champ (la page ouvre le bon onglet et place le curseur dans le champ). */
 export const einvoicingFieldPath = (field: string) => `/settings/billing#einvoicing-${field}`;
+
+export interface ReadinessAdvisory {
+  field: string;
+  group: ReadinessGroup;
+  message: string;
+}
+
+/**
+ * Avertissements NON bloquants. L'export classe en TVA exonérée toute facture sans ligne de TVA (BR-E-10 : motif exigé)
+ * et exige un n° de TVA ou identifiant fiscal pour une facture avec TVA (BR-S-02). Les réglages ne savent pas quelles
+ * factures l'entreprise émettra : imposer le motif (par ex. 293 B) à une entreprise assujettie serait faux.
+ * Limite acceptée : ces deux cas sont signalés à la saisie, et l'export les refuse en désignant le champ.
+ */
+export function checkSellerAdvisories({ einvoicing }: Pick<ReadinessInput, "einvoicing">): ReadinessAdvisory[] {
+  const out: ReadinessAdvisory[] = [];
+  if (blank(einvoicing.vatExemptionReason)) {
+    out.push({
+      group: "einvoicing",
+      field: "vatExemptionReason",
+      message: `Si vous émettez des factures sans TVA, renseignez le motif d'exonération (ex. « ${SUGGESTED_VAT_EXEMPTION_REASON} » en franchise en base).`,
+    });
+  }
+  if (blank(einvoicing.vatNumber) && blank(einvoicing.taxRegistrationId)) {
+    out.push({
+      group: "einvoicing",
+      field: "vatNumber",
+      message: "Pour des factures avec TVA, renseignez votre n° de TVA intracommunautaire (ou votre identifiant fiscal).",
+    });
+  }
+  return out;
+}

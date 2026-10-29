@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkSellerReadiness } from "@/domains/invoice/facturx/facturx-readiness";
+import { checkSellerAdvisories, checkSellerReadiness } from "@/domains/invoice/facturx/facturx-readiness";
 import { companyUsesEinvoicing, getCompanyEinvoicing, updateCompanyEinvoicing } from "@/domains/invoice/facturx/facturx.service";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
@@ -19,7 +19,7 @@ export async function GET() {
     if (!data) return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });
     // Données héritées : la page s'ouvre toujours et montre ce qui manque, sans erreur.
     const enforced = data.einvoicing.enabled === true || (await companyUsesEinvoicing(companyId));
-    return NextResponse.json({ data: { ...data, enforced, missing: checkSellerReadiness(data) }, success: true });
+    return NextResponse.json({ data: { ...data, enforced, missing: checkSellerReadiness(data), advisories: checkSellerAdvisories(data) }, success: true });
   });
 }
 
@@ -56,7 +56,7 @@ export async function PATCH(request: Request) {
     try {
       const data = await updateCompanyEinvoicing(companyId, parsed.data);
       // Entreprise non bloquée : l'enregistrement réussit mais montre ce qui manquerait à l'export.
-      return NextResponse.json({ data: { ...data, enforced, missing }, success: true });
+      return NextResponse.json({ data: { ...data, enforced, missing, advisories: checkSellerAdvisories(parsed.data) }, success: true });
     } catch (error) {
       if (error instanceof Error && error.message === "COMPANY_NOT_FOUND") {
         return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });
