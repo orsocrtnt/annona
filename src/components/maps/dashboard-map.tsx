@@ -26,6 +26,7 @@ function SceneView({ points, selected, selectedId, fitKey }: { points: [number, 
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const lastSelectedId = useRef<string | null>(null);
+  const hasSelected = selected !== null;
   const lastFit = useRef("");
   const pointsRef = useRef(points);
   pointsRef.current = points;
@@ -53,7 +54,7 @@ function SceneView({ points, selected, selectedId, fitKey }: { points: [number, 
     apply();
     const timers = [60, 250].map((ms) => window.setTimeout(apply, ms));
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [map, selectedId, fitKey, selected !== null]);
+  }, [map, selectedId, fitKey, hasSelected]);
 
   return null;
 }
