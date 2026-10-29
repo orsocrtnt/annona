@@ -60,6 +60,7 @@ export function DataGrid<T extends Record<string, unknown>>({
 }: DataGridProps<T>) {
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(0);
+  const sortSelectId = React.useId();
   const [sortKey, setSortKey] = React.useState<string | null>(null);
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
   const variant = dataGridVariant(useMediaQuery(MOBILE_CARDS_QUERY));
@@ -183,9 +184,9 @@ export function DataGrid<T extends Record<string, unknown>>({
             <>
               {sortableColumns.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <label htmlFor="data-grid-sort" className="sr-only">Trier par</label>
+                  <label htmlFor={sortSelectId} className="sr-only">Trier par</label>
                   <select
-                    id="data-grid-sort"
+                    id={sortSelectId}
                     value={sortKey ?? ""}
                     onChange={(e) => {
                       setSortKey(e.target.value || null);

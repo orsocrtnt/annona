@@ -21,10 +21,10 @@ const rows: Row[] = [
   { id: "b", name: "N".repeat(60), city: "Nice", phone: "0607080910" },
 ];
 
-test("splitCardColumns : titre, champs et actions, sans perdre hideOnMobile", () => {
+test("splitCardColumns : titre, champs et actions, hideOnMobile masqué comme dans le tableau mobile", () => {
   const { title, fields, actions } = splitCardColumns(columns);
   assert.equal(title?.key, "name");
-  assert.deepEqual(fields.map((c) => c.key), ["city", "phone"]);
+  assert.deepEqual(fields.map((c) => c.key), ["city"]);
   assert.deepEqual(actions.map((c) => c.key), ["actions"]);
 });
 
@@ -41,12 +41,13 @@ test("dataGridVariant et requête : cartes sous 768 px, tableau au-delà", () =>
   assert.equal(MOBILE_CARDS_QUERY, "(max-width: 767px)");
 });
 
-test("DataGridCards : une carte par ligne avec toutes les colonnes", () => {
+test("DataGridCards : une carte par ligne, colonnes hideOnMobile masquées comme dans le tableau mobile", () => {
   const html = renderToStaticMarkup(React.createElement(DataGridCards<Row>, { rows, columns, getRowId: (r: Row) => r.id }));
   assert.equal(html.match(/<li /g)?.length, 2);
   assert.match(html, /data-testid="data-grid-cards"/);
-  assert.match(html, /Téléphone/);
-  assert.match(html, /0607080910/);
+  assert.doesNotMatch(html, /Téléphone/);
+  assert.doesNotMatch(html, /0607080910/);
+  assert.match(html, /Lyon/);
   assert.match(html, /Ouvrir a/);
   assert.match(html, /N{60}/);
   assert.doesNotMatch(html, /<table/);

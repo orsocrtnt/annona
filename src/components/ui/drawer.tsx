@@ -51,7 +51,7 @@ const DrawerContent = React.forwardRef<
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 flex items-center justify-center rounded-sm max-md:right-1 max-md:top-1 max-md:h-11 max-md:w-11 opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm max-md:flex max-md:items-center max-md:justify-center max-md:right-1 max-md:top-1 max-md:h-11 max-md:w-11 opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
           <X className="h-4 w-4" />
           <span className="sr-only">Fermer</span>
         </DialogPrimitive.Close>

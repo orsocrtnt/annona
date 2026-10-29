@@ -11,10 +11,11 @@ export interface MobileCardLayout<T> {
 
 /**
  * Répartit les colonnes d'un tableau en carte pour les écrans étroits (< md).
- * Aucune colonne n'est perdue : `hideOnMobile` ne vaut que pour le tableau, la carte a la place de tout montrer.
+ * Les colonnes `hideOnMobile` restent masquées, comme dans le tableau mobile : la carte montre le même contenu
+ * qu'avant sur téléphone (pas d'e-mail ni de dernière connexion en plus).
  */
 export function splitCardColumns<T>(columns: TableColumn<T>[]): MobileCardLayout<T> {
-  const labelled = columns.filter((column) => column.header.trim() !== "");
+  const labelled = columns.filter((column) => column.header.trim() !== "" && !column.hideOnMobile);
   const actions = columns.filter((column) => column.header.trim() === "");
   const [title = null, ...fields] = labelled;
   return { title, fields, actions };
