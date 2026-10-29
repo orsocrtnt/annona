@@ -6,7 +6,7 @@
 - [x] 10 — tâche ignorée ≠ échec ; détail par tâche sans donnée personnelle
 - [x] 9 — classe corrigée (traitement immédiat réessayé)
 - [x] 14 — documenté, non corrigé
-- [x] `npm run check` vert (1 217 tests), `git diff --check` propre, pré-vol opus puis Sonnet
+- [x] `npm run check` vert (1 316 tests après fusion d'`integration/2026-10-29`), `git diff --check` propre, pré-vol opus puis Sonnet
 
 ## Livré
 - **16** : `src/lib/database/settings-claims.ts`, option `section` (conflit si la même partie change pendant l'écriture). Convertis : dispatch, localisation, tarifs, catégories, portail, facturation, Factur-X, tableaux de bord, préférences client, mini-admin, onboarding, démo. SQL brut (preuves, commande par message) : `updated_at` avance. Hors réclamation, par choix : provisionnement démo et offres de test (écrasement complet, sans concurrence, commenté), créations de lignes.
@@ -22,6 +22,8 @@
 
 ## PostgreSQL réel (lancé)
 `npm run test:pg-settings` réussi, aucune perte. Clés disjointes, avant → après 10 essais espacés de 10 à 50 ms : entreprise 5 → 0 conflit sur 10, compte 3 → 0 ; même réglage : 1 enregistré, 9 en 409. Ancien code : 9 clés sur 10 perdues. Nettoyé.
+
+- Corrections de relecture : réclamation espacée, onboarding réclamé (clé modifiée seulement), écrasements voulus commentés, fusion d'`integration/2026-10-29` (`package.json` : deux scripts gardés).
 
 ## Non vérifié
 Lignes héritées SENDING après refus : restent « non confirmées » 24 h. Point 9 : cause sans journal.
