@@ -21,7 +21,7 @@ import {
   summarizeDriver,
   type DashboardMapView,
 } from "@/features/back-office/dashboard-map-model";
-import { MAP_SHAPE_LABEL, MAP_STATUS_STYLE, statusCoreSvg } from "@/lib/maps/map-status-style";
+import { MAP_PIN_BODY, MAP_SHAPE_LABEL, MAP_STATUS_STYLE, statusCoreSvg } from "@/lib/maps/map-status-style";
 import { TEAMS_PRESENCE } from "@/lib/driver-presence";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,7 @@ function StatusGlyph({ status, theme }: { status: keyof typeof MAP_STATUS_STYLE.
   const style = MAP_STATUS_STYLE[theme][status];
   // Même forme et même couleur que le cœur de l'épingle sur la carte.
   return (
-    <svg width="16" height="16" viewBox="6 6 14 14" aria-hidden="true" className="shrink-0" dangerouslySetInnerHTML={{ __html: statusCoreSvg(style.shape, style.core) }} />
+    <svg width="18" height="18" viewBox="5 5 16 16" aria-hidden="true" className="shrink-0 rounded-full" style={{ background: MAP_PIN_BODY[theme] }} dangerouslySetInnerHTML={{ __html: statusCoreSvg(style.shape, style.core) }} />
   );
 }
 
@@ -59,7 +59,7 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 export function DashboardMapPanel({ height = 280, initialView = "drivers", showDrivers = true }: { height?: number; initialView?: DashboardMapView; showDrivers?: boolean }) {
   const [view, setView] = useState<DashboardMapView>(showDrivers ? initialView : "deliveries");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const drivers = useDriverLiveLocations();
+  const drivers = useDriverLiveLocations(showDrivers);
   const deliveries = useDispatchDeliveriesMap();
   const theme = useMapTheme();
   const now = useNow(CLOCK_TICK_MS);
@@ -71,7 +71,8 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
   const statusCounts = useMemo(() => countDispatchMapStatuses(deliveryList, new Date(now)), [deliveryList, now]);
 
   const query = view === "drivers" ? drivers : deliveries;
-  const emptyKind = dashboardMapEmptyKind(view, driverList, deliveryList);
+  const hasError = query.isError;
+  const emptyKind = hasError && !query.data ? "none" : dashboardMapEmptyKind(view, driverList, deliveryList);
   const views = showDrivers ? DASHBOARD_MAP_VIEWS : DASHBOARD_MAP_VIEWS.filter((v) => v.key === "deliveries");
 
   // Une sélection qui n'existe plus (mission terminée, livreur déconnecté) est abandonnée, pas affichée vide.
@@ -97,7 +98,7 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
   useEffect(() => {
     if (!selectedId) return;
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedId(null);
+      if (event.key === "Escape" && !event.defaultPrevented) setSelectedId(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

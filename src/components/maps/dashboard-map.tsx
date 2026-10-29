@@ -21,17 +21,26 @@ type Props = {
 };
 
 /** Recadre quand l'ensemble des repères change ou qu'une sélection arrive, pas à chaque rafraîchissement GPS. */
-function SceneView({ points, selected, fitKey }: { points: [number, number][]; selected: [number, number] | null; fitKey: string }) {
+function SceneView({ points, selected, selectedId, fitKey }: { points: [number, number][]; selected: [number, number] | null; selectedId: string | null; fitKey: string }) {
   const map = useMap();
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  const lastSelectedId = useRef<string | null>(null);
   const lastFit = useRef("");
   const pointsRef = useRef(points);
   pointsRef.current = points;
 
   useEffect(() => {
-    if (selected) {
-      map.setView(selected, Math.max(map.getZoom(), 14), { animate: true });
+    const target = selectedRef.current;
+    if (selectedId && target) {
+      // Recentrage seulement quand la sélection change : un nouveau relevé GPS ne déplace pas la carte.
+      if (lastSelectedId.current !== selectedId) {
+        lastSelectedId.current = selectedId;
+        map.setView(target, Math.max(map.getZoom(), 14), { animate: true });
+      }
       return;
     }
+    lastSelectedId.current = null;
     if (lastFit.current === fitKey) return;
     lastFit.current = fitKey;
     const list = pointsRef.current;
@@ -44,7 +53,7 @@ function SceneView({ points, selected, fitKey }: { points: [number, number][]; s
     apply();
     const timers = [60, 250].map((ms) => window.setTimeout(apply, ms));
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [map, selected, fitKey]);
+  }, [map, selectedId, fitKey, selected !== null]);
 
   return null;
 }
@@ -74,7 +83,7 @@ export function DashboardMap({ view, drivers, deliveries, selectedId, onSelect, 
 
   return (
     <LeafletBaseMap height={height} variant="uber" zoom={11} className="w-full">
-      <SceneView points={points} selected={selectedPoint} fitKey={stableFitKey} />
+      <SceneView points={points} selected={selectedPoint} selectedId={selectedId} fitKey={stableFitKey} />
       {view === "drivers" &&
         located.map((driver) => (
           <DriverMapMarker

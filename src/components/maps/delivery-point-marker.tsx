@@ -22,7 +22,7 @@ function useMarkerClicks(onClick?: () => void) {
     () => ({
       click: () => onClick?.(),
       keypress: (event: L.LeafletKeyboardEvent) => {
-        if (event.originalEvent.key === "Enter") onClick?.();
+        if (event.originalEvent.key === "Enter" || event.originalEvent.key === " ") onClick?.();
       },
     }),
     [onClick]
@@ -200,7 +200,7 @@ export function DeliveryOverviewMarker({
     <Marker
       position={[latitude, longitude]}
       icon={icon}
-      title={`${reference} · ${getDispatchMapStatusMeta(status).label} (${MAP_SHAPE_LABEL[MAP_STATUS_STYLE[theme][status].shape]}) — clic : sélectionner · double-clic : voir le détail`}
+      title={`${reference} · ${getDispatchMapStatusMeta(status).label} (${MAP_SHAPE_LABEL[MAP_STATUS_STYLE[theme][status].shape]}) — clic ou Entrée : sélectionner`}
       keyboard
       eventHandlers={eventHandlers}
       zIndexOffset={isSelected ? 1000 : status === "late" ? 600 : 400}
