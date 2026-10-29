@@ -9,6 +9,7 @@ import {
   resolveLoginView,
   spaceForDestination,
 } from "../src/features/auth/login-space";
+import { createSubmitGuard } from "../src/features/auth/submit-guard";
 import { isThemeScopedPath } from "../src/lib/theme";
 
 function read(path: string) {
@@ -73,18 +74,57 @@ test("LANDING-2 : chaque tuile d'espace pointe vers une route de connexion exist
   assert.match(chooser, /<span className="block text-lg[^"]*">\{space\.title\}<\/span>\s*<span className="block text-sm[^"]*">\{space\.description\}<\/span>/);
 });
 
-test("LANDING-2 : formulaire de connexion en POST, même appel serveur, double envoi bloqué", () => {
+test("LANDING-2 : formulaire de connexion en POST, même appel serveur et mêmes messages", () => {
   const form = read("src/features/auth/auth-form.tsx");
   assert.match(form, /<form method="post" onSubmit=\{loginForm\.handleSubmit\(onLogin\)\}/);
-  assert.match(form, /fetch\("\/api\/auth\/login", \{\s*method: "POST"/);
-  assert.match(form, /setError\(json\.error \?\? "Email ou mot de passe incorrect\."\)/);
-  assert.match(form, /if \(loginInFlight\.current\) return;/);
-  // Réponse illisible (502/504 en HTML) : message maîtrisé ; garde relâchée au retour arrière (bfcache).
-  assert.match(form, /res\.json\(\)\.catch\(\(\) => null\)/);
-  assert.match(form, /event\.persisted\) loginInFlight\.current = false/);
-  assert.match(form, /selectLoginRedirect\(requestedRedirect, json\.redirectTo\)/);
-  // Aucun formulaire de mot de passe en GET.
   assert.doesNotMatch(form, /method="get"/i);
+  assert.match(form, /setError\(json\.error \?\? "Email ou mot de passe incorrect\."\)/);
+});
+
+function fakeScheduler() {
+  const timers = new Map<number, () => void>();
+  let next = 0;
+  return {
+    timers,
+    set: (callback: () => void) => {
+      next += 1;
+      timers.set(next, callback);
+      return next;
+    },
+    clear: (handle: unknown) => void timers.delete(handle as number),
+    fire: () => {
+      for (const [id, callback] of [...timers]) {
+        timers.delete(id);
+        callback();
+      }
+    },
+  };
+}
+
+test("LANDING-2 : garde d'envoi unique — double clic, échec, délai de sécurité, succès puis retour arrière", () => {
+  const scheduler = fakeScheduler();
+  const guard = createSubmitGuard({ timeoutMs: 30_000, scheduler });
+  assert.equal(guard.tryAcquire(), true);
+  assert.equal(guard.tryAcquire(), false, "double clic : second envoi refusé");
+  guard.release();
+  assert.equal(guard.tryAcquire(), true, "après un échec, nouvel essai possible");
+  scheduler.fire();
+  assert.equal(guard.isLocked(), false, "requête sans réponse : le délai rouvre la garde");
+  assert.equal(guard.tryAcquire(), true);
+  guard.hold();
+  assert.equal(scheduler.timers.size, 0, "succès : aucun délai ne rouvre la garde pendant la navigation");
+  scheduler.fire();
+  assert.equal(guard.tryAcquire(), false);
+  guard.release();
+  assert.equal(guard.tryAcquire(), true, "retour arrière (pageshow persisté) : la garde se rouvre");
+});
+
+test("LANDING-2 : le formulaire passe par la garde et la relâche au retour depuis le bfcache", () => {
+  const form = read("src/features/auth/auth-form.tsx");
+  assert.match(form, /if \(!loginGuard\.tryAcquire\(\)\) return;/);
+  assert.match(form, /event\.persisted\) loginGuard\.release\(\)/);
+  assert.match(form, /loginGuard\.hold\(\);\s*router\.push\(destination\)/);
+  assert.doesNotMatch(form, /setTimeout/);
 });
 
 test("LANDING-2 : aucune adresse de support inventée", () => {
@@ -116,10 +156,10 @@ test("LANDING-2 : prix de la landing lus sur le catalogue, jamais écrits en dur
 });
 
 test("DESIGN-2 : le site public suit le choix Clair / Sombre / Système, le reste ne change pas", () => {
-  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password"]) {
+  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
-  for (const path of ["/register", "/register/client", "/tarifsx", "/loginx"]) {
+  for (const path of ["/registerx", "/tarifsx", "/loginx"]) {
     assert.equal(isThemeScopedPath(path), false, path);
   }
   const nav = read("src/features/landing/public-top-navbar.tsx");

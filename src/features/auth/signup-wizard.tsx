@@ -298,7 +298,7 @@ export function SignupWizard() {
     <main className="min-h-screen bg-muted/20 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <header className="flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><BrandLogo priority /></Link>
+          <Link href="/" className="flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><BrandLogo className="dark:hidden" priority /><BrandLogo onDark className="hidden dark:inline-flex" /></Link>
           <div className="flex items-center gap-4">
             <PublicSupportLink />
             <Link href="/login" className="text-sm font-medium text-brand hover:underline">Se connecter</Link>

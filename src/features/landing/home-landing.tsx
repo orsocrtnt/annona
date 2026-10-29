@@ -15,7 +15,7 @@ import { ghostButton, inkButton, primaryButton } from "@/features/landing/landin
  */
 
 const benefits = [
-  { icon: MapPinned, title: "Suivi en temps réel", text: "Livraisons et chauffeurs sur une même carte." },
+  { icon: MapPinned, title: "Suivi des livraisons", text: "Chaque commande suivie, étape par étape." },
   { icon: MessageSquareText, title: "Moins d'appels", text: "Vos clients suivent leur commande eux-mêmes." },
   { icon: Workflow, title: "Un seul fil", text: "De la commande à la facture, sans tableur." },
 ] as const;
@@ -74,8 +74,17 @@ function PricingGlance({ pricing }: { pricing: PublicPricing | null }) {
               <small className="text-[13px] font-medium tracking-normal text-muted-foreground">HT / mois</small>
             </p>
             <p role="cell">
-              {plan.unlimitedDriverSeats ? "Usage mesuré" : count.format(plan.includedDriverSeats)}{" "}
-              <span className="text-muted-foreground min-[1000px]:sr-only">livreurs inclus</span>
+              {plan.unlimitedDriverSeats ? (
+                // Même libellé que /tarifs pour un catalogue sans plafond de livreurs.
+                <>
+                  <span className="text-muted-foreground min-[1000px]:sr-only">Livreurs : </span>Usage mesuré
+                </>
+              ) : (
+                <>
+                  {count.format(plan.includedDriverSeats)}{" "}
+                  <span className="text-muted-foreground min-[1000px]:sr-only">livreurs inclus</span>
+                </>
+              )}
             </p>
             <p role="cell">
               {count.format(plan.includedMonthlyOrders)}{" "}

@@ -31,6 +31,7 @@ import { ChevronLeft } from "lucide-react";
 import { AuthShell } from "@/features/auth/auth-shell";
 import { SPACE_ICONS } from "@/features/auth/login-space-chooser";
 import { browserStorage, rememberLastSpace, type LoginContext } from "@/features/auth/login-space";
+import { createSubmitGuard } from "@/features/auth/submit-guard";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { useAuthStore } from "@/stores/auth.store";
 import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
@@ -68,16 +69,16 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
   const queryClient = useQueryClient();
   const [passwordLink, setPasswordLink] = useState<PasswordLink | null>(null);
   const linkRead = useRef(false);
-  const loginInFlight = useRef(false);
+  const [loginGuard] = useState(createSubmitGuard);
 
   // Retour arrière depuis l'espace (bfcache) : le formulaire redevient utilisable.
   useEffect(() => {
     const release = (event: PageTransitionEvent) => {
-      if (event.persisted) loginInFlight.current = false;
+      if (event.persisted) loginGuard.release();
     };
     window.addEventListener("pageshow", release);
     return () => window.removeEventListener("pageshow", release);
-  }, []);
+  }, [loginGuard]);
   const [completingLink, setCompletingLink] = useState(false);
   const { setUser, setPermissions, setDemo, setSaas } = useAuthStore();
 
@@ -143,12 +144,11 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
 
   const onLogin = async (data: LoginInput) => {
     // Double clic : une seule requête à la fois ; après un succès, la navigation est en cours.
-    if (loginInFlight.current) return;
-    loginInFlight.current = true;
+    if (!loginGuard.tryAcquire()) return;
     try {
       await submitLogin(data);
     } catch {
-      loginInFlight.current = false;
+      loginGuard.release();
       setError("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
     }
   };
@@ -174,12 +174,12 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     const json = await res.json().catch(() => null);
     if (json === null) {
       // Réponse illisible (page HTML d'un 502/504, coupure) : message maîtrisé, nouvel essai possible.
-      loginInFlight.current = false;
+      loginGuard.release();
       setError("Service de connexion momentanément indisponible. Réessayez dans quelques instants.");
       return;
     }
     if (!res.ok) {
-      loginInFlight.current = false;
+      loginGuard.release();
       setError(json.error ?? "Email ou mot de passe incorrect.");
       return;
     }
@@ -198,11 +198,9 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     const destination = selectLoginRedirect(requestedRedirect, json.redirectTo);
     // Repère « Dernier utilisé » : l'espace ouvert par le serveur, sans aucune donnée personnelle.
     rememberLastSpace(browserStorage(), destination);
+    // Succès : la garde reste fermée pendant la navigation ; elle ne se rouvre qu'au retour arrière (pageshow).
+    loginGuard.hold();
     router.push(destination);
-    // Navigation lente ou interrompue : la garde se relâche au bout de 10 s si la page est toujours là.
-    window.setTimeout(() => {
-      loginInFlight.current = false;
-    }, 10_000);
   };
 
   const onRegister = async (data: RegisterInput) => {
