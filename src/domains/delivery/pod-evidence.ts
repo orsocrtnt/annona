@@ -81,7 +81,7 @@ export const POD_EVIDENCE_MESSAGES: Record<PodEvidenceErrorCode, string> = {
   POD_SIGNATURE_NOT_ALLOWED: "Une signature ne peut être jointe qu'à une livraison réussie.",
   POD_SIGNATURE_CONFLICT: "Choisissez entre la signature et le refus de signer.",
   POD_RECIPIENT_REQUIRED: "Indiquez le nom de la personne qui réceptionne (2 à 120 caractères).",
-  POD_SIGNATURE_REQUIRED: "La signature du réceptionnaire est requise, ou le motif de son refus de signer.",
+  POD_SIGNATURE_REQUIRED: "Votre entreprise exige une signature à la livraison : faites signer le réceptionnaire, ou indiquez le motif de son refus de signer (3 caractères minimum).",
 };
 
 export function isPodEvidenceError(message: string): message is PodEvidenceErrorCode {

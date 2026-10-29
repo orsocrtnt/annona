@@ -96,6 +96,7 @@ function route(file: string, role: SystemRole, companyId: string | null = "a") {
   const module = { exports: {} as Record<string, (request: Request, context: { params: Promise<{ id: string }> }) => Promise<Response>> };
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": {
       requireStaffRole: async () => ({ context: { user: { id: "self", companyId, role: { systemRole: role } } } }),
       requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => (

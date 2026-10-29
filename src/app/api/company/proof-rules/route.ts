@@ -1,7 +1,10 @@
+import { firstFieldMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { getCompanyProofRules, updateCompanyProofRules } from "@/domains/delivery/proof-settings.service";
 import { proofRulesPatchSchema } from "@/domains/delivery/pod-evidence";
+
+const PROOF_RULE_LABELS = { signatureRequired: "Signature obligatoire", emailToClient: "Envoi de la preuve au client" };
 
 export async function GET() {
   const auth = await requireStaffRole("settings:read");
@@ -30,7 +33,7 @@ export async function PATCH(request: Request) {
 
   const parsed = proofRulesPatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Paramètres de preuve invalides", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: firstFieldMessage(parsed.error.flatten(), PROOF_RULE_LABELS, "Paramètres de preuve invalides : choisissez au moins un réglage à modifier."), details: parsed.error.flatten() }, { status: 400 });
   }
 
   try {

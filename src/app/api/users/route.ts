@@ -1,3 +1,4 @@
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createUserSchema } from "@/lib/validations/user";
@@ -83,9 +84,9 @@ export async function POST(request: Request) {
     };
     const labels: Record<string, string> = {
       MINI_ADMIN_MANAGEMENT_FORBIDDEN: "La gestion des mini-admins est réservée aux administrateurs principaux.",
-      AUTH_EMAIL_NOT_CONFIGURED: "Les invitations par e-mail ne sont pas encore configurées.",
+      AUTH_EMAIL_NOT_CONFIGURED: CONFIG_MESSAGES.INVITATION_EMAIL_NOT_CONFIGURED,
       AUTH_RATE_LIMITED: "Trop de demandes. Réessayez plus tard.",
-      INVITATION_FAILED: "L’invitation n’a pas pu être envoyée. Réessayez plus tard.",
+      INVITATION_FAILED: "L’invitation n’a pas pu être envoyée : le service d’e-mail a refusé l’envoi. Vérifiez l’adresse du destinataire puis réessayez ; si cela se répète, contactez l’administrateur de la plateforme.",
       INVITATION_PROFILE_FAILED: "L’e-mail a pu être envoyé mais le profil n’a pas été créé. Réessayez la création.",
       EMAIL_EXISTS: "Cet email est déjà utilisé.",
       INVALID_ROLE: "Rôle non autorisé.",

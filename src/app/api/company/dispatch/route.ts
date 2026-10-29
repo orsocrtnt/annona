@@ -1,3 +1,4 @@
+import { CONFIG_MESSAGES, firstFieldMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import {
@@ -5,6 +6,15 @@ import {
   updateCompanyDispatchSettings,
 } from "@/domains/company/dispatch-settings.service";
 import { companyDispatchSettingsSchema } from "@/lib/validations/dispatch-settings";
+
+const DISPATCH_FIELD_LABELS = {
+  strategy: "Stratégie",
+  maxActiveDeliveriesPerDriver: "Livraisons actives maximum par livreur",
+  gpsPositionMaxAgeMinutes: "Ancienneté maximale de la position GPS",
+  gpsMaxDistanceKm: "Distance maximale au retrait",
+  driverRules: "Règles par livreur",
+  autoAssignCategories: "Catégories attribuées automatiquement",
+};
 
 export async function GET() {
   const auth = await requireStaffRole("settings:read");
@@ -37,7 +47,7 @@ export async function PATCH(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       {
-        error: parsed.error.issues[0]?.message ?? "Données invalides",
+        error: firstFieldMessage(parsed.error.flatten(), DISPATCH_FIELD_LABELS, parsed.error.issues[0]?.message ?? "Réglages de dispatch invalides : vérifiez les valeurs saisies."),
         details: parsed.error.flatten(),
       },
       { status: 400 }
@@ -53,7 +63,7 @@ export async function PATCH(request: Request) {
     }
     if (error instanceof Error && error.message === "SAAS_FEATURE_NOT_AVAILABLE") {
       return NextResponse.json(
-        { error: "Le dispatch automatique n’est pas inclus dans cette offre." },
+        { error: CONFIG_MESSAGES.DISPATCH_FEATURE_NOT_IN_PLAN },
         { status: 403 }
       );
     }

@@ -76,6 +76,7 @@ const REFUSED: Array<[string, Session, number]> = [
 
 function analyzeRoute(session: Session, outcome: unknown, seen: unknown[] = []) {
   return loadRoute<{ POST: (request: Request) => Promise<Response> }>("src/app/api/orders/intake/analyze/route.ts", {
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": fakeAuthGuard(session),
     "@/domains/order-intake/order-intake.service": {
       analyzeOrderMessage: async (input: unknown) => {
@@ -140,6 +141,7 @@ test("INTAKE route analyse : chaque issue a un statut propre, aucune erreur 500 
 
 function createRoute(session: Session, outcome: unknown, seen: unknown[] = []) {
   return loadRoute<{ POST: (request: Request) => Promise<Response> }>("src/app/api/orders/intake/orders/route.ts", {
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": fakeAuthGuard(session),
     "@/lib/validations/order": { createClientOrderSchema: { safeParse: (value: unknown) => (value && typeof value === "object" && "deliveryCategory" in value ? { success: true, data: value } : { success: false }) } },
     "@/domains/order-intake/order-intake.service": {
@@ -206,6 +208,7 @@ test("INTAKE route création : refus métiers sans erreur 500", async () => {
 test("INTAKE route réglage : activation réservée à l'administration, entreprise de la session", async () => {
   const writes: unknown[] = [];
   const settingsRoute = (session: Session) => loadRoute<{ GET: () => Promise<Response>; PATCH: (request: Request) => Promise<Response> }>("src/app/api/orders/intake/route.ts", {
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": fakeAuthGuard(session),
     "@/lib/permissions/rbac": { hasPermission: (list: string[], permission: string) => list.includes(permission) },
     "@/domains/order-intake/order-intake.settings": {

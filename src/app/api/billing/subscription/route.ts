@@ -1,3 +1,4 @@
+import { billingFailureMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { getSubscriptionView } from "@/domains/billing/subscription-view.service";
@@ -14,9 +15,9 @@ export async function GET() {
   try {
     const subscription = await getSubscriptionView(companyId);
     return NextResponse.json({ data: subscription }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (error) {
     return NextResponse.json(
-      { error: "Chargement de l’abonnement impossible" },
+      { error: billingFailureMessage(error, "Chargement de l’abonnement impossible : réessayez dans un instant ; si cela persiste, contactez le support.") },
       { status: 503, headers: { "Cache-Control": "no-store" } }
     );
   }

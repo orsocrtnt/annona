@@ -68,6 +68,7 @@ function billingDependencies(calls: string[], role: string, companyId: string | 
   return {
     zod,
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": auth(calls, role, companyId),
     "@/services/prisma/client": {
       prisma: {
@@ -118,6 +119,7 @@ test("ADMIN-1 facturation : les autres rôles sont refusés avant l'entreprise, 
     const calls: string[] = [];
     const subscription = load("src/app/api/billing/subscription/route.ts", {
       "next/server": { NextResponse },
+      "@/lib/config-messages": require("../src/lib/config-messages"),
       "@/lib/api/auth-guard": auth(calls, role, "company-1"),
       "@/domains/billing/subscription-view.service": {
         getSubscriptionView: async () => { calls.push("view"); return { plan: "STARTER" }; },
@@ -182,6 +184,7 @@ test("ADMIN-1 facturation : l'administrateur d'entreprise atteint les comporteme
   const viewCalls: string[] = [];
   const view = load("src/app/api/billing/subscription/route.ts", {
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": auth(viewCalls, "COMPANY_ADMIN", "company-1"),
     "@/domains/billing/subscription-view.service": {
       getSubscriptionView: async (companyId: string) => {
@@ -200,6 +203,7 @@ test("ADMIN-1 facturation : l'administrateur d'entreprise atteint les comporteme
   const absentCalls: string[] = [];
   const absent = load("src/app/api/billing/subscription/route.ts", {
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": auth(absentCalls, "COMPANY_ADMIN", null),
     "@/domains/billing/subscription-view.service": {
       getSubscriptionView: async () => { absentCalls.push("view"); return {}; },

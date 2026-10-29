@@ -304,6 +304,11 @@ export function BillingSettingsContent() {
     if (settings) setLocal(settings);
   }, [settings]);
 
+  // Lien direct vers un champ Factur-X (#einvoicing-…) : ouvre l'onglet qui le contient.
+  useEffect(() => {
+    if (window.location.hash.startsWith("#einvoicing-")) setTab("general");
+  }, []);
+
   const handleSave = async () => {
     if (!local) return;
     try {
