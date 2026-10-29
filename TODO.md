@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**58 tâches terminées sur 98 — 59 %**
+**58 tâches terminées sur 99 — 59 %**
 
-`████████████░░░░░░░░` · 40 tâches restantes
+`████████████░░░░░░░░` · 41 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -202,6 +202,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | DESIGN-2 | A+B | Mode sombre sur tout le site (landing, back-office, admin, livreur) et carte sombre assortie. | Après DESIGN-1 ; validation du propriétaire. | Élevée · GPT‑6.1 Sol |
 | FACTURX-SAISIE | A+B | Champs exigés par le Factur-X obligatoires et bloquants dès l'enregistrement des mentions légales. | — | Moyenne · GPT‑6.1 Sol |
 | LANDING-2 | A+B | Landing et page de connexion refaites : minimalistes, très visuelles (Apple, Tesla, Uber), claires et efficaces. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
+| MOBILE-WEB | A+B | Revoir toute l'application au format téléphone, dans le navigateur. | Après DESIGN-2, MAP-INTERACTION et UX-ALERTES. | Élevée · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
@@ -1554,6 +1555,19 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Terminé quand : direction validée par le propriétaire ; landing et connexion livrées en Light et Dark, à 390 et 1 280 px ; chaque information clé (ce qu'on fait, bénéfices, démo, connexion, contact, tarifs) est trouvable en moins de 5 secondes ; aucune promesse au-delà de ce que le produit fait réellement (GROWTH-1) ; scores Lighthouse au moins égaux à aujourd'hui ; `npm run check` vert et recette navigateur.
 
   Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026 ; prolonge GROWTH-1 et la mini-démo DEMO-3 ; mode sombre avec DESIGN-2. Choix de la direction visuelle : propriétaire (questionnaire).
+
+  État : ouverte, non commencée.
+
+- [ ] **MOBILE-WEB — Revoir toute l'application au format téléphone, dans le navigateur.** Demande du propriétaire du 29 octobre 2026 : passer en revue chaque page des trois espaces (administration et dispatch, portail client, app livreur), ainsi que le site public et `/admin`, sur un écran de téléphone (390 px, et 360 px pour les petits Android), dans le navigateur, sans application native.
+  - Inventaire page par page : ce qui déborde, ce qui est trop petit à toucher (cibles d'au moins 44 px), les tableaux illisibles, les menus, les cartes, les formulaires et les modales.
+  - Corriger écran par écran, en gardant le comportement ordinateur identique. Priorité aux parcours du quotidien : livreur en tournée, client qui commande et suit, dispatcher qui affecte en déplacement.
+  - Tableaux longs : version en cartes sur mobile. Actions principales accessibles au pouce, sans débordement horizontal.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : chaque page listée est vérifiée à 390 et 360 px, en Light et Dark, avec capture avant/après ; aucun débordement horizontal ; cibles d'au moins 44 px ; parcours principaux cliqués de bout en bout sur mobile ; `npm run check` vert.
+
+  Source / dépendance / blocage : demande du propriétaire du 29 octobre 2026. À mener après DESIGN-2, MAP-INTERACTION et UX-ALERTES pour ne pas retoucher deux fois les mêmes écrans. Complète MOB-01C (essais sur téléphone réel).
 
   État : ouverte, non commencée.
 

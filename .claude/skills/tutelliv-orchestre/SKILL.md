@@ -19,7 +19,7 @@ Le propriétaire n'est pas là pendant le chantier. **L'orchestrateur est le pat
 ## Rôles
 
 - **Orchestrateur (Claude Opus, conversation principale)** : prépare les branches, lance les agents, relit chaque branche, fusionne, tient `TODO.md`, parle au propriétaire en français simple et court. Il ne code pas lui-même, sauf micro-correctif.
-- **Agents de code** : un par lot, dans un worktree `.claude/worktrees/agent-<lot>` sur une branche `agent/<lot>`, partie du dernier `preproduction` local. Modèle selon le risque (voir tableau).
+- **Agents de code** : un par lot, sur une branche `agent/<lot>` partie du dernier `preproduction`. **Dans le cloud par défaut** (voir « Où tourne chaque agent »), sinon dans un worktree local `.claude/worktrees/agent-<lot>`. Modèle selon le risque (voir tableau).
 - **Agent de recette (Sonnet)** : clique dans le navigateur, branche par branche, sur un worktree détaché au commit testé (skill `tutelliv-recette`). Il constate, ne corrige rien, et renvoie la liste des défauts à corriger.
 - **Vérificateur final (agent Opus neuf, lancé par l'orchestrateur)** : le dernier rempart, quand tout est fusionné. Il ne connaît que le code, les critères « Terminé quand » des tâches et ce journal d'erreurs, jamais les conclusions des agents. Il lance lui-même :
   - `npm run check` et `npm run build` sous Node 22 ;
@@ -31,6 +31,31 @@ Le propriétaire n'est pas là pendant le chantier. **L'orchestrateur est le pat
 - **Codex en complément** (autre fournisseur, autre regard) : lancé par l'orchestrateur lui-même, jamais par le propriétaire, en même temps que le vérificateur final, sur une liste fermée. **Le propriétaire n'a plus à faire intervenir ChatGPT ou Codex pour vérifier** : toute la vérification est dans le chantier.
 - **Commit et push** : un seul envoi groupé sur `preproduction`, puis contrôle du déploiement Vercel. Le propriétaire a demandé ce déroulé complet, push compris. Il n'a lieu que si tout est vert : check, build, recette, et Codex sans défaut important ouvert. Jamais `main` ni la production.
 - **Migrations** : les lots évitent tout changement de schéma. Si un lot en a vraiment besoin, la migration est additive, relue, appliquée sur tutelliv-dev seulement. Ce lot reste alors **hors du push** et il est signalé dans le rapport, car la préproduction exige l'accord du propriétaire.
+
+## Où tourne chaque agent : Mac ou cloud
+
+Depuis le 29 octobre 2026, le cloud de Claude Code est connecté : machines de 16 Go, 4 cœurs, sans la file `lourd.sh`. Le Mac (8 Go) ne garde que ce qui a besoin de lui.
+
+| Travail | Où | Pourquoi |
+|---|---|---|
+| Orchestration (cette conversation) | Mac | Pilote tout, a les outils Vercel et Supabase, Codex et Cursor |
+| Agents de code (écrire, tests unitaires, `npm run check`) | **Cloud** | Le plus lourd ; en parallèle sans faire la queue |
+| Données de test sur tutelliv-dev (lot F) | Cloud | Il suffit de l'accès réseau à la base de développement |
+| Pré-vol adverse d'un agent de code | Avec l'agent (cloud) | Même session |
+| Recette navigateur, captures Light/Dark | Mac | Chrome et Playwright fiables en local ; le navigateur n'est pas garanti dans le cloud |
+| Relecture `code-review` de l'orchestrateur | Mac | Sur la branche récupérée |
+| Codex et Cursor | Mac | Leurs outils en ligne de commande sont installés sur le Mac ; leurs propres clouds ne sont pas reliés à GitHub |
+| Vérification finale V1 « suites » (check, build) | Cloud, ou Mac si le cloud n'est pas prêt | Lourd en mémoire |
+| Vérification finale V2 « navigateur » et V3 « revue » | Mac | Navigateur, outils locaux |
+| Push sur `preproduction`, contrôle Vercel | Mac | Toujours par l'orchestrateur |
+
+**Repli** : si l'environnement cloud n'est pas prêt, ou si le cloud échoue (session qui ne démarre pas, réseau refusé), le lot tourne en local dans un worktree avec `lourd.sh`, comme avant. Le chantier ne s'arrête jamais pour ça.
+
+**Conséquences** :
+- Les agents cloud continuent même si le Mac se met en veille ou si l'écran est fermé. En revanche, l'orchestrateur tourne sur le Mac : s'il s'endort, le pilotage s'arrête. L'anti-veille (`fr.orso.agents-eveilles`) garde le Mac éveillé tant qu'un agent travaille.
+- Le propriétaire peut suivre et commenter les sessions cloud depuis son téléphone (application Claude, onglet Code, ou claude.ai/code).
+- Le cloud consomme le quota Claude Max comme le local : plus de lots en parallèle, c'est une consommation plus rapide. Surveiller les signes de limite.
+- Les lots cloud poussent leur branche `agent/<lot>` sur GitHub (jamais `preproduction` ni `main`). L'orchestrateur la récupère, la relit et la fusionne en local.
 
 ## Choix des modèles
 
@@ -57,7 +82,8 @@ Politique :
 
 | Fournisseur | Rôle | Lancement depuis la conversation (Bash, en arrière-plan, dans le worktree du lot) |
 |---|---|---|
-| **Claude** | Orchestration, lots risqués (Opus), recette navigateur | Agent tool, avec `model: opus`, `sonnet` ou `haiku` |
+| **Claude, cloud** | Agents de code par défaut | `script -q <journal> claude --cloud "<prompt>" < /dev/null` depuis le dossier principal (voir « Agents dans le cloud ») |
+| **Claude, local** | Orchestration, recette navigateur, relectures, vérification, repli des lots | Agent tool, avec `model: opus`, `sonnet` ou `haiku` |
 | **Codex** | Vérification finale indépendante (prioritaire) ; lot de code seulement en appoint | `~/.cursor/extensions/openai.chatgpt-*/bin/macos-aarch64/codex exec -m gpt-6.1-sol -c model_reasoning_effort=medium -s workspace-write -C <worktree> -o <rapport> "<prompt>" < /dev/null` |
 | **Cursor** | Facultatif : 1 ou 2 lots moyens (écran, finitions) si Claude est limité | `cd <worktree> && cursor-agent -p --output-format text --model <modèle> "<prompt>" > <journal>` (`cursor-agent --list-models` pour choisir) |
 
@@ -78,11 +104,14 @@ Règles :
    - direction visuelle de LANDING-2.
 
    Aucun questionnaire au propriétaire. Le périmètre de DISPATCH-4 a été cadré par le propriétaire le 29 octobre ; les prix restent à sa décision.
-4. Vérifier la RAM (`memory_pressure`) et les ports 3110 et 3111.
+4. Vérifier que le cloud est prêt : environnement `tutelliv-dev` créé, accord pour les branches `agent/*`, réglage Vercel des prévisualisations. S'il manque quelque chose, lots en local (repli) et mention dans le rapport.
+5. Vérifier la RAM (`memory_pressure`), les ports 3110 et 3111, et que l'anti-veille tourne (`launchctl list | grep agents-eveilles`).
 
 ## Lots — vague 1 (lancés en même temps)
 
-| Lot | Tâches TODO | Modèle | Fichiers principaux | Serveur |
+Tous les lots codent dans le cloud ; leurs recettes et captures se font sur le Mac (ports 3110 et 3111, une recette à la fois par port).
+
+| Lot | Tâches TODO | Modèle | Fichiers principaux | Recette Mac |
 |---|---|---|---|---|
 | **A — Design** | DESIGN-2 sauf site public : mode sombre du back-office, du dispatch, de `/admin` et de l'app livreur ; **suppression des dégradés** ; surfaces lisibles (tableaux, Chauffeurs) | Opus | `globals.css`, `src/lib/theme.ts`, layouts | 3110, partagé |
 | **B — Carte** | MAP-INTERACTION (**carte unifiée** Livreurs/Livraisons, marqueurs cliquables) + MAP-3 + **carte sombre** | Sonnet | composants de carte, tableau de bord | 3111, partagé |
@@ -99,7 +128,9 @@ Règles :
 | **L2 — Landing, construction** | LANDING-2 sur la direction choisie + mode sombre du site public (la part de DESIGN-2 laissée par le lot A) | Opus |
 | **G — Dispatch avancé, tranche 1** | DISPATCH-4, cadré le 29 octobre (voir la tâche dans `TODO.md`) : les 3 meilleurs livreurs proposés, avec le vrai temps de trajet (OSRM gratuit, en cache) et la raison du choix ; affectation en un clic ; mode « suggestion » ou « automatique » au choix de l'entreprise ; dimensionné pour une grande flotte. Les tournées viennent en tranche 2, dans un chantier suivant. **Aucun changement de prix.** | Opus |
 
-Ordre de fusion sur `integration/<date>` : F, D, E, C, B, puis A, le plus transversal, rebasé en dernier, puis L2.
+| **H — Mobile web** | MOBILE-WEB : revue de toute l'application à 390 et 360 px dans le navigateur, page par page, et corrections. À lancer après la fusion de A, B et C, pour ne pas retoucher deux fois les mêmes écrans. | Sonnet (code cloud, captures Mac) |
+
+Ordre de fusion sur `integration/<date>` : F, D, E, C, B, puis A, le plus transversal, rebasé en dernier, puis L2, puis H.
 
 ## Ce qui reste hors chantier
 
@@ -111,9 +142,10 @@ Bloqué par le propriétaire ou par l'extérieur :
 
 ## Règles données à chaque agent (à recopier dans leur prompt)
 
-- Worktree et branche imposés ; ne jamais modifier `TODO.md` ; pas de push ni de merge ; commits en français.
-- Base tutelliv-dev uniquement (`env2:verify-dev` → passed) ; ne jamais lire de `.env*` ; environnement via `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local --` ; données préfixées `E2E`, nettoyées à la fin.
-- Commandes lourdes via `outputs/suivi-agents/lourd.sh` ; Node 22.
+- Branche imposée `agent/<lot>` ; ne jamais modifier `TODO.md` ; jamais de merge ; commits en français.
+- **Agent cloud** : l'environnement fournit les variables de tutelliv-dev. Vérifier `npm run -s env2:verify-dev` → passed avant tout essai connecté, sinon s'arrêter. Pousser seulement sa branche `agent/<lot>` (`git push -u origin agent/<lot>`), jamais `preproduction` ni `main`. Pas de `lourd.sh`. Node 22 (`nvm use 22` si besoin).
+- **Agent local (repli)** : worktree imposé, pas de push ; environnement via `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local --` ; commandes lourdes via `outputs/suivi-agents/lourd.sh` ; Node 22.
+- Base tutelliv-dev uniquement ; ne jamais lire ni afficher de secret ; données préfixées `E2E`, nettoyées à la fin.
 - **Pré-vol adverse obligatoire** avant le rapport : un sous-agent tente de casser le travail sur les classes de défauts que Codex a trouvées tard :
   - entrelacements concurrents ;
   - réponse réseau ambiguë et rejeu ;
@@ -162,6 +194,7 @@ Bloqué par le propriétaire ou par l'extérieur :
 | Fichiers non suivis identiques qui bloquaient l'avance rapide du dossier principal. | Les comparer (`cmp`), les retirer s'ils sont identiques, puis `git merge --ff-only`. |
 | Node 20 en local alors que le projet exige Node 22. | `node -v` à l'étape 0 ; sinon préfixe `PATH=/opt/homebrew/opt/node@22/bin:$PATH` pour tous les agents. |
 | Le sandbox Codex interdit l'écoute réseau et Chrome : le test PERF-02 échoue en EPERM, et la recette navigateur est impossible. | Codex en lecture et en API seulement ; l'échec EPERM n'est pas un défaut du code. |
+| Le cloud n'a été proposé qu'en fin de chantier, alors que les 8 Go du Mac ralentissaient tout depuis le début. | Code dans le cloud par défaut ; vérifier à l'étape 0. |
 | Agent de recette tombé sur une coupure réseau (ENOTFOUND). | Le reprendre avec SendMessage quand le réseau revient, plutôt que le relancer de zéro. |
 | Pool limité à 15 connexions en mode session : des 503 sur la connexion pendant une minute au démarrage. | `DATABASE_CONNECTION_LIMIT=5` par serveur, deux serveurs au plus, et attendre le 200 sur `/login`. |
 | Des tâches proposées au propriétaire étaient déjà faites. | Vérifier le code et la case dans `TODO.md` avant de proposer quoi que ce soit. |
@@ -235,6 +268,7 @@ Ce skill s'améliore à chaque erreur. L'orchestrateur ne la laisse jamais se re
 - `scripts/e2e/dev-role-accounts.ts cleanup` ; supprimer les données `E2E` créées.
 - Libérer les espaces de démo laissés en session par les recettes, en développement uniquement. La préproduction n'est touchée que si le propriétaire l'a autorisé.
 - Retirer les worktrees des branches fusionnées (`git worktree remove`), sans supprimer les branches.
+- Lister dans le rapport les branches `agent/*` poussées sur GitHub et les sessions cloud du chantier. On ne les supprime pas sans l'accord du propriétaire.
 
 ## Rapport final au propriétaire (gabarit, moins d'une page)
 
@@ -243,7 +277,7 @@ Ce skill s'améliore à chaque erreur. L'orchestrateur ne la laisse jamais se re
 3. **Décisions prises à ta place** : une ligne chacune, avec l'option écartée.
 4. **Non vérifié** et pourquoi.
 5. **À faire de ton côté** : une action concrète par ligne.
-6. **Qui a fait quoi** (Claude, Codex, Cursor) et **ce qu'on a appris** (une ligne).
+6. **Qui a fait quoi** (Claude cloud ou local, Codex, Cursor) et **ce qu'on a appris** (une ligne).
 7. Lien vers la galerie de captures.
 
 ## Maîtrise du temps (après la plainte du 29 octobre : 1 h 30 au lieu de 45 minutes)
@@ -303,7 +337,22 @@ Règles :
    On ne refait pas toutes les recettes. Objectif : **10 à 15 minutes**.
 3. **Serveur chaud** : un serveur de l'intégration reste lancé pendant le chantier, et ses pages principales sont préchargées (`curl` sur la liste des routes) pendant que les agents travaillent. La vérification navigateur commence donc sans attente de compilation.
 4. **Build et check en même temps que le navigateur**, dans deux worktrees, pendant que la RAM libre reste au-dessus de 35 % (`memory_pressure`). Sinon, un à la fois.
-5. **Décharger le Mac quand c'est possible** :
-   - lots lourds confiés à des agents dans le cloud (`isolation: "remote"` de l'Agent tool, si disponible) ;
-   - ou build vérifié par un déploiement de prévisualisation Vercel d'une branche de travail, mais seulement si le propriétaire a autorisé le push de branches autres que `preproduction`.
-6. **Limite physique** : avec 8 Go, deux serveurs et un build en même temps saturent la machine. Une machine avec 16 Go ou plus, ou des agents dans le cloud, diviserait les temps d'attente par deux environ. C'est une décision du propriétaire, signalée dans le rapport si la RAM a ralenti le chantier.
+5. **Décharger le Mac** : c'est désormais la règle, avec le code dans le cloud (voir « Où tourne chaque agent »). `lourd.sh` ne sert plus qu'aux commandes lourdes restées en local : recette, vérification, repli.
+6. **Limite physique restante** : le Mac (8 Go) supporte deux serveurs de recette au plus. Si les recettes font la queue, en faire moins en même temps plutôt que de saturer la machine.
+
+## Agents dans le cloud (vérifié le 29 octobre 2026)
+
+- **Connexion faite** : le compte GitHub `orsocrtnt` est relié au cloud de Claude Code (`/web-setup`). Une session de test a bien été créée.
+- **Lancement par l'orchestrateur** : `claude --cloud` exige un terminal interactif. Depuis Bash, passer par un pseudo-terminal :
+  ```
+  cd /Users/orso/Developer/TutelLiv-GPT && script -q <journal> claude --cloud "<prompt du lot>" < /dev/null
+  ```
+  Le journal contient le lien de la session (`View: https://claude.ai/code/session_…`). L'option `isolation: "remote"` de l'Agent tool **ne marche pas** ici : l'agent tourne en local, sans prévenir.
+- **Choisir l'environnement** : une fois `tutelliv-dev` créé, ajouter `--environment <id>` à la commande. Sans cette option, la session part sur l'environnement par défaut, qui n'a pas l'accès à la base.
+- **Suivre l'avancement** sans lire les transcriptions : `git ls-remote origin 'refs/heads/agent/*'` montre les commits poussés. Le lien de la session sert seulement en cas de doute. Un lot sans commit poussé après 45 minutes est contrôlé ; pour lui écrire, `claude -p "<message>" --cloud <session>` (via `script -q`).
+- **Récupérer le travail** : la session pousse une branche `agent/<lot>` sur GitHub. L'orchestrateur la récupère (`git fetch origin agent/<lot>`) ou utilise `claude --teleport <session>`, puis relit et fusionne comme d'habitude.
+- **Avant le premier vrai lot, il manque encore :**
+  1. un environnement cloud `tutelliv-dev` dans les réglages de claude.ai/code, avec les variables de la base de **développement** seulement, l'accès réseau personnalisé (`*.supabase.co`, `*.pooler.supabase.com`) et le script `npm ci && npx prisma generate`. C'est le propriétaire qui recopie les valeurs, jamais l'orchestrateur ;
+  2. l'accord écrit du propriétaire pour pousser des branches `agent/*`, jamais `preproduction` ni `main` ;
+  3. un réglage Vercel pour que les prévisualisations des branches `agent/*` ne soient pas construites (Ignored Build Step), ou ne se branchent pas sur la préproduction. Le montrer au propriétaire avant de l'appliquer.
+- **Usage** : lots de code et tests unitaires dans le cloud (16 Go, sans file `lourd.sh`). Recette navigateur, Codex et vérification finale restent sur le Mac. Le cloud consomme le quota Claude comme le local.
