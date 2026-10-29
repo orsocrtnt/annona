@@ -348,7 +348,7 @@ function WidgetToggleRow({
           aria-checked={visible}
           onClick={() => onToggle(!visible)}
           className={cn(
-            "relative mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']",
+            "mt-0.5 flex h-5 w-9 max-md:relative shrink-0 items-center rounded-full transition-colors max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']",
             visible ? "bg-brand" : "bg-muted"
           )}
         >

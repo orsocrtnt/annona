@@ -222,7 +222,7 @@ export default function ClientSettingsPage() {
                   ["emailNotifications", "Copie par e-mail"],
                 ] as const
               ).map(([key, label]) => (
-                <label key={key} className="flex cursor-pointer items-center justify-between gap-4 max-md:min-h-11">
+                <label key={key} className="flex items-center justify-between gap-4 max-md:min-h-11 max-md:cursor-pointer">
                   <span className="text-sm">{label}</span>
                   <input
                     type="checkbox"

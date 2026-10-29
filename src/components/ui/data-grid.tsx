@@ -123,11 +123,11 @@ export function DataGrid<T extends Record<string, unknown>>({
       return;
     }
     if (!highlightedVisible) return;
-    if (lastFocusedRowId.current === highlightedRowId) return;
+    if (lastFocusedRowId.current === `${highlightedRowId}:${variant}`) return;
     const target = highlightedRowRef.current ?? highlightedCardRef.current;
     target?.scrollIntoView({ block: "center", behavior: "smooth" });
     target?.focus({ preventScroll: true });
-    lastFocusedRowId.current = highlightedRowId;
+    lastFocusedRowId.current = `${highlightedRowId}:${variant}`;
   }, [highlightedRowId, highlightedVisible, variant]);
 
   const handleSort = (key: string) => {
