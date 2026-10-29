@@ -14,7 +14,7 @@ Sources : [idempotence Resend](https://resend.com/docs/dashboard/emails/idempote
 | 409 `invalid_idempotent_request` | unconfirmed, permanente | SEND_UNCONFIRMED (peut-être déjà parti) |
 | reprise ≥ 23 h après la fenêtre | unconfirmed, aucun appel | SEND_UNCONFIRMED |
 
-Contenu gelé à la création, anti-doublon compté depuis l'envoi. Une relance QUEUED dont la tâche a déjà tourné est une reprise ; tâche épuisée = non confirmée et bloquante, sauf erreur prouvant l'absence d'appel. Admin : « Envoi non confirmé… vérifiez avant de relancer », même résultat liste/clic, tâche FAILED avec `lastError` explicite.
+Rendu complet figé dans le payload à la première tentative émise (`emailSnapshot`, sans migration), réutilisé à chaque reprise, effacé après refus certain d'une première tentative. QUEUED déjà tentée = reprise ; tâche épuisée = non confirmée, bloquante. Admin : « Envoi non confirmé… vérifiez avant de relancer », tâche FAILED, `lastError` explicite.
 
 ## Appelants (`replayWindowStart` obligatoire)
 
@@ -24,11 +24,11 @@ Contenu gelé à la création, anti-doublon compté depuis l'envoi. Une relance 
 
 ## Autres correctifs
 
-Tâche reportée sans perte d'essai, prise vérifiant l'échéance. Limiteur de connexion (défaut trouvé sur PostgreSQL : 10 autorisées sur 12, limite 5) : verrou attendu 2 s au plus, contention = 503 « Service momentanément occupé… », `Retry-After: 5`.
+Report sans perte d'essai. Limiteur (défaut trouvé sur PostgreSQL : 10 autorisées sur 12, limite 5) : verrou attendu 2 s, contention = 503, `Retry-After: 5`.
 
 ## Tests (`node:test`, dans `npm run check`)
 
-Table des 17 cas ; fournisseur simulé au contrat Resend (200, 400, 409×2, 422, 429, 500, expiration, double clic, reprise à 6 min après minuit, +20 h, > 23 h) ; transition QUEUED héritée → 409 → un seul e-mail ; fenêtre notify/bienvenue ; liste, clic, prise de tâche, route 503.
+17 cas d'issue ; rendu figé (montant, adresse, preuve modifiés → même corps) ; fournisseur simulé (200, 400, 409×2, 422, 429, 500, expiration, double clic, reprises 6 min/+20 h/> 23 h) ; transition QUEUED héritée ; notify/bienvenue ; liste, clic, route 503.
 
 ## PostgreSQL réel : `npm run test:pg-locks` (tutelliv-dev, pool 5)
 
@@ -43,16 +43,17 @@ passed: true ; aucune donnée E2E restante
 
 ## Contre-revues adverses (Opus)
 
-Trois passes, constats corrigés sauf limites ci-dessous.
+Quatre passes, constats corrigés sauf limites ci-dessous.
 
 ## Limites
 
 - Aucun envoi Resend réel ; corps `{name}` d'après la documentation.
-- Relance héritée close en NOT_SENT_* après un 500 accepté : indétectable.
+- Relance héritée close NOT_SENT_* après un 500 accepté : non traitée, Resend jamais configuré.
+- Adresse figée : une reprise part vers l'adresse de la première tentative.
 - **Pas de retour arrière sous 1ad71ec** (SEND_UNCONFIRMED ignoré par l'ancien code).
 - Notification/bienvenue déjà tentée, créée > 23 h : plus d'e-mail.
-- `createClientOrder` simulé dans le test PostgreSQL (vrai `beforeCreate`).
+- `createClientOrder` simulé (vrai `beforeCreate`).
 
 ## Commits
 
-1ad71ec, f15dade, 51caacf, 8eae8eb, puis ce rapport ; `npm run check` : exit 0, 1176/1176.
+1ad71ec, f15dade, 51caacf, 8eae8eb, 17e099a, 98f52e0, puis ce rapport ; `npm run check` : exit 0, 1181/1181.
