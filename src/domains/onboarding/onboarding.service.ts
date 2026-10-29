@@ -60,6 +60,10 @@ export interface CompanyOnboardingStatus {
   skippedSteps: number;
   totalSteps: number;
   readyForInternalTest: boolean;
+  /** Masqué de la navigation principale par l'administrateur (le guide reste accessible depuis l'Aide). */
+  hiddenFromNavigation: boolean;
+  /** Proposé dans la navigation principale : ni terminé, ni masqué. */
+  showInNavigation: boolean;
   steps: OnboardingStep[];
   limits: {
     invitationEmailValidated: false;
@@ -91,7 +95,9 @@ export function buildCompanyOnboardingStatus(
     companyDispatchSettingsSchema.safeParse(settings.dispatchRules).success ||
     snapshot.completedDeliveryCount > 0;
 
-  const skipped = asSettings(settings.onboarding).skippedCollaborators === true;
+  const onboardingSettings = asSettings(settings.onboarding);
+  const skipped = onboardingSettings.skippedCollaborators === true;
+  const hiddenFromNavigation = onboardingSettings.hiddenFromNavigation === true;
   const pending = (count: number | undefined) => count ? ` ${count} invitation(s) en attente d’activation.` : "";
 
   const steps: OnboardingStep[] = [
@@ -184,13 +190,16 @@ export function buildCompanyOnboardingStatus(
   ];
 
   const completedSteps = steps.filter((step) => step.complete).length;
+  const readyForInternalTest = steps.every((step) => step.complete || step.skipped);
   return {
     companyName: snapshot.companyName,
     companyProfile: profile,
     completedSteps,
     skippedSteps: steps.filter((step) => step.skipped).length,
     totalSteps: steps.length,
-    readyForInternalTest: steps.every((step) => step.complete || step.skipped),
+    readyForInternalTest,
+    hiddenFromNavigation,
+    showInNavigation: !readyForInternalTest && !hiddenFromNavigation,
     steps,
     limits: {
       invitationEmailValidated: false,
@@ -245,14 +254,17 @@ export async function getCompanyOnboardingStatus(
   });
 }
 
-// Seul le choix facultatif peut être enregistré ; les étapes métier restent calculées.
-export const onboardingPreferenceSchema = z.object({
-  step: z.literal("collaborators"),
-  skipped: z.boolean(),
-}).strict();
+// Seuls le choix facultatif et l'affichage dans la navigation s'enregistrent ; les étapes métier restent calculées.
+export const onboardingPreferenceSchema = z.union([
+  z.object({ step: z.literal("collaborators"), skipped: z.boolean() }).strict(),
+  z.object({ step: z.literal("navigation"), hidden: z.boolean() }).strict(),
+]);
 
 export async function updateOnboardingPreference(companyId: string, input: unknown) {
   const preference = onboardingPreferenceSchema.parse(input);
+  const change = preference.step === "collaborators"
+    ? { skippedCollaborators: preference.skipped }
+    : { hiddenFromNavigation: preference.hidden };
   for (let attempt = 0; attempt < 3; attempt++) {
     const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
     if (!company) throw new Error("COMPANY_NOT_FOUND");
@@ -261,7 +273,7 @@ export async function updateOnboardingPreference(companyId: string, input: unkno
       where: { id: companyId, settings: { equals: company.settings ?? Prisma.AnyNull } },
       data: { settings: {
         ...settings,
-        onboarding: { ...asSettings(settings.onboarding), skippedCollaborators: preference.skipped },
+        onboarding: { ...asSettings(settings.onboarding), ...change },
       } as Prisma.InputJsonObject },
     });
     if (saved.count === 1) return;
@@ -282,5 +294,6 @@ export async function resolveOnboardingLoginPath(
   if (user.role.systemRole !== "COMPANY_ADMIN" || !user.companyId ||
       asSettings(user.settings).onboardingRequired !== true) return defaultPath;
   const status = await getCompanyOnboardingStatus(user.companyId);
-  return status.readyForInternalTest ? defaultPath : "/onboarding";
+  // Masqué par l'administrateur : il n'est plus proposé à la connexion ; l'Aide permet de le reprendre.
+  return status.showInNavigation ? "/onboarding" : defaultPath;
 }

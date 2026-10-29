@@ -2,6 +2,7 @@
 
 import { ProfileForm } from "@/components/shared/profile-form";
 import { ChangePasswordForm } from "@/components/shared/change-password-form";
+import { ThemePreferenceField } from "@/components/theme/theme-preference-choice";
 
 export default function ClientProfilePage() {
   return (
@@ -12,6 +13,7 @@ export default function ClientProfilePage() {
       </div>
       <ProfileForm />
       <ChangePasswordForm />
+      <ThemePreferenceField />
     </div>
   );
 }

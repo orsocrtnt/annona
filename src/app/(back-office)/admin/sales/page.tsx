@@ -164,7 +164,7 @@ export default function AdminSalesCodesPage() {
       {data.total === 0 ? (
         <EmptyState icon={BadgePercent} title="Aucun code" description="Créez le premier code commercial ci-dessus." />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Code</TableHead>

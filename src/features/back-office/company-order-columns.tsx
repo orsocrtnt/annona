@@ -76,7 +76,7 @@ export function getCompanyOrderColumns(mode: ColumnMode): TableColumn<CompanyOrd
         const delivery = row.deliveries?.[0];
         if (!delivery) {
           if (row.status === "QUOTE_REQUESTED") {
-            return <span className="text-xs text-amber-700 dark:text-amber-400">Devis</span>;
+            return <span className="text-xs text-warning">Devis</span>;
           }
           return <span className="text-muted-foreground">—</span>;
         }

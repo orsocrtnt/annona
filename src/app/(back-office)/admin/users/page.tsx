@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
       {data.total === 0 ? (
         <EmptyState icon={Users} title="Aucun compte" description="Aucun compte ne correspond à ces filtres." />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Nom</TableHead>

@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/shared/profile-form";
 import { ChangePasswordForm } from "@/components/shared/change-password-form";
+import { ThemePreferenceField } from "@/components/theme/theme-preference-choice";
 import { useAuth } from "@/hooks/use-auth";
 import { getInitials } from "@/lib/utils";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
@@ -33,6 +34,8 @@ export default function DriverProfilePage() {
       />
 
       <ChangePasswordForm />
+
+      <ThemePreferenceField />
 
       <Button variant="outline" className="w-full" onClick={logout}>
         <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />

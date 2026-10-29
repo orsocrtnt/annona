@@ -161,7 +161,7 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
       <CardContent className="space-y-6">
             <MissionAcknowledgement {...delivery} />
         {isMissionInProgress && (
-          <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900">
+          <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-foreground">
             La mission a démarré. Son annulation reste possible, mais un motif est obligatoire et sera
             conservé dans l’historique.
           </p>

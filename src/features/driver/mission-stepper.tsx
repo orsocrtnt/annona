@@ -34,8 +34,8 @@ export function MissionStepper({ status, category }: MissionStepperProps) {
               <div
                 className={cn(
                   "flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors",
-                  done && "bg-brand text-white",
-                  active && "bg-brand text-white ring-4 ring-brand-subtle",
+                  done && "bg-brand text-white dark:text-primary-foreground",
+                  active && "bg-brand text-white ring-4 ring-brand-subtle dark:text-primary-foreground",
                   !done && !active && "bg-muted text-muted-foreground"
                 )}
               >

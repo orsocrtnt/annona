@@ -7,6 +7,7 @@ import {
   THEME_INIT_SCRIPT,
   THEME_STORAGE_KEY,
   THEME_SCOPED_PATH_PREFIXES,
+  THEME_EXCLUDED_PATH_PREFIXES,
   applyThemeToRoot,
   isThemePreference,
   isThemeScopedPath,
@@ -65,7 +66,15 @@ test("contrastes WCAG AA du Light et du Dark", () => {
     ["--color-error", "--color-error-subtle", 4.5],
     ["--color-error", "--color-card", 4.5],
     ["--color-ring", "--color-card", 3],
+    ["--color-ring", "--color-background", 3],
     ["--color-border", "--color-card", 1.2],
+    // Statuts en texte sur la carte et sur le fond de page.
+    ["--color-success", "--color-card", 4.5],
+    ["--color-warning", "--color-card", 4.5],
+    ["--color-success", "--color-background", 4.5],
+    ["--color-warning", "--color-background", 4.5],
+    ["--color-error", "--color-background", 4.5],
+    ["--color-muted-foreground", "--color-background", 4.5],
   ];
   for (const [name, set] of [["dark", dark], ["light", light]] as const) {
     for (const [fg, bg, min] of pairs) {
@@ -79,12 +88,56 @@ test("contrastes WCAG AA du Light et du Dark", () => {
   assert.ok(ratio(dark.get("--color-text-tertiary")!, dark.get("--color-card")!) >= 3);
 });
 
+test("DESIGN-2 : bordures de champ, diagrammes et aplats d'état restent AA en Sombre", () => {
+  // Champ de saisie : la bordure délimite la cible (WCAG 1.4.11, 3:1) sur la carte et sur le fond.
+  for (const bg of ["--color-card", "--color-background", "--color-popover", "--color-muted"]) {
+    const r = ratio(dark.get("--color-input")!, dark.get(bg)!);
+    assert.ok(r >= 3, `input sur ${bg} : ${r.toFixed(2)}`);
+  }
+  // Diagrammes : barres encre (gris clair en Dark) et teinte intermédiaire lisibles sur la carte (3:1).
+  for (const token of ["--color-chart-ink", "--color-chart-mid"]) {
+    const r = ratio(dark.get(token)!, dark.get("--color-card")!);
+    assert.ok(r >= 3, `${token} : ${r.toFixed(2)}`);
+  }
+  // Light : les diagrammes gardent exactement l'encre et les gris d'avant.
+  assert.equal(light.get("--color-chart-ink"), "#0e1310");
+  assert.equal(light.get("--color-chart-mid"), "#7f8883");
+  assert.equal(light.get("--color-chart-soft"), "#d5dbd7");
+  assert.equal(light.get("--color-chart-todo"), "#c9d3cd");
+  assert.equal(light.get("--color-chart-track"), "#eef1ef");
+  // Aplats d'état (KPI, alertes) : texte, texte atténué et statut lisibles sur chaque aplat.
+  const tone = readFileSync(new URL("../src/components/ui/tone.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(tone, /gradient/);
+  const flats = [...tone.matchAll(/surface: "[^"]*dark:bg-\[(#[0-9a-f]{6})\]/g)].map((m) => m[1]!);
+  assert.equal(flats.length, 4);
+  for (const surface of flats) {
+    for (const fg of ["--color-foreground", "--color-muted-foreground", "--color-error", "--color-warning", "--color-success"]) {
+      const r = ratio(dark.get(fg)!, surface);
+      assert.ok(r >= 4.5, `${fg} sur ${surface} : ${r.toFixed(2)}`);
+    }
+  }
+  const lightFlats = [...tone.matchAll(/surface: "[^"]*?\sbg-\[(#[0-9a-f]{6})\]/g)].map((m) => m[1]!);
+  assert.equal(lightFlats.length, 4);
+  for (const surface of lightFlats) {
+    for (const fg of ["--color-foreground", "--color-muted-foreground"]) {
+      assert.ok(ratio(light.get(fg)!, surface) >= 4.5, `${fg} sur ${surface}`);
+    }
+    assert.ok(ratio("#c43b2f", surface) >= 4.5, `valeur critique sur ${surface}`);
+  }
+});
+
 test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydratation", () => {
   assert.equal(isThemeScopedPath("/portal"), true);
   assert.equal(isThemeScopedPath("/portal/orders/new"), true);
   assert.equal(isThemeScopedPath("/portalx"), false);
-  assert.equal(isThemeScopedPath("/dashboard"), false);
-  assert.equal(isThemeScopedPath("/driver"), false);
+  // DESIGN-2 : back-office et dispatch, /admin, app livreur.
+  for (const path of ["/dashboard", "/dashboard/drivers", "/dispatch", "/settings/billing", "/support", "/users", "/companies", "/onboarding", "/admin", "/admin/users", "/driver", "/driver/missions"]) {
+    assert.equal(isThemeScopedPath(path), true, path);
+  }
+  // Site public, connexion et écrans de carte plein écran (lot carte) : Light inchangé.
+  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/register", "/dashboardx", "/administration", "/dispatch/map", "/dispatch/drivers", "/driver/navigate", "/driver/navigate/abc"]) {
+    assert.equal(isThemeScopedPath(path), false, path);
+  }
   assert.match(THEME_INIT_SCRIPT, new RegExp(THEME_STORAGE_KEY));
   const layout = readFileSync(new URL("../src/app/layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /<head>[\s\S]*THEME_INIT_SCRIPT[\s\S]*<\/head>/);
@@ -103,9 +156,18 @@ test("le verre respecte prefers-reduced-transparency et le mouvement prefers-red
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
-test("le basculement de thème est présent dans la barre du portail", () => {
-  const layout = readFileSync(new URL("../src/components/layouts/client-portal-layout.tsx", import.meta.url), "utf8");
-  assert.match(layout, /<ThemeToggle/);
+test("chaque espace propose la bascule en un clic et le choix Clair / Sombre / Système", () => {
+  const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+  for (const layout of ["src/components/layouts/client-portal-layout.tsx", "src/components/layouts/header.tsx", "src/components/layouts/driver-app-layout.tsx"]) {
+    assert.match(read(layout), /<ThemeToggle/, layout);
+  }
+  // Choix complet : menu du compte du back-office (/admin compris), Profil du portail et du livreur.
+  assert.match(read("src/components/layouts/header.tsx"), /<ThemeRadioGroup \/>/);
+  assert.match(read("src/app/(client-portal)/portal/profile/page.tsx"), /<ThemePreferenceField \/>/);
+  assert.match(read("src/app/(driver-app)/driver/profile/page.tsx"), /<ThemePreferenceField \/>/);
+  const choice = read("src/components/theme/theme-preference-choice.tsx");
+  for (const label of ["Système", "Clair", "Sombre"]) assert.match(choice, new RegExp(`label: "${label}"`));
+  assert.doesNotMatch(choice, /setAttribute|removeAttribute|documentElement/);
 });
 
 test("applyThemeToRoot résout « système » et retire l'attribut hors des espaces migrés", () => {
@@ -122,7 +184,13 @@ test("applyThemeToRoot résout « système » et retire l'attribut hors des espa
   applyThemeToRoot(root, "/portal", "light", true);
   assert.equal(attrs.get("data-theme"), "light");
   // Navigation client vers un autre espace : l'attribut disparaît, le Dark ne déborde pas.
-  applyThemeToRoot(root, "/dashboard", "dark", true);
+  applyThemeToRoot(root, "/dashboard", "dark", false);
+  assert.equal(attrs.get("data-theme"), "dark");
+  applyThemeToRoot(root, "/", "dark", true);
+  assert.equal(attrs.has("data-theme"), false);
+  applyThemeToRoot(root, "/dispatch", "system", true);
+  assert.equal(attrs.get("data-theme"), "dark");
+  applyThemeToRoot(root, "/dispatch/map", "dark", true);
   assert.equal(attrs.has("data-theme"), false);
 });
 
@@ -208,7 +276,8 @@ test("le script d'initialisation et ThemeSync (applyThemeToRoot) décident parei
   // Le script embarque le source de resolveRootTheme : aucune recopie manuelle de la règle.
   assert.ok(THEME_INIT_SCRIPT.includes("resolveRootTheme"));
   assert.ok(THEME_INIT_SCRIPT.includes(JSON.stringify(THEME_SCOPED_PATH_PREFIXES)));
-  const paths = ["/portal", "/portal/orders/new", "/portalx", "/portal-old", "/dashboard", "/", "/driver/missions"];
+  assert.ok(THEME_INIT_SCRIPT.includes(JSON.stringify(THEME_EXCLUDED_PATH_PREFIXES)));
+  const paths = ["/portal", "/portal/orders/new", "/portalx", "/portal-old", "/dashboard", "/", "/driver/missions", "/driver/navigate/x", "/dispatch", "/dispatch/map", "/dispatch/mapx", "/admin/users", "/login", "/tarifs"];
   const stored = [null, "light", "dark", "system", "nimporte"];
   for (const pathname of paths) {
     for (const value of [...stored, "throws"]) {
@@ -238,4 +307,52 @@ test("le script d'initialisation et ThemeSync (applyThemeToRoot) décident parei
       }
     }
   }
+});
+
+test("DESIGN-2 : dans les espaces migrés, aucune couleur claire codée en dur sans sa variante dark:", async () => {
+  const { readdirSync, statSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const roots = [
+    "src/features/back-office", "src/features/driver", "src/features/admin", "src/features/support", "src/features/users",
+    "src/features/deliveries", "src/features/saas", "src/features/dashboard", "src/app/(back-office)", "src/app/(driver-app)",
+    "src/components/ui", "src/components/shared", "src/components/layouts", "src/components/theme", "src/lib/permissions",
+  ];
+  // Écrans de carte plein écran restés en Light (THEME_EXCLUDED_PATH_PREFIXES) : traités par le lot carte.
+  const excluded = /dispatch\/map\/|dispatch\/drivers\/|dispatch-deliveries-map-panel|dispatch-map-status|driver-navigation-/;
+  const files: string[] = [];
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (/\.tsx?$/.test(name) && !excluded.test(path)) files.push(path);
+    }
+  };
+  roots.forEach(walk);
+  const isLightHex = (hex: string) => {
+    const n = parseInt(hex, 16);
+    return ((n >> 16) + ((n >> 8) & 255) + (n & 255)) / 3 > 200;
+  };
+  const offenders: string[] = [];
+  for (const file of files) {
+    const src = readFileSync(file, "utf8");
+    for (const [, classes] of src.matchAll(/["`]([^"`]*\b(?:bg|text)-[^"`]*)["`]/g)) {
+      const tokens = classes!.split(/\s+/);
+      if (tokens.some((t) => t.startsWith("dark:"))) continue;
+      const lightSurface = tokens.some((t) =>
+        /^(?:hover:)?bg-white(?:\/(?:[5-9]\d|100))?$/.test(t) ||
+        /^(?:hover:)?bg-(?:zinc|gray|slate|neutral|stone|red|amber|orange|yellow|emerald|green|blue|sky|indigo)-(?:50|100|200)$/.test(t) ||
+        (/^(?:hover:)?bg-\[#[0-9a-fA-F]{6}\]$/.test(t) && isLightHex(t.match(/#(\w{6})/)![1]!))
+      );
+      const darkText = tokens.some((t) =>
+        (/^text-\[#[0-9a-fA-F]{6}\]$/.test(t) && !isLightHex(t.match(/#(\w{6})/)![1]!)) ||
+        /^text-(?:red|amber|orange|yellow|emerald|green|blue|sky|indigo|zinc|gray|slate|neutral|stone)-[6-9]\d0$/.test(t) ||
+        t === "text-black"
+      );
+      // Texte blanc sur un jeton qui s'éclaircit en Dark (vert, encre inversée, statuts) : illisible sans variante.
+      const whiteOnLightening = tokens.includes("text-white") &&
+        tokens.some((t) => /^bg-(?:brand|primary|foreground|success|warning|error)$/.test(t));
+      if (lightSurface || darkText || whiteOnLightening) offenders.push(`${file} : « ${classes!.slice(0, 120)} »`);
+    }
+  }
+  assert.deepEqual(offenders, []);
 });

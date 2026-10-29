@@ -10,9 +10,12 @@ test("une alerte critique à zéro reste neutre, les autres teintes sont conserv
   assert.equal(resolveTone(undefined, 5), "neutral");
 });
 
-test("les teintes d'urgence sont de légers dégradés vers le blanc", () => {
+test("les teintes d'urgence sont des aplats clairs, sans dégradé, avec leur variante Sombre (DESIGN-2)", () => {
   for (const tone of ["critical", "warning", "info", "success"] as const) {
-    assert.match(TONE_CLASSES[tone].surface, /linear-gradient\(160deg,#[0-9a-f]{6}_0%,#ffffff_62%\)/);
+    const surface = TONE_CLASSES[tone].surface;
+    assert.doesNotMatch(surface, /gradient/);
+    assert.match(surface, /(?:^|\s)bg-\[#f[0-9a-f]{5}\](?:\s|$)/);
+    assert.match(surface, /dark:bg-\[#[0-9a-f]{6}\]/);
   }
 });
 
