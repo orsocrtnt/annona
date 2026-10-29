@@ -1,6 +1,10 @@
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "Tutelliv";
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "support@tutelliv.fr";
+/**
+ * Adresse de support publique, seulement si elle est configurée : aucune adresse par défaut, la boîte
+ * `support@tutelliv.fr` n'existant pas (domaine non acheté). Sans configuration, les liens mènent à /contact.
+ */
+export const SUPPORT_EMAIL: string | null = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
 
 export const ROUTES = {
   HOME: "/",

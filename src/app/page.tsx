@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { HomeLanding } from "@/features/landing/home-landing";
+import { toPublicPricing, type PublicPricing } from "@/domains/growth/public-pricing";
+import { getActiveSignupCatalog } from "@/domains/signup/signup.service";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -8,6 +10,15 @@ export const metadata: Metadata = {
     `${APP_NAME} relie entreprise, clients et chauffeurs pour piloter commandes, dispatch et livraisons.`,
 };
 
-export default function HomePage() {
-  return <HomeLanding />;
+/** Tarifs en un coup d'œil : même source que /tarifs (catalogue actif) ; indisponible = lien vers /tarifs. */
+async function readPricing(): Promise<PublicPricing | null> {
+  try {
+    return toPublicPricing(await getActiveSignupCatalog());
+  } catch {
+    return null;
+  }
+}
+
+export default async function HomePage() {
+  return <HomeLanding pricing={await readPricing()} />;
 }

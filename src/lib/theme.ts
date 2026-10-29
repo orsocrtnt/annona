@@ -4,8 +4,22 @@ export type ResolvedTheme = "light" | "dark";
 
 export const THEME_STORAGE_KEY = "tutelliv-theme";
 
-/** Espaces ayant migré vers les jetons Dark. Les autres gardent le Light actuel quel que soit l'OS. */
-export const THEME_SCOPED_PATH_PREFIXES = ["/portal"] as const;
+/**
+ * Espaces ayant migré vers les jetons Dark. Les autres gardent le Light actuel quel que soit l'OS.
+ * « / » ne vaut que pour l'accueil exact (aucune route ne commence par « // »).
+ * Site public (LANDING-2, DESIGN-2) : accueil, pages publiques, connexion et mot de passe.
+ */
+export const THEME_SCOPED_PATH_PREFIXES = [
+  "/portal",
+  "/",
+  "/fonctionnalites",
+  "/tarifs",
+  "/demonstration",
+  "/contact",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+] as const;
 
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === "system" || value === "light" || value === "dark";

@@ -5,10 +5,13 @@ import { Eye, EyeOff } from "lucide-react";
 import { Input } from "./input";
 import { cn } from "@/lib/utils";
 
-type PasswordInputProps = Omit<React.ComponentPropsWithoutRef<typeof Input>, "type">;
+type PasswordInputProps = Omit<React.ComponentPropsWithoutRef<typeof Input>, "type"> & {
+  /** Classes du bouton Afficher / Masquer (ex. cible de 44 px sur un champ haut). */
+  toggleClassName?: string;
+};
 
 export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, toggleClassName, ...props }, ref) => {
     const [visible, setVisible] = React.useState(false);
 
     return (
@@ -23,7 +26,10 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-          className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            "absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            toggleClassName
+          )}
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>

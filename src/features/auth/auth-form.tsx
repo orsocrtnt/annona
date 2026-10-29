@@ -27,14 +27,14 @@ import type {
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { APP_NAME } from "@/lib/constants";
-import { BrandLogo } from "@/components/brand/brand-logo";
-import { PublicSupportLink } from "@/features/support/public-support-link";
+import { ChevronLeft } from "lucide-react";
+import { AuthShell } from "@/features/auth/auth-shell";
+import { SPACE_ICONS } from "@/features/auth/login-space-chooser";
+import { browserStorage, rememberLastSpace, type LoginContext } from "@/features/auth/login-space";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { useAuthStore } from "@/stores/auth.store";
 import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
 type AuthMode = "login" | "register" | "forgot-password" | "reset-password";
-type LoginContext = "company" | "client" | "driver";
 type PasswordLink =
   | { tokenHash: string; type: "invite" | "recovery" | "signup" }
   | { accessToken: string; refreshToken: string; type: "invite" | "recovery" | "signup" };
@@ -53,15 +53,22 @@ function LoginEmailPrefill({ form }: { form: UseFormReturn<LoginInput> }) {
 interface AuthFormProps {
   mode: AuthMode;
   loginContext?: LoginContext;
+  /** Lien « Essayer la démo » : remplit le compte de démonstration public (affiché en clair sur la page). */
+  prefillDemo?: boolean;
 }
 
-export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
+/** Champs de la connexion : 52 px de haut, bordure contrastée (3:1) en Light comme en Dark. */
+const loginInputClass =
+  "h-[52px] rounded-[14px] border-[#858f88] bg-card px-4 text-base dark:border-[#6b746f]";
+
+export function AuthForm({ mode, loginContext = "company", prefillDemo = false }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
   const [passwordLink, setPasswordLink] = useState<PasswordLink | null>(null);
   const linkRead = useRef(false);
+  const loginInFlight = useRef(false);
   const [completingLink, setCompletingLink] = useState(false);
   const { setUser, setPermissions, setDemo, setSaas } = useAuthStore();
 
@@ -100,8 +107,12 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
 
   const loginForm = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: prefillDemo ? { email: DEMO_LOGIN_EMAIL, password: DEMO_DEFAULT_PASSWORD } : { email: "", password: "" },
   });
+  const fillDemoAccount = () => {
+    loginForm.setValue("email", DEMO_LOGIN_EMAIL, { shouldValidate: true });
+    loginForm.setValue("password", DEMO_DEFAULT_PASSWORD, { shouldValidate: true });
+  };
 
   const registerForm = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -122,6 +133,18 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   });
 
   const onLogin = async (data: LoginInput) => {
+    // Double clic : une seule requête à la fois ; après un succès, la navigation est en cours.
+    if (loginInFlight.current) return;
+    loginInFlight.current = true;
+    try {
+      await submitLogin(data);
+    } catch {
+      loginInFlight.current = false;
+      setError("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+    }
+  };
+
+  const submitLogin = async (data: LoginInput) => {
     setError(null);
     const normalizedEmail = data.email.trim().toLowerCase();
     let demoRequestKey: string | undefined;
@@ -141,6 +164,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
     });
     const json = await res.json();
     if (!res.ok) {
+      loginInFlight.current = false;
       setError(json.error ?? "Email ou mot de passe incorrect.");
       return;
     }
@@ -156,7 +180,10 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       saas: json.saas ?? null,
     });
     const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
-    router.push(selectLoginRedirect(requestedRedirect, json.redirectTo));
+    const destination = selectLoginRedirect(requestedRedirect, json.redirectTo);
+    // Repère « Dernier utilisé » : l'espace ouvert par le serveur, sans aucune donnée personnelle.
+    rememberLastSpace(browserStorage(), destination);
+    router.push(destination);
   };
 
   const onRegister = async (data: RegisterInput) => {
@@ -243,57 +270,55 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
     },
   };
 
+  const SpaceIcon = SPACE_ICONS[loginContext];
+
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden w-1/2 flex-col justify-between bg-foreground p-12 lg:flex">
-        <Link href="/" className="flex w-fit items-center rounded-lg transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-          <BrandLogo onDark size="md" priority />
-        </Link>
-        <div>
-          <h2 className="text-4xl font-semibold leading-tight text-white text-balance">
-            {isInvitedUser
-              ? "Accédez à votre espace personnel"
-              : "Pilotez vos opérations de livraison en temps réel"}
-          </h2>
-          <p className="mt-4 max-w-md text-lg text-white/60">
-            {isInvitedUser
-              ? "Votre administrateur vous envoie une invitation pour choisir votre mot de passe."
-              : "Commandes, dispatch, suivi et facturation au même endroit, pour vous, vos clients et vos livreurs."}
+    <AuthShell>
+        <div className="w-full max-w-[420px] animate-slide-up motion-reduce:animate-none">
+          {mode === "login" && (
+            <>
+              <Link
+                href="/login"
+                className="mb-5 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card pl-2.5 pr-3.5 text-sm font-medium text-text-secondary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <ChevronLeft className="h-[18px] w-[18px]" aria-hidden />
+                Changer d&apos;espace
+              </Link>
+              <div className="mb-4 flex justify-center" aria-hidden>
+                <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-brand-subtle text-brand">
+                  <SpaceIcon className="h-7 w-7" strokeWidth={1.8} />
+                </span>
+              </div>
+            </>
+          )}
+          <h1 className={mode === "login" ? "text-balance text-center text-[clamp(32px,5.6vw,48px)] font-bold leading-[1.04] tracking-[-0.04em]" : "text-balance text-[clamp(26px,4.4vw,36px)] font-bold leading-[1.08] tracking-[-0.035em]"}>
+            {passwordLink?.type === "signup" ? "Confirmer votre adresse e-mail" : titles[mode].title}
+          </h1>
+          <p className={mode === "login" ? "mt-2.5 text-center text-text-secondary" : "mt-2 text-text-secondary"}>
+            {passwordLink?.type === "signup" ? "Confirmez votre adresse pour activer votre espace entreprise." : titles[mode].subtitle}
           </p>
-        </div>
-        <p className="text-sm text-white/40">
-          © {new Date().getFullYear()} {APP_NAME}. Tous droits réservés.
-        </p>
-      </div>
-
-      <div className="relative flex flex-1 items-center justify-center p-6">
-        <PublicSupportLink className="absolute left-6 top-7 z-10 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline" />
-        <Link
-          href="/"
-          className="absolute right-6 top-6 z-10 flex items-center gap-2.5 transition-opacity hover:opacity-80"
-          aria-label={`Retour à l'accueil ${APP_NAME}`}
-        >
-          <BrandLogo />
-        </Link>
-
-        <div className="w-full max-w-md animate-slide-up pt-12 lg:pt-0">
-          <h1 className="text-2xl font-semibold tracking-tight">{passwordLink?.type === "signup" ? "Confirmer votre adresse e-mail" : titles[mode].title}</h1>
-          <p className="mt-1 text-muted-foreground">{passwordLink?.type === "signup" ? "Confirmez votre adresse pour activer votre espace entreprise." : titles[mode].subtitle}</p>
 
           {mode === "login" && loginContext === "company" && (
-            <Alert variant="info" className="mt-4">
+            <Alert variant="info" className="mt-5">
               <AlertDescription>
                 <span className="font-medium">Démonstration commerciale :</span>{" "}
                 connectez-vous avec{" "}
                 <span className="font-mono text-xs">{DEMO_LOGIN_EMAIL}</span> /{" "}
                 <span className="font-mono text-xs">{DEMO_DEFAULT_PASSWORD}</span> pour explorer
                 l&apos;admin, le portail client et l&apos;app chauffeur depuis un seul compte.
+                <button
+                  type="button"
+                  onClick={fillDemoAccount}
+                  className="mt-2.5 flex min-h-11 items-center rounded-full border border-brand/30 bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  Remplir avec le compte démo
+                </button>
               </AlertDescription>
             </Alert>
           )}
 
           {isInvitedUser && mode === "login" && (
-            <Alert variant="info" className="mt-4">
+            <Alert variant="info" className="mt-5">
               <AlertDescription>
                 La création de compte est réservée à votre administrateur. Utilisez votre e-mail et le mot de passe choisi lors de votre invitation.
               </AlertDescription>
@@ -316,7 +341,8 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           )}
 
           {mode === "login" && (
-            <form onSubmit={loginForm.handleSubmit(onLogin)} className="mt-8 space-y-5">
+            // method="post" : un envoi avant l'hydratation ne met jamais le mot de passe dans l'URL.
+            <form method="post" onSubmit={loginForm.handleSubmit(onLogin)} className="mt-7 space-y-5" noValidate>
               <Suspense fallback={null}>
                 <LoginEmailPrefill form={loginForm} />
               </Suspense>
@@ -324,7 +350,9 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 <Input
                   type="email"
                   autoComplete="email"
+                  inputMode="email"
                   placeholder="vous@email.fr"
+                  className={loginInputClass}
                   error={!!loginForm.formState.errors.email}
                   {...loginForm.register("email")}
                 />
@@ -333,25 +361,27 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 <PasswordInput
                   autoComplete="current-password"
                   placeholder="••••••••"
+                  className={`${loginInputClass} pr-14`}
+                  toggleClassName="right-1 h-11 w-11 rounded-[10px]"
                   error={!!loginForm.formState.errors.password}
                   {...loginForm.register("password")}
                 />
               </FormField>
-              <div className="flex justify-end">
-                <Link href={loginLinks[loginContext].forgot} className="text-sm text-brand hover:underline">
+              <div className="-mt-2 flex justify-end">
+                <Link href={loginLinks[loginContext].forgot} className="inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline">
                   Mot de passe oublié ?
                 </Link>
               </div>
-              <Button type="submit" variant="brand" size="lg" className="w-full" loading={loginForm.formState.isSubmitting}>
+              <Button type="submit" variant="brand" size="lg" className="h-[52px] w-full rounded-full text-base font-semibold" loading={loginForm.formState.isSubmitting}>
                 Se connecter
               </Button>
               {loginLinks[loginContext].register && (
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="text-center text-sm text-text-secondary">
                   Pas encore de compte entreprise ?{" "}
                   <Link
                     href={loginLinks[loginContext].register!}
                     onClick={(event) => navigateToAuthPage(event, loginLinks[loginContext].register!)}
-                    className="font-medium text-brand hover:underline"
+                    className="inline-flex min-h-11 items-center font-semibold text-brand hover:underline"
                   >
                     Créer un compte
                   </Link>
@@ -448,7 +478,6 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
             </form>
           )}
         </div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }
