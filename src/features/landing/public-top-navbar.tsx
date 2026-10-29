@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Mail, Menu } from "lucide-react";
+import { ArrowRight, Menu } from "lucide-react";
 
 import {
   AppleNavbar,
@@ -22,11 +22,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+// L'accueil passe par le logo ; Contact rejoint la navigation pour rester visible à toutes les largeurs.
 const publicNavigation = [
-  { href: "/", label: "Accueil" },
   { href: "/fonctionnalites", label: "Fonctionnalités" },
   { href: "/tarifs", label: "Tarifs" },
   { href: "/demonstration", label: "Démonstration" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 const menuItemClass =
@@ -59,13 +60,6 @@ export function PublicTopNavbar() {
 
       <div className="ml-auto flex items-center gap-1">
         <ThemeToggle className="max-sm:hidden" />
-
-        <Link
-          href="/contact"
-          className="hidden min-h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-[#3b443e] transition-colors hover:bg-black/[0.05] hover:text-[#0e1310] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-text-secondary dark:hover:bg-white/[0.08] dark:hover:text-foreground xl:inline-flex"
-        >
-          Contact
-        </Link>
 
         <Link
           href="/login"
@@ -119,12 +113,6 @@ export function PublicTopNavbar() {
               <Link href="/demonstration">
                 <ArrowRight className="h-4 w-4" aria-hidden />
                 Voir la démo
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild className={menuItemClass}>
-              <Link href="/contact">
-                <Mail className="h-4 w-4" aria-hidden />
-                Contact
               </Link>
             </DropdownMenuItem>
             <div className="sm:hidden">

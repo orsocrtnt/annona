@@ -128,14 +128,13 @@ test("DESIGN-2 : le site public suit le choix Clair / Sombre / Système, le rest
 test("DESIGN-2 : pages publiques sans dégradé ni texte foncé fixe en Dark", () => {
   for (const file of ["src/app/tarifs/page.tsx", "src/app/fonctionnalites/page.tsx"]) {
     const source = read(file);
-    for (const [, classes] of source.matchAll(/"([^"]*bg-gradient-to-[^"]*)"/g)) {
-      if (classes.includes("${")) continue;
+    for (const [, classes = ""] of source.matchAll(/"([^"]*bg-gradient-to-[^"]*)"/g)) {
       assert.match(classes, /dark:bg-none/, `${file} : ${classes}`);
     }
   }
   for (const file of ["src/app/tarifs/page.tsx", "src/app/fonctionnalites/page.tsx", "src/app/demonstration/page.tsx", "src/features/landing/growth-shell.tsx", "src/features/landing/home-landing.tsx"]) {
     const source = read(file);
-    for (const [, classes] of source.matchAll(/"([^"]*\btext-\[#0e1310\][^"]*)"/g)) {
+    for (const [, classes = ""] of source.matchAll(/"([^"]*\btext-\[#0e1310\][^"]*)"/g)) {
       // Encre fixe permise seulement sur fond vert (bouton primaire) ou avec sa variante Dark.
       assert.ok(/bg-\[#00d46a\]|dark:text-/.test(classes), `${file} : ${classes}`);
     }
