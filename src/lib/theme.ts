@@ -5,7 +5,6 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "tutelliv-theme";
 
 /**
-/**
  * Espaces ayant migré vers les jetons Dark : portail client, back-office et dispatch, espace `/admin`, app livreur,
  * et site public (LANDING-2, DESIGN-2) : accueil, pages publiques, connexion, inscription (`/register` et
  * `/register/client`) et mot de passe, pour ne pas changer de thème entre connexion et inscription.
@@ -34,11 +33,10 @@ export const THEME_SCOPED_PATH_PREFIXES = [
 ] as const;
 
 /**
- * Écrans plein écran de carte qui restent en Light tant que leur plan et leurs panneaux n'ont pas de version
- * sombre (lot carte de DESIGN-2) : un panneau blanc à texte en jeton y deviendrait illisible en Dark.
- * Retirer une entrée ici dès que l'écran est prêt.
+ * Routes retirées du Dark. Vide depuis le lot B (carte et panneaux ont une version sombre : `use-map-theme.ts`,
+ * `map-theme.css`, `map-visual-theme.ts`). Le mécanisme reste pour exclure un futur écran sans toucher à la règle.
  */
-export const THEME_EXCLUDED_PATH_PREFIXES = ["/dispatch/map", "/dispatch/drivers", "/driver/navigate"] as const;
+export const THEME_EXCLUDED_PATH_PREFIXES: readonly string[] = [];
 
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === "system" || value === "light" || value === "dark";

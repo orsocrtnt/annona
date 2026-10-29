@@ -138,10 +138,15 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
   for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/login/client", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
-  // Écrans de carte plein écran (lot carte) et préfixes voisins : Light inchangé.
-  for (const path of ["/registerx", "/dashboardx", "/administration", "/dispatch/map", "/dispatch/drivers", "/driver/navigate", "/driver/navigate/abc"]) {
+  // Préfixes voisins : hors Dark.
+  for (const path of ["/registerx", "/dashboardx", "/administration", "/dispatch/mapx"].filter((path) => path !== "/dispatch/mapx")) {
     assert.equal(isThemeScopedPath(path), false, path);
   }
+  // Écrans de carte : en Dark depuis le lot B (plus aucune exclusion).
+  for (const path of ["/dispatch/map", "/dispatch/drivers", "/driver/navigate", "/driver/navigate/abc"]) {
+    assert.equal(isThemeScopedPath(path), true, path);
+  }
+  assert.deepEqual([...THEME_EXCLUDED_PATH_PREFIXES], []);
   assert.match(THEME_INIT_SCRIPT, new RegExp(THEME_STORAGE_KEY));
   const layout = readFileSync(new URL("../src/app/layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /<head>[\s\S]*THEME_INIT_SCRIPT[\s\S]*<\/head>/);
@@ -195,7 +200,9 @@ test("applyThemeToRoot résout « système » et retire l'attribut hors des espa
   applyThemeToRoot(root, "/dispatch", "system", true);
   assert.equal(attrs.get("data-theme"), "dark");
   applyThemeToRoot(root, "/dispatch/map", "dark", true);
-  assert.equal(attrs.has("data-theme"), false);
+  assert.equal(attrs.get("data-theme"), "dark");
+  applyThemeToRoot(root, "/driver/navigate/abc", "light", true);
+  assert.equal(attrs.get("data-theme"), "light");
 });
 
 test("ThemeSync est l'unique écrivain de data-theme, appliqué avant peinture, sans snapshot serveur", () => {
@@ -281,7 +288,7 @@ test("le script d'initialisation et ThemeSync (applyThemeToRoot) décident parei
   assert.ok(THEME_INIT_SCRIPT.includes("resolveRootTheme"));
   assert.ok(THEME_INIT_SCRIPT.includes(JSON.stringify(THEME_SCOPED_PATH_PREFIXES)));
   assert.ok(THEME_INIT_SCRIPT.includes(JSON.stringify(THEME_EXCLUDED_PATH_PREFIXES)));
-  const paths = ["/portal", "/portal/orders/new", "/portalx", "/portal-old", "/dashboard", "/", "/driver/missions", "/driver/navigate/x", "/dispatch", "/dispatch/map", "/dispatch/mapx", "/admin/users", "/login", "/tarifs"];
+  const paths = ["/portal", "/portal/orders/new", "/portalx", "/portal-old", "/dashboard", "/", "/driver/missions", "/driver/navigate/x", "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/mapx", "/admin/users", "/login", "/tarifs"];
   const stored = [null, "light", "dark", "system", "nimporte"];
   for (const pathname of paths) {
     for (const value of [...stored, "throws"]) {
@@ -321,8 +328,8 @@ test("DESIGN-2 : dans les espaces migrés, aucune couleur claire codée en dur s
     "src/features/deliveries", "src/features/saas", "src/features/dashboard", "src/app/(back-office)", "src/app/(driver-app)",
     "src/components/ui", "src/components/shared", "src/components/layouts", "src/components/theme", "src/lib/permissions",
   ];
-  // Écrans de carte plein écran restés en Light (THEME_EXCLUDED_PATH_PREFIXES) : traités par le lot carte.
-  const excluded = /dispatch\/map\/|dispatch\/drivers\/|dispatch-deliveries-map-panel|dispatch-map-status|driver-navigation-/;
+  // Aucune exclusion : les écrans de carte sont en Dark et doivent suivre la même règle.
+  const excluded = /^$/;
   const files: string[] = [];
   const walk = (dir: string) => {
     for (const name of readdirSync(dir)) {

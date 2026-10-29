@@ -39,8 +39,8 @@ function matchesDeliverySearch(delivery: DispatchMapDelivery, query: string) {
 
 function deliveryBadgeClasses(category: DeliveryCategory) {
   return category === "COURIER"
-    ? "border-transparent bg-[#f1f3f1] text-[#3f4842]"
-    : "border-transparent bg-[#e9ece9] text-[#0e1310]";
+    ? "border-transparent bg-secondary text-text-secondary"
+    : "border-transparent bg-muted text-foreground";
 }
 
 function DeliveryListItem({
@@ -72,10 +72,10 @@ function DeliveryListItem({
       aria-pressed={isSelected}
       title="Clic : sélectionner ou désélectionner · double-clic : voir le détail"
       className={cn(
-        "w-full rounded-xl border p-3 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+        "w-full rounded-xl border p-3 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         isSelected
-          ? "border-[#cfe9d9] bg-[#f1f6f2] shadow-[inset_3px_0_0_#00d46a]"
-          : "border-transparent bg-white/90 hover:border-[#e4e8e5] hover:bg-white"
+          ? "border-brand/30 bg-brand-subtle shadow-[inset_3px_0_0_var(--color-primary)]"
+          : "border-transparent bg-card/90 hover:border-border hover:bg-card"
       )}
     >
       {/* Le client (ou l'adresse) identifie la livraison ; la référence reste en petit. */}
@@ -160,7 +160,7 @@ function DispatchDeliveriesList({
 
   return (
     <>
-      <div className="border-b border-black/10 px-4 py-3">
+      <div className="border-b border-border px-4 py-3">
         <p className="font-semibold text-foreground">Livraisons actives</p>
         <p className="text-xs text-muted-foreground">
           {hasSearch
@@ -169,14 +169,14 @@ function DispatchDeliveriesList({
         </p>
       </div>
 
-      <div className="border-b border-black/10 px-3 py-3">
+      <div className="border-b border-border px-3 py-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Client, livreur, n° livraison, adresse..."
-            className="h-9 border-zinc-200 bg-white pl-8 text-sm shadow-none focus-visible:ring-black"
+            className="h-9 border-input bg-card pl-8 text-sm shadow-none focus-visible:ring-ring"
           />
         </div>
       </div>

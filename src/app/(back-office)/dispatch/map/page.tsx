@@ -36,7 +36,7 @@ export default function DispatchMapPage() {
     <OfferFeatureGate feature="admin_gps">
       <Suspense
         fallback={
-          <div className="flex h-full items-center justify-center bg-[#ececea]">
+          <div className="flex h-full items-center justify-center bg-muted">
             <PageLoader />
           </div>
         }
@@ -131,14 +131,14 @@ function DispatchMapContent() {
 
   if (isPending && !data && !isError) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#ececea]">
+      <div className="flex h-full items-center justify-center bg-muted">
         <PageLoader />
       </div>
     );
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#ececea]" data-dispatch-map-page>
+    <div className="relative h-full w-full overflow-hidden bg-muted" data-dispatch-map-page>
       <div className="absolute inset-0">
         <DeliveriesLiveMap
           delivery={selectedDelivery}
@@ -168,8 +168,8 @@ function DispatchMapContent() {
             aria-pressed={statusFilter === "all"}
             onClick={() => setStatusFilter("all")}
             className={cn(
-              "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
-              statusFilter === "all" ? "bg-[#0e1310] text-white" : "bg-white/95 text-[#0e1310] hover:bg-white"
+              "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              statusFilter === "all" ? "bg-foreground text-background" : "bg-card/95 text-foreground hover:bg-card"
             )}
           >
             Toutes · {deliveries.length}
@@ -181,8 +181,8 @@ function DispatchMapContent() {
               aria-pressed={statusFilter === status.key}
               onClick={() => setStatusFilter(statusFilter === status.key ? "all" : status.key)}
               className={cn(
-                "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
-                statusFilter === status.key ? status.pill : "bg-white/95 text-[#0e1310] hover:bg-white"
+                "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                statusFilter === status.key ? status.pill : "bg-card/95 text-foreground hover:bg-card"
               )}
             >
               {status.label} · {statusCounts[status.key]}
@@ -191,7 +191,7 @@ function DispatchMapContent() {
           {unlocatedCount > 0 && (
             <span
               role="status"
-              className="inline-flex min-h-9 items-center rounded-full bg-white/80 px-4 text-sm text-[#68726b] shadow-[0_8px_24px_rgba(14,40,25,0.08)]"
+              className="inline-flex min-h-9 items-center rounded-full bg-card/80 px-4 text-sm text-muted-foreground shadow-[0_8px_24px_rgba(14,40,25,0.08)]"
             >
               {unlocatedCount} non localisée{unlocatedCount > 1 ? "s" : ""} sur la carte
             </span>
@@ -211,7 +211,7 @@ function DispatchMapContent() {
         <div className="pointer-events-none absolute left-4 right-4 top-20 z-[1000] md:pl-[min(380px,calc(100vw-16px))]">
           <div
             role="alert"
-            className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-950 shadow-lg"
+            className="rounded-2xl border border-warning/40 bg-warning-subtle px-4 py-2.5 text-center text-sm text-foreground shadow-lg"
           >
             {requestedLateFocus
               ? "Cette livraison n’est plus en retard ou n’est pas accessible."
@@ -225,7 +225,7 @@ function DispatchMapContent() {
         <button
           type="button"
           aria-label="Zoomer"
-          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomIn()}
         >
@@ -234,7 +234,7 @@ function DispatchMapContent() {
         <button
           type="button"
           aria-label="Dézoomer"
-          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomOut()}
         >
