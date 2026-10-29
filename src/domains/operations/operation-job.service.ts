@@ -75,6 +75,35 @@ export function jobEmailReplayWindow(
   };
 }
 
+/**
+ * Instantané du rendu e-mail d'une tâche (C5), sans migration : enregistré atomiquement dans le
+ * payload à la première tentative émise, puis renvoyé tel quel à chaque reprise sous la même clé.
+ * Tâche héritée sans instantané : le rendu courant est enregistré (comportement prudent : un 409
+ * `invalid_idempotent_request` éventuel reste terminal). Instantané illisible : rendu courant.
+ */
+export function jobEmailContentFreezer(jobId: string, db: Pick<typeof prisma, "$executeRaw" | "$queryRaw"> = prisma) {
+  const freeze = async (content: { to: string; subject: string; text: string }) => {
+    const snapshot = JSON.stringify({ to: content.to, subject: content.subject, text: content.text });
+    const created = await db.$executeRaw`
+      UPDATE "operation_jobs"
+      SET "payload" = jsonb_set(CASE WHEN jsonb_typeof("payload") = 'object' THEN "payload" ELSE '{}'::jsonb END,
+                                '{emailSnapshot}', ${snapshot}::jsonb, true)
+      WHERE "id" = ${jobId} AND NOT ("payload" ? 'emailSnapshot')`;
+    const rows = await db.$queryRaw<Array<{ snapshot: unknown }>>`
+      SELECT "payload"->'emailSnapshot' AS snapshot FROM "operation_jobs" WHERE "id" = ${jobId}`;
+    const stored = rows[0]?.snapshot as Record<string, unknown> | null | undefined;
+    if (stored && typeof stored.to === "string" && typeof stored.subject === "string" && typeof stored.text === "string") {
+      return { content: { to: stored.to, subject: stored.subject, text: stored.text }, created: created === 1 };
+    }
+    console.error("[operation-job] instantané e-mail illisible, rendu courant utilisé", jobId);
+    return { content, created: false };
+  };
+  const release = async () => {
+    await db.$executeRaw`UPDATE "operation_jobs" SET "payload" = "payload" - 'emailSnapshot' WHERE "id" = ${jobId} AND jsonb_typeof("payload") = 'object'`;
+  };
+  return { freeze, release };
+}
+
 function isPermanentJobError(error: unknown) {
   return Boolean(error && typeof error === "object" && (error as { permanent?: unknown }).permanent === true);
 }
@@ -132,6 +161,7 @@ function readString(payload: Prisma.JsonValue, key: string) {
 /** `previouslyAttempted` : la tâche avait déjà tourné avant cette exécution (essais ou erreur). */
 async function executeJob(job: OperationJob, context: { previouslyAttempted: boolean }) {
   const emailWindow = () => jobEmailReplayWindow({ id: job.id, createdAt: job.createdAt, previouslyAttempted: context.previouslyAttempted });
+  const freezeContent = jobEmailContentFreezer(job.id);
   if (job.type === "AUTO_DISPATCH") {
     const companyId = readString(job.payload, "companyId");
     const deliveryId = readString(job.payload, "deliveryId");
@@ -161,7 +191,7 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
         "@/domains/signup/signup.service"
       );
       // Fenêtre de déduplication du fournisseur d'e-mail, bornée par la première tentative émise (C5).
-      await deliverSignupWelcomeEmail(job.payload, job.jobKey, emailWindow());
+      await deliverSignupWelcomeEmail(job.payload, job.jobKey, emailWindow(), freezeContent);
       return;
     }
     if (readString(job.payload, "kind") === "ORDER_MESSAGE") {
@@ -174,13 +204,13 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
     // DEMO-3 : relance de facture (e-mail au client).
     if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
       const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");
-      await deliverInvoiceReminderJob(job.payload, job.jobKey, { previouslyAttempted: context.previouslyAttempted });
+      await deliverInvoiceReminderJob(job.payload, job.jobKey, { previouslyAttempted: context.previouslyAttempted, freezeContent });
       return;
     }
     const { deliverClientNotificationJob } = await import(
       "@/domains/client-portal/notify.service"
     );
-    await deliverClientNotificationJob(job.payload, job.jobKey, emailWindow());
+    await deliverClientNotificationJob(job.payload, job.jobKey, emailWindow(), freezeContent);
     return;
   }
 

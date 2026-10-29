@@ -152,6 +152,22 @@ test("C5 : notification — fenêtre de la tâche ; hors fenêtre l'e-mail n'est
   assert.equal(f.notifications.size, 3, "la notification in-app est conservée");
 });
 
+test("C5 : notification — rendu figé à la première tentative émise (lien de preuve désactivé entre deux essais)", async () => {
+  const now = new Date("2026-10-28T10:00:00.000Z");
+  const { bodies, send } = countingSender(now);
+  const { payloads, windowFor, freezerFor } = jobPayloadDb();
+  const eventKey = "client-notification:delivery:delivery-a:freeze";
+  const withLink = fixture(undefined, { send, appUrl: "https://app.example.test" });
+  await withLink.service.deliverClientNotificationJob(payload, eventKey, windowFor({ id: "j1", createdAt: now, previouslyAttempted: false }), freezerFor("j1"));
+  assert.ok(payloads.get("j1")?.emailSnapshot);
+  // L'entreprise coupe l'envoi de la preuve avant la reprise : le corps recalculé changerait.
+  const withoutLink = fixture(undefined, { send, appUrl: "https://app.example.test", companySettings: { proofRules: { emailToClient: false } } });
+  await withoutLink.service.deliverClientNotificationJob(payload, eventKey, windowFor({ id: "j1", createdAt: now, previouslyAttempted: true }), freezerFor("j1"));
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[1], bodies[0], "même corps sous la même clé");
+  assert.match(bodies[0]!, /Preuve de livraison/);
+});
+
 test("rejouer une notification conserve une ligne et la même clé fournisseur", async () => {
   const f = fixture();
   const eventKey = "client-notification:delivery:delivery-a:event-a";

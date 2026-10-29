@@ -10,6 +10,7 @@ import {
 } from "../src/domains/invoice/invoice-reminder.service";
 import { sendTransactionalEmail } from "../src/lib/email/transactional-email";
 import { createInvoiceFakeDb, invoice, type FakeJob, type FakeReminder } from "./helpers/invoice-fake-db";
+import { jobPayloadDb } from "./helpers/job-email-window";
 
 // C5 : issue de chaque réponse Resend sur une relance de facture, avec un fournisseur simulé qui
 // applique le contrat documenté (https://resend.com/docs/dashboard/emails/idempotency-keys) :
@@ -58,7 +59,7 @@ function fakeResend() {
   };
 }
 
-function setup(r1: Partial<FakeReminder> = {}, job: Partial<FakeJob> = {}) {
+function setup(r1: Partial<FakeReminder> = {}, job: Partial<FakeJob> = {}, options: { snapshot?: boolean } = {}) {
   const db = createInvoiceFakeDb({
     invoices: [invoice({ id: "inv", status: "OVERDUE", dueDate: new Date("2026-10-20T10:00:00.000Z") })],
     users: [{ id: "client_a", companyId: "company_a", email: "client.a@example.test", firstName: "Studio", lastName: "Oberkampf" }],
@@ -70,17 +71,20 @@ function setup(r1: Partial<FakeReminder> = {}, job: Partial<FakeJob> = {}) {
     }],
   });
   const resend = fakeResend();
+  // Instantané du rendu dans le payload de la tâche (vrai jobEmailContentFreezer) ; absent = tâche héritée.
+  const jobPayloads = jobPayloadDb();
+  const freezeContent = options.snapshot === false ? undefined : jobPayloads.freezerFor("job_1");
   const deliver = (at: Date, previouslyAttempted = false) => {
     resend.setClock(at);
     return deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
-      db: db as never, now: at, appUrl: "https://app.example.test", getClientSettings: SETTINGS, previouslyAttempted,
+      db: db as never, now: at, appUrl: "https://app.example.test", getClientSettings: SETTINGS, previouslyAttempted, freezeContent,
       send: (input) => sendTransactionalEmail(input, { env: ENV, now: at, fetcher: resend.fetcher }),
     });
   };
   const remind = (at: Date) =>
     remindInvoice({ companyId: "company_a", invoiceId: "inv", userId: "admin_a", emailConfigured: true, now: at }, { db: db as never, kick: () => undefined });
   const r1Row = () => db.reminders.find((row) => row.id === "r1")!;
-  return { db, resend, deliver, remind, r1Row };
+  return { db, resend, deliver, remind, r1Row, jobPayloads };
 }
 
 const settle = (promise: Promise<unknown>) => promise.then(() => null, (error: unknown) => error as Error & { permanent?: boolean });
@@ -146,8 +150,24 @@ for (const row of TABLE) {
   });
 }
 
-test("C5 : 409 invalid_idempotent_request sur une REPRISE — SEND_UNCONFIRMED terminal, aucun renvoi, aucune R2", async () => {
-  const { db, resend, deliver, remind, r1Row } = setup();
+test("C5 : rendu figé — montant, e-mail du client et nom modifiés avant la reprise : même corps, même destinataire, un e-mail", async () => {
+  const { db, resend, deliver, r1Row, jobPayloads } = setup();
+  resend.script.push({ timeout: true, accepted: true });
+  await settle(deliver(T0));
+  assert.ok(jobPayloads.payloads.get("job_1")?.emailSnapshot, "instantané inscrit à la première tentative émise");
+  db.invoices[0]!.amount = 99;
+  db.users[0]!.email = "nouvelle.adresse@example.test";
+  db.companies[0]!.name = "Coursiers A renommée";
+  await deliver(new Date(T0.getTime() + 6 * MIN)); // après minuit à Paris
+  assert.equal(r1Row().result, "SENT");
+  assert.equal(resend.calls.length, 2);
+  assert.equal(resend.calls[1]!.body, resend.calls[0]!.body, "corps identique sous la même clé");
+  assert.match(resend.calls[1]!.body, /client\.a@example\.test/);
+  assert.equal(resend.received, 1);
+});
+
+test("C5 : tâche héritée sans instantané, contenu changé — 409 invalid : SEND_UNCONFIRMED terminal, aucun renvoi, aucune R2", async () => {
+  const { db, resend, deliver, remind, r1Row } = setup({}, {}, { snapshot: false });
   resend.script.push({ timeout: true, accepted: true });
   await settle(deliver(T0));
   // Le contenu a changé entre-temps sous la même clé (ex. montant corrigé) : 409 invalid.
@@ -294,4 +314,33 @@ test("C5 liste : « Relancer » suit la règle du serveur (dernière relance en 
   const dayLater = new Date(T0.getTime() + 25 * HOUR);
   assert.equal((await listCompanyInvoices("company_a", { status: "ALL", now: dayLater }, db as never)).invoices.find((entry) => entry.id === "inv")!.canRemind, true);
   assert.equal((await remind(dayLater))?.duplicate, false);
+});
+
+test("C5 : rendu figé — refus certain d'une PREMIÈRE tentative : instantané effacé, l'adresse corrigée s'applique", async () => {
+  const { db, resend, deliver, r1Row, jobPayloads } = setup();
+  resend.script.push({ status: 422, name: "validation_error", accepted: false });
+  await settle(deliver(T0));
+  assert.equal(r1Row().result, "QUEUED");
+  assert.equal(jobPayloads.payloads.get("job_1")?.emailSnapshot, undefined, "instantané effacé : rien n'est parti");
+  db.users[0]!.email = "adresse.corrigee@example.test";
+  await deliver(new Date(T0.getTime() + 6 * MIN), true);
+  assert.equal(r1Row().result, "SENT");
+  assert.match(resend.calls[1]!.body, /adresse\.corrigee@example\.test/);
+});
+
+test("C5 : rendu figé — refus certain d'une REPRISE (après une issue inconnue) : instantané conservé", async () => {
+  const { db, resend, deliver, r1Row, jobPayloads } = setup();
+  resend.script.push({ timeout: true, accepted: true });
+  await settle(deliver(T0));
+  const snapshot = jobPayloads.payloads.get("job_1")?.emailSnapshot;
+  assert.ok(snapshot);
+  // Le fournisseur ne connaît pas encore la clé pour la reprise (accepté hors simulation) : 429.
+  const retry = setup({ result: "SENDING", completedAt: T0 });
+  retry.jobPayloads.payloads.set("job_1", { emailSnapshot: snapshot });
+  retry.resend.script.push({ status: 429, name: "rate_limit_exceeded", accepted: false });
+  await settle(retry.deliver(new Date(T0.getTime() + 6 * MIN)));
+  assert.deepEqual(retry.jobPayloads.payloads.get("job_1")?.emailSnapshot, snapshot);
+  assert.equal(retry.r1Row().result, "SENDING");
+  db.invoices[0]!.amount = 1;
+  assert.equal(r1Row().result, "SENDING");
 });

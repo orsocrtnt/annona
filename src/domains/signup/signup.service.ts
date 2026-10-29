@@ -14,7 +14,7 @@ import {
   enqueueOperationJob,
   kickOperationJob,
 } from "@/domains/operations/operation-job.service";
-import { sendTransactionalEmail, type ReplayWindowStart } from "@/lib/email/transactional-email";
+import { sendTransactionalEmail, type EmailContentFreezer, type ReplayWindowStart } from "@/lib/email/transactional-email";
 import { attributeSignupSale, resolveActiveSalesCodeId } from "@/domains/sales/sales-code.service";
 
 export const SIGNUP_COOKIE = "tutelliv-signup-resume";
@@ -1067,7 +1067,9 @@ export async function deliverSignupWelcomeEmail(
   rawPayload: Prisma.JsonValue,
   eventKey: string,
   // Fenêtre de la tâche : 23 h après la première tentative émise, plus de renvoi automatique.
-  replayWindow: ReplayWindowStart = null
+  replayWindow: ReplayWindowStart = null,
+  // Rendu figé à la première tentative émise (nom, offre ou adresse modifiés entre deux essais).
+  freezeContent?: EmailContentFreezer
 ) {
   const payload = signupWelcomePayload(rawPayload);
   const journey = await prisma.signupJourney.findFirst({
@@ -1108,6 +1110,7 @@ export async function deliverSignupWelcomeEmail(
     ].join("\n"),
     idempotencyKey: eventKey,
     replayWindowStart: replayWindow,
+    freezeContent,
   });
   if (delivery.status === "disabled") {
     throw new Error("SIGNUP_WELCOME_EMAIL_DISABLED");

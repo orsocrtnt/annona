@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { deferredJobError, enqueueOperationJob, kickOperationJob, permanentJobError } from "@/domains/operations/operation-job.service";
 import { getClientSettings } from "@/domains/client-portal/settings.service";
-import { emailSendOutcome, isIdempotentReplaySafe, sendTransactionalEmail } from "@/lib/email/transactional-email";
+import { emailSendOutcome, isIdempotentReplaySafe, sendTransactionalEmail, type EmailContentFreezer } from "@/lib/email/transactional-email";
 import { invoiceDaysOverdue, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 
 /**
@@ -250,7 +250,9 @@ type DeliveryDeps = {
    * comme une reprise, jamais comme une première tentative.
    */
   previouslyAttempted?: boolean;
-  send?: (input: { to: string; subject: string; text: string; idempotencyKey: string; replayWindowStart: Date | null }) => Promise<{ status: string }>;
+  /** Instantané du rendu dans le payload de la tâche : même corps à chaque reprise sous la même clé. */
+  freezeContent?: EmailContentFreezer;
+  send?: (input: { to: string; subject: string; text: string; idempotencyKey: string; replayWindowStart: Date | null; freezeContent?: EmailContentFreezer }) => Promise<{ status: string }>;
 };
 
 const oneLine = (value: string) => value.replace(/[\r\n]+/g, " ").trim();
@@ -400,6 +402,8 @@ export async function deliverInvoiceReminderJob(
       idempotencyKey: invoiceReminderIdempotencyKey(reservation.reminderId),
       // Première tentative : aucune tentative antérieure n'a pu être acceptée (invariant QUEUED).
       replayWindowStart: reservation.resuming ? reservation.createdAt : null,
+      // Montant, destinataire ou nom modifiés entre deux tentatives : le corps figé repart tel quel.
+      freezeContent: deps.freezeContent,
     });
   } catch (error) {
     const outcome = emailSendOutcome(error);
