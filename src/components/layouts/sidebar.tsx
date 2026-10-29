@@ -49,7 +49,7 @@ function SidebarNavLink({
             "h-[18px] w-[18px] shrink-0",
             premium
               ? isActive
-                ? "text-[#0e1310]"
+                ? "text-[#0e1310] dark:text-primary-foreground"
                 : "text-[#7b8780] group-hover:text-[#0e1310] dark:text-muted-foreground dark:group-hover:text-foreground"
               : isActive
                 ? "text-brand"

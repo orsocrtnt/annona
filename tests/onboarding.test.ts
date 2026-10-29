@@ -197,3 +197,67 @@ test("ONBOARD-1 : un ancien lien dashboard ne contourne pas la reprise serveur",
   assert.equal(selectLoginRedirect("/onboarding", "/portal"), "/portal");
   assert.equal(selectLoginRedirect("https://foreign.test", "/dashboard"), "/dashboard");
 });
+
+test("DESIGN-2 : Première livraison proposée au démarrage, puis hors du menu une fois terminée ou masquée", async () => {
+  const { applyOnboardingNavVisibility } = await import("../src/features/navigation/onboarding-nav");
+  const { companyNavItems } = await import("../src/features/navigation/nav-config");
+  const hasEntry = (status?: { showInNavigation: boolean }) =>
+    applyOnboardingNavVisibility(companyNavItems, status).some((item) => item.href === "/onboarding");
+
+  const started = buildCompanyOnboardingStatus(fresh);
+  assert.equal(started.showInNavigation, true);
+  assert.equal(started.hiddenFromNavigation, false);
+  assert.equal(hasEntry(started), true);
+
+  // Masqué : hors du menu, mais l'avancement et les étapes incomplètes restent calculés (reprise).
+  const hidden = buildCompanyOnboardingStatus({ ...fresh, settings: { onboarding: { hiddenFromNavigation: true, skippedCollaborators: true } } });
+  assert.equal(hidden.showInNavigation, false);
+  assert.equal(hidden.skippedSteps, 1);
+  assert.equal(hidden.steps.filter((step) => !step.complete && !step.skipped).length, 8);
+  assert.equal(hasEntry(hidden), false);
+
+  // Terminé : hors du menu même sans l'avoir masqué. Statut inconnu (chargement, erreur) : hors du menu.
+  const done = buildCompanyOnboardingStatus({
+    ...fresh, companyStatus: "ACTIVE",
+    companyProfile: { email: "entreprise@example.test", address: "1 rue du Test", city: "Paris", country: "FR" },
+    settings: { deliveryCategories: { STANDARD: true, COURIER: false, SPECIAL_MISSION: false }, billing: DEFAULT_BILLING_SETTINGS, dispatchRules: DEFAULT_DISPATCH_SETTINGS },
+    collaboratorCount: 1, clientCount: 1, driverCount: 1, orderCount: 1, completedDeliveryCount: 1,
+  });
+  assert.equal(done.showInNavigation, false);
+  assert.equal(hasEntry(done), false);
+  assert.equal(hasEntry(undefined), false);
+  // Seule l'entrée du guide disparaît : les autres rubriques restent, dans le même ordre.
+  assert.deepEqual(applyOnboardingNavVisibility(companyNavItems, done).map((item) => item.href), companyNavItems.map((item) => item.href).filter((href) => href !== "/onboarding"));
+  // Valeur héritée non booléenne (ancien code, saisie libre) : jamais interprétée comme « masqué ».
+  assert.equal(buildCompanyOnboardingStatus({ ...fresh, settings: { onboarding: { hiddenFromNavigation: "true" } } }).showInNavigation, true);
+});
+
+test("DESIGN-2 : masquer ou réafficher le guide est persistant, réversible et préserve les réglages concurrents", async (t) => {
+  let settings: Record<string, unknown> = { billing: { marker: "keep" }, onboarding: { skippedCollaborators: true } };
+  replaceMethod(t, prisma.company, "findUnique", async () => ({ settings }));
+  let conflict = true;
+  replaceMethod(t, prisma.company, "updateMany", async (args: { where: { settings: { equals: unknown } }; data: { settings: Record<string, unknown> } }) => {
+    if (conflict) { conflict = false; settings = { ...settings, external: "concurrent" }; return { count: 0 }; }
+    assert.deepEqual(args.where.settings.equals, settings);
+    settings = args.data.settings; return { count: 1 };
+  });
+  for (const hidden of [true, true, false]) {
+    await updateOnboardingPreference("company-a", { step: "navigation", hidden });
+    assert.deepEqual(settings, { billing: { marker: "keep" }, external: "concurrent", onboarding: { skippedCollaborators: true, hiddenFromNavigation: hidden } });
+  }
+  for (const invalid of [{ step: "navigation" }, { step: "navigation", hidden: "oui" }, { step: "navigation", hidden: true, skipped: true }, { step: "collaborators", hidden: true }]) {
+    assert.equal(onboardingPreferenceSchema.safeParse(invalid).success, false, JSON.stringify(invalid));
+  }
+});
+
+test("DESIGN-2 : un guide masqué n'est plus imposé à la connexion", async (t) => {
+  let hidden = false;
+  replaceMethod(t, prisma.company, "findUnique", async () => ({ ...companyProfile, status: "TRIAL", settings: { onboarding: { hiddenFromNavigation: hidden } } }));
+  replaceMethod(t, prisma.user, "groupBy", async () => []);
+  replaceMethod(t, prisma.role, "findMany", async () => []);
+  for (const model of [prisma.order, prisma.delivery]) replaceMethod(t, model, "count", async () => 0);
+  const admin = { companyId: "a", role: { systemRole: "COMPANY_ADMIN" }, settings: { onboardingRequired: true } };
+  assert.equal(await resolveOnboardingLoginPath(admin, "/dashboard"), "/onboarding");
+  hidden = true;
+  assert.equal(await resolveOnboardingLoginPath(admin, "/dashboard"), "/dashboard");
+});

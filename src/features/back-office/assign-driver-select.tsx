@@ -77,7 +77,7 @@ function DriverSelectItems({
         </SelectItem>
       ))}
       {overCapacity.map((item) => (
-        <SelectItem key={item.driver.id} value={item.driver.id} className="text-xs text-amber-700 dark:text-warning">
+        <SelectItem key={item.driver.id} value={item.driver.id} className="text-xs text-warning">
           {formatDriverFromParts(item.driver, null)} — {item.reasons}
         </SelectItem>
       ))}
@@ -323,7 +323,7 @@ export function AssignDriverSelect({
           </p>
         )}
         {selectableCount === 0 && (
-          <p className="text-sm text-amber-700 dark:text-warning">
+          <p className="text-sm text-warning">
             Aucun chauffeur compatible. Les chauffeurs hors règles sont affichés à titre informatif
             et ne peuvent pas être assignés.
           </p>

@@ -323,7 +323,7 @@ export function DispatchSettingsForm() {
                           </Badge>
                         )}
                         {isPaused && (
-                          <Badge variant="outline" className="text-xs text-amber-700 dark:text-warning">
+                          <Badge variant="outline" className="text-xs text-warning">
                             En pause
                           </Badge>
                         )}

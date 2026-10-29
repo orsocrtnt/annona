@@ -11,32 +11,29 @@ import { CompanyOnboardingProfile } from "@/features/back-office/onboarding-comp
 import { CompanyLogoCard } from "@/features/back-office/company-logo-card";
 import { useAuthStore } from "@/stores/auth.store";
 import type { CompanyOnboardingStatus } from "@/domains/onboarding/onboarding.service";
+import { ONBOARDING_QUERY_KEY, fetchOnboardingStatus } from "@/features/back-office/onboarding-query";
 
-async function fetchOnboardingStatus(): Promise<CompanyOnboardingStatus> {
-  const response = await fetch("/api/onboarding");
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error ?? "Impossible de charger l’onboarding");
-  return payload.data as CompanyOnboardingStatus;
-}
+type OnboardingPreference = { step: "collaborators"; skipped: boolean } | { step: "navigation"; hidden: boolean };
 
 export function OnboardingContent() {
   const queryClient = useQueryClient();
   const readOnly = useAuthStore((state) => state.saas?.canMutate === false);
   const preference = useMutation({
-    mutationFn: async (skipped: boolean) => {
+    mutationFn: async (body: OnboardingPreference) => {
       const response = await fetch("/api/onboarding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ step: "collaborators", skipped }),
+        body: JSON.stringify(body),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error ?? "Impossible d’enregistrer votre choix");
       return payload.data as CompanyOnboardingStatus;
     },
-    onSuccess: (status) => queryClient.setQueryData(["company", "onboarding"], status),
+    // Même clé que la navigation : l'entrée du menu apparaît ou disparaît aussitôt.
+    onSuccess: (status) => queryClient.setQueryData(ONBOARDING_QUERY_KEY, status),
   });
   const { data, isLoading, error } = useQuery({
-    queryKey: ["company", "onboarding"],
+    queryKey: ONBOARDING_QUERY_KEY,
     queryFn: fetchOnboardingStatus,
     refetchOnMount: "always",
   });
@@ -64,6 +61,31 @@ export function OnboardingContent() {
           Les données confirmées et les choix facultatifs sont conservés après déconnexion.
           Une invitation en attente ne valide pas un compte actif.
         </p>
+      </div>
+
+      {/* Place dans le menu principal : proposé au démarrage, puis rangé dans l'Aide une fois terminé ou masqué. */}
+      <div
+        className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+        data-testid="onboarding-navigation"
+      >
+        <p className="text-sm text-muted-foreground" role="status">
+          {data.readyForInternalTest
+            ? "Parcours terminé : il ne figure plus dans le menu principal. Retrouvez-le dans le menu du compte, rubrique Aide."
+            : data.hiddenFromNavigation
+              ? "Masqué du menu principal. Retrouvez-le dans le menu du compte, rubrique Aide ; votre avancement est conservé."
+              : "Le guide reste accessible depuis l’Aide du menu du compte si vous le masquez ; votre avancement est conservé."}
+        </p>
+        {!data.readyForInternalTest && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            disabled={readOnly || preference.isPending}
+            onClick={() => preference.mutate({ step: "navigation", hidden: !data.hiddenFromNavigation })}
+          >
+            {data.hiddenFromNavigation ? "Afficher dans le menu" : "Masquer du menu"}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -127,7 +149,7 @@ export function OnboardingContent() {
                 </div>
               </div>
               {step.optional && !step.complete && (
-                <Button variant="ghost" size="sm" disabled={readOnly || preference.isPending} onClick={() => preference.mutate(!step.skipped)}>
+                <Button variant="ghost" size="sm" disabled={readOnly || preference.isPending} onClick={() => preference.mutate({ step: "collaborators", skipped: !step.skipped })}>
                   {step.skipped ? "Reprendre cette étape" : "Passer cette étape"}
                 </Button>
               )}

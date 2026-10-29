@@ -86,7 +86,7 @@
   --color-destructive: #e5736b;
   --color-destructive-foreground: #1a0d0c;
   --color-border: #333936;
-  --color-input: #3d4440;
+  --color-input: #6b746f; /* bordure de champ : 3,4:1 sur carte, 3,7:1 sur fond (WCAG 1.4.11) */
   --color-ring: #5bd99a;
   --color-surface: #1c1f1e;
   --color-surface-elevated: #212524;

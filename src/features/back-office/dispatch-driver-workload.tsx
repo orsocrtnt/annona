@@ -70,7 +70,7 @@ function DriverRow({
               {name}
             </Link>
             {isPaused && (
-              <Badge variant="outline" className="text-[10px] text-amber-800">
+              <Badge variant="outline" className="text-[10px] text-amber-800 dark:text-warning">
                 Pause
               </Badge>
             )}
