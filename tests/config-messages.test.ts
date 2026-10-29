@@ -49,3 +49,27 @@ test("Factur-X refusé : le back-office reçoit la liste avec lien direct vers c
   assert.doesNotMatch(String(client.body), /BR-E-10|TL-FR|settings|pénalités|exonération/);
   assert.match(String(client.body), /Contactez-le/);
 });
+
+test("réglages : un champ à énumération ou de mauvais type donne une phrase française, sans nom technique ni anglais", async () => {
+  const { companyDispatchSettingsSchema } = await import("../src/lib/validations/dispatch-settings");
+  const { proofRulesPatchSchema } = await import("../src/domains/delivery/pod-evidence");
+  const labels = { strategy: "Stratégie", gpsMaxDistanceKm: "Distance maximale au retrait", enabled: "Activation", driverRules: "Règles par livreur", signatureRequired: "Signature obligatoire" };
+  const base = { enabled: true, strategy: "PRIORITY_LIST", autoAssignCategories: { STANDARD: true, COURIER: true, SPECIAL_MISSION: false } };
+  const cases: Array<[string, unknown, RegExp]> = [
+    ["strategy", { ...base, strategy: "N_IMPORTE_QUOI" }, /^Stratégie : valeur non reconnue\. Choisissez/],
+    ["type nombre", { ...base, gpsMaxDistanceKm: "dix" }, /^Distance maximale au retrait : saisissez un nombre/],
+    ["type booléen", { ...base, enabled: "oui" }, /^Activation : choisissez Activé/],
+    ["énumération imbriquée", { ...base, driverRules: [{ driverId: "d", priority: 1, dispatchStatus: "SLEEPING" }] }, /^Règles par livreur : valeur non reconnue/],
+  ];
+  for (const [name, input, expected] of cases) {
+    const parsed = companyDispatchSettingsSchema.safeParse(input);
+    assert.ok(!parsed.success, name);
+    const message = firstFieldMessage(parsed.error!.flatten(), labels, "repli");
+    assert.match(message, expected, name);
+    assert.doesNotMatch(message, /Invalid|expected|received|PRIORITY_LIST|LEAST_LOADED|ZONE_THEN|ACTIVE|PAUSED|[A-Z]{4,}_[A-Z]+/, `${name} : ${message}`);
+  }
+  const proof = proofRulesPatchSchema.safeParse({ signatureRequired: "peut-être" });
+  assert.match(firstFieldMessage(proof.error!.flatten(), labels, "repli"), /^Signature obligatoire : choisissez Activé/);
+  const unknown = proofRulesPatchSchema.safeParse({ inconnu: true });
+  assert.doesNotMatch(firstFieldMessage(unknown.error!.flatten(), labels, "repli"), /Unrecognized|inconnu"/);
+});

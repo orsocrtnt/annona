@@ -47,7 +47,7 @@ export async function PATCH(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       {
-        error: firstFieldMessage(parsed.error.flatten(), DISPATCH_FIELD_LABELS, parsed.error.issues[0]?.message ?? "Réglages de dispatch invalides : vérifiez les valeurs saisies."),
+        error: firstFieldMessage(parsed.error.flatten(), DISPATCH_FIELD_LABELS, "Réglages de dispatch invalides : vérifiez les valeurs saisies."),
         details: parsed.error.flatten(),
       },
       { status: 400 }
