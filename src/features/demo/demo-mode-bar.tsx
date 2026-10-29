@@ -255,7 +255,7 @@ export function DemoModeBar() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-900"
+                  className="text-amber-900 hover:bg-amber-100 max-md:min-w-11 dark:text-amber-100 dark:hover:bg-amber-900"
                   onClick={() => persistCollapsed(true)}
                   aria-label="Réduire la barre de démonstration"
                   title="Réduire sur le côté"
