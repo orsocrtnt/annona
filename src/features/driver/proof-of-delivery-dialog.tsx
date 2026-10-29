@@ -162,7 +162,7 @@ export function ProofOfDeliveryDialog({
                 id={failureCodeId}
                 value={failureCode}
                 onChange={(e) => setFailureCode(e.target.value as PodFailureCode)}
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm max-md:text-base max-md:h-11"
               >
                 {POD_FAILURE_CODES.map((code) => (
                   <option key={code} value={code}>
@@ -220,11 +220,11 @@ export function ProofOfDeliveryDialog({
                   maxLength={120}
                   autoComplete="off"
                   aria-required={Boolean(signature) || signatureRequired}
-                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm max-md:text-base max-md:h-11"
                 />
               </label>
               {refusedToSign ? null : <SignaturePad disabled={loading} onChange={setSignature} />}
-              <label className="flex items-start gap-2 text-sm">
+              <label className="flex items-start gap-2 text-sm max-md:min-h-11 max-md:items-center">
                 <input
                   type="checkbox"
                   checked={refusedToSign}
@@ -232,7 +232,7 @@ export function ProofOfDeliveryDialog({
                     setRefusedToSign(e.target.checked);
                     if (e.target.checked) setSignature(null);
                   }}
-                  className="mt-1 h-4 w-4"
+                  className="mt-1 h-4 w-4 max-md:size-5"
                 />
                 <span>Le destinataire refuse ou ne peut pas signer</span>
               </label>
@@ -246,7 +246,7 @@ export function ProofOfDeliveryDialog({
                     maxLength={200}
                     autoComplete="off"
                     aria-required="true"
-                    className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                    className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm max-md:text-base max-md:h-11"
                   />
                 </label>
               ) : null}

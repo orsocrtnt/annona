@@ -59,8 +59,8 @@ function ActivationCard({ enabled, configured }: { enabled: boolean; configured:
           conservation chez le fournisseur, transferts hors Union européenne) n&apos;est pas encore validée.
         </p>
         {!enabled && (
-          <label className="flex min-h-11 items-center gap-2">
-            <input type="checkbox" className="mt-0.5 h-4 w-4" checked={acknowledged}
+          <label className="flex min-h-11 items-center gap-2 max-md:items-center">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 max-md:size-5" checked={acknowledged}
               onChange={(event) => setAcknowledged(event.target.checked)} aria-describedby={noticeId} />
             J&apos;ai lu cette information et j&apos;active la fonction pour mon entreprise.
           </label>

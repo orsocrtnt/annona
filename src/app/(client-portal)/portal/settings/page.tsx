@@ -222,15 +222,15 @@ export default function ClientSettingsPage() {
                   ["emailNotifications", "Copie par e-mail"],
                 ] as const
               ).map(([key, label]) => (
-                <div key={key} className="flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
+                <label key={key} className="flex cursor-pointer items-center justify-between gap-4 max-md:min-h-11">
                   <span className="text-sm">{label}</span>
                   <input
                     type="checkbox"
                     checked={Boolean(settingsForm.watch(key))}
                     onChange={(e) => settingsForm.setValue(key, e.target.checked)}
-                    className="h-4 w-4 rounded border-input"
+                    className="h-4 w-4 rounded border-input max-md:size-5"
                   />
-                </div>
+                </label>
               ))}
               <p className="text-xs text-muted-foreground">
                 {settings?.emailMode === "test"

@@ -112,11 +112,11 @@ export function EinvoicingSettingsCard() {
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2 space-y-2">
-          <label className="flex items-start gap-2 text-sm">
+          <label className="flex items-start gap-2 text-sm max-md:min-h-11 max-md:items-center">
             <input
               type="checkbox"
               id="einvoicing-enabled"
-              className="mt-1 h-4 w-4"
+              className="mt-1 h-4 w-4 max-md:size-5"
               checked={enabled}
               onChange={(e) => setEnabled(e.target.checked)}
             />

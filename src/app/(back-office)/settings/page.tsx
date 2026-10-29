@@ -128,7 +128,7 @@ export default function SettingsPage() {
               >
                 <input
                   type="checkbox"
-                  className="mt-1"
+                  className="mt-1 max-md:size-5"
                   checked={enabled}
                   onChange={() => handleToggle(category)}
                 />
@@ -166,7 +166,7 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border p-3">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-border p-3 max-md:items-center">
             <input
               type="checkbox"
               className="h-5 w-5 shrink-0"

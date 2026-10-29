@@ -306,7 +306,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
               <div className="space-y-2">
                 <Label>Zone de livraison</Label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm max-md:text-base max-md:h-11"
                   value={zoneId}
                   onChange={(e) => setZoneId(e.target.value)}
                 >
@@ -333,10 +333,11 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
                   {tariffs.tariffFees.map((fee) => (
                     <label
                       key={fee.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3"
+                      className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 max-md:min-h-11"
                     >
                       <input
                         type="checkbox"
+                        className="max-md:size-5"
                         checked={feeIds.includes(fee.id)}
                         onChange={() => toggleFee(fee.id)}
                       />
@@ -354,9 +355,10 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
             )}
 
             {order.items && order.items.some((i) => Number(i.unitPrice) > 0) && (
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3">
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 max-md:min-h-11">
                 <input
                   type="checkbox"
+                  className="max-md:size-5"
                   checked={includePurchases}
                   onChange={(e) => setIncludePurchases(e.target.checked)}
                 />

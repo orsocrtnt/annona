@@ -130,7 +130,7 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
             value={ticket.status}
             disabled={updateStatus.isPending || reply.isPending}
             onChange={(event) => void setStatus(event.target.value as CompanySupportTicket["status"])}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm max-md:text-base"
           >
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -207,7 +207,7 @@ export default function CompanySupportPage() {
             id="support-filter"
             value={filter}
             onChange={(event) => setFilter(event.target.value as Filter)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm max-md:text-base"
           >
             <option value="ACTIVE">Demandes actives</option>
             <option value="ALL">Toutes les demandes</option>

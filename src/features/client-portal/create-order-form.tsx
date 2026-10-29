@@ -710,7 +710,7 @@ export function CreateOrderForm({
             </FormField>
             {!isCourier && (
               <>
-                <label className="flex min-h-11 items-center gap-3 text-sm">
+                <label className="flex min-h-11 items-center gap-3 text-sm max-md:items-center">
                   <input className="h-5 w-5" type="checkbox" {...form.register("saveAddress")} />
                   Enregistrer cette adresse
                 </label>
