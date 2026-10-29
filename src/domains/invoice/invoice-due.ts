@@ -54,3 +54,17 @@ export function invoiceDaysOverdue(dueDate: Date | null, now: Date): number {
   if (!dueDate) return 0;
   return Math.max(0, Math.round((parisDayStartUtc(now) - parisDayStartUtc(dueDate)) / DAY_MS));
 }
+
+/**
+ * Statut affiché d'une facture, calculé à la lecture : une facture PENDING dont le jour d'échéance
+ * (Paris) est passé est « en retard » sans attendre le cron. Même règle que la liste Paiements.
+ */
+export function effectiveInvoiceStatus(
+  invoice: { status: InvoiceStatus; dueDate: Date | string | null },
+  now: Date = new Date()
+): { status: InvoiceStatus; daysOverdue: number } {
+  const due = invoice.dueDate ? new Date(invoice.dueDate) : null;
+  const status: InvoiceStatus =
+    invoice.status === "PENDING" && due && due < startOfParisDay(now) ? "OVERDUE" : invoice.status;
+  return { status, daysOverdue: status === "OVERDUE" ? invoiceDaysOverdue(due, now) : 0 };
+}

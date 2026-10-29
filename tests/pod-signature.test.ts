@@ -151,3 +151,13 @@ test("hors ligne : refus de signer envoyé avec son motif, sans fichier de signa
   assert.equal(bodies[0]!.get("signature"), null);
   assert.equal(bodies[0]!.get("podSignatureRefusedReason"), "Refus du client");
 });
+
+test("RECETTE-2810 point 8 : une action en premier envoi n'affiche pas « Réessayer maintenant »", async () => {
+  const { actionNeedsAttention } = await import("../src/features/driver/offline-action-queue");
+  const base = createQueuedDriverAction({ ownerId: "u", missionId: "m", payload: { status: "IN_DELIVERY" } as never });
+  assert.equal(actionNeedsAttention(base, true), false);
+  assert.equal(actionNeedsAttention({ ...base, state: "sending" }, true), false);
+  assert.equal(actionNeedsAttention(base, false), true);
+  assert.equal(actionNeedsAttention({ ...base, attempts: 1, lastError: "réseau" }, true), true);
+  assert.equal(actionNeedsAttention({ ...base, state: "failed" }, true), true);
+});

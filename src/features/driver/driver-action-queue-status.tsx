@@ -3,9 +3,12 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useDriverActionQueue } from "./driver-action-queue-provider";
+import { actionNeedsAttention } from "./offline-action-queue";
 
 export function DriverActionQueueStatus() {
-  const { actions, isProcessing, retry, discard } = useDriverActionQueue();
+  const { actions: queued, isProcessing, retry, discard } = useDriverActionQueue();
+  const online = typeof navigator === "undefined" ? true : navigator.onLine;
+  const actions = queued.filter((action) => actionNeedsAttention(action, online));
   if (actions.length === 0) return null;
 
   const failed = actions.filter((action) => action.state === "failed");
