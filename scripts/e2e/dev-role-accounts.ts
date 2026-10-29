@@ -21,9 +21,9 @@ import { buildMiniAdminSettings, type MiniAdminModuleId } from "../../src/lib/pe
 export const ROLE_ACCOUNTS_MANIFEST = resolve("outputs/e2e-role-accounts.json");
 
 type Account = {
-  key: "dispatcher" | "miniAdminDispatch" | "miniAdminSupport" | "superAdmin" | "billingAdminA" | "billingAdminB";
+  key: "dispatcher" | "driver" | "miniAdminDispatch" | "miniAdminSupport" | "superAdmin" | "billingAdminA" | "billingAdminB";
   email: string;
-  roleSlug: "dispatcher" | "mini-admin" | "super-admin" | "company-admin";
+  roleSlug: "dispatcher" | "driver" | "mini-admin" | "super-admin" | "company-admin";
   firstName: string;
   modules?: MiniAdminModuleId[];
   company: "template" | "billingA" | "billingB" | null;
@@ -31,6 +31,7 @@ type Account = {
 
 const ACCOUNTS: Account[] = [
   { key: "dispatcher", email: "e2e-role-dispatcher@tutelliv.fr", roleSlug: "dispatcher", firstName: "Dispatch", company: "template" },
+  { key: "driver", email: "e2e-role-driver@tutelliv.fr", roleSlug: "driver", firstName: "Livreur", company: "template" },
   { key: "miniAdminDispatch", email: "e2e-role-mini-dispatch@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniDispatch", modules: ["dispatch", "delivery-map"], company: "template" },
   { key: "miniAdminSupport", email: "e2e-role-mini-support@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniSupport", modules: ["support"], company: "template" },
   { key: "superAdmin", email: "e2e-role-super-admin@tutelliv.fr", roleSlug: "super-admin", firstName: "SuperAdmin", company: null },
