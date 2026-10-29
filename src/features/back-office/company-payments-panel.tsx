@@ -142,7 +142,7 @@ export function CompanyPaymentsPanel() {
           const Icon = tile.icon;
           const active = filter === tile.key;
           return (
-            <li key={tile.key}>
+            <li key={tile.key} className="min-w-0">
               <button
                 type="button"
                 onClick={() => setFilter(active ? "ALL" : tile.key)}

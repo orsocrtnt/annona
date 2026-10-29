@@ -366,6 +366,7 @@ export function DispatchSettingsForm() {
                             >
                               <input
                                 type="checkbox"
+                                className="max-md:size-5"
                                 checked={cats[category]}
                                 onChange={(e) =>
                                   updateRule(index, {
@@ -515,12 +516,13 @@ export function DispatchSettingsForm() {
                                 <label
                                   key={zone.id}
                                   className={cn(
-                                    "flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs",
+                                    "flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs max-md:min-h-11",
                                     checked ? "border-brand/30 bg-brand-subtle/20" : "border-border"
                                   )}
                                 >
                                   <input
                                     type="checkbox"
+                                    className="max-md:size-5"
                                     checked={checked}
                                     onChange={(e) =>
                                       toggleDriverZone(index, zone.id, e.target.checked)
@@ -535,9 +537,10 @@ export function DispatchSettingsForm() {
                       )}
                     </div>
 
-                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm max-md:min-h-11">
                       <input
                         type="checkbox"
+                        className="max-md:size-5"
                         checked={isPaused}
                         onChange={(e) =>
                           updateRule(index, {
@@ -597,7 +600,7 @@ export function DispatchSettingsForm() {
                 <input
                   type="radio"
                   name="dispatch-assignment-mode"
-                  className="mt-1"
+                  className="mt-1 max-md:size-5"
                   checked={hasAutoDispatch && local.enabled === mode.value}
                   onChange={() => setLocal({ ...local, enabled: mode.value })}
                 />
@@ -667,9 +670,10 @@ export function DispatchSettingsForm() {
             </div>
           </div>
 
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed p-3">
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed p-3 max-md:min-h-11">
             <input
               type="checkbox"
+              className="max-md:size-5"
               checked={local.prioritizeCourier}
               onChange={(e) => setLocal({ ...local, prioritizeCourier: e.target.checked })}
             />
@@ -682,9 +686,10 @@ export function DispatchSettingsForm() {
           </label>
 
           <div className="space-y-3 rounded-lg border border-dashed p-3">
-            <label className="flex cursor-pointer items-center gap-3">
+            <label className="flex cursor-pointer items-center gap-3 max-md:min-h-11">
               <input
                 type="checkbox"
+                className="max-md:size-5"
                 checked={local.gpsProximityEnabled}
                 onChange={(e) => setLocal({ ...local, gpsProximityEnabled: e.target.checked })}
               />
@@ -740,6 +745,7 @@ export function DispatchSettingsForm() {
                 >
                   <input
                     type="checkbox"
+                    className="max-md:size-5"
                     checked={local.autoAssignCategories[category]}
                     onChange={(e) =>
                       setLocal({

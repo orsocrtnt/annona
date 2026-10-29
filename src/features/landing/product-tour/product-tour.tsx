@@ -355,12 +355,12 @@ export function ProductTour() {
           </AnimatePresence>
         </div>
 
-        <ol aria-label="Étapes de la démonstration" className="grid grid-cols-7 gap-1 px-1 pb-0.5 pt-1.5">
+        <ol aria-label="Étapes de la démonstration" className="grid grid-cols-7 gap-1 px-1 pb-0.5 pt-1.5 max-md:flex max-md:gap-0 max-md:overflow-x-auto max-md:px-0">
           {TOUR_STEPS.map((item, index) => {
             const isCurrent = index === state.current;
             const locked = index > state.reached;
             return (
-              <li key={item}>
+              <li key={item} className="max-md:min-w-11 max-md:flex-1">
                 <button
                   type="button"
                   disabled={locked}
@@ -368,7 +368,7 @@ export function ProductTour() {
                   aria-label={`${index + 1}. ${TOUR_STEP_LABELS[item]}`}
                   onClick={() => navigate(goToStep(state, item))}
                   className={cn(
-                    "relative flex w-full items-center justify-center gap-1 rounded-lg px-0.5 py-1.5 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
+                    "relative flex w-full items-center justify-center gap-1 rounded-lg px-0.5 py-1.5 max-md:min-h-11 text-[11px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
                     !isCurrent && !locked && "text-muted-foreground hover:bg-[#f0f4f1]",
                     locked && "cursor-not-allowed text-muted-foreground/50"
                   )}

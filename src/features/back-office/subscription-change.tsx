@@ -94,7 +94,7 @@ export function SubscriptionChange({ subscription, endsAtLabel }: { subscription
           {catalog.data && <div className="space-y-4">
             <div role="radiogroup" aria-label="Périodicité" className="inline-flex rounded-lg border p-1">
               {(["MONTHLY", "ANNUAL"] as const).map((value) => <button key={value} type="button" role="radio" aria-checked={interval === value}
-                className={cn("rounded-md px-3 py-1.5 text-sm", interval === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+                className={cn("rounded-md px-3 py-1.5 text-sm max-md:min-h-11", interval === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
                 onClick={() => choose({ interval: value })}>{value === "MONTHLY" ? "Mensuel" : "Annuel"}</button>)}
             </div>
             <div role="radiogroup" aria-label="Formule" className="grid gap-2">

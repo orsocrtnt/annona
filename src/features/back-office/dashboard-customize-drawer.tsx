@@ -194,7 +194,7 @@ export function DashboardCustomizeDrawer({
                     type="button"
                     onClick={() => updateDraft({ ...draft, defaultPeriod: option.key })}
                     className={cn(
-                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors max-md:min-h-11",
                       draft.defaultPeriod === option.key
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground"
@@ -348,7 +348,7 @@ function WidgetToggleRow({
           aria-checked={visible}
           onClick={() => onToggle(!visible)}
           className={cn(
-            "mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full transition-colors",
+            "mt-0.5 flex h-5 w-9 max-md:relative shrink-0 items-center rounded-full transition-colors max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']",
             visible ? "bg-brand" : "bg-muted"
           )}
         >

@@ -391,7 +391,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
                 />
               </FormField>
               <div className="-mt-2 flex justify-end">
-                <Link href={loginLinks[loginContext].forgot} className="inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline">
+                <Link href={loginLinks[loginContext].forgot} className="inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Mot de passe oublié ?
                 </Link>
               </div>
@@ -445,7 +445,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 Déjà un compte ?{" "}
-                <Link href="/login" className="font-medium text-brand hover:underline">
+                <Link href="/login" className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Se connecter
                 </Link>
               </p>
@@ -461,7 +461,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
                 Envoyer le lien
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                <Link href="/login" className="font-medium text-brand hover:underline">
+                <Link href="/login" className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Retour à la connexion
                 </Link>
               </p>
@@ -494,7 +494,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
                 Mettre à jour le mot de passe
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                <Link href="/login" className="font-medium text-brand hover:underline">
+                <Link href="/login" className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Retour à la connexion
                 </Link>
               </p>

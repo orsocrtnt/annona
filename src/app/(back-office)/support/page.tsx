@@ -130,7 +130,7 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
             value={ticket.status}
             disabled={updateStatus.isPending || reply.isPending}
             onChange={(event) => void setStatus(event.target.value as CompanySupportTicket["status"])}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm max-md:text-base"
           >
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -148,7 +148,7 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
             maxLength={4000}
             required
             disabled={reply.isPending || updateStatus.isPending}
-            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm max-md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
           <Button type="submit" size="sm" disabled={reply.isPending || updateStatus.isPending || !body.trim()}>
             <Send className="h-4 w-4" /> {reply.isPending ? "Envoi…" : "Envoyer"}
@@ -207,7 +207,7 @@ export default function CompanySupportPage() {
             id="support-filter"
             value={filter}
             onChange={(event) => setFilter(event.target.value as Filter)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm max-md:text-base"
           >
             <option value="ACTIVE">Demandes actives</option>
             <option value="ALL">Toutes les demandes</option>

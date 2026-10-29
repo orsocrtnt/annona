@@ -59,8 +59,8 @@ function ActivationCard({ enabled, configured }: { enabled: boolean; configured:
           conservation chez le fournisseur, transferts hors Union européenne) n&apos;est pas encore validée.
         </p>
         {!enabled && (
-          <label className="flex min-h-11 items-center gap-2">
-            <input type="checkbox" className="mt-0.5 h-4 w-4" checked={acknowledged}
+          <label className="flex min-h-11 items-center gap-2 max-md:items-center">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 max-md:size-5" checked={acknowledged}
               onChange={(event) => setAcknowledged(event.target.checked)} aria-describedby={noticeId} />
             J&apos;ai lu cette information et j&apos;active la fonction pour mon entreprise.
           </label>
@@ -188,7 +188,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
                   }
                 }}
                 placeholder="urgent, 2 plis de Rivoli à La Défense avant 15h, demander M. Durand"
-                className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm max-md:text-base placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </FormField>
             <FormField label="Expéditeur (facultatif)" hint="E-mail ou téléphone : sert à retrouver le client de votre entreprise.">

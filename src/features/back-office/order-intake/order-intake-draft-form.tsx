@@ -37,7 +37,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const selectClass =
-  "flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1";
+  "flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm max-md:h-11 max-md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1";
 
 interface CreatedOrder {
   id: string;
@@ -259,8 +259,8 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
               <Input value={values.deadlineLabel} onChange={(event) => update({ deadlineLabel: event.target.value })} placeholder="ex. avant 15:00" />
             </FormField>
             <div className="flex items-end pb-2">
-              <label className="flex min-h-11 items-center gap-2 text-sm">
-                <input type="checkbox" checked={values.urgent} onChange={(event) => update({ urgent: event.target.checked })} className="h-4 w-4" />
+              <label className="flex min-h-11 items-center gap-2 text-sm max-md:items-center">
+                <input type="checkbox" checked={values.urgent} onChange={(event) => update({ urgent: event.target.checked })} className="h-4 w-4 max-md:size-5" />
                 Urgent
               </label>
             </div>

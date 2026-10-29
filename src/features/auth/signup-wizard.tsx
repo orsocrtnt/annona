@@ -298,10 +298,10 @@ export function SignupWizard() {
     <main className="min-h-screen bg-muted/20 px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <header className="flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><BrandLogo className="dark:hidden" priority /><BrandLogo onDark className="hidden dark:inline-flex" /></Link>
+          <Link href="/" className="flex items-center rounded-lg max-md:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><BrandLogo className="dark:hidden" priority /><BrandLogo onDark className="hidden dark:inline-flex" /></Link>
           <div className="flex items-center gap-4">
             <PublicSupportLink />
-            <Link href="/login" className="text-sm font-medium text-brand hover:underline">Se connecter</Link>
+            <Link href="/login" className="text-sm font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Se connecter</Link>
           </div>
         </header>
         <section className="mt-8 rounded-2xl border bg-background p-5 shadow-sm sm:p-8">
@@ -317,7 +317,7 @@ export function SignupWizard() {
                       type="button"
                       disabled={!reachable || submitting}
                       onClick={() => void goToStage(step.id)}
-                      className={`w-full rounded-md px-1 py-1 ${stage === step.id ? "font-semibold text-foreground" : "text-muted-foreground"} ${reachable ? "hover:text-foreground" : ""}`}
+                      className={`w-full rounded-md px-1 py-1 max-md:min-h-11 ${stage === step.id ? "font-semibold text-foreground" : "text-muted-foreground"} ${reachable ? "hover:text-foreground" : ""}`}
                     >
                       {step.label}
                     </button>
@@ -334,7 +334,7 @@ export function SignupWizard() {
               <h1 className="text-2xl font-semibold">Choisissez votre formule</h1>
               <p className="mt-2 text-muted-foreground">Comparez ce qui est inclus, en option ou absent. Les fonctions déjà incluses ne sont jamais refacturées à l’étape suivante.</p>
               <div className="mt-5 inline-flex rounded-lg border p-1">
-                {(["MONTHLY", "ANNUAL"] as const).map((interval) => <button key={interval} type="button" onClick={() => setBillingInterval(interval)} className={`rounded-md px-4 py-2 text-sm ${billingInterval === interval ? "bg-foreground text-background" : "text-muted-foreground"}`}>{interval === "MONTHLY" ? "Mensuel" : "Annuel"}</button>)}
+                {(["MONTHLY", "ANNUAL"] as const).map((interval) => <button key={interval} type="button" onClick={() => setBillingInterval(interval)} className={`rounded-md px-4 py-2 max-md:min-h-11 text-sm ${billingInterval === interval ? "bg-foreground text-background" : "text-muted-foreground"}`}>{interval === "MONTHLY" ? "Mensuel" : "Annuel"}</button>)}
               </div>
               <div className="mt-6">
                 <SignupPlanComparisonTable

@@ -60,9 +60,9 @@ export function OrderConversation({ orderId }: { orderId: string }) {
       </div>
       {data.closed && <p className="text-sm text-muted-foreground">Mission terminée : historique en lecture seule. Pour une nouvelle demande, contactez le support.</p>}
       {data.canWrite && <form onSubmit={send} className="space-y-3">
-        <label className="block text-sm">Type d’échange<select aria-label="Type d’échange" value={kind} onChange={e => setKind(e.target.value)} disabled={busy} className="ml-2 rounded border bg-background p-2">{Object.entries(kinds).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+        <label className="block text-sm">Type d’échange<select aria-label="Type d’échange" value={kind} onChange={e => setKind(e.target.value)} disabled={busy} className="ml-2 rounded border bg-background p-2 max-md:text-base">{Object.entries(kinds).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
         {data.canNote && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={internal} onChange={e => setInternal(e.target.checked)} disabled={busy} />Note interne (administration uniquement, cachée au client et au chauffeur)</label>}
-        <label className="block text-sm">{internal && data.canNote ? "Note interne" : "Message partagé"}<textarea aria-label={internal && data.canNote ? "Note interne" : "Message partagé"} value={body} onChange={e => setBody(e.target.value)} maxLength={4000} required disabled={busy} rows={3} className="mt-1 block w-full rounded-md border bg-background p-3" /></label>
+        <label className="block text-sm">{internal && data.canNote ? "Note interne" : "Message partagé"}<textarea aria-label={internal && data.canNote ? "Note interne" : "Message partagé"} value={body} onChange={e => setBody(e.target.value)} maxLength={4000} required disabled={busy} rows={3} className="mt-1 block w-full rounded-md border bg-background p-3 max-md:text-base" /></label>
         <Button type="submit" disabled={busy || !body.trim()}>{busy ? "Envoi…" : internal && data.canNote ? "Ajouter la note interne" : "Envoyer le message partagé"}</Button>
       </form>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

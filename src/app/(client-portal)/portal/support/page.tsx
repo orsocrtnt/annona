@@ -214,7 +214,7 @@ export default function ClientSupportPage() {
             </FormField>
             <FormField label="Message" error={form.formState.errors.message?.message} required>
               <textarea
-                className="flex min-h-[120px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex min-h-[120px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm max-md:text-base placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="Décrivez votre demande..."
                 {...form.register("message")}
               />

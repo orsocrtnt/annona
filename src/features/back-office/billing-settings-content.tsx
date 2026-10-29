@@ -154,7 +154,7 @@ function CourierPricingSection({
             aria-label="Activer l'estimation de prix client"
             onClick={() => updateCourier({ showClientEstimate: !courier.showClientEstimate })}
             className={cn(
-              "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
+              "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']",
               courier.showClientEstimate ? "bg-brand" : "bg-muted-foreground/30"
             )}
           >
