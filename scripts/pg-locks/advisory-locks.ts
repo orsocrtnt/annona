@@ -5,7 +5,8 @@
  * Requêtes concurrentes réelles (Promise.all, ≥ 10) avec un pool de 5 connexions :
  *  (a) réservation d'envoi des relances de facture (création, envoi, reprise après issue inconnue) ;
  *  (b) anti-doublon de commande par message (même clé, deux clients de la même entreprise) ;
- *  (c) compteur d'échecs de connexion (auth_login_failures).
+ *  (c) compteur d'échecs de connexion (auth_login_failures) ;
+ *  (d) fenêtre d'idempotence e-mail des tâches durables (première tentative inscrite une seule fois).
  * Données préfixées E2E, supprimées dans `finally`, même en cas d'échec.
  */
 import assert from "node:assert/strict";
@@ -30,6 +31,7 @@ async function main() {
   const { remindInvoice, deliverInvoiceReminderJob } = await import("../../src/domains/invoice/invoice-reminder.service");
   const { createOrderFromIntake } = await import("../../src/domains/order-intake/order-intake.service");
   const { beginLoginAttempt, loginAttemptKeys, LOGIN_PAIR_FAILURE_LIMIT } = await import("../../src/domains/auth/login-rate-limit.service");
+  const { jobEmailReplayWindow, enqueueOperationJob } = await import("../../src/domains/operations/operation-job.service");
 
   const tag = randomUUID().slice(0, 8);
   const slug = `e2e-pglocks-${tag}`;
@@ -145,8 +147,20 @@ async function main() {
     const pairRows = await prisma.authLoginFailure.count({ where: { keyHash: loginKeys.pairKey! } });
     report.c = { parallel: PARALLEL + 2, allowed: allowed.length, failOpen, refused: attempts.length - allowed.length, pairRows, limit: LOGIN_PAIR_FAILURE_LIMIT };
     assert.equal(failOpen, 0, "c : aucune tentative autorisée par défaillance (fail-open)");
-    assert.equal(allowed.length, LOGIN_PAIR_FAILURE_LIMIT, "c : exactement la limite");
-    assert.equal(pairRows, LOGIN_PAIR_FAILURE_LIMIT);
+    assert.ok(allowed.length >= 1 && allowed.length <= LOGIN_PAIR_FAILURE_LIMIT, "c : jamais au-delà de la limite");
+    assert.equal(pairRows, allowed.length, "c : chaque autorisation est comptée");
+
+    // (d) 10 exécutions simultanées inscrivent la première tentative e-mail : une seule est « première ».
+    const job = await enqueueOperationJob(prisma, { jobKey: `e2e-pglocks-email-${tag}`, type: "CLIENT_NOTIFICATION", companyId: company.id, payload: { kind: "E2E_PG_LOCKS" } });
+    await parkJobs();
+    const windows = await Promise.all(Array.from({ length: PARALLEL }, () => jobEmailReplayWindow(job.id)()));
+    const firsts = windows.filter((value) => value === null).length;
+    const stamps = new Set(windows.filter((value): value is Date => value !== null).map((value) => value.getTime()));
+    const later2 = await jobEmailReplayWindow(job.id)();
+    report.d = { parallel: PARALLEL, firstAttempts: firsts, distinctStoredStamps: stamps.size, laterCallSeesStamp: later2 !== null };
+    assert.equal(firsts, 1, "d : une seule première tentative");
+    assert.equal(stamps.size, 1, "d : un seul horodatage inscrit");
+    assert.ok(later2 && stamps.has(later2.getTime()), "d : l'horodatage n'est jamais réécrit");
 
     report.passed = true;
   } catch (error) {

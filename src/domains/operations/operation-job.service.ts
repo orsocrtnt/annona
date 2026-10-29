@@ -36,6 +36,41 @@ export function permanentJobError(message: string) {
   return Object.assign(new Error(message), { permanent: true });
 }
 
+/**
+ * Rien n'a été tenté (ex. une autre exécution tient la réservation d'envoi) : la tâche est replanifiée
+ * à `until` sans consommer d'essai.
+ */
+export function deferredJobError(message: string, until: Date) {
+  return Object.assign(new Error(message), { deferUntil: until });
+}
+
+function deferredUntil(error: unknown): Date | null {
+  const until = error && typeof error === "object" ? (error as { deferUntil?: unknown }).deferUntil : null;
+  return until instanceof Date && Number.isFinite(until.getTime()) ? until : null;
+}
+
+/**
+ * Fenêtre de déduplication du fournisseur d'e-mail pour une tâche (C5), sans migration : l'instant de
+ * la première tentative réellement émise est inscrit dans le payload juste avant l'appel. Renvoie
+ * null pour la première tentative, sinon cet instant (borne basse de toute tentative antérieure).
+ * Valeur illisible ou tâche absente : époque 0, donc fenêtre dépassée (prudence).
+ */
+export function jobEmailReplayWindow(jobId: string, db: Pick<typeof prisma, "$executeRaw" | "$queryRaw"> = prisma) {
+  return async (): Promise<Date | null> => {
+    const now = new Date().toISOString();
+    const marked = await db.$executeRaw`
+      UPDATE "operation_jobs"
+      SET "payload" = jsonb_set(CASE WHEN jsonb_typeof("payload") = 'object' THEN "payload" ELSE '{}'::jsonb END,
+                                '{emailFirstAttemptAt}', to_jsonb(${now}::text), true)
+      WHERE "id" = ${jobId} AND NOT ("payload" ? 'emailFirstAttemptAt')`;
+    if (marked === 1) return null;
+    const rows = await db.$queryRaw<Array<{ first: string | null }>>`
+      SELECT "payload"->>'emailFirstAttemptAt' AS first FROM "operation_jobs" WHERE "id" = ${jobId}`;
+    const first = rows[0]?.first ? new Date(rows[0].first) : null;
+    return first && Number.isFinite(first.getTime()) ? first : new Date(0);
+  };
+}
+
 function isPermanentJobError(error: unknown) {
   return Boolean(error && typeof error === "object" && (error as { permanent?: unknown }).permanent === true);
 }
@@ -119,8 +154,8 @@ async function executeJob(job: OperationJob) {
       const { deliverSignupWelcomeEmail } = await import(
         "@/domains/signup/signup.service"
       );
-      // createdAt : borne de la fenêtre de déduplication du fournisseur d'e-mail (C5).
-      await deliverSignupWelcomeEmail(job.payload, job.jobKey, job.createdAt);
+      // Fenêtre de déduplication du fournisseur d'e-mail, bornée par la première tentative émise (C5).
+      await deliverSignupWelcomeEmail(job.payload, job.jobKey, jobEmailReplayWindow(job.id));
       return;
     }
     if (readString(job.payload, "kind") === "ORDER_MESSAGE") {
@@ -139,7 +174,7 @@ async function executeJob(job: OperationJob) {
     const { deliverClientNotificationJob } = await import(
       "@/domains/client-portal/notify.service"
     );
-    await deliverClientNotificationJob(job.payload, job.jobKey, job.createdAt);
+    await deliverClientNotificationJob(job.payload, job.jobKey, jobEmailReplayWindow(job.id));
     return;
   }
 
@@ -218,6 +253,14 @@ export async function processOperationJob(jobId: string, now?: Date) {
     return prisma.operationJob.findUnique({ where: { id: jobId } });
   } catch (error) {
     const failedAt = now ?? new Date();
+    const deferUntil = deferredUntil(error);
+    if (deferUntil) {
+      await prisma.operationJob.updateMany({
+        where: { id: jobId, status: "PROCESSING", attempts: claimed.attempts, lockedAt: claimed.lockedAt },
+        data: { status: "PENDING", attempts: { decrement: 1 }, nextAttemptAt: deferUntil, lockedAt: null, lastError: safeError(error) },
+      });
+      return prisma.operationJob.findUnique({ where: { id: jobId } });
+    }
     const terminal = claimed.attempts >= claimed.maxAttempts || isPermanentJobError(error);
     await prisma.operationJob.updateMany({
       where: {

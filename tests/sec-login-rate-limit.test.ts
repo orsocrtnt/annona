@@ -200,9 +200,15 @@ test("base indisponible (migration non appliquée) : connexion permise, erreur j
 test("contention (expiration de transaction ou de pool) : refus bref, jamais une autorisation", async (t) => {
   t.mock.method(console, "error", () => undefined);
   const keys = keysFor("victim@example.test", "198.51.100.6");
-  for (const code of ["P2028", "P2024"]) {
-    const db = { $transaction: async () => { throw Object.assign(new Error("Transaction already closed"), { code }); } } as unknown as Db;
-    assert.deepEqual(await beginLoginAttempt(keys, { db }), { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS }, code);
+  const errors = [
+    Object.assign(new Error("Transaction already closed"), { code: "P2028" }),
+    Object.assign(new Error("Timed out fetching a new connection from the connection pool"), { code: "P2024" }),
+    Object.assign(new Error("Raw query failed. Code: `55P03`. Message: `canceling statement due to lock timeout`"), { code: "P2010", meta: { code: "55P03" } }),
+    Object.assign(new Error("Raw query failed"), { code: "P2010", meta: { code: "57014" } }),
+  ];
+  for (const error of errors) {
+    const db = { $transaction: async () => { throw error; } } as unknown as Db;
+    assert.deepEqual(await beginLoginAttempt(keys, { db }), { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS }, error.message);
   }
 });
 

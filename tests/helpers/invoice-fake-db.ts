@@ -185,6 +185,13 @@ export function createInvoiceFakeDb(seed: {
       },
     },
     invoiceReminder: {
+      async findMany(args: { where: Row; take?: number }) {
+        return reminders
+          .filter((reminder) => matches(reminder, args.where))
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, args.take ?? Infinity)
+          .map((found) => ({ ...found, operationJob: jobs.find((job) => job.id === found.operationJobId) ?? null }));
+      },
       async findFirst(args: { where: Row }) {
         const found = reminders
           .filter((reminder) => matches(reminder, args.where))

@@ -21,6 +21,13 @@ export type TransactionalEmailConfiguration = {
     | "missing-test-recipient";
 };
 
+/**
+ * Début de la fenêtre de déduplication : une date, `null` (aucune tentative antérieure possible), ou
+ * un résolveur appelé juste avant l'appel au fournisseur, qui enregistre cette tentative et renvoie
+ * l'instant de la première tentative antérieure (null si c'est la première).
+ */
+export type ReplayWindowStart = Date | null | (() => Promise<Date | null>);
+
 export type TransactionalEmailInput = {
   to: string;
   subject: string;
@@ -31,7 +38,7 @@ export type TransactionalEmailInput = {
    * fournisseur (création de la relance ou de la tâche durable) ; `null` quand aucune tentative
    * antérieure n'a pu être acceptée. Obligatoire : chaque appelant doit se prononcer.
    */
-  replayWindowStart: Date | null;
+  replayWindowStart: ReplayWindowStart;
 };
 
 type SendOptions = {
@@ -175,7 +182,10 @@ export async function sendTransactionalEmail(
     throw emailError("EMAIL_CONTENT_INVALID", "rejected");
   }
   // Au-delà de la fenêtre, le fournisseur ne déduplique plus : une reprise pourrait doubler l'e-mail.
-  if (!isIdempotentReplaySafe(input.replayWindowStart, options.now ?? new Date())) {
+  const replayWindowStart = typeof input.replayWindowStart === "function"
+    ? await input.replayWindowStart()
+    : input.replayWindowStart;
+  if (!isIdempotentReplaySafe(replayWindowStart, options.now ?? new Date())) {
     throw emailError("EMAIL_IDEMPOTENCY_WINDOW_EXPIRED", "unconfirmed");
   }
 

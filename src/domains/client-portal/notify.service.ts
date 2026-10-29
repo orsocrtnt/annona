@@ -8,6 +8,7 @@ import {
 import {
   getTransactionalEmailConfiguration,
   sendTransactionalEmail,
+  type ReplayWindowStart,
 } from "@/lib/email/transactional-email";
 import { prisma } from "@/services/prisma/client";
 import { parseProofRules } from "@/domains/delivery/pod-evidence";
@@ -116,7 +117,7 @@ async function sendClientEmail(
   subject: string,
   text: string,
   idempotencyKey: string,
-  replayWindowStart: Date | null
+  replayWindowStart: ReplayWindowStart
 ) {
   await sendTransactionalEmail({
     to,
@@ -137,7 +138,7 @@ async function insertNotification(
     href: string | null;
     email?: { to: string; subject: string; text: string };
   },
-  replayWindowStart: Date | null
+  replayWindowStart: ReplayWindowStart
 ) {
   await prisma.clientNotification.upsert({
     where: { id: stableNotificationId(eventKey) },
@@ -333,13 +334,13 @@ function composeDeliveryAcceptedMessage(
 }
 
 /**
- * `jobCreatedAt` : création de la tâche durable, borne basse de toute tentative d'envoi sous `eventKey`.
- * Au-delà de 23 h, l'e-mail n'est plus jamais renvoyé automatiquement (la notification in-app reste).
+ * `replayWindow` : fenêtre de déduplication de la tâche (première tentative réellement émise sous
+ * `eventKey`). Au-delà de 23 h, l'e-mail n'est plus jamais renvoyé automatiquement (l'in-app reste).
  */
 export async function deliverClientNotificationJob(
   rawPayload: Prisma.JsonValue,
   eventKey: string,
-  jobCreatedAt: Date | null = null
+  replayWindow: ReplayWindowStart = null
 ) {
   const payload = parseNotificationPayload(rawPayload);
   const settings = await getClientSettings(payload.customerId);
@@ -378,7 +379,7 @@ export async function deliverClientNotificationJob(
         settings.emailNotifications && user.email
           ? { to: user.email, subject: message.title, text: message.emailText }
           : undefined,
-    }, jobCreatedAt);
+    }, replayWindow);
     return;
   }
 
@@ -406,7 +407,7 @@ export async function deliverClientNotificationJob(
       settings.emailNotifications && user.email
         ? { to: user.email, subject: `Facture ${payload.reference}`, text: body }
         : undefined,
-  }, jobCreatedAt);
+  }, replayWindow);
 }
 
 export async function notifyDeliveryStatusChange(input: {

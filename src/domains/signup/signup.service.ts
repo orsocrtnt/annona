@@ -14,7 +14,7 @@ import {
   enqueueOperationJob,
   kickOperationJob,
 } from "@/domains/operations/operation-job.service";
-import { sendTransactionalEmail } from "@/lib/email/transactional-email";
+import { sendTransactionalEmail, type ReplayWindowStart } from "@/lib/email/transactional-email";
 import { attributeSignupSale, resolveActiveSalesCodeId } from "@/domains/sales/sales-code.service";
 
 export const SIGNUP_COOKIE = "tutelliv-signup-resume";
@@ -1066,8 +1066,8 @@ function signupWelcomePayload(value: Prisma.JsonValue) {
 export async function deliverSignupWelcomeEmail(
   rawPayload: Prisma.JsonValue,
   eventKey: string,
-  // Création de la tâche durable : au-delà de 23 h, plus de renvoi automatique sous cette clé.
-  jobCreatedAt: Date | null = null
+  // Fenêtre de la tâche : 23 h après la première tentative émise, plus de renvoi automatique.
+  replayWindow: ReplayWindowStart = null
 ) {
   const payload = signupWelcomePayload(rawPayload);
   const journey = await prisma.signupJourney.findFirst({
@@ -1107,7 +1107,7 @@ export async function deliverSignupWelcomeEmail(
       "L’équipe TutelLiv",
     ].join("\n"),
     idempotencyKey: eventKey,
-    replayWindowStart: jobCreatedAt,
+    replayWindowStart: replayWindow,
   });
   if (delivery.status === "disabled") {
     throw new Error("SIGNUP_WELCOME_EMAIL_DISABLED");

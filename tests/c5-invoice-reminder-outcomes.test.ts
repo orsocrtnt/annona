@@ -50,8 +50,8 @@ function fakeResend() {
   return {
     script, calls, fetcher,
     get received() { return received; },
-    /** Un envoi antérieur sous cette clé, avec un autre contenu (cas 409 invalid_idempotent_request). */
-    preAccept(key: string, body: string) { accepted.set(key, { body, at: clock }); received += 1; },
+    /** Le fournisseur a mémorisé sous cette clé une requête refusée, d'un autre contenu (rien n'est parti). */
+    preRemember(key: string, body: string) { accepted.set(key, { body, at: clock }); },
     setClock(at: Date) { clock = at.getTime(); },
   };
 }
@@ -82,12 +82,14 @@ function setup(r1: Partial<FakeReminder> = {}) {
 
 const settle = (promise: Promise<unknown>) => promise.then(() => null, (error: unknown) => error as Error & { permanent?: boolean });
 
-type Row = { label: string; script: Scripted; expect: "SENT" | "QUEUED" | "SENDING" | "SEND_UNCONFIRMED" };
+type Row = { label: string; script: Scripted; expect: "SENT" | "QUEUED" | "SENDING" | "FAILED" };
 const TABLE: Row[] = [
   { label: "200", script: { status: 200, accepted: true }, expect: "SENT" },
   { label: "400 validation_error", script: { status: 400, name: "validation_error", accepted: false }, expect: "QUEUED" },
   { label: "409 concurrent_idempotent_requests", script: { status: 409, name: "concurrent_idempotent_requests", accepted: true }, expect: "SENDING" },
-  { label: "409 invalid_idempotent_request", script: { status: 409, name: "invalid_idempotent_request", accepted: false }, expect: "SEND_UNCONFIRMED" },
+  // Sur une première tentative (invariant QUEUED : seules des requêtes refusées ont porté la clé) :
+  // clé brûlée sans envoi → FAILED, nouvelle relance permise. Sur une reprise : voir plus bas.
+  { label: "409 invalid_idempotent_request (1re tentative)", script: { status: 409, name: "invalid_idempotent_request", accepted: false }, expect: "FAILED" },
   { label: "422 missing_required_field", script: { status: 422, name: "missing_required_field", accepted: false }, expect: "QUEUED" },
   { label: "429 rate_limit_exceeded", script: { status: 429, name: "rate_limit_exceeded", accepted: false }, expect: "QUEUED" },
   // Pire cas pour une issue ambiguë : le fournisseur a accepté l'e-mail, la réponse ne le dit pas.
@@ -98,7 +100,7 @@ const TABLE: Row[] = [
 for (const row of TABLE) {
   test(`C5 : ${row.label} — issue de la relance, clic « Relancer », reprise à 6 min, au plus un e-mail`, async () => {
     const { db, resend, deliver, remind, r1Row } = setup();
-    if (row.label.startsWith("409 invalid")) resend.preAccept(KEY, "contenu antérieur différent");
+    if (row.label.startsWith("409 invalid")) resend.preRemember(KEY, "contenu antérieur différent");
     resend.script.push(row.script);
 
     const first = await settle(deliver(T0));
@@ -108,30 +110,57 @@ for (const row of TABLE) {
     if (row.expect === "QUEUED") assert.equal(r1Row().completedAt, null, "réservation rendue : rien n'est parti");
     if (row.expect === "SENDING") assert.equal(r1Row().completedAt?.getTime(), T0.getTime(), "réservation conservée");
     // Seule l'issue non confirmée est permanente (tâche FAILED, aucun nouvel essai).
-    assert.equal(first?.permanent === true, row.expect === "SEND_UNCONFIRMED");
+    assert.equal(first?.permanent === true, row.expect === "FAILED");
+    if (row.expect === "FAILED") {
+      assert.equal(resend.received, 0, "rien n'est parti");
+      assert.equal(await settle(deliver(new Date(T0.getTime() + 6 * MIN))), null, "terminal : rejeu sans effet");
+      assert.equal(resend.calls.length, 1);
+      // Double clic : une seule nouvelle relance R2 (nouvelle clé), la seconde est refusée.
+      const clicks = await Promise.all([remind(new Date(T0.getTime() + 7 * MIN)), remind(new Date(T0.getTime() + 7 * MIN))]);
+      assert.equal(clicks.filter((click) => click && !click.duplicate).length, 1);
+      assert.equal(db.reminders.length, 2);
+      return;
+    }
 
     // Double clic administrateur juste après : jamais de seconde relance.
     const clicks = await Promise.all([remind(new Date(T0.getTime() + MIN)), remind(new Date(T0.getTime() + MIN))]);
     assert.ok(clicks.every((click) => click?.duplicate === true && click.reminder.id === "r1"), "aucune R2");
     assert.equal(db.reminders.length, 1);
 
-    // Rejeu de la tâche à 1 min : la réservation SENDING est encore active, rien ne part.
+    // Rejeu de la tâche à 1 min : la réservation SENDING est encore active, rien ne part, et la tâche
+    // est replanifiée à l'expiration de la réservation sans consommer d'essai.
     if (row.expect === "SENDING") {
-      const early = await settle(deliver(new Date(T0.getTime() + MIN)));
+      const early = await settle(deliver(new Date(T0.getTime() + MIN))) as (Error & { deferUntil?: Date }) | null;
       assert.match(early!.message, /INVOICE_REMINDER_SEND_IN_PROGRESS/);
+      assert.ok(early!.deferUntil && early!.deferUntil.getTime() > T0.getTime() + 5 * MIN);
     }
 
     // Reprise à 6 min (après le changement de jour à Paris) : même clé, même contenu.
     const resumed = await settle(deliver(new Date(T0.getTime() + 6 * MIN)));
-    const expectedAfter = row.expect === "SEND_UNCONFIRMED" ? "SEND_UNCONFIRMED" : "SENT";
-    assert.equal(r1Row().result, expectedAfter, "après la reprise");
-    if (expectedAfter === "SENT") assert.equal(resumed, null);
+    assert.equal(r1Row().result, "SENT", "après la reprise");
+    assert.equal(resumed, null);
     assert.ok(resend.calls.every((call) => call.key === KEY), "une seule clé fournisseur");
     assert.equal(new Set(resend.calls.map((call) => call.body)).size, 1, "contenu identique à chaque tentative");
     assert.equal(resend.received, 1, "le client reçoit au plus un e-mail");
-    if (row.expect === "SEND_UNCONFIRMED") assert.equal(resend.calls.length, 1, "aucun renvoi après 409 invalid");
   });
 }
+
+test("C5 : 409 invalid_idempotent_request sur une REPRISE — SEND_UNCONFIRMED terminal, aucun renvoi, aucune R2", async () => {
+  const { db, resend, deliver, remind, r1Row } = setup();
+  resend.script.push({ timeout: true, accepted: true });
+  await settle(deliver(T0));
+  // Le contenu a changé entre-temps sous la même clé (ex. montant corrigé) : 409 invalid.
+  db.invoices[0]!.amount = 99 as never;
+  const error = await settle(deliver(new Date(T0.getTime() + 6 * MIN)));
+  assert.match(error!.message, /EMAIL_PROVIDER_HTTP_409:invalid_idempotent_request/);
+  assert.equal(error!.permanent, true);
+  assert.equal(r1Row().result, "SEND_UNCONFIRMED");
+  assert.equal(await settle(deliver(new Date(T0.getTime() + 20 * MIN))), null, "terminal");
+  assert.equal(resend.calls.length, 2);
+  assert.equal((await remind(new Date(T0.getTime() + 21 * MIN)))?.duplicate, true);
+  assert.equal(db.reminders.length, 1);
+  assert.equal(resend.received, 1);
+});
 
 test("C5 : reprise le lendemain (jour de Paris changé, +20 h) — contenu identique, toujours dédupliqué", async () => {
   const { resend, deliver, r1Row } = setup();
@@ -174,9 +203,9 @@ test("C5 : au-delà de 23 h après la création, une reprise ne rappelle jamais 
   // Rejeu manuel de la tâche (« relancer les tâches en échec ») : état terminal, rien ne part.
   assert.equal(await settle(deliver(new Date(late.getTime() + HOUR))), null);
   assert.equal(resend.calls.length, 1);
-  // Bouton : bloqué jusqu'à 24 h après la création, puis décision humaine (l'état reste affiché).
-  assert.equal((await remind(new Date(T0.getTime() + 23.5 * HOUR)))?.duplicate, true);
-  const after = await remind(new Date(T0.getTime() + 25 * HOUR));
+  // Bouton : bloqué 24 h après le constat (T0 + 23 h), puis décision humaine (l'état reste affiché).
+  assert.equal((await remind(new Date(T0.getTime() + 46 * HOUR)))?.duplicate, true);
+  const after = await remind(new Date(T0.getTime() + 47 * HOUR + MIN));
   assert.equal(after?.duplicate, false, "après 24 h, l'administrateur peut décider d'une nouvelle relance");
   assert.equal(db.reminders.length, 2);
 });

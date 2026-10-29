@@ -49,6 +49,7 @@ function load<T>(deps: Record<string, unknown>): T {
 
 function fixture(options?: {
   failNotification?: boolean;
+  deferNotificationUntil?: Date;
   failFirstNotification?: boolean;
   slowFirstDispatchFailure?: boolean;
 }) {
@@ -93,6 +94,9 @@ function fixture(options?: {
       if (value && typeof value === "object" && "increment" in (value as Row)) {
         (job as unknown as Row)[key] =
           ((job as unknown as Row)[key] as number) + ((value as Row).increment as number);
+      } else if (value && typeof value === "object" && "decrement" in (value as Row)) {
+        (job as unknown as Row)[key] =
+          ((job as unknown as Row)[key] as number) - ((value as Row).decrement as number);
       } else {
         (job as unknown as Row)[key] = value;
       }
@@ -172,6 +176,9 @@ function fixture(options?: {
       deliverClientNotificationJob: async (_payload: unknown, jobKey: string) => {
         executions.push(`notification:${jobKey}`);
         notificationAttempts += 1;
+        if (options?.deferNotificationUntil && notificationAttempts === 1) {
+          throw Object.assign(new Error("INVOICE_REMINDER_SEND_IN_PROGRESS"), { deferUntil: options.deferNotificationUntil });
+        }
         if (options?.failNotification || (options?.failFirstNotification && notificationAttempts === 1)) {
           throw new Error("PROVIDER\nTEMPORARILY_UNAVAILABLE");
         }
@@ -329,6 +336,20 @@ test("le retard compte aussi les tâches PROCESSING dont le bail a expiré sans 
     lockedAt: new Date(f.base.getTime() - 60_000),
   });
   assert.equal(await f.service.countOverduePendingJobs(f.base), 1);
+});
+
+test("C5 : une tâche reportée (rien n'a été tenté) est replanifiée sans consommer d'essai", async () => {
+  const until = new Date("2026-10-05T12:05:01.000Z");
+  const f = fixture({ deferNotificationUntil: until });
+  const job = f.addJob({ jobKey: "client-notification:invoice-reminder:r1", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY_STATUS", companyId: "company-a" } });
+  await f.service.processOperationJob(job.id, f.base);
+  assert.equal(f.jobs[0]?.status, "PENDING");
+  assert.equal(f.jobs[0]?.attempts, 0, "essai rendu");
+  assert.equal(f.jobs[0]?.nextAttemptAt.getTime(), until.getTime());
+  assert.equal(f.jobs[0]?.lastError, "INVOICE_REMINDER_SEND_IN_PROGRESS");
+  await f.service.processOperationJob(job.id, until);
+  assert.equal(f.jobs[0]?.status, "SUCCEEDED");
+  assert.equal(f.jobs[0]?.attempts, 1);
 });
 
 test("trois échecs bornés deviennent visibles sans boucle infinie", async () => {

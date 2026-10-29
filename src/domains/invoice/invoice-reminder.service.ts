@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
-import { enqueueOperationJob, kickOperationJob, permanentJobError } from "@/domains/operations/operation-job.service";
+import { deferredJobError, enqueueOperationJob, kickOperationJob, permanentJobError } from "@/domains/operations/operation-job.service";
 import { getClientSettings } from "@/domains/client-portal/settings.service";
 import { emailSendOutcome, isIdempotentReplaySafe, sendTransactionalEmail } from "@/lib/email/transactional-email";
 import { invoiceDaysOverdue, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
@@ -50,7 +50,8 @@ export type InvoiceReminderResult =
   | "NOT_SENT_CLIENT_PREFERENCES"
   | "NOT_SENT_INVOICE_SETTLED"
   | "SKIPPED_SUPERSEDED"
-  | "SEND_UNCONFIRMED";
+  | "SEND_UNCONFIRMED"
+  | "FAILED";
 
 /** Une relance non confirmée a peut-être été reçue : elle bloque comme une relance envoyée. */
 const BLOCKING_RESULTS: InvoiceReminderResult[] = ["QUEUED", "SENT", "SEND_UNCONFIRMED"];
@@ -74,12 +75,13 @@ export function effectiveReminderResult(reminder: ReminderState, now: Date = new
 
 /** Vrai si cette relance interdit d'en envoyer une nouvelle maintenant (délai anti-doublon). */
 export function reminderBlocksNewOne(reminder: ReminderState, now: Date): boolean {
-  // Réservée : l'e-mail est peut-être parti ; bloque 24 h à partir de la réservation.
-  if (reminder.result === "SENDING") {
-    return (reminder.completedAt ?? reminder.createdAt).getTime() >= now.getTime() - COOLDOWN_MS;
+  const since = now.getTime() - COOLDOWN_MS;
+  // Réservée, envoyée ou non confirmée : 24 h à partir de la réservation ou de l'envoi effectif
+  // (une relance partie tard bloque 24 h après son départ, pas après sa création).
+  if (reminder.result === "SENDING" || reminder.result === "SENT" || reminder.result === "SEND_UNCONFIRMED") {
+    return (reminder.completedAt ?? reminder.createdAt).getTime() >= since;
   }
-  return (BLOCKING_RESULTS as string[]).includes(effectiveReminderResult(reminder))
-    && reminder.createdAt.getTime() >= now.getTime() - COOLDOWN_MS;
+  return (BLOCKING_RESULTS as string[]).includes(effectiveReminderResult(reminder)) && reminder.createdAt.getTime() >= since;
 }
 
 type ReminderDatabase = Pick<PrismaClient, "$transaction">;
@@ -143,17 +145,23 @@ export async function remindInvoice(
     });
     if (sending) return { reminder: view(sending), duplicate: true, jobId: null };
 
-    const recent = await tx.invoiceReminder.findFirst({
+    const since = new Date(now.getTime() - COOLDOWN_MS);
+    const candidates = await tx.invoiceReminder.findMany({
       where: {
         invoiceId: invoice.id,
         companyId: input.companyId,
-        result: { in: BLOCKING_RESULTS },
-        createdAt: { gte: new Date(now.getTime() - COOLDOWN_MS) },
+        OR: [
+          { result: "QUEUED", createdAt: { gte: since } },
+          { result: { in: ["SENT", "SEND_UNCONFIRMED"] }, OR: [{ completedAt: { gte: since } }, { completedAt: null, createdAt: { gte: since } }] },
+        ],
       },
       orderBy: { createdAt: "desc" },
+      take: 20,
       include: { operationJob: { select: { status: true } } },
     });
-    if (recent && reminderBlocksNewOne(recent, now)) {
+    // Toutes les candidates sont examinées : une QUEUED épuisée ne masque pas une SENT plus ancienne.
+    const recent = candidates.find((row) => reminderBlocksNewOne(row, now));
+    if (recent) {
       return { reminder: view(recent), duplicate: true, jobId: null };
     }
 
@@ -295,7 +303,10 @@ export async function deliverInvoiceReminderJob(
     if (resuming) {
       const reservedAt = reminder.completedAt ?? reminder.createdAt;
       // Une autre exécution envoie peut-être en ce moment : la tâche réessaiera plus tard.
-      if (reservedAt.getTime() > now.getTime() - SENDING_TTL_MS) throw new Error("INVOICE_REMINDER_SEND_IN_PROGRESS");
+      // Aucun envoi tenté : la tâche est replanifiée à l'expiration de la réservation, sans perdre d'essai.
+      if (reservedAt.getTime() > now.getTime() - SENDING_TTL_MS) {
+        throw deferredJobError("INVOICE_REMINDER_SEND_IN_PROGRESS", new Date(reservedAt.getTime() + SENDING_TTL_MS + 1000));
+      }
       // Réservation orpheline expirée : reprise avec la même clé d'idempotence et le même contenu.
     } else if (reminder.result !== "QUEUED") {
       return null; // Déjà traitée : rejeu idempotent.
@@ -376,7 +387,12 @@ export async function deliverInvoiceReminderJob(
       await db.invoiceReminder.updateMany({ where: held, data: { result: "QUEUED", completedAt: null } });
     } else if (outcome === "unconfirmed") {
       // Clé déjà utilisée avec un autre contenu, ou fenêtre dépassée : terminal, jamais de renvoi.
-      await db.invoiceReminder.updateMany({ where: held, data: { result: "SEND_UNCONFIRMED", completedAt: now } });
+      // Première tentative : l'invariant QUEUED prouve que seules des requêtes refusées ont porté la
+      // clé (le fournisseur a pu mémoriser un refus) ; rien n'est parti → FAILED, nouvelle relance permise.
+      await db.invoiceReminder.updateMany({
+        where: held,
+        data: { result: reservation.resuming ? "SEND_UNCONFIRMED" : "FAILED", completedAt: now },
+      });
     }
     // Sinon (issue inconnue, ou refus d'une reprise) : SENDING gardé, « Relancer » refuse, la tâche
     // reprendra avec la même clé et le même contenu après expiration de la réservation.

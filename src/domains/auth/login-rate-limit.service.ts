@@ -27,18 +27,25 @@ type LoginAttemptTx = Pick<Prisma.TransactionClient, "authLoginFailure" | "$quer
 
 /**
  * Contention mesurée sur PostgreSQL réel (test:pg-locks) : 12 tentatives simultanées sur la même clé
- * dépassaient le délai par défaut des transactions (2 s d'attente, 5 s d'exécution) et passaient
- * toutes par le chemin « base indisponible » : la limite était contournée en parallèle. Les délais
- * sont élargis, et une expiration de transaction ou de pool (contention) refuse brièvement au lieu
- * d'autoriser. Seules les autres erreurs (base absente, migration manquante) restent permissives.
+ * dépassaient le délai par défaut des transactions et passaient toutes par le chemin « base
+ * indisponible » : la limite était contournée en parallèle. Désormais l'attente d'un verrou est
+ * bornée à 2 s (lock_timeout local : une connexion n'est pas immobilisée longtemps), et toute
+ * contention — verrou (55P03), délai d'instruction (57014), transaction expirée (P2028), pool saturé
+ * (P2024) — refuse brièvement au lieu d'autoriser. Seules les autres erreurs (base absente,
+ * migration manquante) restent permissives. Choix assumé : sous saturation du pool, les connexions
+ * sont refusées quelques secondes plutôt que laissées sans limite.
  */
-const LOGIN_ATTEMPT_TX = { maxWait: 10_000, timeout: 15_000 } as const;
-const CONTENTION_ERROR_CODES = new Set(["P2024", "P2028"]);
+const LOGIN_ATTEMPT_TX = { maxWait: 5_000, timeout: 10_000 } as const;
+const CONTENTION_PRISMA_CODES = new Set(["P2024", "P2028"]);
+const CONTENTION_SQLSTATES = new Set(["55P03", "57014"]);
 export const LOGIN_CONTENTION_RETRY_SECONDS = 5;
 
 function isContentionError(error: unknown) {
-  const code = error && typeof error === "object" ? (error as { code?: unknown }).code : undefined;
-  return typeof code === "string" && CONTENTION_ERROR_CODES.has(code);
+  if (!error || typeof error !== "object") return false;
+  const { code, meta, message } = error as { code?: unknown; meta?: { code?: unknown }; message?: unknown };
+  if (typeof code === "string" && CONTENTION_PRISMA_CODES.has(code)) return true;
+  if (typeof meta?.code === "string" && CONTENTION_SQLSTATES.has(meta.code)) return true;
+  return typeof message === "string" && /\b(55P03|57014)\b|lock timeout|canceling statement due to (lock|statement) timeout/i.test(message);
 }
 
 /** Valeur de `contactSourceFromHeaders` sans x-forwarded-for ni x-real-ip. */
@@ -100,6 +107,8 @@ export async function beginLoginAttempt(
   const limited = limitedKeys(keys).sort((a, b) => a.keyHash.localeCompare(b.keyHash));
   try {
     return await db.$transaction(async (tx) => {
+      // Locale à la transaction : n'affecte pas les autres requêtes de la connexion.
+      if (limited.length) await tx.$queryRaw`SELECT set_config('lock_timeout', '2000ms', true) AS lock_timeout`;
       for (const { keyHash } of limited) {
         await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${keyHash}))`;
       }

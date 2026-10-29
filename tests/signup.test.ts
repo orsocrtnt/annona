@@ -884,7 +884,7 @@ test("SIGNUP-1 : la bienvenue est durable, idempotente et découplée de l'activ
   assert.match(signup, /enqueueOperationJob\(tx/);
   assert.match(signup, /kickOperationJob\(activation\.welcomeJobId\)/);
   assert.match(signup, /idempotencyKey: eventKey/);
-  assert.match(jobs, /deliverSignupWelcomeEmail\(job\.payload, job\.jobKey, job\.createdAt\)/);
+  assert.match(jobs, /deliverSignupWelcomeEmail\(job\.payload, job\.jobKey, jobEmailReplayWindow\(job\.id\)\)/);
 });
 
 test("SIGNUP-1 : aucun ancien endpoint ni retour navigateur ne peut provisionner directement", () => {
