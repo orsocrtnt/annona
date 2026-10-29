@@ -94,7 +94,7 @@ function load(deps: {
 }
 
 const base = dispatchSettings.DEFAULT_DISPATCH_SETTINGS;
-const scoreSettings = { ...base, enabled: true, strategy: "BEST_SCORE" };
+const scoreSettings = { ...base, enabled: true, bestScore: true };
 const pending = { id: "d1", driverId: null, status: "PENDING", deliveryCategory: "STANDARD", postalCode: "75011", pickupPostalCode: null, createdAt: new Date(), ...PICKUP };
 const driver = (id: string, assigned: number, extra: Row = {}) => ({ id, firstName: `E2E ${id}`, lastName: "Livreur", email: `${id}@e2e.invalid`, phone: "0600000000", assigned, inTransit: 0, ...extra });
 const candidate = (over: Partial<ScoreCandidate>): ScoreCandidate => ({
@@ -196,6 +196,15 @@ test("auto meilleur score : OSRM en panne → repli à vol d'oiseau, l'affectati
   assert.deepEqual(log, ["osrm", "assign"]);
 });
 
+test("réglages hérités : sans `bestScore`, défaut faux ; l'ancien schéma ignore le champ (retour arrière sûr)", () => {
+  const legacy = dispatchSettings.companyDispatchSettingsSchema.parse({ ...base, bestScore: undefined });
+  assert.equal(legacy.bestScore, false);
+  const oldSchema = dispatchSettings.companyDispatchSettingsSchema.omit({ bestScore: true });
+  const readByOldCode = oldSchema.parse({ ...base, strategy: "LEAST_LOADED", bestScore: true });
+  assert.equal(readByOldCode.strategy, "LEAST_LOADED");
+  assert.equal("bestScore" in readByOldCode, false);
+});
+
 test("auto : les autres stratégies n'appellent jamais le service de trajet (comportement hérité)", async () => {
   for (const strategy of ["PRIORITY_LIST", "LEAST_LOADED", "ZONE_THEN_PRIORITY"]) {
     const { svc, log } = load({
@@ -211,7 +220,7 @@ test("auto : les autres stratégies n'appellent jamais le service de trajet (com
 });
 
 test("mode suggestion : la file refuse d'affecter en masse, rien n'est affecté", async () => {
-  const { svc, log } = load({ settings: { ...base, enabled: false, strategy: "BEST_SCORE" }, delivery: pending, drivers: [driver("a", 0)] });
+  const { svc, log } = load({ settings: { ...base, enabled: false, bestScore: true }, delivery: pending, drivers: [driver("a", 0)] });
   const queue = await svc.runAutoDispatchQueue("c1");
   assert.equal(queue.assigned, 0);
   assert.match(String(queue.message), /Mode suggestion/);

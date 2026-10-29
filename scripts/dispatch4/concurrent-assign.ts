@@ -46,7 +46,8 @@ async function main() {
         settings: {
           dispatchRules: {
             enabled: true,
-            strategy: "BEST_SCORE",
+            strategy: "PRIORITY_LIST",
+            bestScore: true,
             maxActiveDeliveriesPerDriver: 1,
             prioritizeCourier: true,
             autoAssignCategories: { STANDARD: true, COURIER: true, SPECIAL_MISSION: false },
@@ -80,7 +81,7 @@ async function main() {
       return { results, ms: Date.now() - started };
     };
     const errors = (results: PromiseSettledResult<unknown>[]) =>
-      results.flatMap((r) => (r.status === "rejected" ? [String((r.reason as Error)?.message ?? r.reason).split(":")[0]] : []));
+      results.flatMap((r) => (r.status === "rejected" ? [String((r.reason as Error)?.message ?? r.reason).split(":")[0] ?? ""] : []));
     const events = (deliveryId: string) => prisma.trackingEvent.count({ where: { deliveryId } });
     const read = (deliveryId: string) => prisma.delivery.findUniqueOrThrow({ where: { id: deliveryId }, select: { driverId: true, status: true } });
 
@@ -109,7 +110,7 @@ async function main() {
 
     // (c) Auto-dispatch (meilleur score) contre clic du dispatcher vers « d ».
     const d3 = await newDelivery();
-    const c = await settle(Array.from({ length: PARALLEL }, (_, i) =>
+    const c = await settle<unknown>(Array.from({ length: PARALLEL }, (_, i) =>
       i % 2 ? () => tryAutoAssignDelivery(company.id, d3.id) : () => assignFromSuggestion(company.id, d3.id, drivers.d!.id)));
     const c1 = await read(d3.id);
     assert.equal(c1.status, "ASSIGNED", "c : affectée");

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  BEST_SCORE_STRATEGY_LABEL,
   DISPATCH_STRATEGY_LABELS,
   type CompanyDispatchSettings,
   type DispatchDriverRule,
@@ -618,15 +619,18 @@ export function DispatchSettingsForm() {
             <div className="space-y-2">
               <Label>Stratégie principale</Label>
               <Select
-                value={local.strategy}
+                value={local.bestScore ? "BEST_SCORE" : local.strategy}
                 onValueChange={(value) =>
-                  setLocal({ ...local, strategy: value as DispatchStrategy })
+                  value === "BEST_SCORE"
+                    ? setLocal({ ...local, bestScore: true })
+                    : setLocal({ ...local, bestScore: false, strategy: value as DispatchStrategy })
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="BEST_SCORE">{BEST_SCORE_STRATEGY_LABEL}</SelectItem>
                   {(Object.keys(DISPATCH_STRATEGY_LABELS) as DispatchStrategy[]).map((key) => (
                     <SelectItem key={key} value={key}>
                       {DISPATCH_STRATEGY_LABELS[key]}
@@ -635,13 +639,13 @@ export function DispatchSettingsForm() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                {local.strategy === "PRIORITY_LIST" &&
+                {!local.bestScore && local.strategy === "PRIORITY_LIST" &&
                   "Premier livreur compatible par ordre de priorité."}
-                {local.strategy === "LEAST_LOADED" &&
+                {!local.bestScore && local.strategy === "LEAST_LOADED" &&
                   "Livreur compatible avec le moins de missions actives."}
-                {local.strategy === "ZONE_THEN_PRIORITY" &&
+                {!local.bestScore && local.strategy === "ZONE_THEN_PRIORITY" &&
                   "Livreur préféré de la zone, puis priorité."}
-                {local.strategy === "BEST_SCORE" &&
+                {local.bestScore &&
                   "Score sur 100 : temps de trajet jusqu'au retrait 50 %, charge 30 %, zone 10 %, priorité 10 %."}
               </p>
             </div>

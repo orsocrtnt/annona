@@ -88,7 +88,6 @@ function strategyLabel(strategy: CompanyDispatchSettings["strategy"]): string {
     PRIORITY_LIST: "liste de priorité",
     LEAST_LOADED: "moins chargé",
     ZONE_THEN_PRIORITY: "zone géographique",
-    BEST_SCORE: "meilleur score",
   } as const;
   return labels[strategy];
 }
@@ -302,14 +301,12 @@ export function resolveDriverForDelivery(
 
   let pick: { driverId: string; reason: string } | null = null;
 
-  switch (settings.strategy) {
-    case "BEST_SCORE": {
-      const best = rankDispatchCandidates(
-        buildScoreCandidates(eligible, delivery, settings, tariffZones, proximities, travel)
-      )[0];
-      pick = best ? { driverId: best.id, reason: BEST_SCORE_HISTORY_REASON } : null;
-      break;
-    }
+  if (settings.bestScore) {
+    const best = rankDispatchCandidates(
+      buildScoreCandidates(eligible, delivery, settings, tariffZones, proximities, travel)
+    )[0];
+    pick = best ? { driverId: best.id, reason: BEST_SCORE_HISTORY_REASON } : null;
+  } else switch (settings.strategy) {
     case "LEAST_LOADED":
       pick = pickByLeastLoaded(eligible, settings, delivery.deliveryCategory, proximities);
       break;
@@ -475,7 +472,7 @@ export async function tryAutoAssignDelivery(
   const proximities = proximitiesFromDrivers(delivery, drivers, settings);
   // Meilleur score : trajet calculé ici, avant la transaction d'affectation.
   const travel =
-    settings.strategy === "BEST_SCORE"
+    settings.bestScore
       ? await computeTravelTimes(
           delivery,
           new Set(filterEligibleDrivers(drivers, delivery, settings, tariffSettings.tariffZones).map((d) => d.id)),
