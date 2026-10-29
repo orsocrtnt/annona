@@ -61,8 +61,8 @@ test("MAP-3 : sélection, regroupements visuels et panne fournisseur restent exp
 
   assert.match(deliveryMarker, /dotSize = isSelected \? 16 : 13/);
   assert.match(deliveryMarker, /const size = isSelected \? 32 : 26/);
-  assert.match(deliveryMarker, /stepTextColor = muted \? MAP_VISUAL_THEME\.ink/);
-  assert.match(driverMarker, /isSelected \? MAP_VISUAL_THEME\.ink/);
+  assert.match(deliveryMarker, /stepTextColor = muted \? palette\.ink/);
+  assert.match(driverMarker, /isSelected \? palette\.ink/);
   assert.match(driverMarker, /driver-map-pulse/);
   assert.match(dispatchPanel, /shadow-\[inset_3px_0_0_#00d46a\]/);
   assert.match(portalPanel, /shadow-\[inset_3px_0_0_var\(--color-foreground\)\]/);
