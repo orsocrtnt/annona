@@ -27,12 +27,27 @@ test("DEMO-3 : Facturation › Paiements liste, filtre et relance une facture à
     await expect(panel.getByLabel("Résumé des paiements")).toBeVisible();
     await panel.getByRole("button", { name: "En retard", exact: true }).click();
     await panel.getByRole("button", { name: "Toutes", exact: true }).click();
+    // Attendre la liste avant de compter : sinon le décompte vaut 0 et le test est toujours ignoré.
+    await expect(panel.getByRole("list", { name: "Liste des paiements" }).or(panel.getByText(/Aucune facture/)).first()).toBeVisible();
     const remind = panel.getByRole("button", { name: /^Relancer · facture/ }).first();
     test.skip((await remind.count()) === 0, "aucune facture à régler relançable dans l'entreprise de test");
+    const label = (await remind.getAttribute("aria-label")) ?? "";
+    const reference = label.replace(/^Relancer · facture /, "");
+    const answered = page.waitForResponse((r) => r.request().method() === "POST" && /\/api\/invoices\/[^/]+\/reminders$/.test(r.url()));
     await remind.click();
-    await expect(page.getByText(/Relance envoyée au client|Relance tracée, non envoyée|Déjà relancée/)).toBeVisible();
-    // Anti-doublon : la même facture n'est plus relançable pendant 24 h.
-    await expect(panel.getByRole("button", { name: /^Relancée · facture/ }).first()).toBeDisabled();
+    expect((await answered).ok()).toBe(true);
+    await expect(page.getByText(/Relance envoyée au client|Relance tracée, non envoyée|Déjà relancée|Relance déjà tracée/).first()).toBeVisible();
+    // Relance partie (envoyée ou en cours) : la facture n'est plus relançable pendant 24 h.
+    // Relance non partie (e-mail désactivé en développement) : « Relancer » reste actif et l'écran dit « Relance non envoyée ».
+    const sent = panel.getByRole("button", { name: `Relancée · facture ${reference}` });
+    const stillActive = panel.getByRole("button", { name: `Relancer · facture ${reference}` });
+    await expect(sent.or(stillActive)).toBeVisible();
+    if (await sent.count()) {
+      await expect(sent).toBeDisabled();
+    } else {
+      await expect(stillActive).toBeEnabled();
+      await expect(panel.getByText(/Relance non envoyée/).first()).toBeVisible();
+    }
   } finally {
     await logout(page);
   }

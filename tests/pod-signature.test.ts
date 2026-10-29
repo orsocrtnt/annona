@@ -89,6 +89,15 @@ test("règles de preuve : signature facultative par défaut, requise si l'entrep
   assert.throws(() => assertPodEvidence({ status: "FAILED", rules: DEFAULT_PROOF_RULES, hasSignature: false, recipientName: "Paul" }), /POD_SIGNATURE_NOT_ALLOWED/);
 });
 
+test("RECETTE-2810 point 7 : nom obligatoire (2 caractères) avec signature, facultatif avec photo seule", () => {
+  const base = { status: "DELIVERED" as const, rules: DEFAULT_PROOF_RULES };
+  assert.throws(() => assertPodEvidence({ ...base, hasSignature: true, recipientName: "  " }), /POD_RECIPIENT_REQUIRED/);
+  assert.throws(() => assertPodEvidence({ ...base, hasSignature: true, recipientName: "M" }), /POD_RECIPIENT_REQUIRED/);
+  assert.throws(() => assertPodEvidence({ ...base, hasSignature: false, recipientName: "M" }), /POD_RECIPIENT_REQUIRED/);
+  assert.equal(assertPodEvidence({ ...base, hasSignature: true, recipientName: " Mme Martin " }).recipientName, "Mme Martin");
+  assert.equal(assertPodEvidence({ ...base, hasSignature: false }).recipientName, null);
+});
+
 function memoryStore(): DriverActionQueueStore & { rows: Map<string, QueuedDriverAction> } {
   const rows = new Map<string, QueuedDriverAction>();
   return {
