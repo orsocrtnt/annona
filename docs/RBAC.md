@@ -23,8 +23,8 @@ Les permissions exactes et leurs affectations initiales se trouvent dans `prisma
 
 ## Défenses appliquées
 
-1. `src/middleware.ts` protège les préfixes et maintient la session Supabase.
-2. `src/lib/permissions/route-guards.ts` définit les rôles et permissions des espaces.
+1. `src/middleware.ts` (runtime Node) maintient la session Supabase et, avant tout rendu de page (RSC et préchargements compris), relit en base rôle, permissions, modules mini-admin, compte et entreprise : mauvais espace → 307 vers l'accueil du rôle, aucun écran ouvert → 403, compte indisponible → connexion (AUTH-ROLE).
+2. `src/lib/permissions/page-access.ts` est la table unique des pages protégées (segments → rôles, permissions, modules mini-admin) et des accueils par rôle.
 3. Les gardes API résolvent l'utilisateur courant et refusent compte/entreprise suspendus.
 4. Chaque service ajoute les frontières d'entreprise et de ressource.
 5. Les composants masquent les actions indisponibles pour éviter une fausse affordance.

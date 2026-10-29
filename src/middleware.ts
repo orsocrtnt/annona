@@ -44,6 +44,7 @@ async function resolvePageSubject(request: NextRequest, authId: string): Promise
     subjectInflight.set(key, pending);
   }
   const subject = await pending;
+  subjectCache.delete(key); // réinsertion en fin de Map : l'éviction vise les entrées les plus anciennes
   subjectCache.set(key, { subject, until: Date.now() + SUBJECT_TTL_MS });
   if (subjectCache.size > SUBJECT_MAX_ENTRIES) {
     for (const [cachedKey, entry] of subjectCache) {
@@ -110,7 +111,7 @@ export async function middleware(request: NextRequest) {
   if (isApiRoute) return supabaseResponse;
 
   if (isProtectedPagePath(pathname)) {
-    if (!user) return loginRedirect(request, pathname);
+    if (!user) return withSessionCookies(loginRedirect(request, pathname), supabaseResponse);
     // AUTH-ROLE : rôle, permissions, modules, compte et entreprise relus en base
     // (jamais depuis le JWT ni les métadonnées utilisateur) avant tout rendu, RSC et préchargement compris.
     let subject: PageAccessSubject | null;

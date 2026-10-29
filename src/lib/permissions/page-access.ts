@@ -11,8 +11,8 @@ import {
  * Source unique des accès aux pages protégées (AUTH-ROLE).
  *
  * Lue par le middleware (refus serveur avant tout rendu, y compris les requêtes RSC
- * et les préchargements), par la garde navigateur et par les anciennes aides
- * (`getAllowedRolesForPath`, `ROUTE_GUARDS`, `canAccessRoute`). Les API gardent
+ * et les préchargements), par la garde navigateur, les liens conditionnels
+ * (`useCanOpenPage`) et `getAllowedRolesForPath`. Les API gardent
  * leurs propres contrôles : cette table protège les pages, pas les données.
  */
 export interface PageAccessRule {
@@ -59,7 +59,8 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
     path: "/dispatch/intake",
     roles: COMPANY_OPS,
     anyPermission: ["orders:create"],
-    miniAdminModules: ["dispatch", "orders"],
+    // orders:create n'est donné au mini-admin que par le module Commandes.
+    miniAdminModules: ["orders"],
   },
   { path: "/support", roles: COMPANY_OPS },
   { path: "/users", roles: COMPANY_ADMINS, anyPermission: ["users:read"] },
@@ -93,7 +94,7 @@ export function getPageAccessRule(pathname: string): PageAccessRule | null {
 }
 
 /** Rôle + permission seulement : le contrôle des modules mini-admin est fait par `evaluatePageAccess`. */
-export function ruleAllowsRoleAndPermissions(
+function ruleAllowsRoleAndPermissions(
   rule: PageAccessRule,
   role: SystemRole,
   permissions: readonly string[]

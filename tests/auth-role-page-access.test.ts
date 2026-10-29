@@ -28,13 +28,24 @@ function subject(role: SystemRole, modules: MiniAdminModuleId[] = [...MINI_ADMIN
   return { role, permissions, settings };
 }
 
-/** URL de chaque page.tsx des espaces protégés (groupes retirés, segments dynamiques remplacés). */
-function discoverPages(group: string): string[] {
-  return readdirSync(`src/app/${group}`, { recursive: true })
+/** URL de chaque page.tsx de src/app (groupes et routes parallèles retirés, segments dynamiques remplacés). */
+function discoverAllPages(): string[] {
+  return readdirSync("src/app", { recursive: true })
     .map((entry) => entry.toString().split("\\").join("/"))
-    .filter((entry) => entry === "page.tsx" || entry.endsWith("/page.tsx"))
-    .map((entry) => `/${entry.replace(/\/?page\.tsx$/, "")}`.replace(/\[[^\]]+\]/g, "x").replace(/\/$/, "") || "/");
+    .filter((entry) => (entry === "page.tsx" || entry.endsWith("/page.tsx")) && !entry.startsWith("api/"))
+    .map((entry) => {
+      const segments = entry.split("/").slice(0, -1)
+        .filter((segment) => !/^\(.*\)$/.test(segment) && !segment.startsWith("@"))
+        .map((segment) => segment.replace(/^(\(\.{1,3}\))+/, "").replace(/^\[.+\]$/, "x"));
+      return `/${segments.join("/")}`;
+    });
 }
+
+/** Seules pages publiques admises : toute nouvelle page doit être couverte par la table ou ajoutée ici. */
+const PUBLIC_PAGES = [
+  "/", "/contact", "/demonstration", "/fonctionnalites", "/tarifs",
+  "/login", "/login/client", "/login/driver", "/register", "/register/client", "/forgot-password", "/reset-password",
+];
 
 // Matrice attendue rôle × espace (comptes de référence, mini-admin avec tous ses modules).
 const SPACES: Record<string, SystemRole[]> = {
@@ -130,16 +141,17 @@ test("AUTH-ROLE permissions : le rôle seul ne suffit pas, la permission relue e
   }
 });
 
-test("AUTH-ROLE inventaire : chaque page des espaces est couverte par une règle", () => {
-  const groups = ["(back-office)", "(client-portal)", "(driver-app)"];
-  const pages = groups.flatMap(discoverPages);
-  assert.ok(pages.length >= 49, `pages trouvées : ${pages.length}`);
-  for (const page of pages) {
-    assert.equal(isProtectedPagePath(page), true, page);
+test("AUTH-ROLE inventaire : chaque page de src/app est publique (liste fermée) ou couverte par une règle", () => {
+  const pages = discoverAllPages();
+  assert.ok(pages.length >= 61, `pages trouvées : ${pages.length}`);
+  const protectedPages = pages.filter((page) => !PUBLIC_PAGES.includes(page));
+  assert.ok(protectedPages.length >= 49, `pages protégées : ${protectedPages.length}`);
+  for (const page of protectedPages) {
+    assert.equal(isProtectedPagePath(page), true, `page ni publique ni protégée : ${page}`);
     assert.ok(getPageAccessRule(page), page);
   }
-  // Pages publiques : connexion, inscription, démo, vitrine, suivi public (API).
-  for (const page of [...discoverPages("(auth)"), "/", "/contact", "/demonstration", "/tarifs", "/fonctionnalites"]) {
+  for (const page of PUBLIC_PAGES) {
+    assert.ok(pages.includes(page), `page publique disparue : ${page}`);
     assert.equal(isProtectedPagePath(page), false, page);
   }
   // Frontière de segment : un préfixe homonyme n'est pas un espace.
@@ -215,9 +227,12 @@ function loadMiddleware(session: { id: string } | null, auth: Auth | Error, refr
   return { middleware: module.exports.middleware, resolved };
 }
 
+/** Comme en base : les permissions du mini-admin sont filtrées par ses modules (`extractPermissionSlugs`). */
 const asRole = (role: SystemRole, settings: unknown = {}) => ({
   user: { role: { systemRole: role }, settings },
-  permissions: [...ROLE_PERMISSIONS[role]],
+  permissions: role === "MINI_ADMIN"
+    ? filterMiniAdminPermissions([...ROLE_PERMISSIONS[role]], settings)
+    : [...ROLE_PERMISSIONS[role]],
 });
 
 async function call(session: { id: string } | null, auth: Auth, path: string, headers: Record<string, string> = {}) {

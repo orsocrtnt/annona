@@ -1,5 +1,4 @@
 import type { SystemRole } from "@prisma/client";
-import { getPageAccessRule } from "./page-access";
 
 export const PERMISSIONS = {
   USERS_READ: "users:read",
@@ -47,16 +46,6 @@ export function hasAnyPermission(
   required: Permission[]
 ): boolean {
   return required.some((p) => userPermissions.includes(p));
-}
-
-/** Espace protégé : rôles de la table unique `page-access.ts` ; hors espace : ouvert. */
-export function canAccessRoute(
-  systemRole: SystemRole,
-  routePrefix: string
-): boolean {
-  const rule = getPageAccessRule(routePrefix);
-  if (!rule) return true;
-  return rule.roles.includes(systemRole);
 }
 
 export function getRoleLabel(role: SystemRole): string {
