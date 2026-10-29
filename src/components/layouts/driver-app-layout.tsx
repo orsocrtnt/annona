@@ -77,7 +77,7 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
         </div>
       </AppleNavbar>
 
-      <main id="main-content" tabIndex={-1}><DriverServiceControl /><OrderMessagesInbox />{children}</main>
+      <main id="main-content" tabIndex={-1}><DriverServiceControl /><OrderMessagesInbox space="driver" />{children}</main>
 
       <nav aria-label="Navigation chauffeur" className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1.5">

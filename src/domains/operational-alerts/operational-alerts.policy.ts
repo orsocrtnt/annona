@@ -47,3 +47,9 @@ export function describeAlertTarget(order: AlertTargetOrder, deliveryId: string 
   const customerName = order.customer ? `${order.customer.firstName} ${order.customer.lastName}`.trim() : "";
   return { customerName: customerName || null, place };
 }
+
+/** Mission en cours de réalisation (achat ou livraison) : seule vue prioritaire de l'app livreur. */
+export function isMissionInProgress(order: { deliveries: Array<{ id: string; status: string }> }, deliveryId: string | null) {
+  const delivery = deliveryId ? order.deliveries.find(d => d.id === deliveryId) : undefined;
+  return delivery ? ["PURCHASING", "IN_DELIVERY"].includes(delivery.status) : false;
+}
