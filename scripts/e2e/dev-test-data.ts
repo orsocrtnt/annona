@@ -128,6 +128,7 @@ async function ensureBucket(admin: ReturnType<typeof supabaseAdmin>) {
 
 async function seed() {
   const admin = supabaseAdmin();
+  await purgeReminders(); // rejeu : repartir sans relance récente
   const a = await companyOf(ACCOUNT_EMAILS.billingA);
   const b = await companyOf(ACCOUNT_EMAILS.billingB);
   const dispatcher = await companyOf(ACCOUNT_EMAILS.dispatcher);
@@ -257,6 +258,14 @@ async function seed() {
   console.log(JSON.stringify({ passed: true, orders: ORDER_IDS.length, invoices: INVOICE_IDS.length, deliveries: DELIVERY_IDS.length, manifest: "outputs/e2e-test-data.json" }));
 }
 
+/** Relances (et tâches d'opération liées) de NOS factures uniquement : une relance de moins de 24 h bloque le test suivant. */
+async function purgeReminders() {
+  const reminders = await prisma.invoiceReminder.findMany({ where: { invoiceId: { in: INVOICE_IDS } }, select: { operationJobId: true } });
+  const jobIds = reminders.flatMap((reminder) => (reminder.operationJobId ? [reminder.operationJobId] : []));
+  await prisma.invoiceReminder.deleteMany({ where: { invoiceId: { in: INVOICE_IDS } } });
+  if (jobIds.length) await prisma.operationJob.deleteMany({ where: { id: { in: jobIds } } });
+}
+
 async function cleanup() {
   const admin = supabaseAdmin();
   const deliveries = await prisma.delivery.findMany({ where: { id: { in: DELIVERY_IDS } }, select: { companyId: true } });
@@ -277,11 +286,7 @@ async function cleanup() {
     const { error } = await admin.storage.from(POD_BUCKET).remove(paths);
     if (error && !/not found/i.test(error.message)) throw new Error("POD_REMOVE_FAILED");
   }
-  // Les relances jouées par les tests créent des tâches d'opération rattachées à nos factures.
-  const reminders = await prisma.invoiceReminder.findMany({ where: { invoiceId: { in: INVOICE_IDS } }, select: { operationJobId: true } });
-  const jobIds = reminders.flatMap((reminder) => (reminder.operationJobId ? [reminder.operationJobId] : []));
-  await prisma.invoiceReminder.deleteMany({ where: { invoiceId: { in: INVOICE_IDS } } });
-  if (jobIds.length) await prisma.operationJob.deleteMany({ where: { id: { in: jobIds } } });
+  await purgeReminders();
   const invoices = await prisma.invoice.deleteMany({ where: { id: { in: INVOICE_IDS } } });
   const orders = await prisma.order.deleteMany({ where: { id: { in: ORDER_IDS } } }); // supprime les livraisons en cascade
   const clients = await prisma.user.deleteMany({ where: { id: { in: Object.values(CLIENT_IDS) } } });
@@ -297,7 +302,16 @@ async function verifyClean() {
   ]);
   const clients = await prisma.user.count({ where: { id: { in: Object.values(CLIENT_IDS) } } });
   const left = await prisma.order.count({ where: { reference: { startsWith: "E2E-DATA-" } } });
-  console.log(JSON.stringify({ passed: orders + invoices + deliveries + clients + left === 0, orders, invoices, deliveries, clients, referencesLeft: left }));
+  const reminders = await prisma.invoiceReminder.count({ where: { invoiceId: { in: INVOICE_IDS } } });
+  const jobs = await prisma.operationJob.count({ where: { invoiceReminders: { some: { invoiceId: { in: INVOICE_IDS } } } } });
+  const dispatcher = await prisma.user.findUnique({ where: { email: ACCOUNT_EMAILS.dispatcher }, select: { companyId: true } });
+  let files = 0;
+  if (dispatcher?.companyId) {
+    const { data } = await supabaseAdmin().storage.from(POD_BUCKET).list(dispatcher.companyId, { search: ID.deliveryDelivered });
+    files = (data ?? []).length;
+  }
+  const total = orders + invoices + deliveries + clients + left + reminders + jobs + files;
+  console.log(JSON.stringify({ passed: total === 0, orders, invoices, deliveries, clients, referencesLeft: left, reminders, jobs, storageFiles: files }));
 }
 
 async function main() {

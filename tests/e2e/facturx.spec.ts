@@ -53,7 +53,8 @@ test("FACTURX : l'administrateur voit et enregistre les mentions légales dans R
       await reloaded;
       await expect(card.getByLabel("Escompte (obligatoire)")).toHaveValue(next.discount);
     } finally {
-      if (initial.penalties && initial.discount) await save(initial).catch(() => undefined);
+      // Restaure toujours l'état initial, vide compris.
+      await save(initial).catch(() => undefined);
     }
   } finally {
     await logout(page);
