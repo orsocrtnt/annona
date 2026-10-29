@@ -559,7 +559,7 @@ export function DispatchSettingsForm() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Radio className="h-4 w-4" />
-            Auto-dispatch
+            Dispatch automatique
           </CardTitle>
           <CardDescription>
             Les missions sont assignées par le dispatch — les livreurs ne peuvent pas les prendre
@@ -567,23 +567,52 @@ export function DispatchSettingsForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <label className={cn("flex items-center gap-3 rounded-xl border p-4", hasAutoDispatch ? "cursor-pointer" : "cursor-not-allowed opacity-60")}>
-            <input
-              type="checkbox"
-              checked={hasAutoDispatch && local.enabled}
-              disabled={!hasAutoDispatch}
-              title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
-              onChange={(e) => setLocal({ ...local, enabled: e.target.checked })}
-            />
-            <div>
-              <p className="font-medium">Activer l&apos;auto-dispatch</p>
+          {/* DISPATCH-4 : le mode est stocké dans `enabled` (aucune migration) — Suggestion = false. */}
+          <fieldset
+            className={cn("space-y-2", !hasAutoDispatch && "opacity-60")}
+            disabled={!hasAutoDispatch}
+            title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
+          >
+            <legend className="mb-2 text-sm font-medium">Mode d&apos;affectation</legend>
+            {([
+              {
+                value: false,
+                title: "Suggestion",
+                text: "Les 3 meilleurs livreurs sont proposés pour chaque livraison ; le dispatcher valide en un clic.",
+              },
+              {
+                value: true,
+                title: "Automatique",
+                text: "Chaque nouvelle livraison est affectée sans intervention, selon la stratégie ci-dessous.",
+              },
+            ] as const).map((mode) => (
+              <label
+                key={mode.title}
+                className={cn(
+                  "flex items-start gap-3 rounded-xl border p-4",
+                  hasAutoDispatch ? "cursor-pointer" : "cursor-not-allowed"
+                )}
+              >
+                <input
+                  type="radio"
+                  name="dispatch-assignment-mode"
+                  className="mt-1"
+                  checked={hasAutoDispatch && local.enabled === mode.value}
+                  onChange={() => setLocal({ ...local, enabled: mode.value })}
+                />
+                <div>
+                  <p className="font-medium">{mode.title}</p>
+                  <p className="text-sm text-muted-foreground">{mode.text}</p>
+                </div>
+              </label>
+            ))}
+            {!hasAutoDispatch && (
               <p className="text-sm text-muted-foreground">
-                {hasAutoDispatch
-                  ? "Assigne automatiquement aux livreurs compatibles selon leurs profils ci-dessus."
-                  : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
+                {lockedOfferReason("auto_dispatch", offerAccess?.planCode)} Les suggestions et
+                l&apos;affectation automatique en font partie.
               </p>
-            </div>
-          </label>
+            )}
+          </fieldset>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -612,6 +641,8 @@ export function DispatchSettingsForm() {
                   "Livreur compatible avec le moins de missions actives."}
                 {local.strategy === "ZONE_THEN_PRIORITY" &&
                   "Livreur préféré de la zone, puis priorité."}
+                {local.strategy === "BEST_SCORE" &&
+                  "Score sur 100 : temps de trajet jusqu'au retrait 50 %, charge 30 %, zone 10 %, priorité 10 %."}
               </p>
             </div>
 
@@ -656,7 +687,8 @@ export function DispatchSettingsForm() {
               <div>
                 <p className="text-sm font-medium">Tenir compte de la position GPS</p>
                 <p className="text-xs text-muted-foreground">
-                  À égalité, le livreur en service le plus proche du retrait est choisi.
+                  Temps de trajet jusqu&apos;au retrait pour le meilleur score et les suggestions ;
+                  pour les autres stratégies, départage à égalité. Positions des livreurs en service seulement.
                 </p>
               </div>
             </label>

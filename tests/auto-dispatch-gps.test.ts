@@ -8,6 +8,8 @@ import * as eligibility from "../src/lib/dispatch/driver-eligibility";
 import * as proximityLib from "../src/lib/dispatch/dispatch-proximity";
 import * as trackingPolicy from "../src/domains/tracking/tracking.policy";
 import * as dispatchSettings from "../src/lib/validations/dispatch-settings";
+import * as dispatchScore from "../src/lib/dispatch/dispatch-score";
+import * as travelTime from "../src/lib/dispatch/travel-time";
 import type { DispatchProximity } from "../src/lib/dispatch/dispatch-proximity";
 
 type Row = Record<string, unknown>;
@@ -38,6 +40,8 @@ function load(deps: { prisma?: Row; settings?: Row; drivers?: Row[]; getDrivers?
     "@/domains/tracking/tracking.policy": trackingPolicy,
     "@/lib/query/list-limits": { AUTO_DISPATCH_QUEUE_TAKE: 100 },
     "@/lib/validations/dispatch-settings": dispatchSettings,
+    "@/lib/dispatch/dispatch-score": dispatchScore,
+    "@/lib/dispatch/travel-time": travelTime,
   };
   runInNewContext(ts.transpileModule(readFileSync(resolve("src/domains/delivery/auto-dispatch.service.ts"), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },

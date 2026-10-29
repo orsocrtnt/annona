@@ -4,6 +4,8 @@ export const dispatchStrategySchema = z.enum([
   "PRIORITY_LIST",
   "LEAST_LOADED",
   "ZONE_THEN_PRIORITY",
+  /** DISPATCH-4 : score pondéré (trajet, charge, zone, priorité) ; voir `dispatch-score.ts`. */
+  "BEST_SCORE",
 ]);
 
 export const dispatchDriverStatusSchema = z.enum(["ACTIVE", "PAUSED"]);
@@ -127,6 +129,7 @@ export const DISPATCH_STRATEGY_LABELS: Record<DispatchStrategy, string> = {
   PRIORITY_LIST: "Liste de priorité",
   LEAST_LOADED: "Moins chargé",
   ZONE_THEN_PRIORITY: "Zone puis priorité",
+  BEST_SCORE: "Meilleur score (recommandé)",
 };
 
 export function normalizeDispatchDriverRule(

@@ -130,6 +130,29 @@ export function useAssignDelivery() {
   });
 }
 
+/** DISPATCH-4 : 3 meilleurs livreurs ; pas de relance automatique sur refus (option, rôle). */
+export function useDispatchSuggestions(deliveryId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["company", "dispatch", "suggestions", deliveryId],
+    queryFn: () => backOfficeApi.getDispatchSuggestions(deliveryId!),
+    enabled: Boolean(deliveryId) && enabled,
+    staleTime: QUERY_STALE_MS,
+    retry: false,
+  });
+}
+
+export function useAssignFromSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ deliveryId, driverId }: { deliveryId: string; driverId: string }) =>
+      backOfficeApi.assignFromSuggestion(deliveryId, driverId),
+    // Succès comme conflit : la file et les suggestions sont relues.
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["company"] });
+    },
+  });
+}
+
 export function useUnassignDelivery() {
   const qc = useQueryClient();
   return useMutation({
