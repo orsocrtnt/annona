@@ -1,21 +1,29 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isRouteAllowed } from "../src/lib/permissions/route-guards";
+import type { SystemRole } from "@prisma/client";
+import { buildMiniAdminSettings } from "../src/lib/permissions/mini-admin";
+import { canOpenPage } from "../src/lib/permissions/page-access";
+
+const open = (path: string, role: SystemRole, permissions: string[], settings: unknown = {}) =>
+  canOpenPage(path, { role, permissions, settings });
 
 test("un client ne peut pas accéder aux utilisateurs même avec la permission", () => {
-  assert.equal(isRouteAllowed("/users", "CLIENT", ["users:read"]).allowed, false);
+  assert.equal(open("/users", "CLIENT", ["users:read"]), false);
 });
 test("un mini-admin doit avoir la permission pour accéder aux utilisateurs", () => {
-  assert.equal(isRouteAllowed("/users", "MINI_ADMIN", []).allowed, false);
-  assert.equal(isRouteAllowed("/users", "MINI_ADMIN", ["users:read"]).allowed, true);
+  const accounts = buildMiniAdminSettings("Comptes", ["accounts"]);
+  assert.equal(open("/users", "MINI_ADMIN", [], accounts), false);
+  assert.equal(open("/users", "MINI_ADMIN", ["users:read"], accounts), true);
+  // La permission sans le module « Gestion des comptes » ne suffit pas.
+  assert.equal(open("/users", "MINI_ADMIN", ["users:read"], buildMiniAdminSettings("Support", ["support"])), false);
 });
 test("le portail et les missions restent séparés par rôle", () => {
-  assert.equal(isRouteAllowed("/portal/orders", "CLIENT", ["dashboard:client"]).allowed, true);
-  assert.equal(isRouteAllowed("/driver/missions", "CLIENT", ["dashboard:driver"]).allowed, false);
-  assert.equal(isRouteAllowed("/driver/missions", "DRIVER", ["dashboard:driver"]).allowed, true);
+  assert.equal(open("/portal/orders", "CLIENT", ["dashboard:client"]), true);
+  assert.equal(open("/driver/missions", "CLIENT", ["dashboard:driver"]), false);
+  assert.equal(open("/driver/missions", "DRIVER", ["dashboard:driver"]), true);
 });
 test("le dashboard exige à la fois le rôle et la permission", () => {
-  assert.equal(isRouteAllowed("/dashboard", "COMPANY_ADMIN", []).allowed, false);
-  assert.equal(isRouteAllowed("/dashboard", "DISPATCHER", ["dashboard:company"]).allowed, false);
-  assert.equal(isRouteAllowed("/dashboard", "COMPANY_ADMIN", ["dashboard:company"]).allowed, true);
+  assert.equal(open("/dashboard", "COMPANY_ADMIN", []), false);
+  assert.equal(open("/dashboard", "DISPATCHER", ["dashboard:company"]), false);
+  assert.equal(open("/dashboard", "COMPANY_ADMIN", ["dashboard:company"]), true);
 });

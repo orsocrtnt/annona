@@ -5,7 +5,7 @@ import { hydrateUserWithRole, getUserByAuthId } from "@/domains/user/user.servic
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
-import { getMiniAdminHomePath } from "@/lib/permissions/mini-admin";
+import { getRoleHomePath } from "@/lib/permissions/page-access";
 
 /** Prénom et nom ne sont jamais lus depuis user_metadata, modifiable par l'utilisateur. */
 interface SyncUserInput {
@@ -67,13 +67,5 @@ export async function syncUserFromSupabase(
 }
 
 export function getDashboardPathForRole(role: SystemRole, settings?: unknown): string {
-  const map: Record<SystemRole, string> = {
-    SUPER_ADMIN: "/admin",
-    COMPANY_ADMIN: "/dashboard",
-    MINI_ADMIN: getMiniAdminHomePath(settings),
-    DISPATCHER: "/dispatch",
-    DRIVER: "/driver",
-    CLIENT: "/portal",
-  };
-  return map[role];
+  return getRoleHomePath(role, settings);
 }

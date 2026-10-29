@@ -6,8 +6,7 @@ import ts from "typescript";
 import { NextResponse } from "next/server";
 import { withApiHandler } from "../src/lib/api/route-handler";
 import { adminNavItems, companyNavItems, miniAdminNavItems } from "../src/features/navigation/nav-config";
-import { canAccessRoute } from "../src/lib/permissions/index";
-import { ROUTE_GUARDS } from "../src/lib/permissions/route-guards";
+import { getPageAccessRule } from "../src/lib/permissions/page-access";
 import { getAllowedRolesForPath } from "../src/lib/permissions/rbac";
 
 function load(file: string, dependencies: Record<string, unknown>) {
@@ -43,14 +42,11 @@ test("ADMIN-1 paramètres : navigation et règles réservent /settings aux rôle
     assert.equal(roles.includes("COMPANY_ADMIN"), true);
     assert.equal(roles.includes("MINI_ADMIN"), true);
   }
-  const guard = ROUTE_GUARDS.find((item) => item.path === "/settings");
-  assert.ok(guard);
-  assert.equal(guard.allowedRoles.includes("SUPER_ADMIN"), false);
-  assert.equal(guard.allowedRoles.includes("COMPANY_ADMIN"), true);
-  assert.equal(guard.allowedRoles.includes("MINI_ADMIN"), true);
-  assert.equal(canAccessRoute("SUPER_ADMIN", "/settings"), false);
-  assert.equal(canAccessRoute("COMPANY_ADMIN", "/settings"), true);
-  assert.equal(canAccessRoute("MINI_ADMIN", "/settings"), true);
+  const guard = getPageAccessRule("/settings");
+  assert.equal(guard?.path, "/settings");
+  assert.equal(guard?.roles.includes("SUPER_ADMIN"), false);
+  assert.equal(guard?.roles.includes("COMPANY_ADMIN"), true);
+  assert.equal(guard?.roles.includes("MINI_ADMIN"), true);
 });
 
 test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et métier", async () => {

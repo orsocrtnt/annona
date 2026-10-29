@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { SystemRole } from "@prisma/client";
 import { adminNavItems } from "../src/features/navigation/nav-config";
-import { canAccessRoute } from "../src/lib/permissions/index";
+import { buildMiniAdminSettings, MINI_ADMIN_MODULE_IDS } from "../src/lib/permissions/mini-admin";
 import { getAllowedRolesForPath } from "../src/lib/permissions/rbac";
-import { getDashboardForRole, isRouteAllowed } from "../src/lib/permissions/route-guards";
+import { canOpenPage, getRoleHomePath } from "../src/lib/permissions/page-access";
 
 const expected: Record<string, SystemRole[]> = {
   "/admin": ["SUPER_ADMIN"],
@@ -32,14 +32,14 @@ const permissionFor: Record<string, string> = {
 };
 
 test("ADMIN-1 routes : le super-admin reste dans l'espace plateforme", () => {
-  assert.equal(getDashboardForRole("SUPER_ADMIN"), "/admin");
+  assert.equal(getRoleHomePath("SUPER_ADMIN"), "/admin");
   for (const [path, roles] of Object.entries(expected)) {
     assert.deepEqual([...getAllowedRolesForPath(path)].sort(), [...roles].sort(), path);
     for (const role of ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"] as const) {
-      assert.equal(canAccessRoute(role, path), roles.includes(role), `${role} ${path}`);
       const permission = permissionFor[path];
-      const decision = isRouteAllowed(path, role, permission ? [permission] : []);
-      assert.equal(decision.allowed, roles.includes(role), `guard ${role} ${path}`);
+      const settings = role === "MINI_ADMIN" ? buildMiniAdminSettings("Tous", [...MINI_ADMIN_MODULE_IDS]) : {};
+      const allowed = canOpenPage(path, { role, permissions: permission ? [permission] : [], settings });
+      assert.equal(allowed, roles.includes(role), `guard ${role} ${path}`);
     }
   }
   for (const item of adminNavItems) {

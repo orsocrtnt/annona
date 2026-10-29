@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useUIStore } from "@/stores/ui.store";
 import { useAuth } from "@/hooks/use-auth";
+import { useCanOpenPage } from "@/hooks/use-can-open-page";
 import { getInitials } from "@/lib/utils";
 import { Menu, LogOut, Settings } from "lucide-react";
 import type { BreadcrumbItem } from "@/types";
@@ -28,6 +29,7 @@ interface HeaderProps {
 export function Header({ breadcrumbs, className, premium = false }: HeaderProps) {
   const { toggleMobileNav } = useUIStore();
   const { user, logout } = useAuth();
+  const canOpenSettings = useCanOpenPage("/settings");
 
   const content = (
     <>
@@ -127,13 +129,17 @@ export function Header({ breadcrumbs, className, premium = false }: HeaderProps)
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                Paramètres
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {canOpenSettings && (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Paramètres
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuItem onClick={logout} className="text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               Déconnexion

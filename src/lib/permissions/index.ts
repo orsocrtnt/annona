@@ -48,28 +48,6 @@ export function hasAnyPermission(
   return required.some((p) => userPermissions.includes(p));
 }
 
-export function canAccessRoute(
-  systemRole: SystemRole,
-  routePrefix: string
-): boolean {
-  const routeAccess: Record<string, SystemRole[]> = {
-    "/admin": ["SUPER_ADMIN"],
-    "/dashboard": ["COMPANY_ADMIN", "MINI_ADMIN"],
-    "/dispatch": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-    "/support": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-    "/onboarding": ["COMPANY_ADMIN"],
-    "/driver": ["DRIVER"],
-    "/portal": ["CLIENT"],
-    "/settings": ["COMPANY_ADMIN", "MINI_ADMIN"],
-    "/users": ["COMPANY_ADMIN", "MINI_ADMIN"],
-    "/companies": ["SUPER_ADMIN"],
-  };
-
-  const allowedRoles = routeAccess[routePrefix];
-  if (!allowedRoles) return true;
-  return allowedRoles.includes(systemRole);
-}
-
 export function getRoleLabel(role: SystemRole): string {
   const labels: Record<SystemRole, string> = {
     SUPER_ADMIN: "Super Admin",

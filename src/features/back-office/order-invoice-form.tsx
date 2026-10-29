@@ -1,7 +1,7 @@
 "use client";
 
 import { usePermissions } from "@/hooks/use-permissions";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useCanOpenPage } from "@/hooks/use-can-open-page";
 
 interface OrderInvoiceFormProps {
   order: CompanyOrder & {
@@ -69,6 +70,17 @@ function computeTotal(
   }
 
   return total;
+}
+
+/** Lien vers les paramètres, ou simple texte pour un rôle que la garde serveur y refuserait. */
+function SettingsLink({ children }: { children: ReactNode }) {
+  const canOpen = useCanOpenPage("/settings");
+  if (!canOpen) return <>{children}</>;
+  return (
+    <Link href="/settings" className="text-brand underline underline-offset-2 hover:decoration-2">
+      {children}
+    </Link>
+  );
 }
 
 export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
@@ -180,9 +192,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
       <Card>
         <CardContent className="p-5 text-sm text-muted-foreground">
           Impossible de charger les tarifs. Vérifiez votre connexion ou configurez-les dans{" "}
-          <Link href="/settings" className="text-brand underline underline-offset-2 hover:decoration-2">
-            Paramètres
-          </Link>
+          <SettingsLink>Paramètres</SettingsLink>
           .
         </CardContent>
       </Card>
@@ -285,9 +295,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         {!hasTariffs ? (
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
             Aucun tarif configuré.{" "}
-            <Link href="/settings" className="text-brand underline underline-offset-2 hover:decoration-2">
-              Configurez vos zones et tarifs
-            </Link>{" "}
+            <SettingsLink>Configurez vos zones et tarifs</SettingsLink>{" "}
             dans les paramètres.
           </div>
         ) : (

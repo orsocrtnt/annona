@@ -54,6 +54,15 @@ async function resolveUserFromAuthId(
 }
 
 /**
+ * Contexte relu en base pour un authId déjà vérifié (JWT validé par le middleware) :
+ * compte et entreprise actifs, rôle, permissions et persona de démo. Ne lit jamais
+ * l'en-tête interne : le middleware l'appelle avec l'authId qu'il vient de valider.
+ */
+export async function resolveServerAuthForAuthId(authId: string): Promise<ServerAuthContext | null> {
+  return resolveUserFromAuthId(authId);
+}
+
+/**
  * Charge le contexte auth une fois par requête.
  * Si le middleware a déjà validé l'utilisateur (header), on saute getUser().
  */

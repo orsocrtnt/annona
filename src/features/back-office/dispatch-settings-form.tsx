@@ -38,6 +38,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { lockedOfferReason } from "@/domains/saas/saas-access";
 import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
+import { useCanOpenPage } from "@/hooks/use-can-open-page";
 
 function driverLabel(firstName: string, lastName: string) {
   return formatDriverFromParts({ firstName, lastName }, null);
@@ -52,6 +53,17 @@ function createDefaultRule(driverId: string, priority: number): DispatchDriverRu
     postalCodePrefixes: [],
     dispatchStatus: "ACTIVE",
   });
+}
+
+/** Lien vers la facturation, ou simple libellé pour un rôle qui n'y a pas accès (dispatcher). */
+function BillingLink() {
+  const canOpen = useCanOpenPage("/settings/billing");
+  if (!canOpen) return <>Facturation</>;
+  return (
+    <Link href="/settings/billing" className="text-brand underline underline-offset-2 hover:decoration-2">
+      Facturation
+    </Link>
+  );
 }
 
 export function DispatchSettingsForm() {
@@ -492,9 +504,7 @@ export function DispatchSettingsForm() {
                           <Label className="text-xs">Ou zones tarifaires (Facturation)</Label>
                           <p className="text-xs text-muted-foreground">
                             Alternative aux codes postaux : cochez les zones définies dans{" "}
-                            <Link href="/settings/billing" className="text-brand underline underline-offset-2 hover:decoration-2">
-                              Facturation
-                            </Link>
+                            <BillingLink />
                             . Un livreur est éligible si le code postal OU la zone correspond.
                           </p>
                           <div className="flex flex-wrap gap-2">
@@ -728,9 +738,7 @@ export function DispatchSettingsForm() {
           {zones.length === 0 ? (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               Aucune zone tarifaire — configurez-les dans{" "}
-              <Link href="/settings/billing" className="text-brand underline underline-offset-2 hover:decoration-2">
-                Facturation
-              </Link>{" "}
+              <BillingLink />{" "}
               pour activer le dispatch par zone.
             </p>
           ) : (
