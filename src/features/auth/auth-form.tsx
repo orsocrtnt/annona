@@ -31,6 +31,7 @@ import { ChevronLeft } from "lucide-react";
 import { AuthShell } from "@/features/auth/auth-shell";
 import { SPACE_ICONS } from "@/features/auth/login-space-chooser";
 import { browserStorage, rememberLastSpace, type LoginContext } from "@/features/auth/login-space";
+import { AUTH_TIMEOUT_MESSAGE, RequestTimeoutError, requestJsonWithTimeout } from "@/features/auth/request-timeout";
 import { createSubmitGuard } from "@/features/auth/submit-guard";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { useAuthStore } from "@/stores/auth.store";
@@ -147,9 +148,9 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     if (!loginGuard.tryAcquire()) return;
     try {
       await submitLogin(data);
-    } catch {
+    } catch (caught) {
       loginGuard.release();
-      setError("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+      setError(caught instanceof RequestTimeoutError ? AUTH_TIMEOUT_MESSAGE : "Connexion interrompue. Vérifiez votre réseau puis réessayez.");
     }
   };
 
@@ -162,7 +163,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
       demoRequestKey = window.sessionStorage.getItem(storageKey) ?? window.crypto.randomUUID();
       window.sessionStorage.setItem(storageKey, demoRequestKey);
     }
-    const res = await fetch("/api/auth/login", {
+    const res = await requestJsonWithTimeout("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -171,7 +172,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         demoRequestKey,
       }),
     });
-    const json = await res.json().catch(() => null);
+    const json = res.json;
     if (json === null) {
       // Réponse illisible (page HTML d'un 502/504, coupure) : message maîtrisé, nouvel essai possible.
       loginGuard.release();
@@ -205,15 +206,21 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
 
   const onRegister = async (data: RegisterInput) => {
     setError(null);
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...data,
-        email: data.email.trim().toLowerCase(),
-      }),
-    });
-    const json = await res.json();
+    let res;
+    try {
+      res = await requestJsonWithTimeout("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          email: data.email.trim().toLowerCase(),
+        }),
+      });
+    } catch (caught) {
+      setError(caught instanceof RequestTimeoutError ? AUTH_TIMEOUT_MESSAGE : "Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+      return;
+    }
+    const json = res.json ?? {};
     if (!res.ok) {
       setError(json.error ?? "Impossible de créer le compte.");
       return;
@@ -226,13 +233,12 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
   const onForgotPassword = async (data: ForgotPasswordInput) => {
     setError(null);
     try {
-      const res = await fetch("/api/auth/password-recovery", {
+      const res = await requestJsonWithTimeout("/api/auth/password-recovery", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
       });
-      const json = await res.json();
-      if (!res.ok) { setError(json.error ?? "Envoi indisponible."); return; }
+      if (!res.ok) { setError(res.json?.error ?? "Envoi indisponible."); return; }
       setSuccess("Si cette adresse peut recevoir un lien, un e-mail sera envoyé.");
-    } catch { setError("Connexion interrompue. Réessayez plus tard."); }
+    } catch (caught) { setError(caught instanceof RequestTimeoutError ? AUTH_TIMEOUT_MESSAGE : "Connexion interrompue. Réessayez plus tard."); }
   };
 
   const onResetPassword = async (data?: ResetPasswordInput) => {
@@ -240,11 +246,11 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     if (!passwordLink || completingLink) { setError("Demandez un nouveau lien ou attendez la fin de la demande."); return; }
     setCompletingLink(true);
     try {
-      const res = await fetch("/api/auth/password-link", {
+      const res = await requestJsonWithTimeout("/api/auth/password-link", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, ...passwordLink }),
       });
-      const json = await res.json();
+      const json = res.json ?? {};
       if (!res.ok) { setError(json.error ?? "Lien indisponible."); return; }
       setPasswordLink(null);
       resetForm.reset();
@@ -254,7 +260,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         return;
       }
       setSuccess(passwordLink.type === "signup" ? "Adresse confirmée. Vous pouvez vous connecter." : "Mot de passe enregistré. Vous pouvez vous connecter.");
-    } catch { setError("Connexion interrompue. Si le lien a été utilisé, demandez-en un nouveau."); }
+    } catch (caught) { setError(caught instanceof RequestTimeoutError ? AUTH_TIMEOUT_MESSAGE : "Connexion interrompue. Si le lien a été utilisé, demandez-en un nouveau."); }
     finally { setCompletingLink(false); }
   };
 
