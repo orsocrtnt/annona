@@ -113,6 +113,7 @@ export async function provisionOfferEnvironment(definition: OfferEnvironmentDefi
   const role = await prisma.role.findUnique({ where: { slug: "company-admin" } });
   if (!role) throw new Error("OFFER_ADMIN_ROLE_MISSING");
 
+  // Écrasement complet des réglages voulu : provisionnement d'un environnement d'offre de test, sans concurrence.
   const company = await prisma.company.upsert({
     where: { slug: definition.slug },
     update: {

@@ -76,7 +76,7 @@ test("entreprise : dispatch, localisation, tarifs et catégories enregistrés en
     settle(updateCompanyTariffSettings("company-a", tariffs)),
     settle(updateCompanyDeliveryOptions("company-a", categories)),
   ]);
-  // Quatre écrivains, trois tentatives chacun : un conflit est permis, jamais une perte silencieuse.
+  // Quatre écrivains, dix tentatives espacées chacun : un conflit reste permis, jamais une perte silencieuse.
   const saved = results.filter((result) => result === "saved").length;
   assert.ok(results.every((result) => result === "saved" || result === "SETTINGS_CONFLICT"), results.join());
   assert.equal(store.writes, saved, "une écriture par enregistrement réussi");

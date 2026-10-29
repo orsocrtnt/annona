@@ -128,13 +128,15 @@ test("ONBOARD-1 : reprise serveur isolée, activation et suspension recalculées
 
 test("ONBOARD-1 : choix persistant, idempotent et réversible sans écraser les réglages concurrents", async (t) => {
   let settings: Record<string, unknown> = { billing: { marker: "keep" } };
-  replaceMethod(t, prisma.company, "findUnique", async () => ({ settings }));
+  let updatedAt = new Date("2026-10-29T08:00:00.000Z");
+  replaceMethod(t, prisma.company, "findUnique", async () => ({ settings, updatedAt }));
   let conflict = true;
-  replaceMethod(t, prisma.company, "updateMany", async (args: { where: { id: string; settings: { equals: unknown } }; data: { settings: Record<string, unknown> } }) => {
+  // Réclamation sur updatedAt : un écrivain concurrent d'une autre clé s'intercale une fois.
+  replaceMethod(t, prisma.company, "updateMany", async (args: { where: { id: string; updatedAt: Date }; data: { settings: Record<string, unknown>; updatedAt: Date } }) => {
     assert.equal(args.where.id, "company-a");
-    if (conflict) { conflict = false; settings = { ...settings, external: "concurrent" }; return { count: 0 }; }
-    assert.deepEqual(args.where.settings.equals, settings);
-    settings = args.data.settings; return { count: 1 };
+    if (conflict) { conflict = false; settings = { ...settings, external: "concurrent" }; updatedAt = new Date(updatedAt.getTime() + 1); return { count: 0 }; }
+    assert.equal(args.where.updatedAt.getTime(), updatedAt.getTime());
+    settings = args.data.settings; updatedAt = args.data.updatedAt; return { count: 1 };
   });
   for (const skipped of [true, true, false]) {
     await updateOnboardingPreference("company-a", { step: "collaborators", skipped });
@@ -148,11 +150,17 @@ test("ONBOARD-1 : données invalides, entreprise absente et conflits bornés ne 
   await assert.rejects(updateOnboardingPreference("a", { step: "driver", skipped: true }));
   assert.equal(reads, 0);
   await assert.rejects(updateOnboardingPreference("a", { step: "collaborators", skipped: true }), /COMPANY_NOT_FOUND/);
-  replaceMethod(t, prisma.company, "findUnique", async () => ({ settings: {} }));
+  replaceMethod(t, prisma.company, "findUnique", async () => ({ settings: {}, updatedAt: new Date("2026-10-29T08:00:00.000Z") }));
   let writes = 0;
   replaceMethod(t, prisma.company, "updateMany", async () => { writes++; return { count: 0 }; });
   await assert.rejects(updateOnboardingPreference("a", { step: "collaborators", skipped: true }), /ONBOARDING_CONFLICT/);
-  assert.equal(writes, 3);
+  assert.equal(writes, 10, "tentatives bornées");
+  // Même partie `onboarding` modifiée entre deux lectures : conflit immédiat, rien d'écrasé.
+  let reads2 = 0;
+  replaceMethod(t, prisma.company, "findUnique", async () => ({ settings: { onboarding: { skippedCollaborators: reads2++ > 0 } }, updatedAt: new Date(Date.UTC(2026, 9, 29, 8, 0, 0, reads2)) }));
+  writes = 0;
+  await assert.rejects(updateOnboardingPreference("a", { step: "collaborators", skipped: true }), /ONBOARDING_CONFLICT/);
+  assert.equal(writes, 1);
 });
 
 const companyProfile = { name: "Pilote manuel", email: "contact@example.test", address: "1 rue du Test", city: "Paris", country: "FR", phone: "" };

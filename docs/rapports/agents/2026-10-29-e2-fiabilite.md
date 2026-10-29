@@ -9,7 +9,7 @@
 - [x] `npm run check` vert (1 217 tests), `git diff --check` propre, pré-vol opus puis Sonnet
 
 ## Livré
-- **16** : `src/lib/database/settings-claims.ts`, option `section` (conflit si la même partie change pendant l'écriture). Convertis : dispatch, localisation, tarifs, catégories, portail, facturation, Factur-X, tableaux de bord, préférences client, mini-admin, démo. SQL brut (preuves, commande par message) : `updated_at` avance. Exceptions : provisionnement démo et offres de test.
+- **16** : `src/lib/database/settings-claims.ts`, option `section` (conflit si la même partie change pendant l'écriture). Convertis : dispatch, localisation, tarifs, catégories, portail, facturation, Factur-X, tableaux de bord, préférences client, mini-admin, onboarding, démo. SQL brut (preuves, commande par message) : `updated_at` avance. Hors réclamation, par choix : provisionnement démo et offres de test (écrasement complet, sans concurrence, commenté), créations de lignes.
 - **17** : refus d'une première tentative → QUEUED avec `completedAt` (marqueur inédit dans l'historique) ; rejeu = première tentative ; tâche épuisée = « Échec d'envoi ».
 - **10** : cause constatée (bienvenue `SIGNUP_WELCOME_EMAIL_DISABLED`). `skippedJobError` ; cron 503 sur échec réel seulement, `data.jobs` en codes ; alertes en compteurs.
 - **9** : `kickOperationJob` réessaie (1, 4, 10 s) si la base échoue avant la prise (pool saturé au redémarrage).
@@ -21,10 +21,10 @@
 - 14 : API hors cache de 5 s ; cause plausible : page portail montée qui refait sa requête (`refetchOnWindowFocus`) après changement de session ou de persona.
 
 ## PostgreSQL réel (lancé)
-`npm run test:pg-settings` réussi : réglages différents 5 enregistrés/5 en 409, dispatch 1/9, compte 7/3, aucune perte ; témoin ancien code : 9 clés sur 10 perdues. Nettoyé.
+`npm run test:pg-settings` réussi, aucune perte. Clés disjointes, avant → après 10 essais espacés de 10 à 50 ms : entreprise 5 → 0 conflit sur 10, compte 3 → 0 ; même réglage : 1 enregistré, 9 en 409. Ancien code : 9 clés sur 10 perdues. Nettoyé.
 
 ## Non vérifié
-Lignes héritées SENDING après refus : restent « non confirmées » 24 h. Point 9 : cause sans journal. Forte contention : 409 sur réglages différents (rien de perdu).
+Lignes héritées SENDING après refus : restent « non confirmées » 24 h. Point 9 : cause sans journal.
 
 ## Écrans à capturer
 Paiements après un refus Resend simulé : Light/Dark, 390 et 1 280 px.

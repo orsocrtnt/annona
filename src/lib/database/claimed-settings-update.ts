@@ -32,11 +32,16 @@ export async function updateSettingsWithClaim(options: {
   apply: (current: Record<string, unknown>) => Record<string, unknown>;
   section?: (current: Record<string, unknown>) => unknown;
   attempts?: number;
+  /** Attente avant un nouvel essai (injectable pour les tests) ; par défaut 10 à 50 ms au hasard. */
+  backoff?: () => Promise<void>;
 }): Promise<"saved" | "missing"> {
-  // Cinq tentatives : plusieurs réglages différents enregistrés au même instant passent tous.
-  const attempts = options.attempts ?? 5;
+  // Dix tentatives espacées de 10 à 50 ms au hasard : des réglages DIFFÉRENTS enregistrés au même
+  // instant se désynchronisent et passent tous ; le même réglage modifié reste un conflit (section).
+  const attempts = options.attempts ?? 10;
+  const backoff = options.backoff ?? (() => new Promise<void>((resolve) => setTimeout(resolve, 10 + Math.random() * 40)));
   let firstSection: string | undefined;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) await backoff();
     const row = await options.load();
     if (!row) return "missing";
     if (options.section) {
