@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { AssignDriverSelect } from "@/features/back-office/assign-driver-select";
+import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { DeliveryAdminPanel } from "@/features/back-office/delivery-admin-panel";
 import { useCompanyDelivery } from "@/features/back-office/hooks";
 import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
@@ -114,7 +115,11 @@ export default function CompanyDeliveryDetailPage() {
           <CardHeader>
             <CardTitle className="text-base">Assigner à un chauffeur</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <DispatchSuggestionsPanel
+              deliveryId={delivery.id}
+              pending={delivery.status === "PENDING" && !delivery.driverId}
+            />
             <AssignDriverSelect
               deliveryId={delivery.id}
               status={delivery.status}

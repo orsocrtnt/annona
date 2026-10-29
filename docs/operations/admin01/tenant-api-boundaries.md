@@ -50,6 +50,8 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/dispatch/eligible-drivers/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/map/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/overview/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/dispatch/suggestions/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/dispatch/suggestions/route.ts | POST | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/drivers/[id]/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/drivers/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/invoices/[id]/pdf/route.ts | GET | invoices:read | COMPANY_ADMIN, MINI_ADMIN |

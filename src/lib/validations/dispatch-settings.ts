@@ -60,6 +60,12 @@ export const companyDispatchSettingsSchema = z.object({
    * égalités changent d'issue.
    */
   gpsProximityEnabled: z.boolean().default(true),
+  /**
+   * DISPATCH-4 : affectation automatique au meilleur score (trajet, charge, zone, priorité ;
+   * voir `dispatch-score.ts`). Champ séparé de `strategy` pour un retour arrière sûr : l'ancien
+   * code ignore ce champ (clé inconnue retirée par zod) et reprend la stratégie enregistrée.
+   */
+  bestScore: z.boolean().default(false),
   /** Au-delà, la position du livreur est jugée périmée et n'est pas utilisée. */
   gpsPositionMaxAgeMinutes: z
     .number()
@@ -121,6 +127,7 @@ export const DEFAULT_DISPATCH_SETTINGS: CompanyDispatchSettings = {
   gpsProximityEnabled: true,
   gpsPositionMaxAgeMinutes: 15,
   gpsMaxDistanceKm: 10,
+  bestScore: false,
 };
 
 export const DISPATCH_STRATEGY_LABELS: Record<DispatchStrategy, string> = {
@@ -128,6 +135,9 @@ export const DISPATCH_STRATEGY_LABELS: Record<DispatchStrategy, string> = {
   LEAST_LOADED: "Moins chargé",
   ZONE_THEN_PRIORITY: "Zone puis priorité",
 };
+
+/** Libellé de l'option « meilleur score » dans le sélecteur de stratégie (champ `bestScore`). */
+export const BEST_SCORE_STRATEGY_LABEL = "Meilleur score (recommandé)";
 
 export function normalizeDispatchDriverRule(
   rule: Partial<DispatchDriverRule> & Pick<DispatchDriverRule, "driverId" | "priority">

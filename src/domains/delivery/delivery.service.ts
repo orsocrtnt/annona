@@ -421,7 +421,13 @@ export async function assignDeliveryToDriver(
     ]);
 
     if (!current) return { updated: null, notificationJobId: null };
-    if (options?.expectUnassigned && (current.driverId !== null || current.status !== "PENDING")) {
+    // Déjà confiée au même livreur (double clic, rejeu) : succès idempotent plus bas.
+    const alreadyThisDriver = current.driverId === driverId && current.status === "ASSIGNED";
+    if (
+      options?.expectUnassigned &&
+      !alreadyThisDriver &&
+      (current.driverId !== null || current.status !== "PENDING")
+    ) {
       throw new Error("DELIVERY_NOT_AVAILABLE");
     }
     if (!driver) throw new Error("DRIVER_NOT_FOUND");

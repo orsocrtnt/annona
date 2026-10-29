@@ -6,6 +6,8 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as eligibility from "../src/lib/dispatch/driver-eligibility";
 import * as dispatchSettings from "../src/lib/validations/dispatch-settings";
+import * as dispatchScore from "../src/lib/dispatch/dispatch-score";
+import * as travelTime from "../src/lib/dispatch/travel-time";
 import * as proximity from "../src/lib/dispatch/dispatch-proximity";
 import * as trackingPolicy from "../src/domains/tracking/tracking.policy";
 
@@ -144,6 +146,8 @@ test("ACK : auto-dispatch traite la perte du libre choix comme conflit terminal"
     "@/domains/tracking/tracking.policy": trackingPolicy,
     "@/lib/query/list-limits": { AUTO_DISPATCH_QUEUE_TAKE: 100 },
     "@/lib/validations/dispatch-settings": dispatchSettings,
+    "@/lib/dispatch/dispatch-score": dispatchScore,
+    "@/lib/dispatch/travel-time": travelTime,
   });
   const result = await tryAutoAssignDelivery("company", "delivery");
   assert.equal(result.assigned, false);
