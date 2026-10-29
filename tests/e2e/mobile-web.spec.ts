@@ -42,9 +42,18 @@ async function smallTargets(page: Page) {
         const around = Array.from(el.parentElement.childNodes).some((n) => n !== el && n.nodeType === 3 && (n.textContent ?? "").trim() !== "");
         if (around) continue;
       }
-      if (rect.width < min - 0.5 || rect.height < min - 0.5) {
+      // Interrupteurs : la zone cliquable est étendue par un ::after absolu à insets négatifs (hors cadre visuel).
+      let width = rect.width;
+      let height = rect.height;
+      const after = getComputedStyle(el, "::after");
+      if (el.getAttribute("role") === "switch" && after.position === "absolute") {
+        const [t = 0, r = 0, b = 0, l = 0] = [after.top, after.right, after.bottom, after.left].map((v) => (Number.isFinite(parseFloat(v)) ? parseFloat(v) : 0));
+        width -= l + r;
+        height -= t + b;
+      }
+      if (width < min - 0.5 || height < min - 0.5) {
         const label = (el.getAttribute("aria-label") || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
-        bad.push(`${el.tagName.toLowerCase()} « ${label} » ${Math.round(rect.width)}×${Math.round(rect.height)}`);
+        bad.push(`${el.tagName.toLowerCase()} « ${label} » ${Math.round(width)}×${Math.round(height)}`);
       }
     }
     return bad;

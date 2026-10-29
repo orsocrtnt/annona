@@ -296,7 +296,7 @@ export function CreateRecurringOrderForm({
                 type="button"
                 onClick={() => setActivePickupIndex(index)}
                 className={cn(
-                  "rounded-lg border px-3 py-1.5 text-sm transition-colors",
+                  "rounded-lg border px-3 py-1.5 text-sm transition-colors max-md:min-h-11",
                   activePickupIndex === index
                     ? "border-brand bg-brand-subtle/40 font-medium"
                     : "border-border text-muted-foreground hover:text-foreground"

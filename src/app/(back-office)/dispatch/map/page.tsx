@@ -168,7 +168,7 @@ function DispatchMapContent() {
             aria-pressed={statusFilter === "all"}
             onClick={() => setStatusFilter("all")}
             className={cn(
-              "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+              "inline-flex min-h-9 max-md:min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
               statusFilter === "all" ? "bg-[#0e1310] text-white" : "bg-white/95 text-[#0e1310] hover:bg-white"
             )}
           >
@@ -181,7 +181,7 @@ function DispatchMapContent() {
               aria-pressed={statusFilter === status.key}
               onClick={() => setStatusFilter(statusFilter === status.key ? "all" : status.key)}
               className={cn(
-                "inline-flex min-h-9 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+                "inline-flex min-h-9 max-md:min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
                 statusFilter === status.key ? status.pill : "bg-white/95 text-[#0e1310] hover:bg-white"
               )}
             >
