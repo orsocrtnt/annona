@@ -79,6 +79,9 @@ test("LANDING-2 : formulaire de connexion en POST, même appel serveur, double e
   assert.match(form, /fetch\("\/api\/auth\/login", \{\s*method: "POST"/);
   assert.match(form, /setError\(json\.error \?\? "Email ou mot de passe incorrect\."\)/);
   assert.match(form, /if \(loginInFlight\.current\) return;/);
+  // Réponse illisible (502/504 en HTML) : message maîtrisé ; garde relâchée au retour arrière (bfcache).
+  assert.match(form, /res\.json\(\)\.catch\(\(\) => null\)/);
+  assert.match(form, /event\.persisted\) loginInFlight\.current = false/);
   assert.match(form, /selectLoginRedirect\(requestedRedirect, json\.redirectTo\)/);
   // Aucun formulaire de mot de passe en GET.
   assert.doesNotMatch(form, /method="get"/i);

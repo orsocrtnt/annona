@@ -69,6 +69,15 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
   const [passwordLink, setPasswordLink] = useState<PasswordLink | null>(null);
   const linkRead = useRef(false);
   const loginInFlight = useRef(false);
+
+  // Retour arrière depuis l'espace (bfcache) : le formulaire redevient utilisable.
+  useEffect(() => {
+    const release = (event: PageTransitionEvent) => {
+      if (event.persisted) loginInFlight.current = false;
+    };
+    window.addEventListener("pageshow", release);
+    return () => window.removeEventListener("pageshow", release);
+  }, []);
   const [completingLink, setCompletingLink] = useState(false);
   const { setUser, setPermissions, setDemo, setSaas } = useAuthStore();
 
@@ -162,7 +171,13 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         demoRequestKey,
       }),
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => null);
+    if (json === null) {
+      // Réponse illisible (page HTML d'un 502/504, coupure) : message maîtrisé, nouvel essai possible.
+      loginInFlight.current = false;
+      setError("Service de connexion momentanément indisponible. Réessayez dans quelques instants.");
+      return;
+    }
     if (!res.ok) {
       loginInFlight.current = false;
       setError(json.error ?? "Email ou mot de passe incorrect.");
@@ -184,6 +199,10 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     // Repère « Dernier utilisé » : l'espace ouvert par le serveur, sans aucune donnée personnelle.
     rememberLastSpace(browserStorage(), destination);
     router.push(destination);
+    // Navigation lente ou interrompue : la garde se relâche au bout de 10 s si la page est toujours là.
+    window.setTimeout(() => {
+      loginInFlight.current = false;
+    }, 10_000);
   };
 
   const onRegister = async (data: RegisterInput) => {
