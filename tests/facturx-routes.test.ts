@@ -182,7 +182,7 @@ test("portail : Factur-X limité au client propriétaire de la facture et à son
   assert.equal(refused.body, "refus client", "le client reçoit le message générique");
 });
 
-function einvoicing(role: Role, update: (companyId: string, input: unknown) => Promise<unknown> = async (_c, input) => input) {
+function einvoicing(role: Role, update: (companyId: string, input: unknown) => Promise<unknown> = async (_c, input) => input, uses = false) {
   const calls: Array<[string, unknown]> = [];
   const route = load("src/app/api/company/einvoicing/route.ts", {
     "next/server": { NextResponse: FakeResponse },
@@ -190,11 +190,13 @@ function einvoicing(role: Role, update: (companyId: string, input: unknown) => P
     "@/lib/api/route-handler": { withApiHandler: (fn: () => Promise<Res>) => fn() },
     "@/domains/invoice/facturx/facturx.service": {
       getCompanyEinvoicing: async (companyId: string) => ({ identity: { companyId }, einvoicing: {} }),
+      companyUsesEinvoicing: async () => uses,
       updateCompanyEinvoicing: async (companyId: string, input: unknown) => {
         calls.push([companyId, input]);
         return update(companyId, input);
       },
     },
+    "@/domains/invoice/facturx/facturx-readiness": require("../src/domains/invoice/facturx/facturx-readiness"),
     "@/lib/validations/einvoicing": require("../src/lib/validations/einvoicing"),
   });
   const patch = (body: unknown) => route.PATCH!(new Request("http://local.test/api/company/einvoicing", { method: "PATCH", body: JSON.stringify(body) }));
@@ -205,6 +207,45 @@ const validBody = {
   identity: { legalName: "Coursiers Fictifs SAS", siren: "732829320", siret: "73282932000074", billingAddress: "12 rue de l'Exemple", billingPostalCode: "75011", billingCity: "Paris", country: "FR" },
   einvoicing: { vatNumber: "FR44732829320", latePenaltyText: "Trois fois le taux d'intérêt légal.", earlyPaymentDiscountText: "Pas d'escompte." },
 };
+const incompleteBody = { identity: { siren: "732829320", country: "FR" }, einvoicing: {} };
+
+test("mentions légales : incomplètes et facture électronique activée ou utilisée = refus par champ côté serveur", async () => {
+  const activated = einvoicing("COMPANY_ADMIN");
+  const refused = await activated.patch({ ...incompleteBody, einvoicing: { enabled: true } });
+  assert.equal(refused.status, 400);
+  const fields = Object.keys((refused.body as { fieldErrors: Record<string, string> }).fieldErrors).sort();
+  assert.deepEqual(fields, ["billingAddress", "billingCity", "billingPostalCode", "earlyPaymentDiscountText", "latePenaltyText", "vatExemptionReason"]);
+  assert.equal(activated.calls.length, 0, "rien n'est enregistré");
+
+  const used = einvoicing("COMPANY_ADMIN", undefined, true);
+  assert.equal((await used.patch(incompleteBody)).status, 400);
+  assert.equal(used.calls.length, 0);
+});
+
+test("mentions légales : entreprise qui n'utilise pas la facture électronique = enregistrement accepté, manques signalés", async () => {
+  const idle = einvoicing("COMPANY_ADMIN");
+  const saved = await idle.patch(incompleteBody);
+  assert.equal(saved.status, 200);
+  const data = (saved.body as { data: { enforced: boolean; missing: Array<{ field: string }> } }).data;
+  assert.equal(data.enforced, false);
+  assert.ok(data.missing.some((issue) => issue.field === "latePenaltyText"));
+  assert.equal(idle.calls.length, 1);
+});
+
+test("mentions légales : format invalide = message par champ même sans blocage", async () => {
+  const idle = einvoicing("COMPANY_ADMIN");
+  const bad = await idle.patch({ identity: { siren: "12", country: "FR" }, einvoicing: { iban: "FR7630006000011234567890188" } });
+  assert.equal(bad.status, 400);
+  const errors = (bad.body as { fieldErrors: Record<string, string> }).fieldErrors;
+  assert.ok(errors.siren && errors.iban);
+});
+
+test("mentions légales : lecture d'une entreprise aux mentions incomplètes sans erreur", async () => {
+  const res = await einvoicing("COMPANY_ADMIN").route.GET!();
+  assert.equal(res.status, 200);
+  const data = (res.body as { data: { missing: unknown[] } }).data;
+  assert.ok(data.missing.length > 0);
+});
 
 test("mentions légales : administrateur de l'entreprise uniquement, écriture limitée à son entreprise", async () => {
   const admin = einvoicing("COMPANY_ADMIN");
