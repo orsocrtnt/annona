@@ -13,7 +13,10 @@ export class RequestTimeoutError extends Error {
   }
 }
 
-export type JsonResult = { ok: boolean; status: number; /** null si le corps n'est pas du JSON (page HTML d'un 502, coupure). */ json: any };
+/** `json` : null si le corps n'est pas du JSON (page HTML d'un 502, coupure). */
+// Corps JSON du serveur, lu par les formulaires comme avant (champs optionnels non typés).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type JsonResult = { ok: boolean; status: number; json: any };
 
 export function requestJsonWithTimeout(
   url: string,

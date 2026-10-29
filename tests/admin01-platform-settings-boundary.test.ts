@@ -86,6 +86,8 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/lib/api/route-handler": { withApiHandler },
     "@/lib/api/auth-guard": auth("SUPER_ADMIN"),
     "@/domains/company/billing-settings.service": billingService,
+    "@/domains/invoice/facturx/facturx.service": { getCompanyEinvoicing: async () => null },
+    "@/domains/invoice/facturx/facturx-readiness": { checkSellerReadiness: () => [] },
     "@/lib/validations/billing-settings": validation,
   });
   function tracked(method: string) {
@@ -115,6 +117,8 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/lib/api/route-handler": { withApiHandler },
     "@/lib/api/auth-guard": auth("DISPATCHER"),
     "@/domains/company/billing-settings.service": billingService,
+    "@/domains/invoice/facturx/facturx.service": { getCompanyEinvoicing: async () => null },
+    "@/domains/invoice/facturx/facturx-readiness": { checkSellerReadiness: () => [] },
     "@/lib/validations/billing-settings": validation,
   });
   for (const response of [
@@ -138,6 +142,8 @@ test("ADMIN-1 paramètres : super-admin refusé avant entreprise, corps et méti
     "@/lib/api/route-handler": { withApiHandler },
     "@/lib/api/auth-guard": auth("MINI_ADMIN"),
     "@/domains/company/billing-settings.service": billingService,
+    "@/domains/invoice/facturx/facturx.service": { getCompanyEinvoicing: async () => null },
+    "@/domains/invoice/facturx/facturx-readiness": { checkSellerReadiness: () => [] },
     "@/lib/validations/billing-settings": validation,
   });
   assert.equal((await companySettings.GET!()).status, 200);
