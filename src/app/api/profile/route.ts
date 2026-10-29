@@ -8,7 +8,7 @@ export async function PATCH(request: Request) {
   const auth = await requireAuth();
   if ("error" in auth) return auth.error;
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const parsed = updateProfileSchema.safeParse(body);
 
   if (!parsed.success) {

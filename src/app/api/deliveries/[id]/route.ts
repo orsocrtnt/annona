@@ -60,7 +60,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const parsed = adminUpdateDeliverySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(

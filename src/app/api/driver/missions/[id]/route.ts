@@ -110,7 +110,7 @@ async function parseDriverStatusPayload(request: Request) {
     };
   }
 
-  const body: unknown = await request.json();
+  const body: unknown = await request.json().catch(() => null);
   // Un chemin de preuve ne peut provenir que de l’upload réalisé par ce serveur.
   if (body && typeof body === "object" && "podPhotoPath" in body) throw new Error("POD_UNTRUSTED_PATH");
   return { input: body, podPhoto: undefined, podSignature: undefined };
