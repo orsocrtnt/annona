@@ -18,7 +18,8 @@ import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { isLegacyFakeTrackingCoord } from "@/lib/geocoding";
 import { formatLateness } from "@/lib/format/lateness";
 import { dateTimeLabel } from "@/lib/format/relative-day";
-import { ArrowLeft, Truck, Clock, Phone } from "lucide-react";
+import { ArrowLeft, Clock, Truck } from "lucide-react";
+import { ClientDriverInfo } from "@/features/client-portal/client-driver-info";
 import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
 
 const DeliveryMap = dynamic(
@@ -121,19 +122,8 @@ export default function ClientDeliveryDetailPage() {
             />
 
             {delivery.driver && (
-              <div className="space-y-1 border-t border-border pt-4">
-                <div className="flex items-center gap-3">
-                  <Truck className="h-4 w-4 text-muted-foreground" />
-                  <span>Livreur : {delivery.driver.firstName}</span>
-                </div>
-                {delivery.driver.phone ? (
-                  <a
-                    href={`tel:${delivery.driver.phone}`}
-                    className="ml-7 flex items-center gap-1 text-sm text-brand hover:underline"
-                  >
-                    <Phone className="h-3 w-3" /> {delivery.driver.phone}
-                  </a>
-                ) : null}
+              <div className="border-t border-border pt-4">
+                <ClientDriverInfo driver={delivery.driver} />
               </div>
             )}
 

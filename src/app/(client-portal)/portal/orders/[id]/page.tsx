@@ -18,6 +18,7 @@ import {
 } from "@/features/client-portal/status-badges";
 import { formatCurrency } from "@/features/client-portal/utils";
 import { formatDate } from "@/lib/utils";
+import { ClientDriverInfo } from "@/features/client-portal/client-driver-info";
 import { DeliveryRouteDisplay } from "@/components/shared/delivery-route-display";
 import { MissionStopsDisplay } from "@/components/shared/mission-stops-display";
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
@@ -197,8 +198,8 @@ export default function ClientOrderDetailPage() {
           <CardContent className="space-y-3">
             {order.deliveries?.length ? (
               order.deliveries.map((d) => (
+                <div key={d.id} className="space-y-2">
                 <Link
-                  key={d.id}
                   href={`/portal/deliveries/${d.id}`}
                   className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
@@ -211,6 +212,8 @@ export default function ClientOrderDetailPage() {
                     deliveryCategory={order.deliveryCategory}
                   />
                 </Link>
+                <ClientDriverInfo driver={d.driver} />
+                </div>
               ))
             ) : (
               <p className="text-sm text-muted-foreground">Aucune livraison associée.</p>
