@@ -32,7 +32,7 @@ function subject(role: SystemRole, modules: MiniAdminModuleId[] = [...MINI_ADMIN
 function discoverAllPages(): string[] {
   return readdirSync("src/app", { recursive: true })
     .map((entry) => entry.toString().split("\\").join("/"))
-    .filter((entry) => (entry === "page.tsx" || entry.endsWith("/page.tsx")) && !entry.startsWith("api/"))
+    .filter((entry) => /(^|\/)page\.(tsx|ts|jsx|js|mdx)$/.test(entry) && !entry.startsWith("api/"))
     .map((entry) => {
       const segments = entry.split("/").slice(0, -1)
         .filter((segment) => !/^\(.*\)$/.test(segment) && !segment.startsWith("@"))

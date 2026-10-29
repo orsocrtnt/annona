@@ -152,7 +152,8 @@ test("AUTH-ROLE garde réelle : les vrais modules sont exécutés, seuls Prisma,
   assert.equal(allowed.status, 200);
   for (const file of [
     "middleware.ts", "services/supabase/middleware.ts", "lib/api/server-auth.ts", "domains/user/user.service.ts",
-    "domains/demo/demo-auth.service.ts", "lib/auth/account-access.ts", "lib/permissions/page-access.ts",
+    "domains/demo/demo-auth.service.ts", "domains/demo/demo-session.service.ts", "lib/auth/account-access.ts",
+    "lib/permissions/page-access.ts",
   ]) {
     assert.ok(guard.loaded.includes(file), file);
   }
@@ -219,9 +220,12 @@ test("AUTH-ROLE garde réelle : l'en-tête interne usurpé est effacé et rempla
   const guard = loadGuard({ usersByAuthId: { admin: user("admin", "COMPANY_ADMIN"), client: user("client", "CLIENT") } });
   const spoof = { "x-tutelliv-auth-id": "admin" };
   // Anonyme : l'en-tête transmis aux API et pages est supprimé.
-  const anonymousApi = await guard.call("/api/orders", {}, spoof);
+  // L'en-tête témoin prouve que la liste des en-têtes transmis est bien réécrite (et pas laissée intacte).
+  const anonymousApi = await guard.call("/api/orders", {}, { ...spoof, "x-probe": "1" });
   assert.equal(anonymousApi.forwardedAuthId, null);
-  assert.equal(anonymousApi.overrides.split(",").includes("x-tutelliv-auth-id"), false);
+  const forwarded = anonymousApi.overrides.split(",");
+  assert.ok(forwarded.includes("x-probe"), anonymousApi.overrides);
+  assert.equal(forwarded.includes("x-tutelliv-auth-id"), false);
   // Client connecté : l'en-tête transmis est son authId vérifié, jamais la valeur usurpée.
   const clientApi = await guard.call("/api/orders", session("client"), spoof);
   assert.equal(clientApi.forwardedAuthId, "client");
