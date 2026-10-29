@@ -98,7 +98,7 @@ export function SceneReceipt({ onDone, reducedMotion }: SceneProps) {
                 type="button"
                 data-tour-target
                 onClick={() => setOpened(true)}
-                className="product-tour-pulse mt-2.5 flex min-h-9 w-full items-center justify-center rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="product-tour-pulse mt-2.5 flex min-h-9 max-md:min-h-11 w-full items-center justify-center rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Voir la facture
               </button>

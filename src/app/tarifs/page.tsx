@@ -220,7 +220,7 @@ export default async function TarifsPage() {
           </section>
 
           <div className="mx-auto mt-8 max-w-6xl px-5 text-center sm:px-6">
-            <Link href="/" className="text-sm font-semibold text-[#4a544d] dark:text-text-secondary underline decoration-[#a3aca6] underline-offset-4 hover:text-foreground">
+            <Link href="/" className="inline-flex items-center max-md:min-h-11 text-sm font-semibold text-[#4a544d] dark:text-text-secondary underline decoration-[#a3aca6] underline-offset-4 hover:text-foreground">
               Retour à l’accueil
             </Link>
           </div>
@@ -238,7 +238,7 @@ export default async function TarifsPage() {
             <h1 className="mt-5 text-3xl font-bold tracking-tight">Tarifs</h1>
             <p className="mt-3 text-muted-foreground">Les tarifs sont indisponibles.</p>
             <p className="mt-6">
-              <Link className="font-semibold text-brand underline underline-offset-4" href="/">Retour à l’accueil</Link>
+              <Link className="inline-flex items-center max-md:min-h-11 font-semibold text-brand underline underline-offset-4" href="/">Retour à l’accueil</Link>
             </p>
           </div>
         </main>

@@ -476,7 +476,7 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
         <DialogContent>
           <DialogHeader><DialogTitle>Rendre la mission au dispatch</DialogTitle><DialogDescription>Indiquez pourquoi vous ne pouvez pas effectuer cette mission. Le motif sera conservé dans son historique partagé.</DialogDescription></DialogHeader>
           <label htmlFor={`decline-${mission.id}`}>Motif de refus</label>
-          <textarea className="min-h-24 w-full rounded-md border p-2" id={`decline-${mission.id}`} value={declineReason} onChange={(event) => setDeclineReason(event.target.value)} maxLength={500} />
+          <textarea className="min-h-24 w-full rounded-md border p-2 max-md:text-base" id={`decline-${mission.id}`} value={declineReason} onChange={(event) => setDeclineReason(event.target.value)} maxLength={500} />
           <DialogFooter><Button variant="outline" onClick={() => setDeclineOpen(false)}>Annuler</Button><Button disabled={!declineReason.trim()} loading={acknowledgement.isPending} onClick={() => void acknowledge("decline")}>Confirmer le refus</Button></DialogFooter>
         </DialogContent>
       </Dialog>

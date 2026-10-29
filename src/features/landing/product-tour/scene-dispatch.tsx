@@ -141,7 +141,7 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
               disabled={!ready || launched}
               onClick={() => setLaunchedAt(performance.now())}
               className={cn(
-                "flex min-h-8 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none sm:flex-none",
+                "flex min-h-8 max-md:min-h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-2.5 text-[11px] font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none sm:flex-none",
                 ready && !launched ? "product-tour-pulse" : !ready && "opacity-40"
               )}
             >
@@ -259,7 +259,7 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 26 }}
-                className="product-tour-pulse mt-auto flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0e1310] px-3 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="product-tour-pulse mt-auto flex min-h-10 max-md:min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0e1310] px-3 text-xs font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Passer à la suite
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />

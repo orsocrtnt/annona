@@ -19,7 +19,7 @@ const ARRIVAL_DURATIONS_MS = [450, 600, 450] as const;
 const NAVIGATION_VIEW_MS = GESTURE_RESULT_DELAY_MS * 2;
 
 const gestureButton =
-  "flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none";
+  "flex min-h-10 max-md:min-h-11 w-full items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none";
 
 function MissionDetails({
   phase,

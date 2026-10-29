@@ -18,7 +18,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const inputClass =
-  "mt-2 w-full rounded-xl border border-[#d8dee6] dark:border-border bg-card px-4 py-3 text-sm text-[#172334] dark:text-foreground shadow-sm outline-none transition focus:border-[#3d5a73] dark:focus:border-ring focus:ring-2 focus:ring-[#3d5a73]/20";
+  "mt-2 w-full rounded-xl border border-[#d8dee6] dark:border-border bg-card px-4 py-3 text-sm max-md:text-base text-[#172334] dark:text-foreground shadow-sm outline-none transition focus:border-[#3d5a73] dark:focus:border-ring focus:ring-2 focus:ring-[#3d5a73]/20";
 
 export function ContactForm() {
   const [state, setState] = useState<FormState>({ kind: "idle" });

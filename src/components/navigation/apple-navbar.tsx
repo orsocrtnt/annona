@@ -81,7 +81,7 @@ export function AppleNavbarBrand({
       <Link
         href={href}
         className={cn(
-          "flex min-h-10 shrink-0 items-center rounded-xl px-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "flex min-h-10 max-md:min-h-11 shrink-0 items-center rounded-xl px-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           className
         )}
       >
@@ -96,7 +96,7 @@ export function AppleNavbarBrand({
     <Link
       href={href}
       className={cn(
-        "group flex min-h-10 shrink-0 items-center gap-2.5 rounded-xl px-1.5 pr-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80",
+        "group flex min-h-10 max-md:min-h-11 shrink-0 items-center gap-2.5 rounded-xl px-1.5 pr-2 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80",
         className
       )}
     >
@@ -153,7 +153,7 @@ export function AppleNavbarLink({
 }: AppleNavbarLinkProps) {
   const light = tone === "light";
   const classes = cn(
-    "group relative inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-[10px] px-3 text-[13px] font-medium transition-[color,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none",
+    "group relative inline-flex min-h-10 max-md:min-h-11 items-center justify-center whitespace-nowrap rounded-[10px] px-3 text-[13px] font-medium transition-[color,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none",
     light ? "focus-visible:ring-ring" : "focus-visible:ring-white/80",
     light
       ? active
@@ -213,11 +213,11 @@ export function AppleNavbarLink({
 }
 
 export const appleNavbarIconButtonClass =
-  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/60 transition-[background-color,color,transform] duration-300 ease-out hover:-translate-y-px hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 active:translate-y-0 motion-reduce:transition-none";
+  "inline-flex h-10 w-10 max-md:h-11 max-md:w-11 shrink-0 items-center justify-center rounded-xl text-white/60 transition-[background-color,color,transform] duration-300 ease-out hover:-translate-y-px hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 active:translate-y-0 motion-reduce:transition-none";
 
 export const appleNavbarActionClass =
-  "group inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/[0.13] bg-white/[0.075] px-3.5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.12)] transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-px hover:border-white/20 hover:bg-white/[0.13] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_22px_rgba(0,0,0,0.18)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none";
+  "group inline-flex min-h-10 max-md:min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/[0.13] bg-white/[0.075] px-3.5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_4px_16px_rgba(0,0,0,0.12)] transition-[background-color,border-color,box-shadow,transform] duration-300 ease-out hover:-translate-y-px hover:border-white/20 hover:bg-white/[0.13] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_22px_rgba(0,0,0,0.18)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 motion-reduce:transition-none";
 
 /** Variantes claires (espaces connectés, DA Menthe). */
 export const appleNavbarIconButtonLightClass =
-  "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#5f6a63] transition-[background-color,color] duration-300 ease-out hover:bg-black/[0.05] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";
+  "inline-flex h-10 w-10 max-md:h-11 max-md:w-11 shrink-0 items-center justify-center rounded-xl text-[#5f6a63] transition-[background-color,color] duration-300 ease-out hover:bg-black/[0.05] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";
