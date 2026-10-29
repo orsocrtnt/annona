@@ -220,7 +220,7 @@ test("C5 : affichage — SENDING abandonnée (tâche épuisée ou réservation >
   const dayLater = new Date(T0.getTime() + 25 * HOUR);
   assert.equal(effectiveReminderResult({ ...sending, operationJob: { status: "PENDING" } }, dayLater), "SEND_UNCONFIRMED");
   assert.equal(reminderBlocksNewOne(sending, dayLater), false);
-  assert.equal(effectiveReminderResult({ result: "QUEUED", createdAt: T0, operationJob: { status: "FAILED" } }, now), "FAILED");
+  assert.equal(effectiveReminderResult({ result: "QUEUED", createdAt: T0, operationJob: { status: "FAILED", lastError: "INVOICE_REMINDER_PAYLOAD_INVALID" } }, now), "FAILED");
   assert.equal(reminderBlocksNewOne({ result: "SEND_UNCONFIRMED", createdAt: T0, completedAt: now }, now), true);
 });
 
@@ -254,16 +254,20 @@ test("C5 transition : relance QUEUED déjà tentée, refus certain — reste SEN
   assert.equal(old.r1Row().result, "SEND_UNCONFIRMED");
 });
 
-test("C5 transition : QUEUED héritée dont la tâche a échoué sur le fournisseur = non confirmée et bloquante ; autre échec = FAILED", () => {
+test("C5 transition : QUEUED dont la tâche est épuisée = non confirmée et bloquante, FAILED seulement sans appel possible", () => {
   const now = new Date(T0.getTime() + HOUR);
   const legacy = { result: "QUEUED", createdAt: T0, operationJob: { status: "FAILED", lastError: "EMAIL_PROVIDER_HTTP_500" } };
   assert.equal(effectiveReminderResult(legacy, now), "SEND_UNCONFIRMED");
   assert.equal(reminderBlocksNewOne(legacy, now), true);
   const timeout = { ...legacy, operationJob: { status: "FAILED", lastError: "The operation was aborted due to timeout" } };
   assert.equal(effectiveReminderResult(timeout, now), "SEND_UNCONFIRMED");
-  const other = { ...legacy, operationJob: { status: "FAILED", lastError: "INVOICE_REMINDER_PAYLOAD_INVALID" } };
-  assert.equal(effectiveReminderResult(other, now), "FAILED");
-  assert.equal(reminderBlocksNewOne(other, now), false);
+  // Ancien code : 500 accepté puis dernier essai en échec base de données → seul ce lastError reste.
+  const dbError = { ...legacy, operationJob: { status: "FAILED", lastError: "Unable to start a transaction in the given time." } };
+  assert.equal(effectiveReminderResult(dbError, now), "SEND_UNCONFIRMED");
+  assert.equal(reminderBlocksNewOne(dbError, now), true);
+  const noCall = { ...legacy, operationJob: { status: "FAILED", lastError: "INVOICE_REMINDER_PAYLOAD_INVALID" } };
+  assert.equal(effectiveReminderResult(noCall, now), "FAILED");
+  assert.equal(reminderBlocksNewOne(noCall, now), false);
 });
 
 test("C5 affichage : le clic sur une relance SENDING dont la tâche est épuisée répond « non confirmée », comme la liste", async () => {
@@ -279,8 +283,8 @@ test("C5 affichage : le clic sur une relance SENDING dont la tâche est épuisé
 test("C5 liste : « Relancer » suit la règle du serveur (dernière relance en échec, SENT plus ancienne encore bloquante)", async () => {
   const now = new Date(T0.getTime() + 2 * HOUR);
   const { db, remind } = setup({ result: "SENT", createdAt: new Date(T0.getTime() - 20 * HOUR), completedAt: T0, operationJobId: null });
-  // Dernière relance : en file, tâche épuisée sans appel fournisseur → FAILED, non bloquante.
-  db.jobs.push({ id: "job_2", jobKey: "k2", type: "CLIENT_NOTIFICATION", status: "FAILED", payload: {}, companyId: "company_a", maxAttempts: 3, lastError: "DB_DOWN" });
+  // Dernière relance : en file, tâche épuisée sans appel fournisseur possible → FAILED, non bloquante.
+  db.jobs.push({ id: "job_2", jobKey: "k2", type: "CLIENT_NOTIFICATION", status: "FAILED", payload: {}, companyId: "company_a", maxAttempts: 3, lastError: "INVOICE_REMINDER_PAYLOAD_INVALID" });
   db.reminders.push({ id: "r2", invoiceId: "inv", companyId: "company_a", sentById: "admin_a", channel: "EMAIL", result: "QUEUED", operationJobId: "job_2", completedAt: null, createdAt: new Date(T0.getTime() + HOUR) });
   const list = await listCompanyInvoices("company_a", { status: "ALL", now }, db as never);
   const row = list.invoices.find((entry) => entry.id === "inv")!;

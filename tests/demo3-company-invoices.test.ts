@@ -19,7 +19,7 @@ function seed() {
     orders: [{ id: "order_1", companyId: "company_a", reference: "CMD-1042" }],
     jobs: [
       { id: "job_ok", jobKey: "k1", type: "CLIENT_NOTIFICATION", status: "SUCCEEDED", payload: {}, companyId: "company_a", maxAttempts: 3 },
-      { id: "job_ko", jobKey: "k2", type: "CLIENT_NOTIFICATION", status: "FAILED", payload: {}, companyId: "company_a", maxAttempts: 3 },
+      { id: "job_ko", jobKey: "k2", type: "CLIENT_NOTIFICATION", status: "FAILED", payload: {}, companyId: "company_a", maxAttempts: 3, lastError: "INVOICE_REMINDER_PAYLOAD_INVALID" },
     ],
     reminders: [
       { id: "r1", invoiceId: "late_reminded", companyId: "company_a", sentById: "admin_a", channel: "EMAIL", result: "SENT", operationJobId: "job_ok", completedAt: NOW, createdAt: new Date("2026-10-28T08:00:00.000Z") },

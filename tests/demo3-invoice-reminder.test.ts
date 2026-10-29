@@ -87,13 +87,25 @@ test("DEMO-3 relance : après 24 h, une nouvelle relance est possible", async ()
   assert.equal(db.reminders.length, 2);
 });
 
-test("DEMO-3 relance : un envoi précédent en échec définitif ne bloque pas une nouvelle relance", async () => {
+test("DEMO-3 relance : un échec définitif sans appel au fournisseur ne bloque pas une nouvelle relance", async () => {
   const { db, remind } = setup([invoice({ id: "inv" })]);
   await remind();
   db.jobs[0]!.status = "FAILED";
+  db.jobs[0]!.lastError = "INVOICE_REMINDER_PAYLOAD_INVALID";
   const retry = await remind();
   assert.equal(retry?.duplicate, false);
   assert.equal(db.reminders.length, 2);
+});
+
+test("C5 : une relance en file dont la tâche a échoué après un possible appel reste bloquante (non confirmée)", async () => {
+  const { db, remind } = setup([invoice({ id: "inv" })]);
+  await remind();
+  db.jobs[0]!.status = "FAILED";
+  db.jobs[0]!.lastError = "EMAIL_PROVIDER_HTTP_500";
+  const retry = await remind();
+  assert.equal(retry?.duplicate, true);
+  assert.equal(retry?.reminder.result, "SEND_UNCONFIRMED");
+  assert.equal(db.reminders.length, 1);
 });
 
 test("DEMO-3 relance : e-mail non configuré, relance tracée « non envoyée » sans erreur ni tâche", async () => {

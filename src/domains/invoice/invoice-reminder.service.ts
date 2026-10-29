@@ -57,22 +57,23 @@ const BLOCKING_RESULTS: InvoiceReminderResult[] = ["QUEUED", "SENT", "SEND_UNCON
 
 type ReminderState = { result: string; createdAt: Date; completedAt?: Date | null; operationJob?: { status: string; lastError?: string | null } | null };
 
-/** Erreur de tâche issue d'un appel au fournisseur (réponse HTTP, expiration, réseau). */
-const PROVIDER_ATTEMPT_ERROR = /EMAIL_PROVIDER_HTTP_|TimeoutError|timeout|aborted|fetch failed/i;
+/** Erreurs de tâche qui prouvent qu'aucun appel au fournisseur n'a eu lieu (levées avant tout envoi). */
+const NO_PROVIDER_CALL_ERRORS = new Set(["INVOICE_REMINDER_PAYLOAD_INVALID", "OPERATION_JOB_TYPE_UNSUPPORTED"]);
 
 /**
  * Résultat affiché :
- * - QUEUED dont la tâche a définitivement échoué : FAILED (rien n'est parti), sauf relance héritée
- *   dont la tâche a échoué sur un appel au fournisseur : SEND_UNCONFIRMED ;
+ * - QUEUED dont la tâche a définitivement échoué : SEND_UNCONFIRMED (relance héritée qui a pu partir),
+ *   FAILED seulement si l'erreur prouve qu'aucun appel n'a eu lieu ;
  * - SENDING dont la tâche a définitivement échoué, ou réservée depuis plus de 24 h sans reprise :
  *   SEND_UNCONFIRMED (l'e-mail est peut-être parti, plus aucune reprise automatique en cours).
  */
 export function effectiveReminderResult(reminder: ReminderState, now: Date = new Date()): string {
   if (reminder.result === "QUEUED" && reminder.operationJob?.status === "FAILED") {
-    // Avec ce code, une relance QUEUED dont la tâche est épuisée n'a jamais été réservée : rien n'est
-    // parti. Héritée de l'ancien code (remise en file après un 500, un 409 ou une expiration), elle a
-    // pu partir : non confirmée, donc bloquante, jamais « échec » qui ré-autoriserait « Relancer ».
-    return reminder.operationJob.lastError && PROVIDER_ATTEMPT_ERROR.test(reminder.operationJob.lastError) ? "SEND_UNCONFIRMED" : "FAILED";
+    // Héritée de l'ancien code (remise en file après un 500, un 409 ou une expiration, puis dernier
+    // essai en échec pour une autre raison), elle a pu partir ; seul le dernier `lastError` est
+    // conservé. Donc non confirmée, bloquante, sauf erreur qui prouve qu'aucun appel n'a eu lieu.
+    // Avec ce code, cet état n'arrive presque jamais : la prudence ne coûte rien.
+    return NO_PROVIDER_CALL_ERRORS.has(reminder.operationJob.lastError ?? "") ? "FAILED" : "SEND_UNCONFIRMED";
   }
   if (reminder.result === "SENDING") {
     const reservedAt = (reminder.completedAt ?? reminder.createdAt).getTime();
@@ -89,7 +90,7 @@ export function reminderBlocksNewOne(reminder: ReminderState, now: Date): boolea
   if (reminder.result === "SENDING" || reminder.result === "SENT" || reminder.result === "SEND_UNCONFIRMED") {
     return (reminder.completedAt ?? reminder.createdAt).getTime() >= since;
   }
-  return (BLOCKING_RESULTS as string[]).includes(effectiveReminderResult(reminder)) && reminder.createdAt.getTime() >= since;
+  return (BLOCKING_RESULTS as string[]).includes(effectiveReminderResult(reminder, now)) && reminder.createdAt.getTime() >= since;
 }
 
 /**
