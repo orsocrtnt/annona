@@ -162,6 +162,15 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 | --- | --- | --- |
 | Création de commande côté back-office | Acceptée pour le compte d'un client choisi, depuis le flux « commande par message » uniquement, après relecture et validation du dispatcher. Rôles : `COMPANY_ADMIN`, `MINI_ADMIN` (module Commandes) et `DISPATCHER`, avec la permission `orders:create`. La commande porte `source = ADMIN`. Elle passe par le service de création existant (géocodage, contrôles d'abonnement, idempotence). Le client doit être un compte actif de l'entreprise. La fonction reste désactivée tant que la clé serveur et l'activation par l'entreprise manquent. | INTAKE-1 |
 
+## C12 — Décisions du propriétaire du 29 octobre 2026 (dispatch)
+
+| Sujet | Décision | Suite |
+| --- | --- | --- |
+| Option de dispatch | Une seule option « Dispatch intelligent » remplace le « Dispatch automatique » : 39 € HT par mois en Starter au lieu de 29 €, toujours incluse en Pro et Business. | Mise à jour du catalogue et des pages Tarifs à faire dans DISPATCH-4 ; acceptation par le marché à confronter dans OFFER-1. |
+| Création des tournées | TutelLiv regroupe les livraisons et propose la tournée ; le dispatcher valide ou modifie, ou l'affectation est automatique si l'entreprise a choisi ce mode. | DISPATCH-4, piste 3. |
+| Limites d'une tournée | Créneaux promis aux clients, capacité du véhicule, zone géographique et durée de la journée du livreur. | DISPATCH-4, piste 3. |
+| Départ et fin | Une tournée part de la position du livreur et finit au dernier arrêt. | DISPATCH-4, piste 3. |
+
 ## Éléments encore non confirmés
 
 - identité juridique, SIREN, TVA et adresse de l'éditeur ;
