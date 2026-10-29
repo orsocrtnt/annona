@@ -162,6 +162,7 @@ export function DeliveryOverviewMarker({
   status,
   subtitle,
   showCallout: calloutAllowed = true,
+  isSelected = false,
   onSelect,
 }: {
   latitude: number;
@@ -173,24 +174,26 @@ export function DeliveryOverviewMarker({
   subtitle?: string;
   /** Faux en vue éloignée : l'épingle seule, pour ne pas couvrir la carte de fiches. */
   showCallout?: boolean;
+  /** Épingle sélectionnée : plus grande, cerclée de la couleur de marque, fiche toujours affichée. */
+  isSelected?: boolean;
   onSelect: () => void;
 }) {
   const eventHandlers = useMarkerClicks(onSelect);
   const theme = useMapTheme();
   // Les missions qui demandent l'attention (retard) ou qui bougent (en route) portent leur fiche.
-  const showCallout = calloutAllowed && (status === "late" || status === "route");
+  const showCallout = isSelected || (calloutAllowed && (status === "late" || status === "route"));
   const icon = useMemo(
     () =>
       L.divIcon({
         className: "delivery-point-marker",
         html: `<div style="position:relative;width:0;height:0;overflow:visible;cursor:pointer;">
-            <div style="position:absolute;left:0;top:0;transform:translate(-50%,-100%);">${pinSvg(26, status, false, theme)}</div>
-            ${showCallout ? calloutHtml(title || reference.replace(/^LIV-/, "#"), subtitle, status, 40, theme) : ""}
+            <div style="position:absolute;left:0;top:0;transform:translate(-50%,-100%);">${pinSvg(isSelected ? 32 : 26, status, false, theme, isSelected)}</div>
+            ${showCallout ? calloutHtml(title || reference.replace(/^LIV-/, "#"), subtitle, status, isSelected ? 48 : 40, theme) : ""}
           </div>`,
         iconSize: [1, 1],
         iconAnchor: [0, 0],
       }),
-    [reference, showCallout, status, subtitle, theme, title]
+    [isSelected, reference, showCallout, status, subtitle, theme, title]
   );
 
   return (
@@ -200,7 +203,7 @@ export function DeliveryOverviewMarker({
       title={`${reference} · ${getDispatchMapStatusMeta(status).label} (${MAP_SHAPE_LABEL[MAP_STATUS_STYLE[theme][status].shape]}) — clic : sélectionner · double-clic : voir le détail`}
       keyboard
       eventHandlers={eventHandlers}
-      zIndexOffset={status === "late" ? 600 : 400}
+      zIndexOffset={isSelected ? 1000 : status === "late" ? 600 : 400}
     />
   );
 }
