@@ -36,7 +36,7 @@ Une recette prouve qu'un parcours marche **dans le navigateur**. Lire le JSX ou 
 5. **E2E ciblés** de la branche (jamais toute la suite par défaut) :
    `E2E_BASE_URL=http://localhost:3110 E2E_SKIP_WEB_SERVER=1 npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local -- npx playwright test tests/e2e/<spec>.spec.ts`
    Les specs se déconnectent à la fin pour libérer le pool de démo.
-6. **Non-régression minimale**, à chaque recette : connexion et déconnexion, `/dashboard`, `/dispatch` avec la carte qui s'affiche, `/portal/orders`, `/driver/missions`, sans erreur console.
+6. **Non-régression minimale**, à chaque recette : connexion et déconnexion, `/dashboard`, `/dispatch/map` avec la carte qui s'affiche, `/portal/orders`, `/driver/missions`, sans erreur console.
 7. **Nettoyer** : `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local -- npx tsx scripts/e2e/dev-role-accounts.ts cleanup`, puis suppression des données `E2E` créées pendant la passe, puis arrêt du serveur lancé (son PID uniquement). Vérifier que le port est libre.
 
 ## Rapport (moins de 400 mots)

@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**57 tâches terminées sur 95 — 60 %**
+**58 tâches terminées sur 98 — 59 %**
 
-`████████████░░░░░░░░` · 38 tâches restantes
+`████████████░░░░░░░░` · 40 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -1467,7 +1467,15 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026. S'appuie sur DEMO-3 tranche 3 (distance de départage, `src/lib/dispatch/dispatch-proximity.ts`) et sur les réglages de Règles dispatch. Périmètre et priorité des pistes : décision du propriétaire. Coûts du service de trajet : COST-1.
 
-  État : ouverte, non commencée.
+  Cadrage du propriétaire du 29 octobre 2026 (questionnaire) :
+  - **Priorités** : d'abord la piste 4 (les 3 meilleurs livreurs, avec le vrai temps de trajet et la raison du choix, affectation en un clic), et tout de suite après la piste 3 (tournées optimisées), jugée très importante. Puis les pistes 5 (imprévus) et 6 (mesure), moins prioritaires.
+  - **Métier** : un mélange de courses express (un retrait, une livraison) et de tournées à plusieurs arrêts. Les deux doivent marcher.
+  - **Contrôle** : les deux modes, au choix de l'entreprise dans ses réglages : suggestion validée par le dispatcher, ou affectation automatique réglable.
+  - **Taille** : à court terme, petites entreprises (moins de 20 livreurs, 10 à 30 livraisons par jour). L'outil doit tenir sans refonte si un gros client arrive : performance et algorithmes dimensionnés pour une flotte plus grande.
+  - **Coût des trajets** : service gratuit d'abord (OSRM, avec cache). Un service payant seulement si un client l'exige.
+  - **Offre** : grille actuelle conservée et testée. Piste du propriétaire : un seul « Dispatch automatique » rendu intelligent, un peu plus cher. Proposition de l'orchestrateur, à valider par le propriétaire avant tout changement de prix : une option unique « Dispatch intelligent » qui remplace le dispatch automatique, à 39 € au lieu de 29 € en Starter, toujours incluse en Pro et Business. L'offre pilote après les 4 semaines gratuites reste à décider (OFFER-1).
+
+  État : ouverte, cadrée ; découpage en tranches à faire.
 
 - [ ] **CONFIG-MSG — Expliquer clairement pourquoi une configuration échoue.** Demande du propriétaire du 28 octobre 2026 : quand un réglage ou une fonction refuse de fonctionner pendant la configuration, l'écran doit dire précisément pourquoi et quoi faire, au lieu d'un message général. Cas constaté : en préproduction, le Factur-X d'une facture de démo restait indisponible côté client (« Votre prestataire doit compléter ses informations de facturation ») alors que les mentions légales étaient remplies. La vraie cause, trouvée en reproduisant le cas, était le « Motif d'exonération de TVA » manquant (règle EN 16931 BR-E-10 : les factures de démo sont sans TVA).
   1. Factur-X : lister côté back-office chaque champ manquant, avec un lien direct vers le champ ; signaler dès l'enregistrement des mentions légales ce qui bloquera l'export (exonération de TVA pour des factures sans TVA, IBAN pour un paiement par virement…) ; côté client, garder un message sobre, sans détail interne.
@@ -1482,9 +1490,36 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   État : ouverte, non commencée.
 
+- [ ] **UX-ALERTES — Alléger les alertes et les afficher aux endroits appropriés.** Retour de Marie accepté par le propriétaire le 28 octobre 2026 : les blocs « Alertes à suivre » répétés en haut de chaque page prennent trop de place et repoussent les informations utiles, notamment dans l'app livreur. Inventorier les alertes par rôle, gravité et écran ; conserver un résumé dans les vues de supervision et les alertes qui concernent réellement l'action en cours, avec un accès identifiable aux autres alertes. Réduire l'agressivité visuelle ; conserver la visibilité immédiate des erreurs bloquantes et urgences métier. Éviter les répétitions entre pages et déplacer les explications secondaires hors de l'en-tête.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : chaque bloc d'alerte restant a un rôle et un emplacement justifiés ; aucun écran n'affiche des alertes étrangères à son contexte ; les contenus et actions principaux sont visibles plus tôt sur mobile ; états sans alerte, avertissement, urgence et erreur testés ; aucune alerte critique ni action métier perdue ; `npm run check` vert et recette navigateur administrateur/client/livreur à 390 et 1 280 px.
+
+  Source / dépendance / blocage : décision du propriétaire dans cette conversation, après résumé des retours de Marie. Complète UX-04 et DESIGN-2 ; ne modifie pas les règles de détection métier sans décision explicite. État : ouverte, non commencée.
+
+- [ ] **MAP-INTERACTION — Regrouper les cartes du tableau de bord et rendre leurs informations utiles.** Retour de Marie accepté par le propriétaire le 28 octobre 2026 : remplacer les deux sections « livreurs » et « missions actives » par un même espace de carte avec bascule claire entre les deux vues. Rendre les marqueurs sélectionnables, afficher les informations opérationnelles utiles au rôle et donner accès à la fiche canonique. Employer des couleurs mesurées pour distinguer les statuts et la sélection : le noir et blanc ne doit pas donner l'impression d'un écran inactif. Conserver un fond cartographique sobre (MAP-3), une légende et des formes/libellés qui ne dépendent pas de la seule couleur. Ne pas inventer de précision GPS ni d'informations indisponibles ; préserver la minimisation des coordonnées et de l'identité du livreur côté client.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : une seule zone de carte permet de choisir Livreurs ou Livraisons ; la bascule et la sélection sont compréhensibles au clavier et sur mobile ; chaque marqueur donne une information utile et une action adaptée ; chargement, absence de position, position périmée, aucune mission et erreur fournisseur restent explicites ; permissions et isolation entre entreprises préservées ; `npm run check` vert et recette navigateur à 390 et 1 280 px.
+
+  Source / dépendance / blocage : décision du propriétaire dans cette conversation ; prolonge MAP-3 et UX-03, sans nouveau fournisseur ni suivi permanent promis. État : ouverte, non commencée.
+
+- [ ] **UX-NAV-SCROLL — Revenir en haut lors d'un changement de page, conserver la position au Retour.** Défaut encore reproduit le 28 octobre 2026 sur le code `4a99b6b`, Chrome réel sans interface, `tutelliv-dev`, 1 280 × 720 : clic dans le menu administrateur de `/settings` (scrollY 533) vers `/settings/billing` → scrollY 389, soit le bas de la nouvelle page ; clic côté client de `/portal/settings` (scrollY 1 332) vers `/portal/orders` → scrollY 53, également au bas de cette page. Les liens ont été réellement cliqués ; aucune navigation par remplacement direct d'URL dans le test. Le bouton Retour restaure respectivement 533 et 1 332 : comportement à préserver. Preuve locale : `outputs/verification-2026-10-28/navigation-evidence.json`, captures `navigation-admin.png` et `navigation-client.png` ; pas de diffusion de ces outputs.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : une navigation vers une autre page depuis un menu démarre en haut du contenu, dans les espaces administrateur/client/livreur et sur le site public ; Retour/Avancer restaurent la position ; les ancres, listes à pagination et mises à jour de filtres conservent un comportement explicite adapté ; tests sur les vrais conteneurs de défilement, 390 et 1 280 px ; `npm run check` vert et clics navigateur. Aucun correctif de scroll global aveugle qui casserait l'historique.
+
+  Source / dépendance / blocage : retour de Marie et demande de vérification du propriétaire dans cette conversation ; test indépendant ciblé, sans changement du code. État : ouverte, défaut confirmé ; correction non commencée.
+
 - [ ] **DESIGN-2 — Étendre le mode sombre à tout le site.** Demande du propriétaire du 28 octobre 2026 : le mode sombre du portail client est jugé réussi ; l'étendre au site public (landing, tarifs, fonctionnalités, démonstration), au back-office et dispatch, à l'espace `/admin`, et vérifier l'app livreur (pas encore contrôlée par le propriétaire). Même direction « Encre + Pastel » que le portail, choix Clair / Sombre / Système mémorisé, sans éclair au chargement.
   - **Carte en sombre** : le même plan que celui d'aujourd'hui, en version sombre et noire, assortie au thème (fond, routes, libellés, trajets et marqueurs lisibles), qui bascule avec le thème. Voir MAP-3.
   - Retirer la limite actuelle du thème au seul `/portal/**` (`src/lib/theme.ts`, ThemeSync) espace par espace, en gardant le Light identique à aujourd'hui.
+  - **Surfaces sans dégradés — décision du propriétaire du 28 octobre 2026** : abandonner les dégradés décoratifs au profit de fonds unis et d'accents doux, dans l'esprit du Dark « Encre + Pastel ». Référence vérifiée dans `src/app/globals.css` : fond anthracite `#141716`, cartes `#1c1f1e`, accents verts doux ; les fonds eux-mêmes ne sont pas pastel. L'ancienne maquette admin mentionnée de mémoire n'a pas été retrouvée dans le dépôt : ne pas prétendre l'avoir validée. Proposer l'équivalent en Light avec des aplats clairs/pastel, sans changer les statuts ni le contraste métier.
+  - **Lisibilité des surfaces et finitions** : mieux distinguer les tableaux du fond de page (blanc en Light, surfaces distinctes en Dark), notamment Chauffeurs ; harmoniser l'orange, les boutons et la typographie de Tarifs/Fonctionnalités, sans ajouter de couleurs décoratives. Montrer les propositions avant/après au propriétaire.
+  - **Première livraison** : proposer le parcours au démarrage puis le rendre masquable ou le retirer de la navigation principale une fois terminé, en gardant un accès depuis l'aide et les fonctions disponibles dans leurs rubriques. Préserver reprise, étapes incomplètes et possibilité de consulter à nouveau le guide.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -1522,7 +1557,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   État : ouverte, non commencée.
 
-- [ ] **AUTH-ROLE — Refuser côté serveur les pages du mauvais rôle.** Aujourd'hui, le middleware vérifie seulement qu'une session existe (`src/middleware.ts`) et les layouts des espaces contrôlent le rôle dans le navigateur. Un client connecté qui ouvre `/dashboard`, `/dispatch` ou `/driver/missions` (ou un livreur qui ouvre `/portal/orders`) reçoit donc la page en HTTP 200 avant la redirection côté client. Les API restent protégées : `/api/invoices` renvoie 403 au client, au livreur et au dispatcher, et aucune fuite de données n'a été constatée.
+- [x] **AUTH-ROLE — Refuser côté serveur les pages du mauvais rôle.** Aujourd'hui, le middleware vérifie seulement qu'une session existe (`src/middleware.ts`) et les layouts des espaces contrôlent le rôle dans le navigateur. Un client connecté qui ouvre `/dashboard`, `/dispatch` ou `/driver/missions` (ou un livreur qui ouvre `/portal/orders`) reçoit donc la page en HTTP 200 avant la redirection côté client. Les API restent protégées : `/api/invoices` renvoie 403 au client, au livreur et au dispatcher, et aucune fuite de données n'a été constatée.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -1530,7 +1565,11 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : recette serveur indépendante de Codex du 28 octobre 2026 (`outputs/recette-codex/rapport.md`, sur cda66cd). Défaut préexistant sur `preproduction` (9234600), non introduit par l'intégration. Prioritaire pour la série suivante.
 
-  État : ouverte, non commencée.
+  État : **terminée le 29 octobre 2026** (branche `agent/auth-role`). Le middleware passe en runtime Node. Avant tout rendu, préchargements et requêtes RSC compris, il relit en base le rôle, les permissions, les modules mini-admin, le compte, l'entreprise et la persona de démo, puis applique une table unique (`src/lib/permissions/page-access.ts`).
+  - Réponses : mauvais espace → 307 vers l'accueil du rôle ; aucun écran ouvert → 403 ; compte ou entreprise indisponible → `/login` ; base en panne → 503.
+  - Preuves : `tests/auth-role-real-guard.test.ts` (vrai chemin, compte désactivé, entreprise suspendue, démo expirée) ; `tests/e2e/auth-role-pages.spec.ts` 7/7 ; vérificateur final : 307 en HTML, RSC et préchargement, 0 erreur console.
+  - Limites acceptées : rôle gardé 5 s en mémoire par instance ; écrans déjà en cache client jusqu'à 180 s après le retrait d'un module ou une suspension (les API relisent la base à chaque appel).
+  - Rapport : `docs/rapports/agents/2026-10-29-auth-role.md`.
 
 - [ ] **RECETTE-2810 — Défauts mineurs de la recette du 28 octobre.** Reprendre les défauts mineurs et les points à trancher relevés par les deux recettes navigateur de l'intégration `integration/2026-10-28` (`outputs/recette-agents/integration/rapport.md` sur fcc0a5c et `outputs/recette-agents/integration-correctifs/rapport.md` sur 013d1fc puis 557e9d5), sans bloquer l'intégration : aucun défaut bloquant ni important n'a été relevé.
 
@@ -1541,6 +1580,16 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Source / dépendance / blocage : deux recettes sur tutelliv-dev, audit Codex et rapports de branche. Décisions produit des points 6, 7, 11 et 12 : propriétaire (questionnaire).
 
   État : ouverte, non commencée (liste établie le 29 octobre 2026). Le défaut 1 est un défaut de spécification, pas du produit : manuellement, l'interrupteur persiste.
+
+  Avancement du 29 octobre 2026 :
+  - **Fait** : point 1 (trois specs réparées, attente du PATCH, assertion alignée) ; point 3 (`favicon.ico` et `icon.png`) ; point 2 en partie (titre accessible de la boîte de preuve, dimensions du logo ; avertissements LCP non traités).
+  - **Relances e-mail (audit Codex C5)** : classement des réponses Resend, contenu figé à la première tentative, fenêtre de 23 h, état « Envoi non confirmé », limiteur de connexion corrigé sous concurrence ; verrous exercés sur PostgreSQL réel (`npm run test:pg-locks`). Rapport : `docs/rapports/agents/2026-10-29-relances-email.md`.
+  - **Nouveaux points du vérificateur final** :
+    - 16. `tests/e2e/demo3-payments.spec.ts:30-35` compte les boutons « Relancer » sans attendre la liste, donc il est toujours ignoré ; et il attend « Relancée » désactivé alors qu'une relance non envoyée (e-mail désactivé) laisse « Relancer » actif. À réécrire.
+    - 17. Une relance refusée avec certitude deux fois de suite (403 ou 422) peut s'afficher « Envoi non confirmé » et bloquer « Relancer » 24 h (`invoice-reminder.service.ts:323`, `:406`). Pas de double envoi.
+    - 18. Limiteur : un pool saturé (P2024) refuse toutes les connexions 5 s en 503 (choix documenté, à surveiller en préproduction).
+    - 19. La carte du dispatch est sur `/dispatch/map` : préciser la non-régression du skill de recette.
+  - **Limite acceptée** : une relance héritée close en NOT_SENT_* après un 500 accepté par l'ancien code reste indétectable. Aucun environnement n'a jamais eu Resend configuré, donc aucun envoi accepté hérité n'existe.
 
   Défauts mineurs de la recette de l'intégration :
 
