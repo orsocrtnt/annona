@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as podEvidence from "../src/domains/delivery/pod-evidence";
+import { countingSender, jobPayloadDb } from "./helpers/job-email-window";
 
 type Row = Record<string, unknown>;
 
@@ -36,7 +37,7 @@ function fixture(settings?: {
   deliveryAlerts?: boolean;
   invoiceAlerts?: boolean;
   emailNotifications?: boolean;
-}, options?: { companySettings?: unknown; appUrl?: string }) {
+}, options?: { companySettings?: unknown; appUrl?: string; send?: (input: never) => Promise<unknown> }) {
   const notifications = new Map<string, Row>();
   const emails: Array<{ idempotencyKey: string | null; body: string }> = [];
   const providerDeliveries = new Map<string, string>();
@@ -92,6 +93,7 @@ function fixture(settings?: {
           subject: string;
           text: string;
         }) => {
+          if (options?.send) return options.send(input as never);
           emails.push({
             idempotencyKey: input.idempotencyKey,
             body: JSON.stringify(input),
@@ -127,6 +129,28 @@ const payload = {
   reference: "LIV-TEST",
   deliveryId: "delivery-a",
 };
+
+test("C5 : notification — fenêtre de la tâche ; hors fenêtre l'e-mail n'est jamais renvoyé, l'in-app reste", async () => {
+  const now = new Date("2026-10-28T10:00:00.000Z");
+  const HOUR = 3_600_000;
+  const { fetches, send } = countingSender(now);
+  const { payloads, windowFor } = jobPayloadDb();
+  const f = fixture(undefined, { send });
+  const eventKey = "client-notification:delivery:delivery-a:c5";
+  await f.service.deliverClientNotificationJob(payload, eventKey, windowFor({ id: "j1", createdAt: now, previouslyAttempted: false }));
+  assert.equal(fetches.length, 1);
+  assert.ok(payloads.get("j1")?.emailFirstAttemptAt, "marqueur inscrit avant l'appel");
+  // Tâche héritée déjà exécutée sans marqueur, créée il y a 24 h ; puis marqueur vieux de 24 h.
+  for (const [id, legacy] of [["j2", true], ["j3", false]] as const) {
+    if (!legacy) payloads.set(id, { emailFirstAttemptAt: new Date(now.getTime() - 24 * HOUR).toISOString() });
+    const error = await f.service.deliverClientNotificationJob(payload, `${eventKey}:${id}`, windowFor({ id, createdAt: new Date(now.getTime() - 24 * HOUR), previouslyAttempted: legacy }))
+      .then(() => assert.fail("doit refuser"), (e: unknown) => e as Error & { permanent?: boolean });
+    assert.equal(error.message, "EMAIL_IDEMPOTENCY_WINDOW_EXPIRED");
+    assert.equal(error.permanent, true, "tâche FAILED non confirmée, sans renvoi");
+  }
+  assert.equal(fetches.length, 1, "aucun appel hors fenêtre");
+  assert.equal(f.notifications.size, 3, "la notification in-app est conservée");
+});
 
 test("rejouer une notification conserve une ligne et la même clé fournisseur", async () => {
   const f = fixture();

@@ -8,6 +8,8 @@ import ts from "typescript";
 import { Prisma } from "@prisma/client";
 import { describeSignupValidation, signupActionSchema, signupIdentityDetailsSchema, signupIdentitySchema } from "../src/lib/validations/signup";
 import { buildSignupPlanComparison } from "../src/features/auth/signup-plan-comparison";
+import { emailSendOutcome } from "../src/lib/email/transactional-email";
+import { countingSender, jobPayloadDb } from "./helpers/job-email-window";
 
 function loadSignupService(overrides: Record<string, unknown> = {}) {
   const module = { exports: {} };
@@ -877,6 +879,39 @@ test("SIGNUP-1 : activation verrouillée, atomique et conditionnée par e-mail +
   assert.match(source, /if \(journey\.status === \"ACTIVATED\" && journey\.companyId\)/);
 });
 
+test("C5 : bienvenue — fenêtre de la tâche (première tentative, reprise, tâche héritée ou marqueur > 23 h)", async () => {
+  const now = new Date("2026-10-28T10:00:00.000Z");
+  const HOUR = 3_600_000;
+  const { fetches, send } = countingSender(now);
+  const { payloads, windowFor } = jobPayloadDb();
+  const service = loadSignupService({
+    "@/services/prisma/client": { prisma: { signupJourney: { findFirst: async () => ({
+      companyName: "E2E Coursiers", planCode: "ESSENTIEL", billingInterval: "MONTHLY",
+      company: { users: [{ email: "owner@example.test", firstName: "Ana" }] },
+    }) } } },
+    "@/lib/email/transactional-email": { sendTransactionalEmail: send },
+  });
+  const payload = { kind: "SIGNUP_WELCOME", signupId: "s1", companyId: "c1", userId: "u1" };
+  const expired = (promise: Promise<unknown>) => promise.then(() => assert.fail("doit refuser"), (error: unknown) => {
+    assert.equal((error as Error).message, "EMAIL_IDEMPOTENCY_WINDOW_EXPIRED");
+    assert.equal(emailSendOutcome(error), "unconfirmed");
+    assert.equal((error as { permanent?: boolean }).permanent, true, "tâche FAILED sans nouvel essai");
+  });
+  // Nouvelle tâche, créée il y a 30 h mais jamais tentée (cron arrêté) : envoyée, marqueur inscrit.
+  await service.deliverSignupWelcomeEmail(payload, "signup-welcome:s1", windowFor({ id: "j1", createdAt: new Date(now.getTime() - 30 * HOUR), previouslyAttempted: false }));
+  assert.equal(fetches.length, 1);
+  assert.ok(payloads.get("j1")?.emailFirstAttemptAt);
+  // Reprise dans la fenêtre du marqueur : même clé, envoyée (dédupliquée par le fournisseur).
+  await service.deliverSignupWelcomeEmail(payload, "signup-welcome:s1", windowFor({ id: "j1", createdAt: new Date(now.getTime() - 30 * HOUR), previouslyAttempted: true }));
+  assert.equal(fetches.length, 2);
+  // Tâche héritée déjà exécutée, sans marqueur, créée il y a 24 h : non confirmée, aucun appel.
+  await expired(service.deliverSignupWelcomeEmail(payload, "signup-welcome:s2", windowFor({ id: "j2", createdAt: new Date(now.getTime() - 24 * HOUR), previouslyAttempted: true })));
+  // Marqueur inscrit il y a 24 h : non confirmée, aucun appel.
+  payloads.set("j3", { emailFirstAttemptAt: new Date(now.getTime() - 24 * HOUR).toISOString() });
+  await expired(service.deliverSignupWelcomeEmail(payload, "signup-welcome:s3", windowFor({ id: "j3", createdAt: new Date(now.getTime() - 25 * HOUR), previouslyAttempted: true })));
+  assert.equal(fetches.length, 2, "aucun appel hors fenêtre");
+});
+
 test("SIGNUP-1 : la bienvenue est durable, idempotente et découplée de l'activation", () => {
   const signup = readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8");
   const jobs = readFileSync(resolve("src/domains/operations/operation-job.service.ts"), "utf8");
@@ -884,7 +919,7 @@ test("SIGNUP-1 : la bienvenue est durable, idempotente et découplée de l'activ
   assert.match(signup, /enqueueOperationJob\(tx/);
   assert.match(signup, /kickOperationJob\(activation\.welcomeJobId\)/);
   assert.match(signup, /idempotencyKey: eventKey/);
-  assert.match(jobs, /deliverSignupWelcomeEmail\(job\.payload, job\.jobKey\)/);
+  assert.match(jobs, /deliverSignupWelcomeEmail\(job\.payload, job\.jobKey, emailWindow\(\)\)/);
 });
 
 test("SIGNUP-1 : aucun ancien endpoint ni retour navigateur ne peut provisionner directement", () => {

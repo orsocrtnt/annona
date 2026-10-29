@@ -87,13 +87,25 @@ test("DEMO-3 relance : après 24 h, une nouvelle relance est possible", async ()
   assert.equal(db.reminders.length, 2);
 });
 
-test("DEMO-3 relance : un envoi précédent en échec définitif ne bloque pas une nouvelle relance", async () => {
+test("DEMO-3 relance : un échec définitif sans appel au fournisseur ne bloque pas une nouvelle relance", async () => {
   const { db, remind } = setup([invoice({ id: "inv" })]);
   await remind();
   db.jobs[0]!.status = "FAILED";
+  db.jobs[0]!.lastError = "INVOICE_REMINDER_PAYLOAD_INVALID";
   const retry = await remind();
   assert.equal(retry?.duplicate, false);
   assert.equal(db.reminders.length, 2);
+});
+
+test("C5 : une relance en file dont la tâche a échoué après un possible appel reste bloquante (non confirmée)", async () => {
+  const { db, remind } = setup([invoice({ id: "inv" })]);
+  await remind();
+  db.jobs[0]!.status = "FAILED";
+  db.jobs[0]!.lastError = "EMAIL_PROVIDER_HTTP_500";
+  const retry = await remind();
+  assert.equal(retry?.duplicate, true);
+  assert.equal(retry?.reminder.result, "SEND_UNCONFIRMED");
+  assert.equal(db.reminders.length, 1);
 });
 
 test("DEMO-3 relance : e-mail non configuré, relance tracée « non envoyée » sans erreur ni tâche", async () => {
@@ -218,7 +230,9 @@ test("DEMO-3 relance (envoi) : une panne du fournisseur est rejouée par la tâc
   const { db, deps, deliver } = deliverySetup();
   deps.send = async () => { throw new Error("EMAIL_PROVIDER_HTTP_503"); };
   await assert.rejects(deliver(), /EMAIL_PROVIDER_HTTP_503/);
-  assert.equal(db.reminders[0]!.result, "QUEUED", "reste en file pour le rejeu");
+  // C5 : un 503 (ou une erreur non qualifiée) ne prouve pas que rien n'est parti : la réservation
+  // est gardée et la tâche reprendra avec la même clé ; seul un refus certain la remet en file.
+  assert.equal(db.reminders[0]!.result, "SENDING", "réservation gardée pour la reprise, même clé");
 });
 
 test("DEMO-3 relance (envoi) : aucune injection d'en-tête par la référence ou le nom d'entreprise", async () => {

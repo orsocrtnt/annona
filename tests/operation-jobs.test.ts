@@ -49,6 +49,8 @@ function load<T>(deps: Record<string, unknown>): T {
 
 function fixture(options?: {
   failNotification?: boolean;
+  deferNotificationUntil?: Date;
+  calls?: Array<{ handler: string; arg: unknown }>;
   failFirstNotification?: boolean;
   slowFirstDispatchFailure?: boolean;
 }) {
@@ -93,6 +95,9 @@ function fixture(options?: {
       if (value && typeof value === "object" && "increment" in (value as Row)) {
         (job as unknown as Row)[key] =
           ((job as unknown as Row)[key] as number) + ((value as Row).increment as number);
+      } else if (value && typeof value === "object" && "decrement" in (value as Row)) {
+        (job as unknown as Row)[key] =
+          ((job as unknown as Row)[key] as number) - ((value as Row).decrement as number);
       } else {
         (job as unknown as Row)[key] = value;
       }
@@ -168,10 +173,24 @@ function fixture(options?: {
         return { assigned: true };
       },
     },
+    "@/domains/invoice/invoice-reminder.service": {
+      deliverInvoiceReminderJob: async (_payload: unknown, _jobKey: string, deps: unknown) => {
+        options?.calls?.push({ handler: "reminder", arg: deps });
+      },
+    },
+    "@/domains/signup/signup.service": {
+      deliverSignupWelcomeEmail: async (_payload: unknown, _jobKey: string, window: unknown) => {
+        options?.calls?.push({ handler: "signup", arg: window });
+      },
+    },
     "@/domains/client-portal/notify.service": {
-      deliverClientNotificationJob: async (_payload: unknown, jobKey: string) => {
+      deliverClientNotificationJob: async (_payload: unknown, jobKey: string, window: unknown) => {
+        options?.calls?.push({ handler: "notify", arg: window });
         executions.push(`notification:${jobKey}`);
         notificationAttempts += 1;
+        if (options?.deferNotificationUntil && notificationAttempts === 1) {
+          throw Object.assign(new Error("INVOICE_REMINDER_SEND_IN_PROGRESS"), { deferUntil: options.deferNotificationUntil });
+        }
         if (options?.failNotification || (options?.failFirstNotification && notificationAttempts === 1)) {
           throw new Error("PROVIDER\nTEMPORARILY_UNAVAILABLE");
         }
@@ -329,6 +348,76 @@ test("le retard compte aussi les tâches PROCESSING dont le bail a expiré sans 
     lockedAt: new Date(f.base.getTime() - 60_000),
   });
   assert.equal(await f.service.countOverduePendingJobs(f.base), 1);
+});
+
+test("C5 : une tâche reportée (rien n'a été tenté) est replanifiée sans consommer d'essai", async () => {
+  const until = new Date("2026-10-05T12:05:01.000Z");
+  const f = fixture({ deferNotificationUntil: until });
+  const job = f.addJob({ jobKey: "client-notification:invoice-reminder:r1", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY_STATUS", companyId: "company-a" } });
+  await f.service.processOperationJob(job.id, f.base);
+  assert.equal(f.jobs[0]?.status, "PENDING");
+  assert.equal(f.jobs[0]?.attempts, 0, "essai rendu");
+  assert.equal(f.jobs[0]?.nextAttemptAt.getTime(), until.getTime());
+  assert.equal(f.jobs[0]?.lastError, "INVOICE_REMINDER_SEND_IN_PROGRESS");
+  await f.service.processOperationJob(job.id, until);
+  assert.equal(f.jobs[0]?.status, "SUCCEEDED");
+  assert.equal(f.jobs[0]?.attempts, 1);
+});
+
+test("C5 : « déjà exécutée » est lu AVANT la prise (essais ou lastError, y compris après « relancer les échecs »)", async () => {
+  const calls: Array<{ handler: string; arg: unknown }> = [];
+  const f = fixture({ calls });
+  const fresh = f.addJob({ jobKey: "client-notification:invoice-reminder:r1", type: "CLIENT_NOTIFICATION", payload: { kind: "INVOICE_REMINDER" } });
+  const retried = f.addJob({ jobKey: "client-notification:invoice-reminder:r2", type: "CLIENT_NOTIFICATION", payload: { kind: "INVOICE_REMINDER" }, attempts: 0, lastError: "EMAIL_PROVIDER_HTTP_500" });
+  const welcome = f.addJob({ jobKey: "signup-welcome:s1", type: "CLIENT_NOTIFICATION", payload: { kind: "SIGNUP_WELCOME" } });
+  const notify = f.addJob({ jobKey: "client-notification:delivery:d1:e1", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY" } });
+  for (const job of [fresh, retried, welcome, notify]) await f.service.processOperationJob(job.id, f.base);
+  assert.deepEqual(calls.filter((call) => call.handler === "reminder").map((call) => JSON.parse(JSON.stringify(call.arg))), [{ previouslyAttempted: false }, { previouslyAttempted: true }]);
+  assert.equal(typeof calls.find((call) => call.handler === "signup")?.arg, "function", "bienvenue : fenêtre de la tâche");
+  assert.equal(typeof calls.find((call) => call.handler === "notify")?.arg, "function", "notification : fenêtre de la tâche");
+});
+
+test("C5 : une tâche reportée entre la lecture et la prise n'est pas reprise aussitôt", async () => {
+  const f = fixture();
+  const job = f.addJob({ jobKey: "client-notification:delivery:d2:e1", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY" } });
+  const stale = { ...job };
+  // Pendant la lecture d'E2, E1 a pris puis reporté la tâche (essai rendu, échéance future).
+  job.nextAttemptAt = new Date(f.base.getTime() + 5 * 60_000);
+  job.lastError = "INVOICE_REMINDER_SEND_IN_PROGRESS";
+  const original = f.prisma.operationJob.findUnique;
+  let reads = 0;
+  f.prisma.operationJob.findUnique = async (args: { where: Row }) => (reads++ === 0 ? { ...stale } : original(args));
+  await f.service.processOperationJob(job.id, f.base);
+  assert.equal(f.executions.length, 0, "pas d'exécution avant l'échéance");
+  assert.equal(f.jobs[0]?.status, "PENDING");
+  assert.equal(f.jobs[0]?.attempts, 0);
+});
+
+test("C5 : fenêtre e-mail d'une tâche — marqueur inscrit une fois, tâche héritée bornée par sa création", async () => {
+  const f = fixture();
+  const created = new Date("2026-10-27T10:00:00.000Z");
+  const payloads = new Map<string, Record<string, unknown>>();
+  const db = {
+    $executeRaw: async (_strings: TemplateStringsArray, marker: string, id: string) => {
+      const payload = payloads.get(id) ?? {};
+      if ("emailFirstAttemptAt" in payload) return 0;
+      payloads.set(id, { ...payload, emailFirstAttemptAt: marker });
+      return 1;
+    },
+    $queryRaw: async (_strings: TemplateStringsArray, id: string) => [{ first: (payloads.get(id)?.emailFirstAttemptAt as string | undefined) ?? null }],
+  };
+  type Window = (job: { id: string; createdAt: Date; previouslyAttempted: boolean }, db: unknown) => () => Promise<Date | null>;
+  const window = (f.service as unknown as { jobEmailReplayWindow: Window }).jobEmailReplayWindow;
+  // Nouvelle tâche : première tentative (null), marqueur = maintenant, relu ensuite sans réécriture.
+  assert.equal(await window({ id: "j1", createdAt: created, previouslyAttempted: false }, db)(), null);
+  const stamp = payloads.get("j1")!.emailFirstAttemptAt as string;
+  assert.equal((await window({ id: "j1", createdAt: created, previouslyAttempted: true }, db)())?.toISOString(), stamp);
+  // Tâche héritée déjà exécutée sans marqueur : fenêtre = création, inscrite comme marqueur.
+  assert.equal((await window({ id: "j2", createdAt: created, previouslyAttempted: true }, db)())?.getTime(), created.getTime());
+  assert.equal(payloads.get("j2")!.emailFirstAttemptAt, created.toISOString());
+  // Marqueur illisible : fenêtre dépassée (prudence).
+  payloads.set("j3", { emailFirstAttemptAt: "pas une date" });
+  assert.equal((await window({ id: "j3", createdAt: created, previouslyAttempted: false }, db)())?.getTime(), 0);
 });
 
 test("trois échecs bornés deviennent visibles sans boucle infinie", async () => {

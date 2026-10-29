@@ -8,7 +8,7 @@ type EmailEnvironment = Record<string, string | undefined>;
 type EmailFetcher = (
   input: string | URL | Request,
   init?: RequestInit
-) => Promise<Pick<Response, "ok" | "status">>;
+) => Promise<Pick<Response, "ok" | "status"> & { text?: () => Promise<string> }>;
 
 export type TransactionalEmailConfiguration = {
   mode: TransactionalEmailMode;
@@ -21,17 +21,31 @@ export type TransactionalEmailConfiguration = {
     | "missing-test-recipient";
 };
 
+/**
+ * Début de la fenêtre de déduplication : une date, `null` (aucune tentative antérieure possible), ou
+ * un résolveur appelé juste avant l'appel au fournisseur, qui enregistre cette tentative et renvoie
+ * l'instant de la première tentative antérieure (null si c'est la première).
+ */
+export type ReplayWindowStart = Date | null | (() => Promise<Date | null>);
+
 export type TransactionalEmailInput = {
   to: string;
   subject: string;
   text: string;
   idempotencyKey: string;
+  /**
+   * Instant le plus ancien auquel une tentative précédente sous cette clé a pu atteindre le
+   * fournisseur (création de la relance ou de la tâche durable) ; `null` quand aucune tentative
+   * antérieure n'a pu être acceptée. Obligatoire : chaque appelant doit se prononcer.
+   */
+  replayWindowStart: ReplayWindowStart;
 };
 
 type SendOptions = {
   env?: EmailEnvironment;
   fetcher?: EmailFetcher;
   signal?: AbortSignal;
+  now?: Date;
 };
 
 function parseMode(value: string | undefined): TransactionalEmailMode | null {
@@ -67,17 +81,72 @@ function safeHeader(value: string, max: number) {
   return value.replace(/[\r\n]+/g, " ").trim().slice(0, max);
 }
 
-const PROVIDER_REJECTION = /^EMAIL_PROVIDER_HTTP_\d{3}$/;
+/**
+ * Déduplication Resend : une clé d'idempotence est conservée 24 h ; même clé + même contenu
+ * renvoie la réponse d'origine sans renvoyer l'e-mail.
+ * Source : https://resend.com/docs/dashboard/emails/idempotency-keys
+ */
+export const EMAIL_PROVIDER_IDEMPOTENCY_WINDOW_HOURS = 24;
+/** Reprise automatique sous la même clé : 23 h après le début de fenêtre, 1 h de marge (horloges, durée de requête). */
+export const EMAIL_SAFE_REPLAY_HOURS = 23;
+const SAFE_REPLAY_MS = EMAIL_SAFE_REPLAY_HOURS * 60 * 60 * 1000;
 
 /**
- * Issue d'un envoi en échec (C4) :
- * - "rejected" : refus certain, réponse HTTP explicite du fournisseur (4xx ou 5xx) ; rien n'est parti ;
- * - "unknown" : expiration, erreur réseau, réponse illisible ou erreur non qualifiée ; le fournisseur
- *   a peut-être accepté l'e-mail. Seule une reprise avec la même clé d'idempotence est sûre.
+ * Issue d'un envoi en échec (C4, C5) :
+ * - "rejected" : refus certain de CETTE requête, rien n'est parti avec elle ; elle peut être rejouée
+ *   (une tentative antérieure à l'issue inconnue reste, elle, possiblement acceptée : c'est à
+ *   l'appelant de ne pas l'oublier) ;
+ * - "unknown" : peut-être parti (expiration, réseau, 5xx, 409 requête concurrente, code non
+ *   documenté, réponse illisible) ; seule une reprise avec la même clé ET le même contenu, dans la
+ *   fenêtre de déduplication, est sûre ;
+ * - "unconfirmed" : état terminal, jamais de reprise automatique (ni même clé, ni nouvelle clé) :
+ *   409 `invalid_idempotent_request` (la clé a déjà servi avec un autre contenu : un envoi a pu
+ *   avoir lieu) ou fenêtre de déduplication dépassée pour une reprise.
  */
-export function emailSendOutcome(error: unknown): "rejected" | "unknown" {
-  if (error instanceof Error && (error as { providerRejected?: unknown }).providerRejected === true) return "rejected";
-  return error instanceof Error && PROVIDER_REJECTION.test(error.message) ? "rejected" : "unknown";
+export type EmailSendOutcome = "rejected" | "unknown" | "unconfirmed";
+
+/**
+ * Codes Resend qui prouvent que la requête n'a pas été traitée (https://resend.com/docs/api-reference/errors) :
+ * 400 validation / clé invalide, 401 clé API, 403 domaine ou clé, 404, 405, 422 champ manquant,
+ * 429 débit ou quota. Tout autre code reste une issue inconnue (409 concurrent, 500, 503, passerelle…).
+ */
+const REJECTED_HTTP_STATUSES = new Set([400, 401, 403, 404, 405, 422, 429]);
+
+export function classifyProviderResponse(status: number, errorName: string | null): EmailSendOutcome {
+  if (status === 409 && errorName === "invalid_idempotent_request") return "unconfirmed";
+  if (REJECTED_HTTP_STATUSES.has(status)) return "rejected";
+  return "unknown";
+}
+
+/** Vrai si une reprise sous la même clé est encore dédupliquée par le fournisseur. */
+export function isIdempotentReplaySafe(replayWindowStart: Date | null, now: Date): boolean {
+  return replayWindowStart === null || now.getTime() < replayWindowStart.getTime() + SAFE_REPLAY_MS;
+}
+
+/** Erreur qualifiée ; "unconfirmed" est aussi une erreur permanente pour les tâches durables. */
+function emailError(message: string, outcome: EmailSendOutcome) {
+  return Object.assign(new Error(message), {
+    emailOutcome: outcome,
+    ...(outcome === "unconfirmed" ? { permanent: true } : {}),
+  });
+}
+
+/** Seule une erreur qualifiée par ce module est un refus certain ; tout le reste est inconnu. */
+export function emailSendOutcome(error: unknown): EmailSendOutcome {
+  const outcome = error instanceof Error ? (error as { emailOutcome?: unknown }).emailOutcome : undefined;
+  return outcome === "rejected" || outcome === "unconfirmed" ? outcome : "unknown";
+}
+
+/** Champ `name` du corps d'erreur Resend ({ statusCode, message, name }) ; null si illisible. */
+async function providerErrorName(response: { text?: () => Promise<string> }): Promise<string | null> {
+  try {
+    if (typeof response.text !== "function") return null;
+    const parsed: unknown = JSON.parse((await response.text()).slice(0, 4096));
+    const name = parsed && typeof parsed === "object" ? (parsed as { name?: unknown }).name : null;
+    return typeof name === "string" && /^[a-z_]{1,64}$/.test(name) ? name : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function sendTransactionalEmail(
@@ -92,7 +161,7 @@ export async function sendTransactionalEmail(
 
   const from = (env.MAIL_FROM || env.EMAIL_FROM)!.trim();
   const intendedRecipient = input.to.trim().toLowerCase();
-  if (!hasAddress(intendedRecipient)) throw new Error("EMAIL_RECIPIENT_INVALID");
+  if (!hasAddress(intendedRecipient)) throw emailError("EMAIL_RECIPIENT_INVALID", "rejected");
 
   const testMode = configuration.mode === "test";
   const recipient = testMode
@@ -110,7 +179,14 @@ export async function sendTransactionalEmail(
     EMAIL_IDEMPOTENCY_KEY_MAX
   );
   if (!subject || !text.trim() || !idempotencyKey) {
-    throw new Error("EMAIL_CONTENT_INVALID");
+    throw emailError("EMAIL_CONTENT_INVALID", "rejected");
+  }
+  // Au-delà de la fenêtre, le fournisseur ne déduplique plus : une reprise pourrait doubler l'e-mail.
+  const replayWindowStart = typeof input.replayWindowStart === "function"
+    ? await input.replayWindowStart()
+    : input.replayWindowStart;
+  if (!isIdempotentReplaySafe(replayWindowStart, options.now ?? new Date())) {
+    throw emailError("EMAIL_IDEMPOTENCY_WINDOW_EXPIRED", "unconfirmed");
   }
 
   const response = await (options.fetcher ?? fetch)(
@@ -132,8 +208,12 @@ export async function sendTransactionalEmail(
     }
   );
   if (!response.ok) {
-    // Réponse explicite du fournisseur : refus certain (l'en-tête Idempotency-Key est toujours envoyé).
-    throw Object.assign(new Error(`EMAIL_PROVIDER_HTTP_${response.status}`), { providerRejected: true });
+    // Le code HTTP seul ne prouve pas « rien n'est parti » (409, 5xx) : classement par code et `name`.
+    const name = await providerErrorName(response);
+    throw emailError(
+      `EMAIL_PROVIDER_HTTP_${response.status}${name ? `:${name}` : ""}`,
+      classifyProviderResponse(response.status, name)
+    );
   }
   return {
     status: "sent" as const,
