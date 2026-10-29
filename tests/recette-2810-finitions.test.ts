@@ -17,3 +17,10 @@ test("RECETTE-2810 point 4 : le super-administrateur n'appelle pas les API d'éc
   assert.equal(canUseConversations(undefined), false);
   for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"]) assert.equal(canUseConversations(role), true);
 });
+
+test("RECETTE-2810 point 4 : la liste de rôles de l'interface reste celle de conversationAuth", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { CONVERSATION_ROLES } = await import("../src/lib/constants/conversation-roles");
+  const source = readFileSync("src/lib/api/conversation-auth.ts", "utf8");
+  assert.ok(source.includes(JSON.stringify([...CONVERSATION_ROLES]).replace(/,/g, ", ")));
+});
