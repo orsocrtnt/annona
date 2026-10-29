@@ -61,7 +61,43 @@ test("UX-NAV-SCROLL : site public, un lien vers une autre page démarre en haut"
   await expect.poll(() => scrollTop(page)).toBe(0);
 });
 
-test("UX-NAV-SCROLL : une ancre ne remonte pas, un changement de recherche seul ne remonte pas", async ({ page }) => {
+for (const size of widths) {
+  test(`UX-NAV-SCROLL : portail client, /portal/settings vers /portal/orders démarre en haut (${size.width} px)`, async ({ page }) => {
+    await page.setViewportSize(size);
+    const login = await page.request.post("/api/auth/login", {
+      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    });
+    expect(login.status()).toBe(200);
+    try {
+      await page.goto("/portal/settings");
+      await scrollDown(page, 400);
+      const link = page.getByRole("link", { name: /Commandes/ }).first();
+      if (size.width < 1024 && !(await link.isVisible())) await page.getByRole("button", { name: /menu/i }).first().click();
+      await link.click();
+      await page.waitForURL(/\/portal\/orders/);
+      await expect.poll(() => scrollTop(page)).toBe(0);
+    } finally {
+      await page.request.post("/api/auth/logout").catch(() => undefined);
+    }
+  });
+}
+
+test("UX-NAV-SCROLL : une ancre garde sa position (pas de retour en haut)", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("/");
+  await scrollDown(page, 300);
+  // Ancre réelle posée par le test sur un élément bas de page : le hash seul ne change pas le chemin.
+  await page.evaluate(() => {
+    const target = document.createElement("div");
+    target.id = "e2e-ancre";
+    target.style.cssText = "position:absolute;top:1200px;height:10px";
+    document.body.appendChild(target);
+    window.location.hash = "e2e-ancre";
+  });
+  await expect.poll(() => scrollTop(page)).toBeGreaterThan(600);
+});
+
+test("UX-NAV-SCROLL : un changement de recherche seul ne remonte pas", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto("/");
   await scrollDown(page, 500);

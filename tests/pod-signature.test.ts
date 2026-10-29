@@ -9,7 +9,7 @@ import {
   validatePodSignature,
 } from "../src/lib/storage/pod-signature";
 import { isPodPhotoPathForDelivery } from "../src/lib/storage/pod";
-import { assertPodEvidence, DEFAULT_PROOF_RULES, parseProofRules } from "../src/domains/delivery/pod-evidence";
+import { assertPodEvidence, DEFAULT_PROOF_RULES, isPodEvidenceReady, parseProofRules } from "../src/domains/delivery/pod-evidence";
 import {
   createQueuedDriverAction,
   enqueueDriverAction,
@@ -160,4 +160,13 @@ test("RECETTE-2810 point 8 : une action en premier envoi n'affiche pas « Réess
   assert.equal(actionNeedsAttention(base, false), true);
   assert.equal(actionNeedsAttention({ ...base, attempts: 1, lastError: "réseau" }, true), true);
   assert.equal(actionNeedsAttention({ ...base, state: "failed" }, true), true);
+});
+
+test("RECETTE-2810 point 7 : refus de signer avec un nom d'un caractère n'active pas « Valider »", () => {
+  const base = { hasSignature: false, refusedToSign: true, signatureRequired: false, name: "", reason: "Absent" };
+  assert.equal(isPodEvidenceReady({ ...base, name: "M" }), false);
+  assert.equal(isPodEvidenceReady({ ...base, name: "Mme" }), true);
+  assert.equal(isPodEvidenceReady(base), true);
+  assert.equal(isPodEvidenceReady({ ...base, reason: "ab" }), false);
+  assert.equal(isPodEvidenceReady({ ...base, refusedToSign: false, hasSignature: true, name: "M" }), false);
 });

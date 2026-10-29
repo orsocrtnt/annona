@@ -14,7 +14,7 @@ function routeFiles(dir: string): string[] {
 
 test("aucune route API ne lit request.json() sans protection", () => {
   const offenders = routeFiles(join(process.cwd(), "src/app/api")).filter((file) =>
-    /request\.json\(\)(?!\.catch)/.test(readFileSync(file, "utf8"))
+    /(?<!NextResponse)\.json\(\)(?!\.catch)/.test(readFileSync(file, "utf8"))
   );
   assert.deepEqual(offenders, []);
 });
@@ -49,4 +49,28 @@ test("PATCH /api/company/dispatch répond 400 (et n'écrit rien) sur un JSON inv
     assert.equal(response.status, 400, `corps ${JSON.stringify(body)}`);
   }
   assert.deepEqual(writes, []);
+});
+
+test("non authentifié + JSON invalide sur dispatch : 401 avant tout 400", async () => {
+  const { readFileSync: read } = await import("node:fs");
+  const { runInNewContext } = await import("node:vm");
+  const ts = (await import("typescript")).default;
+  const { NextResponse } = await import("next/server");
+  const module = { exports: {} as Record<string, (request: Request) => Promise<Response>> };
+  const source = ts.transpileModule(read("src/app/api/company/dispatch/route.ts", "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+  }).outputText;
+  const dependencies: Record<string, unknown> = {
+    "next/server": { NextResponse },
+    "@/lib/api/auth-guard": {
+      requireStaffRole: async () => ({ error: NextResponse.json({ error: "Non authentifié" }, { status: 401 }) }),
+      requireRole: () => null,
+      getCompanyId: () => "c",
+    },
+    "@/domains/company/dispatch-settings.service": {},
+    "@/lib/validations/dispatch-settings": {},
+  };
+  runInNewContext(source, { Error, exports: module.exports, module, require: (id: string) => dependencies[id] });
+  const response = await module.exports.PATCH!(new Request("http://local/api/company/dispatch", { method: "PATCH", body: "{pas du json" }));
+  assert.equal(response.status, 401);
 });

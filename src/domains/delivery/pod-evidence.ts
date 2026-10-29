@@ -30,6 +30,21 @@ export const MAX_REFUSAL_REASON = 200;
 export const podRecipientNameSchema = z.string().trim().min(2).max(MAX_RECIPIENT_NAME);
 export const podSignatureRefusalSchema = z.string().trim().min(3).max(MAX_REFUSAL_REASON);
 
+/** Règle partagée avec l'interface livreur : un nom saisi fait au moins 2 caractères ; obligatoire avec une signature. */
+export function isPodEvidenceReady(input: {
+  hasSignature: boolean;
+  refusedToSign: boolean;
+  signatureRequired: boolean;
+  name: string;
+  reason: string;
+}): boolean {
+  const name = input.name.trim();
+  const nameOk = name.length === 0 || name.length >= 2;
+  if (input.refusedToSign) return input.reason.trim().length >= 3 && nameOk;
+  if (input.hasSignature) return name.length >= 2;
+  return !input.signatureRequired && nameOk;
+}
+
 export type PodEvidenceErrorCode =
   | "POD_SIGNATURE_NOT_ALLOWED"
   | "POD_SIGNATURE_CONFLICT"

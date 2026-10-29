@@ -10,7 +10,7 @@
 - 4 : l'encart d'échanges/alertes n'est plus monté pour le super-administrateur (`canUseConversations`, rôles partagés avec `conversationAuth`). Aucun droit élargi.
 - 5 : `effectiveInvoiceStatus` (calcul à la lecture, même règle que Paiements) utilisé par la liste et la fiche commande : « En retard · N j ».
 - 6 : code déjà conforme (`canRemind` reste vrai après une relance non envoyée) ; `demo3-payments.spec.ts` réécrit (attente de la liste, assertion selon l'état final).
-- 7 : serveur et interface exigeaient déjà un nom de 2 caractères avec signature ; test ajouté (1 caractère refusé, photo seule : nom facultatif).
+- 7 : le serveur refusait déjà un nom de moins de 2 caractères ; l interface le laissait passer avec un refus de signer (corrigé, règle partagée isPodEvidenceReady) ; test ajouté (1 caractère refusé, photo seule : nom facultatif).
 - 8 : la bannière de la file n'apparaît plus pendant le premier envoi (`actionNeedsAttention`).
 - 12 : `ClientDriverInfo` partagé fiche livraison / fiche commande (prénom + téléphone selon réglage, mêmes données serveur).
 - 17 : 18 routes lisaient `request.json()` sans protection ; `.catch(() => null)` puis validation Zod donne 400. Garde-fou `tests/api-json-body-guard.test.ts`. Sans nouvel import : aucune simulation existante cassée.

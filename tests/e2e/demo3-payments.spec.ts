@@ -25,10 +25,12 @@ test("DEMO-3 : Facturation › Paiements liste, filtre et relance une facture à
     await page.goto("/settings/billing");
     const panel = page.getByTestId("company-payments");
     await expect(panel.getByLabel("Résumé des paiements")).toBeVisible();
+    const overdue = page.waitForResponse((r) => r.url().includes("/api/invoices") && r.url().includes("status=OVERDUE") && r.ok());
     await panel.getByRole("button", { name: "En retard", exact: true }).click();
-    const filtered = page.waitForResponse((r) => r.url().includes("/api/invoices") && r.ok());
+    await overdue;
+    // « Toutes » est souvent en cache (15 s) : aucune requête à attendre, seulement la liste affichée.
     await panel.getByRole("button", { name: "Toutes", exact: true }).click();
-    await filtered;
+    await expect(panel.getByRole("button", { name: "Toutes", exact: true })).toHaveAttribute("aria-pressed", "true");
     // Attendre la liste avant de compter : sinon le décompte vaut 0 et le test est toujours ignoré.
     await expect(panel.getByRole("list", { name: "Liste des paiements" }).or(panel.getByText(/Aucune facture/)).first()).toBeVisible();
     const remind = panel.getByRole("button", { name: /^Relancer · facture/ }).first();
