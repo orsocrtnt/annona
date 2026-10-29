@@ -11,6 +11,7 @@ Lancement : `/tutelliv-orchestre`, ou « lance le chantier multi-agents ». Les 
 
 Le propriétaire n'est pas là pendant le chantier. **L'orchestrateur est le patron et le décideur** : il tranche, lance, relance, remplace ou recadre les agents, et le chantier continue tant que le propriétaire n'intervient pas. Il ne s'arrête et ne pose une question que si la réponse est indispensable au sens même du projet : une décision commerciale ou juridique engageante, une dépense, une donnée réelle, une action irréversible.
 
+- **Exception, les directions visuelles majeures** (landing, identité, refonte d'un écran phare) : le propriétaire choisit lui-même sur maquettes, par questionnaire avec captures, dès le début du chantier ; les autres lots avancent pendant ce temps. Constat du 29/10 : la landing choisie par l'orchestrateur a été rejetée (« j'aime pas du tout »).
 - **Décisions produit et visuelles** : l'orchestrateur les prend lui-même, avec l'option la plus prudente et la plus cohérente avec `DESIGN.md`, `docs/DECISIONS_PRODUIT_COMMERCIALES.md` et les décisions passées. Chacune est consignée en une ligne dans le rapport final, avec l'alternative écartée, pour pouvoir la revoir.
 - **Pilotage des agents** : vérifier leur avancement toutes les 15 à 20 minutes (commits, fichiers modifiés, serveurs), sans lire leurs transcriptions. Un agent sans progrès en 30 minutes est relancé avec un message précis, ou remplacé. Un agent qui tourne en rond sur le même échec deux fois change d'approche. Si un lot est trop gros, le découper ; si des agents sont libres, lancer le lot suivant.
 - **Blocage réel** : le noter, mettre le lot de côté et continuer les autres. Ne jamais attendre sans rien faire.
@@ -193,6 +194,7 @@ Règles :
 - **Les captures de la galerie ne bloquent jamais le push.** Elles se font après, par le même script ou un agent, pendant le contrôle Vercel.
 - **Un seul propriétaire des comptes de rôle** par chantier : celui qui fait la recette. Aucun autre agent ne lance `e2e:role-accounts setup` ni `cleanup`.
 - **Un E2E écrit est un E2E lancé.** Un lot qui ajoute ou modifie une spec la fait tourner au moins une fois avant `LOT TERMINÉ`. S'il ne peut pas lancer le navigateur, l'orchestrateur la passe tout de suite avec `e2e-final.sh` (navigateur `chromium-headless-shell`) avant la relecture du lot. Constat du 29/10 : 7 échecs en fin de chantier, tous dans des specs jamais lancées ou rendues obsolètes par un autre lot, aucun dans le produit.
+- **Proportion** : le 29/10, la relecture (Codex et la revue adverse) a trouvé tous les défauts réels ; les E2E n'ont trouvé que des tests périmés, pour un coût de plusieurs heures. Avant un push, ne passer que les specs des parcours critiques touchés par le chantier (connexion, paiement, preuve, affectation). La suite complète tourne une fois par semaine, ou avant une mise en production, pas à chaque envoi.
 - **Délai maximal** : 30 minutes pour les E2E du chantier. L'orchestrateur regarde les journaux toutes les 15 minutes. Si un test n'a pas avancé depuis 15 minutes, il change d'approche sans attendre.
 
 ## Retour d'expérience du chantier n° 1 (28 et 29 octobre 2026)

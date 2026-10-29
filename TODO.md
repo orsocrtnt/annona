@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**58 tâches terminées sur 102 — 57 %**
+**58 tâches terminées sur 104 — 56 %**
 
-`███████████░░░░░░░░░` · 44 tâches restantes
+`███████████░░░░░░░░░` · 46 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -205,6 +205,8 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | MOBILE-WEB | A+B | Revoir toute l'application au format téléphone, dans le navigateur. | Après DESIGN-2, MAP-INTERACTION et UX-ALERTES. | Élevée · GPT‑6.1 Sol |
 | E2E-MAJ | A | Remettre à jour les specs E2E jamais lancées ou devenues obsolètes au chantier du 29 octobre. | — | Moyenne · GPT‑6.1 Sol |
 | CONFIG-MSG-2 | A | Retirer ou traduire le champ `details` (messages Zod bruts) des réponses API. | — | Basse · GPT‑6.1 Sol |
+| MAP-UNIFY-2 | A+B | Le tableau de bord affiche encore deux cartes séparées : n'en garder qu'une, avec la bascule Livreurs / Livraisons. | Capture du propriétaire utile. | Moyenne · GPT‑6.1 Sol |
+| LANDING-3 | A+B | Refaire la landing (et revoir la connexion) : la version du 29 octobre ne plaît pas du tout au propriétaire. | Direction visuelle choisie PAR LE PROPRIÉTAIRE parmi des maquettes. | Élevée · GPT‑6.1 Sol |
 | CROSS-BROWSER | A+B | Même rendu sur Edge, Safari, Firefox et Chrome (écart constaté sur Edge). | Après LANDING-2 et MOBILE-WEB ; capture de l'écart à fournir par le propriétaire. | Moyenne · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
@@ -1508,7 +1510,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Terminé quand : une seule zone de carte permet de choisir Livreurs ou Livraisons ; la bascule et la sélection sont compréhensibles au clavier et sur mobile ; chaque marqueur donne une information utile et une action adaptée ; chargement, absence de position, position périmée, aucune mission et erreur fournisseur restent explicites ; permissions et isolation entre entreprises préservées ; `npm run check` vert et recette navigateur à 390 et 1 280 px.
 
-  Source / dépendance / blocage : décision du propriétaire dans cette conversation ; prolonge MAP-3 et UX-03, sans nouveau fournisseur ni suivi permanent promis. État : ouverte, non commencée.
+  Source / dépendance / blocage : décision du propriétaire dans cette conversation ; prolonge MAP-3 et UX-03, sans nouveau fournisseur ni suivi permanent promis. État : livrée le 29 octobre 2026 (lot B, en préproduction e4793e8), mais **non conforme selon le propriétaire** : il voit toujours deux cartes séparées sur le tableau de bord. Reprise dans MAP-UNIFY-2.
 
 - [ ] **UX-NAV-SCROLL — Revenir en haut lors d'un changement de page, conserver la position au Retour.** Défaut encore reproduit le 28 octobre 2026 sur le code `4a99b6b`, Chrome réel sans interface, `tutelliv-dev`, 1 280 × 720 : clic dans le menu administrateur de `/settings` (scrollY 533) vers `/settings/billing` → scrollY 389, soit le bas de la nouvelle page ; clic côté client de `/portal/settings` (scrollY 1 332) vers `/portal/orders` → scrollY 53, également au bas de cette page. Les liens ont été réellement cliqués ; aucune navigation par remplacement direct d'URL dans le test. Le bouton Retour restaure respectivement 533 et 1 332 : comportement à préserver. Preuve locale : `outputs/verification-2026-10-28/navigation-evidence.json`, captures `navigation-admin.png` et `navigation-client.png` ; pas de diffusion de ces outputs.
 
@@ -1559,7 +1561,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026 ; prolonge GROWTH-1 et la mini-démo DEMO-3 ; mode sombre avec DESIGN-2. Choix de la direction visuelle : propriétaire (questionnaire).
 
-  État : ouverte, non commencée.
+  État : livrée le 29 octobre 2026 (lot L2, direction « Ligne de mission » choisie par l'orchestrateur, connexion « Trois espaces »), **rejetée par le propriétaire** (« j'aime pas du tout »). Reprise dans LANDING-3.
 
 - [ ] **MOBILE-WEB — Revoir toute l'application au format téléphone, dans le navigateur.** Demande du propriétaire du 29 octobre 2026 : passer en revue chaque page des trois espaces (administration et dispatch, portail client, app livreur), ainsi que le site public et `/admin`, sur un écran de téléphone (390 px, et 360 px pour les petits Android), dans le navigateur, sans application native.
   - Inventaire page par page : ce qui déborde, ce qui est trop petit à toucher (cibles d'au moins 44 px), les tableaux illisibles, les menus, les cartes, les formulaires et les modales.
@@ -1574,6 +1576,42 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   État : ouverte, non commencée.
 
+
+- [ ] **MAP-UNIFY-2 — Une seule carte sur le tableau de bord, pour de vrai.** Constat du propriétaire du 29 octobre 2026, en préproduction (e4793e8) : il voit toujours deux cartes séparées. Le lot B annonçait une carte unique avec onglets Livreurs / Livraisons (`dashboard-map-panel.tsx`), et le regroupement de `map-drivers` et `map-deliveries` dans une disposition qui contient les deux. Pistes :
+  - une disposition enregistrée par l'entreprise, avec d'autres types de blocs carte ;
+  - la section « missions actives », qui n'est peut-être pas le bloc `map-deliveries` ;
+  - une autre page que le tableau de bord ;
+  - le regroupement qui ne s'applique pas aux dispositions déjà enregistrées (données héritées).
+  Reproduire avec le compte et la disposition du propriétaire, puis une capture avant et après.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : avec la disposition réelle du propriétaire, le tableau de bord n'affiche qu'une carte avec la bascule ; les dispositions déjà enregistrées sont migrées à l'affichage, sans perte ; capture avant et après ; `npm run check` est vert.
+
+  Source / dépendance / blocage : constat du propriétaire du 29 octobre 2026 ; suite de MAP-INTERACTION.
+
+  État : ouverte, non commencée.
+
+- [ ] **LANDING-3 — Refaire la landing, direction choisie par le propriétaire.** Le 29 octobre 2026, le propriétaire a rejeté la landing livrée par LANDING-2 (« j'aime pas du tout »). L'orchestrateur avait choisi lui-même la direction « Ligne de mission », parmi 3 maquettes du lot L1 (`design-proposals/landing-2/`, dans le worktree `agent-l1-landing`). Méthode :
+  1. demander au propriétaire ce qui ne va pas et 2 ou 3 sites qu'il aime ;
+  2. produire 3 maquettes très différentes ;
+  3. le propriétaire choisit, et l'orchestrateur ne tranche pas ;
+  4. seulement ensuite, la construction.
+
+  Garder les acquis techniques de L2 :
+  - prix lus dans le catalogue ;
+  - repli si la base est en panne ;
+  - mode sombre ;
+  - connexion en POST avec garde anti-double-clic ;
+  - aucune adresse inventée.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : direction validée par le propriétaire sur maquette ; page construite conforme à la maquette, en Clair et Sombre, à 390 et 1 280 px ; `npm run check` est vert.
+
+  Source / dépendance / blocage : rejet du propriétaire du 29 octobre 2026. Bloquée par le choix de direction du propriétaire.
+
+  État : ouverte, non commencée.
 
 - [ ] **E2E-MAJ — Remettre à jour les specs E2E du chantier du 29 octobre.** Le passage final sur ec16e60 (build de production, navigateur `chromium-headless-shell`) a montré des échecs qui ne viennent pas du produit, vérifiés à la main :
   - `nav-scroll` : le test fait défiler avant le chargement du contenu (la page mesure encore 720 px), et le cas portail se connecte avec le compte de démo de l'entreprise, que la protection par rôle renvoie vers `/dashboard`. Le produit remonte bien en haut et restaure la position au Retour (mesuré : 400 → 0 → 400).
