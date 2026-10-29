@@ -5,9 +5,10 @@ import { TRAVEL_FALLBACK_LABELS, type TravelEstimate } from "@/lib/dispatch/trav
  * DISPATCH-4 — score d'affectation explicable (0 à 100), calculé sur les livreurs déjà
  * éligibles (règles dures et plafonds de charge respectés). Poids documentés :
  *
- * - trajet jusqu'au retrait : 50 % — 0 min = 1, 45 min ou plus = 0, linéaire ; trajet inconnu
- *   (hors service, position ancienne ou absente, GPS non utilisé) = 0,5, neutre comme dans
- *   DEMO-3 : un livreur sans position n'est ni exclu ni favorisé face à un livreur lointain ;
+ * - trajet jusqu'au retrait : 50 % — 0 min = 1, 45 min ou plus = 0, linéaire ; trajet inconnu :
+ *   GPS non utilisé ou retrait sans coordonnées = 0,5 (personne n'a d'information : neutre) ;
+ *   en service mais position absente ou trop ancienne = 0,25 (jamais exclu, comme dans DEMO-3,
+ *   mais pas favorisé face à un livreur localisé) ; hors service = 0 (ne travaille pas) ;
  * - charge : 30 % — part libre de son plafond (aucune livraison = 1, plafond atteint = 0) ;
  * - zone : 10 % — livreur attitré de la zone = 1, zone couverte par sa règle = 0,75, sans
  *   restriction de zone = 0,5 ;
@@ -52,8 +53,16 @@ const POSITION_LABELS: Partial<Record<DispatchProximityStatus, string>> = {
   DISABLED: "GPS non utilisé",
 };
 
-export function travelScore(travel: TravelEstimate | null): number {
-  if (!travel) return 0.5;
+const UNKNOWN_TRAVEL_SCORES: Partial<Record<DispatchProximityStatus, number>> = {
+  DISABLED: 0.5,
+  NO_PICKUP: 0.5,
+  NO_POSITION: 0.25,
+  STALE: 0.25,
+  OFF_DUTY: 0,
+};
+
+export function travelScore(travel: TravelEstimate | null, positionStatus: DispatchProximityStatus = "NO_POSITION"): number {
+  if (!travel) return UNKNOWN_TRAVEL_SCORES[positionStatus] ?? 0.25;
   return clamp01(1 - travel.seconds / TRAVEL_SCORE_HORIZON_SECONDS);
 }
 
@@ -70,7 +79,7 @@ export function priorityScore(priority: number | null): number {
 export function scoreCandidate(candidate: ScoreCandidate): number {
   const w = DISPATCH_SCORE_WEIGHTS;
   const total =
-    w.travel * travelScore(candidate.travel) +
+    w.travel * travelScore(candidate.travel, candidate.positionStatus) +
     w.load * loadScore(candidate.load, candidate.maxLoad) +
     w.zone * ZONE_SCORES[candidate.zone] +
     w.priority * priorityScore(candidate.priority);

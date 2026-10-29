@@ -13,6 +13,7 @@ test("DISPATCH-4 : 3 suggestions expliquées, double clic sur « Affecter » = u
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   let orderId: string | null = null;
+  let driverId: string | null = null;
   try {
     const login = await page.request.post("/api/auth/login", {
       data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
@@ -27,6 +28,12 @@ test("DISPATCH-4 : 3 suggestions expliquées, double clic sur « Affecter » = u
       data: { reference: `E2E-D4-UI-${tag}`, totalAmount: 10, companyId, shippingAddress: "1 rue E2E", shippingCity: "Paris", shippingPostalCode: "75011" },
     });
     orderId = order.id;
+    // Un livreur E2E libre garantit au moins une suggestion, quel que soit l'état de la démo.
+    const driverRole = await prisma.role.findFirstOrThrow({ where: { systemRole: "DRIVER" }, select: { id: true } });
+    const driver = await prisma.user.create({
+      data: { authId: `e2e-d4-ui-${tag}`, email: `livreur-${tag}@e2e-d4.invalid`, firstName: "E2E", lastName: `D4 ${tag}`, status: "ACTIVE", roleId: driverRole.id, companyId },
+    });
+    driverId = driver.id;
     const delivery = await prisma.delivery.create({
       data: { reference: `E2E-LIV-D4-UI-${tag}`, address: "1 rue E2E", city: "Paris", postalCode: "75011", companyId, orderId: order.id, pickupLatitude: 48.8566, pickupLongitude: 2.3522 },
     });
@@ -45,14 +52,17 @@ test("DISPATCH-4 : 3 suggestions expliquées, double clic sur « Affecter » = u
     const body = (await api.json()).data as { suggestions: Array<{ driverId: string; explanation: string }> };
     expect(JSON.stringify(body)).not.toMatch(/latitude|longitude|email|phone/);
     expect(body.suggestions.length).toBeLessThanOrEqual(3);
-    test.skip(body.suggestions.length === 0, "aucun livreur compatible dans l'entreprise de démonstration");
+    expect(body.suggestions.length).toBeGreaterThan(0);
 
-    await expect(page.getByText(body.suggestions[0]!.explanation)).toBeVisible();
-    const first = page.getByRole("button", { name: /^Affecter à / }).first();
+    const firstRow = page.locator(`section[aria-labelledby="suggestions-${delivery.id}"] ol > li`).first();
+    await expect(firstRow).toContainText(body.suggestions[0]!.explanation);
+    await expect(firstRow).toContainText(`Score ${(body.suggestions[0] as { score?: number }).score}/100`);
+    const first = firstRow.getByRole("button", { name: /^Affecter à / });
     const posted = page.waitForResponse((r) => r.url().includes("/api/dispatch/suggestions") && r.request().method() === "POST");
     await first.dblclick();
     expect((await posted).status()).toBe(200);
-    await expect(page.getByText("Cette livraison n’attend plus de livreur.").or(page.getByRole("heading", { name: "Livreurs suggérés" })).first()).toBeVisible();
+    // La fiche se recharge après la réponse : le panneau disparaît (livraison affectée).
+    await expect(page.getByRole("heading", { name: "Livreurs suggérés" })).toBeHidden();
 
     await expect.poll(async () => (await prisma.delivery.findUniqueOrThrow({ where: { id: delivery.id } })).driverId).toBe(body.suggestions[0]!.driverId);
     expect(await prisma.trackingEvent.count({ where: { deliveryId: delivery.id } })).toBe(1);
@@ -63,6 +73,7 @@ test("DISPATCH-4 : 3 suggestions expliquées, double clic sur « Affecter » = u
     expect(pageErrors).toEqual([]);
   } finally {
     if (orderId) await prisma.order.deleteMany({ where: { id: orderId } });
+    if (driverId) await prisma.user.deleteMany({ where: { id: driverId } });
     await page.request.post("/api/auth/logout").catch(() => undefined);
     await prisma.$disconnect();
   }

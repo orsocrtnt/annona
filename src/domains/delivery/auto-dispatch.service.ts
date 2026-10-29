@@ -347,10 +347,16 @@ type DriverWithDispatchPosition = DriverActivity & DriverDispatchPosition;
  * Un passage de file : les positions sont lues une fois, la charge à chaque livraison.
  * `routeCallsLeft` borne les appels au service de trajet sur toute la file.
  */
-export type AutoDispatchPass = { positions?: Map<string, DriverDispatchPosition>; routeCallsLeft?: number };
+export type AutoDispatchPass = {
+  positions?: Map<string, DriverDispatchPosition>;
+  routeCallsLeft?: number;
+  routeStartedAt?: number;
+};
 
-/** Plafond d'appels `table` par passage de file (au plus un par livraison). */
+/** Plafond d'appels `table` par passage de file (au plus un par livraison)… */
 export const ROUTE_CALLS_PER_PASS = 20;
+/** …et durée totale au-delà de laquelle la file passe au vol d'oiseau (OSRM lent). */
+export const ROUTE_TIME_BUDGET_MS = 10_000;
 
 /** Seuls les livreurs en service ont une position utilisée ; le reste est neutre. */
 function proximitiesFromDrivers(
@@ -394,7 +400,10 @@ export async function computeTravelTimes(
     return [{ id: driver.id, point: { latitude: position.latitude, longitude: position.longitude } }];
   });
   if (origins.length === 0) return new Map();
-  const allowNetwork = pass ? (pass.routeCallsLeft ?? ROUTE_CALLS_PER_PASS) > 0 : true;
+  if (pass) pass.routeStartedAt ??= Date.now();
+  const allowNetwork = pass
+    ? (pass.routeCallsLeft ?? ROUTE_CALLS_PER_PASS) > 0 && Date.now() - pass.routeStartedAt! < ROUTE_TIME_BUDGET_MS
+    : true;
   const { estimates, networkCalls } = await estimateTravelTimes(origins, pickup, { allowNetwork });
   if (pass) pass.routeCallsLeft = (pass.routeCallsLeft ?? ROUTE_CALLS_PER_PASS) - networkCalls;
   return estimates;
@@ -646,6 +655,8 @@ export type DispatchSuggestions = {
   /** Faux si la livraison n'attend plus de livreur : rien n'est proposé. */
   assignable: boolean;
   mode: "SUGGESTION" | "AUTOMATIC";
+  /** Compte en lecture seule : suggestions visibles, affectation refusée (renseigné par la route). */
+  readOnly?: boolean;
   eligibleCount: number;
   suggestions: DispatchSuggestion[];
 };

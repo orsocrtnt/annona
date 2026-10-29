@@ -13,16 +13,19 @@ import { assertSaasFeature, assertSaasMutationFeature } from "@/domains/saas/saa
 const STAFF_ROLES = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"] as const;
 const OPTION_MISSING = "Les suggestions de livreurs font partie de l’option « Dispatch automatique », non incluse dans cette offre.";
 
-async function authorize(mutation: boolean): Promise<{ error: NextResponse } | { companyId: string }> {
+async function authorize(mutation: boolean): Promise<{ error: NextResponse } | { companyId: string; readOnly: boolean }> {
   const auth = await requireStaffRole("deliveries:dispatch");
   if ("error" in auth) return { error: auth.error as NextResponse };
   const denied = requireRole(auth.context, [...STAFF_ROLES]);
   if (denied) return { error: denied };
   const companyId = getCompanyId(auth.context);
   if (!companyId) return { error: NextResponse.json({ error: "Entreprise non associée" }, { status: 400 }) };
+  let readOnly = false;
   try {
-    if (mutation) await assertSaasMutationFeature(companyId, "auto_dispatch");
-    else await assertSaasFeature(companyId, "auto_dispatch");
+    const access = mutation
+      ? await assertSaasMutationFeature(companyId, "auto_dispatch")
+      : await assertSaasFeature(companyId, "auto_dispatch");
+    readOnly = access ? !access.canMutate : false;
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
     if (code === "SAAS_FEATURE_NOT_AVAILABLE" || code === "SAAS_SUBSCRIPTION_REQUIRED") {
@@ -33,7 +36,7 @@ async function authorize(mutation: boolean): Promise<{ error: NextResponse } | {
     }
     throw error;
   }
-  return { companyId };
+  return { companyId, readOnly };
 }
 
 export async function GET(request: Request) {
@@ -44,7 +47,7 @@ export async function GET(request: Request) {
     if (!deliveryId) return NextResponse.json({ error: "deliveryId requis" }, { status: 400 });
     const result = await getDispatchSuggestions(auth.companyId, deliveryId);
     if (!result) return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
-    return NextResponse.json({ data: result, success: true });
+    return NextResponse.json({ data: { ...result, readOnly: auth.readOnly }, success: true });
   });
 }
 

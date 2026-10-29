@@ -44,7 +44,7 @@ export const TRAVEL_FALLBACK_LABELS: Record<TravelFallbackReason, string> = {
   UNAVAILABLE: "service de trajet indisponible",
   TIMEOUT: "service de trajet trop lent",
   NO_ROUTE: "aucun itinéraire routier trouvé",
-  NO_SEGMENT: "point hors du réseau routier",
+  NO_SEGMENT: "un point hors du réseau routier",
   INVALID_RESPONSE: "réponse du service de trajet illisible",
   NOT_PRESELECTED: "livreur éloigné, trajet non calculé",
   BUDGET: "file longue, trajet non calculé",
@@ -238,6 +238,14 @@ export async function estimateTravelTimes(
     return { estimates, networkCalls: 0 };
   }
 
+  // `NoSegment` rejette toute la matrice sans dire quel point : la même requête n'est pas
+  // rejouée pendant la durée du cache.
+  const requestKey = `req:${missing.map((item) => cacheKey(item.point, destination)).join("|")}`;
+  if (readCache(state, requestKey, now)) {
+    for (const item of missing) fallback(item.id, item.point, "NO_SEGMENT");
+    return { estimates, networkCalls: 0 };
+  }
+
   const fetchImpl = options.fetchImpl ?? (fetch as unknown as FetchLike);
   const outcome = await requestTable(
     baseUrl.replace(/\/$/, ""),
@@ -247,6 +255,7 @@ export async function estimateTravelTimes(
     options.timeoutMs ?? ROUTE_TIMEOUT_MS
   );
   if (!outcome.ok) {
+    if (outcome.reason === "NO_SEGMENT") writeCache(state, requestKey, null, now);
     if (outcome.cooldown) {
       state.unavailableUntil = now + ROUTE_FAILURE_COOLDOWN_MS;
       state.lastFailure = outcome.reason;

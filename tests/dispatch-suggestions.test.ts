@@ -110,13 +110,26 @@ test("score : poids documentés (somme 1) et bornes 0–100", () => {
   assert.equal(worst, 5, "seule la part « sans restriction de zone » reste");
 });
 
-test("score : un trajet court l'emporte sur une charge légèrement plus faible ; inconnu = neutre", () => {
+test("score : un trajet court l'emporte sur une charge plus faible ; hors service jamais favorisé", () => {
   const ranked = rankDispatchCandidates([
     candidate({ id: "loin-libre", travel: { source: "ROUTE", seconds: 40 * 60 } }),
     candidate({ id: "proche-occupe", load: 1, travel: { source: "ROUTE", seconds: 4 * 60 } }),
     candidate({ id: "inconnu", positionStatus: "OFF_DUTY" }),
   ]);
-  assert.deepEqual(ranked.map((r) => r.id), ["proche-occupe", "inconnu", "loin-libre"]);
+  assert.deepEqual(ranked.map((r) => r.id), ["proche-occupe", "loin-libre", "inconnu"]);
+  // Sans GPS pour personne, le trajet est neutre : seule la charge départage.
+  const noGps = rankDispatchCandidates([
+    candidate({ id: "occupe", load: 1, positionStatus: "DISABLED" }),
+    candidate({ id: "libre", positionStatus: "DISABLED" }),
+  ]);
+  assert.deepEqual(noGps.map((r) => r.id), ["libre", "occupe"]);
+  // En service sans position : derrière un livreur localisé proche, devant un hors service.
+  const unknown = rankDispatchCandidates([
+    candidate({ id: "hors-service", positionStatus: "OFF_DUTY" }),
+    candidate({ id: "sans-position", positionStatus: "NO_POSITION" }),
+    candidate({ id: "localise", travel: { source: "ROUTE", seconds: 300 } }),
+  ]);
+  assert.deepEqual(unknown.map((r) => r.id), ["localise", "sans-position", "hors-service"]);
   assert.deepEqual(ranked.map((r) => r.rank), [1, 2, 3]);
 });
 
@@ -219,7 +232,11 @@ test("suggestions : 3 meilleurs, explication, aucune coordonnée ni contact, req
       driver("d", 3, fresh(0.001)),
       driver("e", 1),
     ],
-    osrm: () => ({ status: 200, body: { code: "Ok", durations: [[120], [600]] } }),
+    osrm: (url) => {
+      // Seuls les livreurs en service partent au service de trajet (b puis a, par distance).
+      assert.equal(new URL(url).searchParams.get("sources"), "0;1");
+      return { status: 200, body: { code: "Ok", durations: [[120], [600]] } };
+    },
   });
   const result = await svc.getDispatchSuggestions("c1", "d1");
   assert.ok(result);
@@ -230,14 +247,18 @@ test("suggestions : 3 meilleurs, explication, aucune coordonnée ni contact, req
   const suggestions = result.suggestions as Row[];
   assert.equal(suggestions.length, 3);
   assert.deepEqual(suggestions.map((s) => s.rank), [1, 2, 3]);
+  // a : 10 min libre (74) ; b : 2 min mais 2 livraisons (63) ; c : hors service, libre (35) ;
+  // e : hors service, 1 livraison (25), 4e donc absent.
+  assert.deepEqual(suggestions.map((s) => s.driverId), ["a", "b", "c"]);
+  assert.deepEqual(suggestions.map((s) => s.score), [74, 63, 35]);
+  assert.deepEqual(suggestions.map((s) => s.travelMinutes), [10, 2, null]);
+  assert.deepEqual(suggestions.map((s) => s.travelSource), ["ROUTE", "ROUTE", null]);
+  assert.match(String(suggestions[2]!.explanation), /hors service/);
   for (const s of suggestions) {
     assert.equal(typeof s.explanation, "string");
     assert.ok(Number(s.score) >= 0 && Number(s.score) <= 100);
   }
   assert.doesNotMatch(JSON.stringify(result), NO_POSITION_DATA);
-  // Hors service : sa position n'est ni utilisée ni envoyée au service de trajet.
-  const c = suggestions.find((s) => s.driverId === "c");
-  if (c) assert.equal(c.travelMinutes, null);
 });
 
 test("suggestions : livraison déjà affectée ou introuvable → rien n'est calculé", async () => {

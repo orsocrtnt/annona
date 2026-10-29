@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,11 +26,14 @@ export function DispatchSuggestionsPanel({ deliveryId, pending }: DispatchSugges
   const allowed = can("deliveries:dispatch") && Boolean(role && DISPATCH_ROLES.has(role));
   const { data, isLoading, error } = useDispatchSuggestions(deliveryId, pending && allowed);
   const assign = useAssignFromSuggestion();
+  // Verrou synchrone : un double clic n'envoie qu'une requête (le serveur reste idempotent).
+  const inFlight = useRef(false);
 
   if (!pending || !allowed) return null;
 
   const handleAssign = async (driverId: string, label: string) => {
-    if (assign.isPending) return;
+    if (inFlight.current) return;
+    inFlight.current = true;
     try {
       await assign.mutateAsync({ deliveryId, driverId });
       toast.success(`Livraison confiée à ${label}`);
@@ -37,6 +41,8 @@ export function DispatchSuggestionsPanel({ deliveryId, pending }: DispatchSugges
       toast.error("Affectation impossible", {
         description: err instanceof Error ? err.message : undefined,
       });
+    } finally {
+      inFlight.current = false;
     }
   };
 
@@ -94,6 +100,7 @@ export function DispatchSuggestionsPanel({ deliveryId, pending }: DispatchSugges
                   </p>
                   <p className="text-xs text-muted-foreground">{suggestion.explanation}</p>
                 </div>
+                {data.readOnly ? null : (
                 <Button
                   size="sm"
                   variant={suggestion.rank === 1 ? "brand" : "outline"}
@@ -104,12 +111,18 @@ export function DispatchSuggestionsPanel({ deliveryId, pending }: DispatchSugges
                 >
                   Affecter
                 </Button>
+                )}
               </li>
             );
           })}
         </ol>
       )}
-      {data?.assignable && data.suggestions.length > 0 && (
+      {data?.readOnly && (
+        <p className="text-xs text-muted-foreground" role="status">
+          Compte en lecture seule : l&apos;affectation est désactivée.
+        </p>
+      )}
+      {data?.assignable && !data.readOnly && data.suggestions.length > 0 && (
         <p className="text-xs text-muted-foreground">
           Pour un autre choix, utilisez le sélecteur de livreur.
         </p>

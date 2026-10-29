@@ -138,6 +138,18 @@ test("trajet : codes OSRM documentés et erreurs HTTP donnent un repli motivé",
   }
 });
 
+test("trajet : NoSegment n'est pas rejoué pendant la durée du cache", async () => {
+  const state = createTravelTimeState();
+  const osrm = fakeOsrm([{ status: 400, body: { code: "NoSegment" } }, okTable([60])]);
+  const options = { baseUrl: base, fetchImpl: osrm.fetchImpl, state, now: () => 1_000 };
+  await estimateTravelTimes([at("a", 0.01)], pickup, options);
+  const again = await estimateTravelTimes([at("a", 0.01)], pickup, options);
+  assert.equal(again.networkCalls, 0);
+  const a = again.estimates.get("a");
+  assert.equal(a?.source === "STRAIGHT_LINE" && a.fallbackReason, "NO_SEGMENT");
+  assert.equal(state.unavailableUntil, 0, "pas de pause globale : un autre retrait reste calculé");
+});
+
 test("trajet : délai dépassé → TIMEOUT borné, puis pause sans appel, puis reprise", async () => {
   const state = createTravelTimeState();
   let now = 10_000;

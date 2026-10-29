@@ -12,7 +12,7 @@ type Route = { GET: (request: Request) => Promise<Response>; POST: (request: Req
 /** Route réelle ; frontières simulées : session, droits SaaS, service de dispatch. */
 function load(input: {
   role?: string;
-  saas?: (mutation: boolean) => Promise<void>;
+  saas?: (mutation: boolean) => Promise<unknown>;
   suggestions?: () => Promise<unknown>;
   assign?: () => Promise<unknown>;
   calls?: string[];
@@ -94,8 +94,10 @@ test("suggestions : sans l'option « Dispatch automatique » (ou sans abonnement
     assert.equal((await route.POST(post({ deliveryId: "d1", driverId: "x" }))).status, 403);
     assert.equal(calls.some((c) => c.startsWith("assign")), false);
   }
-  const readOnly = load({ saas: async (mutation) => { if (mutation) throw new Error("SAAS_ACCOUNT_READ_ONLY"); } });
-  assert.equal((await readOnly.GET(get())).status, 200, "lecture permise en lecture seule");
+  const readOnly = load({ saas: async (mutation) => { if (mutation) throw new Error("SAAS_ACCOUNT_READ_ONLY"); return { canMutate: false }; } });
+  const readResponse = await readOnly.GET(get());
+  assert.equal(readResponse.status, 200, "lecture permise en lecture seule");
+  assert.equal((await readResponse.json()).data.readOnly, true, "l'écran masque les boutons « Affecter »");
   assert.equal((await readOnly.POST(post({ deliveryId: "d1", driverId: "x" }))).status, 403, "affectation refusée en lecture seule");
 });
 
