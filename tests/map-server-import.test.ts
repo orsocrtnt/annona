@@ -5,9 +5,10 @@ import test from "node:test";
 // either entry must stay safe without a browser (Leaflet itself reads window).
 test("MAP-1 : widgets du tableau de bord importables côté serveur sans window", async () => {
   assert.equal(typeof window, "undefined");
-  const widgets = await import("../src/features/back-office/dashboard-map-widgets");
-  assert.equal(typeof widgets.DriversMapWidget, "function");
-  assert.equal(typeof widgets.DeliveriesMapWidget, "function");
+  const widgets = await import("../src/features/back-office/dashboard-map-panel");
+  assert.equal(typeof widgets.DashboardMapPanel, "function");
+  const scene = await import("../src/components/maps/dashboard-map");
+  assert.equal(typeof scene.DashboardMap, "function");
 });
 
 test("MAP-1 : carte client importable côté serveur sans window", async () => {

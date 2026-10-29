@@ -40,7 +40,7 @@ const source = {
 
 test("carte sombre : même plan, teintes des jetons Dark, libellés lisibles", () => {
   const byId = (theme: "light" | "dark") =>
-    Object.fromEntries(toMentheStyle(source, theme).layers.map((l) => [l.id, l])) as Record<string, { paint: Record<string, string>; layout?: Record<string, unknown> }>;
+    Object.fromEntries(toMentheStyle(source, theme).layers.map((l) => [l.id, l])) as unknown as Record<string, { paint: Record<string, string>; layout?: Record<string, unknown> }>;
   const dark = byId("dark");
   const light = byId("light");
   assert.equal(dark.background!.paint["background-color"], "#181c1a");
