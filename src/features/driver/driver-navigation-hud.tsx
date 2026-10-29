@@ -53,7 +53,7 @@ export function DriverNavigationHud({
   waitingForPosition,
 }: DriverNavigationHudProps) {
   if (unavailable || waitingForPosition) {
-    return <div role="status" className="rounded-2xl bg-card/95 px-4 py-4 text-foreground shadow-xl">
+    return <div role="status" className="rounded-2xl bg-white/95 dark:bg-card/95 px-4 py-4 text-foreground shadow-xl">
       <p className="text-sm font-semibold">{waitingForPosition ? "En attente de la position GPS" : "Itinéraire indisponible"}</p>
       <p className="mt-1 text-xs">{waitingForPosition ? "Le guidage débutera avec une position exploitable." : "Aucun guidage ni durée fiable. Nouvelle tentative automatique ; Google Maps reste accessible ci-dessous."}</p>
     </div>;

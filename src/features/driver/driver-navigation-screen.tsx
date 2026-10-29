@@ -24,7 +24,7 @@ const DriverNavigationMap = dynamic(
   () => import("@/components/maps/driver-navigation-map").then((module) => module.DriverNavigationMap),
   {
     ssr: false,
-    loading: () => <div className="h-full w-full bg-muted" aria-label="Chargement de la carte" />,
+    loading: () => <div className="h-full w-full bg-[#ececea] dark:bg-muted" aria-label="Chargement de la carte" />,
   }
 );
 
@@ -59,7 +59,7 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
 
   if (isLoading) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-muted">
+      <div className="flex h-[100dvh] items-center justify-center bg-[#ececea] dark:bg-muted">
         <PageLoader />
       </div>
     );
@@ -77,7 +77,7 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
   }
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-muted">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#ececea] dark:bg-muted">
       <h1 className="sr-only">
         {target ? `Itinéraire — ${target.label} : ${target.address}` : "Itinéraire de la mission"}
       </h1>
@@ -132,7 +132,7 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="pointer-events-auto space-y-2">
           {!navigation.canNavigate ? (
-            <div className="rounded-2xl bg-card/95 p-4 shadow-lg">
+            <div className="rounded-2xl bg-white/95 dark:bg-card/95 p-4 shadow-lg">
               <p className="text-sm font-medium">{navigation.unavailableReason}</p>
               {googleMapsUrl && <a className="mt-3 block rounded-sm underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href={googleMapsUrl} target="_blank" rel="noopener noreferrer">Ouvrir l’adresse dans Google Maps<span className="sr-only"> (nouvel onglet)</span></a>}
               <Button variant="outline" size="lg" className="mt-3 w-full" asChild>
@@ -141,10 +141,10 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
             </div>
           ) : (
             <>
-              <p className="rounded-xl border border-border bg-card/95 px-3 py-2 text-center text-[11px] text-muted-foreground shadow">
+              <p className="rounded-xl border border-black/10 dark:border-border bg-white/95 dark:bg-card/95 px-3 py-2 text-center text-[11px] text-muted-foreground shadow">
                 Gardez TutelLiv ouvert · durée indicative hors trafic
               </p>
-              <div className="rounded-2xl border border-border bg-card/95 p-3 shadow-lg">
+              <div className="rounded-2xl border border-black/10 dark:border-border bg-white/95 dark:bg-card/95 p-3 shadow-lg">
                 {/* L'étape (collecte, livraison) en repère, l'adresse en tête : c'est elle qu'on cherche. */}
                 {target?.label && <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{target.label}</p>}
                 <p className="line-clamp-2 text-base font-semibold text-foreground">{target?.address}</p>

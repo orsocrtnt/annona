@@ -33,7 +33,7 @@ function DispatchDriversMapContent() {
   );
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-muted">
+    <div className="relative h-full w-full overflow-hidden bg-[#ececea] dark:bg-muted">
       <h1 className="sr-only">Carte des chauffeurs</h1>
       <div className="absolute inset-0">
         <DriversLiveMap
@@ -76,7 +76,7 @@ function DispatchDriversMapContent() {
         <button
           type="button"
           aria-label="Zoomer"
-          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black dark:hover:bg-muted dark:focus-visible:ring-ring focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomIn()}
         >
@@ -85,7 +85,7 @@ function DispatchDriversMapContent() {
         <button
           type="button"
           aria-label="Dézoomer"
-          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="shrink-0 rounded-xl outline-none transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-black dark:hover:bg-muted dark:focus-visible:ring-ring focus-visible:ring-offset-2"
           style={mapGlassButtonStyle}
           onClick={() => mapApi?.zoomOut()}
         >
