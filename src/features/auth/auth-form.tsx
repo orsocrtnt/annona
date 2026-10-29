@@ -273,7 +273,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           className="absolute right-6 top-6 z-10 flex items-center gap-2.5 transition-opacity hover:opacity-80"
           aria-label={`Retour à l'accueil ${APP_NAME}`}
         >
-          <BrandLogo />
+          <BrandLogo priority />
         </Link>
 
         <div className="w-full max-w-md animate-slide-up pt-12 lg:pt-0">

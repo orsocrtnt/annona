@@ -10,7 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { InvoiceStatusBadge } from "@/features/client-portal/status-badges";
 import { formatCurrency } from "@/features/client-portal/utils";
-import { isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
+import { effectiveInvoiceStatus, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 import { formatDate } from "@/lib/utils";
 import type { InvoiceLineItem } from "@/lib/validations/invoice";
 import type { CompanyOrder } from "./types";
@@ -99,6 +99,8 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
   const existingInvoice = order.invoices?.find((invoice) => invoice.status !== "CANCELLED");
   const existingLines = (existingInvoice?.lineItems ?? []) as InvoiceLineItem[];
   const isPaid = existingInvoice?.status === "PAID";
+  // Même règle que Paiements : l'échéance dépassée s'affiche « En retard » sans attendre le cron.
+  const shown = existingInvoice ? effectiveInvoiceStatus(existingInvoice) : { status: "PENDING" as const, daysOverdue: 0 };
   // Une facture en retard reste émise : on l'affiche, on ne propose pas d'en refaire une.
   const isInvoiced = existingInvoice ? isInvoiceOutstanding(existingInvoice.status) : false;
 
@@ -240,7 +242,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         <CardContent className="space-y-4 text-sm">
           <div className="flex items-center justify-between">
             <span className="font-medium">{existingInvoice.reference}</span>
-            <InvoiceStatusBadge status={existingInvoice.status as "PENDING"} />
+            <InvoiceStatusBadge status={shown.status} daysOverdue={shown.daysOverdue} />
           </div>
           {existingLines.length > 0 && (
             <div className="space-y-2 rounded-lg border border-border p-3">

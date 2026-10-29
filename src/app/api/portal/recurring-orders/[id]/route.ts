@@ -11,7 +11,7 @@ export async function PATCH(
   if ("error" in auth) return auth.error;
 
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const parsed = updateRecurringOrderSchema.safeParse(body);
 
   if (!parsed.success) {

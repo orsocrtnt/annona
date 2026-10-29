@@ -9,7 +9,7 @@ import {
   validatePodSignature,
 } from "../src/lib/storage/pod-signature";
 import { isPodPhotoPathForDelivery } from "../src/lib/storage/pod";
-import { assertPodEvidence, DEFAULT_PROOF_RULES, parseProofRules } from "../src/domains/delivery/pod-evidence";
+import { assertPodEvidence, DEFAULT_PROOF_RULES, isPodEvidenceReady, parseProofRules } from "../src/domains/delivery/pod-evidence";
 import {
   createQueuedDriverAction,
   enqueueDriverAction,
@@ -89,6 +89,15 @@ test("règles de preuve : signature facultative par défaut, requise si l'entrep
   assert.throws(() => assertPodEvidence({ status: "FAILED", rules: DEFAULT_PROOF_RULES, hasSignature: false, recipientName: "Paul" }), /POD_SIGNATURE_NOT_ALLOWED/);
 });
 
+test("RECETTE-2810 point 7 : nom obligatoire (2 caractères) avec signature, facultatif avec photo seule", () => {
+  const base = { status: "DELIVERED" as const, rules: DEFAULT_PROOF_RULES };
+  assert.throws(() => assertPodEvidence({ ...base, hasSignature: true, recipientName: "  " }), /POD_RECIPIENT_REQUIRED/);
+  assert.throws(() => assertPodEvidence({ ...base, hasSignature: true, recipientName: "M" }), /POD_RECIPIENT_REQUIRED/);
+  assert.throws(() => assertPodEvidence({ ...base, hasSignature: false, recipientName: "M" }), /POD_RECIPIENT_REQUIRED/);
+  assert.equal(assertPodEvidence({ ...base, hasSignature: true, recipientName: " Mme Martin " }).recipientName, "Mme Martin");
+  assert.equal(assertPodEvidence({ ...base, hasSignature: false }).recipientName, null);
+});
+
 function memoryStore(): DriverActionQueueStore & { rows: Map<string, QueuedDriverAction> } {
   const rows = new Map<string, QueuedDriverAction>();
   return {
@@ -141,4 +150,23 @@ test("hors ligne : refus de signer envoyé avec son motif, sans fichier de signa
   });
   assert.equal(bodies[0]!.get("signature"), null);
   assert.equal(bodies[0]!.get("podSignatureRefusedReason"), "Refus du client");
+});
+
+test("RECETTE-2810 point 8 : une action en premier envoi n'affiche pas « Réessayer maintenant »", async () => {
+  const { actionNeedsAttention } = await import("../src/features/driver/offline-action-queue");
+  const base = createQueuedDriverAction({ ownerId: "u", missionId: "m", payload: { status: "IN_DELIVERY" } as never });
+  assert.equal(actionNeedsAttention(base, true), false);
+  assert.equal(actionNeedsAttention({ ...base, state: "sending" }, true), false);
+  assert.equal(actionNeedsAttention(base, false), true);
+  assert.equal(actionNeedsAttention({ ...base, attempts: 1, lastError: "réseau" }, true), true);
+  assert.equal(actionNeedsAttention({ ...base, state: "failed" }, true), true);
+});
+
+test("RECETTE-2810 point 7 : refus de signer avec un nom d'un caractère n'active pas « Valider »", () => {
+  const base = { hasSignature: false, refusedToSign: true, signatureRequired: false, name: "", reason: "Absent" };
+  assert.equal(isPodEvidenceReady({ ...base, name: "M" }), false);
+  assert.equal(isPodEvidenceReady({ ...base, name: "Mme" }), true);
+  assert.equal(isPodEvidenceReady(base), true);
+  assert.equal(isPodEvidenceReady({ ...base, reason: "ab" }), false);
+  assert.equal(isPodEvidenceReady({ ...base, refusedToSign: false, hasSignature: true, name: "M" }), false);
 });

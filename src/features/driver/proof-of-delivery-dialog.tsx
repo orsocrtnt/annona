@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import { POD_FAILURE_CODES, POD_FAILURE_LABELS, type PodFailureCode } from "@/lib/pod/codes";
+import { isPodEvidenceReady } from "@/domains/delivery/pod-evidence";
 import { SignaturePad } from "./signature-pad";
 import { useDriverProofRules } from "./hooks";
 
@@ -89,11 +90,7 @@ export function ProofOfDeliveryDialog({
   // Signature tracée (avec le nom) ou refus motivé ; facultatives sauf règle de l'entreprise.
   const evidenceReady =
     !success ||
-    (refusedToSign
-      ? reason.length >= 3
-      : signature
-        ? name.length >= 2
-        : !signatureRequired && (name.length === 0 || name.length >= 2));
+    isPodEvidenceReady({ hasSignature: Boolean(signature), refusedToSign, signatureRequired, name, reason });
 
   useEffect(
     () => () => {

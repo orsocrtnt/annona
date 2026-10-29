@@ -225,3 +225,13 @@ export async function processQueuedDriverActions(options: {
 
   return result;
 }
+
+/**
+ * Une action tout juste mise en file et en cours de premier envoi (en ligne, aucune tentative échouée)
+ * n'est ni « en attente » ni en erreur : l'afficher ferait apparaître « Réessayer maintenant » alors que
+ * la requête réussit. Seules les actions refusées, déjà tentées ou hors ligne méritent la bannière.
+ */
+export function actionNeedsAttention(action: QueuedDriverAction, online: boolean): boolean {
+  if (action.state === "failed" || action.attempts > 0 || action.lastError) return true;
+  return !online;
+}

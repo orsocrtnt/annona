@@ -17,7 +17,7 @@ export async function POST(
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const parsed = createOrderInvoiceSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
@@ -67,7 +67,7 @@ export async function PATCH(
   if (denied) return denied;
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
-  const parsed = markOrderInvoicePaidSchema.safeParse(await request.json());
+  const parsed = markOrderInvoicePaidSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Données invalides" }, { status: 400 });
   const { id } = await params;
   try {
