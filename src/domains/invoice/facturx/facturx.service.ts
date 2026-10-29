@@ -173,6 +173,12 @@ export async function getCompanyEinvoicing(companyId: string) {
   return { identity: { ...identity, country: identity.country ?? "FR" }, einvoicing: stored.settings, invalidFields: stored.invalidFields };
 }
 
+/** L'entreprise utilise déjà la facture électronique : au moins une facture émise (hors brouillon et annulée). */
+export async function companyUsesEinvoicing(companyId: string): Promise<boolean> {
+  const issued = await prisma.invoice.count({ where: { companyId, status: { notIn: ["DRAFT", "CANCELLED"] } }, take: 1 });
+  return issued > 0;
+}
+
 export async function updateCompanyEinvoicing(companyId: string, input: CompanyEinvoicingUpdate) {
   const identity = input.identity;
   // Réclamation sur updatedAt : une écriture concurrente de settings (billing…) n'est jamais écrasée.

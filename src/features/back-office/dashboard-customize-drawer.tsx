@@ -354,7 +354,7 @@ function WidgetToggleRow({
         >
           <span
             className={cn(
-              "block h-4 w-4 rounded-full bg-white shadow transition-transform",
+              "block h-4 w-4 rounded-full bg-white shadow transition-transform dark:bg-foreground",
               visible ? "translate-x-4" : "translate-x-0.5"
             )}
           />

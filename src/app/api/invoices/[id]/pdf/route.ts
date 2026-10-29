@@ -47,7 +47,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       });
     }
     const result = await buildFacturXPdf({ source: invoice.source, renderClassicPdf: (legal) => renderClassicInvoicePdf(invoice, legal), now: new Date() });
-    const http = facturXHttpResult(result, invoice.reference, "staff");
+    const http = facturXHttpResult(result, invoice.reference, "staff", auth.context.user.role.systemRole === "COMPANY_ADMIN");
     return new NextResponse(typeof http.body === "string" ? http.body : Buffer.from(http.body), { status: http.status, headers: http.headers });
   });
 }

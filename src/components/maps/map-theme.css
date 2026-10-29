@@ -1,0 +1,37 @@
+/*
+ * Carte en Sombre (DESIGN-2) : même plan que le Clair, teintes des jetons Dark. Portée : seul un
+ * <html data-theme="dark"> l'active ; le Clair reste celui de globals.css. Jetons définis ici car
+ * absents du thème global (lot A) : fond de plan, fond de fenêtre contextuelle, contrôles.
+ */
+:root[data-theme="dark"] .leaflet-map-host .leaflet-container,
+:root[data-theme="dark"] .leaflet-map-host--vector .leaflet-container {
+  background: #181c1a;
+}
+
+/* Plan raster de secours en Sombre : inversé puis désaturé pour rester assorti. */
+:root[data-theme="dark"] .leaflet-map-host--uber:not(.leaflet-map-host--vector) .leaflet-tile-pane {
+  filter: grayscale(1) invert(1) brightness(0.62) contrast(0.9);
+  opacity: 0.95;
+}
+
+:root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-content-wrapper,
+:root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-tip {
+  background: var(--color-popover, #212524);
+  color: var(--color-popover-foreground, #eef1ef);
+}
+
+:root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-content-wrapper {
+  border-color: var(--map-glass-border, rgb(255 255 255 / 12%));
+  box-shadow: 0 8px 28px rgb(0 0 0 / 50%);
+}
+
+:root[data-theme="dark"] .driver-map-pulse {
+  background: rgb(61 214 140 / 22%);
+}
+
+/* Focus clavier visible sur les repères. */
+.leaflet-marker-icon:focus-visible {
+  outline: 3px solid var(--color-ring, #3dd68c);
+  outline-offset: 3px;
+  border-radius: 8px;
+}

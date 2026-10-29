@@ -9,7 +9,7 @@ import type { CompanyOrder } from "./types";
 
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="min-w-0 rounded-xl bg-[#f5f8f6] px-3 py-2.5">
+    <div className="min-w-0 rounded-xl bg-[#f5f8f6] px-3 py-2.5 dark:bg-muted">
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 truncate text-sm font-medium text-foreground">{children}</dd>
     </div>
@@ -42,7 +42,7 @@ export function OrderSummary({ order }: { order: CompanyOrder }) {
       <dl className="mt-4 grid gap-2 sm:grid-cols-3">
         <Fact label="Livraison prévue">
           {due ? (
-            <span className={cn("inline-flex items-center gap-1", late && "text-[#b3352a]")} title={fullDateLabel(due)}>
+            <span className={cn("inline-flex items-center gap-1", late && "text-[#b3352a] dark:text-error")} title={fullDateLabel(due)}>
               {late && <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
               {relativeDayLabel(due, undefined, { withTime: true })}
               {late && " · en retard"}

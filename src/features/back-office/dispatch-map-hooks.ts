@@ -16,7 +16,8 @@ async function fetchJson<T>(url: string): Promise<T> {
   return json.data as T;
 }
 
-export function useDispatchDeliveriesMap() {
+/** `live` faux : un seul chargement, sans rafraîchissement (vue inactive de la carte unifiée). */
+export function useDispatchDeliveriesMap(live = true) {
   const { data: locationSettings } = useCompanyLocationSettings();
   const refreshMs =
     (locationSettings?.adminMapRefreshSeconds ??
@@ -30,11 +31,11 @@ export function useDispatchDeliveriesMap() {
       ),
     retry: 1,
     refetchInterval: (query) =>
-      query.state.status === "error" ? false : refreshMs,
+      query.state.status === "error" || !live ? false : refreshMs,
   });
 }
 
-export function useDriverLiveLocations(enabled = true) {
+export function useDriverLiveLocations(enabled = true, live = true) {
   const { data: locationSettings } = useCompanyLocationSettings();
   const refreshMs =
     (locationSettings?.adminMapRefreshSeconds ??
@@ -46,6 +47,6 @@ export function useDriverLiveLocations(enabled = true) {
     enabled,
     retry: 1,
     refetchInterval: (query) =>
-      query.state.status === "error" ? false : refreshMs,
+      query.state.status === "error" || !live ? false : refreshMs,
   });
 }

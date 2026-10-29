@@ -7,7 +7,8 @@ import { motionTimeline, type TrackingMotion } from "@/domains/tracking/tracking
 import { useNow } from "@/hooks/use-now";
 import { driverSignalLabel, getDriverPresenceStatus, TEAMS_PRESENCE } from "@/lib/driver-presence";
 import { blendPoint, MOTION_BLEND_MS, motionPoint, motionSettled, motionTrail } from "@/lib/maps/driver-motion";
-import { MAP_ROUTE_STYLE, MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import { mapPalette, mapRouteStyle, MAP_VISUAL_THEME, type MapPaletteTheme } from "@/lib/maps/map-visual-theme";
+import { useMapTheme } from "@/hooks/use-map-theme";
 import type { LatLng } from "@/lib/maps/route-progress";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
 
@@ -48,17 +49,21 @@ function createDriverIcon(
   isSelected: boolean,
   presence: keyof typeof TEAMS_PRESENCE,
   signalLabel: string,
-  showLabel = true
+  showLabel = true,
+  theme: MapPaletteTheme = "light"
 ) {
+  const palette = mapPalette(theme);
+  const dark = theme === "dark";
   const { firstName, lastName } = splitName(name);
   const dotSize = isSelected ? DOT_SELECTED : DOT_SIZE;
   const presenceColor = TEAMS_PRESENCE[presence];
   const isOnline = presence === "online";
   const isLost = presence === "lost";
   const cardOffset = dotSize / 2 + GAP;
-  const cardSurface = isSelected ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
-  const primaryText = isSelected ? MAP_VISUAL_THEME.surface : MAP_VISUAL_THEME.ink;
-  const secondaryText = isSelected ? "#d4d4d8" : "#52525b";
+  // Carte sélectionnée = inversion de la carte normale, dans les deux thèmes.
+  const cardSurface = isSelected ? palette.ink : palette.surface;
+  const primaryText = isSelected ? palette.surface : palette.ink;
+  const secondaryText = isSelected ? (dark ? "#52525b" : "#d4d4d8") : dark ? "#b4bcb7" : "#52525b";
 
   const nameBlock = lastName
     ? `<div style="font-size:${isSelected ? 12 : 11}px;font-weight:650;color:${primaryText};line-height:1.2;">${escapeHtml(firstName)}</div>
@@ -66,15 +71,18 @@ function createDriverIcon(
     : `<div style="font-size:${isSelected ? 12 : 11}px;font-weight:650;color:${primaryText};line-height:1.2;">${escapeHtml(firstName)}</div>`;
 
   // Textes foncés sur la carte blanche (contraste AA), clairs sur la carte encre sélectionnée.
+  // Sélectionnée : la carte est inversée, donc les teintes claires du Clair deviennent foncées en Sombre.
+  const onInk = isSelected !== dark;
   const signalColor = isOnline
-    ? isSelected ? MAP_VISUAL_THEME.brand : "#2f6f00"
+    ? onInk ? palette.brand : dark ? "#5bd99a" : "#2f6f00"
     : isLost
-      ? isSelected ? "#ff9aa8" : "#a4243b"
-      : isSelected ? "#f5c75d" : "#7a5200";
+      ? onInk ? "#ff9aa8" : dark ? "#f08a82" : "#a4243b"
+      : onInk ? "#f5c75d" : dark ? "#f0b45c" : "#7a5200";
   const signalBlock = `<div style="font-size:10px;font-weight:600;color:${signalColor};line-height:1.2;margin-top:3px;">${escapeHtml(signalLabel)}</div>`;
   // Camion vert tant que le livreur roule (en direct ou estimé) ; gris une fois le signal perdu.
-  const dotSurface = `background:${isLost ? MAP_VISUAL_THEME.mutedLight : MAP_VISUAL_THEME.brand};`;
-  const dotShadow = `0 0 0 4px #ffffff,0 8px 20px rgba(0,120,60,0.28)${isSelected ? `,0 0 0 6px ${MAP_VISUAL_THEME.ink}` : ""}`;
+  const dotSurface = `background:${isLost ? palette.mutedLight : palette.brand};`;
+  const halo = dark ? "#141716" : "#ffffff";
+  const dotShadow = `0 0 0 4px ${halo},0 8px 20px rgba(0,120,60,0.28)${isSelected ? `,0 0 0 6px ${palette.ink}` : ""}`;
 
   const cardPadding = isSelected ? "7px 14px" : "6px 12px";
   const cardRadius = isSelected ? "12px" : "10px";
@@ -96,7 +104,7 @@ function createDriverIcon(
         color:${MAP_VISUAL_THEME.ink};
         display:flex;align-items:center;justify-content:center;
         box-shadow:${dotShadow};
-      ">${TRUCK_ICON}<span style="position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:${presenceColor};border:2px solid #ffffff;"></span></div>
+      ">${TRUCK_ICON}<span style="position:absolute;right:-3px;bottom:-3px;width:9px;height:9px;border-radius:50%;background:${presenceColor};border:2px solid ${halo};"></span></div>
       <div style="
         position:absolute;
         left:0;
@@ -107,7 +115,7 @@ function createDriverIcon(
         background:${cardSurface};
         backdrop-filter:blur(8px);
         -webkit-backdrop-filter:blur(8px);
-        border:1px solid rgba(10,10,10,0.10);
+        border:1px solid ${dark ? "rgba(255,255,255,0.12)" : "rgba(10,10,10,0.10)"};
         box-shadow:0 6px 20px rgba(0,0,0,0.10);
         text-align:center;
         white-space:nowrap;
@@ -215,10 +223,12 @@ export function DriverMapMarker({
   const now = useNow(motion ? MOTION_PRESENCE_TICK_MS : SIGNAL_LABEL_TICK_MS);
   const signalLabel = driverSignalLabel({ isOnline, estimated, updatedAt }, now);
   const presence = getDriverPresenceStatus(isOnline, updatedAt, now);
+  const theme = useMapTheme();
   const icon = useMemo(
-    () => createDriverIcon(name, isSelected, presence, signalLabel, showLabel),
-    [name, isSelected, presence, signalLabel, showLabel]
+    () => createDriverIcon(name, isSelected, presence, signalLabel, showLabel, theme),
+    [name, isSelected, presence, signalLabel, showLabel, theme]
   );
+  const routeStyle = mapRouteStyle(theme);
   const markerRef = useRef<L.Marker | null>(null);
   const trailRefs = useRef<(L.Polyline | null)[]>([]);
   useDriverMotion(motion, showTrail, markerRef, trailRefs);
@@ -232,8 +242,8 @@ export function DriverMapMarker({
     <>
       {showTrail && motion && (
         <>
-          <Polyline ref={(line) => { trailRefs.current[0] = line; }} positions={mountTrail} pathOptions={MAP_ROUTE_STYLE.halo} interactive={false} />
-          <Polyline ref={(line) => { trailRefs.current[1] = line; }} positions={mountTrail} pathOptions={MAP_ROUTE_STYLE.line} interactive={false} />
+          <Polyline ref={(line) => { trailRefs.current[0] = line; }} positions={mountTrail} pathOptions={routeStyle.halo} interactive={false} />
+          <Polyline ref={(line) => { trailRefs.current[1] = line; }} positions={mountTrail} pathOptions={routeStyle.line} interactive={false} />
         </>
       )}
       <Marker
@@ -241,7 +251,7 @@ export function DriverMapMarker({
         position={motion ? mountPosition : staticPosition}
         icon={icon}
         title={`${withoutRolePrefix(name)} — ${signalLabel}`}
-        eventHandlers={{ click: () => onSelect?.() }}
+        eventHandlers={{ click: () => onSelect?.(), keypress: (e) => { if (e.originalEvent.key === "Enter" || e.originalEvent.key === " ") { e.originalEvent.preventDefault(); onSelect?.(); } } }}
         // Au-dessus des épingles et de leurs fiches : le livreur reste toujours visible.
         zIndexOffset={isSelected ? 1100 : 900}
       />

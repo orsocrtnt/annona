@@ -19,6 +19,7 @@ import {
 } from "@/features/back-office/dispatch-settings-hooks";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
+import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { dispatchSearchText, getDispatchColumns } from "@/features/back-office/dispatch-columns";
 import { MapPin, MessageSquareText, Radio, RefreshCw, Settings2, Sparkles, Truck } from "lucide-react";
 import { toast } from "sonner";
@@ -142,7 +143,7 @@ function DispatcherDashboardContent() {
           <h1 className="text-2xl font-semibold tracking-tight">Centre de dispatch</h1>
           <p className="mt-1 text-muted-foreground">
             Assignez les missions aux livreurs selon leurs profils
-            {dispatchSettings?.enabled ? " — auto-dispatch actif" : ""}
+            {hasAutoDispatch && dispatchSettings ? (dispatchSettings.enabled ? " — mode automatique" : " — mode suggestion") : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -287,6 +288,13 @@ function DispatcherDashboardContent() {
             </Button>
           </AlertDescription>
         </Alert>
+      )}
+
+      {dispatchFocus.state === "ready" && focusedDelivery && (
+        <DispatchSuggestionsPanel
+          deliveryId={focusedDelivery.id}
+          pending={focusedDelivery.status === "PENDING" && !focusedDelivery.driverId}
+        />
       )}
 
       {dispatchFocus.state === "unavailable" && (

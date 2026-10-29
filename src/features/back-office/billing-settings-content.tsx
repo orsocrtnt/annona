@@ -160,7 +160,7 @@ function CourierPricingSection({
           >
             <span
               className={cn(
-                "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
+                "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform dark:bg-foreground",
                 courier.showClientEstimate ? "translate-x-5" : "translate-x-0.5"
               )}
             />
@@ -282,7 +282,7 @@ function InvoiceGeneralSection({
             >
               <span
                 className={cn(
-                  "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
+                  "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform dark:bg-foreground",
                   invoice.autoInvoiceOnDelivery ? "translate-x-5" : "translate-x-0.5"
                 )}
               />
@@ -303,6 +303,11 @@ export function BillingSettingsContent() {
   useEffect(() => {
     if (settings) setLocal(settings);
   }, [settings]);
+
+  // Lien direct vers un champ Factur-X (#einvoicing-…) : ouvre l'onglet qui le contient.
+  useEffect(() => {
+    if (window.location.hash.startsWith("#einvoicing-")) setTab("general");
+  }, []);
 
   const handleSave = async () => {
     if (!local) return;

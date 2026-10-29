@@ -39,7 +39,7 @@ export async function POST(
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
   const { id } = await params;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const parsed = supportMessageSchema.safeParse(body);
 
   if (!parsed.success) {

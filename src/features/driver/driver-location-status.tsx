@@ -48,11 +48,11 @@ export function DriverLocationStatus({
       aria-live="polite"
       className={cn(
         "flex items-start gap-3 rounded-lg border px-3 py-2 text-sm",
-        status === "synced" && "border-emerald-200 bg-emerald-50 text-emerald-950",
-        status === "requesting" && "border-blue-200 bg-blue-50 text-blue-950",
-        failure && "border-amber-300 bg-amber-50 text-amber-950",
+        status === "synced" && "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-success/40 dark:bg-success-subtle dark:text-foreground",
+        status === "requesting" && "border-blue-200 bg-blue-50 text-blue-950 dark:border-[#2f4260] dark:bg-[#1d242c] dark:text-foreground",
+        failure && "border-amber-300 bg-amber-50 text-amber-950 dark:border-warning/40 dark:bg-warning-subtle dark:text-foreground",
         (status === "stopped" || status === "unsupported") && "bg-muted/50 text-muted-foreground",
-        compact && "rounded-xl bg-white/95 shadow-lg"
+        compact && "rounded-xl bg-white/95 shadow-lg dark:bg-card/95"
       )}
     >
       <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", status === "requesting" && "animate-spin")} />

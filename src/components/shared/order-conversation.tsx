@@ -1,6 +1,8 @@
 "use client";
 import { useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { OperationalAlertsInbox, OrderOperationalAlerts } from "@/components/shared/operational-alerts";
+import { alertPlacementForPath, type AlertSpace } from "@/lib/operational-alerts-placement";
 import { dateTimeLabel } from "@/lib/format/relative-day";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -44,7 +46,7 @@ export function OrderConversation({ orderId }: { orderId: string }) {
   if (query.error) return <p role="alert" className="rounded border p-4">{query.error.message}</p>;
   if (!data) return <p className="p-4">Chargement des échanges…</p>;
   return <Card id="messages">
-    <CardHeader><CardTitle className="text-base">Échanges</CardTitle><p className="text-sm text-muted-foreground">Messages partagés avec le client, l’administration et le chauffeur affecté. Actualisation toutes les 10 secondes.</p></CardHeader>
+    <CardHeader><CardTitle className="text-base">Échanges</CardTitle><p className="text-sm text-muted-foreground">Visibles par le client, l’administration et le chauffeur affecté.</p></CardHeader>
     <CardContent className="space-y-4">
       <OrderOperationalAlerts orderId={orderId} />
       {data.unread > 0 && <div className="flex flex-wrap items-center gap-2" role="status"><strong>{data.unread} nouveau(x) message(s)</strong><Button variant="outline" size="sm" onClick={markRead}>Marquer ces messages comme lus</Button></div>}
@@ -71,9 +73,10 @@ export function OrderConversationTrigger({ orderId }: { orderId: string }) {
   const [open, setOpen] = useState(false);
   return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button variant="outline" size="sm">Échanges de la commande</Button></DialogTrigger><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Échanges de la commande</DialogTitle></DialogHeader>{open && <OrderConversation key={orderId} orderId={orderId} />}</DialogContent></Dialog>;
 }
-export function OrderMessagesInbox({ enableDispatchTargets = false }: { enableDispatchTargets?: boolean } = {}) {
+export function OrderMessagesInbox({ enableDispatchTargets = false, space = "staff" }: { enableDispatchTargets?: boolean; space?: AlertSpace } = {}) {
+  const placement = alertPlacementForPath(space, usePathname());
   const [selected, setSelected] = useState<string | null>(null);
   const query = useQuery({ queryKey: ["order-message-notifications"], queryFn: () => request<Array<{ id: string; orderId: string; reference: string; title: string }>>("/api/order-conversations/notifications"), refetchInterval: 10_000, retry: false });
   const rows = query.error ? [] : query.data ?? [];
-  return <><OperationalAlertsInbox onOpen={setSelected} enableDispatchTargets={enableDispatchTargets} />{rows.length > 0 && <div className="mb-4 rounded-lg border border-brand/30 bg-brand/5 p-3" aria-label="Nouveaux échanges"><p className="text-sm font-medium">Nouveaux échanges de commande</p><div className="flex flex-wrap gap-2">{Array.from(new Map(rows.map(row => [row.orderId, row])).values()).map(row => <Button key={row.orderId} variant="ghost" size="sm" onClick={() => setSelected(row.orderId)}>{row.reference} — ouvrir les échanges</Button>)}</div></div>}<Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Échanges de la commande</DialogTitle></DialogHeader>{selected && <OrderConversation key={selected} orderId={selected} />}</DialogContent></Dialog></>;
+  return <><OperationalAlertsInbox onOpen={setSelected} enableDispatchTargets={enableDispatchTargets} mode={placement.mode} context={placement.context} driver={space === "driver"} />{rows.length > 0 && <div className="mb-4 rounded-lg border border-brand/30 bg-brand/5 p-3" aria-label="Nouveaux échanges"><p className="text-sm font-medium">Nouveaux échanges de commande</p><div className="flex flex-wrap gap-2">{Array.from(new Map(rows.map(row => [row.orderId, row])).values()).map(row => <Button key={row.orderId} variant="ghost" size="sm" onClick={() => setSelected(row.orderId)}>{row.reference} — ouvrir les échanges</Button>)}</div></div>}<Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Échanges de la commande</DialogTitle></DialogHeader>{selected && <OrderConversation key={selected} orderId={selected} />}</DialogContent></Dialog></>;
 }

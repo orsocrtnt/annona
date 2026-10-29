@@ -63,7 +63,7 @@ export default function CompaniesPage() {
       {data.total === 0 ? (
         <EmptyState icon={Building2} title="Aucune entreprise" description="Aucune entreprise ne correspond à ces filtres." />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Entreprise</TableHead>

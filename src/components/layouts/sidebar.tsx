@@ -49,8 +49,8 @@ function SidebarNavLink({
             "h-[18px] w-[18px] shrink-0",
             premium
               ? isActive
-                ? "text-[#0e1310]"
-                : "text-[#7b8780] group-hover:text-[#0e1310]"
+                ? "text-[#0e1310] dark:text-primary-foreground"
+                : "text-[#7b8780] group-hover:text-[#0e1310] dark:text-muted-foreground dark:group-hover:text-foreground"
               : isActive
                 ? "text-brand"
                 : "text-muted-foreground group-hover:text-foreground"
@@ -61,7 +61,7 @@ function SidebarNavLink({
         <>
           <span className="flex-1">{item.title}</span>
           {item.badge !== undefined && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-semibold text-white">
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-semibold text-white dark:text-primary-foreground">
               {item.badge}
             </span>
           )}
@@ -81,7 +81,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       className={cn(
         "fixed z-40 flex flex-col transition-all duration-300",
         premium
-          ? "bottom-3 left-3 top-[calc(var(--demo-banner-height,0px)+12px)] rounded-3xl border border-[#e4ebe6] bg-white text-[#0e1310] shadow-[0_10px_30px_rgba(15,50,30,0.06)]"
+          ? "bottom-3 left-3 top-[calc(var(--demo-banner-height,0px)+12px)] rounded-3xl border border-[#e4ebe6] bg-white text-[#0e1310] shadow-[0_10px_30px_rgba(15,50,30,0.06)] dark:border-border dark:bg-card dark:text-foreground dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
           : "inset-y-0 left-0 border-r border-border bg-card",
         sidebarCollapsed ? (premium ? "w-[80px]" : "w-[72px]") : (premium ? "w-[264px]" : "w-64"),
         "hidden lg:flex"
@@ -90,7 +90,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       <div
         className={cn(
           "flex h-16 items-center justify-between px-4",
-          premium ? "border-b border-[#eef2ef]" : "border-b border-border"
+          premium ? "border-b border-[#eef2ef] dark:border-border" : "border-b border-border"
         )}
       >
         {premium ? (
@@ -105,13 +105,22 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
                 width={118}
                 height={35}
                 priority
+                className="dark:hidden"
+                style={{ width: 118, height: 35 }}
+              />
+              <Image
+                src="/brand/logo-horizontal-fond-sombre.png"
+                alt={APP_NAME}
+                width={118}
+                height={35}
+                className="hidden dark:block"
                 style={{ width: 118, height: 35 }}
               />
             </Link>
           )
         ) : (
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white dark:text-primary-foreground">
               <Package2 className="h-4 w-4" />
             </div>
             {!sidebarCollapsed && (
@@ -127,7 +136,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
               ? "flex h-11 w-11 items-center justify-center rounded-full transition-colors"
               : "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
             premium
-              ? "text-[#7b8780] hover:bg-[#f1f5f2] hover:text-[#0e1310]"
+              ? "text-[#7b8780] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
             sidebarCollapsed && "mx-auto"
           )}
@@ -148,8 +157,8 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
               premium ? "min-h-11 rounded-xl py-2" : "rounded-lg py-2.5",
               premium
                 ? isActive
-                  ? "bg-[#00d46a] text-[#0e1310] shadow-[0_6px_18px_rgba(0,212,106,0.22)]"
-                  : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310]"
+                  ? "bg-[#00d46a] text-[#0e1310] shadow-[0_6px_18px_rgba(0,212,106,0.22)] dark:bg-primary dark:text-primary-foreground dark:shadow-none"
+                  : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
                 : isActive
                   ? "bg-brand-subtle text-brand"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -197,7 +206,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       </ScrollArea>
 
       {footer && !sidebarCollapsed && (
-        <div className={cn("p-4", premium ? "border-t border-[#eef2ef]" : "border-t border-border")}>{footer}</div>
+        <div className={cn("p-4", premium ? "border-t border-[#eef2ef] dark:border-border" : "border-t border-border")}>{footer}</div>
       )}
     </aside>
   );

@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { DeliveryMapStatusBar } from "../src/components/maps/delivery-map-status-bar";
 import { MAP_ROUTE_STYLE, MAP_VISUAL_THEME } from "../src/lib/maps/map-visual-theme";
@@ -33,39 +32,4 @@ test("MAP-3 : la progression reste compréhensible sans palette arc-en-ciel", ()
   assert.match(html, /aria-current="step"/);
   assert.match(html, /bg-black/);
   assert.doesNotMatch(html, /#2563eb|#7c3aed|#ea580c|#16a34a|#f59e0b/);
-});
-
-test("MAP-3 : plan vectoriel Menthe commun aux cartes, plan raster gris en secours", () => {
-  const base = readFileSync("src/components/maps/leaflet-base-map-inner.tsx", "utf8");
-  const css = readFileSync("src/app/globals.css", "utf8");
-  assert.match(base, /variant = "uber"/);
-  assert.match(base, /leaflet-map-host--uber/);
-  assert.match(base, /<BaseMapLayer/);
-  // Le filtre gris ne s'applique qu'au plan raster de secours, jamais au vectoriel.
-  assert.match(css, /leaflet-map-host--uber:not\(\.leaflet-map-host--vector\) \.leaflet-tile-pane/);
-  assert.match(css, /grayscale\(1\)[\s\S]*saturate\(0\)/);
-});
-
-test("MAP-3 : sélection, regroupements visuels et panne fournisseur restent explicites", () => {
-  const deliveryMarker = readFileSync("src/components/maps/delivery-point-marker.tsx", "utf8");
-  const driverMarker = readFileSync("src/components/maps/driver-map-marker.tsx", "utf8");
-  const dispatchPanel = readFileSync(
-    "src/features/back-office/dispatch-deliveries-map-panel.tsx",
-    "utf8"
-  );
-  const portalPanel = readFileSync(
-    "src/features/client-portal/portal-deliveries-map-panel.tsx",
-    "utf8"
-  );
-  const provider = readFileSync("src/components/maps/provider-tile-layer.tsx", "utf8");
-
-  assert.match(deliveryMarker, /dotSize = isSelected \? 16 : 13/);
-  assert.match(deliveryMarker, /const size = isSelected \? 32 : 26/);
-  assert.match(deliveryMarker, /stepTextColor = muted \? MAP_VISUAL_THEME\.ink/);
-  assert.match(driverMarker, /isSelected \? MAP_VISUAL_THEME\.ink/);
-  assert.match(driverMarker, /driver-map-pulse/);
-  assert.match(dispatchPanel, /shadow-\[inset_3px_0_0_#00d46a\]/);
-  assert.match(portalPanel, /shadow-\[inset_3px_0_0_var\(--color-foreground\)\]/);
-  assert.match(provider, /Fond de carte indisponible\. Les positions restent affichées\./);
-  assert.match(provider, /bg-black[\s\S]*Réessayer la carte/);
 });

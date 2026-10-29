@@ -52,7 +52,7 @@ export function MobileNav({ items, premium = false }: MobileNavProps) {
       <DialogContent
         className={cn(
           "left-0 top-[var(--demo-banner-height,0px)] h-[calc(100dvh-var(--demo-banner-height,0px))] w-72 max-w-[85vw] translate-x-0 translate-y-0 content-start gap-0 border-y-0 border-l-0 p-4 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden",
-          premium ? "rounded-r-[28px] border-[#e4ebe6] bg-white text-[#0e1310]" : "rounded-none bg-card"
+          premium ? "rounded-r-[28px] border-[#e4ebe6] bg-white text-[#0e1310] dark:border-border dark:bg-card dark:text-foreground" : "rounded-none bg-card"
         )}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
@@ -72,8 +72,8 @@ export function MobileNav({ items, premium = false }: MobileNavProps) {
               premium && "min-h-11",
               premium
                 ? isActive
-                  ? "bg-[#00d46a] text-[#0e1310]"
-                  : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310]"
+                  ? "bg-[#00d46a] text-[#0e1310] dark:bg-primary dark:text-primary-foreground"
+                  : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
                 : isActive
                   ? "bg-brand-subtle text-brand"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",

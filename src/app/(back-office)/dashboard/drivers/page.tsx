@@ -69,9 +69,9 @@ export default function CompanyDriversPage() {
           Suivi de l&apos;activité et des missions du jour
         </p>
         <p className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground" aria-hidden="true">
-          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#0e1310]" /> Livrées</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-chart-ink" /> Livrées</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#00a855]" /> En cours</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#c9d3cd]" /> À faire</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-chart-todo" /> À faire</span>
         </p>
       </div>
       <DataGrid

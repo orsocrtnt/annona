@@ -83,10 +83,10 @@ export function TableDriverDayCell({ day, actions }: { day: DriverDay; actions?:
     <div className="min-w-[10rem]">
       <p className="text-sm text-foreground">{driverDaySentence(day)}</p>
       {segments.total > 0 && (
-        <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-[#eef1ef] dark:bg-muted" aria-hidden="true">
-          <span className="h-full bg-[#0e1310] dark:bg-foreground" style={{ width: `${segments.delivered}%` }} />
+        <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-chart-track" aria-hidden="true">
+          <span className="h-full bg-chart-ink" style={{ width: `${segments.delivered}%` }} />
           <span className="h-full bg-[#00a855]" style={{ width: `${segments.inTransit}%` }} />
-          <span className="h-full bg-[#c9d3cd] dark:bg-border" style={{ width: `${segments.toDo}%` }} />
+          <span className="h-full bg-chart-todo" style={{ width: `${segments.toDo}%` }} />
         </div>
       )}
       {actions ? (

@@ -47,3 +47,14 @@ export function describeAlertTarget(order: AlertTargetOrder, deliveryId: string 
   const customerName = order.customer ? `${order.customer.firstName} ${order.customer.lastName}`.trim() : "";
   return { customerName: customerName || null, place };
 }
+
+/** Mission en cours de réalisation (achat ou livraison) : seule vue prioritaire de l'app livreur. */
+export function isMissionInProgress(order: { deliveries: Array<{ id: string; status: string; driverId?: string | null }> }, deliveryId: string | null, driverId?: string) {
+  const running = (d: { status: string }) => ["PURCHASING", "IN_DELIVERY"].includes(d.status);
+  if (deliveryId) {
+    const delivery = order.deliveries.find(d => d.id === deliveryId);
+    return delivery ? running(delivery) : false;
+  }
+  // Incident rattaché à la commande : il concerne le livreur qui a une livraison de cette commande en cours.
+  return driverId ? order.deliveries.some(d => d.driverId === driverId && running(d)) : false;
+}

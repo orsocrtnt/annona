@@ -120,7 +120,7 @@ export default function AdminOperationsPage() {
       ) : data.total === 0 ? (
         <EmptyState icon={Activity} title="Aucun traitement" description="Aucun job ne correspond à ces filtres." />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Entreprise</TableHead>

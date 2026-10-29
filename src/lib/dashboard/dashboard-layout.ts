@@ -214,14 +214,14 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetCatalogEntry[] = [
   },
   {
     type: "map-drivers",
-    label: "Mini-carte livreurs",
-    description: "Positions GPS des livreurs en direct",
+    label: "Carte en direct",
+    description: "Livreurs et livraisons sur une même carte, avec bascule",
     category: "maps",
   },
   {
     type: "map-deliveries",
-    label: "Mini-carte missions",
-    description: "Destinations et points actifs",
+    label: "Carte en direct (ouverte sur les livraisons)",
+    description: "La même carte unifiée, affichée d'abord sur les livraisons",
     category: "maps",
   },
 ];
@@ -297,6 +297,22 @@ export function normalizeDashboardLayout(
 
 export function getVisibleDashboardWidgets(layout: DashboardLayoutSettings) {
   return [...layout.widgets].filter((w) => w.visible).sort((a, b) => a.order - b.order);
+}
+
+/**
+ * Les anciennes dispositions pouvaient afficher deux cartes (livreurs puis missions). Les deux blocs
+ * ouvrent maintenant la même carte unifiée : on n'en garde qu'une (la première dans l'ordre).
+ */
+export function mergeMapWidgets(widgets: DashboardWidgetLayout[]) {
+  const seen = widgets.some((w) => w.type === "map-drivers" || w.type === "map-deliveries");
+  if (!seen) return widgets;
+  let kept = false;
+  return widgets.filter((w) => {
+    if (w.type !== "map-drivers" && w.type !== "map-deliveries") return true;
+    if (kept) return false;
+    kept = true;
+    return true;
+  });
 }
 
 export function groupDashboardWidgets(widgets: DashboardWidgetLayout[]) {

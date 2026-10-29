@@ -98,7 +98,7 @@ export function CompanyAnalyticsContent() {
               {data.dailyVolume.map((row) => (
                 <div key={row.date} className="flex h-full min-w-0 flex-1 flex-col justify-end">
                   <div
-                    className={cn("w-full rounded-t-[3px]", row.count === 0 ? "bg-[#eef1ef]" : "bg-[#0e1310]")}
+                    className={cn("w-full rounded-t-[3px]", row.count === 0 ? "bg-chart-track" : "bg-chart-ink")}
                     style={{ height: `${Math.max(3, (row.count / maxVolume) * 100)}%` }}
                     title={`${dayLabel(row.date, days)} : ${row.count}`}
                   />
@@ -133,15 +133,15 @@ export function CompanyAnalyticsContent() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             {share != null && (
-              <div className="flex h-2.5 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
-                <span className="h-full bg-[#0e1310]" style={{ width: `${share}%` }} />
+              <div className="flex h-2.5 overflow-hidden rounded-full bg-chart-track" aria-hidden="true">
+                <span className="h-full bg-chart-ink" style={{ width: `${share}%` }} />
                 <span className="h-full bg-[#f2b84b]" style={{ width: `${100 - share}%` }} />
               </div>
             )}
             <dl className="space-y-2">
               <div className="flex items-center justify-between">
                 <dt className="inline-flex items-center gap-2 text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full bg-[#0e1310]" aria-hidden="true" /> Encaissé
+                  <span className="h-2 w-2 rounded-full bg-chart-ink" aria-hidden="true" /> Encaissé
                 </dt>
                 <dd className="font-medium tabular-nums">{formatCurrency(data.collectedAmount)}</dd>
               </div>
@@ -173,8 +173,8 @@ export function CompanyAnalyticsContent() {
               {data.topClients.map((client) => (
                 <li key={client.name} className="grid grid-cols-[minmax(0,10rem)_1fr_auto] items-center gap-3 text-sm">
                   <span className="truncate">{withoutRolePrefix(client.name)}</span>
-                  <span className="h-2 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
-                    <span className="block h-full rounded-full bg-[#0e1310]" style={{ width: `${(client.deliveries / maxClient) * 100}%` }} />
+                  <span className="h-2 overflow-hidden rounded-full bg-chart-track" aria-hidden="true">
+                    <span className="block h-full rounded-full bg-chart-ink" style={{ width: `${(client.deliveries / maxClient) * 100}%` }} />
                   </span>
                   <span className="font-medium tabular-nums">
                     {client.deliveries}

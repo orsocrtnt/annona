@@ -1,3 +1,4 @@
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { analyzeOrderMessage } from "@/domains/order-intake/order-intake.service";
 import { intakeError, intakeJson, withIntakeErrors } from "../intake-http";
@@ -28,9 +29,9 @@ export async function POST(request: Request) {
       case "ok":
         return intakeJson({ success: true, data: result.draft });
       case "disabled":
-        return intakeError("INTAKE_DISABLED", "La commande depuis un message n'est pas activée pour votre entreprise.", 403);
+        return intakeError("INTAKE_DISABLED", CONFIG_MESSAGES.INTAKE_DISABLED, 403);
       case "not_configured":
-        return intakeError("INTAKE_NOT_CONFIGURED", "La commande depuis un message n'est pas encore configurée sur ce serveur.", 403);
+        return intakeError("INTAKE_NOT_CONFIGURED", CONFIG_MESSAGES.INTAKE_NOT_CONFIGURED, 403);
       case "invalid":
         return intakeError("INVALID_MESSAGE", result.message, 400);
       case "rate_limited":

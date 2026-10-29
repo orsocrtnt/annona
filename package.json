@@ -74,6 +74,7 @@
     "test:data02:export-contract": "node --import tsx --test tests/data02-export-contract.test.ts",
     "test:data02:demo-retention": "dotenv -e .env.local -- tsx scripts/data02/demo-retention-connected.ts",
     "data02:demo-cleanup": "dotenv -e .env.local -- tsx scripts/data02/cleanup-demo.ts",
+    "e2e:test-data": "dotenv -e .env.local -- tsx scripts/e2e/dev-test-data.ts",
     "e2e:role-accounts": "dotenv -e .env.local -- tsx scripts/e2e/dev-role-accounts.ts",
     "data02:demo-legacy-inventory": "dotenv -e .env.local -- tsx scripts/data02/inventory-legacy-demos.ts",
     "audit:env1": "dotenv -e .env.local -- tsx scripts/env1/inventory.ts outputs/env1/inventory.json",
@@ -90,6 +91,7 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "test:pg-locks": "tsx scripts/pg-locks/advisory-locks.ts",
     "test:pg-settings": "tsx scripts/pg-locks/settings-claims.ts",
+    "test:dispatch-concurrency": "tsx scripts/dispatch4/concurrent-assign.ts",
     "env2:verify-dev": "dotenv -e .env.local -- tsx scripts/env2/verify-dev-env.ts",
     "billing:refund": "dotenv -e .env.local -- tsx scripts/saas01b/refund.ts"
   },

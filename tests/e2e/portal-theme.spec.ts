@@ -148,21 +148,23 @@ async function switchPersona(page: Page, label: "Administrateur" | "Client") {
   await page.getByRole("option", { name: label }).click();
 }
 
-test("navigation client portail ↔ dashboard : le Dark ne déborde pas et ne clignote pas", async ({ page }) => {
+test("navigation client portail ↔ dashboard : le Dark suit l'utilisateur sans clignoter, Sora reste au portail", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await openPortal(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
   // Portail → dashboard par clic (barre de démonstration, router.push) : aucun rechargement complet.
+  // DESIGN-2 : le back-office est migré, il reste en Dark à chaque image ; seule la police Sora est propre au portail.
   await recordFrames(page);
   await switchPersona(page, "Administrateur");
   await page.waitForURL("**/dashboard");
   await expect(page.locator("[data-portal-root]")).toHaveCount(0);
-  expect(await page.locator("html").getAttribute("data-theme")).toBeNull();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await page.locator("html").getAttribute("data-portal")).toBeNull();
   let seen = await frames(page);
   expect(seen.length).toBeGreaterThan(0);
-  expect(seen.filter((f) => !f.portal && (f.theme === "dark" || f.sora)), "image hors portail en Dark ou en Sora").toEqual([]);
+  expect(seen.filter((f) => f.theme !== "dark"), "image sans le Dark pendant la navigation").toEqual([]);
+  expect(seen.filter((f) => !f.portal && f.sora), "image hors portail en Sora").toEqual([]);
 
   // Dashboard → portail : le Dark est posé dès la première image du portail (aucun éclair clair).
   await recordFrames(page);

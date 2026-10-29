@@ -32,7 +32,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
   const parsed = driverLocationSettingsSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
