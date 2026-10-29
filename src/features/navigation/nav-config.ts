@@ -46,7 +46,6 @@ export const dispatcherNavItems: NavItem[] = [
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
   { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
-  { title: "Gestion des comptes", href: "/users", icon: Users },
 ];
 
 /** Tous les écrans back-office, filtrés ensuite par les accès du mini-admin. */

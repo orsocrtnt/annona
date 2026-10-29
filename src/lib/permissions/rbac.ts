@@ -1,4 +1,5 @@
 import type { SystemRole } from "@prisma/client";
+import { getPageAccessRule } from "./page-access";
 
 export const RESOURCES = [
   "users",
@@ -60,17 +61,6 @@ export const STAFF_ROLES: SystemRole[] = [
   "DISPATCHER",
 ];
 
-const COMPANY_OPS_ROLES: SystemRole[] = [
-  "COMPANY_ADMIN",
-  "MINI_ADMIN",
-];
-
-const DISPATCH_ROLES: SystemRole[] = [
-  "COMPANY_ADMIN",
-  "MINI_ADMIN",
-  "DISPATCHER",
-];
-
 export function hasPermission(
   userPermissions: string[],
   required: PermissionSlug | PermissionSlug[]
@@ -94,43 +84,9 @@ export function hasMinimumRole(userRole: SystemRole, minimumRole: SystemRole): b
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[minimumRole];
 }
 
-export function canAccessRoute(
-  userRole: SystemRole,
-  routePermissions: PermissionSlug[]
-): boolean {
-  const routeRoleMap: Record<string, SystemRole[]> = {
-    "/admin": ["SUPER_ADMIN"],
-    "/dashboard": COMPANY_OPS_ROLES,
-    "/dispatch": DISPATCH_ROLES,
-    "/driver": ["DRIVER"],
-    "/portal": ["CLIENT"],
-    "/support": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-    "/settings": ["COMPANY_ADMIN", "MINI_ADMIN"],
-    "/users": ["COMPANY_ADMIN", "MINI_ADMIN"],
-    "/companies": ["SUPER_ADMIN"],
-  };
-
-  for (const [prefix, roles] of Object.entries(routeRoleMap)) {
-    if (routePermissions.length > 0) return true;
-    void prefix;
-    void roles;
-  }
-
-  return hasRole(userRole, getAllowedRolesForPath(""));
-}
-
+/** Rôles admis par la page (table unique : `page-access.ts`). */
 export function getAllowedRolesForPath(path: string): SystemRole[] {
-  if (path.startsWith("/admin")) return ["SUPER_ADMIN"];
-  if (path.startsWith("/dashboard")) return COMPANY_OPS_ROLES;
-  if (path.startsWith("/dispatch")) return DISPATCH_ROLES;
-  if (path.startsWith("/driver")) return ["DRIVER"];
-  if (path.startsWith("/portal")) return ["CLIENT"];
-  if (path.startsWith("/onboarding")) return ["COMPANY_ADMIN"];
-  if (path.startsWith("/support")) return ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"];
-  if (path.startsWith("/settings")) return ["COMPANY_ADMIN", "MINI_ADMIN"];
-  if (path.startsWith("/users")) return ["COMPANY_ADMIN", "MINI_ADMIN"];
-  if (path.startsWith("/companies")) return ["SUPER_ADMIN"];
-  return [];
+  return [...(getPageAccessRule(path)?.roles ?? [])];
 }
 
 export function buildPermissionSlug(resource: Resource, action: Action): PermissionSlug {

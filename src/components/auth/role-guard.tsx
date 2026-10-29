@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { ROLE_DASHBOARD_MAP } from "@/lib/constants";
+import { getRoleHomePath } from "@/lib/permissions/page-access";
 import type { SystemRole } from "@prisma/client";
 
 interface RoleGuardProps {
@@ -32,7 +32,7 @@ export function RoleGuard({ role, loginHref, children }: RoleGuardProps) {
     }
 
     if (user.role.systemRole !== role) {
-      router.replace(ROLE_DASHBOARD_MAP[user.role.systemRole]);
+      router.replace(getRoleHomePath(user.role.systemRole, user.settings));
     }
   }, [user, isLoading, isAuthenticated, router, role, loginHref]);
 
