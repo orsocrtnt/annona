@@ -22,7 +22,10 @@ function useMarkerClicks(onClick?: () => void) {
     () => ({
       click: () => onClick?.(),
       keypress: (event: L.LeafletKeyboardEvent) => {
-        if (event.originalEvent.key === "Enter" || event.originalEvent.key === " ") onClick?.();
+        if (event.originalEvent.key === "Enter" || event.originalEvent.key === " ") {
+          event.originalEvent.preventDefault();
+          onClick?.();
+        }
       },
     }),
     [onClick]

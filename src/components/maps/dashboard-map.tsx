@@ -9,7 +9,7 @@ import { DriverMapMarker } from "@/components/maps/driver-map-marker";
 import { DeliveryOverviewMarker, DeliveryPointMarker } from "@/components/maps/delivery-point-marker";
 import { LeafletBaseMap, PARIS_CENTER } from "@/components/maps/leaflet-base-map";
 import { getDispatchMapStatus } from "@/features/back-office/dispatch-map-status";
-import { isLocatedDriver, locatedDeliveries, type DashboardMapView } from "@/features/back-office/dashboard-map-model";
+import { isLocatedDriver, locatedDeliveries, sceneViewAction, type DashboardMapView } from "@/features/back-office/dashboard-map-model";
 
 type Props = {
   view: DashboardMapView;
@@ -33,16 +33,15 @@ function SceneView({ points, selected, selectedId, fitKey }: { points: [number, 
 
   useEffect(() => {
     const target = selectedRef.current;
-    if (selectedId && target) {
-      // Recentrage seulement quand la sélection change : un nouveau relevé GPS ne déplace pas la carte.
-      if (lastSelectedId.current !== selectedId) {
-        lastSelectedId.current = selectedId;
-        map.setView(target, Math.max(map.getZoom(), 14), { animate: true });
-      }
+    const action = sceneViewAction({ selectedId, hasTarget: target !== null, lastCenteredId: lastSelectedId.current, fitKey, lastFitKey: lastFit.current });
+    if (action === "center") {
+      lastSelectedId.current = selectedId;
+      map.setView(target!, Math.max(map.getZoom(), 14), { animate: true });
       return;
     }
+    if (action === "hold") return;
     lastSelectedId.current = null;
-    if (lastFit.current === fitKey) return;
+    if (action === "none") return;
     lastFit.current = fitKey;
     const list = pointsRef.current;
     const apply = () => {

@@ -16,12 +16,12 @@
 
 :root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-content-wrapper,
 :root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-tip {
-  background: #212524;
-  color: #eef1ef;
+  background: var(--color-popover, #212524);
+  color: var(--color-popover-foreground, #eef1ef);
 }
 
 :root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-content-wrapper {
-  border-color: rgb(255 255 255 / 12%);
+  border-color: var(--map-glass-border, rgb(255 255 255 / 12%));
   box-shadow: 0 8px 28px rgb(0 0 0 / 50%);
 }
 
@@ -31,7 +31,7 @@
 
 /* Focus clavier visible sur les repères. */
 .leaflet-marker-icon:focus-visible {
-  outline: 3px solid #3dd68c;
+  outline: 3px solid var(--color-ring, #3dd68c);
   outline-offset: 3px;
   border-radius: 8px;
 }

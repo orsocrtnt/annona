@@ -251,7 +251,7 @@ export function DriverMapMarker({
         position={motion ? mountPosition : staticPosition}
         icon={icon}
         title={`${withoutRolePrefix(name)} — ${signalLabel}`}
-        eventHandlers={{ click: () => onSelect?.(), keypress: (e) => { if (e.originalEvent.key === "Enter" || e.originalEvent.key === " ") onSelect?.(); } }}
+        eventHandlers={{ click: () => onSelect?.(), keypress: (e) => { if (e.originalEvent.key === "Enter" || e.originalEvent.key === " ") { e.originalEvent.preventDefault(); onSelect?.(); } } }}
         // Au-dessus des épingles et de leurs fiches : le livreur reste toujours visible.
         zIndexOffset={isSelected ? 1100 : 900}
       />

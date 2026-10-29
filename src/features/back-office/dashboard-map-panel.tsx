@@ -17,6 +17,7 @@ import {
   isLocatedDriver,
   locatedDeliveries,
   nextDashboardMapView,
+  shouldDropSelection,
   summarizeDelivery,
   summarizeDriver,
   type DashboardMapView,
@@ -59,8 +60,8 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 export function DashboardMapPanel({ height = 280, initialView = "drivers", showDrivers = true }: { height?: number; initialView?: DashboardMapView; showDrivers?: boolean }) {
   const [view, setView] = useState<DashboardMapView>(showDrivers ? initialView : "deliveries");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const drivers = useDriverLiveLocations(showDrivers);
-  const deliveries = useDispatchDeliveriesMap();
+  const drivers = useDriverLiveLocations(showDrivers, view === "drivers");
+  const deliveries = useDispatchDeliveriesMap(view === "deliveries");
   const theme = useMapTheme();
   const now = useNow(CLOCK_TICK_MS);
   const tabsId = useId();
@@ -79,12 +80,32 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
   const selectedDriver = view === "drivers" ? driverList.find((d) => d.id === selectedId) : undefined;
   const selectedDelivery = view === "deliveries" ? deliveryList.find((d) => d.id === selectedId) : undefined;
   useEffect(() => {
-    if (selectedId && !selectedDriver && !selectedDelivery && (drivers.data || deliveries.data)) setSelectedId(null);
+    if (shouldDropSelection(selectedId, Boolean(selectedDriver || selectedDelivery), Boolean(drivers.data || deliveries.data))) setSelectedId(null);
   }, [selectedId, selectedDriver, selectedDelivery, drivers.data, deliveries.data]);
 
+  const openerRef = useRef<HTMLElement | null>(null);
+  const select = useCallback((id: string) => {
+    // Mémorise l'élément qui ouvre la fiche (marqueur ou ligne de liste) pour lui rendre le focus.
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setSelectedId(id);
+  }, []);
+  const closeDetail = useCallback(() => {
+    setSelectedId(null);
+    const opener = openerRef.current;
+    openerRef.current = null;
+    window.requestAnimationFrame(() => {
+      if (opener && opener.isConnected && !opener.hasAttribute("disabled")) opener.focus();
+      else tabRefs.current[viewRef.current]?.focus();
+    });
+  }, []);
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const changeView = useCallback((next: DashboardMapView) => {
     setView(next);
     setSelectedId(null);
+    // La vue qui devient active repart d'un relevé frais (l'autre ne se rafraîchissait plus).
+    void (next === "drivers" ? drivers : deliveries).refetch?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch stable ; évite de recréer le gestionnaire à chaque relevé
   }, []);
 
   const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -94,15 +115,6 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
     changeView(next);
     tabRefs.current[next]?.focus();
   };
-
-  useEffect(() => {
-    if (!selectedId) return;
-    const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape" && !event.defaultPrevented) setSelectedId(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [selectedId]);
 
   const loading = query.isPending;
   const errorMessage = query.isError ? (query.error instanceof Error ? query.error.message : "Erreur de chargement") : null;
@@ -114,7 +126,13 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
   const panelTitleId = `${tabsId}-detail`;
 
   return (
-    <section aria-label="Carte en direct" className="space-y-3">
+    <section
+      aria-label="Carte en direct"
+      className="space-y-3"
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && selectedId && !event.defaultPrevented) closeDetail();
+      }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div role="tablist" aria-label="Contenu de la carte" className="inline-flex rounded-xl border border-border bg-muted/40 p-1">
           {views.map((tab) => {
@@ -161,7 +179,7 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
             <PageLoader />
           </div>
         ) : (
-          <DashboardMap view={view} drivers={driverList} deliveries={deliveryList} selectedId={selectedId} onSelect={setSelectedId} height={height} />
+          <DashboardMap view={view} drivers={driverList} deliveries={deliveryList} selectedId={selectedId} onSelect={select} height={height} />
         )}
         {!loading && emptyKind !== "none" && (
           <div className="pointer-events-none absolute inset-x-0 top-3 z-[1000] flex justify-center px-3">
@@ -184,7 +202,7 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
               <button
                 type="button"
                 aria-label="Fermer la fiche"
-                onClick={() => setSelectedId(null)}
+                onClick={closeDetail}
                 className="-m-2 flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X className="h-4 w-4" aria-hidden />
@@ -193,7 +211,7 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
             {driverSummary && (
               <div className="mt-1 space-y-1 text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: driverSummary.state === "unlocated" ? "#8b948e" : driverSummary.state === "live" ? TEAMS_PRESENCE.online : driverSummary.state === "estimated" ? TEAMS_PRESENCE.recent : TEAMS_PRESENCE.lost }} />
+                  <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: driverSummary.state === "unlocated" ? "var(--color-text-tertiary)" : driverSummary.state === "live" ? TEAMS_PRESENCE.online : driverSummary.state === "estimated" ? TEAMS_PRESENCE.recent : TEAMS_PRESENCE.lost }} />
                   <span className="sr-only">Signal</span>
                   <p className="font-medium text-foreground">{driverSummary.stateLabel}</p>
                 </div>
@@ -262,7 +280,7 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
                   const summary = summarizeDriver(driver, now);
                   return (
                     <li key={driver.id}>
-                      <button type="button" aria-pressed={selectedId === driver.id} disabled={summary.state === "unlocated"} onClick={() => setSelectedId(driver.id)} className={cn("flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60", selectedId === driver.id && "bg-accent")}>
+                      <button type="button" aria-pressed={selectedId === driver.id} disabled={summary.state === "unlocated"} onClick={() => select(driver.id)} className={cn("flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60", selectedId === driver.id && "bg-accent")}>
                         <span className="font-medium">{summary.name}</span>
                         <span className="text-xs text-muted-foreground">{summary.stateLabel}</span>
                       </button>
@@ -273,7 +291,7 @@ export function DashboardMapPanel({ height = 280, initialView = "drivers", showD
                   const summary = summarizeDelivery(delivery, new Date(now));
                   return (
                     <li key={delivery.id}>
-                      <button type="button" aria-pressed={selectedId === delivery.id} disabled={!summary.hasDestination} onClick={() => setSelectedId(delivery.id)} className={cn("flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60", selectedId === delivery.id && "bg-accent")}>
+                      <button type="button" aria-pressed={selectedId === delivery.id} disabled={!summary.hasDestination} onClick={() => select(delivery.id)} className={cn("flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-60", selectedId === delivery.id && "bg-accent")}>
                         <span className="flex items-center gap-2 font-medium">
                           <StatusGlyph status={summary.status} theme={theme} />
                           {summary.reference}

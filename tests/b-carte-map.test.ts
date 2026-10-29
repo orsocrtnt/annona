@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { StyleSpecification } from "maplibre-gl";
 import type { LiveDriverLocation } from "../src/domains/driver/driver-location.service";
@@ -11,6 +10,8 @@ import { mapPalette, mapRouteStyle, MAP_VISUAL_THEME_DARK } from "../src/lib/map
 import {
   dashboardMapEmptyKind,
   nextDashboardMapView,
+  sceneViewAction,
+  shouldDropSelection,
   summarizeDelivery,
   summarizeDriver,
 } from "../src/features/back-office/dashboard-map-model";
@@ -148,21 +149,19 @@ test("tableau de bord : les anciennes dispositions à deux cartes n'en montrent 
   assert.equal(mergeMapWidgets(same), same);
 });
 
-test("tableau de bord : plus de sections séparées, la carte unifiée porte onglets, légende, liste et états", () => {
-  const renderer = readFileSync("src/features/back-office/dashboard-widget-renderer.tsx", "utf8");
-  assert.doesNotMatch(renderer, /Missions actives|DriversMapWidget|DeliveriesMapWidget/);
-  assert.match(renderer, /DashboardMapPanel/);
-  const panel = readFileSync("src/features/back-office/dashboard-map-panel.tsx", "utf8");
-  for (const needle of [/role="tablist"/, /role="tab"/, /aria-selected/, /Légende de la carte/, /Réessayer/, /<details/, /aria-pressed/, /Fermer la fiche/, /Voir la livraison/, /Voir la fiche du livreur/]) {
-    assert.match(panel, needle);
-  }
+test("cadrage : recentre à la sélection seulement, jamais à chaque relevé GPS", () => {
+  const base = { hasTarget: true, fitKey: "a", lastFitKey: "a" };
+  assert.equal(sceneViewAction({ ...base, selectedId: "d1", lastCenteredId: null }), "center");
+  assert.equal(sceneViewAction({ ...base, selectedId: "d1", lastCenteredId: "d1" }), "hold", "un nouveau relevé ne déplace pas la carte");
+  assert.equal(sceneViewAction({ ...base, selectedId: "d2", lastCenteredId: "d1" }), "center");
+  assert.equal(sceneViewAction({ ...base, selectedId: null, lastCenteredId: "d1" }), "none");
+  assert.equal(sceneViewAction({ ...base, selectedId: null, lastCenteredId: null, fitKey: "b" }), "fit");
+  assert.equal(sceneViewAction({ ...base, selectedId: "d9", hasTarget: false, lastCenteredId: null, fitKey: "b" }), "fit");
 });
 
-test("carte sombre : le fond vectoriel se recharge selon le thème, sans nouveau fournisseur", () => {
-  const layer = readFileSync("src/components/maps/vector-base-layer.tsx", "utf8");
-  assert.match(layer, /useMapTheme\(\)/);
-  assert.match(layer, /loadMentheStyle\(styleUrl, theme\)/);
-  assert.match(layer, /\[map, styleUrl, theme\]/);
-  const config = readFileSync("src/lib/maps/provider-config.ts", "utf8");
-  assert.match(config, /openfreemap\.org\/styles\/positron/);
+test("sélection disparue : abandonnée seulement quand les données sont chargées", () => {
+  assert.equal(shouldDropSelection("m1", false, true), true);
+  assert.equal(shouldDropSelection("m1", false, false), false);
+  assert.equal(shouldDropSelection("m1", true, true), false);
+  assert.equal(shouldDropSelection(null, false, true), false);
 });

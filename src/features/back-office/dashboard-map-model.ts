@@ -124,3 +124,23 @@ export const DASHBOARD_MAP_EMPTY_MESSAGES: Record<Exclude<DashboardMapEmptyKind,
   "no-mission": "Aucune mission active à afficher.",
   "no-destination": "Les missions actives n'ont pas encore d'adresse localisée sur la carte.",
 };
+
+/**
+ * Décision de cadrage de la scène : recentrer sur la sélection seulement quand elle change (un nouveau
+ * relevé GPS ne déplace pas la carte), recadrer l'ensemble seulement quand les repères affichés changent.
+ */
+export function sceneViewAction(input: {
+  selectedId: string | null;
+  hasTarget: boolean;
+  lastCenteredId: string | null;
+  fitKey: string;
+  lastFitKey: string;
+}): "center" | "hold" | "fit" | "none" {
+  if (input.selectedId && input.hasTarget) return input.lastCenteredId === input.selectedId ? "hold" : "center";
+  return input.fitKey === input.lastFitKey ? "none" : "fit";
+}
+
+/** Une sélection dont l'élément a disparu (mission terminée, livreur retiré) est abandonnée, sauf données pas encore chargées. */
+export function shouldDropSelection(selectedId: string | null, stillExists: boolean, dataLoaded: boolean): boolean {
+  return selectedId !== null && !stillExists && dataLoaded;
+}
