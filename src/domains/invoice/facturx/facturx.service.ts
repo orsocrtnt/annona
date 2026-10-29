@@ -173,15 +173,6 @@ export async function getCompanyEinvoicing(companyId: string) {
   return { identity: { ...identity, country: identity.country ?? "FR" }, einvoicing: stored.settings, invalidFields: stored.invalidFields };
 }
 
-/**
- * La facture électronique est activée pour l'entreprise (choix explicite dans les mentions légales).
- * Une entreprise qui ne fait que des PDF n'est jamais bloquée par les mentions Factur-X, même avec des factures émises.
- */
-export async function isEinvoicingEnabled(companyId: string): Promise<boolean> {
-  const data = await getCompanyEinvoicing(companyId);
-  return data?.einvoicing.enabled === true;
-}
-
 export async function updateCompanyEinvoicing(companyId: string, input: CompanyEinvoicingUpdate) {
   const identity = input.identity;
   // Réclamation sur updatedAt : une écriture concurrente de settings (billing…) n'est jamais écrasée.

@@ -260,7 +260,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         return;
       }
       setSuccess(passwordLink.type === "signup" ? "Adresse confirmée. Vous pouvez vous connecter." : "Mot de passe enregistré. Vous pouvez vous connecter.");
-    } catch (caught) { setError(caught instanceof RequestTimeoutError ? AUTH_TIMEOUT_MESSAGE : "Connexion interrompue. Si le lien a été utilisé, demandez-en un nouveau."); }
+    } catch (caught) { setError(caught instanceof RequestTimeoutError ? `${AUTH_TIMEOUT_MESSAGE}. Si le lien a été utilisé, demandez-en un nouveau.` : "Connexion interrompue. Si le lien a été utilisé, demandez-en un nouveau."); }
     finally { setCompletingLink(false); }
   };
 
