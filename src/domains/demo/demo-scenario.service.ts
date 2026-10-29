@@ -5,7 +5,6 @@ import type {
   DeliveryStatus,
   InvoiceStatus,
   OrderStatus,
-  Prisma,
 } from "@prisma/client";
 import { attachRolesById } from "@/domains/user/user.service";
 import {

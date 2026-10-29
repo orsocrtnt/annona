@@ -3,12 +3,12 @@
 Branche `agent/e2-fiabilite`, base `preproduction` (c917cf8).
 
 ## Terminé quand
-- [ ] 16 — réglages : réclamation sur `updatedAt` généralisée ; conflit 409 ; inventaire ; PostgreSQL réel
-- [ ] 17 — relance refusée avec certitude : ni « Envoi non confirmé » ni blocage 24 h ; pas de double envoi
-- [ ] 10 — cron : tâche ignorée ≠ échec ; erreur sur échec réel seulement ; détail par tâche sans donnée personnelle
-- [ ] 9 — premier job « Prise en charge » resté `PENDING` : cause et classe corrigée
+- [x] 16 — réglages : réclamation sur `updatedAt` généralisée ; conflit 409 ; inventaire ; PostgreSQL réel
+- [x] 17 — relance refusée avec certitude : ni « Envoi non confirmé » ni blocage 24 h ; pas de double envoi
+- [x] 10 — cron : tâche ignorée ≠ échec ; erreur sur échec réel seulement ; détail par tâche sans donnée personnelle
+- [x] 9 — premier job « Prise en charge » resté `PENDING` : cause et classe corrigée
 - [x] 14 — 403 `/api/portal/dashboard` : cause plausible documentée (non prouvée, non corrigée)
-- [ ] `npm run check` vert, `git diff --check` propre, pré-vol adverse
+- [x] `npm run check` vert (1 217 tests), `git diff --check` propre, pré-vol adverse
 
 ## Livré
 - **16** : `src/lib/database/settings-claims.ts` (Company/User) et option `section` de `updateSettingsWithClaim` (5 tentatives). Appelants convertis : dispatch, localisation, tarifs, catégories, portail, facturation, Factur-X (2), tableaux de bord back-office et portail (mise à jour et réinitialisation), préférences client, mini-admin (borné à l'entreprise), démo (règles de dispatch, retards de signal, version du scénario, service de suivi simulé). Déjà conformes : `tracking.service`, `onboarding.service` (égalité JSON). SQL brut (`proof-settings`, `order-intake.settings`) : `updated_at` avance strictement. Exception volontaire : `demo-provision` (remplacement complet). 409 « Rechargez puis réessayez » (`KNOWN_ERROR_CODES` et routes sans `withApiHandler`). Inventaire statique : `tests/settings-claim-generalized.test.ts`.
@@ -26,8 +26,10 @@ Branche `agent/e2-fiabilite`, base `preproduction` (c917cf8).
 - Lignes héritées SENDING + tâche FAILED après un refus (ancien code) : restent « non confirmées » (indiscernables d'une issue inconnue) ; débloquées 24 h après la réservation.
 - Point 9 : cause non prouvée par un journal (aucune trace conservée).
 
-## À lancer sur le Mac
-- `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local -- npm run test:pg-settings`
+## PostgreSQL réel (tutelliv-dev, lancé)
+- `npm run test:pg-settings` : réussi, 10 écritures concurrentes, pool de 5. (a) 10 réglages différents : 5 enregistrés, 5 en 409, aucune clé perdue ; (b) 10 enregistrements du dispatch : 1 enregistré, 9 en 409 ; (c) compte : 7 enregistrés, 3 en 409, aucune perte ; (d) témoin, ancien code : 9 clés sur 10 perdues en silence. Données E2E nettoyées (0 restante).
+- Limite : sous forte contention, des réglages différents peuvent recevoir un 409 (clair, rien de perdu).
+- Pré-vol : opus (1 bloquant, 2 importants corrigés), puis Sonnet sur les corrections : rien de bloquant.
 
 ## Écrans à capturer
 - Aucun écran modifié. Paiements (relance refusée → « Échec d'envoi », bouton actif) : Light/Dark, 390 et 1 280 px, si un refus Resend est simulable.

@@ -167,7 +167,7 @@ test("inventaire : aucune lecture-réécriture de settings sans réclamation dan
   assert.deepEqual(offenders, [], "écriture de settings non réclamée");
 });
 
-test("inventaire : une écriture SQL brute de settings fait toujours avancer updated_at (sinon une réclamation lue avant l'écraserait)", () => {
+test("inventaire (contrôle statique du texte SQL) : une écriture SQL brute de settings fait avancer updated_at", () => {
   const offenders: string[] = [];
   let found = 0;
   for (const file of sourceFiles("src")) {
