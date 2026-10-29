@@ -1,17 +1,73 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/services/supabase/middleware";
 import { AUTH_ROUTES } from "@/lib/constants";
+import { DEMO_PERSONA_COOKIE, DEMO_SESSION_COOKIE } from "@/lib/demo/constants";
 import { isCrossOriginMutation, isOriginCheckExempt } from "@/lib/security/origin-check";
-import { evaluatePageAccess, getRoleHomePath, isProtectedPagePath } from "@/lib/permissions/page-access";
+import {
+  evaluatePageAccess,
+  getRoleHomePath,
+  isProtectedPagePath,
+  type PageAccessSubject,
+} from "@/lib/permissions/page-access";
 import { resolveServerAuthForAuthId } from "@/lib/api/server-auth";
 
+const NO_STORE = "no-store";
+
+/**
+ * Sujet de la garde de pages mémorisé 5 s par authId + persona + session de démo :
+ * absorbe les rafales de préchargement (une relecture en base au lieu d'une par lien).
+ * Les API relisent toujours la base : une suspension reste immédiate pour les données.
+ */
+const SUBJECT_TTL_MS = 5_000;
+const SUBJECT_MAX_ENTRIES = 500;
+const subjectCache = new Map<string, { subject: PageAccessSubject | null; until: number }>();
+const subjectInflight = new Map<string, Promise<PageAccessSubject | null>>();
+
+async function loadSubject(authId: string): Promise<PageAccessSubject | null> {
+  const auth = await resolveServerAuthForAuthId(authId);
+  if (!auth) return null;
+  return { role: auth.user.role.systemRole, permissions: auth.permissions, settings: auth.user.settings };
+}
+
+async function resolvePageSubject(request: NextRequest, authId: string): Promise<PageAccessSubject | null> {
+  const key = [
+    authId,
+    request.cookies.get(DEMO_PERSONA_COOKIE)?.value ?? "",
+    request.cookies.get(DEMO_SESSION_COOKIE)?.value ?? "",
+  ].join("\n");
+  const now = Date.now();
+  const hit = subjectCache.get(key);
+  if (hit && hit.until > now) return hit.subject;
+  let pending = subjectInflight.get(key);
+  if (!pending) {
+    pending = loadSubject(authId).finally(() => subjectInflight.delete(key));
+    subjectInflight.set(key, pending);
+  }
+  const subject = await pending;
+  subjectCache.set(key, { subject, until: Date.now() + SUBJECT_TTL_MS });
+  if (subjectCache.size > SUBJECT_MAX_ENTRIES) {
+    for (const [cachedKey, entry] of subjectCache) {
+      if (entry.until <= Date.now() || subjectCache.size > SUBJECT_MAX_ENTRIES) subjectCache.delete(cachedKey);
+      if (subjectCache.size <= SUBJECT_MAX_ENTRIES) break;
+    }
+  }
+  return subject;
+}
+
+/** Recopie les cookies de session rafraîchis par `updateSession` (rotation du refresh token). */
+function withSessionCookies(response: NextResponse, cookieSource: NextResponse) {
+  cookieSource.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+  response.headers.set("Cache-Control", NO_STORE);
+  return response;
+}
+
 /** Page de refus explicite : rôle sans aucun espace ouvert (jamais le HTML de la page demandée). */
-function forbiddenPage() {
+function refusalPage(status: 403 | 503, title: string, message: string) {
   return new NextResponse(
-    '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Accès refusé</title></head>' +
-      '<body><main><h1>Accès refusé</h1><p>Votre compte n’a accès à aucun écran de cet espace.</p>' +
+    `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title></head>` +
+      `<body><main><h1>${title}</h1><p>${message}</p>` +
       '<p><a href="/login">Revenir à la connexion</a></p></main></body></html>',
-    { status: 403, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } }
+    { status, headers: { "Content-Type": "text/html; charset=utf-8" } }
   );
 }
 
@@ -26,14 +82,11 @@ function loginRedirect(request: NextRequest, pathname: string) {
   return NextResponse.redirect(url);
 }
 
-/** Redirection serveur qui conserve les cookies de session rafraîchis par `updateSession`. */
-function redirectWithCookies(request: NextRequest, pathname: string, cookieSource: NextResponse) {
+function redirectTo(request: NextRequest, pathname: string) {
   const url = request.nextUrl.clone();
   url.pathname = pathname;
   url.search = "";
-  const response = NextResponse.redirect(url);
-  cookieSource.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
-  return response;
+  return NextResponse.redirect(url);
 }
 
 export async function middleware(request: NextRequest) {
@@ -60,32 +113,39 @@ export async function middleware(request: NextRequest) {
     if (!user) return loginRedirect(request, pathname);
     // AUTH-ROLE : rôle, permissions, modules, compte et entreprise relus en base
     // (jamais depuis le JWT ni les métadonnées utilisateur) avant tout rendu, RSC et préchargement compris.
-    const auth = await resolveServerAuthForAuthId(user.id);
-    if (!auth) return loginRedirect(request, pathname);
-    const decision = evaluatePageAccess(pathname, {
-      role: auth.user.role.systemRole,
-      permissions: auth.permissions,
-      settings: auth.user.settings,
-    });
-    if (decision.kind === "redirect") {
-      return redirectWithCookies(request, decision.location, supabaseResponse);
+    let subject: PageAccessSubject | null;
+    try {
+      subject = await resolvePageSubject(request, user.id);
+    } catch {
+      // Base indisponible : refus sans rendu (jamais d'ouverture par défaut).
+      return withSessionCookies(
+        refusalPage(503, "Service momentanément indisponible", "Réessayez dans quelques instants."),
+        supabaseResponse
+      );
     }
-    if (decision.kind === "forbidden") return forbiddenPage();
+    if (!subject) return withSessionCookies(loginRedirect(request, pathname), supabaseResponse);
+    const decision = evaluatePageAccess(pathname, subject);
+    if (decision.kind === "redirect") {
+      return withSessionCookies(redirectTo(request, decision.location), supabaseResponse);
+    }
+    if (decision.kind === "forbidden") {
+      return withSessionCookies(
+        refusalPage(403, "Accès refusé", "Votre compte n’a accès à aucun écran de cet espace."),
+        supabaseResponse
+      );
+    }
     return supabaseResponse;
   }
 
   if (isAuthRoute && user) {
     // Session valide mais compte inactif, non provisionné ou démo expirée : la page de
-    // connexion reste affichée (sinon boucle connexion ↔ espace protégé).
-    const auth = await resolveServerAuthForAuthId(user.id);
-    if (auth) {
-      const home = getRoleHomePath(auth.user.role.systemRole, auth.user.settings);
-      const decision = evaluatePageAccess(home, {
-        role: auth.user.role.systemRole,
-        permissions: auth.permissions,
-        settings: auth.user.settings,
-      });
-      if (decision.kind === "allow") return redirectWithCookies(request, home, supabaseResponse);
+    // connexion reste affichée (sinon boucle connexion ↔ espace protégé). Base indisponible : idem.
+    const subject = await resolvePageSubject(request, user.id).catch(() => null);
+    if (subject) {
+      const home = getRoleHomePath(subject.role, subject.settings);
+      if (evaluatePageAccess(home, subject).kind === "allow") {
+        return withSessionCookies(redirectTo(request, home), supabaseResponse);
+      }
     }
   }
 

@@ -96,7 +96,7 @@ async function expectMatrix(api: APIRequestContext, actor: keyof typeof EXPECTED
   }
   // Requête RSC et préchargement d'un écran interdit : même redirection serveur.
   const forbidden = SPACES.find((path) => !allowed.includes(path))!;
-  for (const headers of [{ RSC: "1" }, { RSC: "1", "Next-Router-Prefetch": "1" }]) {
+  for (const headers of [{ RSC: "1" }, { RSC: "1", "Next-Router-Prefetch": "1" }] as Record<string, string>[]) {
     const rsc = await api.get(`${forbidden}?_rsc=e2e`, { maxRedirects: 0, headers });
     expect(rsc.status(), `${actor} RSC ${forbidden}`).toBe(307);
     expect(new URL(rsc.headers().location!, "http://x").pathname).toBe(home);

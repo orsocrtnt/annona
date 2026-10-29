@@ -26,6 +26,8 @@ export function useAuth() {
     clearPendingCredentials();
     queryClient.clear();
     router.push("/login");
+    // Purge le cache du routeur : aucune page de l'ancienne session n'est réaffichée sans le middleware.
+    router.refresh();
   }, [supabase, clearAuth, queryClient, router]);
 
   return {

@@ -174,7 +174,7 @@ test("AUTH-ROLE navigation : chaque lien du menu d'un rôle mène à une page qu
 
 type Auth = { user: { role: { systemRole: SystemRole }; settings: unknown }; permissions: string[] } | null;
 
-function loadMiddleware(session: { id: string } | null, auth: Auth) {
+function loadMiddleware(session: { id: string } | null, auth: Auth | Error, refreshed = false) {
   const module = { exports: {} as { middleware: (request: NextRequest) => Promise<Response> } };
   const source = ts.transpileModule(readFileSync("src/middleware.ts", "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
@@ -183,14 +183,20 @@ function loadMiddleware(session: { id: string } | null, auth: Auth) {
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse },
     "@/services/supabase/middleware": {
-      updateSession: async () => ({ supabaseResponse: NextResponse.next(), user: session }),
+      updateSession: async () => {
+        const supabaseResponse = NextResponse.next();
+        if (refreshed) supabaseResponse.cookies.set("sb-x-auth-token", "rotated", { httpOnly: true, maxAge: 3600 });
+        return { supabaseResponse, user: session };
+      },
     },
     "@/lib/constants": { AUTH_ROUTES: ["/login", "/register", "/forgot-password", "/reset-password", "/login/client", "/login/driver"] },
+    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "tutelliv-demo-persona", DEMO_SESSION_COOKIE: "tutelliv-demo-session" },
     "@/lib/security/origin-check": { isCrossOriginMutation: () => false, isOriginCheckExempt: () => false },
     "@/lib/permissions/page-access": pageAccess,
     "@/lib/api/server-auth": {
       resolveServerAuthForAuthId: async (authId: string) => {
         resolved.push(authId);
+        if (auth instanceof Error) throw auth;
         return auth;
       },
     },
@@ -199,6 +205,8 @@ function loadMiddleware(session: { id: string } | null, auth: Auth) {
     exports: module.exports,
     module,
     URL,
+    Date,
+    Map,
     require: (id: string) => {
       assert.ok(id in dependencies, `Unexpected dependency ${id}`);
       return dependencies[id];
@@ -224,7 +232,7 @@ test("AUTH-ROLE middleware : mauvais rôle redirigé côté serveur, y compris e
   assert.equal(client.location, "http://localhost:3110/portal");
   assert.deepEqual(client.resolved, ["auth-client"]);
 
-  for (const headers of [{ RSC: "1" }, { RSC: "1", "Next-Router-Prefetch": "1" }]) {
+  for (const headers of [{ RSC: "1" }, { RSC: "1", "Next-Router-Prefetch": "1" }] as Record<string, string>[]) {
     const rsc = await call({ id: "auth-driver" }, asRole("DRIVER"), "/portal/orders?_rsc=abc", headers);
     assert.equal(rsc.status, 307);
     assert.equal(rsc.location, "http://localhost:3110/driver");
@@ -266,4 +274,26 @@ test("AUTH-ROLE middleware : anonyme, compte inactif, connexion et refus explici
   const publicPage = await call({ id: "auth-client" }, asRole("CLIENT"), "/demonstration");
   assert.equal(publicPage.status, 200);
   assert.deepEqual(publicPage.resolved, []);
+});
+
+test("AUTH-ROLE middleware : cookies rafraîchis conservés, no-store, base en panne refusée, rafales mémorisées", async () => {
+  const { middleware, resolved } = loadMiddleware({ id: "auth-client" }, asRole("CLIENT"), true);
+  const redirect = await middleware(new NextRequest("http://localhost:3110/dashboard"));
+  assert.equal(redirect.status, 307);
+  assert.equal(redirect.headers.get("cache-control"), "no-store");
+  assert.match(redirect.headers.get("set-cookie") ?? "", /sb-x-auth-token=rotated.*HttpOnly/i);
+  // Rafale de préchargements : une seule relecture en base pour la même session et persona…
+  await Promise.all(["/dispatch", "/driver", "/users"].map((path) => middleware(new NextRequest(`http://localhost:3110${path}`))));
+  assert.deepEqual(resolved, ["auth-client"]);
+  // … mais un changement de persona de démo relit la base.
+  await middleware(new NextRequest("http://localhost:3110/portal", { headers: { cookie: "tutelliv-demo-persona=driver" } }));
+  assert.deepEqual(resolved, ["auth-client", "auth-client"]);
+
+  const down = loadMiddleware({ id: "auth-x" }, new Error("db down"), true);
+  const failed = await down.middleware(new NextRequest("http://localhost:3110/dashboard"));
+  assert.equal(failed.status, 503);
+  assert.equal(failed.headers.get("cache-control"), "no-store");
+  assert.equal(failed.headers.get("x-middleware-next"), null);
+  const loginWhileDown = await down.middleware(new NextRequest("http://localhost:3110/login"));
+  assert.equal(loginWhileDown.status, 200);
 });

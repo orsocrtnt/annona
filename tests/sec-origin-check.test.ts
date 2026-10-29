@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { NextRequest, NextResponse } from "next/server";
 import { isCrossOriginMutation, isOriginCheckExempt } from "../src/lib/security/origin-check";
+import * as pageAccess from "../src/lib/permissions/page-access";
 
 // SEC-6 : une mutation (POST, PUT, PATCH, DELETE) venue d'une autre origine est refusée
 // par le middleware, sauf webhook Stripe et crons authentifiés par secret.
@@ -64,6 +65,9 @@ function loadMiddleware(calls: string[]) {
     "@/services/supabase/middleware": { updateSession: async () => { calls.push("session"); return { supabaseResponse: NextResponse.next(), user: null }; } },
     "@/lib/constants": { AUTH_ROUTES: ["/login"] },
     "@/lib/security/origin-check": { isCrossOriginMutation, isOriginCheckExempt },
+    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "tutelliv-demo-persona", DEMO_SESSION_COOKIE: "tutelliv-demo-session" },
+    "@/lib/permissions/page-access": pageAccess,
+    "@/lib/api/server-auth": { resolveServerAuthForAuthId: async () => { calls.push("auth"); return null; } },
   };
   runInNewContext(source, { exports: module.exports, module, process, require: (id: string) => {
     assert.ok(id in deps, `Unexpected dependency ${id}`);

@@ -62,7 +62,7 @@ function authFixture(existing: UserWithRole | null = null, byEmail: UserWithRole
     },
     "@/lib/auth/normalize-email": normalize,
     "@/lib/utils": { slugify: (v: string) => v },
-    "@/lib/permissions/mini-admin": { getMiniAdminHomePath: () => "/dashboard" },
+    "@/lib/permissions/page-access": { getRoleHomePath: () => "/dashboard" },
   });
   return { service, writes, updates, links: () => links };
 }

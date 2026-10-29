@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -61,7 +61,6 @@ function isDemoAppArea(pathname: string): boolean {
 
 export function DemoModeBar() {
   const pathname = usePathname();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { demo, setUser, setPermissions, setDemo, setSaas } = useAuthStore();
   const [switching, setSwitching] = useState(false);
@@ -135,7 +134,9 @@ export function DemoModeBar() {
           demo: json.demo ?? null,
           saas: json.saas ?? null,
         });
-        router.push(json.redirectTo);
+        // Chargement complet : le cache du routeur ne réaffiche aucune page de l'ancienne persona,
+        // et l'espace de la nouvelle persona repasse par la garde serveur (AUTH-ROLE).
+        window.location.assign(json.redirectTo);
         toast.success(`Vue ${DEMO_PERSONA_LABELS[persona]} activée`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Erreur de changement de vue");
@@ -143,7 +144,7 @@ export function DemoModeBar() {
         setSwitching(false);
       }
     },
-    [demo, queryClient, router, setDemo, setPermissions, setSaas, setUser]
+    [demo, queryClient, setDemo, setPermissions, setSaas, setUser]
   );
 
   const resetDemo = useCallback(async () => {
@@ -166,14 +167,14 @@ export function DemoModeBar() {
         saas: json.saas ?? null,
       });
       setResetOpen(false);
-      router.push(json.redirectTo ?? "/dashboard");
+      window.location.assign(json.redirectTo ?? "/dashboard");
       toast.success("Démo réinitialisée — scénario de base restauré");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erreur lors de la réinitialisation");
     } finally {
       setResetting(false);
     }
-  }, [queryClient, router, setDemo, setPermissions, setSaas, setUser]);
+  }, [queryClient, setDemo, setPermissions, setSaas, setUser]);
 
   if (!visible || !demo || !hydrated) return null;
 
