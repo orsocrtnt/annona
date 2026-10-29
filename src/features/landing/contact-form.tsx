@@ -18,7 +18,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 const inputClass =
-  "mt-2 w-full rounded-xl border border-[#d8dee6] bg-white px-4 py-3 text-sm text-[#172334] shadow-sm outline-none transition focus:border-[#3d5a73] focus:ring-2 focus:ring-[#3d5a73]/20";
+  "mt-2 w-full rounded-xl border border-[#d8dee6] dark:border-border bg-card px-4 py-3 text-sm text-[#172334] dark:text-foreground shadow-sm outline-none transition focus:border-[#3d5a73] dark:focus:border-ring focus:ring-2 focus:ring-[#3d5a73]/20";
 
 export function ContactForm() {
   const [state, setState] = useState<FormState>({ kind: "idle" });
@@ -53,7 +53,7 @@ export function ContactForm() {
 
   if (state.kind === "sent") {
     return (
-      <div role="status" className="rounded-[1.5rem] border border-[#cfe0cf] bg-[#eef6ee] p-6 text-[#2f5530]">
+      <div role="status" className="rounded-[1.5rem] border border-[#cfe0cf] dark:border-border bg-[#eef6ee] dark:bg-secondary p-6 text-[#2f5530] dark:text-brand">
         <CheckCircle2 className="h-6 w-6" aria-hidden />
         <p className="mt-3 text-lg font-bold">Message reçu.</p>
         <p className="mt-1 text-sm leading-6">Nous vous répondrons à l&apos;adresse indiquée.</p>
@@ -69,26 +69,26 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate={false} className="rounded-[1.5rem] border border-[#d8dee6] bg-white/90 p-6 shadow-[0_20px_60px_rgba(23,35,52,0.08)] sm:p-8">
+    <form onSubmit={handleSubmit} noValidate={false} className="rounded-[1.5rem] border border-[#d8dee6] dark:border-border bg-card/90 p-6 shadow-[0_20px_60px_rgba(23,35,52,0.08)] sm:p-8">
       <div className="grid gap-5 sm:grid-cols-2">
-        <label className="text-sm font-semibold text-[#243447]">
+        <label className="text-sm font-semibold text-[#243447] dark:text-foreground">
           Nom
           <input name="name" required minLength={2} maxLength={120} autoComplete="name" className={inputClass} />
         </label>
-        <label className="text-sm font-semibold text-[#243447]">
+        <label className="text-sm font-semibold text-[#243447] dark:text-foreground">
           E-mail
           <input name="email" type="email" required maxLength={200} autoComplete="email" className={inputClass} />
         </label>
-        <label className="text-sm font-semibold text-[#243447]">
-          Entreprise <span className="font-normal text-[#758290]">(facultatif)</span>
+        <label className="text-sm font-semibold text-[#243447] dark:text-foreground">
+          Entreprise <span className="font-normal text-[#758290] dark:text-text-secondary">(facultatif)</span>
           <input name="company" maxLength={160} autoComplete="organization" className={inputClass} />
         </label>
-        <label className="text-sm font-semibold text-[#243447]">
-          Téléphone <span className="font-normal text-[#758290]">(facultatif)</span>
+        <label className="text-sm font-semibold text-[#243447] dark:text-foreground">
+          Téléphone <span className="font-normal text-[#758290] dark:text-text-secondary">(facultatif)</span>
           <input name="phone" type="tel" maxLength={40} autoComplete="tel" className={inputClass} />
         </label>
       </div>
-      <label className="mt-5 block text-sm font-semibold text-[#243447]">
+      <label className="mt-5 block text-sm font-semibold text-[#243447] dark:text-foreground">
         Message
         <textarea name="message" required minLength={10} maxLength={4000} rows={6} className={inputClass} />
       </label>
@@ -99,11 +99,11 @@ export function ContactForm() {
           <input name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
         </label>
       </div>
-      <p className="mt-4 text-xs leading-5 text-[#758290]">
+      <p className="mt-4 text-xs leading-5 text-[#758290] dark:text-text-secondary">
         Vos coordonnées servent uniquement à vous répondre.
       </p>
       {state.kind === "error" && (
-        <p role="alert" className="mt-4 rounded-xl border border-[#ead1c9] bg-[#fbefeb] px-4 py-3 text-sm font-semibold text-[#8a3b2a]">
+        <p role="alert" className="mt-4 rounded-xl border border-[#ead1c9] dark:border-border bg-[#fbefeb] dark:bg-secondary px-4 py-3 text-sm font-semibold text-[#8a3b2a] dark:text-error">
           {state.message}
         </p>
       )}

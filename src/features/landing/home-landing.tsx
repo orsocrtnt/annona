@@ -22,7 +22,7 @@ const benefits = [
 
 const count = new Intl.NumberFormat("fr-FR");
 
-/** Prix du catalogue : sans centimes quand le montant est rond (79 €), sinon au centime. */
+/** Prix du catalogue : sans centimes quand le montant est rond, sinon au centime. */
 function price(cents: number) {
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",

@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 };
 
 const personaVisuals: Record<DemoPersona, { icon: typeof Building2; detail: string; className: string }> = {
-  admin: { icon: Building2, detail: "Organiser les missions", className: "bg-[#e3f7ec] text-[#08783f]" },
-  client: { icon: UserRound, detail: "Suivre une commande", className: "bg-[#e3f7ec] text-[#08783f]" },
-  driver: { icon: Truck, detail: "Parcourir une mission", className: "bg-[#f2dfb8] text-[#7a5410]" },
+  admin: { icon: Building2, detail: "Organiser les missions", className: "bg-[#e3f7ec] dark:bg-brand-subtle text-brand" },
+  client: { icon: UserRound, detail: "Suivre une commande", className: "bg-[#e3f7ec] dark:bg-brand-subtle text-brand" },
+  driver: { icon: Truck, detail: "Parcourir une mission", className: "bg-[#f2dfb8] dark:bg-[#3a2f1c] text-[#7a5410] dark:text-[#f0b45c]" },
 };
 
 export default async function DemonstrationPage() {
@@ -35,31 +35,31 @@ export default async function DemonstrationPage() {
       <main id="main-content" tabIndex={-1} className="pb-20">
         <section className="mx-auto grid max-w-6xl gap-10 px-5 pb-14 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#e4e8e5] bg-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#08783f] shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-brand shadow-sm">
               <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
               Explorer sans rien déranger
             </div>
-            <h1 className="mt-6 text-balance text-4xl font-bold tracking-[-0.04em] text-[#0e1310] sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 text-balance text-4xl font-bold tracking-[-0.04em] text-foreground sm:text-5xl lg:text-6xl">
               Faites le tour de TutelLiv, à votre rythme.
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-[#68726b] sm:text-lg">
+            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
               La démonstration ouvre une entreprise déjà marquée comme démo. Les données y sont fictives et séparées d&apos;une entreprise cliente.
             </p>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#68726b]">
+            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
               Ce n&apos;est ni un pilote gratuit, ni une découverte premium, ni une souscription.
             </p>
 
             <div className="mt-7">
               {available && href ? (
                 <Link
-                  className="inline-flex min-h-13 items-center gap-2 rounded-xl bg-[#00d46a] px-6 py-3.5 text-sm font-bold text-[#0e1310] shadow-[0_12px_30px_rgba(0,212,106,0.25)] transition-[transform,background-color] hover:bg-[#00c262] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2"
+                  className="inline-flex min-h-13 items-center gap-2 rounded-xl bg-[#00d46a] px-6 py-3.5 text-sm font-bold text-[#0e1310] shadow-[0_12px_30px_rgba(0,212,106,0.25)] transition-[transform,background-color] hover:bg-[#00c262] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] dark:focus-visible:ring-ring focus-visible:ring-offset-2"
                   href={href}
                 >
                   Ouvrir la démonstration
                   <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
               ) : (
-                <div className="inline-flex items-center gap-2 rounded-xl border border-[#ecd6a8] bg-[#fdf4e4] px-4 py-3 text-sm font-semibold text-[#7a5410]">
+                <div className="inline-flex items-center gap-2 rounded-xl border border-[#ecd6a8] dark:border-border bg-[#fdf4e4] dark:bg-secondary px-4 py-3 text-sm font-semibold text-[#7a5410] dark:text-[#f0b45c]">
                   <span className="h-2 w-2 rounded-full bg-[#c98a12]" aria-hidden />
                   {"La démonstration n'est pas ouverte sur cet environnement."}
                 </div>
@@ -68,8 +68,8 @@ export default async function DemonstrationPage() {
           </div>
 
           <div className="relative">
-            <div className="absolute -inset-5 -z-10 rounded-[2.5rem] bg-gradient-to-br from-[#e3f7ec] via-white to-[#fbefd9] blur-2xl" aria-hidden />
-            <div className="overflow-hidden rounded-[1.75rem] border border-[#d5ddd8] bg-[#0e1310] shadow-[0_28px_80px_rgba(14,19,16,0.2)]">
+            <div className="absolute -inset-5 -z-10 rounded-[2.5rem] bg-gradient-to-br from-[#e3f7ec] via-white to-[#fbefd9] blur-2xl dark:hidden" aria-hidden />
+            <div className="overflow-hidden rounded-[1.75rem] border border-[#d5ddd8] dark:border-input bg-[#0e1310] dark:bg-secondary shadow-[0_28px_80px_rgba(14,19,16,0.2)]">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-3.5">
                 <div className="flex gap-1.5" aria-hidden>
                   <span className="h-2.5 w-2.5 rounded-full bg-[#e6a2a2]" />
@@ -120,10 +120,10 @@ export default async function DemonstrationPage() {
             ].map(([Icon, title, text]) => {
               const FeatureIcon = Icon as typeof ShieldCheck;
               return (
-                <article key={String(title)} className="rounded-[1.5rem] border border-[#e4e8e5] bg-white/80 p-5 shadow-sm">
-                  <FeatureIcon className="h-5 w-5 text-[#08783f]" aria-hidden />
-                  <h2 className="mt-4 font-bold text-[#0e1310]">{String(title)}</h2>
-                  <p className="mt-2 text-sm leading-6 text-[#68726b]">{String(text)}</p>
+                <article key={String(title)} className="rounded-[1.5rem] border border-border bg-card/80 p-5 shadow-sm">
+                  <FeatureIcon className="h-5 w-5 text-brand" aria-hidden />
+                  <h2 className="mt-4 font-bold text-foreground">{String(title)}</h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{String(text)}</p>
                 </article>
               );
             })}
@@ -131,22 +131,22 @@ export default async function DemonstrationPage() {
         </section>
 
         <section className="mx-auto mt-12 max-w-4xl px-5 sm:px-6">
-          <div className="rounded-[1.75rem] border border-[#e4e8e5] bg-white/85 p-6 text-center shadow-sm sm:p-8">
-            <h2 className="text-2xl font-bold tracking-tight text-[#0e1310]">Une visite préparée, sans surprise.</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[#68726b]">
+          <div className="rounded-[1.75rem] border border-border bg-card/85 p-6 text-center shadow-sm sm:p-8">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">Une visite préparée, sans surprise.</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
               {`Les vues prévues sont ${Object.values(DEMO_PERSONA_LABELS).join(", ")}. Si l’environnement de démo est incomplet, la connexion existante refuse d’ouvrir un espace. Cette page ne crée ni compte, ni session, ni jeu de données.`}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link href="/fonctionnalites" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] bg-white px-4 py-2.5 text-sm font-bold text-[#0e1310] hover:bg-[#f0f4f1]">
+              <Link href="/fonctionnalites" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-2.5 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary">
                 Fonctionnalités
               </Link>
-              <Link href="/tarifs" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] bg-white px-4 py-2.5 text-sm font-bold text-[#0e1310] hover:bg-[#f0f4f1]">
+              <Link href="/tarifs" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-2.5 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary">
                 Tarifs
               </Link>
-              <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] bg-white px-4 py-2.5 text-sm font-bold text-[#0e1310] hover:bg-[#f0f4f1]">
+              <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-2.5 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary">
                 Inscription
               </Link>
-              <Link href="/login" className="inline-flex min-h-11 items-center px-3 py-2.5 text-sm font-bold text-[#4a544d] underline decoration-[#a3aca6] underline-offset-4 hover:text-[#0e1310]">
+              <Link href="/login" className="inline-flex min-h-11 items-center px-3 py-2.5 text-sm font-bold text-[#4a544d] dark:text-text-secondary underline decoration-[#a3aca6] underline-offset-4 hover:text-foreground">
                 Connexion
               </Link>
             </div>
