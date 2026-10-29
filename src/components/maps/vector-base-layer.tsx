@@ -7,27 +7,29 @@ import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { configureMaplibreWorker } from "@/lib/maps/maplibre-worker";
 import { MAP_VECTOR, PROVIDER_TIMEOUT_MS } from "@/lib/maps/provider-config";
-import { toMentheStyle } from "@/lib/maps/menthe-style";
+import { toMentheStyle, type MapTheme } from "@/lib/maps/menthe-style";
 import { ProviderTileLayer } from "@/components/maps/provider-tile-layer";
 
-let cachedStyle: Promise<StyleSpecification> | null = null;
+import { useMapTheme } from "@/hooks/use-map-theme";
 
-function loadMentheStyle(url: string): Promise<StyleSpecification> {
-  cachedStyle ??= (async () => {
+const cachedStyles: Partial<Record<MapTheme, Promise<StyleSpecification>>> = {};
+
+function loadMentheStyle(url: string, theme: MapTheme): Promise<StyleSpecification> {
+  cachedStyles[theme] ??= (async () => {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
     try {
       const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error(`style ${response.status}`);
-      return toMentheStyle((await response.json()) as StyleSpecification);
+      return toMentheStyle((await response.json()) as StyleSpecification, theme);
     } finally {
       window.clearTimeout(timer);
     }
   })().catch((error) => {
-    cachedStyle = null;
+    delete cachedStyles[theme];
     throw error;
   });
-  return cachedStyle;
+  return cachedStyles[theme]!;
 }
 
 /**
@@ -37,6 +39,7 @@ function loadMentheStyle(url: string): Promise<StyleSpecification> {
 export function BaseMapLayer({ onModeChange }: { onModeChange?: (mode: "vector" | "raster") => void }) {
   const map = useMap();
   const styleUrl = MAP_VECTOR.styleUrl;
+  const theme = useMapTheme();
   const [mode, setMode] = useState<"pending" | "vector" | "raster">(styleUrl ? "pending" : "raster");
 
   useEffect(() => {
@@ -44,7 +47,7 @@ export function BaseMapLayer({ onModeChange }: { onModeChange?: (mode: "vector" 
     let layer: ReturnType<typeof maplibreGL> | null = null;
     let cancelled = false;
 
-    loadMentheStyle(styleUrl)
+    loadMentheStyle(styleUrl, theme)
       .then((style) => {
         if (cancelled) return;
         configureMaplibreWorker();
@@ -60,7 +63,7 @@ export function BaseMapLayer({ onModeChange }: { onModeChange?: (mode: "vector" 
       cancelled = true;
       if (layer) map.removeLayer(layer);
     };
-  }, [map, styleUrl]);
+  }, [map, styleUrl, theme]);
 
   useEffect(() => {
     if (mode !== "pending") onModeChange?.(mode);

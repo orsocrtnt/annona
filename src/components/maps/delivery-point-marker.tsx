@@ -8,7 +8,9 @@ import {
   getDispatchMapStatusMeta,
   type DispatchMapStatusKey,
 } from "@/features/back-office/dispatch-map-status";
-import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import { useMapTheme } from "@/hooks/use-map-theme";
+import { mapPalette, type MapPaletteTheme } from "@/lib/maps/map-visual-theme";
+import { MAP_SHAPE_LABEL, MAP_PIN_BODY, MAP_PIN_OUTLINE, MAP_STATUS_STYLE, statusCoreSvg } from "@/lib/maps/map-status-style";
 
 /**
  * Clic sur un repère. Le double-clic est reconnu plus haut (deux clics rapprochés sur la même
@@ -35,28 +37,31 @@ function escapeHtml(text: string) {
     .replace(/"/g, "&quot;");
 }
 
-const PILL_COLORS: Record<DispatchMapStatusKey, [string, string]> = {
-  late: ["#fde3e0", "#b8352b"],
-  unassigned: ["#fde9d6", "#a8560d"],
-  pending: ["#e1ebfb", "#2a62bd"],
-  route: ["#dff5e8", "#08783f"],
-};
-
-/** Épingle encre de la planche A ; le cœur prend la couleur de l'état (vert en route, rouge en retard). */
-function pinSvg(size: number, core: string, muted: boolean) {
-  const fill = muted ? MAP_VISUAL_THEME.muted : MAP_VISUAL_THEME.ink;
-  return `<svg width="${size}" height="${Math.round(size * 1.25)}" viewBox="0 0 26 32" aria-hidden="true" style="display:block;filter:drop-shadow(0 4px 8px rgba(14,19,16,0.25))"><path d="M13 31s11-10.5 11-18A11 11 0 0 0 2 13c0 7.5 11 18 11 18z" fill="${fill}" stroke="#ffffff" stroke-width="1.5"/><circle cx="13" cy="13" r="4.6" fill="${core}"/></svg>`;
+/**
+ * Épingle de la planche A : corps encre en Clair, clair en Sombre. Le cœur porte le statut par sa forme
+ * (triangle en retard, anneau sans livreur, carré à démarrer, disque en route) et sa couleur mesurée.
+ */
+function pinSvg(size: number, status: DispatchMapStatusKey | undefined, muted: boolean, theme: MapPaletteTheme, selected = false) {
+  const palette = mapPalette(theme);
+  const fill = muted ? palette.muted : MAP_PIN_BODY[theme];
+  const outline = MAP_PIN_OUTLINE[theme];
+  const style = status ? MAP_STATUS_STYLE[theme][status] : null;
+  const core = style ? statusCoreSvg(style.shape, style.core) : `<circle cx="13" cy="13" r="4.6" fill="${palette.surface}"/>`;
+  const ring = selected ? `<path d="M13 31s11-10.5 11-18A11 11 0 0 0 2 13c0 7.5 11 18 11 18z" fill="none" stroke="${palette.brand}" stroke-width="4.5"/>` : "";
+  return `<svg width="${size}" height="${Math.round(size * 1.25)}" viewBox="0 0 26 32" aria-hidden="true" style="display:block;overflow:visible;filter:drop-shadow(0 4px 8px rgba(14,19,16,0.25))">${ring}<path d="M13 31s11-10.5 11-18A11 11 0 0 0 2 13c0 7.5 11 18 11 18z" fill="${fill}" stroke="${outline}" stroke-width="1.5"/>${core}</svg>`;
 }
 
-function calloutHtml(label: string, subtitle: string | undefined, status: DispatchMapStatusKey | undefined, offset: number) {
+function calloutHtml(label: string, subtitle: string | undefined, status: DispatchMapStatusKey | undefined, offset: number, theme: MapPaletteTheme) {
+  const palette = mapPalette(theme);
   const pill = status
-    ? `<span style="justify-self:start;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:${PILL_COLORS[status][0]};color:${PILL_COLORS[status][1]};">${getDispatchMapStatusMeta(status).label}</span>`
+    ? `<span style="justify-self:start;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:${MAP_STATUS_STYLE[theme][status].surface};color:${MAP_STATUS_STYLE[theme][status].text};">${getDispatchMapStatusMeta(status).label}</span>`
     : "";
   const sub = subtitle
-    ? `<span style="font-size:10.5px;color:#68726b;max-width:170px;white-space:normal;line-height:1.3;">${escapeHtml(subtitle)}</span>`
+    ? `<span style="font-size:10.5px;color:${theme === "dark" ? "#a3aca6" : "#68726b"};max-width:170px;white-space:normal;line-height:1.3;">${escapeHtml(subtitle)}</span>`
     : "";
-  return `<div style="position:absolute;left:0;top:0;transform:translate(-50%,calc(-100% - ${offset}px));display:grid;gap:4px;padding:8px 11px;border-radius:12px;background:#ffffff;box-shadow:0 10px 26px rgba(14,40,25,0.16);min-width:112px;max-width:200px;">
-      <span style="font-size:12px;font-weight:650;color:${MAP_VISUAL_THEME.ink};">${escapeHtml(label)}</span>${pill}${sub}
+  const shadow = theme === "dark" ? "0 10px 26px rgba(0,0,0,0.5)" : "0 10px 26px rgba(14,40,25,0.16)";
+  return `<div style="position:absolute;left:0;top:0;transform:translate(-50%,calc(-100% - ${offset}px));display:grid;gap:4px;padding:8px 11px;border-radius:12px;background:${palette.surface};box-shadow:${shadow};min-width:112px;max-width:200px;">
+      <span style="font-size:12px;font-weight:650;color:${palette.ink};">${escapeHtml(label)}</span>${pill}${sub}
     </div>`;
 }
 
@@ -67,30 +72,31 @@ function createPointIcon(
   stepIndex: number | undefined,
   isSelected: boolean,
   muted = false,
-  status?: DispatchMapStatusKey
+  status?: DispatchMapStatusKey,
+  theme: MapPaletteTheme = "light"
 ) {
+  const palette = mapPalette(theme);
   const dotSize = isSelected ? 16 : 13;
   let html: string;
 
   if (kind === "destination") {
     const size = isSelected ? 32 : 26;
-    const core = status ? getDispatchMapStatusMeta(status).dot : MAP_VISUAL_THEME.surface;
-    html = `<div style="position:relative;width:0;height:0;overflow:visible;">
-        <div style="position:absolute;left:0;top:0;transform:translate(-50%,-100%);">${pinSvg(size, core, muted)}</div>
-        ${calloutHtml(label, subtitle, muted ? undefined : status, Math.round(size * 1.25) + 8)}
+        html = `<div style="position:relative;width:0;height:0;overflow:visible;">
+        <div style="position:absolute;left:0;top:0;transform:translate(-50%,-100%);">${pinSvg(size, status, muted, theme, isSelected)}</div>
+        ${calloutHtml(label, subtitle, muted ? undefined : status, Math.round(size * 1.25) + 8, theme)}
       </div>`;
   } else {
     // Collectes et étapes : pastilles encre ou blanches, numérotées pour les étapes.
-    const stepTextColor = muted ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
-    const background = kind === "pickup" ? MAP_VISUAL_THEME.surface : muted ? MAP_VISUAL_THEME.mutedLight : MAP_VISUAL_THEME.inkSoft;
-    const border = kind === "pickup" ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.surface;
+    const stepTextColor = muted ? palette.ink : palette.surface;
+    const background = kind === "pickup" ? palette.surface : muted ? palette.mutedLight : palette.inkSoft;
+    const border = kind === "pickup" ? palette.ink : palette.surface;
     const inner = kind === "step" && stepIndex != null
       ? `<span style="font-size:10px;font-weight:700;color:${stepTextColor};">${stepIndex}</span>`
       : "";
     const size = kind === "step" ? dotSize + 6 : dotSize;
     html = `<div style="position:relative;width:0;height:0;overflow:visible;">
         <div style="position:absolute;left:0;top:0;width:${size}px;height:${size}px;transform:translate(-50%,-50%);border-radius:50%;background:${background};border:3px solid ${border};box-shadow:0 2px 10px rgba(14,19,16,0.22);display:flex;align-items:center;justify-content:center;">${inner}</div>
-        ${calloutHtml(label, subtitle, undefined, size / 2 + 10)}
+        ${calloutHtml(label, subtitle, undefined, size / 2 + 10, theme)}
       </div>`;
   }
 
@@ -129,9 +135,10 @@ export function DeliveryPointMarker({
   onClick,
 }: DeliveryPointMarkerProps) {
   const eventHandlers = useMarkerClicks(onClick);
+  const theme = useMapTheme();
   const icon = useMemo(
-    () => createPointIcon(kind, label, subtitle, stepIndex, isSelected, muted, status),
-    [kind, label, subtitle, stepIndex, isSelected, muted, status]
+    () => createPointIcon(kind, label, subtitle, stepIndex, isSelected, muted, status, theme),
+    [kind, label, subtitle, stepIndex, isSelected, muted, status, theme]
   );
 
   return (
@@ -169,6 +176,7 @@ export function DeliveryOverviewMarker({
   onSelect: () => void;
 }) {
   const eventHandlers = useMarkerClicks(onSelect);
+  const theme = useMapTheme();
   // Les missions qui demandent l'attention (retard) ou qui bougent (en route) portent leur fiche.
   const showCallout = calloutAllowed && (status === "late" || status === "route");
   const icon = useMemo(
@@ -176,20 +184,20 @@ export function DeliveryOverviewMarker({
       L.divIcon({
         className: "delivery-point-marker",
         html: `<div style="position:relative;width:0;height:0;overflow:visible;cursor:pointer;">
-            <div style="position:absolute;left:0;top:0;transform:translate(-50%,-100%);">${pinSvg(26, getDispatchMapStatusMeta(status).dot, false)}</div>
-            ${showCallout ? calloutHtml(title || reference.replace(/^LIV-/, "#"), subtitle, status, 40) : ""}
+            <div style="position:absolute;left:0;top:0;transform:translate(-50%,-100%);">${pinSvg(26, status, false, theme)}</div>
+            ${showCallout ? calloutHtml(title || reference.replace(/^LIV-/, "#"), subtitle, status, 40, theme) : ""}
           </div>`,
         iconSize: [1, 1],
         iconAnchor: [0, 0],
       }),
-    [reference, showCallout, status, subtitle, title]
+    [reference, showCallout, status, subtitle, theme, title]
   );
 
   return (
     <Marker
       position={[latitude, longitude]}
       icon={icon}
-      title={`${reference} · ${getDispatchMapStatusMeta(status).label} — clic : sélectionner · double-clic : voir le détail`}
+      title={`${reference} · ${getDispatchMapStatusMeta(status).label} (${MAP_SHAPE_LABEL[MAP_STATUS_STYLE[theme][status].shape]}) — clic : sélectionner · double-clic : voir le détail`}
       keyboard
       eventHandlers={eventHandlers}
       zIndexOffset={status === "late" ? 600 : 400}
@@ -211,21 +219,23 @@ export function DeliveryClusterMarker({
   hasLate: boolean;
   onSelect: () => void;
 }) {
+  const theme = useMapTheme();
   const icon = useMemo(() => {
+    const palette = mapPalette(theme);
     const size = Math.min(56, 34 + count * 3);
     return L.divIcon({
       className: "delivery-point-marker",
       html: `<div style="position:relative;width:0;height:0;overflow:visible;cursor:pointer;">
-          <div style="position:absolute;left:0;top:0;width:${size}px;height:${size}px;transform:translate(-50%,-50%);border-radius:50%;background:${MAP_VISUAL_THEME.ink};color:#ffffff;display:flex;align-items:center;justify-content:center;font:650 ${count > 9 ? 14 : 13}px/1 Inter,system-ui,sans-serif;box-shadow:0 0 0 5px rgba(255,255,255,0.85),0 8px 20px rgba(14,19,16,0.22);">${count}${
+          <div style="position:absolute;left:0;top:0;width:${size}px;height:${size}px;transform:translate(-50%,-50%);border-radius:50%;background:${palette.ink};color:${palette.surface};display:flex;align-items:center;justify-content:center;font:650 ${count > 9 ? 14 : 13}px/1 Inter,system-ui,sans-serif;box-shadow:0 0 0 5px ${theme === "dark" ? "rgba(20,23,22,0.85)" : "rgba(255,255,255,0.85)"},0 8px 20px rgba(14,19,16,0.22);">${count}${
             hasLate
-              ? `<span style="position:absolute;right:-1px;top:-1px;width:12px;height:12px;border-radius:50%;background:${MAP_VISUAL_THEME.danger};box-shadow:0 0 0 2px #ffffff;"></span>`
+              ? `<span style="position:absolute;right:-1px;top:-1px;width:12px;height:12px;border-radius:50%;background:${palette.danger};box-shadow:0 0 0 2px ${palette.surface};"></span>`
               : ""
           }</div>
         </div>`,
       iconSize: [1, 1],
       iconAnchor: [0, 0],
     });
-  }, [count, hasLate]);
+  }, [count, hasLate, theme]);
 
   return (
     <Marker
