@@ -17,7 +17,7 @@ export const MAP_STATUS_STYLE: Record<
 > = {
   light: {
     late: { core: "#ff7a6b", shape: "triangle", text: "#b8352b", surface: "#fde3e0" },
-    unassigned: { core: "#ffb15c", shape: "ring", text: "#a8560d", surface: "#fde9d6" },
+    unassigned: { core: "#ffb15c", shape: "ring", text: "#8f4708", surface: "#fde9d6" },
     pending: { core: "#7fb0ff", shape: "square", text: "#2a62bd", surface: "#e1ebfb" },
     route: { core: "#00d46a", shape: "circle", text: "#08783f", surface: "#dff5e8" },
   },

@@ -33,7 +33,7 @@ test("le dashboard garde ses widgets de pilotage et leurs détails", () => {
   assert.match(content, /<h1[^>]*>Tableau de bord<\/h1>/);
   assert.match(content, /DashboardCustomizeDrawer/);
   assert.match(content, /drillDown/);
-  for (const widget of ["AlertsRowWidget", "TodaySummaryWidget", "PlanningWidget", "PlanningStatusTableSection", "MapDriversWidget", "MapDeliveriesWidget"]) {
+  for (const widget of ["AlertsRowWidget", "TodaySummaryWidget", "PlanningWidget", "PlanningStatusTableSection", "UnifiedMapWidget"]) {
     assert.match(widgets, new RegExp(`function ${widget}`));
   }
   assert.doesNotMatch(widgets, /Math\.random|faker|mockData|fakeData/);
