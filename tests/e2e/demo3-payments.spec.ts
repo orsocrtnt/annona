@@ -45,7 +45,7 @@ test("DEMO-3 : Facturation › Paiements liste, filtre et relance une facture à
     const remind = panel.getByRole("button", { name: `Relancer · facture ${overdue}`, exact: true });
     await expect(remind).toBeVisible();
     await remind.click();
-    const notice = page.getByText(/Relance envoyée au client|Relance tracée, non envoyée|Déjà relancée/);
+    const notice = page.getByText(/Relance envoyée au client|Relance tracée, non envoyée|Relance déjà tracée, toujours non envoyée|Déjà relancée/);
     await expect(notice).toBeVisible();
     if (/non envoyée/.test((await notice.textContent()) ?? "")) {
       // Aucun e-mail n'est parti (service non configuré sur tutelliv-dev) : la relance est tracée mais ne bloque pas
