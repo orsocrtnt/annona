@@ -14,28 +14,21 @@ Sources : [idempotence Resend](https://resend.com/docs/dashboard/emails/idempote
 | 409 `invalid_idempotent_request` | unconfirmed, permanente | SEND_UNCONFIRMED (peut-être déjà parti) |
 | reprise ≥ 23 h après la fenêtre | unconfirmed, aucun appel | SEND_UNCONFIRMED |
 
-- Contenu gelé à la création de la relance ; anti-doublon compté depuis l'envoi.
-- Une relance QUEUED dont la tâche a déjà tourné est traitée comme une reprise. Si sa tâche est épuisée, elle est affichée non confirmée et bloque « Relancer », sauf erreur prouvant l'absence d'appel au fournisseur.
-- Admin : libellé « Envoi non confirmé… vérifiez avant de relancer », identique dans la liste et au clic. La tâche passe FAILED avec un `lastError` explicite. « Relancer » suit exactement la règle du serveur.
+Contenu gelé à la création, anti-doublon compté depuis l'envoi. Une relance QUEUED dont la tâche a déjà tourné est une reprise ; tâche épuisée = non confirmée et bloquante, sauf erreur prouvant l'absence d'appel. Admin : « Envoi non confirmé… vérifiez avant de relancer », même résultat liste/clic, tâche FAILED avec `lastError` explicite.
 
 ## Appelants (`replayWindowStart` obligatoire)
 
-- `invoice-reminder.service.ts` (`deliverInvoiceReminderJob`) : `null` à la première tentative, création de la relance pour une reprise.
-- `notify.service.ts` (livraison, acceptation, facture émise) et `signup.service.ts` (bienvenue) : `jobEmailReplayWindow` (`operation-job.service.ts`). Il inscrit la première tentative émise dans le payload. Une tâche déjà exécutée sans marqueur (héritée) prend sa date de création.
-- ORDER_MESSAGE n'envoie pas d'e-mail ; l'authentification passe par Supabase.
+- `invoice-reminder.service.ts` : `null` en première tentative, création de la relance sinon.
+- `notify.service.ts` et `signup.service.ts` : `jobEmailReplayWindow` (première tentative inscrite dans le payload ; tâche héritée déjà exécutée : date de création).
+- ORDER_MESSAGE sans e-mail ; authentification par Supabase.
 
 ## Autres correctifs
 
-- Tâche reportée sans perte d'essai ; la prise d'une tâche vérifie son échéance.
-- Limiteur de connexion. Défaut réel trouvé par le test PostgreSQL : 10 connexions autorisées sur 12, limite 5. Désormais, attente de verrou bornée à 2 s. Une contention répond 503 « Service momentanément occupé… », `Retry-After: 5`.
+Tâche reportée sans perte d'essai, prise vérifiant l'échéance. Limiteur de connexion (défaut trouvé sur PostgreSQL : 10 autorisées sur 12, limite 5) : verrou attendu 2 s au plus, contention = 503 « Service momentanément occupé… », `Retry-After: 5`.
 
 ## Tests (`node:test`, dans `npm run check`)
 
-- E-mail : table des 17 cas.
-- Relances : fournisseur simulé au contrat Resend ; 200, 400, 409×2, 422, 429, 500, expiration ; double clic, reprise à 6 min après minuit à Paris puis à +20 h, dépassement de 23 h.
-- Transition : relance QUEUED héritée → 409 → aucun second e-mail.
-- Tâches notify et bienvenue : fenêtre et tâches héritées.
-- Affichage, liste, prise de tâche, route 503.
+Table des 17 cas ; fournisseur simulé au contrat Resend (200, 400, 409×2, 422, 429, 500, expiration, double clic, reprise à 6 min après minuit, +20 h, > 23 h) ; transition QUEUED héritée → 409 → un seul e-mail ; fenêtre notify/bienvenue ; liste, clic, prise de tâche, route 503.
 
 ## PostgreSQL réel : `npm run test:pg-locks` (tutelliv-dev, pool 5)
 
@@ -50,15 +43,15 @@ passed: true ; aucune donnée E2E restante
 
 ## Contre-revues adverses (Opus)
 
-Trois passes ; leurs constats sont corrigés, à l'exception des limites ci-dessous.
+Trois passes, constats corrigés sauf limites ci-dessous.
 
 ## Limites
 
 - Aucun envoi Resend réel ; corps `{name}` d'après la documentation.
-- Relance héritée terminée par l'ancien code en NOT_SENT_* après un 500 accepté : non détectable (tâche réussie, sans erreur).
-- **Pas de retour arrière sous 1ad71ec** : l'ancien code ignore SEND_UNCONFIRMED.
-- Notification ou bienvenue déjà tentée et créée il y a plus de 23 h : plus envoyée par e-mail.
-- `createClientOrder` simulé dans le test PostgreSQL, avec le vrai `beforeCreate`.
+- Relance héritée close en NOT_SENT_* après un 500 accepté : indétectable.
+- **Pas de retour arrière sous 1ad71ec** (SEND_UNCONFIRMED ignoré par l'ancien code).
+- Notification/bienvenue déjà tentée, créée > 23 h : plus d'e-mail.
+- `createClientOrder` simulé dans le test PostgreSQL (vrai `beforeCreate`).
 
 ## Commits
 
