@@ -4,6 +4,9 @@ import { toPublicPricing, type PublicPricing } from "@/domains/growth/public-pri
 import { getActiveSignupCatalog } from "@/domains/signup/signup.service";
 import { APP_NAME } from "@/lib/constants";
 
+/** Le catalogue vient de la base : rechargé toutes les 5 minutes au lieu d'être figé au build. */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: `${APP_NAME} — Plateforme de pilotage des livraisons`,
   description:

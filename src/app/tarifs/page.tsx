@@ -6,6 +6,9 @@ import { toPublicPricing } from "@/domains/growth/public-pricing";
 import { getActiveSignupCatalog } from "@/domains/signup/signup.service";
 import { GrowthShell } from "@/features/landing/growth-shell";
 
+/** Le catalogue vient de la base : rechargé toutes les 5 minutes au lieu d'être figé au build. */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: `Tarifs — ${APP_NAME}`,
   description: "Formules Starter, Pro et Business lues sur le catalogue actif.",
