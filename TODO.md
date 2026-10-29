@@ -4,13 +4,13 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**66 tâches terminées sur 105 — 63 %**
+**67 tâches terminées sur 105 — 64 %**
 
-`█████████████░░░░░░░` · 39 tâches restantes
+`█████████████░░░░░░░` · 38 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
-Mise à jour : 29 octobre 2026 (bilan de l'intégration du 28 octobre : neuf chantiers sur `integration/2026-10-28`, non poussée ; voir DEMO-3, DESIGN-1, FACTURX-1, INTAKE-1, POD-2, OPS-FIAB, SEC-AUDIT, RECETTE-2810 et PROPRIO-2810). Précédente : 26 octobre 2026 (revue de cohérence : tableaux de pilotage, priorités et matrice réalignés sur le code). Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
+Mise à jour : 29 octobre 2026, en fin de journée (revue de cohérence : matrice réalignée sur les cases ; LANDING-3, MAP-UNIFY-2, MAP-INTERACTION, E2E-MAJ, ICONES-IA et CONFIG-MSG-2 closes). Version précédente du même jour : bilan de l'intégration du 28 octobre (neuf chantiers ; voir DEMO-3, DESIGN-1, FACTURX-1, INTAKE-1, POD-2, OPS-FIAB, SEC-AUDIT, RECETTE-2810 et PROPRIO-2810). Précédente : 26 octobre 2026 (revue de cohérence : tableaux de pilotage, priorités et matrice réalignés sur le code). Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
 
 ## Tableau de pilotage
 
@@ -159,7 +159,7 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 - **Absent du code au 21 octobre :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet. *Au 26 octobre, tous ont une tranche locale (voir SAAS-01B/02/03/04, SALES-1, COST-1, ADMIN-1) sauf les factures d'abonnement et l'attribution commerciale persistée.*
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
-## Matrice des 27 tâches ouvertes
+## Matrice des 38 tâches ouvertes
 
 Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées (DISPATCH-3 close le 27 octobre), prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
 
@@ -182,9 +182,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | OFFER-1 | A+B | Confronter au marché la grille et les limites. | Prospects/pilotes. | Moyenne · GPT‑6 Astra |
 | PILOT-1 | A | Recruter, contractualiser et conduire trois pilotes quatre semaines. | Portes A–C et autorisation de contact. | Moyenne · GPT‑6.1 Sol |
 | PILOT-2 | A | Analyser usage, valeur, abandons et volonté de payer. | Après PILOT-1. | Moyenne · GPT‑6 Astra |
-| SAAS-01B | B | Recette réelle en mode test faite le 27 octobre : Checkout, refus, 3D Secure, webhooks, renouvellements, impayé, changement, résiliation, remboursement. | Tarification adaptative à désactiver (propriétaire). | Très élevée · GPT‑6 Astra |
-| SAAS-03 | B | Lecture, API et écran « Mon abonnement » : changement de formule (aperçu, prorata, comptes en excès bloquants) et résiliation à l'échéance, recettés sur Stripe sandbox réelle (27 octobre) ; abonnements sans compte de facturation en lecture seule. Restent options, moyen de paiement, documents, export DATA-02. | Arbitrage export (juriste). | Très élevée · GPT‑6 Astra |
-| SALES-1 | B | Tout est fait et prouvé localement (27 octobre) : codes, écran super-admin, lien d'inscription, attribution figée, commissions et historique. Reste la vérification en préproduction. | Application de la migration avant fusion. | Élevée · GPT‑6 Astra |
+| SAAS-03 | B | Formule, résiliation, moyen de paiement, factures et options en libre-service faits et recettés sur Stripe sandbox (27-28 octobre). Reste l'export depuis l'écran. | Canal de remise chiffré (DATA-02) ; arbitrage export (juriste). | Très élevée · GPT‑6 Astra |
 | SAAS-02 | B+C | Lecture revenu/consommation et alertes C10 faites, affichées et recettées (27 octobre) ; réconciliation paiements, rétention, conversion. | Stripe de test. | Élevée · GPT‑6.1 Sol |
 | PERF-02 | A+B | Harnais en mémoire et PostgreSQL local jetable faits (27 octobre) ; routes Next locales, puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
 | COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
@@ -198,13 +196,11 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | OPS-FIAB | A+B | Implémenté (29 octobre) ; déclenchement réel du workflow, `after()` sur Vercel, Node 22, index en préproduction. | Propriétaire (secrets, Vercel). | Moyenne · GPT‑6 Luna |
 | SEC-AUDIT | A+B | Implémenté et recetté (29 octobre) ; CSP bloquante, migration et secrets de préproduction, rattachement par e-mail. | Propriétaire (migration, secrets). | Élevée · GPT‑6 Astra |
 | DISPATCH-4 | A | Outil de dispatch avancé : score pondéré réglable, temps de trajet réel, tournées, suggestions, réoptimisation. | Périmètre à cadrer avec le propriétaire. | Élevée · GPT‑6 Astra |
-| CONFIG-MSG | A+B | Messages clairs quand une configuration échoue (cause et action), à commencer par Factur-X. | — | Moyenne · GPT‑6.1 Sol |
 | DESIGN-2 | A+B | Mode sombre sur tout le site (landing, back-office, admin, livreur) et carte sombre assortie. | Après DESIGN-1 ; validation du propriétaire. | Élevée · GPT‑6.1 Sol |
-| FACTURX-SAISIE | A+B | Champs exigés par le Factur-X obligatoires et bloquants dès l'enregistrement des mentions légales. | — | Moyenne · GPT‑6.1 Sol |
-| LANDING-2 | A+B | Landing et page de connexion refaites : minimalistes, très visuelles (Apple, Tesla, Uber), claires et efficaces. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
+| UX-ALERTES | A+B | Alertes allégées et placées dans leur contexte : livrées et revues le 29 octobre. | Validation visuelle du propriétaire. | Moyenne · GPT‑6.1 Sol |
+| LANDING-2 | A+B | Landing remplacée par LANDING-3 (validée le 29 octobre) ; reste la page de connexion, minimaliste et très visuelle. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
 | MOBILE-WEB | A+B | Revoir toute l'application au format téléphone, dans le navigateur. | Après DESIGN-2, MAP-INTERACTION et UX-ALERTES. | Élevée · GPT‑6.1 Sol |
 | CROSS-BROWSER | A+B | Même rendu sur Edge, Safari, Firefox et Chrome (écart constaté sur Edge). | Après LANDING-2 et MOBILE-WEB ; capture de l'écart à fournir par le propriétaire. | Moyenne · GPT‑6.1 Sol |
-| AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
 
@@ -1511,13 +1507,13 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : décision du propriétaire dans cette conversation, après résumé des retours de Marie. Complète UX-04 et DESIGN-2 ; ne modifie pas les règles de détection métier sans décision explicite. État : livrée le 29 octobre 2026, revue OK (Codex et revue adverse ; l'incident de la commande remonte en haut de la fiche livraison). Captures visuelles non faites : validation visuelle du propriétaire à faire. Non cochée.
 
-- [ ] **MAP-INTERACTION — Regrouper les cartes du tableau de bord et rendre leurs informations utiles.** Retour de Marie accepté par le propriétaire le 28 octobre 2026 : remplacer les deux sections « livreurs » et « missions actives » par un même espace de carte avec bascule claire entre les deux vues. Rendre les marqueurs sélectionnables, afficher les informations opérationnelles utiles au rôle et donner accès à la fiche canonique. Employer des couleurs mesurées pour distinguer les statuts et la sélection : le noir et blanc ne doit pas donner l'impression d'un écran inactif. Conserver un fond cartographique sobre (MAP-3), une légende et des formes/libellés qui ne dépendent pas de la seule couleur. Ne pas inventer de précision GPS ni d'informations indisponibles ; préserver la minimisation des coordonnées et de l'identité du livreur côté client.
+- [x] **MAP-INTERACTION — Regrouper les cartes du tableau de bord et rendre leurs informations utiles.** Retour de Marie accepté par le propriétaire le 28 octobre 2026 : remplacer les deux sections « livreurs » et « missions actives » par un même espace de carte avec bascule claire entre les deux vues. Rendre les marqueurs sélectionnables, afficher les informations opérationnelles utiles au rôle et donner accès à la fiche canonique. Employer des couleurs mesurées pour distinguer les statuts et la sélection : le noir et blanc ne doit pas donner l'impression d'un écran inactif. Conserver un fond cartographique sobre (MAP-3), une légende et des formes/libellés qui ne dépendent pas de la seule couleur. Ne pas inventer de précision GPS ni d'informations indisponibles ; préserver la minimisation des coordonnées et de l'identité du livreur côté client.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
   Terminé quand : une seule zone de carte permet de choisir Livreurs ou Livraisons ; la bascule et la sélection sont compréhensibles au clavier et sur mobile ; chaque marqueur donne une information utile et une action adaptée ; chargement, absence de position, position périmée, aucune mission et erreur fournisseur restent explicites ; permissions et isolation entre entreprises préservées ; `npm run check` vert et recette navigateur à 390 et 1 280 px.
 
-  Source / dépendance / blocage : décision du propriétaire dans cette conversation ; prolonge MAP-3 et UX-03, sans nouveau fournisseur ni suivi permanent promis. État : livrée le 29 octobre 2026 (lot B, en préproduction e4793e8), mais **non conforme selon le propriétaire** : il voit toujours deux cartes séparées sur le tableau de bord. Reprise dans MAP-UNIFY-2.
+  Source / dépendance / blocage : décision du propriétaire dans cette conversation ; prolonge MAP-3 et UX-03, sans nouveau fournisseur ni suivi permanent promis. État : livrée le 29 octobre 2026 (lot B, en préproduction e4793e8), mais **non conforme selon le propriétaire** : il voit toujours deux cartes séparées sur le tableau de bord. Reprise dans MAP-UNIFY-2. Close le 29 octobre 2026 : la carte unique de MAP-UNIFY-2 (bascule Tout / Livreurs / Livraisons, fiche du livreur au clic) est validée par le propriétaire.
 
 - [x] **UX-NAV-SCROLL — Revenir en haut lors d'un changement de page, conserver la position au Retour.** Défaut encore reproduit le 28 octobre 2026 sur le code `4a99b6b`, Chrome réel sans interface, `tutelliv-dev`, 1 280 × 720 : clic dans le menu administrateur de `/settings` (scrollY 533) vers `/settings/billing` → scrollY 389, soit le bas de la nouvelle page ; clic côté client de `/portal/settings` (scrollY 1 332) vers `/portal/orders` → scrollY 53, également au bas de cette page. Les liens ont été réellement cliqués ; aucune navigation par remplacement direct d'URL dans le test. Le bouton Retour restaure respectivement 533 et 1 332 : comportement à préserver. Preuve locale : `outputs/verification-2026-10-28/navigation-evidence.json`, captures `navigation-admin.png` et `navigation-client.png` ; pas de diffusion de ces outputs.
 
