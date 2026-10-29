@@ -13,6 +13,7 @@ import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/dashboard/dashboard-layout";
 import {
   getVisibleDashboardWidgets,
   groupDashboardWidgets,
+  mergeMapWidgets,
 } from "@/lib/dashboard/dashboard-layout";
 import { DashboardProvider, useDashboardContext } from "@/features/back-office/dashboard-context";
 import {
@@ -54,7 +55,7 @@ function CompanyDashboardView() {
 
   const widgetGroups = useMemo(() => {
     const visible = getVisibleDashboardWidgets(layout);
-    return groupDashboardWidgets(visible);
+    return groupDashboardWidgets(mergeMapWidgets(visible));
   }, [layout]);
 
   return (

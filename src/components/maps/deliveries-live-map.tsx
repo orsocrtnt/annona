@@ -27,7 +27,8 @@ import {
 import { getDispatchMapStatus } from "@/features/back-office/dispatch-map-status";
 import { DriverMapMarker } from "@/components/maps/driver-map-marker";
 import { LeafletBaseMap, PARIS_CENTER } from "@/components/maps/leaflet-base-map";
-import { MAP_ROUTE_STYLE } from "@/lib/maps/map-visual-theme";
+import { mapRouteStyle } from "@/lib/maps/map-visual-theme";
+import { useMapTheme } from "@/hooks/use-map-theme";
 import { useUIStore } from "@/stores/ui.store";
 
 export type DeliveriesMapApi = {
@@ -271,6 +272,7 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
   // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : points de passage arrondis
   const waypoints = useMemo(() => remaining, [waypointsKey]);
 
+  const theme = useMapTheme();
   useEffect(() => {
     if (!waypoints || waypoints.length < 2) {
       setRoute([]);
@@ -293,12 +295,13 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
     };
   }, [waypoints]);
 
+  const routeStyle = mapRouteStyle(theme);
   if (unavailable) return <div role="status" className="pointer-events-none absolute bottom-36 right-3 z-[1000] max-w-[80%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow dark:bg-card/95 dark:text-card-foreground">Itinéraire indisponible · positions seules</div>;
   if (route.length < 2) return null;
 
   return <>
-    <Polyline positions={route} pathOptions={MAP_ROUTE_STYLE.halo} />
-    <Polyline positions={route} pathOptions={MAP_ROUTE_STYLE.line} />
+    <Polyline positions={route} pathOptions={routeStyle.halo} />
+    <Polyline positions={route} pathOptions={routeStyle.line} />
   </>;
 }
 

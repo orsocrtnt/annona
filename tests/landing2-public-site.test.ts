@@ -124,7 +124,7 @@ test("DESIGN-2 : le site public suit le choix Clair / Sombre / Système, le rest
   }
   const nav = read("src/features/landing/public-top-navbar.tsx");
   assert.match(nav, /<ThemeToggle /);
-  assert.match(nav, /<ThemeMenuItem \/>/);
+  assert.match(nav, /<ThemeRadioGroup \/>/);
   assert.match(read("src/features/auth/auth-shell.tsx"), /<ThemeToggle \/>/);
 });
 

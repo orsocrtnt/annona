@@ -1,3 +1,4 @@
+import { billingFailureMessage, CONFIG_MESSAGES } from "@/lib/config-messages";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     if (input.action === "portal") {
       // Moyen de paiement et factures chez Stripe ; rien n'est modifié chez TutelLiv avant le webhook.
       const portal = await billing.paymentPortal(auth.account.id, auth.actorId).catch(() => null);
-      if (!portal) return NextResponse.json({ error: "Gestion du moyen de paiement indisponible. Réessayez dans un instant." }, { status: 409 });
+      if (!portal) return NextResponse.json({ error: CONFIG_MESSAGES.PAYMENT_PROVIDER_UNAVAILABLE }, { status: 409 });
       return NextResponse.json(portal, { headers: { "Cache-Control": "no-store" } });
     }
     if (input.action === "cancel") {
@@ -83,5 +84,5 @@ export async function POST(request: Request) {
     const result = await billing.command(auth.account.id, input.key, { kind: "CHANGE", target, prorationDate: input.prorationDate, confirmedTotalCents: input.confirmedTotalCents, actorId: auth.actorId });
     await billing.reconcile(auth.account.id).catch(() => null);
     return NextResponse.json(result);
-  } catch { return NextResponse.json({ error: "Modification non appliquée ou en attente de rapprochement. Relisez l’historique avant de réessayer avec la même demande." }, { status: 409 }); }
+  } catch (error) { return NextResponse.json({ error: billingFailureMessage(error, "Modification non appliquée ou en attente de rapprochement. Relisez l’historique avant de réessayer avec la même demande.") }, { status: 409 }); }
 }

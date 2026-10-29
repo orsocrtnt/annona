@@ -7,6 +7,8 @@ import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { MobileNav } from "./mobile-nav";
 import { useUIStore } from "@/stores/ui.store";
+import { useAuthStore } from "@/stores/auth.store";
+import { canUseConversations } from "@/lib/constants/conversation-roles";
 import type { NavItem, BreadcrumbItem } from "@/types";
 
 interface BackOfficeLayoutProps {
@@ -27,6 +29,8 @@ export function BackOfficeLayout({
   mapFullscreen = false,
 }: BackOfficeLayoutProps) {
   const { sidebarCollapsed } = useUIStore();
+  // Le super-administrateur n'a pas accès aux échanges ni aux alertes : ne pas appeler ces API (403).
+  const showInbox = canUseConversations(useAuthStore((state) => state.user?.role.systemRole));
   const isLg = useMediaQuery("(min-width: 1024px)");
   // Même retrait que le contenu : barre latérale flottante (12 px + 80/264 px) et son écart.
   const mapSidebarWidth = sidebarCollapsed ? 104 : 292;
@@ -64,7 +68,7 @@ export function BackOfficeLayout({
             className="flex-1 p-4 max-md:px-3 max-md:py-4 lg:px-8 lg:pb-10 lg:pt-5"
           >
             <div className="mx-auto max-w-[1480px]">
-              <OrderMessagesInbox enableDispatchTargets />
+              {showInbox && <OrderMessagesInbox enableDispatchTargets />}
               {children}
             </div>
           </main>

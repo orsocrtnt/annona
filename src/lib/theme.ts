@@ -5,12 +5,23 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "tutelliv-theme";
 
 /**
- * Espaces ayant migré vers les jetons Dark. Les autres gardent le Light actuel quel que soit l'OS.
- * « / » ne vaut que pour l'accueil exact (aucune route ne commence par « // »).
- * Site public (LANDING-2, DESIGN-2) : accueil, pages publiques, connexion et mot de passe.
+/**
+ * Espaces ayant migré vers les jetons Dark : portail client, back-office et dispatch, espace `/admin`, app livreur,
+ * et site public (LANDING-2, DESIGN-2) : accueil, pages publiques, connexion et mot de passe. L'inscription
+ * (`/register`) garde le Light actuel quel que soit l'OS. « / » ne vaut que pour l'accueil exact (aucune route
+ * ne commence par « // »).
  */
 export const THEME_SCOPED_PATH_PREFIXES = [
   "/portal",
+  "/dashboard",
+  "/dispatch",
+  "/settings",
+  "/support",
+  "/users",
+  "/companies",
+  "/onboarding",
+  "/admin",
+  "/driver",
   "/",
   "/fonctionnalites",
   "/tarifs",
@@ -20,6 +31,13 @@ export const THEME_SCOPED_PATH_PREFIXES = [
   "/forgot-password",
   "/reset-password",
 ] as const;
+
+/**
+ * Écrans plein écran de carte qui restent en Light tant que leur plan et leurs panneaux n'ont pas de version
+ * sombre (lot carte de DESIGN-2) : un panneau blanc à texte en jeton y deviendrait illisible en Dark.
+ * Retirer une entrée ici dès que l'écran est prêt.
+ */
+export const THEME_EXCLUDED_PATH_PREFIXES = ["/dispatch/map", "/dispatch/drivers", "/driver/navigate"] as const;
 
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === "system" || value === "light" || value === "dark";
@@ -34,11 +52,15 @@ export function resolveRootTheme(
   pathname: string,
   stored: unknown,
   prefersDark: boolean,
-  prefixes: readonly string[]
+  prefixes: readonly string[],
+  excluded: readonly string[] = []
 ): ResolvedTheme | null {
   let scoped = false;
   for (let i = 0; i < prefixes.length; i++) {
     if (pathname === prefixes[i] || pathname.indexOf(prefixes[i] + "/") === 0) scoped = true;
+  }
+  for (let j = 0; j < excluded.length; j++) {
+    if (pathname === excluded[j] || pathname.indexOf(excluded[j] + "/") === 0) scoped = false;
   }
   if (!scoped) return null;
   if (stored === "light" || stored === "dark") return stored;
@@ -46,7 +68,7 @@ export function resolveRootTheme(
 }
 
 export function isThemeScopedPath(pathname: string): boolean {
-  return resolveRootTheme(pathname, "light", false, THEME_SCOPED_PATH_PREFIXES) !== null;
+  return resolveRootTheme(pathname, "light", false, THEME_SCOPED_PATH_PREFIXES, THEME_EXCLUDED_PATH_PREFIXES) !== null;
 }
 
 export function resolveTheme(pref: ThemePreference, prefersDark: boolean): ResolvedTheme {
@@ -64,7 +86,7 @@ export function applyThemeToRoot(
   pref: ThemePreference,
   prefersDark: boolean
 ): void {
-  const theme = resolveRootTheme(pathname, pref, prefersDark, THEME_SCOPED_PATH_PREFIXES);
+  const theme = resolveRootTheme(pathname, pref, prefersDark, THEME_SCOPED_PATH_PREFIXES, THEME_EXCLUDED_PATH_PREFIXES);
   if (theme) root.setAttribute("data-theme", theme);
   else root.removeAttribute("data-theme");
 }
@@ -75,6 +97,6 @@ export function applyThemeToRoot(
  */
 export const THEME_INIT_SCRIPT = `(function(){try{var v=null;try{v=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY
-)})}catch(e){}var d=!!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);var t=(${resolveRootTheme.toString()})(location.pathname,v,d,${JSON.stringify(
-  THEME_SCOPED_PATH_PREFIXES
+)})}catch(e){}var d=!!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);var t=(${resolveRootTheme.toString()})(location.pathname,v,d,${JSON.stringify(THEME_SCOPED_PATH_PREFIXES)},${JSON.stringify(
+  THEME_EXCLUDED_PATH_PREFIXES
 )});if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}})();`;

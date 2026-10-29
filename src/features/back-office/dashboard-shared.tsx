@@ -85,11 +85,19 @@ export function CategoryCard({
 const DONUT_RADIUS = 42;
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
 
+/** Tons du diagramme en jetons : encre en Light, gris clair en Dark (classes complètes pour Tailwind). */
+const DONUT_TONES = {
+  ink: { stroke: "stroke-chart-ink", dot: "bg-chart-ink" },
+  mid: { stroke: "stroke-chart-mid", dot: "bg-chart-mid" },
+  soft: { stroke: "stroke-chart-soft", dot: "bg-chart-soft" },
+} as const;
+export type DonutTone = keyof typeof DONUT_TONES;
+
 /** Répartition des missions du jour, en tons encre (les diagrammes suivent la direction Encre). */
 export function TodayDonut({
   segments,
 }: {
-  segments: { label: string; value: number; color: string }[];
+  segments: { label: string; value: number; tone: DonutTone }[];
 }) {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0);
   const visible = segments.filter((segment) => segment.value > 0);
@@ -99,7 +107,7 @@ export function TodayDonut({
   return (
     <figure className="flex items-center gap-5">
       <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0 -rotate-90" aria-hidden="true">
-        <circle cx="50" cy="50" r={DONUT_RADIUS} fill="none" stroke="#eef1ee" strokeWidth="10" />
+        <circle cx="50" cy="50" r={DONUT_RADIUS} fill="none" className="stroke-chart-track" strokeWidth="10" />
         {visible.map((segment) => {
           const length = (segment.value / total) * DONUT_CIRCUMFERENCE;
           const dash = Math.max(length - gap, 0);
@@ -110,7 +118,7 @@ export function TodayDonut({
               cy="50"
               r={DONUT_RADIUS}
               fill="none"
-              stroke={segment.color}
+              className={DONUT_TONES[segment.tone].stroke}
               strokeWidth="10"
               strokeDasharray={`${dash} ${DONUT_CIRCUMFERENCE - dash}`}
               strokeDashoffset={-offset}
@@ -128,7 +136,7 @@ export function TodayDonut({
         <ul className="space-y-1 text-xs text-muted-foreground">
           {segments.map((segment) => (
             <li key={segment.label} className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: segment.color }} />
+              <span className={cn("h-2 w-2 rounded-full", DONUT_TONES[segment.tone].dot)} />
               {segment.label} · <span className="font-medium text-foreground">{segment.value}</span>
             </li>
           ))}
@@ -154,11 +162,11 @@ export function HourlyBars({ values }: { values: number[] }) {
           <div
             key={hour}
             title={`${hour} h : ${value} livraison${value > 1 ? "s" : ""}`}
-            className="flex h-full flex-1 items-end rounded-[4px] bg-[#f3f5f3]"
+            className="flex h-full flex-1 items-end rounded-[4px] bg-[#f3f5f3] dark:bg-chart-track"
           >
             {value > 0 && (
               <div
-                className="w-full rounded-[4px] bg-[#0e1310]"
+                className="w-full rounded-[4px] bg-chart-ink"
                 style={{ height: `${Math.max((value / max) * 100, 6)}%` }}
               />
             )}
@@ -201,7 +209,7 @@ export function TodayMetric({
       <p
         className={cn(
           "mt-1 text-2xl font-semibold",
-          variant === "late" && counts.total > 0 ? "text-[#c43b2f]" : toneClasses.value
+          variant === "late" && counts.total > 0 ? "text-[#c43b2f] dark:text-error" : toneClasses.value
         )}
       >
         {counts.total}

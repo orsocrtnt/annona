@@ -40,6 +40,13 @@
   --color-error: #a12c2c;
   --color-error-subtle: #fdf2f2;
 
+  /* Diagrammes (direction Encre) : barres et anneaux en encre, piste claire, reste à faire en gris. */
+  --color-chart-ink: #0e1310;
+  --color-chart-mid: #7f8883;
+  --color-chart-soft: #d5dbd7;
+  --color-chart-todo: #c9d3cd;
+  --color-chart-track: #eef1ef;
+
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
@@ -55,9 +62,10 @@
 }
 
 /*
- * Mode Dark « Encre + Pastel » (DESIGN-1). Portée : seul un <html data-theme="dark"> l'active ;
+ * Mode Dark « Encre + Pastel » (DESIGN-1, DESIGN-2). Portée : seul un <html data-theme="dark"> l'active ;
  * le script de thème (puis ThemeSync) résout « système » avec matchMedia et ne pose l'attribut que sur
- * les espaces migrés (portail client pour l'instant) : le rendu Light des autres espaces reste identique.
+ * les espaces migrés (portail client, back-office et dispatch, `/admin`, app livreur) : le site public et
+ * la connexion gardent leur rendu Light.
  */
 :root[data-theme="dark"] {
   --color-background: #141716;
@@ -78,7 +86,7 @@
   --color-destructive: #e5736b;
   --color-destructive-foreground: #1a0d0c;
   --color-border: #333936;
-  --color-input: #3d4440;
+  --color-input: #6b746f; /* bordure de champ : 3,4:1 sur carte, 3,7:1 sur fond (WCAG 1.4.11) */
   --color-ring: #5bd99a;
   --color-surface: #1c1f1e;
   --color-surface-elevated: #212524;
@@ -95,6 +103,12 @@
   --color-warning-subtle: #3a2f1c;
   --color-error: #f08a82;
   --color-error-subtle: #3d2523;
+  /* Diagrammes en Dark : histogrammes gris clair sur graphite (planche E), piste à peine marquée. */
+  --color-chart-ink: #d5dbd7;
+  --color-chart-mid: #8b948e;
+  --color-chart-soft: #4a524d;
+  --color-chart-todo: #4a524d;
+  --color-chart-track: #2b302d;
   /* Panneaux et boutons flottants des cartes (map-glass-styles.ts) : surfaces sombres sur le plan. */
   --map-glass-bg: rgb(28 31 30 / 0.94);
   --map-glass-border: rgb(255 255 255 / 0.1);
@@ -179,9 +193,6 @@
     @apply bg-white/80 backdrop-blur-xl;
   }
 
-  .gradient-brand {
-    background: linear-gradient(135deg, #08783f 0%, #065f32 100%);
-  }
 }
 
 @keyframes fadeIn {
@@ -200,7 +211,7 @@
 }
 
 .dashboard-v2-shell {
-  color: #0e1310;
+  color: var(--color-foreground); /* #0e1310 en Light, blanc cassé en Dark */
 }
 
 @keyframes stepLinkLoading {

@@ -77,7 +77,7 @@ function DriverSelectItems({
         </SelectItem>
       ))}
       {overCapacity.map((item) => (
-        <SelectItem key={item.driver.id} value={item.driver.id} className="text-xs text-amber-700">
+        <SelectItem key={item.driver.id} value={item.driver.id} className="text-xs text-warning">
           {formatDriverFromParts(item.driver, null)} — {item.reasons}
         </SelectItem>
       ))}
@@ -323,7 +323,7 @@ export function AssignDriverSelect({
           </p>
         )}
         {selectableCount === 0 && (
-          <p className="text-sm text-amber-700">
+          <p className="text-sm text-warning">
             Aucun chauffeur compatible. Les chauffeurs hors règles sont affichés à titre informatif
             et ne peuvent pas être assignés.
           </p>
@@ -408,7 +408,7 @@ function AssignConfirmDialog({
                     <span className="font-medium text-foreground">{pending.driverLabel}</span> a
                     atteint sa limite de livraisons actives.
                   </p>
-                  <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-900">
+                  <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-900 dark:text-foreground">
                     {pending.reasons}
                   </p>
                   <p>Confirmez-vous {isReassign ? "cette réassignation" : "cette assignation"} ?</p>

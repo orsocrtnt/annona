@@ -1,13 +1,20 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-x-auto">
-      <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
-    </div>
-  )
-);
+/** Surface d'un tableau posé sur le fond de page : blanc en Light, carte graphite en Dark, bordure fine. */
+export const TABLE_SURFACE_CLASS = "rounded-xl border border-border bg-card";
+
+const Table = React.forwardRef<
+  HTMLTableElement,
+  React.HTMLAttributes<HTMLTableElement> & {
+    /** Tableau posé directement sur le fond de page (hors carte) : il reçoit sa propre surface. */
+    surface?: boolean;
+  }
+>(({ className, surface = false, ...props }, ref) => (
+  <div className={cn("relative w-full overflow-x-auto", surface && TABLE_SURFACE_CLASS)}>
+    <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
+  </div>
+));
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(

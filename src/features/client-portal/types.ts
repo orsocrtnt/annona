@@ -62,7 +62,7 @@ export interface PortalOrder {
     unitPrice: string | number;
     orderStopId?: string | null;
   }[];
-  deliveries?: { id: string; reference: string; status: DeliveryStatus }[];
+  deliveries?: { id: string; reference: string; status: DeliveryStatus; driver?: { firstName: string; phone?: string | null } | null }[];
   invoices?: {
     id: string;
     reference: string;

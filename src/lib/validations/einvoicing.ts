@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ReadinessIssue } from "@/domains/invoice/facturx/facturx-readiness";
 
 /** Texte facultatif : espaces retirés, chaîne vide → absent. */
 const optionalText = (max: number) =>
@@ -39,6 +40,8 @@ const sirenField = optionalText(20)
 
 /** Mentions légales et paramètres Factur-X de l'entreprise émettrice (Company.settings.einvoicing). */
 export const einvoicingSettingsSchema = z.object({
+  /** L'entreprise active la facture électronique : les mentions exigées par l'export deviennent bloquantes. */
+  enabled: z.boolean().optional(),
   vatNumber,
   /** BT-32 : identifiant fiscal, pour une entreprise sans n° de TVA (franchise en base). */
   taxRegistrationId: optionalText(30).transform(compact),
@@ -108,6 +111,22 @@ export const clientInvoiceIdentitySchema = z.object({
     .regex(/^[A-Z]{2}$/, "Le pays s’écrit en 2 lettres, par exemple FR.")
     .default("FR"),
 });
+
+/** Signalement par champ : erreurs de format (Zod) comme mentions manquantes, au format du formulaire. */
+export type FieldErrors = Record<string, string>;
+
+export function zodFieldErrors(error: z.ZodError): FieldErrors {
+  const out: FieldErrors = {};
+  for (const issue of error.issues) {
+    const field = String(issue.path[issue.path.length - 1] ?? "");
+    if (field && !(field in out)) out[field] = issue.message;
+  }
+  return out;
+}
+
+export function readinessFieldErrors(issues: ReadinessIssue[]): FieldErrors {
+  return Object.fromEntries(issues.map((issue) => [issue.field, issue.message]));
+}
 
 export type EinvoicingSettings = z.infer<typeof einvoicingSettingsSchema>;
 export type CompanyLegalIdentity = z.infer<typeof companyLegalIdentitySchema>;

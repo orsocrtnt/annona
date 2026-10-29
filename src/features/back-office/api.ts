@@ -3,6 +3,7 @@ import type { CreateOrderInvoiceInput } from "@/lib/validations/invoice";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
 import type { CompanyAnalytics } from "@/domains/analytics/analytics.service";
+import type { DispatchSuggestions } from "@/domains/delivery/auto-dispatch.service";
 import {
   orderHistorySearchParams,
   type OrderHistoryPage,
@@ -58,6 +59,14 @@ export const backOfficeApi = {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ driverId, force }),
+    }),
+  getDispatchSuggestions: (deliveryId: string) =>
+    fetchJson<DispatchSuggestions>(`/api/dispatch/suggestions?deliveryId=${encodeURIComponent(deliveryId)}`),
+  assignFromSuggestion: (deliveryId: string, driverId: string) =>
+    fetchJson<{ id: string; driverId: string | null; status: string }>("/api/dispatch/suggestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deliveryId, driverId }),
     }),
   updateOrderStatus: (orderId: string, data: UpdateOrderStatusInput) =>
     fetchJson<CompanyOrder>(`/api/orders/${orderId}`, {

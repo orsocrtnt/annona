@@ -250,7 +250,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
         data-portal-map-page
       >
         <main id="main-content" tabIndex={-1} className="absolute inset-0 z-0">
-          <OrderMessagesInbox />
+          <OrderMessagesInbox space="client" />
           {children}
         </main>
 
@@ -267,7 +267,7 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
 
       <div className="mx-auto max-w-6xl px-4 py-6 max-md:px-3 max-md:py-4 lg:px-6">
         <main id="main-content" tabIndex={-1}>
-          <OrderMessagesInbox />
+          <OrderMessagesInbox space="client" />
           {children}
         </main>
       </div>

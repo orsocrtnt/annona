@@ -90,7 +90,7 @@ export default function AdminAccessEventsPage() {
       {data.total === 0 ? (
         <EmptyState icon={ScrollText} title="Aucun accès journalisé" description="Aucune entrée ne correspond à ces filtres." />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>

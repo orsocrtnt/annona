@@ -3,10 +3,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ClientInvoiceIdentity, CompanyEinvoicingUpdate } from "@/lib/validations/einvoicing";
 
+/** Refus du serveur avec un message par champ (clé du champ du formulaire). */
+export class FieldErrorsError extends Error {
+  constructor(message: string, readonly fieldErrors: Record<string, string>) {
+    super(message);
+  }
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+  if (!res.ok) {
+    const message = json.error ?? "Erreur serveur";
+    throw json.fieldErrors ? new FieldErrorsError(message, json.fieldErrors) : new Error(message);
+  }
   return json.data as T;
 }
 
@@ -18,9 +28,13 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
 
 export type CompanyEinvoicingData = {
   identity: Record<keyof CompanyEinvoicingUpdate["identity"], string | null>;
-  einvoicing: Partial<Record<keyof CompanyEinvoicingUpdate["einvoicing"], string>>;
+  einvoicing: Partial<Record<Exclude<keyof CompanyEinvoicingUpdate["einvoicing"], "enabled">, string>> & { enabled?: boolean };
   /** Champs stockés invalides, écartés à la lecture : à ressaisir. */
   invalidFields?: string[];
+  /** Mentions que l'export Factur-X réclamerait aujourd'hui (même règle que le serveur). */
+  missing?: Array<{ field: string; message: string }>;
+  /** La facture électronique est activée ou déjà utilisée : les mentions manquantes bloquent l'enregistrement. */
+  enforced?: boolean;
 };
 
 export function useCompanyEinvoicing(enabled: boolean) {
@@ -35,7 +49,7 @@ export function useCompanyEinvoicing(enabled: boolean) {
 export function useUpdateCompanyEinvoicing() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: unknown) => fetchJson<CompanyEinvoicingUpdate>("/api/company/einvoicing", jsonInit("PATCH", data)),
+    mutationFn: (data: unknown) => fetchJson<CompanyEinvoicingUpdate & { enforced?: boolean; missing?: Array<{ field: string; message: string }> }>("/api/company/einvoicing", jsonInit("PATCH", data)),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["company", "settings", "einvoicing"] }),
   });
 }

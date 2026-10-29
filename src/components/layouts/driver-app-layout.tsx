@@ -1,6 +1,8 @@
 "use client";
 import { DriverServiceControl } from "@/features/driver/driver-service-control";
 import { OrderMessagesInbox } from "@/components/shared/order-conversation";
+import { useAlertAccessPresent } from "@/components/shared/operational-alerts";
+import { alertModeForPath } from "@/lib/operational-alerts-placement";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -11,6 +13,7 @@ import { getInitials } from "@/lib/utils";
 import { Home, MapPin, User } from "lucide-react";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { AppleNavbar, AppleNavbarBrand } from "@/components/navigation/apple-navbar";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const bottomNav = [
   { title: "Accueil", href: "/driver", icon: Home },
@@ -52,32 +55,34 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
   const pathname = usePathname();
   const isNavigationPage = pathname.startsWith("/driver/navigate");
   const { user } = useAuth();
+  const accessPresent = useAlertAccessPresent(alertModeForPath("driver", pathname));
 
   if (isNavigationPage) {
     return <div className="min-h-screen bg-background"><main id="main-content" tabIndex={-1}>{children}</main></div>;
   }
 
   return (
-    <div className="relative min-h-screen bg-background pb-24">
+    <div className={cn("relative min-h-screen bg-background", accessPresent ? "pb-40" : "pb-24")}>
       <AppleNavbar tone="light" maxWidthClassName="max-w-lg" innerClassName="justify-between">
         <AppleNavbarBrand href="/driver" tone="light" />
         <div className="flex min-w-0 items-center gap-2.5">
+          <ThemeToggle className="-mr-1" />
           <div className="min-w-0 text-right">
-            <p className="truncate text-sm font-medium leading-none text-[#0e1310]">
+            <p className="truncate text-sm font-medium leading-none text-[#0e1310] dark:text-foreground">
               {user ? `${user.firstName} ${user.lastName}`.trim() : "Livreur"}
             </p>
-            <p className="mt-1 truncate text-xs text-[#68726b]">Espace livreur</p>
+            <p className="mt-1 truncate text-xs text-[#68726b] dark:text-muted-foreground">Espace livreur</p>
           </div>
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white">
+            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
               {user ? getInitials(user.firstName, user.lastName) : "L"}
             </AvatarFallback>
           </Avatar>
         </div>
       </AppleNavbar>
 
-      <main id="main-content" tabIndex={-1}><DriverServiceControl /><OrderMessagesInbox />{children}</main>
+      <main id="main-content" tabIndex={-1}><DriverServiceControl /><OrderMessagesInbox space="driver" />{children}</main>
 
       <nav aria-label="Navigation chauffeur" className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1.5">

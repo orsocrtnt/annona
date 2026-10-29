@@ -11,6 +11,7 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCompanyOrder } from "@/features/back-office/hooks";
 import { AssignDriverSelect } from "@/features/back-office/assign-driver-select";
+import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { OrderStatusSelect } from "@/features/back-office/order-status-select";
 import { OrderInvoiceForm } from "@/features/back-office/order-invoice-form";
 import { DeliveryAdminPanel } from "@/features/back-office/delivery-admin-panel";
@@ -112,7 +113,11 @@ export default function CompanyOrderDetailPage() {
           <CardHeader>
             <CardTitle className="text-base">Assigner à un chauffeur</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <DispatchSuggestionsPanel
+              deliveryId={order.deliveries[0].id}
+              pending={order.deliveries[0].status === "PENDING" && !order.deliveries[0].driverId}
+            />
             <AssignDriverSelect
               deliveryId={order.deliveries[0].id}
               status={order.deliveries[0].status}

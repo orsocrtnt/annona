@@ -1,7 +1,7 @@
 import type { InvoiceStatus, Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { COMPANY_INVOICES_TAKE } from "@/lib/query/list-limits";
-import { invoiceDaysOverdue, isInvoiceOutstanding, startOfParisDay } from "@/domains/invoice/invoice-due";
+import { effectiveInvoiceStatus, isInvoiceOutstanding, startOfParisDay } from "@/domains/invoice/invoice-due";
 import {
   blockingReminderCandidatesWhere,
   effectiveReminderResult,
@@ -110,8 +110,7 @@ export async function listCompanyInvoices(
     invoices: rows.map((row) => {
       const last = row.reminders[0] ?? null;
       const outstanding = isInvoiceOutstanding(row.status);
-      const status: InvoiceStatus =
-        row.status === "PENDING" && row.dueDate && row.dueDate < cutoff ? "OVERDUE" : row.status;
+      const { status, daysOverdue } = effectiveInvoiceStatus(row, now);
       return {
         id: row.id,
         reference: row.reference,
@@ -120,7 +119,7 @@ export async function listCompanyInvoices(
         dueDate: row.dueDate?.toISOString() ?? null,
         paidAt: row.paidAt?.toISOString() ?? null,
         createdAt: row.createdAt.toISOString(),
-        daysOverdue: status === "OVERDUE" ? invoiceDaysOverdue(row.dueDate, now) : 0,
+        daysOverdue,
         customerName: row.customer ? `${row.customer.firstName} ${row.customer.lastName}`.trim() : null,
         orderId: row.orderId,
         orderReference: row.order?.reference ?? null,

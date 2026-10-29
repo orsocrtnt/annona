@@ -1,3 +1,4 @@
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { forgotPasswordSchema } from "@/lib/validations/auth";
 import { requestPasswordRecovery } from "@/domains/auth/password-link.service";
@@ -11,6 +12,6 @@ export async function POST(request: Request) {
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
     const status = code === "AUTH_RATE_LIMITED" ? 429 : code === "AUTH_EMAIL_NOT_CONFIGURED" ? 503 : 502;
-    return NextResponse.json({ error: status === 429 ? "Trop de demandes. Réessayez plus tard." : "Envoi indisponible. Réessayez plus tard." }, { status });
+    return NextResponse.json({ error: status === 429 ? "Trop de demandes. Réessayez plus tard." : status === 503 ? CONFIG_MESSAGES.AUTH_EMAIL_UNAVAILABLE : "Envoi indisponible. Réessayez plus tard." }, { status });
   }
 }

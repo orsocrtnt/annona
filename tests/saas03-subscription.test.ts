@@ -229,6 +229,7 @@ function loadRoute(role: string, companyId: string | null, result: unknown, fail
     require: (id: string) => {
       const dependencies: Record<string, unknown> = {
         "next/server": { NextResponse },
+        "@/lib/config-messages": require("../src/lib/config-messages"),
         "@/lib/api/auth-guard": {
           requireStaffRole: async () => ({ context: { user: { companyId, role: { systemRole: role } } } }),
           requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => roles.includes(context.user.role.systemRole) ? null : NextResponse.json({ error: "Accès refusé" }, { status: 403 }),
@@ -262,5 +263,5 @@ test("SAAS-03 : API COMPANY_ADMIN isolée, no-store, vide et erreur lisible", as
   assert.deepEqual(await (await loadRoute("COMPANY_ADMIN", "company-a", null)()).json(), { data: null });
   const failed = await loadRoute("COMPANY_ADMIN", "company-a", view, true)();
   assert.equal(failed.status, 503);
-  assert.deepEqual(await failed.json(), { error: "Chargement de l’abonnement impossible" });
+  assert.deepEqual(await failed.json(), { error: "Chargement de l’abonnement impossible : réessayez dans un instant ; si cela persiste, contactez le support." });
 });

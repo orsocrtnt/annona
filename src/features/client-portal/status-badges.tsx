@@ -70,8 +70,9 @@ export function DeliveryStatusBadge({
   );
 }
 
-export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
-  return <Badge variant={INVOICE_VARIANTS[status]}>{INVOICE_STATUS_LABELS[status]}</Badge>;
+export function InvoiceStatusBadge({ status, daysOverdue = 0 }: { status: InvoiceStatus; daysOverdue?: number }) {
+  const label = status === "OVERDUE" && daysOverdue > 0 ? `En retard · ${daysOverdue} j` : INVOICE_STATUS_LABELS[status];
+  return <Badge variant={INVOICE_VARIANTS[status]}>{label}</Badge>;
 }
 
 const TICKET_LABELS: Record<SupportTicketStatus, string> = {

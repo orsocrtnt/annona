@@ -4,6 +4,7 @@
  * Chaque refus porte un message actionnable qui dit où compléter la donnée.
  */
 import { checkFacturXInvoice, computeFacturXTotals } from "@/domains/invoice/facturx/cii-generator";
+import { checkSellerReadiness, EXPORT_CHECKED_BY_MAPPING } from "@/domains/invoice/facturx/facturx-readiness";
 import { facturXUnavailableReason } from "@/domains/invoice/facturx/facturx-availability";
 import type { FacturXInvoice, FacturXIssue, FacturXLine, FacturXNote, FacturXTotals } from "@/domains/invoice/facturx/facturx.types";
 import type { ClientInvoiceIdentity, EinvoicingSettings } from "@/lib/validations/einvoicing";
@@ -154,9 +155,13 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
   }
 
   // Mentions françaises obligatoires entre professionnels (art. L441-9 du Code de commerce).
-  if (!present(seller.siren)) errors.push({ rule: "TL-FR-SIREN", message: `SIREN de l'entreprise manquant. ${SELLER_HINT}` });
-  if (!present(einvoicing.latePenaltyText)) errors.push({ rule: "TL-FR-PENALITES", message: `Mention des pénalités de retard manquante. ${SELLER_HINT}` });
-  if (!present(einvoicing.earlyPaymentDiscountText)) errors.push({ rule: "TL-FR-ESCOMPTE", message: `Conditions d'escompte manquantes (ex. « Pas d'escompte pour paiement anticipé. »). ${SELLER_HINT}` });
+  // Règle partagée avec l'enregistrement des mentions légales (facturx-readiness.ts) : une seule source.
+  for (const issue of checkSellerReadiness({
+    identity: { siren: seller.siren, billingAddress: seller.billingAddress, billingPostalCode: seller.billingPostalCode, billingCity: seller.billingCity, country: seller.country ?? "FR" },
+    einvoicing,
+  })) {
+    if (EXPORT_CHECKED_BY_MAPPING.has(issue.rule)) errors.push({ rule: issue.rule, message: `${issue.message} ${SELLER_HINT}` });
+  }
 
   const legalInfo = [
     [einvoicing.legalForm, einvoicing.shareCapital ? `au capital de ${einvoicing.shareCapital}` : undefined].filter(Boolean).join(" "),
@@ -249,6 +254,7 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
   if (!present(identity?.siren)) {
     warnings.push({ rule: "TL-W-SIREN-CLIENT", message: "SIREN du client absent : les plateformes agréées l'exigent pour une facture entre entreprises françaises." });
   }
+  if (einvoicing.iban && !einvoicing.bic) warnings.push({ rule: "TL-W-BIC", message: `BIC absent : recommandé avec l'IBAN pour un virement (non bloquant). ${SELLER_HINT}` });
   if (!einvoicing.iban) warnings.push({ rule: "TL-W-IBAN", message: "Aucun IBAN : la facture ne porte pas de coordonnées de virement." });
   if (source.einvoicingInvalidFields?.length) {
     warnings.push({ rule: "TL-W-REGLAGE-INVALIDE", message: `Réglages ignorés car invalides : ${source.einvoicingInvalidFields.join(", ")}. ${SELLER_HINT}` });

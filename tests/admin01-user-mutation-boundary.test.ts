@@ -101,12 +101,14 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
   for (const role of ["SUPER_ADMIN", "DISPATCHER"]) {
     const users = load("src/app/api/users/route.ts", {
       "next/server": { NextResponse },
+      "@/lib/config-messages": require("../src/lib/config-messages"),
       "@/lib/api/auth-guard": auth(role),
       "@/lib/validations/user": validation,
       "@/domains/user/user.service": service,
     });
     const item = load("src/app/api/users/[id]/route.ts", {
       "next/server": { NextResponse },
+      "@/lib/config-messages": require("../src/lib/config-messages"),
       "@/lib/api/auth-guard": auth(role),
       "@/lib/validations/user": validation,
       "@/domains/user/user.service": service,
@@ -124,6 +126,7 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
 
   const allowed = load("src/app/api/users/route.ts", {
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": auth("COMPANY_ADMIN"),
     "@/lib/validations/user": validation,
     "@/domains/user/user.service": service,

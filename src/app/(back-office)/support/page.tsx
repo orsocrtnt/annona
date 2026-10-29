@@ -107,8 +107,8 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
                 className={cn(
                   "max-w-[85%] rounded-2xl border p-3",
                   message.isStaff
-                    ? "ml-auto rounded-br-md border-[#bfe9d0] bg-[#eafaf1]"
-                    : "mr-auto rounded-bl-md border-border bg-[#f5f8f6]"
+                    ? "ml-auto rounded-br-md border-[#bfe9d0] bg-[#eafaf1] dark:border-[#2c4a3a] dark:bg-success-subtle"
+                    : "mr-auto rounded-bl-md border-border bg-[#f5f8f6] dark:bg-muted"
                 )}
               >
                 <p className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">

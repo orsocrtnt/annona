@@ -11,7 +11,8 @@ import {
   AppleNavbarLinks,
   appleNavbarIconButtonLightClass,
 } from "@/components/navigation/apple-navbar";
-import { ThemeMenuItem, ThemeToggle } from "@/components/theme/theme-toggle";
+import { ThemeRadioGroup } from "@/components/theme/theme-preference-choice";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,10 +116,9 @@ export function PublicTopNavbar() {
                 Voir la démo
               </Link>
             </DropdownMenuItem>
-            <div className="sm:hidden">
-              <DropdownMenuSeparator />
-              <ThemeMenuItem />
-            </div>
+            <DropdownMenuSeparator />
+            {/* Clair / Sombre / Système (lot A) : la barre garde la bascule en un clic, le menu le choix complet. */}
+            <ThemeRadioGroup />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
