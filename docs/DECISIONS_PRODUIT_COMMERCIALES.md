@@ -60,7 +60,7 @@ Options mensuelles HT (catalogue C9 du 24 octobre 2026) :
 
 | Option | Prix |
 |---|---:|
-| Dispatch automatique | 29 € Starter ; 39 € Pro ; 49 € Business. Inclus dans Pro et Business, donc non refacturé. Achetable seulement en Starter, à 29 €. |
+| Dispatch automatique (devenu « Dispatch intelligent » le 29 octobre 2026, voir C12) | 29 € Starter ; 39 € Pro ; 49 € Business. Inclus dans Pro et Business, donc non refacturé. Achetable seulement en Starter, à 29 € (39 € depuis le catalogue C10, C12). |
 | Carte GPS client | 49 € |
 | Carte GPS administrateur | 39 € |
 | Analytics avancés | 29 € |

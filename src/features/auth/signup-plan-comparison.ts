@@ -48,7 +48,7 @@ export type ComparisonRow = {
 };
 
 export const FEATURE_COMPARISON_ORDER = [
-  { key: "auto_dispatch", label: "Dispatch automatique" },
+  { key: "auto_dispatch", label: "Dispatch intelligent" },
   { key: "admin_gps", label: "Carte GPS administrateur" },
   { key: "client_gps", label: "Carte GPS client" },
   { key: "advanced_analytics", label: "Statistiques avancées" },

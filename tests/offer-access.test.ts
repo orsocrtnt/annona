@@ -109,7 +109,7 @@ test("offre : les environnements recette couvrent Starter nu, Starter + dispatch
       { key: "business", planCode: "BUSINESS", optionCodes: [] },
     ]
   );
-  assert.match(lockedOfferReason("auto_dispatch", "STARTER"), /Dispatch automatique/);
+  assert.match(lockedOfferReason("auto_dispatch", "STARTER"), /Dispatch intelligent/);
 });
 
 test("offre : un siège à 0 restant affiche le prix d’ajout et bloque l’invitation", () => {

@@ -82,14 +82,14 @@ test("suggestions : client, livreur et super-admin refusés avant tout calcul", 
   }
 });
 
-test("suggestions : sans l'option « Dispatch automatique » (ou sans abonnement) → 403 explicite", async () => {
+test("suggestions : sans l'option « Dispatch intelligent » (ou sans abonnement) → 403 explicite", async () => {
   for (const code of ["SAAS_FEATURE_NOT_AVAILABLE", "SAAS_SUBSCRIPTION_REQUIRED"]) {
     const calls: string[] = [];
     const route = load({ calls, saas: async () => { throw new Error(code); } });
     const response = await route.GET(get());
     assert.equal(response.status, 403);
     const body = await response.json();
-    assert.match(body.error, /Dispatch automatique/);
+    assert.match(body.error, /Dispatch intelligent/);
     assert.equal(calls.some((c) => c.startsWith("suggest")), false, "aucun calcul sans l'option");
     assert.equal((await route.POST(post({ deliveryId: "d1", driverId: "x" }))).status, 403);
     assert.equal(calls.some((c) => c.startsWith("assign")), false);

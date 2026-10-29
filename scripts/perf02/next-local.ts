@@ -25,8 +25,8 @@ async function main() {
   const server = { process: null as ReturnType<typeof spawn> | null };
   try {
     execFileSync(resolve("node_modules/.bin/prisma"), ["db", "push", "--skip-generate", "--schema", "prisma/schema.prisma"], { env, stdio: "inherit" });
-    // Catalogue actif C8 puis C9 : lu par la page Tarifs et l'API d'inscription.
-    for (const file of ["prisma/migrations/20261023180000_catalog_c8_prices/migration.sql", "prisma/migrations/20261024011000_catalog_c9_business/migration.sql"]) {
+    // Catalogue actif C8, C9 puis C10 : lu par la page Tarifs et l'API d'inscription.
+    for (const file of ["prisma/migrations/20261023180000_catalog_c8_prices/migration.sql", "prisma/migrations/20261024011000_catalog_c9_business/migration.sql", "prisma/migrations/20261029200000_catalog_c10_dispatch_intelligent/migration.sql"]) {
       run(pgBin("psql"), ["-h", "127.0.0.1", "-p", PERF02_PG_PORT, "-U", "postgres", "-d", PERF02_PG_DATABASE, "-v", "ON_ERROR_STOP=1", "-f", resolve(file)], env);
     }
     execFileSync(resolve("node_modules/.bin/next"), ["build"], { env, stdio: "inherit" });

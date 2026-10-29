@@ -222,7 +222,7 @@ test("SAAS-04 : la vue locale affiche la fin et les fonctions jusqu'à J59, puis
 
   assert.equal(j59?.premiumDiscovery?.endsAt, endsAt.toISOString());
   assert.deepEqual(j59?.premiumDiscovery?.features, [
-    { code: "auto_dispatch", name: "Dispatch automatique" },
+    { code: "auto_dispatch", name: "Dispatch intelligent" },
     { code: "admin_gps", name: "Carte GPS administrateur" },
     { code: "client_gps", name: "Carte GPS client" },
     { code: "advanced_analytics", name: "Statistiques avancées" },

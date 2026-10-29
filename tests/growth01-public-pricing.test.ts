@@ -71,7 +71,7 @@ test("les tarifs publics reprennent le catalogue sans prix écrits dans la page"
   assert.equal(pro?.options.map((option) => option.code).join(","), "");
   assert.equal(business?.maxDriverSeats, 50);
   assert.equal(business?.unlimitedDriverSeats, true);
-  assert.equal(pro?.includedFeatureLabels.includes("Dispatch automatique"), true);
+  assert.equal(pro?.includedFeatureLabels.includes("Dispatch intelligent"), true);
   assert.equal(starter?.includedFeatureLabels.length, 0);
   assert.equal(business?.discovery, false);
   assert.equal(starter?.discovery, true);

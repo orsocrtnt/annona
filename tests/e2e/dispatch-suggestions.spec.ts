@@ -45,7 +45,7 @@ test("DISPATCH-4 : 3 suggestions expliquées, double clic sur « Affecter » = u
 
     if (api.status() === 403) {
       // Offre sans l'option : l'écran le dit clairement, aucun bouton d'affectation.
-      await expect(page.getByText(/option « Dispatch automatique »/)).toBeVisible();
+      await expect(page.getByText(/option « Dispatch intelligent »/)).toBeVisible();
       await expect(page.getByRole("button", { name: /^Affecter à / })).toHaveCount(0);
       return;
     }

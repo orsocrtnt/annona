@@ -77,7 +77,7 @@ class TestProvider implements SandboxBillingProvider {
 }
 async function main() {
   const catalog = await db.saasCatalogVersion.findFirstOrThrow({ where: { status: "ACTIVE" }, orderBy: { effectiveAt: "desc" }, include: { plans: true, options: true } }) as unknown as SignupCatalog;
-  assert.equal(catalog.code, "C9-2026-10-24");
+  assert.equal(catalog.code, "C10-2026-10-29");
   const c8 = await db.saasPlan.findFirstOrThrow({ where: { catalogVersionId: "saas_catalog_c8_v1", code: "BUSINESS" } });
   assert.equal(c8.unlimitedDriverSeats, true);
   assert.equal(catalog.plans.find((p) => p.code === "BUSINESS")!.includedDriverSeats, 20);

@@ -90,7 +90,7 @@ test("SIGNUP-1 : la comparaison d’offres montre ce que les formules moins chè
     return found;
   };
   assert.equal(rows.some((item) => item.id === "dispatchers"), false);
-  assert.equal(row("auto_dispatch").label, "Dispatch automatique");
+  assert.equal(row("auto_dispatch").label, "Dispatch intelligent");
   assert.equal(row("auto_dispatch").cells.STARTER.kind, "option");
   assert.match(row("auto_dispatch").cells.STARTER.text, /29,00/);
   assert.match(row("auto_dispatch").cells.STARTER.text, /En option · .+ HT \/ mois/);

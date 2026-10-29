@@ -7,10 +7,10 @@ import { assertSaasFeature, assertSaasMutationFeature } from "@/domains/saas/saa
 
 /**
  * DISPATCH-4 — suggestions de livreurs (3 meilleurs, score expliqué) et affectation en un clic.
- * Dispatcher et administrateurs seulement ; option « Dispatch automatique » requise.
+ * Dispatcher et administrateurs seulement ; option « Dispatch intelligent » requise.
  * Aucune coordonnée ni distance en mètres dans la réponse.
  */
-const OPTION_MISSING = "Les suggestions de livreurs font partie de l’option « Dispatch automatique », non incluse dans cette offre.";
+const OPTION_MISSING = "Les suggestions de livreurs font partie de l’option « Dispatch intelligent », non incluse dans cette offre.";
 
 type Authorized = { error: NextResponse } | { companyId: string; readOnly: boolean };
 

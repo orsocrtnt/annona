@@ -19,7 +19,7 @@ const STATUSES = [
   { value: "FAILED", label: "Échoué" },
 ] as const;
 const TYPES = [
-  { value: "AUTO_DISPATCH", label: "Dispatch automatique" },
+  { value: "AUTO_DISPATCH", label: "Dispatch intelligent" },
   { value: "CLIENT_NOTIFICATION", label: "Notification client" },
   { value: "DELIVERY_INVOICE", label: "Facture à la livraison" },
 ] as const;

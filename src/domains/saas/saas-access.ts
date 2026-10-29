@@ -90,7 +90,7 @@ export function canInviteSaasSeat(meter: SessionSaasSeatMeter | undefined) {
 }
 
 export const SAAS_FEATURE_LABELS: Record<OfferSaasFeature, string> = {
-  auto_dispatch: "Dispatch automatique",
+  auto_dispatch: "Dispatch intelligent",
   admin_gps: "Carte GPS administrateur",
   client_gps: "Carte GPS client",
   advanced_analytics: "Statistiques avancées",
