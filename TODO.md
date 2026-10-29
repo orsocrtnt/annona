@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**58 tâches terminées sur 99 — 59 %**
+**58 tâches terminées sur 100 — 58 %**
 
-`████████████░░░░░░░░` · 41 tâches restantes
+`████████████░░░░░░░░` · 42 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -203,6 +203,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | FACTURX-SAISIE | A+B | Champs exigés par le Factur-X obligatoires et bloquants dès l'enregistrement des mentions légales. | — | Moyenne · GPT‑6.1 Sol |
 | LANDING-2 | A+B | Landing et page de connexion refaites : minimalistes, très visuelles (Apple, Tesla, Uber), claires et efficaces. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
 | MOBILE-WEB | A+B | Revoir toute l'application au format téléphone, dans le navigateur. | Après DESIGN-2, MAP-INTERACTION et UX-ALERTES. | Élevée · GPT‑6.1 Sol |
+| CROSS-BROWSER | A+B | Même rendu sur Edge, Safari, Firefox et Chrome (écart constaté sur Edge). | Après LANDING-2 et MOBILE-WEB ; capture de l'écart à fournir par le propriétaire. | Moyenne · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
@@ -1571,6 +1572,20 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   État : ouverte, non commencée.
 
+
+- [ ] **CROSS-BROWSER — Même rendu sur tous les navigateurs courants.** Demande du propriétaire du 29 octobre 2026 : le site ne s'affiche pas pareil sur Edge que sur Chrome. L'écart exact reste à préciser, avec la page et une capture du propriétaire si possible. Aujourd'hui, les tests E2E ne tournent que sur Chrome (`playwright.config.ts`, canal `chrome`) ; WebKit et le Chromium de Playwright sont installés sur le Mac depuis le 29 octobre.
+  - Ajouter des projets Playwright Firefox et WebKit (Safari), et lancer Edge par le canal `msedge` s'il est installé.
+  - Comparer, en Clair et en Sombre, à 1 280 et 390 px : le site public, la connexion, le tableau de bord, le dispatch, le portail client et l'app livreur.
+  - Points à surveiller : polices (`next/font`), `backdrop-filter`, `dvh`, `color-mix`/`oklch`, barres de défilement, champs de date, mode sombre automatique d'Edge, traduction automatique.
+  - Corriger écran par écran sans changer le rendu Chrome.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : les pages listées ont le même rendu sur Chrome, Edge, Safari et Firefox (captures côte à côte) ; une suite E2E courte tourne sur les trois moteurs ; `npm run check` est vert.
+
+  Source / dépendance / blocage : demande du propriétaire du 29 octobre 2026. À mener après LANDING-2 et MOBILE-WEB.
+
+  État : ouverte, non commencée.
 - [x] **AUTH-ROLE — Refuser côté serveur les pages du mauvais rôle.** Aujourd'hui, le middleware vérifie seulement qu'une session existe (`src/middleware.ts`) et les layouts des espaces contrôlent le rôle dans le navigateur. Un client connecté qui ouvre `/dashboard`, `/dispatch` ou `/driver/missions` (ou un livreur qui ouvre `/portal/orders`) reçoit donc la page en HTTP 200 avant la redirection côté client. Les API restent protégées : `/api/invoices` renvoie 403 au client, au livreur et au dispatcher, et aucune fuite de données n'a été constatée.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
