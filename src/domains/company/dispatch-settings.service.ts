@@ -1,4 +1,5 @@
-import type { Prisma } from "@prisma/client";
+import { settingsSection } from "@/lib/database/claimed-settings-update";
+import { updateCompanySettingsWithClaim } from "@/lib/database/settings-claims";
 import { prisma } from "@/services/prisma/client";
 import { resolveCompanySaasAccess } from "@/domains/saas/saas.service";
 import {
@@ -55,22 +56,13 @@ export async function updateCompanyDispatchSettings(
     }
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { settings: true },
+  // Réclamation sur updatedAt : les autres clés de settings ne sont jamais écrasées ; deux
+  // enregistrements simultanés des règles de dispatch : le second reçoit SETTINGS_CONFLICT.
+  const result = await updateCompanySettingsWithClaim(companyId, {
+    apply: (current) => ({ ...current, dispatchRules: parsed }),
+    section: settingsSection("dispatchRules"),
   });
-  if (!company) throw new Error("COMPANY_NOT_FOUND");
-
-  const current = (company.settings ?? {}) as Record<string, unknown>;
-  const nextSettings = {
-    ...current,
-    dispatchRules: parsed,
-  };
-
-  await prisma.company.update({
-    where: { id: companyId },
-    data: { settings: nextSettings as Prisma.InputJsonValue },
-  });
+  if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
 
   return parsed;
 }

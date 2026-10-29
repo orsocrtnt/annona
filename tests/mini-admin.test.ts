@@ -21,7 +21,15 @@ const roles: SystemRole[] = ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISP
 function fixture(t: TestContext, companyId: string | null = "a", targetRole = "MINI_ADMIN") {
   const writes: unknown[] = [];
   replaceMethod(t, prisma.user, "findUnique", async () => ({ id: "target", authId: "auth-target", companyId, roleId: "role", email: "local@example.com", settings: { locale: "fr", miniAdmin: { modules: ["accounts"] } } }));
-  replaceMethod(t, prisma.user, "update", async (args: unknown) => { writes.push(args); return {}; });
+  // Écriture réclamée sur updatedAt, bornée à l'entreprise (RECETTE-2810, point 16).
+  replaceMethod(t, prisma.user, "findFirst", async (args: { where: { id: string; companyId?: string } }) => args.where.id === "target" && args.where.companyId === companyId
+    ? { settings: { locale: "fr", miniAdmin: { modules: ["accounts"] } }, updatedAt: new Date("2026-10-29T08:00:00.000Z") }
+    : null);
+  replaceMethod(t, prisma.user, "updateMany", async (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+    writes.push({ where: { id: args.where.id, companyId: args.where.companyId }, data: { settings: args.data.settings } });
+    return { count: 1 };
+  });
+  replaceMethod(t, prisma.user, "update", async () => { assert.fail("écriture de settings non réclamée"); });
   t.mock.method(prisma, "$queryRaw", async () => [{ id: "role", system_role: targetRole, slug: "mini-admin" }]);
   // Any unexpected write path fails before contacting external services.
   t.mock.method(prisma, "$transaction", async () => { assert.fail("unexpected transaction"); });
@@ -50,7 +58,7 @@ for (const actorRole of roles) {
       assert.deepEqual(writes, []);
     } else if (actorRole === "COMPANY_ADMIN") {
       await users.updateMiniAdminByAdmin("target", input, "a", actorRole);
-      assert.deepEqual(writes, [{ where: { id: "target" }, data: { settings: { locale: "fr", miniAdmin: { title: "Comptes", modules: ["accounts"] } } } }]);
+      assert.deepEqual(writes, [{ where: { id: "target", companyId: "a" }, data: { settings: { locale: "fr", miniAdmin: { title: "Comptes", modules: ["accounts"] } } } }]);
       // Authorized creation reaches the existing-account check, without creating an account.
       await assert.rejects(users.createUserByAdmin(input, "a", actorRole), /EMAIL_EXISTS/);
     } else {

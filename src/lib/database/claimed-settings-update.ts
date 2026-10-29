@@ -3,6 +3,9 @@
  * relire, appliquer la modification sur la version lue, écrire seulement si la ligne n'a pas
  * changé entre-temps ; sinon relire et réessayer. Aucune clé écrite par un autre écrivain
  * concurrent n'est perdue tant que cet écrivain réclame aussi la version.
+ * `section` : partie des réglages que cet écrivain remplace. Si un autre enregistrement l'a modifiée
+ * pendant la tentative (deux formulaires du même réglage envoyés en même temps), rien n'est écrit et
+ * SETTINGS_CONFLICT est levé : le second enregistrement n'écrase jamais le premier en silence.
  */
 
 export interface SettingsRow {
@@ -25,14 +28,35 @@ export async function updateSettingsWithClaim(options: {
   /** `updateMany({ where: { id, updatedAt: claim.expected }, data: { settings, updatedAt: claim.next } })` ; true si 1 ligne. */
   save: (nextSettings: Record<string, unknown>, claim: SettingsClaim) => Promise<boolean>;
   apply: (current: Record<string, unknown>) => Record<string, unknown>;
+  section?: (current: Record<string, unknown>) => unknown;
   attempts?: number;
 }): Promise<"saved" | "missing"> {
-  const attempts = options.attempts ?? 3;
+  // Cinq tentatives : plusieurs réglages différents enregistrés au même instant passent tous.
+  const attempts = options.attempts ?? 5;
+  let firstSection: string | undefined;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const row = await options.load();
     if (!row) return "missing";
+    if (options.section) {
+      // JSON relu en base (jsonb : ordre des clés normalisé) ; `undefined` devient "null".
+      const section = JSON.stringify(options.section(asRecord(row.settings)) ?? null);
+      if (firstSection === undefined) firstSection = section;
+      else if (section !== firstSection) throw new Error("SETTINGS_CONFLICT");
+    }
     const claim = { expected: row.updatedAt, next: new Date(Math.max(Date.now(), row.updatedAt.getTime() + 1)) };
     if (await options.save(options.apply(asRecord(row.settings)), claim)) return "saved";
   }
+  // Traduit en 409 « Rechargez puis réessayez » par les routes (KNOWN_ERROR_CODES ou capture locale).
   throw new Error("SETTINGS_CONFLICT");
+}
+
+/** Partie des réglages désignée par un chemin de clés (`["backOffice", "dashboard"]`). */
+export function settingsSection(...path: string[]) {
+  return (current: Record<string, unknown>): unknown =>
+    path.reduce<unknown>((value, key) => (value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>)[key] : undefined), current);
+}
+
+/** Plusieurs clés de premier niveau remplacées ensemble (ex. tarifs : zones et frais). */
+export function settingsKeys(...keys: string[]) {
+  return (current: Record<string, unknown>): unknown => keys.map((key) => current[key] ?? null);
 }

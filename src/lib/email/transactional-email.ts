@@ -171,7 +171,7 @@ export async function sendTransactionalEmail(
   const env = options.env ?? process.env;
   const configuration = getTransactionalEmailConfiguration(env);
   if (!configuration.enabled) {
-    return { status: "disabled" as const, mode: configuration.mode };
+    return { status: "disabled" as const, mode: configuration.mode, reason: configuration.reason };
   }
 
   const from = (env.MAIL_FROM || env.EMAIL_FROM)!.trim();

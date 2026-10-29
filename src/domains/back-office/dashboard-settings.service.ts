@@ -1,5 +1,6 @@
+import { settingsSection } from "@/lib/database/claimed-settings-update";
+import { updateUserSettingsWithClaim } from "@/lib/database/settings-claims";
 import { prisma } from "@/services/prisma/client";
-import type { Prisma } from "@prisma/client";
 import {
   DEFAULT_DASHBOARD_LAYOUT,
   normalizeDashboardLayout,
@@ -23,53 +24,27 @@ export async function getDashboardLayout(userId: string): Promise<DashboardLayou
   return normalizeDashboardLayout(settings.backOffice?.dashboard);
 }
 
+/** Disposition enregistrée sous `backOffice.dashboard`, sans écraser les autres réglages du compte. */
+async function saveDashboardLayout(userId: string, dashboard: DashboardLayoutSettings): Promise<DashboardLayoutSettings> {
+  const result = await updateUserSettingsWithClaim(userId, {
+    apply: (current) => {
+      const stored = current as StoredUserSettings;
+      return { ...stored, backOffice: { ...(stored.backOffice ?? {}), dashboard } };
+    },
+    // Deux enregistrements simultanés de la disposition : le second reçoit SETTINGS_CONFLICT.
+    section: settingsSection("backOffice", "dashboard"),
+  });
+  if (result === "missing") throw new Error("USER_NOT_FOUND");
+  return dashboard;
+}
+
 export async function updateDashboardLayout(
   userId: string,
   input: DashboardLayoutInput
 ): Promise<DashboardLayoutSettings> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { settings: true },
-  });
-
-  const current = (user?.settings ?? {}) as StoredUserSettings;
-  const backOffice = current.backOffice ?? {};
-  const nextSettings: StoredUserSettings = {
-    ...current,
-    backOffice: {
-      ...backOffice,
-      dashboard: normalizeDashboardLayout(input),
-    },
-  };
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { settings: nextSettings as Prisma.InputJsonValue },
-  });
-
-  return normalizeDashboardLayout(input);
+  return saveDashboardLayout(userId, normalizeDashboardLayout(input));
 }
 
 export async function resetDashboardLayout(userId: string): Promise<DashboardLayoutSettings> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { settings: true },
-  });
-
-  const current = (user?.settings ?? {}) as StoredUserSettings;
-  const backOffice = current.backOffice ?? {};
-  const nextSettings: StoredUserSettings = {
-    ...current,
-    backOffice: {
-      ...backOffice,
-      dashboard: DEFAULT_DASHBOARD_LAYOUT,
-    },
-  };
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { settings: nextSettings as Prisma.InputJsonValue },
-  });
-
-  return DEFAULT_DASHBOARD_LAYOUT;
+  return saveDashboardLayout(userId, DEFAULT_DASHBOARD_LAYOUT);
 }

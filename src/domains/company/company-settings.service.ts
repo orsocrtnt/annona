@@ -1,3 +1,5 @@
+import { settingsSection } from "@/lib/database/claimed-settings-update";
+import { updateCompanySettingsWithClaim } from "@/lib/database/settings-claims";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory } from "@prisma/client";
 import type { CompanyDeliveryOptions } from "@/lib/validations/company-settings";
@@ -42,22 +44,11 @@ export async function updateCompanyDeliveryOptions(
   companyId: string,
   options: CompanyDeliveryOptions
 ): Promise<CompanyDeliveryOptions> {
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { settings: true },
+  const result = await updateCompanySettingsWithClaim(companyId, {
+    apply: (current) => ({ ...current, deliveryCategories: options.deliveryCategories }),
+    section: settingsSection("deliveryCategories"),
   });
-  if (!company) throw new Error("COMPANY_NOT_FOUND");
-
-  const current = (company.settings ?? {}) as Record<string, unknown>;
-  const nextSettings = {
-    ...current,
-    deliveryCategories: options.deliveryCategories,
-  };
-
-  await prisma.company.update({
-    where: { id: companyId },
-    data: { settings: nextSettings },
-  });
+  if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
 
   return options;
 }

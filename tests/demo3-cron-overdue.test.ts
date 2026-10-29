@@ -84,3 +84,37 @@ test("DEMO-3 cron : le passage en retard s'exécute même si le traitement des t
   assert.equal(response.status, 500);
   assert.deepEqual(incidents.map((incident) => incident.fingerprint), ["operation-jobs-worker-crash"]);
 });
+
+test("RECETTE-2810 point 10 : tâches ignorées (e-mail désactivé) = 200 ; le détail par tâche est renvoyé, sans texte libre", async () => {
+  const incidents: Incident[] = [];
+  const details = [{ id: "job-1", type: "CLIENT_NOTIFICATION", kind: "SIGNUP_WELCOME", outcome: "skipped", error: "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED" }];
+  const route = loadCron(async () => 0, incidents, { processed: 3, succeeded: 2, skipped: 1, pending: 0, failed: 0, overdue: 0, details } as never);
+  const response = await route.GET(authorized());
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.success, true);
+  assert.equal(body.data.skipped, 1);
+  assert.deepEqual(body.data.jobs, details);
+  assert.equal(incidents.length, 0);
+});
+
+test("RECETTE-2810 point 10 : un échec réel répond 503 avec les succès et le détail ; l'alerte ne reçoit que des compteurs", async () => {
+  const incidents: Incident[] = [];
+  const details = [{ id: "job-2", type: "CLIENT_NOTIFICATION", kind: "DELIVERY", outcome: "failed", error: "EMAIL_PROVIDER_HTTP_500:application_error" }];
+  const route = loadCron(async () => 0, incidents, { processed: 4, succeeded: 3, skipped: 0, pending: 0, failed: 1, overdue: 0, details } as never);
+  const response = await route.GET(authorized());
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.data.succeeded, 3, "les succès restent visibles");
+  assert.deepEqual(body.data.jobs, details);
+  assert.equal(incidents.length, 1);
+  assert.equal((incidents[0]!.context as Record<string, unknown>).jobs, undefined, "pas de détail dans l'alerte");
+});
+
+test("RECETTE-2810 point 10 : plantage du traitement — message d'alerte fixe, jamais le texte de l'erreur", async () => {
+  const incidents: Incident[] = [];
+  const route = loadCron(async () => 0, incidents, async () => { throw new Error("Invalid invocation: email = 'camille@example.test'"); });
+  const response = await route.GET(authorized());
+  assert.equal(response.status, 500);
+  assert.doesNotMatch(JSON.stringify(incidents), /camille/);
+});

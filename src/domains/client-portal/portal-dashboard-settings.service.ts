@@ -1,5 +1,6 @@
+import { settingsSection } from "@/lib/database/claimed-settings-update";
+import { updateUserSettingsWithClaim } from "@/lib/database/settings-claims";
 import { prisma } from "@/services/prisma/client";
-import type { Prisma } from "@prisma/client";
 import {
   DEFAULT_PORTAL_DASHBOARD_LAYOUT,
   normalizePortalDashboardLayout,
@@ -23,56 +24,27 @@ export async function getPortalDashboardLayout(userId: string): Promise<PortalDa
   return normalizePortalDashboardLayout(settings.portal?.dashboard);
 }
 
+/** Disposition enregistrée sous `portal.dashboard`, sans écraser les autres réglages du compte. */
+async function savePortalDashboardLayout(userId: string, dashboard: PortalDashboardLayoutSettings): Promise<PortalDashboardLayoutSettings> {
+  const result = await updateUserSettingsWithClaim(userId, {
+    apply: (current) => {
+      const stored = current as StoredUserSettings;
+      return { ...stored, portal: { ...(stored.portal ?? {}), dashboard } };
+    },
+    // Deux enregistrements simultanés de la disposition : le second reçoit SETTINGS_CONFLICT.
+    section: settingsSection("portal", "dashboard"),
+  });
+  if (result === "missing") throw new Error("USER_NOT_FOUND");
+  return dashboard;
+}
+
 export async function updatePortalDashboardLayout(
   userId: string,
   input: PortalDashboardLayoutInput
 ): Promise<PortalDashboardLayoutSettings> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { settings: true },
-  });
-
-  const current = (user?.settings ?? {}) as StoredUserSettings;
-  const portal = current.portal ?? {};
-  const normalized = normalizePortalDashboardLayout(input);
-  const nextSettings: StoredUserSettings = {
-    ...current,
-    portal: {
-      ...portal,
-      dashboard: normalized,
-    },
-  };
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { settings: nextSettings as Prisma.InputJsonValue },
-  });
-
-  return normalized;
+  return savePortalDashboardLayout(userId, normalizePortalDashboardLayout(input));
 }
 
-export async function resetPortalDashboardLayout(
-  userId: string
-): Promise<PortalDashboardLayoutSettings> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { settings: true },
-  });
-
-  const current = (user?.settings ?? {}) as StoredUserSettings;
-  const portal = current.portal ?? {};
-  const nextSettings: StoredUserSettings = {
-    ...current,
-    portal: {
-      ...portal,
-      dashboard: DEFAULT_PORTAL_DASHBOARD_LAYOUT,
-    },
-  };
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { settings: nextSettings as Prisma.InputJsonValue },
-  });
-
-  return DEFAULT_PORTAL_DASHBOARD_LAYOUT;
+export async function resetPortalDashboardLayout(userId: string): Promise<PortalDashboardLayoutSettings> {
+  return savePortalDashboardLayout(userId, DEFAULT_PORTAL_DASHBOARD_LAYOUT);
 }

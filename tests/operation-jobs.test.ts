@@ -53,6 +53,7 @@ function fixture(options?: {
   calls?: Array<{ handler: string; arg: unknown }>;
   failFirstNotification?: boolean;
   slowFirstDispatchFailure?: boolean;
+  skipSignup?: boolean;
 }) {
   const base = new Date("2026-10-05T12:00:00.000Z");
   const jobs: Job[] = [];
@@ -181,6 +182,7 @@ function fixture(options?: {
     "@/domains/signup/signup.service": {
       deliverSignupWelcomeEmail: async (_payload: unknown, _jobKey: string, window: unknown) => {
         options?.calls?.push({ handler: "signup", arg: window });
+        if (options?.skipSignup) throw Object.assign(new Error("SIGNUP_WELCOME_EMAIL_DISABLED"), { skipped: true });
       },
     },
     "@/domains/client-portal/notify.service": {
@@ -507,4 +509,75 @@ test("un worker expiré ne peut pas écraser le succès de sa reprise", async ()
   assert.equal(f.jobs[0]?.status, "SUCCEEDED");
   assert.equal(f.jobs[0]?.attempts, 2);
   assert.equal(f.jobs[0]?.lastError, null);
+});
+
+test("RECETTE-2810 point 10 : tâche ignorée (e-mail désactivé) close sans échec ; détail par tâche sans texte libre", async () => {
+  const f = fixture({ skipSignup: true, failNotification: true });
+  f.addJob({ jobKey: "signup-welcome:s1", type: "CLIENT_NOTIFICATION", payload: { kind: "SIGNUP_WELCOME", signupId: "s1" } });
+  f.addJob({ jobKey: "auto-dispatch:d1", type: "AUTO_DISPATCH", payload: { companyId: "company-a", deliveryId: "d1" } });
+  // Notification en échec à son dernier essai : vrai échec ; message brut multi-ligne jamais publié.
+  f.addJob({ jobKey: "client-notification:x", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY", customerId: "client-a" }, attempts: 2 });
+  const result = await f.service.processDueOperationJobs(f.base);
+  assert.equal(result.processed, 3);
+  assert.equal(result.succeeded, 1);
+  assert.equal(result.skipped, 1);
+  assert.equal(result.failed, 1);
+  const welcome = f.jobs.find((job) => job.jobKey === "signup-welcome:s1")!;
+  assert.equal(welcome.status, "SUCCEEDED", "ignorée : aucun nouvel essai");
+  assert.equal(welcome.attempts, 1);
+  assert.equal(welcome.lastError, "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED", "trace conservée");
+  assert.deepEqual(result.details.map((d) => [d.kind, d.outcome, d.error]), [
+    ["SIGNUP_WELCOME", "skipped", "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED"],
+    ["DELIVERY", "failed", "PROVIDER"],
+  ]);
+  assert.doesNotMatch(JSON.stringify(result), /client-a|TEMPORARILY/, "ni identifiant client ni texte libre");
+  // Une tâche ignorée ne repasse jamais.
+  assert.equal((await f.service.processDueOperationJobs(f.base)).processed, 0);
+});
+
+test("RECETTE-2810 point 10 : code d'erreur publiable — préfixe et `name` fournisseur seulement", () => {
+  const f = fixture();
+  const code = f.service.jobErrorCode;
+  assert.equal(code(null), null);
+  assert.equal(code("EMAIL_PROVIDER_HTTP_422:validation_error"), "EMAIL_PROVIDER_HTTP_422:validation_error");
+  assert.equal(code("INVOICE_REMINDER_SEND_UNCONFIRMED:SEND_UNCONFIRMED"), "INVOICE_REMINDER_SEND_UNCONFIRMED:SEND_UNCONFIRMED");
+  assert.equal(code("AUTO_DISPATCH_RETRY:Aucun chauffeur disponible"), "AUTO_DISPATCH_RETRY");
+  assert.equal(code("ERR:camille"), "ERR", "un mot sans tiret bas n'est jamais repris");
+  assert.equal(code("Invalid `prisma.user.update()` invocation: email = 'camille@example.test'"), "ERREUR_NON_CLASSEE");
+  assert.equal(code("SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED"), "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED");
+});
+
+test("RECETTE-2810 point 9 : traitement immédiat — une erreur de base avant la prise est réessayée, pas laissée au cron", async () => {
+  const f = fixture();
+  const waits: number[] = [];
+  let calls = 0;
+  const result = await f.service.processOperationJobWithRetry("job-1", {
+    process: async () => { calls += 1; if (calls < 3) throw new Error("P2024 pool"); return { status: "SUCCEEDED" }; },
+    sleep: async (ms) => { waits.push(ms); },
+    delays: [1, 2, 3],
+  });
+  assert.deepEqual(result, { status: "SUCCEEDED" });
+  assert.equal(calls, 3);
+  assert.deepEqual(waits, [1, 2]);
+  // Panne durable : nombre d'essais borné, l'erreur remonte (journalisée par runAfterResponse), le cron reprend.
+  calls = 0;
+  await assert.rejects(f.service.processOperationJobWithRetry("job-1", {
+    process: async () => { calls += 1; throw new Error("P1001"); },
+    sleep: async () => undefined,
+    delays: [1, 2],
+  }), /P1001/);
+  assert.equal(calls, 3);
+});
+
+test("RECETTE-2810 point 9 : la reprise après une erreur de base n'exécute jamais deux fois la tâche", async () => {
+  const f = fixture();
+  const job = f.addJob({ jobKey: "auto-dispatch:d9", type: "AUTO_DISPATCH", payload: { companyId: "company-a", deliveryId: "d9" } });
+  const original = f.prisma.operationJob.findUnique;
+  let first = true;
+  // La première lecture échoue (pool saturé), comme au redémarrage du serveur.
+  f.prisma.operationJob.findUnique = async (args) => { if (first) { first = false; throw new Error("P2024"); } return original(args); };
+  await f.service.processOperationJobWithRetry(job.id, { sleep: async () => undefined });
+  await f.service.processOperationJobWithRetry(job.id, { sleep: async () => undefined });
+  assert.equal(f.jobs[0]!.status, "SUCCEEDED");
+  assert.deepEqual(f.executions, ["dispatch:d9"]);
 });

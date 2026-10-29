@@ -37,6 +37,32 @@ export function permanentJobError(message: string) {
 }
 
 /**
+ * Tâche sans objet parce que son service est volontairement désactivé (ex. e-mail désactivé en
+ * développement) : ce n'est pas un échec. Elle est close SUCCEEDED, avec `lastError` = `SKIPPED:<code>`
+ * pour la trace, sans nouvel essai (RECETTE-2810, point 10).
+ */
+export function skippedJobError(code: string) {
+  return Object.assign(new Error(code), { skipped: true });
+}
+
+export const SKIPPED_JOB_PREFIX = "SKIPPED:";
+
+function isSkippedJobError(error: unknown) {
+  return Boolean(error && typeof error === "object" && (error as { skipped?: unknown }).skipped === true);
+}
+
+/**
+ * Code d'erreur publiable (cron, alertes) : préfixe en majuscules et `name` du fournisseur, jamais
+ * le texte libre (un message Prisma ou réseau peut contenir des valeurs : adresse, nom…).
+ */
+export function jobErrorCode(lastError: string | null): string | null {
+  if (!lastError) return null;
+  const match = /^([A-Z][A-Z0-9_]{2,80})(?::([A-Z][A-Z0-9_]{2,80}|[a-z]{1,30}_[a-z_]{1,33})(?![^:]))?/.exec(lastError);
+  if (!match) return "ERREUR_NON_CLASSEE";
+  return match[2] ? `${match[1]}:${match[2]}` : match[1]!;
+}
+
+/**
  * Rien n'a été tenté (ex. une autre exécution tient la réservation d'envoi) : la tâche est replanifiée
  * à `until` sans consommer d'essai.
  */
@@ -150,6 +176,19 @@ export async function enqueueAutoDispatchJob(
       deliveryId: input.deliveryId,
     },
   });
+}
+
+export type OperationJobRunDetail = {
+  id: string;
+  type: OperationJob["type"];
+  kind: string | null;
+  outcome: "succeeded" | "skipped" | "pending" | "failed";
+  error: string | null;
+};
+
+function jobKind(payload: Prisma.JsonValue) {
+  const kind = readString(payload, "kind");
+  return kind && /^[A-Z][A-Z_]{1,40}$/.test(kind) ? kind : null;
 }
 
 function readString(payload: Prisma.JsonValue, key: string) {
@@ -293,6 +332,13 @@ export async function processOperationJob(jobId: string, now?: Date) {
     return prisma.operationJob.findUnique({ where: { id: jobId } });
   } catch (error) {
     const failedAt = now ?? new Date();
+    if (isSkippedJobError(error)) {
+      await prisma.operationJob.updateMany({
+        where: { id: jobId, status: "PROCESSING", attempts: claimed.attempts, lockedAt: claimed.lockedAt },
+        data: { status: "SUCCEEDED", completedAt: failedAt, lockedAt: null, lastError: `${SKIPPED_JOB_PREFIX}${safeError(error)}` },
+      });
+      return prisma.operationJob.findUnique({ where: { id: jobId } });
+    }
     const deferUntil = deferredUntil(error);
     if (deferUntil) {
       await prisma.operationJob.updateMany({
@@ -320,10 +366,39 @@ export async function processOperationJob(jobId: string, now?: Date) {
   }
 }
 
+/**
+ * Délais entre deux essais du traitement immédiat quand il échoue AVANT d'avoir pu exécuter la tâche
+ * (pool de connexions saturé au redémarrage, coupure réseau) : sans eux, la tâche restait PENDING
+ * jusqu'au passage du cron (RECETTE-2810, point 9). `processOperationJob` ne lève que sur une erreur
+ * de base de données ; la prise conditionnelle (`updateMany`) empêche toute double exécution.
+ */
+export const KICK_RETRY_DELAYS_MS = [1_000, 4_000, 10_000] as const;
+
+export async function processOperationJobWithRetry(
+  jobId: string,
+  deps: {
+    process?: (jobId: string) => Promise<unknown>;
+    sleep?: (ms: number) => Promise<void>;
+    delays?: readonly number[];
+  } = {}
+) {
+  const run = deps.process ?? processOperationJob;
+  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const delays = deps.delays ?? KICK_RETRY_DELAYS_MS;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await run(jobId);
+    } catch (error) {
+      if (attempt >= delays.length) throw error; // le filet cron reprendra la tâche
+      await sleep(delays[attempt]!);
+    }
+  }
+}
+
 export function kickOperationJob(jobId: string) {
   // after() garde la fonction Vercel vivante jusqu'à la fin du traitement ;
   // le filet /api/cron/operations reprend de toute façon les tâches restées PENDING.
-  runAfterResponse(() => processOperationJob(jobId), {
+  runAfterResponse(() => processOperationJobWithRetry(jobId), {
     log: (...args) => console.error("[operation-job] lancement", jobId, ...args.map((a) => String(a).replace(/[\r\n]+/g, " ").slice(0, 500))),
   });
 }
@@ -342,14 +417,20 @@ export async function processDueOperationJobs(now = new Date()) {
     select: { id: true },
   });
 
-  const result = { processed: 0, succeeded: 0, pending: 0, failed: 0, overdue: 0 };
+  const result = { processed: 0, succeeded: 0, skipped: 0, pending: 0, failed: 0, overdue: 0, details: [] as OperationJobRunDetail[] };
   for (const job of jobs) {
     const updated = await processOperationJob(job.id);
     if (!updated) continue;
     result.processed += 1;
-    if (updated.status === "SUCCEEDED") result.succeeded += 1;
-    else if (updated.status === "FAILED") result.failed += 1;
-    else result.pending += 1;
+    const skipped = updated.status === "SUCCEEDED" && (updated.lastError ?? "").startsWith(SKIPPED_JOB_PREFIX);
+    const outcome: OperationJobRunDetail["outcome"] = skipped
+      ? "skipped"
+      : updated.status === "SUCCEEDED" ? "succeeded" : updated.status === "FAILED" ? "failed" : "pending";
+    result[outcome] += 1;
+    // Détail par tâche sans donnée personnelle : identifiant interne, type, nature et code d'erreur.
+    if (outcome !== "succeeded") {
+      result.details.push({ id: updated.id, type: updated.type, kind: jobKind(updated.payload), outcome, error: jobErrorCode(updated.lastError) });
+    }
   }
   result.overdue = await countOverduePendingJobs(now);
   return result;

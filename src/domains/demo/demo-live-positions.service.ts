@@ -1,4 +1,5 @@
 import { prisma } from "@/services/prisma/client";
+import { updateUserSettingsWithClaim } from "@/lib/database/settings-claims";
 import { ESTIMATION_MAX_SECONDS, trackingService, trackingTarget } from "@/domains/tracking/tracking.policy";
 import { fetchDriveRoute } from "@/lib/maps/drive-route-provider";
 import type { DriveRoute } from "@/lib/maps/drive-simulation";
@@ -105,15 +106,12 @@ export async function advanceDemoDriverPositions(companyId: string, now = new Da
 
     // Le suivi n'est visible que si le service du livreur est actif (même règle qu'en réel).
     if (!trackingActive) {
-      const settings = (mission.driver?.settings ?? {}) as Record<string, unknown>;
-      await prisma.user.update({
-        where: { id: driverId },
-        data: {
-          settings: {
-            ...settings,
-            trackingService: { active: true, startedAt: mission.missionStartedAt!.toISOString(), endedAt: null },
-          },
-        },
+      // Réclamation sur updatedAt (même motif que tracking.service) : aucune autre clé écrasée.
+      await updateUserSettingsWithClaim(driverId, {
+        apply: (settings) => ({
+          ...settings,
+          trackingService: { active: true, startedAt: mission.missionStartedAt!.toISOString(), endedAt: null },
+        }),
       });
     }
 

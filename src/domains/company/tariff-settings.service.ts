@@ -1,3 +1,5 @@
+import { settingsKeys } from "@/lib/database/claimed-settings-update";
+import { updateCompanySettingsWithClaim } from "@/lib/database/settings-claims";
 import { prisma } from "@/services/prisma/client";
 import type { CompanyTariffSettings } from "@/lib/validations/tariff-settings";
 import { findTariffZoneForPostalCode } from "@/lib/tariff/find-tariff-zone";
@@ -32,23 +34,11 @@ export async function updateCompanyTariffSettings(
   companyId: string,
   settings: CompanyTariffSettings
 ): Promise<CompanyTariffSettings> {
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { settings: true },
+  const result = await updateCompanySettingsWithClaim(companyId, {
+    apply: (current) => ({ ...current, tariffZones: settings.tariffZones, tariffFees: settings.tariffFees }),
+    section: settingsKeys("tariffZones", "tariffFees"),
   });
-  if (!company) throw new Error("COMPANY_NOT_FOUND");
-
-  const current = (company.settings ?? {}) as Record<string, unknown>;
-  const nextSettings = {
-    ...current,
-    tariffZones: settings.tariffZones,
-    tariffFees: settings.tariffFees,
-  };
-
-  await prisma.company.update({
-    where: { id: companyId },
-    data: { settings: nextSettings },
-  });
+  if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
 
   return settings;
 }

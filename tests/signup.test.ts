@@ -1100,3 +1100,22 @@ test("SIGNUP-1 : le paiement confirmé ouvre l’environnement d’offre payé",
   assert.match(paymentRoute, /verifyOtp/);
   assert.doesNotMatch(paymentRoute, /redirect=\/onboarding/);
 });
+
+test("RECETTE-2810 point 10 : bienvenue — e-mail volontairement désactivé = tâche ignorée, configuration incomplète = échec", async () => {
+  const journey = { companyName: "E2E Coursiers", planCode: "ESSENTIEL", billingInterval: "MONTHLY", company: { users: [{ email: "owner@example.test", firstName: "Ana" }] } };
+  const skippedJobError = (code: string) => Object.assign(new Error(code), { skipped: true });
+  const serviceFor = (reason: string) => loadSignupService({
+    "@/services/prisma/client": { prisma: { signupJourney: { findFirst: async () => journey } } },
+    "@/lib/email/transactional-email": { sendTransactionalEmail: async () => ({ status: "disabled", mode: "disabled", reason }) },
+    "@/domains/operations/operation-job.service": { enqueueOperationJob: () => ({}), kickOperationJob: () => undefined, skippedJobError },
+  });
+  const payload = { kind: "SIGNUP_WELCOME", signupId: "s1", companyId: "c1", userId: "u1" };
+  const skipped = await serviceFor("disabled").deliverSignupWelcomeEmail(payload, "signup-welcome:s1", null).then(() => null, (error: Error) => error);
+  assert.equal(skipped?.message, "SIGNUP_WELCOME_EMAIL_DISABLED");
+  assert.equal((skipped as { skipped?: boolean }).skipped, true, "ignorée, pas un échec");
+  for (const reason of ["missing-provider", "invalid-mode", "missing-test-recipient"]) {
+    const failed = await serviceFor(reason).deliverSignupWelcomeEmail(payload, "signup-welcome:s1", null).then(() => null, (error: Error) => error);
+    assert.equal(failed?.message, "SIGNUP_WELCOME_EMAIL_NOT_CONFIGURED", reason);
+    assert.equal((failed as { skipped?: boolean }).skipped, undefined, `${reason} : vrai échec`);
+  }
+});

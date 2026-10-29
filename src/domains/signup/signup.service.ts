@@ -13,6 +13,7 @@ import {
 import {
   enqueueOperationJob,
   kickOperationJob,
+  skippedJobError,
 } from "@/domains/operations/operation-job.service";
 import { sendTransactionalEmail, type EmailContentFreezer, type ReplayWindowStart } from "@/lib/email/transactional-email";
 import { attributeSignupSale, resolveActiveSalesCodeId } from "@/domains/sales/sales-code.service";
@@ -1113,7 +1114,11 @@ export async function deliverSignupWelcomeEmail(
     freezeContent,
   });
   if (delivery.status === "disabled") {
-    throw new Error("SIGNUP_WELCOME_EMAIL_DISABLED");
+    // E-mail volontairement désactivé (EMAIL_DELIVERY_MODE absent ou "disabled", ex. développement) :
+    // tâche sans objet, pas un échec du cron. Configuration incomplète (mode test ou live sans
+    // fournisseur) : vrai échec, signalé et rejoué (RECETTE-2810, point 10).
+    if (delivery.reason === "disabled") throw skippedJobError("SIGNUP_WELCOME_EMAIL_DISABLED");
+    throw new Error("SIGNUP_WELCOME_EMAIL_NOT_CONFIGURED");
   }
   return delivery;
 }
