@@ -39,6 +39,7 @@ function fixture(signup = false) {
   let invalid = false;
   let limited = false;
   let updateFails = false;
+  let updateCode: string | undefined;
   let revokeFails = false;
   let suspensionRace = false;
   let passwordWrites = 0;
@@ -72,13 +73,13 @@ function fixture(signup = false) {
         consumed = true;
         return { data: { user: { id: "auth", email_confirmed_at: "2026-09-28", email: "test@example.com", user_metadata: { account_type: "company" } }, session: {} }, error: null };
       },
-      updateUser: async ({ password }: { password: string }) => { assert.equal(password, "TestLocal123!"); passwordWrites++; return { error: updateFails ? new Error("provider") : null }; },
+      updateUser: async ({ password }: { password: string }) => { assert.equal(password, "TestLocal123!"); passwordWrites++; return { error: updateFails ? Object.assign(new Error("provider"), { code: updateCode }) : null }; },
       signOut: async ({ scope }: { scope: string }) => { signouts.push(scope); return { error: revokeFails && scope === "global" ? new Error("provider") : null }; },
       resetPasswordForEmail: async (...args: unknown[]) => { recoveries.push(args); return { error: limited ? { status: 429 } : null }; },
     } }) },
   });
   return { service, user, signouts, sessions, recoveries, provisions: () => provisions, writes: () => passwordWrites, activations: () => activations,
-    set invalid(v: boolean) { invalid = v; }, set limited(v: boolean) { limited = v; }, set updateFails(v: boolean) { updateFails = v; }, set revokeFails(v: boolean) { revokeFails = v; }, set suspensionRace(v: boolean) { suspensionRace = v; } };
+    set invalid(v: boolean) { invalid = v; }, set limited(v: boolean) { limited = v; }, set updateFails(v: boolean) { updateFails = v; }, set updateCode(v: string | undefined) { updateCode = v; }, set revokeFails(v: boolean) { revokeFails = v; }, set suspensionRace(v: boolean) { suspensionRace = v; } };
 }
 const input = { tokenHash: "test-token-not-a-real-secret", type: "invite" as const, password: "TestLocal123!" };
 
@@ -276,4 +277,54 @@ test("SIGNUP-1 : la session du modèle Supabase reprend le brouillon sans provis
   assert.equal(result.signupResumeToken, "resume-token-high-entropy");
   assert.equal(JSON.stringify(calls), JSON.stringify([{ draftId: "draft-1", linkToken: "link-token-high-entropy", authUserId: "auth-managed", email: "managed@example.test" }]));
   assert.deepEqual(signouts, ["global", "local"]);
+});
+
+// Préproduction, 29 octobre 2026 : le lien Supabase par défaut renvoie un refresh token de 12 caractères.
+const shortSession = { accessToken: "access-token-test-not-a-real-secret", refreshToken: "abcdefghijkl", type: "recovery" as const };
+async function linkRoute(f: ReturnType<typeof fixture>) {
+  return load<{ POST: (r: Request) => Promise<Response> }>("src/app/api/auth/password-link/route.ts", {
+    zod: await import("zod"), "@/lib/validations/auth": validation,
+    "@/domains/auth/password-link.service": f.service,
+    "@/domains/signup/signup-cookie": { setSignupResumeCookie: () => undefined },
+  }).POST;
+}
+const post = (body: unknown) => new Request("http://local", { method: "POST", body: JSON.stringify(body) });
+
+test("récupération par session Supabase : refresh token court accepté, mot de passe enregistré", async (t) => {
+  configured(t); const f = fixture(); f.user.status = "ACTIVE";
+  const POST = await linkRoute(f);
+  const res = await POST(post({ ...shortSession, password: "TestLocal123!", confirmPassword: "TestLocal123!" }));
+  assert.equal(res.status, 200);
+  assert.equal(f.writes(), 1);
+  assert.deepEqual(f.signouts, ["global", "local"]);
+});
+
+test("lien du mot de passe : message du mot de passe refusé distinct du lien invalide, sans écho du jeton", async (t) => {
+  configured(t); const f = fixture();
+  const POST = await linkRoute(f);
+  const weak = await POST(post({ ...shortSession, password: "abcdefgh", confirmPassword: "abcdefgh" }));
+  const weakText = await weak.text();
+  assert.equal(weak.status, 400); assert.match(weakText, /majuscule/); assert.ok(!weakText.includes(shortSession.refreshToken));
+  const noLink = await POST(post({ type: "recovery", password: "TestLocal123!", confirmPassword: "TestLocal123!" }));
+  assert.equal(noLink.status, 400); assert.match(await noLink.text(), /Lien manquant ou invalide/);
+  assert.equal(f.writes(), 0);
+});
+
+test("même mot de passe refusé par Supabase : message clair, session du lien conservée pour corriger", async (t) => {
+  configured(t); const f = fixture(); f.user.status = "ACTIVE"; f.updateFails = true; f.updateCode = "same_password";
+  const POST = await linkRoute(f);
+  const res = await POST(post({ ...shortSession, password: "TestLocal123!", confirmPassword: "TestLocal123!" }));
+  const text = await res.text();
+  assert.equal(res.status, 400); assert.match(text, /différent de l’actuel/); assert.doesNotMatch(text, /nouveau lien/);
+  assert.deepEqual(f.signouts, []);
+});
+
+test("mot de passe faible après token_hash : lien consommé, session révoquée, nouveau lien demandé", async (t) => {
+  configured(t); const f = fixture(); f.user.status = "ACTIVE"; f.updateFails = true; f.updateCode = "weak_password";
+  const POST = await linkRoute(f);
+  const res = await POST(post({ ...input, type: "recovery", confirmPassword: input.password }));
+  const text = await res.text();
+  assert.equal(res.status, 400); assert.match(text, /refusé/); assert.match(text, /nouveau lien/);
+  assert.deepEqual(f.signouts, ["local"]);
+  assert.equal(f.activations(), 0);
 });

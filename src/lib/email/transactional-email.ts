@@ -1,3 +1,5 @@
+import { renderTextEmailHtml } from "./email-template";
+
 const EMAIL_TIMEOUT_MS = 10_000;
 const EMAIL_IDEMPOTENCY_KEY_MAX = 256;
 
@@ -203,6 +205,12 @@ export async function sendTransactionalEmail(
   const text = testMode
     ? `Message de recette TutelLiv destiné à ${intendedRecipient}.\n\n${content.text}`
     : content.text;
+  // Dérivé du rendu figé par une fonction pure : une reprise sous la même clé envoie le même HTML.
+  const html = renderTextEmailHtml({
+    subject: safeHeader(content.subject, 180),
+    text: content.text,
+    testRecipient: testMode ? intendedRecipient : undefined,
+  });
   const idempotencyKey = safeHeader(
     input.idempotencyKey,
     EMAIL_IDEMPOTENCY_KEY_MAX
@@ -232,6 +240,7 @@ export async function sendTransactionalEmail(
         to: [recipient],
         subject,
         text,
+        html,
       }),
       signal: options.signal ?? AbortSignal.timeout(EMAIL_TIMEOUT_MS),
     }

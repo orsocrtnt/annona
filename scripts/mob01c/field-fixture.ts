@@ -3,6 +3,8 @@
  *
  *   setup   : crée l'entreprise, un livreur et un administrateur connectables, et des livraisons
  *             STANDARD vers les adresses de MOB01C_ADDRESSES (« rue|code postal|ville;… »).
+ *             Un 4e champ facultatif « lat,lng » impose la position, pour un lieu hors de France
+ *             que le géocodeur IGN ne sait pas localiser.
  *   watch   : relève toutes les 5 s la dernière position du livreur (la base n'en garde qu'une)
  *             et écrit un journal horodaté, sans coordonnées, dans outputs/mob01c/.
  *   cleanup : supprime uniquement ce que le manifeste désigne, puis vérifie zéro résidu.
@@ -88,9 +90,12 @@ async function writePrivate(path: string, content: string) {
 
 function parseAddresses(raw: string | undefined) {
   const addresses = (raw ?? "").split(";").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
-    const [street, postalCode, city] = entry.split("|").map((part) => part.trim());
+    const [street, postalCode, city, position] = entry.split("|").map((part) => part.trim());
     if (!street || !/^\d{5}$/.test(postalCode ?? "") || !city) throw new Error(`ADDRESS_INVALID:${entry}`);
-    return { street, postalCode: postalCode!, city };
+    if (!position) return { street, postalCode: postalCode!, city, coordinates: null };
+    const [lat, lng] = position.split(",").map(Number);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat!) > 90 || Math.abs(lng!) > 180) throw new Error(`ADDRESS_POSITION_INVALID:${entry}`);
+    return { street, postalCode: postalCode!, city, coordinates: { latitude: lat!, longitude: lng! } };
   });
   if (addresses.length === 0) throw new Error("MOB01C_ADDRESSES_MISSING");
   return addresses;
@@ -193,7 +198,10 @@ async function setup() {
       },
       { idempotencyKey: `${key}:order:${index}` }
     );
-    const delivery = await prisma.delivery.findFirstOrThrow({ where: { orderId: order.id }, select: { id: true, latitude: true } });
+    let delivery = await prisma.delivery.findFirstOrThrow({ where: { orderId: order.id }, select: { id: true, latitude: true } });
+    if (address.coordinates) {
+      delivery = await prisma.delivery.update({ where: { id: delivery.id }, data: address.coordinates, select: { id: true, latitude: true } });
+    }
     await assignDeliveryToDriver(company.id, delivery.id, driver.id, { reason: "Essai terrain MOB-01C" });
     deliveries.push({ label, geocoded: delivery.latitude != null });
   }

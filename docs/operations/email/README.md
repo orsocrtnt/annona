@@ -1,6 +1,14 @@
 # EMAIL — transport transactionnel et recette
 
-État du 18 octobre 2026. Le transport métier est préparé pour Resend, mais aucun domaine, secret ni envoi réel n'a été activé.
+État du 18 octobre 2026, mis à jour le 29 octobre 2026 : domaine `tutelliv.fr` vérifié chez Resend (selon le propriétaire), clé restreinte à l'envoi en local et dans Vercel, expéditeur `TutelLiv <no-reply@tutelliv.fr>` dans `.env.local`. Le mode reste `disabled` tant que le propriétaire n'a pas autorisé un envoi de recette.
+
+## Modèle HTML
+
+Chaque e-mail métier part en texte brut **et** en HTML (`src/lib/email/email-template.ts`, DA Menthe Light) : sujet en titre, paragraphes séparés par une ligne vide, première ligne « Libellé : URL » transformée en bouton vert avec lien de secours, bandeau ambre en mode test. Le contenu est échappé, seules les URL http(s) deviennent des liens, aucune image distante ni pixel de suivi. Le HTML est dérivé du rendu figé par une fonction pure : une reprise sous la même `Idempotency-Key` envoie le même corps. Les modèles Supabase Auth utilisent la même mise en page (voir [AUTH_EMAIL_SETUP.md](../../AUTH_EMAIL_SETUP.md)).
+
+## Envoi de recette
+
+`npx tsx scripts/email/send-test.ts --confirm [--to delivered@resend.dev]` envoie trois exemples fictifs (bienvenue, livraison avec preuve, relance de facture), toujours en mode test. Destinataires acceptés : `EMAIL_TEST_RECIPIENT` ou une adresse simulée `@resend.dev` (aucune boîte réelle) ; sans `--confirm`, refus. Aucune clé ni adresse affichée. À lancer uniquement avec l'accord du propriétaire.
 
 Les e-mails d'authentification (invitation, confirmation et récupération) passent par le SMTP de Supabase et suivent [AUTH_EMAIL_SETUP.md](../../AUTH_EMAIL_SETUP.md). Les copies des alertes de livraison et de facture passent par le transport métier Resend. Ces deux circuits doivent être configurés et testés séparément.
 

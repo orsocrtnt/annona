@@ -29,6 +29,9 @@ export async function finishPasswordLink(input: PasswordLinkInput): Promise<{ si
     : await client.auth.setSession({ access_token: input.accessToken, refresh_token: input.refreshToken });
   if (error?.status === 429) throw new Error("AUTH_RATE_LIMITED");
   if (error || !data.user || !data.session || !data.user.email_confirmed_at) throw new Error("AUTH_LINK_INVALID");
+  // Mot de passe refusé par Supabase : la session du fragment, déjà détenue par le
+  // navigateur, reste utilisable pour corriger sans redemander de lien.
+  let keepLinkSession = false;
   try {
     const user = await getUserByAuthId(data.user.id);
     if (input.type === "signup") {
@@ -54,7 +57,13 @@ export async function finishPasswordLink(input: PasswordLinkInput): Promise<{ si
       (input.type === "invite" && !pending)) throw new Error("AUTH_LINK_INVALID");
 
     const { error: updateError } = await client.auth.updateUser({ password: input.password });
-    if (updateError) throw new Error("AUTH_PASSWORD_FAILED");
+    if (updateError) {
+      const code = (updateError as { code?: string }).code;
+      const rejected = code === "weak_password" ? "AUTH_PASSWORD_WEAK" : code === "same_password" ? "AUTH_PASSWORD_SAME" : null;
+      if (!rejected) throw new Error("AUTH_PASSWORD_FAILED");
+      keepLinkSession = !("tokenHash" in input);
+      throw new Error(rejected);
+    }
     // Aucune session issue du lien n'est transmise au navigateur.
     const { error: signOutError } = await client.auth.signOut({ scope: "global" });
     if (signOutError) throw new Error("AUTH_PASSWORD_FAILED");
@@ -69,6 +78,6 @@ export async function finishPasswordLink(input: PasswordLinkInput): Promise<{ si
     return {};
   } finally {
     // Nettoyage même si la lecture ou l'activation échoue. Aucun token dans les logs.
-    await client.auth.signOut({ scope: "local" }).catch(() => undefined);
+    if (!keepLinkSession) await client.auth.signOut({ scope: "local" }).catch(() => undefined);
   }
 }

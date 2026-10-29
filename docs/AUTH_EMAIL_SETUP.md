@@ -4,7 +4,29 @@ Préparation initiale du 28 septembre 2026. Configuration de préproduction vér
 
 État de la préproduction : la Site URL Supabase pointe vers l'alias stable Vercel de la branche `preproduction` et son chemin `/reset-password` est dans la liste des redirections autorisées. Le modèle e-mail Supabase par défaut est utilisé tant qu'aucun SMTP personnalisé n'est configuré. TutelLiv accepte ce modèle ainsi que les futurs modèles personnalisés fondés sur `TokenHash`.
 
-Décision du 18 octobre 2026 : Resend est retenu en principe ; la boîte de réception de test est configurée uniquement dans `.env.local`, ignoré par Git. Les expéditeurs visés sont `no-reply@…` et `support@…`, mais aucun domaine TutelLiv n'est encore acheté ou confirmé. Ne pas inventer de domaine, modifier le DNS ou activer les envois avant sa validation.
+Décision du 18 octobre 2026 : Resend est retenu ; la boîte de réception de test est configurée uniquement dans `.env.local`, ignoré par Git.
+
+Mise à jour du 29 octobre 2026 : le propriétaire indique que le domaine `tutelliv.fr` est vérifié chez Resend et que `RESEND_API_KEY` est posée en local et dans Vercel. La clé locale est restreinte à l'envoi (lecture des domaines refusée en `401 restricted_api_key`, ce qui est voulu). L'expéditeur retenu est `TutelLiv <no-reply@tutelliv.fr>` (`MAIL_FROM`). Sur `tutelliv-preproduction`, le SMTP Resend est actif (journaux Auth, expéditeur `no-reply@tutelliv.fr`) et les trois modèles TutelLiv ont été collés le 29 octobre : les liens utilisent désormais `token_hash`. « Mot de passe oublié » vérifié en réel le même jour (e-mail TutelLiv reçu) ; invitation et confirmation pas encore reçues en réel. `tutelliv-dev` non vérifié.
+
+## SMTP Resend pour Supabase Auth (obligatoire)
+
+Oui, Supabase Auth demande une configuration SMTP spécifique : `RESEND_API_KEY` dans l'application ne change rien aux e-mails d'inscription, d'invitation et de récupération, envoyés par Supabase lui-même. Sans SMTP personnalisé, Supabase n'envoie qu'aux membres de l'organisation Supabase, avec une limite de quelques e-mails par heure : inutilisable pour des pilotes.
+
+Dans le tableau de bord Supabase du projet visé (d'abord `tutelliv-dev`, jamais la production sans décision séparée), **Authentication → Emails → SMTP Settings** :
+
+| Champ | Valeur |
+| --- | --- |
+| Enable custom SMTP | activé |
+| Sender email | `no-reply@tutelliv.fr` |
+| Sender name | `TutelLiv` |
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | `resend` |
+| Password | une clé Resend dédiée à Supabase, restreinte à l'envoi et au domaine `tutelliv.fr` (révocable sans couper l'application) |
+
+Alternative équivalente : l'intégration Supabase du tableau de bord Resend, qui remplit les mêmes champs. Ensuite, dans Resend, désactiver le suivi des clics et des ouvertures du domaine (réécriture des liens à jeton). Dans **Authentication → Rate Limits**, relever « emails sent per hour » (30 par défaut avec SMTP personnalisé) selon le volume pilote.
+
+Les trois modèles à la DA TutelLiv sont générés par `npx tsx scripts/email/render-supabase-templates.ts` dans `docs/operations/email/supabase/` (`signup.html`, `invite.html`, `recovery.html`) ; coller chaque fichier dans **Authentication → Emails → Templates** (« Confirm signup », « Invite user », « Reset password ») avec le sujet affiché par le script. Ne jamais modifier ces fichiers à la main : changer `src/lib/email/email-template.ts` puis régénérer.
 
 ## Avant activation
 
@@ -23,7 +45,7 @@ L'écran d'attente de l'inscription permet de renvoyer le lien de confirmation. 
 
 ## Modèles personnalisés futurs
 
-Ces modèles demandent un SMTP personnalisé. Ils ne sont pas requis pour tester la préproduction : le lien `ConfirmationURL` par défaut est désormais pris en charge par l'application.
+Ces modèles demandent un SMTP personnalisé. Ils ne sont pas requis pour tester la préproduction : le lien `ConfirmationURL` par défaut est désormais pris en charge par l'application. Les extraits ci-dessous gardent la structure minimale historique ; les versions à coller sont celles de `docs/operations/email/supabase/`, mêmes liens, même `type`.
 
 ## Modèle « Invite user »
 
