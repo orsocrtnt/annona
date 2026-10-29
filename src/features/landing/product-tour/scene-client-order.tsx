@@ -213,7 +213,7 @@ export function SceneClientOrder({ onDone, onStart, onReset, reducedMotion }: Sc
                 onStart();
               }}
               className={cn(
-                "flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+                "flex min-h-9 max-md:min-h-11 items-center gap-1.5 whitespace-nowrap rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
                 ready && !starting ? "product-tour-pulse" : !ready && "opacity-40"
               )}
             >

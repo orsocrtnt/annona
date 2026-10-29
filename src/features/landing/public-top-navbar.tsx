@@ -65,14 +65,14 @@ export function PublicTopNavbar() {
 
         <Link
           href="/login"
-          className="inline-flex min-h-10 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-[#0e1310] transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex min-h-10 max-md:min-h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold text-[#0e1310] transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           Connexion
         </Link>
 
         <Link
           href="/demonstration"
-          className="group hidden min-h-10 shrink-0 items-center gap-2 rounded-xl bg-[#0e1310] px-3.5 text-sm font-semibold text-white transition-[background-color,transform] duration-300 ease-out hover:bg-[#232a26] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none sm:inline-flex"
+          className="group hidden min-h-10 max-md:min-h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0e1310] px-3.5 text-sm font-semibold text-white transition-[background-color,transform] duration-300 ease-out hover:bg-[#232a26] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none sm:inline-flex"
         >
           Voir la démo
           <ArrowRight

@@ -23,12 +23,12 @@ const buttonVariants = cva(
           "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover active:scale-[0.98]",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-8 rounded-md px-3 text-xs",
+        default: "h-10 px-4 py-2 max-md:min-h-11",
+        sm: "h-8 rounded-md px-3 text-xs max-md:min-h-11",
         lg: "h-12 rounded-lg px-8 text-base",
         xl: "h-14 rounded-xl px-10 text-base font-semibold",
-        icon: "h-10 w-10",
-        "icon-sm": "h-8 w-8",
+        icon: "h-10 w-10 max-md:min-h-11 max-md:min-w-11",
+        "icon-sm": "h-8 w-8 max-md:min-h-11 max-md:min-w-11",
         // Cibles tactiles >= 44 px (portail client, DESIGN-1) ; variantes ajoutées, les existantes ne changent pas.
         touch: "h-11 px-4 text-sm",
         "icon-touch": "h-11 w-11",

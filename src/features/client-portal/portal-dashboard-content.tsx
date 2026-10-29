@@ -83,7 +83,7 @@ function PortalDashboardView() {
             <button
               type="button"
               aria-label="Personnaliser mon espace"
-              className="inline-flex min-h-6 min-w-6 items-center justify-center rounded font-medium text-brand underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              className="inline-flex min-h-6 min-w-6 max-md:min-h-11 max-md:min-w-11 items-center justify-center rounded font-medium text-brand underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               onClick={() => setCustomizeOpen(true)}
             >
               +

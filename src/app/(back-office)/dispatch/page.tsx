@@ -205,7 +205,7 @@ function DispatcherDashboardContent() {
           type="button"
           onClick={() => setView("queue")}
           className={cn(
-            "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+            "inline-flex items-center gap-2 rounded-md px-4 py-2 max-md:min-h-11 text-sm font-medium transition-colors",
             activeView === "queue"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
@@ -219,7 +219,7 @@ function DispatcherDashboardContent() {
             type="button"
             onClick={() => setView("rules")}
             className={cn(
-              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+              "inline-flex items-center gap-2 rounded-md px-4 py-2 max-md:min-h-11 text-sm font-medium transition-colors",
               activeView === "rules"
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"

@@ -262,7 +262,7 @@ export function ProofOfDeliveryDialog({
               maxLength={400}
               rows={2}
               placeholder="Commentaire (optionnel)"
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm max-md:text-base"
             />
           </label>
         </div>

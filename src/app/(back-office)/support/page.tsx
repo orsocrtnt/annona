@@ -148,7 +148,7 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
             maxLength={4000}
             required
             disabled={reply.isPending || updateStatus.isPending}
-            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm max-md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
           <Button type="submit" size="sm" disabled={reply.isPending || updateStatus.isPending || !body.trim()}>
             <Send className="h-4 w-4" /> {reply.isPending ? "Envoi…" : "Envoyer"}

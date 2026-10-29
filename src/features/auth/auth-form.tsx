@@ -267,10 +267,10 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       </div>
 
       <div className="relative flex flex-1 items-center justify-center p-6">
-        <PublicSupportLink className="absolute left-6 top-7 z-10 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline" />
+        <PublicSupportLink className="absolute left-6 top-7 z-10 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline max-md:top-6 max-md:inline-flex max-md:min-h-11 max-md:items-center" />
         <Link
           href="/"
-          className="absolute right-6 top-6 z-10 flex items-center gap-2.5 transition-opacity hover:opacity-80"
+          className="absolute right-6 top-6 z-10 flex items-center gap-2.5 transition-opacity hover:opacity-80 max-md:min-h-11"
           aria-label={`Retour à l'accueil ${APP_NAME}`}
         >
           <BrandLogo priority />
@@ -338,7 +338,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 />
               </FormField>
               <div className="flex justify-end">
-                <Link href={loginLinks[loginContext].forgot} className="text-sm text-brand hover:underline">
+                <Link href={loginLinks[loginContext].forgot} className="text-sm text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Mot de passe oublié ?
                 </Link>
               </div>
@@ -351,7 +351,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                   <Link
                     href={loginLinks[loginContext].register!}
                     onClick={(event) => navigateToAuthPage(event, loginLinks[loginContext].register!)}
-                    className="font-medium text-brand hover:underline"
+                    className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center"
                   >
                     Créer un compte
                   </Link>
@@ -392,7 +392,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
               </Button>
               <p className="text-center text-sm text-muted-foreground">
                 Déjà un compte ?{" "}
-                <Link href="/login" className="font-medium text-brand hover:underline">
+                <Link href="/login" className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Se connecter
                 </Link>
               </p>
@@ -408,7 +408,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 Envoyer le lien
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                <Link href="/login" className="font-medium text-brand hover:underline">
+                <Link href="/login" className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Retour à la connexion
                 </Link>
               </p>
@@ -441,7 +441,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 Mettre à jour le mot de passe
               </Button>
               <p className="text-center text-sm text-muted-foreground">
-                <Link href="/login" className="font-medium text-brand hover:underline">
+                <Link href="/login" className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
                   Retour à la connexion
                 </Link>
               </p>

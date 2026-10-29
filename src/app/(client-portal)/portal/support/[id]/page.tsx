@@ -122,7 +122,7 @@ export default function ClientSupportTicketPage() {
               rows={4}
               required
               disabled={reply.isPending}
-              className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="block w-full rounded-lg border border-input bg-background px-3 py-2 text-sm max-md:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <Button type="submit" variant="brand" disabled={reply.isPending || !body.trim()}>
               <Send className="h-4 w-4" aria-hidden="true" />

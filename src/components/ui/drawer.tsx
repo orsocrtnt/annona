@@ -35,7 +35,7 @@ const DrawerContent = React.forwardRef<
   const sideClasses = {
     left: "inset-y-0 left-0 h-full w-3/4 max-w-sm data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
     right: "inset-y-0 right-0 h-full w-3/4 max-w-sm data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
-    bottom: "inset-x-0 bottom-0 h-auto max-h-[85vh] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom rounded-t-xl",
+    bottom: "inset-x-0 bottom-0 h-auto max-h-[85vh] max-md:max-h-[85dvh] max-md:overflow-y-auto data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom rounded-t-xl",
   };
 
   return (
@@ -51,7 +51,7 @@ const DrawerContent = React.forwardRef<
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
+        <DialogPrimitive.Close className="absolute right-4 top-4 flex items-center justify-center rounded-sm max-md:right-1 max-md:top-1 max-md:h-11 max-md:w-11 opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
           <X className="h-4 w-4" />
           <span className="sr-only">Fermer</span>
         </DialogPrimitive.Close>

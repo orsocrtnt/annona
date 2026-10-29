@@ -220,7 +220,7 @@ export default async function TarifsPage() {
           </section>
 
           <div className="mx-auto mt-8 max-w-6xl px-5 text-center sm:px-6">
-            <Link href="/" className="text-sm font-semibold text-[#4a544d] underline decoration-[#a3aca6] underline-offset-4 hover:text-[#0e1310]">
+            <Link href="/" className="inline-flex items-center max-md:min-h-11 text-sm font-semibold text-[#4a544d] underline decoration-[#a3aca6] underline-offset-4 hover:text-[#0e1310]">
               Retour à l’accueil
             </Link>
           </div>

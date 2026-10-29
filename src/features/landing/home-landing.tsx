@@ -193,7 +193,7 @@ export function HomeLanding() {
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{text}</p>
                     <Link
                       href={href}
-                      className="mt-3 inline-flex items-center gap-1 rounded-sm text-sm font-semibold text-brand underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="mt-3 inline-flex items-center gap-1 rounded-sm max-md:min-h-11 text-sm font-semibold text-brand underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {cta}
                       <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -267,7 +267,7 @@ export function HomeLanding() {
                 </p>
                 <Link
                   href="/fonctionnalites"
-                  className="mt-4 inline-flex items-center gap-1 self-start rounded-sm text-sm font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="mt-4 inline-flex items-center gap-1 self-start rounded-sm max-md:min-h-11 text-sm font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   En savoir plus
                   <span className="sr-only"> sur : {DELIVERY_CATEGORY_LABELS[category]}</span>
@@ -300,7 +300,7 @@ export function HomeLanding() {
               Déjà équipé ?{" "}
               <Link
                 href="/login"
-                className="rounded-sm font-semibold text-foreground underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex items-center rounded-sm font-semibold text-foreground underline underline-offset-4 max-md:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 Se connecter
               </Link>
@@ -316,19 +316,19 @@ export function HomeLanding() {
             <span> — pilotage des livraisons B2B</span>
           </p>
           <nav aria-label="Pied de page" className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-muted-foreground">
-            <Link href="/fonctionnalites" className="hover:text-foreground hover:underline hover:underline-offset-4">
+            <Link href="/fonctionnalites" className="inline-flex items-center hover:text-foreground hover:underline hover:underline-offset-4 max-md:min-h-11 max-md:min-w-11">
               Fonctionnalités
             </Link>
-            <Link href="/tarifs" className="hover:text-foreground hover:underline hover:underline-offset-4">
+            <Link href="/tarifs" className="inline-flex items-center hover:text-foreground hover:underline hover:underline-offset-4 max-md:min-h-11 max-md:min-w-11">
               Tarifs
             </Link>
-            <Link href="/login" className="hover:text-foreground hover:underline hover:underline-offset-4">
+            <Link href="/login" className="inline-flex items-center hover:text-foreground hover:underline hover:underline-offset-4 max-md:min-h-11 max-md:min-w-11">
               Entreprise
             </Link>
-            <Link href="/login/client" className="hover:text-foreground hover:underline hover:underline-offset-4">
+            <Link href="/login/client" className="inline-flex items-center hover:text-foreground hover:underline hover:underline-offset-4 max-md:min-h-11 max-md:min-w-11">
               Client
             </Link>
-            <Link href="/login/driver" className="hover:text-foreground hover:underline hover:underline-offset-4">
+            <Link href="/login/driver" className="inline-flex items-center hover:text-foreground hover:underline hover:underline-offset-4 max-md:min-h-11 max-md:min-w-11">
               Chauffeur
             </Link>
           </nav>
