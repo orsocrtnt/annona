@@ -21,8 +21,8 @@ export default function BackOfficeRootLayout({ children }: { children: React.Rea
     queryKey: ONBOARDING_QUERY_KEY,
     queryFn: fetchOnboardingStatus,
     enabled: isCompanyAdmin,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    // Court : une étape franchie ailleurs (première livraison terminée) retire l'entrée au retour sur l'onglet.
+    staleTime: 30_000,
   });
 
   const navItems = useMemo(() => {

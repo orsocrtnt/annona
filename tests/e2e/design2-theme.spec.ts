@@ -115,6 +115,7 @@ test("app livreur : bascule en un clic dans la barre et choix complet dans Profi
 
 test("Première livraison : masquée du menu principal, toujours dans l'Aide, puis réaffichée", async ({ page }) => {
   await openAs(page, "admin", "/onboarding");
+  try {
   const control = page.getByTestId("onboarding-navigation");
   await expect(control).toBeVisible();
   const nav = page.getByRole("navigation", { name: "Navigation principale" });
@@ -128,10 +129,13 @@ test("Première livraison : masquée du menu principal, toujours dans l'Aide, pu
       await expect(toggle).toHaveText("Masquer du menu");
     }
     await expect(nav.getByRole("link", { name: "Première livraison" })).toBeVisible();
-    // Double clic : une seule bascule effective (bouton désactivé pendant l'envoi), état final cohérent.
+    // Double clic : le bouton est désactivé pendant l'envoi ; on attend la fin avant de lire l'état.
     await toggle.dblclick();
-    await expect(toggle).toHaveText(/Afficher dans le menu|Masquer du menu/);
-    if ((await toggle.innerText()).includes("Masquer")) await toggle.click();
+    await expect(toggle).toBeEnabled();
+    if ((await toggle.innerText()).includes("Masquer")) {
+      await toggle.click();
+      await expect(toggle).toBeEnabled();
+    }
     await expect(toggle).toHaveText("Afficher dans le menu");
     await expect(nav.getByRole("link", { name: "Première livraison" })).toHaveCount(0);
     // Le choix est enregistré côté serveur : il survit au rechargement.
@@ -144,10 +148,9 @@ test("Première livraison : masquée du menu principal, toujours dans l'Aide, pu
   await page.getByTestId("help-onboarding-link").click();
   await page.waitForURL("**/onboarding");
   await expect(page.getByRole("heading", { name: "Première livraison" })).toBeVisible();
-  // Remise en état du compte de démonstration.
-  const restore = page.getByTestId("onboarding-navigation").getByRole("button");
-  if ((await restore.count()) > 0 && (await restore.innerText()).includes("Afficher")) {
-    await restore.click();
-    await expect(restore).toHaveText("Masquer du menu");
+  } finally {
+    // Remise en état du compte de démonstration, même si une assertion a échoué.
+    const restored = await page.request.patch("/api/onboarding", { data: { step: "navigation", hidden: false } });
+    expect([200, 403]).toContain(restored.status());
   }
 });

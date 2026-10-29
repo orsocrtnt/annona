@@ -116,7 +116,7 @@ export function DispatchLeafletMap({
       </LeafletBaseMap>
       {markers.length === 0 && (
         <div className="pointer-events-none absolute inset-x-0 top-4 z-[1000] flex justify-center px-4">
-          <p className="rounded-full bg-white/95 px-4 py-2 text-center text-sm text-muted-foreground shadow-md">
+          <p className="rounded-full bg-white/95 px-4 py-2 text-center text-sm text-muted-foreground shadow-md dark:bg-card/95">
             {emptyMessage}
           </p>
         </div>
