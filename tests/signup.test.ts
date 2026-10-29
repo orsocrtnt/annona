@@ -912,6 +912,26 @@ test("C5 : bienvenue — fenêtre de la tâche (première tentative, reprise, t�
   assert.equal(fetches.length, 2, "aucun appel hors fenêtre");
 });
 
+test("C5 : bienvenue — rendu figé à la première tentative émise (nom d'espace et adresse modifiés)", async () => {
+  const now = new Date("2026-10-28T10:00:00.000Z");
+  const { bodies, send } = countingSender(now);
+  const { payloads, windowFor, freezerFor } = jobPayloadDb();
+  const journey = { companyName: "E2E Coursiers", planCode: "ESSENTIEL", billingInterval: "MONTHLY", company: { users: [{ email: "owner@example.test", firstName: "Ana" }] } };
+  const service = loadSignupService({
+    "@/services/prisma/client": { prisma: { signupJourney: { findFirst: async () => journey } } },
+    "@/lib/email/transactional-email": { sendTransactionalEmail: send },
+  });
+  const payload = { kind: "SIGNUP_WELCOME", signupId: "s1", companyId: "c1", userId: "u1" };
+  const job = { id: "j1", createdAt: now, previouslyAttempted: false };
+  await service.deliverSignupWelcomeEmail(payload, "signup-welcome:s1", windowFor(job), freezerFor("j1"));
+  assert.ok(payloads.get("j1")?.emailSnapshot);
+  journey.companyName = "Nom modifié";
+  journey.company.users[0]!.email = "autre@example.test";
+  await service.deliverSignupWelcomeEmail(payload, "signup-welcome:s1", windowFor({ ...job, previouslyAttempted: true }), freezerFor("j1"));
+  assert.equal(bodies.length, 2);
+  assert.equal(bodies[1], bodies[0], "même corps et même destinataire sous la même clé");
+});
+
 test("SIGNUP-1 : la bienvenue est durable, idempotente et découplée de l'activation", () => {
   const signup = readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8");
   const jobs = readFileSync(resolve("src/domains/operations/operation-job.service.ts"), "utf8");
@@ -919,7 +939,7 @@ test("SIGNUP-1 : la bienvenue est durable, idempotente et découplée de l'activ
   assert.match(signup, /enqueueOperationJob\(tx/);
   assert.match(signup, /kickOperationJob\(activation\.welcomeJobId\)/);
   assert.match(signup, /idempotencyKey: eventKey/);
-  assert.match(jobs, /deliverSignupWelcomeEmail\(job\.payload, job\.jobKey, emailWindow\(\)\)/);
+  assert.match(jobs, /deliverSignupWelcomeEmail\(job\.payload, job\.jobKey, emailWindow\(\), freezeContent\)/);
 });
 
 test("SIGNUP-1 : aucun ancien endpoint ni retour navigateur ne peut provisionner directement", () => {

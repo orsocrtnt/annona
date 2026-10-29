@@ -8,6 +8,7 @@ import {
 import {
   getTransactionalEmailConfiguration,
   sendTransactionalEmail,
+  type EmailContentFreezer,
   type ReplayWindowStart,
 } from "@/lib/email/transactional-email";
 import { prisma } from "@/services/prisma/client";
@@ -117,7 +118,8 @@ async function sendClientEmail(
   subject: string,
   text: string,
   idempotencyKey: string,
-  replayWindowStart: ReplayWindowStart
+  replayWindowStart: ReplayWindowStart,
+  freezeContent?: EmailContentFreezer
 ) {
   await sendTransactionalEmail({
     to,
@@ -125,6 +127,7 @@ async function sendClientEmail(
     text,
     idempotencyKey,
     replayWindowStart,
+    freezeContent,
   });
 }
 
@@ -138,7 +141,8 @@ async function insertNotification(
     href: string | null;
     email?: { to: string; subject: string; text: string };
   },
-  replayWindowStart: ReplayWindowStart
+  replayWindowStart: ReplayWindowStart,
+  freezeContent?: EmailContentFreezer
 ) {
   await prisma.clientNotification.upsert({
     where: { id: stableNotificationId(eventKey) },
@@ -171,7 +175,8 @@ async function insertNotification(
       input.email.subject,
       input.email.text,
       eventKey,
-      replayWindowStart
+      replayWindowStart,
+      freezeContent
     );
   }
 }
@@ -340,7 +345,9 @@ function composeDeliveryAcceptedMessage(
 export async function deliverClientNotificationJob(
   rawPayload: Prisma.JsonValue,
   eventKey: string,
-  replayWindow: ReplayWindowStart = null
+  replayWindow: ReplayWindowStart = null,
+  // Rendu figé à la première tentative émise (preuve de livraison, e-mail du client modifiés).
+  freezeContent?: EmailContentFreezer
 ) {
   const payload = parseNotificationPayload(rawPayload);
   const settings = await getClientSettings(payload.customerId);
@@ -379,7 +386,7 @@ export async function deliverClientNotificationJob(
         settings.emailNotifications && user.email
           ? { to: user.email, subject: message.title, text: message.emailText }
           : undefined,
-    }, replayWindow);
+    }, replayWindow, freezeContent);
     return;
   }
 
@@ -407,7 +414,7 @@ export async function deliverClientNotificationJob(
       settings.emailNotifications && user.email
         ? { to: user.email, subject: `Facture ${payload.reference}`, text: body }
         : undefined,
-  }, replayWindow);
+  }, replayWindow, freezeContent);
 }
 
 export async function notifyDeliveryStatusChange(input: {

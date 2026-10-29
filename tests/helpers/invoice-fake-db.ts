@@ -118,6 +118,8 @@ export function createInvoiceFakeDb(seed: {
     invoices,
     reminders,
     jobs,
+    users,
+    companies,
     async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]) {
       log.push(`lock:${strings.join("?").replace(/\s+/g, " ").trim()}:${values.join(",")}`);
       return [];

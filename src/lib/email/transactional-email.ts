@@ -28,6 +28,15 @@ export type TransactionalEmailConfiguration = {
  */
 export type ReplayWindowStart = Date | null | (() => Promise<Date | null>);
 
+/** Rendu d'un e-mail (avant la redirection du mode test). */
+export type EmailContent = { to: string; subject: string; text: string };
+
+/**
+ * Fige le rendu à la première tentative émise sous une clé : enregistre `content` s'il n'existe
+ * encore aucun instantané et renvoie l'instantané enregistré, à envoyer tel quel (même clé = même corps).
+ */
+export type EmailContentFreezer = (content: EmailContent) => Promise<EmailContent>;
+
 export type TransactionalEmailInput = {
   to: string;
   subject: string;
@@ -39,6 +48,8 @@ export type TransactionalEmailInput = {
    * antérieure n'a pu être acceptée. Obligatoire : chaque appelant doit se prononcer.
    */
   replayWindowStart: ReplayWindowStart;
+  /** Tâches durables : instantané du rendu dans le payload (C5, contenu stable par clé). */
+  freezeContent?: EmailContentFreezer;
 };
 
 type SendOptions = {
@@ -160,7 +171,12 @@ export async function sendTransactionalEmail(
   }
 
   const from = (env.MAIL_FROM || env.EMAIL_FROM)!.trim();
-  const intendedRecipient = input.to.trim().toLowerCase();
+  if (!hasAddress(input.to.trim().toLowerCase())) throw emailError("EMAIL_RECIPIENT_INVALID", "rejected");
+  // Rendu figé à la première tentative émise : une reprise envoie exactement le même corps.
+  const content = input.freezeContent
+    ? await input.freezeContent({ to: input.to, subject: input.subject, text: input.text })
+    : input;
+  const intendedRecipient = content.to.trim().toLowerCase();
   if (!hasAddress(intendedRecipient)) throw emailError("EMAIL_RECIPIENT_INVALID", "rejected");
 
   const testMode = configuration.mode === "test";
@@ -168,12 +184,12 @@ export async function sendTransactionalEmail(
     ? env.EMAIL_TEST_RECIPIENT!.trim().toLowerCase()
     : intendedRecipient;
   const subject = safeHeader(
-    testMode ? `[TEST → ${intendedRecipient}] ${input.subject}` : input.subject,
+    testMode ? `[TEST → ${intendedRecipient}] ${content.subject}` : content.subject,
     180
   );
   const text = testMode
-    ? `Message de recette TutelLiv destiné à ${intendedRecipient}.\n\n${input.text}`
-    : input.text;
+    ? `Message de recette TutelLiv destiné à ${intendedRecipient}.\n\n${content.text}`
+    : content.text;
   const idempotencyKey = safeHeader(
     input.idempotencyKey,
     EMAIL_IDEMPOTENCY_KEY_MAX
