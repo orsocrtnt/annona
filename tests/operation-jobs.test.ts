@@ -526,7 +526,7 @@ test("RECETTE-2810 point 10 : tâche ignorée (e-mail désactivé) close sans é
   assert.equal(welcome.status, "SUCCEEDED", "ignorée : aucun nouvel essai");
   assert.equal(welcome.attempts, 1);
   assert.equal(welcome.lastError, "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED", "trace conservée");
-  assert.deepEqual(result.details.map((d) => [d.kind, d.outcome, d.error]), [
+  assert.deepEqual(JSON.parse(JSON.stringify(result.details.map((d) => [d.kind, d.outcome, d.error]))), [
     ["SIGNUP_WELCOME", "skipped", "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED"],
     ["DELIVERY", "failed", "PROVIDER"],
   ]);

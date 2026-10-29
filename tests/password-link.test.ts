@@ -166,6 +166,7 @@ test("création réelle du service : invitation sans mot de passe, profil en att
     "node:crypto": { randomUUID: () => "reservation-test" },
     "@prisma/client": { Prisma }, "@/lib/auth/email-links": links,
     "@/lib/permissions/mini-admin": mini, "@/lib/demo/constants": demo, "@/lib/query/list-limits": limits,
+    "@/lib/database/claimed-settings-update": { settingsSection: () => () => null }, "@/lib/database/settings-claims": { updateUserSettingsWithClaim: async () => "saved" },
     "@/domains/client-portal/client-data.service": { linkPortalDataToClient: async () => undefined },
     "@/domains/saas/saas.service": {
       reserveSaasSeat: async () => "reservation-test",

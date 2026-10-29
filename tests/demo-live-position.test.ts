@@ -87,10 +87,12 @@ function loadPositionsService(company: { isDemo: boolean; slug: string }, driver
   const prisma = {
     company: { findUnique: async () => company },
     delivery: { findMany: async () => [{ driverId: "driver", deliveryCategory: "STANDARD", missionStartedAt: startedAt, latitude: 48.85, longitude: 2.35, pickupLatitude: null, pickupLongitude: null, driver: { settings: driverSettings, driverLocation: lastUpdate ? { updatedAt: lastUpdate } : null }, ...mission }] },
-    user: { update: async (args: any) => { writes.push(["user", args]); } },
+    user: { update: async () => { assert.fail("écriture de settings non réclamée"); } },
     driverLocation: { upsert: async (args: any) => { writes.push(["location", args]); } },
   };
-  const deps: Record<string, unknown> = { "@/services/prisma/client": { prisma }, "@/domains/tracking/tracking.policy": policy, "@/lib/maps/drive-route-provider": { fetchDriveRoute: async () => null }, "@/lib/demo/demo-live-position": live };
+  const deps: Record<string, unknown> = { "@/services/prisma/client": { prisma },
+    // Frontière : écriture réclamée des réglages du livreur (RECETTE-2810, point 16).
+    "@/lib/database/settings-claims": { updateUserSettingsWithClaim: async (id: string, options: { apply: (s: Record<string, unknown>) => Record<string, unknown> }) => { writes.push(["user", { where: { id }, data: { settings: options.apply({ ...driverSettings }) } }]); return "saved"; } }, "@/domains/tracking/tracking.policy": policy, "@/lib/maps/drive-route-provider": { fetchDriveRoute: async () => null }, "@/lib/demo/demo-live-position": live };
   const exportsObject = {};
   const sandbox = { module: { exports: exportsObject }, exports: exportsObject, Date, Math, Error, Map, Set, Promise, setTimeout, console, require: (id: string) => { assert.ok(id in deps, id); return deps[id]; } };
   runInNewContext(ts.transpileModule(readFileSync("src/domains/demo/demo-live-positions.service.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, sandbox);

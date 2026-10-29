@@ -4,8 +4,10 @@
  * changé entre-temps ; sinon relire et réessayer. Aucune clé écrite par un autre écrivain
  * concurrent n'est perdue tant que cet écrivain réclame aussi la version.
  * `section` : partie des réglages que cet écrivain remplace. Si un autre enregistrement l'a modifiée
- * pendant la tentative (deux formulaires du même réglage envoyés en même temps), rien n'est écrit et
- * SETTINGS_CONFLICT est levé : le second enregistrement n'écrase jamais le premier en silence.
+ * pendant la tentative (deux enregistrements du même réglage qui se croisent en base), rien n'est écrit
+ * et SETTINGS_CONFLICT est levé. Limite : la référence est la première lecture du serveur, pas la
+ * version chargée par le formulaire ; deux enregistrements successifs (l'un fini avant que l'autre ne
+ * lise) restent « le dernier gagne » (aucun jeton de version côté client).
  */
 
 export interface SettingsRow {

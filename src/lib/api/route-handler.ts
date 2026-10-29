@@ -25,6 +25,7 @@ const KNOWN_ERROR_CODES: Record<string, { status: number; message: string }> = {
   SAAS_ACCOUNT_READ_ONLY: { status: 403, message: "Le compte est en lecture seule." },
   COMPANY_NOT_FOUND: { status: 404, message: "Entreprise introuvable." },
   SETTINGS_CONFLICT: { status: 409, message: SETTINGS_CONFLICT_MESSAGE },
+  USER_NOT_FOUND: { status: 404, message: "Compte introuvable." },
   RECURRING_SPECIAL_MISSION_UNSUPPORTED: { status: 400, message: "Les missions spéciales ne peuvent pas être récurrentes." },
 };
 

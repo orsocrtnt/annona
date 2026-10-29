@@ -1114,9 +1114,9 @@ export async function deliverSignupWelcomeEmail(
     freezeContent,
   });
   if (delivery.status === "disabled") {
-    // E-mail volontairement désactivé (EMAIL_DELIVERY_MODE absent ou "disabled", ex. développement) :
-    // tâche sans objet, pas un échec du cron. Configuration incomplète (mode test ou live sans
-    // fournisseur) : vrai échec, signalé et rejoué (RECETTE-2810, point 10).
+    // E-mail explicitement désactivé (EMAIL_DELIVERY_MODE=disabled, ex. développement) : tâche sans
+    // objet, pas un échec du cron. Variable absente (oubli possible en production) ou configuration
+    // incomplète : vrai échec, signalé et rejoué (RECETTE-2810, point 10).
     if (delivery.reason === "disabled") throw skippedJobError("SIGNUP_WELCOME_EMAIL_DISABLED");
     throw new Error("SIGNUP_WELCOME_EMAIL_NOT_CONFIGURED");
   }

@@ -3,13 +3,35 @@
 Branche `agent/e2-fiabilite`, base `preproduction` (c917cf8).
 
 ## Terminé quand
-- [ ] 16 — réglages : réclamation sur `updatedAt` généralisée ; conflit clair 409 ; inventaire des appelants ; test sur PostgreSQL réel
-- [ ] 17 — relance refusée avec certitude (403, 422…) : ni « Envoi non confirmé » ni blocage 24 h ; jamais de double envoi ; données héritées
-- [ ] 10 — cron : tâche ignorée (service désactivé) ≠ échec ; erreur seulement sur échec réel ; détail par tâche sans donnée personnelle
+- [ ] 16 — réglages : réclamation sur `updatedAt` généralisée ; conflit 409 ; inventaire ; PostgreSQL réel
+- [ ] 17 — relance refusée avec certitude : ni « Envoi non confirmé » ni blocage 24 h ; pas de double envoi
+- [ ] 10 — cron : tâche ignorée ≠ échec ; erreur sur échec réel seulement ; détail par tâche sans donnée personnelle
 - [ ] 9 — premier job « Prise en charge » resté `PENDING` : cause et classe corrigée
-- [x] 14 — 403 `/api/portal/dashboard` : cause plausible documentée (non corrigée, non prouvée)
+- [x] 14 — 403 `/api/portal/dashboard` : cause plausible documentée (non prouvée, non corrigée)
 - [ ] `npm run check` vert, `git diff --check` propre, pré-vol adverse
 
-## Journal
-- Code écrit pour 16, 17, 10, 9 ; tests ciblés en attente du verrou `lourd.sh`.
-- 14 (lecture du code) : les API ne passent pas par le cache de 5 s d'AUTH-ROLE (`src/middleware.ts:111`, réservé aux pages) ; `requireClientRole` relit la base à chaque appel. Les 403 possibles : rôle effectif ≠ CLIENT, permission `dashboard:client` absente, entreprise absente. Cause plausible : une page du portail encore montée refait sa requête (`refetchOnWindowFocus: true`, `src/lib/query/defaults.ts:8`) après un changement de session ou de persona de démo (cookie partagé entre onglets, `resolveDemoActiveUser`) : la requête part avec le nouveau rôle. Non prouvé par un test, rien corrigé (côté client, hors lot).
+## Livré
+- **16** : `src/lib/database/settings-claims.ts` (Company/User) et option `section` de `updateSettingsWithClaim` (5 tentatives). Appelants convertis : dispatch, localisation, tarifs, catégories, portail, facturation, Factur-X (2), tableaux de bord back-office et portail (mise à jour et réinitialisation), préférences client, mini-admin (borné à l'entreprise), démo (règles de dispatch, retards de signal, version du scénario, service de suivi simulé). Déjà conformes : `tracking.service`, `onboarding.service` (égalité JSON). SQL brut (`proof-settings`, `order-intake.settings`) : `updated_at` avance strictement. Exception volontaire : `demo-provision` (remplacement complet). 409 « Rechargez puis réessayez » (`KNOWN_ERROR_CODES` et routes sans `withApiHandler`). Inventaire statique : `tests/settings-claim-generalized.test.ts`.
+- **17** : refus certain d'une première tentative → QUEUED avec `completedAt` = instant du refus (aucun ancien code n'a écrit QUEUED avec `completedAt`, vérifié dans l'historique). Rejeu = première tentative ; tâche épuisée = « Échec d'envoi », « Relancer » libre. Reprise réelle (issue inconnue) inchangée.
+- **10** : cause constatée sur tutelliv-dev (5 tâches `SIGNUP_WELCOME_EMAIL_DISABLED`). `skippedJobError` : tâche close SUCCEEDED, `lastError` `SKIPPED:<code>`. Cron : 503 seulement si tâche épuisée, bloquée > 15 min ou passage des factures impossible ; `data.jobs` (identifiant, type, nature, code) ; alertes : compteurs seuls, message de plantage fixe.
+- **9** : `kickOperationJob` réessaie (1 s, 4 s, 10 s) quand `processOperationJob` lève avant d'exécuter la tâche (pool saturé au redémarrage, cf. point 15). Prisma fixe `next_attempt_at` côté application (requête vérifiée) : pas de décalage d'horloge.
+
+## Décisions
+- Conflit par section côté serveur, sans jeton de version client (écarté : 7 formulaires à modifier, lots UI en parallèle). Limite : deux enregistrements successifs restent « le dernier gagne ».
+- Bienvenue ignorée seulement si `EMAIL_DELIVERY_MODE=disabled` explicite ; variable absente = nouvelle raison `unset`, vrai échec (oubli possible en production).
+- Relance marquée relancée tard par « Relancer les tâches en échec » : envoyée (geste explicite, pas de doublon grâce au contrôle `superseding`) ; écarté : la classer non envoyée.
+- 14 : les API ne passent pas par le cache de 5 s (`src/middleware.ts:111`). Cause plausible : page du portail encore montée qui refait sa requête (`refetchOnWindowFocus`) après un changement de session ou de persona de démo (cookie partagé). Côté client, hors lot.
+
+## Non vérifié
+- Lignes héritées SENDING + tâche FAILED après un refus (ancien code) : restent « non confirmées » (indiscernables d'une issue inconnue) ; débloquées 24 h après la réservation.
+- Point 9 : cause non prouvée par un journal (aucune trace conservée).
+
+## À lancer sur le Mac
+- `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local -- npm run test:pg-settings`
+
+## Écrans à capturer
+- Aucun écran modifié. Paiements (relance refusée → « Échec d'envoi », bouton actif) : Light/Dark, 390 et 1 280 px, si un refus Resend est simulable.
+
+## Erreurs et leçons
+- Imports ajoutés sans vérifier les listes de dépendances fermées des tests `runInNewContext` : trouvé par le pré-vol. Leçon : `grep -l "<fichier modifié>" tests/` avant d'ajouter un import.
+- Inventaire initial limité aux appels Prisma : le SQL brut (`jsonb_set`) l'avait contourné.

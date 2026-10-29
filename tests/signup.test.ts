@@ -1113,7 +1113,7 @@ test("RECETTE-2810 point 10 : bienvenue — e-mail volontairement désactivé = 
   const skipped = await serviceFor("disabled").deliverSignupWelcomeEmail(payload, "signup-welcome:s1", null).then(() => null, (error: Error) => error);
   assert.equal(skipped?.message, "SIGNUP_WELCOME_EMAIL_DISABLED");
   assert.equal((skipped as { skipped?: boolean }).skipped, true, "ignorée, pas un échec");
-  for (const reason of ["missing-provider", "invalid-mode", "missing-test-recipient"]) {
+  for (const reason of ["unset", "missing-provider", "invalid-mode", "missing-test-recipient"]) {
     const failed = await serviceFor(reason).deliverSignupWelcomeEmail(payload, "signup-welcome:s1", null).then(() => null, (error: Error) => error);
     assert.equal(failed?.message, "SIGNUP_WELCOME_EMAIL_NOT_CONFIGURED", reason);
     assert.equal((failed as { skipped?: boolean }).skipped, undefined, `${reason} : vrai échec`);

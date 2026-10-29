@@ -44,7 +44,8 @@ export async function setOrderIntakeEnabled(
           ${JSON.stringify({ enabled })}::jsonb,
           true
         ),
-        "updated_at" = CURRENT_TIMESTAMP
+        -- Version strictement croissante : une réclamation sur updatedAt lue avant échoue toujours.
+        "updated_at" = GREATEST((now() AT TIME ZONE 'UTC')::timestamp(3), "updated_at" + interval '1 millisecond')
     WHERE "id" = ${companyId}`;
   if (updated === 0) throw new Error("COMPANY_NOT_FOUND");
   return { enabled };

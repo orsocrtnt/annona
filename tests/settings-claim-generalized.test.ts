@@ -147,8 +147,8 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-/** Remplacement complet volontaire : (re)provisionnement d'une entreprise de démo. */
-const DELIBERATE_RESETS = new Set(["src/domains/demo/demo-provision.service.ts"]);
+/** Remplacement complet volontaire : (re)provisionnement d'une entreprise de démo ou d'un environnement d'offre de test. */
+const DELIBERATE_RESETS = new Set(["src/domains/demo/demo-provision.service.ts", "src/domains/saas/offer-environment.service.ts"]);
 
 test("inventaire : aucune lecture-réécriture de settings sans réclamation dans src/", () => {
   const offenders: string[] = [];
@@ -156,7 +156,7 @@ test("inventaire : aucune lecture-réécriture de settings sans réclamation dan
     const source = readFileSync(file, "utf8");
     for (const match of source.matchAll(/\.(company|user)\.(update|upsert|updateMany)\(\{/g)) {
       const call = source.slice(match.index!, match.index! + 600);
-      const end = call.indexOf("\n  });") > 0 ? call.indexOf("\n  });") : call.length;
+      const end = call.indexOf("});") > 0 ? call.indexOf("});") : call.length;
       const body = call.slice(0, end);
       if (!/\bsettings\b(?!:\s*true)/.test(body.replace(/select:\s*\{[^}]*\}/g, ""))) continue;
       const line = source.slice(0, match.index!).split("\n").length;
@@ -165,4 +165,21 @@ test("inventaire : aucune lecture-réécriture de settings sans réclamation dan
     }
   }
   assert.deepEqual(offenders, [], "écriture de settings non réclamée");
+});
+
+test("inventaire : une écriture SQL brute de settings fait toujours avancer updated_at (sinon une réclamation lue avant l'écraserait)", () => {
+  const offenders: string[] = [];
+  let found = 0;
+  for (const file of sourceFiles("src")) {
+    const source = readFileSync(file, "utf8");
+    for (const match of source.matchAll(/SET "settings" =/g)) {
+      found += 1;
+      const statement = source.slice(match.index!, source.indexOf("`", match.index!));
+      if (!/"updated_at" = GREATEST\(\(now\(\) AT TIME ZONE 'UTC'\)::timestamp\(3\), "updated_at" \+ interval '1 millisecond'\)/.test(statement)) {
+        offenders.push(`${file}:${source.slice(0, match.index!).split("\n").length}`);
+      }
+    }
+  }
+  assert.ok(found >= 2, "preuves de livraison et commande par message");
+  assert.deepEqual(offenders, []);
 });
