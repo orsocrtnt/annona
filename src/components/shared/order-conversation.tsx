@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { OperationalAlertsInbox, OrderOperationalAlerts } from "@/components/shared/operational-alerts";
-import { alertModeForPath, type AlertSpace } from "@/lib/operational-alerts-placement";
+import { alertPlacementForPath, type AlertSpace } from "@/lib/operational-alerts-placement";
 import { dateTimeLabel } from "@/lib/format/relative-day";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -74,9 +74,9 @@ export function OrderConversationTrigger({ orderId }: { orderId: string }) {
   return <Dialog open={open} onOpenChange={setOpen}><DialogTrigger asChild><Button variant="outline" size="sm">Échanges de la commande</Button></DialogTrigger><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Échanges de la commande</DialogTitle></DialogHeader>{open && <OrderConversation key={orderId} orderId={orderId} />}</DialogContent></Dialog>;
 }
 export function OrderMessagesInbox({ enableDispatchTargets = false, space = "staff" }: { enableDispatchTargets?: boolean; space?: AlertSpace } = {}) {
-  const mode = alertModeForPath(space, usePathname());
+  const placement = alertPlacementForPath(space, usePathname());
   const [selected, setSelected] = useState<string | null>(null);
   const query = useQuery({ queryKey: ["order-message-notifications"], queryFn: () => request<Array<{ id: string; orderId: string; reference: string; title: string }>>("/api/order-conversations/notifications"), refetchInterval: 10_000, retry: false });
   const rows = query.error ? [] : query.data ?? [];
-  return <><OperationalAlertsInbox onOpen={setSelected} enableDispatchTargets={enableDispatchTargets} mode={mode} />{rows.length > 0 && <div className="mb-4 rounded-lg border border-brand/30 bg-brand/5 p-3" aria-label="Nouveaux échanges"><p className="text-sm font-medium">Nouveaux échanges de commande</p><div className="flex flex-wrap gap-2">{Array.from(new Map(rows.map(row => [row.orderId, row])).values()).map(row => <Button key={row.orderId} variant="ghost" size="sm" onClick={() => setSelected(row.orderId)}>{row.reference} — ouvrir les échanges</Button>)}</div></div>}<Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Échanges de la commande</DialogTitle></DialogHeader>{selected && <OrderConversation key={selected} orderId={selected} />}</DialogContent></Dialog></>;
+  return <><OperationalAlertsInbox onOpen={setSelected} enableDispatchTargets={enableDispatchTargets} mode={placement.mode} context={placement.context} driver={space === "driver"} />{rows.length > 0 && <div className="mb-4 rounded-lg border border-brand/30 bg-brand/5 p-3" aria-label="Nouveaux échanges"><p className="text-sm font-medium">Nouveaux échanges de commande</p><div className="flex flex-wrap gap-2">{Array.from(new Map(rows.map(row => [row.orderId, row])).values()).map(row => <Button key={row.orderId} variant="ghost" size="sm" onClick={() => setSelected(row.orderId)}>{row.reference} — ouvrir les échanges</Button>)}</div></div>}<Dialog open={Boolean(selected)} onOpenChange={open => { if (!open) setSelected(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>Échanges de la commande</DialogTitle></DialogHeader>{selected && <OrderConversation key={selected} orderId={selected} />}</DialogContent></Dialog></>;
 }

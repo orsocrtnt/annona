@@ -75,9 +75,12 @@ test("UX-03 : une fiche par statut présent dans la démo, avec la prochaine act
     }
 
     // Les alertes liées à une livraison ouvrent sa fiche.
+    const alertsResponse = page.waitForResponse(/\/api\/operational-alerts(\?|$)/);
     await page.goto("/dashboard");
-    // Le bandeau d'alertes est compact : le détail se déplie avec « Voir ».
-    const alertToggle = page.getByRole("button", { name: "Voir", exact: true });
+    await alertsResponse;
+    // La première alerte est toujours visible ; les suivantes se déplient.
+    const alertToggle = page.getByRole("button", { name: /^Voir les \d+ alertes$/ });
+    await page.waitForTimeout(500);
     if (await alertToggle.count()) await alertToggle.first().click();
     const alertLinks = page.locator('section[aria-label$="alertes à suivre"] a, section[aria-label$="alerte à suivre"] a');
     if (await alertLinks.count()) {

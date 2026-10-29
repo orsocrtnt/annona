@@ -1,6 +1,8 @@
 "use client";
 import { DriverServiceControl } from "@/features/driver/driver-service-control";
 import { OrderMessagesInbox } from "@/components/shared/order-conversation";
+import { useAlertAccessPresent } from "@/components/shared/operational-alerts";
+import { alertModeForPath } from "@/lib/operational-alerts-placement";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -52,13 +54,14 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
   const pathname = usePathname();
   const isNavigationPage = pathname.startsWith("/driver/navigate");
   const { user } = useAuth();
+  const accessPresent = useAlertAccessPresent(alertModeForPath("driver", pathname));
 
   if (isNavigationPage) {
     return <div className="min-h-screen bg-background"><main id="main-content" tabIndex={-1}>{children}</main></div>;
   }
 
   return (
-    <div className="relative min-h-screen bg-background pb-24">
+    <div className={cn("relative min-h-screen bg-background", accessPresent ? "pb-40" : "pb-24")}>
       <AppleNavbar tone="light" maxWidthClassName="max-w-lg" innerClassName="justify-between">
         <AppleNavbarBrand href="/driver" tone="light" />
         <div className="flex min-w-0 items-center gap-2.5">
