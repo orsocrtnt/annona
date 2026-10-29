@@ -74,3 +74,22 @@ export function checkSellerReadiness({ identity, einvoicing }: ReadinessInput): 
 
 /** Règles reprises telles quelles par l'export : les autres sont contrôlées par cii-generator.ts (BR-*). */
 export const EXPORT_CHECKED_BY_MAPPING = new Set(["TL-FR-SIREN", "TL-FR-PENALITES", "TL-FR-ESCOMPTE", "TL-FR-BIC"]);
+
+/** Règle d'export (cii-generator / mapping) → champ du formulaire « Mentions légales et Factur-X » à compléter. */
+export const RULE_FIELD: Record<string, string> = {
+  "TL-FR-SIREN": "siren",
+  "BR-CO-26": "siren",
+  "TL-FR-PENALITES": "latePenaltyText",
+  "TL-FR-ESCOMPTE": "earlyPaymentDiscountText",
+  "TL-FR-BIC": "bic",
+  "BR-61": "iban",
+  "BR-E-10": "vatExemptionReason",
+  "BR-08": "billingAddress",
+  "BR-09": "country",
+  "BR-06": "legalName",
+  "BR-S-02": "vatNumber",
+  "BR-E-02": "taxRegistrationId",
+};
+
+/** Lien direct vers le champ (la page ouvre le bon onglet et place le curseur dans le champ). */
+export const einvoicingFieldPath = (field: string) => `/settings/billing#einvoicing-${field}`;

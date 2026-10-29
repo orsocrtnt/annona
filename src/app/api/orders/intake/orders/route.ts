@@ -1,3 +1,4 @@
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createClientOrderSchema } from "@/lib/validations/order";
 import { createOrderFromIntake } from "@/domains/order-intake/order-intake.service";
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
       case "created":
         return intakeJson({ success: true, data: result.order }, 201);
       case "disabled":
-        return intakeError("INTAKE_DISABLED", "La commande depuis un message n'est pas activée pour votre entreprise.", 403);
+        return intakeError("INTAKE_DISABLED", CONFIG_MESSAGES.INTAKE_DISABLED, 403);
       case "invalid":
         return intakeError("INVALID_ORDER", "Ce type de commande se saisit depuis le formulaire complet.", 400);
       case "customer_not_found":

@@ -80,6 +80,7 @@ test("ADMIN-1 comptes plateforme : autorisation avant lecture et ancien GET refu
   const reads: string[] = [];
   const admin = load("src/app/api/admin/users/route.ts", {
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": {
       requireStaffRole: async (permission: string) => {
         assert.equal(permission, "dashboard:admin");
@@ -104,6 +105,7 @@ test("ADMIN-1 comptes plateforme : autorisation avant lecture et ancien GET refu
 
   const legacy = load("src/app/api/users/route.ts", {
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": {
       requireStaffRole: async () => ({ context: { user: { companyId: null, role: { systemRole: "SUPER_ADMIN" } } } }),
       requireRole: () => NextResponse.json({ error: "Accès refusé" }, { status: 403 }),

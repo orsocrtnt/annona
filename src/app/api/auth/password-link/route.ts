@@ -1,3 +1,4 @@
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resetPasswordSchema } from "@/lib/validations/auth";
@@ -29,6 +30,6 @@ export async function POST(request: Request) {
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
     const status = code === "AUTH_RATE_LIMITED" ? 429 : code === "AUTH_EMAIL_NOT_CONFIGURED" ? 503 : code === "AUTH_LINK_INVALID" ? 400 : 502;
-    return NextResponse.json({ error: status === 429 ? "Trop de tentatives. Réessayez plus tard." : status === 503 ? "Le service d’invitation est indisponible." : "Lien expiré, déjà utilisé ou indisponible. Demandez un nouveau lien." }, { status, headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ error: status === 429 ? "Trop de tentatives. Réessayez plus tard." : status === 503 ? CONFIG_MESSAGES.AUTH_EMAIL_UNAVAILABLE : "Lien expiré, déjà utilisé ou indisponible. Demandez un nouveau lien." }, { status, headers: { "Cache-Control": "no-store" } });
   }
 }

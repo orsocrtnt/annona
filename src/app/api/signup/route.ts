@@ -1,3 +1,4 @@
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { type NextRequest, NextResponse } from "next/server";
 import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, reopenSignupIdentity, resendSignupConfirmation, submitSignupIdentity, updateSignupIdentityDetails, updateSignupSelection } from "@/domains/signup/signup.service";
 import { clearSignupResumeCookie, setSignupResumeCookie } from "@/domains/signup/signup-cookie";
@@ -15,7 +16,7 @@ function publicError(error: unknown) {
   if (code === "SIGNUP_EDIT_IDENTITY_LOCKED") return { status: 409, error: "L’adresse a déjà été confirmée et ne peut plus être modifiée à cette étape." };
   if (code === "SIGNUP_EDIT_IDENTITY_FAILED") return { status: 503, error: "Impossible de rouvrir cette étape pour le moment." };
   if (code === "AUTH_RATE_LIMITED") return { status: 429, error: "Trop de demandes. Réessayez dans quelques minutes." };
-  if (["AUTH_EMAIL_NOT_CONFIGURED", "AUTH_EMAIL_FAILED"].includes(code)) return { status: 503, error: "La vérification e-mail est temporairement indisponible." };
+  if (["AUTH_EMAIL_NOT_CONFIGURED", "AUTH_EMAIL_FAILED"].includes(code)) return { status: 503, error: CONFIG_MESSAGES.SIGNUP_EMAIL_UNAVAILABLE };
   if (code === "SALES_CODE_INVALID") return { status: 400, error: "Ce code commercial n’est pas reconnu ou n’est plus actif." };
   if (code === "SIGNUP_RESUME_INVALID") return { status: 401, error: "Cette inscription a expiré. Recommencez en quelques instants." };
   if (code.includes("INVALID") || code.includes("EXCEEDED") || code.includes("LOCKED")) return { status: 400, error: "Les choix transmis ne sont pas disponibles pour cette offre." };

@@ -229,6 +229,7 @@ function loadRoute(role: string, companyId: string | null, result: unknown, fail
     require: (id: string) => {
       const dependencies: Record<string, unknown> = {
         "next/server": { NextResponse },
+        "@/lib/config-messages": require("../src/lib/config-messages"),
         "@/lib/api/auth-guard": {
           requireStaffRole: async () => ({ context: { user: { companyId, role: { systemRole: role } } } }),
           requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => roles.includes(context.user.role.systemRole) ? null : NextResponse.json({ error: "Accès refusé" }, { status: 403 }),

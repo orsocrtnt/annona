@@ -55,6 +55,9 @@ export function EinvoicingSettingsCard() {
     }
     setValues(next);
     setEnabled(data.einvoicing.enabled === true);
+    // Arrivée par un lien direct (#einvoicing-champ) : place le curseur dans le champ à compléter.
+    const target = window.location.hash.startsWith("#einvoicing-") ? window.location.hash.slice(1) : null;
+    if (target) window.setTimeout(() => document.getElementById(target)?.focus({ preventScroll: false }), 0);
   }, [data]);
 
   if (!isAdmin) return null;

@@ -13,6 +13,7 @@ function load(role: string, calls: string[]) {
   }).outputText;
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse },
+    "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": {
       requireStaffRole: async () => {
         calls.push("staff");

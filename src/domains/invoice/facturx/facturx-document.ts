@@ -2,6 +2,7 @@
  * Assemblage du PDF Factur-X (sans accès base) et réponse HTTP associée.
  * Le PDF classique reste la source visuelle ; le Factur-X y ajoute le XML et les métadonnées.
  */
+import { einvoicingFieldPath, RULE_FIELD } from "@/domains/invoice/facturx/facturx-readiness";
 import { FACTURX_CONFORMANCE_LEVEL, serializeFacturXXml } from "@/domains/invoice/facturx/cii-generator";
 import { mapInvoiceToFacturX, type FacturXSource } from "@/domains/invoice/facturx/facturx-mapping";
 import type { FacturXInvoice, FacturXIssue } from "@/domains/invoice/facturx/facturx.types";
@@ -86,8 +87,11 @@ export function facturXHttpResult(result: FacturXDocumentResult, reference: stri
   const statusIssue = result.errors.find((issue) => issue.rule === "TL-STATUT");
   const lines =
     audience === "staff"
-      ? result.errors.map((issue) => `- ${issue.message} [${issue.rule}]`)
-      : [statusIssue ? statusIssue.message : "Votre prestataire doit compléter ses informations de facturation avant de pouvoir émettre ce format."];
+      ? result.errors.map((issue) => {
+          const field = RULE_FIELD[issue.rule];
+          return `- ${issue.message} [${issue.rule}]${field ? `\n  Action : ${einvoicingFieldPath(field)}` : ""}`;
+        })
+      : [statusIssue ? statusIssue.message : "Votre prestataire doit compléter ses informations de facturation avant de pouvoir émettre ce format. Contactez-le pour qu'il le fasse ; en attendant, le PDF classique est disponible."];
   return {
     status: 422,
     headers: { ...common, "Content-Type": "text/plain; charset=utf-8" },
