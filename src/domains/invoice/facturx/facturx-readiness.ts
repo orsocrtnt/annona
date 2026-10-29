@@ -34,6 +34,12 @@ export interface ReadinessInput {
     iban?: string | null;
     bic?: string | null;
   };
+  /**
+   * Taux de TVA des réglages de facturation (en %). Quand il est connu, il décide de la catégorie de TVA des
+   * factures : au-dessus de 0, l'export exige le n° de TVA (BR-S-02) ; à 0, le motif d'exonération (BR-E-10).
+   * Absent pour l'export, qui lit la catégorie sur les lignes de la facture elle-même.
+   */
+  vatRate?: number | null;
 }
 
 const blank = (value: string | null | undefined) => !value || !value.trim();
@@ -41,7 +47,7 @@ const blank = (value: string | null | undefined) => !value || !value.trim();
 /** Mention de TVA proposée (jamais enregistrée d'office : l'utilisateur la valide). */
 export const SUGGESTED_VAT_EXEMPTION_REASON = "TVA non applicable, art. 293 B du CGI";
 
-export function checkSellerReadiness({ identity, einvoicing }: ReadinessInput): ReadinessIssue[] {
+export function checkSellerReadiness({ identity, einvoicing, vatRate }: ReadinessInput): ReadinessIssue[] {
   const issues: ReadinessIssue[] = [];
   const add = (group: ReadinessGroup, field: string, rule: string, message: string) => issues.push({ group, field, rule, message });
 
@@ -56,6 +62,13 @@ export function checkSellerReadiness({ identity, einvoicing }: ReadinessInput): 
   }
   if (blank(einvoicing.earlyPaymentDiscountText)) {
     add("einvoicing", "earlyPaymentDiscountText", "TL-FR-ESCOMPTE", "Conditions d'escompte manquantes (ex. « Pas d'escompte pour paiement anticipé. »).");
+  }
+  // L'export ne transmet l'identifiant fiscal (BT-32) qu'aux factures exonérées : seul le n° de TVA satisfait BR-S-02.
+  if (typeof vatRate === "number" && vatRate > 0 && blank(einvoicing.vatNumber)) {
+    add("einvoicing", "vatNumber", "BR-S-02", `N° de TVA intracommunautaire manquant : votre taux de TVA de facturation est de ${vatRate} %, la facture électronique l'exige.`);
+  }
+  if (vatRate === 0 && blank(einvoicing.vatExemptionReason)) {
+    add("einvoicing", "vatExemptionReason", "BR-E-10", `Motif d'exonération de TVA manquant : votre taux de TVA de facturation est de 0 % (ex. « ${SUGGESTED_VAT_EXEMPTION_REASON} »).`);
   }
   return issues;
 }
@@ -88,25 +101,27 @@ export interface ReadinessAdvisory {
 }
 
 /**
- * Avertissements NON bloquants. L'export classe en TVA exonérée toute facture sans ligne de TVA (BR-E-10 : motif exigé)
- * et exige un n° de TVA ou identifiant fiscal pour une facture avec TVA (BR-S-02). Les réglages ne savent pas quelles
- * factures l'entreprise émettra : imposer le motif (par ex. 293 B) à une entreprise assujettie serait faux.
- * Limite acceptée : ces deux cas sont signalés à la saisie, et l'export les refuse en désignant le champ.
+ * Avertissements NON bloquants, pour une entreprise dont la facture électronique n'est pas activée.
+ * Le taux de TVA de facturation, quand il est connu, dit quelle mention serait exigée : n° de TVA au-dessus de 0 %,
+ * motif d'exonération à 0 %. Sans taux connu, les deux sont signalées. L'identifiant fiscal seul ne lève pas
+ * l'avertissement de TVA : l'export ne le transmet qu'aux factures exonérées.
  */
-export function checkSellerAdvisories({ einvoicing }: Pick<ReadinessInput, "einvoicing">): ReadinessAdvisory[] {
+export function checkSellerAdvisories({ einvoicing, vatRate }: Pick<ReadinessInput, "einvoicing" | "vatRate">): ReadinessAdvisory[] {
   const out: ReadinessAdvisory[] = [];
-  if (blank(einvoicing.vatExemptionReason)) {
+  const withVat = typeof vatRate !== "number" || vatRate > 0;
+  const withoutVat = typeof vatRate !== "number" || vatRate === 0;
+  if (withoutVat && blank(einvoicing.vatExemptionReason)) {
     out.push({
       group: "einvoicing",
       field: "vatExemptionReason",
       message: `Si vous émettez des factures sans TVA, renseignez le motif d'exonération (ex. « ${SUGGESTED_VAT_EXEMPTION_REASON} » en franchise en base).`,
     });
   }
-  if (blank(einvoicing.vatNumber) && blank(einvoicing.taxRegistrationId)) {
+  if (withVat && blank(einvoicing.vatNumber)) {
     out.push({
       group: "einvoicing",
       field: "vatNumber",
-      message: "Pour des factures avec TVA, renseignez votre n° de TVA intracommunautaire (ou votre identifiant fiscal).",
+      message: "Pour des factures avec TVA, renseignez votre n° de TVA intracommunautaire.",
     });
   }
   return out;

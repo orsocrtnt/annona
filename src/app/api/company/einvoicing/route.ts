@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkSellerAdvisories, checkSellerReadiness } from "@/domains/invoice/facturx/facturx-readiness";
-import { companyUsesEinvoicing, getCompanyEinvoicing, updateCompanyEinvoicing } from "@/domains/invoice/facturx/facturx.service";
+import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
+import { getCompanyEinvoicing, updateCompanyEinvoicing } from "@/domains/invoice/facturx/facturx.service";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { companyEinvoicingUpdateSchema, readinessFieldErrors, zodFieldErrors } from "@/lib/validations/einvoicing";
@@ -18,8 +19,10 @@ export async function GET() {
     const data = await getCompanyEinvoicing(companyId);
     if (!data) return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });
     // Données héritées : la page s'ouvre toujours et montre ce qui manque, sans erreur.
-    const enforced = data.einvoicing.enabled === true || (await companyUsesEinvoicing(companyId));
-    return NextResponse.json({ data: { ...data, enforced, missing: checkSellerReadiness(data), advisories: checkSellerAdvisories(data) }, success: true });
+    const enforced = data.einvoicing.enabled === true;
+    const { vatRate } = (await getCompanyBillingSettings(companyId)).invoice;
+    const withRate = { ...data, vatRate };
+    return NextResponse.json({ data: { ...data, vatRate, enforced, missing: checkSellerReadiness(withRate), advisories: checkSellerAdvisories(withRate) }, success: true });
   });
 }
 
@@ -40,9 +43,13 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Même règle que l'export Factur-X. Bloquant dès que l'entreprise active ou utilise la facture électronique.
-    const missing = checkSellerReadiness(parsed.data);
-    const enforced = parsed.data.einvoicing.enabled === true || (missing.length > 0 && (await companyUsesEinvoicing(companyId)));
+    // Bloquant seulement si la facture électronique est activée. `enabled` absent du corps : la valeur enregistrée est conservée.
+    const stored = await getCompanyEinvoicing(companyId);
+    if (!stored) return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });
+    const enforced = parsed.data.einvoicing.enabled ?? stored.einvoicing.enabled === true;
+    const update = { ...parsed.data, einvoicing: { ...parsed.data.einvoicing, enabled: enforced } };
+    const { vatRate } = (await getCompanyBillingSettings(companyId)).invoice;
+    const missing = checkSellerReadiness({ ...update, vatRate });
     if (enforced && missing.length > 0) {
       return NextResponse.json(
         {
@@ -54,9 +61,9 @@ export async function PATCH(request: Request) {
     }
 
     try {
-      const data = await updateCompanyEinvoicing(companyId, parsed.data);
+      const data = await updateCompanyEinvoicing(companyId, update);
       // Entreprise non bloquée : l'enregistrement réussit mais montre ce qui manquerait à l'export.
-      return NextResponse.json({ data: { ...data, enforced, missing, advisories: checkSellerAdvisories(parsed.data) }, success: true });
+      return NextResponse.json({ data: { ...data, enforced, missing, advisories: checkSellerAdvisories({ ...update, vatRate }), vatRate }, success: true });
     } catch (error) {
       if (error instanceof Error && error.message === "COMPANY_NOT_FOUND") {
         return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });

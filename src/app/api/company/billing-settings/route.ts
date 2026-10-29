@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
+import { checkSellerReadiness } from "@/domains/invoice/facturx/facturx-readiness";
+import { getCompanyEinvoicing } from "@/domains/invoice/facturx/facturx.service";
 import {
   getCompanyBillingSettings,
   updateCompanyBillingSettings,
@@ -46,6 +48,21 @@ export async function PATCH(request: Request) {
         },
         { status: 400 }
       );
+    }
+
+    // Le taux de TVA décide de la mention exigée par la facture électronique (n° de TVA ou motif d'exonération).
+    const einvoicing = await getCompanyEinvoicing(companyId);
+    if (einvoicing?.einvoicing.enabled === true) {
+      const previousRate = (await getCompanyBillingSettings(companyId)).invoice.vatRate;
+      if (previousRate > 0 !== parsed.data.invoice.vatRate > 0) {
+        const vatIssue = checkSellerReadiness({ ...einvoicing, vatRate: parsed.data.invoice.vatRate }).find((issue) => issue.rule === "BR-S-02" || issue.rule === "BR-E-10");
+        if (vatIssue) {
+          return NextResponse.json(
+            { error: `Enregistrement refusé : ${vatIssue.message} Renseignez-la d'abord dans « Mentions légales et Factur-X », ou désactivez la facture électronique.`, fieldErrors: { vatRate: vatIssue.message } },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     try {

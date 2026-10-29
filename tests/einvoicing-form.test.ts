@@ -42,7 +42,7 @@ test("la mention 293 B est une proposition : jamais ajoutée au corps envoyé", 
 });
 
 test("corps envoyé : activation transmise seulement si cochée, pays FR par défaut", () => {
-  assert.equal("enabled" in buildEinvoicingBody(full(), false).einvoicing, false);
+  assert.equal(buildEinvoicingBody(full(), false).einvoicing.enabled, false, "la case décochée est envoyée : le serveur ne la devine pas");
   assert.equal(buildEinvoicingBody({ ...full(), country: "" }, true).einvoicing.enabled, true);
   assert.equal(buildEinvoicingBody({ ...full(), country: "" }, true).identity.country, "FR");
 });

@@ -66,9 +66,9 @@ export function EinvoicingSettingsCard() {
 
   if (!isAdmin) return null;
 
-  // Bloquant si la facture électronique est activée ici ou déjà utilisée (indication du serveur, même règle que l'export).
-  const enforced = enabled || data?.enforced === true;
-  const evaluation = evaluateEinvoicingForm(values, enabled, enforced);
+  // Bloquant seulement si la facture électronique est activée (la case, même règle que le serveur).
+  const enforced = enabled;
+  const evaluation = evaluateEinvoicingForm(values, enabled, enforced, data?.vatRate);
   const errors = { ...evaluation.errors, ...serverErrors };
   const labelOf = (key: string) => FIELDS.find((f) => f.key === key)?.label.replace(/ \(.*\)$/, "") ?? key;
   const focusField = (key: string) => {
@@ -123,7 +123,6 @@ export function EinvoicingSettingsCard() {
             <span>
               J&apos;active la facture électronique : les mentions exigées par le Factur-X deviennent obligatoires à
               l&apos;enregistrement.
-              {data?.enforced && !enabled ? " (Déjà le cas : vous avez des factures émises.)" : ""}
             </span>
           </label>
           {evaluation.missing.length > 0 && (

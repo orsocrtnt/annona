@@ -82,34 +82,59 @@ for (const [name, mutate, field] of CASES) {
   });
 }
 
-test("limite acceptée 1 : n° de TVA sans motif d'exonération = avertissement, pas blocage ; une facture sans TVA est refusée à l'export avec le bon champ", () => {
-  const input = complete();
-  input.einvoicing.vatNumber = "FR44732829320";
-  input.einvoicing.vatExemptionReason = "";
-  assert.deepEqual(checkSellerReadiness(input), [], "non bloquant");
-  assert.deepEqual(checkSellerAdvisories(input).map((a) => a.field), ["vatExemptionReason"]);
-  const exported = exportWith(input); // facture sans ligne de TVA => catégorie E
-  assert.ok(!exported.ok);
-  if (!exported.ok) {
-    assert.ok(exported.errors.some((e) => e.rule === "BR-E-10" && /Réglages/.test(e.message)));
-    assert.equal(RULE_FIELD["BR-E-10"], "vatExemptionReason");
-  }
-});
-
-test("limite acceptée 2 : ni n° de TVA ni identifiant fiscal = avertissement ; une facture avec TVA est refusée à l'export (BR-S-02) avec le bon champ", () => {
-  const input = complete();
+test("TVA 20 % sans n° de TVA : manque bloquant (BR-S-02) et l'export de la facture avec TVA est refusé sur le même champ", () => {
+  const input = { ...complete(), vatRate: 20 };
   input.einvoicing.vatNumber = "";
-  assert.deepEqual(checkSellerReadiness(input), []);
-  assert.deepEqual(checkSellerAdvisories(input).map((a) => a.field), ["vatNumber"]);
+  const issues = checkSellerReadiness(input);
+  assert.deepEqual(issues.map((i) => i.field), ["vatNumber"]);
+  assert.equal(issues[0]!.rule, "BR-S-02");
   const withVat = exportWithVat(input);
   assert.ok(!withVat.ok);
-  if (!withVat.ok) assert.ok(withVat.errors.some((e) => e.rule === "BR-S-02"));
+  if (!withVat.ok) assert.ok(withVat.errors.some((e) => e.rule === issues[0]!.rule));
   assert.equal(RULE_FIELD["BR-S-02"], "vatNumber");
+});
+
+test("identifiant fiscal seul avec TVA : ni accepté ni avertissement levé, l'export le refuse", () => {
+  const input = { ...complete(), vatRate: 20 };
+  input.einvoicing.vatNumber = "";
+  input.einvoicing.taxRegistrationId = "12345678901";
+  assert.deepEqual(checkSellerReadiness(input).map((i) => i.field), ["vatNumber"]);
+  assert.deepEqual(checkSellerAdvisories(input).map((a) => a.field), ["vatNumber"]);
+  assert.deepEqual(checkSellerAdvisories({ einvoicing: input.einvoicing }).map((a) => a.field), ["vatNumber"]);
+  const source = exportWithSource(input);
+  const withVat = mapInvoiceToFacturX({
+    ...source,
+    einvoicing: { ...source.einvoicing, taxRegistrationId: "12345678901" },
+    invoice: { ...source.invoice, amount: 30, lineItems: [{ label: "Course", amount: 25, quantity: 1, sourceType: "ZONE" }, { label: "TVA (20%)", amount: 5, quantity: 1, sourceType: "VAT" }] },
+  });
+  assert.ok(!withVat.ok && withVat.errors.some((e) => e.rule === "BR-S-02"));
+});
+
+test("TVA 0 % sans motif d'exonération : manque bloquant (BR-E-10) ; avec le motif, plus rien ; le n° de TVA n'est pas exigé à 0 %", () => {
+  const input = { ...complete(), vatRate: 0 };
+  input.einvoicing.vatExemptionReason = "";
+  const issues = checkSellerReadiness(input);
+  assert.deepEqual(issues.map((i) => i.field), ["vatExemptionReason"]);
+  const exported = exportWith(input);
+  assert.ok(!exported.ok && exported.errors.some((e) => e.rule === issues[0]!.rule));
+  assert.deepEqual(checkSellerAdvisories(input).map((a) => a.field), ["vatExemptionReason"]);
+  input.einvoicing.vatExemptionReason = "TVA non applicable, art. 293 B du CGI";
+  assert.deepEqual(checkSellerReadiness(input), []);
+  assert.deepEqual(checkSellerAdvisories(input), []);
+});
+
+test("taux inconnu (export) : aucune règle de TVA ajoutée à la liste, les deux avertissements restent", () => {
+  const input = complete();
+  input.einvoicing.vatNumber = "";
+  input.einvoicing.vatExemptionReason = "";
+  assert.deepEqual(checkSellerReadiness(input), []);
+  assert.deepEqual(checkSellerAdvisories(input).map((a) => a.field).sort(), ["vatExemptionReason", "vatNumber"]);
 });
 
 test("aucun avertissement quand tout est renseigné", () => {
   const input = complete();
   input.einvoicing.vatNumber = "FR44732829320";
+  assert.deepEqual(checkSellerAdvisories({ ...input, vatRate: 20 }), []);
   assert.deepEqual(checkSellerAdvisories(input), []);
 });
 

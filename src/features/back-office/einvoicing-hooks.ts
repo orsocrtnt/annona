@@ -33,8 +33,10 @@ export type CompanyEinvoicingData = {
   invalidFields?: string[];
   /** Mentions que l'export Factur-X réclamerait aujourd'hui (même règle que le serveur). */
   missing?: Array<{ field: string; message: string }>;
-  /** La facture électronique est activée ou déjà utilisée : les mentions manquantes bloquent l'enregistrement. */
+  /** La facture électronique est activée : les mentions manquantes bloquent l'enregistrement. */
   enforced?: boolean;
+  /** Taux de TVA des réglages de facturation (%), qui décide de la mention de TVA exigée. */
+  vatRate?: number;
 };
 
 export function useCompanyEinvoicing(enabled: boolean) {

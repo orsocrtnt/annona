@@ -182,25 +182,64 @@ test("portail : Factur-X limité au client propriétaire de la facture et à son
   assert.equal(refused.body, "refus client", "le client reçoit le message générique");
 });
 
-function einvoicing(role: Role, update: (companyId: string, input: unknown) => Promise<unknown> = async (_c, input) => input, uses = false) {
-  const calls: Array<[string, unknown]> = [];
-  const route = load("src/app/api/company/einvoicing/route.ts", {
-    "next/server": { NextResponse: FakeResponse },
-    "@/lib/api/auth-guard": staffAuth(role),
-    "@/lib/api/route-handler": { withApiHandler: (fn: () => Promise<Res>) => fn() },
-    "@/domains/invoice/facturx/facturx.service": {
-      getCompanyEinvoicing: async (companyId: string) => ({ identity: { companyId }, einvoicing: {} }),
-      companyUsesEinvoicing: async () => uses,
-      updateCompanyEinvoicing: async (companyId: string, input: unknown) => {
-        calls.push([companyId, input]);
-        return update(companyId, input);
+import { createRequire } from "node:module";
+const nodeRequire = createRequire(import.meta.url);
+
+/** Charge un module du dépôt et, récursivement, ses dépendances « @/ » réelles ; seules les surcharges sont simulées. */
+function loadReal(file: string, overrides: Record<string, unknown>, cache: Record<string, Record<string, unknown>> = {}): Record<string, (...args: unknown[]) => Promise<Res>> {
+  const loaded = { exports: {} as Record<string, unknown> };
+  const js = ts.transpileModule(readFileSync(resolve(file), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  runInNewContext(js, {
+    Array, Buffer, Date, Error, JSON, Math, Number, Object, Promise, String, URL, setTimeout, console,
+    exports: loaded.exports, module: loaded,
+    require: (id: string) => {
+      if (id in overrides) return overrides[id];
+      if (id.startsWith("@/")) {
+        const path = `src/${id.slice(2)}.ts`;
+        return (cache[path] ??= loadReal(path, overrides, cache));
+      }
+      return nodeRequire(id);
+    },
+  });
+  return loaded.exports as Record<string, (...args: unknown[]) => Promise<Res>>;
+}
+
+/** Seule frontière simulée : Prisma (une entreprise en mémoire), l'authentification et la réponse HTTP. */
+function einvoicing(role: Role, stored: { einvoicing?: Record<string, unknown>; billing?: Record<string, unknown>; issuedInvoices?: number; failWrite?: "conflict" | "taken" } = {}) {
+  const company = {
+    id: "company_a", legalName: null, siren: null, siret: null, billingAddress: null, billingPostalCode: null, billingCity: null, country: null,
+    settings: { ...(stored.einvoicing ? { einvoicing: stored.einvoicing } : {}), ...(stored.billing ? { billing: { invoice: stored.billing } } : {}) } as Record<string, unknown>,
+    updatedAt: new Date(1000),
+  };
+  const writes: Array<Record<string, unknown>> = [];
+  const prisma = {
+    company: {
+      findUnique: async () => ({ ...company }),
+      updateMany: async ({ where, data }: { where: { updatedAt: Date }; data: Record<string, unknown> }) => {
+        if (stored.failWrite === "conflict" || +where.updatedAt !== +company.updatedAt) return { count: 0 };
+        if (stored.failWrite === "taken") throw new (nodeRequire("@prisma/client").Prisma.PrismaClientKnownRequestError)("unique", { code: "P2002", clientVersion: "x" });
+        Object.assign(company, data);
+        writes.push(data);
+        return { count: 1 };
       },
     },
-    "@/domains/invoice/facturx/facturx-readiness": require("../src/domains/invoice/facturx/facturx-readiness"),
-    "@/lib/validations/einvoicing": require("../src/lib/validations/einvoicing"),
-  });
+    invoice: { count: async () => stored.issuedInvoices ?? 0 },
+  };
+  const overrides = {
+    "next/server": { NextResponse: FakeResponse },
+    "@/lib/api/auth-guard": staffAuth(role),
+    "@/lib/api/route-handler": { withApiHandler: (fn: () => Promise<Res>) => fn(), readJsonBody: async (request: Request) => request.json().catch(() => null) },
+    "@/services/prisma/client": { prisma },
+    "@/domains/company/company-logo.service": { readCompanyLogo: async () => null },
+    "@/lib/pdf/invoice-pdf": { generateInvoicePdf: async () => new Uint8Array() },
+  };
+  const cache = {};
+  const route = loadReal("src/app/api/company/einvoicing/route.ts", overrides, cache);
+  const billingRoute = loadReal("src/app/api/company/billing-settings/route.ts", overrides, cache);
   const patch = (body: unknown) => route.PATCH!(new Request("http://local.test/api/company/einvoicing", { method: "PATCH", body: JSON.stringify(body) }));
-  return { route, patch, calls };
+  const patchBilling = (invoice: Record<string, unknown>) => billingRoute.PATCH!(new Request("http://local.test/api/company/billing-settings", { method: "PATCH", body: JSON.stringify({ courier: { basePrice: 8, pricePerKm: 1.2, minimumPrice: 10, nightSurchargePercent: 0, weekendSurchargePercent: 0, freeKmIncluded: 0, showClientEstimate: false }, invoice: { defaultDueDays: 30, referencePrefix: "FAC", footerNote: "", autoInvoiceOnDelivery: false, ...invoice } }) }));
+  const storedEinvoicing = () => (company.settings.einvoicing ?? {}) as Record<string, unknown>;
+  return { route, patch, patchBilling, writes, storedEinvoicing, company };
 }
 
 const validBody = {
@@ -209,27 +248,85 @@ const validBody = {
 };
 const incompleteBody = { identity: { siren: "732829320", country: "FR" }, einvoicing: {} };
 
-test("mentions légales : incomplètes et facture électronique activée ou utilisée = refus par champ côté serveur", async () => {
+test("mentions légales : incomplètes et facture électronique activée = refus par champ, rien n'est enregistré", async () => {
   const activated = einvoicing("COMPANY_ADMIN");
   const refused = await activated.patch({ ...incompleteBody, einvoicing: { enabled: true } });
   assert.equal(refused.status, 400);
   const fields = Object.keys((refused.body as { fieldErrors: Record<string, string> }).fieldErrors).sort();
-  assert.deepEqual(fields, ["billingAddress", "billingCity", "billingPostalCode", "earlyPaymentDiscountText", "latePenaltyText"]);
-  assert.equal(activated.calls.length, 0, "rien n'est enregistré");
+  assert.deepEqual(fields, ["billingAddress", "billingCity", "billingPostalCode", "earlyPaymentDiscountText", "latePenaltyText", "vatNumber"]);
+  assert.equal(activated.writes.length, 0);
 
-  const used = einvoicing("COMPANY_ADMIN", undefined, true);
-  assert.equal((await used.patch(incompleteBody)).status, 400);
-  assert.equal(used.calls.length, 0);
+  const stored = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true } });
+  assert.equal((await stored.patch(incompleteBody)).status, 400, "enabled absent du corps : la valeur enregistrée (activée) s'applique");
+  assert.equal(stored.writes.length, 0);
 });
 
-test("mentions légales : entreprise qui n'utilise pas la facture électronique = enregistrement accepté, manques signalés", async () => {
-  const idle = einvoicing("COMPANY_ADMIN");
+test("mentions légales : entreprise qui ne fait que des PDF, même avec des factures émises = enregistrement accepté, manques signalés", async () => {
+  const idle = einvoicing("COMPANY_ADMIN", { issuedInvoices: 12 });
   const saved = await idle.patch(incompleteBody);
   assert.equal(saved.status, 200);
   const data = (saved.body as { data: { enforced: boolean; missing: Array<{ field: string }> } }).data;
   assert.equal(data.enforced, false);
   assert.ok(data.missing.some((issue) => issue.field === "latePenaltyText"));
-  assert.equal(idle.calls.length, 1);
+  assert.equal(idle.writes.length, 1);
+  const read = await idle.route.GET!();
+  assert.equal((read.body as { data: { enforced: boolean } }).data.enforced, false);
+});
+
+test("mentions légales : enabled omis conserve la valeur enregistrée (activée ou non), enabled explicite la remplace", async () => {
+  const on = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true } });
+  assert.equal((await on.patch(validBody)).status, 200);
+  assert.equal(on.storedEinvoicing().enabled, true);
+  assert.equal((await on.patch({ ...validBody, einvoicing: { ...validBody.einvoicing, enabled: false } })).status, 200);
+  assert.equal(on.storedEinvoicing().enabled, false);
+  assert.equal((await on.patch(validBody)).status, 200);
+  assert.equal(on.storedEinvoicing().enabled, false, "désactivée puis omise : reste désactivée");
+});
+
+test("mentions légales : le taux de TVA des réglages décide de la mention exigée quand la facture électronique est activée", async () => {
+  const withVat = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true }, billing: { vatRate: 20 } });
+  const noVatNumber = { ...validBody, einvoicing: { latePenaltyText: "Trois fois le taux légal.", earlyPaymentDiscountText: "Pas d'escompte." } };
+  const refused = await withVat.patch(noVatNumber);
+  assert.equal(refused.status, 400);
+  assert.deepEqual([...Object.keys((refused.body as { fieldErrors: Record<string, string> }).fieldErrors)], ["vatNumber"]);
+  assert.equal((await withVat.patch({ ...noVatNumber, einvoicing: { ...noVatNumber.einvoicing, taxRegistrationId: "12345678901" } })).status, 400, "l'identifiant fiscal seul ne suffit pas");
+
+  const exempt = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true }, billing: { vatRate: 0 } });
+  const refusedExempt = await exempt.patch(noVatNumber);
+  assert.equal(refusedExempt.status, 400);
+  assert.deepEqual([...Object.keys((refusedExempt.body as { fieldErrors: Record<string, string> }).fieldErrors)], ["vatExemptionReason"]);
+  assert.equal((await exempt.patch({ ...noVatNumber, einvoicing: { ...noVatNumber.einvoicing, vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } })).status, 200);
+
+  const idle = einvoicing("COMPANY_ADMIN", { billing: { vatRate: 20 } });
+  const saved = await idle.patch(noVatNumber);
+  assert.equal(saved.status, 200, "facture électronique non activée : jamais bloquée");
+  assert.deepEqual([...(saved.body as { data: { advisories: Array<{ field: string }> } }).data.advisories.map((a) => a.field)], ["vatNumber"]);
+});
+
+test("réglages de facturation : passer la TVA de 0 à 20 % avec la facture électronique activée et sans n° de TVA est refusé, clairement", async () => {
+  const sans = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true, vatExemptionReason: "TVA non applicable, art. 293 B du CGI" }, billing: { vatRate: 0 } });
+  const refused = await sans.patchBilling({ vatRate: 20 });
+  assert.equal(refused.status, 400);
+  assert.match((refused.body as { error: string }).error, /N° de TVA/);
+  assert.equal(sans.writes.length, 0);
+  assert.equal((await sans.patchBilling({ vatRate: 0 })).status, 200, "taux inchangé : jamais bloqué");
+
+  const inverse = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true, vatNumber: "FR44732829320" }, billing: { vatRate: 20 } });
+  const refusedInverse = await inverse.patchBilling({ vatRate: 0 });
+  assert.equal(refusedInverse.status, 400);
+  assert.match((refusedInverse.body as { error: string }).error, /exonération/);
+
+  const idle = einvoicing("COMPANY_ADMIN", { billing: { vatRate: 0 } });
+  assert.equal((await idle.patchBilling({ vatRate: 20 })).status, 200, "facture électronique non activée : accepté");
+  const ok = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true, vatNumber: "FR44732829320" }, billing: { vatRate: 0 } });
+  assert.equal((await ok.patchBilling({ vatRate: 20 })).status, 200);
+});
+
+test("mentions légales : lecture d'une entreprise activée aux données héritées incomplètes sans erreur", async () => {
+  const legacy = einvoicing("COMPANY_ADMIN", { einvoicing: { enabled: true }, billing: { vatRate: 20 } });
+  const res = await legacy.route.GET!();
+  assert.equal(res.status, 200);
+  assert.ok((res.body as { data: { missing: Array<{ field: string }> } }).data.missing.some((m) => m.field === "vatNumber"));
 });
 
 test("mentions légales : format invalide = message par champ même sans blocage", async () => {
@@ -252,24 +349,22 @@ test("mentions légales : administrateur de l'entreprise uniquement, écriture l
   assert.equal((await admin.route.GET!()).status, 200);
   const saved = await admin.patch(validBody);
   assert.equal(saved.status, 200);
-  assert.equal(admin.calls[0]![0], "company_a");
+  assert.equal(admin.writes.length, 1);
   for (const role of ["MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"] as Role[]) {
     const other = einvoicing(role);
     assert.equal((await other.patch(validBody)).status, 403, role);
     assert.equal((await other.route.GET!()).status, 403, role);
-    assert.equal(other.calls.length, 0);
+    assert.equal(other.writes.length, 0);
   }
 });
 
-test("mentions légales : données invalides (400) et SIREN déjà utilisé (409)", async () => {
+test("mentions légales : données invalides (400)", async () => {
   const admin = einvoicing("COMPANY_ADMIN");
   const invalid = await admin.patch({ ...validBody, einvoicing: { vatNumber: "FR00732829320" } });
   assert.equal(invalid.status, 400);
-  assert.equal(admin.calls.length, 0);
-  const taken = einvoicing("COMPANY_ADMIN", async () => { throw new Error("COMPANY_IDENTITY_TAKEN"); });
-  assert.equal((await taken.patch(validBody)).status, 409);
-  const conflict = einvoicing("COMPANY_ADMIN", async () => { throw new Error("SETTINGS_CONFLICT"); });
-  assert.equal((await conflict.patch(validBody)).status, 409);
+  assert.equal(admin.writes.length, 0);
+  assert.equal((await einvoicing("COMPANY_ADMIN", { failWrite: "taken" }).patch(validBody)).status, 409);
+  assert.equal((await einvoicing("COMPANY_ADMIN", { failWrite: "conflict" }).patch(validBody)).status, 409);
 });
 
 function identity(role: Role, companyId = "company_a") {

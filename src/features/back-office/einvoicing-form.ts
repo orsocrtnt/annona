@@ -14,7 +14,7 @@ export function buildEinvoicingBody(values: Record<string, string>, enabled: boo
   const body = { identity: {} as Record<string, string>, einvoicing: {} as Record<string, string | boolean> };
   for (const [key, value] of Object.entries(values)) body[groupOf(key)][key] = value;
   if (!body.identity.country) body.identity.country = "FR";
-  if (enabled) body.einvoicing.enabled = true;
+  body.einvoicing.enabled = enabled;
   return body;
 }
 
@@ -28,12 +28,12 @@ export interface FormEvaluation {
 }
 
 /** Mêmes règles que le serveur : schéma Zod de la route et checkSellerReadiness, sans copie. */
-export function evaluateEinvoicingForm(values: Record<string, string>, enabled: boolean, enforced: boolean): FormEvaluation {
+export function evaluateEinvoicingForm(values: Record<string, string>, enabled: boolean, enforced: boolean, vatRate?: number): FormEvaluation {
   const body = buildEinvoicingBody(values, enabled);
   const parsed = companyEinvoicingUpdateSchema.safeParse(body);
   const errors: FieldErrors = parsed.success ? {} : zodFieldErrors(parsed.error);
-  const missing = checkSellerReadiness({ identity: body.identity, einvoicing: body.einvoicing as Record<string, string> });
+  const missing = checkSellerReadiness({ identity: body.identity, einvoicing: body.einvoicing as Record<string, string>, vatRate });
   if (enforced) for (const [field, message] of Object.entries(readinessFieldErrors(missing))) errors[field] ??= message;
-  const advisories = checkSellerAdvisories({ einvoicing: body.einvoicing as Record<string, string> });
+  const advisories = checkSellerAdvisories({ einvoicing: body.einvoicing as Record<string, string>, vatRate });
   return { errors, missing, advisories };
 }
