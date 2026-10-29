@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +27,8 @@ const FIELDS: Field[] = [
   { key: "legalForm", group: "einvoicing", label: "Forme juridique", placeholder: "SAS, SARL, EI…" },
   { key: "shareCapital", group: "einvoicing", label: "Capital social", placeholder: "10 000 €" },
   { key: "rcs", group: "einvoicing", label: "Immatriculation (RCS / RM)", placeholder: "RCS Paris 123 456 789", wide: true },
-  { key: "iban", group: "einvoicing", label: "IBAN (obligatoire pour un paiement par virement)", wide: true },
-  { key: "bic", group: "einvoicing", label: "BIC (obligatoire avec l'IBAN)" },
+  { key: "iban", group: "einvoicing", label: "IBAN (facultatif ; à renseigner pour un paiement par virement)", wide: true },
+  { key: "bic", group: "einvoicing", label: "BIC (recommandé avec l'IBAN)" },
   { key: "paymentTermsText", group: "einvoicing", label: "Conditions de paiement (facultatif)", placeholder: "Paiement à 30 jours date de facture.", wide: true },
   { key: "latePenaltyText", group: "einvoicing", label: "Pénalités de retard (obligatoire)", placeholder: "Pénalités de retard : trois fois le taux d'intérêt légal.", wide: true },
   { key: "earlyPaymentDiscountText", group: "einvoicing", label: "Escompte (obligatoire)", placeholder: "Pas d'escompte pour paiement anticipé.", wide: true },
@@ -45,6 +45,7 @@ export function EinvoicingSettingsCard() {
   const [enabled, setEnabled] = useState(false);
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
+  const focusedFromHash = useRef(false);
 
   useEffect(() => {
     if (!data) return;
@@ -57,7 +58,10 @@ export function EinvoicingSettingsCard() {
     setEnabled(data.einvoicing.enabled === true);
     // Arrivée par un lien direct (#einvoicing-champ) : place le curseur dans le champ à compléter.
     const target = window.location.hash.startsWith("#einvoicing-") ? window.location.hash.slice(1) : null;
-    if (target) window.setTimeout(() => document.getElementById(target)?.focus({ preventScroll: false }), 0);
+    if (target && !focusedFromHash.current) {
+      focusedFromHash.current = true;
+      window.setTimeout(() => document.getElementById(target)?.focus({ preventScroll: false }), 0);
+    }
   }, [data]);
 
   if (!isAdmin) return null;

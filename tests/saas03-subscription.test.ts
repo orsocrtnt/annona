@@ -263,5 +263,5 @@ test("SAAS-03 : API COMPANY_ADMIN isolée, no-store, vide et erreur lisible", as
   assert.deepEqual(await (await loadRoute("COMPANY_ADMIN", "company-a", null)()).json(), { data: null });
   const failed = await loadRoute("COMPANY_ADMIN", "company-a", view, true)();
   assert.equal(failed.status, 503);
-  assert.deepEqual(await failed.json(), { error: "Chargement de l’abonnement impossible" });
+  assert.deepEqual(await failed.json(), { error: "Chargement de l’abonnement impossible : réessayez dans un instant ; si cela persiste, contactez le support." });
 });

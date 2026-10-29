@@ -27,9 +27,9 @@ for (const [field, label] of [["siren", "SIREN"], ["billingAddress", "rue"], ["b
   });
 }
 
-test("IBAN sans BIC : BIC exigé ; format invalide signalé même sans blocage", () => {
+test("IBAN sans BIC : non bloquant ; format invalide signalé même sans blocage", () => {
   const values = { ...full(), iban: "FR7630006000011234567890189" };
-  assert.ok(evaluateEinvoicingForm(values, true, true).errors.bic);
+  assert.equal(evaluateEinvoicingForm(values, true, true).errors.bic, undefined);
   const badIban = evaluateEinvoicingForm({ ...full(), iban: "FR7630006000011234567890188", bic: "AGRIFRPP" }, false, false);
   assert.ok(badIban.errors.iban);
   assert.ok(evaluateEinvoicingForm({ ...full(), bic: "XX" }, false, false).errors.bic);

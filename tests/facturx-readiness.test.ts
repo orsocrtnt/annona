@@ -55,7 +55,6 @@ const CASES: Array<[string, (i: ReadinessInput) => void, string]> = [
   ["pénalités", (i) => { i.einvoicing.latePenaltyText = ""; }, "latePenaltyText"],
   ["escompte", (i) => { i.einvoicing.earlyPaymentDiscountText = " "; }, "earlyPaymentDiscountText"],
   ["motif d'exonération", (i) => { i.einvoicing.vatExemptionReason = ""; }, "vatExemptionReason"],
-  ["BIC avec IBAN", (i) => { i.einvoicing.bic = ""; }, "bic"],
 ];
 
 for (const [name, mutate, field] of CASES) {
@@ -75,6 +74,14 @@ test("entreprise avec n° de TVA : le motif d'exonération n'est pas exigé à l
   input.einvoicing.vatNumber = "FR44732829320";
   input.einvoicing.vatExemptionReason = "";
   assert.deepEqual(checkSellerReadiness(input), []);
+});
+
+test("IBAN sans BIC : non bloquant (simple avertissement à l'export)", () => {
+  const input = complete();
+  input.einvoicing.bic = "";
+  assert.deepEqual(checkSellerReadiness(input), []);
+  const exported = exportWith(input);
+  assert.ok(exported.ok && exported.warnings.some((w) => w.rule === "TL-W-BIC"));
 });
 
 test("sans IBAN : pas de virement, ni IBAN ni BIC exigés", () => {

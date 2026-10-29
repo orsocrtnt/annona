@@ -65,15 +65,11 @@ export function checkSellerReadiness({ identity, einvoicing }: ReadinessInput): 
       `Motif d'exonération de TVA manquant : sans n° de TVA, vos factures sont sans TVA (ex. « ${SUGGESTED_VAT_EXEMPTION_REASON} »).`
     );
   }
-  // Paiement par virement (IBAN renseigné, repris par l'export en BG-17) : le BIC l'accompagne. Un BIC seul n'est pas exporté.
-  if (!blank(einvoicing.iban) && blank(einvoicing.bic)) {
-    add("einvoicing", "bic", "TL-FR-BIC", "BIC manquant : indiquez-le avec l'IBAN pour un paiement par virement.");
-  }
   return issues;
 }
 
 /** Règles reprises telles quelles par l'export : les autres sont contrôlées par cii-generator.ts (BR-*). */
-export const EXPORT_CHECKED_BY_MAPPING = new Set(["TL-FR-SIREN", "TL-FR-PENALITES", "TL-FR-ESCOMPTE", "TL-FR-BIC"]);
+export const EXPORT_CHECKED_BY_MAPPING = new Set(["TL-FR-SIREN", "TL-FR-PENALITES", "TL-FR-ESCOMPTE"]);
 
 /** Règle d'export (cii-generator / mapping) → champ du formulaire « Mentions légales et Factur-X » à compléter. */
 export const RULE_FIELD: Record<string, string> = {
@@ -81,7 +77,6 @@ export const RULE_FIELD: Record<string, string> = {
   "BR-CO-26": "siren",
   "TL-FR-PENALITES": "latePenaltyText",
   "TL-FR-ESCOMPTE": "earlyPaymentDiscountText",
-  "TL-FR-BIC": "bic",
   "BR-61": "iban",
   "BR-E-10": "vatExemptionReason",
   "BR-08": "billingAddress",

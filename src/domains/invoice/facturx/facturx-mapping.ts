@@ -254,6 +254,7 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
   if (!present(identity?.siren)) {
     warnings.push({ rule: "TL-W-SIREN-CLIENT", message: "SIREN du client absent : les plateformes agréées l'exigent pour une facture entre entreprises françaises." });
   }
+  if (einvoicing.iban && !einvoicing.bic) warnings.push({ rule: "TL-W-BIC", message: `BIC absent : recommandé avec l'IBAN pour un virement (non bloquant). ${SELLER_HINT}` });
   if (!einvoicing.iban) warnings.push({ rule: "TL-W-IBAN", message: "Aucun IBAN : la facture ne porte pas de coordonnées de virement." });
   if (source.einvoicingInvalidFields?.length) {
     warnings.push({ rule: "TL-W-REGLAGE-INVALIDE", message: `Réglages ignorés car invalides : ${source.einvoicingInvalidFields.join(", ")}. ${SELLER_HINT}` });

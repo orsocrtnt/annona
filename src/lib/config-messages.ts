@@ -16,7 +16,7 @@ export const CONFIG_MESSAGES = {
   /** E-mail non configuré : lien de connexion ou de réinitialisation (page publique, message sobre). */
   AUTH_EMAIL_UNAVAILABLE: "L'envoi d'e-mails est indisponible sur ce serveur. Réessayez plus tard ou contactez votre administrateur.",
   /** E-mail non configuré : confirmation d'inscription. */
-  SIGNUP_EMAIL_UNAVAILABLE: "La vérification par e-mail est indisponible sur ce serveur : votre inscription est conservée. Réessayez plus tard ou contactez-nous.",
+  SIGNUP_EMAIL_UNAVAILABLE: "La vérification par e-mail est indisponible sur ce serveur : Réessayez plus tard ou contactez-nous.",
   INTAKE_DISABLED: "La commande depuis un message n'est pas activée pour votre entreprise. Activez-la dans la page « Commande par message » (case d'activation en haut de page).",
   INTAKE_NOT_CONFIGURED: `Le service d'analyse des messages n'est pas configuré sur ce serveur : rien n'est analysé. Saisissez la commande à la main. ${PLATFORM_ADMIN_HINT}`,
   DISPATCH_FEATURE_NOT_IN_PLAN: "Le dispatch automatique n'est pas inclus dans votre offre : le réglage n'a pas été enregistré. Choisissez une offre qui l'inclut dans Réglages › Abonnement, ou laissez-le désactivé.",
