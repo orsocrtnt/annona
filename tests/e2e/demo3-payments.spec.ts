@@ -26,7 +26,9 @@ test("DEMO-3 : Facturation › Paiements liste, filtre et relance une facture à
     const panel = page.getByTestId("company-payments");
     await expect(panel.getByLabel("Résumé des paiements")).toBeVisible();
     await panel.getByRole("button", { name: "En retard", exact: true }).click();
+    const filtered = page.waitForResponse((r) => r.url().includes("/api/invoices") && r.ok());
     await panel.getByRole("button", { name: "Toutes", exact: true }).click();
+    await filtered;
     // Attendre la liste avant de compter : sinon le décompte vaut 0 et le test est toujours ignoré.
     await expect(panel.getByRole("list", { name: "Liste des paiements" }).or(panel.getByText(/Aucune facture/)).first()).toBeVisible();
     const remind = panel.getByRole("button", { name: /^Relancer · facture/ }).first();
@@ -41,7 +43,8 @@ test("DEMO-3 : Facturation › Paiements liste, filtre et relance une facture à
     // Relance non partie (e-mail désactivé en développement) : « Relancer » reste actif et l'écran dit « Relance non envoyée ».
     const sent = panel.getByRole("button", { name: `Relancée · facture ${reference}` });
     const stillActive = panel.getByRole("button", { name: `Relancer · facture ${reference}` });
-    await expect(sent.or(stillActive)).toBeVisible();
+    // Un seul état final attendu avant de choisir la branche : l'ancien bouton « Relancer » est encore là juste après le clic.
+    await expect(sent.or(panel.getByText(/Relance non envoyée/).first())).toBeVisible();
     if (await sent.count()) {
       await expect(sent).toBeDisabled();
     } else {

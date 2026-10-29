@@ -1,13 +1,23 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useDriverActionQueue } from "./driver-action-queue-provider";
 import { actionNeedsAttention } from "./offline-action-queue";
 
+function subscribeOnline(callback: () => void) {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+
 export function DriverActionQueueStatus() {
   const { actions: queued, isProcessing, retry, discard } = useDriverActionQueue();
-  const online = typeof navigator === "undefined" ? true : navigator.onLine;
+  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const actions = queued.filter((action) => actionNeedsAttention(action, online));
   if (actions.length === 0) return null;
 
