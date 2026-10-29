@@ -62,12 +62,12 @@ export function getRoleLabel(role: SystemRole): string {
 
 export function getRoleColor(role: SystemRole): string {
   const colors: Record<SystemRole, string> = {
-    SUPER_ADMIN: "border-transparent bg-red-100 text-red-800",
-    COMPANY_ADMIN: "border-transparent bg-red-100 text-red-800",
-    MINI_ADMIN: "border-transparent bg-indigo-100 text-indigo-800",
-    DISPATCHER: "border-transparent bg-slate-100 text-slate-800",
-    DRIVER: "border-transparent bg-orange-100 text-orange-800",
-    CLIENT: "border-transparent bg-blue-100 text-blue-800",
+    SUPER_ADMIN: "border-transparent bg-red-100 text-red-800 dark:bg-error-subtle dark:text-error",
+    COMPANY_ADMIN: "border-transparent bg-red-100 text-red-800 dark:bg-error-subtle dark:text-error",
+    MINI_ADMIN: "border-transparent bg-indigo-100 text-indigo-800 dark:bg-[#26283f] dark:text-[#b4b8f0]",
+    DISPATCHER: "border-transparent bg-slate-100 text-slate-800 dark:bg-muted dark:text-foreground",
+    DRIVER: "border-transparent bg-orange-100 text-orange-800 dark:bg-warning-subtle dark:text-warning",
+    CLIENT: "border-transparent bg-blue-100 text-blue-800 dark:bg-[#1f2c40] dark:text-[#8fb5ee]",
   };
   return colors[role];
 }

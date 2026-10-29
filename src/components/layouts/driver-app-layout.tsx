@@ -11,6 +11,7 @@ import { getInitials } from "@/lib/utils";
 import { Home, MapPin, User } from "lucide-react";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { AppleNavbar, AppleNavbarBrand } from "@/components/navigation/apple-navbar";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const bottomNav = [
   { title: "Accueil", href: "/driver", icon: Home },
@@ -62,15 +63,16 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
       <AppleNavbar tone="light" maxWidthClassName="max-w-lg" innerClassName="justify-between">
         <AppleNavbarBrand href="/driver" tone="light" />
         <div className="flex min-w-0 items-center gap-2.5">
+          <ThemeToggle className="-mr-1" />
           <div className="min-w-0 text-right">
-            <p className="truncate text-sm font-medium leading-none text-[#0e1310]">
+            <p className="truncate text-sm font-medium leading-none text-[#0e1310] dark:text-foreground">
               {user ? `${user.firstName} ${user.lastName}`.trim() : "Livreur"}
             </p>
-            <p className="mt-1 truncate text-xs text-[#68726b]">Espace livreur</p>
+            <p className="mt-1 truncate text-xs text-[#68726b] dark:text-muted-foreground">Espace livreur</p>
           </div>
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white">
+            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
               {user ? getInitials(user.firstName, user.lastName) : "L"}
             </AvatarFallback>
           </Avatar>

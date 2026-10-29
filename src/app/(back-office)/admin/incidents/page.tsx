@@ -67,7 +67,7 @@ export default function AdminIncidentsPage() {
       {data.total === 0 ? (
         <EmptyState icon={ShieldAlert} title="Aucun incident" description="Aucun incident ne correspond à ces filtres." />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Entreprise</TableHead>

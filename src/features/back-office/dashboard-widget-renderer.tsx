@@ -302,9 +302,9 @@ function TodaySummaryWidget() {
         </div>
         <TodayDonut
           segments={[
-            { label: "Livrées", value: dashboard.today.delivered.total, color: "#0e1310" },
-            { label: "En cours", value: dashboard.today.inProgress.total, color: "#7f8883" },
-            { label: "Restantes", value: dashboard.today.remaining.total, color: "#d5dbd7" },
+            { label: "Livrées", value: dashboard.today.delivered.total, tone: "ink" },
+            { label: "En cours", value: dashboard.today.inProgress.total, tone: "mid" },
+            { label: "Restantes", value: dashboard.today.remaining.total, tone: "soft" },
           ]}
         />
         <div className="xl:col-span-2">

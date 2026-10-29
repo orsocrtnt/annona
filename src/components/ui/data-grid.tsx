@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TABLE_SURFACE_CLASS,
 } from "./table";
 import { Input } from "./input";
 import { Button } from "./button";
@@ -173,7 +173,8 @@ export function DataGrid<T extends Record<string, unknown>>({
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-border max-md:-mx-1 max-md:overflow-x-auto">
+          {/* Surface distincte du fond de page : blanc en Light, carte graphite en Dark. */}
+          <div className={cn("overflow-hidden max-md:-mx-1 max-md:overflow-x-auto", TABLE_SURFACE_CLASS)}>
             <Table className={cn("w-full text-xs", tableClassName ?? "table-fixed")}>
               <TableHeader>
                 <TableRow>

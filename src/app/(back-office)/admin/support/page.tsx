@@ -100,7 +100,7 @@ export default function AdminSupportPage() {
       {data.total === 0 ? (
         <EmptyState icon={HeadphonesIcon} title="Aucun ticket" description="Aucun ticket ne correspond à ces filtres." />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Entreprise</TableHead>

@@ -48,7 +48,7 @@ export function ProofOfDeliveryCard({
           width={480}
           height={180}
           unoptimized
-          className="max-h-32 w-auto rounded-md border border-border bg-white"
+          className="max-h-32 w-auto rounded-md border border-border bg-white dark:bg-white"
         />
       ) : null}
       {photoUrl ? (

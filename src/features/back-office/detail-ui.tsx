@@ -36,7 +36,7 @@ export function PersonHeader({
       </Button>
       <div className="flex min-w-0 items-center gap-4">
         <span
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-sm font-semibold text-foreground"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-sm font-semibold text-foreground dark:bg-muted"
           aria-hidden="true"
         >
           {initialsOf(name)}
@@ -98,7 +98,7 @@ export function RecordRow({
       href={href}
       className={cn(
         className,
-        "transition-colors hover:bg-[#f5f8f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+        "transition-colors hover:bg-[#f5f8f6] dark:hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
       )}
     >
       {body}
@@ -121,7 +121,7 @@ export function ActivityList({
     <ol className="space-y-3">
       {items.map((item, index) => (
         <li key={index} className="flex gap-3 text-sm">
-          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#0e1310]" aria-hidden="true" />
+          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-chart-ink" aria-hidden="true" />
           <div className="min-w-0">
             <p className="font-medium text-foreground">{item.title}</p>
             {item.detail && <p className="text-muted-foreground">{item.detail}</p>}

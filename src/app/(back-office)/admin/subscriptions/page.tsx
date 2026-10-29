@@ -155,7 +155,7 @@ export default function AdminSubscriptionsPage() {
           description="Aucune souscription commerciale ne correspond à ces filtres."
         />
       ) : (
-        <Table>
+        <Table surface>
           <TableHeader>
             <TableRow>
               <TableHead>Entreprise</TableHead>

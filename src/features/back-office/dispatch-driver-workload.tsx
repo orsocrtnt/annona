@@ -22,8 +22,8 @@ function WorkloadBar({ label, split, max }: { label: string; split: WorkloadSpli
           {bar.total}
         </span>
       </div>
-      <div className="mt-1 flex h-2 overflow-hidden rounded-full bg-[#eef1ef]" aria-hidden="true">
-        <span className="h-full bg-[#0e1310]" style={{ width: `${bar.standardPct}%` }} />
+      <div className="mt-1 flex h-2 overflow-hidden rounded-full bg-chart-track" aria-hidden="true">
+        <span className="h-full bg-chart-ink" style={{ width: `${bar.standardPct}%` }} />
         <span className="h-full bg-[#00a855]" style={{ width: `${bar.courierPct}%` }} />
       </div>
       <p className="sr-only">
@@ -59,7 +59,7 @@ function DriverRow({
     <li className="grid gap-3 py-3 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-center sm:gap-6">
       <div className="flex min-w-0 items-center gap-3">
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-xs font-semibold text-[#0e1310]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-xs font-semibold text-[#0e1310] dark:bg-muted dark:text-foreground"
           aria-hidden="true"
         >
           {initials}
@@ -134,7 +134,7 @@ export function DispatchDriverWorkload({
         </CardDescription>
         <p className="flex items-center gap-4 pt-1 text-xs text-muted-foreground" aria-hidden="true">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#0e1310]" /> Commandes
+            <span className="h-2 w-2 rounded-full bg-chart-ink" /> Commandes
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-[#00a855]" /> Courses

@@ -145,7 +145,7 @@ export function TablePersonCell({ href, name, detail }: { href: string; name: st
   return (
     <div className="flex min-w-0 items-center gap-3">
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-xs font-semibold text-foreground"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-xs font-semibold text-foreground dark:bg-muted"
         aria-hidden="true"
       >
         {initialsOf(name)}

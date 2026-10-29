@@ -162,7 +162,7 @@ export function SignaturePad({ disabled, onChange }: SignaturePadProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endStroke}
         onPointerCancel={endStroke}
-        className="h-36 w-full touch-none rounded-lg border border-dashed border-border bg-white"
+        className="h-36 w-full touch-none rounded-lg border border-dashed border-border bg-white dark:bg-white"
         data-testid="signature-canvas"
         data-signed={hasInk ? "true" : "false"}
       />
