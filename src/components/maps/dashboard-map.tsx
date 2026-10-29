@@ -9,7 +9,7 @@ import { DriverMapMarker } from "@/components/maps/driver-map-marker";
 import { DeliveryOverviewMarker, DeliveryPointMarker } from "@/components/maps/delivery-point-marker";
 import { LeafletBaseMap, PARIS_CENTER } from "@/components/maps/leaflet-base-map";
 import { getDispatchMapStatus } from "@/features/back-office/dispatch-map-status";
-import { isLocatedDriver, locatedDeliveries, sceneViewAction, type DashboardMapView } from "@/features/back-office/dashboard-map-model";
+import { isLocatedDriver, locatedDeliveries, mapViewShows, sceneViewAction, type DashboardMapView } from "@/features/back-office/dashboard-map-model";
 
 type Props = {
   view: DashboardMapView;
@@ -59,62 +59,62 @@ function SceneView({ points, selected, selectedId, fitKey }: { points: [number, 
 }
 
 export function DashboardMap({ view, drivers, deliveries, selectedId, onSelect, height }: Props) {
-  const located = useMemo(() => drivers.filter(isLocatedDriver), [drivers]);
-  const geoDeliveries = useMemo(() => locatedDeliveries(deliveries), [deliveries]);
-  const selectedDelivery = view === "deliveries" ? geoDeliveries.find((d) => d.id === selectedId) : undefined;
+  const shows = mapViewShows(view);
+  const located = useMemo(() => (shows.drivers ? drivers.filter(isLocatedDriver) : []), [shows.drivers, drivers]);
+  const geoDeliveries = useMemo(() => (shows.deliveries ? locatedDeliveries(deliveries) : []), [shows.deliveries, deliveries]);
+  const selectedDelivery = geoDeliveries.find((d) => d.id === selectedId);
+  const selectedDriver = located.find((d) => d.id === selectedId);
 
   const points = useMemo<[number, number][]>(
-    () =>
-      view === "drivers"
-        ? located.map((d) => [d.latitude!, d.longitude!])
-        : geoDeliveries.map((d) => [d.destination!.latitude, d.destination!.longitude]),
-    [view, located, geoDeliveries]
+    () => [
+      ...located.map((d) => [d.latitude!, d.longitude!] as [number, number]),
+      ...geoDeliveries.map((d) => [d.destination!.latitude, d.destination!.longitude] as [number, number]),
+    ],
+    [located, geoDeliveries]
   );
   const selectedPoint = useMemo<[number, number] | null>(() => {
-    if (view === "drivers") {
-      const driver = located.find((d) => d.id === selectedId);
-      return driver ? [driver.latitude!, driver.longitude!] : null;
-    }
+    if (selectedDriver) return [selectedDriver.latitude!, selectedDriver.longitude!];
     return selectedDelivery?.destination ? [selectedDelivery.destination.latitude, selectedDelivery.destination.longitude] : null;
-  }, [view, located, selectedId, selectedDelivery]);
-  const fitKey = `${view}:${points.map((p) => p.join(",")).sort().join("|")}`;
-  // Le cadrage ne dépend que des identifiants affichés, pas des positions qui bougent.
-  const stableFitKey = view === "drivers" ? `${view}:${located.map((d) => d.id).sort().join("|")}` : fitKey;
+  }, [selectedDriver, selectedDelivery]);
+  // Le cadrage ne dépend que des identifiants affichés pour les livreurs (leurs positions bougent), des positions pour les missions.
+  const stableFitKey = [
+    view,
+    located.map((d) => d.id).sort().join("|"),
+    geoDeliveries.map((d) => `${d.destination!.latitude},${d.destination!.longitude}`).sort().join("|"),
+  ].join(":");
 
   return (
     <LeafletBaseMap height={height} variant="uber" zoom={11} className="w-full">
       <SceneView points={points} selected={selectedPoint} selectedId={selectedId} fitKey={stableFitKey} />
-      {view === "drivers" &&
-        located.map((driver) => (
-          <DriverMapMarker
-            key={driver.id}
-            name={driver.name}
-            latitude={driver.latitude!}
-            longitude={driver.longitude!}
-            isSelected={selectedId === driver.id}
-            isOnline={driver.isOnline}
-            estimated={driver.estimated}
-            motion={driver.motion}
-            updatedAt={driver.updatedAt}
-            showLabel={selectedId === driver.id || located.length <= 6}
-            onSelect={() => onSelect(driver.id)}
-          />
-        ))}
-      {view === "deliveries" &&
-        geoDeliveries.map((delivery) => (
-          <DeliveryOverviewMarker
-            key={delivery.id}
-            latitude={delivery.destination!.latitude}
-            longitude={delivery.destination!.longitude}
-            reference={delivery.reference}
-            title={delivery.customerName ?? undefined}
-            subtitle={delivery.address}
-            status={getDispatchMapStatus(delivery)}
-            showCallout={geoDeliveries.length <= 6}
-            isSelected={selectedId === delivery.id}
-            onSelect={() => onSelect(delivery.id)}
-          />
-        ))}
+      {located.map((driver) => (
+        <DriverMapMarker
+          key={driver.id}
+          name={driver.name}
+          latitude={driver.latitude!}
+          longitude={driver.longitude!}
+          isSelected={selectedId === driver.id}
+          isOnline={driver.isOnline}
+          estimated={driver.estimated}
+          motion={driver.motion}
+          updatedAt={driver.updatedAt}
+          showLabel={selectedId === driver.id || located.length <= 6}
+          onSelect={() => onSelect(driver.id)}
+        />
+      ))}
+      {geoDeliveries.map((delivery) => (
+        <DeliveryOverviewMarker
+          key={delivery.id}
+          latitude={delivery.destination!.latitude}
+          longitude={delivery.destination!.longitude}
+          reference={delivery.reference}
+          title={delivery.customerName ?? undefined}
+          subtitle={delivery.address}
+          status={getDispatchMapStatus(delivery)}
+          showCallout={geoDeliveries.length <= 6}
+          isSelected={selectedId === delivery.id}
+          onSelect={() => onSelect(delivery.id)}
+        />
+      ))}
       {selectedDelivery?.pickups.map((pickup) => (
         <DeliveryPointMarker key={pickup.id} kind="pickup" latitude={pickup.latitude} longitude={pickup.longitude} label="Collecte" subtitle={pickup.address} />
       ))}

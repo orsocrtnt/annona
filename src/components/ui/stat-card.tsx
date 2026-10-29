@@ -37,6 +37,11 @@ interface StatCardProps extends DashboardStat {
   /** Teinte d'état (direction Menthe). Une alerte critique à zéro reste neutre. */
   tone?: Tone;
   delta?: StatDelta;
+  /**
+   * Rendu sobre du dashboard : pastille d'état devant le libellé, icône fine sans carré teinté,
+   * pas de lien texte « Voir le détail » (toute la carte est cliquable).
+   */
+  quiet?: boolean;
 }
 
 export function StatCard({
@@ -49,13 +54,35 @@ export function StatCard({
   onClick,
   tone,
   delta,
+  quiet,
 }: StatCardProps) {
   const isPositive = change !== undefined && change >= 0;
   const numericValue = typeof value === "number" ? value : Number(value);
   const isClickable = Boolean(onClick) && numericValue > 0;
   const toneClasses = tone ? TONE_CLASSES[resolveTone(tone, numericValue)] : null;
 
-  const content = (
+  const content = quiet ? (
+    <CardContent className="flex h-full flex-col p-5">
+      <div className="flex items-start justify-between gap-3">
+        {/* Deux lignes réservées en grille de 4 : les chiffres restent alignés même si un libellé passe à la ligne. */}
+        <p className="flex items-start gap-2 text-sm font-medium text-muted-foreground xl:min-h-10">
+          {toneClasses && <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", toneClasses.dot)} aria-hidden="true" />}
+          {label}
+        </p>
+        {Icon && <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />}
+      </div>
+      <p
+        className={cn(
+          "mt-3 text-3xl font-semibold tracking-tight tabular-nums",
+          toneClasses ? toneClasses.value : "text-foreground"
+        )}
+      >
+        {value}
+      </p>
+      {delta && <div className="mt-2"><DeltaBadge delta={delta} /></div>}
+      {changeLabel && <p className="mt-2 text-xs text-muted-foreground">{changeLabel}</p>}
+    </CardContent>
+  ) : (
     <CardContent className="p-6">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
@@ -114,7 +141,7 @@ export function StatCard({
 
   if (!isClickable) {
     return (
-      <Card className={cn("overflow-hidden", toneClasses?.surface, className)}>
+      <Card className={cn("overflow-hidden", quiet && "h-full", toneClasses?.surface, className)}>
         {content}
       </Card>
     );
@@ -123,12 +150,13 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden transition-colors hover:border-brand/40 hover:shadow-md",
+        "overflow-hidden transition-colors",
+        quiet ? "h-full hover:border-foreground/20" : "hover:border-brand/40 hover:shadow-md",
         toneClasses?.surface,
         className
       )}
     >
-      <button type="button" className="w-full text-left" onClick={onClick}>
+      <button type="button" className={cn("w-full text-left", quiet && "h-full")} onClick={onClick}>
         {content}
       </button>
     </Card>

@@ -16,7 +16,9 @@ export function getNavItemsForRole(role?: SystemRole, settings?: unknown): NavIt
       return dispatcherNavItems;
     case "MINI_ADMIN": {
       const { modules } = parseMiniAdminSettings(settings);
-      return miniAdminNavItems.filter((item) => miniAdminAllowsHref(item.href, modules));
+      const allowed = miniAdminNavItems.filter((item) => miniAdminAllowsHref(item.href, modules));
+      // Les deux anciens modules carte mènent à la même carte : une seule entrée « Carte ».
+      return allowed.filter((item, index) => allowed.findIndex((other) => other.title === item.title) === index);
     }
     case "COMPANY_ADMIN":
     default:

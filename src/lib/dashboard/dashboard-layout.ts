@@ -212,16 +212,12 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetCatalogEntry[] = [
     category: "stats",
     compact: true,
   },
+  // Une seule carte : « map-deliveries » reste un type connu pour lire les anciennes dispositions,
+  // mais n'est plus proposé (normalizeDashboardLayout le fond dans « map-drivers »).
   {
     type: "map-drivers",
     label: "Carte en direct",
-    description: "Livreurs et livraisons sur une même carte, avec bascule",
-    category: "maps",
-  },
-  {
-    type: "map-deliveries",
-    label: "Carte en direct (ouverte sur les livraisons)",
-    description: "La même carte unifiée, affichée d'abord sur les livraisons",
+    description: "Livreurs et livraisons sur une seule carte : Tout, Livreurs ou Livraisons",
     category: "maps",
   },
 ];
@@ -291,8 +287,24 @@ export function normalizeDashboardLayout(
 
   return {
     defaultPeriod: input?.defaultPeriod ?? DEFAULT_DASHBOARD_LAYOUT.defaultPeriod,
-    widgets: assignWidgetOrders(widgets),
+    widgets: assignWidgetOrders(foldMapWidgets(widgets)),
   };
+}
+
+/**
+ * Les anciennes dispositions pouvaient contenir deux blocs carte (livreurs, livraisons). Il n'en reste
+ * qu'un, « map-drivers » : affiché si l'un des deux l'était, à la place du premier, avec sa hauteur.
+ */
+function foldMapWidgets(widgets: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
+  const drivers = widgets.find((w) => w.type === "map-drivers");
+  const deliveries = widgets.find((w) => w.type === "map-deliveries");
+  if (!drivers || !deliveries || !deliveries.visible) return widgets;
+  const first = drivers.visible && drivers.order <= deliveries.order ? drivers : deliveries;
+  return widgets.map((w) => {
+    if (w.type === "map-deliveries") return { ...w, visible: false };
+    if (w.type === "map-drivers") return { ...w, visible: true, order: first.order, config: first.config ?? w.config };
+    return w;
+  });
 }
 
 export function getVisibleDashboardWidgets(layout: DashboardLayoutSettings) {

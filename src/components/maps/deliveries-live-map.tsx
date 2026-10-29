@@ -7,6 +7,7 @@ import { Polyline, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { clusterProjectedPoints } from "@/lib/maps/cluster-points";
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
+import type { LiveDriverLocation } from "@/domains/driver/driver-location.service";
 import {
   buildDeliveryMapMarkers,
   getDeliveryMapPhaseHint,
@@ -43,7 +44,26 @@ interface DeliveriesLiveMapProps {
   /** Clic sur une livraison (deux clics rapprochés = double-clic, géré par la page). */
   onSelect?: (id: string) => void;
   onMapReady?: (api: DeliveriesMapApi) => void;
+  /**
+   * Livreurs de la vue d'ensemble, missions ou non (carte unique, MAP-UNIFY-2). Absent : seuls les
+   * livreurs des livraisons affichées apparaissent ; tableau vide : aucun livreur.
+   */
+  liveDrivers?: LiveDriverLocation[];
+  selectedDriverId?: string | null;
+  onSelectDriver?: (id: string) => void;
 }
+
+type OverviewDriver = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  isOnline: boolean;
+  estimated: boolean;
+  motion: LiveDriverLocation["motion"];
+  updatedAt: string | null;
+  onSelect: () => void;
+};
 
 function MapApiBridge({ onMapReady }: { onMapReady?: (api: DeliveriesMapApi) => void }) {
   const map = useMap();
@@ -161,25 +181,59 @@ function OverviewViewController({ points }: { points: [number, number][] }) {
 function OverviewLayer({
   deliveries,
   onSelect,
+  liveDrivers,
+  selectedDriverId,
+  onSelectDriver,
 }: {
   deliveries: DispatchMapDelivery[];
   onSelect?: (id: string) => void;
+  liveDrivers?: LiveDriverLocation[];
+  selectedDriverId?: string | null;
+  onSelectDriver?: (id: string) => void;
 }) {
   const located = deliveries.filter((delivery) => delivery.destination && !delivery.isHistorical);
-  const drivers = new Map<string, DispatchMapDelivery>();
-  for (const delivery of located) {
-    if (delivery.driverId && delivery.driverLocation && delivery.driverName && showDriverOnMap(delivery)) {
-      drivers.set(delivery.driverId, delivery);
+  const drivers = new Map<string, OverviewDriver>();
+  if (liveDrivers) {
+    for (const driver of liveDrivers) {
+      if (driver.latitude == null || driver.longitude == null) continue;
+      drivers.set(driver.id, {
+        id: driver.id,
+        name: driver.name,
+        latitude: driver.latitude,
+        longitude: driver.longitude,
+        isOnline: driver.isOnline,
+        estimated: driver.estimated,
+        motion: driver.motion,
+        updatedAt: driver.updatedAt,
+        onSelect: () => onSelectDriver?.(driver.id),
+      });
+    }
+  } else {
+    for (const delivery of located) {
+      if (delivery.driverId && delivery.driverLocation && delivery.driverName && showDriverOnMap(delivery)) {
+        drivers.set(delivery.driverId, {
+          id: delivery.driverId,
+          name: delivery.driverName,
+          latitude: delivery.driverLocation.latitude,
+          longitude: delivery.driverLocation.longitude,
+          isOnline: delivery.driverLocation.isOnline,
+          estimated: delivery.driverLocation.estimated,
+          motion: delivery.driverLocation.motion,
+          updatedAt: delivery.driverLocation.updatedAt,
+          onSelect: () => onSelect?.(delivery.id),
+        });
+      }
     }
   }
   const points = useMemo<[number, number][]>(
     () => [
       ...located.map((d) => [d.destination!.latitude, d.destination!.longitude] as [number, number]),
-      ...[...drivers.values()].map((d) => [d.driverLocation!.latitude, d.driverLocation!.longitude] as [number, number]),
+      ...[...drivers.values()].map((d) => [d.latitude, d.longitude] as [number, number]),
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : positions arrondies
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : identifiants, pas les positions qui bougent
     [located.map((d) => d.id).join(), [...drivers.keys()].join()]
   );
+  const selectedDriver = selectedDriverId ? drivers.get(selectedDriverId) : undefined;
 
   const map = useMap();
   const [zoom, setZoom] = useState(() => map.getZoom());
@@ -206,6 +260,7 @@ function OverviewLayer({
   return (
     <>
       <OverviewViewController points={points} />
+      <DriverFocusController target={selectedDriver ? [selectedDriver.latitude, selectedDriver.longitude] : null} targetId={selectedDriver?.id ?? null} />
       {clusters.map((cluster) => {
         if (cluster.items.length === 1) {
           const delivery = cluster.items[0]!;
@@ -244,22 +299,41 @@ function OverviewLayer({
           />
         );
       })}
-      {[...drivers.values()].map((delivery) => (
+      {[...drivers.values()].map((driver) => (
         <DriverMapMarker
-          key={delivery.driverId}
-          name={delivery.driverName!}
-          latitude={delivery.driverLocation!.latitude}
-          longitude={delivery.driverLocation!.longitude}
-          isOnline={delivery.driverLocation!.isOnline}
-          estimated={delivery.driverLocation!.estimated}
-          motion={delivery.driverLocation!.motion}
-          updatedAt={delivery.driverLocation!.updatedAt}
-          showLabel={zoom >= 13}
-          onSelect={() => onSelect?.(delivery.id)}
+          key={driver.id}
+          name={driver.name}
+          latitude={driver.latitude}
+          longitude={driver.longitude}
+          isSelected={driver.id === selectedDriverId}
+          isOnline={driver.isOnline}
+          estimated={driver.estimated}
+          motion={driver.motion}
+          updatedAt={driver.updatedAt}
+          showLabel={zoom >= 13 || driver.id === selectedDriverId}
+          onSelect={driver.onSelect}
         />
       ))}
     </>
   );
+}
+
+/** Centre la carte sur le livreur choisi, une fois par sélection : ses relevés suivants ne la déplacent pas. */
+function DriverFocusController({ target, targetId }: { target: [number, number] | null; targetId: string | null }) {
+  const map = useMap();
+  const targetRef = useRef(target);
+  targetRef.current = target;
+  const lastId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!targetId) {
+      lastId.current = null;
+      return;
+    }
+    if (targetId === lastId.current || !targetRef.current) return;
+    lastId.current = targetId;
+    map.setView(targetRef.current, Math.max(map.getZoom(), 14), { animate: true });
+  }, [map, targetId]);
+  return null;
 }
 
 function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapDelivery; driverMoving: boolean }) {
@@ -305,7 +379,7 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
   </>;
 }
 
-export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapReady }: DeliveriesLiveMapProps) {
+export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapReady, liveDrivers, selectedDriverId, onSelectDriver }: DeliveriesLiveMapProps) {
   const markers = useMemo(
     () => (delivery ? buildDeliveryMapMarkers(delivery) : []),
     [delivery]
@@ -320,7 +394,15 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapRe
     <LeafletBaseMap fill variant="uber" className="h-full w-full" center={PARIS_CENTER}>
       <MapApiBridge onMapReady={onMapReady} />
       <MapViewController delivery={delivery} />
-      {!delivery && <OverviewLayer deliveries={deliveries} onSelect={onSelect} />}
+      {!delivery && (
+        <OverviewLayer
+          deliveries={deliveries}
+          onSelect={onSelect}
+          liveDrivers={liveDrivers}
+          selectedDriverId={selectedDriverId}
+          onSelectDriver={onSelectDriver}
+        />
+      )}
 
       {delivery && !delivery.isHistorical && (
         <DeliveryRouteLayer delivery={delivery} driverMoving={Boolean(showDriver && delivery.driverLocation?.motion)} />

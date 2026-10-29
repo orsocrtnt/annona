@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { StatCard, type StatDelta } from "@/components/ui/stat-card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { TONE_CLASSES } from "@/components/ui/tone";
 import { DASHBOARD_PERIOD_LABELS } from "@/lib/dashboard/period-stats";
 import type { DashboardWidgetLayout, DashboardWidgetType } from "@/lib/dashboard/dashboard-layout";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
@@ -31,7 +30,7 @@ import {
 } from "@/features/back-office/dashboard-shared";
 import { useDriverLiveLocations } from "@/features/back-office/dispatch-map-hooks";
 import { DashboardMapPanel } from "@/features/back-office/dashboard-map-panel";
-import type { DashboardMapView } from "@/features/back-office/dashboard-map-model";
+import { usePermissions } from "@/hooks/use-permissions";
 import { lockedOfferReason } from "@/domains/saas/saas-access";
 import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
 
@@ -76,6 +75,7 @@ function AlertsRowWidget() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
+        quiet
         label="En retard"
         value={dashboard.alerts.late}
         icon={AlertTriangle}
@@ -91,6 +91,7 @@ function AlertsRowWidget() {
         }
       />
       <StatCard
+        quiet
         label="Sans livreur"
         tone="warning"
         value={dashboard.alerts.unassigned}
@@ -104,6 +105,7 @@ function AlertsRowWidget() {
         }
       />
       <StatCard
+        quiet
         label="Assignées non démarrées"
         tone="info"
         value={dashboard.alerts.assignedNotStarted}
@@ -117,6 +119,7 @@ function AlertsRowWidget() {
         }
       />
       <StatCard
+        quiet
         label="En cours de route"
         tone="success"
         value={dashboard.alerts.inProgress}
@@ -137,6 +140,7 @@ function AlertLateWidget() {
   const { dashboard, openDrillDown } = useDashboardContext();
   return (
     <StatCard
+      quiet
       label="En retard"
       value={dashboard.alerts.late}
       icon={AlertTriangle}
@@ -158,6 +162,7 @@ function AlertUnassignedWidget() {
   const { dashboard, openDrillDown } = useDashboardContext();
   return (
     <StatCard
+      quiet
       label="Sans livreur"
       tone="warning"
       value={dashboard.alerts.unassigned}
@@ -177,6 +182,7 @@ function AlertAssignedNotStartedWidget() {
   const { dashboard, openDrillDown } = useDashboardContext();
   return (
     <StatCard
+      quiet
       label="Assignées non démarrées"
       tone="info"
       value={dashboard.alerts.assignedNotStarted}
@@ -196,6 +202,7 @@ function AlertInProgressWidget() {
   const { dashboard, openDrillDown } = useDashboardContext();
   return (
     <StatCard
+      quiet
       label="En cours de route"
       tone="success"
       value={dashboard.alerts.inProgress}
@@ -218,10 +225,10 @@ function TodaySummaryWidget() {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Aujourd&apos;hui</CardTitle>
-        <CardDescription>Résumé des missions du jour — cliquez pour voir le détail</CardDescription>
+        <CardDescription>Résumé des missions du jour</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 xl:grid-cols-[1fr_auto] xl:items-center">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <TodayMetric
             label="Livrées"
             tone="success"
@@ -395,7 +402,6 @@ function PlanningCategoriesSection({
         counts={periodStats.total}
         field="standard"
         icon={Package}
-        accentClass={TONE_CLASSES.warning.surface}
         onClick={() =>
           openDrillDown({
             scope: "period",
@@ -409,7 +415,6 @@ function PlanningCategoriesSection({
         counts={periodStats.total}
         field="courier"
         icon={Bike}
-        accentClass={TONE_CLASSES.info.surface}
         onClick={() =>
           openDrillDown({
             scope: "period",
@@ -423,7 +428,6 @@ function PlanningCategoriesSection({
         counts={periodStats.total}
         field="total"
         icon={Truck}
-        accentClass={TONE_CLASSES.neutral.surface}
         onClick={() =>
           openDrillDown({
             scope: "period",
@@ -637,7 +641,7 @@ function PlanningWidget() {
             <span>
               <strong>{periodStats.late.total}</strong> mission
               {periodStats.late.total > 1 ? "s" : ""} en retard sur cette période
-              <span className="ml-2 text-brand">Voir le détail →</span>
+              <span className="ml-2 text-muted-foreground">Voir le détail</span>
             </span>
           </button>
         )}
@@ -783,6 +787,7 @@ function DriversOnlineWidget() {
 
   return (
     <StatCard
+      quiet
       label="Livreurs connectés"
       value={onlineCount}
       icon={Users}
@@ -791,9 +796,10 @@ function DriversOnlineWidget() {
   );
 }
 
-/** Carte unifiée du tableau de bord : une seule zone, bascule Livreurs / Livraisons (MAP-INTERACTION). */
-function UnifiedMapWidget({ height = 280, initialView }: { height?: number; initialView: DashboardMapView }) {
+/** Carte unique du tableau de bord : une seule zone, bascule Tout / Livreurs / Livraisons (MAP-UNIFY-2). */
+function UnifiedMapWidget({ height = 280 }: { height?: number }) {
   const access = useOfferAccess();
+  const { can } = usePermissions();
   const hasAdminGps = useHasOfferFeature("admin_gps");
   if (!hasAdminGps) {
     return (
@@ -817,7 +823,7 @@ function UnifiedMapWidget({ height = 280, initialView }: { height?: number; init
         <CardDescription>Livreurs et livraisons : choisissez la vue, sélectionnez un repère pour ses détails</CardDescription>
       </CardHeader>
       <CardContent>
-        <DashboardMapPanel height={height} initialView={initialView} />
+        <DashboardMapPanel height={height} showDrivers={can("drivers:read")} />
       </CardContent>
     </Card>
   );
@@ -838,6 +844,7 @@ function ItemCard({
 }) {
   return (
     <StatCard
+      quiet
       label={label}
       value={value}
       icon={icon}
@@ -891,9 +898,8 @@ function DashboardWidget({ widget }: { widget: DashboardWidgetLayout }) {
     case "stat-drivers-online":
       return <DriversOnlineWidget />;
     case "map-drivers":
-      return <UnifiedMapWidget height={mapHeight} initialView="drivers" />;
     case "map-deliveries":
-      return <UnifiedMapWidget height={mapHeight} initialView="deliveries" />;
+      return <UnifiedMapWidget height={mapHeight} />;
     default:
       return null;
   }

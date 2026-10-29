@@ -16,8 +16,10 @@ export function SpaceSidebar({ items, dense = false }: { items: readonly SpaceNa
       )}
     >
       <div className="mb-3 flex h-8 items-center sm:px-1">
-        <Image src="/brand/monogramme-fond-clair.png" alt="" aria-hidden width={28} height={24} className="sm:hidden" />
-        <BrandLogo className="hidden sm:inline-flex" />
+        <Image src="/brand/monogramme-fond-clair.png" alt="" aria-hidden width={28} height={24} className="sm:hidden dark:hidden" />
+        <Image src="/brand/monogramme-fond-sombre.png" alt="" aria-hidden width={28} height={24} className="hidden dark:block dark:sm:hidden" />
+        <BrandLogo className="hidden sm:inline-flex dark:sm:hidden" />
+        <BrandLogo onDark className="hidden dark:sm:inline-flex" />
       </div>
       {items.map(({ icon: Icon, label, active }) => (
         <span

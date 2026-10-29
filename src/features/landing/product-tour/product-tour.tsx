@@ -62,37 +62,7 @@ const INTERLUDE_ICONS = { company: Building2, driver: Truck, client: UserRound }
 /** Durée d'affichage d'un carton, fondus compris. */
 const INTERLUDE_MS = 2100;
 const REDUCED_INTERLUDE_MS = 1400;
-/**
- * Fenêtre agrandie (écran large), calée sur la zone validée par le propriétaire : à 1440 px de large,
- * x 382 → 1361 et y 112 → 734. Le texte du hero glisse à gauche dans l'espace restant.
- */
-const EXPANDED_LEFT_RATIO = 0.265;
-const EXPANDED_RIGHT_RATIO = 0.055;
-const EXPANDED_MAX_WIDTH = 1100;
-const EXPANDED_TOP = 112;
-const EXPANDED_MAX_HEIGHT = 640;
-const PAGE_GUTTER = 24;
-const EXPAND_MS = 700;
 
-type Frame = { left: number; top: number; width: number; stageHeight: number; slotHeight: number };
-
-const EXPANDED_ATTRIBUTE = "data-tour-expanded";
-
-/** Décale le texte du hero (variables lues par globals.css) ; null le remet en place. */
-function shiftHeroText(frameLeft: number | null) {
-  const root = document.documentElement;
-  const text = document.querySelector<HTMLElement>(".home-hero-text");
-  if (frameLeft === null || !text) {
-    root.removeAttribute(EXPANDED_ATTRIBUTE);
-    return;
-  }
-  const restLeft = text.getBoundingClientRect().left - (root.hasAttribute(EXPANDED_ATTRIBUTE) ? new DOMMatrix(getComputedStyle(text).transform).m41 : 0);
-  const width = frameLeft - PAGE_GUTTER * 2;
-  root.style.setProperty("--tour-text-shift", `${PAGE_GUTTER - restLeft}px`);
-  root.style.setProperty("--tour-text-width", `${width}px`);
-  root.style.setProperty("--tour-title-size", `${Math.min(48, Math.floor(width / 5.8))}px`);
-  root.setAttribute(EXPANDED_ATTRIBUTE, "");
-}
 
 /** Courbe douce, sans rebond : sortie rapide, arrivée qui se pose. */
 const EASE_OUT = [0.22, 1, 0.36, 1] as const;
@@ -150,10 +120,6 @@ export function ProductTour() {
   const [visit, setVisit] = useState(0);
   const reducedMotion = usePrefersReducedMotion();
   const stage = useRef<HTMLDivElement>(null);
-  const slot = useRef<HTMLDivElement>(null);
-  const figure = useRef<HTMLElement>(null);
-  /** Taille de la fenêtre détachée de sa colonne ; null tant qu'elle y est rangée. */
-  const [frame, setFrame] = useState<Frame | null>(null);
   const step = TOUR_STEPS[state.current] ?? "order";
   const interludeMs = reducedMotion ? REDUCED_INTERLUDE_MS : INTERLUDE_MS;
 
@@ -182,62 +148,8 @@ export function ProductTour() {
     element.focus({ preventScroll: true });
   }, [interacted, showing]);
 
-  /** Position cible (relative à la colonne) et défilement final : la fenêtre entière, sans défilement manuel. */
-  const expandedFrame = useCallback((): { frame: Frame; scrollTop: number; viewportLeft: number } | null => {
-    const column = slot.current?.getBoundingClientRect();
-    const box = figure.current;
-    const area = stage.current;
-    if (!column || !box || !area || window.innerWidth < 1024) return null;
-    const viewportWidth = document.documentElement.clientWidth;
-    const right = viewportWidth - Math.max(PAGE_GUTTER, Math.round(viewportWidth * EXPANDED_RIGHT_RATIO));
-    const width = Math.min(EXPANDED_MAX_WIDTH, right - Math.round(viewportWidth * EXPANDED_LEFT_RATIO));
-    const viewportLeft = right - width;
-    const height = Math.min(EXPANDED_MAX_HEIGHT, window.innerHeight - EXPANDED_TOP - PAGE_GUTTER * 2);
-    const chrome = box.offsetHeight - area.offsetHeight;
-    const columnTop = column.top + window.scrollY;
-    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-    const scrollTop = Math.min(Math.max(0, columnTop - EXPANDED_TOP), Math.max(0, maxScroll));
-    return {
-      frame: {
-        left: viewportLeft - column.left,
-        top: EXPANDED_TOP + scrollTop - columnTop,
-        width,
-        stageHeight: Math.max(area.offsetHeight, height - chrome),
-        slotHeight: column.height,
-      },
-      scrollTop,
-      viewportLeft,
-    };
-  }, []);
-
-  const onStart = useCallback(() => {
-    if (started) return;
-    setStarted(true);
-    const target = expandedFrame();
-    const column = slot.current?.getBoundingClientRect();
-    if (!target || !column || !stage.current) return;
-    // Détache la fenêtre à sa place actuelle, puis l'agrandit à l'image suivante : transition continue.
-    setFrame({ left: 0, top: 0, width: column.width, stageHeight: stage.current.offsetHeight, slotHeight: column.height });
-    requestAnimationFrame(() => requestAnimationFrame(() => setFrame(target.frame)));
-    shiftHeroText(target.viewportLeft);
-    if (Math.abs(window.scrollY - target.scrollTop) > 2) {
-      window.scrollTo({ top: target.scrollTop, behavior: reducedMotion ? "auto" : "smooth" });
-    }
-  }, [started, expandedFrame, reducedMotion]);
-
-  useEffect(() => {
-    if (!started) return;
-    const onResize = () =>
-      setFrame((current) => {
-        const target = current ? expandedFrame() : null;
-        shiftHeroText(target ? target.viewportLeft : null);
-        return target ? target.frame : current;
-      });
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [started, expandedFrame]);
-
-  useEffect(() => () => shiftHeroText(null), []);
+  // La démo occupe toute la largeur de sa section (LANDING-3) : le départ ne l'agrandit plus.
+  const onStart = useCallback(() => setStarted(true), []);
 
   const navigate = (next: typeof state) => {
     setInteracted(true);
@@ -251,11 +163,6 @@ export function ProductTour() {
   const reset = () => {
     setStarted(false);
     navigate(restartTour());
-    shiftHeroText(null);
-    const column = slot.current?.getBoundingClientRect();
-    if (!frame || !column) return;
-    setFrame({ ...frame, left: 0, top: 0, width: column.width, stageHeight: 460 });
-    setTimeout(() => setFrame(null), reducedMotion ? 0 : EXPAND_MS);
   };
 
   /** Départ depuis l'écran d'accueil : la fenêtre s'agrandit et le focus reste dans la démo. */
@@ -268,17 +175,10 @@ export function ProductTour() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div ref={slot} className="relative" style={frame ? { height: frame.slotHeight } : undefined}>
       <figure
-        ref={figure}
         aria-label="Démonstration interactive du parcours d'une livraison"
         data-started={started ? "true" : "false"}
-        style={frame ? { left: frame.left, top: frame.top, width: frame.width } : undefined}
-        className={cn(
-          "z-30 overflow-hidden rounded-[22px] border border-black/[0.07] bg-white p-1.5 transition-[left,top,width,box-shadow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-          frame ? "absolute" : "relative w-full",
-          started ? "shadow-[0_40px_110px_rgba(14,19,16,0.2)]" : "shadow-[0_30px_80px_rgba(14,19,16,0.12)]"
-        )}
+        className="relative w-full overflow-hidden rounded-[24px] border border-border bg-card p-1.5 shadow-[0_1px_2px_rgba(14,19,16,0.04),0_20px_50px_-30px_rgba(14,19,16,0.25)]"
       >
         <div className="flex items-center gap-3 px-2 py-2 sm:px-3">
           <div className="hidden items-center gap-1.5 sm:flex">
@@ -292,7 +192,7 @@ export function ProductTour() {
             <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" aria-hidden />
             <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" aria-hidden />
           </div>
-          <div className="mx-auto flex h-7 min-w-0 max-w-[280px] flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-lg bg-[#f0f4f1] px-3 text-xs font-medium text-muted-foreground">
+          <div className="mx-auto flex h-7 min-w-0 max-w-[280px] flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-lg bg-secondary px-3 text-xs font-medium text-muted-foreground">
             <Lock className="h-3 w-3 shrink-0" aria-hidden />
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
@@ -319,8 +219,7 @@ export function ProductTour() {
         <div
           ref={stage}
           tabIndex={-1}
-          style={frame ? { height: frame.stageHeight } : undefined}
-          className="relative h-[420px] overflow-hidden rounded-[16px] bg-[#f5f8f6] transition-[height] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] focus:outline-none motion-reduce:transition-none sm:h-[460px]"
+          className="relative h-[420px] overflow-hidden rounded-[18px] bg-[#f5f8f6] focus:outline-none sm:h-[460px] lg:h-[600px]"
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
@@ -390,8 +289,8 @@ export function ProductTour() {
                   >
                     {index + 1}
                   </span>
-                  {/* Numéros seuls au repos ; libellés quand la fenêtre est agrandie. */}
-                  <span className={cn("relative whitespace-nowrap", frame && started ? "inline" : "hidden")}>
+                  {/* Numéros seuls au repos ; libellés une fois la démo lancée, sur écran large. */}
+                  <span className={cn("relative hidden whitespace-nowrap", started && "lg:inline")}>
                     {TOUR_STEP_LABELS[item]}
                   </span>
                 </button>
@@ -400,7 +299,6 @@ export function ProductTour() {
           })}
         </ol>
       </figure>
-      </div>
     </MotionConfig>
   );
 }

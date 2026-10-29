@@ -8,14 +8,25 @@ import { readMapTheme } from "../src/hooks/use-map-theme";
 import { MAP_PIN_BODY, MAP_STATUS_STYLE } from "../src/lib/maps/map-status-style";
 import { mapPalette, mapRouteStyle, MAP_VISUAL_THEME_DARK } from "../src/lib/maps/map-visual-theme";
 import {
+  allowedMapViews,
   dashboardMapEmptyKind,
+  mapViewShows,
   nextDashboardMapView,
+  resolveMapView,
   sceneViewAction,
   shouldDropSelection,
   summarizeDelivery,
   summarizeDriver,
 } from "../src/features/back-office/dashboard-map-model";
-import { mergeMapWidgets, type DashboardWidgetLayout } from "../src/lib/dashboard/dashboard-layout";
+import {
+  DASHBOARD_WIDGET_CATALOG,
+  getVisibleDashboardWidgets,
+  mergeMapWidgets,
+  normalizeDashboardLayout,
+  type DashboardWidgetLayout,
+} from "../src/lib/dashboard/dashboard-layout";
+import { getNavItemsForRole } from "../src/features/navigation/get-nav-items";
+import { buildMiniAdminSettings } from "../src/lib/permissions/mini-admin";
 
 function luminance(hex: string) {
   const c = hex.slice(1).match(/.{2}/g)!.map((v) => {
@@ -36,6 +47,9 @@ const source = {
     { id: "background", type: "background", paint: { "background-color": "#fff" } },
     { id: "highway_minor", type: "line", source: "x", "source-layer": "transportation", paint: { "line-color": "#000" } },
     { id: "label_city", type: "symbol", source: "x", "source-layer": "place", layout: { "text-field": ["get", "name_en"] }, paint: { "text-color": "#000", "text-halo-color": "#fff" } },
+    { id: "building", type: "fill", source: "x", "source-layer": "building", paint: { "fill-color": "rgb(234, 234, 229)", "fill-outline-color": "rgb(219, 219, 218)" } },
+    { id: "highway_path", type: "line", source: "x", "source-layer": "transportation", paint: { "line-color": "rgb(234, 234, 234)" } },
+    { id: "railway_dashline", type: "line", source: "x", "source-layer": "transportation", paint: { "line-color": "#fafafa" } },
   ],
 } as unknown as StyleSpecification;
 
@@ -51,6 +65,12 @@ test("carte sombre : même plan, teintes des jetons Dark, libellés lisibles", (
   assert.ok(contrast(dark.label_city!.paint["text-color"]!, dark.label_city!.paint["text-halo-color"]!) >= 7);
   assert.ok(contrast(dark.highway_minor!.paint["line-color"]!, dark.background!.paint["background-color"]!) >= 1.2, "routes distinctes de la terre");
   assert.equal(toMentheStyle(source).layers[0]!.id, "background");
+  // De près, en Sombre : plus de contours de bâtiments clairs ni de trottoirs, plus aucun trait quasi blanc.
+  assert.equal(dark.building!.paint["fill-outline-color"], dark.building!.paint["fill-color"]);
+  assert.equal(dark.highway_path!.layout!.visibility, "none");
+  assert.ok(contrast(dark.railway_dashline!.paint["line-color"]!, dark.background!.paint["background-color"]!) < 1.5, "pointillés de rail fondus dans l'encre");
+  assert.equal(light.highway_path!.layout?.visibility, undefined, "le Clair garde tous ses détails");
+  assert.equal(light.building!.paint["fill-outline-color"], "rgb(219, 219, 218)");
   assert.equal((source.layers[0] as unknown as { paint: Record<string, string> }).paint["background-color"], "#fff");
 });
 
@@ -130,15 +150,70 @@ test("états vides explicites : aucun livreur, aucune position, aucune mission, 
   assert.equal(dashboardMapEmptyKind("deliveries", [], []), "no-mission");
   assert.equal(dashboardMapEmptyKind("deliveries", [], [delivery({ destination: null })]), "no-destination");
   assert.equal(dashboardMapEmptyKind("deliveries", [], [delivery({})]), "none");
+  assert.equal(dashboardMapEmptyKind("all", [], []), "no-activity");
+  assert.equal(dashboardMapEmptyKind("all", [driver({ latitude: null, longitude: null })], [delivery({ destination: null })]), "no-location");
+  assert.equal(dashboardMapEmptyKind("all", [driver({ latitude: null, longitude: null })], [delivery({})]), "none", "une mission localisée suffit");
+  assert.equal(dashboardMapEmptyKind("all", [driver({})], []), "none", "un livreur localisé suffit");
+});
+
+test("carte unique : Tout montre livreurs et livraisons, chaque bouton n'en montre qu'un", () => {
+  assert.deepEqual(mapViewShows("all"), { drivers: true, deliveries: true });
+  assert.deepEqual(mapViewShows("drivers"), { drivers: true, deliveries: false });
+  assert.deepEqual(mapViewShows("deliveries"), { drivers: false, deliveries: true });
+});
+
+test("carte unique : vues proposées selon les droits, vue demandée ramenée aux vues permises", () => {
+  assert.deepEqual(allowedMapViews(true, true), ["all", "drivers", "deliveries"]);
+  assert.deepEqual(allowedMapViews(false, true), ["deliveries"], "sans accès aux livreurs : ni Tout ni Livreurs");
+  assert.deepEqual(allowedMapViews(true, false), ["drivers"]);
+  assert.equal(resolveMapView("drivers", allowedMapViews(true, true)), "drivers");
+  assert.equal(resolveMapView(null, allowedMapViews(true, true)), "all");
+  assert.equal(resolveMapView("n'importe", allowedMapViews(true, true)), "all");
+  assert.equal(resolveMapView("all", allowedMapViews(false, true)), "deliveries", "un lien « Tout » ne montre pas les livreurs sans droit");
+  assert.equal(resolveMapView("all", []), null);
 });
 
 test("bascule au clavier : flèches, Début, Fin, autres touches ignorées", () => {
+  assert.equal(nextDashboardMapView("all", "ArrowRight"), "drivers");
   assert.equal(nextDashboardMapView("drivers", "ArrowRight"), "deliveries");
-  assert.equal(nextDashboardMapView("deliveries", "ArrowRight"), "drivers");
-  assert.equal(nextDashboardMapView("drivers", "ArrowLeft"), "deliveries");
-  assert.equal(nextDashboardMapView("deliveries", "Home"), "drivers");
-  assert.equal(nextDashboardMapView("drivers", "End"), "deliveries");
+  assert.equal(nextDashboardMapView("deliveries", "ArrowRight"), "all");
+  assert.equal(nextDashboardMapView("all", "ArrowLeft"), "deliveries");
+  assert.equal(nextDashboardMapView("deliveries", "Home"), "all");
+  assert.equal(nextDashboardMapView("all", "End"), "deliveries");
   assert.equal(nextDashboardMapView("drivers", "a"), null);
+  assert.equal(nextDashboardMapView("deliveries", "ArrowRight", ["deliveries"]), "deliveries", "une seule vue permise : on y reste");
+});
+
+test("tableau de bord : un seul bloc carte proposé, les dispositions enregistrées à deux cartes sont fondues", () => {
+  assert.deepEqual(DASHBOARD_WIDGET_CATALOG.filter((e) => e.category === "maps").map((e) => e.type), ["map-drivers"]);
+  const stored = (widgets: Array<[string, boolean, number, number?]>) =>
+    ({ widgets: widgets.map(([type, visible, order, mapHeight]) => ({ type, visible, order, ...(mapHeight ? { config: { mapHeight } } : {}) })) });
+  // Les blocs absents de la disposition reprennent leur valeur par défaut : on ne regarde que ceux de l'exemple.
+  const visibleTypes = (input: { widgets: { type: string }[] }) => {
+    const listed = new Set(input.widgets.map((w) => w.type));
+    return getVisibleDashboardWidgets(normalizeDashboardLayout(input as never)).map((w) => w.type).filter((t) => listed.has(t));
+  };
+
+  // Les deux cartes affichées : une seule reste, à la place de la première.
+  assert.deepEqual(visibleTypes(stored([["alerts-row", true, 0], ["map-deliveries", true, 1], ["planning", true, 2], ["map-drivers", true, 3]])), ["alerts-row", "map-drivers", "planning"]);
+  // Seule l'ancienne carte des livraisons était affichée : la carte unique la remplace, avec sa hauteur.
+  const onlyDeliveriesInput = stored([["planning", true, 0], ["map-deliveries", true, 1, 420], ["map-drivers", false, 2]]);
+  assert.deepEqual(visibleTypes(onlyDeliveriesInput), ["planning", "map-drivers"]);
+  const onlyDeliveries = normalizeDashboardLayout(onlyDeliveriesInput as never);
+  assert.equal(onlyDeliveries.widgets.find((w) => w.type === "map-drivers")?.config?.mapHeight, 420);
+  // Sans carte : rien n'apparaît ; avec la seule carte unique : inchangé.
+  assert.deepEqual(visibleTypes(stored([["planning", true, 0], ["map-deliveries", false, 1], ["map-drivers", false, 2]])), ["planning"]);
+  assert.deepEqual(visibleTypes(stored([["map-drivers", true, 0], ["planning", true, 1]])), ["map-drivers", "planning"]);
+});
+
+test("menu : une seule entrée « Carte », y compris pour un mini-admin aux deux anciens modules carte", () => {
+  const titles = (items: { title: string; href: string }[]) => items.filter((i) => i.title.startsWith("Carte")).map((i) => `${i.title} ${i.href}`);
+  assert.deepEqual(titles(getNavItemsForRole("COMPANY_ADMIN")), ["Carte /dispatch/map"]);
+  assert.deepEqual(titles(getNavItemsForRole("DISPATCHER")), ["Carte /dispatch/map"]);
+  assert.deepEqual(titles(getNavItemsForRole("MINI_ADMIN", buildMiniAdminSettings("Ops", ["driver-map", "delivery-map"]))), ["Carte /dispatch/map"]);
+  assert.deepEqual(titles(getNavItemsForRole("MINI_ADMIN", buildMiniAdminSettings("Ops", ["delivery-map"]))), ["Carte /dispatch/map"]);
+  assert.deepEqual(titles(getNavItemsForRole("MINI_ADMIN", buildMiniAdminSettings("Ops", ["driver-map"]))), ["Carte /dispatch/drivers"], "l'ancien module seul garde son adresse");
+  assert.deepEqual(titles(getNavItemsForRole("MINI_ADMIN", buildMiniAdminSettings("Ops", ["dispatch"]))), []);
 });
 
 test("tableau de bord : les anciennes dispositions à deux cartes n'en montrent qu'une", () => {

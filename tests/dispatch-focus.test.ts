@@ -87,7 +87,7 @@ test("DISPATCH-2 : la grille et la carte exposent le focus visuel et clavier", (
     "src/features/back-office/dispatch-deliveries-map-panel.tsx",
     "utf8"
   );
-  const mapPage = readFileSync("src/app/(back-office)/dispatch/map/page.tsx", "utf8");
+  const mapPage = readFileSync("src/features/back-office/dispatch-unified-map.tsx", "utf8");
 
   assert.match(grid, /data-highlighted/);
   assert.match(grid, /aria-current/);

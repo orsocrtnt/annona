@@ -18,10 +18,8 @@ export const adminNavItems: NavItem[] = [
   { title: "Utilisateurs", href: "/admin/users", icon: Users },
 ];
 
-const dispatchMapItems: NavItem[] = [
-  { title: "Carte chauffeurs", href: "/dispatch/drivers", icon: Truck },
-  { title: "Carte livraison", href: "/dispatch/map", icon: MapPin },
-];
+/** Une seule entrée « Carte » : livreurs et livraisons sur la même carte (MAP-UNIFY-2). */
+const dispatchMapItems: NavItem[] = [{ title: "Carte", href: "/dispatch/map", icon: MapPin }];
 
 export const companyNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
@@ -55,6 +53,8 @@ export const miniAdminNavItems: NavItem[] = [
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
   { title: "Dispatch", href: "/dispatch", icon: Radio },
   ...dispatchMapItems,
+  // Mini-admin qui n'a que l'ancien module « Carte chauffeurs » : même carte, par son ancienne adresse.
+  { title: "Carte", href: "/dispatch/drivers", icon: MapPin },
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
   { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },

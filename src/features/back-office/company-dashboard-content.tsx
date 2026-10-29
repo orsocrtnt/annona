@@ -49,6 +49,17 @@ export function CompanyDashboardContent() {
   );
 }
 
+/** Sous-titre calme : la date du jour plutôt qu'un slogan (« jeudi 29 octobre 2026 » → « Jeudi 29 octobre 2026 »). */
+function formatToday(date: Date) {
+  const label = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 function CompanyDashboardView() {
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const { layout, drillDown, closeDrillDown, drillDownItems } = useDashboardContext();
@@ -63,7 +74,9 @@ function CompanyDashboardView() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Tableau de bord</h1>
-          <p className="mt-1 text-muted-foreground">Pilotez vos opérations de livraison</p>
+          <p className="mt-1 text-muted-foreground" suppressHydrationWarning>
+            {formatToday(new Date())}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <DashboardCustomizeButton onClick={() => setCustomizeOpen(true)} />

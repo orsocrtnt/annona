@@ -16,7 +16,7 @@ export function ClickableCount({
   className?: string;
 }) {
   if (value <= 0 || !onClick) {
-    return <span className={className}>{value}</span>;
+    return <span className={cn("tabular-nums", value === 0 && "text-muted-foreground/70", className)}>{value}</span>;
   }
 
   return (
@@ -24,7 +24,7 @@ export function ClickableCount({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex min-h-6 min-w-6 max-md:min-h-11 max-md:min-w-11 items-center justify-center rounded-md px-1.5 py-0.5 font-medium text-brand underline-offset-2 transition-colors hover:bg-brand/10 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+        "inline-flex min-h-6 min-w-6 max-md:min-h-11 max-md:min-w-11 items-center justify-center rounded-md px-1.5 py-0.5 font-medium tabular-nums text-foreground underline-offset-4 transition-colors hover:bg-muted hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         className
       )}
     >
@@ -38,34 +38,29 @@ export function CategoryCard({
   counts,
   field,
   icon: Icon,
-  accentClass,
   onClick,
 }: {
   label: string;
   counts: DashboardCategoryCounts;
   field: keyof DashboardCategoryCounts;
   icon: typeof Package;
-  accentClass: string;
   onClick?: () => void;
 }) {
   const value = counts[field];
   const isClickable = value > 0 && onClick;
 
   const inner = (
-    <div className="flex items-start justify-between">
-      <div>
+    <>
+      <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <p className="mt-2 text-3xl font-semibold tracking-tight">{value}</p>
-        {isClickable && <p className="mt-2 text-xs text-brand">Voir le détail →</p>}
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />
       </div>
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background/60">
-        <Icon className="h-5 w-5 text-foreground/70" />
-      </div>
-    </div>
+      <p className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+    </>
   );
 
   if (!isClickable) {
-    return <div className={cn("rounded-xl border p-5", accentClass)}>{inner}</div>;
+    return <div className="rounded-xl border border-border bg-card p-5">{inner}</div>;
   }
 
   return (
@@ -73,8 +68,7 @@ export function CategoryCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full rounded-xl border p-5 text-left transition-colors hover:shadow-md",
-        accentClass
+        "w-full rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-foreground/20"
       )}
     >
       {inner}
@@ -101,13 +95,13 @@ export function TodayDonut({
 }) {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0);
   const visible = segments.filter((segment) => segment.value > 0);
-  const gap = visible.length > 1 ? 2 : 0;
+  const gap = visible.length > 1 ? 8 : 0;
   let offset = 0;
 
   return (
     <figure className="flex items-center gap-5">
       <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0 -rotate-90" aria-hidden="true">
-        <circle cx="50" cy="50" r={DONUT_RADIUS} fill="none" className="stroke-chart-track" strokeWidth="10" />
+        <circle cx="50" cy="50" r={DONUT_RADIUS} fill="none" className="stroke-chart-track" strokeWidth="6" />
         {visible.map((segment) => {
           const length = (segment.value / total) * DONUT_CIRCUMFERENCE;
           const dash = Math.max(length - gap, 0);
@@ -119,7 +113,8 @@ export function TodayDonut({
               r={DONUT_RADIUS}
               fill="none"
               className={DONUT_TONES[segment.tone].stroke}
-              strokeWidth="10"
+              strokeWidth="6"
+              strokeLinecap="round"
               strokeDasharray={`${dash} ${DONUT_CIRCUMFERENCE - dash}`}
               strokeDashoffset={-offset}
             />
@@ -157,23 +152,27 @@ export function HourlyBars({ values }: { values: number[] }) {
           <span className="text-xs text-muted-foreground">Aucune livraison terminée aujourd&apos;hui</span>
         )}
       </figcaption>
-      <div className="flex h-16 items-end gap-1" role="img" aria-label={`Livraisons terminées par heure, maximum ${max}`}>
+      <div
+        className="flex h-16 items-end gap-1 border-b border-chart-track"
+        role="img"
+        aria-label={`Livraisons terminées par heure, maximum ${max}`}
+      >
         {values.map((value, hour) => (
           <div
             key={hour}
             title={`${hour} h : ${value} livraison${value > 1 ? "s" : ""}`}
-            className="flex h-full flex-1 items-end rounded-[4px] bg-[#f3f5f3] dark:bg-chart-track"
+            className="flex h-full flex-1 items-end justify-center"
           >
             {value > 0 && (
               <div
-                className="w-full rounded-[4px] bg-chart-ink"
+                className="w-1.5 rounded-t-full bg-chart-ink"
                 style={{ height: `${Math.max((value / max) * 100, 6)}%` }}
               />
             )}
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-[11px] text-muted-foreground" aria-hidden="true">
+      <div className="flex justify-between text-[11px] tabular-nums text-muted-foreground" aria-hidden="true">
         <span>0 h</span>
         <span>6 h</span>
         <span>12 h</span>
@@ -201,14 +200,18 @@ export function TodayMetric({
 }) {
   const isClickable = counts.total > 0 && onClick;
   const toneClasses = TONE_CLASSES[resolveTone(tone, counts.total)];
-  const surface = cn("rounded-xl border p-4", toneClasses.surface);
+  // Pas de carte dans la carte : une colonne sans bordure, la pastille porte l'état.
+  const surface = "rounded-lg p-3";
 
   const inner = (
     <>
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <span className={cn("h-2 w-2 shrink-0 rounded-full", toneClasses.dot)} aria-hidden="true" />
+        {label}
+      </p>
       <p
         className={cn(
-          "mt-1 text-2xl font-semibold",
+          "mt-2 text-2xl font-semibold tabular-nums",
           variant === "late" && counts.total > 0 ? "text-[#c43b2f] dark:text-error" : toneClasses.value
         )}
       >
@@ -216,15 +219,14 @@ export function TodayMetric({
       </p>
       {delta && <div className="mt-1"><DeltaBadge delta={delta} /></div>}
       {variant !== "late" && (
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground">
           {counts.standard} commande{counts.standard > 1 ? "s" : ""} · {counts.courier} course
           {counts.courier > 1 ? "s" : ""}
         </p>
       )}
       {variant === "late" && (
-        <p className="mt-2 text-xs text-muted-foreground">Date client dépassée</p>
+        <p className="mt-1 text-xs text-muted-foreground">Date client dépassée</p>
       )}
-      {isClickable && <p className="mt-2 text-xs text-brand">Voir le détail →</p>}
     </>
   );
 
@@ -236,7 +238,7 @@ export function TodayMetric({
     <button
       type="button"
       onClick={onClick}
-      className={cn(surface, "w-full text-left transition-shadow hover:shadow-md")}
+      className={cn(surface, "flex h-full w-full flex-col items-stretch justify-start text-left transition-colors hover:bg-muted/60")}
     >
       {inner}
     </button>

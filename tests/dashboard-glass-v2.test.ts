@@ -18,10 +18,12 @@ test("la coque Glass Light V2 couvre tout le back-office", () => {
   assert.match(shell, /<MobileNav items=\{navItems\} premium \/>/);
   assert.match(shell, /<Header breadcrumbs=\{breadcrumbs\} premium \/>/);
   assert.match(shell, /OrderMessagesInbox enableDispatchTargets/);
-  // Direction Menthe : barre latérale blanche avec le logo officiel, page active en vert, police Inter seule.
+  // Direction Menthe : barre latérale blanche avec le logo officiel, police Inter seule.
+  // Page active sobre (29 octobre 2026) : surface à peine teintée et filet, ni aplat vert ni halo.
   assert.match(sidebar, /bg-white text-\[#0e1310\]/);
   assert.doesNotMatch(sidebar, /bg-\[#0e1310\]/);
-  assert.match(sidebar, /bg-\[#00d46a\]/);
+  assert.doesNotMatch(sidebar, /bg-\[#00d46a\]|shadow-\[0_6px_18px_rgba\(0,212,106/);
+  assert.match(sidebar, /bg-\[#f1f5f2\] text-\[#0e1310\] ring-1 ring-inset ring-\[#e4ebe6\]/);
   assert.match(sidebar, /\/brand\/logo-horizontal-fond-clair\.png/);
   assert.doesNotMatch(rootLayout, /Sora/);
 });

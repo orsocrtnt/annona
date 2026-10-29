@@ -573,48 +573,253 @@ input[type="radio"] {
   accent-color: #0b8a45;
 }
 
-/* Hero : quand la mini-démo s'agrandit, le texte glisse à gauche et se resserre (variables posées par la démo). */
-@media (min-width: 1024px) {
-  .home-hero-text {
-    max-width: 48rem;
-    transition:
-      transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      max-width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  }
 
-  .home-hero-title {
-    transition: font-size 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  }
+/*
+ * Landing (LANDING-3) : couleurs exactes de la maquette validée par le propriétaire
+ * (artifact « TutelLiv — landing assemblée »), en Clair et en Sombre « Encre + Pastel ».
+ */
+.landing {
+  --l-ink: #0e1310;
+  --l-mute: #5f6b66;
+  --l-line: #e5ebe7;
+  --l-soft: #f5f7f6;
+  --l-bg: #ffffff;
+  --l-card: #ffffff;
+  --l-mint: #5bd99a;
+  --l-mint-h: #47cc89;
+  --l-on-mint: #0e1310;
+  --l-brand: #08783f;
+  --l-mint-s: #e6f8ee;
+  --l-ink-btn: #0e1310;
+  --l-ink-btn-fg: #ffffff;
+  --l-shadow: 0 1px 2px rgba(14, 19, 16, 0.04), 0 20px 50px -30px rgba(14, 19, 16, 0.25);
+  --l-you-bg: #fdeaea;
+  --l-you-line: #f6c9ca;
+  --l-you-fg: #9b1c1f;
+  --l-auto-line: #bfead2;
+  --l-free-bg: #e6effd;
+  --l-free-line: #bcd2fa;
+  --l-free-fg: #1d4ed8;
+  background: var(--l-bg);
+  color: var(--l-ink);
+  /* La maquette garde l'interligne par défaut du navigateur. */
+  line-height: normal;
+}
 
-  .home-hero-promises {
-    max-height: 20rem;
-    transition:
-      opacity 0.4s ease,
-      max-height 0.7s cubic-bezier(0.22, 1, 0.36, 1),
-      margin-top 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  }
+:root[data-theme="dark"] .landing {
+  --l-ink: #ecefed;
+  --l-mute: #9aa49f;
+  --l-line: #2e3331;
+  --l-soft: #262a29;
+  --l-bg: #1c1f1e;
+  --l-card: #232726;
+  --l-mint-h: #7be0ab;
+  --l-on-mint: #1c1f1e;
+  --l-brand: #7be0ab;
+  --l-mint-s: #1f3a2c;
+  --l-ink-btn: #ecefed;
+  --l-ink-btn-fg: #1c1f1e;
+  --l-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.6);
+  --l-you-bg: #3a2326;
+  --l-you-line: #5a3236;
+  --l-you-fg: #f3abad;
+  --l-auto-line: #2d5a40;
+  --l-free-bg: #1e2a40;
+  --l-free-line: #2f4670;
+  --l-free-fg: #a9c4f7;
+}
 
-  html[data-tour-expanded] .home-hero-text {
-    transform: translateX(var(--tour-text-shift));
-    max-width: var(--tour-text-width);
-  }
-
-  html[data-tour-expanded] .home-hero-title {
-    font-size: var(--tour-title-size);
-  }
-
-  html[data-tour-expanded] .home-hero-promises {
-    max-height: 0;
-    margin-top: 0;
-    overflow: hidden;
+/* Apparition d'une action de la course, comme dans la maquette (fondu + montée de 10 px, 0,25 s). */
+@keyframes landingFadeUp {
+  from {
     opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
+.landing-fade-up {
+  animation: landingFadeUp 0.25s ease both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .home-hero-text,
-  .home-hero-title,
-  .home-hero-promises {
-    transition: none;
+  .landing-fade-up {
+    animation: none;
   }
+}
+
+/*
+ * Mini-démo de la landing en Sombre (LANDING-3) : ses couleurs Clair écrites en dur sont remplacées par les
+ * teintes « Encre + Pastel » de la maquette ; la bulle-guide et le bouton de départ gardent leur verre fumé.
+ */
+:root[data-theme="dark"] .tour-adapt .bg-white,
+:root[data-theme="dark"] .tour-adapt .bg-white\/90 {
+  background-color: #232726;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#f5f8f6\],
+:root[data-theme="dark"] .tour-adapt .bg-\[\#f0f4f1\],
+:root[data-theme="dark"] .tour-adapt .bg-\[\#eef4f0\],
+:root[data-theme="dark"] .tour-adapt .bg-\[\#eef1ef\] {
+  background-color: #262a29;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#f5f8f6\]\/80 {
+  background-color: rgb(28 31 30 / 80%);
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#e4e8e5\],
+:root[data-theme="dark"] .tour-adapt .bg-\[\#dfe7e2\] {
+  background-color: #333936;
+}
+
+:root[data-theme="dark"] .tour-adapt .hover\:bg-\[\#f0f4f1\]:hover {
+  background-color: #2e3331;
+}
+
+:root[data-theme="dark"] .tour-adapt .text-\[\#0e1310\] {
+  color: #ecefed;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#0e1310\] {
+  background-color: #ecefed;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#0e1310\]\/15 {
+  background-color: rgb(236 239 237 / 15%);
+}
+
+:root[data-theme="dark"] .tour-adapt .hover\:bg-\[\#232a26\]:hover {
+  background-color: #d9dedb;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#0e1310\].text-white,
+:root[data-theme="dark"] .tour-adapt .bg-\[\#0e1310\] .text-white\/70 {
+  color: #1c1f1e;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#0e1310\] .text-white\/70 {
+  opacity: 0.7;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#00d46a\].text-\[\#0e1310\],
+:root[data-theme="dark"] .tour-adapt .bg-\[\#00d46a\] .text-\[\#0e1310\] {
+  color: #0e1310;
+}
+
+:root[data-theme="dark"] .tour-adapt .text-\[\#00a854\] {
+  color: #7be0ab;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#e6f8ee\] {
+  background-color: #1f3a2c;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#eaf2ff\],
+:root[data-theme="dark"] .tour-adapt .bg-\[\#f3f7ff\] {
+  background-color: #1e2a40;
+}
+
+:root[data-theme="dark"] .tour-adapt .text-\[\#1d4f9e\] {
+  color: #a9c4f7;
+}
+
+:root[data-theme="dark"] .tour-adapt .border-\[\#cfe0fb\] {
+  border-color: #2f4670;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#fde8e6\] {
+  background-color: #3a2326;
+}
+
+:root[data-theme="dark"] .tour-adapt .text-\[\#c2382a\],
+:root[data-theme="dark"] .tour-adapt .text-\[\#a1271b\] {
+  color: #f3abad;
+}
+
+:root[data-theme="dark"] .tour-adapt .ring-\[\#f3b8b1\] {
+  --tw-ring-color: #5a3236;
+}
+
+:root[data-theme="dark"] .tour-adapt .bg-\[\#fff1d6\],
+:root[data-theme="dark"] .tour-adapt .bg-\[\#fff8ec\] {
+  background-color: #3a2f1c;
+}
+
+:root[data-theme="dark"] .tour-adapt .text-\[\#a8660b\] {
+  color: #f2c27a;
+}
+
+:root[data-theme="dark"] .tour-adapt .border-\[\#f3dcae\] {
+  border-color: #5a4626;
+}
+
+:root[data-theme="dark"] .tour-adapt .border-black\/\[0\.06\],
+:root[data-theme="dark"] .tour-adapt .border-black\/\[0\.07\],
+:root[data-theme="dark"] .tour-adapt .border-black\/\[0\.08\] {
+  border-color: rgb(255 255 255 / 8%);
+}
+
+:root[data-theme="dark"] .tour-adapt .border-\[\#e4e8e5\],
+:root[data-theme="dark"] .tour-adapt .border-\[\#d5ddd6\] {
+  border-color: #333936;
+}
+
+:root[data-theme="dark"] .tour-adapt [class*="radial-gradient(ellipse_80%_60%_at_50%_40%,#e3f7ec"] {
+  background-image: radial-gradient(ellipse 80% 60% at 50% 40%, #1f3a2c 0%, #1c1f1e 70%);
+}
+
+:root[data-theme="dark"] .tour-adapt svg [fill="#eef4f0"] {
+  fill: #262b29;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [fill="#e9efe9"] {
+  fill: #2a2f2d;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [fill="#d6efdf"] {
+  fill: #2a3a30;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [fill="#d5ddd6"] {
+  fill: #3a403d;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [stroke="#cfe3f1"] {
+  stroke: #26343d;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [stroke="#ffffff"] {
+  stroke: #353b38;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [stroke="#e7ece9"] {
+  stroke: #353b38;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [fill="#ffffff"] {
+  fill: #232726;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [fill="#0e1310"] {
+  fill: #ecefed;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [stroke="#0e1310"] {
+  stroke: #ecefed;
+}
+:root[data-theme="dark"] .tour-adapt svg [fill="#d3f4e2"] {
+  fill: #2a4a38;
+}
+
+:root[data-theme="dark"] .tour-adapt svg [fill="#9be8bf"] {
+  fill: #3f8f63;
+}
+
+/* Étape en cours du dispatch (« Avant · Après ») : pastille claire en Sombre, texte foncé lisible. */
+:root[data-theme="dark"] .tour-adapt li.text-white {
+  color: #1c1f1e;
 }

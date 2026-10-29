@@ -6,7 +6,7 @@ const read = (path: string) => readFileSync(path, "utf8");
 
 test("UX-03 : les entrées du back-office vers une livraison ouvrent sa fiche, pas la commande", () => {
   assert.match(read("src/features/back-office/dispatch-columns.tsx"), /href=\{`\/dashboard\/deliveries\/\$\{row\.id\}`\}/);
-  const map = read("src/app/(back-office)/dispatch/map/page.tsx");
+  const map = read("src/features/back-office/dispatch-unified-map.tsx");
   assert.match(map, /router\.push\(`\/dashboard\/deliveries\/\$\{id\}`\)/);
   assert.doesNotMatch(map, /\/dashboard\/orders\//);
   assert.match(read("src/app/(back-office)/support/page.tsx"), /href=\{`\/dashboard\/deliveries\/\$\{ticket\.relatedDelivery\.id\}`\}/);

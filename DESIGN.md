@@ -78,7 +78,7 @@ components:
     rounded: "{rounded.card}"
     padding: "20px"
   nav-active:
-    backgroundColor: "{colors.mission-green}"
+    backgroundColor: "{colors.surface-muted}"
     textColor: "{colors.operational-ink}"
     typography: "{typography.body}"
     rounded: "{rounded.control}"
@@ -209,7 +209,7 @@ Les boutons sont calmes, tactiles et directement hiérarchisés.
 
 ### Navigation
 
-Le rail est noir, flottant et arrondi. L’item actif est une barre verte de 44px minimum avec texte et icône noirs ; les items inactifs sont blancs à opacité réduite et deviennent pleinement lisibles au survol. Sur mobile, le rail devient un tiroir noir arrondi à droite, déclenché depuis la topbar.
+Le rail est noir, flottant et arrondi. L’item actif est une surface à peine teintée de 44px minimum, bordée d’un filet, avec texte encre et icône verte (sélection) : ni aplat vert ni halo (décision du 29 octobre 2026). Les compteurs sont de simples chiffres gris, sans pastille colorée. Les items inactifs sont blancs à opacité réduite et deviennent pleinement lisibles au survol. Sur mobile, le rail devient un tiroir noir arrondi à droite, déclenché depuis la topbar.
 
 ### Ligne de mission
 

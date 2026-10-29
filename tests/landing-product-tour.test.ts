@@ -73,17 +73,18 @@ test("les deux commandes voisines du 11e sont regroupées pour Karim, dont #1042
   assert.ok(grouped.some((order) => order.number === "#1042"));
 });
 
-test("la mini-démo s'ouvre depuis la ligne à cinq étapes, chargée à la demande (LANDING-2)", () => {
+test("la mini-démo est ouverte d'office sur la landing, chargée à part (LANDING-3)", () => {
   const home = readFileSync(fileURLToPath(new URL("../src/features/landing/home-landing.tsx", import.meta.url)), "utf8");
-  const line = readFileSync(fileURLToPath(new URL("../src/features/landing/mission-line.tsx", import.meta.url)), "utf8");
-  assert.match(home, /<MissionLine \/>/);
-  assert.doesNotMatch(home, /produit-tableau-de-bord\.webp/);
-  assert.match(line, /<ProductTour \/>/);
+  const demo = readFileSync(fileURLToPath(new URL("../src/features/landing/landing-demo.tsx", import.meta.url)), "utf8");
+  assert.match(home, /<LandingDemo \/>/);
+  assert.match(home, /id="demo"/);
+  assert.match(demo, /<ProductTour \/>/);
+  // Plus de bouton qui cache la démo : elle s'affiche sans clic.
+  assert.doesNotMatch(demo, /aria-expanded|useState|hidden=/);
   // Import dynamique : motion et les scènes ne pèsent pas sur le premier affichage de la landing.
-  assert.match(line, /lazy\(/);
-  assert.match(line, /import\("@\/features\/landing\/product-tour\/product-tour"\)/);
-  assert.doesNotMatch(line, /^import \{ ProductTour \}/m);
-  assert.match(line, /aria-expanded=\{open\}/);
+  assert.match(demo, /lazy\(/);
+  assert.match(demo, /import\("@\/features\/landing\/product-tour\/product-tour"\)/);
+  assert.doesNotMatch(demo, /^import \{ ProductTour \}/m);
 });
 
 test("le marqueur suit le trajet selon la distance parcourue", () => {

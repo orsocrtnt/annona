@@ -49,7 +49,7 @@ function SidebarNavLink({
             "h-[18px] w-[18px] shrink-0",
             premium
               ? isActive
-                ? "text-[#0e1310] dark:text-primary-foreground"
+                ? "text-brand"
                 : "text-[#7b8780] group-hover:text-[#0e1310] dark:text-muted-foreground dark:group-hover:text-foreground"
               : isActive
                 ? "text-brand"
@@ -61,7 +61,7 @@ function SidebarNavLink({
         <>
           <span className="flex-1">{item.title}</span>
           {item.badge !== undefined && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-semibold text-white dark:text-primary-foreground">
+            <span className="text-xs tabular-nums text-muted-foreground">
               {item.badge}
             </span>
           )}
@@ -157,7 +157,8 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
               premium ? "min-h-11 rounded-xl py-2" : "rounded-lg py-2.5",
               premium
                 ? isActive
-                  ? "bg-[#00d46a] text-[#0e1310] shadow-[0_6px_18px_rgba(0,212,106,0.22)] dark:bg-primary dark:text-primary-foreground dark:shadow-none"
+                  ? // Page active sobre : surface à peine teintée et filet, sans aplat vert ni halo ; seule l'icône garde le vert de sélection.
+                    "bg-[#f1f5f2] text-[#0e1310] ring-1 ring-inset ring-[#e4ebe6] dark:bg-muted dark:text-foreground dark:ring-border"
                   : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
                 : isActive
                   ? "bg-brand-subtle text-brand"
@@ -181,7 +182,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
                     <>
                       <span className="flex-1">{item.title}</span>
                       {item.badge !== undefined && (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[10px] font-semibold text-muted-foreground">
+                        <span className="text-xs tabular-nums text-muted-foreground">
                           {item.badge}
                         </span>
                       )}

@@ -10,7 +10,7 @@ import { isPurchasingPhase } from "@/features/back-office/dispatch-delivery-map-
 import { getDispatchMapStatus, getDispatchMapStatusMeta } from "@/features/back-office/dispatch-map-status";
 import { mapGlassCardStyle } from "@/components/maps/map-glass-styles";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Package, Search, ShoppingBag, Truck } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Package, Search, ShoppingBag, Truck } from "lucide-react";
 import type { DeliveryCategory } from "@prisma/client";
 
 interface DispatchDeliveriesMapPanelProps {
@@ -18,6 +18,9 @@ interface DispatchDeliveriesMapPanelProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   focusSelectedId?: string | null;
+  /** Ordinateur : liste repliée en pastille, la carte prend toute la largeur. */
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 function matchesDeliverySearch(delivery: DispatchMapDelivery, query: string) {
@@ -105,11 +108,11 @@ function DeliveryListItem({
           ))}
         </div>
       ) : (
-        delivery.pickupAddress && (
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-            Collecte : {delivery.pickupAddress}
-          </p>
-        )
+          delivery.pickupAddress && (
+            <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+              Collecte : {delivery.pickupAddress}
+            </p>
+          )
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -147,6 +150,7 @@ function DispatchDeliveriesList({
   onSearchChange,
   onSelect,
   focusSelectedId,
+  onCollapse,
 }: {
   deliveries: DispatchMapDelivery[];
   filteredDeliveries: DispatchMapDelivery[];
@@ -155,18 +159,32 @@ function DispatchDeliveriesList({
   onSearchChange: (value: string) => void;
   onSelect: (id: string) => void;
   focusSelectedId?: string | null;
+  onCollapse?: () => void;
 }) {
   const hasSearch = search.trim().length > 0;
 
   return (
     <>
-      <div className="border-b border-black/10 dark:border-border px-4 py-3">
-        <p className="font-semibold text-foreground">Livraisons actives</p>
-        <p className="text-xs text-muted-foreground">
-          {hasSearch
-            ? `${filteredDeliveries.length} / ${deliveries.length} sur la carte`
-            : `${deliveries.length} sur la carte`}
-        </p>
+      <div className="flex items-start justify-between gap-2 border-b border-black/10 dark:border-border px-4 py-3">
+        <div className="min-w-0">
+          <p className="font-semibold text-foreground">Livraisons actives</p>
+          <p className="text-xs text-muted-foreground">
+            {hasSearch
+              ? `${filteredDeliveries.length} / ${deliveries.length} sur la carte`
+              : `${deliveries.length} sur la carte`}
+          </p>
+        </div>
+        {onCollapse && (
+          <button
+            type="button"
+            aria-label="Replier la liste des livraisons"
+            aria-expanded={true}
+            onClick={onCollapse}
+            className="-mr-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-black/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-muted"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+        )}
       </div>
 
       <div className="border-b border-black/10 dark:border-border px-3 py-3">
@@ -211,6 +229,8 @@ export function DispatchDeliveriesMapPanel({
   selectedId,
   onSelect,
   focusSelectedId = null,
+  collapsed = false,
+  onCollapsedChange,
 }: DispatchDeliveriesMapPanelProps) {
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -226,6 +246,8 @@ export function DispatchDeliveriesMapPanel({
     if (!focusSelectedId) return;
     setSearch("");
     setMobileOpen(true);
+    onCollapsedChange?.(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- seulement quand une livraison est demandée
   }, [focusSelectedId]);
 
   const handleSelect = (id: string) => {
@@ -286,7 +308,26 @@ export function DispatchDeliveriesMapPanel({
         )}
       </div>
 
-      {/* Desktop : panneau latéral fixe (inchangé) */}
+      {/* Desktop : panneau latéral, repliable en pastille */}
+      {collapsed ? (
+        <button
+          type="button"
+          aria-label={`Déplier la liste des livraisons (${deliveries.length})`}
+          aria-expanded={false}
+          onClick={() => onCollapsedChange?.(false)}
+          className="pointer-events-auto hidden w-56 items-center gap-3 rounded-2xl px-4 py-3 text-left outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-ring md:flex"
+          style={mapGlassCardStyle}
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white">
+            <Truck className="h-4 w-4" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">Livraisons actives</span>
+            <span className="block text-xs text-muted-foreground">{deliveries.length} sur la carte</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+      ) : (
       <div
         data-dispatch-map-panel
         className="pointer-events-auto hidden h-[calc(100dvh-32px)] w-[min(360px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl md:flex"
@@ -300,8 +341,10 @@ export function DispatchDeliveriesMapPanel({
           onSearchChange={setSearch}
           onSelect={onSelect}
           focusSelectedId={focusSelectedId}
+          onCollapse={onCollapsedChange ? () => onCollapsedChange(true) : undefined}
         />
       </div>
+      )}
     </>
   );
 }

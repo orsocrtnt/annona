@@ -36,7 +36,7 @@ function MobileNavLink({
       onClick={onNavigate}
       className={className}
     >
-      {Icon && <Icon className="h-[18px] w-[18px]" />}
+      {Icon && <Icon className={cn("h-[18px] w-[18px]", isActive && "text-brand")} />}
       {item.title}
     </Link>
   );
@@ -72,7 +72,7 @@ export function MobileNav({ items, premium = false }: MobileNavProps) {
               premium && "min-h-11",
               premium
                 ? isActive
-                  ? "bg-[#00d46a] text-[#0e1310] dark:bg-primary dark:text-primary-foreground"
+                  ? "bg-[#f1f5f2] text-[#0e1310] ring-1 ring-inset ring-[#e4ebe6] dark:bg-muted dark:text-foreground dark:ring-border"
                   : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
                 : isActive
                   ? "bg-brand-subtle text-brand"

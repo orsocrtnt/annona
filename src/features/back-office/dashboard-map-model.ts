@@ -4,16 +4,39 @@ import { getDispatchMapStatus, getDispatchMapStatusMeta, type DispatchMapStatusK
 import { driverSignalLabel, getDriverPresenceStatus, type DriverPresenceStatus } from "@/lib/driver-presence";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
 
-/** Les deux vues de la carte unifiée du tableau de bord. */
-export type DashboardMapView = "drivers" | "deliveries";
+/** Les vues de la carte unique (tableau de bord et Dispatch) : tout, livreurs seuls ou livraisons seules. */
+export type DashboardMapView = "all" | "drivers" | "deliveries";
 export const DASHBOARD_MAP_VIEWS: { key: DashboardMapView; label: string }[] = [
+  { key: "all", label: "Tout" },
   { key: "drivers", label: "Livreurs" },
   { key: "deliveries", label: "Livraisons" },
 ];
 
+/** Ce que la vue affiche sur la carte. */
+export function mapViewShows(view: DashboardMapView): { drivers: boolean; deliveries: boolean } {
+  return { drivers: view !== "deliveries", deliveries: view !== "drivers" };
+}
+
+/** Vues proposées selon les droits : sans accès aux livreurs (ou aux livraisons), la vue « Tout » n'a pas de sens. */
+export function allowedMapViews(canSeeDrivers: boolean, canSeeDeliveries: boolean): DashboardMapView[] {
+  return DASHBOARD_MAP_VIEWS.map((view) => view.key).filter((key) => {
+    const shows = mapViewShows(key);
+    return (!shows.drivers || canSeeDrivers) && (!shows.deliveries || canSeeDeliveries);
+  });
+}
+
+/** Vue demandée (paramètre d'URL, bloc enregistré) ramenée aux vues autorisées ; sinon la première autorisée. */
+export function resolveMapView(requested: string | null | undefined, allowed: DashboardMapView[]): DashboardMapView | null {
+  const match = allowed.find((view) => view === requested);
+  return match ?? allowed[0] ?? null;
+}
+
 /** Navigation clavier d'une liste d'onglets (flèches, Début, Fin) : retourne la vue à activer, ou null. */
-export function nextDashboardMapView(current: DashboardMapView, key: string): DashboardMapView | null {
-  const keys = DASHBOARD_MAP_VIEWS.map((view) => view.key);
+export function nextDashboardMapView(
+  current: DashboardMapView,
+  key: string,
+  keys: DashboardMapView[] = DASHBOARD_MAP_VIEWS.map((view) => view.key)
+): DashboardMapView | null {
   const index = keys.indexOf(current);
   if (key === "ArrowRight" || key === "ArrowDown") return keys[(index + 1) % keys.length]!;
   if (key === "ArrowLeft" || key === "ArrowUp") return keys[(index - 1 + keys.length) % keys.length]!;
@@ -102,7 +125,7 @@ export function locatedDeliveries(deliveries: DispatchMapDelivery[]): DispatchMa
   return deliveries.filter((delivery) => delivery.destination != null);
 }
 
-export type DashboardMapEmptyKind = "none" | "no-driver" | "no-position" | "no-mission" | "no-destination";
+export type DashboardMapEmptyKind = "none" | "no-driver" | "no-position" | "no-mission" | "no-destination" | "no-activity" | "no-location";
 
 /** Raison explicite d'une carte sans repère (jamais un fond muet). */
 export function dashboardMapEmptyKind(
@@ -110,6 +133,10 @@ export function dashboardMapEmptyKind(
   drivers: LiveDriverLocation[],
   deliveries: DispatchMapDelivery[]
 ): DashboardMapEmptyKind {
+  if (view === "all") {
+    if (drivers.length === 0 && deliveries.length === 0) return "no-activity";
+    return drivers.some(isLocatedDriver) || locatedDeliveries(deliveries).length > 0 ? "none" : "no-location";
+  }
   if (view === "drivers") {
     if (drivers.length === 0) return "no-driver";
     return drivers.some(isLocatedDriver) ? "none" : "no-position";
@@ -123,6 +150,8 @@ export const DASHBOARD_MAP_EMPTY_MESSAGES: Record<Exclude<DashboardMapEmptyKind,
   "no-position": "Aucun livreur n'a de position : elle apparaît dès que le service est démarré.",
   "no-mission": "Aucune mission active à afficher.",
   "no-destination": "Les missions actives n'ont pas encore d'adresse localisée sur la carte.",
+  "no-activity": "Aucun livreur ni mission active à afficher pour le moment.",
+  "no-location": "Aucune position de livreur ni adresse de mission localisée pour le moment.",
 };
 
 /**

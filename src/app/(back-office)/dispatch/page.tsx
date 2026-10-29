@@ -171,18 +171,7 @@ function DispatcherDashboardContent() {
             )}
           >
             <MapPin className="h-4 w-4" />
-            Carte livraison
-          </Link>
-          <Link
-            href="/dispatch/drivers"
-            title={hasAdminGps ? undefined : lockedOfferReason("admin_gps", offerAccess?.planCode)}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              !hasAdminGps && "opacity-50"
-            )}
-          >
-            <Truck className="h-4 w-4" />
-            Carte chauffeurs
+            Carte
           </Link>
           {view === "queue" && (
             <Button
