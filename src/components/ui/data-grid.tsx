@@ -12,6 +12,9 @@ import { EmptyState } from "./empty-state";
 import { Skeleton } from "./skeleton";
 import type { TableColumn } from "@/types";
 import { getHighlightedPage } from "@/lib/table/data-grid-focus";
+import { dataGridVariant, MOBILE_CARDS_QUERY } from "@/lib/table/mobile-cards";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { DataGridCards } from "./data-grid-cards";
 
 interface DataGridProps<T> {
   data: T[];
@@ -59,7 +62,9 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [page, setPage] = React.useState(0);
   const [sortKey, setSortKey] = React.useState<string | null>(null);
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const variant = dataGridVariant(useMediaQuery(MOBILE_CARDS_QUERY));
   const highlightedRowRef = React.useRef<HTMLTableRowElement | null>(null);
+  const highlightedCardRef = React.useRef<HTMLLIElement | null>(null);
   const lastFocusedRowId = React.useRef<string | null>(null);
 
   React.useEffect(() => {
@@ -119,10 +124,11 @@ export function DataGrid<T extends Record<string, unknown>>({
     }
     if (!highlightedVisible) return;
     if (lastFocusedRowId.current === highlightedRowId) return;
-    highlightedRowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-    highlightedRowRef.current?.focus({ preventScroll: true });
+    const target = highlightedRowRef.current ?? highlightedCardRef.current;
+    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    target?.focus({ preventScroll: true });
     lastFocusedRowId.current = highlightedRowId;
-  }, [highlightedRowId, highlightedVisible]);
+  }, [highlightedRowId, highlightedVisible, variant]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -136,7 +142,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   const getColumnClassName = (col: TableColumn<T>) =>
     cn(col.className, col.hideOnMobile && "max-md:hidden");
 
-  const hasMobileHiddenColumns = columns.some((col) => col.hideOnMobile);
+  const sortableColumns = columns.filter((col) => col.sortable);
 
   if (loading) {
     return (
@@ -173,7 +179,49 @@ export function DataGrid<T extends Record<string, unknown>>({
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
         <>
-          {/* Surface distincte du fond de page : blanc en Light, carte graphite en Dark. */}
+          {variant === "cards" ? (
+            <>
+              {sortableColumns.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label htmlFor="data-grid-sort" className="sr-only">Trier par</label>
+                  <select
+                    id="data-grid-sort"
+                    value={sortKey ?? ""}
+                    onChange={(e) => {
+                      setSortKey(e.target.value || null);
+                      setSortDir("asc");
+                    }}
+                    className="min-h-11 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-base"
+                  >
+                    <option value="">Ordre d&apos;origine</option>
+                    {sortableColumns.map((col) => (
+                      <option key={String(col.key)} value={String(col.key)}>Trier par {col.header}</option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={!sortKey}
+                    aria-label={`Ordre ${sortDir === "asc" ? "croissant" : "décroissant"}, inverser`}
+                    onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                  >
+                    <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              )}
+              <DataGridCards
+                rows={paginated}
+                columns={columns}
+                getRowId={getRowId}
+                highlightedRowId={highlightedRowId}
+                highlightedRowLabel={highlightedRowLabel}
+                highlightedRef={highlightedCardRef}
+                onRowClick={onRowClick}
+              />
+            </>
+          ) : (
+          /* Surface distincte du fond de page : blanc en Light, carte graphite en Dark. */
           <div className={cn("overflow-hidden max-md:-mx-1 max-md:overflow-x-auto", TABLE_SURFACE_CLASS)}>
             <Table className={cn("w-full text-xs", tableClassName ?? "table-fixed")}>
               <TableHeader>
@@ -231,11 +279,6 @@ export function DataGrid<T extends Record<string, unknown>>({
               </TableBody>
             </Table>
           </div>
-
-          {hasMobileHiddenColumns && (
-            <p className="text-xs text-muted-foreground md:hidden">
-              Faites défiler horizontalement pour voir toutes les colonnes.
-            </p>
           )}
 
           {paginate && totalPages > 1 ? (

@@ -238,7 +238,7 @@ export default async function TarifsPage() {
             <h1 className="mt-5 text-3xl font-bold tracking-tight">Tarifs</h1>
             <p className="mt-3 text-[#68726b]">Les tarifs sont indisponibles.</p>
             <p className="mt-6">
-              <Link className="font-semibold text-[#08783f] underline underline-offset-4" href="/">Retour à l’accueil</Link>
+              <Link className="inline-flex items-center max-md:min-h-11 font-semibold text-[#08783f] underline underline-offset-4" href="/">Retour à l’accueil</Link>
             </p>
           </div>
         </main>
