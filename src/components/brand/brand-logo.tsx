@@ -29,6 +29,7 @@ export function BrandLogo({
         width={width}
         height={height}
         priority={priority}
+        style={{ width, height }}
       />
       <span className="sr-only">{APP_NAME}</span>
     </span>

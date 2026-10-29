@@ -67,7 +67,6 @@ export function ProofOfDeliveryDialog({
   onOpenChange,
   onConfirm,
 }: ProofOfDeliveryDialogProps) {
-  const titleId = useId();
   const failureCodeId = useId();
   const noteId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,11 +144,10 @@ export function ProofOfDeliveryDialog({
       }}
     >
       <DialogContent
-        aria-labelledby={titleId}
         className="max-w-sm"
       >
         <DialogHeader>
-          <DialogTitle id={titleId}>
+          <DialogTitle>
             {success ? "Preuve de livraison" : "Échec de livraison"}
           </DialogTitle>
           <DialogDescription>

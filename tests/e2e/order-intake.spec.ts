@@ -70,7 +70,8 @@ test("INTAKE : coller, analyser, relire, créer une seule commande malgré le do
 
     await expect(page.getByLabel(/^Adresse/).first()).toHaveValue("12 rue de Rivoli");
     await expect(page.getByText("Urgent", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText(/Informations absentes du message/)).toBeVisible();
+    // Le brouillon simulé est complet (adresse, ville, code postal, échéance, quantité) : aucune alerte d'informations absentes.
+    await expect(page.getByText(/Informations absentes du message/)).toHaveCount(0);
 
     // Sans client choisi, rien n'est envoyé.
     await page.getByRole("button", { name: "Créer la commande" }).click();

@@ -31,7 +31,7 @@ Une recette prouve qu'un parcours marche **dans le navigateur**. Lire le JSX ou 
    - clavier : tabulation, focus visible, Échap sur les modales ;
    - thème clair et sombre si la branche touche au design, et largeurs 390 px et 1 280 px ;
    - console : zéro erreur ; noter les violations CSP, y compris en Report-Only.
-   
+
    Captures : `outputs/recette-agents/<branche>/<parcours>-<état>.png`.
 5. **E2E ciblés** de la branche (jamais toute la suite par défaut) :
    `E2E_BASE_URL=http://localhost:3110 E2E_SKIP_WEB_SERVER=1 npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local -- npx playwright test tests/e2e/<spec>.spec.ts`

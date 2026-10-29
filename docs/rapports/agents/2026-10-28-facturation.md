@@ -202,4 +202,3 @@ Toujours non vérifié : clic navigateur, spec E2E non lancée, migration non ap
 `tests/demo3-invoice-reminder.test.ts` reste vert (23/23).
 
 **Non vérifié (C1)** : le verrou consultatif et la réservation sont simulés par la base en mémoire, qui sérialise les transactions, et n'ont pas été exécutés sur PostgreSQL réel. La déduplication par clé d'idempotence du fournisseur n'a pas été vérifiée avec un envoi réel.
-

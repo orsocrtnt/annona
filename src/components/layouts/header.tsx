@@ -83,7 +83,7 @@ export function Header({ breadcrumbs, className, premium = false }: HeaderProps)
             href="/"
             className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
           >
-            <Image src="/brand/logo-horizontal-fond-clair.png" alt="TutelLiv" width={94} height={28} priority />
+            <Image src="/brand/logo-horizontal-fond-clair.png" alt="TutelLiv" width={94} height={28} priority style={{ width: 94, height: 28 }} />
           </Link>
           <p className="hidden text-sm font-medium text-[#667069] lg:block">
             Centre de pilotage

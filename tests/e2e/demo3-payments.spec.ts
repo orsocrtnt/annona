@@ -68,13 +68,17 @@ test("DEMO-3 : réglage « Émettre la facture à la livraison » désactivé pa
     await expect(toggle).toBeVisible();
     const initial = await toggle.getAttribute("aria-checked");
     await toggle.click();
+    const saved = page.waitForResponse((r) => r.request().method() === "PATCH" && r.url().includes("/api/") && r.ok());
     await page.getByRole("button", { name: "Enregistrer la facturation" }).click();
+    await saved;
     await page.reload();
     await page.getByRole("button", { name: "Factures", exact: true }).click();
     await expect(toggle).toHaveAttribute("aria-checked", initial === "true" ? "false" : "true");
     // Remise dans l'état initial pour ne pas changer le comportement des autres recettes.
     await toggle.click();
+    const restored = page.waitForResponse((r) => r.request().method() === "PATCH" && r.url().includes("/api/") && r.ok());
     await page.getByRole("button", { name: "Enregistrer la facturation" }).click();
+    await restored;
   } finally {
     await logout(page);
   }

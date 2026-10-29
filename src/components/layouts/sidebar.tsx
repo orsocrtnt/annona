@@ -105,6 +105,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
                 width={118}
                 height={35}
                 priority
+                style={{ width: 118, height: 35 }}
               />
             </Link>
           )

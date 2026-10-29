@@ -35,14 +35,18 @@ test("FACTURX : l'administrateur voit et enregistre les mentions légales dans R
   test.skip(!roles, "comptes de rôle absents : npm run e2e:role-accounts -- setup");
   await login(page, roles!.billingAdminA);
   try {
+    // Les valeurs chargées écrasent le formulaire à leur arrivée : on attend le GET avant de remplir.
+    const loaded = page.waitForResponse((r) => r.request().method() === "GET" && r.url().includes("/api/company/einvoicing") && r.ok());
     await page.goto("/settings/billing");
     await page.getByRole("button", { name: "Factures" }).click();
     const card = page.getByTestId("einvoicing-settings");
     await expect(card.getByText("Mentions légales et Factur-X")).toBeVisible();
+    await loaded;
     await card.getByLabel("Pénalités de retard (obligatoire)").fill("Pénalités de retard : trois fois le taux d'intérêt légal.");
     await card.getByLabel("Escompte (obligatoire)").fill("Pas d'escompte pour paiement anticipé.");
+    const saved = page.waitForResponse((r) => r.request().method() === "PATCH" && r.url().includes("/api/company/einvoicing") && r.status() === 200);
     await card.getByRole("button", { name: "Enregistrer les mentions légales" }).click();
-    await expect(page.getByText(/Mentions légales enregistrées|Enregistrement impossible/)).toBeVisible();
+    await saved;
     await page.reload();
     await page.getByRole("button", { name: "Factures" }).click();
     await expect(card.getByLabel("Escompte (obligatoire)")).toHaveValue("Pas d'escompte pour paiement anticipé.");
