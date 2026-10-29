@@ -84,7 +84,7 @@ function RecentDeliveriesWidget() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Livraisons récentes</CardTitle>
-        <Link href="/portal/deliveries" className="text-sm text-brand hover:underline">
+        <Link href="/portal/deliveries" className="text-sm text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
           Voir tout
         </Link>
       </CardHeader>

@@ -153,7 +153,7 @@ export function TablePersonCell({ href, name, detail }: { href: string; name: st
       <div className="min-w-0">
         <Link
           href={href}
-          className="block truncate rounded font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+          className="block truncate rounded font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 max-md:min-h-11 max-md:leading-[2.75rem]"
         >
           {name}
         </Link>

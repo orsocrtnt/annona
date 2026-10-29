@@ -42,7 +42,7 @@ export function AccountingExportForm() {
       }}>
         <div className="space-y-1"><Label htmlFor="accounting-from">Créé du (UTC)</Label><Input id="accounting-from" name="from" type="date" required /></div>
         <div className="space-y-1"><Label htmlFor="accounting-to">Au inclus (UTC)</Label><Input id="accounting-to" name="to" type="date" required /></div>
-        <div className="space-y-1"><Label htmlFor="accounting-status">Statut du document</Label><select id="accounting-status" name="status" required defaultValue="" className="flex h-10 rounded-md border border-input bg-background px-3 text-sm max-md:text-base max-md:h-11">
+        <div className="space-y-1 max-md:w-full max-md:min-w-0"><Label htmlFor="accounting-status">Statut du document</Label><select id="accounting-status" name="status" required defaultValue="" className="flex h-10 rounded-md border border-input bg-background px-3 text-sm max-md:text-base max-md:h-11 max-md:w-full max-md:min-w-0">
           <option value="" disabled>Choisir un statut</option>
           <option value="ALL">Tous, y compris brouillons et annulations</option>
           <option value="DRAFT">Brouillon</option><option value="PENDING">En attente</option><option value="PAID">Payé</option>

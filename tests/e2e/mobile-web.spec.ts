@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
-// MOBILE-WEB (lot H) : écrite sans être lancée (pas de base ici). À 390 et 360 px, sur les pages principales
+// MOBILE-WEB (lot H). Contrôles souples (expect.soft) : un passage relève tous les défauts. À 390 et 360 px, sur les pages principales
 // de chaque espace : la page ne défile jamais horizontalement et les boutons / liens visibles font au moins
 // 44 × 44 px. Exclus, par construction : le lien d'évitement (hors écran tant qu'il n'a pas le focus), les
 // éléments sr-only et les liens en ligne au milieu d'une phrase (cible WCAG 2.5.8 : exception « en ligne »).
@@ -33,6 +33,8 @@ async function smallTargets(page: Page) {
       const style = getComputedStyle(el);
       if (style.visibility === "hidden" || style.display === "none" || Number(style.opacity) === 0) continue;
       if (el.closest("[hidden], [aria-hidden='true'], .sr-only")) continue;
+      // Marqueurs Leaflet : ancre de positionnement de 1 × 1 px, la zone touchée est le dessin enfant (hors périmètre de cette spec).
+      if (el.classList.contains("leaflet-marker-icon")) continue;
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) continue;
       // Lien d'évitement : hors écran tant qu'il n'a pas le focus.
@@ -65,8 +67,8 @@ async function audit(page: Page, path: string, width: number) {
   await expect(page.locator("body")).toBeVisible();
   await page.waitForLoadState("networkidle").catch(() => undefined);
   const { scrollWidth, innerWidth } = await overflowX(page);
-  expect(scrollWidth, `${path} @${width} : défilement horizontal`).toBeLessThanOrEqual(innerWidth);
-  expect(await smallTargets(page), `${path} @${width} : cibles < ${MIN} px`).toEqual([]);
+  expect.soft(scrollWidth, `${path} @${width} : défilement horizontal`).toBeLessThanOrEqual(innerWidth);
+  expect.soft(await smallTargets(page), `${path} @${width} : cibles < ${MIN} px`).toEqual([]);
 }
 
 for (const size of SIZES) {

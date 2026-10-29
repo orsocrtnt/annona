@@ -66,7 +66,7 @@ function DriverRow({
         </span>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Link href={`/dashboard/drivers/${driver.id}`} className="truncate font-medium hover:underline">
+            <Link href={`/dashboard/drivers/${driver.id}`} className="truncate font-medium hover:underline max-md:block max-md:min-h-11 max-md:leading-[2.75rem]">
               {name}
             </Link>
             {isPaused && (

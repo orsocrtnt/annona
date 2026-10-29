@@ -65,7 +65,7 @@ export default function NewOrderPage() {
     <div className="space-y-6">
       <Link
         href="/portal/orders"
-        className="inline-flex items-center gap-2 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex items-center gap-2 rounded-md text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Retour aux commandes

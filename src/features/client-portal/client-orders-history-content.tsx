@@ -82,7 +82,7 @@ export function ClientOrdersHistoryContent({ initialOrders }: ClientOrdersHistor
 
   return (
     <div className="space-y-6">
-      <Link href="/portal/orders" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+      <Link href="/portal/orders" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground max-md:min-h-11">
         <ArrowLeft className="h-4 w-4" />
         Commandes en cours
       </Link>

@@ -123,7 +123,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   return (
     <div className="space-y-6">
       <div>
-        <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground max-md:min-h-11">
           <ArrowLeft className="h-4 w-4" aria-hidden /> {backLabel}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">Nouvelle commande depuis un message</h1>

@@ -175,7 +175,7 @@ export default function AdminSubscriptionsPage() {
             {data.rows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/companies/${row.companyId}`}>{row.company}</Link>
+                  <Link href={`/companies/${row.companyId}`} className="max-md:inline-flex max-md:min-h-11 max-md:items-center">{row.company}</Link>
                 </TableCell>
                 <TableCell>{row.email ?? "—"}{row.phone ? ` · ${row.phone}` : ""}</TableCell>
                 <TableCell>{row.plan ? planLabel[row.plan] : "Non déterminée"}</TableCell>

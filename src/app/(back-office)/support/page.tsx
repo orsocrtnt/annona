@@ -72,21 +72,21 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <a className="inline-flex items-center gap-1 hover:text-foreground" href={`mailto:${ticket.customer.email}`}>
+          <a className="inline-flex items-center gap-1 hover:text-foreground max-md:min-h-11 max-md:break-all" href={`mailto:${ticket.customer.email}`}>
             <Mail className="h-3.5 w-3.5" aria-hidden="true" /> {ticket.customer.email}
           </a>
           {ticket.customer.phone ? (
-            <a className="inline-flex items-center gap-1 hover:text-foreground" href={`tel:${ticket.customer.phone}`}>
+            <a className="inline-flex items-center gap-1 hover:text-foreground max-md:min-h-11" href={`tel:${ticket.customer.phone}`}>
               <Phone className="h-3.5 w-3.5" aria-hidden="true" /> {ticket.customer.phone}
             </a>
           ) : null}
           {ticket.relatedOrder ? (
-            <Link className="font-medium text-brand hover:underline" href={`/dashboard/orders/${ticket.relatedOrder.id}`}>
+            <Link className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center" href={`/dashboard/orders/${ticket.relatedOrder.id}`}>
               Commande {ticket.relatedOrder.reference}
             </Link>
           ) : null}
           {ticket.relatedDelivery ? (
-            <Link className="font-medium text-brand hover:underline" href={`/dashboard/deliveries/${ticket.relatedDelivery.id}`}>
+            <Link className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center" href={`/dashboard/deliveries/${ticket.relatedDelivery.id}`}>
               Livraison {ticket.relatedDelivery.reference}
             </Link>
           ) : null}
