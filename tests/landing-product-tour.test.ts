@@ -73,11 +73,17 @@ test("les deux commandes voisines du 11e sont regroupées pour Karim, dont #1042
   assert.ok(grouped.some((order) => order.number === "#1042"));
 });
 
-test("le hero affiche la mini-démo à la place de la capture du tableau de bord", () => {
+test("la mini-démo s'ouvre depuis la ligne à cinq étapes, chargée à la demande (LANDING-2)", () => {
   const home = readFileSync(fileURLToPath(new URL("../src/features/landing/home-landing.tsx", import.meta.url)), "utf8");
-  assert.match(home, /<ProductTour \/>/);
+  const line = readFileSync(fileURLToPath(new URL("../src/features/landing/mission-line.tsx", import.meta.url)), "utf8");
+  assert.match(home, /<MissionLine \/>/);
   assert.doesNotMatch(home, /produit-tableau-de-bord\.webp/);
-  assert.match(home, /produit-carte\.webp/);
+  assert.match(line, /<ProductTour \/>/);
+  // Import dynamique : motion et les scènes ne pèsent pas sur le premier affichage de la landing.
+  assert.match(line, /lazy\(/);
+  assert.match(line, /import\("@\/features\/landing\/product-tour\/product-tour"\)/);
+  assert.doesNotMatch(line, /^import \{ ProductTour \}/m);
+  assert.match(line, /aria-expanded=\{open\}/);
 });
 
 test("le marqueur suit le trajet selon la distance parcourue", () => {

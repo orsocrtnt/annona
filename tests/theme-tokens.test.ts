@@ -134,8 +134,12 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
   for (const path of ["/dashboard", "/dashboard/drivers", "/dispatch", "/settings/billing", "/support", "/users", "/companies", "/onboarding", "/admin", "/admin/users", "/driver", "/driver/missions"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
-  // Site public, connexion et écrans de carte plein écran (lot carte) : Light inchangé.
-  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/register", "/dashboardx", "/administration", "/dispatch/map", "/dispatch/drivers", "/driver/navigate", "/driver/navigate/abc"]) {
+  // Site public et connexion (LANDING-2, DESIGN-2) : même choix de thème.
+  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/login/client", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
+    assert.equal(isThemeScopedPath(path), true, path);
+  }
+  // Écrans de carte plein écran (lot carte) et préfixes voisins : Light inchangé.
+  for (const path of ["/registerx", "/dashboardx", "/administration", "/dispatch/map", "/dispatch/drivers", "/driver/navigate", "/driver/navigate/abc"]) {
     assert.equal(isThemeScopedPath(path), false, path);
   }
   assert.match(THEME_INIT_SCRIPT, new RegExp(THEME_STORAGE_KEY));
@@ -186,7 +190,7 @@ test("applyThemeToRoot résout « système » et retire l'attribut hors des espa
   // Navigation client vers un autre espace : l'attribut disparaît, le Dark ne déborde pas.
   applyThemeToRoot(root, "/dashboard", "dark", false);
   assert.equal(attrs.get("data-theme"), "dark");
-  applyThemeToRoot(root, "/", "dark", true);
+  applyThemeToRoot(root, "/registerx", "dark", true);
   assert.equal(attrs.has("data-theme"), false);
   applyThemeToRoot(root, "/dispatch", "system", true);
   assert.equal(attrs.get("data-theme"), "dark");

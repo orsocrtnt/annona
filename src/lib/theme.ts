@@ -5,8 +5,11 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "tutelliv-theme";
 
 /**
- * Espaces ayant migré vers les jetons Dark : portail client, back-office et dispatch, espace `/admin`, app livreur.
- * Les autres (site public, connexion et inscription) gardent le Light actuel quel que soit l'OS.
+/**
+ * Espaces ayant migré vers les jetons Dark : portail client, back-office et dispatch, espace `/admin`, app livreur,
+ * et site public (LANDING-2, DESIGN-2) : accueil, pages publiques, connexion, inscription (`/register` et
+ * `/register/client`) et mot de passe, pour ne pas changer de thème entre connexion et inscription.
+ * « / » ne vaut que pour l'accueil exact (aucune route ne commence par « // »).
  */
 export const THEME_SCOPED_PATH_PREFIXES = [
   "/portal",
@@ -19,6 +22,15 @@ export const THEME_SCOPED_PATH_PREFIXES = [
   "/onboarding",
   "/admin",
   "/driver",
+  "/",
+  "/fonctionnalites",
+  "/tarifs",
+  "/demonstration",
+  "/contact",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/register",
 ] as const;
 
 /**
