@@ -201,6 +201,7 @@ export async function provisionDemoEnvironment(): Promise<{
   });
   if (!driver) throw new Error("DEMO_DRIVER_MISSING");
 
+  // Écrasement complet voulu : (re)provisionnement d'un espace de démo, réglages remis à zéro, sans concurrence.
   await prisma.company.update({
     where: { id: company.id },
     data: { settings: buildDemoCompanySettings(driver.id) },

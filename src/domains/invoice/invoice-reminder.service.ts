@@ -17,8 +17,11 @@ import { invoiceDaysOverdue, isInvoiceOutstanding } from "@/domains/invoice/invo
  *   passe SENDING avant l'envoi ; aucune autre relance de la facture ne peut alors être créée ni
  *   envoyée. L'e-mail part hors transaction, puis la relance passe SENT.
  * - Issues d'envoi (C4, C5) — invariant : QUEUED ⇒ aucune tentative n'a pu être acceptée.
- *   · refus certain d'une première tentative (réservée depuis QUEUED) : retour à QUEUED (rejeu,
- *     même clé ; FAILED quand la tâche est épuisée) ;
+ *   · refus certain d'une première tentative (réservée depuis QUEUED) : retour à QUEUED avec
+ *     `completedAt` = instant du refus (rejeu, même clé ; FAILED quand la tâche est épuisée). Ce
+ *     marqueur (aucun ancien code n'a jamais écrit QUEUED avec un `completedAt`) prouve qu'aucune
+ *     tentative n'a pu être acceptée : le rejeu suivant reste une première tentative, et une tâche
+ *     épuisée s'affiche « échec », sans bloquer « Relancer » (RECETTE-2810, point 17) ;
  *   · issue inconnue (expiration, réseau, 5xx, 409 concurrent), ou refus certain d'une reprise
  *     (une tentative antérieure a pu partir) : la relance reste SENDING ; reprise par la tâche
  *     après expiration de la réservation, même clé et même contenu ;
@@ -63,7 +66,8 @@ const NO_PROVIDER_CALL_ERRORS = new Set(["INVOICE_REMINDER_PAYLOAD_INVALID", "OP
 /**
  * Résultat affiché :
  * - QUEUED dont la tâche a définitivement échoué : SEND_UNCONFIRMED (relance héritée qui a pu partir),
- *   FAILED seulement si l'erreur prouve qu'aucun appel n'a eu lieu ;
+ *   FAILED seulement si l'erreur prouve qu'aucun appel n'a eu lieu, ou si la relance porte le
+ *   marqueur de refus certain (`completedAt` non nul : toutes les tentatives émises ont été refusées) ;
  * - SENDING dont la tâche a définitivement échoué, ou réservée depuis plus de 24 h sans reprise :
  *   SEND_UNCONFIRMED (l'e-mail est peut-être parti, plus aucune reprise automatique en cours).
  */
@@ -73,6 +77,7 @@ export function effectiveReminderResult(reminder: ReminderState, now: Date = new
     // essai en échec pour une autre raison), elle a pu partir ; seul le dernier `lastError` est
     // conservé. Donc non confirmée, bloquante, sauf erreur qui prouve qu'aucun appel n'a eu lieu.
     // Avec ce code, cet état n'arrive presque jamais : la prudence ne coûte rien.
+    if (reminder.completedAt) return "FAILED";
     return NO_PROVIDER_CALL_ERRORS.has(reminder.operationJob.lastError ?? "") ? "FAILED" : "SEND_UNCONFIRMED";
   }
   if (reminder.result === "SENDING") {
@@ -321,8 +326,10 @@ export async function deliverInvoiceReminderJob(
     });
     if (!reminder || reminder.invoice.companyId !== companyId) return null;
     // Reprise : une tentative précédente (issue inconnue, processus arrêté, ou relance QUEUED dont
-    // la tâche a déjà tourné) a peut-être été acceptée.
-    const resuming = reminder.result === "SENDING" || (reminder.result === "QUEUED" && deps.previouslyAttempted === true);
+    // la tâche a déjà tourné) a peut-être été acceptée. Exception : QUEUED avec `completedAt` = rendue
+    // après un refus certain par ce code ; aucune tentative n'a pu partir, c'est une première tentative.
+    const rejectedOnly = reminder.result === "QUEUED" && reminder.completedAt !== null;
+    const resuming = reminder.result === "SENDING" || (reminder.result === "QUEUED" && deps.previouslyAttempted === true && !rejectedOnly);
     if (reminder.result === "SENDING") {
       const reservedAt = reminder.completedAt ?? reminder.createdAt;
       // Une autre exécution envoie peut-être en ce moment : la tâche réessaiera plus tard.
@@ -408,8 +415,9 @@ export async function deliverInvoiceReminderJob(
   } catch (error) {
     const outcome = emailSendOutcome(error);
     if (outcome === "rejected" && !reservation.resuming) {
-      // Refus certain d'une première tentative : rien n'est parti, la réservation est rendue.
-      await db.invoiceReminder.updateMany({ where: held, data: { result: "QUEUED", completedAt: null } });
+      // Refus certain d'une première tentative : rien n'est parti, la réservation est rendue avec le
+      // marqueur de refus (`completedAt`) : le rejeu reste une première tentative, jamais une reprise.
+      await db.invoiceReminder.updateMany({ where: held, data: { result: "QUEUED", completedAt: now } });
     } else if (outcome === "unconfirmed") {
       // Clé déjà utilisée avec un autre contenu (un envoi a peut-être eu lieu, y compris sous l'ancien
       // code), ou fenêtre dépassée : terminal, jamais de renvoi, « Relancer » reste bloqué 24 h.

@@ -1,10 +1,10 @@
 import { prisma } from "@/services/prisma/client";
+import { updateCompanySettingsWithClaim, updateUserSettingsWithClaim } from "@/lib/database/settings-claims";
 import type {
   DeliveryCategory,
   DeliveryStatus,
   InvoiceStatus,
   OrderStatus,
-  Prisma,
 } from "@prisma/client";
 import { attachRolesById } from "@/domains/user/user.service";
 import {
@@ -531,40 +531,34 @@ const DRIVER_LOCATION_SEEDS = [
 async function applyDemoDispatchDrivers(companyId: string, driverIds: string[]) {
   if (driverIds.length === 0) return;
 
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { settings: true },
-  });
-  const settings =
-    company?.settings && typeof company.settings === "object"
-      ? { ...(company.settings as Record<string, unknown>) }
-      : {};
-  const previousDispatch =
-    settings.dispatchRules && typeof settings.dispatchRules === "object"
-      ? { ...(settings.dispatchRules as Record<string, unknown>) }
-      : {};
-
-  settings.dispatchRules = {
-    ...previousDispatch,
-    enabled: true,
-    defaultDriverId: driverIds[0],
-    driverRules: driverIds.map((driverId, index) => ({
-      driverId,
-      priority: index + 1,
-      allowedCategories: {
-        STANDARD: true,
-        COURIER: true,
-        SPECIAL_MISSION: false,
-      },
-      zoneIds: [],
-      postalCodePrefixes: ["75", "92", "93", "94"],
-      dispatchStatus: "ACTIVE",
-    })),
-  };
-
-  await prisma.company.update({
-    where: { id: companyId },
-    data: { settings: settings as Prisma.InputJsonValue },
+  // Réclamation sur updatedAt : un réglage enregistré pendant la réinitialisation n'est pas écrasé.
+  await updateCompanySettingsWithClaim(companyId, {
+    apply: (settings) => {
+      const previousDispatch =
+        settings.dispatchRules && typeof settings.dispatchRules === "object"
+          ? { ...(settings.dispatchRules as Record<string, unknown>) }
+          : {};
+      return {
+        ...settings,
+        dispatchRules: {
+          ...previousDispatch,
+          enabled: true,
+          defaultDriverId: driverIds[0],
+          driverRules: driverIds.map((driverId, index) => ({
+            driverId,
+            priority: index + 1,
+            allowedCategories: {
+              STANDARD: true,
+              COURIER: true,
+              SPECIAL_MISSION: false,
+            },
+            zoneIds: [],
+            postalCodePrefixes: ["75", "92", "93", "94"],
+            dispatchStatus: "ACTIVE",
+          })),
+        },
+      };
+    },
   });
 }
 
@@ -612,17 +606,11 @@ async function ensureDemoDriverLocations(drivers: Array<{ id: string }>) {
 }
 
 /** Fige le retard fictif du signal de chaque livreur de démo (en direct, estimé ou perdu). */
-async function applyDemoSignalLags(drivers: Array<{ id: string; settings: Prisma.JsonValue | null }>) {
-  await Promise.all(drivers.map((driver, index) => {
-    const settings =
-      driver.settings && typeof driver.settings === "object" && !Array.isArray(driver.settings)
-        ? { ...(driver.settings as Record<string, unknown>) }
-        : {};
-    return prisma.user.update({
-      where: { id: driver.id },
-      data: { settings: { ...settings, demoSignalLagSeconds: DEMO_SIGNAL_LAG_SECONDS[index] ?? 0 } as Prisma.InputJsonValue },
-    });
-  }));
+async function applyDemoSignalLags(drivers: Array<{ id: string }>) {
+  // Réclamation sur updatedAt : l'état du service de suivi écrit en parallèle n'est pas écrasé.
+  await Promise.all(drivers.map((driver, index) => updateUserSettingsWithClaim(driver.id, {
+    apply: (settings) => ({ ...settings, demoSignalLagSeconds: DEMO_SIGNAL_LAG_SECONDS[index] ?? 0 }),
+  })));
 }
 
 async function purgeDemoTransactionalData(companyId: string) {
@@ -1025,13 +1013,8 @@ export async function resetDemoScenario(
   );
 
   // Marque la version du scénario : la maintenance du pool recycle les espaces dépassés.
-  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
-  const settings = company?.settings && typeof company.settings === "object" && !Array.isArray(company.settings)
-    ? (company.settings as Record<string, unknown>)
-    : {};
-  await prisma.company.update({
-    where: { id: companyId },
-    data: { settings: { ...settings, demoScenarioVersion: DEMO_SCENARIO_VERSION } },
+  await updateCompanySettingsWithClaim(companyId, {
+    apply: (settings) => ({ ...settings, demoScenarioVersion: DEMO_SCENARIO_VERSION }),
   });
 
   return { deliveries: scenarios.length };

@@ -43,11 +43,13 @@ export async function PATCH(
       MINI_ADMIN_MANAGEMENT_FORBIDDEN: 403,
       USER_NOT_FOUND: 404,
       ROLE_NOT_EDITABLE: 403,
+      SETTINGS_CONFLICT: 409,
     };
     const labels: Record<string, string> = {
       MINI_ADMIN_MANAGEMENT_FORBIDDEN: "La gestion des mini-admins est réservée aux administrateurs principaux.",
       USER_NOT_FOUND: "Utilisateur introuvable.",
       ROLE_NOT_EDITABLE: "Seuls les mini-admins peuvent être modifiés ici.",
+      SETTINGS_CONFLICT: "Les réglages ont changé pendant l'enregistrement. Rechargez puis réessayez.",
     };
     return NextResponse.json(
       { error: labels[message] ?? "Erreur lors de la mise à jour" },

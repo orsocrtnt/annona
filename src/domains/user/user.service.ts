@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
+import { settingsSection } from "@/lib/database/claimed-settings-update";
+import { updateUserSettingsWithClaim } from "@/lib/database/settings-claims";
 import { createAdminClient } from "@/services/supabase/admin";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import type { UserWithRole } from "@/types";
@@ -369,20 +371,14 @@ export async function updateMiniAdminByAdmin(
     throw new Error("ROLE_NOT_EDITABLE");
   }
 
-  const current =
-    user.settings && typeof user.settings === "object" && !Array.isArray(user.settings)
-      ? (user.settings as Record<string, unknown>)
-      : {};
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      settings: {
-        ...current,
-        ...buildMiniAdminSettings(input.miniAdminTitle, input.miniAdminModules),
-      },
-    },
+  // Réclamation sur updatedAt, bornée à l'entreprise : les autres clés du compte (suivi, tableau de
+  // bord…) ne sont jamais écrasées ; deux modifications simultanées : SETTINGS_CONFLICT à la seconde.
+  const result = await updateUserSettingsWithClaim(user.id, {
+    companyId,
+    apply: (current) => ({ ...current, ...buildMiniAdminSettings(input.miniAdminTitle, input.miniAdminModules) }),
+    section: settingsSection("miniAdmin"),
   });
+  if (result === "missing") throw new Error("USER_NOT_FOUND");
 
   return { success: true };
 }

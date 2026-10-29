@@ -113,7 +113,8 @@ for (const row of TABLE) {
     assert.equal(r1Row().result, row.expect, "résultat après la première tentative");
     if (row.expect === "SENT") assert.equal(first, null);
     else assert.ok(first, "la tâche échoue et sera rejouée (ou non) selon l'issue");
-    if (row.expect === "QUEUED") assert.equal(r1Row().completedAt, null, "réservation rendue : rien n'est parti");
+    // Réservation rendue avec le marqueur de refus certain (RECETTE-2810, point 17) : rien n'est parti.
+    if (row.expect === "QUEUED") assert.equal(r1Row().completedAt?.getTime(), T0.getTime(), "réservation rendue, refus marqué");
     if (row.expect === "SENDING") assert.equal(r1Row().completedAt?.getTime(), T0.getTime(), "réservation conservée");
     // Seule l'issue non confirmée est permanente (tâche FAILED, aucun nouvel essai).
     assert.equal(first?.permanent === true, row.expect === "SEND_UNCONFIRMED");
@@ -343,4 +344,68 @@ test("C5 : rendu figé — refus certain d'une REPRISE (après une issue inconnu
   assert.equal(retry.r1Row().result, "SENDING");
   db.invoices[0]!.amount = 1;
   assert.equal(r1Row().result, "SENDING");
+});
+
+// RECETTE-2810, point 17 : une relance refusée avec certitude à chaque tentative (403, 422) n'est
+// jamais affichée « Envoi non confirmé » et ne bloque pas « Relancer » ; jamais de double envoi.
+for (const refusal of [
+  { status: 403, name: "validation_error" },
+  { status: 422, name: "missing_required_field" },
+]) {
+  test(`point 17 : ${refusal.status} deux fois — reste QUEUED (jamais SENDING), tâche épuisée = échec, « Relancer » libre`, async () => {
+    const { db, resend, deliver, remind, r1Row } = setup();
+    resend.script.push({ ...refusal, accepted: false }, { ...refusal, accepted: false });
+    await settle(deliver(T0));
+    assert.equal(r1Row().result, "QUEUED");
+    // Rejeu de la tâche (essai antérieur) : première tentative, pas une reprise.
+    const second = await settle(deliver(new Date(T0.getTime() + MIN), true));
+    assert.match(second!.message, new RegExp(`EMAIL_PROVIDER_HTTP_${refusal.status}`));
+    assert.equal(r1Row().result, "QUEUED", "jamais SENDING après un refus certain");
+    assert.equal(r1Row().completedAt?.getTime(), T0.getTime() + MIN, "marqueur du dernier refus");
+    assert.equal(resend.received, 0);
+    const job = db.jobs.find((entry) => entry.id === "job_1")!;
+    job.status = "FAILED";
+    job.lastError = second!.message;
+    const now = new Date(T0.getTime() + HOUR);
+    assert.equal(effectiveReminderResult({ ...r1Row(), operationJob: job }, now), "FAILED");
+    assert.equal(reminderBlocksNewOne({ ...r1Row(), operationJob: job }, now), false);
+    const row = (await listCompanyInvoices("company_a", { status: "ALL", now }, db as never)).invoices.find((entry) => entry.id === "inv")!;
+    assert.equal(row.lastReminder?.result, "FAILED");
+    assert.equal(row.canRemind, true);
+    const click = await remind(now);
+    assert.equal(click?.duplicate, false, "une nouvelle relance est créée");
+    assert.equal(db.reminders.length, 2);
+  });
+}
+
+test("point 17 : refus certain puis acceptation — un seul e-mail, envoyé comme une première tentative", async () => {
+  const { resend, deliver, r1Row } = setup();
+  resend.script.push({ status: 403, name: "validation_error", accepted: false });
+  await settle(deliver(T0));
+  await deliver(new Date(T0.getTime() + MIN), true);
+  assert.equal(r1Row().result, "SENT");
+  assert.equal(resend.received, 1);
+  assert.equal(resend.calls.length, 2);
+});
+
+test("point 17 : refus certain puis issue inconnue — la reprise suivante est dédupliquée (un e-mail)", async () => {
+  const { resend, deliver, r1Row } = setup();
+  resend.script.push({ status: 422, name: "validation_error", accepted: false }, { timeout: true, accepted: true });
+  await settle(deliver(T0));
+  await settle(deliver(new Date(T0.getTime() + MIN), true));
+  assert.equal(r1Row().result, "SENDING", "issue inconnue : la réservation est gardée");
+  await deliver(new Date(T0.getTime() + 7 * MIN), true);
+  assert.equal(r1Row().result, "SENT");
+  assert.equal(resend.received, 1, "la reprise sous la même clé ne renvoie rien");
+});
+
+test("point 17, données héritées : QUEUED sans marqueur déjà tentée reste une reprise ; SENDING épuisée reste non confirmée", async () => {
+  const { resend, deliver, r1Row } = setup();
+  resend.script.push({ status: 422, name: "validation_error", accepted: false });
+  await settle(deliver(T0, true));
+  assert.equal(r1Row().result, "SENDING", "ancien état : une tentative antérieure a pu partir");
+  const now = new Date(T0.getTime() + HOUR);
+  const legacySending = { result: "SENDING", createdAt: T0, completedAt: T0, operationJob: { status: "FAILED", lastError: "EMAIL_PROVIDER_HTTP_422:validation_error" } };
+  assert.equal(effectiveReminderResult(legacySending, now), "SEND_UNCONFIRMED");
+  assert.equal(reminderBlocksNewOne(legacySending, now), true);
 });

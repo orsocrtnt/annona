@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 const INTERNAL_ERROR_MESSAGE = "Erreur interne du serveur";
+/** Réglages modifiés par un autre enregistrement pendant celui-ci (réclamation sur updatedAt). */
+export const SETTINGS_CONFLICT_MESSAGE = "Les réglages ont changé pendant l'enregistrement. Rechargez puis réessayez.";
 
 export function apiError(message: string, status = 500) {
   return NextResponse.json({ error: message, success: false }, { status });
@@ -22,6 +24,8 @@ const KNOWN_ERROR_CODES: Record<string, { status: number; message: string }> = {
   SAAS_FEATURE_NOT_AVAILABLE: { status: 403, message: "Cette fonctionnalité n'est pas incluse dans votre offre." },
   SAAS_ACCOUNT_READ_ONLY: { status: 403, message: "Le compte est en lecture seule." },
   COMPANY_NOT_FOUND: { status: 404, message: "Entreprise introuvable." },
+  SETTINGS_CONFLICT: { status: 409, message: SETTINGS_CONFLICT_MESSAGE },
+  USER_NOT_FOUND: { status: 404, message: "Compte introuvable." },
   RECURRING_SPECIAL_MISSION_UNSUPPORTED: { status: 400, message: "Les missions spéciales ne peuvent pas être récurrentes." },
 };
 

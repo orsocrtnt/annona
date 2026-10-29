@@ -61,6 +61,9 @@ export async function PATCH(request: Request) {
     if (error instanceof Error && error.message === "COMPANY_NOT_FOUND") {
       return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });
     }
+    if (error instanceof Error && error.message === "SETTINGS_CONFLICT") {
+      return NextResponse.json({ error: "Les réglages ont changé pendant l'enregistrement. Rechargez puis réessayez." }, { status: 409 });
+    }
     if (error instanceof Error && error.message === "SAAS_FEATURE_NOT_AVAILABLE") {
       return NextResponse.json(
         { error: CONFIG_MESSAGES.DISPATCH_FEATURE_NOT_IN_PLAN },

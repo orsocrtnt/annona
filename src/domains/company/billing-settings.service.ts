@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
+import { settingsSection, updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
 import { prisma } from "@/services/prisma/client";
 import type { CompanyBillingSettings } from "@/lib/validations/billing-settings";
 import {
@@ -37,6 +37,7 @@ export async function updateCompanyBillingSettings(
   const result = await updateSettingsWithClaim({
     load: () => prisma.company.findUnique({ where: { id: companyId }, select: { settings: true, updatedAt: true } }),
     apply: (current) => ({ ...current, billing }),
+    section: settingsSection("billing"),
     save: async (settings, claim) => {
       const claimed = await prisma.company.updateMany({
         where: { id: companyId, updatedAt: claim.expected },

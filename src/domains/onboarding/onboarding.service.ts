@@ -1,6 +1,7 @@
-import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/services/prisma/client";
+import { settingsSection } from "@/lib/database/claimed-settings-update";
+import { updateCompanySettingsWithClaim } from "@/lib/database/settings-claims";
 import { companyDeliveryOptionsSchema } from "@/lib/validations/company-settings";
 import { companyBillingSettingsSchema } from "@/lib/validations/billing-settings";
 import { companyDispatchSettingsSchema } from "@/lib/validations/dispatch-settings";
@@ -265,20 +266,23 @@ export async function updateOnboardingPreference(companyId: string, input: unkno
   const change = preference.step === "collaborators"
     ? { skippedCollaborators: preference.skipped }
     : { hiddenFromNavigation: preference.hidden };
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
-    if (!company) throw new Error("COMPANY_NOT_FOUND");
-    const settings = asSettings(company.settings);
-    const saved = await prisma.company.updateMany({
-      where: { id: companyId, settings: { equals: company.settings ?? Prisma.AnyNull } },
-      data: { settings: {
+  // Réclamation sur updatedAt (RECETTE-2810, point 16) : les autres réglages ne sont jamais écrasés ;
+  // un enregistrement concurrent du même choix d'onboarding donne un conflit (409).
+  let result: "saved" | "missing";
+  try {
+    result = await updateCompanySettingsWithClaim(companyId, {
+      apply: (settings) => ({
         ...settings,
         onboarding: { ...asSettings(settings.onboarding), ...change },
-      } as Prisma.InputJsonObject },
+      }),
+      // Seule la clé modifiée compte : masquer la navigation et passer les collaborateurs ne se gênent pas.
+      section: settingsSection("onboarding", Object.keys(change)[0]!),
     });
-    if (saved.count === 1) return;
+  } catch (error) {
+    if (error instanceof Error && error.message === "SETTINGS_CONFLICT") throw new Error("ONBOARDING_CONFLICT");
+    throw error;
   }
-  throw new Error("ONBOARDING_CONFLICT");
+  if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
 }
 
 export async function updateOnboardingCompanyProfile(companyId: string, input: unknown) {

@@ -93,6 +93,7 @@ function invitations(options: { roleSlug?: "client" | "driver" | "dispatcher"; e
     } } } }) },
     "@/domains/client-portal/client-data.service": { linkPortalDataToClient: async () => { events.push("link"); } },
     "@/lib/query/list-limits": {},
+    "@/lib/database/claimed-settings-update": { settingsSection: () => () => null }, "@/lib/database/settings-claims": { updateUserSettingsWithClaim: async () => "saved" },
     "@/lib/permissions/mini-admin": { canManageMiniAdmins: () => true },
     "@/lib/auth/email-links": { getPasswordLinkRedirect: () => "http://localhost/reset-password" },
     "@/lib/demo/constants": {},

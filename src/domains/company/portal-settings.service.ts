@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
+import { settingsSection, updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
 import { prisma } from "@/services/prisma/client";
 
 /** Le client voit le téléphone du livreur tant que l'administrateur ne l'a pas masqué. */
@@ -22,6 +22,7 @@ export async function updatePortalShowDriverPhone(companyId: string, value: bool
   const result = await updateSettingsWithClaim({
     load: () => prisma.company.findUnique({ where: { id: companyId }, select: { settings: true, updatedAt: true } }),
     apply: (current) => ({ ...current, portalShowDriverPhone: value }),
+    section: settingsSection("portalShowDriverPhone"),
     save: async (settings, claim) => {
       const claimed = await prisma.company.updateMany({
         where: { id: companyId, updatedAt: claim.expected },

@@ -15,7 +15,7 @@ import {
   type ClientInvoiceIdentity,
   type CompanyEinvoicingUpdate,
 } from "@/lib/validations/einvoicing";
-import { updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
+import { settingsSection, updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
 import { prisma } from "@/services/prisma/client";
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -185,6 +185,7 @@ export async function updateCompanyEinvoicing(companyId: string, input: CompanyE
   const result = await updateSettingsWithClaim({
     load: () => prisma.company.findUnique({ where: { id: companyId }, select: { settings: true, updatedAt: true } }),
     apply: (current) => ({ ...current, einvoicing: input.einvoicing }),
+    section: settingsSection("einvoicing"),
     save: async (settings, claim) => {
       try {
         const claimed = await prisma.company.updateMany({
@@ -227,6 +228,7 @@ export async function updateClientInvoiceIdentity(companyId: string, clientId: s
   const result = await updateSettingsWithClaim({
     load: () => prisma.user.findFirst({ where, select: { settings: true, updatedAt: true } }),
     apply: (current) => ({ ...current, invoiceIdentity: identity }),
+    section: settingsSection("invoiceIdentity"),
     save: async (settings, claim) => {
       const claimed = await prisma.user.updateMany({
         where: { ...where, updatedAt: claim.expected },

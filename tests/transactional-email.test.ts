@@ -17,11 +17,13 @@ const baseEnv = {
 };
 
 test("le transport reste désactivé par défaut et refuse les configurations partielles", () => {
+  // Variable absente : désactivé, raison « unset » (oubli possible, distinct d'un choix explicite).
   assert.deepEqual(getTransactionalEmailConfiguration({}), {
     mode: "disabled",
     enabled: false,
-    reason: "disabled",
+    reason: "unset",
   });
+  assert.equal(getTransactionalEmailConfiguration({ EMAIL_DELIVERY_MODE: "disabled" }).reason, "disabled");
   assert.equal(
     getTransactionalEmailConfiguration({
       ...baseEnv,
@@ -163,8 +165,8 @@ test("un mode désactivé n'appelle jamais le fournisseur, même au rejeu", asyn
       return { ok: true, status: 200 };
     },
   };
-  assert.deepEqual(await sendTransactionalEmail(input, options), { status: "disabled", mode: "disabled" });
-  assert.deepEqual(await sendTransactionalEmail(input, options), { status: "disabled", mode: "disabled" });
+  assert.deepEqual(await sendTransactionalEmail(input, options), { status: "disabled", mode: "disabled", reason: "disabled" });
+  assert.deepEqual(await sendTransactionalEmail(input, options), { status: "disabled", mode: "disabled", reason: "disabled" });
   assert.equal(calls, 0);
 });
 

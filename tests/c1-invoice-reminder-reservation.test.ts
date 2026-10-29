@@ -159,7 +159,8 @@ test("C1 : limite de débit (429) sur une première tentative — réservation l
     /EMAIL_PROVIDER_HTTP_429:rate_limit_exceeded/
   );
   assert.equal(r("r1")?.result, "QUEUED");
-  assert.equal(r("r1")?.completedAt, null);
+  // Marqueur de refus certain (RECETTE-2810, point 17) : rien n'est parti, le rejeu reste une première tentative.
+  assert.ok(r("r1")?.completedAt instanceof Date);
   await deliver();
   assert.equal(r("r1")?.result, "SENT");
 });
@@ -234,7 +235,8 @@ test("C4 : refus 4xx certain — réservation libérée, une nouvelle relance es
     send: providerSend(422, "missing_required_field"),
   }), /EMAIL_PROVIDER_HTTP_422/);
   assert.equal(r("r1")?.result, "QUEUED");
-  assert.equal(r("r1")?.completedAt, null);
+  // Marqueur de refus certain (RECETTE-2810, point 17) : rien n'est parti, le rejeu reste une première tentative.
+  assert.ok(r("r1")?.completedAt instanceof Date);
   const click = await remind();
   assert.equal(click?.duplicate, false, "R1 (créée il y a 30 h) ne bloque plus : nouvelle relance");
   assert.equal(db.reminders.length, 2);

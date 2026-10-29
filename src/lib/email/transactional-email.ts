@@ -15,7 +15,10 @@ export type TransactionalEmailConfiguration = {
   enabled: boolean;
   reason:
     | "ready"
+    /** EMAIL_DELIVERY_MODE explicitement à "disabled" (choix délibéré, ex. développement). */
     | "disabled"
+    /** EMAIL_DELIVERY_MODE absent : désactivé aussi, mais un oubli possible (jamais traité comme un choix). */
+    | "unset"
     | "invalid-mode"
     | "missing-provider"
     | "missing-test-recipient";
@@ -76,6 +79,7 @@ function hasAddress(value: string | undefined) {
 export function getTransactionalEmailConfiguration(
   env: EmailEnvironment = process.env
 ): TransactionalEmailConfiguration {
+  if (!env.EMAIL_DELIVERY_MODE?.trim()) return { mode: "disabled", enabled: false, reason: "unset" };
   const mode = parseMode(env.EMAIL_DELIVERY_MODE);
   if (!mode) return { mode: "disabled", enabled: false, reason: "invalid-mode" };
   if (mode === "disabled") {
@@ -171,7 +175,7 @@ export async function sendTransactionalEmail(
   const env = options.env ?? process.env;
   const configuration = getTransactionalEmailConfiguration(env);
   if (!configuration.enabled) {
-    return { status: "disabled" as const, mode: configuration.mode };
+    return { status: "disabled" as const, mode: configuration.mode, reason: configuration.reason };
   }
 
   const from = (env.MAIL_FROM || env.EMAIL_FROM)!.trim();
