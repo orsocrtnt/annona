@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**58 tâches terminées sur 100 — 58 %**
+**58 tâches terminées sur 102 — 57 %**
 
-`████████████░░░░░░░░` · 42 tâches restantes
+`███████████░░░░░░░░░` · 44 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -203,6 +203,8 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | FACTURX-SAISIE | A+B | Champs exigés par le Factur-X obligatoires et bloquants dès l'enregistrement des mentions légales. | — | Moyenne · GPT‑6.1 Sol |
 | LANDING-2 | A+B | Landing et page de connexion refaites : minimalistes, très visuelles (Apple, Tesla, Uber), claires et efficaces. | Direction visuelle : propriétaire. | Élevée · GPT‑6.1 Sol |
 | MOBILE-WEB | A+B | Revoir toute l'application au format téléphone, dans le navigateur. | Après DESIGN-2, MAP-INTERACTION et UX-ALERTES. | Élevée · GPT‑6.1 Sol |
+| E2E-MAJ | A | Remettre à jour les specs E2E jamais lancées ou devenues obsolètes au chantier du 29 octobre. | — | Moyenne · GPT‑6.1 Sol |
+| CONFIG-MSG-2 | A | Retirer ou traduire le champ `details` (messages Zod bruts) des réponses API. | — | Basse · GPT‑6.1 Sol |
 | CROSS-BROWSER | A+B | Même rendu sur Edge, Safari, Firefox et Chrome (écart constaté sur Edge). | Après LANDING-2 et MOBILE-WEB ; capture de l'écart à fournir par le propriétaire. | Moyenne · GPT‑6.1 Sol |
 | AUTH-ROLE | A+B | Refuser côté serveur les pages d'un espace au mauvais rôle (aujourd'hui refus seulement côté navigateur). | — | Élevée · GPT‑6 Astra |
 | RECETTE-2810 | A+B | Dix-sept points mineurs ou à trancher des recettes du 28 octobre. | Décisions produit du propriétaire. | Moyenne · GPT‑6.1 Sol |
@@ -1572,6 +1574,31 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   État : ouverte, non commencée.
 
+
+- [ ] **E2E-MAJ — Remettre à jour les specs E2E du chantier du 29 octobre.** Le passage final sur ec16e60 (build de production, navigateur `chromium-headless-shell`) a montré des échecs qui ne viennent pas du produit, vérifiés à la main :
+  - `nav-scroll` : le test fait défiler avant le chargement du contenu (la page mesure encore 720 px), et le cas portail se connecte avec le compte de démo de l'entreprise, que la protection par rôle renvoie vers `/dashboard`. Le produit remonte bien en haut et restaure la position au Retour (mesuré : 400 → 0 → 400).
+  - `ux03-delivery:200` : le mini-admin sans module livraison est maintenant renvoyé vers `/support` ; le test attend encore « Livraison introuvable ».
+  - `design2-theme:93` : la carte du dispatch passe désormais en sombre (correction du 29 octobre) ; le test exige encore le Clair. `design2-theme:108` : `getByText("Système")` trouve deux éléments.
+  - Les specs restantes du passage (`portal-theme`, `dispatch-suggestions`, `facturx` avec la règle TVA plus stricte) sont à reprendre selon leurs journaux.
+  - Mettre aussi `playwright.config.ts` sur `chromium-headless-shell` par défaut sur Mac : le Chrome du poste et le Chromium complet expirent au lancement.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : les specs du chantier passent sur le build de production, sans attente fixe ; `npm run check` est vert.
+
+  Source / dépendance / blocage : vérification finale du 29 octobre 2026.
+
+  État : ouverte, non commencée.
+
+- [ ] **CONFIG-MSG-2 — Ne plus renvoyer les messages Zod bruts dans `details`.** 28 routes de `src/app/api` répondent `details: parsed.error.flatten()`, avec des messages techniques en anglais. L'interface ne lit pas ce champ, et il ne contient ni secret ni donnée personnelle (relevé de Codex du 29 octobre).
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort bas.**
+
+  Terminé quand : plus aucune réponse d'API ne contient de message Zod brut ; un test de garde le vérifie ; `npm run check` est vert.
+
+  Source / dépendance / blocage : vérification finale du 29 octobre 2026.
+
+  État : ouverte, non commencée.
 
 - [ ] **CROSS-BROWSER — Même rendu sur tous les navigateurs courants.** Demande du propriétaire du 29 octobre 2026 : le site ne s'affiche pas pareil sur Edge que sur Chrome. L'écart exact reste à préciser, avec la page et une capture du propriétaire si possible. Aujourd'hui, les tests E2E ne tournent que sur Chrome (`playwright.config.ts`, canal `chrome`) ; WebKit et le Chromium de Playwright sont installés sur le Mac depuis le 29 octobre.
   - Ajouter des projets Playwright Firefox et WebKit (Safari), et lancer Edge par le canal `msedge` s'il est installé.

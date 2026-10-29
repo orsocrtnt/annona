@@ -40,12 +40,12 @@ Depuis le 29 octobre 2026, le cloud de Claude Code est connecté : machines de 1
 |---|---|---|
 | Orchestration (cette conversation) | Mac | Pilote tout, a les outils Vercel et Supabase, Codex et Cursor |
 | Agents de code (écrire, tests unitaires, `npm run check`) | **Cloud** | Le plus lourd ; en parallèle sans faire la queue |
-| Données de test sur tutelliv-dev (lot F) | Cloud | Il suffit de l'accès réseau à la base de développement |
+| Données de test sur tutelliv-dev (lot F), tests PostgreSQL réels (`test:pg-locks`), E2E | **Mac** | Le cloud ne joint pas PostgreSQL : son proxy ne laisse passer que HTTP/HTTPS (vérifié le 28 octobre) |
 | Pré-vol adverse d'un agent de code | Avec l'agent (cloud) | Même session |
 | Recette navigateur, captures Light/Dark | Mac | Chrome et Playwright fiables en local ; le navigateur n'est pas garanti dans le cloud |
 | Relecture `code-review` de l'orchestrateur | Mac | Sur la branche récupérée |
 | Codex et Cursor | Mac | Leurs outils en ligne de commande sont installés sur le Mac ; leurs propres clouds ne sont pas reliés à GitHub |
-| Vérification finale V1 « suites » (check, build) | Cloud, ou Mac si le cloud n'est pas prêt | Lourd en mémoire |
+| Vérification finale V1 « suites » (check, build) | Mac (`test:pg-locks` exige la base) | Le cloud ne joint pas la base |
 | Vérification finale V2 « navigateur » et V3 « revue » | Mac | Navigateur, outils locaux |
 | Push sur `preproduction`, contrôle Vercel | Mac | Toujours par l'orchestrateur |
 
@@ -82,7 +82,7 @@ Politique :
 
 | Fournisseur | Rôle | Lancement depuis la conversation (Bash, en arrière-plan, dans le worktree du lot) |
 |---|---|---|
-| **Claude, cloud** | Agents de code par défaut | `script -q <journal> claude --cloud "<prompt>" < /dev/null` depuis le dossier principal (voir « Agents dans le cloud ») |
+| **Claude, cloud** | Agents de code par défaut | Routine `RemoteTrigger` : `create`, puis `run` (voir « Agents dans le cloud »). Jamais `claude --cloud` |
 | **Claude, local** | Orchestration, recette navigateur, relectures, vérification, repli des lots | Agent tool, avec `model: opus`, `sonnet` ou `haiku` |
 | **Codex** | Vérification finale indépendante (prioritaire) ; lot de code seulement en appoint | `~/.cursor/extensions/openai.chatgpt-*/bin/macos-aarch64/codex exec -m gpt-6.1-sol -c model_reasoning_effort=medium -s workspace-write -C <worktree> -o <rapport> "<prompt>" < /dev/null` |
 | **Cursor** | Facultatif : 1 ou 2 lots moyens (écran, finitions) si Claude est limité | `cd <worktree> && cursor-agent -p --output-format text --model <modèle> "<prompt>" > <journal>` (`cursor-agent --list-models` pour choisir) |
@@ -143,7 +143,13 @@ Bloqué par le propriétaire ou par l'extérieur :
 ## Règles données à chaque agent (à recopier dans leur prompt)
 
 - Branche imposée `agent/<lot>` ; ne jamais modifier `TODO.md` ; jamais de merge ; commits en français.
-- **Agent cloud** : l'environnement fournit les variables de tutelliv-dev. Vérifier `npm run -s env2:verify-dev` → passed avant tout essai connecté, sinon s'arrêter. Pousser seulement sa branche `agent/<lot>` (`git push -u origin agent/<lot>`), jamais `preproduction` ni `main`. Pas de `lourd.sh`. Node 22 (`nvm use 22` si besoin).
+- **Agent cloud** : l'environnement fournit les variables de tutelliv-dev. Commencer par `git fetch origin preproduction && git checkout -B agent/<lot> origin/preproduction && npm ci --no-audit --no-fund` (le clone part de `main`, sans `node_modules`), puis vérifier `npm run -s env2:verify-dev` → passed (preuve d'être sur le bon environnement), sinon s'arrêter. **La base PostgreSQL n'est pas joignable depuis le cloud** (proxy HTTP/HTTPS seulement) : dans le cloud, uniquement le code et `npm run check`, qui tourne sans services externes. Tout ce qui touche la base (seed, `test:pg-locks`, E2E, serveur connecté) est listé dans le rapport « à lancer sur le Mac » et fait par l'orchestrateur. Pousser seulement sa branche `agent/<lot>` (`git push -u origin agent/<lot>`), jamais `preproduction` ni `main`. Pas de `lourd.sh`. Node 22 est celui du `PATH` par défaut (`/opt/node22`).
+- **Agent cloud, personne ne regarde** : le propriétaire n'ouvre jamais la session cloud. L'agent ne pose aucune question et n'attend aucune réponse. Il tranche avec l'option la plus prudente et la note dans son rapport. Sur un vrai blocage, il écrit le blocage dans son rapport, commite, pousse sa branche et s'arrête. Pour tenir sur la durée :
+  - **feuille de route dans la branche** : dès le départ, il crée son rapport `docs/rapports/agents/<date>-<lot>.md` avec les critères « Terminé quand » cochables, puis le met à jour à chaque étape ;
+  - **commit et push à chaque étape franchie** : la machine du cloud peut être reprise après une pause, et seul ce qui est poussé survit ;
+  - **après un compactage** (automatique dans le cloud) ou une reprise, il relit d'abord son rapport et `git log`, avant de continuer ;
+  - **contexte léger** : sorties limitées (`| tail -40`, `grep -m`) ; gros fichiers et longs journaux délégués à un sous-agent `explorateur` ; `/compact` de lui-même entre deux grandes étapes (fin d'implémentation, avant le pré-vol) ;
+  - **commandes longues** (`npm run check`, build) en arrière-plan avec attente, jamais coupées par le délai de 2 minutes.
 - **Agent local (repli)** : worktree imposé, pas de push ; environnement via `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local --` ; commandes lourdes via `outputs/suivi-agents/lourd.sh` ; Node 22.
 - Base tutelliv-dev uniquement ; ne jamais lire ni afficher de secret ; données préfixées `E2E`, nettoyées à la fin.
 - **Pré-vol adverse obligatoire** avant le rapport : un sous-agent tente de casser le travail sur les classes de défauts que Codex a trouvées tard :
@@ -171,6 +177,23 @@ Bloqué par le propriétaire ou par l'extérieur :
 3. **Galerie de captures** avant/après (artifact privé), jointe au rapport final : le propriétaire relit tout le visuel en une seule fois, après coup, sans bloquer le chantier.
 4. À la fin, quand tout est fusionné : le **vérificateur final Opus** et **Codex** (liste fermée des critères « Terminé quand ») sont lancés en même temps. Leurs défauts sont fusionnés et corrigés en un seul tour, puis le vérificateur final contrôle à nouveau les seuls points corrigés. Un défaut hors liste n'est corrigé tout de suite que s'il est prouvé et important ; sinon, il va dans la TODO. Push seulement quand le vérificateur final ne signale plus aucun défaut important.
 5. Mise à jour de `TODO.md` + `npm run todo:progress`, commit groupé, puis push sur feu vert et contrôle du déploiement.
+
+## Vérification rapide (plainte du 29 octobre : plus de 2 h de recette navigateur pour presque rien)
+Constat : l'agent de recette a tourné plus de 2 h. Ses causes :
+- un serveur de développement, avec un test de 18 minutes à cause de la compilation à la demande ;
+- un navigateur qui expirait au lancement dans l'environnement du sous-agent, alors qu'il démarrait en 0,2 s depuis la session de l'orchestrateur ;
+- des comptes de test écrasés par un autre agent ;
+- des captures mêlées aux tests qui décident du push ;
+- aucun contrôle de l'orchestrateur pendant 1 h 30.
+
+Règles :
+- **Les E2E sont un script, pas un agent.** L'orchestrateur lance lui-même, en arrière-plan et depuis sa session, un script déterministe : `outputs/suivi-agents/e2e-final.sh`, ou une copie adaptée. Ce script fait un build de production (`next build`), lance `next start` sur 3111, fait `setup` et `seed` en vérifiant leur code de sortie, puis passe chaque spec avec `PLAYWRIGHT_CHANNEL=chromium E2E_SKIP_WEB_SERVER=1`, avec une ligne de résultat par spec. Un agent (Sonnet) n'intervient qu'ensuite, pour qualifier les échecs à partir des journaux.
+- **Jamais de serveur de développement pour une recette.** Toujours le build de production.
+- **Étape 0** : `npx playwright install chromium`, déjà fait le 29/10, et un test de lancement du navigateur (0,2 s attendu). Si un sous-agent n'arrive pas à lancer le navigateur au premier essai, l'orchestrateur reprend la main tout de suite.
+- **Les captures de la galerie ne bloquent jamais le push.** Elles se font après, par le même script ou un agent, pendant le contrôle Vercel.
+- **Un seul propriétaire des comptes de rôle** par chantier : celui qui fait la recette. Aucun autre agent ne lance `e2e:role-accounts setup` ni `cleanup`.
+- **Un E2E écrit est un E2E lancé.** Un lot qui ajoute ou modifie une spec la fait tourner au moins une fois avant `LOT TERMINÉ`. S'il ne peut pas lancer le navigateur, l'orchestrateur la passe tout de suite avec `e2e-final.sh` (navigateur `chromium-headless-shell`) avant la relecture du lot. Constat du 29/10 : 7 échecs en fin de chantier, tous dans des specs jamais lancées ou rendues obsolètes par un autre lot, aucun dans le produit.
+- **Délai maximal** : 30 minutes pour les E2E du chantier. L'orchestrateur regarde les journaux toutes les 15 minutes. Si un test n'a pas avancé depuis 15 minutes, il change d'approche sans attendre.
 
 ## Retour d'expérience du chantier n° 1 (28 et 29 octobre 2026)
 
@@ -287,6 +310,19 @@ Ce skill s'améliore à chaque erreur. L'orchestrateur ne la laisse jamais se re
 - **Points d'avancement spontanés** au propriétaire toutes les 15 à 20 minutes : une ligne avec l'heure de fin prévue. Il ne doit jamais avoir à demander où on en est.
 - **Délais annoncés avec marge** : prendre la durée observée la plus longue, pas la plus courte. Si on dépasse, le dire tout de suite, avec la raison et la nouvelle heure.
 - **Toute plainte du propriétaire** devient une règle ici ou dans la mémoire (`tutelliv-plainte-ameliorer-process`).
+- **File d'attente et plafond (demandes du propriétaire du 28 octobre : « ralentis, on va taper la limite » ; « sinon c'est ingérable »)** :
+  - le propriétaire peut donner une liste de X tâches d'un coup. L'orchestrateur les range dans une **file d'attente**, inscrite dans `etat-chantier.md`, dans l'ordre des dépendances et des priorités ;
+  - **4 à 5 lots au plus en même temps**, et jamais plus de 5 agents actifs, relectures et contre-relectures comprises. Le lot suivant de la file ne part que quand un lot se termine ;
+  - si le quota semble serré, mettre en pause le lot le moins avancé (commit « wip », feuille de route à jour), jamais un lot presque fini. Les lots en pause repartent en tête de file.
+- **Réflexe « plus vite, même qualité »** (demande du propriétaire du 28 octobre) : à chaque point d'avancement (toutes les 15 à 20 minutes), se poser la question et **agir aussitôt**, sans attendre qu'on le demande :
+  - qu'est-ce qui attend sans raison ? Un lot prêt à relire, une fusion possible, une recette qui peut démarrer ;
+  - quel lot peut partir **maintenant** au lieu de « la vague suivante » ? Seule une vraie dépendance de fichiers justifie d'attendre ;
+  - qu'est-ce qui peut sortir du chemin critique ? Un push en deux fois, un lot reporté, une vérification déjà faite au niveau du lot ;
+  - quelle machine est sous-employée ? Le cloud libre pendant que le Mac fait la queue, ou l'inverse.
+
+  On ne gagne jamais de temps en retirant une vérification qui protège la qualité.
+- **Annonce du délai** (plainte du 28 octobre : « 5 h du matin, c'est super long ») : donner le détail par étape et proposer d'emblée la version courte (vague 2 en parallèle, push en deux fois, lot reporté), au lieu d'un seul horaire lointain.
+
 
 ## Fichiers à tenir à jour (par l'orchestrateur, sans attendre qu'on le demande)
 
@@ -342,17 +378,37 @@ Règles :
 
 ## Agents dans le cloud (vérifié le 29 octobre 2026)
 
-- **Connexion faite** : le compte GitHub `orsocrtnt` est relié au cloud de Claude Code (`/web-setup`). Une session de test a bien été créée.
-- **Lancement par l'orchestrateur** : `claude --cloud` exige un terminal interactif. Depuis Bash, passer par un pseudo-terminal :
-  ```
-  cd /Users/orso/Developer/TutelLiv-GPT && script -q <journal> claude --cloud "<prompt du lot>" < /dev/null
-  ```
-  Le journal contient le lien de la session (`View: https://claude.ai/code/session_…`). L'option `isolation: "remote"` de l'Agent tool **ne marche pas** ici : l'agent tourne en local, sans prévenir.
-- **Choisir l'environnement** : une fois `tutelliv-dev` créé, ajouter `--environment <id>` à la commande. Sans cette option, la session part sur l'environnement par défaut, qui n'a pas l'accès à la base.
-- **Suivre l'avancement** sans lire les transcriptions : `git ls-remote origin 'refs/heads/agent/*'` montre les commits poussés. Le lien de la session sert seulement en cas de doute. Un lot sans commit poussé après 45 minutes est contrôlé ; pour lui écrire, `claude -p "<message>" --cloud <session>` (via `script -q`).
-- **Récupérer le travail** : la session pousse une branche `agent/<lot>` sur GitHub. L'orchestrateur la récupère (`git fetch origin agent/<lot>`) ou utilise `claude --teleport <session>`, puis relit et fusionne comme d'habitude.
-- **Avant le premier vrai lot, il manque encore :**
-  1. un environnement cloud `tutelliv-dev` dans les réglages de claude.ai/code, avec les variables de la base de **développement** seulement, l'accès réseau personnalisé (`*.supabase.co`, `*.pooler.supabase.com`) et le script `npm ci && npx prisma generate`. C'est le propriétaire qui recopie les valeurs, jamais l'orchestrateur ;
-  2. l'accord écrit du propriétaire pour pousser des branches `agent/*`, jamais `preproduction` ni `main` ;
-  3. un réglage Vercel pour que les prévisualisations des branches `agent/*` ne soient pas construites (Ignored Build Step), ou ne se branchent pas sur la préproduction. Le montrer au propriétaire avant de l'appliquer.
+- **Connexion faite** : sur claude.ai/customize/connectors, le compte GitHub `orsocrtnt` est connecté, l'application Claude est installée et l'état du dépôt `tutelliv-v2` est vert.
+- **⚠️ Ne jamais lancer un lot avec `claude --cloud`** : sa vérification préalable répond à tort `GitHub app is not installed` (journal `--debug-file`, 29 octobre, même après reconnexion de GitHub). La session part alors en copie locale (« bundle »), sans remote `origin`, et ne peut pas pousser. Le 28 octobre, quatre lots finis ont été perdus ainsi. L'option `isolation: "remote"` de l'Agent tool ne marche pas non plus : l'agent tourne en local, sans prévenir.
+- **Lancer un lot par une routine** (vérifié le 29 octobre : clone depuis GitHub et push réel de `agent/test-cloud-4` depuis `preproduction`). Une routine par lot, avec l'outil `RemoteTrigger` :
+  1. `action: "create"`, avec `body` :
+     ```json
+     {"name":"lot-<x>","run_once_at":"2027-10-01T12:00:00Z","enabled":true,
+      "job_config":{"ccr":{"environment_id":"env_01TspvfnXJQVRTy6pQ8UPQho",
+        "session_context":{"model":"claude-sonnet-5-5",
+          "sources":[{"git_repository":{"url":"https://github.com/orsocrtnt/tutelliv-v2"}}],
+          "allowed_tools":["Bash","Read","Write","Edit","Glob","Grep","Agent"]},
+        "events":[{"data":{"uuid":"<uuidgen en minuscules>","session_id":"","type":"user",
+          "parent_tool_use_id":null,"message":{"role":"user","content":"<prompt du lot>"}}}]}}}
+     ```
+     `env_01TspvfnXJQVRTy6pQ8UPQho` est `tutelliv-dev` ; `env_01BHQ1eLakq8qFjGX1bZHNXN` est `Default`, sans accès à la base. Modèle : `claude-sonnet-5-5` ou `claude-opus-5-5`. Avec un `run_once_at` lointain, la routine ne part que sur demande.
+  2. Tout de suite après, `action: "update"` avec `{"clear_mcp_connections": true}`, car l'API attache sinon tous les connecteurs du compte (Gmail, Drive, Supabase…).
+  3. `action: "run"`, **seulement après la réponse du `create`/`update`, jamais dans le même envoi** : sinon la routine part avec l'ancienne configuration (vu le 29 octobre). Le lancement fonctionne même si la routine est désactivée. La réponse donne le `session_id` (`cse_…`), à noter dans l'état du chantier. Le prompt va dans `events`, pas dans le corps de `run`, qui arriverait comme donnée non fiable. Limites : 30 lancements par heure et par routine, 100 par heure pour le compte.
+  4. Le prompt du lot commence par `git fetch origin preproduction && git checkout -B agent/<lot> origin/preproduction && npm ci --no-audit --no-fund`, car le clone part de `main` (le champ `branch` de la source est ignoré) et sans `node_modules` (sinon un autre `dotenv` répond et `env2:verify-dev` échoue). Il demande aussi de **ne pas envoyer de notification mobile**.
+  5. Lot fini : `action: "update"` avec `{"enabled": false}`. La suppression d'une routine et l'archivage d'une session se font à la main sur claude.ai : les lister dans le rapport final.
+  - Vérifié le 29 octobre (test 5) : création avec `Write`, modification avec `Edit` d'un nouveau fichier et de `TODO.md`, `npm run check` 1196/1196 en 2 minutes, commit et push : la session a duré 161 s. `Read` refuse un fichier de plus de 256 Ko (`TODO.md` en fait 366) : le lire par tranches (`offset`/`limit`) ou avec `grep`.
+  - **⚠️ Une branche = une seule session, nom jamais réutilisé** : depuis le cloud, un `git push` ordinaire a écrasé un commit existant de `agent/test-cloud-4` au lieu d'être refusé. Deux sessions sur la même branche s'écraseraient sans prévenir. Pour reprendre un lot, envoyer une relance à sa session existante plutôt que relancer une routine sur la même branche.
+- **Voir où en est une session (retour des agents)** : `RemoteTrigger` `action: "get_run_log"`, `session_id: "cse_…"`. On y voit le démarrage, les commandes, les erreurs, le dernier message et la ligne `result:` (fini, bloqué, en attente). `action: "list_runs"` avec `trigger_id` liste les sessions d'une routine. Plus de téléportation. À faire à chaque point d'avancement pour tout lot sans envoi récent, et ne jamais naviguer à l'aveugle.
+- **Le propriétaire ne voit pas les sessions de routine** dans la liste de gauche de claude.ai/code (constaté le 29/10 : il a cru Mobile non lancé et a mis le chantier en pause). Au lancement de chaque lot cloud, lui donner en une ligne le lien `https://claude.ai/code/session_…` (le `cse_` de `run` sans son préfixe `c`), et rappeler qu'il peut aussi vérifier sur claude.ai/code/routines ou par les commits de la branche sur GitHub. Dans la salle de contrôle, afficher les lots cloud avec un badge « cloud », l'heure du dernier commit et ce lien (à faire au prochain chantier).
+- **Suivre l'avancement** sans lire les transcriptions : `git ls-remote origin 'refs/heads/agent/*'` montre les commits poussés. Un lot sans commit poussé après 45 minutes est contrôlé. Pour lui écrire, sans pseudo-terminal : `claude -p "<message>" --cloud cse_… --output-format json < /dev/null` → `{"ok":true,…}`.
+- **Récupérer le travail** : la session pousse une branche `agent/<lot>` sur GitHub. L'orchestrateur la récupère (`git fetch origin agent/<lot>`), puis relit et fusionne comme d'habitude. Le proxy du cloud refuse la suppression d'une branche distante (403) : le nettoyage se fait depuis le Mac, avec l'accord du propriétaire.
+- **Préparation faite le 28 octobre 2026 (heure de New York)** :
+  1. environnement cloud `tutelliv-dev` : 7 variables de la base de **développement** (recopiées par le propriétaire), accès réseau « Limité » (`*.supabase.co`, `*.pooler.supabase.com`, `binaries.prisma.sh` + gestionnaires de paquets), script `if [ -f package.json ]; then npm ci && npx prisma generate; fi`. Vérifié par routine : Node 22, et `env2:verify-dev` passed après `npm ci`. **PostgreSQL injoignable depuis le cloud** (proxy HTTP/HTTPS seulement) ;
+  2. accord écrit du propriétaire pour les branches `agent/*` (jamais `preproduction` ni `main`) ;
+  3. Vercel, Ignored Build Step du projet : `case "$VERCEL_GIT_COMMIT_REF" in preproduction|main) exit 1;; *) exit 0;; esac`. Seules `preproduction` et `main` sont construites, car les variables « Preview » génériques (base, clé de service) s'appliquent à toute autre branche.
 - **Usage** : lots de code et tests unitaires dans le cloud (16 Go, sans file `lourd.sh`). Recette navigateur, Codex et vérification finale restent sur le Mac. Le cloud consomme le quota Claude comme le local.
+- **Les meilleures conditions pour un agent cloud** (le propriétaire ne regarde jamais le cloud ; c'est l'orchestrateur qui surveille) :
+  - outils autorisés d'avance par `allowed_tools` de la routine : l'agent ne reste jamais bloqué sur une demande d'accord ;
+  - le prompt du lot contient tout : règles de la rubrique « Règles données à chaque agent », critères « Terminé quand », décisions déjà prises, chemins des fichiers. L'agent n'a jamais besoin de demander ;
+  - feuille de route, push à chaque étape et relecture après un compactage : voir « Agent cloud, personne ne regarde » ;
+  - l'orchestrateur surveille par `git ls-remote origin 'refs/heads/agent/*'`. S'il n'y a aucun nouveau commit depuis 45 minutes, il lit `get_run_log`, puis envoie une relance précise avec `claude -p "<message>" --cloud cse_… < /dev/null` : relire le rapport, dire où il en est, finir ou consigner le blocage.
