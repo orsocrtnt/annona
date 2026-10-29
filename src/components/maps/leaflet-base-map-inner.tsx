@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { MapContainer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import "./map-theme.css";
 import { useViewportHeight } from "@/hooks/use-viewport-height";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui.store";

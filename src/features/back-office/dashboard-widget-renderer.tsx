@@ -1,21 +1,16 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import Link from "next/link";
 import {
   AlertTriangle,
   Bike,
-  MapPin,
   Package,
-  Radio,
   Truck,
   UserCheck,
   Users,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard, type StatDelta } from "@/components/ui/stat-card";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { PageLoader } from "@/components/ui/loader";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TONE_CLASSES } from "@/components/ui/tone";
 import { DASHBOARD_PERIOD_LABELS } from "@/lib/dashboard/period-stats";
@@ -35,28 +30,10 @@ import {
   TodayMetric,
 } from "@/features/back-office/dashboard-shared";
 import { useDriverLiveLocations } from "@/features/back-office/dispatch-map-hooks";
+import { DashboardMapPanel } from "@/features/back-office/dashboard-map-panel";
+import type { DashboardMapView } from "@/features/back-office/dashboard-map-model";
 import { lockedOfferReason } from "@/domains/saas/saas-access";
 import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
-
-const DeliveriesMapWidget = dynamic(
-  () =>
-    import("@/features/back-office/dashboard-map-widgets").then((m) => m.DeliveriesMapWidget),
-  { ssr: false, loading: () => <MapWidgetSkeleton /> }
-);
-
-const DriversMapWidget = dynamic(
-  () =>
-    import("@/features/back-office/dashboard-map-widgets").then((m) => m.DriversMapWidget),
-  { ssr: false, loading: () => <MapWidgetSkeleton /> }
-);
-
-function MapWidgetSkeleton() {
-  return (
-    <div className="flex h-[280px] items-center justify-center rounded-xl border border-border bg-muted/20">
-      <PageLoader />
-    </div>
-  );
-}
 
 /** Écart des retards avec hier à la même heure, sur la même définition reconstituée. */
 function lateDelta(dashboard: CompanyDashboardStats): StatDelta {
@@ -814,14 +791,15 @@ function DriversOnlineWidget() {
   );
 }
 
-function MapDriversWidget({ height = 280 }: { height?: number }) {
+/** Carte unifiée du tableau de bord : une seule zone, bascule Livreurs / Livraisons (MAP-INTERACTION). */
+function UnifiedMapWidget({ height = 280, initialView }: { height?: number; initialView: DashboardMapView }) {
   const access = useOfferAccess();
   const hasAdminGps = useHasOfferFeature("admin_gps");
   if (!hasAdminGps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Livreurs en direct</CardTitle>
+          <CardTitle className="text-base">Carte en direct</CardTitle>
           <CardDescription>{lockedOfferReason("admin_gps", access?.planCode)}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -834,59 +812,12 @@ function MapDriversWidget({ height = 280 }: { height?: number }) {
   }
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
-        <div>
-          <CardTitle className="text-base">Livreurs en direct</CardTitle>
-          <CardDescription>Positions GPS des livreurs connectés</CardDescription>
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/dispatch/drivers">
-            <MapPin className="mr-2 h-4 w-4" />
-            Carte complète
-          </Link>
-        </Button>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Carte en direct</CardTitle>
+        <CardDescription>Livreurs et livraisons : choisissez la vue, sélectionnez un repère pour ses détails</CardDescription>
       </CardHeader>
       <CardContent>
-        <DriversMapWidget height={height} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function MapDeliveriesWidget({ height = 280 }: { height?: number }) {
-  const access = useOfferAccess();
-  const hasAdminGps = useHasOfferFeature("admin_gps");
-  if (!hasAdminGps) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Missions actives</CardTitle>
-          <CardDescription>{lockedOfferReason("admin_gps", access?.planCode)}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-[180px] items-center justify-center rounded-xl border border-dashed bg-muted/20 text-sm text-muted-foreground">
-            Carte GPS indisponible dans cette offre
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
-        <div>
-          <CardTitle className="text-base">Missions actives</CardTitle>
-          <CardDescription>Destinations et points sur la carte</CardDescription>
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/dispatch/map">
-            <Radio className="mr-2 h-4 w-4" />
-            Dispatch
-          </Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <DeliveriesMapWidget height={height} />
+        <DashboardMapPanel height={height} initialView={initialView} />
       </CardContent>
     </Card>
   );
@@ -960,9 +891,9 @@ function DashboardWidget({ widget }: { widget: DashboardWidgetLayout }) {
     case "stat-drivers-online":
       return <DriversOnlineWidget />;
     case "map-drivers":
-      return <MapDriversWidget height={mapHeight} />;
+      return <UnifiedMapWidget height={mapHeight} initialView="drivers" />;
     case "map-deliveries":
-      return <MapDeliveriesWidget height={mapHeight} />;
+      return <UnifiedMapWidget height={mapHeight} initialView="deliveries" />;
     default:
       return null;
   }

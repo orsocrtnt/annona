@@ -7,7 +7,8 @@ import { LeafletBaseMap } from "@/components/maps/leaflet-base-map";
 import { MAP_TILES } from "@/lib/maps/provider-config";
 import type { NavigationRoute } from "@/lib/maps/osrm-route";
 import type { LivePosition } from "@/features/driver/use-driver-live-position";
-import { MAP_ROUTE_STYLE, MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import { mapPalette, mapRouteStyle, type MapPaletteTheme } from "@/lib/maps/map-visual-theme";
+import { useMapTheme } from "@/hooks/use-map-theme";
 
 type DriverNavigationMapProps = {
   position: LivePosition | null;
@@ -65,7 +66,8 @@ function MapInteractionWatcher({ onUserInteraction }: { onUserInteraction: () =>
   return null;
 }
 
-function createDriverIcon(heading: number | null) {
+function createDriverIcon(heading: number | null, theme: MapPaletteTheme) {
+  const palette = mapPalette(theme);
   const rotation = heading ?? 0;
   return L.divIcon({
     className: "driver-nav-arrow",
@@ -76,8 +78,8 @@ function createDriverIcon(heading: number | null) {
       transform-origin: center center;
     ">
       <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="10" fill="${MAP_VISUAL_THEME.ink}" stroke="#ffffff" stroke-width="2.5"/>
-        <path d="M12 6 L16 16 L12 13 L8 16 Z" fill="#ffffff"/>
+        <circle cx="12" cy="12" r="10" fill="${palette.ink}" stroke="${palette.surface}" stroke-width="2.5"/>
+        <path d="M12 6 L16 16 L12 13 L8 16 Z" fill="${palette.surface}"/>
       </svg>
     </div>`,
     iconSize: [28, 28],
@@ -99,7 +101,10 @@ export function DriverNavigationMap({
     return [48.8566, 2.3522];
   }, [position, target]);
 
-  const driverIcon = useMemo(() => createDriverIcon(heading), [heading]);
+  const theme = useMapTheme();
+  const palette = mapPalette(theme);
+  const routeStyle = mapRouteStyle(theme);
+  const driverIcon = useMemo(() => createDriverIcon(heading, theme), [heading, theme]);
 
   return (
     <LeafletBaseMap fill navigation variant="uber" center={center} zoom={NAV_ZOOM} className="h-full w-full">
@@ -110,11 +115,11 @@ export function DriverNavigationMap({
         <>
           <Polyline
             positions={route.polyline}
-            pathOptions={MAP_ROUTE_STYLE.halo}
+            pathOptions={routeStyle.halo}
           />
           <Polyline
             positions={route.polyline}
-            pathOptions={{ ...MAP_ROUTE_STYLE.line, weight: 6 }}
+            pathOptions={{ ...routeStyle.line, weight: 6 }}
           />
         </>
       )}
@@ -126,9 +131,9 @@ export function DriverNavigationMap({
             className: "",
             html: `<div style="
               width: 18px; height: 18px; border-radius: 9999px;
-              background: ${MAP_VISUAL_THEME.surface}; border: 3px solid ${MAP_VISUAL_THEME.ink};
+              background: ${palette.surface}; border: 3px solid ${palette.ink};
               box-shadow: 0 2px 8px rgba(0,0,0,0.22);
-            "><span style="display:block;width:6px;height:6px;margin:3px;border-radius:9999px;background:${MAP_VISUAL_THEME.ink};"></span></div>`,
+            "><span style="display:block;width:6px;height:6px;margin:3px;border-radius:9999px;background:${palette.ink};"></span></div>`,
             iconSize: [18, 18],
             iconAnchor: [9, 9],
           })}

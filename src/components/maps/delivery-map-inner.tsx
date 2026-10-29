@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { CircleMarker, Polyline, Popup, useMap } from "react-leaflet";
 import { LeafletBaseMap } from "@/components/maps/leaflet-base-map";
-import { MAP_ROUTE_STYLE, MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import { mapPalette, mapRouteStyle } from "@/lib/maps/map-visual-theme";
+import { useMapTheme } from "@/hooks/use-map-theme";
 
 export interface MapMarker {
   id: string;
@@ -19,13 +20,16 @@ export interface DeliveryMapProps {
 
 function DeliveryMapPoints({ markers }: { markers: MapMarker[] }) {
   const map = useMap();
+  const theme = useMapTheme();
+  const palette = mapPalette(theme);
+  const routeStyle = mapRouteStyle(theme);
   useEffect(() => {
     if (markers.length > 1) map.fitBounds(markers.map(m => [m.latitude, m.longitude] as [number, number]), { padding: [30, 30], maxZoom: 15 });
   }, [map, markers]);
   return <>
-    {markers.length > 1 && <Polyline positions={markers.map(m => [m.latitude, m.longitude])} pathOptions={{ ...MAP_ROUTE_STYLE.halo, weight: 7 }} />}
-    {markers.length > 1 && <Polyline positions={markers.map(m => [m.latitude, m.longitude])} pathOptions={{ ...MAP_ROUTE_STYLE.line, weight: 3.5 }} />}
-    {markers.map((marker, index) => <CircleMarker key={marker.id} center={[marker.latitude, marker.longitude]} radius={index === markers.length - 1 ? 9 : 6} pathOptions={{ color: MAP_VISUAL_THEME.surface, fillColor: index === markers.length - 1 ? MAP_VISUAL_THEME.ink : MAP_VISUAL_THEME.inkSoft, fillOpacity: 1, weight: 3 }}><Popup>{marker.label}</Popup></CircleMarker>)}
+    {markers.length > 1 && <Polyline positions={markers.map(m => [m.latitude, m.longitude])} pathOptions={{ ...routeStyle.halo, weight: 7 }} />}
+    {markers.length > 1 && <Polyline positions={markers.map(m => [m.latitude, m.longitude])} pathOptions={{ ...routeStyle.line, weight: 3.5 }} />}
+    {markers.map((marker, index) => <CircleMarker key={marker.id} center={[marker.latitude, marker.longitude]} radius={index === markers.length - 1 ? 9 : 6} pathOptions={{ color: palette.surface, fillColor: index === markers.length - 1 ? palette.ink : palette.inkSoft, fillOpacity: 1, weight: 3 }}><Popup>{marker.label}</Popup></CircleMarker>)}
   </>;
 }
 
