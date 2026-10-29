@@ -1,40 +1,44 @@
 # Lot G — DISPATCH-4 tranche 1 — 29 octobre 2026
 
-Branche `agent/g-dispatch` (depuis c917cf8). Ni push ni migration.
+Branche `agent/g-dispatch` (depuis c917cf8). Aucun push, aucune migration.
 
-## Feuille de route
+## Livré
 
-- [x] Les 3 meilleurs livreurs, avec un score sur 100 et une phrase « pourquoi » (`src/lib/dispatch/dispatch-score.ts`). Poids : trajet 50 %, charge 30 %, zone 10 %, priorité 10 %.
-- [x] Trajet OSRM `table` : un seul appel, mis en cache (2 min, 1 000 entrées, clé arrondie à environ 100 m). En cas de panne, repli « à vol d'oiseau » avec la raison affichée et pause de 30 s (`travel-time.ts`). Contrat vérifié dans la doc v5.24.
-- [x] Affectation en un clic (`POST /api/dispatch/suggestions`). Le choix manuel forcé reste dans le sélecteur.
-- [x] Transaction courte, sans appel réseau. Double clic sans effet (même livreur, aucune écriture). Pas de remplacement silencieux.
-- [x] Mode Suggestion / Automatique, porté par `dispatchRules.enabled`, sans migration. Option « Meilleur score » (champ `bestScore`). Tout est derrière l'option « Dispatch automatique » ; l'écran indique quand elle manque.
-- [x] Dimensionnement pour 200 livreurs : 200 calculs vol d'oiseau et un tri, puis un appel `table` de 9 coordonnées. Une file est limitée à 20 appels et 10 s.
-- [x] Aucune coordonnée en sortie. Historique client sans chiffre. Accès dispatcher et admin seulement. Requêtes filtrées par `companyId`.
-- [ ] `npm run check` et test PostgreSQL : voir plus bas.
+- [x] Les 3 meilleurs livreurs, avec un score sur 100 et une phrase qui explique le choix (`src/lib/dispatch/dispatch-score.ts`). Poids : trajet 50 %, charge 30 %, zone 10 %, priorité 10 %.
+- [x] Trajet OSRM `table` (`travel-time.ts`) : un seul appel groupé, cache de 2 min et 1 000 entrées. En cas d'échec, estimation à vol d'oiseau avec la raison affichée, et pause de 30 s.
+- [x] Affectation en un clic (`/api/dispatch/suggestions`), forçage manuel conservé. Transaction sans appel réseau. Double clic idempotent.
+- [x] Deux modes : Suggestion ou Automatique, sans migration. Tout passe par l'option « Dispatch automatique ».
+- [x] Pour 200 livreurs : vol d'oiseau, puis un appel `table` de 9 points. La file est limitée à 20 appels et 10 s.
+- [x] Aucune coordonnée exposée. Accès dispatcher et admin seulement. Données filtrées par `companyId`.
+- [x] Test PostgreSQL réel (`npm run test:dispatch-concurrency`, 10 requêtes en parallèle) : réussi.
+- [x] Pré-vol adverse traité. `npm run check` vert, `git diff --check` propre.
 
 ## Décisions
 
-- Mode = `enabled` : Suggestion = faux, Automatique = vrai. Les réglages hérités ne changent pas. Écarté : un second champ, qui pouvait contredire le premier.
-- « Meilleur score » : champ `bestScore` (faux par défaut), à part de `strategy`, pour qu'un retour arrière reste sûr. L'ancien code ignore ce champ et reprend la stratégie enregistrée. Écarté : une valeur `BEST_SCORE` dans `strategy`, que l'ancien code refuse, ce qui bloquerait toute affectation.
-- Trajet inconnu : 0,5 si personne n'a de GPS ; 0,25 si le livreur est en service sans position ; 0 s'il est hors service.
-- Positions envoyées uniquement à `DRIVE_ROUTE_OSRM_URL`. Sans ce réglage, on reste à vol d'oiseau. Écarté : le serveur public OSRM.
+- Le mode est porté par `enabled` : Suggestion = faux, Automatique = vrai. Écarté : un second champ, qui pourrait contredire le premier.
+- Le « Meilleur score » est un champ séparé `bestScore` : en cas de retour arrière, l'ancien code l'ignore. Écarté : une valeur dans `strategy`, que l'ancien code refuserait.
+- Trajet inconnu : 0,5 si le GPS est inactif pour tous, 0,25 sans position, 0 hors service.
+- OSRM seulement via `DRIVE_ROUTE_OSRM_URL`, jamais le serveur public.
 
 ## Non vérifié
 
-- Le trajet OSRM réel : seul le réseau est simulé dans les tests.
-- La recette navigateur.
+- OSRM réel : seul le réseau est simulé.
+- Recette navigateur et E2E (pas de serveur).
+- Deux points mineurs restent ouverts. Si l'auto et un clic visent le même livreur au même moment, l'auto peut compter une affectation qu'il n'a pas faite. Le verrou très bref peut aussi toucher un livreur d'une autre entreprise, sans fuite.
 
 ## À lancer sur le Mac
 
-- `npx dotenv -e .env.local -- npm run test:dispatch-concurrency`
-- `npx playwright test tests/e2e/dispatch-suggestions.spec.ts`
+`npx playwright test tests/e2e/dispatch-suggestions.spec.ts`
 
 ## Écrans à capturer (Light/Dark, 390 et 1 280 px)
 
-Fiche livraison en attente (panneau « Livreurs suggérés »), `/dispatch?delivery=…`, Règles dispatch (mode et stratégie), offre sans l'option.
+- Fiche livraison en attente, panneau « Livreurs suggérés »
+- `/dispatch?delivery=…`
+- Règles dispatch : mode et stratégie
+- Offre sans l'option
 
 ## Erreurs et leçons
 
-- Le premier E2E aurait échoué : explications identiques, et un `.or()` qui passait toujours. La relecture adverse l'a vu.
-- Le score neutre de 0,5 favorisait les livreurs hors service. Corrigé.
+- Premier E2E fautif (`.or()` toujours vrai), repéré en relecture.
+- Un score neutre de 0,5 favorisait les livreurs hors service.
+- `BEST_SCORE` dans l'enum bloquait le retour arrière.

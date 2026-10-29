@@ -10,13 +10,14 @@ import { assertSaasFeature, assertSaasMutationFeature } from "@/domains/saas/saa
  * Dispatcher et administrateurs seulement ; option « Dispatch automatique » requise.
  * Aucune coordonnée ni distance en mètres dans la réponse.
  */
-const STAFF_ROLES = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"] as const;
 const OPTION_MISSING = "Les suggestions de livreurs font partie de l’option « Dispatch automatique », non incluse dans cette offre.";
 
-async function authorize(mutation: boolean): Promise<{ error: NextResponse } | { companyId: string; readOnly: boolean }> {
+type Authorized = { error: NextResponse } | { companyId: string; readOnly: boolean };
+
+async function authorize(mutation: boolean): Promise<Authorized> {
   const auth = await requireStaffRole("deliveries:dispatch");
   if ("error" in auth) return { error: auth.error as NextResponse };
-  const denied = requireRole(auth.context, [...STAFF_ROLES]);
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
   if (denied) return { error: denied };
   const companyId = getCompanyId(auth.context);
   if (!companyId) return { error: NextResponse.json({ error: "Entreprise non associée" }, { status: 400 }) };

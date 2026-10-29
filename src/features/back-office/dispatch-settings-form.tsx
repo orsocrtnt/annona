@@ -691,8 +691,8 @@ export function DispatchSettingsForm() {
               <div>
                 <p className="text-sm font-medium">Tenir compte de la position GPS</p>
                 <p className="text-xs text-muted-foreground">
-                  Temps de trajet jusqu&apos;au retrait pour le meilleur score et les suggestions ;
-                  pour les autres stratégies, départage à égalité. Positions des livreurs en service seulement.
+                  À égalité, le livreur en service le plus proche du retrait est choisi. Avec le
+                  meilleur score et les suggestions : temps de trajet jusqu&apos;au retrait.
                 </p>
               </div>
             </label>
