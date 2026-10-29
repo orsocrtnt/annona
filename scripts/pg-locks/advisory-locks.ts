@@ -145,7 +145,12 @@ async function main() {
     const allowed = attempts.filter((gate) => gate.allowed);
     const failOpen = allowed.filter((gate) => gate.allowed && gate.attempt === null).length;
     const pairRows = await prisma.authLoginFailure.count({ where: { keyHash: loginKeys.pairKey! } });
-    report.c = { parallel: PARALLEL + 2, allowed: allowed.length, failOpen, refused: attempts.length - allowed.length, pairRows, limit: LOGIN_PAIR_FAILURE_LIMIT };
+    const refusedByContention = attempts.filter((gate) => !gate.allowed && gate.busy === true).length;
+    report.c = {
+      parallel: PARALLEL + 2, allowed: allowed.length, failOpen,
+      refusedByLimit: attempts.length - allowed.length - refusedByContention, refusedByContention,
+      pairRows, limit: LOGIN_PAIR_FAILURE_LIMIT,
+    };
     assert.equal(failOpen, 0, "c : aucune tentative autorisée par défaillance (fail-open)");
     assert.ok(allowed.length >= 1 && allowed.length <= LOGIN_PAIR_FAILURE_LIMIT, "c : jamais au-delà de la limite");
     assert.equal(pairRows, allowed.length, "c : chaque autorisation est comptée");
@@ -153,10 +158,10 @@ async function main() {
     // (d) 10 exécutions simultanées inscrivent la première tentative e-mail : une seule est « première ».
     const job = await enqueueOperationJob(prisma, { jobKey: `e2e-pglocks-email-${tag}`, type: "CLIENT_NOTIFICATION", companyId: company.id, payload: { kind: "E2E_PG_LOCKS" } });
     await parkJobs();
-    const windows = await Promise.all(Array.from({ length: PARALLEL }, () => jobEmailReplayWindow(job.id)()));
+    const windows = await Promise.all(Array.from({ length: PARALLEL }, () => jobEmailReplayWindow({ id: job.id, createdAt: new Date(), previouslyAttempted: false })()));
     const firsts = windows.filter((value) => value === null).length;
     const stamps = new Set(windows.filter((value): value is Date => value !== null).map((value) => value.getTime()));
-    const later2 = await jobEmailReplayWindow(job.id)();
+    const later2 = await jobEmailReplayWindow({ id: job.id, createdAt: new Date(), previouslyAttempted: false })();
     report.d = { parallel: PARALLEL, firstAttempts: firsts, distinctStoredStamps: stamps.size, laterCallSeesStamp: later2 !== null };
     assert.equal(firsts, 1, "d : une seule première tentative");
     assert.equal(stamps.size, 1, "d : un seul horodatage inscrit");

@@ -916,8 +916,10 @@ model Invoice {
 }
 
 /// DEMO-3 : trace d'une relance de facture (qui, quand, canal, résultat).
-/// result : QUEUED, SENT, NOT_SENT_EMAIL_NOT_CONFIGURED, NOT_SENT_NO_RECIPIENT,
-/// NOT_SENT_CLIENT_PREFERENCES, NOT_SENT_INVOICE_SETTLED, SKIPPED_SUPERSEDED.
+/// result : QUEUED, SENDING (réservée ; completed_at = heure de réservation), SENT,
+/// SEND_UNCONFIRMED (C5 : peut-être reçue, aucun renvoi automatique), NOT_SENT_EMAIL_NOT_CONFIGURED,
+/// NOT_SENT_NO_RECIPIENT, NOT_SENT_CLIENT_PREFERENCES, NOT_SENT_INVOICE_SETTLED, SKIPPED_SUPERSEDED.
+/// FAILED n'est jamais stocké : résultat affiché d'une relance QUEUED dont la tâche est épuisée.
 model InvoiceReminder {
   id          String    @id @default(cuid())
   channel     String    @default("EMAIL")

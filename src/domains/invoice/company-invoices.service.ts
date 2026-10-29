@@ -2,7 +2,11 @@ import type { InvoiceStatus, Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { COMPANY_INVOICES_TAKE } from "@/lib/query/list-limits";
 import { invoiceDaysOverdue, isInvoiceOutstanding, startOfParisDay } from "@/domains/invoice/invoice-due";
-import { effectiveReminderResult, reminderBlocksNewOne } from "@/domains/invoice/invoice-reminder.service";
+import {
+  blockingReminderCandidatesWhere,
+  effectiveReminderResult,
+  firstBlockingReminder,
+} from "@/domains/invoice/invoice-reminder.service";
 
 export const COMPANY_INVOICE_FILTERS = ["ALL", "PENDING", "OVERDUE", "PAID"] as const;
 export type CompanyInvoiceFilter = (typeof COMPANY_INVOICE_FILTERS)[number];
@@ -30,7 +34,7 @@ export type CompanyInvoiceList = {
   limit: number;
 };
 
-type ListDatabase = Pick<PrismaClient, "invoice">;
+type ListDatabase = Pick<PrismaClient, "invoice" | "invoiceReminder">;
 
 /**
  * Paiements côté entreprise (DEMO-3). Lecture seule : une facture PENDING dont le
@@ -78,7 +82,7 @@ export async function listCompanyInvoices(
         reminders: {
           orderBy: { createdAt: "desc" },
           take: 1,
-          select: { result: true, channel: true, createdAt: true, completedAt: true, operationJob: { select: { status: true } } },
+          select: { result: true, channel: true, createdAt: true, completedAt: true, operationJob: { select: { status: true, lastError: true } } },
         },
       },
     }),
@@ -86,6 +90,19 @@ export async function listCompanyInvoices(
     db.invoice.count({ where: { companyId, ...pending } }),
     db.invoice.count({ where: { companyId, ...overdue } }),
   ]);
+
+  // « Relancer » suit exactement la règle du serveur : toute relance bloquante, pas seulement la dernière.
+  const outstandingIds = rows.filter((row) => isInvoiceOutstanding(row.status)).map((row) => row.id);
+  const candidates = outstandingIds.length
+    ? await db.invoiceReminder.findMany({
+        where: { companyId, invoiceId: { in: outstandingIds }, ...blockingReminderCandidatesWhere(now) },
+        orderBy: { createdAt: "desc" },
+        select: { invoiceId: true, result: true, createdAt: true, completedAt: true, operationJob: { select: { status: true, lastError: true } } },
+      })
+    : [];
+  const blocked = new Set(
+    outstandingIds.filter((id) => firstBlockingReminder(candidates.filter((row) => row.invoiceId === id), now))
+  );
 
   return {
     counts: { PAID: paidCount, PENDING: pendingCount, OVERDUE: overdueCount },
@@ -110,7 +127,7 @@ export async function listCompanyInvoices(
         lastReminder: last
           ? { createdAt: last.createdAt.toISOString(), result: effectiveReminderResult(last, now), channel: last.channel }
           : null,
-        canRemind: outstanding && !(last && reminderBlocksNewOne(last, now)),
+        canRemind: outstanding && !blocked.has(row.id),
       };
     }),
   };

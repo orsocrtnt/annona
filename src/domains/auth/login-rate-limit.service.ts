@@ -21,7 +21,7 @@ export type LoginAttemptKeys = { pairKey: string | null; emailKey: string | null
 export type LoginAttempt = { keys: LoginAttemptKeys; ids: string[] };
 export type LoginAttemptGate =
   | { allowed: true; attempt: LoginAttempt | null }
-  | { allowed: false; retryAfterSeconds: number };
+  | { allowed: false; retryAfterSeconds: number; busy?: true };
 type LoginAttemptDatabase = Pick<typeof prisma, "authLoginFailure" | "$transaction">;
 type LoginAttemptTx = Pick<Prisma.TransactionClient, "authLoginFailure" | "$queryRaw">;
 
@@ -39,6 +39,14 @@ const LOGIN_ATTEMPT_TX = { maxWait: 5_000, timeout: 10_000 } as const;
 const CONTENTION_PRISMA_CODES = new Set(["P2024", "P2028"]);
 const CONTENTION_SQLSTATES = new Set(["55P03", "57014"]);
 export const LOGIN_CONTENTION_RETRY_SECONDS = 5;
+/**
+ * Refus par contention, sans lien avec des échecs : 503 (capacité côté serveur, pas un excès du
+ * client) avec un message distinct, jamais « trop de tentatives ».
+ */
+export const LOGIN_BUSY_MESSAGE = "Service momentanément occupé, réessayez dans quelques secondes.";
+export function loginBusyResponseInit() {
+  return { status: 503, headers: { "Retry-After": String(LOGIN_CONTENTION_RETRY_SECONDS) } };
+}
 
 function isContentionError(error: unknown) {
   if (!error || typeof error !== "object") return false;
@@ -122,7 +130,7 @@ export async function beginLoginAttempt(
   } catch (error) {
     console.error("Login rate limit check failed:", error instanceof Error ? error.message : "unknown");
     // Contention (tentatives simultanées sur les mêmes clés, pool saturé) : jamais un contournement.
-    if (isContentionError(error)) return { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS };
+    if (isContentionError(error)) return { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS, busy: true };
     return { allowed: true, attempt: null };
   }
 }

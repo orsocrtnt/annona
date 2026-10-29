@@ -208,12 +208,12 @@ test("contention (expiration de transaction ou de pool) : refus bref, jamais une
   ];
   for (const error of errors) {
     const db = { $transaction: async () => { throw error; } } as unknown as Db;
-    assert.deepEqual(await beginLoginAttempt(keys, { db }), { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS }, error.message);
+    assert.deepEqual(await beginLoginAttempt(keys, { db }), { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS, busy: true }, error.message);
   }
 });
 
 // Route : le contrôle précède Supabase, la réponse ne dépend pas de l'existence du compte.
-function loadLoginRoute(options: { blocked?: number; signIn: "ok" | "invalid" | "down"; demo?: boolean; realLimiter?: boolean }) {
+function loadLoginRoute(options: { blocked?: number; busy?: boolean; signIn: "ok" | "invalid" | "down"; demo?: boolean; realLimiter?: boolean }) {
   const calls: string[] = [];
   const afterTasks: Array<() => Promise<void>> = [];
   const user = { id: "u", email: "user@example.test", companyId: "a", company: { isDemo: false }, role: { systemRole: "CLIENT" }, settings: null };
@@ -232,8 +232,11 @@ function loadLoginRoute(options: { blocked?: number; signIn: "ok" | "invalid" | 
       signOut: async () => ({ error: null }),
     } }) },
     "@/domains/auth/login-rate-limit.service": options.realLimiter ? limiter : {
+      LOGIN_BUSY_MESSAGE: limiter.LOGIN_BUSY_MESSAGE,
+      loginBusyResponseInit: limiter.loginBusyResponseInit,
       startLoginAttempt: async ({ email, source, trackEmail }: { email: string; source: string; trackEmail: boolean }) => {
         calls.push(`begin:${email}:${source}:${trackEmail ? "email" : "source-only"}`);
+        if (options.busy) return { allowed: false, retryAfterSeconds: limiter.LOGIN_CONTENTION_RETRY_SECONDS, busy: true };
         return options.blocked ? { allowed: false, retryAfterSeconds: options.blocked } : { allowed: true, attempt: { ids: ["r1"] } };
       },
       settleLoginAttempt: async (_attempt: unknown, outcome: string) => { calls.push(`settle:${outcome}`); },
@@ -269,6 +272,17 @@ test("route : bloquée -> 429 en français avec Retry-After, Supabase jamais app
   assert.match(body.error, /Trop de tentatives.*10 minutes/);
   assert.doesNotMatch(JSON.stringify(body), /introuvable|inexistant|existe/);
   assert.deepEqual(route.calls, ["begin:user@example.test:203.0.113.10:email"]);
+});
+
+test("route : contention du limiteur -> 503 « service occupé », Retry-After 5, jamais « trop de tentatives »", async () => {
+  const route = loadLoginRoute({ busy: true, signIn: "ok" });
+  const response = await route.POST(loginRequest());
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("Retry-After"), "5");
+  const body = await response.json();
+  assert.equal(body.error, "Service momentanément occupé, réessayez dans quelques secondes.");
+  assert.doesNotMatch(body.error, /tentatives/);
+  assert.deepEqual(route.calls, ["begin:user@example.test:203.0.113.10:email"], "Supabase jamais appelé : le refus reste");
 });
 
 test("route : échec d'identifiants conservé, panne Supabase annulée, succès soldé", async () => {

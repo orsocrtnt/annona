@@ -30,6 +30,8 @@ import {
 } from "@/domains/demo/demo-pool.service";
 import { getSessionSaasAccess } from "@/domains/saas/saas-session";
 import {
+  LOGIN_BUSY_MESSAGE,
+  loginBusyResponseInit,
   settleLoginAttempt,
   startLoginAttempt,
 } from "@/domains/auth/login-rate-limit.service";
@@ -87,6 +89,9 @@ export async function POST(request: Request) {
       }),
       createClient(),
     ]);
+    if (!rateLimit.allowed && rateLimit.busy) {
+      return NextResponse.json({ error: LOGIN_BUSY_MESSAGE }, loginBusyResponseInit());
+    }
     if (!rateLimit.allowed) {
       const minutes = Math.ceil(rateLimit.retryAfterSeconds / 60);
       return NextResponse.json(

@@ -48,6 +48,7 @@ export type FakeJob = {
   payload: Row;
   companyId: string | null;
   maxAttempts: number;
+  lastError?: string | null;
 };
 
 function matchValue(actual: unknown, condition: unknown): boolean {

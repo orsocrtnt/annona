@@ -53,19 +53,23 @@ function deferredUntil(error: unknown): Date | null {
  * Fenêtre de déduplication du fournisseur d'e-mail pour une tâche (C5), sans migration : l'instant de
  * la première tentative réellement émise est inscrit dans le payload juste avant l'appel. Renvoie
  * null pour la première tentative, sinon cet instant (borne basse de toute tentative antérieure).
- * Valeur illisible ou tâche absente : époque 0, donc fenêtre dépassée (prudence).
+ * Tâche déjà exécutée sans marqueur (héritée de l'ancien code, qui a pu envoyer) : la fenêtre part de
+ * sa création, inscrite comme marqueur. Valeur illisible ou tâche absente : époque 0 (fenêtre dépassée).
  */
-export function jobEmailReplayWindow(jobId: string, db: Pick<typeof prisma, "$executeRaw" | "$queryRaw"> = prisma) {
+export function jobEmailReplayWindow(
+  job: { id: string; createdAt: Date; previouslyAttempted: boolean },
+  db: Pick<typeof prisma, "$executeRaw" | "$queryRaw"> = prisma
+) {
   return async (): Promise<Date | null> => {
-    const now = new Date().toISOString();
+    const marker = (job.previouslyAttempted ? job.createdAt : new Date()).toISOString();
     const marked = await db.$executeRaw`
       UPDATE "operation_jobs"
       SET "payload" = jsonb_set(CASE WHEN jsonb_typeof("payload") = 'object' THEN "payload" ELSE '{}'::jsonb END,
-                                '{emailFirstAttemptAt}', to_jsonb(${now}::text), true)
-      WHERE "id" = ${jobId} AND NOT ("payload" ? 'emailFirstAttemptAt')`;
-    if (marked === 1) return null;
+                                '{emailFirstAttemptAt}', to_jsonb(${marker}::text), true)
+      WHERE "id" = ${job.id} AND NOT ("payload" ? 'emailFirstAttemptAt')`;
+    if (marked === 1) return job.previouslyAttempted ? job.createdAt : null;
     const rows = await db.$queryRaw<Array<{ first: string | null }>>`
-      SELECT "payload"->>'emailFirstAttemptAt' AS first FROM "operation_jobs" WHERE "id" = ${jobId}`;
+      SELECT "payload"->>'emailFirstAttemptAt' AS first FROM "operation_jobs" WHERE "id" = ${job.id}`;
     const first = rows[0]?.first ? new Date(rows[0].first) : null;
     return first && Number.isFinite(first.getTime()) ? first : new Date(0);
   };
@@ -125,7 +129,9 @@ function readString(payload: Prisma.JsonValue, key: string) {
   return typeof value === "string" ? value : null;
 }
 
-async function executeJob(job: OperationJob) {
+/** `previouslyAttempted` : la tâche avait déjà tourné avant cette exécution (essais ou erreur). */
+async function executeJob(job: OperationJob, context: { previouslyAttempted: boolean }) {
+  const emailWindow = () => jobEmailReplayWindow({ id: job.id, createdAt: job.createdAt, previouslyAttempted: context.previouslyAttempted });
   if (job.type === "AUTO_DISPATCH") {
     const companyId = readString(job.payload, "companyId");
     const deliveryId = readString(job.payload, "deliveryId");
@@ -155,7 +161,7 @@ async function executeJob(job: OperationJob) {
         "@/domains/signup/signup.service"
       );
       // Fenêtre de déduplication du fournisseur d'e-mail, bornée par la première tentative émise (C5).
-      await deliverSignupWelcomeEmail(job.payload, job.jobKey, jobEmailReplayWindow(job.id));
+      await deliverSignupWelcomeEmail(job.payload, job.jobKey, emailWindow());
       return;
     }
     if (readString(job.payload, "kind") === "ORDER_MESSAGE") {
@@ -168,13 +174,13 @@ async function executeJob(job: OperationJob) {
     // DEMO-3 : relance de facture (e-mail au client).
     if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
       const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");
-      await deliverInvoiceReminderJob(job.payload, job.jobKey);
+      await deliverInvoiceReminderJob(job.payload, job.jobKey, { previouslyAttempted: context.previouslyAttempted });
       return;
     }
     const { deliverClientNotificationJob } = await import(
       "@/domains/client-portal/notify.service"
     );
-    await deliverClientNotificationJob(job.payload, job.jobKey, jobEmailReplayWindow(job.id));
+    await deliverClientNotificationJob(job.payload, job.jobKey, emailWindow());
     return;
   }
 
@@ -218,11 +224,15 @@ export async function processOperationJob(jobId: string, now?: Date) {
     return prisma.operationJob.findUnique({ where: { id: jobId } });
   }
 
+  // Avant la prise : un essai ou une erreur antérieurs signalent une tâche déjà exécutée (C5).
+  const previouslyAttempted = current.attempts > 0 || current.lastError !== null;
   const claim = await prisma.operationJob.updateMany({
     where: {
       id: current.id,
       status: current.status,
       attempts: current.attempts,
+      // Une tâche reportée entre-temps (échéance future) n'est pas reprise aussitôt.
+      nextAttemptAt: { lte: claimedAt },
     },
     data: {
       status: "PROCESSING",
@@ -235,7 +245,7 @@ export async function processOperationJob(jobId: string, now?: Date) {
 
   const claimed = await prisma.operationJob.findUniqueOrThrow({ where: { id: jobId } });
   try {
-    await executeJob(claimed);
+    await executeJob(claimed, { previouslyAttempted });
     await prisma.operationJob.updateMany({
       where: {
         id: jobId,

@@ -50,22 +50,30 @@ export type InvoiceReminderResult =
   | "NOT_SENT_CLIENT_PREFERENCES"
   | "NOT_SENT_INVOICE_SETTLED"
   | "SKIPPED_SUPERSEDED"
-  | "SEND_UNCONFIRMED"
-  | "FAILED";
+  | "SEND_UNCONFIRMED";
 
 /** Une relance non confirmée a peut-être été reçue : elle bloque comme une relance envoyée. */
 const BLOCKING_RESULTS: InvoiceReminderResult[] = ["QUEUED", "SENT", "SEND_UNCONFIRMED"];
 
-type ReminderState = { result: string; createdAt: Date; completedAt?: Date | null; operationJob?: { status: string } | null };
+type ReminderState = { result: string; createdAt: Date; completedAt?: Date | null; operationJob?: { status: string; lastError?: string | null } | null };
+
+/** Erreur de tâche issue d'un appel au fournisseur (réponse HTTP, expiration, réseau). */
+const PROVIDER_ATTEMPT_ERROR = /EMAIL_PROVIDER_HTTP_|TimeoutError|timeout|aborted|fetch failed/i;
 
 /**
  * Résultat affiché :
- * - QUEUED dont la tâche a définitivement échoué : FAILED (rien n'est parti, c'est certain) ;
+ * - QUEUED dont la tâche a définitivement échoué : FAILED (rien n'est parti), sauf relance héritée
+ *   dont la tâche a échoué sur un appel au fournisseur : SEND_UNCONFIRMED ;
  * - SENDING dont la tâche a définitivement échoué, ou réservée depuis plus de 24 h sans reprise :
  *   SEND_UNCONFIRMED (l'e-mail est peut-être parti, plus aucune reprise automatique en cours).
  */
 export function effectiveReminderResult(reminder: ReminderState, now: Date = new Date()): string {
-  if (reminder.result === "QUEUED" && reminder.operationJob?.status === "FAILED") return "FAILED";
+  if (reminder.result === "QUEUED" && reminder.operationJob?.status === "FAILED") {
+    // Avec ce code, une relance QUEUED dont la tâche est épuisée n'a jamais été réservée : rien n'est
+    // parti. Héritée de l'ancien code (remise en file après un 500, un 409 ou une expiration), elle a
+    // pu partir : non confirmée, donc bloquante, jamais « échec » qui ré-autoriserait « Relancer ».
+    return reminder.operationJob.lastError && PROVIDER_ATTEMPT_ERROR.test(reminder.operationJob.lastError) ? "SEND_UNCONFIRMED" : "FAILED";
+  }
   if (reminder.result === "SENDING") {
     const reservedAt = (reminder.completedAt ?? reminder.createdAt).getTime();
     if (reminder.operationJob?.status === "FAILED" || reservedAt < now.getTime() - COOLDOWN_MS) return "SEND_UNCONFIRMED";
@@ -82,6 +90,27 @@ export function reminderBlocksNewOne(reminder: ReminderState, now: Date): boolea
     return (reminder.completedAt ?? reminder.createdAt).getTime() >= since;
   }
   return (BLOCKING_RESULTS as string[]).includes(effectiveReminderResult(reminder)) && reminder.createdAt.getTime() >= since;
+}
+
+/**
+ * Relances qui peuvent bloquer une nouvelle relance (fenêtre de 24 h) ; le filtre exact est
+ * `reminderBlocksNewOne`. Partagé par le bouton (liste) et le serveur (clic) : même règle partout.
+ */
+export function blockingReminderCandidatesWhere(now: Date) {
+  const since = new Date(now.getTime() - COOLDOWN_MS);
+  return {
+    OR: [
+      { result: "SENDING", completedAt: { gte: since } },
+      { result: "QUEUED", createdAt: { gte: since } },
+      { result: { in: ["SENT", "SEND_UNCONFIRMED"] }, OR: [{ completedAt: { gte: since } }, { completedAt: null, createdAt: { gte: since } }] },
+    ],
+  } satisfies Prisma.InvoiceReminderWhereInput;
+}
+
+/** Relance qui bloque, une réservation en cours d'abord ; null si une nouvelle relance est permise. */
+export function firstBlockingReminder<T extends ReminderState>(rows: T[], now: Date): T | null {
+  const blocking = rows.filter((row) => reminderBlocksNewOne(row, now));
+  return blocking.find((row) => row.result === "SENDING") ?? blocking[0] ?? null;
 }
 
 type ReminderDatabase = Pick<PrismaClient, "$transaction">;
@@ -109,6 +138,11 @@ function view(row: InvoiceReminderView): InvoiceReminderView {
   return { id: row.id, channel: row.channel, result: row.result, createdAt: row.createdAt };
 }
 
+/** Vue d'une relance existante : résultat effectif, le même que dans la liste des factures. */
+function effectiveView(row: InvoiceReminderView & ReminderState, now: Date): InvoiceReminderView {
+  return { ...view(row), result: effectiveReminderResult(row, now) };
+}
+
 function hasUsableEmail(customer: { email: string; companyId: string | null } | null, companyId: string) {
   return Boolean(customer && customer.companyId === companyId && customer.email.trim());
 }
@@ -133,37 +167,16 @@ export async function remindInvoice(
     if (!invoice) return null;
     if (!isInvoiceOutstanding(invoice.status)) throw new Error("INVOICE_NOT_REMINDABLE");
 
-    // Une relance réservée (SENDING) refuse toute nouvelle relance, même créée il y a plus de 24 h.
-    const sending = await tx.invoiceReminder.findFirst({
-      where: {
-        invoiceId: invoice.id,
-        companyId: input.companyId,
-        result: "SENDING",
-        completedAt: { gte: new Date(now.getTime() - COOLDOWN_MS) },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    if (sending) return { reminder: view(sending), duplicate: true, jobId: null };
-
-    const since = new Date(now.getTime() - COOLDOWN_MS);
+    // Réservée (SENDING, même créée il y a plus de 24 h), en file, envoyée ou non confirmée : toutes
+    // les candidates sont examinées (une QUEUED épuisée ne masque pas une SENT plus ancienne).
     const candidates = await tx.invoiceReminder.findMany({
-      where: {
-        invoiceId: invoice.id,
-        companyId: input.companyId,
-        OR: [
-          { result: "QUEUED", createdAt: { gte: since } },
-          { result: { in: ["SENT", "SEND_UNCONFIRMED"] }, OR: [{ completedAt: { gte: since } }, { completedAt: null, createdAt: { gte: since } }] },
-        ],
-      },
+      where: { invoiceId: invoice.id, companyId: input.companyId, ...blockingReminderCandidatesWhere(now) },
       orderBy: { createdAt: "desc" },
-      take: 20,
-      include: { operationJob: { select: { status: true } } },
+      take: 50,
+      include: { operationJob: { select: { status: true, lastError: true } } },
     });
-    // Toutes les candidates sont examinées : une QUEUED épuisée ne masque pas une SENT plus ancienne.
-    const recent = candidates.find((row) => reminderBlocksNewOne(row, now));
-    if (recent) {
-      return { reminder: view(recent), duplicate: true, jobId: null };
-    }
+    const blocking = firstBlockingReminder(candidates, now);
+    if (blocking) return { reminder: effectiveView(blocking, now), duplicate: true, jobId: null };
 
     const result: InvoiceReminderResult = !input.emailConfigured
       ? "NOT_SENT_EMAIL_NOT_CONFIGURED"
@@ -230,6 +243,12 @@ type DeliveryDeps = {
   now?: Date;
   appUrl?: string;
   getClientSettings?: typeof getClientSettings;
+  /**
+   * La tâche a déjà été exécutée (essais ou erreur antérieurs). Une relance QUEUED héritée de
+   * l'ancien code a pu être remise en file après un envoi accepté (500, 409) : elle est traitée
+   * comme une reprise, jamais comme une première tentative.
+   */
+  previouslyAttempted?: boolean;
   send?: (input: { to: string; subject: string; text: string; idempotencyKey: string; replayWindowStart: Date | null }) => Promise<{ status: string }>;
 };
 
@@ -298,9 +317,10 @@ export async function deliverInvoiceReminderJob(
       include: { invoice: { select: REMINDER_INVOICE_SELECT } },
     });
     if (!reminder || reminder.invoice.companyId !== companyId) return null;
-    // Reprise : une tentative précédente (issue inconnue ou processus arrêté) a peut-être été acceptée.
-    const resuming = reminder.result === "SENDING";
-    if (resuming) {
+    // Reprise : une tentative précédente (issue inconnue, processus arrêté, ou relance QUEUED dont
+    // la tâche a déjà tourné) a peut-être été acceptée.
+    const resuming = reminder.result === "SENDING" || (reminder.result === "QUEUED" && deps.previouslyAttempted === true);
+    if (reminder.result === "SENDING") {
       const reservedAt = reminder.completedAt ?? reminder.createdAt;
       // Une autre exécution envoie peut-être en ce moment : la tâche réessaiera plus tard.
       // Aucun envoi tenté : la tâche est replanifiée à l'expiration de la réservation, sans perdre d'essai.
@@ -386,13 +406,9 @@ export async function deliverInvoiceReminderJob(
       // Refus certain d'une première tentative : rien n'est parti, la réservation est rendue.
       await db.invoiceReminder.updateMany({ where: held, data: { result: "QUEUED", completedAt: null } });
     } else if (outcome === "unconfirmed") {
-      // Clé déjà utilisée avec un autre contenu, ou fenêtre dépassée : terminal, jamais de renvoi.
-      // Première tentative : l'invariant QUEUED prouve que seules des requêtes refusées ont porté la
-      // clé (le fournisseur a pu mémoriser un refus) ; rien n'est parti → FAILED, nouvelle relance permise.
-      await db.invoiceReminder.updateMany({
-        where: held,
-        data: { result: reservation.resuming ? "SEND_UNCONFIRMED" : "FAILED", completedAt: now },
-      });
+      // Clé déjà utilisée avec un autre contenu (un envoi a peut-être eu lieu, y compris sous l'ancien
+      // code), ou fenêtre dépassée : terminal, jamais de renvoi, « Relancer » reste bloqué 24 h.
+      await db.invoiceReminder.updateMany({ where: held, data: { result: "SEND_UNCONFIRMED", completedAt: now } });
     }
     // Sinon (issue inconnue, ou refus d'une reprise) : SENDING gardé, « Relancer » refuse, la tâche
     // reprendra avec la même clé et le même contenu après expiration de la réservation.

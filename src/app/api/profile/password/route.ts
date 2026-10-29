@@ -3,7 +3,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { requireAuth } from "@/lib/api/auth-guard";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import { changePasswordSchema } from "@/lib/validations/auth";
-import { settleLoginAttempt, startLoginAttempt } from "@/domains/auth/login-rate-limit.service";
+import { LOGIN_BUSY_MESSAGE, loginBusyResponseInit, settleLoginAttempt, startLoginAttempt } from "@/domains/auth/login-rate-limit.service";
 import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
 import { createAdminClient } from "@/services/supabase/admin";
 
@@ -34,6 +34,9 @@ export async function POST(request: Request) {
 
   // SEC-2 : la vérification du mot de passe actuel suit la même limite que la connexion.
   const rateLimit = await startLoginAttempt({ email, source: contactSourceFromHeaders(request.headers), trackEmail: true });
+  if (!rateLimit.allowed && rateLimit.busy) {
+    return NextResponse.json({ error: LOGIN_BUSY_MESSAGE }, loginBusyResponseInit());
+  }
   if (!rateLimit.allowed) {
     const minutes = Math.ceil(rateLimit.retryAfterSeconds / 60);
     return NextResponse.json(
