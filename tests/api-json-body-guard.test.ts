@@ -25,6 +25,7 @@ test("PATCH /api/company/dispatch répond 400 (et n'écrit rien) sur un JSON inv
   const ts = (await import("typescript")).default;
   const { NextResponse } = await import("next/server");
   const { companyDispatchSettingsSchema } = await import("../src/lib/validations/dispatch-settings");
+  const configMessages = await import("../src/lib/config-messages");
   const writes: string[] = [];
   const module = { exports: {} as Record<string, (request: Request) => Promise<Response>> };
   const source = ts.transpileModule(read("src/app/api/company/dispatch/route.ts", "utf8"), {
@@ -42,6 +43,7 @@ test("PATCH /api/company/dispatch répond 400 (et n'écrit rien) sur un JSON inv
       updateCompanyDispatchSettings: async () => { writes.push("write"); return {}; },
     },
     "@/lib/validations/dispatch-settings": { companyDispatchSettingsSchema },
+    "@/lib/config-messages": configMessages,
   };
   runInNewContext(source, { Error, exports: module.exports, module, require: (id: string) => dependencies[id] });
   for (const body of ["{pas du json", "", "null"]) {
