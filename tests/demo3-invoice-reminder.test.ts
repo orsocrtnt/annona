@@ -218,7 +218,9 @@ test("DEMO-3 relance (envoi) : une panne du fournisseur est rejouée par la tâc
   const { db, deps, deliver } = deliverySetup();
   deps.send = async () => { throw new Error("EMAIL_PROVIDER_HTTP_503"); };
   await assert.rejects(deliver(), /EMAIL_PROVIDER_HTTP_503/);
-  assert.equal(db.reminders[0]!.result, "QUEUED", "reste en file pour le rejeu");
+  // C5 : un 503 (ou une erreur non qualifiée) ne prouve pas que rien n'est parti : la réservation
+  // est gardée et la tâche reprendra avec la même clé ; seul un refus certain la remet en file.
+  assert.equal(db.reminders[0]!.result, "SENDING", "réservation gardée pour la reprise, même clé");
 });
 
 test("DEMO-3 relance (envoi) : aucune injection d'en-tête par la référence ou le nom d'entreprise", async () => {

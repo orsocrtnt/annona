@@ -119,7 +119,8 @@ async function executeJob(job: OperationJob) {
       const { deliverSignupWelcomeEmail } = await import(
         "@/domains/signup/signup.service"
       );
-      await deliverSignupWelcomeEmail(job.payload, job.jobKey);
+      // createdAt : borne de la fenêtre de déduplication du fournisseur d'e-mail (C5).
+      await deliverSignupWelcomeEmail(job.payload, job.jobKey, job.createdAt);
       return;
     }
     if (readString(job.payload, "kind") === "ORDER_MESSAGE") {
@@ -138,7 +139,7 @@ async function executeJob(job: OperationJob) {
     const { deliverClientNotificationJob } = await import(
       "@/domains/client-portal/notify.service"
     );
-    await deliverClientNotificationJob(job.payload, job.jobKey);
+    await deliverClientNotificationJob(job.payload, job.jobKey, job.createdAt);
     return;
   }
 

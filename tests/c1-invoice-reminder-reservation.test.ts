@@ -6,7 +6,7 @@ import {
   reminderBlocksNewOne,
   remindInvoice,
 } from "../src/domains/invoice/invoice-reminder.service";
-import { emailSendOutcome } from "../src/lib/email/transactional-email";
+import { emailSendOutcome, sendTransactionalEmail } from "../src/lib/email/transactional-email";
 import { createInvoiceFakeDb, invoice, type FakeInvoice, type FakeReminder } from "./helpers/invoice-fake-db";
 
 // C1 : réservation d'envoi par facture. Une seule relance peut être en cours d'envoi (SENDING)
@@ -15,6 +15,12 @@ const NOW = new Date("2026-10-28T10:00:00.000Z");
 const HOUR = 3_600_000;
 const USERS = [{ id: "client_a", companyId: "company_a", email: "client.a@example.test", firstName: "Studio", lastName: "Oberkampf" }];
 const KEY = "client-notification:invoice-reminder:r1";
+
+const EMAIL_ENV = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+/** Envoi par le vrai helper, le fournisseur répondant `status` + `name` (corps d'erreur Resend). */
+const providerSend = (status: number, name: string) =>
+  (input: { to: string; subject: string; text: string; idempotencyKey: string; replayWindowStart: Date | null }) =>
+    sendTransactionalEmail(input, { env: EMAIL_ENV, now: NOW, fetcher: async () => ({ ok: false, status, text: async () => JSON.stringify({ statusCode: status, message: "x", name }) }) });
 
 function setup(r1: Partial<FakeReminder> = {}, invoiceOverrides: Partial<FakeInvoice> = {}) {
   const db = createInvoiceFakeDb({
@@ -105,7 +111,8 @@ test("C1 : réservation encore valide — une autre exécution envoie, la tâche
 });
 
 test("C1 : R1 orpheline expirée — reprise possible, avec la même clé d'idempotence fournisseur", async () => {
-  const { sent, deliver, r } = setup({ result: "SENDING", completedAt: new Date(NOW.getTime() - (INVOICE_REMINDER_SENDING_TTL_MINUTES + 1) * 60_000) });
+  // Reprise dans la fenêtre de déduplication (relance créée il y a 1 h) ; au-delà de 23 h, voir C5.
+  const { sent, deliver, r } = setup({ result: "SENDING", createdAt: new Date(NOW.getTime() - HOUR), completedAt: new Date(NOW.getTime() - (INVOICE_REMINDER_SENDING_TTL_MINUTES + 1) * 60_000) });
   // Même si la tâche est reprise sous une autre clé d'événement, la clé fournisseur reste celle de la relance.
   await deliver("r1", "reprise-apres-crash");
   assert.equal(sent.length, 1);
@@ -126,28 +133,48 @@ test("C1 : une autre relance réservée ou envoyée dans les 24 h bloque l'envoi
   }
 });
 
-test("C1 : facture payée entre-temps, y compris pour une reprise orpheline — aucun envoi", async () => {
-  for (const r1 of [{}, { result: "SENDING", completedAt: new Date(NOW.getTime() - 10 * 60_000) }]) {
-    const { sent, deliver, r } = setup(r1, { status: "PAID" });
-    await deliver();
-    assert.equal(sent.length, 0);
-    assert.equal(r("r1")?.result, "NOT_SENT_INVOICE_SETTLED");
-  }
+test("C1 : facture payée entre-temps — aucun envoi ; une reprise orpheline devient non confirmée", async () => {
+  const first = setup({}, { status: "PAID" });
+  await first.deliver();
+  assert.equal(first.sent.length, 0);
+  assert.equal(first.r("r1")?.result, "NOT_SENT_INVOICE_SETTLED");
+  // Reprise : la première tentative a peut-être été reçue, « non envoyée » serait faux.
+  const resumed = setup({ result: "SENDING", createdAt: new Date(NOW.getTime() - HOUR), completedAt: new Date(NOW.getTime() - 10 * 60_000) }, { status: "PAID" });
+  await assert.rejects(resumed.deliver(), (error: unknown) => {
+    assert.equal((error as Error).message, "INVOICE_REMINDER_SEND_UNCONFIRMED:NOT_SENT_INVOICE_SETTLED");
+    assert.equal((error as { permanent?: boolean }).permanent, true);
+    return true;
+  });
+  assert.equal(resumed.sent.length, 0);
+  assert.equal(resumed.r("r1")?.result, "SEND_UNCONFIRMED");
 });
 
-test("C1 : panne du fournisseur — la réservation est libérée (QUEUED) pour le rejeu, sans bloquer", async () => {
+test("C1 : limite de débit (429) sur une première tentative — réservation libérée (QUEUED) pour le rejeu", async () => {
   const { db, deliver, r } = setup();
   const deps = { db: db as never, now: NOW, getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }) };
   await assert.rejects(
     deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
-      ...deps, send: async () => { throw new Error("EMAIL_PROVIDER_HTTP_503"); },
+      ...deps, send: providerSend(429, "rate_limit_exceeded"),
     }),
-    /EMAIL_PROVIDER_HTTP_503/
+    /EMAIL_PROVIDER_HTTP_429:rate_limit_exceeded/
   );
   assert.equal(r("r1")?.result, "QUEUED");
   assert.equal(r("r1")?.completedAt, null);
   await deliver();
   assert.equal(r("r1")?.result, "SENT");
+});
+
+test("C5 : 503 du fournisseur = issue inconnue — la réservation SENDING est gardée", async () => {
+  const { db, r } = setup();
+  await assert.rejects(
+    deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
+      db: db as never, now: NOW,
+      getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
+      send: providerSend(503, "service_unavailable"),
+    }),
+    /EMAIL_PROVIDER_HTTP_503/
+  );
+  assert.equal(r("r1")?.result, "SENDING");
 });
 
 // C4 : issue d'envoi ambiguë. Le fournisseur accepte l'e-mail, mais la réponse se perd (expiration).
@@ -181,7 +208,7 @@ test("C4 : acceptation avec réponse perdue — R1 reste SENDING et un clic ne c
 });
 
 test("C4 : reprise après expiration de la réservation — même clé d'idempotence, puis SENT", async () => {
-  const { db, sent, r } = setup();
+  const { db, sent, r } = setup({ createdAt: new Date(NOW.getTime() - HOUR) });
   const settings = async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true });
   const payload = { kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never;
   const keys: string[] = [];
@@ -204,7 +231,7 @@ test("C4 : refus 4xx certain — réservation libérée, une nouvelle relance es
   await assert.rejects(deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
     db: db as never, now: NOW,
     getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
-    send: async () => { throw Object.assign(new Error("EMAIL_PROVIDER_HTTP_422"), { name: "Error" }); },
+    send: providerSend(422, "missing_required_field"),
   }), /EMAIL_PROVIDER_HTTP_422/);
   assert.equal(r("r1")?.result, "QUEUED");
   assert.equal(r("r1")?.completedAt, null);

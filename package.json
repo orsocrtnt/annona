@@ -88,6 +88,7 @@
     "todo:progress": "node scripts/docs/update-todo-progress.mjs",
     "docs:verify": "npm run todo:progress && node scripts/docs/verify-docs.mjs outputs/doc1/verification.json",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "test:pg-locks": "tsx scripts/pg-locks/advisory-locks.ts",
     "env2:verify-dev": "dotenv -e .env.local -- tsx scripts/env2/verify-dev-env.ts",
     "billing:refund": "dotenv -e .env.local -- tsx scripts/saas01b/refund.ts"
   },

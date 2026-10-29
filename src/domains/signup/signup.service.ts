@@ -1065,7 +1065,9 @@ function signupWelcomePayload(value: Prisma.JsonValue) {
 
 export async function deliverSignupWelcomeEmail(
   rawPayload: Prisma.JsonValue,
-  eventKey: string
+  eventKey: string,
+  // Création de la tâche durable : au-delà de 23 h, plus de renvoi automatique sous cette clé.
+  jobCreatedAt: Date | null = null
 ) {
   const payload = signupWelcomePayload(rawPayload);
   const journey = await prisma.signupJourney.findFirst({
@@ -1105,6 +1107,7 @@ export async function deliverSignupWelcomeEmail(
       "L’équipe TutelLiv",
     ].join("\n"),
     idempotencyKey: eventKey,
+    replayWindowStart: jobCreatedAt,
   });
   if (delivery.status === "disabled") {
     throw new Error("SIGNUP_WELCOME_EMAIL_DISABLED");

@@ -106,17 +106,24 @@ function stableNotificationId(eventKey: string) {
   return `evt_${createHash("sha256").update(eventKey).digest("hex").slice(0, 24)}`;
 }
 
+/**
+ * Toute erreur remonte à la tâche durable, rejouée avec la même clé (`eventKey`) et le même contenu :
+ * refus certain ou issue inconnue → nouvel essai ; non confirmée (409 clé déjà utilisée avec un autre
+ * contenu, fenêtre de déduplication dépassée) → erreur permanente, tâche FAILED sans renvoi.
+ */
 async function sendClientEmail(
   to: string,
   subject: string,
   text: string,
-  idempotencyKey: string
+  idempotencyKey: string,
+  replayWindowStart: Date | null
 ) {
   await sendTransactionalEmail({
     to,
     subject,
     text,
     idempotencyKey,
+    replayWindowStart,
   });
 }
 
@@ -129,7 +136,8 @@ async function insertNotification(
     body: string;
     href: string | null;
     email?: { to: string; subject: string; text: string };
-  }
+  },
+  replayWindowStart: Date | null
 ) {
   await prisma.clientNotification.upsert({
     where: { id: stableNotificationId(eventKey) },
@@ -161,7 +169,8 @@ async function insertNotification(
       input.email.to,
       input.email.subject,
       input.email.text,
-      eventKey
+      eventKey,
+      replayWindowStart
     );
   }
 }
@@ -323,9 +332,14 @@ function composeDeliveryAcceptedMessage(
   return { title: ACCEPTED_COPY.title, body, emailText: body };
 }
 
+/**
+ * `jobCreatedAt` : création de la tâche durable, borne basse de toute tentative d'envoi sous `eventKey`.
+ * Au-delà de 23 h, l'e-mail n'est plus jamais renvoyé automatiquement (la notification in-app reste).
+ */
 export async function deliverClientNotificationJob(
   rawPayload: Prisma.JsonValue,
-  eventKey: string
+  eventKey: string,
+  jobCreatedAt: Date | null = null
 ) {
   const payload = parseNotificationPayload(rawPayload);
   const settings = await getClientSettings(payload.customerId);
@@ -364,7 +378,7 @@ export async function deliverClientNotificationJob(
         settings.emailNotifications && user.email
           ? { to: user.email, subject: message.title, text: message.emailText }
           : undefined,
-    });
+    }, jobCreatedAt);
     return;
   }
 
@@ -392,7 +406,7 @@ export async function deliverClientNotificationJob(
       settings.emailNotifications && user.email
         ? { to: user.email, subject: `Facture ${payload.reference}`, text: body }
         : undefined,
-  });
+  }, jobCreatedAt);
 }
 
 export async function notifyDeliveryStatusChange(input: {

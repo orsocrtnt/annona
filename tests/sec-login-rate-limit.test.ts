@@ -10,6 +10,7 @@ import {
   LOGIN_RATE_WINDOW_MS,
   LOGIN_SOURCE_FAILURE_LIMIT,
   beginLoginAttempt,
+  LOGIN_CONTENTION_RETRY_SECONDS,
   loginAttemptKeys,
   settleLoginAttempt,
   startLoginAttempt,
@@ -194,6 +195,15 @@ test("base indisponible (migration non appliquée) : connexion permise, erreur j
   await settleLoginAttempt(null, "failure", { db });
   await settleLoginAttempt({ keys, ids: ["x"] }, "success", { db });
   assert.equal(logged.length, 2);
+});
+
+test("contention (expiration de transaction ou de pool) : refus bref, jamais une autorisation", async (t) => {
+  t.mock.method(console, "error", () => undefined);
+  const keys = keysFor("victim@example.test", "198.51.100.6");
+  for (const code of ["P2028", "P2024"]) {
+    const db = { $transaction: async () => { throw Object.assign(new Error("Transaction already closed"), { code }); } } as unknown as Db;
+    assert.deepEqual(await beginLoginAttempt(keys, { db }), { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS }, code);
+  }
 });
 
 // Route : le contrôle précède Supabase, la réponse ne dépend pas de l'existence du compte.

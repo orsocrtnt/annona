@@ -78,7 +78,7 @@ export async function listCompanyInvoices(
         reminders: {
           orderBy: { createdAt: "desc" },
           take: 1,
-          select: { result: true, channel: true, createdAt: true, operationJob: { select: { status: true } } },
+          select: { result: true, channel: true, createdAt: true, completedAt: true, operationJob: { select: { status: true } } },
         },
       },
     }),
@@ -108,7 +108,7 @@ export async function listCompanyInvoices(
         orderId: row.orderId,
         orderReference: row.order?.reference ?? null,
         lastReminder: last
-          ? { createdAt: last.createdAt.toISOString(), result: effectiveReminderResult(last), channel: last.channel }
+          ? { createdAt: last.createdAt.toISOString(), result: effectiveReminderResult(last, now), channel: last.channel }
           : null,
         canRemind: outstanding && !(last && reminderBlocksNewOne(last, now)),
       };

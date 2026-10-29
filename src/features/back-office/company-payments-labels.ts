@@ -18,6 +18,8 @@ const REMINDER_LABELS: Record<string, { label: string; tone: PaymentTone }> = {
   NOT_SENT_CLIENT_PREFERENCES: { label: "Relance non envoyée : le client a désactivé ces e-mails", tone: "warning" },
   NOT_SENT_INVOICE_SETTLED: { label: "Relance annulée : facture réglée entre-temps", tone: "warning" },
   SKIPPED_SUPERSEDED: { label: "Relance non envoyée : remplacée par une relance plus récente", tone: "warning" },
+  // C5 : l'e-mail a peut-être été reçu ; aucun renvoi automatique. Vérifier avant de relancer.
+  SEND_UNCONFIRMED: { label: "Envoi non confirmé : le client a peut-être reçu la relance, vérifiez avant de relancer", tone: "error" },
 };
 
 export function reminderResultLabel(result: string): { label: string; tone: PaymentTone } {
@@ -38,6 +40,9 @@ export function reminderOutcomeMessage(outcome: { duplicate: boolean; reminder: 
   }
   if (outcome.duplicate && outcome.reminder.result === "SENDING") {
     return { kind: "info", text: "Une relance est en cours d'envoi : aucune nouvelle relance envoyée." };
+  }
+  if (outcome.duplicate && outcome.reminder.result === "SEND_UNCONFIRMED") {
+    return { kind: "warning", text: "Une relance récente n'a pas pu être confirmée : aucune nouvelle relance envoyée." };
   }
   if (outcome.duplicate) {
     return { kind: "info", text: "Déjà relancée dans les dernières 24 h : aucune nouvelle relance envoyée." };

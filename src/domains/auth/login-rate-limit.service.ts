@@ -25,6 +25,22 @@ export type LoginAttemptGate =
 type LoginAttemptDatabase = Pick<typeof prisma, "authLoginFailure" | "$transaction">;
 type LoginAttemptTx = Pick<Prisma.TransactionClient, "authLoginFailure" | "$queryRaw">;
 
+/**
+ * Contention mesurée sur PostgreSQL réel (test:pg-locks) : 12 tentatives simultanées sur la même clé
+ * dépassaient le délai par défaut des transactions (2 s d'attente, 5 s d'exécution) et passaient
+ * toutes par le chemin « base indisponible » : la limite était contournée en parallèle. Les délais
+ * sont élargis, et une expiration de transaction ou de pool (contention) refuse brièvement au lieu
+ * d'autoriser. Seules les autres erreurs (base absente, migration manquante) restent permissives.
+ */
+const LOGIN_ATTEMPT_TX = { maxWait: 10_000, timeout: 15_000 } as const;
+const CONTENTION_ERROR_CODES = new Set(["P2024", "P2028"]);
+export const LOGIN_CONTENTION_RETRY_SECONDS = 5;
+
+function isContentionError(error: unknown) {
+  const code = error && typeof error === "object" ? (error as { code?: unknown }).code : undefined;
+  return typeof code === "string" && CONTENTION_ERROR_CODES.has(code);
+}
+
 /** Valeur de `contactSourceFromHeaders` sans x-forwarded-for ni x-real-ip. */
 const UNKNOWN_SOURCE = "unknown";
 
@@ -93,9 +109,11 @@ export async function beginLoginAttempt(
       const ids: string[] = [];
       for (const { keyHash } of limited) ids.push((await tx.authLoginFailure.create({ data: { keyHash, createdAt: now }, select: { id: true } })).id);
       return { allowed: true, attempt: { keys, ids } } as const;
-    });
+    }, LOGIN_ATTEMPT_TX);
   } catch (error) {
     console.error("Login rate limit check failed:", error instanceof Error ? error.message : "unknown");
+    // Contention (tentatives simultanées sur les mêmes clés, pool saturé) : jamais un contournement.
+    if (isContentionError(error)) return { allowed: false, retryAfterSeconds: LOGIN_CONTENTION_RETRY_SECONDS };
     return { allowed: true, attempt: null };
   }
 }
