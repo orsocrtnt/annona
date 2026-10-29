@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**58 tâches terminées sur 104 — 56 %**
+**61 tâches terminées sur 104 — 59 %**
 
-`███████████░░░░░░░░░` · 46 tâches restantes
+`████████████░░░░░░░░` · 43 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -590,6 +590,8 @@ Statuts ET localisation sont demandés. Leur présence dans le code ne suffit pa
 
   État technique au 16 octobre 2026 : thème commun noir/blanc appliqué aux cartes administrateur, client et livreur ; fond monochrome, trajets à halo blanc/ligne noire, marqueurs et sélection contrastés, panneaux blancs, HUD et progression simplifiés, panne fournisseur et attribution préservées. Recette locale 1280 × 720 et 390 × 844 sans débordement, `npm run check` réussi (199/199 tests), build Next.js réussi (96 pages) et `git diff --check` réussi. Preuves avant/après et rapport : `docs/rapports/2026-10-15/map3.md`. Le 20 octobre, le propriétaire a fourni l’ancienne carte et demandé une nouvelle passe : la tâche reste ouverte pour rapprocher la composition et la hiérarchie visuelle de cette référence, puis obtenir sa validation explicite.
 
+  État au 29 octobre 2026 : livrée avec le lot B, non validée visuellement ; le propriétaire conteste la carte unique. Non cochée : à revoir avec MAP-UNIFY-2.
+
   Support de revue préparé le 2026-10-18 : critères et captures disponibles dans `docs/operations/map3/REVIEW.md`. Une nouvelle série homogène admin/client/livreur sera produite sur préproduction avec mission active ; la case reste ouverte jusqu'à l'accord du propriétaire.
 
   Sécurité du fond vectoriel du 2026-10-27 : `maplibre-gl` 5.24.0, ajouté avec le plan Menthe, porte une faille XSS critique (GHSA-jrc7-96c5-q579, versions ≤ 6.4.0) qui fait échouer `npm run audit:prod` et donc la CI. Passage en 6.13.0 (corrigée, publiée depuis trois semaines ; le plugin Leaflet accepte la v6). La v6 cherche son worker à côté de son module, chemin introuvable une fois empaqueté par Next : carte vide et « Worker failed to load » constatés dans Chrome. Le worker autonome est désormais copié au postinstall vers `public/vendor/` (ignoré par Git) et désigné par `setWorkerUrl`. Vérifié : `npm run audit:prod` 0 vulnérabilité, `npm run check` 513/513, build CI sans secret, `npm ci` recrée le worker, Chrome réel sur la préproduction autorisée en dev (Turbopack) et en build de production : fond Menthe affiché sur la carte chauffeurs et la carte livraison avec 14 repères, aucune erreur hors favicon 404 préexistant. Aucune validation visuelle de MAP-3 n'en est déduite.
@@ -717,6 +719,8 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
   **Complexité : moyenne à élevée — inventaire transversal, hiérarchie des actions et risque de masquer une fonction importante.**
 
   Terminé quand : aucun parcours essentiel n'affiche une succession de boutons accompagnés chacun d'une phrase explicative ; les libellés utilisent des verbes et désignent précisément le résultat ; les actions principales sont stables au même endroit ; les actions destructives restent séparées et confirmées ; les icônes seules possèdent un nom accessible ; les aides restantes sont courtes, contextuelles et justifiées. Un utilisateur de chaque rôle peut créer, affecter, démarrer, suivre, clôturer et consulter une preuve sans demander à quoi servent les commandes visibles.
+
+  État au 29 octobre 2026 : la partie « explications permanentes » est livrée avec UX-ALERTES (revue par Codex et revue adverse OK). Validation visuelle du propriétaire à faire ; le reste de l'inventaire des actions n'est pas vérifié. Non cochée.
 
   Tests requis : audit des écrans principaux administrateur/client/livreur sur ordinateur et mobile ; noms accessibles, clavier, focus, menus et confirmations ; scénarios de découverte sans consigne préalable ; vérification qu'aucune action métier existante n'a disparu et que la réduction visuelle ne dégrade ni permissions ni performances.
 
@@ -1481,9 +1485,9 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - **Coût des trajets** : service gratuit d'abord (OSRM, avec cache). Un service payant seulement si un client l'exige.
   - **Offre** : grille actuelle conservée et testée. Piste du propriétaire : un seul « Dispatch automatique » rendu intelligent, un peu plus cher. Proposition de l'orchestrateur, à valider par le propriétaire avant tout changement de prix : une option unique « Dispatch intelligent » qui remplace le dispatch automatique, à 39 € au lieu de 29 € en Starter, toujours incluse en Pro et Business. L'offre pilote après les 4 semaines gratuites reste à décider (OFFER-1).
 
-  État : ouverte, cadrée ; découpage en tranches à faire.
+  État au 29 octobre 2026 : tranche 1 livrée (les 3 meilleurs livreurs avec un score expliqué, temps de trajet OSRM avec cache et repli, affectation en un clic sans double affectation, testée sur PostgreSQL réel, mode Suggestion / Automatique). Non vérifiée dans un navigateur : la spec `dispatch-suggestions` est obsolète. Restent à faire : les tournées et la tranche 2 (imprévus, mesure). Non cochée.
 
-- [ ] **CONFIG-MSG — Expliquer clairement pourquoi une configuration échoue.** Demande du propriétaire du 28 octobre 2026 : quand un réglage ou une fonction refuse de fonctionner pendant la configuration, l'écran doit dire précisément pourquoi et quoi faire, au lieu d'un message général. Cas constaté : en préproduction, le Factur-X d'une facture de démo restait indisponible côté client (« Votre prestataire doit compléter ses informations de facturation ») alors que les mentions légales étaient remplies. La vraie cause, trouvée en reproduisant le cas, était le « Motif d'exonération de TVA » manquant (règle EN 16931 BR-E-10 : les factures de démo sont sans TVA).
+- [x] **CONFIG-MSG — Expliquer clairement pourquoi une configuration échoue.** Demande du propriétaire du 28 octobre 2026 : quand un réglage ou une fonction refuse de fonctionner pendant la configuration, l'écran doit dire précisément pourquoi et quoi faire, au lieu d'un message général. Cas constaté : en préproduction, le Factur-X d'une facture de démo restait indisponible côté client (« Votre prestataire doit compléter ses informations de facturation ») alors que les mentions légales étaient remplies. La vraie cause, trouvée en reproduisant le cas, était le « Motif d'exonération de TVA » manquant (règle EN 16931 BR-E-10 : les factures de démo sont sans TVA).
   1. Factur-X : lister côté back-office chaque champ manquant, avec un lien direct vers le champ ; signaler dès l'enregistrement des mentions légales ce qui bloquera l'export (exonération de TVA pour des factures sans TVA, IBAN pour un paiement par virement…) ; côté client, garder un message sobre, sans détail interne.
   2. Étendre la règle aux autres configurations : Stripe, e-mail, commande par message (clé absente), règles dispatch, preuve de livraison, invitations. Chaque refus de configuration affiche la cause et l'action attendue.
   3. Préremplir ou proposer les mentions usuelles quand c'est sans risque, par exemple « TVA non applicable, art. 293 B du CGI » pour une entreprise sans TVA, à valider par l'utilisateur.
@@ -1494,7 +1498,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : essai du propriétaire en préproduction le 28 octobre 2026 ; FACTURX-1, INTAKE-1, POD-2, EMAIL.
 
-  État : ouverte, non commencée.
+  État : livrée le 29 octobre 2026 : messages français avec la cause et l'action, plus de message Zod brut dans `error`, garde de test. Reste le champ `details`, suivi par CONFIG-MSG-2.
 
 - [ ] **UX-ALERTES — Alléger les alertes et les afficher aux endroits appropriés.** Retour de Marie accepté par le propriétaire le 28 octobre 2026 : les blocs « Alertes à suivre » répétés en haut de chaque page prennent trop de place et repoussent les informations utiles, notamment dans l'app livreur. Inventorier les alertes par rôle, gravité et écran ; conserver un résumé dans les vues de supervision et les alertes qui concernent réellement l'action en cours, avec un accès identifiable aux autres alertes. Réduire l'agressivité visuelle ; conserver la visibilité immédiate des erreurs bloquantes et urgences métier. Éviter les répétitions entre pages et déplacer les explications secondaires hors de l'en-tête.
 
@@ -1502,7 +1506,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Terminé quand : chaque bloc d'alerte restant a un rôle et un emplacement justifiés ; aucun écran n'affiche des alertes étrangères à son contexte ; les contenus et actions principaux sont visibles plus tôt sur mobile ; états sans alerte, avertissement, urgence et erreur testés ; aucune alerte critique ni action métier perdue ; `npm run check` vert et recette navigateur administrateur/client/livreur à 390 et 1 280 px.
 
-  Source / dépendance / blocage : décision du propriétaire dans cette conversation, après résumé des retours de Marie. Complète UX-04 et DESIGN-2 ; ne modifie pas les règles de détection métier sans décision explicite. État : ouverte, non commencée.
+  Source / dépendance / blocage : décision du propriétaire dans cette conversation, après résumé des retours de Marie. Complète UX-04 et DESIGN-2 ; ne modifie pas les règles de détection métier sans décision explicite. État : livrée le 29 octobre 2026, revue OK (Codex et revue adverse ; l'incident de la commande remonte en haut de la fiche livraison). Captures visuelles non faites : validation visuelle du propriétaire à faire. Non cochée.
 
 - [ ] **MAP-INTERACTION — Regrouper les cartes du tableau de bord et rendre leurs informations utiles.** Retour de Marie accepté par le propriétaire le 28 octobre 2026 : remplacer les deux sections « livreurs » et « missions actives » par un même espace de carte avec bascule claire entre les deux vues. Rendre les marqueurs sélectionnables, afficher les informations opérationnelles utiles au rôle et donner accès à la fiche canonique. Employer des couleurs mesurées pour distinguer les statuts et la sélection : le noir et blanc ne doit pas donner l'impression d'un écran inactif. Conserver un fond cartographique sobre (MAP-3), une légende et des formes/libellés qui ne dépendent pas de la seule couleur. Ne pas inventer de précision GPS ni d'informations indisponibles ; préserver la minimisation des coordonnées et de l'identité du livreur côté client.
 
@@ -1512,13 +1516,13 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : décision du propriétaire dans cette conversation ; prolonge MAP-3 et UX-03, sans nouveau fournisseur ni suivi permanent promis. État : livrée le 29 octobre 2026 (lot B, en préproduction e4793e8), mais **non conforme selon le propriétaire** : il voit toujours deux cartes séparées sur le tableau de bord. Reprise dans MAP-UNIFY-2.
 
-- [ ] **UX-NAV-SCROLL — Revenir en haut lors d'un changement de page, conserver la position au Retour.** Défaut encore reproduit le 28 octobre 2026 sur le code `4a99b6b`, Chrome réel sans interface, `tutelliv-dev`, 1 280 × 720 : clic dans le menu administrateur de `/settings` (scrollY 533) vers `/settings/billing` → scrollY 389, soit le bas de la nouvelle page ; clic côté client de `/portal/settings` (scrollY 1 332) vers `/portal/orders` → scrollY 53, également au bas de cette page. Les liens ont été réellement cliqués ; aucune navigation par remplacement direct d'URL dans le test. Le bouton Retour restaure respectivement 533 et 1 332 : comportement à préserver. Preuve locale : `outputs/verification-2026-10-28/navigation-evidence.json`, captures `navigation-admin.png` et `navigation-client.png` ; pas de diffusion de ces outputs.
+- [x] **UX-NAV-SCROLL — Revenir en haut lors d'un changement de page, conserver la position au Retour.** Défaut encore reproduit le 28 octobre 2026 sur le code `4a99b6b`, Chrome réel sans interface, `tutelliv-dev`, 1 280 × 720 : clic dans le menu administrateur de `/settings` (scrollY 533) vers `/settings/billing` → scrollY 389, soit le bas de la nouvelle page ; clic côté client de `/portal/settings` (scrollY 1 332) vers `/portal/orders` → scrollY 53, également au bas de cette page. Les liens ont été réellement cliqués ; aucune navigation par remplacement direct d'URL dans le test. Le bouton Retour restaure respectivement 533 et 1 332 : comportement à préserver. Preuve locale : `outputs/verification-2026-10-28/navigation-evidence.json`, captures `navigation-admin.png` et `navigation-client.png` ; pas de diffusion de ces outputs.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
   Terminé quand : une navigation vers une autre page depuis un menu démarre en haut du contenu, dans les espaces administrateur/client/livreur et sur le site public ; Retour/Avancer restaurent la position ; les ancres, listes à pagination et mises à jour de filtres conservent un comportement explicite adapté ; tests sur les vrais conteneurs de défilement, 390 et 1 280 px ; `npm run check` vert et clics navigateur. Aucun correctif de scroll global aveugle qui casserait l'historique.
 
-  Source / dépendance / blocage : retour de Marie et demande de vérification du propriétaire dans cette conversation ; test indépendant ciblé, sans changement du code. État : ouverte, défaut confirmé ; correction non commencée.
+  Source / dépendance / blocage : retour de Marie et demande de vérification du propriétaire dans cette conversation ; test indépendant ciblé, sans changement du code. État : livrée et vérifiée le 29 octobre 2026. Tests unitaires de la règle ; mesuré dans un navigateur sur un build de production : un clic de menu remonte en haut (400 → 0), et le Retour restaure la position (→ 400). La spec E2E `nav-scroll` est à remettre à jour (E2E-MAJ).
 
 - [ ] **DESIGN-2 — Étendre le mode sombre à tout le site.** Demande du propriétaire du 28 octobre 2026 : le mode sombre du portail client est jugé réussi ; l'étendre au site public (landing, tarifs, fonctionnalités, démonstration), au back-office et dispatch, à l'espace `/admin`, et vérifier l'app livreur (pas encore contrôlée par le propriétaire). Même direction « Encre + Pastel » que le portail, choix Clair / Sombre / Système mémorisé, sans éclair au chargement.
   - **Carte en sombre** : le même plan que celui d'aujourd'hui, en version sombre et noire, assortie au thème (fond, routes, libellés, trajets et marqueurs lisibles), qui bascule avec le thème. Voir MAP-3.
@@ -1533,9 +1537,9 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : demande du propriétaire du 28 octobre 2026 ; suite de DESIGN-1 (tranche portail) et de MAP-3. Méthode : agent avec navigateur et captures de référence, comme pour le portail.
 
-  État : ouverte, non commencée.
+  État : livrée le 29 octobre 2026 : mode sombre du back-office, du dispatch, de `/admin`, de l'app livreur et du site public, sans dégradés. Light identique vérifié par diff. Revue OK. Captures avant/après non faites ; validation visuelle du propriétaire à faire. Non cochée.
 
-- [ ] **FACTURX-SAISIE — Rendre bloquants à l'enregistrement les champs qui bloquent la facture.** Constat du propriétaire du 28 octobre 2026 en préproduction : dans Réglages › Facturation › « Mentions légales et Factur-X » (`src/features/back-office/einvoicing-settings-card.tsx`), on peut enregistrer sans la mention des pénalités et de l'indemnité de retard (ni l'escompte, ni le motif d'exonération pour des factures sans TVA). L'enregistrement réussit, puis le téléchargement Factur-X est refusé plus tard. Ce qui empêche d'émettre la facture doit être signalé et bloquant au moment de la saisie.
+- [x] **FACTURX-SAISIE — Rendre bloquants à l'enregistrement les champs qui bloquent la facture.** Constat du propriétaire du 28 octobre 2026 en préproduction : dans Réglages › Facturation › « Mentions légales et Factur-X » (`src/features/back-office/einvoicing-settings-card.tsx`), on peut enregistrer sans la mention des pénalités et de l'indemnité de retard (ni l'escompte, ni le motif d'exonération pour des factures sans TVA). L'enregistrement réussit, puis le téléchargement Factur-X est refusé plus tard. Ce qui empêche d'émettre la facture doit être signalé et bloquant au moment de la saisie.
   - Marquer comme obligatoires les champs exigés par l'export : SIREN, adresse complète (rue, code postal, ville), pénalités de retard et indemnité de 40 €, escompte, motif d'exonération si l'entreprise facture sans TVA, IBAN et BIC si le paiement se fait par virement.
   - Refuser l'enregistrement avec un message par champ, côté formulaire ET côté serveur (schéma Zod de `src/lib/validations/einvoicing.ts`), dès que l'entreprise active ou utilise la facture électronique. Une entreprise qui ne l'utilise pas n'est pas bloquée, mais voit ce qui manquerait.
   - Mêmes règles pour l'identité de facturation du client, si l'export en dépend.
@@ -1546,7 +1550,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : essai du propriétaire du 28 octobre 2026 ; à mener avec CONFIG-MSG et FACTURX-1.
 
-  État : ouverte, non commencée.
+  État : livrée et vérifiée le 29 octobre 2026. Si la facture électronique est activée : taux de TVA > 0 → n° de TVA obligatoire ; taux = 0 → motif d'exonération obligatoire ; le changement de taux est contrôlé ; une entreprise en PDF seul n'est jamais bloquée. Tests de routes ne simulant que Prisma ; E2E `facturx` 3/3 ; contre-vérification Codex OK.
 
 - [ ] **LANDING-2 — Refaire la landing et la page de connexion, minimalistes et très visuelles.** Demande du propriétaire du 28 octobre 2026. La page de connexion est jugée laide. La landing est une « bonne base », mais elle a trop de texte et en fait trop. Objectif : quelque chose de plus original, qui reste efficace et « tac tac ». Le visiteur doit comprendre en quelques secondes ce que fait TutelLiv, pourquoi il est là, ce que l'outil va lui apporter, et où se connecter, voir la démo ou contacter quelqu'un. Tous les sujets sont abordés, mais de façon très claire et minimaliste.
   - **Inspiration** : Apple, Tesla, Uber. Grands visuels produit (les trois espaces : dispatch, portail client, app livreur), peu de mots, une idée par écran, beaucoup d'air, mouvement sobre. Le propriétaire laisse carte blanche et attend une proposition originale, pas un modèle de SaaS générique.
@@ -1574,7 +1578,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : demande du propriétaire du 29 octobre 2026. À mener après DESIGN-2, MAP-INTERACTION et UX-ALERTES pour ne pas retoucher deux fois les mêmes écrans. Complète MOB-01C (essais sur téléphone réel).
 
-  État : ouverte, non commencée.
+  État : livrée le 29 octobre 2026 (cibles de 44 px, champs de 16 px, tableaux en cartes sous md, ordinateur identique). E2E `mobile-web` : partie publique verte ; espaces connectés : 2 petits défauts corrigés après un passage (logo de l'en-tête, bouton Réduire de la démo), à confirmer par un nouveau passage. Pas d'appareil réel. Non cochée.
 
 
 - [ ] **MAP-UNIFY-2 — Une seule carte sur le tableau de bord, pour de vrai.** Constat du propriétaire du 29 octobre 2026, en préproduction (e4793e8) : il voit toujours deux cartes séparées. Le lot B annonçait une carte unique avec onglets Livreurs / Livraisons (`dashboard-map-panel.tsx`), et le regroupement de `map-drivers` et `map-deliveries` dans une disposition qui contient les deux. Pistes :
@@ -1673,7 +1677,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Source / dépendance / blocage : deux recettes sur tutelliv-dev, audit Codex et rapports de branche. Décisions produit des points 6, 7, 11 et 12 : propriétaire (questionnaire).
 
-  État : ouverte, non commencée (liste établie le 29 octobre 2026). Le défaut 1 est un défaut de spécification, pas du produit : manuellement, l'interrupteur persiste.
+  État : ouverte, non commencée (liste établie le 29 octobre 2026). Mise à jour du 29 octobre 2026 (lots E et E2) : points 1 et 3 faits, point 2 en partie ; points 6, 7, 9, 10, 11, 12, 16 et 17 livrés ; point 14 seulement documenté ; point 9, cause non prouvée. Restent : avertissements LCP du point 2, points 4, 5, 8, 13, 15, 18 et 19 non traités, point 9 à élucider, point 14 à reproduire, puis rejeu navigateur de la série et `npm run check`. Le défaut 1 est un défaut de spécification, pas du produit : manuellement, l'interrupteur persiste.
 
   Avancement du 29 octobre 2026 :
   - **Fait** : point 1 (trois specs réparées, attente du PATCH, assertion alignée) ; point 3 (`favicon.ico` et `icon.png`) ; point 2 en partie (titre accessible de la boîte de preuve, dimensions du logo ; avertissements LCP non traités).
