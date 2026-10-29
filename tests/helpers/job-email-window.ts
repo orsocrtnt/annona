@@ -9,7 +9,14 @@ export function jobPayloadDb() {
   const payloads = new Map<string, Record<string, unknown>>();
   const keyOf = (strings: TemplateStringsArray) => (strings.join("?").includes("emailSnapshot") ? "emailSnapshot" : "emailFirstAttemptAt");
   const db = {
-    $executeRaw: async (strings: TemplateStringsArray, value: string, id: string) => {
+    $executeRaw: async (strings: TemplateStringsArray, value: string, id?: string) => {
+      if (strings.join("?").includes("- 'emailSnapshot'")) {
+        const payload = { ...(payloads.get(value) ?? {}) };
+        delete payload.emailSnapshot;
+        payloads.set(value, payload);
+        return 1;
+      }
+      id = id!;
       const key = keyOf(strings);
       const payload = payloads.get(id) ?? {};
       if (key in payload) return 0;

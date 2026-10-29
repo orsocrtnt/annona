@@ -372,8 +372,8 @@ test("C5 : « déjà exécutée » est lu AVANT la prise (essais ou lastError, y
   const welcome = f.addJob({ jobKey: "signup-welcome:s1", type: "CLIENT_NOTIFICATION", payload: { kind: "SIGNUP_WELCOME" } });
   const notify = f.addJob({ jobKey: "client-notification:delivery:d1:e1", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY" } });
   for (const job of [fresh, retried, welcome, notify]) await f.service.processOperationJob(job.id, f.base);
-  assert.deepEqual(calls.filter((call) => call.handler === "reminder").map((call) => JSON.parse(JSON.stringify(call.arg))), [{ previouslyAttempted: false }, { previouslyAttempted: true }]);
-  assert.equal(typeof (calls.find((call) => call.handler === "reminder")?.arg as { freezeContent?: unknown }).freezeContent, "function", "relance : instantané du rendu");
+  assert.deepEqual(calls.filter((call) => call.handler === "reminder").map((call) => (call.arg as { previouslyAttempted: boolean }).previouslyAttempted), [false, true]);
+  assert.equal(typeof (calls.find((call) => call.handler === "reminder")?.arg as { freezeContent?: unknown }).freezeContent, "object", "relance : instantané du rendu");
   assert.equal(typeof calls.find((call) => call.handler === "signup")?.arg, "function", "bienvenue : fenêtre de la tâche");
   assert.equal(typeof calls.find((call) => call.handler === "notify")?.arg, "function", "notification : fenêtre de la tâche");
 });

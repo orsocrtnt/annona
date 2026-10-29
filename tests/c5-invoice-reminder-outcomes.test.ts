@@ -315,3 +315,32 @@ test("C5 liste : « Relancer » suit la règle du serveur (dernière relance en 
   assert.equal((await listCompanyInvoices("company_a", { status: "ALL", now: dayLater }, db as never)).invoices.find((entry) => entry.id === "inv")!.canRemind, true);
   assert.equal((await remind(dayLater))?.duplicate, false);
 });
+
+test("C5 : rendu figé — refus certain d'une PREMIÈRE tentative : instantané effacé, l'adresse corrigée s'applique", async () => {
+  const { db, resend, deliver, r1Row, jobPayloads } = setup();
+  resend.script.push({ status: 422, name: "validation_error", accepted: false });
+  await settle(deliver(T0));
+  assert.equal(r1Row().result, "QUEUED");
+  assert.equal(jobPayloads.payloads.get("job_1")?.emailSnapshot, undefined, "instantané effacé : rien n'est parti");
+  db.users[0]!.email = "adresse.corrigee@example.test";
+  await deliver(new Date(T0.getTime() + 6 * MIN), true);
+  assert.equal(r1Row().result, "SENT");
+  assert.match(resend.calls[1]!.body, /adresse\.corrigee@example\.test/);
+});
+
+test("C5 : rendu figé — refus certain d'une REPRISE (après une issue inconnue) : instantané conservé", async () => {
+  const { db, resend, deliver, r1Row, jobPayloads } = setup();
+  resend.script.push({ timeout: true, accepted: true });
+  await settle(deliver(T0));
+  const snapshot = jobPayloads.payloads.get("job_1")?.emailSnapshot;
+  assert.ok(snapshot);
+  // Le fournisseur ne connaît pas encore la clé pour la reprise (accepté hors simulation) : 429.
+  const retry = setup({ result: "SENDING", completedAt: T0 });
+  retry.jobPayloads.payloads.set("job_1", { emailSnapshot: snapshot });
+  retry.resend.script.push({ status: 429, name: "rate_limit_exceeded", accepted: false });
+  await settle(retry.deliver(new Date(T0.getTime() + 6 * MIN)));
+  assert.deepEqual(retry.jobPayloads.payloads.get("job_1")?.emailSnapshot, snapshot);
+  assert.equal(retry.r1Row().result, "SENDING");
+  db.invoices[0]!.amount = 1;
+  assert.equal(r1Row().result, "SENDING");
+});

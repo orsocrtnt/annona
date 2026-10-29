@@ -32,10 +32,14 @@ export type ReplayWindowStart = Date | null | (() => Promise<Date | null>);
 export type EmailContent = { to: string; subject: string; text: string };
 
 /**
- * Fige le rendu à la première tentative émise sous une clé : enregistre `content` s'il n'existe
- * encore aucun instantané et renvoie l'instantané enregistré, à envoyer tel quel (même clé = même corps).
+ * Fige le rendu sous une clé : `freeze` enregistre `content` s'il n'existe encore aucun instantané et
+ * renvoie l'instantané enregistré, à envoyer tel quel (même clé = même corps) ; `release` l'efface
+ * après un refus certain d'une première tentative (rien n'est parti : une correction pourra s'appliquer).
  */
-export type EmailContentFreezer = (content: EmailContent) => Promise<EmailContent>;
+export type EmailContentFreezer = {
+  freeze: (content: EmailContent) => Promise<{ content: EmailContent; created: boolean }>;
+  release: () => Promise<void>;
+};
 
 export type TransactionalEmailInput = {
   to: string;
@@ -171,13 +175,18 @@ export async function sendTransactionalEmail(
   }
 
   const from = (env.MAIL_FROM || env.EMAIL_FROM)!.trim();
-  if (!hasAddress(input.to.trim().toLowerCase())) throw emailError("EMAIL_RECIPIENT_INVALID", "rejected");
   // Rendu figé à la première tentative émise : une reprise envoie exactement le même corps.
-  const content = input.freezeContent
-    ? await input.freezeContent({ to: input.to, subject: input.subject, text: input.text })
-    : input;
+  const frozen = input.freezeContent
+    ? await input.freezeContent.freeze({ to: input.to, subject: input.subject, text: input.text })
+    : null;
+  const content = frozen?.content ?? input;
+  // Refus certain d'une première tentative : l'instantané est effacé pour qu'une correction s'applique.
+  const rejectFirst = async (message: string, first: boolean) => {
+    if (first && frozen?.created) await input.freezeContent!.release().catch(() => undefined);
+    return emailError(message, "rejected");
+  };
   const intendedRecipient = content.to.trim().toLowerCase();
-  if (!hasAddress(intendedRecipient)) throw emailError("EMAIL_RECIPIENT_INVALID", "rejected");
+  if (!hasAddress(intendedRecipient)) throw await rejectFirst("EMAIL_RECIPIENT_INVALID", true);
 
   const testMode = configuration.mode === "test";
   const recipient = testMode
@@ -195,7 +204,7 @@ export async function sendTransactionalEmail(
     EMAIL_IDEMPOTENCY_KEY_MAX
   );
   if (!subject || !text.trim() || !idempotencyKey) {
-    throw emailError("EMAIL_CONTENT_INVALID", "rejected");
+    throw await rejectFirst("EMAIL_CONTENT_INVALID", true);
   }
   // Au-delà de la fenêtre, le fournisseur ne déduplique plus : une reprise pourrait doubler l'e-mail.
   const replayWindowStart = typeof input.replayWindowStart === "function"
@@ -226,10 +235,11 @@ export async function sendTransactionalEmail(
   if (!response.ok) {
     // Le code HTTP seul ne prouve pas « rien n'est parti » (409, 5xx) : classement par code et `name`.
     const name = await providerErrorName(response);
-    throw emailError(
-      `EMAIL_PROVIDER_HTTP_${response.status}${name ? `:${name}` : ""}`,
-      classifyProviderResponse(response.status, name)
-    );
+    const message = `EMAIL_PROVIDER_HTTP_${response.status}${name ? `:${name}` : ""}`;
+    const outcome = classifyProviderResponse(response.status, name);
+    // Première tentative (aucune antérieure possible) refusée avec certitude : instantané effacé.
+    if (outcome === "rejected") throw await rejectFirst(message, replayWindowStart === null);
+    throw emailError(message, outcome);
   }
   return {
     status: "sent" as const,

@@ -82,9 +82,9 @@ export function jobEmailReplayWindow(
  * `invalid_idempotent_request` éventuel reste terminal). Instantané illisible : rendu courant.
  */
 export function jobEmailContentFreezer(jobId: string, db: Pick<typeof prisma, "$executeRaw" | "$queryRaw"> = prisma) {
-  return async (content: { to: string; subject: string; text: string }) => {
+  const freeze = async (content: { to: string; subject: string; text: string }) => {
     const snapshot = JSON.stringify({ to: content.to, subject: content.subject, text: content.text });
-    await db.$executeRaw`
+    const created = await db.$executeRaw`
       UPDATE "operation_jobs"
       SET "payload" = jsonb_set(CASE WHEN jsonb_typeof("payload") = 'object' THEN "payload" ELSE '{}'::jsonb END,
                                 '{emailSnapshot}', ${snapshot}::jsonb, true)
@@ -92,10 +92,16 @@ export function jobEmailContentFreezer(jobId: string, db: Pick<typeof prisma, "$
     const rows = await db.$queryRaw<Array<{ snapshot: unknown }>>`
       SELECT "payload"->'emailSnapshot' AS snapshot FROM "operation_jobs" WHERE "id" = ${jobId}`;
     const stored = rows[0]?.snapshot as Record<string, unknown> | null | undefined;
-    return stored && typeof stored.to === "string" && typeof stored.subject === "string" && typeof stored.text === "string"
-      ? { to: stored.to, subject: stored.subject, text: stored.text }
-      : content;
+    if (stored && typeof stored.to === "string" && typeof stored.subject === "string" && typeof stored.text === "string") {
+      return { content: { to: stored.to, subject: stored.subject, text: stored.text }, created: created === 1 };
+    }
+    console.error("[operation-job] instantané e-mail illisible, rendu courant utilisé", jobId);
+    return { content, created: false };
   };
+  const release = async () => {
+    await db.$executeRaw`UPDATE "operation_jobs" SET "payload" = "payload" - 'emailSnapshot' WHERE "id" = ${jobId} AND jsonb_typeof("payload") = 'object'`;
+  };
+  return { freeze, release };
 }
 
 function isPermanentJobError(error: unknown) {
