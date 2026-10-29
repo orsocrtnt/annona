@@ -348,7 +348,10 @@ test("DESIGN-2 : dans les espaces migrés, aucune couleur claire codée en dur s
         /^text-(?:red|amber|orange|yellow|emerald|green|blue|sky|indigo|zinc|gray|slate|neutral|stone)-[6-9]\d0$/.test(t) ||
         t === "text-black"
       );
-      if (lightSurface || darkText) offenders.push(`${file} : « ${classes!.slice(0, 120)} »`);
+      // Texte blanc sur un jeton qui s'éclaircit en Dark (vert, encre inversée, statuts) : illisible sans variante.
+      const whiteOnLightening = tokens.includes("text-white") &&
+        tokens.some((t) => /^bg-(?:brand|primary|foreground|success|warning|error)$/.test(t));
+      if (lightSurface || darkText || whiteOnLightening) offenders.push(`${file} : « ${classes!.slice(0, 120)} »`);
     }
   }
   assert.deepEqual(offenders, []);

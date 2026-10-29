@@ -120,7 +120,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
           )
         ) : (
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white dark:text-primary-foreground">
               <Package2 className="h-4 w-4" />
             </div>
             {!sidebarCollapsed && (
