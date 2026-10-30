@@ -84,7 +84,7 @@ export function ClientOrdersContent({ initialOrders }: ClientOrdersContentProps)
     pageSize: ORDER_HISTORY_DEFAULT_PAGE_SIZE,
     history: false,
   });
-  const { data: result, isLoading, isFetching, error } = usePortalOrders(query, initialOrders);
+  const { data: result, isLoading, isFetching, error, refetch } = usePortalOrders(query, initialOrders);
 
   if (isInitialQueryLoading(isLoading, result)) return <PageSkeleton />;
 
@@ -115,7 +115,8 @@ export function ClientOrdersContent({ initialOrders }: ClientOrdersContentProps)
         <EmptyState
           icon={ShoppingBag}
           title="Impossible de charger les commandes"
-          description="Réessayez dans quelques instants."
+          description="Vérifiez votre connexion, puis réessayez."
+          action={{ label: "Réessayer", onClick: () => void refetch() }}
         />
       ) : (
         <Card>

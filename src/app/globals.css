@@ -128,7 +128,7 @@
 /*
  * Verre du portail (barre `data-glass`, panneaux de carte `--map-glass-*`) : surface opaque, sans flou,
  * si l'utilisateur réduit la transparence. Règle hors couche : elle l'emporte sur les utilitaires Tailwind.
- * Portée `:root[data-theme]` (espaces migrés) : les autres espaces gardent leur rendu actuel.
+ * Portée `:root[data-theme]` : depuis DESIGN-2, tous les espaces sont migrés.
  */
 @media (prefers-reduced-transparency: reduce) {
   :root[data-theme] {
@@ -137,6 +137,11 @@
   }
   :root[data-theme] [data-glass] {
     background-color: var(--color-card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  /* DESIGN-1 : hors portail aussi (barre de démo, menus, panneaux), aucun flou d'arrière-plan. */
+  :root[data-theme] [class*="backdrop-blur"] {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

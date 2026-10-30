@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**73 tâches terminées sur 105 — 70 %**
+**74 tâches terminées sur 106 — 70 %**
 
 `██████████████░░░░░░` · 32 tâches restantes
 
@@ -159,7 +159,7 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 - **Absent du code au 21 octobre :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet. *Au 26 octobre, tous ont une tranche locale (voir SAAS-01B/02/03/04, SALES-1, COST-1, ADMIN-1) sauf les factures d'abonnement et l'attribution commerciale persistée.*
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
-## Matrice des 32 tâches ouvertes
+## Matrice des 31 tâches ouvertes
 
 Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées (DISPATCH-3 close le 27 octobre), prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
 
@@ -170,7 +170,6 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | EMAIL | A+B | Modèles et transport de test faits ; envoi réel, erreurs fournisseur et réception. | Domaine/Resend. | Moyenne · GPT‑6.1 Sol |
 | ONBOARD-1 | A+B | Tranche technique qualifiée ; essai par un pilote réel, temps humain, invitations réelles, décision d'import. | Pilotes + EMAIL. | Élevée · GPT‑6.1 Sol |
 | MOB-01C | A | Exécuter GPS, verrouillage, refus et reprise sur iPhone/Android réels. | Appareils/opérateur. | Moyenne · GPT‑6.1 Sol |
-| DESIGN-1 | A+B | Design validé visuellement dans les trois espaces (29 octobre) ; restent lecteur d'écran et zoom à 200 %. | Aucune. | Élevée · GPT‑6.1 Sol |
 | V1-GO | A | Rejouer la recette finale et documenter les limites promises. | MOB-01C, EMAIL/SEC-05 réels, LEGAL-1 ; latence préproduction (PERF-02). | Élevée · GPT‑6 Astra |
 | LEGAL-1 | A+B | Compléter les inconnues puis obtenir validation professionnelle. | Identité éditeur et professionnels externes. | Moyenne · GPT‑6 Astra |
 | DATA-02 | A+B | Export complété du contrat SaaS (27 octobre) ; export en flux, remise chiffrée, politique et nettoyage planifié. | Politique finale : LEGAL-1. | Élevée · GPT‑6 Astra |
@@ -184,6 +183,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | PERF-02 | A+B | Harnais en mémoire et PostgreSQL local jetable faits (27 octobre) ; routes Next locales, puis préproduction et région Vercel. | Charge distante : accord propriétaire. | Élevée · GPT‑6 Astra |
 | COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
 | GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration, Contact et sa boîte de lecture faits (27 octobre). Mini-démo interactive du hero faite le 27 octobre (client → dispatcher intelligent → livreur → suivi, `src/features/landing/product-tour/`, spec et plan dans `docs/superpowers/`) : `npm run check` vert, parcours navigateur 1440/390 et mouvement réduit verts ; revue visuelle propriétaire à faire. Reste : pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
+| LEGAL-LIENS | A+B | Ajouter mentions légales et confidentialité aux pieds de page publics et aux formulaires de collecte. | Contenu : LEGAL-1. | Faible · GPT‑6 Luna |
 | DEMO-3 | A+B | Tranches 1, 2, 3, 5 et 6 livrées et recettées sur tutelliv-dev (29 octobre) ; restent arrivée estimée en direct, créneau, tableaux de bord et tournées/push, puis e-mails réels. | EMAIL pour les e-mails réels ; migration pour le créneau ; accord du propriétaire pour les tournées. | Élevée · GPT‑6.1 Sol |
 | RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon. | Très élevée · GPT‑6 Astra |
 | SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée. | Moyenne · GPT‑6.1 Sol |
@@ -666,7 +666,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Validation : `npm run check` réussi avec 214/214 tests, build Next.js réussi (96 pages), `git diff --check` réussi et recette interactive Chrome sans erreur JavaScript. Aucune donnée métier créée ou modifiée. Rapport `docs/rapports/2026-10-16/ui2.md`, procédure `docs/operations/ui2/README.md`, preuves `outputs/ui2/`.
 
-- [ ] **DESIGN-1 — Revoir la direction visuelle de l’ensemble du produit.** Auditer les écrans des trois espaces, définir une direction commune sobre inspirée de l’ancienne carte, puis alléger et harmoniser tableaux de bord, navigation, listes, formulaires, cartes de contenu, modales et états vides/chargement/erreur. Revenir à des surfaces majoritairement blanches, noires et grises avec une couleur d’action maîtrisée ; réduire les blocs, couleurs, ombres et informations simultanées qui rendent les écrans chargés. Conserver la lisibilité métier et les repères propres à chaque rôle.
+- [x] **DESIGN-1 — Revoir la direction visuelle de l’ensemble du produit.** Auditer les écrans des trois espaces, définir une direction commune sobre inspirée de l’ancienne carte, puis alléger et harmoniser tableaux de bord, navigation, listes, formulaires, cartes de contenu, modales et états vides/chargement/erreur. Revenir à des surfaces majoritairement blanches, noires et grises avec une couleur d’action maîtrisée ; réduire les blocs, couleurs, ombres et informations simultanées qui rendent les écrans chargés. Conserver la lisibilité métier et les repères propres à chaque rôle.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -682,6 +682,14 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Reste (audit du 29 octobre : Dark des espaces administrateur, dispatch, `/admin` et livreur livré par DESIGN-2, plan sombre par MAP-3) : validation visuelle de la propagation ; lecteur d'écran et zoom à 200 % ; `/portal/profile` non vérifié ; bouton « Réessayer » absent de l'état d'erreur des commandes ; libellés de la barre de statut de carte à 10 et 11 px (composant partagé avec le back-office) ; `prefers-reduced-transparency` hors portail ; comparaison avant/après relue et validée par le propriétaire (revue visuelle différée) ; défauts mineurs de la recette dans RECETTE-2810.
   - Validée visuellement par le propriétaire le 29 octobre 2026. Reste avant de cocher : lecteur d'écran et zoom à 200 % (travail d'agent).
+  - Terminée le 29 octobre 2026, sur un build de production local (base tutelliv-dev, compte de démonstration ; 14 écrans principaux des trois rôles, dont `/portal/profile`) :
+    - lecteur d'écran : audit axe-core WCAG 2 A/AA, en Clair et en Sombre, 0 violation après correction de deux contrastes (texte de la barre de démo, pastille d'alerte de la carte à 4,44 → 5,13) ; aucune icône sans nom (inventaire UX-04) ;
+    - zoom à 200 % (640 × 450 px, densité 2) : aucun débordement horizontal, titre visible sur les 14 écrans ;
+    - état d'erreur des commandes et de l'historique : bouton « Réessayer », vérifié avec une panne simulée puis rechargement ;
+    - barre de statut de la carte : libellés à 12 px au lieu de 10 et 11 px ;
+    - `prefers-reduced-transparency` : plus aucun flou d'arrière-plan dans tous les espaces (vérifié par émulation : `blur(40px)` → `none`) ;
+    - test `tests/design1-finitions.test.ts` ; `npm run check` vert (1 375 tests) ; aucune erreur de page.
+  - Validation visuelle du propriétaire du 29 octobre 2026 pour la direction et sa propagation. Les défauts mineurs de recette restent suivis dans RECETTE-2810.
 
 - [x] **UX-03 — Faire de la livraison le dossier opérationnel principal.** Depuis toute liste, carte, alerte ou tableau de bord, un clic sur une livraison doit ouvrir une fiche canonique claire. Elle regroupe selon le rôle : référence et statut de livraison, client et contacts utiles, adresses et étapes, créneaux/délais prévus, retard calculé, horodatages réels, livreur et affectation, instructions, contenu utile de la commande, incident ou échec, échanges et chronologie, preuve de livraison et documents associés. Organiser par priorité et sections repliables afin que l’état, le délai et la prochaine action soient compris immédiatement sans produire une page surchargée.
 
@@ -1301,6 +1309,14 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Limite Contact atomique du 2026-10-27 : la mesure PERF-02 du serveur Next a montré 56 envois acceptés sur une rafale de 60 simultanés, pour une limite globale de 50. Des envois concurrents lisaient le même compte avant d'écrire, ce qui permettait aussi de dépasser les 3 envois par source. Le comptage et l'écriture se font désormais dans une transaction, sous un verrou consultatif PostgreSQL de transaction (`pg_advisory_xact_lock`), compatible avec le pooler de Supabase en mode transaction. Aucun schéma n'est modifié. Vérifié : `tests/growth01-contact.test.ts` 9/9 (8 envois simultanés d'une source : 3 acceptés ; à deux places de la limite globale : 2 acceptés). Mesure rejouée sur PostgreSQL réel : 50 acceptés, 10 refusés, 50 écrits.
 
+- [ ] **LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public.** Constat du 29 octobre 2026 : aucun lien vers des mentions légales ou une politique de confidentialité dans les pieds de page consultés (accueil `src/features/landing/home-landing.tsx`, pages publiques `src/features/landing/growth-shell.tsx`). Rendre ces informations accessibles avant de collecter des demandes (formulaire Contact, inscription) et d'accueillir des utilisateurs réels.
+
+  **Modèle conseillé : GPT‑6 Luna · effort moyen ; repli si indisponible : GPT‑5.6 Luna.**
+
+  Terminé quand : chaque pied de page public (accueil, Fonctionnalités, Tarifs, Démonstration, Contact, inscription et connexion) mène aux mentions légales et à la politique de confidentialité ; les formulaires qui collectent des données (Contact, inscription) y renvoient au point de collecte ; contenu issu des pièces validées de LEGAL-1, sans identité, SIREN, adresse ni engagement inventés ; recette navigateur Light/Dark, 1440 et 390.
+
+  Source / dépendance / blocage : contenu bloqué par LEGAL-1 (identité de l'éditeur et validation professionnelle). Les pages et les liens peuvent être préparés avant, mais ne doivent pas être publiés avec un contenu provisoire présenté comme définitif. Complète le reste « pages légales » de GROWTH-1.
+
 - [ ] **DEMO-3 — Rendre réel ce que la mini-démo du site montre.** Revue du 28 octobre 2026 (code de `preproduction` comparé aux 7 étapes de `src/features/landing/product-tour/`) : 3 points disponibles, 8 partiels, 1 absent. Le propriétaire a choisi de montrer ces fonctions comme disponibles (spec `docs/superpowers/specs/2026-10-27-landing-product-tour-design.md`) ; cette tâche comble l'écart, par tranches livrées et testées une à une, dans cet ordre :
   1. **Paiements côté entreprise (absent)** : liste des factures payées / en attente / en retard, passage automatique en retard avec le nombre de jours, bouton « Relancer » qui envoie un e-mail au client et trace la relance. Aujourd'hui l'onglet Facturation ne mène qu'aux réglages et le statut `OVERDUE` n'est jamais posé.
   2. **Facture créée à la livraison** : générer la facture au passage en « Livrée » et réutiliser l'e-mail existant (`notify.service.ts`) ; aujourd'hui elle est créée à la main.
@@ -1659,6 +1675,15 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Reste à faire : le regard du propriétaire, une démo vraiment sombre si elle est souhaitée, puis la connexion (citée dans le tableau), non reprise ici.
 
   Validée par le propriétaire le 29 octobre 2026 sur le vrai site. Case cochée. Hors de cette validation : la page de connexion reste à reprendre (LANDING-2, encore ouverte), et une démo vraiment sombre seulement si le propriétaire la demande.
+
+  Retouches du 29 octobre 2026 (soir), à la demande du propriétaire :
+  - la mini-démo n'est plus en pleine largeur, elle était étirée : elle est limitée à 960 px et centrée, avec son titre (`landing-demo.tsx`) ;
+  - graphique « Livraisons · 7 jours » de l'écran d'accueil de la démo (`cover-dashboard.tsx`) : le SVG étiré (`preserveAspectRatio="none"`, point ovale, courbe à travers les barres) est remplacé par des barres en HTML proportionnées, dont aujourd'hui en vert plein avec sa valeur, et le total « 288 livraisons cette semaine » ;
+  - le téléphone du livreur (`phone-frame.tsx`) est limité à 480 px de haut pour 230 px de large : un format de smartphone, et non plus toute la hauteur de la fenêtre ;
+  - côté entreprise, les scènes de la démo (accueil, dispatch, facturation) reprennent le vrai menu de `nav-config.ts`, avec tous les onglets disponibles (`space-nav.ts`). Le menu se resserre de lui-même au-delà de 8 onglets (`space-sidebar.tsx`) ;
+  - livreur de la démo : Karim est renommé Lucas, et l'ancien second livreur Lucas devient Hugo. Seule la démo de la landing change, les comptes de démo du site gardent leurs noms.
+
+  Vérifié : `npm run check` vert (1 371 tests), `tests/landing-product-tour.test.ts` mis à jour (33/33). Captures à 1 440 px sur le serveur local : démo centrée, graphique proportionné. Non vérifiés à l'écran : le téléphone et la scène dispatch avec le menu complet, car le parcours automatique reste bloqué à l'étape 1 de la démo. Ils restent à revoir par le propriétaire sur http://localhost:3005/#demo. Non commité.
 
 - [x] **E2E-MAJ — Remettre à jour les specs E2E du chantier du 29 octobre.** Le passage final sur ec16e60 (build de production, navigateur `chromium-headless-shell`) a montré des échecs qui ne viennent pas du produit, vérifiés à la main :
   - `nav-scroll` : le test fait défiler avant le chargement du contenu (la page mesure encore 720 px), et le cas portail se connecte avec le compte de démo de l'entreprise, que la protection par rôle renvoie vers `/dashboard`. Le produit remonte bien en haut et restaure la position au Retour (mesuré : 400 → 0 → 400).

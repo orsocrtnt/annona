@@ -76,7 +76,7 @@ export function ClientOrdersHistoryContent({ initialOrders }: ClientOrdersHistor
     pageSize: ORDER_HISTORY_DEFAULT_PAGE_SIZE,
     history: true,
   });
-  const { data: result, isLoading, isFetching, error } = usePortalOrders(query, initialOrders);
+  const { data: result, isLoading, isFetching, error, refetch } = usePortalOrders(query, initialOrders);
 
   if (isInitialQueryLoading(isLoading, result)) return <PageSkeleton />;
 
@@ -93,7 +93,12 @@ export function ClientOrdersHistoryContent({ initialOrders }: ClientOrdersHistor
       </div>
 
       {error ? (
-        <EmptyState icon={History} title="Impossible de charger l'historique" />
+        <EmptyState
+          icon={History}
+          title="Impossible de charger l'historique"
+          description="Vérifiez votre connexion, puis réessayez."
+          action={{ label: "Réessayer", onClick: () => void refetch() }}
+        />
       ) : (
         <Card>
           <CardHeader>

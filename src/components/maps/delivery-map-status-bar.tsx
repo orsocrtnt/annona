@@ -140,7 +140,7 @@ export function DeliveryMapStatusBar({
                 />
                 <span
                   className={cn(
-                    "w-full px-0.5 text-center text-[10px] leading-tight transition-colors duration-300 sm:text-[11px]",
+                    "w-full px-0.5 text-center text-xs leading-tight transition-colors duration-300",
                     isCurrent && "font-semibold text-black dark:text-foreground",
                     isCompleted && "font-medium text-zinc-700 dark:text-text-secondary",
                     isUpcoming && "text-muted-foreground/80"

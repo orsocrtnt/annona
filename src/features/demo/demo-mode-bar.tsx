@@ -207,7 +207,7 @@ export function DemoModeBar() {
               <div className="flex min-w-0 items-center gap-2 text-sm text-amber-950 dark:text-amber-100">
                 <FlaskConical className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
                 <span className="font-medium">Environnement de démonstration</span>
-                <span className="hidden text-amber-800/80 sm:inline dark:text-amber-200/80">
+                <span className="hidden text-amber-800 sm:inline dark:text-amber-200">
                   — données fictives dans votre session isolée
                 </span>
               </div>
