@@ -28,11 +28,10 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - DEMO-3B : après les clés du propriétaire, redéployer, suivre l'essai sur l'iPhone et cocher la case.
-- DISPATCH-5 : imprévus (piste 5), puis mesure (piste 6).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Juriste : LEGAL-1, LEGAL-LIENS, DATA-02.
-- Pilotes : PILOT-1 et 2, PROD-02 et 04, OFFER-1, V1-GO, ONBOARD-1.
+- Pilotes : PILOT-1 et 2, PROD-02 et 04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
 - Mesures et mise en vente : SAAS-02, SAAS-03, COST-1, RELEASE-1, SMS, GROWTH-1.
 
 **Déjà fait côté agent, la case attend une action du point 1 :** SEC-AUDIT, POD-2, OPS-FIAB, INTAKE-1, FACTURX-1, MOB-01C.
@@ -221,7 +220,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | POD-2 | A | Implémenté et recetté ; règles pilotables depuis Paramètres (29 octobre) ; reste essai sur téléphone réel, GPS, conservation, e-mail réel. | MOB-01C, LEGAL-1/DATA-02, EMAIL. | Élevée · GPT‑6.1 Sol |
 | OPS-FIAB | A+B | Implémenté (29 octobre) ; déclenchement réel du workflow, `after()` sur Vercel, Node 22, index en préproduction. | Propriétaire (secrets, Vercel). | Moyenne · GPT‑6 Luna |
 | SEC-AUDIT | A+B | Implémenté et recetté (29 octobre) ; CSP bloquante, migration et secrets de préproduction, rattachement par e-mail. | Propriétaire (migration, secrets). | Élevée · GPT‑6 Astra |
-| DISPATCH-5 | A | Imprévus (piste 5), puis mesure (piste 6). DISPATCH-4 close le 30 octobre sur décision du propriétaire. | Indépendante. | GPT‑6 Astra · élevé |
+| DISPATCH-5 | A | Imprévus livrés ; mesure reportée aux pilotes. | Activité réelle (PILOT-1). | GPT‑6 Astra · élevé |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
 
 ## 0 — Cadrer la V1 sur le problème observé
@@ -1709,8 +1708,10 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Terminé quand : chaque proposition reste explicable et validable par le dispatcher ; aucune coordonnée de livreur exposée au client ; tests métier et `npm run check` verts ; recette navigateur.
 
   **Piste 5, imprévus : livrée le 30 octobre 2026.** Bloc « Imprévus à traiter » dans Dispatch › File d'attente, recalculé à chaque lecture, sans table ni écriture : livreur sans compte actif, livreur hors service à moins de deux heures de l'échéance, retard, commande sans livreur à moins d'une heure de l'échéance. Une commande « au jour » n'est signalée qu'une fois la journée passée. « Proposer un livreur » rouvre le panneau de suggestions (score et explication) ; le dispatcher valide, et un remplacement est refusé si la mission a démarré ou changé de livreur entre-temps. Une mission déjà démarrée en retard ne propose rien : lien vers la mission.
-  - Vérifications : `tests/dispatch-incidents.test.ts` 8/8 ; `tests/e2e/dispatch-incidents.spec.ts` 1/1 sur `tutelliv-dev` (signalement, remplacement refusé puis validé au clic, rôle client refusé, aucune coordonnée dans la réponse) ; `tests/e2e/dispatch-suggestions.spec.ts` rejoué, 1/1 ; `npm run check` relancé avant publication.
+  - Vérifications : `tests/dispatch-incidents.test.ts` 8/8 ; `tests/e2e/dispatch-incidents.spec.ts` 1/1 sur `tutelliv-dev` (signalement, remplacement refusé puis validé au clic, rôle client refusé, aucune coordonnée dans la réponse) ; `tests/e2e/dispatch-suggestions.spec.ts` rejoué, 1/1 ; `npm run build` réussi. Incident de publication : `34fc236` a été poussé avec `npm run check` à 1 479/1 480, le compte de routes de `tests/admin01-tenant-api-boundary-inventory.test.ts` n'étant pas à jour (code déployé non concerné) ; corrigé juste après, 1 480/1 480.
   - Limites : pas de rôle de recette réel en préproduction, seule la route y est contrôlée. Seuils de 60 et 120 minutes fixés par l'agent, non réglables. Le livreur remplacé n'est pas prévenu par notification. Reste : piste 6, mesure.
+
+  **Piste 6, mesure : reportée aux pilotes, décision de l'agent du 30 octobre 2026.** Sans activité réelle, une comparaison avant/après ne mesurerait que des données de démonstration. Les kilomètres à vide demanderaient de conserver un historique de positions, qui n'existe pas et relève de la validation juridique ; les « retards évités » ne sont pas observables sans inventer un scénario de référence. Temps de dispatch et ponctualité seront à construire avec PILOT-1.
 
 - [x] **CONFIG-MSG — Expliquer clairement pourquoi une configuration échoue.** Demande du propriétaire du 28 octobre 2026 : quand un réglage ou une fonction refuse de fonctionner pendant la configuration, l'écran doit dire précisément pourquoi et quoi faire, au lieu d'un message général. Cas constaté : en préproduction, le Factur-X d'une facture de démo restait indisponible côté client (« Votre prestataire doit compléter ses informations de facturation ») alors que les mentions légales étaient remplies. La vraie cause, trouvée en reproduisant le cas, était le « Motif d'exonération de TVA » manquant (règle EN 16931 BR-E-10 : les factures de démo sont sans TVA).
   1. Factur-X : lister côté back-office chaque champ manquant, avec un lien direct vers le champ ; signaler dès l'enregistrement des mentions légales ce qui bloquera l'export (exonération de TVA pour des factures sans TVA, IBAN pour un paiement par virement…) ; côté client, garder un message sobre, sans détail interne.
