@@ -99,7 +99,7 @@ export function renderEmailLayout(input: EmailLayoutInput) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
 <tr><td style="background:${COLORS.card};border:1px solid ${COLORS.border};border-radius:20px;overflow:hidden">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-${banner}<tr><td class="email-logo-header" align="center" bgcolor="#ffffff" style="padding:28px 24px;text-align:center;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-radius:20px 20px 0 0"><img src="https://tutelliv.fr/brand/logo-horizontal-fond-clair.png" width="146" height="43" alt="TutelLiv" style="display:block;margin:0 auto;width:146px;height:auto;border:0;color:${COLORS.ink};font-size:20px;font-weight:700"></td></tr>
+${banner}<tr><td class="email-logo-header" align="center" bgcolor="#ffffff" style="padding:0;text-align:center;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-bottom:1px solid ${COLORS.border};border-radius:20px 20px 0 0"><img src="https://tutelliv.fr/brand/email-bandeau-logo.png" width="558" height="99" alt="TutelLiv" style="display:block;width:100%;max-width:558px;height:auto;border:0;border-radius:20px 20px 0 0;color:${COLORS.ink};font-size:20px;font-weight:700"></td></tr>
 <tr><td class="email-padding" style="padding:32px;font-family:${FONT}">${body}</td></tr>
 </table>
 </td></tr>

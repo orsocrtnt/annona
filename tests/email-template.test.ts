@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import sharp from "sharp";
 import { renderSupabaseAuthTemplate, renderTextEmailHtml } from "../src/lib/email/email-template";
 import { sendTransactionalEmail } from "../src/lib/email/transactional-email";
 
@@ -123,9 +124,21 @@ test("le logo garde un fond clair dédié sans imposer le thème clair au conten
     ...(["signup", "invite", "recovery"] as const).map(type => renderSupabaseAuthTemplate(type).html),
   ];
   for (const html of renders) {
-    assert.match(html, /<td class="email-logo-header" align="center" bgcolor="#ffffff"[^>]+background-image:linear-gradient\(#ffffff,#ffffff\)[^>]*><img[^>]+alt="TutelLiv"[^>]+margin:0 auto/);
+    assert.match(html, /<td class="email-logo-header" align="center" bgcolor="#ffffff"[^>]+background-image:linear-gradient\(#ffffff,#ffffff\)[^>]*><img[^>]+alt="TutelLiv"/);
     assert.equal((html.match(/background-image:linear-gradient/g) ?? []).length, 1, "protection limitée au logo");
     assert.equal((html.match(/<img /g) ?? []).length, 1, "pas de second logo caché ni de pixel");
-    assert.ok(html.includes("https://tutelliv.fr/brand/logo-horizontal-fond-clair.png"));
   }
+});
+
+test("le bandeau du logo est une image blanche pleine largeur, pour rester blanc dans Outlook", async () => {
+  const renders = [
+    renderTextEmailHtml({ subject: "Bienvenue sur TutelLiv", text: "Bonjour" }),
+    ...(["signup", "invite", "recovery"] as const).map(type => renderSupabaseAuthTemplate(type).html),
+  ];
+  for (const html of renders) {
+    assert.match(html, /<img src="https:\/\/tutelliv\.fr\/brand\/email-bandeau-logo\.png" width="558" height="99" alt="TutelLiv" style="display:block;width:100%;/);
+    assert.match(html, /class="email-logo-header"[^>]+border-bottom:1px solid #e4e8e5/, "bandeau visible aussi sur une carte blanche");
+  }
+  const metadata = await sharp("public/brand/email-bandeau-logo.png").metadata();
+  assert.deepEqual([metadata.width, metadata.height, metadata.hasAlpha], [1116, 198, false]);
 });

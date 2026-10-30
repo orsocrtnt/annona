@@ -16,7 +16,7 @@ _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalc
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
-- E-mails : texte clarifié et bandeau centré validés le 30 octobre ; versions courte et visuelle conservées dans `docs/operations/email/prospection/`. Reste le contrôle sur Gmail mobile sombre.
+- E-mails : donner l'accord de push du correctif du bandeau Outlook, validé par toi le 30 octobre. Texte, Gmail sombre et bandeau validés ; versions courte et visuelle dans `docs/operations/email/prospection/`.
 - Créer la clé `ANTHROPIC_API_KEY` dans ta console Anthropic et la donner à Claude, qui la pose dans Vercel.
 - Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
@@ -27,7 +27,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- E-mails : lot Menthe soignée prêt et publication sur `preproduction` autorisée le 30 octobre (1 460 tests et build verts) ; reste le suivi du déploiement, l’installation des trois modèles Auth dans Supabase et leur recette réelle/Outlook.
+- E-mails : lot Menthe soignée déployé sur `preproduction` (`164be30`), trois modèles Auth installés et reçus sur Gmail le 30 octobre. Correctif du bandeau blanc validé par le propriétaire dans Outlook, non publié : reste le push sur son accord, puis le recollage des trois modèles Auth dans Supabase (la mise en ligne seule ne les change pas).
 - DEMO-3B : push « Nouvelle mission » au livreur (chantier séparé : service worker, abonnements, clés).
 - DISPATCH-5 : imprévus (piste 5), puis mesure (piste 6).
 
@@ -893,6 +893,17 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
   Terminé quand : Envoi test reçu ; échec visible/rejouable ; préférences respectées ; aucun envoi en double.
 
   Source / dépendance / blocage : le transport, les modèles, l'idempotence et les pannes simulées sont testables sans domaine. La clé Resend, le domaine vérifié et la boîte contrôlée sont requis uniquement pour fermer la recette d'envoi réel ; OPS-02B est terminée.
+
+  **Bandeau blanc pour Outlook, correctif local du 30 octobre 2026, signalé par le propriétaire.** Le blanc venait d'une couleur de fond de cellule. Il est désormais dans une image opaque pleine largeur, `public/brand/email-bandeau-logo.png` (1116 × 198, sans transparence), avec un filet sous le bandeau pour le distinguer de la carte blanche. Logo un peu agrandi (170 px de large contre 146, marges de l'image comprises) pour rester lisible sur mobile. Appliqué au modèle commun, aux trois modèles Auth régénérés et aux deux versions de prospection.
+  - Vérifications : test de régression observé rouge puis vert (10/10 tests du rendu) ; `npm run check` réussi, 1 461/1 461 tests ; `npm run ci:secrets` réussi ; capture Chromium en clair et en sombre simulé à 700 px, mesure à 390 px sans débordement.
+  - Envoi demandé par le propriétaire à 15 h 45 (heure de New York) : objet « [TEST BANDEAU OUTLOOK] Vos livraisons, tout simplement. », version visuelle vers sa boîte Kedge (Outlook) et son Gmail, accepté par Resend (HTTP 200), présent dans Gmail. L'image est jointe au mail (`cid:`), car elle n'est pas encore en ligne : ce test ne reproduit donc pas le blocage des images externes.
+  - Validation : le propriétaire a jugé ce test « parfait » le 30 octobre, après l'envoi vers Outlook.
+  - Limites : cause Outlook déduite, non reproduite ; version finale avec image en ligne non testée, car l'image n'existe en ligne qu'après publication. Non poussé, modèles Auth de Supabase pas encore remplacés. Si les images sont bloquées, le bandeau reste une simple couleur de fond. Suite : push, recollage des trois modèles dans `tutelliv-preproduction`, envoi de test vers Outlook.
+
+  **Modèles Auth installés sur `tutelliv-preproduction` le 30 octobre 2026 (session Codex, interrompue vers 15 h 38, heure de New York).** Les trois modèles Menthe ont été collés et enregistrés dans le tableau de bord Supabase. `tutelliv-dev` n'est pas modifié : SMTP personnalisé désactivé, ce qui empêche d'y éditer les modèles.
+  - Vérifications relevées dans le journal de Codex : invitation et récupération testées sur `tutelliv-dev` (lien accepté une fois, rejeu refusé, connexion avec le nouveau mot de passe) ; sur la préproduction, série `mailauth-20261030193401`, confirmation, invitation et récupération reçues, premier usage accepté, second refusé ; nettoyage annoncé (0 utilisateur et 0 parcours restants, 3 comptes Auth supprimés, aucun paiement ni entreprise créés).
+  - Contrôlé directement par Claude : `164be30` en état READY sur Vercel ; les trois mails présents dans Gmail avec l'expéditeur `no-reply@tutelliv.fr` et les bons objets ; capture Outlook du mail de démarchage `[TEST OUTLOOK]` : logo, bandeau et titre corrects.
+  - Limites : modèles distants non relus directement (pas d'accès à la configuration Auth depuis la CLI) ; dans Outlook, seul le haut du mail de démarchage est vu : blocs, bouton et lien non confirmés, mails Auth non affichés. Mode sombre Outlook et Gmail mobile sombre non vérifiés.
 
   **Commit et push de l’ensemble autorisés le 30 octobre 2026.** Lot final : présentation Menthe soignée des 13 mails, logo centré sur bandeau blanc protégé, liens métier, tests, modèles Auth générés et documentation ; versions de prospection courte et visuelle (texte clarifié validé) conservées dans `docs/operations/email/prospection/`, HTML et texte. Les six commits déjà préparés sur la branche sont inclus dans la publication demandée ; aucun reset, migration ou seed.
   - Vérifications avant commit : `npm run check` réussi (types, lint, 1 460/1 460 tests) ; `npm run build` réussi sans serveur dev en parallèle ; `npm run docs:verify` réussi (82 Markdown, aucun lien cassé, script ou variable manquants) ; `npm run ci:secrets` réussi (1 441 fichiers, aucun secret détecté) ; `git diff --check` réussi ; `npm run todo:progress` exécuté après mise à jour. Recettes visuelles et envois réels détaillés ci-dessous ; le nouveau texte est validé par le propriétaire pour publication.
