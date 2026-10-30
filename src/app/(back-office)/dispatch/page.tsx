@@ -18,6 +18,7 @@ import {
   useRunAutoDispatch,
 } from "@/features/back-office/dispatch-settings-hooks";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
+import { DispatchIncidentsPanel } from "@/features/back-office/dispatch-incidents-panel";
 import { DispatchRoundsPanel } from "@/features/back-office/dispatch-rounds-panel";
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
 import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
@@ -333,6 +334,8 @@ function DispatcherDashboardContent() {
               changeLabel="Terminées"
             />
           </div>
+
+          <DispatchIncidentsPanel />
 
           <DispatchDriverWorkload
             drivers={overview?.workload}

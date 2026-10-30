@@ -399,6 +399,8 @@ export async function assignDeliveryToDriver(
     force?: boolean;
     /** Le libre choix ne peut jamais remplacer une affectation existante. */
     expectUnassigned?: boolean;
+    /** Remplacement validé : refusé si la livraison a changé de livreur entre-temps. */
+    expectedDriverId?: string;
     /** Tournée validée (DISPATCH-4) ; toute autre affectation sort la livraison de sa tournée. */
     round?: { id: string; sequence: number };
     /** Le livreur prend lui-même la mission : rien à lui signaler. */
@@ -437,6 +439,9 @@ export async function assignDeliveryToDriver(
       !alreadyThisDriver &&
       (current.driverId !== null || current.status !== "PENDING")
     ) {
+      throw new Error("DELIVERY_NOT_AVAILABLE");
+    }
+    if (options?.expectedDriverId && !alreadyThisDriver && current.driverId !== options.expectedDriverId) {
       throw new Error("DELIVERY_NOT_AVAILABLE");
     }
     if (!driver) throw new Error("DRIVER_NOT_FOUND");

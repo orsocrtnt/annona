@@ -15,16 +15,18 @@ interface DispatchSuggestionsPanelProps {
   deliveryId: string;
   /** Affiché seulement pour une livraison qui attend un livreur. */
   pending: boolean;
+  /** Imprévu : le livreur proposé remplace celui-ci, si sa mission n'a pas démarré. */
+  replacesDriverId?: string;
 }
 
 /**
  * DISPATCH-4 — les 3 meilleurs livreurs, la raison du choix et l'affectation en un clic.
  * Le choix manuel (y compris forcé au-delà de la charge) reste dans le sélecteur voisin.
  */
-export function DispatchSuggestionsPanel({ deliveryId, pending }: DispatchSuggestionsPanelProps) {
+export function DispatchSuggestionsPanel({ deliveryId, pending, replacesDriverId }: DispatchSuggestionsPanelProps) {
   const { can, role } = usePermissions();
   const allowed = can("deliveries:dispatch") && Boolean(role && DISPATCH_ROLES.has(role));
-  const { data, isLoading, error } = useDispatchSuggestions(deliveryId, pending && allowed);
+  const { data, isLoading, error } = useDispatchSuggestions(deliveryId, pending && allowed, replacesDriverId);
   const assign = useAssignFromSuggestion();
   // Verrou synchrone : un double clic n'envoie qu'une requête (le serveur reste idempotent).
   const inFlight = useRef(false);
@@ -35,7 +37,7 @@ export function DispatchSuggestionsPanel({ deliveryId, pending }: DispatchSugges
     if (inFlight.current) return;
     inFlight.current = true;
     try {
-      await assign.mutateAsync({ deliveryId, driverId });
+      await assign.mutateAsync({ deliveryId, driverId, replacesDriverId });
       toast.success(`Livraison confiée à ${label}`);
     } catch (err) {
       toast.error("Affectation impossible", {
@@ -75,7 +77,7 @@ export function DispatchSuggestionsPanel({ deliveryId, pending }: DispatchSugges
         </p>
       ) : data.suggestions.length === 0 ? (
         <p className="text-sm text-muted-foreground" role="status">
-          Aucun livreur compatible avec les règles de dispatch. Choisissez un livreur ci-dessous,
+          Aucun livreur compatible avec les règles de dispatch. Choisissez un livreur dans la file,
           au besoin en forçant la charge.
         </p>
       ) : (

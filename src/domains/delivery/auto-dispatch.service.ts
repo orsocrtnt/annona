@@ -675,7 +675,9 @@ export type DispatchSuggestions = {
 export async function getDispatchSuggestions(
   companyId: string,
   deliveryId: string,
-  count = 3
+  count = 3,
+  /** Imprévu : propose un remplaçant tant que la mission de ce livreur n'a pas démarré. */
+  replacesDriverId?: string
 ): Promise<DispatchSuggestions | null> {
   const [delivery, settings] = await Promise.all([
     prisma.delivery.findFirst({
@@ -690,13 +692,18 @@ export async function getDispatchSuggestions(
         driverId: true,
         status: true,
         createdAt: true,
+        missionStartedAt: true,
       },
     }),
     getCompanyDispatchSettings(companyId),
   ]);
   if (!delivery) return null;
   const mode = settings.enabled ? "AUTOMATIC" : "SUGGESTION";
-  const assignable = delivery.status === "PENDING" && !delivery.driverId;
+  const replaceable = Boolean(replacesDriverId)
+    && delivery.status === "ASSIGNED"
+    && delivery.driverId === replacesDriverId
+    && !delivery.missionStartedAt;
+  const assignable = replaceable || (delivery.status === "PENDING" && !delivery.driverId);
   if (!assignable) {
     return { deliveryId, assignable, mode, eligibleCount: 0, suggestions: [] };
   }
@@ -709,7 +716,8 @@ export async function getDispatchSuggestions(
   ]);
   const positioned = drivers as DriverWithDispatchPosition[];
   const zones = tariffSettings.tariffZones;
-  const eligible = filterEligibleDrivers(positioned, delivery, settings, zones);
+  const eligible = filterEligibleDrivers(positioned, delivery, settings, zones)
+    .filter((driver) => driver.id !== delivery.driverId);
   const proximities = proximitiesFromDrivers(delivery, eligible as DriverWithDispatchPosition[], settings);
   const travel = await computeTravelTimes(
     delivery,
@@ -751,9 +759,9 @@ export async function getDispatchSuggestions(
  * livreur déjà affecté est un succès idempotent (double clic). Règles dures et plafonds
  * revérifiés sous verrou par `assignDeliveryToDriver` ; aucun appel réseau dans la transaction.
  */
-export async function assignFromSuggestion(companyId: string, deliveryId: string, driverId: string) {
+export async function assignFromSuggestion(companyId: string, deliveryId: string, driverId: string, replacesDriverId?: string) {
   return assignDeliveryToDriver(companyId, deliveryId, driverId, {
     reason: SUGGESTION_HISTORY_REASON,
-    expectUnassigned: true,
+    ...(replacesDriverId ? { expectedDriverId: replacesDriverId } : { expectUnassigned: true }),
   });
 }

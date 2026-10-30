@@ -4,6 +4,7 @@ import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
 import type { CompanyAnalytics } from "@/domains/analytics/analytics.service";
 import type { DispatchSuggestions } from "@/domains/delivery/auto-dispatch.service";
+import type { DispatchIncident } from "@/lib/dispatch/dispatch-incidents";
 import type { PresentedRound, RoundProposals } from "@/domains/delivery/delivery-rounds.service";
 import {
   orderHistorySearchParams,
@@ -79,13 +80,16 @@ export const backOfficeApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     }),
-  getDispatchSuggestions: (deliveryId: string) =>
-    fetchJson<DispatchSuggestions>(`/api/dispatch/suggestions?deliveryId=${encodeURIComponent(deliveryId)}`),
-  assignFromSuggestion: (deliveryId: string, driverId: string) =>
+  getDispatchIncidents: () => fetchJson<DispatchIncident[]>("/api/dispatch/incidents"),
+  getDispatchSuggestions: (deliveryId: string, replacesDriverId?: string) =>
+    fetchJson<DispatchSuggestions>(
+      `/api/dispatch/suggestions?deliveryId=${encodeURIComponent(deliveryId)}${replacesDriverId ? `&replacesDriverId=${encodeURIComponent(replacesDriverId)}` : ""}`
+    ),
+  assignFromSuggestion: (deliveryId: string, driverId: string, replacesDriverId?: string) =>
     fetchJson<{ id: string; driverId: string | null; status: string }>("/api/dispatch/suggestions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deliveryId, driverId }),
+      body: JSON.stringify({ deliveryId, driverId, replacesDriverId }),
     }),
   updateOrderStatus: (orderId: string, data: UpdateOrderStatusInput) =>
     fetchJson<CompanyOrder>(`/api/orders/${orderId}`, {

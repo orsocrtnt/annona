@@ -46,13 +46,14 @@ export async function GET(request: Request) {
     if ("error" in auth) return auth.error;
     const deliveryId = new URL(request.url).searchParams.get("deliveryId")?.trim();
     if (!deliveryId) return NextResponse.json({ error: "deliveryId requis" }, { status: 400 });
-    const result = await getDispatchSuggestions(auth.companyId, deliveryId);
+    const replacesDriverId = new URL(request.url).searchParams.get("replacesDriverId")?.trim() || undefined;
+    const result = await getDispatchSuggestions(auth.companyId, deliveryId, undefined, replacesDriverId);
     if (!result) return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
     return NextResponse.json({ data: { ...result, readOnly: auth.readOnly }, success: true });
   });
 }
 
-const assignSchema = z.object({ deliveryId: z.string().min(1), driverId: z.string().min(1) });
+const assignSchema = z.object({ deliveryId: z.string().min(1), driverId: z.string().min(1), replacesDriverId: z.string().min(1).optional() });
 
 const CONFLICTS: Record<string, string> = {
   DELIVERY_NOT_AVAILABLE: "Cette livraison a déjà été affectée entre-temps. Actualisez la page.",
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
     const parsed = assignSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return NextResponse.json({ error: "Données invalides" }, { status: 400 });
     try {
-      const delivery = await assignFromSuggestion(auth.companyId, parsed.data.deliveryId, parsed.data.driverId);
+      const delivery = await assignFromSuggestion(auth.companyId, parsed.data.deliveryId, parsed.data.driverId, parsed.data.replacesDriverId);
       if (!delivery) return NextResponse.json({ error: "Livraison introuvable" }, { status: 404 });
       // Réponse minimale : le client relit la file ; rien d'autre ne sort.
       return NextResponse.json({ data: { id: delivery.id, driverId: delivery.driverId, status: delivery.status }, success: true });
