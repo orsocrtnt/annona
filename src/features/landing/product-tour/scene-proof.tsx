@@ -21,7 +21,7 @@ const RECIPIENT = [TOUR_PROOF.recipient] as const;
 const gestureButton =
   "flex min-h-10 max-md:min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none";
 
-/** ⑤ App livreur : sur place, Karim photographie le colis, le nom du réceptionnaire se saisit, il valide. */
+/** ⑤ App livreur : sur place, Lucas photographie le colis, le nom du réceptionnaire se saisit, il valide. */
 export function SceneProof({ onDone, reducedMotion }: SceneProps) {
   const intro = useTimeline(INTRO_DURATIONS_MS, reducedMotion);
   const [photoTaken, setPhotoTaken] = useState(false);

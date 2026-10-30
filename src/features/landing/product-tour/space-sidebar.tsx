@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 
 export type SpaceNavItem = { icon: LucideIcon; label: string; active?: boolean };
 
-/** Menu latéral d'un espace : libellés sur grand écran, icônes seules en mobile. `dense` pour un menu complet. */
-export function SpaceSidebar({ items, dense = false }: { items: readonly SpaceNavItem[]; dense?: boolean }) {
+/** Menu latéral d'un espace : libellés sur grand écran, icônes seules en mobile. Serré d'office pour un menu complet (plus de 8 onglets). */
+export function SpaceSidebar({ items, dense = items.length > 8 }: { items: readonly SpaceNavItem[]; dense?: boolean }) {
   return (
     <aside
       className={cn(

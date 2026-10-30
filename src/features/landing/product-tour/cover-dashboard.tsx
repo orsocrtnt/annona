@@ -1,15 +1,12 @@
-import { AlertTriangle, CheckCircle2, Clock3, PackageOpen, Truck, type LucideIcon } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, PackageOpen, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CityStreets } from "@/features/landing/product-tour/city-map";
-import { SpaceSidebar, type SpaceNavItem } from "@/features/landing/product-tour/space-sidebar";
+import { SpaceSidebar } from "@/features/landing/product-tour/space-sidebar";
+import { companyNav } from "@/features/landing/product-tour/space-nav";
 import { TOUR_LANES } from "@/features/landing/product-tour/tour-data";
-import { companyNavItems } from "@/features/navigation/nav-config";
 
-/** Le vrai menu de l'espace entreprise : toutes les fonctionnalités disponibles aujourd'hui. */
-const NAV: SpaceNavItem[] = companyNavItems.flatMap((item) =>
-  // Toutes les icônes de la navigation sont des icônes Lucide.
-  item.icon ? [{ icon: item.icon as LucideIcon, label: item.title, active: item.title === "Tableau de bord" }] : []
-);
+/** Le vrai menu de l'espace entreprise : tous les onglets disponibles aujourd'hui. */
+const NAV = companyNav("Tableau de bord");
 
 const KPIS = [
   { label: "En retard", value: "3", icon: AlertTriangle, tone: "bg-[#fde8e6] text-[#c2382a]" },
@@ -41,39 +38,36 @@ const DRIVER_PINS = [
   { x: 176, y: 214 },
 ] as const;
 
-/** Un bâton par jour, et la courbe qui relie leurs sommets : on lit le volume et la tendance. */
+/**
+ * Un bâton par jour, aujourd'hui en vert plein avec sa valeur. Barres en HTML (pas de SVG étiré) :
+ * elles gardent leurs proportions quelle que soit la hauteur de la fenêtre.
+ */
 function WeekChart() {
   const max = Math.max(...WEEK.map((point) => point.count));
-  const slot = 300 / WEEK.length;
-  const bars = WEEK.map((point, index) => {
-    const top = 100 - (point.count / max) * 82;
-    return { x: slot * index + slot / 2, top };
-  });
-  const line = bars.map((bar, index) => `${index === 0 ? "M" : "L"}${bar.x.toFixed(1)} ${bar.top.toFixed(1)}`).join(" ");
-  const last = bars[bars.length - 1] ?? { x: 279, top: 18 };
+  const lastIndex = WEEK.length - 1;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <svg viewBox="0 0 300 104" preserveAspectRatio="none" className="min-h-0 w-full flex-1">
-        {[26, 52, 78].map((y) => (
-          <line key={y} x1="0" x2="300" y1={y} y2={y} stroke="#e7ece9" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-        ))}
-        {bars.map((bar, index) => (
-          <rect
-            key={index}
-            x={bar.x - slot * 0.28}
-            y={bar.top}
-            width={slot * 0.56}
-            height={104 - bar.top}
-            rx="3"
-            fill={index === bars.length - 1 ? "#9be8bf" : "#d3f4e2"}
-          />
-        ))}
-        <path d={line} fill="none" stroke="#00b85c" strokeWidth="2.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        <circle cx={last.x} cy={last.top} r="3.5" fill="#00b85c" stroke="#ffffff" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-      </svg>
-      <div className="mt-1 grid grid-cols-7 text-center text-[9px] font-medium text-muted-foreground">
+      <p className="text-[22px] font-bold leading-none tracking-[-0.03em]">
+        {WEEK.reduce((sum, point) => sum + point.count, 0)}
+        <span className="ml-1 text-[10px] font-medium tracking-normal text-muted-foreground">livraisons cette semaine</span>
+      </p>
+      <div className="mt-auto flex min-h-0 max-h-[220px] flex-1 items-end gap-[6%] border-b border-[#e7ece9] px-[4%] pt-4">
         {WEEK.map((point, index) => (
-          <span key={index}>{point.day}</span>
+          <div key={index} className="flex h-full flex-1 items-end justify-center">
+            <div
+              className={cn("relative w-full max-w-[22px] rounded-t-[5px]", index === lastIndex ? "bg-[#00b85c]" : "bg-[#d3f4e2]")}
+              style={{ height: `${(point.count / max) * 100}%` }}
+            >
+              {index === lastIndex && (
+                <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#0e1310]">{point.count}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 flex gap-[6%] px-[4%] text-center text-[9px] font-medium text-muted-foreground">
+        {WEEK.map((point, index) => (
+          <span key={index} className="flex-1">{point.day}</span>
         ))}
       </div>
     </div>
@@ -87,7 +81,7 @@ function WeekChart() {
 export function CoverDashboard() {
   return (
     <div className="flex h-full bg-[#f5f8f6]" aria-hidden>
-      <SpaceSidebar items={NAV} dense />
+      <SpaceSidebar items={NAV} />
       <div className="@container flex min-w-0 flex-1 flex-col gap-2.5 p-3 sm:p-4">
         <div className="flex items-center justify-between">
           <div className="leading-tight">

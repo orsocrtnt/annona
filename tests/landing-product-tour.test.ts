@@ -67,9 +67,9 @@ test("le dispatcher répartit chaque commande en attente vers un livreur de la d
   assert.equal(new Set(TOUR_QUEUE.map((order) => order.driver)).size, TOUR_LANES.length);
 });
 
-test("les deux commandes voisines du 11e sont regroupées pour Karim, dont #1042", () => {
+test("les deux commandes voisines du 11e sont regroupées pour Lucas, dont #1042", () => {
   const grouped = TOUR_QUEUE.filter((order) => order.grouped);
-  assert.deepEqual(grouped.map((order) => order.driver), ["Karim", "Karim"]);
+  assert.deepEqual(grouped.map((order) => order.driver), ["Lucas", "Lucas"]);
   assert.ok(grouped.some((order) => order.number === "#1042"));
 });
 

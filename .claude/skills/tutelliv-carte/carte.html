@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TutelLiv — carte des connexions</title>
+<style>
+  :root {
+    --bg: #f6faf8; --card: #ffffff; --ink: #14201b; --muted: #5d6b65; --line: #dfe8e3;
+    --accent: #1f9d74; --accent-soft: #e2f5ed; --call: #2f6fd6; --read: #1f9d74; --write: #c76a12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1513; --card: #171f1c; --ink: #e6efea; --muted: #93a29b; --line: #26322d;
+      --accent: #4cc99c; --accent-soft: #183028; --call: #7aa7ff; --read: #4cc99c; --write: #f0a35a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  a { color: inherit; text-decoration: none; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); padding: 12px 24px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  header .brand { font-weight: 650; }
+  header .brand a:hover { color: var(--accent); }
+  .meta { color: var(--muted); font-size: 12px; }
+  .search { position: relative; flex: 1; min-width: 260px; max-width: 560px; }
+  .search input { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: inherit; }
+  .search input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  #results { position: absolute; top: 42px; left: 0; right: 0; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.12); max-height: 60vh; overflow: auto; display: none; }
+  #results a { display: flex; gap: 8px; align-items: center; padding: 7px 12px; }
+  #results a:hover, #results a.on { background: var(--accent-soft); }
+  label.opt { color: var(--muted); font-size: 13px; display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  main { padding: 20px 24px 60px; max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 6px 0 2px; word-break: break-all; }
+  h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0 20px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .tile:hover { border-color: var(--accent); }
+  .tile b { display: block; font-size: 22px; }
+  .it { display: flex; gap: 8px; align-items: center; padding: 5px 6px; border-radius: 8px; }
+  .it:hover { background: var(--accent-soft); }
+  .it .lb { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .it .n { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .why { border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 6px; font-size: 11px; padding: 1px 6px; cursor: pointer; }
+  .why:hover { color: var(--accent); border-color: var(--accent); }
+  .path { margin: 2px 0 6px 6px; padding: 6px 10px; border-left: 2px solid var(--accent); color: var(--muted); font-size: 12px; }
+  .path a { color: var(--ink); } .path a:hover { color: var(--accent); }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .k-appel { color: var(--call); border-color: currentColor; }
+  .k-lecture { color: var(--read); border-color: currentColor; }
+  .k-écriture { color: var(--write); border-color: currentColor; }
+  .k-type { opacity: .6; }
+  .layer { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  details { margin-bottom: 6px; }
+  summary { cursor: pointer; padding: 4px 0; font-weight: 600; }
+  .muted { color: var(--muted); }
+  .sum { margin: 8px 0 0; }
+  .sum b { color: var(--accent); }
+  .help { color: var(--muted); max-width: 760px; }
+  .empty { color: var(--muted); font-style: italic; }
+  .tools a { color: var(--accent); margin-right: 14px; font-size: 13px; }
+  .nav a { margin-right: 12px; color: var(--muted); font-weight: 600; }
+  .nav a:hover { color: var(--accent); }
+  .maphead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .mapwrap { overflow: auto; max-height: 78vh; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); padding: 8px; }
+  .bigtile { display: block; margin: 12px 0; padding: 14px 16px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+  svg.map { display: block; font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  svg.map .ct { fill: var(--muted); font-weight: 650; font-size: 11px; letter-spacing: .04em; }
+  svg.map path { fill: none; stroke: var(--muted); stroke-opacity: .22; transition: stroke-opacity .12s; }
+  svg.map .nd { cursor: pointer; transition: opacity .12s; }
+  svg.map .nd .box { fill: var(--card); stroke: var(--line); }
+  svg.map .nd text { fill: var(--ink); }
+  svg.map .nd:hover .box { stroke: var(--accent); }
+  svg.map .nd.center .box { stroke: var(--accent); stroke-width: 2; fill: var(--accent-soft); }
+  svg.map .more { fill: var(--muted); font-style: italic; }
+  svg.map.dim path { stroke-opacity: .04; }
+  svg.map path.ind { stroke-dasharray: 4 3; }
+  svg.map.dim path.lit { stroke: var(--accent); stroke-opacity: .85; }
+  svg.map.dim .nd { opacity: .22; }
+  svg.map.dim .nd.lit { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><a href="#">TutelLiv · carte des connexions</a></div>
+  <nav class="nav"><a href="#">Accueil</a><a href="#carte">Cartographie</a></nav>
+  <div class="search">
+    <input id="q" placeholder="Chercher une page, une route /api, un fichier, une table…" autocomplete="off">
+    <div id="results"></div>
+  </div>
+  <label class="opt"><input type="checkbox" id="types"> Compter les imports de types</label>
+  <div class="meta" id="meta"></div>
+</header>
+<main id="view"></main>
+<script>
+const D = /*__DATA__*/null;
+const layerLabel = Object.fromEntries(D.layers);
+const byId = new Map(D.nodes.map((n) => [n.id, n]));
+const outAll = new Map(), incAll = new Map();
+for (const n of D.nodes) { outAll.set(n.id, []); incAll.set(n.id, []); }
+for (const e of D.edges) { outAll.get(e.from).push(e); incAll.get(e.to).push(e); }
+const $ = (s) => document.querySelector(s);
+const view = $('#view');
+let withTypes = false;
+let current = null;
+const usable = (e) => withTypes || e.kinds.some((k) => k !== 'type');
+const out = (id) => outAll.get(id).filter(usable);
+const inc = (id) => incAll.get(id).filter(usable);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const href = (id) => '#' + encodeURIComponent(id);
+const kinds = (ks) => ks.map((k) => `<span class="badge k-${k}">${k}</span>`).join(' ');
+const methods = (n) => n.methods?.length ? ' ' + n.methods.map((m) => `<span class="badge">${m}</span>`).join(' ') : '';
+
+$('#meta').textContent = `commit ${D.commit} · ${new Date(D.generatedAt).toLocaleString('fr-FR')}`;
+
+function walk(start, dir) {
+  const parent = new Map([[start, null]]);
+  const q = [start];
+  while (q.length) {
+    const id = q.shift();
+    for (const e of (dir === 'down' ? out(id) : inc(id))) {
+      const nx = dir === 'down' ? e.to : e.from;
+      if (!parent.has(nx)) { parent.set(nx, id); q.push(nx); }
+    }
+  }
+  return parent;
+}
+
+function item(id, extra = '', why = '') {
+  const n = byId.get(id);
+  return `<a class="it" href="${href(id)}"><span class="lb" title="${esc(n.id)}">${esc(n.label)}</span>${methods(n)}${extra}</a>${why}`;
+}
+
+function grouped(parent, start, dir) {
+  const ids = [...parent.keys()].filter((id) => id !== start);
+  if (!ids.length) return '<p class="empty">Rien.</p>';
+  return D.layers.map(([k, label]) => {
+    const g = ids.filter((id) => byId.get(id).layer === k).sort((a, b) => byId.get(a).label.localeCompare(byId.get(b).label));
+    if (!g.length) return '';
+    const rows = g.map((id) => `<div>${item(id, `<button class="why" data-t="${esc(id)}" data-d="${dir}" title="Montrer le chemin">pourquoi ?</button>`)}</div>`).join('');
+    return `<details ${g.length <= 15 || k === 'page' || k === 'table' ? 'open' : ''}><summary>${label} <span class="muted">(${g.length})</span></summary>${rows}</details>`;
+  }).join('');
+}
+
+function nodeView(id) {
+  const n = byId.get(id);
+  const down = walk(id, 'down'), up = walk(id, 'up');
+  current = { id, down, up };
+  const dOut = out(id), dIn = inc(id);
+  const upPages = [...up.keys()].filter((x) => x !== id && byId.get(x).layer === 'page').length;
+  const downTables = [...down.keys()].filter((x) => x !== id && byId.get(x).layer === 'table').length;
+  view.innerHTML = `
+    <section class="card">
+      <span class="badge layer">${layerLabel[n.layer]}</span>${methods(n)}
+      <h1>${esc(n.label)}</h1>
+      ${n.file ? `<div class="muted">${esc(n.id)}</div><div class="tools" style="margin-top:6px"><a href="vscode://file/${encodeURI(D.root + '/' + n.id)}">Ouvrir dans VS Code</a></div>` : ''}
+      <p class="sum">Utilise <b>${down.size - 1}</b> éléments (dont ${downTables} tables) · <b>${up.size - 1}</b> éléments dépendent de lui (dont ${upPages} pages)</p>
+    </section>
+    <section class="card" style="margin-top:16px">
+      <div class="maphead"><h2 style="margin:0">Cartographie de sa chaîne</h2>
+        <label class="opt"><input type="checkbox" id="fall" ${focusAll ? 'checked' : ''}> Tous les maillons (composants, hooks, lib…)</label></div>
+      <p class="help">Tout ce qu'il utilise et tout ce qui l'utilise, rangé en étages de gauche (pages) à droite (tables). Pointillé = lien qui passe par des fichiers techniques masqués. 8 boîtes au plus par étage, les plus proches d'abord ; le reste est dans les listes plus bas. Survole pour voir les liens, clique pour ouvrir.</p>
+      <div class="mapwrap" id="focusmap"></div>
+    </section>
+    <div class="cols">
+      <section class="card"><h2>Il utilise directement (${dOut.length})</h2>${dOut.map((e) => item(e.to, kinds(e.kinds))).join('') || '<p class="empty">Rien.</p>'}</section>
+      <section class="card"><h2>Utilisé directement par (${dIn.length})</h2>${dIn.map((e) => item(e.from, kinds(e.kinds))).join('') || '<p class="empty">Personne.</p>'}</section>
+    </div>
+    <div class="cols">
+      <section class="card"><h2>Toute la chaîne qu'il utilise</h2>${grouped(down, id, 'down')}</section>
+      <section class="card"><h2>Tout ce qui casse si on le modifie</h2>${grouped(up, id, 'up')}</section>
+    </div>`;
+  $('#fall').addEventListener('change', (e) => { focusAll = e.target.checked; focusMap(id); });
+  focusMap(id);
+}
+
+// ---------- Cartographie ----------
+// 8 étages au plus, 8 boîtes au plus par étage : la carte reste lisible d'un coup d'œil.
+const MAX = 8;
+const STAGES = [
+  ['Pages', ['page', 'layout', 'app']],
+  ['Interface', ['feature', 'composant', 'hook', 'store']],
+  ['Routes API', ['api']],
+  ['Domaines', ['domaine']],
+  ['Services', ['service']],
+  ['Outils', ['lib', 'type', 'autre']],
+  ['Tables', ['table']],
+  ['Paquets', ['paquet']],
+];
+const stageOf = (l) => STAGES.findIndex(([, ls]) => ls.includes(l));
+const FLOW = ['page', 'layout', 'app', 'composant', 'feature', 'hook', 'store', 'api', 'domaine', 'service', 'lib', 'type', 'autre', 'table', 'paquet'];
+const layerColor = (l) => `hsl(${(FLOW.indexOf(l) * 360 / FLOW.length + 150) % 360} 55% 48%)`;
+const trunc = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+const shortLabel = (n) => {
+  if (!n.file || n.layer === 'page' || n.layer === 'api') return n.label;
+  if (n.layer === 'layout') return n.url + ' (gabarit)';
+  const segs = n.id.split('/');
+  return (segs.length > 3 ? segs[2] : segs[1]) + '/' + segs.at(-1);
+};
+
+// Dessine des colonnes de boîtes reliées par des courbes. columns : [{ title, items: [{ id, label, layer, title, cls }], more }].
+function drawLayered(host, columns, edges, { onClick, colW = 230, rowH = 26, nodeH = 20, center = false } = {}) {
+  const colOf = new Map();
+  columns.forEach((c, ci) => c.items.forEach((it) => colOf.set(it.id, ci)));
+  edges = edges.filter((e) => colOf.has(e.from) && colOf.has(e.to));
+  const adj = new Map();
+  const link = (a, b) => (adj.get(a) ?? adj.set(a, new Set()).get(a)).add(b);
+  for (const e of edges) { link(e.from, e.to); link(e.to, e.from); }
+  // Ordre vertical par barycentre des voisins, pour limiter les croisements.
+  const pos = new Map();
+  const place = (c) => c.items.forEach((it, i) => pos.set(it.id, i / Math.max(1, c.items.length - 1)));
+  columns.forEach(place);
+  for (let pass = 0; pass < 6; pass++) {
+    const order = pass % 2 ? [...columns.keys()].reverse() : [...columns.keys()];
+    for (const ci of order) {
+      const c = columns[ci];
+      const bary = new Map(c.items.map((it) => {
+        const ns = [...(adj.get(it.id) ?? [])].filter((x) => colOf.get(x) !== ci);
+        return [it.id, ns.length ? ns.reduce((s, x) => s + pos.get(x), 0) / ns.length : pos.get(it.id)];
+      }));
+      c.items.sort((a, b) => bary.get(a.id) - bary.get(b.id));
+      place(c);
+    }
+  }
+  const top = 34, gap = 46, w = colW - gap;
+  const rows = (c) => c.items.length + (c.more ? 1 : 0);
+  const maxRows = Math.max(1, ...columns.map(rows));
+  const W = columns.length * colW - gap + 4, H = top + maxRows * rowH + 10;
+  const P = new Map();
+  let svg = `<svg class="map" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  columns.forEach((c, ci) => {
+    const x = 2 + ci * colW, off = center ? ((maxRows - rows(c)) * rowH) / 2 : 0;
+    c.items.forEach((it, i) => P.set(it.id, { x, y: top + off + i * rowH }));
+    c.moreY = top + off + c.items.length * rowH;
+    svg += `<text class="ct" x="${x}" y="16">${esc(c.title.toUpperCase())}</text>`;
+  });
+  const maxW = Math.max(1, ...edges.map((e) => e.w || 1));
+  svg += '<g>';
+  for (const e of edges) {
+    const a = P.get(e.from), b = P.get(e.to);
+    const y1 = a.y + nodeH / 2, y2 = b.y + nodeH / 2;
+    let d;
+    if (b.x > a.x) { const m = (b.x - a.x - w) / 2; d = `M${a.x + w},${y1} C${a.x + w + m},${y1} ${b.x - m},${y2} ${b.x},${y2}`; }
+    else if (b.x < a.x) { const m = (a.x - b.x - w) / 2 + 30; d = `M${a.x},${y1} C${a.x - m},${y1} ${b.x + w + m},${y2} ${b.x + w},${y2}`; }
+    else d = `M${a.x + w},${y1} C${a.x + w + 36},${y1} ${b.x + w + 36},${y2} ${b.x + w},${y2}`;
+    svg += `<path${e.ind ? ' class="ind"' : ''} data-f="${esc(e.from)}" data-t="${esc(e.to)}" d="${d}" stroke-width="${(1 + 3 * Math.sqrt((e.w || 1) / maxW)).toFixed(2)}"/>`;
+  }
+  svg += '</g><g>';
+  columns.forEach((c, ci) => {
+    for (const it of c.items) {
+      const p = P.get(it.id);
+      svg += `<g class="nd${it.cls ? ' ' + it.cls : ''}" data-id="${esc(it.id)}" transform="translate(${p.x},${p.y})"><title>${esc(it.title ?? it.label)}</title>`
+        + `<rect class="box" width="${w}" height="${nodeH}" rx="6"/><rect width="4" height="${nodeH}" rx="2" fill="${layerColor(it.layer)}"/>`
+        + `<text x="10" y="${nodeH / 2 + 4}">${esc(trunc(it.label, Math.floor((w - 14) / 6.4)))}</text></g>`;
+    }
+    if (c.more) svg += `<text class="more" x="${12 + ci * colW}" y="${c.moreY + 14}">+${c.more} autres</text>`;
+  });
+  host.innerHTML = svg + '</g></svg>';
+  const el = host.querySelector('svg');
+  const nodeEls = new Map([...el.querySelectorAll('.nd')].map((g) => [g.dataset.id, g]));
+  const paths = [...el.querySelectorAll('path')];
+  let sticky = null;
+  const apply = (lit, pred) => {
+    el.classList.toggle('dim', !!lit);
+    for (const [id, g] of nodeEls) g.classList.toggle('lit', !!lit && lit.has(id));
+    for (const p of paths) p.classList.toggle('lit', !!lit && pred(p));
+  };
+  const rest = () => (sticky ? apply(sticky.lit, sticky.pred) : apply(null));
+  for (const [id, g] of nodeEls) {
+    g.addEventListener('mouseenter', () => apply(new Set([id, ...(adj.get(id) ?? [])]), (p) => p.dataset.f === id || p.dataset.t === id));
+    g.addEventListener('mouseleave', rest);
+    g.addEventListener('click', (ev) => { ev.stopPropagation(); onClick?.(id); });
+  }
+  el.addEventListener('click', () => { sticky = null; rest(); host.dispatchEvent(new CustomEvent('clear')); });
+  return { stick(lit, pred) { sticky = lit ? { lit, pred } : null; rest(); } };
+}
+
+// Carte locale : toute la chaîne de l'élément rangée par couche (pages → features → routes API → domaines → tables).
+// Les maillons techniques (composants, hooks, lib, types, paquets) sont sautés : le lien devient alors pointillé.
+const STORY = new Set(['page', 'feature', 'api', 'domaine', 'service', 'store', 'table']);
+let focusAll = false;
+function focusMap(id) {
+  const CAP = MAX;
+  const keep = (x) => x === id || focusAll ? byId.get(x).layer !== 'paquet' : STORY.has(byId.get(x).layer);
+  const { down, up } = current;
+  const byLayer = new Map();
+  const shown = new Set([id]);
+  const more = new Map();
+  for (const x of [id, ...[...down.keys(), ...up.keys()].filter((y) => y !== id)]) { // ordre du parcours = du plus proche au plus lointain
+    if (!keep(x) || (x !== id && shown.has(x))) continue;
+    const l = stageOf(byId.get(x).layer);
+    const list = byLayer.get(l) ?? byLayer.set(l, []).get(l);
+    if (list.length >= CAP && x !== id) { more.set(l, (more.get(l) ?? 0) + 1); continue; }
+    list.push(x); shown.add(x);
+  }
+  const edges = [];
+  const nearest = (x, parent) => { let p = parent.get(x), hops = 0; while (p && !shown.has(p)) { p = parent.get(p); hops++; } return [p, hops > 0]; };
+  for (const x of shown) {
+    if (x === id) continue;
+    if (down.has(x)) { const [p, ind] = nearest(x, down); if (p) edges.push({ from: p, to: x, ind }); }
+    else { const [p, ind] = nearest(x, up); if (p) edges.push({ from: x, to: p, ind }); }
+  }
+  const columns = STAGES.map((_, i) => i).filter((l) => byLayer.has(l)).map((l) => ({
+    title: `${STAGES[l][0]} (${byLayer.get(l).length + (more.get(l) ?? 0)})`,
+    more: more.get(l) ?? 0,
+    items: byLayer.get(l).map((x) => { const n = byId.get(x); return { id: x, label: shortLabel(n), layer: n.layer, title: `${layerLabel[n.layer]} — ${n.id}`, cls: x === id ? 'center' : '' }; }),
+  }));
+  const host = $('#focusmap');
+  if (columns.length === 1 && columns[0].items.length === 1) { host.innerHTML = '<p class="empty" style="padding:8px">Aucun lien avec les pages, routes API, domaines ou tables. Coche « tous les maillons » pour voir les liens techniques.</p>'; return; }
+  drawLayered(host, columns, edges, { colW: 240, onClick: (x) => { if (x !== id) location.hash = href(x); } });
+}
+
+// Carte générale : un nœud par module (couche + dossier), liens pondérés par le nombre d'imports.
+const groupOf = (n) => {
+  if (n.layer === 'page' || n.layer === 'layout') return '/' + (n.url.split('/')[1] || '');
+  if (n.layer === 'api') return '/api/' + (n.url.split('/')[2] || '');
+  if (n.layer === 'table' || n.layer === 'paquet') return n.label;
+  if (n.layer === 'app') return 'app';
+  return n.module;
+};
+const modKey = (n) => n.layer + '|' + groupOf(n);
+let showPkgs = false;
+
+function mapView() {
+  current = null;
+  const mods = new Map();
+  for (const n of D.nodes) {
+    if (n.layer === 'paquet' && !showPkgs) continue;
+    const k = modKey(n);
+    if (!mods.has(k)) mods.set(k, { id: k, label: groupOf(n), layer: n.layer, files: [] });
+    mods.get(k).files.push(n.id);
+  }
+  const agg = new Map();
+  for (const e of D.edges) {
+    if (!usable(e)) continue;
+    const a = modKey(byId.get(e.from)), b = modKey(byId.get(e.to));
+    if (a === b || !mods.has(a) || !mods.has(b)) continue;
+    agg.set(a + '\u0000' + b, (agg.get(a + '\u0000' + b) ?? 0) + 1);
+  }
+  const edges = [...agg].map(([k, w]) => { const [from, to] = k.split('\u0000'); return { from, to, w }; });
+  const linked = new Set(edges.flatMap((e) => [e.from, e.to]));
+  const weight = new Map();
+  for (const e of edges) for (const x of [e.from, e.to]) weight.set(x, (weight.get(x) ?? 0) + e.w);
+  const columns = STAGES.map(([title, ls]) => {
+    const all = [...mods.values()].filter((m) => ls.includes(m.layer) && linked.has(m.id)).sort((a, b) => weight.get(b.id) - weight.get(a.id));
+    return {
+      title: `${title} (${all.length})`,
+      more: Math.max(0, all.length - MAX),
+      items: all.slice(0, MAX).map((m) => ({ id: m.id, label: `${m.label} · ${m.files.length}`, layer: m.layer, title: `${layerLabel[m.layer]} ${m.label} — ${m.files.length} fichier(s)` })),
+    };
+  }).filter((c) => c.items.length);
+  view.innerHTML = `
+    <section class="card">
+      <div class="maphead"><h2 style="margin:0">Cartographie générale — par module</h2>
+        <label class="opt"><input type="checkbox" id="pk" ${showPkgs ? 'checked' : ''}> Afficher les paquets npm</label></div>
+      <p class="help">8 étages au plus, et 8 boîtes au plus par étage : les modules les plus connectés (les autres se trouvent avec la recherche). Chaque boîte regroupe les fichiers d'un module (le chiffre = nombre de fichiers) ; les liens vont de gauche (qui utilise) à droite (ce qui est utilisé), plus épais quand il y a plus d'imports. Survole une boîte pour ses liens directs, clique pour allumer toute sa chaîne et lister ses fichiers. Clic dans le vide pour effacer.</p>
+      <div class="mapwrap" id="mapwrap"></div>
+    </section>
+    <section class="card" id="modpanel" style="margin-top:16px;display:none"></section>`;
+  $('#pk').addEventListener('change', (e) => { showPkgs = e.target.checked; mapView(); });
+  const nextOf = (dir) => {
+    const m = new Map();
+    for (const e of edges) { const [a, b] = dir === 'down' ? [e.from, e.to] : [e.to, e.from]; (m.get(a) ?? m.set(a, []).get(a)).push(b); }
+    return m;
+  };
+  const downA = nextOf('down'), upA = nextOf('up');
+  const reach = (start, A) => { const s = new Set([start]); const q = [start]; while (q.length) for (const y of A.get(q.shift()) ?? []) if (!s.has(y)) { s.add(y); q.push(y); } return s; };
+  const host = $('#mapwrap'), panel = $('#modpanel');
+  host.addEventListener('clear', () => { panel.style.display = 'none'; });
+  const api = drawLayered(host, columns, edges, {
+    colW: 190,
+    onClick: (id) => {
+      const dn = reach(id, downA), up = reach(id, upA);
+      api.stick(new Set([...dn, ...up]), (p) => (dn.has(p.dataset.f) && dn.has(p.dataset.t)) || (up.has(p.dataset.f) && up.has(p.dataset.t)));
+      const m = mods.get(id);
+      panel.style.display = '';
+      panel.innerHTML = `<span class="badge layer">${layerLabel[m.layer]}</span><h1>${esc(m.label)}</h1>
+        <p class="sum">Utilise <b>${dn.size - 1}</b> modules · <b>${up.size - 1}</b> modules en dépendent</p>
+        <h2 style="margin-top:14px">Fichiers du module (${m.files.length})</h2>${m.files.map((f) => item(f)).join('')}`;
+    },
+  });
+}
+
+function showPath(btn) {
+  const row = btn.closest('div');
+  const old = row.nextElementSibling;
+  if (old?.classList.contains('path')) return old.remove();
+  const parent = btn.dataset.d === 'down' ? current.down : current.up;
+  const chain = [];
+  for (let x = btn.dataset.t; x; x = parent.get(x)) chain.push(x);
+  if (btn.dataset.d === 'down') chain.reverse();
+  const div = document.createElement('div');
+  div.className = 'path';
+  div.innerHTML = chain.map((x) => `<a href="${href(x)}">${esc(byId.get(x).label)}</a>`).join(' → ') + '<br><span>(« A → B » : A utilise B)</span>';
+  row.after(div);
+}
+
+function home() {
+  current = null;
+  const count = (l) => D.nodes.filter((n) => n.layer === l).length;
+  const tables = D.nodes.filter((n) => n.layer === 'table').map((n) => {
+    const e = inc(n.id);
+    return { n, r: e.filter((x) => x.kinds.includes('lecture')).length, w: e.filter((x) => x.kinds.includes('écriture')).length };
+  }).sort((a, b) => (b.r + b.w) - (a.r + a.w));
+  view.innerHTML = `
+    <p class="help">Cherche n'importe quel élément en haut. Pour chacun, tu vois <b>ce qu'il utilise</b>, <b>ce qui l'utilise</b>, et tout ce qui serait touché si on le modifie. Le bouton « pourquoi ? » montre le chemin de dépendance.</p>
+    <a class="bigtile" href="#carte">Ouvrir la cartographie générale de l'app →</a>
+    <div class="grid">${D.layers.map(([k, label]) => count(k) ? `<a class="tile" href="#couche:${k}"><b>${count(k)}</b>${label}</a>` : '').join('')}</div>
+    <div class="cols">
+      <section class="card"><h2>Tables de la base (lecteurs · écrivains)</h2>${tables.map(({ n, r, w }) => item(n.id, `<span class="n">${r} lect. · ${w} écr.</span>`)).join('')}</section>
+      <section class="card">
+        <h2>Appels /api sans route trouvée (${D.unresolved.length})</h2>
+        ${D.unresolved.map((u) => `<div class="it"><span class="lb"><code>${esc(u.url)}</code></span></div><div class="path">${item(u.from)}</div>`).join('') || '<p class="empty">Aucun.</p>'}
+        <h2 style="margin-top:18px">Fichiers jamais importés (${D.orphans.length})</h2>
+        ${D.orphans.map((id) => item(id)).join('') || '<p class="empty">Aucun.</p>'}
+      </section>
+    </div>`;
+}
+
+function layerView(k) {
+  current = null;
+  const list = D.nodes.filter((n) => n.layer === k).sort((a, b) => a.label.localeCompare(b.label));
+  view.innerHTML = `<section class="card"><h2>${layerLabel[k]} (${list.length}) — ↓ utilise · ↑ utilisé par</h2>
+    ${list.map((n) => item(n.id, `<span class="n">↓${out(n.id).length} · ↑${inc(n.id).length}</span>`)).join('')}</section>`;
+}
+
+function route() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h === 'carte') mapView();
+  else if (h.startsWith('couche:')) layerView(h.slice(7));
+  else if (byId.has(h)) nodeView(h);
+  else home();
+  window.scrollTo(0, 0);
+}
+
+// Recherche
+const q = $('#q'), results = $('#results');
+let hits = [], sel = 0;
+function search() {
+  const terms = q.value.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) { results.style.display = 'none'; return; }
+  hits = D.nodes.filter((n) => { const s = (n.label + ' ' + n.id).toLowerCase(); return terms.every((t) => s.includes(t)); })
+    .sort((a, b) => (a.label.toLowerCase().startsWith(terms[0]) ? 0 : 1) - (b.label.toLowerCase().startsWith(terms[0]) ? 0 : 1) || a.label.length - b.label.length)
+    .slice(0, 20);
+  sel = 0;
+  results.innerHTML = hits.map((n, i) => `<a href="${href(n.id)}" class="${i === sel ? 'on' : ''}"><span class="badge layer">${layerLabel[n.layer]}</span><span class="lb">${esc(n.label)}</span></a>`).join('') || '<div class="it empty">Aucun résultat</div>';
+  results.style.display = 'block';
+}
+q.addEventListener('input', search);
+q.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    sel = Math.max(0, Math.min(hits.length - 1, sel + (e.key === 'ArrowDown' ? 1 : -1)));
+    [...results.children].forEach((c, i) => c.classList.toggle('on', i === sel));
+  } else if (e.key === 'Enter' && hits[sel]) { location.hash = href(hits[sel].id); q.blur(); }
+  else if (e.key === 'Escape') q.blur();
+});
+q.addEventListener('focus', search);
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search')) results.style.display = 'none';
+  const btn = e.target.closest('.why');
+  if (btn) { e.preventDefault(); showPath(btn); }
+});
+window.addEventListener('hashchange', () => { results.style.display = 'none'; route(); });
+document.addEventListener('keydown', (e) => { if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); } });
+$('#types').addEventListener('change', (e) => { withTypes = e.target.checked; route(); });
+route();
+</script>
+</body>
+</html>

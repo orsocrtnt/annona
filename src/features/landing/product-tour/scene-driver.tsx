@@ -36,7 +36,7 @@ function MissionDetails({
 }) {
   return (
     <div className="flex h-full flex-col px-3 pb-3 pt-2">
-      <p className="text-[11px] text-muted-foreground">Bonjour Karim</p>
+      <p className="text-[11px] text-muted-foreground">Bonjour Lucas</p>
       <p className="text-sm font-bold">Mes missions</p>
 
       {phase >= 1 && (

@@ -47,7 +47,7 @@ const HOME_DELIVERIES = [
 ] as const;
 
 const HOME_ACTIVITY = [
-  { text: "#1038 prise en charge par Lucas", when: "Aujourd'hui · 11 h 05" },
+  { text: "#1038 prise en charge par Hugo", when: "Aujourd'hui · 11 h 05" },
   { text: "#1040 livrée, preuve photo jointe", when: "Hier · 16 h 42" },
   { text: "Facture F-2026-1031 payée", when: "Hier · 09 h 10" },
 ] as const;

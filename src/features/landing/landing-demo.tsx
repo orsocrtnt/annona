@@ -32,7 +32,7 @@ function TourUnavailable() {
 export function LandingDemo() {
   return (
     <>
-      <div className="mb-[26px] max-w-[720px]">
+      <div className="mx-auto mb-[26px] max-w-[720px] text-center">
         <p className="text-[14px] leading-[20px] font-bold text-[var(--l-brand)]">Essayez</p>
         <h2 id="demo-title" className="mt-2 text-[clamp(30px,4vw,48px)] font-bold leading-[1.02] tracking-[-0.04em]">
           Suivez la commande {TOUR_ORDER.number}, du client à la facture.
@@ -42,7 +42,7 @@ export function LandingDemo() {
         </p>
       </div>
       {/* En Sombre, `tour-adapt` (globals.css) passe la démo aux teintes de la maquette. */}
-      <div className="tour-adapt">
+      <div className="tour-adapt mx-auto max-w-[960px]">
         <Suspense
           fallback={
             <div className="grid h-[460px] place-items-center rounded-[24px] border border-border bg-card text-sm text-muted-foreground lg:h-[600px]" role="status">

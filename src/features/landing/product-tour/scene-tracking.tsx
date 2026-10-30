@@ -40,7 +40,7 @@ export function SceneTracking({ onDone, reducedMotion }: SceneProps) {
 
   const timeline = [
     { label: "Commandée", done: true },
-    { label: "Attribuée à Karim", done: true },
+    { label: "Attribuée à Lucas", done: true },
     { label: "En route", done: delivered, active: !delivered },
     { label: "Arrivé", done: delivered },
   ];
@@ -77,7 +77,7 @@ export function SceneTracking({ onDone, reducedMotion }: SceneProps) {
             <div className="product-tour-in">
               <p className="flex items-center gap-2 text-sm font-bold">
                 <CheckCircle2 className="h-5 w-5 text-[#00a854]" aria-hidden />
-                Karim est arrivé
+                Lucas est arrivé
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {TOUR_ORDER.dropoff} · remise en cours
@@ -86,7 +86,7 @@ export function SceneTracking({ onDone, reducedMotion }: SceneProps) {
           ) : (
             <>
               <div className="flex items-baseline justify-between gap-2">
-                <p className="text-sm font-bold">Karim arrive dans {minutes} min</p>
+                <p className="text-sm font-bold">Lucas arrive dans {minutes} min</p>
                 <p className="text-[11px] text-muted-foreground">{TOUR_ORDER.slot}</p>
               </div>
               <ol className="mt-2.5 grid grid-cols-4 gap-1.5" aria-label="Étapes de la livraison">
