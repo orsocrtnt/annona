@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**77 tâches terminées sur 106 — 73 %**
+**79 tâches terminées sur 106 — 75 %**
 
-`███████████████░░░░░` · 29 tâches restantes
+`███████████████░░░░░` · 27 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -17,16 +17,14 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
 - Créer la clé `ANTHROPIC_API_KEY` dans ta console Anthropic et la donner à Claude, qui la pose dans Vercel.
-- Juriste : ouvrir le brouillon Gmail « TutelLiv : dossier juridique… », joindre `~/Downloads/TutelLiv-dossier-juridique-2026-10-30.zip`, mettre son adresse, envoyer.
-- Choisir la plateforme agréée Factur-X (recommandation : Super PDP, voir FACTURX-1 dans PROPRIO-2810) et demander les devis.
+- Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
+- Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- PERF-02 : essai de charge sur la préproduction (accord donné le 30 octobre).
-- Factur-X : retirer le bloc de livraison vide du XML (avertissement Mustang PEPPOL-EN16931-R008).
-- EMAIL et SEC-05 : vérifier en réel l'échec rejouable, les préférences et l'absence de doublon.
-- DEMO-3 : créneau propre à chaque entreprise et poids facultatif (tranche 7), arrivée estimée en direct (4), tableaux de bord client et entreprise (8, 9).
+- PERF-02 : rejouer les routes connectées sur la préproduction (publiques faites : 0 erreur) et expliquer les 500 à 16 simultanées.
+- DEMO-3 : recette navigateur du bloc « Factures » du portail client (8 ; l'entreprise, 9, est vérifiée) ; arrivée estimée en direct (4) ; créneau et poids (7, migration à faire accepter pour la préproduction).
 - DISPATCH-4 : les tournées (feu vert donné, règles C12).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
@@ -315,7 +313,7 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
   Preuve locale : autorisation explicite reçue après le refus initial. Statuts compte/entreprise contrôlés, cache de permissions inter-requêtes retiré, connexion/synchronisation et démo contrôlées. 39 tests réussis dont 11 SEC-04 ; types OK, lint sans erreur (24 avertissements existants). Retrait effectif dès la prochaine requête après validation en base, testé sur deux instances simulées. Aucune suspension distante ni déploiement. Requêtes déjà autorisées, jetons Supabase, Storage et écrans déjà chargés hors de cette garantie. Rapport : docs/rapports/2026-09-28/sec04.md.
 
-- [ ] **SEC-05 — Remplacer les mots de passe temporaires persistants par des invitations.** Invitations limitées dans le temps et à usage unique, mot de passe choisi par le destinataire, e-mail vérifié, limites de tentatives et récupération de compte.
+- [x] **SEC-05 — Remplacer les mots de passe temporaires persistants par des invitations.** Invitations limitées dans le temps et à usage unique, mot de passe choisi par le destinataire, e-mail vérifié, limites de tentatives et récupération de compte.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
@@ -332,6 +330,7 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
 
   **Réception confirmée par le propriétaire le 29 octobre 2026** (C13) : invitation, confirmation et récupération reçues en réel. Reste avant de cocher : rejouer en réel l'invitation expirée ou réutilisée refusée et la récupération suivie d'une déconnexion, sur la cible isolée.
+  **Recette réelle du 30 octobre 2026 — case cochée.** `npm run recette:sec05-real` (`scripts/email/sec05-real.ts`) sur `tutelliv-dev` avec le vrai Supabase Auth : compte E2E `e2e-sec05-20261030045444@tutelliv.test` en attente, lien d'invitation produit par `admin.generateLink` (même jeton que l'e-mail, sans envoi) puis consommé par `finishPasswordLink` : accepté, compte passé `ACTIVE` ; rejeu du même lien : `AUTH_LINK_INVALID`. Lien de récupération : accepté, rejeu `AUTH_LINK_INVALID`. Connexion : ancien mot de passe refusé, nouveau accepté ; `signOut()` (appel de `use-auth.ts`) puis réutilisation du jeton de rafraîchissement : refusée. Compte supprimé (base et Auth). L'expiration n'a pas été attendue (le critère dit « expirée ou réutilisée ») ; les tests simulés la couvrent (`npm run test:email-sec05`). La réception réelle des trois modèles a été confirmée le 29 octobre (C13).
 - [x] **SEC-06 — Vérifier toutes les frontières d’accès et le stockage.** Couvrir API, exports, PDF, photos, rôles et accès directs Supabase ; inspecter politiques réellement déployées, sans supposer leur absence.
 
   Terminé quand : Matrice A/B × admin/mini-admin/client/chauffeur documentée ; refus lecture/écriture/téléchargement hors périmètre, y compris URL signées expirées.
@@ -881,7 +880,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Validation : 217/217 tests locaux, recette connectée sur deux entreprises avec zéro résidu, parcours Chrome client/admin/chauffeur et deux refus 403 réussis, suite E2E globale 2/2, build Next.js 98 pages et `git diff --check` réussis. Une concurrence réponse/résolution détectée en recette est couverte : une réponse tardive ne rétrograde plus un ticket résolu. Procédure `docs/operations/support1/README.md`, rapport `docs/rapports/2026-10-16/support1.md`, preuves `outputs/support1/`.
 
-- [ ] **EMAIL — Valider les messages transactionnels.** Configurer expéditeur et destinataires de test ; invitations, récupération, événements utiles et gestion d’échec.
+- [x] **EMAIL — Valider les messages transactionnels.** Configurer expéditeur et destinataires de test ; invitations, récupération, événements utiles et gestion d’échec.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
@@ -907,6 +906,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
   **Correction d'état du 29 octobre 2026 (soir)** : le domaine n'est plus un blocage. D'après `docs/AUTH_EMAIL_SETUP.md` et le commit `c3133e3` : `tutelliv.fr` vérifié chez Resend, `RESEND_API_KEY` posée en local et dans Vercel, expéditeur `TutelLiv <no-reply@tutelliv.fr>`, SMTP Resend actif sur Supabase préproduction avec les trois modèles TutelLiv, « Mot de passe oublié » reçu en réel. En local, `EMAIL_DELIVERY_MODE=disabled` et `AUTH_EMAIL_LINKS_ENABLED=false`. Reste : réception réelle de l'invitation et de la confirmation, notifications métier (prise en charge, preuve, relance de facture) envoyées en réel, SMTP de `tutelliv-dev` non vérifié ; la lecture de la boîte de test se fait par le propriétaire.
 
   **Réception confirmée par le propriétaire le 29 octobre 2026** (décision C13) : mot de passe oublié, invitation, confirmation de compte et e-mails métier reçus dans la boîte de test. Reste avant de cocher : vérifier en réel qu'un échec d'envoi est visible et rejouable, que les préférences de notification sont respectées et qu'aucun envoi n'est doublé (cible isolée).
+  **Recette réelle du 30 octobre 2026.** `npm run recette:email-real` (`scripts/email/real-recette.ts`) sur `tutelliv-dev`, Resend en mode test (redirection vers la boîte de test hors Git), factures E2E `E2E-MAIL-20261030045128-A/B/C` supprimées ensuite, réglages du client restaurés. Échec visible : clé Resend invalide → tâche `PENDING`, `lastError = EMAIL_PROVIDER_HTTP_401:validation_error`, essai 1 ; reprise avec la vraie clé → `SUCCEEDED` à l'essai 2 ; rejeu forcé de la même tâche (même clé d'idempotence) → `SUCCEEDED`, une seule notification in-app. Préférences : « alertes facture » coupées → tâche réussie, 0 notification, aucun envoi ; « e-mails » coupés → 1 notification in-app, aucun envoi. Réception vérifiée par l'agent (second passage, boîte de test pointée sur le Gmail connecté pour ce seul processus) : `E2E-MAIL-20261030050712` → exactement un e-mail reçu, « [TEST → demo-client@tutelliv.fr] Facture E2E-MAIL-20261030050712-A », expéditeur `no-reply@tutelliv.fr`, malgré l'échec, la reprise et le rejeu ; aucun pour B (alertes facture coupées) ni C (e-mails coupés). **Case cochée le 30 octobre 2026.**
 - [x] **DOC-1 — Réconcilier la documentation et les procédures.** Actualiser architecture, base, commandes, configuration, limitations, dépannage et reprise ; archiver les statuts historiques non vérifiés.
 
   **Modèle conseillé : GPT‑6 Luna · effort moyen ; repli si indisponible : GPT‑5.6 Luna.**
@@ -1010,6 +1010,13 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
   - **Police embarquée** : la variante Factur-X embarque Liberation Sans 2.1.5 Regular et Bold (SIL OFL 1.1, licence dans `src/lib/pdf/fonts/LICENSE-LiberationSans.txt`), réduite aux caractères WinAnsi (pyftsubset, environ 41 Ko chacune, `src/lib/pdf/fonts/liberation-sans.ts`) puis sous-ensemble par document ; largeurs identiques à Helvetica, mise en page inchangée. Dépendance ajoutée : `@pdf-lib/fontkit` ^1.1.1. Relevé classique : polices standard, empreintes de contenu inchangées.
   - Vérifications : nouveau test dans `tests/facturx-pdf.test.ts` (toutes les polices de la variante Factur-X embarquées, `LiberationSans` ; relevé classique en Helvetica non embarquée) ; extracteur de texte des tests (`tests/helpers/pdf-text.ts`) étendu aux polices CID via la table ToUnicode : les mentions visibles restent alignées sur le XML (18/18). Rendu relu sur une facture fictive (€, œ, « », tirets, accents corrects ; 29 Ko). `npm run check` vert (1386/1386) ; `next build` réussi dans un worktree isolé.
   - Spécification `facturx.spec.ts` verte et écritures de réglages par réclamation : faits (RECETTE-2810).
+
+  **Avancement du 30 octobre 2026 — validation Mustang passée, date de livraison BT-72.**
+  - Validation officielle : Mustang CLI 2.26.0 (XSD, Schematron EN 16931, PDF/A) sur deux factures fictives générées par `buildFacturXPdf` (TVA 20 % et franchise en base art. 293 B) : « valid », 0 erreur. Le premier passage relevait un avertissement PEPPOL-EN16931-R008 (bloc `ApplicableHeaderTradeDelivery` vide).
+  - Correctif : la date de livraison effective (BT-72, `ActualDeliverySupplyChainEvent/OccurrenceDateTime`) vient de la dernière livraison terminée (`completedAt`) de la commande liée ; elle est aussi imprimée dans les mentions visibles (« Date de livraison : JJ/MM/AAAA », jour de Paris) pour garder le document hybride cohérent. Sans livraison terminée, le bloc reste vide (obligatoire dans le schéma CII). Après correctif : Mustang « valid », 0 erreur, 0 avertissement sur les deux factures.
+  - Tests : un test XML (bloc rempli au jour de Paris, bloc vide sans date) et un test de mapping (XML et mentions visibles) ; `tests/facturx-*.test.ts` verts (57 + 1), `tsc` vert.
+  - Reste : validateur FNFE (non lancé), confirmation BT-32 de la franchise par une plateforme agréée, choix de la plateforme (recommandation Super PDP, voir PROPRIO-2810).
+
   - Reste (propriétaire, PROPRIO-2810) : validation officielle Mustang ou FNFE (XSD, Schematron, et veraPDF pour la partie PDF/A-3b) sur une facture fictive ; confirmation du traitement BT-32 de la franchise ; choix d'une plateforme agréée (FACTURX-2). Non vérifié : la conformité PDF/A complète n'a été contrôlée par aucun validateur.
 - [ ] **LEGAL-1 — Préparer le dossier contractuel et données personnelles.** Faire valider contrat SaaS/CGV, confidentialité, traitement de données, sous-traitants, hébergement, GPS, photos, conservation et incidents selon usages/pays.
 
@@ -1332,6 +1339,10 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Routes connectées, préparé le 2026-10-28 : `npm run test:perf02:connected` construit l'application en production, la sert sur `127.0.0.1:55452` contre `tutelliv-dev` (garde ENV-2) et mesure en lecture seule 7 API et 2 pages connectées, de 1 à 16 requêtes simultanées et 24 par niveau, puis contrôle l'isolement entre la session démo et un dispatcher d'une autre entreprise (comptes de `npm run e2e:role-accounts`). Le build passe ; la mesure a été interrompue à la demande du propriétaire avant ses résultats. À lancer sous Node 22, sans serveur de développement en parallèle, avec les comptes de rôle créés puis supprimés.
 
+  **Mesures du 30 octobre 2026 (accord du propriétaire pour la préproduction).**
+  - Préproduction, routes publiques et session anonyme (`npm run test:perf02:preprod`, nouveau script `scripts/perf02/preprod-public.ts` limité aux deux origines HTTPS de préproduction, garde testée dans `tests/perf02-preprod-guard.test.ts`) : client à New York vers Vercel `cdg1`, 9 routes × concurrence 1/4/8/16 × 24 requêtes + niveau de reprise : **864 requêtes, 0 erreur**. Pages publiques : p95 ≤ 384 ms à 16 simultanées (≤ 135 ms à 1). Routes dynamiques (`/login`, `/api/auth/session`, `/api/signup`) : p50 ≈ 255 à 310 ms, p95 ≤ 807 ms à 16 ; reprise immédiate après le pic (p95 du niveau de reprise 65 à 417 ms). Résultat local : `outputs/perf02/preprod-public.json`.
+  - Routes connectées sur build de production local (`npm run test:perf02:connected`, worktree isolé, Node 22.23.4, comptes de rôle créés puis supprimés : 7) contre `tutelliv-dev` : **isolement OK** (14 livraisons de chaque côté, 0 commune, 6 accès croisés en 404). Latences dominées par l'aller-retour New York ↔ Paris de chaque requête SQL : p50 de 4,6 à 6,4 s à 1 requête, 13,8 à 24,8 s à 16 ; **5 réponses 500 à 16 simultanées** (`/api/back-office/dashboard` 3, `/api/dispatch/overview` 2), probablement le pool de connexions saturé par ces requêtes lentes ; pages `/dashboard` et `/dispatch` ≤ 30 ms (coquille statique). Ces chiffres ne valent pas pour Vercel Paris + Supabase Paris. Résultat local : `outputs/perf02/next-connected.json`.
+  - Suite : rejouer les routes connectées sur la préproduction elle-même (même région que la base) avec un compte de recette dédié, et lire les journaux des 500 à 16 simultanées ; la case reste ouverte (point de saturation et décision de capacité à consigner).
 - [ ] **COST-1 — Simuler les coûts d'exploitation et la marge contributive.** Établir un modèle par Starter 5 livreurs/1 000 commandes, Pro 10/3 000 et Business 25/6 000, puis pour 1, 10, 50 et 100 entreprises. Séparer coûts fixes, variables et paliers de forfait pour Supabase/PostgreSQL/Realtime/Storage, positions GPS, cartographie/itinéraires, e-mails, preuves, Vercel, paiement et support. Comparer aux prix 79/179/349 € HT et aux commissions de 15/25/35 % sur les montants initiaux éligibles encaissés.
 
   **Modèle conseillé : phase documentaire GPT‑6.1 Sol · effort moyen ; validation mesurée GPT‑6 Astra · effort élevé.**
@@ -1421,6 +1432,12 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
 
   **Décisions du propriétaire du 29 octobre 2026 (C13)** : tranche 7, créneau propre à chaque entreprise (mode « au jour » ou par créneaux, réglé dans Paramètres, détails au choix de l'équipe), poids du colis facultatif ; tranche 10, feu vert avec DISPATCH-4.
+  **Avancement du 30 octobre 2026 — tranches 8 et 9 codées (recette navigateur à suivre).**
+  - Tranche 9, tableau de bord entreprise : nouveau bloc « 7 derniers jours » (`history-7d`, affiché par défaut, y compris dans les dispositions enregistrées avant lui) : barres empilées par jour « à l'heure » (`chart-ink`) puis « en retard » (`warning`, livrée après la date demandée par le client, même règle que `isLateDelivery`), total au-dessus, légende, info-bulle par jour, tableau pour lecteur d'écran ; échecs comptés dans l'info-bulle et le tableau. Données : une requête de plus dans `getCompanyDashboardStats` (missions terminées depuis six jours à minuit, bornée par `DASHBOARD_DELIVERIES_TAKE`), calcul pur `buildSevenDayHistory` (`src/lib/dashboard/seven-day-history.ts`). Retards en permanence : si le bloc d'alertes et la case « En retard » sont masqués, la normalisation remet « En retard » en tête (dispositions déjà enregistrées comprises) ; descriptions du tiroir de personnalisation ajustées. Palette vérifiée avec le validateur dataviz : séparation daltonisme ΔE 12,5 (clair) et 16,1 (sombre), contraste ≥ 3:1 ; le gris neutre est volontaire (pas une couleur de série).
+  - Tranche 8, tableau de bord client : bloc « Factures » (`billing-summary`, affiché par défaut) avec « Montant à régler » (en attente + en retard, au centime, nombre de factures dont en retard) et « Dernière facture » (montant, référence, date, badge de statut avec jours de retard, lien vers la facture) ; brouillons et annulées exclus ; requêtes limitées au client et à son entreprise (`getClientBillingSummary`, `summarizeClientBilling`), renvoyées par `GET /api/portal/dashboard`. « Activité récente » existait déjà (Livraisons récentes) ; la carte du portail n'est pas ajoutée à ce tableau de bord (non faite).
+  - Tests : `tests/demo3-dashboard-history.test.ts` (3) et `tests/demo3-portal-billing.test.ts` (3) verts, tests voisins du tableau de bord verts (24), `tsc` vert.
+  - Recette navigateur du 30 octobre (serveur de dev dans un worktree isolé, port 3105, Playwright sans écran, `tutelliv-dev`) : **tableau de bord entreprise vérifié en Light et Dark** (session démo) : bloc « 7 derniers jours » affiché, légende, légende chiffrée « 1 livrée en 7 jours, dont 1 en retard », 7 lignes dans le tableau pour lecteur d'écran, aucune erreur de page. **Portail client non vérifié** : la connexion `demo-client@tutelliv.fr` avec le mot de passe démo répond 401 (compte client démo à identifier, sans doute réservé au mode démo par persona).
+  - Reste pour ces tranches : recette navigateur du bloc « Factures » côté client, puis la carte côté client si on la veut.
 - [ ] **INTAKE-1 — Commande par message IA (coller un message).** Depuis le back-office (Commandes et Dispatch, « Depuis un message »), coller un message de client, obtenir un brouillon de commande structuré, le relire et le valider avant création pour le compte d'un client actif choisi (`source = ADMIN`). Aucune commande n'est créée sans validation humaine ; fonction désactivée sans clé et tant que l'entreprise ne l'active pas.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
@@ -1965,6 +1982,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Point 19, juriste : brouillon Gmail préparé (signature comprise) et dossier zippé dans `~/Downloads/TutelLiv-dossier-juridique-2026-10-30.zip` (9 fichiers) ; le propriétaire joint le zip, met l'adresse et envoie.
   - Point 20 : Android toujours à trouver (objet physique).
   - Reste au propriétaire : clé Anthropic, envoi au juriste, choix de la plateforme agréée, Android, passage en Pro plus tard.
+  - Après le push (623d841) : déploiement Vercel Preview « Ready », CI `preproduction` verte (run 41003405365). `tutelliv.fr` `/`, `/login`, `/mentions-legales`, `/confidentialite` en 200 avec `content-security-policy` bloquante. Console d'un Chromium sans écran : une seule erreur, le script de la barre de commentaires Vercel (`vercel.live/_next-live/feedback/feedback.js`) bloqué par la CSP ; le site n'est pas touché. Correctif possible : désactiver « Preview feedback » dans Vercel (refusé à l'agent par le garde-fou des permissions, à faire par le propriétaire : Settings → General → Vercel Toolbar) ou autoriser `vercel.live` en préproduction dans la CSP.
 - [ ] **RELEASE-1 — Réaliser la recette de mise en vente.** Rejouer sécurité, livraison, GPS promis, abonnement, support, exports et restauration ; revue des défauts ouverts et charge représentative.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**

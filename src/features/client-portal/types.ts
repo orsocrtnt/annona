@@ -15,6 +15,20 @@ export interface PortalDashboardStats {
   deliveredThisMonth: number;
   nextDeliveryEta: string | null;
   orderCount?: number;
+  /** Tranche 8 de DEMO-3 : montant restant à régler et dernière facture. */
+  billing?: {
+    dueAmount: number;
+    dueCount: number;
+    overdueCount: number;
+    lastInvoice: {
+      id: string;
+      reference: string;
+      amount: number;
+      status: import("@prisma/client").InvoiceStatus;
+      createdAt: string;
+      dueDate: string | null;
+    } | null;
+  };
   recentDeliveries?: {
     id: string;
     reference: string;

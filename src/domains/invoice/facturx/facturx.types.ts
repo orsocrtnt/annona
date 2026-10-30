@@ -97,6 +97,8 @@ export interface FacturXInvoice {
   buyer: FacturXParty;
   /** BT-14 : référence de la commande côté vendeur */
   sellerOrderReference?: string;
+  /** BT-72 : date de livraison effective */
+  deliveryDate?: Date;
   /** BG-3 : facture d'origine, pour un avoir */
   precedingInvoice?: { number: string; issueDate: Date };
   /** BG-25 */

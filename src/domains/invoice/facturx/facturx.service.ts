@@ -42,7 +42,12 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
       lineItems: true,
       notes: true,
       companyId: true,
-      order: { select: { reference: true } },
+      order: {
+        select: {
+          reference: true,
+          deliveries: { where: { completedAt: { not: null } }, select: { completedAt: true }, orderBy: { completedAt: "desc" }, take: 1 },
+        },
+      },
       company: {
         select: {
           name: true,
@@ -92,6 +97,7 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
             lineItems: invoice.lineItems,
             notes: invoice.notes,
             orderReference: invoice.order?.reference ?? null,
+            deliveryDate: invoice.order?.deliveries[0]?.completedAt ?? null,
           },
           seller: {
             name: company.name,

@@ -25,6 +25,7 @@ import {
   CategoryCard,
   ClickableCount,
   HourlyBars,
+  SevenDayBars,
   TodayDonut,
   TodayMetric,
 } from "@/features/back-office/dashboard-shared";
@@ -796,6 +797,21 @@ function DriversOnlineWidget() {
   );
 }
 
+function HistoryWidget() {
+  const { dashboard } = useDashboardContext();
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">7 derniers jours</CardTitle>
+        <CardDescription>Livraisons terminées chaque jour ; en retard = après la date demandée par le client</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <SevenDayBars days={dashboard.history7d} />
+      </CardContent>
+    </Card>
+  );
+}
+
 /** Carte unique du tableau de bord : une seule zone, bascule Tout / Livreurs / Livraisons (MAP-UNIFY-2). */
 function UnifiedMapWidget({ height = 280 }: { height?: number }) {
   const access = useOfferAccess();
@@ -897,6 +913,8 @@ function DashboardWidget({ widget }: { widget: DashboardWidgetLayout }) {
       return <StatusStatWidget widget={widget} />;
     case "stat-drivers-online":
       return <DriversOnlineWidget />;
+    case "history-7d":
+      return <HistoryWidget />;
     case "map-drivers":
     case "map-deliveries":
       return <UnifiedMapWidget height={mapHeight} />;

@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { etaDayLabel, formatEta } from "@/features/client-portal/utils";
 import { formatPlace } from "@/lib/format/place";
-import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
+import { DeliveryStatusBadge, InvoiceStatusBadge } from "@/features/client-portal/status-badges";
 import type { PortalDashboardWidgetLayout } from "@/lib/dashboard/portal-dashboard-layout";
 import { usePortalDashboardContext } from "@/features/client-portal/portal-dashboard-context";
 
@@ -74,6 +74,55 @@ function ChartOrdersHistoryWidget() {
 
 function ChartDeliveriesStatusWidget() {
   return <ChartPlaceholder title="Livraisons par statut" type="bar" />;
+}
+
+const euros = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+const invoiceDay = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+const DAY_MS = 86_400_000;
+
+/** Montant à régler et dernière facture (DEMO-3, tranche 8). */
+function BillingSummaryWidget() {
+  const { stats } = usePortalDashboardContext();
+  const billing = stats.billing;
+  if (!billing) return null;
+  const last = billing.lastInvoice;
+  const daysOverdue = last?.status === "OVERDUE" && last.dueDate ? Math.max(Math.floor((Date.now() - Date.parse(last.dueDate)) / DAY_MS), 0) : 0;
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">Factures</CardTitle>
+        <Link href="/portal/invoices" className="text-sm text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
+          Voir tout
+        </Link>
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-border p-4">
+          <p className="text-sm text-muted-foreground">Montant à régler</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{euros.format(billing.dueAmount)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {billing.dueCount === 0
+              ? "Rien à régler pour le moment."
+              : `${billing.dueCount} facture${billing.dueCount > 1 ? "s" : ""} à régler${billing.overdueCount ? `, dont ${billing.overdueCount} en retard` : ""}`}
+          </p>
+        </div>
+        {last ? (
+          <Link href={`/portal/invoices/${last.id}`} className="rounded-lg border border-border p-4 transition-colors hover:bg-muted/50">
+            <p className="text-sm text-muted-foreground">Dernière facture</p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">{euros.format(last.amount)}</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="tabular-nums">{last.reference} · {invoiceDay.format(new Date(last.createdAt))}</span>
+              <InvoiceStatusBadge status={last.status} daysOverdue={daysOverdue} />
+            </div>
+          </Link>
+        ) : (
+          <div className="rounded-lg border border-dashed border-border p-4">
+            <p className="text-sm text-muted-foreground">Dernière facture</p>
+            <p className="mt-1 text-sm text-muted-foreground">Aucune facture pour le moment.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function RecentDeliveriesWidget() {
@@ -179,6 +228,8 @@ function PortalDashboardWidget({ widget }: { widget: PortalDashboardWidgetLayout
       return <ChartOrdersHistoryWidget />;
     case "chart-deliveries-status":
       return <ChartDeliveriesStatusWidget />;
+    case "billing-summary":
+      return <BillingSummaryWidget />;
     case "recent-deliveries":
       return <RecentDeliveriesWidget />;
     case "quick-actions":

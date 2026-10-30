@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import { facturXUnavailableReason } from "../src/domains/invoice/facturx/facturx-availability";
 import { generateFacturXXml } from "../src/domains/invoice/facturx/cii-generator";
-import { buildFacturXPdf, facturXHttpResult } from "../src/domains/invoice/facturx/facturx-document";
+import { buildFacturXPdf, facturXHttpResult, facturXVisibleMentions } from "../src/domains/invoice/facturx/facturx-document";
 import { mapInvoiceToFacturX, type FacturXSource } from "../src/domains/invoice/facturx/facturx-mapping";
 import { companyClientWhere, facturXInvoiceWhere } from "../src/domains/invoice/facturx/facturx-scope";
 import { generateInvoicePdf, type InvoicePdfLegalMentions } from "../src/lib/pdf/invoice-pdf";
@@ -346,4 +346,15 @@ test("DEMO-3 : facture passée en retard — Factur-X complet (XML embarqué bie
   assert.ok(built.ok);
   assert.deepEqual(xmlWellFormednessErrors(built.xml), []);
   assert.equal(facturXHttpResult(built, "FAC-2026-0042", "staff").status, 200);
+});
+
+test("BT-72 : la date de livraison passe dans le XML et dans les mentions visibles, au jour de Paris", () => {
+  const dated = mapInvoiceToFacturX(source({ invoice: { deliveryDate: new Date("2026-10-27T23:30:00Z") } }));
+  assert.ok(dated.ok);
+  assert.equal(dated.invoice.deliveryDate?.toISOString(), "2026-10-27T23:30:00.000Z");
+  assert.ok(facturXVisibleMentions(dated.invoice).mentions.includes("Date de livraison : 28/10/2026."));
+  const undated = mapInvoiceToFacturX(source());
+  assert.ok(undated.ok);
+  assert.equal(undated.invoice.deliveryDate, undefined);
+  assert.ok(!facturXVisibleMentions(undated.invoice).mentions.some((line) => line.startsWith("Date de livraison")));
 });

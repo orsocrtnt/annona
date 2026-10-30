@@ -20,6 +20,8 @@ export interface FacturXSourceInvoice {
   lineItems: unknown;
   notes: string | null;
   orderReference: string | null;
+  /** Fin de la dernière livraison terminée de la commande (BT-72), si connue. */
+  deliveryDate?: Date | null;
 }
 
 export interface FacturXSourceSeller {
@@ -226,6 +228,7 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
       address: buyerAddress,
     },
     sellerOrderReference: invoice.orderReference ?? undefined,
+    deliveryDate: invoice.deliveryDate ?? undefined,
     lines,
     vatExemptions:
       category === "E" && present(exemptionReason)

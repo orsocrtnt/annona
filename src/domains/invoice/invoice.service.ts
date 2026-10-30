@@ -1,5 +1,5 @@
 import { prisma } from "@/services/prisma/client";
-import { Prisma } from "@prisma/client";
+import { Prisma, type InvoiceStatus } from "@prisma/client";
 import type { CreateOrderInvoiceInput, InvoiceLineItem } from "@/lib/validations/invoice";
 import {
   getCompanyTariffSettings,
@@ -318,6 +318,52 @@ export async function getClientInvoices(customerId: string, companyId: string) {
     orderBy: { createdAt: "desc" },
     take: CLIENT_INVOICES_TAKE,
   });
+}
+
+/**
+ * Résumé de facturation du tableau de bord client (DEMO-3, tranche 8) : montant restant à régler
+ * (en attente + en retard) et dernière facture émise. Brouillons et annulées exclus.
+ */
+export async function getClientBillingSummary(customerId: string, companyId: string) {
+  const where = { customerId, companyId };
+  const [due, last] = await Promise.all([
+    prisma.invoice.groupBy({
+      by: ["status"],
+      where: { ...where, status: { in: ["PENDING", "OVERDUE"] } },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
+    prisma.invoice.findFirst({
+      where: { ...where, status: { notIn: ["DRAFT", "CANCELLED"] } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, reference: true, amount: true, status: true, createdAt: true, dueDate: true },
+    }),
+  ]);
+  return summarizeClientBilling(due, last);
+}
+
+export function summarizeClientBilling(
+  due: Array<{ status: InvoiceStatus; _sum: { amount: unknown }; _count: { _all: number } }>,
+  last: { id: string; reference: string; amount: unknown; status: InvoiceStatus; createdAt: Date; dueDate: Date | null } | null
+) {
+  const overdue = due.find((row) => row.status === "OVERDUE");
+  // Centimes entiers : la somme de Decimal convertis ne doit pas laisser de reste flottant.
+  const dueCents = due.reduce((sum, row) => sum + Math.round(Number(row._sum.amount ?? 0) * 100), 0);
+  return {
+    dueAmount: dueCents / 100,
+    dueCount: due.reduce((sum, row) => sum + row._count._all, 0),
+    overdueCount: overdue?._count._all ?? 0,
+    lastInvoice: last
+      ? {
+          id: last.id,
+          reference: last.reference,
+          amount: Number(last.amount),
+          status: last.status,
+          createdAt: last.createdAt.toISOString(),
+          dueDate: last.dueDate?.toISOString() ?? null,
+        }
+      : null,
+  };
 }
 
 export async function getClientInvoiceById(

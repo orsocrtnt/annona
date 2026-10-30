@@ -275,3 +275,16 @@ test("franchise en base sans n° de TVA : BR-E-02 satisfaite par l'identifiant f
   assert.doesNotMatch(xml, /schemeID="VA">FR44/);
   assert.ok(checkFacturXInvoice({ ...franchise, seller: { ...seller, vatNumber: undefined } }).some((issue) => issue.rule === "BR-E-02"));
 });
+
+test("BT-72 : la date de livraison remplit le bloc de livraison, sinon il reste vide", () => {
+  // Livrée le 27 octobre à 23 h 30 UTC, soit le 28 octobre à Paris.
+  const delivered = generateFacturXXml(invoice({ deliveryDate: new Date("2026-10-27T23:30:00Z") }));
+  assert.deepEqual(xmlWellFormednessErrors(delivered), []);
+  assert.match(
+    delivered,
+    /<ram:ApplicableHeaderTradeDelivery>\s*<ram:ActualDeliverySupplyChainEvent>\s*<ram:OccurrenceDateTime>\s*<udt:DateTimeString format="102">20261028<\/udt:DateTimeString>\s*<\/ram:OccurrenceDateTime>\s*<\/ram:ActualDeliverySupplyChainEvent>\s*<\/ram:ApplicableHeaderTradeDelivery>/
+  );
+  const undated = generateFacturXXml(invoice());
+  assert.doesNotMatch(undated, /ActualDeliverySupplyChainEvent/);
+  assert.match(undated, /<ram:ApplicableHeaderTradeDelivery\s*\/>|<ram:ApplicableHeaderTradeDelivery>\s*<\/ram:ApplicableHeaderTradeDelivery>/);
+});

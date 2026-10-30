@@ -14,6 +14,7 @@ export type FacturXDocumentResult =
   | { ok: false; errors: FacturXIssue[]; warnings: FacturXIssue[] };
 
 const euros = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+const parisDay = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", year: "numeric" });
 
 /** Mentions visibles du Factur-X, construites depuis le même modèle que le XML (document hybride cohérent). */
 export function facturXVisibleMentions(invoice: FacturXInvoice): InvoicePdfLegalMentions {
@@ -29,12 +30,13 @@ export function facturXVisibleMentions(invoice: FacturXInvoice): InvoicePdfLegal
 
   const exemptions = Object.values(invoice.vatExemptions).map((exemption) => exemption?.reason);
   const notes = invoice.notes.filter((note) => note.subjectCode !== "AAI").map((note) => note.content);
+  const delivered = invoice.deliveryDate ? `Date de livraison : ${parisDay.format(invoice.deliveryDate)}.` : undefined;
   const prepaid = invoice.prepaidAmount ? `Montant déjà réglé : ${euros.format(invoice.prepaidAmount)} — solde dû : ${euros.format(0)}.` : undefined;
   return {
     documentLabel: invoice.typeCode === "381" ? "Avoir" : "Facture",
     seller: { name: invoice.seller.name, lines: partyLines(invoice.seller) },
     buyer: { name: invoice.buyer.name, lines: partyLines({ ...invoice.buyer, siret: undefined, taxRegistrationId: undefined }) },
-    mentions: [invoice.seller.legalInfo, ...exemptions, invoice.paymentTerms, ...notes, prepaid].filter(
+    mentions: [invoice.seller.legalInfo, ...exemptions, invoice.paymentTerms, ...notes, delivered, prepaid].filter(
       (line): line is string => Boolean(line && line.trim())
     ),
     footer: "Facture accompagnée de ses données structurées Factur-X (profil EN 16931), fichier factur-x.xml joint.",

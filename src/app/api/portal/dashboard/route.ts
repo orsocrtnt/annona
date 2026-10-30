@@ -3,6 +3,7 @@ import { requireClientRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { getClientOrderStats } from "@/domains/order/order.service";
 import { getClientDeliveries } from "@/domains/delivery/delivery.service";
+import { getClientBillingSummary } from "@/domains/invoice/invoice.service";
 import { PORTAL_RECENT_DELIVERIES_TAKE } from "@/lib/query/list-limits";
 
 export async function GET() {
@@ -16,9 +17,10 @@ export async function GET() {
       return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
     }
 
-    const [stats, deliveries] = await Promise.all([
+    const [stats, deliveries, billing] = await Promise.all([
       getClientOrderStats(customerId, companyId),
       getClientDeliveries(customerId, companyId, { take: PORTAL_RECENT_DELIVERIES_TAKE }),
+      getClientBillingSummary(customerId, companyId),
     ]);
 
     return NextResponse.json({
@@ -28,6 +30,7 @@ export async function GET() {
         deliveredThisMonth: stats.deliveredThisMonth,
         nextDeliveryEta: stats.nextDeliveryEta,
         orderCount: stats.orderCount,
+        billing,
         recentDeliveries: deliveries.map((d) => ({
           id: d.id,
           reference: d.reference,

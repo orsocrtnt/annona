@@ -29,6 +29,7 @@ import type {
   DashboardTodayStats,
 } from "@/lib/dashboard/dashboard-types";
 import { DASHBOARD_DELIVERIES_TAKE } from "@/lib/query/list-limits";
+import { buildSevenDayHistory, historyStart } from "@/lib/dashboard/seven-day-history";
 import { buildDashboardTrends } from "@/lib/dashboard/trends";
 
 type DeliveryRow = {
@@ -276,7 +277,7 @@ export async function getCompanyDashboardStats(
 
   const yesterdayStart = addDays(todayStart, -1);
 
-  const [planningDeliveries, activeDeliveries, allForToday, trendDeliveries] = await Promise.all([
+  const [planningDeliveries, activeDeliveries, allForToday, trendDeliveries, historyDeliveries] = await Promise.all([
     prisma.delivery.findMany({
       where: {
         companyId,
@@ -340,6 +341,12 @@ export async function getCompanyDashboardStats(
       },
       take: DASHBOARD_DELIVERIES_TAKE,
     }),
+    // Historique : missions terminées (livrées ou en échec) depuis six jours à minuit.
+    prisma.delivery.findMany({
+      where: { companyId, completedAt: { gte: historyStart(todayStart), lte: now } },
+      select: { status: true, completedAt: true, order: { select: { requestedDeliveryDate: true } } },
+      take: DASHBOARD_DELIVERIES_TAKE,
+    }),
   ]);
 
   const periods = {} as Record<DashboardPeriodKey, PeriodDashboardStats>;
@@ -384,6 +391,14 @@ export async function getCompanyDashboardStats(
       })),
       todayStart,
       now
+    ),
+    history7d: buildSevenDayHistory(
+      historyDeliveries.map((delivery) => ({
+        status: delivery.status,
+        completedAt: delivery.completedAt,
+        requestedDeliveryDate: delivery.order.requestedDeliveryDate,
+      })),
+      todayStart
     ),
   };
 }

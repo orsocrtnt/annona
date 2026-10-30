@@ -1,3 +1,4 @@
+import type { DashboardHistoryDay } from "@/lib/dashboard/seven-day-history";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
 import type { DashboardPeriodKey, PeriodDashboardStats } from "@/lib/dashboard/period-stats";
 
@@ -96,6 +97,8 @@ export interface CompanyDashboardStats {
   alerts: DashboardAlerts;
   today: DashboardTodayStats;
   trends: DashboardTrends;
+  /** Sept derniers jours, aujourd'hui compris : livrées, dont en retard, et échecs. */
+  history7d: DashboardHistoryDay[];
 }
 
 export type { DashboardPeriodKey, PeriodDashboardStats };

@@ -324,7 +324,9 @@ export function serializeFacturXXml(invoice: FacturXInvoice, totals: FacturXTota
           partyNode("ram:BuyerTradeParty", invoice.buyer, false),
           clean(invoice.sellerOrderReference) && el("ram:SellerOrderReferencedDocument", [leaf("ram:IssuerAssignedID", invoice.sellerOrderReference!.trim())]),
         ]),
-        el("ram:ApplicableHeaderTradeDelivery"),
+        el("ram:ApplicableHeaderTradeDelivery", [
+          invoice.deliveryDate && el("ram:ActualDeliverySupplyChainEvent", [dateTime("ram:OccurrenceDateTime", invoice.deliveryDate)]),
+        ]),
         el("ram:ApplicableHeaderTradeSettlement", [
           clean(invoice.paymentReference) && leaf("ram:PaymentReference", invoice.paymentReference!.trim()),
           leaf("ram:InvoiceCurrencyCode", currency),

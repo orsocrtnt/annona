@@ -24,6 +24,7 @@ export const DASHBOARD_WIDGET_TYPES = [
   "stat-status-in-delivery",
   "stat-status-delivered",
   "stat-drivers-online",
+  "history-7d",
   "map-drivers",
   "map-deliveries",
 ] as const;
@@ -59,13 +60,13 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetCatalogEntry[] = [
   {
     type: "alerts-row",
     label: "Alertes opérationnelles",
-    description: "Les 4 alertes en un bloc",
+    description: "Les 4 alertes en un bloc ; sans lui, « En retard » reste affiché",
     category: "alerts",
   },
   {
     type: "alert-late",
     label: "En retard",
-    description: "Missions dont la date client est dépassée",
+    description: "Missions dont la date client est dépassée ; reste affiché si le bloc d'alertes est masqué",
     category: "alerts",
     compact: true,
   },
@@ -212,6 +213,12 @@ export const DASHBOARD_WIDGET_CATALOG: DashboardWidgetCatalogEntry[] = [
     category: "stats",
     compact: true,
   },
+  {
+    type: "history-7d",
+    label: "7 derniers jours",
+    description: "Livrées par jour, dont en retard, et échecs",
+    category: "stats",
+  },
   // Une seule carte : « map-deliveries » reste un type connu pour lire les anciennes dispositions,
   // mais n'est plus proposé (normalizeDashboardLayout le fond dans « map-drivers »).
   {
@@ -237,7 +244,7 @@ export const DASHBOARD_WIDGET_CATEGORY_LABELS: Record<
   maps: "Cartes",
 };
 
-const DEFAULT_VISIBLE: DashboardWidgetType[] = ["alerts-row", "today-summary", "planning"];
+const DEFAULT_VISIBLE: DashboardWidgetType[] = ["alerts-row", "today-summary", "history-7d", "planning"];
 
 export const DEFAULT_DASHBOARD_LAYOUT: DashboardLayoutSettings = {
   defaultPeriod: "7d",
@@ -287,8 +294,14 @@ export function normalizeDashboardLayout(
 
   return {
     defaultPeriod: input?.defaultPeriod ?? DEFAULT_DASHBOARD_LAYOUT.defaultPeriod,
-    widgets: assignWidgetOrders(foldMapWidgets(widgets)),
+    widgets: assignWidgetOrders(keepLateVisible(foldMapWidgets(widgets))),
   };
+}
+
+/** Les retards restent affichés en permanence (DEMO-3, tranche 9) : sans bloc d'alertes, « En retard » revient en tête. */
+function keepLateVisible(widgets: DashboardWidgetLayout[]): DashboardWidgetLayout[] {
+  if (widgets.some((w) => (w.type === "alerts-row" || w.type === "alert-late") && w.visible)) return widgets;
+  return widgets.map((w) => (w.type === "alert-late" ? { ...w, visible: true, order: -1 } : w));
 }
 
 /**
@@ -400,7 +413,7 @@ export function toggleDashboardWidget(
   const next = widgets.map((widget) =>
     widget.type === type ? { ...widget, visible } : widget
   );
-  return assignWidgetOrders(next);
+  return assignWidgetOrders(keepLateVisible(next));
 }
 
 export function getWidgetCatalogEntry(type: DashboardWidgetType) {

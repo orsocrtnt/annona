@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { TONE_CLASSES, resolveTone, type Tone } from "@/components/ui/tone";
 import { DeltaBadge, type StatDelta } from "@/components/ui/stat-card";
 import type { DashboardCategoryCounts } from "@/lib/dashboard/dashboard-types";
+import type { DashboardHistoryDay } from "@/lib/dashboard/seven-day-history";
 import { Package } from "lucide-react";
 
 export function ClickableCount({
@@ -179,6 +180,70 @@ export function HourlyBars({ values }: { values: number[] }) {
         <span>18 h</span>
         <span>23 h</span>
       </div>
+    </figure>
+  );
+}
+
+const HISTORY_DAY = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric" });
+const HISTORY_DAY_LONG = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+function historyLabel(day: DashboardHistoryDay) {
+  const onTime = day.delivered - day.deliveredLate;
+  const failed = day.failed ? `, ${day.failed} en échec` : "";
+  return `${HISTORY_DAY_LONG.format(new Date(day.date))} : ${day.delivered} livrée${day.delivered > 1 ? "s" : ""} (${onTime} à l'heure, ${day.deliveredLate} en retard)${failed}`;
+}
+
+/** Sept derniers jours : barres empilées « à l'heure » puis « en retard », total au-dessus (DEMO-3, tranche 9). */
+export function SevenDayBars({ days }: { days: DashboardHistoryDay[] }) {
+  const max = Math.max(...days.map((day) => day.delivered), 0);
+  const late = days.reduce((sum, day) => sum + day.deliveredLate, 0);
+  const total = days.reduce((sum, day) => sum + day.delivered, 0);
+  return (
+    <figure className="space-y-3">
+      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <span className="text-sm text-muted-foreground">
+          {total} livrée{total > 1 ? "s" : ""} en 7 jours, dont {late} en retard
+        </span>
+        <span className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-ink" />À l&apos;heure</span>
+          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-warning" />En retard</span>
+        </span>
+      </figcaption>
+      <div className="flex h-32 items-end gap-2 border-b border-chart-track" aria-hidden="true">
+        {days.map((day) => {
+          const onTime = day.delivered - day.deliveredLate;
+          return (
+            <div key={day.date} title={historyLabel(day)} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
+              <span className="text-[11px] tabular-nums text-muted-foreground">{day.delivered > 0 ? day.delivered : ""}</span>
+              {day.delivered > 0 && (
+                <div className="flex w-3 flex-col justify-end gap-[2px]" style={{ height: `${Math.max((day.delivered / max) * 80, 6)}%` }}>
+                  {day.deliveredLate > 0 && <div className="w-full rounded-t-[4px] bg-warning" style={{ flexGrow: day.deliveredLate }} />}
+                  {onTime > 0 && <div className={cn("w-full bg-chart-ink", day.deliveredLate === 0 && "rounded-t-[4px]")} style={{ flexGrow: onTime }} />}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-2 text-[11px] tabular-nums text-muted-foreground" aria-hidden="true">
+        {days.map((day) => (
+          <span key={day.date} className="flex-1 text-center">{HISTORY_DAY.format(new Date(day.date))}</span>
+        ))}
+      </div>
+      <table className="sr-only">
+        <caption>Livraisons des 7 derniers jours</caption>
+        <thead>
+          <tr><th scope="col">Jour</th><th scope="col">Livrées</th><th scope="col">Dont en retard</th><th scope="col">En échec</th></tr>
+        </thead>
+        <tbody>
+          {days.map((day) => (
+            <tr key={day.date}>
+              <th scope="row">{HISTORY_DAY_LONG.format(new Date(day.date))}</th>
+              <td>{day.delivered}</td><td>{day.deliveredLate}</td><td>{day.failed}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </figure>
   );
 }

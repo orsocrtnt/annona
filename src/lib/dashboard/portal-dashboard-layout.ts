@@ -4,6 +4,7 @@ export const PORTAL_DASHBOARD_WIDGET_TYPES = [
   "stat-in-delivery",
   "stat-delivered-month",
   "stat-next-delivery",
+  "billing-summary",
   "chart-orders-history",
   "chart-deliveries-status",
   "recent-deliveries",
@@ -67,6 +68,12 @@ export const PORTAL_DASHBOARD_WIDGET_CATALOG: PortalDashboardWidgetCatalogEntry[
     compact: true,
   },
   {
+    type: "billing-summary",
+    label: "Factures",
+    description: "Montant à régler et dernière facture",
+    category: "stats",
+  },
+  {
     type: "chart-orders-history",
     label: "Historique des commandes",
     description: "Graphique d'activité (aperçu)",
@@ -112,7 +119,7 @@ export const PORTAL_DASHBOARD_WIDGET_CATEGORY_LABELS: Record<
   shortcuts: "Raccourcis",
 };
 
-const DEFAULT_VISIBLE: PortalDashboardWidgetType[] = ["stats-row", "recent-deliveries"];
+const DEFAULT_VISIBLE: PortalDashboardWidgetType[] = ["stats-row", "billing-summary", "recent-deliveries"];
 
 export const DEFAULT_PORTAL_DASHBOARD_LAYOUT: PortalDashboardLayoutSettings = {
   widgets: PORTAL_DASHBOARD_WIDGET_TYPES.map((type, index) => ({
