@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**72 tâches terminées sur 105 — 69 %**
+**73 tâches terminées sur 105 — 70 %**
 
-`██████████████░░░░░░` · 33 tâches restantes
+`██████████████░░░░░░` · 32 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -159,7 +159,7 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 - **Absent du code au 21 octobre :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet. *Au 26 octobre, tous ont une tranche locale (voir SAAS-01B/02/03/04, SALES-1, COST-1, ADMIN-1) sauf les factures d'abonnement et l'attribution commerciale persistée.*
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
-## Matrice des 33 tâches ouvertes
+## Matrice des 32 tâches ouvertes
 
 Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées (DISPATCH-3 close le 27 octobre), prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
 
@@ -171,7 +171,6 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | ONBOARD-1 | A+B | Tranche technique qualifiée ; essai par un pilote réel, temps humain, invitations réelles, décision d'import. | Pilotes + EMAIL. | Élevée · GPT‑6.1 Sol |
 | MOB-01C | A | Exécuter GPS, verrouillage, refus et reprise sur iPhone/Android réels. | Appareils/opérateur. | Moyenne · GPT‑6.1 Sol |
 | DESIGN-1 | A+B | Design validé visuellement dans les trois espaces (29 octobre) ; restent lecteur d'écran et zoom à 200 %. | Aucune. | Élevée · GPT‑6.1 Sol |
-| UX-04 | A+B | Partie livrée validée visuellement (29 octobre) ; finir l'inventaire et la simplification des actions des parcours prioritaires. | Aucune. | Moyenne · GPT‑6.1 Sol |
 | V1-GO | A | Rejouer la recette finale et documenter les limites promises. | MOB-01C, EMAIL/SEC-05 réels, LEGAL-1 ; latence préproduction (PERF-02). | Élevée · GPT‑6 Astra |
 | LEGAL-1 | A+B | Compléter les inconnues puis obtenir validation professionnelle. | Identité éditeur et professionnels externes. | Moyenne · GPT‑6 Astra |
 | DATA-02 | A+B | Export complété du contrat SaaS (27 octobre) ; export en flux, remise chiffrée, politique et nettoyage planifié. | Politique finale : LEGAL-1. | Élevée · GPT‑6 Astra |
@@ -707,7 +706,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
   Recette par rôle et clavier du 2026-10-27 : `npm run e2e:role-accounts -- setup` crée sur `tutelliv-dev` uniquement (garde ENV-2) des comptes dispatcher, mini-admin (module Dispatch, puis module Support seul) et super-admin, rattachés à l'entreprise modèle « LogiExpress Démo » hors pool ; `cleanup` les supprime avec leur manifeste local `outputs/e2e-role-accounts.json`. `tests/e2e/ux03-delivery.spec.ts` 8/8 sur serveur local : le dispatcher et le mini-admin Dispatch ouvrent la fiche depuis la file, voient l'assignation tant que la livraison n'est pas terminée et reçoivent 404 sur une livraison d'une autre entreprise ; le mini-admin Support reçoit 403 et la fiche reste « Livraison introuvable » ; au clavier, Entrée sur une ligne ouvre la fiche, Tab atteint « Retour au dispatch » puis « Informations techniques » avec un focus visible, Entrée déplie et le lien commande s'ouvre. Correction : la fiche ne relance plus la requête sur un refus d'accès. `npm run check` 725/725. Comptes supprimés après l'essai. Reste : la revue visuelle avec DESIGN-1, différée.
   - Validée visuellement par le propriétaire le 29 octobre 2026. Case cochée.
 
-- [ ] **UX-04 — Simplifier les actions et supprimer les explications permanentes inutiles.** Inventorier les boutons, rangées d'actions et textes qui expliquent en permanence leur fonctionnement. Pour chaque écran, conserver une action principale évidente, regrouper les actions secondaires, déplacer les actions rares dans un menu clairement nommé et retirer les lignes d'aide redondantes. Si la place, le nom ou l'icône ne suffisent pas à comprendre une action, renommer ou repositionner le contrôle avant d'ajouter une aide. Réserver les aides contextuelles aux notions réellement complexes, sans masquer une étape critique dans une infobulle.
+- [x] **UX-04 — Simplifier les actions et supprimer les explications permanentes inutiles.** Inventorier les boutons, rangées d'actions et textes qui expliquent en permanence leur fonctionnement. Pour chaque écran, conserver une action principale évidente, regrouper les actions secondaires, déplacer les actions rares dans un menu clairement nommé et retirer les lignes d'aide redondantes. Si la place, le nom ou l'icône ne suffisent pas à comprendre une action, renommer ou repositionner le contrôle avant d'ajouter une aide. Réserver les aides contextuelles aux notions réellement complexes, sans masquer une étape critique dans une infobulle.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
@@ -721,6 +720,8 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
   Source / dépendance / blocage : demande explicite du propriétaire le 21 octobre 2026 après constat d'un trop grand nombre de boutons, de rangées et d'explications. Complète DESIGN-1 sans le dupliquer : DESIGN-1 définit le système visuel, UX-04 réduit et clarifie les actions. Préserver UI-2 et les protections serveur ; une interface plus simple ne doit pas rendre une action sensible moins explicite.
   - Validée visuellement par le propriétaire le 29 octobre 2026. Reste avant de cocher : finir l'inventaire des actions des parcours prioritaires (travail d'agent).
+  - Terminée le 29 octobre 2026. Inventaire automatique des parcours prioritaires (administrateur, client, livreur ; 15 écrans à 1 280 et 390 px) : `docs/operations/ux04/INVENTORY.md`. Aucun contrôle sans nom accessible ; actions destructrices confirmées (suppression d'utilisateur, annulation de livraison) ; aides restantes justifiées (règle « au moins une option active », partage de position du livreur). Correction : dans `assign-driver-select.tsx` (fiches commande et livraison), « Changer » devient « Changer de chauffeur », « Retirer » devient « Retirer le chauffeur », et le retrait demande une confirmation. Test `tests/ux04-actions.test.ts` ; navigateur : confirmation affichée, chauffeur gardé après refus, aucune erreur ; `npm run check` vert (1 371 tests) ; `ux03-delivery` vert.
+  - Limites : l'essai de découverte par un vrai utilisateur de chaque rôle se fera avec les pilotes (PILOT-1). Les specs `v1-roles` et `v1-operational` ont échoué pendant la passe : un second serveur de développement (port 3005, lancé hors de cette session) a cassé le cache `.next` partagé (connexion en 500, `app-paths-manifest.json` introuvable). `v1-operational` attendait aussi le bloc « Suivi partagé » sur la commande client, absent à l'écran : à rejouer sur un serveur seul avant V1-GO.
 
 - [x] **TEST-2 — Transformer les vérifications en suite reproductible.** Tests de règles métier, intégration sur deux entreprises et E2E des trois rôles ; fixtures isolées et traces sans secrets.
 
@@ -881,6 +882,7 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 ## 5 — Conserver les modules utiles et préparer l’usage réel
 
 Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles sont explicitement exclues de la V1 ; une fonction non qualifiée ne doit pas être exposée comme fiable. Contrats et données restent à cadrer avant usage réel.
+  - À rejouer avant V1-GO (29 octobre 2026) : `v1-roles` et `v1-operational` sur un serveur seul ; lors de la passe UX-04, `v1-operational` n'a pas trouvé le bloc « Suivi partagé » de la commande client (cache `.next` alors abîmé par un second serveur : cause à confirmer).
 
 - [x] **OPS-01 — Fiabiliser les récurrences.** Occurrence durable unique, reprises après erreur, lots drainés, fuseaux horaires et fin de mois.
 

@@ -281,7 +281,7 @@ export function AssignDriverSelect({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm">{assignedLabel}</span>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setEditing(true)}>
-            Changer
+            Changer de chauffeur
           </Button>
           <Button
             variant="ghost"
@@ -289,6 +289,8 @@ export function AssignDriverSelect({
             className="h-7 px-2 text-xs text-destructive"
             disabled={unassign.isPending}
             onClick={async () => {
+              // UX-04 : action qui défait une affectation, confirmée comme l'annulation de livraison.
+              if (!confirm(`Retirer le chauffeur de cette livraison ? (${assignedLabel})`)) return;
               try {
                 await unassign.mutateAsync(deliveryId);
                 toast.success("Chauffeur retiré");
@@ -299,7 +301,7 @@ export function AssignDriverSelect({
               }
             }}
           >
-            Retirer
+            Retirer le chauffeur
           </Button>
         </div>
 
