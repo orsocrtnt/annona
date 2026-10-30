@@ -1107,6 +1107,7 @@ export async function deliverSignupWelcomeEmail(
       `Votre espace ${journey.companyName ?? "TutelLiv"} est prêt avec l’offre ${journey.planCode} (${interval}).`,
       "Connectez-vous puis suivez l’assistant pour ajouter vos livreurs, vos clients et créer votre première livraison.",
       "",
+      ...(process.env.NEXT_PUBLIC_APP_URL ? [`Découvrir mon espace : ${process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "")}/onboarding`, ""] : []),
       "L’équipe TutelLiv",
     ].join("\n"),
     idempotencyKey: eventKey,

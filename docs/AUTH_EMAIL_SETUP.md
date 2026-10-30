@@ -26,7 +26,7 @@ Dans le tableau de bord Supabase du projet visé (d'abord `tutelliv-dev`, jamais
 
 Alternative équivalente : l'intégration Supabase du tableau de bord Resend, qui remplit les mêmes champs. Ensuite, dans Resend, désactiver le suivi des clics et des ouvertures du domaine (réécriture des liens à jeton). Dans **Authentication → Rate Limits**, relever « emails sent per hour » (30 par défaut avec SMTP personnalisé) selon le volume pilote.
 
-Les trois modèles à la DA TutelLiv sont générés par `npx tsx scripts/email/render-supabase-templates.ts` dans `docs/operations/email/supabase/` (`signup.html`, `invite.html`, `recovery.html`) ; coller chaque fichier dans **Authentication → Emails → Templates** (« Confirm signup », « Invite user », « Reset password ») avec le sujet affiché par le script. Ne jamais modifier ces fichiers à la main : changer `src/lib/email/email-template.ts` puis régénérer.
+Les trois modèles à la DA TutelLiv sont générés par `npx tsx scripts/email/render-supabase-templates.ts` dans `docs/operations/email/supabase/` (`signup.html`, `invite.html`, `recovery.html`) ; coller chaque fichier dans **Authentication → Emails → Templates** (« Confirm signup », « Invite user », « Reset password ») avec le sujet affiché par le script. Ne jamais modifier ces fichiers à la main : changer `src/lib/email/email-template.ts` puis régénérer. Les versions générées le 30 octobre 2026 portent la direction « Menthe soignée » avec le logo officiel, les boutons encre et les mentions de sécurité conservées. Elles ne remplacent les versions hébergées qu’après installation dans Supabase ; aucune activation ou installation distante n’est effectuée par le générateur.
 
 ## Avant activation
 

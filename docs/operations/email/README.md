@@ -4,7 +4,13 @@
 
 ## Modèle HTML
 
-Chaque e-mail métier part en texte brut **et** en HTML (`src/lib/email/email-template.ts`, DA Menthe Light) : sujet en titre, paragraphes séparés par une ligne vide, première ligne « Libellé : URL » transformée en bouton vert avec lien de secours, bandeau ambre en mode test. Le contenu est échappé, seules les URL http(s) deviennent des liens, aucune image distante ni pixel de suivi. Le HTML est dérivé du rendu figé par une fonction pure : une reprise sous la même `Idempotency-Key` envoie le même corps. Les modèles Supabase Auth utilisent la même mise en page (voir [AUTH_EMAIL_SETUP.md](../../AUTH_EMAIL_SETUP.md)).
+Chaque e-mail métier part en texte brut **et** en HTML (`src/lib/email/email-template.ts`, direction « Menthe soignée » validée le 30 octobre 2026). Carte blanche sur fond clair, logo officiel horizontal avec texte alternatif `TutelLiv`, boutons encre avec liens de secours, badges menthe et accents ambre/rouge selon le statut. La présentation pure de `email-presentation.ts` couvre les sept notifications de livraison, la bienvenue, la facture et la relance ; les trois modèles Auth partagent la même mise en page. Les récapitulatifs affichent uniquement les valeurs reconnues dans le texte métier figé ; un message inconnu garde son titre et son contenu.
+
+Le 30 octobre 2026, protection ajoutée contre la perte de contraste du logo transparent en mode sombre : un bandeau blanc sur toute la largeur de l’en-tête combine `bgcolor`, `background-color` et `background-image:linear-gradient(#ffffff,#ffffff)`. Le logo est centré avec `align="center"`, `text-align:center` et `margin:0 auto`, avec 28 px de marge verticale et 24 px de marge horizontale. Aucun contour ni séparation sous le bandeau : il se fond dans la carte blanche en clair. Le fond protégé est limité à l’en-tête ; aucune inversion du PNG ni permutation de logo par media query. Technique documentée par [Litmus](https://www.litmus.com/blog/background-colors-html-email#dont-forget-dark-mode). Les couleurs du logo restent noires et vertes, avec un fond clair pour les rendre lisibles. Le repli uni dépend du client ; ce contournement ne garantit pas tous les clients de messagerie. Contrôle local sur fond sombre simulé, pas de validation Gmail mobile réel à ce stade. Les messages déjà reçus ne sont pas modifiés.
+
+Le logo est la seule image distante : `https://tutelliv.fr/brand/logo-horizontal-fond-clair.png` (ressource publique, aucun jeton ni paramètre par destinataire). Aucun pixel de suivi ; les textes et le nom alternatif restent lisibles si les images sont bloquées. Le contenu et les récapitulatifs sont échappés ; seules les URL http(s) du texte deviennent des liens. La première ligne « Libellé : URL » fournit le bouton. Le mode test conserve son bandeau ambre. Les préférences de preuve et de notification, la file et les clés d’idempotence restent applicables ; aucun lien de preuve n’est ajouté lorsqu’il est désactivé.
+
+`npx tsx scripts/email/render-supabase-templates.ts` régénère les modèles Auth versionnés et les 13 aperçus réels sous `outputs/email/preview/index.html` (données fictives, navigation des cadres bloquée par sandbox). Les outputs restent locaux. Pour appliquer la nouvelle présentation aux mails Auth hébergés, installer les trois fichiers générés dans Supabase selon [AUTH_EMAIL_SETUP.md](../../AUTH_EMAIL_SETUP.md) après la publication autorisée. La modification du dépôt seule ne modifie pas les modèles Supabase déjà configurés. La réception Gmail/Outlook et le mode sombre des clients mail demandent une recette réelle séparée.
 
 ## Envoi de recette
 
@@ -57,3 +63,10 @@ Cette preuve ne configure ni SMTP Supabase, ni Resend, ni domaine, ni boîte de 
 7. Revenir à disabled après la recette.
 
 Le passage à live exige une décision séparée après la recette. EMAIL reste ouverte jusque-là.
+
+## Brouillons de prospection conservés
+
+- [Version courte — HTML](prospection/demarchage-court.html) et [texte](prospection/demarchage-court.txt).
+- [Version visuelle — HTML](prospection/demarchage-visuel.html) et [texte avec objet](prospection/demarchage-visuel.txt), texte clarifié et bandeau blanc centré validés le 30 octobre 2026.
+
+Ces fichiers sont des modèles réutilisables, sans liste de destinataires ni mécanisme d’envoi automatique. Les preuves des tests réels restent uniquement dans `outputs/` et ne sont pas publiées.

@@ -324,7 +324,7 @@ function composeDeliveryStatusMessage(
   const emailText =
     isProofStatus && proofRules.emailToClient && appUrl
       ? `${body}\nPreuve de livraison (signature, photo, PDF) : ${appUrl}/portal/deliveries/${payload.deliveryId}`
-      : body;
+      : !isProofStatus && appUrl ? `${body}\nConsulter ma livraison : ${appUrl}/portal/deliveries/${payload.deliveryId}` : body;
   return { title: copy.title, body, emailText };
 }
 
@@ -335,7 +335,9 @@ function composeDeliveryAcceptedMessage(
   // Refus ou nouvelle acceptation depuis la mise en file : cette prise en charge n'est plus vraie.
   if (delivery.missionAcceptedAt?.getTime() !== Date.parse(payload.acceptedAt)) return null;
   const body = ACCEPTED_COPY.body(payload.reference);
-  return { title: ACCEPTED_COPY.title, body, emailText: body };
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
+  const emailText = appUrl ? `${body}\nConsulter ma livraison : ${appUrl}/portal/deliveries/${payload.deliveryId}` : body;
+  return { title: ACCEPTED_COPY.title, body, emailText };
 }
 
 /**
@@ -404,6 +406,8 @@ export async function deliverClientNotificationJob(
     currency: "EUR",
   }).format(payload.amount);
   const body = `La facture ${payload.reference} (${amount}) est disponible.`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
+  const emailText = appUrl ? `${body}\nConsulter ma facture : ${appUrl}/portal/invoices/${payload.invoiceId}` : body;
   await insertNotification(eventKey, {
     userId: payload.customerId,
     type: "INVOICE",
@@ -412,7 +416,7 @@ export async function deliverClientNotificationJob(
     href: `/portal/invoices/${payload.invoiceId}`,
     email:
       settings.emailNotifications && user.email
-        ? { to: user.email, subject: `Facture ${payload.reference}`, text: body }
+        ? { to: user.email, subject: `Facture ${payload.reference}`, text: emailText }
         : undefined,
   }, replayWindow, freezeContent);
 }
