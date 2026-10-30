@@ -108,7 +108,8 @@ async function roleId(systemRole: "COMPANY_ADMIN" | "CLIENT" | "DRIVER") {
 }
 
 async function createLoginUser(email: string) {
-  const password = randomBytes(12).toString("base64url");
+  // Politique Supabase : minuscule, majuscule et chiffre garantis, quel que soit le tirage.
+  const password = `Aa1${randomBytes(12).toString("base64url")}`;
   const { data, error } = await adminClient().auth.admin.createUser({ email, password, email_confirm: true });
   if (error || !data.user) throw new Error(`AUTH_CREATE_FAILED:${error?.message ?? "no-user"}`);
   return { id: data.user.id, email, password };
