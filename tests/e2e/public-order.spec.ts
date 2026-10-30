@@ -53,7 +53,8 @@ test("LIEN : commander sans compte, suivre, plafond, lien coupé", async ({ page
   try {
     await loginAdmin(page);
     await page.goto("/dashboard/orders/intake");
-    const row = page.locator("div", { has: page.getByRole("heading", { name: "Lien de commande" }) }).last();
+    const row = page.getByTestId("channel-orderLink");
+    await expect(row.getByRole("button", { name: /^(Activer|Désactiver)$/ })).toBeVisible({ timeout: 60_000 });
     if (await row.getByRole("button", { name: "Activer" }).isVisible()) await row.getByRole("button", { name: "Activer" }).click();
     await expect(row.getByRole("button", { name: "Copier" })).toBeVisible();
     const url = (await (await page.request.get("/api/company/intake-channels")).json()).data.orderLink.url as string;
@@ -190,6 +191,8 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     expect(await prisma.order.count({ where: { companyId, notes: { contains: "E2E commande urgente" } } }), "jamais de commande créée seule").toBe(0);
 
     // Analyse simulée : aucun appel réel au modèle, la clé n'est pas requise.
+    // La tâche lancée à la réception tourne en parallèle dans ce processus : attendre sa fin.
+    await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } })).status, { timeout: 30_000 }).not.toBe("RECEIVED");
     const draft = buildOrderIntakeDraft(EXTRACTION, stored.bodyText, new Date());
     await prisma.inboundOrderEmail.updateMany({ where: { id: stored.id }, data: { status: "RECEIVED" } });
     await analyzeInboundEmailJob({ inboundEmailId: stored.id }, { analyze: async () => ({ status: "ok", draft }) });
@@ -205,7 +208,7 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     await expect(card.getByText("Brouillon prêt")).toBeVisible();
     await expect(card.getByText(/pièce\(s\) jointe\(s\)/)).toBeVisible();
     await card.getByRole("button", { name: "Relire le brouillon" }).click();
-    await expect(page.getByLabel(/Client/).first()).toBeVisible();
+    await expect(page.getByLabel(/^Client/)).toBeVisible();
 
     const spam = page.getByRole("listitem").filter({ hasText: "E2E à classer" });
     await spam.getByRole("button", { name: "Classer sans commande" }).click();
@@ -214,18 +217,15 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     expect(dismissed.status).toBe("DISMISSED");
     expect(dismissed.bodyText, "contenu effacé dès le classement").toBe("");
 
-    const client = await prisma.user.findFirstOrThrow({ where: { companyId, status: "ACTIVE", role: { systemRole: "CLIENT" } }, select: { id: true } });
+    // Vrai clic : le double clic ne crée qu'une commande et l'e-mail se classe seul.
+    await page.getByLabel(/^Client/).selectOption({ index: 1 });
+    await page.getByRole("button", { name: "Créer la commande" }).dblclick();
+    await expect(page.getByText(/Commande créée/).first()).toBeVisible({ timeout: 60_000 });
+    await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } })).status, { timeout: 30_000 }).toBe("CONVERTED");
     const key = `inbound-${stored.id}-0`;
-    const payload = {
-      customerId: client.id,
-      order: { deliveryCategory: "COURIER", items: [], shippingAddress: "5 place de la Défense", shippingCity: "Courbevoie", shippingPostalCode: "92400", requestedDeliveryDate: tomorrow(), notes: "E2E commande urgente", pickupStops: [{ label: "Enlèvement", address: "12 rue de Rivoli", city: "Paris", postalCode: "75001", items: [{ name: "plis", quantity: 2 }] }] },
-    };
-    const first = await page.request.post("/api/orders/intake/orders", { headers: { "Idempotency-Key": key }, data: payload });
-    expect(first.status()).toBe(201);
-    const replay = await page.request.post("/api/orders/intake/orders", { headers: { "Idempotency-Key": key }, data: payload });
-    orderId = (await first.json()).data.id as string;
-    expect((await replay.json()).data.id, "rouvrir l'e-mail ne recrée pas la commande").toBe(orderId);
-    expect((await page.request.patch(`/api/orders/intake/inbox/${stored.id}`, { data: { status: "CONVERTED", orderId } })).status()).toBe(200);
+    const createdOrders = await prisma.order.findMany({ where: { companyId, idempotencyKey: key }, select: { id: true } });
+    expect(createdOrders, "une seule commande").toHaveLength(1);
+    orderId = createdOrders[0]!.id;
     const converted = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } });
     expect(converted.status).toBe("CONVERTED");
     expect(converted.orderId).toBe(orderId);

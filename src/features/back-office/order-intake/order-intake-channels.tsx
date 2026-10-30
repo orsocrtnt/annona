@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { InboundEmailItem, IntakeChannelAction } from "./order-intake-api";
 import { useCloseInboundEmail, useInboundEmails, useIntakeChannels, useUpdateIntakeChannel } from "./order-intake-hooks";
 
-function ChannelRow({ title, description, value, enabled, disabledReason, onAction, pending }: {
+function ChannelRow({ testId, title, description, value, enabled, disabledReason, onAction, pending }: {
+  testId: string;
   title: string;
   description: string;
   value: string | null;
@@ -19,7 +20,7 @@ function ChannelRow({ title, description, value, enabled, disabledReason, onActi
 }) {
   const [copied, setCopied] = React.useState(false);
   return (
-    <div className="space-y-2 border-b border-border pb-4 last:border-0 last:pb-0">
+    <div data-testid={testId} className="space-y-2 border-b border-border pb-4 last:border-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="font-medium">{title}</h3>
         <Badge variant={enabled ? "default" : "secondary"}>{enabled ? "Activé" : "Désactivé"}</Badge>
@@ -66,6 +67,7 @@ export function IntakeChannelsCard() {
         {data && (
           <>
             <ChannelRow
+              testId="channel-orderLink"
               title="Lien de commande"
               description="À partager à vos clients : ils commandent sans compte et reçoivent un lien de suivi par e-mail. L'expéditeur n'est pas vérifié : ces commandes ne partent jamais seules à un livreur, un dispatcher les affecte."
               value={data.orderLink.url}
@@ -74,6 +76,7 @@ export function IntakeChannelsCard() {
               onAction={act("orderLink")}
             />
             <ChannelRow
+              testId="channel-inboundEmail"
               title="Adresse de réception des commandes"
               description="Transférez-y vos e-mails de commande. Chacun devient un brouillon ci-dessous, à relire et valider : aucune commande n'est créée seule."
               value={data.inboundEmail.address}

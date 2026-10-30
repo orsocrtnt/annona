@@ -77,6 +77,7 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 - **Conservation côté TutelLiv** : le texte et l'expéditeur ne sont pas stockés. Seul un journal d'usage est conservé (entreprise, modèle, issue, nombre de jetons, horodatage) pour le quota et le coût ; sa durée de conservation reste à fixer (LEGAL-1).
 - **Conservation côté fournisseur** : **INCONNUE dans ce dossier**. Durée de rétention des entrées et sorties de l'API, usage éventuel pour l'entraînement, région de traitement et transferts hors EEE (fournisseur établi aux États-Unis) restent à vérifier dans les conditions et le DPA applicables au compte réellement souscrit.
 - **Rôle proposé** : sous-traitant ultérieur pour cette finalité, à qualifier.
+- **E-mails reçus (MAIL-COMMANDE, non activé)** : Resend reçoit et conserve les e-mails transférés à l'adresse de commande, puis leur texte part chez Anthropic. Durée de conservation chez Resend et information des expéditeurs à qualifier avant toute donnée réelle (voir aussi F03).
 - **Mention affichée** : l'écran d'activation indique que le texte est transmis au sous-traitant Anthropic et qu'aucune validation juridique n'est acquise.
 - **À obtenir** : entité contractante, DPA et version, rétention et éventuelle option de non-conservation, région et mécanisme de transfert, sous-traitants ultérieurs, information des personnes dont les coordonnées figurent dans les messages transmis.
 

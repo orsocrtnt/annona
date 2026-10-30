@@ -40,9 +40,21 @@ Permissions : `orders:create` et rôles `COMPANY_ADMIN`, `MINI_ADMIN`, `DISPATCH
 
 Estimation **non mesurée** : message type ≈ 1 200 jetons en entrée et 600 à 1 000 en sortie, soit **0,0004 à 0,0006 $ par analyse**. Pire cas (8 000 caractères, sortie au plafond) ≈ 0,0024 $. Une entreprise à 50 messages par jour dépenserait environ 1 $ par mois ; au plafond de 300 par jour, 5 à 22 $ par mois. À confirmer par le journal d'usage après les premiers appels réels.
 
+## Réception automatique des e-mails (MAIL-COMMANDE, 30 octobre 2026)
+
+Chaque entreprise active une adresse `<jeton>@<INBOUND_EMAIL_DOMAIN>` vers laquelle elle transfère ses e-mails de commande. Un e-mail reçu devient un brouillon à relire : aucune commande n'est créée sans validation humaine. Code présent, testé avec fournisseur et modèle simulés.
+
+Mise en service (propriétaire) :
+
+1. Dans Resend (Domains), ajouter `commandes.tutelliv.fr` en réception et poser le MX indiqué dans la zone OVH. Ne pas toucher au MX de `tutelliv.fr`, qui sert la boîte OVH.
+2. Dans Resend (Webhooks), créer un webhook `email.received` vers `https://tutelliv.fr/api/webhooks/inbound-email` et copier son secret.
+3. Dans Vercel (Preview, branche `preproduction`) : `INBOUND_EMAIL_DOMAIN=commandes.tutelliv.fr` et `RESEND_INBOUND_WEBHOOK_SECRET=<secret>`. `RESEND_API_KEY` doit avoir le droit de lire les e-mails reçus.
+4. Poser `ANTHROPIC_API_KEY` (ci-dessus) et activer la fonction ; sans elle, l'e-mail reste lisible et « À lire », sans brouillon.
+
+Garde-fous : signature Svix vérifiée sur le corps brut (5 minutes de tolérance), expéditeur jamais considéré comme prouvé, 200 e-mails par jour et par entreprise, texte seul (HTML réduit, pièces jointes non lues), corps et brouillon effacés au traitement, ligne supprimée après 30 jours.
+
 ## Hors tranche (documenté, non développé)
 
-- **Adresse e-mail dédiée de transfert** (`commandes@…`) : un service de réception (« inbound parse » chez un fournisseur e-mail) poste le message sur un webhook signé ; le webhook crée un brouillon en file d'attente, jamais une commande. À décider : fournisseur (Resend est déjà pressenti pour l'envoi), sous-domaine et enregistrements MX/SPF/DKIM, coût par message, durée de conservation des e-mails reçus, authentification de l'expéditeur, information des clients. Nouveau flux de sous-traitance à qualifier.
 - **WhatsApp Business** : API Cloud de Meta en direct ou via un fournisseur agréé ; vérification de l'entreprise, numéro dédié, modèles de messages approuvés hors fenêtre de 24 h, tarification par conversation ou par message à vérifier au moment du choix, consentement explicite des clients (opt-in) et information RGPD. Mêmes règles : brouillon puis validation humaine.
 
 Ces deux canaux réutiliseraient tel quel le domaine `src/domains/order-intake` (analyse, brouillon, quota), seule l'entrée change.

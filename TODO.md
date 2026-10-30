@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**89 tâches terminées sur 114 — 78 %**
+**90 tâches terminées sur 116 — 78 %**
 
-`████████████████░░░░` · 25 tâches restantes
+`████████████████░░░░` · 26 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -21,6 +21,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
+- MAIL-COMMANDE (quand tu voudras l'allumer) : poser le MX de `commandes.tutelliv.fr` chez OVH, créer le webhook `email.received` dans Resend, puis mettre `INBOUND_EMAIL_DOMAIN` et `RESEND_INBOUND_WEBHOOK_SECRET` dans Vercel ; la clé Anthropic au-dessus sert aussi ici. Le dire à Claude, qui fait l'essai réel.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
 
 **2. Claude — peut le faire seul, dans cet ordre**
@@ -31,7 +32,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Pilotes : PILOT-1 et 2, PROD-02 et 04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
 - Mesures et mise en vente : SAAS-02, SAAS-03, COST-1, RELEASE-1, SMS, GROWTH-1.
 
-**Déjà fait côté agent, la case attend une action du point 1 :** SEC-AUDIT, POD-2, OPS-FIAB, INTAKE-1, FACTURX-1, MOB-01C.
+**Déjà fait côté agent, la case attend une action du point 1 :** SEC-AUDIT, POD-2, OPS-FIAB, INTAKE-1, MAIL-COMMANDE, FACTURX-1, MOB-01C.
 
 Mise à jour : 29 octobre 2026, en fin de journée (revue de cohérence : matrice réalignée sur les cases ; LANDING-3, MAP-UNIFY-2, MAP-INTERACTION, E2E-MAJ, ICONES-IA et CONFIG-MSG-2 closes). Version précédente du même jour : bilan de l'intégration du 28 octobre (neuf chantiers ; voir DEMO-3, DESIGN-1, FACTURX-1, INTAKE-1, POD-2, OPS-FIAB, SEC-AUDIT, RECETTE-2810 et PROPRIO-2810). Précédente : 26 octobre 2026 (revue de cohérence : tableaux de pilotage, priorités et matrice réalignés sur le code). Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
 
@@ -1520,6 +1521,24 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   **Close le 30 octobre 2026 : essai réel sur l'iPhone du propriétaire.** Compte livreur de test, site ajouté à l'écran d'accueil, notifications activées ; abonnement relu en base (`web.push.apple.com`). Mission fictive affectée à 18 h 15 (heure de New York) : tâche `DRIVER_NOTIFICATION` réussie du premier coup, Apple a accepté l'envoi, et le propriétaire confirme que tout fonctionne (« c'est nickel ») en réponse aux questions sur la réception et l'ouverture de la page Missions. Jeu de test supprimé par `npm run mob01c:cleanup`.
   - Non vérifié : Android, faute de téléphone (voir MOB-01C) ; le livreur remplacé par un dispatcher n'est pas prévenu.
+
+- [x] **LIEN-PUBLIC — Commander et suivre sans connexion.** Demande du propriétaire du 30 octobre 2026 (« commander et suivre »). Lien propre à chaque entreprise (`/commander/<jeton>`), désactivé par défaut et renouvelable, réglé dans « Depuis un message » ; lien de suivi `/suivi/<jeton>` envoyé par e-mail au demandeur et copiable depuis le détail de n'importe quelle commande.
+
+  **Modèle conseillé : Claude Opus · effort élevé.**
+
+  Décisions prises : le demandeur n'est pas authentifié, donc la commande reste sans client et sans `customerEmail` (aucun rattachement possible à un compte par un e-mail saisi), source `PUBLIC_LINK`, demandeur dans les notes et marqué non vérifié, **jamais d'affectation automatique** ; plafond 5 commandes par source et 60 par entreprise par heure, sous verrou ; pot de miel ; le suivi n'expose ni livreur, ni position, ni adresse complète, ni preuve, et expire 30 jours après la fin de la commande. Migration `20261030180000_public_order_channels` (RLS + REVOKE).
+
+  Vérifié sur tutelliv-dev : `tests/e2e/public-order.spec.ts` (navigateur réel, sans session : champs manquants, double clic = 1 commande, suivi, 404 sur jeton inconnu, champ forcé refusé, pot de miel, 6e envoi en 429, lien coupé en 404, suivi conservé) ; écrans commandes, dispatch et carte sans erreur avec une commande sans client ; passage en Livrée ; captures 390 px relues. `npm run check` vert.
+
+  Limites : e-mail du demandeur non vérifié, donc du spam reste possible sous le plafond et il consomme le quota de commandes (l'entreprise coupe ou renouvelle le lien) ; envoi réel du lien de suivi non constaté (dépend du mode e-mail du serveur) ; pas de position du livreur dans le suivi V1 ; `exportCompanyData` n'inclut pas les nouvelles tables (inventaire DATA-02 à jour, à trancher avec le juriste).
+
+- [ ] **MAIL-COMMANDE — Les e-mails reçus deviennent des brouillons à valider.** Demande et décision du propriétaire du 30 octobre 2026 : brouillon à valider, jamais de commande créée seule. Code livré : adresse dédiée `<jeton>@<INBOUND_EMAIL_DOMAIN>` par entreprise, webhook signé `/api/webhooks/inbound-email` (Resend, format Svix), lecture du corps via l'API Resend, tâche durable `INBOUND_EMAIL` qui réutilise l'analyse d'INTAKE-1, liste « E-mails de commande reçus » dans « Depuis un message », corps et brouillon effacés dès le traitement et ligne supprimée après 30 jours, plafond 200 e-mails par jour et par entreprise, pièces jointes signalées mais non lues.
+
+  **Modèle conseillé : Claude Opus · effort élevé.**
+
+  Terminé quand : MX de `commandes.tutelliv.fr` posé chez OVH, webhook Resend créé, `INBOUND_EMAIL_DOMAIN` et `RESEND_INBOUND_WEBHOOK_SECRET` sur Vercel, clé Anthropic (INTAKE-1), puis un vrai e-mail reçu et transformé en brouillon en préproduction. Sous-traitance à qualifier : voir F03 et F10.
+
+  Vérifié sur tutelliv-dev avec fournisseur et modèle simulés : signature (corps modifié, mauvais secret, rejeu tardif, absence), adresse inconnue ignorée, webhook rejoué sans doublon, HTML réduit à du texte, aucune commande créée à la réception, clic réel « Relire le brouillon » puis double clic « Créer la commande » = 1 commande et e-mail classé, classement sans commande, contenu effacé. **Jamais exercé : un vrai e-mail chez Resend et une vraie analyse par le modèle.**
 
 - [ ] **INTAKE-1 — Commande par message IA (coller un message).** Depuis le back-office (Commandes et Dispatch, « Depuis un message »), coller un message de client, obtenir un brouillon de commande structuré, le relire et le valider avant création pour le compte d'un client actif choisi (`source = ADMIN`). Aucune commande n'est créée sans validation humaine ; fonction désactivée sans clé et tant que l'entreprise ne l'active pas.
 
