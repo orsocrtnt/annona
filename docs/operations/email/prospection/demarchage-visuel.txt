@@ -9,8 +9,8 @@ Gérez vos commandes : retrouvez toutes les demandes au même endroit.
 Organisez les missions : affectez les livraisons et suivez leur avancement.
 Informez vos clients : ils consultent le suivi et les preuves de livraison.
 
-Découvrez concrètement le fonctionnement de TutelLiv dans notre démonstration.
+Découvrez concrètement le fonctionnement de TutelLiv sur notre site.
 
-Découvrir la démonstration : https://tutelliv.fr/demonstration
+Découvrir TutelLiv : https://tutelliv.fr
 
 Vous ne souhaitez plus être contacté ? https://tutelliv.fr/contact
