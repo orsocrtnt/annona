@@ -160,6 +160,7 @@ test("le service worker ne garde que les pages livreur et n'intercepte pas le rÃ
   const manifest = JSON.parse(readFileSync("public/driver.webmanifest", "utf8"));
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.start_url, "/driver");
+  assert.equal(manifest.theme_color, undefined, "une couleur fixe garderait la barre du haut blanche en mode sombre");
 });
 
 test("l'affectation inscrit la notification dans la transaction, sauf prise par le livreur lui-mÃªme", () => {

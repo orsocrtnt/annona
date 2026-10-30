@@ -20,7 +20,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Trouver un téléphone Android (essais MOB-01C).
-- BARRE-IPHONE : ouvrir tutelliv.fr sur l'iPhone et dire si le haut de l'écran est bien blanc, sans changement de couleur.
+- BARRE-IPHONE : ouvrir tutelliv.fr sur l'iPhone et dire si le haut de l'écran est bien blanc, sans changement de couleur. Mode sombre : supprimer l'icône livreur, la rajouter avec le compte de `outputs/mob01c/acces.txt`, passer en Sombre et dire si la barre suit.
 - ICONE-IPHONE : sur l'iPhone, supprimer l'ancien raccourci, effacer les données du site tutelliv.fr dans Safari, rajouter le site à l'écran d'accueil et dire si le logo noir apparaît.
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
@@ -1983,6 +1983,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Fait : `globals.css` donne au fond de page la couleur de la landing ; `layout.tsx` déclare `theme-color` ; `ThemeSync` l'aligne sur le fond réel à chaque page et changement de thème. Les autres pages gardent leur fond, sans rupture : la zone prend leur couleur `#f5f8f6`, pas du blanc pur.
   - Vérifié : WebKit en profil iPhone 15 sur serveur de dev isolé : Clair, Sombre, Clair avec téléphone en sombre, Système puis passage du téléphone en sombre ; accueil, clic vers `/login`, retour ; aucune erreur. `npm run check` : 1415/1415. Limite : à la toute première compilation en dev, la balise est restée à sa valeur initiale, qui reste juste en Clair ; pas reproduit ensuite.
   - Non vérifié : un vrai iPhone. Suite : essai du propriétaire, puis case à cocher.
+  - Signalement du propriétaire du 30 octobre 2026 : la barre du haut reste blanche en mode sombre. Lecture retenue par l'agent : app installée sur l'iPhone. Cause probable, non reproduite : le manifeste livreur ajouté pour DEMO-3B fixait `theme_color` à `#ffffff`, valeur que `ThemeSync` ne peut pas changer. Couleurs fixes retirées de `public/driver.webmanifest`. Vérifications : `tests/driver-push.test.ts` et `npm run check`. Limites : pas d'iPhone côté agent ; iOS ne relit le manifeste qu'à l'installation, il faut supprimer l'icône et la rajouter. Jeu de test `mob01c` recréé pour cet essai, à supprimer ensuite par `npm run mob01c:cleanup`.
 
 - [x] **RECETTE-2810 — Défauts mineurs de la recette du 28 octobre.** Reprendre les défauts mineurs et les points à trancher relevés par les deux recettes navigateur de l'intégration `integration/2026-10-28` (`outputs/recette-agents/integration/rapport.md` sur fcc0a5c et `outputs/recette-agents/integration-correctifs/rapport.md` sur 013d1fc puis 557e9d5), sans bloquer l'intégration : aucun défaut bloquant ni important n'a été relevé.
 
