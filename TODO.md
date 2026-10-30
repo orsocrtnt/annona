@@ -159,7 +159,7 @@ La réorganisation du plan n’autorise pas à implémenter tout le backlog. La 
 - **Absent du code au 21 octobre :** découverte premium, Stripe, factures d'abonnement, espace « Mon abonnement », attribution commerciale persistée, commissions, simulation de coûts multi-clients et tableau de supervision SaaS complet. *Au 26 octobre, tous ont une tranche locale (voir SAAS-01B/02/03/04, SALES-1, COST-1, ADMIN-1) sauf les factures d'abonnement et l'attribution commerciale persistée.*
 - **Doublons évités :** infrastructure → ENV-1/CI-1/DB-1/OPS-03A ; e-mails → SEC-05/EMAIL ; onboarding après activation → ONBOARD-1 ; récurrence/duplication → OPS-01 et fonctions existantes ; UX/cartes → MAP-3/DESIGN-1/MOB-01C ; pilotes → PILOT-1/2 ; site → GROWTH-1 ; métriques → SAAS-02 ; mise en vente → RELEASE-1.
 
-## Matrice des 31 tâches ouvertes
+## Matrice des 32 tâches ouvertes
 
 Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B, SIGNUP-1, ADMIN-1), ENV-2 et DISPATCH-3 ajoutées (DISPATCH-3 close le 27 octobre), prochain incrément réaligné sur le code. `A` = indispensable ou utile aux pilotes ; `B` = libre-service payant ; `C` = croissance après les deux jalons. « Local » signifie qu'un incrément vérifiable peut être terminé sans dépense ni intervention extérieure.
 
