@@ -2,8 +2,27 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CompanyDeliveryOptions } from "@/lib/validations/company-settings";
+import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 import type { ProofRules } from "@/domains/delivery/pod-evidence";
 import { companySettingsApi } from "./company-settings-api";
+
+export function useCompanyDeliverySlots() {
+  return useQuery({
+    queryKey: ["company", "settings", "delivery-slots"],
+    queryFn: companySettingsApi.getDeliverySlots,
+  });
+}
+
+export function useUpdateCompanyDeliverySlots() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CompanyDeliverySlots) => companySettingsApi.updateDeliverySlots(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["company", "settings", "delivery-slots"] });
+      qc.invalidateQueries({ queryKey: ["portal", "delivery-options"] });
+    },
+  });
+}
 
 export function useCompanyDeliveryOptions() {
   return useQuery({

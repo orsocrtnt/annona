@@ -1,5 +1,6 @@
 "use client";
 
+import { deliverySlotRange, formatWeightKg } from "@/lib/format/delivery-slot";
 import Link from "next/link";
 import { OrderTracking } from "@/components/shared/order-tracking";
 import { OrderConversation } from "@/components/shared/order-conversation";
@@ -102,6 +103,17 @@ export default function ClientOrderDetailPage() {
                 instructions: order.deliveryInstructions,
               }}
             />
+            {order.deliverySlotStart && order.requestedDeliveryDate && (
+              <p className="mt-4 text-sm">
+                <span className="text-muted-foreground">Créneau :</span>{" "}
+                {formatDate(order.requestedDeliveryDate)}, {deliverySlotRange(order.deliverySlotStart, order.requestedDeliveryDate)}
+              </p>
+            )}
+            {order.weightKg != null && (
+              <p className="mt-2 text-sm">
+                <span className="text-muted-foreground">Poids :</span> {formatWeightKg(order.weightKg)}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

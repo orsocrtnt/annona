@@ -217,6 +217,7 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
       "Déjà assignée",
       "Déjà assignée entre-temps",
       "Statut non éligible",
+      "En attente de la prochaine tournée automatique",
     ]);
     if (!result.assigned && result.skippedReason && !terminalSkips.has(result.skippedReason)) {
       throw new Error(`AUTO_DISPATCH_RETRY:${result.skippedReason}`);

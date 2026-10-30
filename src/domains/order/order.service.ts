@@ -43,6 +43,8 @@ import {
 } from "@/domains/saas/saas.service";
 
 type CreateOrderOptions = CreateClientOrderInput & {
+  /** Calculé par `resolveDeliverySlot`, jamais lu de la requête. */
+  deliverySlotStart?: string;
   recurringOrderId?: string;
   source?: OrderSource;
 };
@@ -458,7 +460,7 @@ export async function getOrderReorderTemplate(
 
 export async function getClientOrderStats(customerId: string, companyId: string) {
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const [orders, deliveries, nextDelivery] = await Promise.all([
+  const [orders, deliveries, nextDelivery, nextSlot] = await Promise.all([
     prisma.order.groupBy({ by: ["status"], where: { customerId, companyId }, _count: { _all: true } }),
     prisma.delivery.groupBy({
       by: ["status"],
@@ -472,6 +474,10 @@ export async function getClientOrderStats(customerId: string, companyId: string)
       where: { customerId, companyId, status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY", "PENDING"] }, estimatedArrival: { not: null } },
       orderBy: { estimatedArrival: "asc" }, select: { estimatedArrival: true },
     }),
+    prisma.order.findFirst({
+      where: { customerId, companyId, deliverySlotStart: { not: null }, requestedDeliveryDate: { gte: new Date() }, status: { in: ACTIVE_ORDER_STATUSES } },
+      orderBy: { requestedDeliveryDate: "asc" }, select: { deliverySlotStart: true, requestedDeliveryDate: true },
+    }),
   ]);
   const count = (status: DeliveryStatus) => deliveries.find((row) => row.status === status)?._count._all ?? 0;
   return {
@@ -479,6 +485,9 @@ export async function getClientOrderStats(customerId: string, companyId: string)
     orderCount: orders.reduce((sum, row) => sum + row._count._all, 0),
     inDelivery: count("ASSIGNED") + count("PURCHASING") + count("IN_DELIVERY"),
     deliveredThisMonth: count("DELIVERED"), nextDeliveryEta: nextDelivery?.estimatedArrival ?? null,
+    nextDeliverySlot: nextSlot?.deliverySlotStart && nextSlot.requestedDeliveryDate
+      ? { start: nextSlot.deliverySlotStart, end: nextSlot.requestedDeliveryDate }
+      : null,
   };
 }
 
@@ -663,6 +672,8 @@ export async function createClientOrder(
         requestedDeliveryDate: input.requestedDeliveryDate
           ? new Date(input.requestedDeliveryDate)
           : null,
+        deliverySlotStart: input.deliverySlotStart ? new Date(input.deliverySlotStart) : null,
+        weightKg: input.weightKg ?? null,
         companyId,
         customerId,
         customerEmail: email,
@@ -745,9 +756,11 @@ export async function createClientOrder(
         companyId,
         orderId: order.id,
         customerId,
-        scheduledAt: input.requestedDeliveryDate
-          ? new Date(input.requestedDeliveryDate)
-          : new Date(Date.now() + 48 * 60 * 60 * 1000),
+        scheduledAt: input.deliverySlotStart
+          ? new Date(input.deliverySlotStart)
+          : input.requestedDeliveryDate
+            ? new Date(input.requestedDeliveryDate)
+            : new Date(Date.now() + 48 * 60 * 60 * 1000),
         trackingEvents: {
           create: isCourier
             ? (() => {

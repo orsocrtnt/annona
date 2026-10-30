@@ -4,6 +4,7 @@ import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
 import type { CompanyAnalytics } from "@/domains/analytics/analytics.service";
 import type { DispatchSuggestions } from "@/domains/delivery/auto-dispatch.service";
+import type { PresentedRound, RoundProposals } from "@/domains/delivery/delivery-rounds.service";
 import {
   orderHistorySearchParams,
   type OrderHistoryPage,
@@ -33,6 +34,17 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return json.data as T;
 }
 
+export type RoundSubmission = {
+  driverId: string;
+  stops: Array<{ deliveryId: string; kind: "PICKUP" | "DROPOFF" }>;
+  dryRun?: boolean;
+  acceptViolations?: boolean;
+};
+
+export type RoundSubmissionResult =
+  | { status: "PREVIEW" | "NEEDS_CONFIRMATION"; round: PresentedRound }
+  | { status: "DONE"; round: PresentedRound; roundId: string; assigned: string[]; failed: Array<{ deliveryId: string; code: string }> };
+
 export const backOfficeApi = {
   getDashboard: () =>
     fetchJson<CompanyDashboardStats>("/api/back-office/dashboard"),
@@ -59,6 +71,13 @@ export const backOfficeApi = {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ driverId, force }),
+    }),
+  getRoundProposals: () => fetchJson<RoundProposals>("/api/dispatch/rounds"),
+  submitRound: (body: RoundSubmission) =>
+    fetchJson<RoundSubmissionResult>("/api/dispatch/rounds", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     }),
   getDispatchSuggestions: (deliveryId: string) =>
     fetchJson<DispatchSuggestions>(`/api/dispatch/suggestions?deliveryId=${encodeURIComponent(deliveryId)}`),

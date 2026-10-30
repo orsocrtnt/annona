@@ -81,6 +81,16 @@ export const createClientOrderSchema = z
     shippingPostalCode: z.string().optional(),
     deliveryInstructions: z.string().optional(),
     requestedDeliveryDate: z.string().optional(),
+    /** Clé du créneau choisi (« 09:00-12:00 ») : heures recalculées par le serveur. */
+    requestedDeliverySlot: z.string().max(11).optional(),
+    weightKg: z.preprocess(
+      (value) => (value === "" || value == null || Number.isNaN(value) ? undefined : value),
+      z.coerce
+        .number({ message: "Poids invalide" })
+        .positive("Le poids doit être supérieur à 0")
+        .max(1000, "1 000 kg au maximum")
+        .optional()
+    ),
     notes: z.string().optional(),
     saveAddress: z.boolean().optional(),
     addressLabel: z.string().optional(),

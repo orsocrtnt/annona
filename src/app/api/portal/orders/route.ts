@@ -3,7 +3,8 @@ import { requireClientRole } from "@/lib/api/auth-guard";
 import { listClientOrderHistory, createClientOrder } from "@/domains/order/order.service";
 import { createClientOrderSchema } from "@/lib/validations/order";
 import { parseOrderHistoryQuery } from "@/lib/validations/order-history";
-import { assertDeliveryCategoryEnabled } from "@/domains/company/company-settings.service";
+import { assertDeliveryCategoryEnabled, getCompanyDeliverySlots } from "@/domains/company/company-settings.service";
+import { DELIVERY_SLOT_ERROR_MESSAGES, resolveDeliverySlot } from "@/domains/order/delivery-slot";
 
 export async function GET(request: Request) {
   const auth = await requireClientRole();
@@ -61,13 +62,18 @@ export async function POST(request: Request) {
     throw error;
   }
 
+  const slot = resolveDeliverySlot(await getCompanyDeliverySlots(companyId), parsed.data, new Date());
+  if (!slot.ok) {
+    return NextResponse.json({ error: DELIVERY_SLOT_ERROR_MESSAGES[slot.error] }, { status: 400 });
+  }
+
   let order;
   try {
     order = await createClientOrder(
       auth.context.user.id,
       companyId,
       auth.context.user.email,
-      parsed.data,
+      { ...parsed.data, requestedDeliveryDate: slot.requestedDeliveryDate, deliverySlotStart: slot.deliverySlotStart },
       { idempotencyKey }
     );
   } catch (error) {

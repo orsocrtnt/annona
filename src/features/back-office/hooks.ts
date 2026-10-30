@@ -131,6 +131,26 @@ export function useAssignDelivery() {
 }
 
 /** DISPATCH-4 : 3 meilleurs livreurs ; pas de relance automatique sur refus (option, rôle). */
+export function useRoundProposals(enabled: boolean) {
+  return useQuery({
+    queryKey: ["company", "dispatch", "rounds"],
+    queryFn: backOfficeApi.getRoundProposals,
+    enabled,
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+export function useSubmitRound() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: backOfficeApi.submitRound,
+    onSuccess: (result) => {
+      if (result.status === "DONE") qc.invalidateQueries({ queryKey: ["company"] });
+    },
+  });
+}
+
 export function useDispatchSuggestions(deliveryId: string | null, enabled = true) {
   return useQuery({
     queryKey: ["company", "dispatch", "suggestions", deliveryId],

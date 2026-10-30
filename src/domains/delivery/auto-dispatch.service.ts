@@ -54,6 +54,8 @@ type Proximities = ReadonlyMap<string, DispatchProximity>;
 type TravelTimes = ReadonlyMap<string, TravelEstimate>;
 type TariffZones = Awaited<ReturnType<typeof getCompanyTariffSettings>>["tariffZones"];
 
+export const AUTO_ROUND_WAIT_REASON = "En attente de la prochaine tournée automatique";
+
 export type AutoDispatchResult = {
   deliveryId: string;
   assigned: boolean;
@@ -419,6 +421,10 @@ export async function tryAutoAssignDelivery(
       skippedReason: "Auto-dispatch désactivé",
     };
   }
+  // Tournées automatiques : la livraison attend le prochain passage, pour être regroupée.
+  if (settings.rounds.autoAssign) {
+    return { deliveryId, assigned: false, skippedReason: AUTO_ROUND_WAIT_REASON };
+  }
 
   const delivery = await prisma.delivery.findFirst({
     where: { id: deliveryId, companyId },
@@ -537,6 +543,10 @@ export async function runAutoDispatchQueue(companyId: string) {
       // Mode « Suggestion » : aucune affectation sans validation du dispatcher.
       message: "Mode suggestion : validez les propositions livraison par livraison.",
     };
+  }
+  if (settings.rounds.autoAssign) {
+    const { runAutoRounds } = await import("@/domains/delivery/delivery-rounds.service");
+    return { ...(await runAutoRounds(companyId)), results: [] as AutoDispatchResult[] };
   }
 
   const pending = await prisma.delivery.findMany({

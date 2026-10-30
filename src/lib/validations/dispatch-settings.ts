@@ -27,6 +27,8 @@ export const dispatchDriverRuleSchema = z.object({
   /** Codes postaux couverts saisis manuellement (ex. 75009, 75007, 92). */
   postalCodePrefixes: z.array(z.string()).default([]),
   dispatchStatus: dispatchDriverStatusSchema.default("ACTIVE"),
+  /** Capacité du véhicule pour les tournées ; vide = pas de limite de poids. */
+  vehicleCapacityKg: z.number().positive().max(100_000).optional(),
   maxActiveByCategory: z
     .object({
       STANDARD: z.number().int().min(1).optional(),
@@ -34,6 +36,15 @@ export const dispatchDriverRuleSchema = z.object({
       SPECIAL_MISSION: z.number().int().min(1).optional(),
     })
     .optional(),
+});
+
+/** Tournées (DISPATCH-4, C12) : limites appliquées aux propositions. */
+export const dispatchRoundSettingsSchema = z.object({
+  /** Vrai avec l'affectation automatique : les tournées sont affectées sans validation. */
+  autoAssign: z.boolean().default(false),
+  stopMinutes: z.number().int().min(1).max(60).default(5),
+  dayMinutes: z.number().int().min(30).max(1440).default(480),
+  maxDeliveries: z.number().int().min(2).max(40).default(12),
 });
 
 export const companyDispatchSettingsSchema = z.object({
@@ -66,6 +77,7 @@ export const companyDispatchSettingsSchema = z.object({
    * code ignore ce champ (clé inconnue retirée par zod) et reprend la stratégie enregistrée.
    */
   bestScore: z.boolean().default(false),
+  rounds: dispatchRoundSettingsSchema.default({ autoAssign: false, stopMinutes: 5, dayMinutes: 480, maxDeliveries: 12 }),
   /** Au-delà, la position du livreur est jugée périmée et n'est pas utilisée. */
   gpsPositionMaxAgeMinutes: z
     .number()
@@ -124,6 +136,7 @@ export const DEFAULT_DISPATCH_SETTINGS: CompanyDispatchSettings = {
   driverRules: [],
   zoneDriverMap: {},
   defaultDriverId: null,
+  rounds: { autoAssign: false, stopMinutes: 5, dayMinutes: 480, maxDeliveries: 12 },
   gpsProximityEnabled: true,
   gpsPositionMaxAgeMinutes: 15,
   gpsMaxDistanceKm: 10,

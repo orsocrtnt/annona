@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loader";
 import { CompanyLogoCard } from "@/features/back-office/company-logo-card";
+import { DeliverySlotsCard } from "@/features/back-office/delivery-slots-card";
 import { useAuthStore } from "@/stores/auth.store";
 import { DELIVERY_CATEGORY_DESCRIPTIONS, DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import {
@@ -176,6 +177,8 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <DeliverySlotsCard readOnly={readOnly} />
 
       <Card>
         <CardHeader>

@@ -3,6 +3,7 @@ import { updateCompanySettingsWithClaim } from "@/lib/database/settings-claims";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory } from "@prisma/client";
 import type { CompanyDeliveryOptions } from "@/lib/validations/company-settings";
+import { DEFAULT_DELIVERY_SLOTS, parseDeliverySlots, type CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 
 export const DEFAULT_DELIVERY_OPTIONS: CompanyDeliveryOptions = {
   deliveryCategories: {
@@ -51,6 +52,22 @@ export async function updateCompanyDeliveryOptions(
   if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
 
   return options;
+}
+
+export async function getCompanyDeliverySlots(companyId: string): Promise<CompanyDeliverySlots> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
+  if (!company) return DEFAULT_DELIVERY_SLOTS;
+  return parseDeliverySlots((company.settings as Record<string, unknown> | null)?.deliverySlots);
+}
+
+export async function updateCompanyDeliverySlots(companyId: string, slots: CompanyDeliverySlots): Promise<CompanyDeliverySlots> {
+  // Réclamation sur updatedAt : les autres clés de Company.settings ne sont jamais écrasées.
+  const result = await updateCompanySettingsWithClaim(companyId, {
+    apply: (current) => ({ ...current, deliverySlots: slots }),
+    section: settingsSection("deliverySlots"),
+  });
+  if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
+  return parseDeliverySlots(slots);
 }
 
 export function getEnabledDeliveryCategories(options: CompanyDeliveryOptions): DeliveryCategory[] {

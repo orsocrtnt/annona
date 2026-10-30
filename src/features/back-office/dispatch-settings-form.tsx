@@ -415,6 +415,20 @@ export function DispatchSettingsForm() {
                           />
                         </div>
                         <div className="space-y-1">
+                          <Label className="text-xs">Capacité (kg)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            aria-label="Capacité du véhicule en kg"
+                            placeholder="Sans limite"
+                            value={rule.vehicleCapacityKg ?? ""}
+                            onChange={(e) => {
+                              const value = Number(e.target.value);
+                              updateRule(index, { vehicleCapacityKg: e.target.value && value > 0 ? value : undefined });
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1">
                           <Label className="text-xs">Chauffeur</Label>
                           <Select
                             value={rule.driverId}
@@ -701,6 +715,34 @@ export function DispatchSettingsForm() {
                 </p>
               </div>
             </label>
+            <div className="space-y-3 rounded-lg border border-border p-3">
+              <p className="text-sm font-medium">Tournées</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="round-day">Durée maximale (minutes)</Label>
+                  <Input id="round-day" type="number" min={30} max={1440} value={local.rounds.dayMinutes}
+                    onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, dayMinutes: Math.min(1440, Math.max(30, Number(e.target.value) || 30)) } })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="round-stop">Temps à chaque arrêt (minutes)</Label>
+                  <Input id="round-stop" type="number" min={1} max={60} value={local.rounds.stopMinutes}
+                    onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, stopMinutes: Math.min(60, Math.max(1, Number(e.target.value) || 1)) } })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="round-max">Livraisons par tournée</Label>
+                  <Input id="round-max" type="number" min={2} max={40} value={local.rounds.maxDeliveries}
+                    onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, maxDeliveries: Math.min(40, Math.max(2, Number(e.target.value) || 2)) } })} />
+                </div>
+              </div>
+              <label className="flex items-start gap-3">
+                <input type="checkbox" className="mt-1" checked={local.rounds.autoAssign}
+                  onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, autoAssign: e.target.checked } })} />
+                <span className="text-sm">
+                  Affecter les tournées automatiquement
+                  <span className="block text-muted-foreground">Avec l&apos;affectation automatique active, les livraisons sont regroupées toutes les 5 minutes environ, sans validation.</span>
+                </span>
+              </label>
+            </div>
             {local.gpsProximityEnabled && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">

@@ -1,4 +1,5 @@
 import type { CompanyDeliveryOptions } from "@/lib/validations/company-settings";
+import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 import type { ProofRules } from "@/domains/delivery/pod-evidence";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -9,6 +10,13 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const companySettingsApi = {
+  getDeliverySlots: () => fetchJson<CompanyDeliverySlots>("/api/company/delivery-slots"),
+  updateDeliverySlots: (data: CompanyDeliverySlots) =>
+    fetchJson<CompanyDeliverySlots>("/api/company/delivery-slots", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
   getDeliveryOptions: () => fetchJson<CompanyDeliveryOptions>("/api/company/settings"),
   updateDeliveryOptions: (data: CompanyDeliveryOptions) =>
     fetchJson<CompanyDeliveryOptions>("/api/company/settings", {

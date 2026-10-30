@@ -10,6 +10,8 @@ export interface DriverMissionItem {
 
 export interface DriverMission {
   id: string;
+  roundId?: string | null;
+  roundSequence?: number | null;
   orderId: string;
   reference: string;
   status: DeliveryStatus;

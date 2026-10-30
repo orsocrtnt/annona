@@ -29,6 +29,7 @@ export async function GET() {
         inDelivery: stats.inDelivery,
         deliveredThisMonth: stats.deliveredThisMonth,
         nextDeliveryEta: stats.nextDeliveryEta,
+        nextDeliverySlot: stats.nextDeliverySlot,
         orderCount: stats.orderCount,
         billing,
         recentDeliveries: deliveries.map((d) => ({

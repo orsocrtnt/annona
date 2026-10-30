@@ -18,6 +18,8 @@ export interface CompanyOrder {
   itemCount: number;
   createdAt: string;
   requestedDeliveryDate?: string | null;
+  deliverySlotStart?: string | null;
+  weightKg?: string | number | null;
   deliveryCategory?: DeliveryCategory;
   pickupAddress?: string | null;
   pickupCity?: string | null;
@@ -111,6 +113,8 @@ export interface CompanyDelivery {
     shippingPostalCode: string | null;
     deliveryInstructions: string | null;
     requestedDeliveryDate: string | null;
+    deliverySlotStart?: string | null;
+    weightKg?: string | number | null;
     customer: { firstName: string; lastName: string; email: string } | null;
     items: { name: string; quantity: number }[];
   };

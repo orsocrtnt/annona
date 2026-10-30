@@ -18,6 +18,7 @@ import {
   useRunAutoDispatch,
 } from "@/features/back-office/dispatch-settings-hooks";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
+import { DispatchRoundsPanel } from "@/features/back-office/dispatch-rounds-panel";
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
 import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { dispatchSearchText, getDispatchColumns } from "@/features/back-office/dispatch-columns";
@@ -337,6 +338,8 @@ function DispatcherDashboardContent() {
             drivers={overview?.workload}
             settings={dispatchSettings}
           />
+
+          {hasAutoDispatch && <DispatchRoundsPanel />}
 
           {error ? (
             <EmptyState

@@ -1,3 +1,4 @@
+import { orderMissionsByRound } from "@/lib/dispatch/round-order";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus, OrderStatus, Prisma } from "@prisma/client";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
@@ -239,6 +240,8 @@ const COMPANY_DELIVERY_INCLUDE = {
       itemCount: true,
       totalAmount: true,
       requestedDeliveryDate: true,
+      deliverySlotStart: true,
+      weightKg: true,
       customerEmail: true,
       deliveryCategory: true,
       pickupAddress: true,
@@ -395,6 +398,8 @@ export async function assignDeliveryToDriver(
     force?: boolean;
     /** Le libre choix ne peut jamais remplacer une affectation existante. */
     expectUnassigned?: boolean;
+    /** Tournée validée (DISPATCH-4) ; toute autre affectation sort la livraison de sa tournée. */
+    round?: { id: string; sequence: number };
   }
 ) {
   const { updated, notificationJobId } = await prisma.$transaction(async (tx) => {
@@ -491,6 +496,8 @@ export async function assignDeliveryToDriver(
         status: "ASSIGNED",
         estimatedArrival: current.scheduledAt,
         missionAcceptedAt: null,
+        roundId: options?.round?.id ?? null,
+        roundSequence: options?.round?.sequence ?? null,
         updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)),
       },
     });
@@ -671,7 +678,7 @@ export async function getDriverMissions(driverId: string) {
     }),
   ]);
 
-  return [...active, ...delivered];
+  return [...orderMissionsByRound(active), ...delivered];
 }
 
 export async function getDriverMissionById(
@@ -1011,6 +1018,8 @@ async function unassignDeliveryBeforeStart(
       data: {
         driverId: null,
         driverName: null,
+        roundId: null,
+        roundSequence: null,
         missionAcceptedAt: null,
         updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)),
         status: "PENDING",
@@ -1098,6 +1107,8 @@ async function cancelDeliveryByAdmin(
         status: "CANCELLED",
         driverId: null,
         driverName: null,
+        roundId: null,
+        roundSequence: null,
       },
     });
     if (claim.count === 0) throw new Error("DELIVERY_STATUS_CONFLICT");

@@ -14,13 +14,17 @@ import { ChartPlaceholder } from "@/components/ui/chart-placeholder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { etaDayLabel, formatEta } from "@/features/client-portal/utils";
+import { deliverySlotRange } from "@/lib/format/delivery-slot";
 import { formatPlace } from "@/lib/format/place";
 import { DeliveryStatusBadge, InvoiceStatusBadge } from "@/features/client-portal/status-badges";
 import type { PortalDashboardWidgetLayout } from "@/lib/dashboard/portal-dashboard-layout";
 import { usePortalDashboardContext } from "@/features/client-portal/portal-dashboard-context";
 
 /** L'heure seule ne suffit pas : on dit aussi quel jour (aujourd'hui, demain, date). */
-function NextDeliveryCard({ eta }: { eta: string | null }) {
+function NextDeliveryCard({ eta, slot }: { eta: string | null; slot?: { start: string; end: string } | null }) {
+  if (slot) {
+    return <StatCard label="Prochain créneau" value={deliverySlotRange(slot.start, slot.end)} changeLabel={etaDayLabel(slot.start)} icon={Clock} />;
+  }
   return (
     <StatCard
       label="Prochaine livraison"
@@ -39,7 +43,7 @@ function StatsRowWidget() {
       <StatCard label="Commandes actives" value={stats.activeOrders} icon={Package} />
       <StatCard label="En livraison" value={stats.inDelivery} icon={Truck} />
       <StatCard label="Livrées ce mois" value={stats.deliveredThisMonth} icon={CheckCircle2} />
-      <NextDeliveryCard eta={stats.nextDeliveryEta} />
+      <NextDeliveryCard eta={stats.nextDeliveryEta} slot={stats.nextDeliverySlot} />
     </div>
   );
 }
@@ -64,7 +68,7 @@ function StatDeliveredMonthWidget() {
 function StatNextDeliveryWidget() {
   const { stats } = usePortalDashboardContext();
   return (
-    <NextDeliveryCard eta={stats.nextDeliveryEta} />
+    <NextDeliveryCard eta={stats.nextDeliveryEta} slot={stats.nextDeliverySlot} />
   );
 }
 

@@ -14,6 +14,7 @@ export interface PortalDashboardStats {
   inDelivery: number;
   deliveredThisMonth: number;
   nextDeliveryEta: string | null;
+  nextDeliverySlot?: { start: string; end: string } | null;
   orderCount?: number;
   /** Tranche 8 de DEMO-3 : montant restant à régler et dernière facture. */
   billing?: {
@@ -57,6 +58,8 @@ export interface PortalOrder {
   shippingPostalCode?: string | null;
   deliveryInstructions?: string | null;
   requestedDeliveryDate?: string | null;
+  deliverySlotStart?: string | null;
+  weightKg?: string | number | null;
   notes?: string | null;
   missionDescription?: string | null;
   stops?: {

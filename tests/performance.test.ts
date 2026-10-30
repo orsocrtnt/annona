@@ -218,9 +218,10 @@ test("compteurs agrégés : états actifs, date logistique, client/entreprise re
   });
   replace(t, prisma.order, "count", async ({ where }: { where: Record<string, unknown> }) => { assert.equal(where.companyId, "a"); return 2; });
   replace(t, prisma.delivery, "findFirst", async () => null);
+  replace(t, prisma.order, "findFirst", async () => null);
   assert.deepEqual(await getDriverStats("driver"), { assigned: 1, inTransit: 2, deliveredToday: 1 });
   assert.deepEqual(await getCompanyOrderStats("a"), { pendingOrders: 2, activeDeliveries: 3, deliveredToday: 1, unassigned: 1 });
-  assert.deepEqual(await getClientOrderStats("client", "a"), { activeOrders: 2, orderCount: 5, inDelivery: 3, deliveredThisMonth: 1, nextDeliveryEta: null });
+  assert.deepEqual(await getClientOrderStats("client", "a"), { activeOrders: 2, orderCount: 5, inDelivery: 3, deliveredThisMonth: 1, nextDeliveryEta: null, nextDeliverySlot: null });
   assert.equal(deliveryReads, 3);
 });
 test("réglages réutilisés du contexte : nouveaux droits et valeurs relus à chaque requête", async () => {

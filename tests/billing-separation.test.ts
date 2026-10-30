@@ -126,6 +126,7 @@ test("BILL : compteurs client, chauffeur et admin stables ; clôture ancienne ex
   replace(t, prisma.order, "groupBy", async ({where}: {where: Record<string, unknown>}) => matches(where, f.order) ? [{ status: f.order.status, _count: { _all: 1 } }] : []);
   replace(t, prisma.delivery, "groupBy", async ({where}: {where: Record<string, unknown>}) => matches(where, f.delivery) ? [{ status: f.delivery.status, _count: { _all: 1 } }] : []);
   replace(t, prisma.delivery, "findFirst", async () => null);
+  replace(t, prisma.order, "findFirst", async () => null);
   const stats = () => Promise.all([getClientOrderStats("client", "company"), getDriverStats("driver"), getCompanyOrderStats("company")]);
   const before = await stats(); assert.equal(before[0].deliveredThisMonth, 1); assert.equal(before[1].deliveredToday, 1); assert.equal(before[2].deliveredToday, 1);
   await f.service.createOrderInvoice("company", "order", input); assert.deepEqual(await stats(), before);

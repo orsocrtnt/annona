@@ -273,3 +273,54 @@ export async function estimateTravelTimes(
   });
   return { estimates, networkCalls: 1 };
 }
+
+/** Au-delà, pas d'appel : une matrice de cette taille reste bornée pour le service gratuit. */
+export const ROUTE_MATRIX_MAX_POINTS = 60;
+
+export type TravelMatrix = {
+  /** Temps de trajet en secondes ; à vol d'oiseau si le service n'a pas répondu. */
+  seconds: (from: GeoPoint, to: GeoPoint) => number;
+  /** Vrai si tout ou partie des temps sont estimés à vol d'oiseau. */
+  approximate: boolean;
+};
+
+/**
+ * Tournées — un seul appel `table` pour tous les points, hors transaction. Ne lève jamais : sans
+ * service, trop de points ou panne, les temps sont à vol d'oiseau et `approximate` le dit.
+ */
+export async function estimateTravelMatrix(points: GeoPoint[], options: TravelTimeOptions = {}): Promise<TravelMatrix> {
+  const state = options.state ?? processState;
+  const now = (options.now ?? Date.now)();
+  const baseUrl = options.baseUrl === undefined ? serverRouteProviderConfig()?.osrmUrl ?? null : options.baseUrl;
+  const straight: TravelMatrix = { seconds: straightLineSeconds, approximate: true };
+  const key = (point: GeoPoint) => `${round(point.latitude)},${round(point.longitude)}`;
+  const unique = [...new Map(points.filter((p) => isValidCoordinate(p.latitude, p.longitude)).map((p) => [key(p), p])).values()];
+  if (!baseUrl || unique.length < 2 || unique.length > ROUTE_MATRIX_MAX_POINTS || state.unavailableUntil > now) return straight;
+
+  const coords = unique.map((p) => `${p.longitude},${p.latitude}`).join(";");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? ROUTE_TIMEOUT_MS);
+  try {
+    const fetchImpl = options.fetchImpl ?? (fetch as unknown as FetchLike);
+    const response = await fetchImpl(`${baseUrl.replace(/\/$/, "")}/table/v1/driving/${coords}?annotations=duration`, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    const body = (await response.json()) as { code?: unknown; durations?: unknown };
+    const matrix = body.durations;
+    if (!response.ok || body.code !== "Ok" || !Array.isArray(matrix) || matrix.length !== unique.length) throw new Error("ROUTE_MATRIX_INVALID");
+    const index = new Map(unique.map((point, position) => [key(point), position]));
+    const seconds = (from: GeoPoint, to: GeoPoint) => {
+      const cell = (matrix[index.get(key(from)) ?? -1] as unknown[] | undefined)?.[index.get(key(to)) ?? -1];
+      // Cellule nulle : pas d'itinéraire entre ces deux points, repli local pour ce trajet.
+      return typeof cell === "number" && Number.isFinite(cell) && cell >= 0 ? Math.round(cell) : straightLineSeconds(from, to);
+    };
+    return { seconds, approximate: false };
+  } catch {
+    state.unavailableUntil = now + ROUTE_FAILURE_COOLDOWN_MS;
+    state.lastFailure = "UNAVAILABLE";
+    return straight;
+  } finally {
+    clearTimeout(timer);
+  }
+}

@@ -37,7 +37,7 @@ export async function acknowledgeDeliveryMissionByDriver(
       },
       data: input.action === "accept"
         ? { missionAcceptedAt: now, updatedAt: now }
-        : { status: "PENDING", driverId: null, driverName: null,
+        : { status: "PENDING", driverId: null, driverName: null, roundId: null, roundSequence: null,
             missionAcceptedAt: null, estimatedArrival: null, updatedAt: now },
     });
     if (claim.count !== 1) throw new Error("MISSION_ACK_CONFLICT");

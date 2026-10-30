@@ -1,3 +1,4 @@
+import { deliverySlotRange, formatWeightKg } from "@/lib/format/delivery-slot";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPlace } from "@/lib/format/place";
@@ -44,7 +45,9 @@ export function OrderSummary({ order }: { order: CompanyOrder }) {
           {due ? (
             <span className={cn("inline-flex items-center gap-1", late && "text-[#b3352a] dark:text-error")} title={fullDateLabel(due)}>
               {late && <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
-              {relativeDayLabel(due, undefined, { withTime: true })}
+              {order.deliverySlotStart
+                ? `${relativeDayLabel(due)}, ${deliverySlotRange(order.deliverySlotStart, due)}`
+                : relativeDayLabel(due, undefined, { withTime: true })}
               {late && " · en retard"}
             </span>
           ) : (
@@ -52,6 +55,7 @@ export function OrderSummary({ order }: { order: CompanyOrder }) {
           )}
         </Fact>
         <Fact label="Livreur">{driver ?? "Pas encore assigné"}</Fact>
+        {order.weightKg != null && <Fact label="Poids">{formatWeightKg(order.weightKg)}</Fact>}
         <Fact label="Créée">
           <span title={fullDateLabel(order.createdAt)}>{relativeDayLabel(order.createdAt, undefined, { withTime: true })}</span>
         </Fact>

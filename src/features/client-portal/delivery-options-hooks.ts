@@ -3,10 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import type { DeliveryCategory } from "@prisma/client";
 import type { CompanyDeliveryOptions } from "@/lib/validations/company-settings";
+import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 
 interface PortalDeliveryOptionsResponse {
   options: CompanyDeliveryOptions;
   enabled: DeliveryCategory[];
+  deliverySlots: CompanyDeliverySlots;
 }
 
 async function fetchDeliveryOptions(): Promise<PortalDeliveryOptionsResponse> {

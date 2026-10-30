@@ -278,6 +278,9 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                 {withoutRolePrefix(formatClientFromParts(mission.order.customer, mission.order.customerEmail))}
               </p>
               <span className="text-xs tabular-nums text-muted-foreground">{mission.reference}</span>
+              {mission.roundId && mission.roundSequence != null && (
+                <p className="text-xs font-medium text-brand" data-mission-round="true">Tournée · arrêt {mission.roundSequence}</p>
+              )}
               {mission.timing?.dueAt && mission.status !== "DELIVERED" && mission.status !== "FAILED" && (
                 <p className="text-xs" data-mission-due="true">
                   <span className="text-muted-foreground">À livrer avant </span>

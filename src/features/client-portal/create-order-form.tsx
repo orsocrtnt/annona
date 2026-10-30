@@ -13,6 +13,8 @@ import {
   type CreateClientOrderFormInput,
 } from "@/lib/validations/order";
 import { DELIVERY_CATEGORY_LABELS, PORTAL_CATEGORY_DESCRIPTIONS } from "@/lib/constants/delivery";
+import { isDeliverySlotOpen } from "@/domains/order/delivery-slot";
+import { deliverySlotKey, deliverySlotLabel } from "@/lib/validations/delivery-slots";
 import { usePortalAddresses } from "./hooks";
 import { usePortalDeliveryOptions } from "./delivery-options-hooks";
 import { PageLoader } from "@/components/ui/loader";
@@ -67,6 +69,8 @@ const DEFAULT_FORM_VALUES: CreateClientOrderFormInput = {
   shippingPostalCode: "",
   deliveryInstructions: "",
   requestedDeliveryDate: "",
+  requestedDeliverySlot: "",
+  weightKg: "",
   notes: "",
   saveAddress: false,
   addressLabel: "",
@@ -102,6 +106,31 @@ export function CreateOrderForm({
       ...initialValues,
     },
   });
+
+  // Créneaux réglés par l'entreprise ; le serveur revérifie le choix à la création.
+  const slotSettings = deliveryOptions?.deliverySlots;
+  const selectedDate = form.watch("requestedDeliveryDate");
+  const selectedSlot = form.watch("requestedDeliverySlot");
+  const [slotNow, setSlotNow] = useState<Date | null>(null);
+  useEffect(() => setSlotNow(new Date()), [selectedDate]);
+  const openSlots = useMemo(
+    () => (slotSettings?.slots ?? []).filter((slot) => !selectedDate || !slotNow || isDeliverySlotOpen(selectedDate, slot, slotNow)),
+    [slotSettings?.slots, selectedDate, slotNow]
+  );
+  // Une autre date peut fermer le créneau choisi : il faut alors en reprendre un.
+  useEffect(() => {
+    if (selectedSlot && !openSlots.some((slot) => deliverySlotKey(slot) === selectedSlot)) {
+      form.setValue("requestedDeliverySlot", "");
+    }
+  }, [form, openSlots, selectedSlot]);
+
+  const submitOrder = (data: CreateClientOrderInput | CreateClientOrderFormInput) => {
+    if (slotSettings?.mode === "SLOTS" && data.deliveryCategory !== "SPECIAL_MISSION" && !data.requestedDeliverySlot) {
+      form.setError("requestedDeliverySlot", { message: "Choisissez un créneau de livraison" });
+      return;
+    }
+    return onSubmit(data);
+  };
 
   const { fields: itemFields, append: appendItem, remove: removeItem } = useFieldArray({
     control: form.control,
@@ -218,7 +247,7 @@ export function CreateOrderForm({
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(submitOrder, onInvalid)} className="space-y-6">
       {enabledCategories.length > 1 && (
         <div className="space-y-3">
           <h3 className="text-base font-semibold tracking-tight">Type de demande</h3>
@@ -704,6 +733,28 @@ export function CreateOrderForm({
                 min={minDeliveryDate}
                 {...form.register("requestedDeliveryDate")}
               />
+            </FormField>
+            {slotSettings?.mode === "SLOTS" && (
+              <FormField label="Créneau de livraison" error={errors.requestedDeliverySlot?.message} required>
+                <Select
+                  value={selectedSlot ?? ""}
+                  onValueChange={(value) => form.setValue("requestedDeliverySlot", value, { shouldValidate: true })}
+                >
+                  <SelectTrigger id="order-delivery-slot" aria-label="Créneau de livraison">
+                    <SelectValue placeholder={openSlots.length ? "Choisir un créneau..." : "Plus de créneau ce jour-là"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {openSlots.map((slot) => (
+                      <SelectItem key={deliverySlotKey(slot)} value={deliverySlotKey(slot)}>
+                        {deliverySlotLabel(slot)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+            <FormField label="Poids du colis en kg (facultatif)" error={errors.weightKg?.message}>
+              <Input type="number" inputMode="decimal" min="0.01" max="1000" step="0.01" placeholder="4,5" {...form.register("weightKg")} />
             </FormField>
             <FormField label="Notes">
               <Input {...form.register("notes")} />

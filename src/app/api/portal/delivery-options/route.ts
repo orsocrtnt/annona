@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import {
   getCompanyDeliveryOptions,
+  getCompanyDeliverySlots,
   getEnabledDeliveryCategories,
 } from "@/domains/company/company-settings.service";
 
@@ -14,11 +15,11 @@ export async function GET() {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
 
-  const options = await getCompanyDeliveryOptions(companyId);
+  const [options, deliverySlots] = await Promise.all([getCompanyDeliveryOptions(companyId), getCompanyDeliverySlots(companyId)]);
   const enabled = getEnabledDeliveryCategories(options);
 
   return NextResponse.json({
-    data: { options, enabled },
+    data: { options, enabled, deliverySlots },
     success: true,
   });
 }

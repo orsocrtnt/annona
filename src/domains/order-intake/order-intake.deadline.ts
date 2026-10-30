@@ -76,6 +76,13 @@ function parisWallTimeToUtc(date: { year: number; month: number; day: number }, 
   return new Date(guess);
 }
 
+/** Date AAAA-MM-JJ et heure HH:MM de Paris en instant UTC ; `null` si l'une est invalide. */
+export function parisInstant(date: string, time: string): Date | null {
+  const day = parseDate(date);
+  const hour = parseTime(time);
+  return day && hour ? parisWallTimeToUtc(day, hour) : null;
+}
+
 const MODE_LABELS: Record<NonNullable<IntakeDeadlineExtraction["mode"]>, string> = {
   before: "avant",
   at: "à",

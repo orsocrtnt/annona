@@ -708,6 +708,9 @@ model Order {
   shippingPostalCode    String?   @map("shipping_postal_code")
   deliveryInstructions  String?   @map("delivery_instructions")
   requestedDeliveryDate DateTime? @map("requested_delivery_date")
+  /// Début du créneau promis ; sa fin est `requestedDeliveryDate`. Vide en mode « au jour ».
+  deliverySlotStart     DateTime? @map("delivery_slot_start")
+  weightKg              Decimal?  @map("weight_kg") @db.Decimal(7, 2)
   missionDescription    String?   @map("mission_description")
 
   companyId     String  @map("company_id")
@@ -795,6 +798,9 @@ model Delivery {
   driverId          String?          @map("driver_id")
   driver            User?            @relation("DriverDeliveries", fields: [driverId], references: [id], onDelete: SetNull)
   scheduledAt       DateTime?        @map("scheduled_at")
+  /// Tournée (DISPATCH-4) : même identifiant pour les livraisons groupées, ordre de passage.
+  roundId           String?          @map("round_id")
+  roundSequence     Int?             @map("round_sequence")
   estimatedArrival  DateTime?        @map("estimated_arrival")
   completedAt       DateTime?        @map("completed_at")
   missionAcceptedAt DateTime?        @map("mission_accepted_at")
@@ -830,6 +836,8 @@ model Delivery {
   @@index([driverId])
   @@index([status])
   @@map("deliveries")
+
+  @@index([companyId, roundId])
 }
 
 /// Dernière position GPS connue d'un chauffeur (fréquence configurable par entreprise)

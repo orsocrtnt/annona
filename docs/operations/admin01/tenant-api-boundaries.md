@@ -21,6 +21,8 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/billing-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/clients/[id]/invoice-identity/route.ts | GET | settings:read | COMPANY_ADMIN |
 | src/app/api/company/clients/[id]/invoice-identity/route.ts | PUT | settings:update | COMPANY_ADMIN |
+| src/app/api/company/delivery-slots/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/delivery-slots/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/dispatch/route.ts | GET | settings:read ou deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/company/dispatch/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/einvoicing/route.ts | GET | settings:read | COMPANY_ADMIN |
@@ -50,6 +52,8 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/dispatch/eligible-drivers/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/map/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/overview/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/dispatch/rounds/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/dispatch/rounds/route.ts | POST | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/suggestions/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/suggestions/route.ts | POST | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/drivers/[id]/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |

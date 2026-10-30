@@ -40,6 +40,10 @@ export async function GET(request: Request) {
   }
 
   const overdueInvoices = await runOverdueInvoiceSweep();
+  // Tournées automatiques : un échec ne doit pas bloquer le traitement des tâches.
+  await import("@/domains/delivery/delivery-rounds.service")
+    .then(({ runDueAutoRounds }) => runDueAutoRounds())
+    .catch((error) => console.warn("[cron.auto-rounds]", error instanceof Error ? error.message : "FAILED"));
   try {
     const { details, ...counts } = await processDueOperationJobs();
     // Compteurs seuls pour les alertes ; le détail par tâche (identifiant interne, type, nature, code
