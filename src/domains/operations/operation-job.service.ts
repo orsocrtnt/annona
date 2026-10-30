@@ -261,6 +261,12 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
     return;
   }
 
+  if (job.type === "DRIVER_NOTIFICATION") {
+    const { deliverDriverMissionPush } = await import("@/domains/driver/driver-push.service");
+    await deliverDriverMissionPush(job.payload);
+    return;
+  }
+
   throw new Error("OPERATION_JOB_TYPE_UNSUPPORTED");
 }
 

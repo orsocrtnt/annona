@@ -22,6 +22,7 @@ const TYPES = [
   { value: "AUTO_DISPATCH", label: "Dispatch intelligent" },
   { value: "CLIENT_NOTIFICATION", label: "Notification client" },
   { value: "DELIVERY_INVOICE", label: "Facture à la livraison" },
+  { value: "DRIVER_NOTIFICATION", label: "Notification livreur" },
 ] as const;
 const statusLabel = Object.fromEntries(STATUSES.map((item) => [item.value, item.label]));
 const typeLabel = Object.fromEntries(TYPES.map((item) => [item.value, item.label]));

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ProfileForm } from "@/components/shared/profile-form";
 import { ChangePasswordForm } from "@/components/shared/change-password-form";
 import { ThemePreferenceField } from "@/components/theme/theme-preference-choice";
+import { DriverPushSettings } from "@/features/driver/driver-push-settings";
+import { disableDriverPush } from "@/features/driver/driver-push";
 import { useAuth } from "@/hooks/use-auth";
 import { getInitials } from "@/lib/utils";
 import { withoutRolePrefix } from "@/lib/format/person-labels";
@@ -35,9 +37,18 @@ export default function DriverProfilePage() {
 
       <ChangePasswordForm />
 
+      <DriverPushSettings />
+
       <ThemePreferenceField />
 
-      <Button variant="outline" className="w-full" onClick={logout}>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => {
+          // Le téléphone cesse de recevoir les missions de ce compte, même hors connexion du serveur.
+          void disableDriverPush().catch(() => undefined).finally(logout);
+        }}
+      >
         <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
         Déconnexion
       </Button>

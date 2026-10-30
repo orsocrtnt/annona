@@ -65,3 +65,7 @@ Cette liste contient les inconnues qui empêchent encore des documents définiti
 ## Facturation de livraison
 
 La V1 conserve une consultation des prestations, des informations tarifaires, des documents de suivi et un export comptable. Elle ne doit pas émettre une promesse de facture réglementaire ni se présenter comme plateforme agréée. Avant toute intégration future, le comptable/juriste devra préciser formats, mentions, séquences, avoirs, archivage et articulation avec une plateforme agréée.
+
+## Notifications au livreur
+
+- service de notification web du fabricant de l'appareil (Apple, Google, Mozilla ou Microsoft) : destinataire de l'adresse d'abonnement et du message chiffré, sans contenu de mission (texte générique) ; **À QUALIFIER** dans la liste des sous-traitants et la politique de confidentialité avant données réelles.

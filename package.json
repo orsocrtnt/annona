@@ -79,6 +79,7 @@
     "test:data02:demo-retention": "dotenv -e .env.local -- tsx scripts/data02/demo-retention-connected.ts",
     "data02:demo-cleanup": "dotenv -e .env.local -- tsx scripts/data02/cleanup-demo.ts",
     "e2e:test-data": "dotenv -e .env.local -- tsx scripts/e2e/dev-test-data.ts",
+    "push:setup-keys": "node scripts/driver-push/setup-vapid-keys.mjs",
     "e2e:role-accounts": "dotenv -e .env.local -- tsx scripts/e2e/dev-role-accounts.ts",
     "data02:demo-legacy-inventory": "dotenv -e .env.local -- tsx scripts/data02/inventory-legacy-demos.ts",
     "audit:env1": "dotenv -e .env.local -- tsx scripts/env1/inventory.ts outputs/env1/inventory.json",
@@ -137,6 +138,7 @@
     "sharp": "^0.35.5",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
+    "web-push": "^3.6.7",
     "ws": "^8.21.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.14"
@@ -149,6 +151,7 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@types/web-push": "^3.6.4",
     "@types/ws": "^8.18.1",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.5",

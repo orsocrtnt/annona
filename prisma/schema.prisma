@@ -109,6 +109,7 @@ enum OperationJobType {
   AUTO_DISPATCH
   CLIENT_NOTIFICATION
   DELIVERY_INVOICE
+  DRIVER_NOTIFICATION
 }
 
 enum OperationJobStatus {
@@ -252,6 +253,7 @@ model User {
   addresses            CustomerAddress[]
   recurringOrders      RecurringOrder[]
   driverLocation       DriverLocation?
+  driverPushSubscriptions DriverPushSubscription[]
   notifications        ClientNotification[]
   orderMessages        OrderMessage[]
   orderThreadReads     OrderThreadRead[]
@@ -323,6 +325,7 @@ model Company {
   saasUsageEvents      SaasUsageEvent[]
   saasSeatReservations SaasSeatReservation[]
   orderIntakeUsage     OrderIntakeUsage[]
+  driverPushSubscriptions DriverPushSubscription[]
   demoPoolEnvironment  DemoPoolEnvironment?
   signupJourney        SignupJourney?
 
@@ -1281,4 +1284,22 @@ model OrderIntakeUsage {
 
   @@index([companyId, createdAt])
   @@map("order_intake_usage")
+}
+
+/// Abonnement aux notifications d'un appareil de livreur : aucun contenu de mission n'y est stocké.
+model DriverPushSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([userId, companyId])
+  @@index([companyId])
+  @@map("driver_push_subscriptions")
 }

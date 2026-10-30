@@ -24,7 +24,7 @@ import {
 import { outOfRangeIncidentBody } from "@/lib/maps/out-of-range-note";
 import { resolveCustomersByEmail } from "@/domains/order/resolve-customer";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
-import { kickOperationJob } from "@/domains/operations/operation-job.service";
+import { enqueueOperationJob, kickOperationJob } from "@/domains/operations/operation-job.service";
 import { queueDeliveryInvoiceJob } from "@/domains/invoice/delivery-invoice.service";
 import { POD_FAILURE_LABELS, type PodFailureCode, type PodOutcome } from "@/lib/pod/codes";
 import { resolveDeliveryCoordinateFields } from "@/domains/delivery/delivery-coordinates";
@@ -401,9 +401,11 @@ export async function assignDeliveryToDriver(
     expectUnassigned?: boolean;
     /** Tournée validée (DISPATCH-4) ; toute autre affectation sort la livraison de sa tournée. */
     round?: { id: string; sequence: number };
+    /** Le livreur prend lui-même la mission : rien à lui signaler. */
+    selfClaimed?: boolean;
   }
 ) {
-  const { updated, notificationJobId } = await prisma.$transaction(async (tx) => {
+  const { updated, notificationJobId, driverPushJobId } = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM "companies" WHERE id = ${companyId} FOR SHARE
     `;
@@ -427,7 +429,7 @@ export async function assignDeliveryToDriver(
       }),
     ]);
 
-    if (!current) return { updated: null, notificationJobId: null };
+    if (!current) return { updated: null, notificationJobId: null, driverPushJobId: null };
     // Déjà confiée au même livreur (double clic, rejeu) : succès idempotent plus bas.
     const alreadyThisDriver = current.driverId === driverId && current.status === "ASSIGNED";
     if (
@@ -451,7 +453,7 @@ export async function assignDeliveryToDriver(
         where: { id: deliveryId },
         include: ASSIGNMENT_DELIVERY_INCLUDE,
       });
-      return { updated: idempotent, notificationJobId: null };
+      return { updated: idempotent, notificationJobId: null, driverPushJobId: null };
     }
 
     const rawSettings = (company.settings ?? {}) as Record<string, unknown>;
@@ -510,7 +512,7 @@ export async function assignDeliveryToDriver(
         include: ASSIGNMENT_DELIVERY_INCLUDE,
       });
       if (latest?.driverId === driver.id && latest.status === "ASSIGNED") {
-        return { updated: latest, notificationJobId: null };
+        return { updated: latest, notificationJobId: null, driverPushJobId: null };
       }
       if (latest) {
         const latestBlock = getAssignmentBlockReason(latest);
@@ -567,10 +569,20 @@ export async function assignDeliveryToDriver(
       eventId: trackingEvent.id,
     });
 
-    return { updated, notificationJobId: notificationJob?.id ?? null };
+    const driverPushJob = options?.selfClaimed
+      ? null
+      : await enqueueOperationJob(tx, {
+          jobKey: `driver-push:mission:${deliveryId}:${trackingEvent.id}`,
+          type: "DRIVER_NOTIFICATION",
+          companyId,
+          payload: { kind: "NEW_MISSION", companyId, deliveryId, driverId: driver.id },
+        });
+
+    return { updated, notificationJobId: notificationJob?.id ?? null, driverPushJobId: driverPushJob?.id ?? null };
   }, { maxWait: 10_000, timeout: 30_000 });
 
   if (notificationJobId) kickOperationJob(notificationJobId);
+  if (driverPushJobId) kickOperationJob(driverPushJobId);
   return updated;
 }
 
@@ -634,6 +646,7 @@ export async function claimDeliveryByDriver(
   return assignDeliveryToDriver(companyId, deliveryId, driverId, {
     reason: "Libre affectation par le chauffeur — confirmation attendue",
     expectUnassigned: true,
+    selfClaimed: true,
   });
 }
 
