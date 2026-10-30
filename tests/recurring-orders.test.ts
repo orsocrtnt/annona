@@ -171,8 +171,12 @@ function fixture(rows: Recurring[], options: { failAdvanceOnce?: boolean } = {})
         return { id: key };
       },
     },
-    "@/domains/company/company-settings.service": {
+    "@/domains/company/company-settings.service": { getCompanyDeliverySlots: async () => ({ mode: "DAY", slots: [] }),
       assertDeliveryCategoryEnabled: async () => undefined,
+    },
+    "@/domains/order/delivery-slot": {
+      deliverySlotChoiceError: () => null,
+      recurringOccurrenceDelivery: (_settings: unknown, input: { date: string }) => ({ requestedDeliveryDate: input.date }),
     },
     "@/lib/query/list-limits": {
       CLIENT_RECURRING_TAKE: 50,

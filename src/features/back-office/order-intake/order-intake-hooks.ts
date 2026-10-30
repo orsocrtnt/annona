@@ -1,5 +1,6 @@
 "use client";
 
+import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { IntakeOrderInput } from "@/domains/order-intake/order-intake.form";
 import { orderIntakeApi } from "./order-intake-api";
@@ -30,5 +31,18 @@ export function useCreateIntakeOrder() {
     mutationFn: (input: { customerId: string; order: IntakeOrderInput; idempotencyKey: string }) =>
       orderIntakeApi.createOrder(input.customerId, input.order, input.idempotencyKey),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["company"] }),
+  });
+}
+
+export function useIntakeDeliverySlots() {
+  return useQuery({
+    queryKey: ["company", "intake", "delivery-slots"],
+    queryFn: async (): Promise<CompanyDeliverySlots> => {
+      const response = await fetch("/api/orders/intake/delivery-slots");
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.error ?? "Erreur serveur");
+      return json.data as CompanyDeliverySlots;
+    },
+    retry: false,
   });
 }

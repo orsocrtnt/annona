@@ -1,3 +1,4 @@
+import { requestedDeliveryInstant } from "@/domains/order/delivery-slot";
 import { createHash } from "node:crypto";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryStatus, OrderSource, OrderStatus, Prisma } from "@prisma/client";
@@ -551,7 +552,7 @@ export async function createClientOrder(
             shippingCity: firstStop?.city ?? null,
             shippingPostalCode: firstStop?.postalCode ?? null,
             requestedDeliveryDate: input.requestedDeliveryDate
-              ? new Date(input.requestedDeliveryDate)
+              ? requestedDeliveryInstant(input.requestedDeliveryDate)
               : null,
             companyId,
             customerId,
@@ -670,7 +671,7 @@ export async function createClientOrder(
         shippingPostalCode: input.shippingPostalCode!,
         deliveryInstructions: input.deliveryInstructions,
         requestedDeliveryDate: input.requestedDeliveryDate
-          ? new Date(input.requestedDeliveryDate)
+          ? requestedDeliveryInstant(input.requestedDeliveryDate)
           : null,
         deliverySlotStart: input.deliverySlotStart ? new Date(input.deliverySlotStart) : null,
         weightKg: input.weightKg ?? null,
@@ -759,7 +760,7 @@ export async function createClientOrder(
         scheduledAt: input.deliverySlotStart
           ? new Date(input.deliverySlotStart)
           : input.requestedDeliveryDate
-            ? new Date(input.requestedDeliveryDate)
+            ? requestedDeliveryInstant(input.requestedDeliveryDate)
             : new Date(Date.now() + 48 * 60 * 60 * 1000),
         trackingEvents: {
           create: isCourier

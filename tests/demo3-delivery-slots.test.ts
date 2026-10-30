@@ -69,3 +69,45 @@ test("affichage : plage en heure de Paris et poids à la française", () => {
   assert.equal(deliverySlotRange("2026-11-02T08:00:00Z", "2026-11-02T11:00:00Z"), "09:00 – 12:00");
   assert.equal(formatWeightKg("4.50"), "4,5 kg");
 });
+
+test("récurrence : le créneau choisi est exigé en mode créneaux, inutile au jour", async () => {
+  const { deliverySlotChoiceError } = await import("../src/domains/order/delivery-slot");
+  assert.equal(deliverySlotChoiceError(DEFAULT_DELIVERY_SLOTS, undefined), null);
+  assert.equal(deliverySlotChoiceError(slots, undefined), "DELIVERY_SLOT_REQUIRED");
+  assert.equal(deliverySlotChoiceError(slots, "07:00-08:00"), "DELIVERY_SLOT_INVALID");
+  assert.equal(deliverySlotChoiceError(slots, "09:00-12:00"), null);
+});
+
+test("occurrence : créneau repris ; supprimé ou mode au jour, la commande part quand même au jour", async () => {
+  const { recurringOccurrenceDelivery } = await import("../src/domains/order/delivery-slot");
+  const input = { deliveryCategory: "STANDARD", date: "2026-11-02", key: "09:00-12:00" };
+  assert.deepEqual(recurringOccurrenceDelivery(slots, input), { requestedDeliveryDate: "2026-11-02T11:00:00.000Z", deliverySlotStart: "2026-11-02T08:00:00.000Z" });
+  assert.deepEqual(recurringOccurrenceDelivery(slots, { ...input, key: "07:00-08:00" }), { requestedDeliveryDate: "2026-11-02" });
+  assert.deepEqual(recurringOccurrenceDelivery(slots, { ...input, key: null }), { requestedDeliveryDate: "2026-11-02" });
+  assert.deepEqual(recurringOccurrenceDelivery(DEFAULT_DELIVERY_SLOTS, input), { requestedDeliveryDate: "2026-11-02" });
+});
+
+test("occurrence rejouée après la fin du créneau : résultat identique, la clé d'idempotence reste valable", async () => {
+  const { recurringOccurrenceDelivery } = await import("../src/domains/order/delivery-slot");
+  assert.ok(recurringOccurrenceDelivery(slots, { deliveryCategory: "STANDARD", date: "2020-01-06", key: "09:00-12:00" }).deliverySlotStart);
+});
+
+test("message IA : l'heure du message choisit le créneau, sans jamais en inventer", async () => {
+  const { suggestDeliverySlot } = await import("../src/domains/order/delivery-slot");
+  assert.equal(suggestDeliverySlot(slots.slots, "10:30")?.start, "09:00");
+  assert.equal(suggestDeliverySlot(slots.slots, "13:00")?.start, "14:00");
+  assert.equal(suggestDeliverySlot(slots.slots, "20:00"), null);
+  assert.equal(suggestDeliverySlot(slots.slots, null), null);
+});
+
+test("message IA : créneau et poids transmis à la commande, champs vides absents", async () => {
+  const { buildOrderInputFromForm } = await import("../src/domains/order-intake/order-intake.form");
+  const stop = { address: "", city: "", postalCode: "", contactName: "", phone: "", instructions: "" };
+  const values = { deliveryCategory: "STANDARD" as const, pickup: stop, delivery: stop, requestedDeliveryDate: "2026-11-02", deadlineLabel: "", urgent: false, packageName: "Colis", quantity: 1, instructions: "" };
+  const filled = buildOrderInputFromForm({ ...values, requestedDeliverySlot: "09:00-12:00", weightKg: "4.5" });
+  assert.equal(filled.requestedDeliverySlot, "09:00-12:00");
+  assert.equal(filled.weightKg, "4.5");
+  const empty = buildOrderInputFromForm({ ...values, requestedDeliverySlot: "", weightKg: "" });
+  assert.equal("requestedDeliverySlot" in empty, false);
+  assert.equal("weightKg" in empty, false);
+});

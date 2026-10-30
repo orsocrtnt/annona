@@ -131,6 +131,7 @@ function fixture(failureStage: FailureStage) {
   const service = load<typeof import("../src/domains/order/order.service")>(
     "src/domains/order/order.service.ts",
     {
+      "@/domains/order/delivery-slot": { requestedDeliveryInstant: (value: string) => new Date(value) },
       "@/services/prisma/client": { prisma },
       "node:crypto": { createHash },
       "@/domains/client-portal/address.service": {

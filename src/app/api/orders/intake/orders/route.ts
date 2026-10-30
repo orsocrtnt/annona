@@ -45,6 +45,8 @@ export async function POST(request: Request) {
         return intakeError("CUSTOMER_NOT_FOUND", "Client introuvable dans votre entreprise.", 404);
       case "customer_inactive":
         return intakeError("CUSTOMER_INACTIVE", "Ce compte client n'est pas actif.", 409);
+      case "slot_invalid":
+        return intakeError("SLOT_INVALID", result.message, 400);
       case "category_disabled":
         return intakeError("CATEGORY_DISABLED", "Ce type de livraison n'est pas activé pour votre entreprise.", 403);
       case "conflict":

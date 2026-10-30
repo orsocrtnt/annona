@@ -1,5 +1,6 @@
 "use client";
 
+import { deliverySlotKey, deliverySlotLabel } from "@/lib/validations/delivery-slots";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm, type Control, type FieldErrors, type FieldValues, type UseFormRegister } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,6 +64,8 @@ export function CreateRecurringOrderForm({
       intervalUnit: "WEEKS",
       startAt: todayIso(),
       endAt: "",
+      deliverySlot: "",
+      weightKg: "",
       items: [{ name: "", quantity: 1, estimatedPrice: undefined }],
       pickupStops: [
         {
@@ -123,7 +126,13 @@ export function CreateRecurringOrderForm({
     form.setValue("shippingPostalCode", addr.postalCode ?? "");
   };
 
+  const slotSettings = deliveryOptions?.deliverySlots;
+
   const handleSubmit = async (data: CreateRecurringOrderFormInput) => {
+    if (slotSettings?.mode === "SLOTS" && !data.deliverySlot) {
+      form.setError("deliverySlot", { message: "Choisissez un créneau de livraison" });
+      return;
+    }
     const parsed = createRecurringOrderSchema.parse({
       ...data,
       endAt: data.endAt || undefined,
@@ -206,6 +215,28 @@ export function CreateRecurringOrderForm({
           </FormField>
           <FormField label="Fin de la récurrence (optionnel)" error={form.formState.errors.endAt?.message}>
             <Input type="date" {...form.register("endAt")} />
+          </FormField>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {slotSettings?.mode === "SLOTS" && (
+            <FormField label="Créneau de livraison" error={form.formState.errors.deliverySlot?.message} required>
+              <Select
+                value={form.watch("deliverySlot") ?? ""}
+                onValueChange={(value) => form.setValue("deliverySlot", value, { shouldValidate: true })}
+              >
+                <SelectTrigger id="recurring-delivery-slot" aria-label="Créneau de livraison">
+                  <SelectValue placeholder="Choisir un créneau..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {slotSettings.slots.map((slot) => (
+                    <SelectItem key={deliverySlotKey(slot)} value={deliverySlotKey(slot)}>{deliverySlotLabel(slot)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          )}
+          <FormField label="Poids du colis en kg (facultatif)" error={form.formState.errors.weightKg?.message}>
+            <Input type="number" inputMode="decimal" min="0.01" max="1000" step="0.01" placeholder="4,5" {...form.register("weightKg")} />
           </FormField>
         </div>
         <p className="text-xs text-muted-foreground">

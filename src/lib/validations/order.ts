@@ -63,6 +63,15 @@ export const pickupStopSchema = z.object({
   items: z.array(draftOrderItemSchema).default([]),
 });
 
+const optionalWeightKg = z.preprocess(
+  (value) => (value === "" || value == null || Number.isNaN(value) ? undefined : value),
+  z.coerce
+    .number({ message: "Poids invalide" })
+    .positive("Le poids doit être supérieur à 0")
+    .max(1000, "1 000 kg au maximum")
+    .optional()
+);
+
 export const createClientOrderSchema = z
   .object({
     deliveryCategory: z
@@ -83,14 +92,7 @@ export const createClientOrderSchema = z
     requestedDeliveryDate: z.string().optional(),
     /** Clé du créneau choisi (« 09:00-12:00 ») : heures recalculées par le serveur. */
     requestedDeliverySlot: z.string().max(11).optional(),
-    weightKg: z.preprocess(
-      (value) => (value === "" || value == null || Number.isNaN(value) ? undefined : value),
-      z.coerce
-        .number({ message: "Poids invalide" })
-        .positive("Le poids doit être supérieur à 0")
-        .max(1000, "1 000 kg au maximum")
-        .optional()
-    ),
+    weightKg: optionalWeightKg,
     notes: z.string().optional(),
     saveAddress: z.boolean().optional(),
     addressLabel: z.string().optional(),
@@ -260,6 +262,9 @@ export const createRecurringOrderSchema = z
     intervalUnit: z.enum(["DAYS", "WEEKS", "MONTHS"]),
     startAt: z.string().min(1, "Date de début requise"),
     endAt: z.string().optional(),
+    /** Clé du créneau (« 09:00-12:00 »), repris à chaque occurrence. */
+    deliverySlot: z.string().max(11).optional(),
+    weightKg: optionalWeightKg,
     pickupStops: z.array(pickupStopSchema).optional(),
     pickupAddress: z.string().optional(),
     pickupCity: z.string().optional(),

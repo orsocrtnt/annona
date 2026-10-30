@@ -1,4 +1,5 @@
 import { orderMissionsByRound } from "@/lib/dispatch/round-order";
+import { isWholeDayDue } from "@/lib/orders/whole-day-due";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus, OrderStatus, Prisma } from "@prisma/client";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
@@ -494,7 +495,8 @@ export async function assignDeliveryToDriver(
         driverId: driver.id,
         driverName,
         status: "ASSIGNED",
-        estimatedArrival: current.scheduledAt,
+        // Commande « au jour » : aucune heure promise, donc aucune arrivée à annoncer.
+        estimatedArrival: isWholeDayDue(current.scheduledAt) ? null : current.scheduledAt,
         missionAcceptedAt: null,
         roundId: options?.round?.id ?? null,
         roundSequence: options?.round?.sequence ?? null,

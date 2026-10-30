@@ -1,3 +1,5 @@
+import { isWholeDayDue } from "@/lib/orders/whole-day-due";
+
 /** Dates lisibles d'un coup d'œil dans les listes : « Aujourd'hui 14:30 », « Hier », « 23 oct. ». */
 
 const TIME_ZONE = "Europe/Paris";
@@ -16,7 +18,7 @@ export function relativeDayLabel(value: string | Date, now = new Date(), options
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   const diff = dayDiff(date, now);
-  const time = options.withTime ? ` ${timeFormat.format(date)}` : "";
+  const time = options.withTime && !isWholeDayDue(date) ? ` ${timeFormat.format(date)}` : "";
   if (diff === 0) return `Aujourd'hui${time}`;
   if (diff === -1) return `Hier${time}`;
   if (diff === 1) return `Demain${time}`;
@@ -44,7 +46,8 @@ export function dateTimeLabel(value: string | Date): string {
   if (Number.isNaN(date.getTime())) return "—";
   const parts = dateTimeFormat.formatToParts(date);
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
-  return `${get("day")} ${get("month")} ${get("year")} à ${get("hour")}:${get("minute")}`;
+  const day = `${get("day")} ${get("month")} ${get("year")}`;
+  return isWholeDayDue(date) ? day : `${day} à ${get("hour")}:${get("minute")}`;
 }
 
 /** « à l'instant », « il y a 25 s », « il y a 3 min », « il y a 2 h », puis la date. */

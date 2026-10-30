@@ -1,4 +1,5 @@
 import { parisInstant } from "@/domains/order-intake/order-intake.deadline";
+import { WHOLE_DAY_DUE_TIME } from "@/lib/orders/whole-day-due";
 import { deliverySlotKey, type CompanyDeliverySlots, type DeliverySlot } from "@/lib/validations/delivery-slots";
 
 export type DeliverySlotError = "DELIVERY_SLOT_REQUIRED" | "DELIVERY_SLOT_INVALID" | "DELIVERY_SLOT_PAST";
@@ -13,6 +14,41 @@ export const DELIVERY_SLOT_ERROR_MESSAGES: Record<DeliverySlotError, string> = {
 export function isDeliverySlotOpen(date: string, slot: DeliverySlot, now: Date): boolean {
   const end = parisInstant(date, slot.end);
   return Boolean(end && end > now);
+}
+
+/**
+ * Une date seule (« au jour ») vaut jusqu'à la fin de la journée à Paris. Lue telle quelle, elle
+ * tomberait à minuit UTC, soit 01:00 à Paris : la commande serait en retard dès sa création.
+ */
+export function requestedDeliveryInstant(value: string): Date {
+  return (/^\d{4}-\d{2}-\d{2}$/.test(value) ? parisInstant(value, WHOLE_DAY_DUE_TIME) : null) ?? new Date(value);
+}
+
+/** Commande récurrente : le créneau choisi doit exister tant que l'entreprise est en mode créneaux. */
+export function deliverySlotChoiceError(settings: CompanyDeliverySlots, key: string | null | undefined): DeliverySlotError | null {
+  if (settings.mode !== "SLOTS") return null;
+  if (!key) return "DELIVERY_SLOT_REQUIRED";
+  return settings.slots.some((slot) => deliverySlotKey(slot) === key) ? null : "DELIVERY_SLOT_INVALID";
+}
+
+/**
+ * Occurrence d'une récurrence : une commande n'est jamais perdue. Créneau supprimé ou entreprise
+ * repassée au jour : l'occurrence part « au jour ». Un rattrapage garde son créneau, même passé,
+ * pour que la relance d'une occurrence interrompue reste identique (clé d'idempotence).
+ */
+export function recurringOccurrenceDelivery(settings: CompanyDeliverySlots, input: { deliveryCategory: string; date: string; key: string | null }) {
+  const resolved = input.key
+    ? resolveDeliverySlot(settings, { deliveryCategory: input.deliveryCategory, requestedDeliveryDate: input.date, requestedDeliverySlot: input.key }, new Date(0))
+    : null;
+  return resolved?.ok && resolved.deliverySlotStart
+    ? { requestedDeliveryDate: resolved.requestedDeliveryDate!, deliverySlotStart: resolved.deliverySlotStart }
+    : { requestedDeliveryDate: input.date };
+}
+
+/** Message IA : créneau qui contient l'heure trouvée, sinon le premier qui finit après elle. */
+export function suggestDeliverySlot(slots: DeliverySlot[], time: string | null | undefined): DeliverySlot | null {
+  if (!time) return null;
+  return slots.find((slot) => slot.start <= time && time <= slot.end) ?? slots.find((slot) => slot.end >= time) ?? null;
 }
 
 export type ResolvedDeliverySlot =

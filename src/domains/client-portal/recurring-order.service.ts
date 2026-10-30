@@ -1,3 +1,5 @@
+import { deliverySlotChoiceError, recurringOccurrenceDelivery } from "@/domains/order/delivery-slot";
+import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, RecurrenceFrequency, RecurrenceUnit } from "@prisma/client";
 import type {
@@ -5,7 +7,7 @@ import type {
   UpdateRecurringOrderInput,
 } from "@/lib/validations/order";
 import { createClientOrder } from "@/domains/order/order.service";
-import { assertDeliveryCategoryEnabled } from "@/domains/company/company-settings.service";
+import { assertDeliveryCategoryEnabled, getCompanyDeliverySlots } from "@/domains/company/company-settings.service";
 import { CLIENT_RECURRING_TAKE, RECURRING_DUE_TAKE } from "@/lib/query/list-limits";
 import {
   firstPickupFields,
@@ -76,10 +78,11 @@ function buildOrderPayload(
     shippingPostalCode: string | null;
     deliveryInstructions: string | null;
     notes: string | null;
+    weightKg?: unknown;
     items: unknown;
     id: string;
   },
-  requestedDeliveryDate: string
+  delivery: { requestedDeliveryDate: string; deliverySlotStart?: string }
 ) {
   const pickupStops = resolveRecurringPickupStops(recurring);
 
@@ -113,7 +116,8 @@ function buildOrderPayload(
     shippingPostalCode: recurring.shippingPostalCode ?? "",
     deliveryInstructions: recurring.deliveryInstructions ?? undefined,
     notes: recurring.notes ?? undefined,
-    requestedDeliveryDate,
+    ...delivery,
+    weightKg: recurring.weightKg == null ? undefined : Number(recurring.weightKg),
     recurringOrderId: recurring.id,
   };
 }
@@ -148,6 +152,10 @@ export async function createClientRecurringOrder(
   input: CreateRecurringOrderInput
 ) {
   await assertDeliveryCategoryEnabled(companyId, input.deliveryCategory);
+  const slotSettings = await getCompanyDeliverySlots(companyId);
+  const slotError = deliverySlotChoiceError(slotSettings, input.deliverySlot);
+  if (slotError) throw new Error(slotError);
+  const deliverySlot = slotSettings.mode === "SLOTS" ? input.deliverySlot! : null;
 
   const startAt = parseRecurringCalendarDate(input.startAt);
   const endAt = input.endAt ? parseRecurringCalendarDate(input.endAt, true) : null;
@@ -182,6 +190,8 @@ export async function createClientRecurringOrder(
       deliveryInstructions: input.deliveryInstructions,
       notes: input.notes,
       items,
+      deliverySlot,
+      weightKg: input.weightKg ?? null,
       startAt,
       nextRunAt,
       endAt,
@@ -194,7 +204,10 @@ export async function createClientRecurringOrder(
   if (startAt <= now && (!endAt || endAt >= now)) {
     assertRecurringCategory(recurring.deliveryCategory);
     await createClientOrder(customerId, companyId, email, {
-      ...buildOrderPayload({ ...recurring, items }, recurringCalendarDateValue(startAt)),
+      ...buildOrderPayload(
+        { ...recurring, items },
+        recurringOccurrenceDelivery(slotSettings, { deliveryCategory: recurring.deliveryCategory, date: recurringCalendarDateValue(startAt), key: deliverySlot })
+      ),
     }, {
       idempotencyKey: `recurring:${recurring.id}:${startAt.toISOString()}`,
     });
@@ -285,10 +298,20 @@ export type RecurringProcessingSummary = {
   hasMore: boolean;
 };
 
+/** Réglage lu une fois par entreprise pendant un passage. */
+function deliverySlotsReader() {
+  const known = new Map<string, Promise<CompanyDeliverySlots>>();
+  return (companyId: string) => {
+    if (!known.has(companyId)) known.set(companyId, getCompanyDeliverySlots(companyId));
+    return known.get(companyId)!;
+  };
+}
+
 export async function processDueRecurringOrders(options: {
   now?: Date;
   maxOccurrences?: number;
 } = {}): Promise<RecurringProcessingSummary> {
+  const slotsOf = deliverySlotsReader();
   const now = options.now ?? new Date();
   const maxOccurrences = Math.max(
     1,
@@ -353,7 +376,14 @@ export async function processDueRecurringOrders(options: {
           recurring.companyId,
           recurring.customer.email,
           {
-            ...buildOrderPayload(recurring, recurringCalendarDateValue(occurrenceAt)),
+            ...buildOrderPayload(
+              recurring,
+              recurringOccurrenceDelivery(await slotsOf(recurring.companyId), {
+                deliveryCategory: recurring.deliveryCategory,
+                date: recurringCalendarDateValue(occurrenceAt),
+                key: recurring.deliverySlot,
+              })
+            ),
           },
           { idempotencyKey: occurrenceKey }
         );

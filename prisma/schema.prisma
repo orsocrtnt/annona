@@ -1024,6 +1024,8 @@ model RecurringOrder {
   intervalValue        Int                 @default(1) @map("interval_value")
   intervalUnit         RecurrenceUnit      @default(WEEKS) @map("interval_unit")
   status               RecurrenceStatus    @default(ACTIVE)
+  deliverySlot         String?             @map("delivery_slot")
+  weightKg             Decimal?            @map("weight_kg") @db.Decimal(7, 2)
   startAt              DateTime            @default(now()) @map("start_at")
   nextRunAt            DateTime            @map("next_run_at")
   endAt                DateTime?           @map("end_at")

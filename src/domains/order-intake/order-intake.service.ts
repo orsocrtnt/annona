@@ -2,6 +2,8 @@ import { zodIssueMessage } from "@/lib/config-messages";
 import { prisma } from "@/services/prisma/client";
 import { createClientOrder } from "@/domains/order/order.service";
 import { assertDeliveryCategoryEnabled } from "@/domains/company/company-settings.service";
+import { DELIVERY_SLOT_ERROR_MESSAGES, resolveDeliverySlot } from "@/domains/order/delivery-slot";
+import { parseDeliverySlots } from "@/lib/validations/delivery-slots";
 import type { CreateClientOrderInput } from "@/lib/validations/order";
 import { createAnthropicOrderIntakeProvider } from "./anthropic-provider";
 import { matchCustomerBySender } from "./order-intake.customer";
@@ -86,6 +88,7 @@ export type CreateOrderFromIntakeResult =
   | { status: "customer_not_found" }
   | { status: "customer_inactive" }
   | { status: "category_disabled" }
+  | { status: "slot_invalid"; message: string }
   | { status: "conflict" }
   | { status: "saas_blocked" }
   | { status: "saas_read_only" };
@@ -143,12 +146,24 @@ export async function createOrderFromIntake(
     throw error;
   }
 
+  const company = await db.company.findUnique({ where: { id: input.companyId }, select: { settings: true } });
+  const slot = resolveDeliverySlot(
+    parseDeliverySlots((company?.settings as Record<string, unknown> | null)?.deliverySlots),
+    input.order,
+    new Date()
+  );
+  if (!slot.ok) return { status: "slot_invalid", message: DELIVERY_SLOT_ERROR_MESSAGES[slot.error] };
+
   try {
     const order = await createOrder(
       customer.id,
       input.companyId,
       customer.email,
-      { ...input.order, source: "ADMIN" },
+      {
+        ...input.order,
+        ...(slot.deliverySlotStart ? { requestedDeliveryDate: slot.requestedDeliveryDate, deliverySlotStart: slot.deliverySlotStart } : {}),
+        source: "ADMIN",
+      },
       {
         idempotencyKey: input.idempotencyKey,
         // Atomique : le verrou (entreprise, clé) est tenu jusqu'à la fin de la transaction de création,

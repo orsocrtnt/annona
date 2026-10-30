@@ -19,6 +19,9 @@ export interface IntakeFormValues {
   delivery: IntakeFormStop;
   /** Jour local à Paris, AAAA-MM-JJ (champ date existant de la commande). */
   requestedDeliveryDate: string;
+  /** Créneau choisi (« 09:00-12:00 ») quand l'entreprise livre par créneaux. */
+  requestedDeliverySlot: string;
+  weightKg: string;
   /** Échéance lisible recopiée dans les consignes (l'heure n'a pas de colonne dédiée). */
   deadlineLabel: string;
   urgent: boolean;
@@ -50,6 +53,8 @@ export function draftToFormValues(draft: OrderIntakeDraft, deliveryIndex: number
     pickup: stopValues(draft.pickup),
     delivery: stopValues(draft.deliveries[deliveryIndex]),
     requestedDeliveryDate: deadline.date ?? "",
+    requestedDeliverySlot: "",
+    weightKg: "",
     deadlineLabel: deadline.time ? (deadline.label ?? "") : "",
     urgent: draft.urgency.value === "urgent",
     packageName: draft.packages.description.value ?? "",
@@ -105,6 +110,8 @@ export function buildOrderInputFromForm(values: IntakeFormValues): IntakeOrderIn
     shippingPostalCode: clean(values.delivery.postalCode),
     deliveryInstructions,
     requestedDeliveryDate: clean(values.requestedDeliveryDate),
+    ...(values.requestedDeliverySlot ? { requestedDeliverySlot: values.requestedDeliverySlot } : {}),
+    ...(values.weightKg ? { weightKg: values.weightKg } : {}),
     notes: "Commande saisie depuis un message reçu (brouillon assisté, relu avant création).",
   };
 

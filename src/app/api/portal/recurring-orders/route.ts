@@ -1,3 +1,4 @@
+import { DELIVERY_SLOT_ERROR_MESSAGES } from "@/domains/order/delivery-slot";
 import { NextResponse } from "next/server";
 import { requireClientRole } from "@/lib/api/auth-guard";
 import {
@@ -48,6 +49,9 @@ export async function POST(request: Request) {
         { error: "Les missions spéciales ne peuvent pas être récurrentes." },
         { status: 400 }
       );
+    }
+    if (error instanceof Error && (error.message === "DELIVERY_SLOT_REQUIRED" || error.message === "DELIVERY_SLOT_INVALID")) {
+      return NextResponse.json({ error: DELIVERY_SLOT_ERROR_MESSAGES[error.message] }, { status: 400 });
     }
     if (error instanceof Error && error.message === "DELIVERY_CATEGORY_DISABLED") {
       return NextResponse.json(

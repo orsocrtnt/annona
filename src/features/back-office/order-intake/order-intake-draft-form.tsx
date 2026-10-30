@@ -21,7 +21,10 @@ import {
 import type { IntakeStop, IntakeTextField } from "@/domains/order-intake/order-intake.schema";
 import { createClientOrderSchema } from "@/lib/validations/order";
 import { OrderIntakeApiError } from "./order-intake-api";
-import { useCreateIntakeOrder } from "./order-intake-hooks";
+import { useCreateIntakeOrder, useIntakeDeliverySlots } from "./order-intake-hooks";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { suggestDeliverySlot } from "@/domains/order/delivery-slot";
+import { deliverySlotKey, deliverySlotLabel } from "@/lib/validations/delivery-slots";
 
 const FIELD_LABELS: Record<string, string> = {
   "pickup.address": "adresse d'enlèvement",
@@ -142,6 +145,14 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
   const createOrder = useCreateIntakeOrder();
 
   const values = forms[active]!;
+  const { data: slotSettings } = useIntakeDeliverySlots();
+  // Créneau prérempli depuis l'heure du message ; le dispatcher relit et peut le changer.
+  React.useEffect(() => {
+    if (slotSettings?.mode !== "SLOTS") return;
+    const suggested = suggestDeliverySlot(slotSettings.slots, draft.deadline.time);
+    if (!suggested) return;
+    setForms((current) => current.map((form) => (form.requestedDeliverySlot ? form : { ...form, requestedDeliverySlot: deliverySlotKey(suggested) })));
+  }, [slotSettings, draft.deadline.time]);
   const missing = flagsFor(draft.missingFields, active);
   const uncertain = flagsFor(draft.uncertainFields, active);
   const createdHere = created[active];
@@ -254,6 +265,23 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
               hint={uncertain.has("deadline") ? (draft.deadline.isPast ? "À vérifier : échéance déjà passée." : "À vérifier : date peu sûre.") : undefined}
             >
               <Input type="date" value={values.requestedDeliveryDate} onChange={(event) => update({ requestedDeliveryDate: event.target.value })} />
+            </FormField>
+            {slotSettings?.mode === "SLOTS" && (
+              <FormField label="Créneau de livraison" required error={values.requestedDeliverySlot ? undefined : "À choisir."}>
+                <Select value={values.requestedDeliverySlot} onValueChange={(value) => update({ requestedDeliverySlot: value })}>
+                  <SelectTrigger aria-label="Créneau de livraison">
+                    <SelectValue placeholder="Choisir un créneau..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {slotSettings.slots.map((slot) => (
+                      <SelectItem key={deliverySlotKey(slot)} value={deliverySlotKey(slot)}>{deliverySlotLabel(slot)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            )}
+            <FormField label="Poids en kg (facultatif)">
+              <Input type="number" inputMode="decimal" min="0.01" max="1000" step="0.01" value={values.weightKg} onChange={(event) => update({ weightKg: event.target.value })} />
             </FormField>
             <FormField label="Échéance (heure de Paris)" hint={draft.deadline.source ? `Extrait : « ${draft.deadline.source} »` : undefined}>
               <Input value={values.deadlineLabel} onChange={(event) => update({ deadlineLabel: event.target.value })} placeholder="ex. avant 15:00" />
