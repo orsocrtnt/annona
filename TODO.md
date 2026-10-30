@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**81 tâches terminées sur 109 — 74 %**
+**83 tâches terminées sur 111 — 75 %**
 
 `███████████████░░░░░` · 28 tâches restantes
 
@@ -27,8 +27,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - Corriger : une commande « au jour » pour aujourd'hui s'affiche « 01:00 · En retard » (date enregistrée à minuit UTC ; vu le 30 octobre, antérieur aux créneaux).
-- DEMO-3 : push « Nouvelle mission » au livreur (chantier séparé : service worker, abonnements, clés).
-- DISPATCH-4 : imprévus (piste 5), puis mesure (piste 6).
+- DEMO-3B : push « Nouvelle mission » au livreur (chantier séparé : service worker, abonnements, clés).
+- DISPATCH-5 : imprévus (piste 5), puis mesure (piste 6).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Juriste : LEGAL-1, LEGAL-LIENS, DATA-02.
@@ -213,7 +213,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | COST-1 | A+B | Phase documentaire faite ; phase 2 mesurée. | PERF-02 et pilotes. | Élevée · GPT‑6 Astra |
 | GROWTH-1 | B | Tarifs, Fonctionnalités, Démonstration, Contact et sa boîte de lecture faits (27 octobre). Mini-démo interactive du hero faite le 27 octobre (client → dispatcher intelligent → livreur → suivi, `src/features/landing/product-tour/`, spec et plan dans `docs/superpowers/`) : `npm run check` vert, parcours navigateur 1440/390 et mouvement réduit verts ; revue visuelle propriétaire à faire. Reste : pages légales. | Migration à appliquer après fusion ; légal : LEGAL-1. | Élevée · GPT‑6.1 Sol |
 | LEGAL-LIENS | A+B | Ajouter mentions légales et confidentialité aux pieds de page publics et aux formulaires de collecte. | Contenu : LEGAL-1. | Faible · GPT‑6 Luna |
-| DEMO-3 | A+B | Tranches 1, 2, 3, 5 et 6 livrées et recettées sur tutelliv-dev (29 octobre) ; restent arrivée estimée en direct, créneau, tableaux de bord et tournées/push, puis e-mails réels. | EMAIL pour les e-mails réels ; migration pour le créneau ; accord du propriétaire pour les tournées. | Élevée · GPT‑6.1 Sol |
+| DEMO-3B | A+B | Push « Nouvelle mission » au livreur ; restes de DEMO-3 à revérifier. DEMO-3 close le 30 octobre sur décision du propriétaire. | Indépendante. | GPT‑6.1 Sol · élevé |
 | RELEASE-1 | B | Rejouer toutes les portes avant encaissement et production. | Dernier jalon. | Très élevée · GPT‑6 Astra |
 | SMS | C | Requalifier uniquement si les pilotes montrent un besoin payant répété. | Différée. | Moyenne · GPT‑6.1 Sol |
 | FACTURX-1 | B | Implémenté et recetté (29 octobre) ; validation Mustang/FNFE, PDF/A strict, BT-32, plateforme agréée. | Propriétaire pour la validation officielle. | Moyenne · GPT‑6.1 Sol |
@@ -221,7 +221,7 @@ Revue du 26 octobre 2026 : lignes des tâches closes retirées (DEMO-2, OPS-03B,
 | POD-2 | A | Implémenté et recetté ; règles pilotables depuis Paramètres (29 octobre) ; reste essai sur téléphone réel, GPS, conservation, e-mail réel. | MOB-01C, LEGAL-1/DATA-02, EMAIL. | Élevée · GPT‑6.1 Sol |
 | OPS-FIAB | A+B | Implémenté (29 octobre) ; déclenchement réel du workflow, `after()` sur Vercel, Node 22, index en préproduction. | Propriétaire (secrets, Vercel). | Moyenne · GPT‑6 Luna |
 | SEC-AUDIT | A+B | Implémenté et recetté (29 octobre) ; CSP bloquante, migration et secrets de préproduction, rattachement par e-mail. | Propriétaire (migration, secrets). | Élevée · GPT‑6 Astra |
-| DISPATCH-4 | A | Tranche 1 (3 meilleurs livreurs, temps de trajet, affectation en un clic) livrée et vérifiée ; restent les tournées, puis imprévus et mesure. | Aucune (décisions du 29 octobre prises). | Élevée · GPT‑6 Astra |
+| DISPATCH-5 | A | Imprévus (piste 5), puis mesure (piste 6). DISPATCH-4 close le 30 octobre sur décision du propriétaire. | Indépendante. | GPT‑6 Astra · élevé |
 | PROPRIO-2810 | A+B | Quatorze actions du propriétaire avant mise en ligne, dont les migrations de préproduction sur accord. | Propriétaire. | Faible · GPT‑6 Luna |
 
 ## 0 — Cadrer la V1 sur le problème observé
@@ -1404,7 +1404,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Non vérifié : le renvoi de l'étape identité de l'inscription en navigateur (il faut un parcours d'inscription sur base ; vérifié par test statique seulement) ; l'E2E `mobile-web` n'a pas été relancé.
   - Reste pour cocher : remplacer le contenu provisoire par les pièces validées de LEGAL-1 (SIREN, directeur de la publication, contact légal/RGPD, durées de conservation, texte de confidentialité relu par le juriste), puis retirer le bandeau.
 
-- [ ] **DEMO-3 — Rendre réel ce que la mini-démo du site montre.** Revue du 28 octobre 2026 (code de `preproduction` comparé aux 7 étapes de `src/features/landing/product-tour/`) : 3 points disponibles, 8 partiels, 1 absent. Le propriétaire a choisi de montrer ces fonctions comme disponibles (spec `docs/superpowers/specs/2026-10-27-landing-product-tour-design.md`) ; cette tâche comble l'écart, par tranches livrées et testées une à une, dans cet ordre :
+- [x] **DEMO-3 — Rendre réel ce que la mini-démo du site montre.** Revue du 28 octobre 2026 (code de `preproduction` comparé aux 7 étapes de `src/features/landing/product-tour/`) : 3 points disponibles, 8 partiels, 1 absent. Le propriétaire a choisi de montrer ces fonctions comme disponibles (spec `docs/superpowers/specs/2026-10-27-landing-product-tour-design.md`) ; cette tâche comble l'écart, par tranches livrées et testées une à une, dans cet ordre :
   1. **Paiements côté entreprise (absent)** : liste des factures payées / en attente / en retard, passage automatique en retard avec le nombre de jours, bouton « Relancer » qui envoie un e-mail au client et trace la relance. Aujourd'hui l'onglet Facturation ne mène qu'aux réglages et le statut `OVERDUE` n'est jamais posé.
   2. **Facture créée à la livraison** : générer la facture au passage en « Livrée » et réutiliser l'e-mail existant (`notify.service.ts`) ; aujourd'hui elle est créée à la main.
   3. **Distance GPS dans le dispatcher** : prendre en compte la position des livreurs et la distance au retrait dans l'auto-dispatch (aujourd'hui : priorité, charge, code postal).
@@ -1447,6 +1447,14 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - **Tranche 7, créneau et poids : faite le 30 octobre 2026 (C13), migration appliquée sur `tutelliv-dev` puis la préproduction avec l'accord du propriétaire.** Migration `20261030120000_order_slot_weight` (`delivery_slot_start`, `weight_kg`, facultatifs ; la fin du créneau reste `requested_delivery_date`, donc la règle de retard ne change pas). Paramètres > « Créneaux de livraison » : « Au jour » par défaut, ou jusqu'à 8 créneaux en heure de Paris, sans chevauchement. Le client choisit date et créneau, le serveur recalcule les heures (`resolveDeliverySlot`) et refuse créneau absent, inconnu ou fini ; poids facultatif (0 à 1 000 kg). Affichage : fiche client, fiche back-office, « Prochain créneau » sur le tableau de bord client. Vérifié : `tests/demo3-delivery-slots.test.ts` 8/8 ; recette navigateur sur `tutelliv-dev` : réglage (créneau inversé refusé, conservé au rechargement), commande réelle « 31 oct., 09:00 – 12:00 · 4,5 kg », créneau forgé refusé en 400, retour au mode au jour : champ masqué. Limites : commandes récurrentes et commandes par message IA sans créneau (date seule) ; poids non repris dans ces deux parcours.
   - **Tranche 10, regroupement en tournées : faite avec DISPATCH-4 (voir cette tâche). Reste le push « Nouvelle mission »** : rien n'existe pour l'instant (ni service worker, ni abonnement, ni clés VAPID), donc chantier séparé ; la tâche DEMO-3 reste ouverte pour lui et pour les e-mails réels.
   - **Recette navigateur du bloc « Factures », 30 octobre 2026 : passée** (commit 54c8e94, worktree isolé, port 3110, Chromium sans écran, `tutelliv-dev`, persona client de démo : le 401 venait du mauvais identifiant, le client démo passe par `POST /api/demo/persona`). Facture `E2E` en retard ajoutée puis supprimée : « 123,45 € », « 1 facture à régler, dont 1 en retard », badge « En retard · 5 j ». Sans elle : « 0,00 € », « Rien à régler pour le moment. ». Vérifiés : rechargement, clic vers la facture, retour arrière, 1 280 et 390 px sans débordement, mode sombre par le vrai bouton (conservé au rechargement), non-régression `/portal/orders`, `/driver/missions`, `/dashboard`, `/dispatch/map` avec carte, 0 erreur console. Captures relues à l'œil en clair, sombre et mobile : `outputs/recette-agents/demo3-factures/`. **Tranches 8 et 9 terminées.** La carte côté client relève de la tranche 4.
+  **Clôture du 30 octobre 2026, sur décision du propriétaire.** Il déclare que tout fonctionne sur les points que l'agent n'a pas pu vérifier : tournées automatiques par le cron, messages de capacité et de créneau manqué dans le navigateur, positions réelles d'un livreur, erreur de console React sur `/dispatch`. Ces points sont validés par sa déclaration, sans essai de l'agent. Temps de trajet à vol d'oiseau, affichés « environ » : acceptés pour le moment. Ce qui n'est pas construit n'est pas couvert par cette clôture et passe dans DEMO-3B.
+
+- [ ] **DEMO-3B — Finir les restes de la mini-démo.** Reprend ce qui restait de DEMO-3 à sa clôture. (1) **Push « Nouvelle mission »** au livreur : rien n'existe (service worker, abonnements, clés VAPID). (2) À revérifier avant de les traiter, car notés le 29 octobre : affichage de `proximity` dans l'interface du dispatcher, pagination de la liste Paiements au-delà de 100 factures, spécifications E2E `demo3-payments`.
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
+
+  Terminé quand : le livreur reçoit la notification sur un vrai téléphone, sans lien avec une donnée d'un autre compte ; les trois restes sont faits ou écartés ; `npm run check` vert.
+
 - [ ] **INTAKE-1 — Commande par message IA (coller un message).** Depuis le back-office (Commandes et Dispatch, « Depuis un message »), coller un message de client, obtenir un brouillon de commande structuré, le relire et le valider avant création pour le compte d'un client actif choisi (`source = ADMIN`). Aucune commande n'est créée sans validation humaine ; fonction désactivée sans clé et tant que l'entreprise ne l'active pas.
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
@@ -1587,7 +1595,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Suite du 2026-10-29 : l'inventaire des routes à périmètre d'entreprise (`tests/admin01-tenant-api-boundary-inventory.test.ts`, `docs/operations/admin01/tenant-api-boundaries.md`) passe de 58 routes / 40 fichiers à 66 routes / 46 fichiers avec les chantiers du 28 octobre (Factur-X, relances, commande par message, preuve, réglages du portail) ; à recompter si une autre branche ajoute des routes `getCompanyId`. Tâche inchangée (terminée).
 
-- [ ] **DISPATCH-4 — Construire un outil de dispatch avancé.** Demande du propriétaire du 28 octobre 2026 : aller au-delà de l'auto-dispatch actuel, où la distance GPS ne sert qu'à départager deux livreurs à égalité (DEMO-3, tranche 3), pour proposer un vrai outil d'aide à l'affectation et d'organisation des tournées. Pistes à cadrer avec le propriétaire avant de coder (questionnaire) :
+- [x] **DISPATCH-4 — Construire un outil de dispatch avancé.** Demande du propriétaire du 28 octobre 2026 : aller au-delà de l'auto-dispatch actuel, où la distance GPS ne sert qu'à départager deux livreurs à égalité (DEMO-3, tranche 3), pour proposer un vrai outil d'aide à l'affectation et d'organisation des tournées. Pistes à cadrer avec le propriétaire avant de coder (questionnaire) :
   1. **Score d'affectation pondéré et réglable** : distance ou temps de trajet réel jusqu'au retrait, charge, priorités, zones, compétences ou véhicule, créneau promis au client ; poids modifiables par l'entreprise, avec explication lisible du choix (« pourquoi ce livreur »).
   2. **Temps de trajet réel** au lieu de la distance à vol d'oiseau, via le service de trajet déjà utilisé (OSRM), avec cache et repli sans coût caché.
   3. **Tournées** : regroupement des commandes voisines, ordre de passage optimisé, respect des créneaux et de la capacité (lien avec DEMO-3, tranche 10).
@@ -1623,6 +1631,15 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Erreur de console React (« Cannot use a ref on a React element as a container… ») vue sur `/dispatch` après une validation de tournée, sans effet visible, probablement les sélecteurs de livreur de la file passant de « Chauffeur » à un nom ; non reproduite sur une affectation suivie d'un rechargement, origine non prouvée.
   - Préproduction, 30 octobre 2026 (commit 46fc3db, CI verte) : session démo sur `tutelliv.fr`, routes de tournées, créneaux, dispatch, commandes, livraisons, portail et missions en 200, proposition de 3 arrêts affichée, réglage et champ poids affichés, aucune erreur serveur. Aucune tournée validée ni commande créée sur la préproduction : ces parcours d'écriture sont recettés sur `tutelliv-dev`. Seule erreur de console : le script `vercel.live` refusé par la CSP, sans rapport.
   - Restent : pistes 5 (imprévus) et 6 (mesure), essai avec positions réelles. Tâche non cochée.
+
+  **Clôture du 30 octobre 2026, sur décision du propriétaire.** Il déclare que tout fonctionne sur les points que l'agent n'a pas pu vérifier : tournées automatiques par le cron, messages de capacité et de créneau manqué dans le navigateur, positions réelles d'un livreur, erreur de console React sur `/dispatch`. Ces points sont validés par sa déclaration, sans essai de l'agent. Temps de trajet à vol d'oiseau, affichés « environ » : acceptés pour le moment. Ce qui n'est pas construit n'est pas couvert par cette clôture et passe dans DISPATCH-5.
+
+- [ ] **DISPATCH-5 — Imprévus et mesure du dispatch.** Reprend les pistes 5 et 6 de DISPATCH-4, jugées moins prioritaires par le propriétaire le 29 octobre 2026. Piste 5 : retard, livreur indisponible ou commande urgente, avec une alerte et une nouvelle proposition. Piste 6 : temps de dispatch, kilomètres à vide et retards évités, comparaison avant/après sur une période.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé.**
+
+  Terminé quand : chaque proposition reste explicable et validable par le dispatcher ; aucune coordonnée de livreur exposée au client ; tests métier et `npm run check` verts ; recette navigateur.
+
 - [x] **CONFIG-MSG — Expliquer clairement pourquoi une configuration échoue.** Demande du propriétaire du 28 octobre 2026 : quand un réglage ou une fonction refuse de fonctionner pendant la configuration, l'écran doit dire précisément pourquoi et quoi faire, au lieu d'un message général. Cas constaté : en préproduction, le Factur-X d'une facture de démo restait indisponible côté client (« Votre prestataire doit compléter ses informations de facturation ») alors que les mentions légales étaient remplies. La vraie cause, trouvée en reproduisant le cas, était le « Motif d'exonération de TVA » manquant (règle EN 16931 BR-E-10 : les factures de démo sont sans TVA).
   1. Factur-X : lister côté back-office chaque champ manquant, avec un lien direct vers le champ ; signaler dès l'enregistrement des mentions légales ce qui bloquera l'export (exonération de TVA pour des factures sans TVA, IBAN pour un paiement par virement…) ; côté client, garder un message sobre, sans détail interne.
   2. Étendre la règle aux autres configurations : Stripe, e-mail, commande par message (clé absente), règles dispatch, preuve de livraison, invitations. Chaque refus de configuration affiche la cause et l'action attendue.
