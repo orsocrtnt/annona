@@ -16,7 +16,7 @@ _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalc
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
-- Notifications livreur : lancer `npm run push:setup-keys` dans le terminal du projet et le dire à Claude ; il redéploie et te donne les étapes pour l'essai sur l'iPhone.
+- Notifications livreur : essai sur l'iPhone (étapes données par Claude le 30 octobre) et dire si la notification arrive.
 - Créer la clé `ANTHROPIC_API_KEY` dans ta console Anthropic et la donner à Claude, qui la pose dans Vercel.
 - Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
@@ -27,7 +27,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- DEMO-3B : après les clés du propriétaire, redéployer, suivre l'essai sur l'iPhone et cocher la case.
+- DEMO-3B : cocher la case si l'essai sur l'iPhone réussit, sinon corriger.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Juriste : LEGAL-1, LEGAL-LIENS, DATA-02.
@@ -1520,7 +1520,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Vérifications : `npm run check` réussi, 1 472/1 472 tests dont 11 dédiés (`tests/driver-push.test.ts`) ; `npm run build`, `npm run docs:verify` et `npm run ci:secrets` réussis ; `tests/e2e/driver-push.spec.ts` 2/2 sous Chromium complet (refus sans session, refus d'un dispatcher, refus d'une adresse interne, abonnement et retrait du livreur, service worker enregistré sans violation CSP, manifeste absent de l'accueil) ; écran contrôlé à 390 px en clair et sombre. Migration `20261030160000_driver_push_subscriptions` appliquée sur `tutelliv-dev` et `tutelliv-preproduction`.
   - Limites : aucune notification réellement reçue. Dans le navigateur de test, le clic sur « Activer » affiche « Impossible d'activer », cause non établie (service de notification probablement absent de ce navigateur) : à trancher sur un vrai téléphone. Clés VAPID non posées : le garde-fou de la session a refusé que l'agent écrive ces secrets dans Vercel et les `.env`, sans contournement ; `npm run push:setup-keys` est prêt pour le propriétaire et n'a pas été exécuté. Tant qu'elles manquent, l'écran indique que les notifications ne sont pas disponibles et les tâches sont closes sans envoi. Service de notification du fabricant à qualifier côté juriste (`docs/legal/POINTS_A_VALIDER.md`).
   - Restes de DEMO-3 : `demo3-payments` rejoué, 3/3 après `npm run e2e:role-accounts -- setup` et `npm run e2e:test-data -- seed` sur `tutelliv-dev` ; fait. Pagination des Paiements au-delà de 100 factures écartée pour les pilotes : l'écran le signale, les filtres de statut et l'export comptable couvrent le besoin. `proximity` écarté : l'API `eligible-drivers` n'a aucun écran, et le dispatcher dispose du panneau de suggestions avec score et explication, sans distance par choix de la route (`/api/dispatch/suggestions`).
-  - Suite : le propriétaire lance `npm run push:setup-keys`, l'agent redéploie, puis essai sur l'iPhone et case cochée si la notification arrive.
+  - Clés VAPID posées par le propriétaire le 30 octobre avec `npm run push:setup-keys` (présence contrôlée dans les fichiers locaux et Vercel, valeurs non lues), puis redéploiement. Suite : essai sur l'iPhone et case cochée si la notification arrive.
 
 - [ ] **INTAKE-1 — Commande par message IA (coller un message).** Depuis le back-office (Commandes et Dispatch, « Depuis un message »), coller un message de client, obtenir un brouillon de commande structuré, le relire et le valider avant création pour le compte d'un client actif choisi (`source = ADMIN`). Aucune commande n'est créée sans validation humaine ; fonction désactivée sans clé et tant que l'entreprise ne l'active pas.
 
