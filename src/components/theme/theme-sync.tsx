@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
 
-import { applyThemeToRoot } from "@/lib/theme";
+import { PHONE_MEDIA_QUERY, applyThemeToRoot } from "@/lib/theme";
 
 import { readThemePreference, subscribeThemePreference } from "./use-theme-preference";
 
@@ -23,8 +23,9 @@ export function ThemeSync() {
 
   useIsomorphicLayoutEffect(() => {
     const media = window.matchMedia(DARK_QUERY);
+    const phone = window.matchMedia(PHONE_MEDIA_QUERY);
     const apply = () => {
-      applyThemeToRoot(document.documentElement, pathname, readThemePreference(), media.matches);
+      applyThemeToRoot(document.documentElement, pathname, readThemePreference(), media.matches, phone.matches);
       // Zone de l'heure et de la batterie sur iPhone : même couleur que le fond de la page.
       const pageColor = getComputedStyle(document.body).backgroundColor;
       document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute("content", pageColor));
@@ -32,9 +33,11 @@ export function ThemeSync() {
     apply();
     const unsubscribe = subscribeThemePreference(apply);
     media.addEventListener("change", apply);
+    phone.addEventListener("change", apply);
     return () => {
       unsubscribe();
       media.removeEventListener("change", apply);
+      phone.removeEventListener("change", apply);
     };
   }, [pathname]);
 

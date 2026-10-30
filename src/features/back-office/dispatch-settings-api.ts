@@ -1,3 +1,4 @@
+import type { AutoDispatchPreview } from "@/domains/delivery/auto-dispatch.service";
 import type { CompanyDispatchSettings } from "@/lib/validations/dispatch-settings";
 
 export type OperationJobHealth = {
@@ -29,10 +30,13 @@ export const dispatchSettingsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  runAutoAssign: () =>
+  previewAutoAssign: () => fetchJson<AutoDispatchPreview>("/api/dispatch/auto-assign"),
+  runAutoAssign: (assignments?: Array<{ deliveryId: string; driverId: string }>) =>
     fetchJson<{ assigned: number; skipped: number; message?: string }>(
       "/api/dispatch/auto-assign",
-      { method: "POST" }
+      assignments
+        ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assignments }) }
+        : { method: "POST" }
     ),
   getOperationJobHealth: () =>
     fetchJson<OperationJobHealth>("/api/operations/jobs"),

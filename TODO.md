@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**86 tâches terminées sur 113 — 76 %**
+**87 tâches terminées sur 114 — 76 %**
 
 `███████████████░░░░░` · 27 tâches restantes
 
@@ -20,7 +20,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Trouver un téléphone Android (essais MOB-01C).
-- BARRE-IPHONE : ouvrir tutelliv.fr sur l'iPhone et dire si le haut de l'écran est bien blanc, sans changement de couleur. Mode sombre : supprimer l'icône livreur, la rajouter avec le compte de `outputs/mob01c/acces.txt`, passer en Sombre et dire si la barre suit.
+- BARRE-IPHONE : sur l'iPhone, confirmer que le site et l'app s'affichent bien en clair, avec le haut de l'écran blanc.
 - ICONE-IPHONE : sur l'iPhone, supprimer l'ancien raccourci, effacer les données du site tutelliv.fr dans Safari, rajouter le site à l'écran d'accueil et dire si le logo noir apparaît.
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
@@ -1977,6 +1977,14 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
 - [x] **LANDING-VERT — Boutons verts de la landing au vert du logo.** Demande du propriétaire du 30 octobre 2026. `--l-mint` passe de `#5bd99a` à `#00d46a` (vert du logo, `mission-green` de `DESIGN.md`) en Clair et en Sombre ; survol `#00bf5f` en Clair, `#2fe085` en Sombre. Boutons concernés : « Essayer la démo », « Lancer la course », « Créer mon espace ». « Voir la démo » (noir, barre du haut) et les boutons blancs ne changent pas : ils ne sont pas verts.
   - Vérifié : Chromium réel sur un serveur de dev en worktree isolé, Clair et Sombre, 1 280 px : fond `rgb(0, 212, 106)`, survol mesuré, aucune erreur de page, captures relues. `npm run check` vert (1413/1413, ce qui lève aussi les 2 échecs TRACK notés sous ICONE-IPHONE). Non vérifié : affichage sur téléphone, seule la couleur change. Rien à faire ensuite.
+
+- [x] **RETOURS-3010 — Retours du propriétaire du 30 octobre 2026 après essai sur téléphone.**
+  - Itinéraire pendant la livraison : pas seulement un bug de la démo. Le serveur ne fournit aucun tracé sans `DRIVE_ROUTE_OSRM_URL` (non posée sur la préproduction), et la carte n'en demandait pas pour un livreur « en mouvement ». Elle trace désormais le trajet quand le serveur n'en donne pas, et garde la ligne pendant le recalcul. Non traité : le marqueur du livreur n'avance pas sans cette variable.
+  - Carte sur téléphone : bouton « Ouvrir le menu » flottant, car la carte plein écran masquait l'en-tête qui le porte.
+  - « Lancer auto-dispatch » : proposition livraison par livraison avec sa raison, rien n'est affecté avant « Valider » ; case « Ne plus me demander » dessous, gardée dans ce navigateur, annulable par « Demander à nouveau une validation ». Une proposition devenue caduque à la validation est écartée sans forcer. En mode tournées, la fenêtre annonce le nombre de livraisons. Hors périmètre : en mode automatique, le dispatch déclenché à la création d'une commande continue sans validation.
+  - Téléphone : thème clair seul, boutons de thème masqués, préférence conservée pour l'ordinateur (voir BARRE-IPHONE). Le retrait de `theme_color` du manifeste n'avait pas suffi.
+  - Vérifications : `tests/dispatch-phone-corrections.test.ts` ; `tests/e2e/dispatch-phone-corrections.spec.ts` 3/3 sur `tutelliv-dev`, itinéraire tracé dans la démo, menu ouvert et navigation à 390 px, thème clair malgré une préférence sombre, annulation sans affectation puis validation réelle ; `npm run check` et `npm run build` avant publication.
+  - Limites : rendu non vu sur un vrai téléphone. En développement, après une validation, le rechargement de `/dispatch` est resté plus de 45 s sur le squelette avant de s'afficher ; cause non établie, à surveiller en préproduction. Jeu de test `mob01c` supprimé, résidu nul.
 
 - [ ] **BARRE-IPHONE — Couleur de la zone de l'heure et de la batterie sur iPhone.** Demande du propriétaire du 30 octobre 2026 : changement de couleur en haut de l'écran en arrivant sur le site, il veut du blanc.
   - Cause mesurée : fond de page `#f5f8f6` (sombre `#141716`) sous une landing `#ffffff` (sombre `#1c1f1e`), et aucune balise `theme-color` ; iOS colore le haut de l'écran avec ce fond.

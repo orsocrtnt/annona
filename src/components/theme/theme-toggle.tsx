@@ -37,7 +37,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-pressed={isDark}
       onClick={toggle}
       className={cn(
-        "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "theme-control inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className
       )}
     >
@@ -55,7 +55,7 @@ export function ThemeMenuItem() {
     <DropdownMenuItem
       data-testid="theme-menu-item"
       onSelect={toggle}
-      className="min-h-11 cursor-pointer rounded-xl px-3 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      className="theme-control min-h-11 cursor-pointer rounded-xl px-3 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
     >
       <Icon className="h-4 w-4" aria-hidden />
       <span>{isDark ? "Mode clair" : "Mode sombre"}</span>

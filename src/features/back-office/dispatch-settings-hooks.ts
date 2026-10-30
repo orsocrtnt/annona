@@ -25,11 +25,15 @@ export function useUpdateCompanyDispatchSettings() {
 export function useRunAutoDispatch() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => dispatchSettingsApi.runAutoAssign(),
+    mutationFn: (assignments?: Array<{ deliveryId: string; driverId: string }>) => dispatchSettingsApi.runAutoAssign(assignments),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["company"] });
     },
   });
+}
+
+export function usePreviewAutoDispatch() {
+  return useMutation({ mutationFn: () => dispatchSettingsApi.previewAutoAssign() });
 }
 
 export function useOperationJobHealth() {

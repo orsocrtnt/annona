@@ -1,6 +1,8 @@
 "use client";
 import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Sidebar } from "./sidebar";
@@ -28,7 +30,7 @@ export function BackOfficeLayout({
   sidebarFooter,
   mapFullscreen = false,
 }: BackOfficeLayoutProps) {
-  const { sidebarCollapsed } = useUIStore();
+  const { sidebarCollapsed, toggleMobileNav } = useUIStore();
   // Super-administrateur, ou mini-admin sans lecture des commandes ni des livraisons : pas d'accès aux
   // échanges ni aux alertes, donc ne pas appeler ces API (403).
   const role = useAuthStore((state) => state.user?.role.systemRole);
@@ -51,6 +53,19 @@ export function BackOfficeLayout({
         )}
       >
         {!mapFullscreen && <Header breadcrumbs={breadcrumbs} premium />}
+        {mapFullscreen && (
+          // Carte plein écran : sans en-tête, ce bouton est le seul accès au menu sur téléphone.
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="fixed bottom-20 left-3 z-10 h-11 w-11 rounded-full bg-card shadow-md lg:hidden"
+            onClick={toggleMobileNav}
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
         {mapFullscreen ? (
           <main
             id="main-content"

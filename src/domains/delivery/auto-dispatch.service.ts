@@ -347,6 +347,8 @@ type DriverWithDispatchPosition = DriverActivity & DriverDispatchPosition;
  * `routeCallsLeft` borne les appels au service de trajet sur toute la file.
  */
 export type AutoDispatchPass = {
+  /** Proposition sans affectation : charge déjà promise à chaque livreur par les lignes précédentes. */
+  plannedLoad?: Map<string, { assigned: number; byCategory: Partial<Record<DeliveryCategory, number>> }>;
   positions?: Map<string, DriverDispatchPosition>;
   routeCallsLeft?: number;
   routeStartedAt?: number;
@@ -408,22 +410,21 @@ export async function computeTravelTimes(
   return estimates;
 }
 
-export async function tryAutoAssignDelivery(
+type AutoPick = { driverId: string; reason: string; driverName: string; category: DeliveryCategory };
+
+/** Choix du livreur sans rien écrire ; `skippedReason` si aucune affectation n'est possible. */
+async function pickAutoDriver(
   companyId: string,
   deliveryId: string,
+  settings: Awaited<ReturnType<typeof getCompanyDispatchSettings>>,
   pass?: AutoDispatchPass
-): Promise<AutoDispatchResult> {
-  const settings = await getCompanyDispatchSettings(companyId);
+): Promise<{ pick: AutoPick } | { skippedReason: string }> {
   if (!settings.enabled) {
-    return {
-      deliveryId,
-      assigned: false,
-      skippedReason: "Auto-dispatch désactivé",
-    };
+    return { skippedReason: "Auto-dispatch désactivé" };
   }
   // Tournées automatiques : la livraison attend le prochain passage, pour être regroupée.
   if (settings.rounds.autoAssign) {
-    return { deliveryId, assigned: false, skippedReason: AUTO_ROUND_WAIT_REASON };
+    return { skippedReason: AUTO_ROUND_WAIT_REASON };
   }
 
   const delivery = await prisma.delivery.findFirst({
@@ -442,15 +443,15 @@ export async function tryAutoAssignDelivery(
   });
 
   if (!delivery) {
-    return { deliveryId, assigned: false, skippedReason: "Livraison introuvable" };
+    return { skippedReason: "Livraison introuvable" };
   }
 
   if (delivery.driverId) {
-    return { deliveryId, assigned: false, skippedReason: "Déjà assignée" };
+    return { skippedReason: "Déjà assignée" };
   }
 
   if (delivery.status !== "PENDING") {
-    return { deliveryId, assigned: false, skippedReason: "Statut non éligible" };
+    return { skippedReason: "Statut non éligible" };
   }
 
   // Positions lues avec la liste des livreurs, hors transaction (leçon DISPATCH-3),
@@ -463,8 +464,9 @@ export async function tryAutoAssignDelivery(
     getCompanyTariffSettings(companyId),
   ]);
   const known = pass?.positions;
-  const drivers: DriverWithDispatchPosition[] =
+  const located: DriverWithDispatchPosition[] =
     !readPositions && known ? loaded.map((driver) => ({ ...driver, ...known.get(driver.id) })) : loaded;
+  const drivers = located.map((driver) => withPlannedLoad(driver, pass?.plannedLoad?.get(driver.id)));
   if (readPositions && pass) {
     pass.positions = new Map(
       drivers.map((driver) => [driver.id, { settings: driver.settings, driverLocation: driver.driverLocation ?? null }])
@@ -472,7 +474,7 @@ export async function tryAutoAssignDelivery(
   }
 
   if (drivers.length === 0) {
-    return { deliveryId, assigned: false, skippedReason: "Aucun chauffeur actif" };
+    return { skippedReason: "Aucun chauffeur actif" };
   }
 
   const proximities = proximitiesFromDrivers(delivery, drivers, settings);
@@ -497,12 +499,41 @@ export async function tryAutoAssignDelivery(
   );
 
   if (!pick) {
-    return {
-      deliveryId,
-      assigned: false,
-      skippedReason: "Aucun chauffeur compatible selon les règles",
-    };
+    return { skippedReason: "Aucun chauffeur compatible selon les règles" };
   }
+
+  const chosen = drivers.find((driver) => driver.id === pick.driverId);
+  return {
+    pick: {
+      driverId: pick.driverId,
+      reason: pick.reason,
+      driverName: chosen ? `${chosen.firstName} ${chosen.lastName}`.trim() : "",
+      category: delivery.deliveryCategory,
+    },
+  };
+}
+
+function withPlannedLoad<T extends { assigned?: number; activeByCategory?: Partial<Record<DeliveryCategory, number>> }>(
+  driver: T,
+  planned?: { assigned: number; byCategory: Partial<Record<DeliveryCategory, number>> }
+): T {
+  if (!planned) return driver;
+  const activeByCategory = { ...driver.activeByCategory };
+  for (const [category, count] of Object.entries(planned.byCategory) as [DeliveryCategory, number][]) {
+    activeByCategory[category] = (activeByCategory[category] ?? 0) + count;
+  }
+  return { ...driver, assigned: (driver.assigned ?? 0) + planned.assigned, activeByCategory };
+}
+
+export async function tryAutoAssignDelivery(
+  companyId: string,
+  deliveryId: string,
+  pass?: AutoDispatchPass
+): Promise<AutoDispatchResult> {
+  const settings = await getCompanyDispatchSettings(companyId);
+  const found = await pickAutoDriver(companyId, deliveryId, settings, pass);
+  if ("skippedReason" in found) return { deliveryId, assigned: false, skippedReason: found.skippedReason };
+  const { pick } = found;
 
   try {
     await assignDeliveryToDriver(companyId, deliveryId, pick.driverId, {
@@ -589,6 +620,92 @@ export async function runAutoDispatchQueue(companyId: string) {
   }
 
   return { assigned, skipped, results };
+}
+
+export type AutoDispatchProposal = {
+  deliveryId: string;
+  reference: string;
+  driverId: string;
+  driverName: string;
+  reason: string;
+};
+
+export type AutoDispatchPreview =
+  | { mode: "SUGGESTION"; message: string }
+  | { mode: "ROUNDS"; pending: number }
+  | { mode: "PROPOSALS"; proposals: AutoDispatchProposal[]; unassigned: Array<{ deliveryId: string; reference: string; reason: string }> };
+
+/**
+ * Ce que lancerait « Lancer auto-dispatch », sans rien affecter : le dispatcher valide ensuite.
+ * Règles et plafonds sont revérifiés sous verrou à la validation.
+ */
+export async function previewAutoDispatch(companyId: string): Promise<AutoDispatchPreview> {
+  const settings = await getCompanyDispatchSettings(companyId);
+  if (!settings.enabled) {
+    return { mode: "SUGGESTION", message: "Mode suggestion : validez les propositions livraison par livraison." };
+  }
+  if (settings.rounds.autoAssign) {
+    const pending = await prisma.delivery.count({ where: { companyId, status: "PENDING", driverId: null } });
+    return { mode: "ROUNDS", pending };
+  }
+  const pending = await prisma.delivery.findMany({
+    where: { companyId, status: "PENDING", driverId: null },
+    select: { id: true, reference: true, deliveryCategory: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+    take: AUTO_DISPATCH_QUEUE_TAKE,
+  });
+  const sorted = [...pending].sort((a, b) => {
+    if (settings.prioritizeCourier) {
+      if (a.deliveryCategory === "COURIER" && b.deliveryCategory !== "COURIER") return -1;
+      if (b.deliveryCategory === "COURIER" && a.deliveryCategory !== "COURIER") return 1;
+    }
+    return a.createdAt.getTime() - b.createdAt.getTime();
+  });
+
+  const pass: AutoDispatchPass = { plannedLoad: new Map() };
+  const proposals: AutoDispatchProposal[] = [];
+  const unassigned: Array<{ deliveryId: string; reference: string; reason: string }> = [];
+  for (const delivery of sorted) {
+    const found = await pickAutoDriver(companyId, delivery.id, settings, pass);
+    if ("skippedReason" in found) {
+      unassigned.push({ deliveryId: delivery.id, reference: delivery.reference, reason: found.skippedReason });
+      continue;
+    }
+    const { pick } = found;
+    const planned = pass.plannedLoad!.get(pick.driverId) ?? { assigned: 0, byCategory: {} };
+    planned.assigned += 1;
+    planned.byCategory[pick.category] = (planned.byCategory[pick.category] ?? 0) + 1;
+    pass.plannedLoad!.set(pick.driverId, planned);
+    proposals.push({ deliveryId: delivery.id, reference: delivery.reference, driverId: pick.driverId, driverName: pick.driverName, reason: pick.reason });
+  }
+  return { mode: "PROPOSALS", proposals, unassigned };
+}
+
+const STALE_PROPOSAL_ERRORS = ["DELIVERY_ALREADY_ASSIGNED", "DELIVERY_NOT_AVAILABLE", "DELIVERY_ASSIGNMENT_CONFLICT", "DELIVERY_STATUS_CONFLICT", "DELIVERY_MISSION_STARTED", "DELIVERY_NOT_ASSIGNABLE", "DELIVERY_CANCELLED", "DRIVER_NOT_FOUND"];
+
+/** Applique les propositions validées ; celle qu'un changement a rendue caduque est écartée, sans forcer. */
+export async function confirmAutoDispatch(companyId: string, assignments: Array<{ deliveryId: string; driverId: string; reason?: string }>) {
+  let assigned = 0;
+  let skipped = 0;
+  for (const assignment of assignments) {
+    try {
+      const updated = await assignDeliveryToDriver(companyId, assignment.deliveryId, assignment.driverId, {
+        automatic: true,
+        reason: "Proposition validée par le dispatcher",
+        expectUnassigned: true,
+      });
+      if (updated) assigned += 1;
+      else skipped += 1;
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "";
+      if (STALE_PROPOSAL_ERRORS.includes(code) || code.startsWith("DRIVER_INELIGIBLE:") || code.startsWith("DRIVER_OVER_CAPACITY:")) {
+        skipped += 1;
+        continue;
+      }
+      throw error;
+    }
+  }
+  return { assigned, skipped };
 }
 
 export async function getEligibleDriversForDelivery(

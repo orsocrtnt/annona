@@ -130,6 +130,13 @@
  * si l'utilisateur réduit la transparence. Règle hors couche : elle l'emporte sur les utilitaires Tailwind.
  * Portée `:root[data-theme]` : depuis DESIGN-2, tous les espaces sont migrés.
  */
+/* Téléphone : thème clair seul pour le moment (même requête que PHONE_MEDIA_QUERY). */
+@media (max-width: 767px), (max-height: 500px) and (pointer: coarse) {
+  .theme-control {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-transparency: reduce) {
   :root[data-theme] {
     --map-glass-bg: var(--color-card);

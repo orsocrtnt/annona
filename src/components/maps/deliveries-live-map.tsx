@@ -339,8 +339,10 @@ function DriverFocusController({ target, targetId }: { target: [number, number] 
 function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapDelivery; driverMoving: boolean }) {
   const [route, setRoute] = useState<[number, number][]>([]);
   const [unavailable, setUnavailable] = useState(false);
-  // Livreur en mouvement : son tronçon vers la prochaine étape est tracé (et effacé derrière lui)
-  // par son marqueur ; cette couche ne garde que la suite du parcours.
+  const routeDeliveryId = useRef<string | null>(null);
+  // Livreur en mouvement avec un itinéraire fourni par le serveur : son tronçon vers la prochaine étape
+  // est tracé (et effacé derrière lui) par son marqueur ; cette couche ne garde que la suite du parcours.
+  // Sans cet itinéraire, le marqueur ne trace rien : cette couche dessine tout le trajet.
   const remaining = driverMoving ? getRouteWaypointsAfterDriver(delivery) : getDeliveryRouteWaypoints(delivery);
   const waypointsKey = JSON.stringify(remaining?.map((w) => [w.latitude.toFixed(5), w.longitude.toFixed(5)]) ?? null);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- clé stable : points de passage arrondis
@@ -354,7 +356,9 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
     }
 
     const controller = new AbortController();
-    setRoute([]);
+    // Même mission : le tracé reste affiché pendant son recalcul à chaque relevé du livreur.
+    if (routeDeliveryId.current !== delivery.id) setRoute([]);
+    routeDeliveryId.current = delivery.id;
     setUnavailable(false);
     const initial = setTimeout(() => {
       // Même file que les marqueurs : jamais refusé pour deux requêtes trop rapprochées.
@@ -367,7 +371,7 @@ function DeliveryRouteLayer({ delivery, driverMoving }: { delivery: DispatchMapD
       clearTimeout(initial);
       controller.abort();
     };
-  }, [waypoints]);
+  }, [waypoints, delivery.id]);
 
   const routeStyle = mapRouteStyle(theme);
   if (unavailable) return <div role="status" className="pointer-events-none absolute bottom-36 right-3 z-[1000] max-w-[80%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow dark:bg-card/95 dark:text-card-foreground">Itinéraire indisponible · positions seules</div>;
@@ -405,7 +409,7 @@ export function DeliveriesLiveMap({ delivery, deliveries = [], onSelect, onMapRe
       )}
 
       {delivery && !delivery.isHistorical && (
-        <DeliveryRouteLayer delivery={delivery} driverMoving={Boolean(showDriver && delivery.driverLocation?.motion)} />
+        <DeliveryRouteLayer delivery={delivery} driverMoving={Boolean(showDriver && delivery.driverLocation?.motion?.route)} />
       )}
 
       {delivery && !delivery.destination && <div role="status" className="pointer-events-none absolute right-3 top-1/2 z-[1000] max-w-[85%] rounded-xl bg-white/95 px-3 py-2 text-sm shadow dark:bg-card/95 dark:text-card-foreground">Adresse non localisée · position de livraison indisponible</div>}

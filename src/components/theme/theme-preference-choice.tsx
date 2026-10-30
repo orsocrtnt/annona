@@ -58,7 +58,7 @@ export function ThemeRadioGroup() {
 export function ThemePreferenceField({ className }: { className?: string }) {
   const { preference, setPreference } = useThemePreference();
   return (
-    <fieldset className={cn("min-w-0 rounded-2xl border border-border bg-card p-4", className)} data-testid="theme-preference-field">
+    <fieldset className={cn("theme-control min-w-0 rounded-2xl border border-border bg-card p-4", className)} data-testid="theme-preference-field">
       {/* Légende flottante : elle reste dans la carte au lieu de chevaucher la bordure du fieldset. */}
       <legend className="float-left w-full text-sm font-semibold">Affichage</legend>
       <p className="clear-left pt-1 text-sm text-muted-foreground">« Système » suit le réglage clair ou sombre de votre appareil.</p>

@@ -40,6 +40,9 @@ export const THEME_SCOPED_PATH_PREFIXES = [
  */
 export const THEME_EXCLUDED_PATH_PREFIXES: readonly string[] = [];
 
+/** Téléphone, portrait ou paysage : thème clair seul pour le moment (décision du propriétaire du 30 octobre 2026). */
+export const PHONE_MEDIA_QUERY = "(max-width: 767px), (max-height: 500px) and (pointer: coarse)";
+
 export function isThemePreference(value: unknown): value is ThemePreference {
   return value === "system" || value === "light" || value === "dark";
 }
@@ -54,7 +57,8 @@ export function resolveRootTheme(
   stored: unknown,
   prefersDark: boolean,
   prefixes: readonly string[],
-  excluded: readonly string[] = []
+  excluded: readonly string[] = [],
+  phone = false
 ): ResolvedTheme | null {
   let scoped = false;
   for (let i = 0; i < prefixes.length; i++) {
@@ -64,6 +68,7 @@ export function resolveRootTheme(
     if (pathname === excluded[j] || pathname.indexOf(excluded[j] + "/") === 0) scoped = false;
   }
   if (!scoped) return null;
+  if (phone) return "light";
   if (stored === "light" || stored === "dark") return stored;
   return prefersDark ? "dark" : "light";
 }
@@ -85,9 +90,10 @@ export function applyThemeToRoot(
   root: { setAttribute(name: string, value: string): void; removeAttribute(name: string): void },
   pathname: string,
   pref: ThemePreference,
-  prefersDark: boolean
+  prefersDark: boolean,
+  phone = false
 ): void {
-  const theme = resolveRootTheme(pathname, pref, prefersDark, THEME_SCOPED_PATH_PREFIXES, THEME_EXCLUDED_PATH_PREFIXES);
+  const theme = resolveRootTheme(pathname, pref, prefersDark, THEME_SCOPED_PATH_PREFIXES, THEME_EXCLUDED_PATH_PREFIXES, phone);
   if (theme) root.setAttribute("data-theme", theme);
   else root.removeAttribute("data-theme");
 }
@@ -98,6 +104,6 @@ export function applyThemeToRoot(
  */
 export const THEME_INIT_SCRIPT = `(function(){try{var v=null;try{v=localStorage.getItem(${JSON.stringify(
   THEME_STORAGE_KEY
-)})}catch(e){}var d=!!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);var t=(${resolveRootTheme.toString()})(location.pathname,v,d,${JSON.stringify(THEME_SCOPED_PATH_PREFIXES)},${JSON.stringify(
+)})}catch(e){}var d=!!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches);var p=!!(window.matchMedia&&window.matchMedia(${JSON.stringify(PHONE_MEDIA_QUERY)}).matches);var t=(${resolveRootTheme.toString()})(location.pathname,v,d,${JSON.stringify(THEME_SCOPED_PATH_PREFIXES)},${JSON.stringify(
   THEME_EXCLUDED_PATH_PREFIXES
-)});if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}})();`;
+)},p);if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}})();`;

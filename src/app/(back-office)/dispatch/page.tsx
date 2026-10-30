@@ -15,8 +15,15 @@ import { useDispatchOverview } from "@/features/back-office/hooks";
 import {
   useOperationJobHealth,
   useRetryFailedOperationJobs,
+  usePreviewAutoDispatch,
   useRunAutoDispatch,
 } from "@/features/back-office/dispatch-settings-hooks";
+import {
+  AutoDispatchConfirmDialog,
+  readAutoDispatchSkip,
+  writeAutoDispatchSkip,
+} from "@/features/back-office/auto-dispatch-confirm-dialog";
+import type { AutoDispatchPreview } from "@/domains/delivery/auto-dispatch.service";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
 import { DispatchIncidentsPanel } from "@/features/back-office/dispatch-incidents-panel";
 import { DispatchRoundsPanel } from "@/features/back-office/dispatch-rounds-panel";
@@ -61,6 +68,10 @@ function DispatcherDashboardContent() {
   const stats = overview?.stats;
   const dispatchSettings = overview?.settings;
   const runAutoDispatch = useRunAutoDispatch();
+  const previewAutoDispatch = usePreviewAutoDispatch();
+  const [autoPreview, setAutoPreview] = useState<AutoDispatchPreview | null>(null);
+  const [skipAutoConfirm, setSkipAutoConfirm] = useState(false);
+  useEffect(() => setSkipAutoConfirm(readAutoDispatchSkip()), []);
   const offerAccess = useOfferAccess();
   const hasAdminGps = useHasOfferFeature("admin_gps");
   const hasAutoDispatch = useHasOfferFeature("auto_dispatch");
@@ -98,9 +109,28 @@ function DispatcherDashboardContent() {
     [queue]
   );
 
-  const handleAutoDispatch = async () => {
+  // Sauf « Ne plus me demander » : proposition d'abord, rien n'est affecté sans validation.
+  const handleLaunchAutoDispatch = async () => {
+    if (skipAutoConfirm) return runAuto();
     try {
-      const result = await runAutoDispatch.mutateAsync();
+      setAutoPreview(await previewAutoDispatch.mutateAsync());
+    } catch (err) {
+      toast.error("Proposition impossible", { description: err instanceof Error ? err.message : undefined });
+    }
+  };
+
+  const handleValidateAutoDispatch = async (assignments: Array<{ deliveryId: string; driverId: string }> | undefined, neverAsk: boolean) => {
+    if (neverAsk) {
+      writeAutoDispatchSkip(true);
+      setSkipAutoConfirm(true);
+    }
+    setAutoPreview(null);
+    await runAuto(assignments);
+  };
+
+  const runAuto = async (assignments?: Array<{ deliveryId: string; driverId: string }>) => {
+    try {
+      const result = await runAutoDispatch.mutateAsync(assignments);
       if (result.message) {
         toast.info(result.message);
         return;
@@ -179,10 +209,10 @@ function DispatcherDashboardContent() {
             <Button
               variant="brand"
               size="sm"
-              loading={runAutoDispatch.isPending}
-              disabled={!hasAutoDispatch || !dispatchSettings?.enabled || runAutoDispatch.isPending}
+              loading={runAutoDispatch.isPending || previewAutoDispatch.isPending}
+              disabled={!hasAutoDispatch || !dispatchSettings?.enabled || runAutoDispatch.isPending || previewAutoDispatch.isPending}
               title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
-              onClick={handleAutoDispatch}
+              onClick={handleLaunchAutoDispatch}
             >
               <Route className="mr-2 h-4 w-4" aria-hidden />
               Lancer auto-dispatch
@@ -190,6 +220,28 @@ function DispatcherDashboardContent() {
           )}
         </div>
       </div>
+
+      {skipAutoConfirm && activeView === "queue" && (
+        <p className="text-sm text-muted-foreground">
+          L&apos;auto-dispatch s&apos;applique sans validation.{" "}
+          <button
+            type="button"
+            className="underline underline-offset-4 max-md:min-h-11"
+            onClick={() => {
+              writeAutoDispatchSkip(false);
+              setSkipAutoConfirm(false);
+            }}
+          >
+            Demander à nouveau une validation
+          </button>
+        </p>
+      )}
+
+      <AutoDispatchConfirmDialog
+        preview={autoPreview}
+        onClose={() => setAutoPreview(null)}
+        onValidate={handleValidateAutoDispatch}
+      />
 
       <div className="inline-flex rounded-lg border border-border bg-muted/30 p-1">
         <button

@@ -3,16 +3,18 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
+import { z } from "zod";
 import { NextResponse } from "next/server";
 import { withApiHandler } from "../src/lib/api/route-handler";
 
 function load(role: string, calls: string[], saas: () => Promise<void>) {
-  const module = { exports: {} as { POST?: () => Promise<Response> } };
+  const module = { exports: {} as { POST?: (request: Request) => Promise<Response> } };
   const source = ts.transpileModule(readFileSync("src/app/api/dispatch/auto-assign/route.ts", "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse },
+    zod: { z },
     "@/lib/api/route-handler": { withApiHandler },
     "@/lib/api/auth-guard": {
       requireStaffRole: async (permission: string) => {
@@ -45,7 +47,7 @@ function load(role: string, calls: string[], saas: () => Promise<void>) {
 test("ADMIN-1 affectation : super-admin refusé avant entreprise, droit et traitement", async () => {
   const calls: string[] = [];
   const route = load("SUPER_ADMIN", calls, async () => undefined);
-  const response = await route.POST!();
+  const response = await route.POST!(new Request("https://tutelliv.test/api/dispatch/auto-assign", { method: "POST" }));
   assert.equal(response.status, 403);
   assert.deepEqual(calls, ["staff", "role"]);
 });
@@ -53,7 +55,7 @@ test("ADMIN-1 affectation : super-admin refusé avant entreprise, droit et trait
 test("ADMIN-1 affectation : ordre conservé et refus SaaS inchangés", async () => {
   for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]) {
     const calls: string[] = [];
-    const ok = await load(role, calls, async () => undefined).POST!();
+    const ok = await load(role, calls, async () => undefined).POST!(new Request("https://tutelliv.test/api/dispatch/auto-assign", { method: "POST" }));
     assert.equal(ok.status, 200);
     assert.deepEqual(calls, ["staff", "role", "company", "saas", "queue"]);
   }
@@ -62,7 +64,7 @@ test("ADMIN-1 affectation : ordre conservé et refus SaaS inchangés", async () 
     ["SAAS_ACCOUNT_READ_ONLY", "Le compte est en lecture seule."],
   ] as const) {
     const calls: string[] = [];
-    const response = await load("COMPANY_ADMIN", calls, async () => { throw new Error(code); }).POST!();
+    const response = await load("COMPANY_ADMIN", calls, async () => { throw new Error(code); }).POST!(new Request("https://tutelliv.test/api/dispatch/auto-assign", { method: "POST" }));
     assert.equal(response.status, 403);
     assert.equal((await response.json()).error, message);
     assert.equal(calls.includes("queue"), false);
