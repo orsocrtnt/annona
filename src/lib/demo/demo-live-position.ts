@@ -4,7 +4,7 @@ import { buildRouteTrack, slicePath, type LatLng } from "@/lib/maps/route-progre
 
 type Point = { latitude: number; longitude: number };
 
-/** Cycle d'aller-retour d'un livreur simulé : assez lent pour paraître réel, assez rapide pour se voir. */
+/** Cycle d'un livreur simulé : assez lent pour paraître réel, assez rapide pour se voir. */
 export const DEMO_POSITION_CYCLE_MS = 12 * 60 * 1000;
 /** Une position plus récente que ce délai n'est pas réécrite (lectures rapprochées). */
 export const DEMO_POSITION_MIN_INTERVAL_MS = 10 * 1000;
@@ -61,14 +61,15 @@ export function demoTripProgress(missionStartedAt: Date, now: Date): number {
 
 type DemoLoop = { start: number; timeline: DriveTimeline; duration: number };
 /** Trajets simulés en mémoire : plan de conduite et boucles déjà calculées, par mission. */
-const demoTrips = new Map<string, { plans: [DrivePlan, DrivePlan]; loops: DemoLoop[] }>();
+const demoTrips = new Map<string, { plan: DrivePlan; loops: DemoLoop[] }>();
 const DEMO_TRIPS_LIMIT = 200;
 const DEMO_LOOP_MAX_SECONDS = 3600;
 const DEMO_MAX_LOOPS = 500;
 
 /**
  * Position simulée d'un livreur de démo : même conduite que l'estimation des cartes (virages,
- * grands carrefours, feux), de 8 % à 90 % du trajet puis retour au début. Déterministe.
+ * grands carrefours, feux), de 8 % à 90 % du trajet, puis reprise du trajet depuis 8 % : toujours
+ * vers la cible, pour que l'arrivée estimée du portail diminue (DEMO-3). Déterministe.
  */
 export function demoDrivePosition(route: DriveRoute, missionStartedAt: Date, at: Date): LatLng {
   const startMs = missionStartedAt.getTime();
@@ -78,10 +79,7 @@ export function demoDrivePosition(route: DriveRoute, missionStartedAt: Date, at:
     const track = buildRouteTrack(route.points);
     const forward = slicePath(track, track.length * 0.08, track.length * 0.9);
     trip = {
-      plans: [
-        buildDrivePlan({ points: forward, lights: route.lights }),
-        buildDrivePlan({ points: [...forward].reverse(), lights: [...route.lights].reverse() }),
-      ],
+      plan: buildDrivePlan({ points: forward, lights: route.lights }),
       loops: [],
     };
     if (demoTrips.size >= DEMO_TRIPS_LIMIT) demoTrips.delete(demoTrips.keys().next().value!);
@@ -93,7 +91,7 @@ export function demoDrivePosition(route: DriveRoute, missionStartedAt: Date, at:
     if (loop) return positionAt(loop.timeline, (atMs - loop.start) / 1000);
     const last = trip.loops[trip.loops.length - 1];
     const start = last ? last.start + last.duration * 1000 : startMs;
-    const timeline = simulateDrive(trip.plans[trip.loops.length % 2]!, start, DEMO_LOOP_MAX_SECONDS);
+    const timeline = simulateDrive(trip.plan, start, DEMO_LOOP_MAX_SECONDS);
     trip.loops.push({ start, timeline, duration: Math.max(1, timelineDuration(timeline)) });
   }
   const last = trip.loops[trip.loops.length - 1]!;

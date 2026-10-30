@@ -138,7 +138,7 @@ test("démo : hors entreprise de démo, aucun retard ni position simulés", asyn
   assert.equal(writes.length, 0);
 });
 
-test("démo : conduite simulée des cartes, de 8 % à 90 % du trajet, puis retour continu", () => {
+test("démo : conduite simulée des cartes, de 8 % à 90 % du trajet, puis reprise depuis 8 %, jamais de trajet retour", () => {
   const startedAt = new Date("2026-10-27T10:00:00Z");
   // Rue droite de ≈ 3 km vers le nord, sans carrefour : la boucle est régulière.
   const route = { points: [[48.85, 2.35], [48.877, 2.35]] as [number, number][], lights: [] };
@@ -149,8 +149,9 @@ test("démo : conduite simulée des cartes, de 8 % à 90 % du trajet, puis retou
   while (at(restart) >= at(restart - 1) && restart < 3600) restart += 1;
   assert.ok(restart < 3600, "la boucle se termine");
   assert.ok(at(restart - 1) <= 48.85 + 0.027 * 0.9 + 1e-6, "jamais au-delà de 90 %");
-  assert.ok(at(restart) > 48.85 + 0.027 * 0.8, "le retour commence près de 90 %, sans saut au début");
-  assert.ok(Math.abs(at(restart) - at(restart - 1)) < 0.0005, "continuité au demi-tour");
+  assert.ok(at(restart - 1) > 48.85 + 0.027 * 0.8, "la boucle va jusqu'à près de 90 %");
+  assert.ok(Math.abs(at(restart) - (48.85 + 0.027 * 0.08)) < 0.0005, "reprise au début du trajet");
+  assert.ok(at(restart + 60) > at(restart), "de nouveau vers la cible");
   assert.equal(at(42), at(42), "déterministe");
 });
 

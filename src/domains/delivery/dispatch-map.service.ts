@@ -1,6 +1,8 @@
 import { clientDriverLabel, loadCompanyDriverNames, redactClientTimeline, type KnownDriverName } from "@/domains/delivery/client-driver";
 import { getCompanyDriverLocations } from "@/domains/driver/driver-location.service";
 import { getCompanyLocationSettings } from "@/domains/company/location-settings.service";
+import { attachClientLiveEta } from "@/domains/delivery/client-live-eta";
+import type { ClientLiveEta } from "@/lib/format/live-eta";
 import { resolveTrackingPosition } from "@/domains/tracking/tracking-position.service";
 import { trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
 import { prisma } from "@/services/prisma/client";
@@ -103,6 +105,8 @@ export type DispatchMapDelivery = {
   isHistorical: boolean;
   completedAt: string | null;
   createdAt: string;
+  /** Vue client seulement (DEMO-3) : « arrive dans X min ». */
+  liveEta?: ClientLiveEta | null;
 };
 
 export type DispatchDriverMapEntry = {
@@ -774,7 +778,7 @@ export async function getClientDeliveriesMap(
   ]);
 
   return {
-    active: activePayload.deliveries,
+    active: await attachClientLiveEta(activePayload.deliveries),
     history: historyPayload.deliveries,
   };
 }

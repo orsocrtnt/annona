@@ -167,6 +167,7 @@ test("TRACK-1 carte chauffeurs : destination ne devient jamais position, signal 
     "@/domains/tracking/tracking.policy": policy, "@/domains/delivery/client-driver": clientDriver,
     "@/domains/tracking/tracking-position.service": resolver,
     "@/lib/geocoding": { geocodeManyCapped: async () => new Map(), isLegacyFakeTrackingCoord: () => false },
+    "@/domains/delivery/client-live-eta": { attachClientLiveEta: async (deliveries: unknown[]) => deliveries },
     "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s },
     "@/lib/validations/driver-location-settings": { DEFAULT_DRIVER_LOCATION_SETTINGS },
     "@/lib/format/person-labels": { formatDriverDisplayName: (s: string) => s, formatClientFromParts: () => "Client" },
@@ -232,6 +233,7 @@ test("TRACK-2 services : signal perdu depuis 2 min, livreur gardé et estimé su
     "@/domains/driver/driver-location.service": { getCompanyDriverLocations: async () => [live] },
     "@/domains/company/location-settings.service": { getCompanyLocationSettings: async () => DEFAULT_DRIVER_LOCATION_SETTINGS },
     "@/lib/geocoding": { geocodeManyCapped: async () => new Map(), isLegacyFakeTrackingCoord: () => false },
+    "@/domains/delivery/client-live-eta": { attachClientLiveEta: async (deliveries: unknown[]) => deliveries },
     "@/lib/constants/order-status": { getFulfillmentStatusLabel: (s: string) => s },
   });
   const adminMap = await map.getDispatchMapDeliveries("a", 45);

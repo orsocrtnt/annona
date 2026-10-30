@@ -11,14 +11,14 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePortalDelivery } from "@/features/client-portal/hooks";
 import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
-import { etaDayLabel, formatEta } from "@/features/client-portal/utils";
+import { ClientDeliveryArrival } from "@/features/client-portal/client-delivery-arrival";
 import dynamic from "next/dynamic";
 import { DeliveryRouteDisplay } from "@/components/shared/delivery-route-display";
 import { getCourierPickupStops } from "@/lib/order/courier-pickups";
 import { isLegacyFakeTrackingCoord } from "@/lib/geocoding";
 import { formatLateness } from "@/lib/format/lateness";
 import { dateTimeLabel } from "@/lib/format/relative-day";
-import { ArrowLeft, Clock, Truck } from "lucide-react";
+import { ArrowLeft, Truck } from "lucide-react";
 import { ClientDriverInfo } from "@/features/client-portal/client-driver-info";
 import { ProofOfDeliveryCard } from "@/features/deliveries/proof-of-delivery-card";
 
@@ -127,12 +127,7 @@ export default function ClientDeliveryDetailPage() {
               </div>
             )}
 
-            {delivery.estimatedArrival && (
-              <div className="flex items-center gap-3 border-t border-border pt-4">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Arrivée estimée {etaDayLabel(delivery.estimatedArrival)} à {formatEta(delivery.estimatedArrival)}</span>
-              </div>
-            )}
+            <ClientDeliveryArrival deliveryId={delivery.id} status={delivery.status} estimatedArrival={delivery.estimatedArrival} />
             {(delivery.status === "DELIVERED" || delivery.status === "FAILED") && (
               <div className="border-t border-border pt-4">
                 <ProofOfDeliveryCard

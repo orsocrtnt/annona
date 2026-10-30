@@ -88,6 +88,34 @@ Lecture : les pages publiques sont prérendues et ne touchent pas la base. Cons�
 
 **Défaut mis en évidence puis corrigé :** la première mesure a accepté **56** envois Contact sur une rafale de 60 simultanés, pour une limite globale de 50. Le comptage puis l'écriture n'étaient pas atomiques : des envois concurrents lisaient le même compte, et le même écart valait pour la limite de 3 par source. Correction : comptage et écriture se font dans une transaction, sous un verrou consultatif PostgreSQL (`pg_advisory_xact_lock`). Mesure rejouée : **50 acceptés, 10 refusés, 50 écrits**. Prix de la sérialisation : le refus 429 passe de 28 à 53 ms en p95 à 16 requêtes simultanées, ce qui est négligeable pour un formulaire limité à 50 envois par heure. Ligne Contact du tableau : mesure après correction.
 
+## Préproduction, routes connectées et saturation (30 octobre 2026)
+
+Accord du propriétaire pour une charge mesurée, sans dépense. Lecture seule, aucun compte créé : deux sessions démo de test, donc deux entreprises fictives, rendues au pool à la déconnexion. Client à New York, fonctions Vercel `cdg1`, base Supabase Paris, offres gratuites.
+
+```bash
+npm run test:perf02:preprod-connected
+npx tsx scripts/perf02/preprod-connected.ts https://tutelliv.fr/ outputs/perf02/preprod-saturation.json --saturation
+```
+
+| Mesure | Résultat |
+|---|---|
+| 9 routes × concurrence 1/4/8/16 × 24 + reprise | 936 requêtes mesurées, toutes en 200 |
+| 7 API, 1 à 16 simultanées | p50 ≈ 0,46 à 0,56 s, stable ; p95 ≤ 1,54 s |
+| 2 pages connectées | p50 ≈ 0,17 à 0,23 s ; p95 ≤ 0,45 s |
+| Isolement | 14 livraisons de chaque côté, 0 commune, 6 accès croisés en 404 |
+| Palier 32 (tableau de bord / dispatch) | p95 1,05 / 0,82 s, 0 erreur |
+| Palier 64 | p95 1,23 / 1,35 s, 0 erreur |
+| Palier 128 | p95 2,13 / 2,10 s, 0 erreur, débit ≈ 76 requêtes/s |
+| Reprise après 128 | p95 0,56 s, 0 erreur |
+
+**Point de saturation.** Aucune erreur jusqu'à 128 requêtes simultanées, plafond de cet essai : la limite en erreurs n'est pas atteinte. La latence commence à se dégrader entre 64 et 128 (p50 doublé, de 0,74 à 1,35 s) et le débit plafonne vers 76 requêtes/s.
+
+**Les 500 du poste local à 16 simultanées, expliqués.** Reproduits le 30 octobre sur un build de production local (journaux serveur conservés) : 11 réponses 500, 11 erreurs Prisma `P2024` (« Timed out fetching a new connection from the connection pool », 5 connexions, 10 s d'attente). Depuis New York, chaque requête SQL coûte un aller-retour transatlantique : une seule instance garde ses 5 connexions trop longtemps et les suivantes dépassent 10 s. Sur Vercel, le même palier ne produit aucune erreur. Ce n'est pas un défaut à corriger côté produit ; c'est une limite de la mesure locale.
+
+**Décision de capacité avant pilotes.** Trois entreprises pilotes (Business 25 livreurs au plus chacune) restent très en dessous du palier mesuré : conserver le pool à 5 connexions, l'hébergement `cdg1` et les offres actuelles pour les pilotes. Budget retenu : p95 des API connectées ≤ 1,5 s en usage normal et ≤ 2,5 s en pic. Rejouer cette mesure avant la mise en vente (RELEASE-1).
+
+**Limites.** Lecture seule et une seule entreprise sous charge : création, affectation, positions GPS, Realtime, preuves, exports, jobs et webhooks n'ont pas été chargés sur la préproduction ; leur coût reste issu de la mesure PostgreSQL locale et du modèle analytique. Les scénarios 10, 50 et 100 entreprises restent une extrapolation : le débit observé ne prouve pas la capacité de la base avec beaucoup de données. Les journaux Vercel n'ont remonté aucune ligne sur la fenêtre : la preuve est le code HTTP de chaque réponse. Le client à New York ajoute un aller-retour transatlantique à chaque requête : ces chiffres sont pessimistes pour un utilisateur en France.
+
 ## Suite autorisée
 
 Avant les pilotes, rejouer le même protocole sur un PostgreSQL/Prisma réellement isolé et expressément autorisé, avec serveur Next local contrôlé, puis sur préproduction seulement après autorisation écrite et dans un plafond de charge défini. Mesurer alors les mêmes p50/p95, le pool réel, les fichiers, les jobs et l'absence de fuite A/B. Ces mesures manquent encore : PERF-02 reste ouverte.

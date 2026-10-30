@@ -1,5 +1,6 @@
 "use client";
 
+import { liveEtaLabel } from "@/lib/format/live-eta";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
@@ -93,6 +94,10 @@ function DeliveryListItem({
         )}
 
         <p className="mt-1 text-xs font-semibold text-zinc-900 dark:text-foreground">{delivery.statusLabel}</p>
+
+        {delivery.liveEta && (
+          <p className="mt-1 text-xs font-medium text-brand" data-live-eta="true">{liveEtaLabel(delivery.liveEta)}</p>
+        )}
 
         {isHistorical && historyDate && (
           <p className="mt-1 text-xs text-muted-foreground">Terminée le {historyDate}</p>

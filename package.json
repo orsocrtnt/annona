@@ -57,6 +57,7 @@
     "recette:email-real": "dotenv -e .env.local -- tsx scripts/email/real-recette.ts",
     "recette:sec05-real": "dotenv -e .env.local -- tsx scripts/email/sec05-real.ts",
     "test:perf02:preprod": "tsx scripts/perf02/preprod-public.ts https://tutelliv.fr/ outputs/perf02/preprod-public.json",
+    "test:perf02:preprod-connected": "tsx scripts/perf02/preprod-connected.ts https://tutelliv.fr/ outputs/perf02/preprod-connected.json",
     "test:perf02:connected": "dotenv -e .env.local -- tsx scripts/perf02/next-connected.ts outputs/perf02/next-connected.json",
     "test:email-sec05": "node --import tsx --test tests/password-link.test.ts tests/transactional-email.test.ts tests/email-template.test.ts tests/notification-idempotency.test.ts tests/operation-jobs.test.ts",
     "test:saas03": "node --import tsx --test tests/saas03-subscription.test.ts tests/saas03-plan-change.test.ts tests/saas03-payment-portal.test.ts tests/saas03-options.test.ts",

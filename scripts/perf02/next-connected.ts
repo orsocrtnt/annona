@@ -25,11 +25,13 @@ export const PERF02_CONNECTED_ROUTES = [
   { name: "Page dispatch", path: "/dispatch" },
 ] as const;
 
+export const PERF02_DEMO_LOGIN = { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" };
+
 const output = resolve(process.argv[2] ?? "outputs/perf02/next-connected.json");
 
-type Session = { cookie: string };
+export type Session = { cookie: string };
 
-async function login(base: string, body: Record<string, unknown>): Promise<Session> {
+export async function login(base: string, body: Record<string, unknown>): Promise<Session> {
   const response = await fetch(`${base}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: base },
@@ -41,10 +43,10 @@ async function login(base: string, body: Record<string, unknown>): Promise<Sessi
   return { cookie };
 }
 
-const get = (base: string, session: Session, path: string) =>
+export const get = (base: string, session: Session, path: string) =>
   fetch(`${base}${path}`, { headers: { Cookie: session.cookie }, redirect: "manual" });
 
-async function logout(base: string, session: Session) {
+export async function logout(base: string, session: Session) {
   await fetch(`${base}/api/auth/logout`, { method: "POST", headers: { Cookie: session.cookie, Origin: base } }).catch(() => undefined);
 }
 
@@ -54,7 +56,7 @@ async function deliveryIds(base: string, session: Session) {
 }
 
 /** Deux entreprises ouvertes en même temps : aucune livraison commune, et l'accès croisé répond 404. */
-async function crossCompanyCheck(base: string, demo: Session, other: Session) {
+export async function crossCompanyCheck(base: string, demo: Session, other: Session) {
   const [mine, theirs] = await Promise.all([deliveryIds(base, demo), deliveryIds(base, other)]);
   const shared = mine.filter((id) => theirs.includes(id)).length;
   const crossed = await Promise.all([
@@ -66,7 +68,7 @@ async function crossCompanyCheck(base: string, demo: Session, other: Session) {
 
 export async function runConnectedMeasure(rawBase: string, other: { email: string; password: string } | null) {
   const base = assertLocalPerf02Target(rawBase).replace(/\/$/, "");
-  const demo = await login(base, { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" });
+  const demo = await login(base, PERF02_DEMO_LOGIN);
   const second = other ? await login(base, { ...other, accountType: "company" }) : null;
   try {
     const routes = [];
