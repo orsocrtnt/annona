@@ -611,6 +611,15 @@ input[type="radio"] {
   line-height: normal;
 }
 
+/* iOS colore la zone de l'heure et de la batterie avec le fond de page : il doit être celui de la landing. */
+:root:has(.landing) body {
+  background-color: #ffffff;
+}
+
+:root[data-theme="dark"]:has(.landing) body {
+  background-color: #1c1f1e;
+}
+
 :root[data-theme="dark"] .landing {
   --l-ink: #ecefed;
   --l-mute: #9aa49f;

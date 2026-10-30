@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**81 tâches terminées sur 108 — 75 %**
+**81 tâches terminées sur 109 — 74 %**
 
-`███████████████░░░░░` · 27 tâches restantes
+`███████████████░░░░░` · 28 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -20,6 +20,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Trouver un téléphone Android (essais MOB-01C).
+- BARRE-IPHONE : ouvrir tutelliv.fr sur l'iPhone et dire si le haut de l'écran est bien blanc, sans changement de couleur.
 - ICONE-IPHONE : sur l'iPhone, supprimer l'ancien raccourci, effacer les données du site tutelliv.fr dans Safari, rajouter le site à l'écran d'accueil et dire si le logo noir apparaît.
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
@@ -1875,6 +1876,12 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
 - [x] **LANDING-VERT — Boutons verts de la landing au vert du logo.** Demande du propriétaire du 30 octobre 2026. `--l-mint` passe de `#5bd99a` à `#00d46a` (vert du logo, `mission-green` de `DESIGN.md`) en Clair et en Sombre ; survol `#00bf5f` en Clair, `#2fe085` en Sombre. Boutons concernés : « Essayer la démo », « Lancer la course », « Créer mon espace ». « Voir la démo » (noir, barre du haut) et les boutons blancs ne changent pas : ils ne sont pas verts.
   - Vérifié : Chromium réel sur un serveur de dev en worktree isolé, Clair et Sombre, 1 280 px : fond `rgb(0, 212, 106)`, survol mesuré, aucune erreur de page, captures relues. `npm run check` vert (1413/1413, ce qui lève aussi les 2 échecs TRACK notés sous ICONE-IPHONE). Non vérifié : affichage sur téléphone, seule la couleur change. Rien à faire ensuite.
+
+- [ ] **BARRE-IPHONE — Couleur de la zone de l'heure et de la batterie sur iPhone.** Demande du propriétaire du 30 octobre 2026 : changement de couleur en haut de l'écran en arrivant sur le site, il veut du blanc.
+  - Cause mesurée : fond de page `#f5f8f6` (sombre `#141716`) sous une landing `#ffffff` (sombre `#1c1f1e`), et aucune balise `theme-color` ; iOS colore le haut de l'écran avec ce fond.
+  - Fait : `globals.css` donne au fond de page la couleur de la landing ; `layout.tsx` déclare `theme-color` ; `ThemeSync` l'aligne sur le fond réel à chaque page et changement de thème. Les autres pages gardent leur fond, sans rupture : la zone prend leur couleur `#f5f8f6`, pas du blanc pur.
+  - Vérifié : WebKit en profil iPhone 15 sur serveur de dev isolé : Clair, Sombre, Clair avec téléphone en sombre, Système puis passage du téléphone en sombre ; accueil, clic vers `/login`, retour ; aucune erreur. `npm run check` : 1415/1415. Limite : à la toute première compilation en dev, la balise est restée à sa valeur initiale, qui reste juste en Clair ; pas reproduit ensuite.
+  - Non vérifié : un vrai iPhone. Suite : essai du propriétaire, puis case à cocher.
 
 - [x] **RECETTE-2810 — Défauts mineurs de la recette du 28 octobre.** Reprendre les défauts mineurs et les points à trancher relevés par les deux recettes navigateur de l'intégration `integration/2026-10-28` (`outputs/recette-agents/integration/rapport.md` sur fcc0a5c et `outputs/recette-agents/integration-correctifs/rapport.md` sur 013d1fc puis 557e9d5), sans bloquer l'intégration : aucun défaut bloquant ni important n'a été relevé.
 

@@ -23,8 +23,12 @@ export function ThemeSync() {
 
   useIsomorphicLayoutEffect(() => {
     const media = window.matchMedia(DARK_QUERY);
-    const apply = () =>
+    const apply = () => {
       applyThemeToRoot(document.documentElement, pathname, readThemePreference(), media.matches);
+      // Zone de l'heure et de la batterie sur iPhone : même couleur que le fond de la page.
+      const pageColor = getComputedStyle(document.body).backgroundColor;
+      document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute("content", pageColor));
+    };
     apply();
     const unsubscribe = subscribeThemePreference(apply);
     media.addEventListener("change", apply);

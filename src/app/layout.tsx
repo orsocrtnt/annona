@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { AppProviders } from "@/components/providers/app-providers";
 import { APP_NAME } from "@/lib/constants";
@@ -16,6 +16,14 @@ export const metadata: Metadata = {
     template: `%s | ${APP_NAME}`,
   },
   description: "Plateforme de pilotage pour entreprises de livraison",
+};
+
+// Valeur du premier affichage ; ThemeSync l'aligne ensuite sur le fond réel de la page et le thème choisi.
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c1f1e" },
+  ],
 };
 
 export default function RootLayout({

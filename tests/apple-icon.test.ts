@@ -18,3 +18,10 @@ test("les adresses de secours d'iOS servent la même icône", () => {
   assert.ok(icon.equals(readFileSync("public/apple-touch-icon.png")));
   assert.ok(icon.equals(readFileSync("public/apple-touch-icon-precomposed.png")));
 });
+
+// Sans ce fond, iOS garde le gris de l'application au-dessus de la landing blanche.
+test("le fond de page de la landing est celui de la landing, en Clair et en Sombre", () => {
+  const css = readFileSync("src/app/globals.css", "utf8");
+  assert.match(css, /:root:has\(\.landing\) body \{\s*background-color: #ffffff;/);
+  assert.match(css, /:root\[data-theme="dark"\]:has\(\.landing\) body \{\s*background-color: #1c1f1e;/);
+});
