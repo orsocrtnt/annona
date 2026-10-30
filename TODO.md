@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**87 tâches terminées sur 114 — 76 %**
+**89 tâches terminées sur 114 — 78 %**
 
-`███████████████░░░░░` · 27 tâches restantes
+`████████████████░░░░` · 25 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -16,12 +16,10 @@ _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalc
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
-- Créer la clé `ANTHROPIC_API_KEY` dans ta console Anthropic et la donner à Claude, qui la pose dans Vercel.
-- Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
+- Clé Anthropic : la créer dans ta console et la coller toi-même dans Vercel (`ANTHROPIC_API_KEY`, Preview, branche `preproduction`), puis le dire à Claude, qui redéploie et teste « Depuis un message ».
+- Plus tard : juriste, en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
-- Trouver un téléphone Android (essais MOB-01C).
-- BARRE-IPHONE : sur l'iPhone, confirmer que le site et l'app s'affichent bien en clair, avec le haut de l'écran blanc.
-- ICONE-IPHONE : sur l'iPhone, supprimer l'ancien raccourci, effacer les données du site tutelliv.fr dans Safari, rajouter le site à l'écran d'accueil et dire si le logo noir apparaît.
+- Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
 
@@ -1969,7 +1967,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Fait le 29 octobre 2026 : icônes `Sparkles` retirées ou remplacées dans les 7 fichiers. Bandeau « Des formules lisibles » et carte « Découverte » de `/tarifs` : icône supprimée. Mission spéciale (réglages et nouvelle commande) : `Briefcase`. Bouton « Lancer auto-dispatch » et bouton de la mini-démo : `Route`. Estimation indicative du portail : `Calculator`. Barre de démonstration : `FlaskConical`.
   - Garde : `tests/icones-ia.test.ts` refuse `Sparkle(s)`, `WandSparkles`, `Wand`, `Stars` et l'emoji ✨ dans `src`. Vérifié sur le build de production : aucune icône étincelle sur `/`, `/tarifs`, `/dispatch`, `/settings` et `/portal/orders/new`, aucune erreur de page, nouvelle icône visible sur le dispatch. `npm run check` vert.
 
-- [ ] **ICONE-IPHONE — Logo noir sur l'écran d'accueil de l'iPhone.** Demande du propriétaire du 30 octobre 2026 : le logo noir doit apparaître quand on ajoute l'application à l'écran d'accueil.
+- [x] **ICONE-IPHONE — Logo noir sur l'écran d'accueil de l'iPhone.** Demande du propriétaire du 30 octobre 2026 : le logo noir doit apparaître quand on ajoute l'application à l'écran d'accueil.
   - Fait le 30 octobre 2026 : `src/app/apple-icon.png` (180 × 180 px, opaque), tiré de `public/brand/icone-app-fond-sombre.png` avec les coins transparents remplis de la couleur du fond, car iOS veut un carré plein. Next l'annonce seul sur toutes les pages. Favicon et application en plein écran (`appleWebApp`) inchangés.
   - Vérifié : `tests/apple-icon.test.ts` vert (taille, sans transparence) ; serveur de dev dans un worktree isolé : balise `apple-touch-icon` présente sur `/` et `/login`, `/apple-icon.png` répond 200 en `image/png`. `npm run check` : types et lint verts, 1411 tests sur 1413 ; les 2 échecs (`tests/tracking.test.ts`, TRACK-1 et TRACK-2) portent sur le module `@/domains/delivery/client-live-eta` du chantier DEMO-3 en cours, sans rapport avec l'icône ; sans ce chantier, le commit de référence avec l'icône : 1403/1403.
   - 30 octobre, après « ça n'a pas fonctionné » : l'icône était déjà en ligne (déploiement `a495c23`), fichier servi identique au dépôt, balise présente sur `/`, `/login`, `/dashboard`, `/driver`, `/portal`. Cause exacte non établie sans l'iPhone : essai avant le déploiement ou icône gardée en cache par iOS. Ajout de `public/apple-touch-icon.png` et `public/apple-touch-icon-precomposed.png`, qui répondaient 404, et test étendu.
@@ -1986,11 +1984,11 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Vérifications : `tests/dispatch-phone-corrections.test.ts` ; `tests/e2e/dispatch-phone-corrections.spec.ts` 3/3 sur `tutelliv-dev`, itinéraire tracé dans la démo, menu ouvert et navigation à 390 px, thème clair malgré une préférence sombre, annulation sans affectation puis validation réelle ; `npm run check` et `npm run build` avant publication.
   - Limites : rendu non vu sur un vrai téléphone. En développement, après une validation, le rechargement de `/dispatch` est resté plus de 45 s sur le squelette avant de s'afficher ; cause non établie, à surveiller en préproduction. Jeu de test `mob01c` supprimé, résidu nul.
 
-- [ ] **BARRE-IPHONE — Couleur de la zone de l'heure et de la batterie sur iPhone.** Demande du propriétaire du 30 octobre 2026 : changement de couleur en haut de l'écran en arrivant sur le site, il veut du blanc.
+- [x] **BARRE-IPHONE — Couleur de la zone de l'heure et de la batterie sur iPhone.** Demande du propriétaire du 30 octobre 2026 : changement de couleur en haut de l'écran en arrivant sur le site, il veut du blanc.
   - Cause mesurée : fond de page `#f5f8f6` (sombre `#141716`) sous une landing `#ffffff` (sombre `#1c1f1e`), et aucune balise `theme-color` ; iOS colore le haut de l'écran avec ce fond.
   - Fait : `globals.css` donne au fond de page la couleur de la landing ; `layout.tsx` déclare `theme-color` ; `ThemeSync` l'aligne sur le fond réel à chaque page et changement de thème. Les autres pages gardent leur fond, sans rupture : la zone prend leur couleur `#f5f8f6`, pas du blanc pur.
   - Vérifié : WebKit en profil iPhone 15 sur serveur de dev isolé : Clair, Sombre, Clair avec téléphone en sombre, Système puis passage du téléphone en sombre ; accueil, clic vers `/login`, retour ; aucune erreur. `npm run check` : 1415/1415. Limite : à la toute première compilation en dev, la balise est restée à sa valeur initiale, qui reste juste en Clair ; pas reproduit ensuite.
-  - Non vérifié : un vrai iPhone. Suite : essai du propriétaire, puis case à cocher.
+  - Close le 30 octobre 2026 : le propriétaire confirme sur son iPhone (« cbn »), affichage clair avec le haut de l'écran blanc. Le mode sombre reste retiré des téléphones pour le moment (RETOURS-3010).
   - Signalement du propriétaire du 30 octobre 2026 : la barre du haut reste blanche en mode sombre. Lecture retenue par l'agent : app installée sur l'iPhone. Cause probable, non reproduite : le manifeste livreur ajouté pour DEMO-3B fixait `theme_color` à `#ffffff`, valeur que `ThemeSync` ne peut pas changer. Couleurs fixes retirées de `public/driver.webmanifest`. Vérifications : `tests/driver-push.test.ts` et `npm run check`. Limites : pas d'iPhone côté agent ; iOS ne relit le manifeste qu'à l'installation, il faut supprimer l'icône et la rajouter. Jeu de test `mob01c` recréé pour cet essai, à supprimer ensuite par `npm run mob01c:cleanup`.
 
 - [x] **RECETTE-2810 — Défauts mineurs de la recette du 28 octobre.** Reprendre les défauts mineurs et les points à trancher relevés par les deux recettes navigateur de l'intégration `integration/2026-10-28` (`outputs/recette-agents/integration/rapport.md` sur fcc0a5c et `outputs/recette-agents/integration-correctifs/rapport.md` sur 013d1fc puis 557e9d5), sans bloquer l'intégration : aucun défaut bloquant ni important n'a été relevé.
