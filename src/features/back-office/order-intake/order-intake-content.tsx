@@ -12,7 +12,9 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import type { OrderIntakeDraft } from "@/domains/order-intake/order-intake.draft";
 import { OrderIntakeApiError } from "./order-intake-api";
 import { OrderIntakeDraftForm } from "./order-intake-draft-form";
-import { useAnalyzeOrderMessage, useOrderIntakeStatus, useToggleOrderIntake } from "./order-intake-hooks";
+import { useAnalyzeOrderMessage, useCloseInboundEmail, useOrderIntakeStatus, useToggleOrderIntake } from "./order-intake-hooks";
+import { InboundEmailsCard, IntakeChannelsCard } from "./order-intake-channels";
+import type { InboundEmailItem } from "./order-intake-api";
 
 const MAX_TEXT = 8000;
 
@@ -92,6 +94,8 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   const [text, setText] = React.useState("");
   const [sender, setSender] = React.useState("");
   const [result, setResult] = React.useState<{ draft: OrderIntakeDraft; keys: string[]; id: number } | null>(null);
+  const [activeEmailId, setActiveEmailId] = React.useState<string | null>(null);
+  const closeEmail = useCloseInboundEmail();
   const draftHeadingRef = React.useRef<HTMLHeadingElement>(null);
 
   React.useEffect(() => {
@@ -105,6 +109,21 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   const maxLength = info?.limits.maxTextLength ?? MAX_TEXT;
   const error = analyze.error instanceof OrderIntakeApiError ? analyze.error : null;
 
+  // Clés stables par e-mail : rouvrir le même e-mail ne peut pas créer une seconde commande.
+  const openEmail = (email: InboundEmailItem) => {
+    setActiveEmailId(email.id);
+    setText([email.subject ? `Objet : ${email.subject}` : "", email.bodyText].filter(Boolean).join("\n\n").slice(0, maxLength));
+    setSender(email.fromAddress);
+    analyze.reset();
+    setResult((previous) => email.draft
+      ? {
+          draft: email.draft,
+          keys: Array.from({ length: Math.max(1, email.draft.deliveries.length) }, (_, index) => `inbound-${email.id}-${index}`),
+          id: (previous?.id ?? 0) + 1,
+        }
+      : null);
+  };
+
   const run = () => {
     if (!available || analyze.isPending || !text.trim()) return;
     analyze.mutate(
@@ -113,7 +132,8 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
         onSuccess: (draft) => setResult((previous) => ({
           draft,
           // Une clé d'idempotence par livraison, fixée pour toute la vie de ce brouillon.
-          keys: Array.from({ length: Math.max(1, draft.deliveries.length) }, newKey),
+          keys: Array.from({ length: Math.max(1, draft.deliveries.length) }, (_, index) =>
+            activeEmailId ? `inbound-${activeEmailId}-${index}` : newKey()),
           id: (previous?.id ?? 0) + 1,
         })),
       }
@@ -157,6 +177,8 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
         </Alert>
       )}
       {info?.canManage && <ActivationCard enabled={info.enabled} configured={info.configured} />}
+      {info?.canManage && <IntakeChannelsCard />}
+      <InboundEmailsCard activeId={activeEmailId} onOpen={openEmail} />
 
       <Card>
         <CardHeader>
@@ -224,7 +246,11 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
           <h2 id="intake-draft-title" ref={draftHeadingRef} tabIndex={-1} className="sr-only">
             Brouillon de commande
           </h2>
-          <OrderIntakeDraftForm key={result.id} draft={result.draft} idempotencyKeys={result.keys} ordersHref={ordersHref} />
+          <OrderIntakeDraftForm key={result.id} draft={result.draft} idempotencyKeys={result.keys} ordersHref={ordersHref}
+            onAllCreated={activeEmailId ? (orderId) => {
+              closeEmail.mutate({ id: activeEmailId, status: "CONVERTED", orderId });
+              setActiveEmailId(null);
+            } : undefined} />
         </section>
       )}
     </div>

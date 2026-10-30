@@ -3,7 +3,7 @@ const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /** Appels serveur à serveur authentifiés par signature ou secret, sans Origin navigateur. */
 export function isOriginCheckExempt(pathname: string): boolean {
-  return pathname === "/api/billing/webhook" || pathname.startsWith("/api/cron/");
+  return pathname === "/api/billing/webhook" || pathname === "/api/webhooks/inbound-email" || pathname.startsWith("/api/cron/");
 }
 
 function originOf(value: string | undefined | null): string | null {

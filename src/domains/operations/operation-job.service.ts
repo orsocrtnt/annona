@@ -241,6 +241,11 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
       await deliverOrderMessageNotification(messageId);
       return;
     }
+    if (readString(job.payload, "kind") === "GUEST_TRACKING_LINK") {
+      const { deliverGuestTrackingEmail } = await import("@/domains/public-order/public-order.service");
+      await deliverGuestTrackingEmail(job.payload, job.jobKey, emailWindow(), freezeContent);
+      return;
+    }
     // DEMO-3 : relance de facture (e-mail au client).
     if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
       const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");
@@ -264,6 +269,12 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
   if (job.type === "DRIVER_NOTIFICATION") {
     const { deliverDriverMissionPush } = await import("@/domains/driver/driver-push.service");
     await deliverDriverMissionPush(job.payload);
+    return;
+  }
+
+  if (job.type === "INBOUND_EMAIL") {
+    const { analyzeInboundEmailJob } = await import("@/domains/order-intake/inbound-email.service");
+    await analyzeInboundEmailJob(job.payload);
     return;
   }
 

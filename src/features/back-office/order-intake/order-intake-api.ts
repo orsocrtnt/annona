@@ -8,6 +8,27 @@ export interface OrderIntakeStatus {
   limits: { hourly: number; daily: number; maxTextLength: number };
 }
 
+export interface InboundEmailItem {
+  id: string;
+  fromAddress: string;
+  subject: string;
+  bodyText: string;
+  attachmentCount: number;
+  status: "RECEIVED" | "ANALYZED" | "ANALYSIS_FAILED";
+  draft: OrderIntakeDraft | null;
+  analysisError: string | null;
+  createdAt: string;
+}
+
+export interface IntakeChannels {
+  orderLink: { enabled: boolean; url: string | null };
+  inboundEmail: { enabled: boolean; configured: boolean; address: string | null };
+}
+
+export type IntakeChannelAction =
+  | { channel: "orderLink" | "inboundEmail"; enabled: boolean }
+  | { channel: "orderLink" | "inboundEmail"; rotate: true };
+
 /** Erreur lisible renvoyée par les routes ; `code` pilote l'état affiché. */
 export class OrderIntakeApiError extends Error {
   constructor(readonly code: string, message: string, readonly status: number) {
@@ -45,6 +66,20 @@ export const orderIntakeApi = {
       method: "POST",
       headers: jsonHeaders,
       body: JSON.stringify({ text, sender: sender.trim() || undefined }),
+    }),
+  getInbox: () => request<InboundEmailItem[]>("/api/orders/intake/inbox"),
+  closeInboundEmail: (id: string, status: "CONVERTED" | "DISMISSED", orderId?: string) =>
+    request<void>(`/api/orders/intake/inbox/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: jsonHeaders,
+      body: JSON.stringify({ status, ...(orderId ? { orderId } : {}) }),
+    }),
+  getChannels: () => request<IntakeChannels>("/api/company/intake-channels"),
+  updateChannel: (action: IntakeChannelAction) =>
+    request<IntakeChannels>("/api/company/intake-channels", {
+      method: "PATCH",
+      headers: jsonHeaders,
+      body: JSON.stringify(action),
     }),
   /** La même clé est renvoyée à chaque clic sur une même livraison : une seule commande. */
   createOrder: (customerId: string, order: IntakeOrderInput, idempotencyKey: string) =>

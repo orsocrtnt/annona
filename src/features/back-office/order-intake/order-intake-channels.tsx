@@ -1,0 +1,144 @@
+"use client";
+
+import * as React from "react";
+import { Inbox, Link2, Paperclip } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { InboundEmailItem, IntakeChannelAction } from "./order-intake-api";
+import { useCloseInboundEmail, useInboundEmails, useIntakeChannels, useUpdateIntakeChannel } from "./order-intake-hooks";
+
+function ChannelRow({ title, description, value, enabled, disabledReason, onAction, pending }: {
+  title: string;
+  description: string;
+  value: string | null;
+  enabled: boolean;
+  disabledReason?: string;
+  onAction: (action: { enabled: boolean } | { rotate: true }) => void;
+  pending: boolean;
+}) {
+  const [copied, setCopied] = React.useState(false);
+  return (
+    <div className="space-y-2 border-b border-border pb-4 last:border-0 last:pb-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <h3 className="font-medium">{title}</h3>
+        <Badge variant={enabled ? "default" : "secondary"}>{enabled ? "Activé" : "Désactivé"}</Badge>
+      </div>
+      <p className="text-muted-foreground">{description}</p>
+      {disabledReason && <p className="text-warning">{disabledReason}</p>}
+      {enabled && value && <p className="break-all rounded-lg bg-muted px-3 py-2 font-mono text-xs">{value}</p>}
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant={enabled ? "outline" : "default"} className="min-h-11" disabled={pending || Boolean(disabledReason && !enabled)}
+          onClick={() => onAction({ enabled: !enabled })}>
+          {enabled ? "Désactiver" : "Activer"}
+        </Button>
+        {enabled && value && (
+          <>
+            <Button type="button" variant="outline" className="min-h-11" onClick={async () => {
+              await navigator.clipboard.writeText(value).then(() => setCopied(true), () => setCopied(false));
+            }}>
+              {copied ? "Copié" : "Copier"}
+            </Button>
+            <Button type="button" variant="ghost" className="min-h-11" disabled={pending} onClick={() => onAction({ rotate: true })}>
+              Renouveler (l&apos;ancien cesse de marcher)
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Réglages réservés à l'administration : lien de commande public et adresse de réception. */
+export function IntakeChannelsCard() {
+  const channels = useIntakeChannels(true);
+  const update = useUpdateIntakeChannel();
+  const act = (channel: IntakeChannelAction["channel"]) => (action: { enabled: boolean } | { rotate: true }) =>
+    update.mutate({ channel, ...action } as IntakeChannelAction);
+  const data = channels.data;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base"><Link2 className="h-4 w-4" aria-hidden /> Commandes sans connexion</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        {channels.isError && <p role="alert" className="text-destructive">Réglages indisponibles. Rechargez la page.</p>}
+        {data && (
+          <>
+            <ChannelRow
+              title="Lien de commande"
+              description="À partager à vos clients : ils commandent sans compte et reçoivent un lien de suivi par e-mail. L'expéditeur n'est pas vérifié : ces commandes ne partent jamais seules à un livreur, un dispatcher les affecte."
+              value={data.orderLink.url}
+              enabled={data.orderLink.enabled}
+              pending={update.isPending}
+              onAction={act("orderLink")}
+            />
+            <ChannelRow
+              title="Adresse de réception des commandes"
+              description="Transférez-y vos e-mails de commande. Chacun devient un brouillon ci-dessous, à relire et valider : aucune commande n'est créée seule."
+              value={data.inboundEmail.address}
+              enabled={data.inboundEmail.enabled}
+              disabledReason={data.inboundEmail.configured ? undefined : "La réception n'est pas encore branchée sur ce serveur."}
+              pending={update.isPending}
+              onAction={act("inboundEmail")}
+            />
+          </>
+        )}
+        <div aria-live="polite">{update.isError && <p role="alert" className="text-destructive">Réglage non enregistré. Réessayez.</p>}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const STATE_LABEL: Record<InboundEmailItem["status"], string> = {
+  RECEIVED: "Analyse en cours",
+  ANALYZED: "Brouillon prêt",
+  ANALYSIS_FAILED: "À lire",
+};
+
+const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
+
+/** E-mails reçus à traiter. Le contenu vient d'un inconnu : il reste du texte, jamais du HTML. */
+export function InboundEmailsCard({ activeId, onOpen }: { activeId: string | null; onOpen: (email: InboundEmailItem) => void }) {
+  const inbox = useInboundEmails();
+  const close = useCloseInboundEmail();
+  const emails = inbox.data ?? [];
+  if (!inbox.isError && emails.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base"><Inbox className="h-4 w-4" aria-hidden /> E-mails de commande reçus</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        {inbox.isError && <p role="alert" className="text-destructive">Liste indisponible. Rechargez la page.</p>}
+        <ul className="space-y-3">
+          {emails.map((email) => (
+            <li key={email.id} className={`rounded-lg border p-3 ${email.id === activeId ? "border-primary" : "border-border"}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="min-w-0 break-words font-medium">{email.subject || "(sans objet)"}</p>
+                <Badge variant={email.status === "ANALYZED" ? "default" : "secondary"}>{STATE_LABEL[email.status]}</Badge>
+              </div>
+              <p className="mt-1 break-all text-xs text-muted-foreground">
+                {email.fromAddress || "Expéditeur inconnu"} · {dateTime.format(new Date(email.createdAt))}
+              </p>
+              {email.attachmentCount > 0 && (
+                <p className="mt-1 flex items-center gap-1 text-xs text-warning">
+                  <Paperclip className="h-3 w-3" aria-hidden /> {email.attachmentCount} pièce(s) jointe(s) non lue(s) : à consulter dans votre messagerie.
+                </p>
+              )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button type="button" variant="outline" className="min-h-11" onClick={() => onOpen(email)}>
+                  {email.draft ? "Relire le brouillon" : "Ouvrir le message"}
+                </Button>
+                <Button type="button" variant="ghost" className="min-h-11" disabled={close.isPending}
+                  onClick={() => close.mutate({ id: email.id, status: "DISMISSED" })}>
+                  Classer sans commande
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}

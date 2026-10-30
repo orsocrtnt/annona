@@ -52,6 +52,8 @@ interface OrderIntakeDraftFormProps {
   /** Une clé par livraison, tirée à l'analyse : chaque clic renvoie la même. */
   idempotencyKeys: string[];
   ordersHref: string | null;
+  /** Appelé quand chaque livraison du brouillon a sa commande (e-mail reçu : on le classe). */
+  onAllCreated?: (orderId: string) => void;
 }
 
 /** Drapeaux du brouillon ramenés à la livraison affichée (« deliveries.1.city » → « delivery.city »). */
@@ -132,7 +134,7 @@ function StopFieldset({ legend, prefix, values, extracted, uncertain, missing, o
   );
 }
 
-export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: OrderIntakeDraftFormProps) {
+export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAllCreated }: OrderIntakeDraftFormProps) {
   const deliveryCount = Math.max(1, draft.deliveries.length);
   const [active, setActive] = React.useState(0);
   const [forms, setForms] = React.useState<IntakeFormValues[]>(() =>
@@ -177,7 +179,11 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref }: Ord
     createOrder.mutate(
       { customerId, order, idempotencyKey: idempotencyKeys[active]! },
       {
-        onSuccess: (result) => setCreated((current) => ({ ...current, [active]: result })),
+        onSuccess: (result) => {
+          const next = { ...created, [active]: result };
+          setCreated(next);
+          if (Object.keys(next).length >= idempotencyKeys.length) onAllCreated?.(result.id);
+        },
         onError: (error) => setErrors([error instanceof OrderIntakeApiError ? error.message : "Création impossible. Réessayez."]),
       }
     );

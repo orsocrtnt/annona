@@ -103,6 +103,7 @@ enum OrderSource {
   ADMIN
   CLIENT
   RECURRING
+  PUBLIC_LINK
 }
 
 enum OperationJobType {
@@ -110,6 +111,15 @@ enum OperationJobType {
   CLIENT_NOTIFICATION
   DELIVERY_INVOICE
   DRIVER_NOTIFICATION
+  INBOUND_EMAIL
+}
+
+enum InboundEmailStatus {
+  RECEIVED
+  ANALYZED
+  ANALYSIS_FAILED
+  CONVERTED
+  DISMISSED
 }
 
 enum OperationJobStatus {
@@ -328,6 +338,9 @@ model Company {
   driverPushSubscriptions DriverPushSubscription[]
   demoPoolEnvironment  DemoPoolEnvironment?
   signupJourney        SignupJourney?
+  intakeChannel        CompanyIntakeChannel?
+  orderTrackingLinks   OrderTrackingLink[]
+  inboundOrderEmails   InboundOrderEmail[]
 
   @@index([slug])
   @@index([status])
@@ -736,6 +749,7 @@ model Order {
   messages        OrderMessage[]
   threadReads     OrderThreadRead[]
   saasUsageEvents SaasUsageEvent[]
+  trackingLink    OrderTrackingLink?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1302,4 +1316,60 @@ model DriverPushSubscription {
   @@index([userId, companyId])
   @@index([companyId])
   @@map("driver_push_subscriptions")
+}
+
+/// Canaux d'entrée sans connexion d'une entreprise : lien de commande et adresse de réception.
+model CompanyIntakeChannel {
+  companyId           String   @id @map("company_id")
+  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderLinkToken      String?  @unique @map("order_link_token")
+  orderLinkEnabled    Boolean  @default(false) @map("order_link_enabled")
+  inboundEmailToken   String?  @unique @map("inbound_email_token")
+  inboundEmailEnabled Boolean  @default(false) @map("inbound_email_enabled")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("company_intake_channels")
+}
+
+/// Lien de suivi sans connexion d'une commande. Les champs guest* ne sont remplis que pour une
+/// commande passée par le lien public : ils n'identifient personne et ne rattachent aucun compte.
+model OrderTrackingLink {
+  id         String    @id @default(cuid())
+  token      String    @unique
+  orderId    String    @unique @map("order_id")
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  companyId  String    @map("company_id")
+  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  guestEmail String?   @map("guest_email")
+  /// Empreinte HMAC de la source (jamais l'adresse IP) : base du débit du lien public.
+  sourceHash String?   @map("source_hash")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([companyId, createdAt])
+  @@index([sourceHash, createdAt])
+  @@map("order_tracking_links")
+}
+
+/// E-mail reçu sur l'adresse de commande : jamais une commande, seulement un brouillon à valider.
+/// Corps et brouillon sont effacés dès le traitement, et la ligne après 30 jours.
+model InboundOrderEmail {
+  id              String             @id @default(cuid())
+  companyId       String             @map("company_id")
+  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  providerEmailId String             @unique @map("provider_email_id")
+  fromAddress     String             @map("from_address")
+  subject         String             @default("")
+  bodyText        String             @default("") @map("body_text")
+  attachmentCount Int                @default(0) @map("attachment_count")
+  status          InboundEmailStatus @default(RECEIVED)
+  draft           Json?
+  analysisError   String?            @map("analysis_error")
+  orderId         String?            @map("order_id")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  @@index([companyId, status, createdAt])
+  @@index([createdAt])
+  @@map("inbound_order_emails")
 }

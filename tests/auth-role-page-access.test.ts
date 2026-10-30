@@ -43,7 +43,7 @@ function discoverAllPages(): string[] {
 
 /** Seules pages publiques admises : toute nouvelle page doit être couverte par la table ou ajoutée ici. */
 const PUBLIC_PAGES = [
-  "/", "/contact", "/demonstration", "/fonctionnalites", "/tarifs", "/mentions-legales", "/confidentialite",
+  "/", "/commander/x", "/suivi/x", "/contact", "/demonstration", "/fonctionnalites", "/tarifs", "/mentions-legales", "/confidentialite",
   "/login", "/login/client", "/login/driver", "/register", "/register/client", "/forgot-password", "/reset-password",
 ];
 

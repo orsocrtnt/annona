@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCompanyOrder } from "@/features/back-office/hooks";
+import { OrderTrackingLinkButton } from "@/features/back-office/order-tracking-link-button";
 import { AssignDriverSelect } from "@/features/back-office/assign-driver-select";
 import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { OrderStatusSelect } from "@/features/back-office/order-status-select";
@@ -245,6 +246,7 @@ export default function CompanyOrderDetailPage() {
           </CardContent>
         </Card>
       )}
+      <OrderTrackingLinkButton orderId={order.id} />
       <OrderTracking orderId={order.id} />
       <OrderConversation orderId={order.id} />
     </div>

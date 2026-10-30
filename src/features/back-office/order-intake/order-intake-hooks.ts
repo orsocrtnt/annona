@@ -34,6 +34,34 @@ export function useCreateIntakeOrder() {
   });
 }
 
+const INBOX_KEY = ["company", "order-intake", "inbox"] as const;
+const CHANNELS_KEY = ["company", "order-intake", "channels"] as const;
+
+export function useInboundEmails() {
+  return useQuery({ queryKey: INBOX_KEY, queryFn: orderIntakeApi.getInbox, retry: false, refetchInterval: 30_000 });
+}
+
+export function useCloseInboundEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; status: "CONVERTED" | "DISMISSED"; orderId?: string }) =>
+      orderIntakeApi.closeInboundEmail(input.id, input.status, input.orderId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: INBOX_KEY }),
+  });
+}
+
+export function useIntakeChannels(enabled: boolean) {
+  return useQuery({ queryKey: CHANNELS_KEY, queryFn: orderIntakeApi.getChannels, retry: false, enabled });
+}
+
+export function useUpdateIntakeChannel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: orderIntakeApi.updateChannel,
+    onSuccess: (data) => qc.setQueryData(CHANNELS_KEY, data),
+  });
+}
+
 export function useIntakeDeliverySlots() {
   return useQuery({
     queryKey: ["company", "intake", "delivery-slots"],

@@ -57,6 +57,10 @@ type CreateOrderRequest = {
    * Le géocodage et tout appel réseau restent avant la transaction.
    */
   beforeCreate?: (tx: Prisma.TransactionClient) => Promise<void>;
+  /** Fin de la transaction de création : écritures liées à la commande (lien de suivi, e-mail). */
+  afterCreate?: (tx: Prisma.TransactionClient, order: { id: string }) => Promise<void>;
+  /** Commande anonyme : un dispatcher la regarde avant toute affectation à un livreur. */
+  skipAutoDispatch?: boolean;
 };
 
 function canonicalize(value: unknown): unknown {
@@ -88,7 +92,7 @@ function isUniqueConstraintError(error: unknown) {
 }
 
 async function findIdempotentOrder(
-  customerId: string,
+  customerId: string | null,
   companyId: string,
   idempotencyKey: string,
   requestFingerprint: string
@@ -497,9 +501,9 @@ export async function getClientOrderCount(customerId: string, companyId: string)
 }
 
 export async function createClientOrder(
-  customerId: string,
+  customerId: string | null,
   companyId: string,
-  email: string,
+  email: string | null,
   input: CreateOrderOptions,
   request: CreateOrderRequest = {}
 ) {
@@ -803,7 +807,9 @@ export async function createClientOrder(
       },
     });
 
-      const operationJob = saasAccess.features.has("auto_dispatch")
+      await request.afterCreate?.(tx, order);
+
+      const operationJob = saasAccess.features.has("auto_dispatch") && !request.skipAutoDispatch
         ? await enqueueAutoDispatchJob(tx, {
             companyId,
             deliveryId: delivery.id,
@@ -829,7 +835,7 @@ export async function createClientOrder(
 
   const { order, operationJobId } = transactionResult;
 
-  if (input.saveAddress && input.addressLabel) {
+  if (customerId && input.saveAddress && input.addressLabel) {
     try {
       await createClientAddress(customerId, {
         label: input.addressLabel,
