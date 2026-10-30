@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**80 tâches terminées sur 107 — 75 %**
+**81 tâches terminées sur 108 — 75 %**
 
 `███████████████░░░░░` · 27 tâches restantes
 
@@ -20,7 +20,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Juriste : en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Trouver un téléphone Android (essais MOB-01C).
-- ICONE-IPHONE : après le prochain envoi en préproduction, ajouter le site à l'écran d'accueil de l'iPhone (supprimer l'ancien raccourci d'abord) et regarder si le logo noir apparaît.
+- ICONE-IPHONE : sur l'iPhone, supprimer l'ancien raccourci, effacer les données du site tutelliv.fr dans Safari, rajouter le site à l'écran d'accueil et dire si le logo noir apparaît.
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
 
@@ -1870,7 +1870,11 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 - [ ] **ICONE-IPHONE — Logo noir sur l'écran d'accueil de l'iPhone.** Demande du propriétaire du 30 octobre 2026 : le logo noir doit apparaître quand on ajoute l'application à l'écran d'accueil.
   - Fait le 30 octobre 2026 : `src/app/apple-icon.png` (180 × 180 px, opaque), tiré de `public/brand/icone-app-fond-sombre.png` avec les coins transparents remplis de la couleur du fond, car iOS veut un carré plein. Next l'annonce seul sur toutes les pages. Favicon et application en plein écran (`appleWebApp`) inchangés.
   - Vérifié : `tests/apple-icon.test.ts` vert (taille, sans transparence) ; serveur de dev dans un worktree isolé : balise `apple-touch-icon` présente sur `/` et `/login`, `/apple-icon.png` répond 200 en `image/png`. `npm run check` : types et lint verts, 1411 tests sur 1413 ; les 2 échecs (`tests/tracking.test.ts`, TRACK-1 et TRACK-2) portent sur le module `@/domains/delivery/client-live-eta` du chantier DEMO-3 en cours, sans rapport avec l'icône ; sans ce chantier, le commit de référence avec l'icône : 1403/1403.
-  - Non vérifié : le vrai ajout sur un iPhone, impossible avant l'envoi en préproduction (non poussé, commit groupé). Suite : essai du propriétaire, puis case à cocher.
+  - 30 octobre, après « ça n'a pas fonctionné » : l'icône était déjà en ligne (déploiement `a495c23`), fichier servi identique au dépôt, balise présente sur `/`, `/login`, `/dashboard`, `/driver`, `/portal`. Cause exacte non établie sans l'iPhone : essai avant le déploiement ou icône gardée en cache par iOS. Ajout de `public/apple-touch-icon.png` et `public/apple-touch-icon-precomposed.png`, qui répondaient 404, et test étendu.
+  - Non vérifié : le vrai ajout sur un iPhone. Suite : essai du propriétaire, puis case à cocher.
+
+- [x] **LANDING-VERT — Boutons verts de la landing au vert du logo.** Demande du propriétaire du 30 octobre 2026. `--l-mint` passe de `#5bd99a` à `#00d46a` (vert du logo, `mission-green` de `DESIGN.md`) en Clair et en Sombre ; survol `#00bf5f` en Clair, `#2fe085` en Sombre. Boutons concernés : « Essayer la démo », « Lancer la course », « Créer mon espace ». « Voir la démo » (noir, barre du haut) et les boutons blancs ne changent pas : ils ne sont pas verts.
+  - Vérifié : Chromium réel sur un serveur de dev en worktree isolé, Clair et Sombre, 1 280 px : fond `rgb(0, 212, 106)`, survol mesuré, aucune erreur de page, captures relues. `npm run check` vert (1413/1413, ce qui lève aussi les 2 échecs TRACK notés sous ICONE-IPHONE). Non vérifié : affichage sur téléphone, seule la couleur change. Rien à faire ensuite.
 
 - [x] **RECETTE-2810 — Défauts mineurs de la recette du 28 octobre.** Reprendre les défauts mineurs et les points à trancher relevés par les deux recettes navigateur de l'intégration `integration/2026-10-28` (`outputs/recette-agents/integration/rapport.md` sur fcc0a5c et `outputs/recette-agents/integration-correctifs/rapport.md` sur 013d1fc puis 557e9d5), sans bloquer l'intégration : aucun défaut bloquant ni important n'a été relevé.
 

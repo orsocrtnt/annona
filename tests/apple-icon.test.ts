@@ -11,3 +11,10 @@ test("l'icône d'écran d'accueil iPhone est un PNG carré de 180 px sans transp
   const RGB_WITHOUT_ALPHA = 2;
   assert.equal(png[25], RGB_WITHOUT_ALPHA);
 });
+
+// iOS demande aussi ces adresses fixes quand il ne retient pas la balise de la page.
+test("les adresses de secours d'iOS servent la même icône", () => {
+  const icon = readFileSync("src/app/apple-icon.png");
+  assert.ok(icon.equals(readFileSync("public/apple-touch-icon.png")));
+  assert.ok(icon.equals(readFileSync("public/apple-touch-icon-precomposed.png")));
+});
