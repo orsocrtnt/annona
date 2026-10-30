@@ -3,6 +3,7 @@
 ## OBLIGATION : mettre `TODO.md` à jour
 - **Mettre `TODO.md` à jour est obligatoire, pas optionnel.** Après chaque changement de code, de comportement ou de visuel, même petit et même demandé en passant (retouche, correction rapide), consigner dans la tâche concernée ce qui a changé, les vérifications lancées avec leur résultat, ce qui reste non vérifié et la suite. S'il n'existe aucune tâche concernée, en créer une.
 - Ne jamais terminer un tour ni annoncer un travail fini sans avoir mis `TODO.md` à jour puis lancé `npm run todo:progress`. Le propriétaire ne doit jamais avoir à le demander.
+- Tenir à jour le bloc « Ce qu'il reste vraiment à faire » en tête de `TODO.md` (trois listes courtes : propriétaire, agent, attente extérieure ; simples tirets, pas de cases). C'est la seule vue que le propriétaire lit : la corriger à chaque fin de tâche.
 
 ## Sources et périmètre
 - Lire ce fichier, `TODO.md` et `docs/CONVENTIONS.md` avant de travailler.

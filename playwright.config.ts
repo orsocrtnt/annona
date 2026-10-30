@@ -29,6 +29,8 @@ export default defineConfig({
     headless: true,
     // Sur Mac, le Chrome du poste et le Chromium complet expirent au lancement : la coquille sans interface est fiable.
     channel: process.env.PLAYWRIGHT_CHANNEL || (process.platform === "darwin" ? "chromium-headless-shell" : undefined),
+    // MOBILE-WEB : `E2E_MOBILE=1` rejoue les parcours sur un téléphone (390 × 844, tactile).
+    ...(process.env.E2E_MOBILE === "1" ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true } : {}),
     trace: "off",
     video: "off",
     screenshot: "only-on-failure",

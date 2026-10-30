@@ -89,7 +89,7 @@ function FlatTopNavbar({ pathname, demoHref }: { pathname: string; demoHref: str
   return (
     <header className="relative z-40">
       <div className="mx-auto flex max-w-[1280px] items-center gap-2.5 px-4 py-[14px] text-[15px] min-[901px]:gap-[26px] min-[901px]:px-8 min-[901px]:py-[18px]">
-        <Link href="/" className="flex shrink-0 rounded-lg max-[900px]:[&_img]:!h-[30px] max-[900px]:[&_img]:!w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <Link href="/" className="flex min-h-11 shrink-0 items-center rounded-lg max-[900px]:[&_img]:!h-[30px] max-[900px]:[&_img]:!w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <BrandLogo size="md" className="dark:hidden" priority />
           <BrandLogo size="md" onDark className="hidden dark:inline-flex" />
         </Link>

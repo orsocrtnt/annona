@@ -59,7 +59,8 @@ export function buildSecurityHeaders(env: HeaderEnv = process.env as HeaderEnv) 
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     // Géolocalisation pour l'app chauffeur ; caméra conservée pour la preuve de livraison.
     { key: "Permissions-Policy", value: "geolocation=(self), camera=(self), microphone=(), payment=(), usb=(), browsing-topics=()" },
-    // Report-Only : une CSP bloquante non recettée en navigateur casserait les cartes.
-    { key: "Content-Security-Policy-Report-Only", value: buildContentSecurityPolicy(env) },
+    // Bloquante depuis la recette SEC-AUDIT du 29 octobre 2026 (build de production : cartes, démo,
+    // preuves, connexion, portail, livreur, /admin) : zéro violation après `zod-jitless`.
+    { key: "Content-Security-Policy", value: buildContentSecurityPolicy(env) },
   ];
 }

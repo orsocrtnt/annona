@@ -1,5 +1,6 @@
 "use client";
 
+import { effectiveSignatureRequired } from "@/features/driver/proof-rules-cache";
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import {
@@ -84,7 +85,8 @@ export function ProofOfDeliveryDialog({
   const { data: proofRules } = useDriverProofRules();
 
   const success = outcome === "SUCCESS";
-  const signatureRequired = proofRules?.signatureRequired ?? false;
+  // Règle jamais chargée (hors ligne dès la première mission) : signature demandée par précaution.
+  const signatureRequired = effectiveSignatureRequired(proofRules);
   const name = recipientName.trim();
   const reason = refusalReason.trim();
   // Signature tracée (avec le nom) ou refus motivé ; facultatives sauf règle de l'entreprise.
@@ -209,6 +211,11 @@ export function ProofOfDeliveryDialog({
               <legend className="px-1 text-sm font-medium">
                 Réception{signatureRequired ? " (signature requise)" : ""}
               </legend>
+              {!proofRules && (
+                <p className="text-xs text-muted-foreground">
+                  Règles de votre entreprise pas encore chargées : la signature est demandée par précaution.
+                </p>
+              )}
               <label htmlFor={recipientId} className="block space-y-1 text-sm">
                 <span className="font-medium">
                   Nom du réceptionnaire{signature || signatureRequired ? " *" : ""}

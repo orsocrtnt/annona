@@ -171,6 +171,16 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 | Limites d'une tournée | Créneaux promis aux clients, capacité du véhicule, zone géographique et durée de la journée du livreur. | DISPATCH-4, piste 3. |
 | Départ et fin | Une tournée part de la position du livreur et finit au dernier arrêt. | DISPATCH-4, piste 3. |
 
+## C13 — Décisions du propriétaire du 29 octobre 2026 (soir : créneaux, poids, tournées, e-mails)
+
+| Sujet | Décision | Suite |
+| --- | --- | --- |
+| Créneau de livraison à la commande | Propre à chaque entreprise : certaines livrent « au jour », d'autres par créneaux. Réglé par l'entreprise dans Paramètres ; détails laissés à l'équipe produit. | DEMO-3, tranche 7. |
+| Poids du colis | Demandé à la commande, facultatif ; sert ensuite à la capacité des tournées. | DEMO-3, tranche 7 ; DISPATCH-4, piste 3. |
+| Tournées | Feu vert pour construire la piste 3 de DISPATCH-4 selon C12. | DISPATCH-4 ; DEMO-3, tranche 10. |
+| Navigateurs | CROSS-BROWSER annulée. | — |
+| E-mails réels | Mot de passe oublié, invitation, confirmation de compte et e-mails métier reçus dans la boîte de test le 29 octobre 2026. | EMAIL, SEC-05. |
+
 ## Éléments encore non confirmés
 
 - identité juridique, SIREN, TVA et adresse de l'éditeur ;

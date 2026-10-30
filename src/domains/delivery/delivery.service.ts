@@ -19,6 +19,7 @@ import {
   assertDriverMissionProximityOrThrow,
   statusNeedsProximityCheck,
 } from "@/domains/delivery/driver-proximity.service";
+import { outOfRangeIncidentBody } from "@/lib/maps/out-of-range-note";
 import { resolveCustomersByEmail } from "@/domains/order/resolve-customer";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
 import { kickOperationJob } from "@/domains/operations/operation-job.service";
@@ -801,13 +802,14 @@ export async function updateDeliveryStatusByDriver(
   }
 
   const proximityRule = statusNeedsProximityCheck(status, delivery.deliveryCategory);
+  let forcedOutOfRange: Awaited<ReturnType<typeof assertDriverMissionProximityOrThrow>> = null;
   if (proximityRule.required) {
     const overridePosition =
       options?.latitude != null && options?.longitude != null
         ? { latitude: options.latitude, longitude: options.longitude }
         : null;
 
-    await assertDriverMissionProximityOrThrow(
+    forcedOutOfRange = await assertDriverMissionProximityOrThrow(
       driverId,
       delivery.companyId,
       deliveryId,
@@ -920,6 +922,23 @@ export async function updateDeliveryStatusByDriver(
         longitude: eventLongitude,
       },
     });
+
+    // MOB-01C : étape confirmée hors zone, signalée avec la distance à l'équipe seulement (note interne
+    // de type incident, donc alerte « Incident interne » ; jamais visible du client).
+    if (forcedOutOfRange) {
+      await tx.orderMessage.create({
+        data: {
+          orderId: delivery.orderId,
+          authorId: driverId,
+          authorName: delivery.driverName?.trim() || "Livreur",
+          authorRole: "DRIVER",
+          body: outOfRangeIncidentBody({ ...forcedOutOfRange, status }),
+          kind: "INCIDENT",
+          internal: true,
+          requestKey: `out-of-range:${trackingEvent.id}`,
+        },
+      });
+    }
 
     const notificationJob = await queueDeliveryStatusNotification(tx, {
       customerId: delivery.customerId,

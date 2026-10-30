@@ -9,6 +9,9 @@ import { APP_NAME } from "@/lib/constants";
 const quietLink =
   "inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
+const legalLink =
+  "inline-flex min-h-11 items-center rounded-md px-1 text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 /**
  * Coque des pages de connexion (direction C) : logo, contact et thème en haut, contenu centré, aide en bas.
  * Light Menthe / Dark « Encre + Pastel » par les jetons ; aucune image lourde.
@@ -41,6 +44,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <footer className="px-4 pb-6 text-center text-sm text-muted-foreground">
         Besoin d&apos;aide ?{" "}
         <PublicSupportLink className="inline-flex min-h-11 items-center font-medium text-text-secondary underline underline-offset-4 hover:text-foreground" />
+        <nav aria-label="Informations légales" className="flex flex-wrap justify-center gap-x-4">
+          <Link href="/mentions-legales" className={legalLink}>Mentions légales</Link>
+          <Link href="/confidentialite" className={legalLink}>Confidentialité</Link>
+        </nav>
       </footer>
     </div>
   );

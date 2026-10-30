@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Send } from "lucide-react";
 
@@ -100,7 +101,10 @@ export function ContactForm() {
         </label>
       </div>
       <p className="mt-4 text-xs leading-5 text-[#758290] dark:text-text-secondary">
-        Vos coordonnées servent uniquement à vous répondre.
+        Vos coordonnées servent uniquement à vous répondre.{" "}
+        <Link href="/confidentialite" className="font-semibold underline underline-offset-4 hover:text-[#243447] dark:hover:text-foreground">
+          Politique de confidentialité
+        </Link>
       </p>
       {state.kind === "error" && (
         <p role="alert" className="mt-4 rounded-xl border border-[#ead1c9] dark:border-border bg-[#fbefeb] dark:bg-secondary px-4 py-3 text-sm font-semibold text-[#8a3b2a] dark:text-error">

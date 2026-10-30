@@ -91,6 +91,7 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "test:pg-locks": "tsx scripts/pg-locks/advisory-locks.ts",
     "test:pg-settings": "tsx scripts/pg-locks/settings-claims.ts",
+    "test:pg-intake": "tsx scripts/pg-locks/order-intake.ts",
     "test:dispatch-concurrency": "tsx scripts/dispatch4/concurrent-assign.ts",
     "env2:verify-dev": "dotenv -e .env.local -- tsx scripts/env2/verify-dev-env.ts",
     "billing:refund": "dotenv -e .env.local -- tsx scripts/saas01b/refund.ts"
@@ -99,6 +100,7 @@
     "@anthropic-ai/sdk": "^1.3.0",
     "@hookform/resolvers": "^5.4.0",
     "@maplibre/maplibre-gl-leaflet": "0.1.4",
+    "@pdf-lib/fontkit": "^1.1.1",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",

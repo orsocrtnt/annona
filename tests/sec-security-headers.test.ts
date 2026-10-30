@@ -3,8 +3,8 @@ import test from "node:test";
 import { buildContentSecurityPolicy, buildSecurityHeaders } from "../src/lib/security/security-headers";
 import nextConfig from "../next.config";
 
-// SEC-5 : en-têtes de sécurité globaux ; CSP en Report-Only tant que la recette
-// navigateur des cartes (OSM, OpenFreeMap, IGN, OSRM) n'est pas faite.
+// SEC-5 : en-têtes de sécurité globaux ; CSP bloquante depuis la recette navigateur SEC-AUDIT
+// du 29 octobre 2026 (cartes OSM, OpenFreeMap, IGN, OSRM ; Supabase ; build de production).
 const ENV = {
   NEXT_PUBLIC_SUPABASE_URL: "https://abcd.supabase.co",
   NEXT_PUBLIC_MAP_TILE_URL: "https://data.geopf.fr/wmts?layer=PLAN&z={z}&x={x}&y={y}",
@@ -27,8 +27,8 @@ test("en-têtes de base : anti-iframe, nosniff, referrer, permissions minimales"
   assert.match(permissions, /geolocation=\(self\)/);
   assert.match(permissions, /microphone=\(\)/);
   assert.match(permissions, /payment=\(\)/);
-  assert.ok(headers.has("Content-Security-Policy-Report-Only"));
-  assert.ok(!headers.has("Content-Security-Policy"), "CSP bloquante interdite avant recette navigateur");
+  assert.ok(headers.has("Content-Security-Policy"), "CSP bloquante");
+  assert.ok(!headers.has("Content-Security-Policy-Report-Only"), "plus de double politique");
 });
 
 test("CSP : domaines réellement utilisés autorisés, rien de plus large", () => {
@@ -70,7 +70,7 @@ test("next.config : en-têtes appliqués à toutes les routes", async () => {
   const all = rules.find((rule) => rule.source === "/:path*");
   assert.ok(all, "règle globale");
   const keys = all!.headers.map((header) => header.key);
-  for (const key of ["X-Frame-Options", "X-Content-Type-Options", "Referrer-Policy", "Permissions-Policy", "Content-Security-Policy-Report-Only"]) {
+  for (const key of ["X-Frame-Options", "X-Content-Type-Options", "Referrer-Policy", "Permissions-Policy", "Content-Security-Policy"]) {
     assert.ok(keys.includes(key), key);
   }
 });

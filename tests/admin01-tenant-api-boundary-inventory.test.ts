@@ -25,6 +25,10 @@ function functionBodies(source: string) {
 }
 
 function observe(scan: string) {
+  // Garde partagée de DISPATCHER-403 (src/lib/api/dispatch-settings-read-guard.ts), décrite dans l'inventaire.
+  if (scan.includes("requireDispatchSettingsReader()")) {
+    return { permission: "settings:read ou deliveries:dispatch", role: "COMPANY_ADMIN, MINI_ADMIN, DISPATCHER" };
+  }
   const permissions = [...scan.matchAll(/requireStaffRole\(\s*"([^"]+)"\s*\)/g)].map((match) => match[1]);
   const permission = permissions.length > 0 ? permissions.join(", ") : scan.includes("requireStaffRole()") ? "requireStaffRole()" : "aucun";
   const roles = scan.match(/requireRole\([^)]*\[([^\]]*)\]/);
@@ -79,4 +83,5 @@ test("ADMIN-1 inventaire entreprise : chaque route avec getCompanyId est documen
   const note = readFileSync(inventoryPath, "utf8");
   assert.equal(note.includes("conversationAuth"), true);
   assert.equal(note.includes("requireSupportStaff"), true);
+  assert.equal(note.includes("requireDispatchSettingsReader"), true);
 });

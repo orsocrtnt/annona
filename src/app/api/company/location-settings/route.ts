@@ -1,6 +1,7 @@
 import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
+import { requireDispatchSettingsReader } from "@/lib/api/dispatch-settings-read-guard";
 import {
   getCompanyLocationSettings,
   updateCompanyLocationSettings,
@@ -8,10 +9,8 @@ import {
 import { driverLocationSettingsSchema } from "@/lib/validations/driver-location-settings";
 
 export async function GET() {
-  const auth = await requireStaffRole("settings:read");
+  const auth = await requireDispatchSettingsReader();
   if ("error" in auth) return auth.error;
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
-  if (denied) return denied;
 
   const companyId = getCompanyId(auth.context);
   if (!companyId) {

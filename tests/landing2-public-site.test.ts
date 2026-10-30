@@ -153,7 +153,7 @@ test("LANDING-3 : la landing n'écrit aucun prix en dur et renvoie vers /tarifs,
 });
 
 test("DESIGN-2 : le site public suit le choix Clair / Sombre / Système, le reste ne change pas", () => {
-  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
+  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
   for (const path of ["/registerx", "/tarifsx", "/loginx"]) {

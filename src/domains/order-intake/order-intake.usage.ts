@@ -5,6 +5,12 @@ export const ORDER_INTAKE_HOURLY_LIMIT = 60;
 export const ORDER_INTAKE_DAILY_LIMIT = 300;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+/**
+ * Les réservations d'une même entreprise attendent le verrou à tour de rôle : avec l'attente par défaut
+ * de Prisma (2 s), dix analyses simultanées sur un pool de 5 échouaient en erreur serveur au lieu d'être
+ * servies ou plafonnées (mesuré sur PostgreSQL réel, `npm run test:pg-intake`).
+ */
+export const ORDER_INTAKE_RESERVE_TX = { maxWait: 10_000, timeout: 15_000 } as const;
 
 export type OrderIntakeUsageStatus = "PENDING" | "SUCCEEDED" | "FAILED";
 type UsageDb = Pick<typeof prisma, "orderIntakeUsage" | "$transaction">;
@@ -52,7 +58,7 @@ export async function reserveOrderIntakeCall(
       select: { id: true },
     });
     return { status: "reserved", id: row.id } as const;
-  });
+  }, ORDER_INTAKE_RESERVE_TX);
 }
 
 /** Rend la place réservée quand le fournisseur a refusé l'appel avant toute génération (aucun jeton). */

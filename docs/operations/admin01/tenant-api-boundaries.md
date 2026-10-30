@@ -21,11 +21,11 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/billing-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/clients/[id]/invoice-identity/route.ts | GET | settings:read | COMPANY_ADMIN |
 | src/app/api/company/clients/[id]/invoice-identity/route.ts | PUT | settings:update | COMPANY_ADMIN |
-| src/app/api/company/dispatch/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/dispatch/route.ts | GET | settings:read ou deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/company/dispatch/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/einvoicing/route.ts | GET | settings:read | COMPANY_ADMIN |
 | src/app/api/company/einvoicing/route.ts | PATCH | settings:update | COMPANY_ADMIN |
-| src/app/api/company/location-settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/location-settings/route.ts | GET | settings:read ou deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/company/location-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/logo/route.ts | GET | aucun | aucun |
 | src/app/api/company/logo/route.ts | POST | settings:update | COMPANY_ADMIN, MINI_ADMIN |
@@ -36,7 +36,7 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/proof-rules/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
-| src/app/api/company/tariffs/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
+| src/app/api/company/tariffs/route.ts | GET | settings:read ou deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/company/tariffs/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/deliveries/[id]/assign/route.ts | PATCH | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/[id]/proof/[kind]/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
@@ -88,6 +88,8 @@ Ces routes n'appellent pas `getCompanyId`. Elles passent par un garde partagé d
 `conversationAuth` autorise uniquement `COMPANY_ADMIN`, `MINI_ADMIN`, `DISPATCHER`, `DRIVER` et `CLIENT`. `SUPER_ADMIN` est exclu.
 
 `requireSupportStaff` autorise uniquement `COMPANY_ADMIN`, `MINI_ADMIN` et `DISPATCHER`. `SUPER_ADMIN` est exclu. Un `MINI_ADMIN` sans `support:read` reste refusé avant l'entreprise.
+
+`requireDispatchSettingsReader` (DISPATCHER-403, 29 octobre 2026) protège la lecture des réglages d'assignation (`company/dispatch`, `company/tariffs`, `company/location-settings`) : `COMPANY_ADMIN` et `MINI_ADMIN` avec `settings:read`, ou `DISPATCHER` avec `deliveries:dispatch`. `SUPER_ADMIN` est exclu ; un `MINI_ADMIN` sans `settings:read` reste refusé. L'écriture de ces réglages reste `settings:update` pour `COMPANY_ADMIN` et `MINI_ADMIN`.
 
 <!-- INDIRECT_COMPANY_BOUNDARIES_START -->
 | Chemin | Méthode | Garde |

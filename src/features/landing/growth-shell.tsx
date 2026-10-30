@@ -11,7 +11,7 @@ const display = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-type GrowthPage = "fonctionnalites" | "tarifs" | "demonstration" | "contact";
+type GrowthPage = "fonctionnalites" | "tarifs" | "demonstration" | "contact" | "mentions-legales" | "confidentialite";
 
 export function GrowthShell({
   active,
@@ -48,6 +48,8 @@ export function GrowthShell({
             <Link href="/login/client" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Espace client</Link>
             <Link href="/login/driver" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Espace chauffeur</Link>
             <Link href="/contact" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Contact</Link>
+            <Link href="/mentions-legales" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Mentions légales</Link>
+            <Link href="/confidentialite" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Confidentialité</Link>
           </div>
         </div>
       </footer>

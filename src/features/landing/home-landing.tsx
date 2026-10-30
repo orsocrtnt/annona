@@ -95,6 +95,8 @@ export function HomeLanding() {
               <Link href="/login?espace=entreprise" className={footerLink}>Entreprise</Link>
               <Link href="/login/client" className={footerLink}>Client</Link>
               <Link href="/login/driver" className={footerLink}>Chauffeur</Link>
+              <Link href="/mentions-legales" className={footerLink}>Mentions légales</Link>
+              <Link href="/confidentialite" className={footerLink}>Confidentialité</Link>
             </nav>
           </div>
         </div>

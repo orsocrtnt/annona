@@ -11,8 +11,10 @@ import { DELIVERY_CATEGORY_DESCRIPTIONS, DELIVERY_CATEGORY_LABELS } from "@/lib/
 import {
   useCompanyDeliveryOptions,
   useCompanyPortalSettings,
+  useCompanyProofRules,
   useUpdateCompanyDeliveryOptions,
   useUpdateCompanyPortalSettings,
+  useUpdateCompanyProofRules,
 } from "@/features/back-office/company-settings-hooks";
 import type { DeliveryCategory } from "@prisma/client";
 import { Package, Bike, Briefcase } from "lucide-react";
@@ -46,6 +48,8 @@ export default function SettingsPage() {
   const updateOptions = useUpdateCompanyDeliveryOptions();
   const { data: portal } = useCompanyPortalSettings();
   const updatePortal = useUpdateCompanyPortalSettings();
+  const { data: proofRules } = useCompanyProofRules();
+  const updateProofRules = useUpdateCompanyProofRules();
   const readOnly = useAuthStore((state) => state.saas?.canMutate === false);
   const [local, setLocal] = useState(options?.deliveryCategories);
 
@@ -76,6 +80,21 @@ export default function SettingsPage() {
     try {
       await updatePortal.mutateAsync({ portalShowDriverPhone });
       toast.success(portalShowDriverPhone ? "Téléphone du livreur visible par les clients" : "Téléphone du livreur masqué aux clients");
+    } catch (error) {
+      toast.error("Enregistrement impossible", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  };
+
+  const handleProofRule = async (patch: { signatureRequired: boolean } | { emailToClient: boolean }) => {
+    try {
+      await updateProofRules.mutateAsync(patch);
+      toast.success(
+        "signatureRequired" in patch
+          ? patch.signatureRequired ? "Signature du réceptionnaire obligatoire" : "Signature du réceptionnaire facultative"
+          : patch.emailToClient ? "La preuve sera envoyée au client par e-mail" : "La preuve ne sera plus envoyée au client par e-mail"
+      );
     } catch (error) {
       toast.error("Enregistrement impossible", {
         description: error instanceof Error ? error.message : undefined,
@@ -175,6 +194,48 @@ export default function SettingsPage() {
               onChange={(event) => handleDriverPhone(event.target.checked)}
             />
             <span className="text-sm font-medium">Afficher le téléphone du livreur aux clients</span>
+          </label>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Preuve de livraison</CardTitle>
+          <CardDescription>
+            Ce que le livreur doit recueillir à la remise. Une photo reste toujours demandée ; avec une
+            signature, le nom du réceptionnaire est obligatoire.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-5 w-5 shrink-0"
+              checked={proofRules?.signatureRequired ?? false}
+              disabled={!proofRules || readOnly || updateProofRules.isPending}
+              onChange={(event) => handleProofRule({ signatureRequired: event.target.checked })}
+            />
+            <span className="text-sm">
+              <span className="font-medium">Signature du réceptionnaire obligatoire</span>
+              <span className="mt-0.5 block text-muted-foreground">
+                Sans signature, le livreur doit noter le refus et son motif.
+              </span>
+            </span>
+          </label>
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-border p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-5 w-5 shrink-0"
+              checked={proofRules?.emailToClient ?? true}
+              disabled={!proofRules || readOnly || updateProofRules.isPending}
+              onChange={(event) => handleProofRule({ emailToClient: event.target.checked })}
+            />
+            <span className="text-sm">
+              <span className="font-medium">Envoyer la preuve au client par e-mail</span>
+              <span className="mt-0.5 block text-muted-foreground">
+                Lien vers la preuve (PDF) envoyé au donneur d&apos;ordre une fois la livraison validée.
+              </span>
+            </span>
           </label>
         </CardContent>
       </Card>

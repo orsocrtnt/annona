@@ -5,12 +5,20 @@ import { driverApi } from "./api";
 import { useDriverLocationSettings } from "./location-settings-hooks";
 import { useDriverActionQueue } from "./driver-action-queue-provider";
 import type { DriverPodPayload } from "./offline-action-queue";
+import { readCachedProofRules, writeCachedProofRules } from "./proof-rules-cache";
 
 /** Règles de preuve de l'entreprise (signature requise ou non), mises en cache pour le mode hors ligne. */
 export function useDriverProofRules() {
   return useQuery({
     queryKey: ["driver", "proof-rules"],
-    queryFn: () => driverApi.getProofRules(),
+    queryFn: async () => {
+      const rules = await driverApi.getProofRules();
+      writeCachedProofRules(rules);
+      return rules;
+    },
+    // Dernière règle connue sur ce téléphone : rechargée dès que le réseau le permet.
+    initialData: readCachedProofRules,
+    initialDataUpdatedAt: 0,
     staleTime: 10 * 60_000,
     gcTime: 24 * 60 * 60_000,
   });

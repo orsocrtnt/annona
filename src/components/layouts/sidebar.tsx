@@ -113,6 +113,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
                 alt={APP_NAME}
                 width={118}
                 height={35}
+                priority
                 className="hidden dark:block"
                 style={{ width: 118, height: 35 }}
               />

@@ -101,6 +101,10 @@ export async function checkDriverMissionProximity(
   };
 }
 
+/**
+ * Refuse une étape hors zone, sauf confirmation explicite du livreur. Confirmée hors zone, l'étape passe et
+ * le contrôle est renvoyé (distance comprise) pour être signalé à l'équipe (MOB-01C) ; sinon `null`.
+ */
 export async function assertDriverMissionProximityOrThrow(
   driverId: string,
   companyId: string,
@@ -108,9 +112,7 @@ export async function assertDriverMissionProximityOrThrow(
   kind: ProximityTargetKind,
   confirmOutOfRange: boolean | undefined,
   overridePosition?: { latitude: number; longitude: number } | null
-) {
-  if (confirmOutOfRange) return;
-
+): Promise<MissionProximityResult | null> {
   const check = await checkDriverMissionProximity(
     driverId,
     companyId,
@@ -119,9 +121,7 @@ export async function assertDriverMissionProximityOrThrow(
     overridePosition
   );
 
-  if (!check) return;
-
-  if (!check.hasLocation || !check.near) {
-    throw new DriverProximityError(kind, check.distanceMeters);
-  }
+  if (!check || (check.hasLocation && check.near)) return null;
+  if (confirmOutOfRange) return check;
+  throw new DriverProximityError(kind, check.distanceMeters);
 }

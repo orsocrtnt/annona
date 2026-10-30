@@ -78,6 +78,7 @@ function fakeDatabase(t: TestContext, options: {
   order.deliveries = [delivery];
   const invoices: Row[] = options.invoices ?? [];
   const jobs: Row[] = [];
+  const outOfRangeNotes: Row[] = [];
   let sequence = 0;
   let queue: Promise<unknown> = Promise.resolve();
 
@@ -116,6 +117,8 @@ function fakeDatabase(t: TestContext, options: {
     },
     driverLocation: { findUnique: async () => null },
     trackingEvent: { create: async () => ({ id: `evt_${++sequence}` }) },
+    // MOB-01C : une étape confirmée hors zone laisse une note interne d'incident.
+    orderMessage: { create: async ({ data }: { data: Row }) => { outOfRangeNotes.push(data); return { id: `msg_${++sequence}`, ...data }; } },
     invoice: {
       findMany: async ({ where }: { where: Row }) => invoices.filter((row) =>
         row.orderId === where.orderId
@@ -144,7 +147,7 @@ function fakeDatabase(t: TestContext, options: {
       findUnique: async () => null,
     },
   };
-  for (const key of ["$queryRaw", "$transaction", "company", "order", "delivery", "driverLocation", "trackingEvent", "invoice", "operationJob"]) {
+  for (const key of ["$queryRaw", "$transaction", "company", "order", "delivery", "driverLocation", "trackingEvent", "orderMessage", "invoice", "operationJob"]) {
     replace(t, prisma, key, (db as Row)[key]);
   }
   replace(t, console, "error", () => undefined);

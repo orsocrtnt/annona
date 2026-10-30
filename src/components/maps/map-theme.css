@@ -35,3 +35,19 @@
   outline-offset: 3px;
   border-radius: 8px;
 }
+
+/*
+ * MOBILE-WEB : zone tactile de 44 px (WCAG 2.5.5) autour de chaque marqueur cliquable. L'ancre Leaflet fait
+ * 1 px et le dessin 26 à 32 px ; ce cercle transparent, centré sur l'ancre, agrandit la cible sans changer
+ * le dessin. Les clics sur le pseudo-élément reviennent au marqueur.
+ */
+.leaflet-marker-icon.leaflet-interactive::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}

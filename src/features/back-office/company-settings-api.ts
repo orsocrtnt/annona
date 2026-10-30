@@ -1,4 +1,5 @@
 import type { CompanyDeliveryOptions } from "@/lib/validations/company-settings";
+import type { ProofRules } from "@/domains/delivery/pod-evidence";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
@@ -18,6 +19,13 @@ export const companySettingsApi = {
   getPortalSettings: () => fetchJson<{ portalShowDriverPhone: boolean }>("/api/company/portal-settings"),
   updatePortalSettings: (data: { portalShowDriverPhone: boolean }) =>
     fetchJson<{ portalShowDriverPhone: boolean }>("/api/company/portal-settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  getProofRules: () => fetchJson<ProofRules>("/api/company/proof-rules"),
+  updateProofRules: (data: Partial<ProofRules>) =>
+    fetchJson<ProofRules>("/api/company/proof-rules", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

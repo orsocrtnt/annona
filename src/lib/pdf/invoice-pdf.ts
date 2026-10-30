@@ -10,7 +10,9 @@ import {
 } from "pdf-lib";
 import type { InvoiceStatus } from "@prisma/client";
 import { INVOICE_STATUS_LABELS } from "@/lib/constants/invoice-status";
+import fontkit from "@pdf-lib/fontkit";
 import { TUTELLIV_LOGO_PNG_BASE64 } from "@/lib/pdf/tutelliv-logo";
+import { LIBERATION_SANS_BOLD_TTF_BASE64, LIBERATION_SANS_REGULAR_TTF_BASE64 } from "@/lib/pdf/fonts/liberation-sans";
 
 export interface InvoicePdfData {
   reference: string;
@@ -120,8 +122,18 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   const doc = await PDFDocument.create();
   doc.setTitle(`${documentLabel} ${data.reference}`);
   doc.setCreator("TutelLiv");
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  // Variante Factur-X (PDF/A-3b) : polices embarquées, exigées par la norme ; largeurs identiques à
+  // Helvetica. Relevé classique : polices standard, octets inchangés.
+  let font: PDFFont;
+  let bold: PDFFont;
+  if (legal) {
+    doc.registerFontkit(fontkit);
+    font = await doc.embedFont(Buffer.from(LIBERATION_SANS_REGULAR_TTF_BASE64, "base64"), { subset: true });
+    bold = await doc.embedFont(Buffer.from(LIBERATION_SANS_BOLD_TTF_BASE64, "base64"), { subset: true });
+  } else {
+    font = await doc.embedFont(StandardFonts.Helvetica);
+    bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  }
   const supported = new Set(font.getCharacterSet());
   const tutelliv = await doc.embedPng(Buffer.from(TUTELLIV_LOGO_PNG_BASE64, "base64"));
   let companyLogo: PDFImage | null = null;
@@ -130,7 +142,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     companyLogo = await doc.embedPng(data.companyLogoPng).catch(() => null);
   }
 
-  /** Police standard (WinAnsi) : on garde €, ’, œ… et on remplace seulement l'impossible. */
+  /** Jeu WinAnsi (police standard ou Liberation Sans réduite) : on garde €, ’, œ… et on remplace seulement l'impossible. */
   const sanitize = (value: string) =>
     [...value.replace(/[\u202f\u2009\u2007]/g, "\u00a0")]
       .map((character) => (character === "\n" || supported.has(character.codePointAt(0)!) ? character : "?"))

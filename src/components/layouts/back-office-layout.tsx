@@ -8,7 +8,7 @@ import { Header } from "./header";
 import { MobileNav } from "./mobile-nav";
 import { useUIStore } from "@/stores/ui.store";
 import { useAuthStore } from "@/stores/auth.store";
-import { canUseConversations } from "@/lib/constants/conversation-roles";
+import { canOpenStaffInbox } from "@/lib/constants/conversation-roles";
 import type { NavItem, BreadcrumbItem } from "@/types";
 
 interface BackOfficeLayoutProps {
@@ -29,8 +29,11 @@ export function BackOfficeLayout({
   mapFullscreen = false,
 }: BackOfficeLayoutProps) {
   const { sidebarCollapsed } = useUIStore();
-  // Le super-administrateur n'a pas accès aux échanges ni aux alertes : ne pas appeler ces API (403).
-  const showInbox = canUseConversations(useAuthStore((state) => state.user?.role.systemRole));
+  // Super-administrateur, ou mini-admin sans lecture des commandes ni des livraisons : pas d'accès aux
+  // échanges ni aux alertes, donc ne pas appeler ces API (403).
+  const role = useAuthStore((state) => state.user?.role.systemRole);
+  const permissions = useAuthStore((state) => state.permissions);
+  const showInbox = canOpenStaffInbox(role, permissions);
   const isLg = useMediaQuery("(min-width: 1024px)");
   // Même retrait que le contenu : barre latérale flottante (12 px + 80/264 px) et son écart.
   const mapSidebarWidth = sidebarCollapsed ? 104 : 292;

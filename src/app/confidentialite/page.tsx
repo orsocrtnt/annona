@@ -1,0 +1,89 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { APP_NAME } from "@/lib/constants";
+import { LegalDocument, LegalSection } from "@/features/legal/legal-document";
+
+export const metadata: Metadata = {
+  title: `Confidentialité — ${APP_NAME}`,
+  description: "Données collectées par le site TutelLiv et vos droits (version provisoire, en cours de validation).",
+};
+
+export default function ConfidentialitePage() {
+  return (
+    <LegalDocument
+      active="confidentialite"
+      title="Politique de confidentialité"
+      intro={`Ce que ${APP_NAME} collecte sur ce site, pourquoi, et comment exercer vos droits.`}
+    >
+      <LegalSection title="Responsable du traitement">
+        <p>
+          L&apos;éditeur du site, présenté dans les{" "}
+          <Link href="/mentions-legales" className="font-semibold text-brand underline underline-offset-4">
+            mentions légales
+          </Link>
+          .
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Formulaire de contact">
+        <p>
+          Données demandées : nom, e-mail et message ; société et téléphone si vous les indiquez. Elles servent
+          uniquement à vous répondre.
+        </p>
+        <p>
+          Votre adresse IP n&apos;est pas enregistrée : seule une empreinte chiffrée sert à limiter les envois
+          abusifs.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Création d'un compte entreprise">
+        <p>
+          Données demandées : prénom, nom, e-mail professionnel, mot de passe, nom de l&apos;entreprise, adresse
+          de facturation ; raison sociale, SIREN, SIRET et téléphone si vous les indiquez. Elles servent à créer
+          votre compte, à gérer votre abonnement et à vous facturer.
+        </p>
+        <p>Le paiement est confié au prestataire de paiement Stripe.</p>
+      </LegalSection>
+
+      <LegalSection title="Données traitées dans l'application">
+        <p>
+          Les commandes, livraisons, preuves et positions des livreurs sont traitées pour le compte des
+          entreprises clientes. Leur cadre est fixé par le contrat et l&apos;accord de traitement des données,
+          en cours de préparation.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Hébergement et destinataires">
+        <p>
+          Les données sont hébergées par Vercel (site) et Supabase (base de données, région de Paris). Elles ne
+          sont ni vendues ni utilisées à des fins publicitaires.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Durée de conservation">
+        <p>
+          <em>En cours de définition.</em> Les durées seront publiées ici avant l&apos;ouverture commerciale.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Cookies et stockage local">
+        <p>
+          Le site n&apos;utilise aucun traceur publicitaire. Il dépose seulement ce qui est nécessaire à son
+          fonctionnement : la session de connexion, le suivi de l&apos;inscription en cours et votre choix de
+          thème clair ou sombre.
+        </p>
+      </LegalSection>
+
+      <LegalSection title="Vos droits">
+        <p>
+          Vous pouvez demander l&apos;accès à vos données, leur rectification, leur effacement, leur portabilité,
+          la limitation de leur traitement ou vous y opposer, depuis la{" "}
+          <Link href="/contact" className="font-semibold text-brand underline underline-offset-4">
+            page Contact
+          </Link>
+          . Vous pouvez aussi adresser une réclamation à la CNIL (cnil.fr).
+        </p>
+      </LegalSection>
+    </LegalDocument>
+  );
+}

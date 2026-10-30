@@ -170,3 +170,33 @@ test("un PDF qui contient déjà un factur-x.xml est refusé plutôt que doublé
   const { facturx } = await build();
   await assert.rejects(() => embedFacturXInPdf(facturx, { xml: XML, documentDate: NOW }), /FACTURX_ALREADY_EMBEDDED/);
 });
+
+test("FACTURX-1 PDF/A-3b : la variante Factur-X embarque toutes ses polices, le relevé classique garde les polices standard", async () => {
+  const legal = {
+    documentLabel: "Facture",
+    seller: { name: "Coursiers Fictifs SAS", lines: ["SIREN 000 000 000", "12 rue de l'Exemple, 75001 Paris"] },
+    buyer: { name: "Client Démo SARL", lines: ["1 rue des Tests, 75002 Paris"] },
+    mentions: ["Pénalités de retard : trois fois le taux d'intérêt légal.", "Indemnité forfaitaire de recouvrement : 40 €."],
+    footer: "Coursiers Fictifs SAS — œuvre « test » …",
+  };
+  const fontsOf = async (bytes: Uint8Array) => {
+    const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+    const fonts: Array<{ base: string; embedded: boolean }> = [];
+    for (const [, object] of doc.context.enumerateIndirectObjects()) {
+      if (!(object instanceof PDFDict) || object.get(PDFName.of("Type")) !== PDFName.of("Font")) continue;
+      const subtype = object.get(PDFName.of("Subtype"));
+      if (subtype === PDFName.of("CIDFontType2") || subtype === PDFName.of("Type1") || subtype === PDFName.of("TrueType")) {
+        const descriptor = object.lookupMaybe(PDFName.of("FontDescriptor"), PDFDict);
+        const embedded = Boolean(descriptor && (descriptor.get(PDFName.of("FontFile2")) || descriptor.get(PDFName.of("FontFile")) || descriptor.get(PDFName.of("FontFile3"))));
+        fonts.push({ base: String(object.get(PDFName.of("BaseFont"))), embedded });
+      }
+    }
+    return fonts;
+  };
+  const facturx = await fontsOf(await generateInvoicePdf({ ...classic, legal }));
+  assert.ok(facturx.length >= 2, "au moins une police normale et une grasse");
+  assert.ok(facturx.every((font) => font.embedded), JSON.stringify(facturx));
+  assert.ok(facturx.every((font) => /LiberationSans/.test(font.base)), JSON.stringify(facturx));
+  const standard = await fontsOf(await generateInvoicePdf(classic));
+  assert.ok(standard.length >= 2 && standard.every((font) => !font.embedded && /Helvetica/.test(font.base)), JSON.stringify(standard));
+});

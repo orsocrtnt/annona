@@ -26,6 +26,8 @@ export const THEME_SCOPED_PATH_PREFIXES = [
   "/tarifs",
   "/demonstration",
   "/contact",
+  "/mentions-legales",
+  "/confidentialite",
   "/login",
   "/forgot-password",
   "/reset-password",

@@ -277,7 +277,7 @@ test("partie visible du Factur-X : mentions légales vendeur/acheteur alignées 
   const now = new Date("2026-10-28T10:00:00Z");
   const built = await buildFacturXPdf({ source: source(), renderClassicPdf: render, now });
   assert.ok(built.ok);
-  const visible = pdfText(built.pdf);
+  const visible = await pdfText(built.pdf);
   for (const expected of [
     "FACTURE",
     "Coursiers Fictifs SAS",
@@ -305,9 +305,9 @@ test("partie visible du Factur-X : mentions légales vendeur/acheteur alignées 
     renderClassicPdf: render,
     now,
   });
-  assert.ok(exempt.ok && pdfText(exempt.pdf).includes("TVA non applicable, art. 293 B du CGI"));
+  assert.ok(exempt.ok && (await pdfText(exempt.pdf)).includes("TVA non applicable, art. 293 B du CGI"));
 
-  const classic = pdfText(await generateInvoicePdf(base));
+  const classic = await pdfText(await generateInvoicePdf(base));
   assert.ok(classic.includes("RELEVÉ DE PRESTATION") && !classic.includes("SIREN") && !classic.includes("MENTIONS LÉGALES"));
 });
 
@@ -341,7 +341,7 @@ test("micro-coursier en franchise (293 B) sans n° de TVA : export possible avec
 test("DEMO-3 : facture passée en retard — Factur-X complet (XML embarqué bien formé) et PDF classique « En retard »", async () => {
   const render = async () => generateInvoicePdf({ reference: "FAC-2026-0042", status: "OVERDUE", createdAt: new Date("2026-09-27T09:00:00Z"), amount: 30, lineItems: [], company: { name: "Coursiers Fictifs" } });
   const classic = await render();
-  assert.match(pdfText(classic), /En retard/);
+  assert.match(await pdfText(classic), /En retard/);
   const built = await buildFacturXPdf({ source: source({ invoice: { status: "OVERDUE" } }), renderClassicPdf: render, now: new Date("2026-10-28T10:00:00Z") });
   assert.ok(built.ok);
   assert.deepEqual(xmlWellFormednessErrors(built.xml), []);

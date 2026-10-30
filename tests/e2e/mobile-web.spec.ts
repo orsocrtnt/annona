@@ -14,8 +14,10 @@ const SIZES = [
   { width: 360, height: 740 },
 ];
 const MIN = 44;
+// Clair et Sombre : même règle, le thème est imposé par le stockage local et la préférence système.
+const THEMES = ["light", "dark"] as const;
 
-const PUBLIC = ["/", "/tarifs", "/contact", "/fonctionnalites", "/demonstration", "/login", "/login/client", "/login/driver", "/register", "/forgot-password"];
+const PUBLIC = ["/", "/tarifs", "/contact", "/fonctionnalites", "/demonstration", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/login/driver", "/register", "/forgot-password"];
 const BACK_OFFICE = ["/dashboard", "/dashboard/orders", "/dashboard/clients", "/dashboard/drivers", "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/intake", "/users", "/support", "/settings"];
 const PORTAL = ["/portal", "/portal/orders", "/portal/orders/new", "/portal/orders/history", "/portal/deliveries", "/portal/invoices", "/portal/recurring", "/portal/support", "/portal/profile", "/portal/settings"];
 const DRIVER = ["/driver", "/driver/missions", "/driver/profile"];
@@ -33,8 +35,15 @@ async function smallTargets(page: Page) {
       const style = getComputedStyle(el);
       if (style.visibility === "hidden" || style.display === "none" || Number(style.opacity) === 0) continue;
       if (el.closest("[hidden], [aria-hidden='true'], .sr-only")) continue;
-      // Marqueurs Leaflet : ancre de positionnement de 1 × 1 px, la zone touchée est le dessin enfant (hors périmètre de cette spec).
-      if (el.classList.contains("leaflet-marker-icon")) continue;
+      // Marqueurs Leaflet : l'ancre fait 1 × 1 px ; la cible réelle est la zone tactile ::after de 44 px
+      // (map-theme.css), mesurée ici pour chaque marqueur cliquable.
+      if (el.classList.contains("leaflet-marker-icon")) {
+        if (!el.classList.contains("leaflet-interactive")) continue;
+        const hit = getComputedStyle(el, "::after");
+        const size = Math.min(parseFloat(hit.width) || 0, parseFloat(hit.height) || 0);
+        if (hit.position !== "absolute" || size < min - 0.5) bad.push(`marqueur de carte ${Math.round(size)}×${Math.round(size)}`);
+        continue;
+      }
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) continue;
       // Lien d'évitement : hors écran tant qu'il n'a pas le focus.
@@ -66,14 +75,20 @@ async function audit(page: Page, path: string, width: number) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   await expect(page.locator("body")).toBeVisible();
   await page.waitForLoadState("networkidle").catch(() => undefined);
+  const theme = await page.evaluate(() => localStorage.getItem("tutelliv-theme"));
+  // Toutes les pages auditées suivent le choix Clair / Sombre (THEME_SCOPED_PATH_PREFIXES).
+  if (theme) expect.soft(await page.evaluate(() => document.documentElement.dataset.theme), `${path} : thème ${theme} appliqué`).toBe(theme);
   const { scrollWidth, innerWidth } = await overflowX(page);
   expect.soft(scrollWidth, `${path} @${width} : défilement horizontal`).toBeLessThanOrEqual(innerWidth);
   expect.soft(await smallTargets(page), `${path} @${width} : cibles < ${MIN} px`).toEqual([]);
 }
 
-for (const size of SIZES) {
-  test.describe(`MOBILE-WEB ${size.width} px`, () => {
-    test.use({ viewport: size });
+for (const theme of THEMES) for (const size of SIZES) {
+  test.describe(`MOBILE-WEB ${size.width} px ${theme === "dark" ? "Sombre" : "Clair"}`, () => {
+    test.use({ viewport: size, colorScheme: theme });
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript((value) => localStorage.setItem("tutelliv-theme", value), theme);
+    });
 
     test("site public et authentification", async ({ page }) => {
       for (const path of PUBLIC) await audit(page, path, size.width);
