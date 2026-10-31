@@ -21,6 +21,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
+- E-mails du site : dans Vercel (Preview, `preproduction`), passer `EMAIL_DELIVERY_MODE` à `test`, ajouter `EMAIL_TEST_RECIPIENT` et `MAIL_FROM`, sinon le lien de suivi et les autres e-mails métier ne partent pas (LIEN-PUBLIC).
 - MAIL-COMMANDE (quand tu voudras l'allumer) : poser le MX de `commandes.tutelliv.fr` chez OVH, créer le webhook `email.received` dans Resend, puis mettre `INBOUND_EMAIL_DOMAIN` et `RESEND_INBOUND_WEBHOOK_SECRET` dans Vercel ; la clé Anthropic au-dessus sert aussi ici. Le dire à Claude, qui fait l'essai réel.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
 
@@ -1531,6 +1532,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Vérifié sur tutelliv-dev : `tests/e2e/public-order.spec.ts` (navigateur réel, sans session : champs manquants, double clic = 1 commande, suivi, 404 sur jeton inconnu, champ forcé refusé, pot de miel, 6e envoi en 429, lien coupé en 404, suivi conservé) ; écrans commandes, dispatch et carte sans erreur avec une commande sans client ; passage en Livrée ; captures 390 px relues. `npm run check` vert.
 
   Préproduction (`ace40bc`, CI verte, migration appliquée) : jeton inconnu en 404 sur `/commander`, `/suivi` et l'API publique (la table répond), webhook sans signature en 400, routes du back-office en 401 sans session. Pas de commande réelle passée en préproduction : essai du propriétaire à faire depuis Commandes › « Nouvelle commande depuis un message ».
+
+  **Constat du 30 octobre 2026 : le site n'envoie aucun e-mail.** Commande d'essai `CRS-29446734` (entreprise « Recette Pro », préproduction, lien activé) : créée, mais tâche close `SKIPPED:GUEST_TRACKING_EMAIL_DISABLED`, car `EMAIL_DELIVERY_MODE` y désactive l'envoi ; `MAIL_FROM` et `EMAIL_TEST_RECIPIENT` n'y sont pas non plus (noms relevés sur Vercel). Le lien de suivi reste affiché après la commande. E-mail d'essai envoyé hors du site, avec la configuration Resend locale, vers la boîte de test. Reste : poser ces variables pour que le site envoie.
 
   Limites : e-mail du demandeur non vérifié, donc du spam reste possible sous le plafond et il consomme le quota de commandes (l'entreprise coupe ou renouvelle le lien) ; envoi réel du lien de suivi non constaté (dépend du mode e-mail du serveur) ; pas de position du livreur dans le suivi V1 ; `exportCompanyData` n'inclut pas les nouvelles tables (inventaire DATA-02 à jour, à trancher avec le juriste).
 
