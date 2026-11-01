@@ -90,7 +90,7 @@ export function OrderHistoryTable<T extends Record<string, unknown>>({
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={isMobile ? "Rechercher…" : searchPlaceholder}
             className="pl-9"
             aria-label="Rechercher dans l'historique"
           />

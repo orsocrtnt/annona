@@ -14,8 +14,8 @@ const SIZES = [
   { width: 360, height: 740 },
 ];
 const MIN = 44;
-// Clair et Sombre : même règle, le thème est imposé par le stockage local et la préférence système.
-const THEMES = ["light", "dark"] as const;
+// Clair seulement : le mode sombre est retiré des téléphones depuis le 30 octobre 2026 (voir `PHONE_` dans src/lib/theme.ts).
+const THEMES = ["light"] as const;
 
 const PUBLIC = ["/", "/tarifs", "/contact", "/fonctionnalites", "/demonstration", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/login/driver", "/register", "/forgot-password"];
 const BACK_OFFICE = ["/dashboard", "/dashboard/orders", "/dashboard/clients", "/dashboard/drivers", "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/intake", "/users", "/support", "/settings"];

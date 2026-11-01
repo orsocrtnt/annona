@@ -12,7 +12,7 @@ export type AlertPlacement = { mode: AlertMode; context?: AlertContext };
 
 const SUPERVISION_PAGES: Record<Exclude<AlertSpace, "driver">, string[]> = {
   staff: ["/dashboard", "/dispatch", "/dashboard/orders", "/dashboard/deliveries"],
-  client: ["/portal", "/portal/orders", "/portal/deliveries"],
+  client: ["/portal", "/portal/orders"],
 };
 const DETAIL_PAGES: Record<Exclude<AlertSpace, "driver">, Array<{ prefix: string; key: keyof AlertContext }>> = {
   staff: [{ prefix: "/dashboard/orders/", key: "orderId" }, { prefix: "/dashboard/deliveries/", key: "deliveryId" }],

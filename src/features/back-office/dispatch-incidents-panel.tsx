@@ -1,5 +1,7 @@
 "use client";
 
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { MOBILE_CARDS_QUERY } from "@/lib/table/mobile-cards";
 import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
@@ -11,12 +13,18 @@ import { buildDispatchTargetHref } from "./dispatch-focus";
 import { DispatchSuggestionsPanel } from "./dispatch-suggestions-panel";
 import { useDispatchIncidents } from "./hooks";
 
+const MOBILE_INCIDENTS = 3;
+
 /** Retards, livreurs indisponibles et urgences : chaque nouvelle proposition reste validée par le dispatcher. */
 export function DispatchIncidentsPanel() {
   const { data: incidents } = useDispatchIncidents();
   const [openId, setOpenId] = useState<string | null>(null);
+  // Téléphone : les 3 premiers imprévus, le reste à la demande, pour que la file reste atteignable.
+  const isMobile = useMediaQuery(MOBILE_CARDS_QUERY);
+  const [showAll, setShowAll] = useState(false);
 
   if (!incidents?.length) return null;
+  const shown = isMobile && !showAll ? incidents.slice(0, MOBILE_INCIDENTS) : incidents;
 
   return (
     <Card data-testid="dispatch-incidents">
@@ -28,7 +36,7 @@ export function DispatchIncidentsPanel() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {incidents.map((incident) => (
+        {shown.map((incident) => (
           <div key={incident.deliveryId} className="space-y-3 rounded-xl border p-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
@@ -66,6 +74,11 @@ export function DispatchIncidentsPanel() {
             )}
           </div>
         ))}
+        {shown.length < incidents.length && (
+          <Button type="button" variant="outline" className="w-full" onClick={() => setShowAll(true)}>
+            Voir les {incidents.length - shown.length} autres
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

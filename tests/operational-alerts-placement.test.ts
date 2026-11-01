@@ -59,6 +59,8 @@ test("fiches détaillées : les alertes de la commande ou livraison de la page r
   assert.deepEqual(alertPlacementForPath("staff", "/dashboard/orders/o1"), { mode: "context", context: { orderId: "o1" } });
   assert.deepEqual(alertPlacementForPath("staff", "/dashboard/deliveries/d1/"), { mode: "context", context: { deliveryId: "d1" } });
   assert.deepEqual(alertPlacementForPath("client", "/portal/orders/o2"), { mode: "context", context: { orderId: "o2" } });
+  // Carte plein écran : un bandeau passerait sous la barre flottante, l'accès « Alertes » reste.
+  assert.deepEqual(alertPlacementForPath("client", "/portal/deliveries"), { mode: "floating" });
   assert.deepEqual(alertPlacementForPath("client", "/portal/deliveries/d2"), { mode: "context", context: { deliveryId: "d2" } });
   assert.equal(alertModeForPath("staff", "/dashboard/orders/new"), "floating");
   const all = [{ orderId: "o1", deliveryId: "d1" }, { orderId: "o1", deliveryId: null }, { orderId: "o9", deliveryId: "d9" }];

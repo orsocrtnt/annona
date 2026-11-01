@@ -39,7 +39,7 @@ function StatsRowWidget() {
   const { stats } = usePortalDashboardContext();
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <StatCard label="Commandes actives" value={stats.activeOrders} icon={Package} />
       <StatCard label="En livraison" value={stats.inDelivery} icon={Truck} />
       <StatCard label="Livrées ce mois" value={stats.deliveredThisMonth} icon={CheckCircle2} />
@@ -251,7 +251,7 @@ export function PortalDashboardWidgetRenderer({ widget }: { widget: PortalDashbo
 
 export function PortalDashboardCompactGrid({ widgets }: { widgets: PortalDashboardWidgetLayout[] }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       {widgets.map((widget) => (
         <PortalDashboardWidget key={widget.type} widget={widget} />
       ))}
