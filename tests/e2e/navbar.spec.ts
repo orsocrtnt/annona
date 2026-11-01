@@ -9,7 +9,8 @@ test("la navigation publique reproduit le soulignement lumineux au survol", asyn
   page,
 }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/");
+  // L'accueil a sa barre plate (LANDING-3) ; les autres pages publiques gardent le soulignement.
+  await page.goto("/contact");
 
   const nav = page.getByRole("navigation", { name: "Navigation publique" });
   const pricingLink = nav.getByRole("link", { name: "Tarifs" });

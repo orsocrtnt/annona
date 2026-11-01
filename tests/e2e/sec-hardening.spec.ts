@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // SEC-1..6 : recette navigateur du durcissement (non lancée par l'agent Sécurité).
 // Base de développement uniquement ; aucun compte réel n'est créé ni modifié.
 
-test("en-têtes de sécurité et CSP Report-Only sur une page publique et une carte", async ({ page }) => {
+test("en-têtes de sécurité et CSP bloquante sur une page publique et une carte", async ({ page }) => {
   const violations: string[] = [];
   page.on("console", (message) => {
     if (/Content Security Policy|Content-Security-Policy/i.test(message.text())) violations.push(message.text());
@@ -14,10 +14,9 @@ test("en-têtes de sécurité et CSP Report-Only sur une page publique et une ca
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
   expect(headers["permissions-policy"]).toContain("geolocation=(self)");
-  expect(headers["content-security-policy-report-only"]).toContain("frame-ancestors 'none'");
-  expect(headers["content-security-policy"]).toBeUndefined();
+  expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
   await page.waitForLoadState("networkidle");
-  // La mini-démo et les cartes ne doivent produire aucune violation avant de passer en CSP bloquante.
+  // La mini-démo et les cartes ne doivent produire aucune violation de la CSP bloquante.
   expect(violations, violations.join("\n")).toEqual([]);
 });
 

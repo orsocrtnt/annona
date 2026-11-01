@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,6 +33,13 @@ export function OnboardingContent() {
     // Même clé que la navigation : l'entrée du menu apparaît ou disparaît aussitôt.
     onSuccess: (status) => queryClient.setQueryData(ONBOARDING_QUERY_KEY, status),
   });
+  // Double clic : les deux clics partent avant que le bouton se désactive, le serveur répondrait 409 au second.
+  const preferenceInFlight = useRef(false);
+  const savePreference = (body: OnboardingPreference) => {
+    if (preferenceInFlight.current) return;
+    preferenceInFlight.current = true;
+    preference.mutate(body, { onSettled: () => { preferenceInFlight.current = false; } });
+  };
   const { data, isLoading, error } = useQuery({
     queryKey: ONBOARDING_QUERY_KEY,
     queryFn: fetchOnboardingStatus,
@@ -81,7 +89,7 @@ export function OnboardingContent() {
             size="sm"
             className="shrink-0"
             disabled={readOnly || preference.isPending}
-            onClick={() => preference.mutate({ step: "navigation", hidden: !data.hiddenFromNavigation })}
+            onClick={() => savePreference({ step: "navigation", hidden: !data.hiddenFromNavigation })}
           >
             {data.hiddenFromNavigation ? "Afficher dans le menu" : "Masquer du menu"}
           </Button>
@@ -149,7 +157,7 @@ export function OnboardingContent() {
                 </div>
               </div>
               {step.optional && !step.complete && (
-                <Button variant="ghost" size="sm" disabled={readOnly || preference.isPending} onClick={() => preference.mutate({ step: "collaborators", skipped: !step.skipped })}>
+                <Button variant="ghost" size="sm" disabled={readOnly || preference.isPending} onClick={() => savePreference({ step: "collaborators", skipped: !step.skipped })}>
                   {step.skipped ? "Reprendre cette étape" : "Passer cette étape"}
                 </Button>
               )}

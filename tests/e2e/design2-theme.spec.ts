@@ -98,7 +98,8 @@ test("carte plein écran du dispatch : suit le Sombre depuis le plan sombre du l
 
 test("app livreur : bascule en un clic dans la barre et choix complet dans Profil", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
-  await openAs(page, "driver", "/driver", 390);
+  // Largeur tablette : le mode sombre est retiré des téléphones depuis le 30 octobre 2026.
+  await openAs(page, "driver", "/driver", 1024);
   await page.getByTestId("theme-toggle").click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await bodyBackground(page)).toBe(DARK_BG);
@@ -130,14 +131,14 @@ test("Première livraison : masquée du menu principal, toujours dans l'Aide, pu
       await expect(toggle).toHaveText("Masquer du menu");
     }
     await expect(nav.getByRole("link", { name: "Première livraison" })).toBeVisible();
-    // Double clic : le bouton est désactivé pendant l'envoi ; on attend la fin avant de lire l'état.
+    // Double clic : une seule requête part, le choix n'est donc pas inversé et aucune erreur n'apparaît.
+    const patches: number[] = [];
+    page.on("response", (response) => {
+      if (response.request().method() === "PATCH" && new URL(response.url()).pathname === "/api/onboarding") patches.push(response.status());
+    });
     await toggle.dblclick();
-    await expect(toggle).toBeEnabled();
-    if ((await toggle.innerText()).includes("Masquer")) {
-      await toggle.click();
-      await expect(toggle).toBeEnabled();
-    }
     await expect(toggle).toHaveText("Afficher dans le menu");
+    expect(patches).toEqual([200]);
     await expect(nav.getByRole("link", { name: "Première livraison" })).toHaveCount(0);
     // Le choix est enregistré côté serveur : il survit au rechargement.
     await page.reload();

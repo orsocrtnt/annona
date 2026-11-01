@@ -103,7 +103,7 @@ test("le site public suit aussi le thème du système (LANDING-2 : plus aucun es
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème reste accessible", async ({ page }) => {
+test("la barre du portail ne déborde pas à 320, 375 et 390 px et le mode sombre reste absent du téléphone", async ({ page }) => {
   await openPortal(page);
   for (const width of [320, 375, 390]) {
     await page.setViewportSize({ width, height: 844 });
@@ -119,8 +119,8 @@ test("la barre du portail ne déborde pas à 320, 375 et 390 px et le thème res
   const account = page.getByTestId("portal-mobile-account");
   await expect(account).toBeVisible();
   expect((await account.innerText()).trim().length).toBeGreaterThan(1);
-  await page.getByRole("menuitem", { name: "Mode sombre" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByRole("menuitem", { name: "Mode sombre" })).toHaveCount(0);
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
 });
 
 /**
