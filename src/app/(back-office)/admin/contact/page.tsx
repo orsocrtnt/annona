@@ -27,7 +27,7 @@ export default function AdminContactMessagesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Messages Contact</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">
           Demandes reçues par le formulaire public, les plus récentes d&apos;abord. Lecture seule ; répondez depuis votre messagerie.
         </p>
       </div>

@@ -89,7 +89,7 @@ export function ClientOrdersHistoryContent({ initialOrders }: ClientOrdersHistor
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Historique des commandes</h1>
-        <p className="mt-1 text-muted-foreground">Toutes les commandes terminées, consultables et exportables.</p>
+        <p className="mt-1 text-muted-foreground max-md:hidden">Toutes les commandes terminées, consultables et exportables.</p>
       </div>
 
       {error ? (

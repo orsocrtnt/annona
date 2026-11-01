@@ -93,7 +93,7 @@ export function ClientOrdersContent({ initialOrders }: ClientOrdersContentProps)
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Mes commandes</h1>
-          <p className="mt-1 text-muted-foreground">Commandes en cours, avec recherche et filtres complets.</p>
+          <p className="mt-1 text-muted-foreground max-md:hidden">Commandes en cours, avec recherche et filtres complets.</p>
         </div>
         <div className="flex flex-wrap gap-2 max-md:w-full">
           <Button variant="outline" className="max-md:w-full" asChild>

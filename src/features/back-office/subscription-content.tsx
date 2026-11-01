@@ -51,7 +51,7 @@ export function SubscriptionContent() {
   if (!data) {
     return <section className="rounded-xl border border-dashed p-6">
       <h1 className="text-2xl font-semibold tracking-tight">Mon abonnement</h1>
-      <p className="mt-2 text-muted-foreground">Aucun abonnement actif n’est disponible pour cette entreprise.</p>
+      <p className="mt-2 text-muted-foreground max-md:hidden">Aucun abonnement actif n’est disponible pour cette entreprise.</p>
     </section>;
   }
 

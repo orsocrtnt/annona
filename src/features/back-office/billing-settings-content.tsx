@@ -327,7 +327,7 @@ export function BillingSettingsContent() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Facturation</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 text-muted-foreground max-md:hidden">
           Paiements, tarification des courses, zones, suppléments et paramètres de facture
         </p>
       </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Download, FilterX, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, FilterX, Search, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataGrid } from "@/components/ui/data-grid";
 import { Input } from "@/components/ui/input";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { MOBILE_CARDS_QUERY } from "@/lib/table/mobile-cards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import { FULFILLMENT_STATUS_LABELS } from "@/lib/constants/order-status";
@@ -33,6 +35,8 @@ interface OrderHistoryTableProps<T extends Record<string, unknown>> {
   emptyDescription: string;
 }
 
+const MOBILE_ROWS = 8;
+
 export function OrderHistoryTable<T extends Record<string, unknown>>({
   result,
   columns,
@@ -46,6 +50,14 @@ export function OrderHistoryTable<T extends Record<string, unknown>>({
   emptyDescription,
 }: OrderHistoryTableProps<T>) {
   const [search, setSearch] = React.useState(query.search ?? "");
+  // Téléphone : recherche seule, filtres et export derrière un bouton, 8 cartes puis « Afficher plus ».
+  const isMobile = useMediaQuery(MOBILE_CARDS_QUERY);
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [mobileLimit, setMobileLimit] = React.useState(MOBILE_ROWS);
+  const showFilters = !isMobile || filtersOpen;
+  const activeFilters = [query.status, query.category, query.from, query.to].filter(Boolean).length;
+  const items = result?.items ?? [];
+  const shownItems = isMobile ? items.slice(0, mobileLimit) : items;
 
   React.useEffect(() => {
     const normalized = search.trim();
@@ -72,7 +84,7 @@ export function OrderHistoryTable<T extends Record<string, unknown>>({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(16rem,2fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto]">
+      <div className="grid gap-3 max-md:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(16rem,2fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -83,6 +95,16 @@ export function OrderHistoryTable<T extends Record<string, unknown>>({
             aria-label="Rechercher dans l'historique"
           />
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="md:hidden"
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((open) => !open)}
+        >
+          <SlidersHorizontal /> Filtres{activeFilters > 0 ? ` (${activeFilters})` : ""}
+        </Button>
+        {showFilters && <div className="contents max-md:col-span-2 max-md:grid max-md:gap-3">
         <Select value={query.status ?? "all"} onValueChange={(value) => change({ status: value === "all" ? undefined : value as OrderStatus })}>
           <SelectTrigger aria-label="Filtrer par statut"><SelectValue placeholder="Tous les statuts" /></SelectTrigger>
           <SelectContent>
@@ -98,9 +120,10 @@ export function OrderHistoryTable<T extends Record<string, unknown>>({
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={clearFilters} type="button"><FilterX /> Effacer</Button>
+        </div>}
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      {showFilters && <div className="flex flex-wrap items-end gap-3">
         <label className="space-y-1 text-xs text-muted-foreground">
           Du
           <Input type="date" value={query.from ?? ""} onChange={(event) => change({ from: event.target.value || undefined })} className="mt-1 w-auto" />
@@ -118,10 +141,10 @@ export function OrderHistoryTable<T extends Record<string, unknown>>({
         <Button asChild variant="outline" className="sm:ml-auto">
           <a href={exportHref} download><Download /> Exporter tout le résultat</a>
         </Button>
-      </div>
+      </div>}
 
       <DataGrid
-        data={result?.items ?? []}
+        data={shownItems}
         columns={columns}
         searchable={false}
         paginate={false}
@@ -130,6 +153,11 @@ export function OrderHistoryTable<T extends Record<string, unknown>>({
         emptyTitle={emptyTitle}
         emptyDescription={emptyDescription}
       />
+      {shownItems.length < items.length && (
+        <Button type="button" variant="outline" className="w-full" onClick={() => setMobileLimit((limit) => limit + MOBILE_ROWS)}>
+          Afficher plus
+        </Button>
+      )}
 
       {result && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">

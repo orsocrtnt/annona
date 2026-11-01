@@ -106,7 +106,7 @@ export default function RecurringOrdersPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Commandes récurrentes</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-muted-foreground max-md:hidden">
             Planifiez des livraisons régulières — achats ou courses collecte → livraison
           </p>
         </div>

@@ -175,7 +175,7 @@ export default function UsersPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gestion des comptes</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-muted-foreground max-md:hidden">
             Clients, chauffeurs et mini-admins de votre entreprise
           </p>
         </div>

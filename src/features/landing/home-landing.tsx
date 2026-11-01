@@ -25,7 +25,7 @@ export function HomeLanding() {
 
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <section aria-labelledby="hero-title" className="mx-auto max-w-[1280px] px-5 pb-8 pt-4 text-center min-[901px]:px-8 min-[901px]:pb-16 min-[901px]:pt-[72px]">
-          <p className="mb-3.5 inline-flex items-center rounded-full bg-[var(--l-mint-s)] px-3 py-[7px] text-[13px] font-semibold text-[var(--l-brand)]">
+          <p className="mb-3.5 hidden items-center rounded-full min-[901px]:inline-flex bg-[var(--l-mint-s)] px-3 py-[7px] text-[13px] font-semibold text-[var(--l-brand)]">
             Pour les sociétés de coursiers et de livraison express
           </p>
           <h1
@@ -37,8 +37,8 @@ export function HomeLanding() {
             <span className="text-[var(--l-brand)]">au même endroit.</span>
           </h1>
           <p className="mx-auto mt-3.5 max-w-[560px] text-[16px] leading-[1.45] text-[var(--l-mute)] min-[901px]:text-[18px]">
-            Les commandes de vos clients pros, le dispatch, le suivi, les preuves et les factures. Pensé pour les
-            équipes de 3 à 20 livreurs.
+            Les commandes de vos clients pros, le dispatch, le suivi, les preuves et les factures.
+            <span className="hidden min-[901px]:inline"> Pensé pour les équipes de 3 à 20 livreurs.</span>
           </p>
           <div className="mt-[22px] flex flex-wrap justify-center gap-2.5">
             <a href="#demo" className={landingMintButton}>
@@ -50,8 +50,8 @@ export function HomeLanding() {
           </div>
         </section>
 
-        <section aria-labelledby="race-title" className={`${page} pt-6`}>
-          <p className={`${sectionKicker} mb-[26px]`}>Le temps gagné</p>
+        <section aria-labelledby="race-title" className={`${page} min-[901px]:pt-6`}>
+          <p className={`${sectionKicker} mb-[26px] hidden min-[901px]:block`}>Le temps gagné</p>
           <ActionsRace />
         </section>
 
@@ -59,7 +59,7 @@ export function HomeLanding() {
           <LandingDemo />
         </section>
 
-        <section id="contact" aria-labelledby="contact-title" className="px-4 pb-[130px] pt-[110px] text-center min-[901px]:px-8">
+        <section id="contact" aria-labelledby="contact-title" className="px-4 pb-16 pt-16 text-center min-[901px]:px-8 min-[901px]:pb-[130px] min-[901px]:pt-[110px]">
           <span className="mb-7 inline-flex [&_img]:!h-[52px] [&_img]:!w-auto">
             <BrandLogo size="md" className="dark:hidden" />
             <BrandLogo size="md" onDark className="hidden dark:inline-flex" />

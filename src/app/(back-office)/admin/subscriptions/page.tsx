@@ -72,7 +72,7 @@ export default function AdminSubscriptionsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Souscriptions</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">
           {"Lecture seule des souscriptions commerciales. HT enregistré : prix de la formule et des options. Le suivi dit qui relancer. Aucun paiement Stripe n'est lu."}
         </p>
       </div>

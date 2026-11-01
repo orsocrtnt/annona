@@ -147,7 +147,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
           <ArrowLeft className="h-4 w-4" aria-hidden /> {backLabel}
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">Nouvelle commande depuis un message</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 text-muted-foreground max-md:hidden">
           Collez un e-mail, un SMS ou un message WhatsApp : TutelLiv prépare un brouillon que vous relisez avant de créer la commande.
         </p>
       </div>

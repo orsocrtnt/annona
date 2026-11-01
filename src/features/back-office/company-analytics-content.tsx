@@ -54,7 +54,7 @@ export function CompanyAnalyticsContent() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Analyse</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-muted-foreground max-md:hidden">
             Volume, ponctualité et facturation sur les {days} derniers jours
           </p>
         </div>

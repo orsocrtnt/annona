@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DataGrid } from "@/components/ui/data-grid";
+import { MobileFold } from "@/components/ui/mobile-fold";
 import { StatCard } from "@/components/ui/stat-card";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
@@ -173,7 +174,7 @@ function DispatcherDashboardContent() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Centre de dispatch</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-muted-foreground max-md:hidden">
             Assignez les missions aux livreurs selon leurs profils
             {hasAutoDispatch && dispatchSettings ? (dispatchSettings.enabled ? " — mode automatique" : " — mode suggestion") : ""}
           </p>
@@ -360,7 +361,7 @@ function DispatcherDashboardContent() {
         <DispatchSettingsForm />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard
               label="En attente"
               value={stats?.unassigned ?? 0}
@@ -389,12 +390,18 @@ function DispatcherDashboardContent() {
 
           <DispatchIncidentsPanel />
 
-          <DispatchDriverWorkload
-            drivers={overview?.workload}
-            settings={dispatchSettings}
-          />
+          <MobileFold title="Charge par livreur">
+            <DispatchDriverWorkload
+              drivers={overview?.workload}
+              settings={dispatchSettings}
+            />
+          </MobileFold>
 
-          {hasAutoDispatch && <DispatchRoundsPanel />}
+          {hasAutoDispatch && (
+            <MobileFold title="Tournées">
+              <DispatchRoundsPanel />
+            </MobileFold>
+          )}
 
           {error ? (
             <EmptyState

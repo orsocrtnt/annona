@@ -41,7 +41,7 @@ export default function CompaniesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Entreprises</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Liste en lecture seule des entreprises de la plateforme.</p>
+        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">Liste en lecture seule des entreprises de la plateforme.</p>
       </div>
       <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); setQ(draftQuery.trim()); setPage(1); }}>
         <label className="grid gap-1 text-sm">

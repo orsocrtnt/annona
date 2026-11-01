@@ -73,7 +73,7 @@ export default function NewOrderPage() {
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Nouvelle commande</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 text-muted-foreground max-md:hidden">
           {reorderTemplate
             ? `Reprise de la livraison ${reorderTemplate.deliveryReference} — modifiez si besoin`
             : "Créez une commande de livraison"}

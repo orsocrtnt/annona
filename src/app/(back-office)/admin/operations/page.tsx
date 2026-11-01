@@ -85,7 +85,7 @@ export default function AdminOperationsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Exploitation</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">
           File technique en lecture seule. Un traitement en cours verrouillé depuis dix minutes est signalé comme bloqué.
         </p>
       </div>

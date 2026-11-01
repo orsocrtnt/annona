@@ -204,7 +204,8 @@ export function DemoModeBar() {
             className="fixed inset-x-0 top-0 z-[2000] border-b border-amber-200/80 bg-amber-50/95 px-3 py-2 backdrop-blur-md dark:border-amber-900/50 dark:bg-amber-950/90"
           >
             <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-2 text-sm text-amber-950 dark:text-amber-100">
+              {/* Téléphone : une seule ligne, le nom de la zone reste lu par `aria-label`. */}
+              <div className="hidden min-w-0 items-center gap-2 text-sm sm:flex text-amber-950 dark:text-amber-100">
                 <FlaskConical className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
                 <span className="font-medium">Environnement de démonstration</span>
                 <span className="hidden text-amber-800 sm:inline dark:text-amber-200">
@@ -212,15 +213,16 @@ export function DemoModeBar() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:flex-wrap">
+                <FlaskConical className="h-4 w-4 shrink-0 text-amber-600 sm:hidden dark:text-amber-400" aria-hidden />
+                <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
                   <ActiveIcon className="hidden h-4 w-4 text-amber-700 sm:block dark:text-amber-300" />
                   <Select
                     value={demo.persona}
                     onValueChange={(value) => void switchPersona(value as DemoPersona)}
                     disabled={switching || resetting}
                   >
-                    <SelectTrigger aria-label="Changer de vue de démonstration" className="h-9 w-[min(180px,calc(100vw-1.5rem))] border-amber-200 bg-white/90 dark:border-amber-800 dark:bg-amber-950">
+                    <SelectTrigger aria-label="Changer de vue de démonstration" className="h-9 w-full border-amber-200 sm:w-[180px] bg-white/90 dark:border-amber-800 dark:bg-amber-950">
                       <SelectValue placeholder="Changer de vue" />
                     </SelectTrigger>
                     <SelectContent className="z-[2100]">
@@ -243,12 +245,12 @@ export function DemoModeBar() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="border-amber-300 bg-white/90 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:hover:bg-amber-900"
+                  className="border-amber-300 bg-white/90 hover:bg-amber-100 max-sm:min-w-11 dark:border-amber-800 dark:bg-amber-950 dark:hover:bg-amber-900"
                   onClick={() => setResetOpen(true)}
                   disabled={switching || resetting}
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Réinitialiser la démo
+                  <span className="max-sm:sr-only">Réinitialiser la démo</span>
                 </Button>
 
                 <Button

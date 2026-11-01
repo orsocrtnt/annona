@@ -33,12 +33,12 @@ export function LandingDemo() {
   return (
     <>
       <div className="mx-auto mb-[26px] max-w-[720px] text-center">
-        <p className="text-[14px] leading-[20px] font-bold text-[var(--l-brand)]">Essayez</p>
+        <p className="hidden text-[14px] leading-[20px] font-bold text-[var(--l-brand)] min-[901px]:block">Essayez</p>
         <h2 id="demo-title" className="mt-2 text-[clamp(30px,4vw,48px)] font-bold leading-[1.02] tracking-[-0.04em]">
           Suivez la commande {TOUR_ORDER.number}, du client à la facture.
         </h2>
         <p className="mt-2.5 text-[17px] text-[var(--l-mute)]">
-          Chaque geste fait avancer la livraison d&apos;un espace à l&apos;autre. Données fictives, rien n&apos;est enregistré.
+          <span className="hidden min-[901px]:inline">Chaque geste fait avancer la livraison d&apos;un espace à l&apos;autre. </span>Données fictives, rien n&apos;est enregistré.
         </p>
       </div>
       {/* En Sombre, `tour-adapt` (globals.css) passe la démo aux teintes de la maquette. */}

@@ -62,34 +62,34 @@ export function StatCard({
   const toneClasses = tone ? TONE_CLASSES[resolveTone(tone, numericValue)] : null;
 
   const content = quiet ? (
-    <CardContent className="flex h-full flex-col p-5">
+    <CardContent className="flex h-full flex-col p-5 max-md:p-3.5">
       <div className="flex items-start justify-between gap-3">
         {/* Deux lignes réservées en grille de 4 : les chiffres restent alignés même si un libellé passe à la ligne. */}
         <p className="flex items-start gap-2 text-sm font-medium text-muted-foreground xl:min-h-10">
           {toneClasses && <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", toneClasses.dot)} aria-hidden="true" />}
           {label}
         </p>
-        {Icon && <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden="true" />}
+        {Icon && <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70 max-md:hidden" aria-hidden="true" />}
       </div>
       <p
         className={cn(
-          "mt-3 text-3xl font-semibold tracking-tight tabular-nums",
+          "mt-3 text-3xl font-semibold tracking-tight tabular-nums max-md:mt-1.5 max-md:text-2xl",
           toneClasses ? toneClasses.value : "text-foreground"
         )}
       >
         {value}
       </p>
       {delta && <div className="mt-2"><DeltaBadge delta={delta} /></div>}
-      {changeLabel && <p className="mt-2 text-xs text-muted-foreground">{changeLabel}</p>}
+      {changeLabel && <p className="mt-2 text-xs text-muted-foreground max-md:hidden">{changeLabel}</p>}
     </CardContent>
   ) : (
-    <CardContent className="p-6">
+    <CardContent className="p-6 max-md:p-3.5">
       <div className="flex items-start justify-between">
-        <div className="space-y-2">
+        <div className="space-y-2 max-md:space-y-1">
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           <p
             className={cn(
-              "text-3xl font-semibold tracking-tight",
+              "text-3xl font-semibold tracking-tight max-md:text-2xl",
               toneClasses ? toneClasses.value : "text-foreground"
             )}
           >
@@ -97,7 +97,7 @@ export function StatCard({
           </p>
           {delta && <DeltaBadge delta={delta} />}
           {(change !== undefined || changeLabel) && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 max-md:hidden">
               {change !== undefined && (
                 <>
                   {isPositive ? (
@@ -122,13 +122,13 @@ export function StatCard({
             </div>
           )}
           {isClickable && (
-            <p className="text-xs text-brand">Voir le détail →</p>
+            <p className="text-xs text-brand max-md:hidden">Voir le détail →</p>
           )}
         </div>
         {Icon && (
           <div
             className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-xl",
+              "flex h-10 w-10 items-center justify-center rounded-xl max-md:hidden",
               toneClasses ? toneClasses.icon : "bg-brand-subtle text-brand"
             )}
           >

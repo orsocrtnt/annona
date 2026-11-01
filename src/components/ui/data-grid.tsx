@@ -45,7 +45,7 @@ export function DataGrid<T extends Record<string, unknown>>({
   searchPlaceholder = "Rechercher...",
   searchKey,
   searchText,
-  pageSize = 10,
+  pageSize: requestedPageSize = 10,
   paginate = true,
   showResultCount = true,
   loading = false,
@@ -64,6 +64,8 @@ export function DataGrid<T extends Record<string, unknown>>({
   const [sortKey, setSortKey] = React.useState<string | null>(null);
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
   const variant = dataGridVariant(useMediaQuery(MOBILE_CARDS_QUERY));
+  // Téléphone : des pages courtes, une liste de 15 cartes fait plusieurs écrans.
+  const pageSize = variant === "cards" ? Math.min(requestedPageSize, 8) : requestedPageSize;
   const highlightedRowRef = React.useRef<HTMLTableRowElement | null>(null);
   const highlightedCardRef = React.useRef<HTMLLIElement | null>(null);
   const lastFocusedRowId = React.useRef<string | null>(null);

@@ -190,7 +190,7 @@ export default function CompanySupportPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Support clients</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-muted-foreground max-md:hidden">
             Canal suivi : cet espace TutelLiv · objectif de première réponse sous 1 jour ouvré
           </p>
         </div>

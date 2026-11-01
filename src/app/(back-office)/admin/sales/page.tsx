@@ -137,7 +137,7 @@ export default function AdminSalesCodesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Codes commerciaux</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">
           Un code permanent par commercial. Le niveau est figé dans chaque inscription au moment de l&apos;activation ; aucune commission n&apos;est versée automatiquement.
         </p>
       </div>

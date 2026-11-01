@@ -71,7 +71,7 @@ export default function ClientSupportPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Support</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 text-muted-foreground max-md:hidden">
           Contactez votre administrateur ou votre chauffeur selon votre livraison
         </p>
       </div>

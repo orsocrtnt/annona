@@ -65,7 +65,7 @@ export default function CompanyDriversPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Chauffeurs</h1>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 text-muted-foreground max-md:hidden">
           Suivi de l&apos;activité et des missions du jour
         </p>
         <p className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground" aria-hidden="true">

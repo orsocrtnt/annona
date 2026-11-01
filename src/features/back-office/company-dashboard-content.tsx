@@ -12,6 +12,7 @@ import { useDashboardLayout } from "@/features/back-office/dashboard-layout-hook
 import { DEFAULT_DASHBOARD_LAYOUT } from "@/lib/dashboard/dashboard-layout";
 import {
   getVisibleDashboardWidgets,
+  getWidgetCatalogEntry,
   groupDashboardWidgets,
   mergeMapWidgets,
 } from "@/lib/dashboard/dashboard-layout";
@@ -24,6 +25,7 @@ import {
   DashboardCustomizeButton,
   DashboardCustomizeDrawer,
 } from "@/features/back-office/dashboard-customize-drawer";
+import { MobileFold } from "@/components/ui/mobile-fold";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 export function CompanyDashboardContent() {
@@ -70,16 +72,18 @@ function CompanyDashboardView() {
   }, [layout]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-md:space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Tableau de bord</h1>
-          <p className="mt-1 text-muted-foreground" suppressHydrationWarning>
+          <p className="mt-1 text-muted-foreground max-md:hidden" suppressHydrationWarning>
             {formatToday(new Date())}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <DashboardCustomizeButton onClick={() => setCustomizeOpen(true)} />
+          <span className="contents max-md:hidden">
+            <DashboardCustomizeButton onClick={() => setCustomizeOpen(true)} />
+          </span>
           <Button variant="outline" asChild>
             <Link href="/dispatch">
               <Radio className="mr-2 h-4 w-4" />
@@ -116,7 +120,13 @@ function CompanyDashboardView() {
             <DashboardCompactGrid key={`compact-${index}`} widgets={group.widgets} />
           ) : (
             group.widgets.map((widget) => (
-              <DashboardWidgetRenderer key={widget.type} widget={widget} />
+              widget.type === "alerts-row" ? (
+                <DashboardWidgetRenderer key={widget.type} widget={widget} />
+              ) : (
+                <MobileFold key={widget.type} title={getWidgetCatalogEntry(widget.type)?.label ?? widget.type}>
+                  <DashboardWidgetRenderer widget={widget} />
+                </MobileFold>
+              )
             ))
           )
         )

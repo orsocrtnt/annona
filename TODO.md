@@ -4,14 +4,14 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**90 tâches terminées sur 116 — 78 %**
+**90 tâches terminées sur 117 — 77 %**
 
-`████████████████░░░░` · 26 tâches restantes
+`███████████████░░░░░` · 27 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 30 octobre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 1er novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
@@ -21,11 +21,12 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- MAIL-COMMANDE (quand tu voudras l'allumer) : poser le MX de `commandes.tutelliv.fr` chez OVH, créer le webhook `email.received` dans Resend, puis mettre `INBOUND_EMAIL_DOMAIN` et `RESEND_INBOUND_WEBHOOK_SECRET` dans Vercel ; la clé Anthropic au-dessus sert aussi ici. Le dire à Claude, qui fait l'essai réel.
+- MAIL-COMMANDE : le 1er novembre, Claude a créé le domaine Resend, le MX et le DKIM chez OVH, le webhook, et `INBOUND_EMAIL_DOMAIN` dans Vercel. Reste à toi : coller `RESEND_INBOUND_WEBHOOK_SECRET` dans Vercel (Preview, `preproduction`) et remplacer `RESEND_API_KEY` par une clé Resend « Full access » (l'actuelle ne peut qu'envoyer). Le dire à Claude, qui redéploie et fait l'essai réel.
 - ENV-2 : dire si on supprime l'ancien projet Supabase `wlomrzil…` (en pause, mot de passe exposé) ou si on change son mot de passe à sa prochaine relance ; confirmer l'origine de la clé Stripe de test.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- Rien pour l'instant : le reste attend une action du point 1 ou 3.
+- MOBILE-2 : finir et recetter la refonte téléphone (branche locale `mobile/refonte`, dossier `.claude/worktrees/mobile`), puis pousser sur `preproduction`.
+- Répétition générale des parcours gérant, client et livreur sur `tutelliv-dev`, à faire après MOBILE-2.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Juriste : LEGAL-1, LEGAL-LIENS, DATA-02.
@@ -1538,6 +1539,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
 - [ ] **MAIL-COMMANDE — Les e-mails reçus deviennent des brouillons à valider.** Demande et décision du propriétaire du 30 octobre 2026 : brouillon à valider, jamais de commande créée seule. Code livré : adresse dédiée `<jeton>@<INBOUND_EMAIL_DOMAIN>` par entreprise, webhook signé `/api/webhooks/inbound-email` (Resend, format Svix), lecture du corps via l'API Resend, tâche durable `INBOUND_EMAIL` qui réutilise l'analyse d'INTAKE-1, liste « E-mails de commande reçus » dans « Depuis un message », corps et brouillon effacés dès le traitement et ligne supprimée après 30 jours, plafond 200 e-mails par jour et par entreprise, pièces jointes signalées mais non lues.
 
+  Avancement du 1er novembre 2026 : domaine `commandes.tutelliv.fr` créé chez Resend (région Irlande, réception seule) et vérifié ; MX `10 receive-euw1.forge.rmta.net.` et TXT DKIM posés chez OVH, contrôlés sur `dns103.ovh.net`, MX de `tutelliv.fr` inchangés ; webhook `email.received` créé vers `https://tutelliv.fr/api/webhooks/inbound-email` ; `INBOUND_EMAIL_DOMAIN` posé sur Vercel (Preview, `preproduction`). Reste : `RESEND_INBOUND_WEBHOOK_SECRET`, `RESEND_API_KEY` en « Full access » (la clé actuelle est « Sending access », elle ne peut pas lire les e-mails reçus), `ANTHROPIC_API_KEY`, redéploiement, puis essai avec un vrai e-mail : jamais exercé.
+
   **Modèle conseillé : Claude Opus · effort élevé.**
 
   Terminé quand : MX de `commandes.tutelliv.fr` posé chez OVH, webhook Resend créé, `INBOUND_EMAIL_DOMAIN` et `RESEND_INBOUND_WEBHOOK_SECRET` sur Vercel, clé Anthropic (INTAKE-1), puis un vrai e-mail reçu et transformé en brouillon en préproduction. Sous-traitance à qualifier : voir F03 et F10.
@@ -1867,6 +1870,22 @@ Développer l'architecture et les scénarios en environnement fictif sans active
     - `npm run check` vert (1366/1366, puis 1365/1365 après les changements d'une autre session en parallèle).
   - Prochaine étape : après le push groupé, le propriétaire ouvre son tableau de bord et la page Carte en préproduction ; cocher si une seule carte apparaît.
   - Validée par le propriétaire le 29 octobre 2026 : une seule carte avec la bascule Tout / Livreurs / Livraisons. Case cochée.
+
+- [ ] **MOBILE-2 — Alléger l'application sur téléphone, ordinateur inchangé.** Demande du propriétaire du 1er novembre 2026 : l'application est trop chargée sur téléphone ; landing d'abord, puis mini-audit et décisions de l'agent pour le reste. Même adresse et mêmes données, seul l'affichage change sous 768 px (900 px pour la landing).
+
+  **Modèle conseillé : Claude Opus · effort élevé.**
+
+  Terminé quand : les écrans modifiés sont recettés au clic à 390 et 360 px en Clair et Sombre, l'ordinateur est vérifié identique à 1 280 px, `npm run check` et `tests/e2e/mobile-web.spec.ts` sont verts, puis la branche est poussée sur `preproduction` et contrôlée en ligne.
+
+  Mesures avant (390 × 664 utiles, compte de démo, serveur de dev) : dispatch 11,9 écrans, commandes 8,2, tableau de bord 4,5, profil livreur 3,3, missions livreur 3,9, landing 3,7.
+
+  Fait (branche locale `mobile/refonte`, non poussée) : barre de démo sur une ligne ; sous-titre sous le h1 masqué sur les listes (30 écrans) ; pastille Alertes réduite à l'icône et au compteur ; indicateurs du tableau de bord et du dispatch en 2 colonnes, plus compacts ; `MobileFold` (`src/components/ui/mobile-fold.tsx`) replie les blocs secondaires du tableau de bord et « Charge par livreur » / « Tournées » du dispatch ; cartes de liste à 3 champs puis « Plus de détails », 8 cartes par page ; commandes : recherche seule, bouton « Filtres », « Afficher plus » ; texte du service livreur raccourci, le reste en dépliant ; landing allégée (pastille, phrase, intertitres, marges).
+
+  Vérifié : landing mesurée de 2 463 à 2 138 px, section d'accroche de 358 à 275 px. `npx tsc --noEmit` vert.
+
+  Non vérifié : rendu visuel après modification des écrans connectés (la remesure a expiré sur `/api/auth/login` : serveur de dev chargé ou défaut, cause non établie, à vérifier en premier) ; `npm run check` ; E2E `mobile-web` et ses tests d'interface liés à l'ancien texte ; ordinateur à 1 280 px ; thème Sombre ; 360 px. Pages publiques `/tarifs` (6,4 écrans) et `/fonctionnalites` (5,4) non retouchées.
+
+  Suite : relancer un serveur sur 3110 depuis `.claude/worktrees/mobile`, remesurer avec les captures, corriger, lancer la série complète, puis pousser. Enchaîner sur la répétition générale des trois rôles.
 
 - [x] **LANDING-3 — Refaire la landing, direction choisie par le propriétaire.** Le 29 octobre 2026, le propriétaire a rejeté la landing livrée par LANDING-2 (« j'aime pas du tout »). L'orchestrateur avait choisi lui-même la direction « Ligne de mission », parmi 3 maquettes du lot L1 (`design-proposals/landing-2/`, dans le worktree `agent-l1-landing`). Méthode :
   1. demander au propriétaire ce qui ne va pas et 2 ou 3 sites qu'il aime ;

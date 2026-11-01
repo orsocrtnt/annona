@@ -57,7 +57,7 @@ export default function AdminSupportPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Support plateforme</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">
           Métadonnées des tickets. Le sujet, les messages et l’identité du client ne sont pas affichés.
         </p>
       </div>

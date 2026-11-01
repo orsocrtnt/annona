@@ -59,7 +59,7 @@ export default function AdminAccessEventsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{"Journal d'accès"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">
           Lecture seule. Identifiant interne, rôle, ressource et décision.
         </p>
       </div>
