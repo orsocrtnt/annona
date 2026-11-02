@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 const root = process.cwd();
 const todoPath = resolve(root, "TODO.md");
 const sharePath = resolve(root, "outputs/TODO-TutelLiv-vente.md");
+const archivePath = resolve(root, "docs/TODO-ARCHIVE.md");
 const startMarker = "<!-- TODO_PROGRESS_START -->";
 const endMarker = "<!-- TODO_PROGRESS_END -->";
 
@@ -21,10 +22,13 @@ function writeIfChanged(path, content) {
 }
 
 let todo = readFileSync(todoPath, "utf8");
+// Tâches closes déplacées dans l'archive : elles comptent toujours dans la jauge.
+const archive = existsSync(archivePath) ? readFileSync(archivePath, "utf8") : "";
 const tasks = [...todo.matchAll(/^- \[([ xX])\] /gm)];
-const total = tasks.length;
-const completed = tasks.filter((match) => match[1].toLowerCase() === "x").length;
-const remaining = total - completed;
+const archived = [...archive.matchAll(/^- \[[xX]\] /gm)].length;
+const remaining = tasks.filter((match) => match[1] === " ").length;
+const completed = tasks.length - remaining + archived;
+const total = completed + remaining;
 const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
 const gaugeWidth = 20;
 const filled = total === 0 ? 0 : Math.round((completed / total) * gaugeWidth);

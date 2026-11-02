@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-const todo = readFileSync("TODO.md", "utf8");
+const todo = readFileSync("docs/TODO-ARCHIVE.md", "utf8");
 const acceptance = readFileSync("docs/operations/admin01/ACCEPTANCE.md", "utf8");
 const script = JSON.parse(readFileSync("package.json", "utf8")).scripts["test:admin01"] as string;
 const gate = acceptance.slice(acceptance.indexOf("<!-- ADMIN01_GATE_START -->"), acceptance.indexOf("<!-- ADMIN01_GATE_END -->"));

@@ -7,7 +7,8 @@
 - Sous le titre de chaque tâche ouverte, écrire qui doit agir ensuite : `**Qui : Claude.**` ou `**Qui : Toi.**`, avec une condition éventuelle (`**Qui : Claude — après le juriste.**`). `npm run todo:progress` en tire les listes sous la jauge ; une tâche sans cette ligne apparaît dans « À classer ». La changer quand la main passe.
 
 ## Sources et périmètre
-- Lire ce fichier, `TODO.md` et `docs/CONVENTIONS.md` avant de travailler.
+- Lire ce fichier, `TODO.md` et `docs/CONVENTIONS.md` avant de travailler. Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`, à ouvrir seulement si besoin.
+- Quand une case est cochée, déplacer la tâche et ses preuves dans `docs/TODO-ARCHIVE.md`. Y ajouter aussi les lignes de journal. `TODO.md` reste une page de pilotage.
 - `TODO.md` est la source unique des priorités et statuts ; vérifier le code avant de croire un ancien statut.
 - Respecter la demande en cours : une demande de préparation ou d'audit n'autorise pas à implémenter tout le backlog.
 - Réutiliser l'architecture Next.js / features / domains / services et préserver le code existant.
