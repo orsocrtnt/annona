@@ -22,7 +22,7 @@ function load<T>(file: string, deps: Record<string, unknown>): T {
 }
 const initialVersion = new Date("2026-10-09T09:00:00.000Z");
 function fixture(options: { failEvent?: boolean; race?: boolean } = {}) {
-  let row: Row = { id: "delivery", companyId: "company", orderId: "order", driverId: "driver", driverName: "Test Chauffeur", status: "ASSIGNED", missionStartedAt: null, missionAcceptedAt: null, updatedAt: initialVersion };
+  let row: Row = { id: "delivery", companyId: "company", orderId: "order", driverId: "driver", driverName: "Test Livreur", status: "ASSIGNED", missionStartedAt: null, missionAcceptedAt: null, updatedAt: initialVersion };
   let orderStatus = "ASSIGNED";
   let events: Row[] = [];
   const same = (a: unknown, b: unknown) => a instanceof Date && b instanceof Date ? +a === +b : a === b;
@@ -81,7 +81,7 @@ test("ACK : refus avant ou après confirmation rend la mission et conserve la tr
     await f.acknowledge("driver", "company", "delivery", { action: "decline", expectedUpdatedAt: f.row().updatedAt as Date, reason: "Indisponible" });
     assert.equal(f.row().driverId, null); assert.equal(f.row().missionAcceptedAt, null);
     assert.equal(f.row().status, "PENDING"); assert.equal(f.order(), "PENDING");
-    assert.match(String(f.events().at(-1)?.description), /Test Chauffeur.*Indisponible/);
+    assert.match(String(f.events().at(-1)?.description), /Test Livreur.*Indisponible/);
     assert.equal(f.events().filter(e => e.label === "Prise en charge confirmée").length, confirmed ? 1 : 0);
   }
 });
@@ -89,7 +89,7 @@ test("ACK : motif vide interdit sans mutation", async () => {
   const f = fixture(); await assert.rejects(f.acknowledge("driver", "company", "delivery", { action: "decline", expectedUpdatedAt: initialVersion, reason: "  " }), /MISSION_DECLINE_REASON_REQUIRED/);
   assert.equal(f.row().driverId, "driver"); assert.equal(f.events().length, 0);
 });
-test("ACK : mauvais chauffeur et autre entreprise ne voient aucune mission", async () => {
+test("ACK : mauvais livreur et autre entreprise ne voient aucune mission", async () => {
   const f = fixture(); assert.equal(await f.acknowledge("other", "company", "delivery", accept), null);
   assert.equal(await f.acknowledge("driver", "foreign", "delivery", accept), null); assert.equal(f.events().length, 0);
 });
@@ -105,7 +105,7 @@ test("ACK : départ et états terminaux refusent confirmation et refus", async (
     assert.equal(f.events().length, 0);
   }
 });
-test("ACK : perte du CAS interdit une confirmation du mauvais chauffeur", async () => {
+test("ACK : perte du CAS interdit une confirmation du mauvais livreur", async () => {
   const f = fixture({ race: true }); await assert.rejects(f.acknowledge("driver", "company", "delivery", accept), /MISSION_ACK_CONFLICT/); assert.equal(f.events().length, 0);
 });
 test("ACK : échec historique annule aussi le refus et le statut commande", async () => {

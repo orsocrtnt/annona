@@ -36,7 +36,7 @@ async function requireLogoEditor() {
 }
 
 /**
- * Logo de l'entreprise de l'utilisateur connecté (équipe, client ou chauffeur), servi en privé.
+ * Logo de l'entreprise de l'utilisateur connecté (équipe, client ou livreur), servi en privé.
  * `?meta=1` : seulement `{ hasLogo }`, pour ne demander l'image que si elle existe.
  */
 export async function GET(request: Request) {

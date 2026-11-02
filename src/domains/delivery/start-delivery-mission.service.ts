@@ -47,7 +47,7 @@ export async function startDeliveryMissionByDriver(
         data: {
           deliveryId,
           label: "Mission démarrée",
-          description: "Le chauffeur a commencé la mission",
+          description: "Le livreur a commencé la mission",
         },
       });
 

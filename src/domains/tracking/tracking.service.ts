@@ -37,13 +37,13 @@ export async function getOrderTracking(actor: ConversationActor, orderId: string
 }
 export async function getDriverService(driverId: string, companyId: string) {
   const driver = await prisma.user.findFirst({ where: { id: driverId, companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } }, select: { settings: true } });
-  if (!driver) throw new ConversationError(404, "Chauffeur introuvable.");
+  if (!driver) throw new ConversationError(404, "Livreur introuvable.");
   return trackingService(driver.settings);
 }
 export async function setDriverService(driverId: string, companyId: string, active: boolean) {
   return transaction(async tx => {
     const driver = await tx.user.findFirst({ where: { id: driverId, companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } }, select: { settings: true, updatedAt: true } });
-    if (!driver) throw new ConversationError(404, "Chauffeur introuvable.");
+    if (!driver) throw new ConversationError(404, "Livreur introuvable.");
     const current = trackingService(driver.settings);
     if (current.active === active) return current;
     const now = new Date(Math.max(Date.now(), +driver.updatedAt + 1));

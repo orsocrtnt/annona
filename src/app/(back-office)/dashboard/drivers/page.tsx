@@ -18,7 +18,7 @@ export default function CompanyDriversPage() {
     () => [
       {
         key: "name",
-        header: "Chauffeur",
+        header: "Livreur",
         sortable: true,
         cell: (row) => (
           <TablePersonCell
@@ -56,7 +56,7 @@ export default function CompanyDriversPage() {
       <EmptyState
         icon={Truck}
         title="Erreur de chargement"
-        description={error instanceof Error ? error.message : "Impossible de charger les chauffeurs"}
+        description={error instanceof Error ? error.message : "Impossible de charger les livreurs"}
       />
     );
   }
@@ -64,7 +64,7 @@ export default function CompanyDriversPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Chauffeurs</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Livreurs</h1>
         <p className="mt-1 text-muted-foreground max-md:hidden">
           Suivi de l&apos;activité et des missions du jour
         </p>
@@ -83,8 +83,8 @@ export default function CompanyDriversPage() {
         searchText={(row) => [row.name, row.email, row.phone].filter(Boolean).join(" ")}
         searchPlaceholder="Nom, e-mail ou téléphone…"
         paginate={false}
-        emptyTitle="Aucun chauffeur"
-        emptyDescription="Créez des comptes chauffeur dans Gestion des comptes."
+        emptyTitle="Aucun livreur"
+        emptyDescription="Créez des comptes livreur dans Gestion des comptes."
       />
     </div>
   );

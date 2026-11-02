@@ -377,7 +377,7 @@ test("V1-GO : double clic, course complète et échec motivé concordant", async
     expect(deliveredCourier.status).toBe("DELIVERED");
     uploadedProofPath = deliveredCourier.podPhotoPath;
     expect(uploadedProofPath).toBeTruthy();
-    console.log("[V1-GO] R02/R06 course chauffeur validée");
+    console.log("[V1-GO] R02/R06 course livreur validée");
 
     await selectPersona(page, "client");
     await page.goto(`/portal/deliveries/${courier.deliveries[0]!.id}`);

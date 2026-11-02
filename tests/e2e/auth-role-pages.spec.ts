@@ -68,7 +68,7 @@ const EXPECTED: Record<"admin" | "client" | "driver" | RoleKey, Expectation> = {
       "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/intake", "/support",
     ],
   },
-  // Mini-admin avec les modules Dispatch et Carte livraison : ni carte chauffeurs, ni saisie, ni comptes.
+  // Mini-admin avec les modules Dispatch et Carte livraison : ni carte livreurs, ni saisie, ni comptes.
   miniAdminDispatch: { home: "/dispatch", allowed: ["/dispatch", "/dispatch/map"] },
   // Mini-admin avec le seul module Support : tout autre écran le renvoie au support.
   miniAdminSupport: { home: "/support", allowed: ["/support"] },

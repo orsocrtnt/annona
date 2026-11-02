@@ -132,7 +132,7 @@ export function DispatchSettingsForm() {
     const ruleDriverIds = local.driverRules.map((r) => r.driverId);
     const duplicates = ruleDriverIds.filter((id, i) => ruleDriverIds.indexOf(id) !== i);
     if (duplicates.length > 0) {
-      toast.error("Chaque chauffeur ne peut apparaître qu'une fois");
+      toast.error("Chaque livreur ne peut apparaître qu'une fois");
       return;
     }
 
@@ -429,7 +429,7 @@ export function DispatchSettingsForm() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Chauffeur</Label>
+                          <Label className="text-xs">Livreur</Label>
                           <Select
                             value={rule.driverId}
                             onValueChange={(value) => updateRule(index, { driverId: value })}
@@ -577,7 +577,7 @@ export function DispatchSettingsForm() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Radio className="h-4 w-4" />
-            Dispatch automatique
+            Dispatch intelligent
           </CardTitle>
           <CardDescription>
             Les missions sont assignées par le dispatch — les livreurs ne peuvent pas les prendre

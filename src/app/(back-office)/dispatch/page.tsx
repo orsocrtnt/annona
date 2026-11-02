@@ -140,7 +140,7 @@ function DispatcherDashboardContent() {
         toast.info("Aucune livraison assignée", {
           description:
             result.skipped > 0
-              ? `${result.skipped} livraison(s) ignorée(s) — vérifiez les profils chauffeurs.`
+              ? `${result.skipped} livraison(s) ignorée(s) — vérifiez les profils livreurs.`
               : "La file d'attente est vide.",
         });
       } else {
@@ -378,7 +378,7 @@ function DispatcherDashboardContent() {
               label="Non assignées"
               value={pendingUnassigned}
               icon={Radio}
-              changeLabel="En attente d'un chauffeur"
+              changeLabel="En attente d'un livreur"
             />
             <StatCard
               label="Livrées aujourd'hui"

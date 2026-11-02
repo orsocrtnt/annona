@@ -15,7 +15,7 @@ const NOW = new Date("2026-10-29T08:00:00Z");
 const EVENTS = [
   { id: "e1", label: "Information", description: "Karim Benali a confirmé la prise en charge", occurredAt: NOW, latitude: null, longitude: null },
   { id: "e2", label: "Prise en charge confirmée", description: "Livreur Karim Benali a confirmé la prise en charge, avant le départ.", occurredAt: NOW, latitude: null, longitude: null },
-  { id: "e3", label: "Chauffeur réassigné", description: "Livreur Awa Diallo → Livreur Karim Benali", occurredAt: NOW, latitude: null, longitude: null },
+  { id: "e3", label: "Livreur réassigné", description: "Livreur Awa Diallo → Livreur Karim Benali", occurredAt: NOW, latitude: null, longitude: null },
   // C3 : anciens livreurs (particule, inactif, trait d'union, majuscules), hors des libellés connus.
   { id: "e4", label: "Assignée automatiquement", description: "Livraison confiée à Livreur Jean de La Fontaine — choix automatique", occurredAt: NOW, latitude: null, longitude: null },
   { id: "e5", label: "Information", description: "Relais prévu : le livreur jean de la fontaine passe le colis à MARIE-CLAIRE DUPONT-MARTIN", occurredAt: NOW, latitude: null, longitude: null },

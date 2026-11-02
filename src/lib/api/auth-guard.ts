@@ -55,7 +55,7 @@ export async function requireDriverRole(): Promise<
 
   if (result.context.user.role.systemRole !== "DRIVER") {
     return {
-      error: NextResponse.json({ error: "Réservé aux chauffeurs" }, { status: 403 }),
+      error: NextResponse.json({ error: "Réservé aux livreurs" }, { status: 403 }),
     };
   }
 

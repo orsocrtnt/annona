@@ -115,7 +115,7 @@ function fixture() {
   return { service: moduleAt("src/domains/tracking/tracking.service.ts", deps), location: moduleAt("src/domains/driver/driver-location.service.ts", deps), calls, user, order, noUser: () => { user = null; }, noOrder: () => { order = null; }, noMission: () => { foundMission = null; }, conflict: () => { claim = 0; } };
 }
 const actor = { id: "client", companyId: "a", role: "CLIENT", permissions: ["dashboard:client"] };
-test("TRACK-1 service : commande et enfants limités entreprise/client ; chauffeur enfants affectés seulement", async () => {
+test("TRACK-1 service : commande et enfants limités entreprise/client ; livreur enfants affectés seulement", async () => {
   const f = fixture(); await f.service.getOrderTracking(actor, "o"); const q = f.calls.find(c => c[0] === "order")[1]; assert.equal(q.where.customerId, "client"); assert.equal(q.where.companyId, "a"); assert.equal(q.select.deliveries.where.customerId, "client"); assert.equal(q.select.deliveries.where.companyId, "a");
   f.calls.length = 0; await f.service.getOrderTracking({ ...actor, role: "DRIVER", id: "driver" }, "o"); assert.equal(f.calls.find(c => c[0] === "order")[1].select.deliveries.where.driverId, "driver");
 });
@@ -156,7 +156,7 @@ test("TRACK-1 route service : identité authentifiée imposée, corps strict, au
   assert.equal((await route.POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ active: true }) }))).status, 200); assert.equal(calls[1][0], "current"); assert.equal(calls[1][1], "a");
 });
 
-test("TRACK-1 carte chauffeurs : destination ne devient jamais position, signal autorisé seul fait marqueur", async () => {
+test("TRACK-1 carte livreurs : destination ne devient jamais position, signal autorisé seul fait marqueur", async () => {
   let locations: any[] = [];
   let missingDestination = false;
   const service = moduleAt("src/domains/delivery/dispatch-map.service.ts", {

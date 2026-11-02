@@ -47,10 +47,10 @@ export function LocationSettingsForm() {
         <div className="flex items-start gap-3">
           <MapPin className="mt-0.5 h-5 w-5 text-brand" />
           <div>
-            <CardTitle className="text-base">Suivi GPS chauffeurs</CardTitle>
+            <CardTitle className="text-base">Suivi GPS livreurs</CardTitle>
             <CardDescription>
               Fréquence adaptative type Uber : plus rapide en mission, plus espacée au repos.
-              Le chauffeur doit garder l&apos;app ouverte dans Safari pour que le suivi fonctionne.
+              Le livreur doit garder l&apos;app ouverte dans Safari pour que le suivi fonctionne.
             </CardDescription>
           </div>
         </div>
@@ -93,7 +93,7 @@ export function LocationSettingsForm() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Chauffeur en ligne sans mission active (~10–30 s chez Uber).
+              Livreur en ligne sans mission active (~10–30 s chez Uber).
             </p>
           </div>
 
@@ -113,7 +113,7 @@ export function LocationSettingsForm() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Fréquence d&apos;actualisation de la carte dispatch chauffeurs.
+              Fréquence d&apos;actualisation de la carte dispatch livreurs.
             </p>
           </div>
 
@@ -133,7 +133,7 @@ export function LocationSettingsForm() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Sans signal GPS depuis ce délai, le chauffeur apparaît hors ligne sur la carte.
+              Sans signal GPS depuis ce délai, le livreur apparaît hors ligne sur la carte.
             </p>
           </div>
         </div>

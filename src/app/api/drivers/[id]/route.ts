@@ -23,7 +23,7 @@ export async function GET(
     const detail = await getCompanyDriverDetail(companyId, id);
 
     if (!detail) {
-      return NextResponse.json({ error: "Chauffeur introuvable" }, { status: 404 });
+      return NextResponse.json({ error: "Livreur introuvable" }, { status: 404 });
     }
 
     return NextResponse.json({ data: omitStoragePaths(detail), success: true });

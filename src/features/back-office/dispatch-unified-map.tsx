@@ -71,7 +71,7 @@ function MapViewToggle({ views, view, onChange, className }: { views: DashboardM
 
 /**
  * La carte unique du Dispatch : livreurs et livraisons ensemble, ou l'un des deux seul.
- * `/dispatch/map` ouvre « Tout » ; `/dispatch/drivers` (ancienne carte chauffeurs) ouvre « Livreurs ».
+ * `/dispatch/map` ouvre « Tout » ; `/dispatch/drivers` (ancienne carte livreurs) ouvre « Livreurs ».
  */
 export function DispatchUnifiedMap({ defaultView }: { defaultView: DashboardMapView }) {
   const router = useRouter();

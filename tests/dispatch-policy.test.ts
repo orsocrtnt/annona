@@ -47,7 +47,7 @@ test("affectation : seules les livraisons en attente ou assignées avant départ
   );
 });
 
-test("affectation : les combinaisons statut/chauffeur incohérentes déclenchent un conflit", () => {
+test("affectation : les combinaisons statut/livreur incohérentes déclenchent un conflit", () => {
   assert.equal(
     getAssignmentBlockReason({ status: "PENDING", driverId: "driver-a", missionStartedAt: null }),
     "DELIVERY_STATUS_CONFLICT"

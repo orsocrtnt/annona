@@ -23,7 +23,7 @@ export class DriverProximityError extends Error {
     public readonly kind: ProximityTargetKind,
     public readonly distanceMeters: number | null
   ) {
-    super("Le chauffeur n'est pas proche du point attendu");
+    super("Le livreur n'est pas proche du point attendu");
     this.name = "DriverProximityError";
   }
 }

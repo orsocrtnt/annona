@@ -9,7 +9,7 @@ import type { ConversationActor } from "../src/domains/order-conversation/order-
 
 // Seule la frontière externe (Prisma) est simulée : le service et la politique d'alertes sont les vrais.
 const staff: ConversationActor = { id: "admin", companyId: "a", role: "COMPANY_ADMIN", permissions: ["orders:read", "orders:update"], name: "Admin" };
-const incident = (id: string) => ({ id, requestKey: `uuid-${id}`, kind: "INCIDENT", internal: false, body: "Portail fermé", authorName: "Chauffeur", createdAt: new Date() });
+const incident = (id: string) => ({ id, requestKey: `uuid-${id}`, kind: "INCIDENT", internal: false, body: "Portail fermé", authorName: "Livreur", createdAt: new Date() });
 const order = (id: string, deliveryIds: string[], messages: unknown[]) => ({
   id, reference: `CMD-${id}`, companyId: "a", updatedAt: new Date(2), status: "ASSIGNED", requestedDeliveryDate: null, shippingAddress: null, shippingCity: null, customer: null,
   deliveries: deliveryIds.map(d => ({ id: d, reference: `LIV-${d}`, status: "ASSIGNED", completedAt: null, driverId: "driver", address: null, city: null })), messages,

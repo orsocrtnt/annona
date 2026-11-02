@@ -49,11 +49,11 @@ export const ROLE_LABELS: Record<SystemRole, string> = {
   COMPANY_ADMIN: "Administrateur",
   MINI_ADMIN: "Mini-admin",
   DISPATCHER: "Dispatcher",
-  DRIVER: "Chauffeur",
+  DRIVER: "Livreur",
   CLIENT: "Client",
 };
 
-/** Personnel interne (back-office), hors client et chauffeur. */
+/** Personnel interne (back-office), hors client et livreur. */
 export const STAFF_ROLES: SystemRole[] = [
   "SUPER_ADMIN",
   "COMPANY_ADMIN",

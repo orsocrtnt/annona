@@ -235,7 +235,7 @@ const COMPANY_ORDER_HISTORY_SELECT = {
   shippingAddress: true,
   shippingCity: true,
   pickupAddress: true,
-  // Codes postaux lus par le sélecteur de chauffeur (zones de dispatch) : sans eux, « Aucun compatible ».
+  // Codes postaux lus par le sélecteur de livreur (zones de dispatch) : sans eux, « Aucun compatible ».
   shippingPostalCode: true,
   pickupPostalCode: true,
   customerEmail: true,
@@ -1042,7 +1042,7 @@ async function cancelCompanyOrderBeforeMissionStart(
           deliveryId: delivery.id,
           label: getFulfillmentStatusLabel("CANCELLED", order.deliveryCategory),
           description: delivery.driverName
-            ? `Commande annulée avant le départ — chauffeur précédemment assigné : ${delivery.driverName}`
+            ? `Commande annulée avant le départ — livreur précédemment assigné : ${delivery.driverName}`
             : "Commande annulée avant le départ par l’administrateur",
         },
       });

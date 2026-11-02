@@ -70,7 +70,7 @@ const ADMIN: Session = { role: "COMPANY_ADMIN", permissions: ["orders:read", "or
 const REFUSED: Array<[string, Session, number]> = [
   ["sans session", null, 401],
   ["client", { role: "CLIENT", permissions: ["orders:read", "orders:create", "dashboard:client"], companyId: "company-a" }, 403],
-  ["chauffeur", { role: "DRIVER", permissions: ["dashboard:driver"], companyId: "company-a" }, 403],
+  ["livreur", { role: "DRIVER", permissions: ["dashboard:driver"], companyId: "company-a" }, 403],
   ["mini-admin sans module commandes", { role: "MINI_ADMIN", permissions: ["support:read"], companyId: "company-a" }, 403],
   ["super-administrateur", { role: "SUPER_ADMIN", permissions: ["orders:read", "orders:create", "dashboard:admin"], companyId: null }, 403],
 ];

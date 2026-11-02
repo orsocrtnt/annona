@@ -34,7 +34,7 @@ const nav: Array<{ href: string; title: string; disabled?: boolean; disabledReas
   { href: "/dashboard/analytics", title: "Analyse" },
   { href: "/dispatch", title: "Dispatch" },
   { href: "/dispatch/map", title: "Carte livraison" },
-  { href: "/dispatch/drivers", title: "Carte chauffeurs" },
+  { href: "/dispatch/drivers", title: "Carte livreurs" },
   { href: "/portal/deliveries", title: "Livraisons" },
 ];
 

@@ -105,14 +105,14 @@ export function DispatchDriverWorkload({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Charge par chauffeur</CardTitle>
+          <CardTitle className="text-base">Charge par livreur</CardTitle>
           <CardDescription>Commandes et courses planifiées par livreur</CardDescription>
         </CardHeader>
         <CardContent>
           <EmptyState
             icon={Users}
-            title="Aucun chauffeur actif"
-            description="Créez des comptes chauffeur dans Gestion des comptes."
+            title="Aucun livreur actif"
+            description="Créez des comptes livreur dans Gestion des comptes."
           />
         </CardContent>
       </Card>
@@ -127,7 +127,7 @@ export function DispatchDriverWorkload({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Charge par chauffeur</CardTitle>
+        <CardTitle className="text-base">Charge par livreur</CardTitle>
         <CardDescription>
           Équipe : {teamToday} livraison{teamToday > 1 ? "s" : ""} aujourd&apos;hui · {teamWeek} sur les 7
           prochains jours (aujourd&apos;hui inclus)

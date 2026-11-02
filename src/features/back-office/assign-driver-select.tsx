@@ -64,7 +64,7 @@ function DriverSelectItems({
   if (compatible.length === 0 && overCapacity.length === 0 && incompatible.length === 0) {
     return (
       <SelectItem value="_none" disabled>
-        Aucun chauffeur
+        Aucun livreur
       </SelectItem>
     );
   }
@@ -156,11 +156,11 @@ export function AssignDriverSelect({
       toast.success(
         force
           ? isReassign
-            ? "Chauffeur réassigné (charge dépassée)"
-            : "Chauffeur assigné (charge dépassée)"
+            ? "Livreur réassigné (charge dépassée)"
+            : "Livreur assigné (charge dépassée)"
           : isReassign
-            ? "Chauffeur réassigné"
-            : "Chauffeur assigné"
+            ? "Livreur réassigné"
+            : "Livreur assigné"
       );
     } catch (error) {
       if (error instanceof Error && !force && isSoftIneligibilityMessage(error.message)) {
@@ -192,7 +192,7 @@ export function AssignDriverSelect({
 
     if (incompatibleIds.has(id)) {
       const item = incompatible.find((entry) => entry.driver.id === id);
-      toast.error("Chauffeur incompatible avec cette livraison", {
+      toast.error("Livreur incompatible avec cette livraison", {
         description: item?.reasons ?? "Règles dispatch non respectées",
       });
       return;
@@ -238,9 +238,9 @@ export function AssignDriverSelect({
             onValueChange={requestAssign}
             disabled={assign.isPending}
           >
-            <SelectTrigger aria-label="Assigner un chauffeur" className={TABLE_SELECT_TRIGGER_CLASS}>
+            <SelectTrigger aria-label="Assigner un livreur" className={TABLE_SELECT_TRIGGER_CLASS}>
               {/* Le livreur affecté n'est pas toujours dans la liste filtrée : on affiche quand même son nom. */}
-              <SelectValue placeholder={selectableCount > 0 ? "Chauffeur" : "Aucun compatible"}>
+              <SelectValue placeholder={selectableCount > 0 ? "Livreur" : "Aucun compatible"}>
                 {driverId && assignedLabel ? withoutRolePrefix(assignedLabel) : undefined}
               </SelectValue>
             </SelectTrigger>
@@ -281,7 +281,7 @@ export function AssignDriverSelect({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm">{assignedLabel}</span>
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setEditing(true)}>
-            Changer de chauffeur
+            Changer de livreur
           </Button>
           <Button
             variant="ghost"
@@ -290,10 +290,10 @@ export function AssignDriverSelect({
             disabled={unassign.isPending}
             onClick={async () => {
               // UX-04 : action qui défait une affectation, confirmée comme l'annulation de livraison.
-              if (!confirm(`Retirer le chauffeur de cette livraison ? (${assignedLabel})`)) return;
+              if (!confirm(`Retirer le livreur de cette livraison ? (${assignedLabel})`)) return;
               try {
                 await unassign.mutateAsync(deliveryId);
-                toast.success("Chauffeur retiré");
+                toast.success("Livreur retiré");
               } catch (error) {
                 toast.error("Action impossible", {
                   description: error instanceof Error ? error.message : undefined,
@@ -301,7 +301,7 @@ export function AssignDriverSelect({
               }
             }}
           >
-            Retirer le chauffeur
+            Retirer le livreur
           </Button>
         </div>
 
@@ -326,7 +326,7 @@ export function AssignDriverSelect({
         )}
         {selectableCount === 0 && (
           <p className="text-sm text-warning">
-            Aucun chauffeur compatible. Les chauffeurs hors règles sont affichés à titre informatif
+            Aucun livreur compatible. Les livreurs hors règles sont affichés à titre informatif
             et ne peuvent pas être assignés.
           </p>
         )}
@@ -337,8 +337,8 @@ export function AssignDriverSelect({
               onValueChange={setDriverIdDraft}
               disabled={assign.isPending}
             >
-              <SelectTrigger aria-label="Choisir un chauffeur">
-                <SelectValue placeholder="Choisir un chauffeur..." />
+              <SelectTrigger aria-label="Choisir un livreur">
+                <SelectValue placeholder="Choisir un livreur..." />
               </SelectTrigger>
               <SelectContent>
                 <DriverSelectItems
@@ -356,7 +356,7 @@ export function AssignDriverSelect({
             loading={assign.isPending}
             onClick={() => requestAssign(driverIdDraft)}
           >
-            {assignedLabel ? "Réassigner" : "Assigner au chauffeur"}
+            {assignedLabel ? "Réassigner" : "Assigner au livreur"}
           </Button>
           {incompatible.length > 0 && selectableCount > 0 && (
             <Button variant="ghost" size="sm" onClick={() => setShowAllDrivers((value) => !value)}>

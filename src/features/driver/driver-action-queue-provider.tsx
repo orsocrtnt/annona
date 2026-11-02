@@ -111,7 +111,7 @@ export function DriverActionQueueProvider({ children }: { children: React.ReactN
     missionId: string,
     payload: QueuedDriverActionPayload
   ): Promise<DriverActionSubmission> => {
-    if (!ownerId) throw new DriverApiError("Session chauffeur indisponible.", { retryable: false });
+    if (!ownerId) throw new DriverApiError("Session livreur indisponible.", { retryable: false });
     const action = createQueuedDriverAction({ ownerId, missionId, payload });
     try {
       await enqueueDriverAction(browserDriverActionQueueStore, action);

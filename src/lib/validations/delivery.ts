@@ -2,7 +2,7 @@ import { z } from "zod";
 import { POD_FAILURE_CODES } from "@/lib/pod/codes";
 
 export const assignDeliverySchema = z.object({
-  driverId: z.string().min(1, "Chauffeur requis"),
+  driverId: z.string().min(1, "Livreur requis"),
   force: z.boolean().optional(),
 });
 

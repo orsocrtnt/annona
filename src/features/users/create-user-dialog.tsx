@@ -142,9 +142,9 @@ export function CreateUserDialog() {
                     <SelectItem value="driver" disabled={!canInviteDriver}>
                       {canInviteDriver
                         ? driverMeter
-                          ? `Chauffeur / Livreur — ${seatRemainingLabel(driverMeter)}`
-                          : "Chauffeur / Livreur"
-                        : `Chauffeur / Livreur — ${driverMeter ? seatRemainingLabel(driverMeter) : "aucun poste restant"}`}
+                          ? `Livreur — ${seatRemainingLabel(driverMeter)}`
+                          : "Livreur"
+                        : `Livreur — ${driverMeter ? seatRemainingLabel(driverMeter) : "aucun poste restant"}`}
                     </SelectItem>
                     {canDelegate && (
                       <SelectItem value="dispatcher" disabled={!canInviteDispatcher}>

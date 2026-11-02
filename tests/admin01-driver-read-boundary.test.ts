@@ -65,7 +65,7 @@ function context(calls: string[]) {
   };
 }
 
-test("ADMIN-1 chauffeurs : lecture refusée avant entreprise et paramètres", async () => {
+test("ADMIN-1 livreurs : lecture refusée avant entreprise et paramètres", async () => {
   const listCalls: string[] = [];
   const list = load("src/app/api/drivers/route.ts", "SUPER_ADMIN", listCalls);
   assert.equal((await list.GET!()).status, 403);
@@ -77,7 +77,7 @@ test("ADMIN-1 chauffeurs : lecture refusée avant entreprise et paramètres", as
   assert.deepEqual(detailCalls, ["staff:drivers:read", "role"]);
 });
 
-test("ADMIN-1 chauffeurs : les trois rôles conservent réponses et erreurs", async () => {
+test("ADMIN-1 livreurs : les trois rôles conservent réponses et erreurs", async () => {
   for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]) {
     const list = await load("src/app/api/drivers/route.ts", role, []).GET!();
     assert.equal(list.status, 200);
@@ -94,12 +94,12 @@ test("ADMIN-1 chauffeurs : les trois rôles conservent réponses et erreurs", as
 
   const failed = await load("src/app/api/drivers/route.ts", "COMPANY_ADMIN", [], "fail").GET!();
   assert.equal(failed.status, 500);
-  assert.equal((await failed.json()).error, "Impossible de charger les chauffeurs");
+  assert.equal((await failed.json()).error, "Impossible de charger les livreurs");
 
   const missing = await load("src/app/api/drivers/[id]/route.ts", "DISPATCHER", [], "missing").GET!(
     new Request("http://local/api/drivers/driver-1"),
     context([])
   );
   assert.equal(missing.status, 404);
-  assert.equal((await missing.json()).error, "Chauffeur introuvable");
+  assert.equal((await missing.json()).error, "Livreur introuvable");
 });

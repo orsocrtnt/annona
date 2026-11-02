@@ -102,7 +102,7 @@ export async function provisionClientTestData(
             },
             {
               label: "En livraison",
-              description: "Le chauffeur est en route",
+              description: "Le livreur est en route",
               latitude: 48.8606,
               longitude: 2.3376,
               occurredAt: new Date(Date.now() - 1 * 60 * 60 * 1000),

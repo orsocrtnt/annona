@@ -57,7 +57,7 @@ export function buildSecurityHeaders(env: HeaderEnv = process.env as HeaderEnv) 
     { key: "X-Frame-Options", value: "DENY" },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-    // Géolocalisation pour l'app chauffeur ; caméra conservée pour la preuve de livraison.
+    // Géolocalisation pour l'app livreur ; caméra conservée pour la preuve de livraison.
     { key: "Permissions-Policy", value: "geolocation=(self), camera=(self), microphone=(), payment=(), usb=(), browsing-topics=()" },
     // Bloquante depuis la recette SEC-AUDIT du 29 octobre 2026 (build de production : cartes, démo,
     // preuves, connexion, portail, livreur, /admin) : zéro violation après `zod-jitless`.

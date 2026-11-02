@@ -99,7 +99,7 @@ export function getDispatchColumns(): TableColumn<CompanyDelivery>[] {
     },
     {
       key: "driver",
-      header: "Chauffeur",
+      header: "Livreur",
       className: ORDER_TABLE_COL.driver,
       cell: (row) => (
         <div className={tableSelectWrapper()}>

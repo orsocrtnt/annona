@@ -3,7 +3,7 @@
  * de la destination (rôle relu en base, AUTH-ROLE) ; un mauvais choix n'ouvre ni ne ferme aucun accès.
  */
 export type LoginContext = "company" | "client" | "driver";
-export type LoginSpaceKey = "entreprise" | "client" | "chauffeur";
+export type LoginSpaceKey = "entreprise" | "client" | "livreur";
 
 export const LOGIN_SPACES: Record<
   LoginSpaceKey,
@@ -21,10 +21,10 @@ export const LOGIN_SPACES: Record<
     title: "Client",
     description: "Commander, suivre ses livraisons, retrouver ses factures.",
   },
-  chauffeur: {
+  livreur: {
     context: "driver",
     href: "/login/driver",
-    title: "Chauffeur",
+    title: "Livreur",
     description: "Missions du jour et navigation.",
   },
 };
@@ -65,7 +65,7 @@ export function resolveLoginView(params: Record<string, SearchValue>): LoginView
 /** Espace réellement ouvert par le serveur (et non celui choisi) : c'est lui qu'on retient. */
 export function spaceForDestination(path: string): LoginSpaceKey {
   if (path === "/portal" || path.startsWith("/portal/")) return "client";
-  if (path === "/driver" || path.startsWith("/driver/")) return "chauffeur";
+  if (path === "/driver" || path.startsWith("/driver/")) return "livreur";
   return "entreprise";
 }
 

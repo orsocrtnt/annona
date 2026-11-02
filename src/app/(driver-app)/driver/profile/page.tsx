@@ -27,7 +27,7 @@ export default function DriverProfilePage() {
           {/* Le rôle est déjà dit dessous : le nom seul. */}
           {user ? withoutRolePrefix(`${user.firstName} ${user.lastName}`.trim()) : "Mon profil"}
         </h1>
-        <p className="text-sm text-muted-foreground">Chauffeur livreur</p>
+        <p className="text-sm text-muted-foreground">Livreur livreur</p>
       </div>
 
       <ProfileForm

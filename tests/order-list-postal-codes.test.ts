@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 // « Aucun compatible » : la liste des commandes ne transmettait aucun code postal au sélecteur de
-// chauffeur (company-order-columns lit delivery.postalCode ?? row.shippingPostalCode, et le pickup).
-test("la liste des commandes sélectionne les codes postaux lus par le sélecteur de chauffeur", () => {
+// livreur (company-order-columns lit delivery.postalCode ?? row.shippingPostalCode, et le pickup).
+test("la liste des commandes sélectionne les codes postaux lus par le sélecteur de livreur", () => {
   const source = readFileSync("src/domains/order/order.service.ts", "utf8");
   const start = source.indexOf("const COMPANY_ORDER_HISTORY_SELECT");
   const select = source.slice(start, source.indexOf("} satisfies Prisma.OrderSelect;", start));

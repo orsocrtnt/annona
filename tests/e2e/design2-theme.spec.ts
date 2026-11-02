@@ -55,16 +55,16 @@ test("back-office : suit le système, bascule en un clic, choix Système dans le
   expect(await page.evaluate(() => localStorage.getItem("tutelliv-theme"))).toBe("system");
 });
 
-test("back-office en Sombre : écrans principaux lisibles, tableau Chauffeurs sur une surface distincte", async ({ page }) => {
+test("back-office en Sombre : écrans principaux lisibles, tableau Livreurs sur une surface distincte", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await openAs(page, "admin", "/dashboard/drivers");
-  await expect(page.getByRole("heading", { name: "Chauffeurs" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Livreurs" })).toBeVisible();
   const table = page.locator("table").first();
   await expect(table).toBeVisible();
   // La surface du tableau (son conteneur) n'est pas le fond de page.
   const surface = await table.evaluate((el) => getComputedStyle(el.closest("div.rounded-xl, div[class*='rounded-xl']") ?? el).backgroundColor);
   expect(surface).toBe(CARD_DARK);
-  await page.screenshot({ path: test.info().outputPath("chauffeurs-sombre-1280.png"), fullPage: true });
+  await page.screenshot({ path: test.info().outputPath("livreurs-sombre-1280.png"), fullPage: true });
 
   for (const path of ["/dashboard", "/dashboard/orders", "/dispatch", "/dashboard/analytics", "/settings", "/support", "/users"]) {
     await page.goto(path);

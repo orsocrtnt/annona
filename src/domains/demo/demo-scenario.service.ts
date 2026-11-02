@@ -164,10 +164,10 @@ function buildScenario(): ScenarioItem[] {
       deliveryInstructions: "Sonner à l'interphone — 3e étage",
       tracking: [
         { label: "Commande reçue", offsetHours: -6 },
-        { label: "Assignée", description: "Chauffeur affecté", offsetHours: -3 },
+        { label: "Assignée", description: "Livreur affecté", offsetHours: -3 },
         {
           label: "En livraison",
-          description: "Le chauffeur est en route",
+          description: "Le livreur est en route",
           offsetHours: -1,
           latitude: 48.8698,
           longitude: 2.3078,
@@ -177,7 +177,7 @@ function buildScenario(): ScenarioItem[] {
       supportTicket: {
         subject: "Question sur l'heure de livraison",
         message:
-          "Bonjour, pouvez-vous me confirmer l'heure estimée d'arrivée du chauffeur ? Merci.",
+          "Bonjour, pouvez-vous me confirmer l'heure estimée d'arrivée du livreur ? Merci.",
       },
     },
     {
@@ -197,7 +197,7 @@ function buildScenario(): ScenarioItem[] {
       tracking: [
         {
           label: "Commande reçue",
-          description: "En attente d'assignation chauffeur",
+          description: "En attente d'assignation livreur",
           offsetHours: -2,
         },
       ],
@@ -219,7 +219,7 @@ function buildScenario(): ScenarioItem[] {
       notes: "Date demandée dépassée — priorité dispatch",
       tracking: [
         { label: "Commande reçue", offsetHours: -72 },
-        { label: "En attente chauffeur", description: "Retard sur la date prévue", offsetHours: -24 },
+        { label: "En attente livreur", description: "Retard sur la date prévue", offsetHours: -24 },
       ],
     },
     {
@@ -270,7 +270,7 @@ function buildScenario(): ScenarioItem[] {
       deliveryInstructions: "Livraison en main propre",
       tracking: [
         { label: "Course reçue", offsetHours: -3 },
-        { label: "Chauffeur en route collecte", offsetHours: -1, latitude: 48.8606, longitude: 2.3376 },
+        { label: "Livreur en route collecte", offsetHours: -1, latitude: 48.8606, longitude: 2.3376 },
         { label: "En cours d'achat", description: "Récupération en cours", offsetHours: 0 },
       ],
     },
@@ -348,7 +348,7 @@ function buildScenario(): ScenarioItem[] {
       deliveryInstructions: "Accès parking livraison — badge à l'accueil",
       tracking: [
         { label: "Commande reçue", offsetHours: -4 },
-        { label: "Assignée au chauffeur", offsetHours: -2 },
+        { label: "Assignée au livreur", offsetHours: -2 },
       ],
     },
     // Carte « suivi en direct » : plusieurs livreurs en route, toutes les missions à Paris.
@@ -366,7 +366,7 @@ function buildScenario(): ScenarioItem[] {
       items: [{ name: "Matériel événementiel", quantity: 3, unitPrice: 42.0 }],
       tracking: [
         { label: "Commande reçue", offsetHours: -3 },
-        { label: "En livraison", description: "Le chauffeur est en route", offsetHours: -0.4 },
+        { label: "En livraison", description: "Le livreur est en route", offsetHours: -0.4 },
       ],
     },
     {
@@ -425,7 +425,7 @@ function buildScenario(): ScenarioItem[] {
       notes: "Créneau dépassé — mission pas encore démarrée",
       tracking: [
         { label: "Commande reçue", offsetHours: -8 },
-        { label: "Assignée au chauffeur", offsetHours: -5 },
+        { label: "Assignée au livreur", offsetHours: -5 },
       ],
     },
     {
@@ -438,7 +438,7 @@ function buildScenario(): ScenarioItem[] {
       scheduledAtOffsetHours: 3,
       shipping: { address: "12 Rue Lepic", city: "Paris", postalCode: "75018" },
       items: [{ name: "Fleurs — commande boutique", quantity: 2, unitPrice: 28.0 }],
-      tracking: [{ label: "Commande reçue", description: "En attente d'assignation chauffeur", offsetHours: -1 }],
+      tracking: [{ label: "Commande reçue", description: "En attente d'assignation livreur", offsetHours: -1 }],
     },
     {
       label: "Sans livreur — Belleville",
@@ -465,7 +465,7 @@ function buildScenario(): ScenarioItem[] {
       items: [{ name: "Fournitures médicales", quantity: 2, unitPrice: 54.0 }],
       tracking: [
         { label: "Commande reçue", offsetHours: -2 },
-        { label: "Assignée au chauffeur", offsetHours: -1 },
+        { label: "Assignée au livreur", offsetHours: -1 },
       ],
     },
   ];

@@ -8,7 +8,7 @@ import type { ConversationActor } from "../src/domains/order-conversation/order-
 const now = new Date("2026-10-12T12:00:00Z"), due = new Date(+now - 60000);
 const staff: ConversationActor = { id: "admin", companyId: "a", role: "COMPANY_ADMIN", permissions: ["orders:read", "orders:update"], name: "Admin" };
 function order() { return { id: "o", reference: "CMD", companyId: "a", updatedAt: new Date(2), status: "ASSIGNED", requestedDeliveryDate: due, deliveries: [{ id: "d", reference: "LIV", status: "ASSIGNED", completedAt: null as Date | null, driverId: "driver", updatedAt: new Date(1) }] }; }
-const incident = { id: "i", requestKey: "uuid", kind: "INCIDENT", internal: false, body: "Portail fermé", authorName: "Chauffeur", createdAt: now };
+const incident = { id: "i", requestKey: "uuid", kind: "INCIDENT", internal: false, body: "Portail fermé", authorName: "Livreur", createdAt: now };
 function action(id: string, key: "ack" | "resolve") { return { ...incident, id: key, kind: "INSTRUCTION", requestKey: alertActionKey(id, key), body: key === "ack" ? "Appeler" : "Accès ouvert" }; }
 test("alerte : seule l’échéance demandée dépassée crée un retard, sans date aucune supposition", () => {
   const o = order(); const rows = deriveOperationalAlerts(o, [], true, now); assert.equal(rows.length, 1); assert.equal(rows[0]!.deliveryId, "d");
@@ -52,7 +52,7 @@ test("alerte : une livraison terminée clôt son retard même si une autre reste
   const o = order(); o.deliveries.push({ ...o.deliveries[0]!, id: "d2", reference: "LIV2" }); o.deliveries[0]!.completedAt = now;
   const rows = deriveOperationalAlerts(o, [], true, now); assert.equal(rows[0]!.state, "CLOSED"); assert.equal(rows[1]!.state, "OPEN");
 });
-test("alerte : chauffeur voit seulement ses retards, incidents partagés sur la commande", () => {
+test("alerte : livreur voit seulement ses retards, incidents partagés sur la commande", () => {
   const o = order(); o.deliveries.push({ ...o.deliveries[0]!, id: "d2", driverId: "other" });
   const rows = deriveOperationalAlerts(o, [incident], false, now, "driver"); assert.equal(rows.length, 2); assert.ok(rows[0]!.id.startsWith("late:d:")); assert.equal(rows[1]!.id, "incident:i");
   assert.equal(deriveOperationalAlerts(o, [], true, now).length, 2);
@@ -70,17 +70,17 @@ function fixture() {
   runInNewContext(ts.transpileModule(readFileSync("src/domains/operational-alerts/operational-alerts.service.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, { module, exports: module.exports, Date, Error, console, require: (id: string) => { assert.ok(id in deps, id); return deps[id]; } });
   return { service: module.exports as typeof import("../src/domains/operational-alerts/operational-alerts.service"), o, messages, calls, loseClaim: () => { claim = 0; } };
 }
-test("alerte service : actions refusées client/chauffeur et personnel lecture seule avant écriture", async () => {
+test("alerte service : actions refusées client/livreur et personnel lecture seule avant écriture", async () => {
   const f = fixture(); for (const actor of [{ ...staff, role: "CLIENT" as const }, { ...staff, role: "DRIVER" as const }, { ...staff, permissions: ["orders:read"] }]) await assert.rejects(f.service.actOnOperationalAlert(actor, "o", { alertId: "incident:i", action: "ack", note: "action" }), /habilitée/);
   assert.equal(f.calls.length, 0);
 });
 test("alerte service : prise en compte, résolution, rejeux inter-auteur sans nouvelle action ni tâche", async () => {
   const f = fixture(), id = (await f.service.getOrderOperationalAlerts(staff, "o"))[0]!.id;
   await assert.rejects(f.service.actOnOperationalAlert(staff, "o", { alertId: id, action: "resolve", note: "trop tôt" }), /avant/);
-  const a = await f.service.actOnOperationalAlert(staff, "o", { alertId: id, action: "ack", note: "Appeler chauffeur" });
+  const a = await f.service.actOnOperationalAlert(staff, "o", { alertId: id, action: "ack", note: "Appeler livreur" });
   const replay = await f.service.actOnOperationalAlert({ ...staff, id: "other-admin" }, "o", { alertId: id, action: "ack", note: "Double prise" });
   assert.equal(replay.messageId, a.messageId); assert.equal(replay.replay, true);
-  await f.service.actOnOperationalAlert(staff, "o", { alertId: id, action: "resolve", note: "Chauffeur arrivé" });
+  await f.service.actOnOperationalAlert(staff, "o", { alertId: id, action: "resolve", note: "Livreur arrivé" });
   assert.equal(f.messages.length, 2); assert.equal(f.calls.filter(c => c[0]! === "job").length, 2);
   const row = (await f.service.getOrderOperationalAlerts(staff, "o"))[0]!; assert.equal(row.state, "RESOLVED"); assert.ok(!JSON.stringify(row).includes("requestKey"));
 });

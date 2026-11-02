@@ -7,7 +7,7 @@ const OPERATION_JOB_TAKE = 50;
 const OPERATION_JOB_OVERDUE_MS = 15 * 60 * 1000;
 const OPERATION_JOB_LEASE_MS = 5 * 60 * 1000;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 30 * 60_000] as const;
-const AUTO_DISPATCH_WAITING_DRIVER = new Set(["Aucun chauffeur actif", "Aucun chauffeur compatible selon les règles"]);
+const AUTO_DISPATCH_WAITING_DRIVER = new Set(["Aucun livreur actif", "Aucun livreur compatible selon les règles"]);
 const AUTO_DISPATCH_RECHECK_MS = 10 * 60_000;
 const AUTO_DISPATCH_WAIT_MS = 24 * 60 * 60_000;
 

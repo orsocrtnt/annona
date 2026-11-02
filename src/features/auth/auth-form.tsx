@@ -272,7 +272,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
 
   const titles: Record<AuthMode, { title: string; subtitle: string }> = {
     login: {
-      title: isClient ? "Espace client" : isDriver ? "Espace chauffeur" : "Connexion",
+      title: isClient ? "Espace client" : isDriver ? "Espace livreur" : "Connexion",
       subtitle: isClient
         ? "Suivez vos commandes et livraisons en temps réel"
         : isDriver
@@ -328,7 +328,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
                 connectez-vous avec{" "}
                 <span className="font-mono text-xs">{DEMO_LOGIN_EMAIL}</span> /{" "}
                 <span className="font-mono text-xs">{DEMO_DEFAULT_PASSWORD}</span> pour explorer
-                l&apos;admin, le portail client et l&apos;app chauffeur depuis un seul compte.
+                l&apos;admin, le portail client et l&apos;app livreur depuis un seul compte.
                 <button
                   type="button"
                   onClick={fillDemoAccount}
@@ -417,7 +417,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
             <form onSubmit={registerForm.handleSubmit(onRegister)} className="mt-8 space-y-5">
               <Alert variant="info">
                 <AlertDescription>
-                  Cette inscription est réservée aux administrateurs d&apos;entreprise. Les comptes clients et chauffeurs sont créés par l&apos;administrateur.
+                  Cette inscription est réservée aux administrateurs d&apos;entreprise. Les comptes clients et livreurs sont créés par l&apos;administrateur.
                 </AlertDescription>
               </Alert>
               <div className="grid grid-cols-2 gap-4">

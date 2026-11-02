@@ -105,7 +105,7 @@ export async function DELETE(
       ROLE_NOT_DELETABLE: "Ce rôle ne peut pas être supprimé depuis cette page.",
       DEMO_ACCOUNT_LOCKED: "Ce compte fait partie de la démo et ne peut pas être supprimé.",
       DRIVER_HAS_ACTIVE_DELIVERIES:
-        "Ce chauffeur a encore une mission active. Réaffectez ou terminez ses missions avant de le supprimer.",
+        "Ce livreur a encore une mission active. Réaffectez ou terminez ses missions avant de le supprimer.",
     };
 
     return NextResponse.json(

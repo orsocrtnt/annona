@@ -24,7 +24,7 @@ export function isMissionStarted(delivery: { missionStartedAt: string | null }) 
   return delivery.missionStartedAt != null;
 }
 
-/** Commande : mission démarrée, en attente que le chauffeur lance les achats. */
+/** Commande : mission démarrée, en attente que le livreur lance les achats. */
 export function isAwaitingPurchasePhase(delivery: DispatchMapDelivery) {
   return (
     delivery.deliveryCategory === "STANDARD" &&
@@ -232,7 +232,7 @@ export function getDeliveryMapPhaseHint(delivery: DispatchMapDelivery): string |
     delivery.deliveryCategory === "COURIER" &&
     ACTIVE_ROUTE_STATUSES.includes(delivery.status as (typeof ACTIVE_ROUTE_STATUSES)[number])
   ) {
-    return "Itinéraire chauffeur → collecte(s) → livraison";
+    return "Itinéraire livreur → collecte(s) → livraison";
   }
 
   if (isPurchasingPhase(delivery)) {
@@ -241,8 +241,8 @@ export function getDeliveryMapPhaseHint(delivery: DispatchMapDelivery): string |
 
   if (delivery.status === "IN_DELIVERY") {
     return delivery.deliveryCategory === "COURIER"
-      ? "Itinéraire chauffeur → A → B"
-      : "Itinéraire chauffeur → livraison";
+      ? "Itinéraire livreur → A → B"
+      : "Itinéraire livreur → livraison";
   }
 
   if (

@@ -157,7 +157,7 @@ test("affectation : le libellé ne parle plus de prise en charge (réservée à 
   const f = notifyFixture();
   await f.service.deliverClientNotificationJob({ kind: "DELIVERY", customerId: "client-a", companyId: "company-a", status: "ASSIGNED", reference: "LIV-1038", deliveryId: "delivery-a" }, "client-notification:delivery:delivery-a:event-1");
   const row = [...f.notifications.values()][0]!;
-  assert.equal(row.title, "Chauffeur assigné");
+  assert.equal(row.title, "Livreur assigné");
   assert.doesNotMatch(String(row.body), /pris en charge/);
 });
 
@@ -165,7 +165,7 @@ test("affectation : le libellé ne parle plus de prise en charge (réservée à 
 
 const initialVersion = new Date("2026-10-09T09:00:00.000Z");
 function ackFixture(options: { failEvent?: boolean; customerId?: string | null } = {}) {
-  let row: Row = { id: "delivery", companyId: "company", orderId: "order", customerId: options.customerId === undefined ? "client" : options.customerId, reference: "LIV-1038", driverId: "driver", driverName: "Test Chauffeur", status: "ASSIGNED", missionStartedAt: null, missionAcceptedAt: null, updatedAt: initialVersion };
+  let row: Row = { id: "delivery", companyId: "company", orderId: "order", customerId: options.customerId === undefined ? "client" : options.customerId, reference: "LIV-1038", driverId: "driver", driverName: "Test Livreur", status: "ASSIGNED", missionStartedAt: null, missionAcceptedAt: null, updatedAt: initialVersion };
   let events: Row[] = [];
   let jobs: Row[] = [];
   const kicked: string[] = [];

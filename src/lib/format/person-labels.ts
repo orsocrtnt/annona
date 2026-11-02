@@ -2,6 +2,8 @@ import type { SystemRole } from "@prisma/client";
 
 const CLIENT_PREFIX = "Client ";
 const DRIVER_PREFIX = "Livreur ";
+/** Ancien mot, encore présent dans des noms déjà enregistrés sur les livraisons. */
+const LEGACY_DRIVER_PREFIX = "Chauffeur ";
 
 function stripPrefix(name: string, prefix: string): string {
   const trimmed = name.trim();
@@ -19,7 +21,7 @@ export function formatClientDisplayName(name: string | null | undefined): string
 
 export function formatDriverDisplayName(name: string | null | undefined): string {
   if (!name?.trim()) return "Livreur";
-  const base = stripPrefix(name, DRIVER_PREFIX);
+  const base = stripPrefix(stripPrefix(name, LEGACY_DRIVER_PREFIX), DRIVER_PREFIX);
   return base ? `${DRIVER_PREFIX}${base}` : "Livreur";
 }
 
@@ -67,5 +69,5 @@ export function formatPersonNameByRole(
 
 /** Nom seul, sans « Client » / « Livreur » : quand le libellé du champ dit déjà le rôle. */
 export function withoutRolePrefix(name: string | null | undefined): string {
-  return stripPrefix(stripPrefix(name ?? "", CLIENT_PREFIX), DRIVER_PREFIX);
+  return stripPrefix(stripPrefix(stripPrefix(name ?? "", CLIENT_PREFIX), LEGACY_DRIVER_PREFIX), DRIVER_PREFIX);
 }

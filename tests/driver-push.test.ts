@@ -167,5 +167,5 @@ test("l'affectation inscrit la notification dans la transaction, sauf prise par 
   const source = readFileSync("src/domains/delivery/delivery.service.ts", "utf8");
   assert.match(source, /options\?\.selfClaimed\s*\? null\s*: await enqueueOperationJob\(tx,/);
   assert.match(source, /jobKey: `driver-push:mission:\$\{deliveryId\}:\$\{trackingEvent\.id\}`/);
-  assert.match(source, /Libre affectation par le chauffeur[^}]+selfClaimed: true/);
+  assert.match(source, /Libre affectation par le livreur[^}]+selfClaimed: true/);
 });

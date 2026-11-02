@@ -113,7 +113,7 @@ export default function CompanyDeliveryDetailPage() {
       {!terminal && (
         <Card className="border-brand/20">
           <CardHeader>
-            <CardTitle className="text-base">Assigner à un chauffeur</CardTitle>
+            <CardTitle className="text-base">Assigner à un livreur</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <DispatchSuggestionsPanel

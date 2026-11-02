@@ -15,7 +15,7 @@ export const dispatchDriverCategoriesSchema = z.object({
 });
 
 export const dispatchDriverRuleSchema = z.object({
-  driverId: z.string().min(1, "Chauffeur requis"),
+  driverId: z.string().min(1, "Livreur requis"),
   priority: z.number().int().min(1, "Priorité minimale : 1"),
   maxActiveDeliveries: z.number().int().min(1).optional(),
   allowedCategories: dispatchDriverCategoriesSchema.default({

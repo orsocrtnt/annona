@@ -103,7 +103,7 @@ test("toutes les lectures client sensibles exigent propriétaire ET entreprise",
   assert.equal(invoiceLists[0]?.companyId, "company-a");
 });
 
-test("carte client et mission chauffeur conservent la frontière d’entreprise", async (t) => {
+test("carte client et mission livreur conservent la frontière d’entreprise", async (t) => {
   const deliveryQueries: Where[] = [];
   // Noms des livreurs de l'entreprise (masquage C3), sans base.
   replaceMethod(t, prisma.user, "findMany", async () => [] as never);

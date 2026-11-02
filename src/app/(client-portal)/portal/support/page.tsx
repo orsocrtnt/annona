@@ -72,7 +72,7 @@ export default function ClientSupportPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Support</h1>
         <p className="mt-1 text-muted-foreground max-md:hidden">
-          Contactez votre administrateur ou votre chauffeur selon votre livraison
+          Contactez votre administrateur ou votre livreur selon votre livraison
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export default function ClientSupportPage() {
                 <Phone className="h-6 w-6 text-muted-foreground" />
               </div>
               <div className="max-md:min-w-0">
-                <p className="font-medium">Chauffeur</p>
+                <p className="font-medium">Livreur</p>
                 <p className="text-sm text-muted-foreground">
                   Non disponible — aucune livraison en cours ou récente
                 </p>

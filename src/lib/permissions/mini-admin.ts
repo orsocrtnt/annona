@@ -66,7 +66,7 @@ export const MINI_ADMIN_MODULES: {
   },
   {
     id: "driver-map",
-    label: "Carte chauffeurs",
+    label: "Carte livreurs",
     group: "ops",
     hrefs: ["/dispatch/drivers"],
     match: "prefix",
@@ -98,7 +98,7 @@ export const MINI_ADMIN_MODULES: {
   },
   {
     id: "drivers",
-    label: "Chauffeurs",
+    label: "Livreurs",
     group: "ops",
     hrefs: ["/dashboard/drivers"],
     match: "prefix",

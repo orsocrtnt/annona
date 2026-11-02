@@ -184,7 +184,7 @@ for (const key of ["dispatcher", "miniAdminDispatch"] as const) {
       await expect(page.getByRole("heading", { level: 1, name: delivery.reference })).toBeVisible();
       await expect(page.locator("[data-delivery-summary=true]")).toContainText("Échéance");
       const terminal = ["DELIVERED", "FAILED", "CANCELLED"].includes(delivery.status);
-      await expect(page.getByText("Assigner à un chauffeur")).toHaveCount(terminal ? 0 : 1);
+      await expect(page.getByText("Assigner à un livreur")).toHaveCount(terminal ? 0 : 1);
 
       if (foreign) {
         expect((await page.request.get(`/api/deliveries/${foreign}`)).status()).toBe(404);

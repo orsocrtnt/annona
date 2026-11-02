@@ -39,7 +39,7 @@ function fixture() {
   return { service: module.exports as typeof import("../src/domains/order-conversation/order-conversation.service"), calls, order, message, replay: (v: any) => { replay = v; }, read: (v: any) => { read = v; }, users: (v: any[]) => { users = v; }, loseAssignment: () => { lockCount = 0; } };
 }
 function clean(value: unknown) { return JSON.parse(JSON.stringify(value)); }
-test("conversation : client propriétaire et entreprise, chauffeur affecté et staff avec lecture", () => {
+test("conversation : client propriétaire et entreprise, livreur affecté et staff avec lecture", () => {
   const { service } = fixture();
   assert.deepEqual(clean(service.conversationScope(client)), { companyId: "a", customerId: client.id });
   assert.deepEqual(clean(service.conversationScope(driver)), { companyId: "a", deliveries: { some: { companyId: "a", driverId: driver.id } } });
@@ -97,7 +97,7 @@ test("conversation : marquage ancien ne recule pas le watermark", async () => {
   await f.service.markOrderConversationRead(staff, "order-a", "message-a");
   assert.equal(f.calls.some(c => c.method === "read.upsert"), false);
 });
-test("conversation : notifications ancien chauffeur filtrées par affectation courante", async () => {
+test("conversation : notifications ancien livreur filtrées par affectation courante", async () => {
   const f = fixture(); await f.service.listOrderMessageNotifications(driver);
   const where = f.calls.find(c => c.method === "notification.findMany")!.input.where;
   assert.equal(where.orderMessage.is.internal, false);

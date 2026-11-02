@@ -2,7 +2,7 @@ import { prisma } from "@/services/prisma/client";
 import { queueDeliveryAcceptedNotification } from "@/domains/client-portal/notify.service";
 import { kickOperationJob } from "@/domains/operations/operation-job.service";
 
-/** Compare la version présentée par le chauffeur : protège aussi le cycle A → B → A. */
+/** Compare la version présentée par le livreur : protège aussi le cycle A → B → A. */
 export async function acknowledgeDeliveryMissionByDriver(
   driverId: string,
   companyId: string,
@@ -53,8 +53,8 @@ export async function acknowledgeDeliveryMissionByDriver(
         deliveryId,
         label: input.action === "accept" ? "Prise en charge confirmée" : "Mission refusée — retour au dispatch",
         description: input.action === "accept"
-          ? `${current.driverName ?? "Le chauffeur assigné"} a confirmé la prise en charge, avant le départ.`
-          : `${current.driverName ?? "Le chauffeur assigné"} — ${reason}${current.missionAcceptedAt ? ` — prise en charge précédente : ${current.missionAcceptedAt.toISOString()}` : ""}`,
+          ? `${current.driverName ?? "Le livreur assigné"} a confirmé la prise en charge, avant le départ.`
+          : `${current.driverName ?? "Le livreur assigné"} — ${reason}${current.missionAcceptedAt ? ` — prise en charge précédente : ${current.missionAcceptedAt.toISOString()}` : ""}`,
         occurredAt: now,
       },
     });

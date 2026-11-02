@@ -10,7 +10,7 @@ export function proposeLegacyDeliveryRecovery(delivery: {
   const legacy = delivery.status === "INVOICED" || delivery.status === "PAID";
   if (!legacy) return { legacy: false, candidateStatus: null, completedAt: delivery.completedAt, reviewRequired: false };
   const statuses: Record<string, DeliveryStatus> = {
-    "En attente": "PENDING", "Assigné": "ASSIGNED", "Assignée au chauffeur": "ASSIGNED",
+    "En attente": "PENDING", "Assigné": "ASSIGNED", "Assignée au livreur": "ASSIGNED",
     "En cours d'achat": "PURCHASING", "Collecté": "PURCHASING", "En livraison": "IN_DELIVERY",
     "Livré": "DELIVERED", "Échec de livraison": "FAILED", "Annulé": "CANCELLED",
   };

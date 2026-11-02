@@ -26,7 +26,7 @@ export async function GET() {
     }
     console.error("GET /api/dispatch/drivers-map failed:", error);
     return NextResponse.json(
-      { error: "Impossible de charger la carte des chauffeurs" },
+      { error: "Impossible de charger la carte des livreurs" },
       { status: 500 }
     );
   }

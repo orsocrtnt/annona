@@ -122,10 +122,10 @@ test("I2 client : prénom seul depuis la relation ou le nom stocké", () => {
 test("I2 client : la chronologie ne montre plus de nom de livreur", () => {
   const at = new Date("2026-10-29T08:00:00Z");
   const events = [
-    { id: "1", label: "Chauffeur réassigné", description: "Livreur Karim Benali → Livreur Awa Diallo", occurredAt: at },
-    { id: "2", label: "Chauffeur retiré", description: "Livreur Karim Benali retiré avant le démarrage — panne", occurredAt: at },
+    { id: "1", label: "Livreur réassigné", description: "Livreur Karim Benali → Livreur Awa Diallo", occurredAt: at },
+    { id: "2", label: "Livreur retiré", description: "Livreur Karim Benali retiré avant le démarrage — panne", occurredAt: at },
     { id: "3", label: "Prise en charge confirmée", description: "Karim Benali a confirmé la prise en charge, avant le départ.", occurredAt: at },
-    { id: "4", label: "Annulée", description: "Commande annulée avant le départ — chauffeur précédemment assigné : Karim Benali", occurredAt: at },
+    { id: "4", label: "Annulée", description: "Commande annulée avant le départ — livreur précédemment assigné : Karim Benali", occurredAt: at },
     { id: "5", label: "En route", description: "Le livreur est en route", occurredAt: at },
   ];
   const safe = redactClientTimeline(events);

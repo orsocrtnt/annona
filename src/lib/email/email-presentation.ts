@@ -7,7 +7,7 @@ export type EmailPresentation = {
 };
 
 const DELIVERY: Record<string, { heading: string; status: string; tone?: "warning" | "danger" }> = {
-  "Chauffeur assigné": { heading: "Un livreur pour votre livraison.", status: "Chauffeur assigné" },
+  "Livreur assigné": { heading: "Un livreur pour votre livraison.", status: "Livreur assigné" },
   "Prise en charge": { heading: "Votre livraison est prise en charge.", status: "Prise en charge" },
   "Courses en cours": { heading: "Vos courses ont commencé.", status: "Courses en cours" },
   "En cours de livraison": { heading: "Votre livraison est en route.", status: "En cours de livraison" },

@@ -71,8 +71,8 @@ const DELIVERY_COPY: Partial<
   Record<DeliveryStatus, { title: string; body: (ref: string) => string }>
 > = {
   ASSIGNED: {
-    title: "Chauffeur assigné",
-    body: (ref) => `Un chauffeur a été assigné à ${ref}.`,
+    title: "Livreur assigné",
+    body: (ref) => `Un livreur a été assigné à ${ref}.`,
   },
   PURCHASING: {
     title: "Courses en cours",

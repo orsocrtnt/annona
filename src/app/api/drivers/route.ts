@@ -19,7 +19,7 @@ export async function GET() {
   } catch (error) {
     console.error("GET /api/drivers failed:", error);
     return NextResponse.json(
-      { error: "Impossible de charger les chauffeurs" },
+      { error: "Impossible de charger les livreurs" },
       { status: 500 }
     );
   }

@@ -54,7 +54,7 @@ export function getRoleLabel(role: SystemRole): string {
     COMPANY_ADMIN: "Administrateur",
     MINI_ADMIN: "Mini-admin",
     DISPATCHER: "Dispatcher",
-    DRIVER: "Chauffeur",
+    DRIVER: "Livreur",
     CLIENT: "Client",
   };
   return labels[role];

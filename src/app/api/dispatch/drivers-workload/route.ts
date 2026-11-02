@@ -19,7 +19,7 @@ export async function GET() {
   } catch (error) {
     console.error("GET /api/dispatch/drivers-workload failed:", error);
     return NextResponse.json(
-      { error: "Impossible de charger la charge des chauffeurs" },
+      { error: "Impossible de charger la charge des livreurs" },
       { status: 500 }
     );
   }

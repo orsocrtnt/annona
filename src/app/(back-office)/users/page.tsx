@@ -42,7 +42,7 @@ type RoleFilter = "all" | "DRIVER" | "CLIENT" | "MINI_ADMIN";
 
 const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
   { value: "all", label: "Tous" },
-  { value: "DRIVER", label: "Chauffeurs" },
+  { value: "DRIVER", label: "Livreurs" },
   { value: "CLIENT", label: "Clients" },
   { value: "MINI_ADMIN", label: "Mini-admins" },
 ];
@@ -176,7 +176,7 @@ export default function UsersPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gestion des comptes</h1>
           <p className="mt-1 text-muted-foreground max-md:hidden">
-            Clients, chauffeurs et mini-admins de votre entreprise
+            Clients, livreurs et mini-admins de votre entreprise
           </p>
         </div>
         {platformReadOnly ? null : <CreateUserDialog />}
@@ -220,14 +220,14 @@ export default function UsersPage() {
             paginate={false}
             emptyTitle={
               roleFilter === "DRIVER"
-                ? "Aucun chauffeur"
+                ? "Aucun livreur"
                 : roleFilter === "CLIENT"
                   ? "Aucun client"
                   : roleFilter === "MINI_ADMIN"
                     ? "Aucun mini-admin"
                     : "Aucun utilisateur"
             }
-            emptyDescription={platformReadOnly ? "Aucun compte ne correspond à cette recherche." : "Créez un compte avec le bouton « Nouvel utilisateur »."}
+            emptyDescription={platformReadOnly ? "Aucun compte ne correspond à cette recherche." : "Créez un compte avec le bouton « Inviter un utilisateur »."}
           />
         </CardContent>
       </Card>

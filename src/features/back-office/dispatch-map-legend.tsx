@@ -1,7 +1,7 @@
 const LEGEND_ITEMS = [
   { color: "bg-blue-500", label: "Destination livraison" },
   { color: "bg-orange-500", label: "Point de collecte (coursier)" },
-  { color: "bg-violet-600", label: "Position chauffeur" },
+  { color: "bg-violet-600", label: "Position livreur" },
 ] as const;
 
 export function DispatchMapLegend() {

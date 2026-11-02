@@ -542,7 +542,7 @@ test("RECETTE-2810 point 10 : code d'erreur publiable — préfixe et `name` fou
   assert.equal(code(null), null);
   assert.equal(code("EMAIL_PROVIDER_HTTP_422:validation_error"), "EMAIL_PROVIDER_HTTP_422:validation_error");
   assert.equal(code("INVOICE_REMINDER_SEND_UNCONFIRMED:SEND_UNCONFIRMED"), "INVOICE_REMINDER_SEND_UNCONFIRMED:SEND_UNCONFIRMED");
-  assert.equal(code("AUTO_DISPATCH_RETRY:Aucun chauffeur disponible"), "AUTO_DISPATCH_RETRY");
+  assert.equal(code("AUTO_DISPATCH_RETRY:Aucun livreur disponible"), "AUTO_DISPATCH_RETRY");
   assert.equal(code("ERR:camille"), "ERR", "un mot sans tiret bas n'est jamais repris");
   assert.equal(code("Invalid `prisma.user.update()` invocation: email = 'camille@example.test'"), "ERREUR_NON_CLASSEE");
   assert.equal(code("SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED"), "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED");
@@ -584,7 +584,7 @@ test("RECETTE-2810 point 9 : la reprise après une erreur de base n'exécute jam
 });
 
 test("C5 : sans livreur disponible, la tâche attend sans user ses essais, puis rend la main après 24 h", async () => {
-  const waiting = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun chauffeur actif" } });
+  const waiting = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun livreur actif" } });
   const job = waiting.addJob({
     jobKey: "auto-dispatch:delivery-nuit",
     type: "AUTO_DISPATCH",
@@ -596,7 +596,7 @@ test("C5 : sans livreur disponible, la tâche attend sans user ses essais, puis 
   assert.equal(waiting.jobs[0]?.attempts, 0);
   assert.equal(waiting.jobs[0]?.lastError?.includes("AUTO_DISPATCH_WAITING_DRIVER"), true);
 
-  const late = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun chauffeur compatible selon les règles" } });
+  const late = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun livreur compatible selon les règles" } });
   const oldJob = late.addJob({
     jobKey: "auto-dispatch:delivery-vieille",
     type: "AUTO_DISPATCH",

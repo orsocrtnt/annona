@@ -46,16 +46,16 @@ export function clientDriverLabel(driverName: string | null | undefined): string
 // livreurs (delivery.service.ts : assignation, réassignation, retrait ; acknowledge : refus).
 const DRIVER_EVENT_LABELS = new Set([
   "Assignée automatiquement",
-  "Chauffeur réassigné",
+  "Livreur réassigné",
   "Réassignation forcée",
   "Assignation forcée",
-  "Assignée au chauffeur",
-  "Chauffeur retiré",
+  "Assignée au livreur",
+  "Livreur retiré",
   "Prise en charge confirmée",
   "Mission refusée — retour au dispatch",
 ]);
 
-const FORMER_DRIVER = /\s*(?:—\s*)?chauffeur précédemment assigné\s*:.*$/i;
+const FORMER_DRIVER = /\s*(?:—\s*)?livreur précédemment assigné\s*:.*$/i;
 
 // Filet « Livreur <Nom…> » : le prénom (majuscule initiale) puis les mots du nom, particules
 // courtes en minuscules comprises (de, du, de la, van der, d'Arc…), jusqu'à la ponctuation, une

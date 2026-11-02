@@ -93,7 +93,7 @@ export function CompanyClientsContent({ initialClients }: CompanyClientsContentP
         searchPlaceholder="Nom, e-mail ou téléphone…"
         paginate={false}
         emptyTitle="Aucun client"
-        emptyDescription="Créez des comptes clients dans Équipe."
+        emptyDescription="Créez des comptes clients dans Gestion des comptes."
       />
     </div>
   );

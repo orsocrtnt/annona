@@ -550,8 +550,8 @@ export async function assignDeliveryToDriver(
           ? "Réassignation forcée"
           : "Assignation forcée"
         : current.driverId
-          ? "Chauffeur réassigné"
-          : "Assignée au chauffeur";
+          ? "Livreur réassigné"
+          : "Assignée au livreur";
     const newDriverLabel = formatDriverDisplayName(driverName);
     const transition = current.driverId
       ? `${formatDriverDisplayName(current.driverName)} → ${newDriverLabel}`
@@ -650,7 +650,7 @@ export async function claimDeliveryByDriver(
   if (!delivery) throw new Error("DELIVERY_NOT_AVAILABLE");
 
   return assignDeliveryToDriver(companyId, deliveryId, driverId, {
-    reason: "Libre affectation par le chauffeur — confirmation attendue",
+    reason: "Libre affectation par le livreur — confirmation attendue",
     expectUnassigned: true,
     selfClaimed: true,
   });
@@ -763,7 +763,7 @@ async function applyDriverPurchasePrices(
   });
 }
 
-/** Transitions de statut autorisées pour le chauffeur (empêche de sauter une étape). */
+/** Transitions de statut autorisées pour le livreur (empêche de sauter une étape). */
 function isValidDriverStatusTransition(
   current: DeliveryStatus,
   next: DeliveryStatus,
@@ -851,7 +851,7 @@ export async function updateDeliveryStatusByDriver(
   const orderStatus = status as OrderStatus;
   const deliveryStatus = status as DeliveryStatus;
 
-  // Position à horodater sur l'événement de suivi : celle fournie, sinon la dernière connue du chauffeur.
+  // Position à horodater sur l'événement de suivi : celle fournie, sinon la dernière connue du livreur.
   let eventLatitude = options?.latitude ?? null;
   let eventLongitude = options?.longitude ?? null;
   let eventPositionAt: Date | null = eventLatitude != null && eventLongitude != null ? new Date() : null;
@@ -945,7 +945,7 @@ export async function updateDeliveryStatusByDriver(
               ]
                 .filter(Boolean)
                 .join(" — ")
-            : "Statut mis à jour par le chauffeur",
+            : "Statut mis à jour par le livreur",
         latitude: eventLatitude,
         longitude: eventLongitude,
       },
@@ -1061,7 +1061,7 @@ async function unassignDeliveryBeforeStart(
     const trackingEvent = await tx.trackingEvent.create({
       data: {
         deliveryId,
-        label: "Chauffeur retiré",
+        label: "Livreur retiré",
         description: [
           `${formatDriverDisplayName(current.driverName)} retiré avant le démarrage`,
           reason?.trim(),

@@ -66,7 +66,7 @@ test("les modèles Supabase pointent vers /reset-password avec le TokenHash et l
 
 test("les mails reconnus ont leur titre et leur statut sans inventer de données métier", () => {
   const variants = [
-    ["Chauffeur assigné", "Un livreur pour votre livraison.", "CHAUFFEUR ASSIGNÉ"],
+    ["Livreur assigné", "Un livreur pour votre livraison.", "LIVREUR ASSIGNÉ"],
     ["Prise en charge", "Votre livraison est prise en charge.", "PRISE EN CHARGE"],
     ["Courses en cours", "Vos courses ont commencé.", "COURSES EN COURS"],
     ["En cours de livraison", "Votre livraison est en route.", "EN COURS DE LIVRAISON"],

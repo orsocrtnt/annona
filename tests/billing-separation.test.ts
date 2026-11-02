@@ -115,7 +115,7 @@ test("BILL : permissions dédiées émission et règlement ; commandes seules re
   assert.equal((await route.PATCH(request({ invoiceId: "i", expectedUpdatedAt: new Date().toISOString() }), params)).status, 200);
   assert.equal(calls, 2);
 });
-test("BILL : compteurs client, chauffeur et admin stables ; clôture ancienne exclue du mois courant", async (t) => {
+test("BILL : compteurs client, livreur et admin stables ; clôture ancienne exclue du mois courant", async (t) => {
   const f = fixture();
   const matches = (where: Record<string, unknown>, row: Record<string, unknown>): boolean => Object.entries(where).every(([key, value]) => {
     if (key === "OR") return (value as Record<string, unknown>[]).some((part) => matches(part, row));

@@ -19,7 +19,7 @@ export const DEMO_FIXTURE_CLIENTS = [
 ] as const;
 
 export const DEMO_FIXTURE_DRIVERS = [
-  { email: DEMO_DRIVER_EMAIL, firstName: "Marc", lastName: "Chauffeur Démo" },
+  { email: DEMO_DRIVER_EMAIL, firstName: "Marc", lastName: "Livreur Démo" },
   { email: "demo-driver-2@tutelliv.fr", firstName: "Jean", lastName: "Dupont" },
   { email: "demo-driver-3@tutelliv.fr", firstName: "Karim", lastName: "Benali" },
   { email: "demo-driver-4@tutelliv.fr", firstName: "Sophie", lastName: "Laurent" },
@@ -60,7 +60,7 @@ export type DemoPersona = "admin" | "client" | "driver";
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
   admin: "Administrateur",
   client: "Client",
-  driver: "Chauffeur",
+  driver: "Livreur",
 };
 
 export const DEMO_PERSONA_PATHS: Record<DemoPersona, string> = {

@@ -89,7 +89,7 @@ export function isTeamStatusChangeAllowed(from: OrderStatus, to: OrderStatus) {
   return TEAM_STATUS_CHANGES[from].includes(to);
 }
 
-/** Statuts modifiables par le chauffeur */
+/** Statuts modifiables par le livreur */
 export const DRIVER_EDITABLE_STATUSES: OrderStatus[] = [
   "ASSIGNED",
   "PURCHASING",

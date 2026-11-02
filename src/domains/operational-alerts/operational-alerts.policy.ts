@@ -22,7 +22,7 @@ export function deriveOperationalAlerts(order: Order, messages: Message[], canAc
     const id = `late:${d.id}:${due.toISOString()}`;
     // Une date estimée ou une simple création ne constitue pas une échéance.
     const hasAction = messages.some(m => m.requestKey === alertActionKey(id, "ack") || m.requestKey === alertActionKey(id, "resolve"));
-    if ((!d.completedAt && active.has(d.status)) || (d.completedAt && +d.completedAt > +due) || hasAction) sources.push({ id, deliveryId: d.id, title: `Retard — ${d.reference}`, detail: "Date de livraison demandée dépassée. À vérifier avec le chauffeur.", deadline: due, internal: false, closed: closed || Boolean(d.completedAt) || !active.has(d.status) });
+    if ((!d.completedAt && active.has(d.status)) || (d.completedAt && +d.completedAt > +due) || hasAction) sources.push({ id, deliveryId: d.id, title: `Retard — ${d.reference}`, detail: "Date de livraison demandée dépassée. À vérifier avec le livreur.", deadline: due, internal: false, closed: closed || Boolean(d.completedAt) || !active.has(d.status) });
   }
   for (const message of messages) if (message.kind === "INCIDENT" && !message.requestKey.startsWith("alert1:")) sources.push({ id: `incident:${message.id}`, deliveryId: null, title: message.internal ? "Incident interne" : "Incident signalé", detail: message.body, deadline: null, internal: message.internal, closed });
   return sources.map(({ closed: sourceClosed, ...source }) => {

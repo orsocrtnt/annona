@@ -59,8 +59,8 @@ export default function CompanyDriverDetailPage() {
     return (
       <EmptyState
         icon={Truck}
-        title="Chauffeur introuvable"
-        description="Ce chauffeur n'existe pas ou n'est plus accessible."
+        title="Livreur introuvable"
+        description="Ce livreur n'existe pas ou n'est plus accessible."
       />
     );
   }
@@ -72,7 +72,7 @@ export default function CompanyDriverDetailPage() {
     <div className="space-y-6">
       <PersonHeader
         backHref="/dashboard/drivers"
-        role="Chauffeur"
+        role="Livreur"
         name={name}
         contact={[driver.phone, driver.email].filter(Boolean).join(" · ")}
       />

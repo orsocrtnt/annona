@@ -31,7 +31,7 @@ export const WOW_ACTS = [
   },
   {
     id: "driver",
-    label: "Chauffeur",
+    label: "Livreur",
     headline: "Sur le terrain",
     sub: "Missions · navigation",
     asset: LANDING_ASSETS.team,

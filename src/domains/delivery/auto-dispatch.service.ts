@@ -151,7 +151,7 @@ function pickByPriorityList(
   );
 
   const picked = sorted[0]!;
-  const base = `Chauffeur le moins chargé (${activeLoad(picked)} active(s))`;
+  const base = `Livreur le moins chargé (${activeLoad(picked)} active(s))`;
   return {
     driverId: picked.id,
     reason: proximityDecided(
@@ -328,7 +328,7 @@ export function resolveDriverForDelivery(
     if (defaultDriver) {
       return {
         driverId: defaultDriver.id,
-        reason: "Chauffeur par défaut",
+        reason: "Livreur par défaut",
       };
     }
   }
@@ -474,7 +474,7 @@ async function pickAutoDriver(
   }
 
   if (drivers.length === 0) {
-    return { skippedReason: "Aucun chauffeur actif" };
+    return { skippedReason: "Aucun livreur actif" };
   }
 
   const proximities = proximitiesFromDrivers(delivery, drivers, settings);
@@ -499,7 +499,7 @@ async function pickAutoDriver(
   );
 
   if (!pick) {
-    return { skippedReason: "Aucun chauffeur compatible selon les règles" };
+    return { skippedReason: "Aucun livreur compatible selon les règles" };
   }
 
   const chosen = drivers.find((driver) => driver.id === pick.driverId);

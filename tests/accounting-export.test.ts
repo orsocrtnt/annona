@@ -163,7 +163,7 @@ test("BILL-01B route exige invoices:read, refuse entreprise absente, erreurs san
   assert.equal(error.status, 503); assert.ok(!(await error.text()).includes(fail));
 });
 
-test("BILL-01B vraie garde serveur : anonyme, client, chauffeur et mini-admin commandes refusés", async () => {
+test("BILL-01B vraie garde serveur : anonyme, client, livreur et mini-admin commandes refusés", async () => {
   let session: unknown = null;
   function load(file: string, deps: Record<string, unknown>) {
     const sandboxModule = { exports: {} };

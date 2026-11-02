@@ -76,7 +76,7 @@ export async function PATCH(
     }
     if (error instanceof Error && error.message === "ORDER_ASSIGNMENT_REQUIRED") {
       return NextResponse.json(
-        { error: "Assignez d’abord un chauffeur depuis le centre de dispatch." },
+        { error: "Assignez d’abord un livreur depuis le centre de dispatch." },
         { status: 409 }
       );
     }

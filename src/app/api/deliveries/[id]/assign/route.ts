@@ -43,7 +43,7 @@ export async function PATCH(
     return NextResponse.json({ data: omitStoragePaths(delivery), success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "DRIVER_NOT_FOUND") {
-      return NextResponse.json({ error: "Chauffeur introuvable" }, { status: 404 });
+      return NextResponse.json({ error: "Livreur introuvable" }, { status: 404 });
     }
     if (error instanceof Error && error.message.startsWith("DRIVER_OVER_CAPACITY:")) {
       return NextResponse.json(

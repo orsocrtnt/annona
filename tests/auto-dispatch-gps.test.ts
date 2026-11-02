@@ -63,7 +63,7 @@ test("dispatch GPS : sans règle, à charge égale, le livreur proche du retrait
   const drivers = [{ id: "idle", assigned: 0 }, { id: "close", assigned: 0 }];
   const pick = svc.resolveDriverForDelivery(delivery, settings, drivers, [], new Map([["close", near(900)], ["idle", neutral("NO_POSITION")]]));
   assert.equal(pick?.driverId, "close");
-  assert.equal(pick!.reason, "Chauffeur le moins chargé (0 active(s)) · plus proche du point de retrait");
+  assert.equal(pick!.reason, "Livreur le moins chargé (0 active(s)) · plus proche du point de retrait");
   assert.doesNotMatch(pick!.reason, NO_NUMBERS_ABOUT_POSITION, "raison stockée dans l'historique visible du client : aucune distance");
 });
 
@@ -270,7 +270,7 @@ test("dispatch GPS (P3) : sans règle, la charge passe avant la distance", () =>
   const proximities = new Map([["A", near(9000)], ["B", { status: "FAR" as const, distanceMeters: 11_000, positionAgeSeconds: 60 }]]);
   const pick = svc.resolveDriverForDelivery(delivery, roomy, drivers, [], proximities);
   assert.equal(pick?.driverId, "B");
-  assert.equal(pick?.reason, "Chauffeur le moins chargé (0 active(s))");
+  assert.equal(pick?.reason, "Livreur le moins chargé (0 active(s))");
 });
 
 test("dispatch GPS (P4) : la liste des livreurs ne charge la position et l'état de service que sur demande, en une requête", async () => {

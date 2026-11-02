@@ -30,7 +30,7 @@ export const companyNavItems: NavItem[] = [
   ...dispatchMapItems,
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
   { title: "Support", href: "/support", icon: HeadphonesIcon },
-  { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
+  { title: "Livreurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
   { title: "Mon abonnement", href: "/settings/subscription", icon: CreditCard },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
@@ -43,7 +43,7 @@ export const dispatcherNavItems: NavItem[] = [
   ...dispatchMapItems,
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
   { title: "Support", href: "/support", icon: HeadphonesIcon },
-  { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
+  { title: "Livreurs", href: "/dashboard/drivers", icon: Truck },
 ];
 
 /** Tous les écrans back-office, filtrés ensuite par les accès du mini-admin. */
@@ -53,11 +53,11 @@ export const miniAdminNavItems: NavItem[] = [
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
   { title: "Dispatch", href: "/dispatch", icon: Radio },
   ...dispatchMapItems,
-  // Mini-admin qui n'a que l'ancien module « Carte chauffeurs » : même carte, par son ancienne adresse.
+  // Mini-admin qui n'a que l'ancien module « Carte livreurs » : même carte, par son ancienne adresse.
   { title: "Carte", href: "/dispatch/drivers", icon: MapPin },
   { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
   { title: "Support", href: "/support", icon: HeadphonesIcon },
-  { title: "Chauffeurs", href: "/dashboard/drivers", icon: Truck },
+  { title: "Livreurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
   { title: "Paramètres", href: "/settings", icon: Settings },

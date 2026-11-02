@@ -29,10 +29,10 @@ test("LANDING-2 : /login sans paramètre montre le choix, ?espace= valide ouvre 
   assert.deepEqual(resolveLoginView({}), { kind: "choose" });
   assert.deepEqual(resolveLoginView({ espace: "entreprise" }), { kind: "form", context: "company", prefillDemo: false });
   assert.deepEqual(resolveLoginView({ espace: "client" }), { kind: "form", context: "client", prefillDemo: false });
-  assert.deepEqual(resolveLoginView({ espace: "chauffeur" }), { kind: "form", context: "driver", prefillDemo: false });
-  assert.deepEqual(resolveLoginView({ espace: ["client", "chauffeur"] }), { kind: "form", context: "client", prefillDemo: false });
+  assert.deepEqual(resolveLoginView({ espace: "livreur" }), { kind: "form", context: "driver", prefillDemo: false });
+  assert.deepEqual(resolveLoginView({ espace: ["client", "livreur"] }), { kind: "form", context: "client", prefillDemo: false });
   assert.deepEqual(resolveLoginView({ espace: "entreprise", demo: "1" }), { kind: "form", context: "company", prefillDemo: true });
-  // La démo ne pré-remplit jamais un formulaire client ou chauffeur.
+  // La démo ne pré-remplit jamais un formulaire client ou livreur.
   assert.deepEqual(resolveLoginView({ espace: "client", demo: "1" }), { kind: "form", context: "client", prefillDemo: false });
 });
 
@@ -51,13 +51,13 @@ test("LANDING-2 : les liens existants (?email= démo, ?redirect= middleware et i
 test("LANDING-2 : le dernier espace retenu est celui ouvert par le serveur, sans donnée personnelle", () => {
   assert.equal(spaceForDestination("/portal"), "client");
   assert.equal(spaceForDestination("/portal/orders"), "client");
-  assert.equal(spaceForDestination("/driver"), "chauffeur");
+  assert.equal(spaceForDestination("/driver"), "livreur");
   assert.equal(spaceForDestination("/dashboard"), "entreprise");
   assert.equal(spaceForDestination("/portalx"), "entreprise");
   const storage = memoryStorage();
   rememberLastSpace(storage, "/driver/missions");
-  assert.deepEqual([...storage.data.entries()], [[LAST_SPACE_STORAGE_KEY, "chauffeur"]]);
-  assert.equal(readLastSpace(storage), "chauffeur");
+  assert.deepEqual([...storage.data.entries()], [[LAST_SPACE_STORAGE_KEY, "livreur"]]);
+  assert.equal(readLastSpace(storage), "livreur");
   assert.equal(readLastSpace(memoryStorage({ [LAST_SPACE_STORAGE_KEY]: "jean@exemple.fr" })), null);
   assert.equal(readLastSpace(null), null);
   const throwing = { getItem: () => { throw new Error("bloqué"); }, setItem: () => { throw new Error("bloqué"); } };
@@ -68,7 +68,7 @@ test("LANDING-2 : le dernier espace retenu est celui ouvert par le serveur, sans
 test("LANDING-2 : chaque tuile d'espace pointe vers une route de connexion existante", () => {
   assert.equal(LOGIN_SPACES.entreprise.href, "/login?espace=entreprise");
   assert.equal(LOGIN_SPACES.client.href, "/login/client");
-  assert.equal(LOGIN_SPACES.chauffeur.href, "/login/driver");
+  assert.equal(LOGIN_SPACES.livreur.href, "/login/driver");
   const chooser = read("src/features/auth/login-space-chooser.tsx");
   // Titre et description sur deux lignes (défaut « EntrepriseCommandes… » de la maquette).
   assert.match(chooser, /<span className="block text-lg[^"]*">\{space\.title\}<\/span>\s*<span className="block text-sm[^"]*">\{space\.description\}<\/span>/);

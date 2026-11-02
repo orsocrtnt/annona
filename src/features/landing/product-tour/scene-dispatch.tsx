@@ -132,7 +132,7 @@ export function SceneDispatch({ onDone, reducedMotion }: SceneProps) {
             <span title="Carte livraison" className="hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground sm:flex" aria-hidden>
               <MapPin className="h-3.5 w-3.5" />
             </span>
-            <span title="Carte chauffeurs" className="hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground sm:flex" aria-hidden>
+            <span title="Carte livreurs" className="hidden h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground sm:flex" aria-hidden>
               <Truck className="h-3.5 w-3.5" />
             </span>
             <button

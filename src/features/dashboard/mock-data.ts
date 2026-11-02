@@ -15,13 +15,13 @@ export const companyStats: DashboardStat[] = [
   { label: "Livraisons aujourd'hui", value: "156", change: 8, changeLabel: "vs hier", icon: Truck },
   { label: "En cours", value: "42", icon: Clock },
   { label: "Terminées", value: "108", change: 12, changeLabel: "vs hier", icon: CheckCircle2 },
-  { label: "Chauffeurs actifs", value: "28", icon: Users },
+  { label: "Livreurs actifs", value: "28", icon: Users },
 ];
 
 export const dispatcherStats: DashboardStat[] = [
   { label: "À dispatcher", value: "18", icon: AlertTriangle },
   { label: "En livraison", value: "42", icon: Truck },
-  { label: "Chauffeurs dispo", value: "12", icon: Users },
+  { label: "Livreurs dispo", value: "12", icon: Users },
   { label: "Retard moyen", value: "4 min", change: -15, changeLabel: "vs hier", icon: Clock },
 ];
 
@@ -50,9 +50,9 @@ export const mockCompanies = [
 export const mockUsers = [
   { id: "1", name: "Marie Dupont", email: "marie@logiexpress.fr", role: "Administrateur", company: "LogiExpress Paris", status: "ACTIVE" },
   { id: "2", name: "Jean Martin", email: "jean@logiexpress.fr", role: "Dispatcher", company: "LogiExpress Paris", status: "ACTIVE" },
-  { id: "3", name: "Pierre Leroy", email: "pierre@logiexpress.fr", role: "Chauffeur", company: "LogiExpress Paris", status: "ACTIVE" },
+  { id: "3", name: "Pierre Leroy", email: "pierre@logiexpress.fr", role: "Livreur", company: "LogiExpress Paris", status: "ACTIVE" },
   { id: "4", name: "Sophie Bernard", email: "sophie@speeddelivery.fr", role: "Administrateur", company: "SpeedDelivery Lyon", status: "ACTIVE" },
-  { id: "5", name: "Lucas Petit", email: "lucas@fastfreight.fr", role: "Chauffeur", company: "FastFreight Marseille", status: "INACTIVE" },
+  { id: "5", name: "Lucas Petit", email: "lucas@fastfreight.fr", role: "Livreur", company: "FastFreight Marseille", status: "INACTIVE" },
 ];
 
 export const mockDeliveries = [
@@ -83,7 +83,7 @@ export const mockInvoices = [
 export const mockActivity = [
   { id: "1", action: "Nouvelle entreprise inscrite", entity: "QuickShip Nantes", time: "Il y a 5 min", type: "company" },
   { id: "2", action: "Livraison terminée", entity: "DEL-003", time: "Il y a 12 min", type: "delivery" },
-  { id: "3", action: "Nouveau chauffeur ajouté", entity: "Marc Dubois", time: "Il y a 25 min", type: "user" },
+  { id: "3", action: "Nouveau livreur ajouté", entity: "Marc Dubois", time: "Il y a 25 min", type: "user" },
   { id: "4", action: "Alerte retard", entity: "DEL-005", time: "Il y a 35 min", type: "alert" },
   { id: "5", action: "Mise à jour paramètres", entity: "LogiExpress Paris", time: "Il y a 1h", type: "settings" },
 ];
