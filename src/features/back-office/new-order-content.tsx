@@ -131,7 +131,13 @@ export function NewOrderContent({ backHref, backLabel, ordersHref }: NewOrderCon
             <CardTitle className="text-base">Détails de la commande</CardTitle>
             <CardDescription>Le client la retrouvera dans son portail.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          {/* Avant la validation des champs : un formulaire vide signale aussi le client manquant. */}
+          <CardContent
+            className="space-y-6"
+            onSubmitCapture={() => {
+              if (!customerId) setCustomerError(CUSTOMER_REQUIRED);
+            }}
+          >
             <FormField label="Client" htmlFor="new-order-customer" error={customerError} required>
               <select
                 ref={customerSelect}
