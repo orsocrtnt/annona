@@ -10,6 +10,7 @@ import {
   FULFILLMENT_STATUS_LABELS,
   getFulfillmentStatusLabel,
   HISTORY_ORDER_STATUSES,
+  isTeamStatusChangeAllowed,
 } from "@/lib/constants/order-status";
 import {
   generateDeliveryReference,
@@ -1098,6 +1099,17 @@ export async function updateCompanyOrderStatus(
     throw new Error("SPECIAL_QUOTE_TRANSITION_INVALID");
   }
 
+  if (order.status !== status && !isTeamStatusChangeAllowed(order.status, status)) {
+    throw new Error("ORDER_STATUS_TRANSITION_INVALID");
+  }
+  // Achat ou livraison en cours supposent une mission réellement démarrée, comme côté livraison.
+  if (
+    (status === "PURCHASING" || status === "IN_DELIVERY") &&
+    order.deliveries.some((delivery) => !delivery.driverId || !delivery.missionStartedAt)
+  ) {
+    throw new Error("ORDER_STATUS_TRANSITION_INVALID");
+  }
+
   const acceptingQuote =
     order.status === "QUOTE_REQUESTED" &&
     status === "PENDING" &&
@@ -1208,15 +1220,25 @@ export async function updateCompanyOrderStatus(
 
     let passageKey: string | null = null;
     for (const delivery of order.deliveries) {
-      const deliveryUpdate: {
-        status: DeliveryStatus;
-        completedAt?: Date | null;
-      } = {
+      // Replanifier un échec rouvre la livraison sans livreur ; l'historique et la preuve restent.
+      const replanning = order.status === "FAILED" && status === "PENDING";
+      const deliveryUpdate: Prisma.DeliveryUpdateInput = {
         status: syncDeliveryStatus(status),
-        completedAt:
-          status === "DELIVERED" || status === "FAILED"
+        completedAt: replanning
+          ? null
+          : status === "DELIVERED" || status === "FAILED"
             ? delivery.completedAt ?? new Date()
             : delivery.completedAt,
+        ...(replanning
+          ? {
+              driver: { disconnect: true },
+              driverName: null,
+              round: { disconnect: true },
+              roundSequence: null,
+              missionAcceptedAt: null,
+              missionStartedAt: null,
+            }
+          : {}),
       };
       await tx.delivery.update({
         where: { id: delivery.id },
@@ -1233,7 +1255,7 @@ export async function updateCompanyOrderStatus(
       const notificationJob = await queueDeliveryStatusNotification(tx, {
         customerId: order.customerId,
         companyId,
-        status: deliveryUpdate.status,
+        status: syncDeliveryStatus(status),
         reference: delivery.reference,
         deliveryId: delivery.id,
         eventId: trackingEvent.id,

@@ -92,6 +92,8 @@ export async function PATCH(
           "L’état de cette livraison a changé. Actualisez la page.",
         DELIVERY_UPDATE_CONFLICT:
           "Cette action doit être effectuée séparément pour préserver l’historique.",
+        ORDER_STATUS_TRANSITION_INVALID:
+          "Ce changement de statut n’est pas permis depuis l’état actuel.",
         ORDER_STATUS_CONFLICT:
           "L’état de la commande a changé. Actualisez la page.",
         CANCELLATION_REASON_REQUIRED:

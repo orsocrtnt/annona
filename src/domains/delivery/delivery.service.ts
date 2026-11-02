@@ -13,6 +13,7 @@ import {
 import {
   FULFILLMENT_STATUS_LABELS,
   getFulfillmentStatusLabel,
+  isTeamStatusChangeAllowed,
 } from "@/lib/constants/order-status";
 import { formatDriverDisplayName } from "@/lib/format/person-labels";
 import { getPortalShowDriverPhone } from "@/domains/company/portal-settings.service";
@@ -1224,6 +1225,9 @@ export async function adminUpdateDelivery(
   if (!delivery) return null;
   if (input.status === "PENDING" && delivery.driverId) {
     throw new Error("DELIVERY_UPDATE_CONFLICT");
+  }
+  if (input.status && input.status !== delivery.status && !isTeamStatusChangeAllowed(delivery.status, input.status)) {
+    throw new Error("ORDER_STATUS_TRANSITION_INVALID");
   }
   if (
     (input.status === "PURCHASING" || input.status === "IN_DELIVERY") &&

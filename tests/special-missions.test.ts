@@ -62,6 +62,6 @@ test("SPECIAL-1 : une demande de devis ne propose que conserver, convertir ou an
     getAdminEditableOrderStatuses("QUOTE_REQUESTED", "SPECIAL_MISSION"),
     ["QUOTE_REQUESTED", "PENDING", "CANCELLED"]
   );
-  assert.ok(getAdminEditableOrderStatuses("PENDING", "SPECIAL_MISSION").includes("DELIVERED"));
-  assert.ok(getAdminEditableOrderStatuses("QUOTE_REQUESTED", "STANDARD").includes("FAILED"));
+  assert.deepEqual(getAdminEditableOrderStatuses("PENDING", "SPECIAL_MISSION"), ["PENDING", "CANCELLED"]);
+  assert.ok(getAdminEditableOrderStatuses("IN_DELIVERY", "SPECIAL_MISSION").includes("DELIVERED"));
 });

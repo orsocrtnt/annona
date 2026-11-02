@@ -68,6 +68,9 @@ export async function PATCH(
         { status: 409 }
       );
     }
+    if (error instanceof Error && error.message === "ORDER_STATUS_TRANSITION_INVALID") {
+      return NextResponse.json({ error: "Ce changement de statut n’est pas permis depuis l’état actuel." }, { status: 409 });
+    }
     if (error instanceof Error && error.message === "ORDER_ASSIGNMENT_REQUIRED") {
       return NextResponse.json(
         { error: "Assignez d’abord un chauffeur depuis le centre de dispatch." },

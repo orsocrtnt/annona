@@ -60,7 +60,33 @@ export function getAdminEditableOrderStatuses(
   ) {
     return SPECIAL_MISSION_QUOTE_STATUSES;
   }
-  return ADMIN_EDITABLE_STATUSES.filter((status) => status !== "ASSIGNED");
+  return ADMIN_EDITABLE_STATUSES.filter(
+    (status) =>
+      status !== "ASSIGNED" &&
+      (status === currentStatus || isTeamStatusChangeAllowed(currentStatus, status))
+  );
+}
+
+/**
+ * Changements d'état permis à l'équipe (AUDIT-0111, C1). Une commande avance et ne recule pas ;
+ * annulée ou payée, elle n'en bouge plus. Seul un échec peut repartir en attente, pour replanifier.
+ * « Assigné » passe par l'affectation, et retirer un livreur par son action dédiée.
+ */
+const TEAM_STATUS_CHANGES: Record<OrderStatus, OrderStatus[]> = {
+  QUOTE_REQUESTED: ["PENDING", "CANCELLED"],
+  PENDING: ["ASSIGNED", "CANCELLED"],
+  ASSIGNED: ["PURCHASING", "IN_DELIVERY", "DELIVERED", "FAILED", "CANCELLED"],
+  PURCHASING: ["IN_DELIVERY", "DELIVERED", "FAILED", "CANCELLED"],
+  IN_DELIVERY: ["DELIVERED", "FAILED", "CANCELLED"],
+  DELIVERED: ["INVOICED", "PAID"],
+  INVOICED: ["PAID"],
+  PAID: [],
+  CANCELLED: [],
+  FAILED: ["PENDING"],
+};
+
+export function isTeamStatusChangeAllowed(from: OrderStatus, to: OrderStatus) {
+  return TEAM_STATUS_CHANGES[from].includes(to);
 }
 
 /** Statuts modifiables par le chauffeur */

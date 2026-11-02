@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ADMIN_EDITABLE_STATUSES, getFulfillmentStatusLabel } from "@/lib/constants/order-status";
+import { getAdminEditableOrderStatuses, getFulfillmentStatusLabel } from "@/lib/constants/order-status";
 import { formatDate } from "@/lib/utils";
 import { useUpdateDelivery } from "./hooks";
 
@@ -174,8 +174,8 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
                 <SelectValue>{getFulfillmentStatusLabel(status, deliveryCategory)}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {ADMIN_EDITABLE_STATUSES.filter(
-                  (candidate) => candidate !== "ASSIGNED" && candidate !== "CANCELLED"
+                {getAdminEditableOrderStatuses(delivery.status, deliveryCategory).filter(
+                  (candidate) => candidate !== "CANCELLED"
                 ).map((candidate) => (
                   <SelectItem key={candidate} value={candidate}>
                     {getFulfillmentStatusLabel(candidate, deliveryCategory)}
