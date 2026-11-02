@@ -241,6 +241,8 @@ Merci. Je prépare mes premiers pilotes : 4 semaines, accompagnés, sans obligat
 
 ## 8. Le rendez-vous de 20 à 30 minutes
 
+Pitch en 10 secondes, 30 secondes et 2 minutes, supports et démonstration minute par minute : [`PITCH.md`](PITCH.md).
+
 **D'abord écouter (15 minutes).** Reprendre le guide d'entretien existant de [`docs/CADRAGE_CLIENT.md`](../../CADRAGE_CLIENT.md). Les quatre questions à ne pas sauter :
 
 1. Prenons la dernière commande : par où est-elle arrivée, qui a fait quoi jusqu'à la fin ?
@@ -257,7 +259,7 @@ Ne pas demander « Vous aimeriez une carte en direct ? » ni « Vous paieriez 17
 3. le livreur confirme et démarre ;
 4. le client voit l'état de la livraison.
 
-**Ne jamais ajouter de photo ni de signature dans la démo :** c'est ce qui a bloqué une place le 28 octobre, et le blocage est définitif tant que personne n'intervient. Pour la preuve, montrer la visite animée de la page d'accueil.
+**Ne jamais ajouter de photo ni de signature dans la démo :** c'est ce qui a bloqué une place le 28 octobre, et le blocage est définitif tant que personne n'intervient. La preuve se raconte, ou se montre dans la visite animée de la page d'accueil, à jouer depuis le début.
 
 **Se déconnecter à la fin de la démo** : cela libère une place pour le suivant. Vérifier avant chaque rendez-vous que la démo s'ouvre. Ne pas montrer les invitations, ni taper une vraie adresse dans la démo : ce blocage reste à corriger (AUDIT-0111).
 

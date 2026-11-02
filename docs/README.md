@@ -35,6 +35,7 @@ Cet index distingue la documentation courante des preuves datées. En cas de con
 - [`operations/email/README.md`](operations/email/README.md) — modes désactivé/recette/réel, transport métier et protocole d'envoi contrôlé.
 - [`operations/pilot1/README.md`](operations/pilot1/README.md) — portes, déroulement, mesures, incidents et sortie des trois pilotes accompagnés.
 - [`operations/prospection/README.md`](operations/prospection/README.md) — plan de démarchage à partir du 2 novembre 2026 : préalables, cible, calendrier, textes, suivi et règles légales.
+- [`operations/prospection/PITCH.md`](operations/prospection/PITCH.md) — pitch en 10 secondes, 30 secondes et 2 minutes, supports et démonstration minute par minute.
 - [`operations/saas01b/README.md`](operations/saas01b/README.md) — journal de facturation sandbox, gardes Stripe test et recette locale sans compte.
 
 ## Produit et recette
