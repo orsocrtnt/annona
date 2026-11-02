@@ -30,7 +30,18 @@ const gaugeWidth = 20;
 const filled = total === 0 ? 0 : Math.round((completed / total) * gaugeWidth);
 const gauge = `${"█".repeat(filled)}${"░".repeat(gaugeWidth - filled)}`;
 // Liste en simples tirets : seules les cases des tâches comptent dans la jauge.
-const openTasks = [...todo.matchAll(/^- \[ \] \*\*(.+?)\.?\*\*/gm)].map((match) => `- ${match[1]}`).join("\n");
+// Chaque tâche ouverte porte « **Qui : Claude.** » ou « **Qui : Toi — condition.** » : celui qui agit ensuite.
+const openTasks = [...todo.matchAll(/^- \[ \] \*\*(.+?)\.?\*\*[\s\S]*?(?=^- \[[ xX]\] |^## |(?![\s\S]))/gm)].map((match) => {
+  const owner = match[0].match(/^\s*\*\*Qui : (Claude|Toi)(?: — (.+?))?\.\*\*/m);
+  return { title: match[1], owner: owner?.[1] ?? null, when: owner?.[2] ?? null };
+});
+function taskList(owner) {
+  const rows = openTasks.filter((task) => task.owner === owner);
+  return [...rows.filter((task) => !task.when), ...rows.filter((task) => task.when)]
+    .map((task) => `- ${task.title}${task.when ? ` (${task.when})` : ""}`)
+    .join("\n");
+}
+const unclassified = taskList(null);
 const block = `${startMarker}
 ## Progression globale
 
@@ -38,9 +49,15 @@ const block = `${startMarker}
 
 \`${gauge}\` · ${remaining} tâches restantes
 
-${openTasks}
+**À faire par Claude**
 
-_Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : \`npm run todo:progress\`, automatiquement avant \`npm run docs:verify\`._
+${taskList("Claude")}
+
+**À faire par toi**
+
+${taskList("Toi")}
+${unclassified ? `\n**À classer**\n\n${unclassified}\n` : ""}
+_Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : \`npm run todo:progress\`, automatiquement avant \`npm run docs:verify\`._
 ${endMarker}`;
 
 const blockPattern = new RegExp(`${startMarker}[\\s\\S]*?${endMarker}`);

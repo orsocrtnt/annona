@@ -4,37 +4,46 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**93 tâches terminées sur 118 — 79 %**
+**93 tâches terminées sur 122 — 76 %**
 
-`████████████████░░░░` · 25 tâches restantes
+`███████████████░░░░░` · 29 tâches restantes
+
+**À faire par Claude**
+
+- AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
+- FACT-KM — Faire correspondre le prix annoncé et le prix facturé d'une course
+- FACT-AUTO-VIDE — Prévenir quand la facture automatique ne peut pas partir
+- ANALYSE-ENCAISSE — Corriger le pourcentage encaissé de la page Analyse
+- MOTS-UNIFIES — Employer les mêmes mots partout à l'écran
+- V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et le juriste)
+- DATA-02 — Prévoir sortie, export et conservation des données (après le juriste)
+- PROD-04 — Définir les mesures de valeur (après les pilotes)
+- SAAS-03 — Permettre la gestion autonome de l'abonnement (après le juriste)
+- SAAS-02 — Mesurer le revenu et la santé du SaaS (après les pilotes)
+- COST-1 — Simuler les coûts d'exploitation et la marge contributive (après les pilotes)
+- GROWTH-1 — Construire le site commercial relié au parcours autonome (après le juriste)
+- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (après le juriste)
+- DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
+- RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
+- SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
+
+**À faire par toi**
 
 - SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex
 - POD-2 — Preuve de livraison complète : signature, PDF, envoi et relevés
 - MOB-01C — Réaliser les essais iPhone et Android
-- ONBOARD-1 — Guider jusqu’à la première livraison
 - OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation
-- V1-GO — Valider la V1 prête à être essayée
 - FACTURX-1 — Factur-X EN 16931 des factures de livraison
 - LEGAL-1 — Préparer le dossier contractuel et données personnelles
-- DATA-02 — Prévoir sortie, export et conservation des données
 - PROD-02 — Documenter le travail actuel et sa difficulté principale
-- PROD-04 — Définir les mesures de valeur
-- OFFER-1 — Valider la grille cible et l'offre pilote
-- PILOT-1 — Recruter et conduire trois pilotes accompagnés
-- PILOT-2 — Décider avec les preuves des pilotes
-- SAAS-03 — Permettre la gestion autonome de l'abonnement
-- SAAS-02 — Mesurer le revenu et la santé du SaaS
-- COST-1 — Simuler les coûts d'exploitation et la marge contributive
-- GROWTH-1 — Construire le site commercial relié au parcours autonome
-- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public
 - INTAKE-1 — Commande par message IA (coller un message)
-- DISPATCH-5 — Imprévus et mesure du dispatch
-- AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
 - PROPRIO-2810 — Actions du propriétaire avant mise en ligne
-- RELEASE-1 — Réaliser la recette de mise en vente
-- SMS — Ajouter seulement les extensions justifiées
+- ONBOARD-1 — Guider jusqu’à la première livraison (pendant les pilotes)
+- OFFER-1 — Valider la grille cible et l'offre pilote (pendant les entretiens et les pilotes)
+- PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
+- PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 
-_Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
+_Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
 ## Ce qu'il reste vraiment à faire (vue simple, à jour au 1er novembre 2026)
@@ -54,8 +63,11 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
+- Commandes récurrentes en panne sur tutelliv.fr : rien ne les déclenche sur le site, 10 sur 23 (données de test) sont en retard. À réparer en premier (AUDIT-0111, point E1).
+- Faille sur les comptes invités : une inscription permet de prendre un compte invité. Rien d'urgent sans vraies données, mais à corriger avant le premier pilote (AUDIT-0111, point S1).
 - Démarchage : débloquer la place de démo numéro 1, refusé le 1er novembre par le contrôle de sécurité de l'outil ; à refaire si le propriétaire l'autorise. Empêcher qu'une preuve ajoutée en démo bloque une place. Les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
 - AUDIT-0111 : les corrections avant pilote, dans l'ordre de la tâche (commandes récurrentes en panne sur tutelliv.fr, compte invité, raccourcis de test, changements d'état, double commande, lecture seule, démo, numéros de facture, dispatch, limites de tentatives, contrôle automatique sur base, TODO réduite). Aucune nouvelle fonction d'ici là.
+- Écarts trouvés en écrivant les vidéos de formation : prix annoncé et prix facturé d'une course (FACT-KM), facture automatique qui échoue sans prévenir (FACT-AUTO-VIDE), pourcentage encaissé faux (ANALYSE-ENCAISSE), mots différents à l'écran (MOTS-UNIFIES, avis du juriste pour « Relevé » et « Facture » seulement).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Juriste : LEGAL-1, LEGAL-LIENS, DATA-02, et la fiche F10 d'INTAKE-1 (obligatoire avant tout vrai message de client).
@@ -376,6 +388,8 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
 - [ ] **SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex.** Fermer les faiblesses relevées par la revue du 28 octobre : inscription qui créait des entreprises, limitation des connexions, erreurs internes exposées, corps JSON non stricts, contrôle d'origine, en-têtes de sécurité, secret HMAC du Contact, et minimisation des données du livreur vues par le client.
 
+  **Qui : Toi.**
+
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
   Terminé quand : la CSP passe de Report-Only à bloquante après une recette sans violation sur les cartes, Stripe, Supabase et les polices ; la migration de limitation est appliquée en préproduction ; `CONTACT_HMAC_SECRET` est défini ; la protection Supabase contre les mots de passe compromis est active ; le rattachement par e-mail est arbitré ; aucune donnée de livreur au-delà de la règle décidée n'est lisible côté client.
@@ -537,6 +551,8 @@ Le client utilise son espace pour commander ; l’administrateur organise et le 
 
 - [ ] **POD-2 — Preuve de livraison complète : signature, PDF, envoi et relevés.** Compléter POD-1 : signature tactile à l'écran avec nom du réceptionnaire et refus motivé, photos ré-encodées sans métadonnées, PDF de preuve, envoi au donneur d'ordre, relevés par coursier et conservation. Tranche 6 de DEMO-3 (nom du réceptionnaire).
 
+  **Qui : Toi.**
+
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
   Terminé quand : essai sur téléphone réel de la signature tactile et de la reprise hors ligne ; règles de preuve pilotables depuis l'interface ; décision prise sur le nom obligatoire ou non ; position enregistrée alignée sur la décision GPS ; durée de conservation validée (LEGAL-1/DATA-02) ; e-mail réel du lien de preuve reçu.
@@ -673,6 +689,8 @@ Statuts ET localisation sont demandés. Leur présence dans le code ne suffit pa
 
 - [ ] **MOB-01C — Réaliser les essais iPhone et Android.** Mission réelle fictive avec déplacements, GPS refusé, écran verrouillé et retour dans l’app. Mesurer limites plutôt que promettre un suivi permanent.
 
+  **Qui : Toi.**
+
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
   Terminé quand : Matrice appareils/scénarios avec preuves ; décider PWA/app native seulement si une limite bloque la promesse.
@@ -694,6 +712,8 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
   - Vérifications : `tests/mob01c-out-of-range.test.ts` (5 tests : confirmation forcée renvoie la distance, refus sans confirmation, rien dans la zone, position inconnue, texte et note interne) ; `tests/demo3-delivery-invoice.test.ts` adapté ; `npm run check` vert (1393/1393). Recette navigateur (worktree isolé, tutelliv-dev, livreur à 390 avec photo, nom et signature) : dialogue « Position non vérifiée », « Confirmer quand même », note interne `INCIDENT` lue par le dispatcher, absente de la vue du livreur. Le cas avec distance n'a pas pu être joué en navigateur (livraison de test sans coordonnées), il est couvert par les tests. Données nettoyées, worktree supprimé.
   - Reste : essais Android et cas non testés de la séance iPhone (refus dans l'application, mode avion après preuve, coupure du service de localisation, fermeture complète).
 - [ ] **ONBOARD-1 — Guider jusqu’à la première livraison.** Proposer un assistant persistant avec barre de progression : informations entreprise, services/paramètres, livreurs, collaborateurs autorisés, premiers clients professionnels, tarifs utiles, import validé si retenu, première commande et première livraison. Chaque étape peut être quittée et reprise sans perdre les données déjà confirmées. Le même assistant doit fonctionner pour un compte pilote créé manuellement puis, plus tard, après activation autonome par SIGNUP-1.
+
+  **Qui : Toi — pendant les pilotes.**
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -884,6 +904,8 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
 - [ ] **OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation.** Lancer les tâches durables sans dépendre du seul cron Vercel, détecter les tâches en retard, fixer Node et indexer les clés étrangères.
 
+  **Qui : Toi.**
+
   **Modèle conseillé : GPT‑6 Luna · effort moyen.**
 
   Terminé quand : le workflow GitHub planifié a réellement tourné sur la préproduction avec ses secrets ; `after()` est vérifié sur Vercel ; Node 22 est réglé sur Vercel ; la migration d'index est appliquée en préproduction (en production avec `CONCURRENTLY`) ; une tâche en retard déclenche une alerte reçue.
@@ -1021,6 +1043,8 @@ Préparer ces éléments maintenant. Aucun contact commercial nécessaire pour l
 
 - [ ] **V1-GO — Valider la V1 prête à être essayée.** Exécuter la recette des trois rôles sur données fictives, sécurité, erreurs réseau, GPS sur téléphones réels, échanges, preuve et historique. Vérifier configuration, aide et incidents connus.
 
+  **Qui : Claude — après les essais téléphone et le juriste.**
+
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
   Terminé quand : Parcours complet validé avec preuves ; aucun défaut bloquant connu sur ce parcours ; limites documentées ; fonctions non qualifiées explicitement hors promesse. Ce jalon ne vaut ni validation commerciale ni autorisation de production.
@@ -1082,6 +1106,8 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
 
 - [ ] **FACTURX-1 — Factur-X EN 16931 des factures de livraison.** Joindre au PDF de la facture de livraison un XML CII (profil EN 16931 « Comfort ») embarqué en PDF/A-3, téléchargeable depuis le back-office et le portail, avec mentions légales de l'entreprise et identité de facturation du client, sans changer le relevé classique ni l'export comptable. Ce n'est pas une émission via une plateforme agréée et il ne faut pas le présenter comme une conformité certifiée.
 
+  **Qui : Toi.**
+
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
   Terminé quand : validation officielle (XSD et Schematron : Mustang ou validateur FNFE) passée sur des factures fictives de recette ; décision prise sur le PDF/A-3b strict (police embarquée) ; traitement BT-32 de la franchise en base confirmé ; recette navigateur des écrans administrateur et portail ; choix d'une plateforme agréée tracé (FACTURX-2 si retenu).
@@ -1108,6 +1134,8 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
   - Reste (propriétaire, PROPRIO-2810) : validation officielle Mustang ou FNFE (XSD, Schematron, et veraPDF pour la partie PDF/A-3b) sur une facture fictive ; confirmation du traitement BT-32 de la franchise ; choix d'une plateforme agréée (FACTURX-2). Non vérifié : la conformité PDF/A complète n'a été contrôlée par aucun validateur.
 - [ ] **LEGAL-1 — Préparer le dossier contractuel et données personnelles.** Faire valider contrat SaaS/CGV, confidentialité, traitement de données, sous-traitants, hébergement, GPS, photos, conservation et incidents selon usages/pays.
 
+  **Qui : Toi.**
+
   **Modèle conseillé : GPT‑6 Astra · effort moyen.**
 
   Terminé quand : Documents validés et cohérents avec le service réel ; responsabilités et support explicités.
@@ -1121,6 +1149,8 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
   Reste à faire : confirmer l'identité de l'éditeur et ses justificatifs, recueillir contrats/DPA/régions des fournisseurs réellement retenus, faire qualifier les rôles et l'AIPD, puis faire rédiger ou valider chaque pièce par les professionnels compétents. LEGAL-1 reste ouverte.
 
 - [ ] **DATA-02 — Prévoir sortie, export et conservation des données.** Définir export par entreprise, délais de conservation, suppression et arrêt GPS hors service ; séparer clôture compte et obligations de conservation.
+
+  **Qui : Claude — après le juriste.**
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -1196,6 +1226,8 @@ Reprise le 1er novembre 2026 à la demande du propriétaire : démarchage à par
 
 - [ ] **PROD-02 — Documenter le travail actuel et sa difficulté principale.** Préparer dix entretiens sur des journées récentes : réception des demandes, affectation, appels de suivi, preuves perdues, facturation. Recruter et contacter uniquement avec instruction explicite.
 
+  **Qui : Toi.**
+
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
   Terminé quand : Synthèse des problèmes récurrents, fréquence, coût et outils actuels ; sélectionner un problème prioritaire avec preuves.
@@ -1215,9 +1247,12 @@ Reprise le 1er novembre 2026 à la demande du propriétaire : démarchage à par
   - Non fait, refusé par le contrôle de sécurité de l'outil : ajout de `CONTACT_ALERT_RECIPIENT` sur Vercel et déblocage de la place de démo 1 (elle garde sa preuve fictive du 28 octobre et 2 fichiers ; aucune suppression n'a abouti, l'unique essai a répondu 400). Cause trouvée : une preuve ajoutée en démo met la place en quarantaine, à corriger.
   - Vérifications : `npm run check` 1 496/1 496 ; `npm run docs:verify` ; `npm run ci:secrets` ; `npm run todo:progress`. Aucun message envoyé à un prospect. En ligne (`8b744a2`, Vercel READY) : `/tarifs` affiche « Demander un pilote » et plus aucun lien d'inscription par formule, Confidentialité affiche la section prospection ; un message de test du formulaire a répondu 202 et l'alerte est arrivée dans Gmail, avec le préfixe `[TEST → …]` du mode test . Le message de test « TEST ALERTE 20261101 » reste dans `/admin/contact` : sa suppression a été refusée par le contrôle de l'outil, à ignorer ou à effacer. Clic réel dans Chromium sur `tutelliv.fr`, ordinateur et téléphone (390 px) : 3 boutons, arrivée sur Contact avec le formulaire, aucun débordement ni erreur (sortie complète relue pour le téléphone).
   - Limites : règles légales lues sur la CNIL et des sources secondaires, sans juriste ; page du ministère sur le démarchage illisible par l'outil ; coordonnées vérifiées pour 2 entreprises seulement sur 34, le reste à chercher à la main ; effectif du registre différent du nombre de livreurs ; objectifs chiffrés sans référence réelle.
+  - Kit commercial du 1er novembre, demandé par le propriétaire : `docs/operations/prospection/PITCH.md` (pitch 10 s, 30 s, 2 min, démonstration minute par minute) ; plaquette de 4 pages locale dans `outputs/commercial/kit/` (refaite le même jour, le propriétaire la trouvant trop légère : ce qui change dans la journée, détail par rôle, mise en route, données, limites), version sans prix et modèle après SIREN, avec de vraies captures de la démo ; présentation privée de 8 diapositives sans prix (https://claude.ai/artifact/16Lz9mrjNz5nuJtcWyT1A6). Vérifié : rendu des deux plaquettes relu page par page, 4 pages chacune, polices chargées, fonctions citées vérifiées dans le code ; « Réinitialiser la démo » remet les données à la date du jour (appel direct du service sur une session de démo, déconnexion faite) ; `npm run docs:verify`. Tout est aussi en PDF dans `outputs/commercial/kit/` à la demande du propriétaire (plaquettes, présentation sans les notes, pitch, plan) ; les 8 diapositives ont été relues en rendu local, sans débordement. Non vérifié : impression papier, parcours de démonstration cliqué de bout en bout. La plaquette porte `orso@tutelliv.fr`, boîte à créer. Aucun envoi à un prospect.
   - Suite : le propriétaire demande le SIREN et crée la boîte mail, puis démarche. Case ouverte jusqu'aux dix entretiens et à leur synthèse.
 
 - [ ] **PROD-04 — Définir les mesures de valeur.** Mesurer temps de dispatch, appels de suivi par livraison, incidents, délai de récupération de preuve et temps de première livraison. Définir période et méthode de mesure.
+
+  **Qui : Claude — après les pilotes.**
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
@@ -1230,6 +1265,8 @@ Reprise le 1er novembre 2026 à la demande du propriétaire : démarchage à par
   Protocole documentaire local du 2026-10-25 : `docs/operations/prod04/README.md` fixe des périodes comparables, le début et la fin de chaque mesure, les sources autorisées, la minimisation et les calculs descriptifs. Il réutilise la fiche PILOT-1 sans lancer de collecte, conserve les valeurs absentes comme « non mesuré » et interdit seuil, causalité ou gain inventé. PROD-04 reste ouverte : aucune baseline d'entreprise, aucun objectif convenu et aucune donnée terrain ne sont disponibles avant PROD-02/PILOT-1.
 
 - [ ] **OFFER-1 — Valider la grille cible et l'offre pilote.** Confronter les formules Starter 79 € HT/mois, Pro 179 € et Business 349 €, leurs annuels à 790/1 790/3 490 € HT, options, plafonds et dépassements aux coûts et prospects. Pilote proposé : trois entreprises, quatre semaines, gratuit, usage encadré, accompagnement direct, export final et aucune obligation de souscription. Les prix TTC à 20 % servent d'exemple France ; la taxe réellement applicable doit être déterminée par transaction.
+
+  **Qui : Toi — pendant les entretiens et les pilotes.**
 
   **Modèle conseillé : GPT‑6 Astra · effort moyen.**
 
@@ -1275,6 +1312,8 @@ Reprise le 1er novembre 2026 à la demande du propriétaire : démarchage à par
 
 - [ ] **PILOT-1 — Recruter et conduire trois pilotes accompagnés.** Préparer démonstration, critères d’entrée et protocole ; viser quatre semaines d’usage représentatif, sans en faire un délai de développement.
 
+  **Qui : Toi — après les entretiens.**
+
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
   Terminé quand : Mesures avant/après, incidents, adoption par les trois rôles, coût support et retours consignés chaque semaine.
@@ -1288,6 +1327,8 @@ Reprise le 1er novembre 2026 à la demande du propriétaire : démarchage à par
   Préparation locale du 2026-10-18 : protocole exécutable et fiches de suivi ajoutés dans `docs/operations/pilot1/`. Ils définissent les portes technique, contrat/données et exploitation, le périmètre V1, la semaine 0 puis quatre semaines, les mesures stables, trois niveaux d'incident, les entretiens séparés des trois rôles et la sortie avec export/conservation. Aucun prospect n'a été contacté, aucune donnée réelle utilisée et aucun résultat commercial supposé. PILOT-1 reste ouverte jusqu'à la conduite documentée des trois pilotes.
 
 - [ ] **PILOT-2 — Décider avec les preuves des pilotes.** Analyser ce qui crée de la valeur et les abandons ; objectif proposé : au moins deux pilotes veulent payer pour continuer, avec gain observé.
+
+  **Qui : Toi — après les pilotes.**
 
   **Modèle conseillé : GPT‑6 Astra · effort moyen.**
 
@@ -1318,6 +1359,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Recette Stripe en mode test du 2026-10-27, sur instruction du propriétaire, contre `tutelliv-dev` et `stripe listen` vers le port 3108. Passés : Checkout carte 4242 (entreprise activée seulement après facture payée de 94,80 € TTC), abandon sur Stripe (inscription conservée), carte refusée et 3D Secure, signature absente ou forgée (400), événement rejoué sans effet, changement Starter → Pro → Business avec prorata payé et consentement au centime, résiliation en fin de période, remboursement partiel par `npm run billing:refund` (opérateur plateforme, motif journalisé, relance sans double remboursement), et par horloge de test : renouvellement payé, renouvellement refusé (`PAST_DUE`, droits non prolongés), régularisation. Trois défauts corrigés : un changement vers la formule active verrouillait le compte pour toujours ; les webhooks simultanés produisaient des conflits d'écriture (503) ; une demande appliquée pouvait répondre en erreur. Restent : quelques 503 isolés en local, dus à des transactions de plus de 5 s entre ce poste et la base de Paris (Stripe les rejoue) ; les relances J3…J30 se calculent sur l'heure réelle et ne se vérifient donc pas par horloge de test. Les critères de la case sont remplis ; cochée sur validation du propriétaire le 27 octobre 2026.
 
 - [ ] **SAAS-03 — Permettre la gestion autonome de l'abonnement.** Ajouter « Mon abonnement » pour afficher formule, périodicité, options, consommations, alertes et historique ; ajouter/supprimer une option, changer de formule ou de périodicité, gérer le moyen de paiement, consulter les documents, résilier et lancer l'export DATA-02. Toute dépense supplémentaire exige un récapitulatif et une confirmation explicite ; une rétrogradation impossible explique les dépassements à résoudre.
+
+  **Qui : Claude — après le juriste.**
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -1398,6 +1441,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
 - [ ] **SAAS-02 — Mesurer le revenu et la santé du SaaS.** Séparer revenu abonnement, frais et coûts des factures de livraison ; activation, rétention, conversion et consommation par entreprise. Mesurer commandes, livreurs et options, y compris l'usage Business annoncé illimité, avec alertes de coût sans plafond caché.
 
+  **Qui : Claude — après les pilotes.**
+
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
   Terminé quand : Indicateurs réconciliés avec paiements ; définitions écrites ; quotas et alertes de coûts testés.
@@ -1443,6 +1488,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - **Clôture du 30 octobre 2026.** Préproduction (`npm run test:perf02:preprod-connected`, script `scripts/perf02/preprod-connected.ts`, garde testée) : lecture seule, aucun compte créé, deux sessions démo de test. 936 requêtes sur 9 routes, concurrence 1 à 16, toutes en 200 ; API p50 0,46 à 0,56 s, p95 ≤ 1,54 s ; pages p95 ≤ 0,45 s. Isolement : 0 livraison commune, 6 accès croisés en 404. Saturation (`--saturation`, tableau de bord et dispatch) : 0 erreur à 32, 64 et 128 simultanées, p95 ≤ 2,13 s à 128, débit plafonné vers 76 requêtes/s, reprise p95 0,56 s. La limite en erreurs n'est pas atteinte à 128, plafond de l'essai ; la latence se dégrade entre 64 et 128. **Les 500 locaux sont expliqués** : reproduits sur un build de production local, 11 réponses 500 et 11 erreurs Prisma `P2024` (pool de 5 connexions, attente 10 s), causées par l'aller-retour transatlantique de chaque requête SQL ; absents sur Vercel, donc pas de correction produit. **Décision de capacité** : pool à 5, `cdg1` et offres actuelles conservés pour les pilotes ; budget p95 API ≤ 1,5 s en usage normal, ≤ 2,5 s en pic ; mesure à rejouer avant RELEASE-1. Vérifié : `tests/perf02-preprod-guard.test.ts` 3/3, `npm run check` 1404/1404. **Limites assumées** (critère « modèle analytique » de la tâche) : création, affectation, GPS, Realtime, preuves, exports, jobs et webhooks non chargés sur la préproduction ; 10, 50 et 100 entreprises restent extrapolés ; journaux Vercel vides sur la fenêtre, la preuve est le code HTTP. Détail : `docs/operations/perf02/README.md`.
 - [ ] **COST-1 — Simuler les coûts d'exploitation et la marge contributive.** Établir un modèle par Starter 5 livreurs/1 000 commandes, Pro 10/3 000 et Business 25/6 000, puis pour 1, 10, 50 et 100 entreprises. Séparer coûts fixes, variables et paliers de forfait pour Supabase/PostgreSQL/Realtime/Storage, positions GPS, cartographie/itinéraires, e-mails, preuves, Vercel, paiement et support. Comparer aux prix 79/179/349 € HT et aux commissions de 15/25/35 % sur les montants initiaux éligibles encaissés.
 
+  **Qui : Claude — après les pilotes.**
+
   **Modèle conseillé : phase documentaire GPT‑6.1 Sol · effort moyen ; validation mesurée GPT‑6 Astra · effort élevé.**
 
   **Complexité : élevée — hypothèses de volume, tarifs externes changeants et scénarios de montée en gamme.**
@@ -1457,6 +1504,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
     Avancement local du 2026-10-24 : intégrateur `npm run cost1:perf02` ajouté après régénération du modèle ; il apparie strictement les 12 sorties PERF-02 aux profils/volumes et aux trois variantes documentaires, en reprenant seulement latences, débit, erreurs, matérialisation, extrapolation signalée, isolation, saturation/reprise et plafond local. Fichier absent, schéma/volume ou scénarios incompatibles échouent explicitement. **Aucun coût, marge, commission, CPU Vercel, palier Supabase, preuve, e-mail, navigation/cartographie ou support n'est remplacé.** Vérifié : `npm run cost1:model`, `npm run cost1:perf02`, tests ciblés 2/2 et `npm run check` 363/363. Procédure `docs/operations/cost1/README.md`, rapport `docs/rapports/2026-10-24/cost1-validation-locale.md`. Phase 2 et COST-1 restent ouverts pour les mesures PostgreSQL/Next, hébergement, preuves, e-mails, cartographie et trois pilotes.
 
 - [ ] **GROWTH-1 — Construire le site commercial relié au parcours autonome.** Faire évoluer la page publique existante vers Accueil, Fonctionnalités par rôle, Tarifs/options, Démonstration, Inscription, Connexion, Contact et Informations légales. Relier chaque offre à SIGNUP-1 ; présenter uniquement les fonctions réellement disponibles, limites, dépassements et traitement des données. Aucun témoignage ou gain inventé.
+
+  **Qui : Claude — après le juriste.**
 
   **Modèle conseillé : GPT‑6.1 Sol · effort élevé.**
 
@@ -1483,6 +1532,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Retouches de la mini-démo du 29 octobre 2026 au soir (session parallèle) : démo centrée (`landing-demo.tsx`), menu de l'espace entreprise tiré de la vraie navigation (`space-nav.ts`), graphique du tableau de bord en barres HTML qui gardent leurs proportions (`cover-dashboard.tsx`), noms de livreurs harmonisés (`tour-data.ts`) et ajustements des scènes. Vérifié par cette session : typage, lint, `tests/landing-product-tour.test.ts` et `npm run check` verts (1 375 tests) ; rendu navigateur non revu par cette session.
 
 - [ ] **LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public.** Constat du 29 octobre 2026 : aucun lien vers des mentions légales ou une politique de confidentialité dans les pieds de page consultés (accueil `src/features/landing/home-landing.tsx`, pages publiques `src/features/landing/growth-shell.tsx`). Rendre ces informations accessibles avant de collecter des demandes (formulaire Contact, inscription) et d'accueillir des utilisateurs réels.
+
+  **Qui : Claude — après le juriste.**
 
   **Modèle conseillé : GPT‑6 Luna · effort moyen ; repli si indisponible : GPT‑5.6 Luna.**
 
@@ -1588,6 +1639,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Vérifié sur tutelliv-dev avec fournisseur et modèle simulés : signature (corps modifié, mauvais secret, rejeu tardif, absence), adresse inconnue ignorée, webhook rejoué sans doublon, HTML réduit à du texte, aucune commande créée à la réception, clic réel « Relire le brouillon » puis double clic « Créer la commande » = 1 commande et e-mail classé, classement sans commande, contenu effacé. **Jamais exercé : un vrai e-mail chez Resend et une vraie analyse par le modèle.**
 
 - [ ] **INTAKE-1 — Commande par message IA (coller un message).** Depuis le back-office (Commandes et Dispatch, « Depuis un message »), coller un message de client, obtenir un brouillon de commande structuré, le relire et le valider avant création pour le compte d'un client actif choisi (`source = ADMIN`). Aucune commande n'est créée sans validation humaine ; fonction désactivée sans clé et tant que l'entreprise ne l'active pas.
+
+  **Qui : Toi.**
 
   Essai réel du 1er novembre 2026 en préproduction : 20 messages **fictifs** (pas des messages anonymisés) analysés par le vrai modèle, deux codes postaux retrouvés dans 20 cas sur 20, 3,6 s en médiane, 6,7 s au maximum. Seuls les codes postaux ont été comparés ; coût réel non relevé. Restent : les vingt messages anonymisés avec mesure de qualité et de coût, la fiche F10, la décision sur le portail client.
 
@@ -1769,6 +1822,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   **Clôture du 30 octobre 2026, sur décision du propriétaire.** Il déclare que tout fonctionne sur les points que l'agent n'a pas pu vérifier : tournées automatiques par le cron, messages de capacité et de créneau manqué dans le navigateur, positions réelles d'un livreur, erreur de console React sur `/dispatch`. Ces points sont validés par sa déclaration, sans essai de l'agent. Temps de trajet à vol d'oiseau, affichés « environ » : acceptés pour le moment. Ce qui n'est pas construit n'est pas couvert par cette clôture et passe dans DISPATCH-5.
 
 - [ ] **DISPATCH-5 — Imprévus et mesure du dispatch.** Reprend les pistes 5 et 6 de DISPATCH-4, jugées moins prioritaires par le propriétaire le 29 octobre 2026. Piste 5 : retard, livreur indisponible ou commande urgente, avec une alerte et une nouvelle proposition. Piste 6 : temps de dispatch, kilomètres à vide et retards évités, comparaison avant/après sur une période.
+
+  **Qui : Claude — après les pilotes.**
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
@@ -2160,6 +2215,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
 - [ ] **AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote.** Audit demandé par le propriétaire en carte blanche ; rapport PDF de 12 pages, local et confidentiel : `outputs/audit-2026-11-01/TutelLiv-Audit-2026-11-01.pdf` (constats, fichiers et lignes en annexe). Conclusion : produit sérieux, aucune confrontation au marché ; geler les nouvelles fonctions, corriger ce qui suit, mener dix entretiens en parallèle, puis un seul pilote.
 
+  **Qui : Claude.**
+
   **Modèle conseillé : GPT‑6 Astra · effort élevé (sécurité, états métier).**
 
   Terminé quand : chaque point est corrigé avec un test du comportement réel, `npm run check` vert, parcours complets rejoués sur `tutelliv-dev`, et le point E2 tranché par le propriétaire.
@@ -2181,7 +2238,53 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Vérifications de l'audit : `npm run check` vert (1 492 tests) ; `npm audit --omit=dev` sans faille ; journaux Vercel sur 7 jours, conseillers Supabase, comptages en base et pages publiques relus. Aucun code ni donnée modifiés. Non vérifié : intérieur de l'application non cliqué, E2E et build non relancés localement, performance non mesurée, failles lues dans le code mais non rejouées, environ 100 routes contrôlées seulement sur la présence de leur garde d'accès.
 
+- [ ] **FACT-KM — Faire correspondre le prix annoncé et le prix facturé d'une course.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. « Tarification des courses » (forfait, prix au km, minimum, majorations) ne sert qu'à l'estimation montrée au client (`courier-estimate.service.ts`). La facture se calcule sur les zones, les suppléments, les achats et les lignes libres (`invoice.service.ts`, `order-invoice-form.tsx` : aucune référence au tarif des courses). Un client peut donc être facturé autrement que ce qu'on lui a annoncé.
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé (montants facturés).**
+
+  À trancher en début de tâche : préremplir la facture d'une course avec le calcul de l'estimation, ou réserver une seule méthode de prix par entreprise. Recommandation : préremplir, en laissant l'entreprise corriger avant d'enregistrer. Rester honnête sur la distance « environ » déjà retenue.
+
+  Terminé quand : pour une même course, estimation et facture partent du même calcul, à la main comme à la livraison, ou l'écran explique clairement la différence ; factures déjà émises inchangées ; tests des montants, `npm run check` vert et clic réel navigateur.
+
+  Source / dépendance / blocage : aucun blocage. Refaire ensuite le plan 4 de la vidéo E5 (`outputs/videos-formation/scenarios/`).
+
+- [ ] **FACT-AUTO-VIDE — Prévenir quand la facture automatique ne peut pas partir.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. Avec « Émettre la facture à la livraison », une commande sans zone reconnue ni achat lève `DELIVERY_INVOICE_EMPTY` (`invoice.service.ts:238`), erreur définitive sans nouvel essai ; aucun écran de l'entreprise ne le signale. La livraison reste alors sans facture, sans que personne le sache.
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : l'entreprise voit, à un endroit qu'elle consulte déjà et dans ses mots, quelle commande n'a pas de facture, pourquoi, et peut l'émettre à la main ou ajouter la zone manquante ; le même contrôle couvre l'autre erreur définitive (`INVOICE_AMOUNT_TOO_LARGE`) ; tests du cas réel, `npm run check` vert et clic réel navigateur.
+
+  Source / dépendance / blocage : aucun blocage. Adapter ensuite le plan 8 de la vidéo F1.
+
+- [ ] **ANALYSE-ENCAISSE — Corriger le pourcentage encaissé de la page Analyse.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. `analytics.service.ts:123-128` compte « Encaissé » (payées) et « En attente » (en attente, brouillons), sans les factures en retard ; celles-ci et les annulées comptent pourtant dans « Facturé ». Le pourcentage part de `collectedShare(encaissé, en attente)` : il oublie les retards et paraît donc meilleur que la réalité. Les brouillons, eux, n'ont pas encore été facturés au client.
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6 Luna · effort moyen.**
+
+  Terminé quand : retards affichés à part ; annulées et brouillons traités selon une règle écrite ; « Encaissé + En attente + En retard » égale le total affiché ; le pourcentage se calcule sur ce total ; test avec une facture de chaque statut, `npm run check` vert et clic réel navigateur.
+
+  Source / dépendance / blocage : aucun blocage. Rendre ensuite visible la carte « Encaissement » dans la vidéo F3.
+
+- [ ] **MOTS-UNIFIES — Employer les mêmes mots partout à l'écran.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. Mélanges constatés : « Chauffeur » et « Livreur » ; « Relevé » et « Facture » ; « Équipe » pour « Gestion des comptes » ; « Nouvel utilisateur » pour « Inviter un utilisateur » ; « Analytics avancés » et « Statistiques avancées » ; « Support prioritaire » et « Assistance prioritaire » ; « Dispatch automatique » et « Dispatch intelligent ».
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6 Luna · effort moyen.**
+
+  À trancher : recommandation « Livreur » partout, sauf le code interne. « Relevé » a été choisi exprès parce que le document n'est pas une facture électronique réglementaire : ne pas le remplacer par « Facture » sans avis du juriste (LEGAL-1), en lien avec le point C2 d'AUDIT-0111. Le reste peut avancer sans attendre.
+
+  Terminé quand : un seul mot par notion dans les écrans, e-mails et PDF des trois espaces ; recherche de chaque ancien mot sans résultat visible par l'utilisateur ; tests à jour, `npm run check` vert et clic réel navigateur.
+
+  Source / dépendance / blocage : juriste pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
+
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.** Liste unique des actions que seul le propriétaire peut faire pour mettre en ligne les neuf chantiers intégrés le 28 octobre 2026. Le 28 octobre 2026, l'intégration a été poussée sur `preproduction` (dd8a835, déploiement Vercel prêt, aucune erreur) et les cinq migrations ont été appliquées à la base de préproduction ; les autres actions ci-dessous restent à faire.
+
+  **Qui : Toi.**
 
   **Modèle conseillé : GPT‑6 Luna · effort faible.**
 
@@ -2233,6 +2336,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Après le push (623d841) : déploiement Vercel Preview « Ready », CI `preproduction` verte (run 41003405365). `tutelliv.fr` `/`, `/login`, `/mentions-legales`, `/confidentialite` en 200 avec `content-security-policy` bloquante. Console d'un Chromium sans écran : une seule erreur, le script de la barre de commentaires Vercel (`vercel.live/_next-live/feedback/feedback.js`) bloqué par la CSP ; le site n'est pas touché. Correctif possible : désactiver « Preview feedback » dans Vercel (refusé à l'agent par le garde-fou des permissions, à faire par le propriétaire : Settings → General → Vercel Toolbar) ou autoriser `vercel.live` en préproduction dans la CSP.
 - [ ] **RELEASE-1 — Réaliser la recette de mise en vente.** Rejouer sécurité, livraison, GPS promis, abonnement, support, exports et restauration ; revue des défauts ouverts et charge représentative.
 
+  **Qui : Claude — en dernier, avant la mise en vente.**
+
   **Modèle conseillé : GPT‑6 Astra · effort élevé.**
 
   Terminé quand : Aucun défaut bloquant connu ouvert ; responsabilités opérationnelles définies ; décision de lancement explicite et surveillance prête.
@@ -2240,6 +2345,8 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   Source / dépendance / blocage : Toutes les portes pertinentes ci-dessous ; pas de déploiement implicite.
 
 - [ ] **SMS — Ajouter seulement les extensions justifiées.** Prioriser SMS, intégrations, optimisation avancée, IA ou app native selon problèmes répétés et disposition à payer.
+
+  **Qui : Claude — seulement si les pilotes le demandent.**
 
   **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
 
@@ -2426,6 +2533,7 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-27 — UX-03, variantes et alertes : alertes et tableau de bord vers la fiche livraison ; échéance et retard pour le client et le livreur, sans consigne interne. Playwright 4/4 sur la démo, `npm run check` 721/722 (seul échec : test de la mini-démo d'accueil en cours chez l'agent design). Aucune migration ni push.
 
 - 2026-11-01 — Liste des tâches à faire ajoutée sous la jauge, générée par `npm run todo:progress`.
+- 2026-11-01 — Demande du propriétaire : liste sous la jauge séparée en « À faire par Claude » (16) et « À faire par toi » (13), selon qui doit agir ensuite. Chaque tâche ouverte porte une ligne « Qui » ; `scripts/docs/update-todo-progress.mjs` en tire les listes, et une tâche sans classement irait dans « À classer ». Règle ajoutée à `AGENTS.md`. Vérifié : `npm run todo:progress` deux fois (second passage sans changement), 29 tâches classées, ESLint sans erreur sur le script. `npm run check` non lancé : seuls ce script de documentation et du Markdown ont changé.
 - 2026-10-30 — MOBILE-WEB close : parcours principaux au format téléphone 20/20 (1 ignoré, téléphone réel), captures Clair/Sombre à 390 px.
 - 2026-10-29 — MOBILE-WEB : mode Sombre et marqueurs de carte couverts, logo de l'accueil porté à 44 px, option `E2E_MOBILE=1` ; bloc « Ce qu'il reste vraiment à faire » ajouté en tête du fichier ; actions du propriétaire inscrites dans son agenda du 30 octobre.
 - 2026-10-29 — MOB-01C : confirmation hors zone signalée par une note interne d'incident avec la distance, visible de l'équipe seulement. `npm run check` 1393/1393.
