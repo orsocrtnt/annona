@@ -4,12 +4,13 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**97 tâches terminées sur 123 — 79 %**
+**97 tâches terminées sur 124 — 78 %**
 
-`████████████████░░░░` · 26 tâches restantes
+`████████████████░░░░` · 27 tâches restantes
 
 **À faire par Claude**
 
+- ADMIN-COMMANDE — Créer une commande directement depuis l'espace admin
 - V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
 - DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
 - PROD-04 — Définir les mesures de valeur (après les pilotes)
@@ -64,6 +65,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - Recette connectée : le 2 novembre, elle ne passait plus depuis le 23 octobre (entreprises de test sans abonnement), et elle a révélé un vrai bug, corrigé (deux premières commandes simultanées du mois). Partie connectée verte sur `tutelliv-dev` ; parcours navigateur en cours de relance en ligne.
+- ADMIN-COMMANDE : créer une commande directement depuis l'espace admin, avec un formulaire (demande du 2 novembre).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
@@ -302,6 +304,14 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   Terminé quand : un seul mot par notion dans les écrans, e-mails et PDF des trois espaces ; recherche de chaque ancien mot sans résultat visible par l'utilisateur ; tests à jour, `npm run check` vert et clic réel navigateur.
 
   Source / dépendance / blocage : vérification des exigences applicables pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
+
+- [ ] **ADMIN-COMMANDE — Créer une commande directement depuis l'espace admin.** Demande du propriétaire du 2 novembre 2026 : l'admin doit pouvoir créer une commande en direct depuis son espace. Aujourd'hui, la création côté équipe ne passe que par « commande par message » (décision C11 du 28 octobre).
+
+  **Qui : Claude.**
+
+  Terminé quand : depuis Commandes, un administrateur crée une commande avec un formulaire, sans coller de message, pour un client choisi ; la commande suit ensuite le même parcours qu'une commande du portail (dispatch, suivi, quota de l'offre, lecture seule si l'abonnement est expiré) ; une entreprise ne voit que ses clients ; tests métier, `npm run check` et clic réel navigateur.
+
+  À préciser au moment de commencer : les rôles concernés en plus de l'administrateur (dispatcher, mini-administrateur), et une commande sans compte client ou non. La décision C11 est à mettre à jour. L'audit du 1er novembre demande de geler les nouvelles fonctions avant le premier pilote : à placer par le propriétaire par rapport aux entretiens.
 
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.**
 
