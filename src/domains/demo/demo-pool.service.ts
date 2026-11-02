@@ -23,6 +23,8 @@ export const DEMO_POOL_TEST_LEASE_MS = 60 * 60 * 1000;
 export const DEMO_POOL_RETRY_AFTER_SECONDS = 5;
 const RECYCLE_LOCK_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_RECYCLE_ATTEMPTS = 3;
+/** Une tâche de fond finit en quelques minutes : au-delà d'une heure, elle est coincée et l'espace part en quarantaine. */
+export const DEMO_POOL_JOBS_WAIT_MS = 60 * 60 * 1000;
 const SESSION_ID_PATTERN = /^[a-f0-9]{64}$/;
 const REQUEST_KEY_PATTERN = /^[A-Za-z0-9_-]{16,128}$/;
 
@@ -40,6 +42,7 @@ type RecycleResult = {
 };
 
 export class DemoPoolSafetyError extends Error {}
+class DemoPoolJobsRunning extends Error {}
 class DemoPoolLeaseRace extends Error {}
 
 export class DemoPoolUnavailableError extends Error {
@@ -393,7 +396,7 @@ export async function preparePoolRecycle(
     prisma.$transaction((tx) => hasCrossTenantDemoReference(tx, companyId, userIds)),
   ]);
   if (pdfs) throw new DemoPoolSafetyError("EXTERNAL_ASSET_REFERENCE");
-  if (runningJobs) throw new DemoPoolSafetyError("UNFINISHED_JOBS");
+  if (runningJobs) throw new DemoPoolJobsRunning("UNFINISHED_JOBS");
   if (crossTenant) throw new DemoPoolSafetyError("CROSS_TENANT_REFERENCE");
   await storage.purge(companyId);
   try {
@@ -445,8 +448,17 @@ export async function recycleDemoPoolEnvironment(
     });
     return { companyId, status: "recycled" };
   } catch (error) {
+    // Tâche de fond encore en cours : l'espace attend, sans consommer d'essai. Rien n'est reconstruit tant qu'elle tourne.
+    const waitingSince = (environment.recycleRequestedAt ?? now).getTime();
+    if (error instanceof DemoPoolJobsRunning && now.getTime() - waitingSince < DEMO_POOL_JOBS_WAIT_MS) {
+      await prisma.demoPoolEnvironment.update({
+        where: { id: environment.id },
+        data: { state: "RECYCLING", recycleStartedAt: null, lastFailureCode: error.message },
+      });
+      return { companyId, status: "retry", reason: error.message };
+    }
     const attempts = environment.recycleAttempts + 1;
-    const safetyFailure = error instanceof DemoPoolSafetyError;
+    const safetyFailure = error instanceof DemoPoolSafetyError || error instanceof DemoPoolJobsRunning;
     const state: DemoPoolState = safetyFailure || attempts >= MAX_RECYCLE_ATTEMPTS
       ? "QUARANTINED"
       : "RECYCLING";

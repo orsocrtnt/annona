@@ -4,6 +4,7 @@ import test, { type TestContext } from "node:test";
 import { prisma } from "../src/services/prisma/client";
 import { purgeDemoPoolStorage } from "../src/domains/data-lifecycle/demo-cleanup.service";
 import {
+  DEMO_POOL_JOBS_WAIT_MS,
   DemoPoolSafetyError,
   demoPoolLeaseKeyHash,
   demoSessionIdFromRequestKey,
@@ -11,6 +12,7 @@ import {
   DEMO_POOL_TEST_LEASE_MS,
   DEMO_POOL_RETRY_AFTER_SECONDS,
   preparePoolRecycle,
+  recycleDemoPoolEnvironment,
 } from "../src/domains/demo/demo-pool.service";
 
 test("DEMO-2 : clé navigateur idempotente, opaque et strictement validée", () => {
@@ -148,4 +150,51 @@ test("retrait du dossier : identifiant douteux ou panne de lecture, aucune suppr
     /STORAGE_UNAVAILABLE/
   );
   assert.equal(removals, 0);
+});
+
+function recycleWithRunningJobs(t: TestContext, requestedAt: Date) {
+  const updates: Array<Record<string, unknown>> = [];
+  const environment = {
+    id: "envA", companyId: "slotA", poolKey: "pool", state: "RECYCLING", updatedAt: requestedAt,
+    recycleAttempts: 0, recycleRequestedAt: requestedAt, leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null,
+  };
+  const company = { id: "slotA", isDemo: true, status: "ACTIVE", logoUrl: null, settings: { demoPool: true, demoPoolKey: "pool" }, users: [] };
+  const stubs = {
+    demoPoolEnvironment: {
+      findUnique: async () => environment,
+      updateMany: async () => ({ count: 1 }),
+      update: async ({ data }: { data: Record<string, unknown> }) => { updates.push(data); return environment; },
+    },
+    company: { findUnique: async () => company },
+    invoice: { count: async () => 0 },
+    operationJob: { count: async () => 1 },
+  };
+  for (const [model, stub] of Object.entries(stubs)) {
+    Object.defineProperty(prisma, model, { configurable: true, value: stub });
+    t.after(() => { Reflect.deleteProperty(prisma, model); });
+  }
+  t.mock.method(prisma, "$transaction", (async () => false) as never);
+  let purged = 0;
+  return { updates, options: { purgeStorage: async () => { purged += 1; }, assertStorageEmpty: async () => {} }, purged: () => purged };
+}
+
+test("recyclage : une tâche de fond en cours fait attendre l'espace, sans essai consommé ni fichier retiré", async (t) => {
+  const now = new Date("2026-11-02T12:00:00.000Z");
+  const h = recycleWithRunningJobs(t, new Date(now.getTime() - DEMO_POOL_JOBS_WAIT_MS + 1000));
+  const result = await recycleDemoPoolEnvironment("slotA", { now, ...h.options });
+  assert.deepEqual({ status: result.status, reason: result.reason }, { status: "retry", reason: "UNFINISHED_JOBS" });
+  assert.equal(h.updates.length, 1);
+  assert.equal(h.updates[0]?.state, "RECYCLING");
+  assert.equal(h.updates[0]?.recycleStartedAt, null);
+  assert.equal("recycleAttempts" in h.updates[0]!, false);
+  assert.equal(h.purged(), 0);
+});
+
+test("recyclage : une tâche de fond coincée depuis plus d'une heure met l'espace en quarantaine", async (t) => {
+  const now = new Date("2026-11-02T12:00:00.000Z");
+  const h = recycleWithRunningJobs(t, new Date(now.getTime() - DEMO_POOL_JOBS_WAIT_MS));
+  const result = await recycleDemoPoolEnvironment("slotA", { now, ...h.options });
+  assert.deepEqual({ status: result.status, reason: result.reason }, { status: "quarantined", reason: "UNFINISHED_JOBS" });
+  assert.equal(h.updates[0]?.state, "QUARANTINED");
+  assert.equal(h.purged(), 0);
 });
