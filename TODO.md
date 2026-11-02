@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**96 tâches terminées sur 123 — 78 %**
+**97 tâches terminées sur 123 — 79 %**
 
-`████████████████░░░░` · 27 tâches restantes
+`████████████████░░░░` · 26 tâches restantes
 
 **À faire par Claude**
 
@@ -40,14 +40,10 @@
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 
-**À classer**
-
-- DEMO-SLIDES-6-7 — Modifier la démo entre la slide 6 et la slide 7
-
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 1er novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 2 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
@@ -65,9 +61,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1 : vérifier et documenter le respect des exigences applicables (contrats, RGPD, GPS, photos, conservation et fournisseurs), avec les pièces et décisions du propriétaire. Recourir à un juriste reste facultatif ; aucune conformité n’est encore déclarée.
-- Relire le résultat de la recette connectée lancée le 2 novembre (GitHub Actions, TutelLiv CI, lancement manuel) et corriger ce qu'elle signale. Non cliqués : replanifier un échec à l'écran, bandeau de prix du portail.
-- Démarchage : débloquer la place de démo numéro 1, refusé le 1er novembre par le contrôle de sécurité de l'outil ; à refaire si le propriétaire l'autorise. Empêcher qu'une preuve ajoutée en démo bloque une place. Les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
-- DEMO-SLIDES-6-7 : modifier la démo entre la slide 6 et la slide 7, dès que le propriétaire a précisé quelle démo et quel changement.
+- Relire le premier passage de la recette connectée, prévu chaque nuit à 3 h UTC (22 h à New York, première fois le 2 novembre au soir), et corriger ce qu'elle signale. Aucune recette connectée n'apparaît dans GitHub Actions depuis le 20 octobre. Non cliqués : replanifier un échec à l'écran, bandeau de prix du portail.
+- Démarchage : les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
@@ -296,16 +291,6 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   Terminé quand : un seul mot par notion dans les écrans, e-mails et PDF des trois espaces ; recherche de chaque ancien mot sans résultat visible par l'utilisateur ; tests à jour, `npm run check` vert et clic réel navigateur.
 
   Source / dépendance / blocage : vérification des exigences applicables pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
-
-- [ ] **DEMO-SLIDES-6-7 — Modifier la démo entre la slide 6 et la slide 7.** Demande du propriétaire du 2 novembre 2026, notée telle quelle.
-
-  **Qui : le propriétaire précise, puis Claude.**
-
-  À préciser avant de commencer : de quelle démo il s'agit (la mini-démo de l'accueil, dont les étapes 6 et 7 sont « Facture » et « Paiements », ou la présentation de rendez-vous, dont les diapositives 6 et 7 sont « Vos clients » et « Où en est TutelLiv ») et ce qu'il faut changer. Hypothèse non confirmée : la mini-démo.
-
-  Terminé quand : le changement demandé est visible à cet endroit, vérifié en cliquant, et les supports du kit qui en parlent sont à jour.
-
-  Source / dépendance / blocage : précision du propriétaire. Rien n'a été modifié pour l'instant.
 
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.**
 
