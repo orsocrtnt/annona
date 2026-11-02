@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**92 tâches terminées sur 117 — 79 %**
+**93 tâches terminées sur 117 — 79 %**
 
-`████████████████░░░░` · 25 tâches restantes
+`████████████████░░░░` · 24 tâches restantes
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -20,9 +20,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- Essayer l'application allégée sur ton iPhone (MOBILE-2) et dire ce qui te gêne encore.
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
-- ENV-2 : l'ancien projet Supabase `wlomrzil…` reste en pause (ta décision du 1er novembre) ; change son mot de passe s'il est relancé un jour, et confirme l'origine de la clé Stripe de test.
+- Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - Rien pour l'instant : le reste attend une action du point 1 ou 3.
@@ -272,7 +271,9 @@ SEC-01/02/03/04 et SEC-06 sont terminées. SEC-05 est implémentée localement m
 
   Terminé le 2026-10-20 : identifiants remplacés, ancienne clé serveur révoquée, branche distante et Preview Vercel actives, variables Preview et environnement GitHub `preproduction` configurés. La migration additive RBAC et son rejeu sont vérifiés. Le commit `f6e19cc` est déployé avec succès en Preview et la chaîne GitHub connectée réussit la garde d'isolation, 279 tests, TEST-2, le montage temporaire, trois parcours Chromium, la preuve nettoyée et le nettoyage `always()`. Le contrôle direct final confirme zéro entreprise de test, zéro utilisateur Auth, deux migrations appliquées, zéro drift, RLS partout et bucket privé. La Preview reste protégée par l'authentification Vercel ; la CI teste donc le même commit dans son runner relié au Supabase de préproduction et contrôle le déploiement séparément. Rapport `docs/rapports/2026-10-20/preproduction-ci.md`.
 
-- [ ] **ENV-2 — Rétablir une cible de développement locale joignable.** `.env.local` vise encore le projet Supabase de développement `wlomrzil…`, en pause : connexion, Playwright par défaut et recettes navigateur locales échouent (`ENOTFOUND`, 401), ce qui a bloqué les preuves navigateur de SAAS-03, SAAS-04 et ADMIN-1. Son mot de passe de base a de plus été exposé dans un journal d'outil le 26 octobre 2026.
+- [x] **ENV-2 — Rétablir une cible de développement locale joignable.** `.env.local` vise encore le projet Supabase de développement `wlomrzil…`, en pause : connexion, Playwright par défaut et recettes navigateur locales échouent (`ENOTFOUND`, 401), ce qui a bloqué les preuves navigateur de SAAS-03, SAAS-04 et ADMIN-1. Son mot de passe de base a de plus été exposé dans un journal d'outil le 26 octobre 2026.
+
+  Close le 1er novembre 2026 sur décision du propriétaire : la clé Stripe de test appartient bien à son compte (déclaration du propriétaire, non recoupée par l'agent). `.env.local` vise `tutelliv-dev`, garde `env2:verify-dev` verte, `test:e2e` démarre sans contournement, Node 22 en place. Écart accepté : le mot de passe exposé de `wlomrzil…` n'est pas changé, le projet reste en pause et n'est plus utilisé ; à changer s'il est relancé.
 
   **Modèle conseillé : GPT‑6 Luna · effort faible.**
 
@@ -1892,7 +1893,7 @@ Développer l'architecture et les scénarios en environnement fictif sans active
 
   Non exercé : « Plus de détails » (aucune liste visitée n'a plus de 4 champs) ; téléphone réel après cette refonte. Pages `/tarifs` (6,4 écrans) et `/fonctionnalites` (5,4) non retouchées : décision de l'agent, leur longueur est du contenu de vente.
 
-  Suite : essai sur l'iPhone du propriétaire.
+  Confirmé par le propriétaire sur téléphone le 1er novembre 2026 (« pour tel c'est nickel »).
 
   **Répétition générale du 1er novembre 2026** (serveur de production local, `tutelliv-dev`, 25 fichiers de parcours, trois rôles) : dernier passage complet 73 passés, 10 ignorés, 1 échec, corrigé puis `design2-theme` rejoué seul, 5/5. Le passage complet n'a pas été rejoué après cette dernière correction de test.
   - **Défaut réel corrigé** : au-dessus de 768 px, une fenêtre plus haute que l'écran ne défilait pas ; à 720 px de haut, « Valider la livraison » était inatteignable depuis l'ajout de la signature (POD-2). `src/components/ui/dialog.tsx` limite désormais la hauteur et défile partout. V1-GO repasse.
