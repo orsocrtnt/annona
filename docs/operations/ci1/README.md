@@ -30,6 +30,8 @@ Le job `Recette préproduction` ne s'exécute que lors d'un lancement manuel ave
 - `PREPROD_EXPECTED_APP_HOST` ;
 - `PREPROD_EXPECTED_SUPABASE_REF`.
 
+**Depuis le 2 novembre 2026 :** le passage de nuit s'arrête à la recette connectée. La préproduction contient des places de démo et des entreprises de recette, et le montage de la démonstration temporaire refuse alors de s'exécuter (`PREPRODUCTION_PERSISTENT_DEMO_UNEXPECTED`). Les parcours navigateur restent possibles par lancement manuel (`run_browser`), sur une cible vide, et se rejouent sur `tutelliv-dev`.
+
 Le job refuse d'abord toute cible qui ne correspond pas à la référence Supabase et à l'hôte attendus. Il exécute les 279 règles locales, la recette connectée A/B, puis monte une démonstration temporaire sur la cible vide avant les quatre parcours Chromium. Un nettoyage `always()` supprime ensuite le socle, les quatre sessions isolées, leurs utilisateurs, leur utilisateur Auth et leurs éventuels objets Storage. Une suppression est refusée si le graphe, le roster ou les objets ne sont pas strictement ceux de la fixture. Cinq fichiers de preuve sans secret sont conservés sept jours seulement lorsque la suite entière et le nettoyage réussissent. Les liens et e-mails réels restent désactivés.
 
 La Preview Vercel est protégée par l'authentification de l'équipe et renvoie donc 401 à un navigateur d'automatisation non connecté. La recette fonctionnelle démarre le commit testé dans le runner et le relie au Supabase de préproduction. Le déploiement Vercel du même commit est vérifié séparément via son statut GitHub/Vercel ; aucun contournement public de la protection n'est créé.

@@ -14,6 +14,11 @@ on:
         required: false
         default: false
         type: boolean
+      run_browser:
+        description: "Monter la démonstration temporaire et rejouer les parcours navigateur (exige une base sans autre entreprise que la démo)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -156,13 +161,19 @@ jobs:
       - name: Rejouer la recette connectée isolée
         run: npm run test:connected
 
+      # La préproduction contient les places de démo et des entreprises de recette : le montage refuse
+      # alors de s'exécuter, à juste titre. Le passage de nuit s'arrête donc à la recette connectée ;
+      # les parcours navigateur se rejouent sur tutelliv-dev (skill tutelliv-recette).
       - name: Monter la démonstration navigateur temporaire
+        if: ${{ inputs.run_browser == true }}
         run: npm run test:v1:browser-fixture:setup
 
       - name: Rejouer les parcours navigateur
+        if: ${{ inputs.run_browser == true }}
         run: npm run test:e2e
 
       - name: Vérifier les preuves de recette
+        if: ${{ inputs.run_browser == true }}
         run: node scripts/test-v1/verify-output.mjs
 
       - name: Supprimer la démonstration navigateur temporaire
