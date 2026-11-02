@@ -85,8 +85,8 @@ export default function ConfidentialitePage() {
 
       <LegalSection title="Durée de conservation">
         <p>
-          Messages de contact et prospection : trois ans après le dernier échange. <em>Autres données : en cours de
-          définition.</em> Ces durées seront publiées ici avant l&apos;ouverture commerciale.
+          Messages de contact et prospection : trois ans après le dernier échange. Autres données :{" "}
+          <em>En cours de définition.</em> Ces durées seront publiées ici avant l&apos;ouverture commerciale.
         </p>
       </LegalSection>
 
