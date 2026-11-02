@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sendTransactionalEmail } from "@/lib/email/transactional-email";
 import { abuseFingerprint, getAbuseHmacSecret } from "@/lib/security/abuse-hmac";
 import { prisma } from "@/services/prisma/client";
 
@@ -22,8 +23,18 @@ export const contactMessageSchema = z.object({
   website: z.string().max(200).optional(),
 }).strict();
 
+export type ContactAlertMessage = {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  phone: string | null;
+  message: string;
+};
+
 export type ContactSubmitResult =
-  | { status: "accepted" }
+  /** `stored` manque quand rien n'a été écrit (pot de miel) : aucune alerte dans ce cas. */
+  | { status: "accepted"; stored?: ContactAlertMessage }
   | { status: "invalid"; field: string }
   | { status: "rate_limited" };
 
@@ -72,9 +83,60 @@ export async function submitContactMessage(
     ]);
     if (fromSource >= CONTACT_SOURCE_LIMIT || total >= CONTACT_GLOBAL_LIMIT) return { status: "rate_limited" } as const;
 
-    await tx.contactMessage.create({ data: { ...data, sourceHash } });
-    return { status: "accepted" } as const;
+    const stored = await tx.contactMessage.create({ data: { ...data, sourceHash } });
+    return {
+      status: "accepted",
+      stored: {
+        id: stored.id,
+        name: stored.name,
+        email: stored.email,
+        company: stored.company,
+        phone: stored.phone,
+        message: stored.message,
+      },
+    } as const;
   });
+}
+
+/**
+ * Prévient l'équipe d'un nouveau message Contact. Le message est déjà enregistré et reste lisible
+ * dans le back-office : une alerte ratée ne doit jamais faire échouer l'envoi du visiteur.
+ */
+export async function sendContactAlert(
+  message: ContactAlertMessage,
+  options: { env?: Record<string, string | undefined>; send?: typeof sendTransactionalEmail } = {}
+): Promise<"sent" | "skipped" | "failed"> {
+  const env = options.env ?? process.env;
+  // Repli sur la boîte de recette : c'est déjà celle de l'équipe tant que l'envoi réel n'est pas ouvert.
+  const to = env.CONTACT_ALERT_RECIPIENT?.trim() || env.EMAIL_TEST_RECIPIENT?.trim();
+  if (!to) return "skipped";
+  const appUrl = env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
+  try {
+    const result = await (options.send ?? sendTransactionalEmail)({
+      to,
+      subject: `Nouveau message Contact : ${message.company ?? message.name}`,
+      text: [
+        `Nom : ${message.name}`,
+        `E-mail : ${message.email}`,
+        `Entreprise : ${message.company ?? "non indiquée"}`,
+        `Téléphone : ${message.phone ?? "non indiqué"}`,
+        "",
+        message.message,
+        ...(appUrl ? ["", `Lire dans le back-office : ${appUrl}/admin/contact`] : []),
+      ].join("\n"),
+      idempotencyKey: `contact-message:${message.id}`,
+      // Un seul essai par message : aucune tentative antérieure n'a pu partir sous cette clé.
+      replayWindowStart: null,
+    });
+    if (result.status === "disabled") {
+      console.error("Contact alert skipped:", result.reason);
+      return "skipped";
+    }
+    return "sent";
+  } catch (error) {
+    console.error("Contact alert failed:", error instanceof Error ? error.message : "unknown");
+    return "failed";
+  }
 }
 
 export function parseContactListParams(params: URLSearchParams) {

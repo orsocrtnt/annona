@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**93 tâches terminées sur 117 — 79 %**
+**93 tâches terminées sur 118 — 79 %**
 
-`████████████████░░░░` · 24 tâches restantes
+`████████████████░░░░` · 25 tâches restantes
 
 - SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex
 - POD-2 — Preuve de livraison complète : signature, PDF, envoi et relevés
@@ -29,6 +29,7 @@
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public
 - INTAKE-1 — Commande par message IA (coller un message)
 - DISPATCH-5 — Imprévus et mesure du dispatch
+- AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
 - PROPRIO-2810 — Actions du propriétaire avant mise en ligne
 - RELEASE-1 — Réaliser la recette de mise en vente
 - SMS — Ajouter seulement les extensions justifiées
@@ -41,6 +42,10 @@ _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalc
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
+- Cette semaine, le plus important (audit du 1er novembre, PDF dans `outputs/audit-2026-11-01/`) : contacter des sociétés de livraison et tenir dix entretiens (PROD-02) ; le plan complet, les textes et la liste d'entreprises sont prêts (`docs/operations/prospection/README.md`). Chaque jour à partir du 2 novembre : trouver les coordonnées, écrire et appeler de 8 h à 11 h à New York (14 h à 17 h en France).
+- Avant le premier message du démarchage : créer une vraie boîte mail, par exemple `orso@tutelliv.fr` (les mails actuels partent de `no-reply@`, une réponse serait perdue).
+- Lundi 2 novembre, avant le premier message : demander ton SIREN sur le Guichet unique (pas encore de numéro, confirmé le 1er novembre). D'ici là, le démarchage se limite aux entretiens de recherche : aucun prix ni offre de pilote.
+- Donner ton accord pour créer une vraie production (AUDIT-0111, point E2) : tutelliv.fr tourne aujourd'hui sur une préversion.
 - Plus tard : juriste, en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
@@ -49,11 +54,12 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- Rien pour l'instant : le reste attend une action du point 1 ou 3.
+- Démarchage : débloquer la place de démo numéro 1, refusé le 1er novembre par le contrôle de sécurité de l'outil ; à refaire si le propriétaire l'autorise. Empêcher qu'une preuve ajoutée en démo bloque une place. Les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
+- AUDIT-0111 : les corrections avant pilote, dans l'ordre de la tâche (commandes récurrentes en panne sur tutelliv.fr, compte invité, raccourcis de test, changements d'état, double commande, lecture seule, démo, numéros de facture, dispatch, limites de tentatives, contrôle automatique sur base, TODO réduite). Aucune nouvelle fonction d'ici là.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Juriste : LEGAL-1, LEGAL-LIENS, DATA-02, et la fiche F10 d'INTAKE-1 (obligatoire avant tout vrai message de client).
-- Pilotes : PILOT-1 et 2, PROD-02 et 04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
+- Pilotes (ils attendent les entretiens du point 1, qui ne dépendent que de toi pour démarrer) : PILOT-1 et 2, PROD-04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
 - Mesures et mise en vente : SAAS-02, SAAS-03, COST-1, RELEASE-1, SMS, GROWTH-1.
 
 **Déjà fait côté agent, la case attend une action du point 1 :** SEC-AUDIT, POD-2, OPS-FIAB, INTAKE-1, FACTURX-1, MOB-01C.
@@ -1176,7 +1182,7 @@ Travaux conservés. Les fonctions optionnelles ne bloquent pas le noyau si elles
 
 ## 6 — Reprendre la validation commerciale quand le propriétaire sera disponible
 
-Prospection, entretiens et pilotes différés à sa demande ; aucune prise de contact prévue. Conserver leurs critères, sans les considérer validés par les tests internes.
+Reprise le 1er novembre 2026 à la demande du propriétaire : démarchage à partir du 2 novembre, plan dans `docs/operations/prospection/README.md`. Les critères ci-dessous restent à prouver : les tests internes ne les valident pas.
 
   Location des recettes du 2026-10-27, décision C10 : une connexion démo qui envoie `demoTestSession: true` réserve son espace une heure au lieu de huit. Les cinq recettes Playwright démo l'envoient. Seule la valeur booléenne `true` est acceptée, et l'indicateur ne peut que raccourcir la session de celui qui l'envoie. Les humains gardent huit heures. Vérifié : harnais de connexion (indicateur vrai, chaîne, absent), `tests/demo-pool.test.ts`, `npm run check` 525/525. Limite : pas exercé sur la préproduction, dont le pool est saturé par d'autres sessions.
 
@@ -1201,6 +1207,15 @@ Prospection, entretiens et pilotes différés à sa demande ; aucune prise de co
   Avancement : le propriétaire a décrit les e-mails client → administrateur → livreur → confirmation et échanges par e-mail. Difficultés rapportées : temps, organisation, visibilité des étapes et position. Les entretiens indépendants et mesures ne sont pas réalisés.
 
   Ciblage confirmé le 2026-10-18 : France entière, priorité Paris/Île-de-France et Marseille/Bouches-du-Rhône ; objectif d'environ dix entretiens. Un système de recherche de prospects est en préparation, mais aucun résultat n'est encore compté comme preuve.
+
+  **Plan de démarchage du 1er novembre 2026, demandé par le propriétaire.** Document `docs/operations/prospection/README.md` : préalables, cible, calendrier du 2 au 13 novembre, textes, objections, suivi, règles légales et décisions prises. Liste locale non versionnée `outputs/prospection/prospects-2026-11-01.csv` : 282 entreprises du registre public (65 A, 207 B, 10 C), sans celles opposées à la prospection commerciale ; vague 1 de 34 entreprises.
+  - Constats : aucun SIREN trouvé (site, documents, Gmail) ; envois actuels depuis `no-reply@` ; boutons `/tarifs` vers une inscription en environnement test ; démo le 1er novembre avec 6 places, dont 2 libres, 3 occupées et 1 bloquée (lecture seule en préproduction) ; aucune alerte pour le formulaire Contact, 0 message ; PDF de présentation à usage interne.
+  - Décisions du propriétaire le 1er novembre (questionnaire) : pas encore de SIREN, donc entretiens de recherche seulement jusqu'au numéro ; corrections du site autorisées et mise en ligne sur `preproduction` demandée.
+  - Code changé : boutons de `/tarifs` vers « Demander un pilote » (`/contact`) ; paragraphe prospection et date de la page Confidentialité ; mail d'alerte après chaque message Contact enregistré (`CONTACT_ALERT_RECIPIENT`, sinon `EMAIL_TEST_RECIPIENT`), jamais pour le pot de miel, sans effet sur la réponse au visiteur.
+  - Non fait, refusé par le contrôle de sécurité de l'outil : ajout de `CONTACT_ALERT_RECIPIENT` sur Vercel et déblocage de la place de démo 1 (elle garde sa preuve fictive du 28 octobre et 2 fichiers ; aucune suppression n'a abouti, l'unique essai a répondu 400). Cause trouvée : une preuve ajoutée en démo met la place en quarantaine, à corriger.
+  - Vérifications : `npm run check` 1 496/1 496 ; `npm run docs:verify` ; `npm run ci:secrets` ; `npm run todo:progress`. Aucun message envoyé à un prospect.
+  - Limites : règles légales lues sur la CNIL et des sources secondaires, sans juriste ; page du ministère sur le démarchage illisible par l'outil ; coordonnées vérifiées pour 2 entreprises seulement sur 34, le reste à chercher à la main ; effectif du registre différent du nombre de livreurs ; objectifs chiffrés sans référence réelle.
+  - Suite : le propriétaire demande le SIREN et crée la boîte mail, puis démarche. Case ouverte jusqu'aux dix entretiens et à leur synthèse.
 
 - [ ] **PROD-04 — Définir les mesures de valeur.** Mesurer temps de dispatch, appels de suivi par livraison, incidents, délai de récupération de preuve et temps de première livraison. Définir période et méthode de mesure.
 
@@ -2142,6 +2157,29 @@ Développer l'architecture et les scénarios en environnement fictif sans active
   - Décision technique : le dispatcher lit ces trois réglages, en lecture seule, car ils servent à l'assignation. Nouvelle garde `requireDispatchSettingsReader` (`src/lib/api/dispatch-settings-read-guard.ts`) sur les `GET` de `company/dispatch`, `company/tariffs` et `company/location-settings` : `COMPANY_ADMIN`/`MINI_ADMIN` avec `settings:read`, ou `DISPATCHER` avec `deliveries:dispatch` ; `SUPER_ADMIN` exclu. Les `PATCH` restent `settings:update` pour `COMPANY_ADMIN`/`MINI_ADMIN`. La grille tarifaire devient lisible par le dispatcher.
   - Tests : `tests/dispatcher-403-settings-read.test.ts` (garde et trois routes) ; tests de frontière ADMIN-1 mis à jour (dispatcher : GET 200, PATCH 403) ; inventaire `docs/operations/admin01/tenant-api-boundaries.md` et son test mis à jour. `npm run check` vert (1388/1388).
   - Recette navigateur (worktree isolé, tutelliv-dev, compte dispatcher) : `/dashboard`, `/dispatch`, `/dispatch/map`, `/dashboard/orders` et fiche livraison en Clair 1280 et Sombre 390 → 0 réponse en erreur, 0 erreur console ; `GET` des trois réglages 200, `PATCH /api/company/dispatch` 403 ; sur une livraison E2E non assignée créée pour l'essai, le sélecteur liste les livreurs compatibles et « Charge max atteinte ». Données E2E, livraison temporaire et comptes supprimés, worktree supprimé.
+
+- [ ] **AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote.** Audit demandé par le propriétaire en carte blanche ; rapport PDF de 12 pages, local et confidentiel : `outputs/audit-2026-11-01/TutelLiv-Audit-2026-11-01.pdf` (constats, fichiers et lignes en annexe). Conclusion : produit sérieux, aucune confrontation au marché ; geler les nouvelles fonctions, corriger ce qui suit, mener dix entretiens en parallèle, puis un seul pilote.
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé (sécurité, états métier).**
+
+  Terminé quand : chaque point est corrigé avec un test du comportement réel, `npm run check` vert, parcours complets rejoués sur `tutelliv-dev`, et le point E2 tranché par le propriétaire.
+
+  À faire, dans l'ordre :
+  1. E1 — Commandes récurrentes et facturation : les tâches quotidiennes de `vercel.json` ne tournent qu'en production Vercel (ancienne version du 7 septembre, base en pause, échec quotidien constaté) ; rien ne les appelle sur tutelliv.fr, 10 récurrences de test sur 23 en retard le 1er novembre.
+  2. S1 — Une inscription ne doit pas pouvoir toucher un compte invité non confirmé (`signup.service.ts`, `reuseUnconfirmedAuthUser`).
+  3. S2 — Retirer le raccourci de confirmation d'e-mail et désactiver le paiement fictif sur le site public.
+  4. C1 — Définir les changements d'état permis des commandes et livraisons côté équipe, avec tests.
+  5. C3 — Double commande par lien public : clé d'unicité inopérante sans client.
+  6. C4 — Appliquer la lecture seule d'un abonnement expiré aux modifications de commandes et livraisons.
+  7. S3 — Bloquer les invitations depuis la démo publique.
+  8. C2 — Numéroter les factures en suite continue (à confirmer par un comptable).
+  9. C5 — Relancer le dispatch automatique abandonné après trois essais sans livreur actif.
+  10. S4 et S5 — Compléter les limites de tentatives, revoir le rattachement par e-mail.
+  11. C6 — Faire tourner les parcours complets sur une base dans le contrôle automatique (dernier passage connecté : 20 octobre).
+  12. P1 — Réduire cette TODO à une page de pilotage et archiver le journal.
+  13. E2 — Créer une vraie production (accord du propriétaire requis), offres Vercel et Supabase payantes.
+
+  Vérifications de l'audit : `npm run check` vert (1 492 tests) ; `npm audit --omit=dev` sans faille ; journaux Vercel sur 7 jours, conseillers Supabase, comptages en base et pages publiques relus. Aucun code ni donnée modifiés. Non vérifié : intérieur de l'application non cliqué, E2E et build non relancés localement, performance non mesurée, failles lues dans le code mais non rejouées, environ 100 routes contrôlées seulement sur la présence de leur garde d'accès.
 
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.** Liste unique des actions que seul le propriétaire peut faire pour mettre en ligne les neuf chantiers intégrés le 28 octobre 2026. Le 28 octobre 2026, l'intégration a été poussée sur `preproduction` (dd8a835, déploiement Vercel prêt, aucune erreur) et les cinq migrations ont été appliquées à la base de préproduction ; les autres actions ci-dessous restent à faire.
 

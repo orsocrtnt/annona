@@ -187,16 +187,10 @@ export default async function TarifsPage() {
                           ? "bg-[#00d46a] text-[#0e1310] hover:bg-[#00c262]"
                           : "bg-[#0e1310] text-white hover:bg-[#232a26] dark:bg-foreground dark:text-background dark:hover:bg-foreground/90"
                       }`}
-                      href={`/register?plan=${plan.code}&interval=MONTHLY`}
+                      href="/contact"
                     >
-                      Choisir {plan.name} au mois
+                      Demander un pilote
                       <ArrowRight className="h-4 w-4" aria-hidden />
-                    </Link>
-                    <Link
-                      className="inline-flex min-h-12 items-center justify-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-3 text-center text-sm font-bold text-foreground transition-colors hover:bg-[#f0f4f1] dark:hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] dark:focus-visible:ring-ring focus-visible:ring-offset-2"
-                      href={`/register?plan=${plan.code}&interval=ANNUAL`}
-                    >
-                      Choisir à l’année
                     </Link>
                   </div>
                 </article>

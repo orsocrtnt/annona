@@ -36,6 +36,23 @@ export default function ConfidentialitePage() {
         </p>
       </LegalSection>
 
+      <LegalSection title="Prospection commerciale">
+        <p>
+          TutelLiv peut contacter par e-mail ou par téléphone des entreprises de coursiers et de livraison, au sujet
+          de leur activité professionnelle. Les coordonnées proviennent de registres publics d&apos;entreprises, des
+          sites de ces entreprises et d&apos;annuaires professionnels ; le premier message indique leur origine.
+        </p>
+        <p>
+          Données utilisées : nom de l&apos;entreprise, nom et fonction de l&apos;interlocuteur, e-mail et téléphone
+          professionnels, échanges. Elles sont conservées au plus trois ans après le dernier échange.
+        </p>
+        <p>
+          Vous pouvez refuser à tout moment, gratuitement et sans justification : répondez « stop » à un message ou
+          écrivez-nous depuis la page Contact. Nous retirons alors vos coordonnées et ne gardons que ce qui évite de
+          vous recontacter.
+        </p>
+      </LegalSection>
+
       <LegalSection title="Création d'un compte entreprise">
         <p>
           Données demandées : prénom, nom, e-mail professionnel, mot de passe, nom de l&apos;entreprise, adresse

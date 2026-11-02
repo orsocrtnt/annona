@@ -49,8 +49,10 @@ test("les parcours publics locaux se rejoignent sans route absente", () => {
   assert.equal(publicNav.includes('href: "/tarifs"'), true);
   assert.equal(publicNav.includes('href: "/demonstration"'), true);
 
-  assert.match(tarifs, /\/register\?plan=\$\{plan\.code\}&interval=MONTHLY/);
-  assert.match(tarifs, /\/register\?plan=\$\{plan\.code\}&interval=ANNUAL/);
+  // Tant que le paiement réel n'est pas ouvert, les formules mènent à Contact, pas à l'inscription.
+  assert.match(tarifs, /href="\/contact"/);
+  assert.match(tarifs, /Demander un pilote/);
+  assert.doesNotMatch(tarifs, /\/register\?plan=/);
   assert.match(tarifs, /getActiveSignupCatalog/);
   assert.doesNotMatch(read("src/domains/growth/public-pricing.ts"), /7900|17900|34900/);
   assert.deepEqual(signupEntryFromSearch("?plan=PRO&interval=ANNUAL"), { planCode: "PRO", billingInterval: "ANNUAL" });

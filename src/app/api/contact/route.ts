@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { contactSourceFromHeaders, submitContactMessage } from "@/domains/growth/contact.service";
+import { after, NextResponse } from "next/server";
+import { contactSourceFromHeaders, sendContactAlert, submitContactMessage } from "@/domains/growth/contact.service";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
@@ -16,6 +16,8 @@ export async function POST(request: Request) {
         { status: 429, headers: { ...NO_STORE, "Retry-After": "3600" } }
       );
     }
+    const stored = result.stored;
+    if (stored) after(async () => { await sendContactAlert(stored); });
     return NextResponse.json({ success: true }, { status: 202, headers: NO_STORE });
   } catch (error) {
     console.error("Contact submission failed:", error instanceof Error ? error.message : "unknown");

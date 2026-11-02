@@ -8,7 +8,7 @@ import { GrowthShell } from "@/features/landing/growth-shell";
  * affichés, sous un bandeau « en cours de validation » tant que LEGAL-1 n'est pas close. Ne jamais compléter
  * un champ inconnu (SIREN, directeur de publication, durées) par une hypothèse.
  */
-export const LEGAL_UPDATED_AT = "29 octobre 2026";
+export const LEGAL_UPDATED_AT = "2 novembre 2026";
 
 export function LegalDocument({
   active,
