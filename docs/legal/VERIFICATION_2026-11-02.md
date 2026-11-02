@@ -29,8 +29,8 @@ Verdicts : **Cohérent** (constat conforme au texte lu), **Écart** (à corriger
 
 | Exigence | Source | Constat | Verdict | Qui, avant quoi |
 |---|---|---|---|---|
-| CGV communicables à un professionnel qui les demande ; refus sanctionné | [Service Public F37351](https://entreprendre.service-public.gouv.fr/vosdroits/F37351), [F33527](https://entreprendre.service-public.gouv.fr/vosdroits/F33527) | Aucun texte dans le dépôt. Les fichiers J5 sont sur Drive, que les agents ne doivent pas lire | **Pièce manquante** | Propriétaire, avant toute offre |
-| Accord de traitement (article 28) dès qu'un client confie des données | [RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj/fra), [CNIL](https://www.cnil.fr/fr/sous-traitant) | Aucun texte dans le dépôt | **Pièce manquante** | Propriétaire, avant le premier pilote |
+| CGV communicables à un professionnel qui les demande ; refus sanctionné | [Service Public F37351](https://entreprendre.service-public.gouv.fr/vosdroits/F37351), [F33527](https://entreprendre.service-public.gouv.fr/vosdroits/F33527) | Projet J5 lu le 2 novembre, non publiable : écarts en section 6 | **Écart** | Décisions du propriétaire, puis mise à jour, avant toute offre |
+| Accord de traitement (article 28) dès qu'un client confie des données | [RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj/fra), [CNIL](https://www.cnil.fr/fr/sous-traitant) | Projet J5 lu le 2 novembre, annexes à compléter : section 6 | **Écart** | Avant le premier pilote |
 | Protections possibles pour une entreprise de 5 salariés ou moins, contrat hors établissement et hors activité principale | [Service Public F33527](https://entreprendre.service-public.gouv.fr/vosdroits/F33527) | Déjà signalé dans le plan de démarchage. Application à un logiciel métier non tranchée | **À décider** | Avant la première vente |
 | Résiliation en ligne des abonnements | [Service Public F37351](https://entreprendre.service-public.gouv.fr/vosdroits/F37351) (articles L215-1-1 et suivants du Code de la consommation) | Pas de parcours autonome. Application aux clients professionnels non tranchée ; à prévoir dans SAAS-03 | **À décider** | Avant la vente en ligne |
 | **Nouveau — Data Act :** un client peut changer de fournisseur. Applicable depuis le 12 septembre 2025, SaaS inclus, export lisible par machine, plus de frais de changement à partir du 12 janvier 2027 | [Commission européenne](https://digital-strategy.ec.europa.eu/en/factpages/data-act-explained), [texte](https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng) | Absent du dossier précédent. Export réservé à l'opérateur, sans remise au client (DATA-02). Aucune exemption micro-entreprise trouvée sur ce chapitre, mais le texte complet n'a pas pu être lu par l'outil (préavis de 2 mois et transition de 30 jours relevés seulement en extraits) | **Écart** | Agent : DATA-02. CGV : à relire dans le texte |
@@ -41,7 +41,7 @@ Verdicts : **Cohérent** (constat conforme au texte lu), **Écart** (à corriger
 |---|---|---|---|---|
 | GPS : arrêt hors temps de travail, pas de surveillance permanente, pas de contrôle de vitesse | [CNIL](https://www.cnil.fr/fr/la-geolocalisation-des-vehicules-des-salaries) (page signalée en cours de mise à jour) | Une seule dernière position par livreur (`driver_locations`) ; effacée à chaque changement de service ([tracking.service.ts](../../src/domains/tracking/tracking.service.ts)). Bouton de service présent. Non essayé sur téléphone (MOB-01C) | **Cohérent** dans le code, **Non vérifié** sur appareil | Propriétaire : MOB-01C |
 | GPS : conservation de 2 mois en principe, 1 an si la preuve ne peut pas être apportée autrement | [CNIL](https://www.cnil.fr/fr/la-geolocalisation-des-vehicules-des-salaries) | Position de preuve (`pod_latitude`, `pod_longitude`) sans durée ni purge ; aucune tâche de purge dans `src/app/api/cron` | **Écart** | Agent après décision : DATA-02 |
-| GPS : salariés informés, représentants informés ou consultés, inscription au registre | [CNIL](https://www.cnil.fr/fr/la-geolocalisation-des-vehicules-des-salaries) | Obligation de l'employeur, donc du client. Aucune notice type dans le dépôt | **Pièce manquante** | Propriétaire, avant le premier pilote |
+| GPS : salariés informés, représentants informés ou consultés, inscription au registre | [CNIL](https://www.cnil.fr/fr/la-geolocalisation-des-vehicules-des-salaries) | Obligation de l'employeur, donc du client. Modèle de notice J5 à compléter : section 6 | **Écart** | Propriétaire, avant le premier pilote |
 | Analyse d'impact si risque élevé. La liste CNIL vise la surveillance constante des employés et la localisation à large échelle ; en cas de doute, la faire | [CNIL](https://www.cnil.fr/fr/ce-quil-faut-savoir-sur-lanalyse-dimpact-relative-la-protection-des-donnees-aipd), [liste](https://www.cnil.fr/sites/cnil/files/atoms/files/liste-traitements-aipd-requise.pdf) | Non faite. Elle revient d'abord au client responsable du traitement, avec l'aide de TutelLiv. Recommandation : préparer une analyse type | **À décider** | Agent la prépare, avant le premier pilote |
 | Photos : minimisation | [RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj/fra) | Métadonnées retirées au dépôt ([pod.ts](../../src/lib/storage/pod.ts)), espace de stockage privé. Durée non fixée, consignes de cadrage à écrire | **Écart** partiel | À décider : section 4 |
 | Données sur l'appareil | [RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj/fra) | La file hors ligne du livreur est rattachée à son compte, mais aucune expiration ni purge n'a été trouvée dans [offline-action-queue.ts](../../src/features/driver/offline-action-queue.ts) ; recherche par mots-clés, parcours non rejoué | **Écart** | Agent, avant le premier pilote |
@@ -85,17 +85,18 @@ Verdicts : **Cohérent** (constat conforme au texte lu), **Écart** (à corriger
 
 **À fournir**
 - SIREN, e-mail et téléphone publiables, et confirmation du directeur de publication.
-- Les textes J5 (CGV, CGU, confidentialité, DPA, cookies, convention pilote, notice GPS, matrice de conservation) sous forme exploitable dans `docs/legal/contrats/`, car l'agent ne lit pas Drive. Ou la décision de les réécrire à partir de ce dossier.
+- **Droit d'exercer depuis les États-Unis :** la checklist J5 demande de confirmer la capacité à exercer sous visa J-1, et la cohérence de la résidence fiscale avec l'activité française. Elle demande aussi de vérifier la reprise de ton **ancien SIREN**. Rien de cela n'est tranché dans le dossier : à confirmer avant toute vente, idéalement avant le dépôt au Guichet unique. L'agent ne conclut pas sur ces points.
 
 **Décidé le 2 novembre**
 - Page Confidentialité : bases légales publiées (intérêt légitime pour le contact et la prospection, contrat pour le compte) ; messages Contact conservés trois ans après le dernier échange. La purge reste à écrire (DATA-02).
 - Vercel Pro et vraie production : avant le premier pilote ou la première vente. D'ici là, démo fictive et entretiens seulement ; le site public reste sur l'offre documentée pendant le démarchage, risque accepté.
 - Appels aux professionnels : maintenus avec prudence (lignes professionnelles, en semaine de 14 h à 17 h, sujet lié à l'activité, refus respecté), risque accepté.
-- Textes J5 : accès au Drive donné par le propriétaire pour ce travail, en lecture seule.
+- Textes J5 : accès au Drive donné par le propriétaire pour ce travail, en lecture seule. Rien n'a été modifié sur Drive.
 
 **À décider**
 - Durées de conservation du [projet DATA-02](../operations/data02/RETENTION_POLICY_DRAFT.md).
 - Faire confirmer ou non les points incertains par un professionnel.
+- Clauses marquées « choix contractuel » dans les CGV et le DPA (section 6).
 
 ## 5. Non vérifié
 
@@ -104,3 +105,27 @@ Verdicts : **Cohérent** (constat conforme au texte lu), **Écart** (à corriger
 - L'offre Vercel réellement souscrite, et les variables en ligne.
 - La mention « empreinte chiffrée » de l'adresse IP sur le formulaire Contact, relue dans la page seulement.
 - Les règles sociales propres aux livreurs indépendants, et le droit du transport applicable aux clients : hors du logiciel, à charge du client.
+- Les fichiers J5 `09_PROMPTS` et `11_SOURCES` : non lus, sans effet sur les écarts ci-dessus. Les textes J5 ne sont pas copiés dans le dépôt.
+
+## 6. Textes J5 du 21 octobre comparés au produit actuel
+
+Lus sur Drive le 2 novembre 2026, avec l'accord du propriétaire. Complète [la comparaison du 22 octobre](J5_COMPARAISON_CONTRACTUELLE.md), en notant ce qui a changé depuis. Tous ces textes restent des projets non publiables.
+
+| Texte | Ne correspond plus au produit, ou manque | À faire |
+|---|---|---|
+| **CGV, article 3** | Business annoncé « illimité » : le catalogue prévoit 20 livreurs inclus, 50 au plus, 9 € au-delà de 20. Option à 49 € pour le dispatch : devenue « Dispatch intelligent », 39 € en Starter, incluse en Pro et Business (C12). Administrateur supplémentaire réservé à Business : 12 € sur toutes les offres | Reprendre le catalogue en vigueur (C9 à C12) |
+| **CGV, article 6** | Baisse de formule : refusée tant que des comptes dépassent la limite (C10) | Préciser |
+| **CGV, article 7** | Découverte de 60 jours : s'arrête au premier échec de paiement et dès une demande de résiliation (C10) | Ajouter |
+| **CGV, article 11** | Rien sur le changement de fournisseur (Data Act) ; durée d'accès après la fin non fixée | Ajouter après lecture du texte |
+| **CGV, articles 16 et 17** | Plafond de responsabilité et préavis de 30 jours encore au stade de propositions | Décision du propriétaire |
+| **CGU, article 2** | « Dispatcher / mini-administrateur » réunis ; le code a deux rôles distincts (`DISPATCHER`, `MINI_ADMIN`) | Séparer |
+| **CGU, articles 6 et 7** | Faits à inscrire : position lue pendant le service, dernière position seule en base, effacée à chaque changement de service ; métadonnées des photos retirées. Signature et nom du destinataire absents | Compléter |
+| **CGU, article 14** | Acceptation enregistrée avec version et date : aucun champ de ce type trouvé dans `prisma/schema.prisma` ni dans l'inscription | Développement avant la vente |
+| **Confidentialité, section 11** | Le Dispatch intelligent peut affecter un livreur automatiquement (C12) : l'analyse de décision automatisée reste à faire. Ne rien déclarer avant | Analyse, avant le premier pilote |
+| **Confidentialité, section 5** | Manquent Anthropic, les services de notification des navigateurs, OSRM, OpenFreeMap et GitHub | Compléter |
+| **DPA, annexe A** | Manquent signature, nom du destinataire et motif de refus de signer, commande par lien public, messages collés ou e-mails reçus (INTAKE-1) | Compléter |
+| **DPA, annexe C et article 6** | Fournisseurs à compléter comme ci-dessus. **Le propriétaire travaille depuis New York : son accès aux données est un accès hors de l'Espace économique européen**, à inventorier et analyser avant le premier pilote, comme le prévoit l'article 6 | Analyse et inscription |
+| **DPA, annexes B et D** | Mesures à n'inscrire qu'avec preuve. Export : archive opérateur disponible, canal de remise, délais et preuve de suppression absents | DATA-02 |
+| **Convention pilote, article 4** | Conditions préalables aux vraies données : (a) isolation testée sur les cas couverts, (f) restauration prouvée sans suivi continu, et (b), (c), (d), (e), (g), (h) non réunies | Bloque les données réelles |
+| **Notice livreurs, sections 2, 3 et 6** | Sections 2 et 3 complétables avec les faits ci-dessus, après l'essai sur téléphone (MOB-01C). Durées à fixer. Affichage du nom du livreur au client à décider (POD-2) | Compléter |
+| **Mentions légales** | Le projet désigne le propriétaire comme directeur de la publication, à confirmer. Le téléphone des hébergeurs reste à trouver. L'accord pour publier l'adresse personnelle reste à cocher dans la checklist J5 | Propriétaire |

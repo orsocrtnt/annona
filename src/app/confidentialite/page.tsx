@@ -59,8 +59,9 @@ export default function ConfidentialitePage() {
         <p>
           Données demandées : prénom, nom, e-mail professionnel, mot de passe, nom de l&apos;entreprise, adresse
           de facturation ; raison sociale, SIREN, SIRET et téléphone si vous les indiquez. Elles servent à créer
-          votre compte, à gérer votre abonnement et à vous facturer. Ce traitement repose sur le contrat conclu avec
-          votre entreprise.
+          votre compte, à gérer votre abonnement et à vous facturer. Ce traitement repose sur le contrat si vous
+          contractez vous-même, sinon sur notre intérêt légitime à gérer la relation avec votre entreprise ; les
+          documents comptables relèvent de nos obligations légales.
         </p>
         <p>L&apos;inscription en ligne n&apos;est pas encore ouverte : aucun paiement n&apos;est possible sur ce site pour l&apos;instant.</p>
       </LegalSection>
