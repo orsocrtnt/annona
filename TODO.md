@@ -10,16 +10,17 @@
 
 **À faire par Claude**
 
-- V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et le juriste)
-- DATA-02 — Prévoir sortie, export et conservation des données (après le juriste)
+- LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents
+- V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
+- DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
 - PROD-04 — Définir les mesures de valeur (après les pilotes)
-- SAAS-03 — Permettre la gestion autonome de l'abonnement (après le juriste)
+- SAAS-03 — Permettre la gestion autonome de l'abonnement (après la vérification de conformité)
 - SAAS-02 — Mesurer le revenu et la santé du SaaS (après les pilotes)
 - COST-1 — Simuler les coûts d'exploitation et la marge contributive (après les pilotes)
-- GROWTH-1 — Construire le site commercial relié au parcours autonome (après le juriste)
-- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (après le juriste)
+- GROWTH-1 — Construire le site commercial relié au parcours autonome (après la vérification de conformité)
+- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (après la vérification de conformité)
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
-- MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après le juriste)
+- MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -30,7 +31,6 @@
 - MOB-01C — Réaliser les essais iPhone et Android
 - OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation
 - FACTURX-1 — Factur-X EN 16931 des factures de livraison
-- LEGAL-1 — Préparer le dossier contractuel et données personnelles
 - PROD-02 — Documenter le travail actuel et sa difficulté principale
 - INTAKE-1 — Commande par message IA (coller un message)
 - AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
@@ -57,7 +57,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Lundi 2 novembre, avant le premier message : demander ton SIREN sur le Guichet unique (pas encore de numéro, confirmé le 1er novembre). D'ici là, le démarchage se limite aux entretiens de recherche : aucun prix ni offre de pilote.
 - Étude de marché (`outputs/reports/Marché TutelLiv livraison B2B France.md`, environ 840 entreprises visées, hypothèse à mesurer) : trier la liste de prospects (107 lignes sur 282 ont le bon profil), obtenir 50 réponses tirées au hasard sur la part de clients directs, demander un devis à GTLYS et à Toncarton.
 - Donner ton accord pour créer une vraie production (AUDIT-0111, point E2) : tutelliv.fr tourne aujourd'hui sur une préversion.
-- Plus tard : juriste, en choisir un (aucun contact juriste trouvé dans le Gmail le 30 octobre) ; le brouillon et le zip sont prêts.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
@@ -65,12 +64,13 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
+- LEGAL-1 : vérifier et documenter le respect des exigences applicables (contrats, RGPD, GPS, photos, conservation et fournisseurs), avec les pièces et décisions du propriétaire. Recourir à un juriste reste facultatif ; aucune conformité n’est encore déclarée.
 - Relire le résultat de la recette connectée lancée le 2 novembre (GitHub Actions, TutelLiv CI, lancement manuel) et corriger ce qu'elle signale. Non cliqués : replanifier un échec à l'écran, bandeau de prix du portail.
 - Démarchage : débloquer la place de démo numéro 1, refusé le 1er novembre par le contrôle de sécurité de l'outil ; à refaire si le propriétaire l'autorise. Empêcher qu'une preuve ajoutée en démo bloque une place. Les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
 - DEMO-SLIDES-6-7 : modifier la démo entre la slide 6 et la slide 7, dès que le propriétaire a précisé quelle démo et quel changement.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
-- Juriste : LEGAL-1, LEGAL-LIENS, DATA-02, et la fiche F10 d'INTAKE-1 (obligatoire avant tout vrai message de client).
+- Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
 - Pilotes (ils attendent les entretiens du point 1, qui ne dépendent que de toi pour démarrer) : PILOT-1 et 2, PROD-04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
 - Mesures et mise en vente : SAAS-02, SAAS-03, COST-1, RELEASE-1, SMS, GROWTH-1.
 
@@ -124,7 +124,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **V1-GO — Valider la V1 prête à être essayée.**
 
-  **Qui : Claude — après les essais téléphone et le juriste.**
+  **Qui : Claude — après les essais téléphone et la vérification de conformité.**
 
   Terminé quand : Parcours complet validé avec preuves ; aucun défaut bloquant connu sur ce parcours ; limites documentées ; fonctions non qualifiées explicitement hors promesse. Ce jalon ne vaut ni validation commerciale ni autorisation de production.
 
@@ -138,17 +138,21 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section FACTURX-1.
 
-- [ ] **LEGAL-1 — Préparer le dossier contractuel et données personnelles.**
+- [ ] **LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents.**
 
-  **Qui : Toi.**
+  **Qui : Claude.**
 
-  Terminé quand : Documents validés et cohérents avec le service réel ; responsabilités et support explicités.
+  Terminé quand : exigences applicables identifiées à partir de sources officielles à jour et vérifiées avec preuves ; contrats et documents cohérents avec le service réel ; RGPD, GPS, photos, conservation, fournisseurs, responsabilités et support examinés ; pièces manquantes et écarts consignés puis traités avant les usages concernés. Les décisions et engagements restent à confirmer par le propriétaire.
+
+  Décision du propriétaire du 1er novembre 2026 : retirer le recours obligatoire à un juriste et le remplacer par une vérification documentée de conformité. Cette décision remplace les anciennes dépendances imposant une validation professionnelle dans les documents de travail ; les obligations applicables, contrats nécessaires et contrôles avant données réelles restent à vérifier. Un avis professionnel peut être sollicité au besoin, sans être un préalable systématique. Aucun contrôle de conformité n’est réalisé par cette simple mise à jour.
+
+  Vérifications de cette mise à jour documentaire : résultats consignés dans le journal de `docs/TODO-ARCHIVE.md`. Suite : effectuer la vérification LEGAL-1 ; tâche maintenue ouverte.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section LEGAL-1.
 
 - [ ] **DATA-02 — Prévoir sortie, export et conservation des données.**
 
-  **Qui : Claude — après le juriste.**
+  **Qui : Claude — après la vérification de conformité.**
 
   Terminé quand : Export exploitable et test de suppression sur fixtures ; aucun effet sur une autre entreprise ; politique appliquée au stockage et sauvegardes.
 
@@ -198,7 +202,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **SAAS-03 — Permettre la gestion autonome de l'abonnement.**
 
-  **Qui : Claude — après le juriste.**
+  **Qui : Claude — après la vérification de conformité.**
 
   Terminé quand : chaque action passe par le serveur et un journal auditable ; l'état affiché se réconcilie avec le fournisseur ; seuils de commandes/livreurs produisent des alertes sans doublon ; les rétrogradations avec ressources excédentaires sont refusées ou planifiées selon la règle décidée, jamais destructives ; résiliation conserve l'accès/export selon la politique ; seuls les rôles autorisés gèrent l'abonnement.
 
@@ -222,7 +226,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **GROWTH-1 — Construire le site commercial relié au parcours autonome.**
 
-  **Qui : Claude — après le juriste.**
+  **Qui : Claude — après la vérification de conformité.**
 
   Terminé quand : un prospect comprend pour qui est le produit, le problème résolu, les trois espaces, le prix HT/TTC indicatif, options et dépassements, la différence démo/pilote/découverte premium et la prochaine étape ; navigation responsive et accessible ; contenu cohérent avec le catalogue actif ; formulaires protégés contre abus ; pages légales publiées seulement après validation.
 
@@ -230,7 +234,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public.**
 
-  **Qui : Claude — après le juriste.**
+  **Qui : Claude — après la vérification de conformité.**
 
   Terminé quand : chaque pied de page public (accueil, Fonctionnalités, Tarifs, Démonstration, Contact, inscription et connexion) mène aux mentions légales et à la politique de confidentialité ; les formulaires qui collectent des données (Contact, inscription) y renvoient au point de collecte ; contenu issu des pièces validées de LEGAL-1, sans identité, SIREN, adresse ni engagement inventés ; recette navigateur Light/Dark, 1440 et 390.
 
@@ -281,17 +285,17 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOTS-UNIFIES — Employer les mêmes mots partout à l'écran.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. Mélanges constatés : « Chauffeur » et « Livreur » ; « Relevé » et « Facture » ; « Équipe » pour « Gestion des comptes » ; « Nouvel utilisateur » pour « Inviter un utilisateur » ; « Analytics avancés » et « Statistiques avancées » ; « Support prioritaire » et « Assistance prioritaire » ; « Dispatch automatique » et « Dispatch intelligent ».
 
-  **Qui : Claude — après le juriste.**
+  **Qui : Claude — après la vérification de conformité.**
 
   « Livreur » et les autres mots sont unifiés ; reste seulement « Relevé » et « Facture ».
 
   **Modèle conseillé : GPT‑6 Luna · effort moyen.**
 
-  À trancher : recommandation « Livreur » partout, sauf le code interne. « Relevé » a été choisi exprès parce que le document n'est pas une facture électronique réglementaire : ne pas le remplacer par « Facture » sans avis du juriste (LEGAL-1), en lien avec le point C2 d'AUDIT-0111. Le reste peut avancer sans attendre.
+  À trancher : recommandation « Livreur » partout, sauf le code interne. « Relevé » a été choisi exprès parce que le document n'est pas une facture électronique réglementaire : ne pas le remplacer par « Facture » sans vérification des exigences applicables (LEGAL-1), en lien avec le point C2 d'AUDIT-0111. Le reste peut avancer sans attendre.
 
   Terminé quand : un seul mot par notion dans les écrans, e-mails et PDF des trois espaces ; recherche de chaque ancien mot sans résultat visible par l'utilisateur ; tests à jour, `npm run check` vert et clic réel navigateur.
 
-  Source / dépendance / blocage : juriste pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
+  Source / dépendance / blocage : vérification des exigences applicables pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
 
 - [ ] **DEMO-SLIDES-6-7 — Modifier la démo entre la slide 6 et la slide 7.** Demande du propriétaire du 2 novembre 2026, notée telle quelle.
 
