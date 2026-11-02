@@ -67,7 +67,8 @@ jobs:
     timeout-minutes: 10
     services:
       postgres:
-        image: postgres:16
+        # Image Supabase : les migrations utilisent ses rôles et ses extensions (http, pg_cron).
+        image: supabase/postgres:15.8.1.135
         env:
           POSTGRES_PASSWORD: ci
         ports:
@@ -94,10 +95,10 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
-      # Les migrations retirent les droits de ces rôles, présents d'office sur Supabase.
-      - name: Créer les rôles Supabase
+      # Le stockage Supabase est un service à part : seule sa table des espaces est simulée ici.
+      - name: Préparer le stockage Supabase
         run: |
-          docker exec "${{ job.services.postgres.id }}" psql -U postgres -c "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;"
+          docker exec -e PGPASSWORD=ci "${{ job.services.postgres.id }}" psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS storage; CREATE TABLE IF NOT EXISTS storage.buckets (id text PRIMARY KEY, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);"
 
       - name: Appliquer toutes les migrations
         run: npx prisma migrate deploy
