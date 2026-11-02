@@ -2536,3 +2536,45 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 - 2026-10-29 — RECETTE-2810 close : recette navigateur de la série (E2E 19/19 hors `fixme`, console propre sur les trois espaces), LCP du logo sombre corrigé, décisions 6, 7, 11 et 12 prises, points 9, 14, 15 et 18 acceptés comme limites connues. LEGAL-LIENS : pages légales provisoires et liens publiés, case ouverte en attente de LEGAL-1. `npm run check` 1379/1379.
 - 2026-10-29 — Bilan de l'intégration du 28 octobre (`integration/2026-10-28`, neuf chantiers : fiabilité, sécurité, design du portail, preuve de livraison, Factur-X, commande par message, dispatch GPS, facturation et correctifs Codex). `npm run check` 1145/1145 sur 557e9d5, build à 146 pages, recette navigateur sans défaut bloquant ni important, audit Codex favorable côté code au complément 3 (C3 et C4 corrigés), avec réserves. Cinq migrations appliquées sur tutelliv-dev uniquement ; rien n'est poussé et la préproduction n'est pas mise à jour. DEMO-3 (tranches 1, 2, 3, 5, 6) et DESIGN-1 (tranche portail) restent ouvertes avec leur état ; sept tâches ajoutées : FACTURX-1, INTAKE-1, POD-2, OPS-FIAB, SEC-AUDIT, RECETTE-2810 et PROPRIO-2810, toutes ouvertes. Aucune case cochée : aucune validation terrain, pilote ou propriétaire.
 - 2026-10-29 — Réinitialisation du mot de passe réparée (SEC-05) : refresh token court de Supabase accepté, messages d'erreur distincts, nouvel essai possible après `same_password`. `npm run check` 1358/1358 et parcours réel en préproduction réussi sans résidu ; non déployé.
+
+## Closes le 2 novembre 2026
+
+- [x] **FACT-KM — Faire correspondre le prix annoncé et le prix facturé d'une course.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. « Tarification des courses » (forfait, prix au km, minimum, majorations) ne sert qu'à l'estimation montrée au client (`courier-estimate.service.ts`). La facture se calcule sur les zones, les suppléments, les achats et les lignes libres (`invoice.service.ts`, `order-invoice-form.tsx` : aucune référence au tarif des courses). Un client peut donc être facturé autrement que ce qu'on lui a annoncé.
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort élevé (montants facturés).**
+
+  À trancher en début de tâche : préremplir la facture d'une course avec le calcul de l'estimation, ou réserver une seule méthode de prix par entreprise. Recommandation : préremplir, en laissant l'entreprise corriger avant d'enregistrer. Rester honnête sur la distance « environ » déjà retenue.
+
+  Terminé quand : pour une même course, estimation et facture partent du même calcul, à la main comme à la livraison, ou l'écran explique clairement la différence ; factures déjà émises inchangées ; tests des montants, `npm run check` vert et clic réel navigateur.
+
+  Source / dépendance / blocage : aucun blocage. Refaire ensuite le plan 4 de la vidéo E5 (`outputs/videos-formation/scenarios/`).
+
+  Fait le 2 novembre 2026 : prix annoncé repris sur la facture d'une course si l'estimation est affichée, sinon zones ; le client voit le total TVA comprise. Vérifié : `scripts/audit0111/connected.ts` sur tutelliv-dev, clic réel du préremplissage. Bandeau du portail non cliqué.
+
+- [x] **FACT-AUTO-VIDE — Prévenir quand la facture automatique ne peut pas partir.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. Avec « Émettre la facture à la livraison », une commande sans zone reconnue ni achat lève `DELIVERY_INVOICE_EMPTY` (`invoice.service.ts:238`), erreur définitive sans nouvel essai ; aucun écran de l'entreprise ne le signale. La livraison reste alors sans facture, sans que personne le sache.
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
+
+  Terminé quand : l'entreprise voit, à un endroit qu'elle consulte déjà et dans ses mots, quelle commande n'a pas de facture, pourquoi, et peut l'émettre à la main ou ajouter la zone manquante ; le même contrôle couvre l'autre erreur définitive (`INVOICE_AMOUNT_TOO_LARGE`) ; tests du cas réel, `npm run check` vert et clic réel navigateur.
+
+  Source / dépendance / blocage : aucun blocage. Adapter ensuite le plan 8 de la vidéo F1.
+
+  Fait le 2 novembre 2026 : carte « livraison sans facture » dans Paiements. Vérifié sur tutelliv-dev et par clic réel.
+
+- [x] **ANALYSE-ENCAISSE — Corriger le pourcentage encaissé de la page Analyse.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. `analytics.service.ts:123-128` compte « Encaissé » (payées) et « En attente » (en attente, brouillons), sans les factures en retard ; celles-ci et les annulées comptent pourtant dans « Facturé ». Le pourcentage part de `collectedShare(encaissé, en attente)` : il oublie les retards et paraît donc meilleur que la réalité. Les brouillons, eux, n'ont pas encore été facturés au client.
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6 Luna · effort moyen.**
+
+  Terminé quand : retards affichés à part ; annulées et brouillons traités selon une règle écrite ; « Encaissé + En attente + En retard » égale le total affiché ; le pourcentage se calcule sur ce total ; test avec une facture de chaque statut, `npm run check` vert et clic réel navigateur.
+
+  Source / dépendance / blocage : aucun blocage. Rendre ensuite visible la carte « Encaissement » dans la vidéo F3.
+
+  Fait le 2 novembre 2026 : retards affichés, brouillons et annulées exclus, total égal à la somme. Vérifié par test et en navigateur.
+
+- 2026-11-02 — AUDIT-0111 : E1, S1 à S5, C1 à C6 et P1 en préproduction (migrations `invoice_counters` et `mots_unifies` appliquées). `npm run check` 1 518 tests verts, E2E ciblés 22/22, build OK, CI migrations verte, récurrences lancées sur tutelliv.fr (16 générées, 0 en retard). Recette connectée lancée sur la préproduction, résultat non relu : session coupée à la demande du propriétaire.

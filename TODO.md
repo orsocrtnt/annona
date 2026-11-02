@@ -4,17 +4,12 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**93 tâches terminées sur 122 — 76 %**
+**96 tâches terminées sur 123 — 78 %**
 
-`███████████████░░░░░` · 29 tâches restantes
+`████████████████░░░░` · 27 tâches restantes
 
 **À faire par Claude**
 
-- AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
-- FACT-KM — Faire correspondre le prix annoncé et le prix facturé d'une course
-- FACT-AUTO-VIDE — Prévenir quand la facture automatique ne peut pas partir
-- ANALYSE-ENCAISSE — Corriger le pourcentage encaissé de la page Analyse
-- MOTS-UNIFIES — Employer les mêmes mots partout à l'écran
 - V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et le juriste)
 - DATA-02 — Prévoir sortie, export et conservation des données (après le juriste)
 - PROD-04 — Définir les mesures de valeur (après les pilotes)
@@ -24,6 +19,7 @@
 - GROWTH-1 — Construire le site commercial relié au parcours autonome (après le juriste)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (après le juriste)
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
+- MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après le juriste)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -37,11 +33,16 @@
 - LEGAL-1 — Préparer le dossier contractuel et données personnelles
 - PROD-02 — Documenter le travail actuel et sa difficulté principale
 - INTAKE-1 — Commande par message IA (coller un message)
+- AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
 - PROPRIO-2810 — Actions du propriétaire avant mise en ligne
 - ONBOARD-1 — Guider jusqu’à la première livraison (pendant les pilotes)
 - OFFER-1 — Valider la grille cible et l'offre pilote (pendant les entretiens et les pilotes)
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
+
+**À classer**
+
+- DEMO-SLIDES-6-7 — Modifier la démo entre la slide 6 et la slide 7
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -64,11 +65,9 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- Commandes récurrentes en panne sur tutelliv.fr : rien ne les déclenche sur le site, 10 sur 23 (données de test) étaient en retard le 1er novembre (AUDIT-0111, point E1). Corrigé en local (`86fb1bd`), reste à publier et à vérifier en ligne.
-- Faille sur les comptes invités : une inscription permettait de prendre un compte invité (AUDIT-0111, point S1). Corrigé en local (`86fb1bd`), reste à publier et à vérifier en ligne avant le premier pilote.
+- Relire le résultat de la recette connectée lancée le 2 novembre (GitHub Actions, TutelLiv CI, lancement manuel) et corriger ce qu'elle signale. Non cliqués : replanifier un échec à l'écran, bandeau de prix du portail.
 - Démarchage : débloquer la place de démo numéro 1, refusé le 1er novembre par le contrôle de sécurité de l'outil ; à refaire si le propriétaire l'autorise. Empêcher qu'une preuve ajoutée en démo bloque une place. Les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
-- AUDIT-0111 : les corrections avant pilote, dans l'ordre de la tâche (commandes récurrentes en panne sur tutelliv.fr, compte invité, raccourcis de test, changements d'état, double commande, lecture seule, démo, numéros de facture, dispatch, limites de tentatives, contrôle automatique sur base, TODO réduite). Aucune nouvelle fonction d'ici là.
-- Écarts trouvés en écrivant les vidéos de formation : prix annoncé et prix facturé d'une course (FACT-KM), facture automatique qui échoue sans prévenir (FACT-AUTO-VIDE), pourcentage encaissé faux (ANALYSE-ENCAISSE), mots différents à l'écran (MOTS-UNIFIES, avis du juriste pour « Relevé » et « Facture » seulement).
+- DEMO-SLIDES-6-7 : modifier la démo entre la slide 6 et la slide 7, dès que le propriétaire a précisé quelle démo et quel changement.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Juriste : LEGAL-1, LEGAL-LIENS, DATA-02, et la fiche F10 d'INTAKE-1 (obligatoire avant tout vrai message de client).
@@ -253,7 +252,9 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote.** Audit demandé par le propriétaire en carte blanche ; rapport PDF de 15 pages avec étude de marché, local et confidentiel : `outputs/audit-2026-11-01/TutelLiv-Audit-2026-11-01.pdf` (constats, fichiers et lignes en annexe). Conclusion : produit sérieux, aucune confrontation au marché ; geler les nouvelles fonctions, corriger ce qui suit, mener dix entretiens en parallèle, puis un seul pilote.
 
-  **Qui : Claude.**
+  **Qui : Toi.**
+
+  État du 2 novembre 2026 : tout est en préproduction sauf E2 (accord du propriétaire) ; numérotation C2 à confirmer par un comptable ; S4 : la limite contournable en appelant Supabase directement reste ouverte. Inscription en ligne fermée sur tutelliv.fr tant que le paiement n\'est pas réel.
 
   **Modèle conseillé : GPT‑6 Astra · effort élevé (sécurité, états métier).**
 
@@ -276,41 +277,11 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   Vérifications de l'audit : `npm run check` vert (1 492 tests) ; `npm audit --omit=dev` sans faille ; journaux Vercel sur 7 jours, conseillers Supabase, comptages en base et pages publiques relus. Aucun code ni donnée modifiés. Non vérifié : intérieur de l'application non cliqué, E2E et build non relancés localement, performance non mesurée, failles lues dans le code mais non rejouées, environ 100 routes contrôlées seulement sur la présence de leur garde d'accès.
 
-- [ ] **FACT-KM — Faire correspondre le prix annoncé et le prix facturé d'une course.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. « Tarification des courses » (forfait, prix au km, minimum, majorations) ne sert qu'à l'estimation montrée au client (`courier-estimate.service.ts`). La facture se calcule sur les zones, les suppléments, les achats et les lignes libres (`invoice.service.ts`, `order-invoice-form.tsx` : aucune référence au tarif des courses). Un client peut donc être facturé autrement que ce qu'on lui a annoncé.
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : GPT‑6.1 Sol · effort élevé (montants facturés).**
-
-  À trancher en début de tâche : préremplir la facture d'une course avec le calcul de l'estimation, ou réserver une seule méthode de prix par entreprise. Recommandation : préremplir, en laissant l'entreprise corriger avant d'enregistrer. Rester honnête sur la distance « environ » déjà retenue.
-
-  Terminé quand : pour une même course, estimation et facture partent du même calcul, à la main comme à la livraison, ou l'écran explique clairement la différence ; factures déjà émises inchangées ; tests des montants, `npm run check` vert et clic réel navigateur.
-
-  Source / dépendance / blocage : aucun blocage. Refaire ensuite le plan 4 de la vidéo E5 (`outputs/videos-formation/scenarios/`).
-
-- [ ] **FACT-AUTO-VIDE — Prévenir quand la facture automatique ne peut pas partir.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. Avec « Émettre la facture à la livraison », une commande sans zone reconnue ni achat lève `DELIVERY_INVOICE_EMPTY` (`invoice.service.ts:238`), erreur définitive sans nouvel essai ; aucun écran de l'entreprise ne le signale. La livraison reste alors sans facture, sans que personne le sache.
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : GPT‑6.1 Sol · effort moyen.**
-
-  Terminé quand : l'entreprise voit, à un endroit qu'elle consulte déjà et dans ses mots, quelle commande n'a pas de facture, pourquoi, et peut l'émettre à la main ou ajouter la zone manquante ; le même contrôle couvre l'autre erreur définitive (`INVOICE_AMOUNT_TOO_LARGE`) ; tests du cas réel, `npm run check` vert et clic réel navigateur.
-
-  Source / dépendance / blocage : aucun blocage. Adapter ensuite le plan 8 de la vidéo F1.
-
-- [ ] **ANALYSE-ENCAISSE — Corriger le pourcentage encaissé de la page Analyse.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. `analytics.service.ts:123-128` compte « Encaissé » (payées) et « En attente » (en attente, brouillons), sans les factures en retard ; celles-ci et les annulées comptent pourtant dans « Facturé ». Le pourcentage part de `collectedShare(encaissé, en attente)` : il oublie les retards et paraît donc meilleur que la réalité. Les brouillons, eux, n'ont pas encore été facturés au client.
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : GPT‑6 Luna · effort moyen.**
-
-  Terminé quand : retards affichés à part ; annulées et brouillons traités selon une règle écrite ; « Encaissé + En attente + En retard » égale le total affiché ; le pourcentage se calcule sur ce total ; test avec une facture de chaque statut, `npm run check` vert et clic réel navigateur.
-
-  Source / dépendance / blocage : aucun blocage. Rendre ensuite visible la carte « Encaissement » dans la vidéo F3.
-
 - [ ] **MOTS-UNIFIES — Employer les mêmes mots partout à l'écran.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. Mélanges constatés : « Chauffeur » et « Livreur » ; « Relevé » et « Facture » ; « Équipe » pour « Gestion des comptes » ; « Nouvel utilisateur » pour « Inviter un utilisateur » ; « Analytics avancés » et « Statistiques avancées » ; « Support prioritaire » et « Assistance prioritaire » ; « Dispatch automatique » et « Dispatch intelligent ».
 
-  **Qui : Claude.**
+  **Qui : Claude — après le juriste.**
+
+  « Livreur » et les autres mots sont unifiés ; reste seulement « Relevé » et « Facture ».
 
   **Modèle conseillé : GPT‑6 Luna · effort moyen.**
 
@@ -319,6 +290,16 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   Terminé quand : un seul mot par notion dans les écrans, e-mails et PDF des trois espaces ; recherche de chaque ancien mot sans résultat visible par l'utilisateur ; tests à jour, `npm run check` vert et clic réel navigateur.
 
   Source / dépendance / blocage : juriste pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
+
+- [ ] **DEMO-SLIDES-6-7 — Modifier la démo entre la slide 6 et la slide 7.** Demande du propriétaire du 2 novembre 2026, notée telle quelle.
+
+  **Qui : le propriétaire précise, puis Claude.**
+
+  À préciser avant de commencer : de quelle démo il s'agit (la mini-démo de l'accueil, dont les étapes 6 et 7 sont « Facture » et « Paiements », ou la présentation de rendez-vous, dont les diapositives 6 et 7 sont « Vos clients » et « Où en est TutelLiv ») et ce qu'il faut changer. Hypothèse non confirmée : la mini-démo.
+
+  Terminé quand : le changement demandé est visible à cet endroit, vérifié en cliquant, et les supports du kit qui en parlent sont à jour.
+
+  Source / dépendance / blocage : précision du propriétaire. Rien n'a été modifié pour l'instant.
 
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.**
 
