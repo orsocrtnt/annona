@@ -81,8 +81,8 @@ async function main() {
     const now = new Date();
     await activateManualPilot({
       companyId: companyB, startsAt: new Date(now.getTime() - 60_000), endsAt: new Date(now.getTime() + 86_400_000),
-      limits: { drivers: 5, admins: 1, dispatchers: 1, ordersPerMonth: 100 },
-    } as never);
+      limits: { drivers: 5, admins: 1, dispatchers: 1, monthlyOrders: 100 },
+    });
     const token = `e2e-audit-${tag}-lien-public`;
     await prisma.companyIntakeChannel.create({ data: { companyId: companyB, orderLinkToken: token, orderLinkEnabled: true } });
     const form = {

@@ -7,7 +7,8 @@ const proofPath = "outputs/support1/browser.json";
 test("SUPPORT-1 : ticket client, réponse staff, notification et résolution visibles", async ({
   page,
 }) => {
-  test.setTimeout(120_000);
+  // Le serveur de dev compile chaque page à la première visite : 2 minutes ne suffisent pas toujours.
+  test.setTimeout(300_000);
   const marker = `SUPPORT-1 navigateur ${crypto.randomUUID()}`;
   const pageErrors: string[] = [];
   let ticketId: string | null = null;
