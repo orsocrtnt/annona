@@ -8,6 +8,31 @@
 
 `████████████████░░░░` · 24 tâches restantes
 
+- SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex
+- POD-2 — Preuve de livraison complète : signature, PDF, envoi et relevés
+- MOB-01C — Réaliser les essais iPhone et Android
+- ONBOARD-1 — Guider jusqu’à la première livraison
+- OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation
+- V1-GO — Valider la V1 prête à être essayée
+- FACTURX-1 — Factur-X EN 16931 des factures de livraison
+- LEGAL-1 — Préparer le dossier contractuel et données personnelles
+- DATA-02 — Prévoir sortie, export et conservation des données
+- PROD-02 — Documenter le travail actuel et sa difficulté principale
+- PROD-04 — Définir les mesures de valeur
+- OFFER-1 — Valider la grille cible et l'offre pilote
+- PILOT-1 — Recruter et conduire trois pilotes accompagnés
+- PILOT-2 — Décider avec les preuves des pilotes
+- SAAS-03 — Permettre la gestion autonome de l'abonnement
+- SAAS-02 — Mesurer le revenu et la santé du SaaS
+- COST-1 — Simuler les coûts d'exploitation et la marge contributive
+- GROWTH-1 — Construire le site commercial relié au parcours autonome
+- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public
+- INTAKE-1 — Commande par message IA (coller un message)
+- DISPATCH-5 — Imprévus et mesure du dispatch
+- PROPRIO-2810 — Actions du propriétaire avant mise en ligne
+- RELEASE-1 — Réaliser la recette de mise en vente
+- SMS — Ajouter seulement les extensions justifiées
+
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
@@ -2362,6 +2387,7 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 
 - 2026-10-27 — UX-03, variantes et alertes : alertes et tableau de bord vers la fiche livraison ; échéance et retard pour le client et le livreur, sans consigne interne. Playwright 4/4 sur la démo, `npm run check` 721/722 (seul échec : test de la mini-démo d'accueil en cours chez l'agent design). Aucune migration ni push.
 
+- 2026-11-01 — Liste des tâches à faire ajoutée sous la jauge, générée par `npm run todo:progress`.
 - 2026-10-30 — MOBILE-WEB close : parcours principaux au format téléphone 20/20 (1 ignoré, téléphone réel), captures Clair/Sombre à 390 px.
 - 2026-10-29 — MOBILE-WEB : mode Sombre et marqueurs de carte couverts, logo de l'accueil porté à 44 px, option `E2E_MOBILE=1` ; bloc « Ce qu'il reste vraiment à faire » ajouté en tête du fichier ; actions du propriétaire inscrites dans son agenda du 30 octobre.
 - 2026-10-29 — MOB-01C : confirmation hors zone signalée par une note interne d'incident avec la distance, visible de l'équipe seulement. `npm run check` 1393/1393.

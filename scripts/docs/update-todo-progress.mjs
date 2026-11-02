@@ -29,12 +29,16 @@ const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
 const gaugeWidth = 20;
 const filled = total === 0 ? 0 : Math.round((completed / total) * gaugeWidth);
 const gauge = `${"█".repeat(filled)}${"░".repeat(gaugeWidth - filled)}`;
+// Liste en simples tirets : seules les cases des tâches comptent dans la jauge.
+const openTasks = [...todo.matchAll(/^- \[ \] \*\*(.+?)\.?\*\*/gm)].map((match) => `- ${match[1]}`).join("\n");
 const block = `${startMarker}
 ## Progression globale
 
 **${completed} tâches terminées sur ${total} — ${percent} %**
 
 \`${gauge}\` · ${remaining} tâches restantes
+
+${openTasks}
 
 _Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : \`npm run todo:progress\`, automatiquement avant \`npm run docs:verify\`._
 ${endMarker}`;
