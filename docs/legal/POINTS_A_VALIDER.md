@@ -4,9 +4,9 @@ Cette liste contient les inconnues qui empêchent encore des documents définiti
 
 ## Identité de l'éditeur
 
-- forme juridique, dénomination et nom commercial : **INCONNUS** ;
-- SIREN/SIRET, RCS/RNE et TVA : **INCONNUS** ;
-- siège, représentant légal et contact juridique : **INCONNUS** ;
+- forme juridique et nom : entrepreneur individuel, nom et adresse publiés sur la page Mentions légales, justificatif à fournir ;
+- SIREN/SIRET, RNE et TVA : **EN ATTENTE** (pas de numéro le 1er novembre 2026) ;
+- e-mail et téléphone publiables, directeur de la publication : **À FOURNIR** ;
 - assurance responsabilité professionnelle : **INCONNUE** ;
 - responsable interne du dossier données et suppléant : **À NOMMER** ;
 - nécessité de désigner un DPO : **À ANALYSER**, sans conclure à partir de la taille seule.

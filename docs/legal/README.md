@@ -1,6 +1,8 @@
 # LEGAL-1 — dossier de revue France
 
-Version de travail du 18 octobre 2026, destinée au juriste et au propriétaire. Ce dossier organise les questions et pièces à valider ; il ne contient ni avis juridique, ni contrat prêt à signer, ni attestation de conformité. **LEGAL-1 reste ouverte.** L'identité juridique de l'exploitant et la validation professionnelle manquent.
+**État à jour : [vérification du 2 novembre 2026](VERIFICATION_2026-11-02.md).** Depuis le 1er novembre 2026, le recours à un juriste n'est plus obligatoire : là où ce dossier dit « juriste » ou « validation professionnelle », lire « vérification documentée, décision du propriétaire », un avis restant possible au besoin.
+
+Version de travail du 18 octobre 2026, destinée au propriétaire. Ce dossier organise les questions et pièces à valider ; il ne contient ni avis juridique, ni contrat prêt à signer, ni attestation de conformité. **LEGAL-1 reste ouverte.** L'identité juridique de l'exploitant et la validation professionnelle manquent.
 
 ## Mode de lecture
 

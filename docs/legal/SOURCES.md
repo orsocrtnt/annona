@@ -1,6 +1,6 @@
 # Sources officielles du dossier LEGAL-1
 
-Consultation : 18 octobre 2026. Cette liste sert à orienter la revue professionnelle. Une page officielle ne dispense pas d'examiner son champ d'application, la version du texte et les faits propres à TutelLiv ou à chaque entreprise cliente.
+Consultation : 18 octobre 2026, complétée le 2 novembre 2026 (section ci-dessous). Cette liste sert à orienter la revue professionnelle. Une page officielle ne dispense pas d'examiner son champ d'application, la version du texte et les faits propres à TutelLiv ou à chaque entreprise cliente.
 
 ## Protection des données
 
@@ -35,3 +35,12 @@ La décision produit consiste à fournir un export comptable, pas à présenter 
 ## Sources fournisseurs à recueillir
 
 Les contrats, DPA, listes de sous-traitants ultérieurs, régions, mécanismes de transfert et politiques de suppression des comptes Supabase, Vercel, Resend et futurs fournisseurs doivent être archivés dans leur version effectivement acceptée. Une documentation publique consultée sans connaître le compte, le plan et l'entité contractante ne suffit pas à valider la chaîne.
+
+## Ajouts du 2 novembre 2026
+
+- [Service Public — mentions obligatoires d'un site](https://entreprendre.service-public.gouv.fr/vosdroits/F37351), vérifié le 13 octobre 2026 : mentions d'un entrepreneur individuel, sanctions, CGV, résiliation en ligne.
+- [CNIL — prospection par courrier électronique](https://www.cnil.fr/fr/la-prospection-commerciale-par-courrier-electronique), 10 juin 2026 : intérêt légitime et opposition entre professionnels.
+- [CNIL — démarchage commercial](https://www.cnil.fr/fr/demarchage-commercial) et [décret n° 2026-662 du 23 juillet 2026](https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054483939) : consentement des consommateurs à partir du 11 août 2026.
+- [CNIL — liste des traitements exigeant une AIPD](https://www.cnil.fr/sites/cnil/files/atoms/files/liste-traitements-aipd-requise.pdf).
+- [Commission européenne — Data Act](https://digital-strategy.ec.europa.eu/en/factpages/data-act-explained) et [règlement (UE) 2023/2854](https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng) : changement de fournisseur ; texte complet non lu par l'outil.
+- [Vercel — conditions](https://vercel.com/legal/terms), version du 19 octobre 2026, et [DPA](https://vercel.com/legal/dpa) ; [Supabase — DPA](https://supabase.com/legal/dpa) ; [Anthropic — conditions commerciales](https://www.anthropic.com/legal/commercial-terms) ; [OSMF — règles des tuiles](https://operations.osmfoundation.org/policies/tiles/).

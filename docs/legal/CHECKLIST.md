@@ -1,6 +1,6 @@
 # Porte juridique avant données réelles
 
-Cette checklist ne remplace pas les portes techniques de `TODO.md`. Une ligne est considérée satisfaite uniquement avec une preuve datée, un responsable identifié et, lorsqu'indiqué, une validation professionnelle.
+Cette checklist ne remplace pas les portes techniques de `TODO.md`. Une ligne est considérée satisfaite uniquement avec une preuve datée et un responsable identifié. Depuis le 1er novembre 2026, la mention « juriste » ou « validateur juridique » se lit « vérification documentée et décision du propriétaire » ; état au 2 novembre : [vérification](VERIFICATION_2026-11-02.md).
 
 ## Entité et contrats
 

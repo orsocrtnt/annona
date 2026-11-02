@@ -28,7 +28,8 @@ export default function ConfidentialitePage() {
       <LegalSection title="Formulaire de contact">
         <p>
           Données demandées : nom, e-mail et message ; société et téléphone si vous les indiquez. Elles servent
-          uniquement à vous répondre.
+          uniquement à vous répondre. Ce traitement repose sur notre intérêt légitime à répondre aux demandes reçues.
+          Les messages sont conservés trois ans après le dernier échange.
         </p>
         <p>
           Votre adresse IP n&apos;est pas enregistrée : seule une empreinte chiffrée sert à limiter les envois
@@ -40,7 +41,8 @@ export default function ConfidentialitePage() {
         <p>
           TutelLiv peut contacter par e-mail ou par téléphone des entreprises de coursiers et de livraison, au sujet
           de leur activité professionnelle. Les coordonnées proviennent de registres publics d&apos;entreprises, des
-          sites de ces entreprises et d&apos;annuaires professionnels ; le premier message indique leur origine.
+          sites de ces entreprises et d&apos;annuaires professionnels ; le premier message indique leur origine. Ce
+          traitement repose sur notre intérêt légitime à faire connaître notre service à ces professionnels.
         </p>
         <p>
           Données utilisées : nom de l&apos;entreprise, nom et fonction de l&apos;interlocuteur, e-mail et téléphone
@@ -57,9 +59,10 @@ export default function ConfidentialitePage() {
         <p>
           Données demandées : prénom, nom, e-mail professionnel, mot de passe, nom de l&apos;entreprise, adresse
           de facturation ; raison sociale, SIREN, SIRET et téléphone si vous les indiquez. Elles servent à créer
-          votre compte, à gérer votre abonnement et à vous facturer.
+          votre compte, à gérer votre abonnement et à vous facturer. Ce traitement repose sur le contrat conclu avec
+          votre entreprise.
         </p>
-        <p>Le paiement est confié au prestataire de paiement Stripe.</p>
+        <p>L&apos;inscription en ligne n&apos;est pas encore ouverte : aucun paiement n&apos;est possible sur ce site pour l&apos;instant.</p>
       </LegalSection>
 
       <LegalSection title="Données traitées dans l'application">
@@ -72,22 +75,27 @@ export default function ConfidentialitePage() {
 
       <LegalSection title="Hébergement et destinataires">
         <p>
-          Les données sont hébergées par Vercel (site) et Supabase (base de données, région de Paris). Elles ne
-          sont ni vendues ni utilisées à des fins publicitaires.
+          Les données sont hébergées par Vercel Inc., aux États-Unis (site), et Supabase Pte Ltd, à Singapour (base
+          de données, région de Paris). Les e-mails sont envoyés par Resend. Les cartes et les itinéraires de
+          l&apos;application s&apos;appuient sur OpenStreetMap, OSRM et le service d&apos;adresses de l&apos;IGN. Ces
+          prestataires ne sont pas tous établis dans l&apos;Union européenne. Les données ne sont ni vendues ni
+          utilisées à des fins publicitaires.
         </p>
       </LegalSection>
 
       <LegalSection title="Durée de conservation">
         <p>
-          <em>En cours de définition.</em> Les durées seront publiées ici avant l&apos;ouverture commerciale.
+          Messages de contact et prospection : trois ans après le dernier échange. <em>Autres données : en cours de
+          définition.</em> Ces durées seront publiées ici avant l&apos;ouverture commerciale.
         </p>
       </LegalSection>
 
       <LegalSection title="Cookies et stockage local">
         <p>
           Le site n&apos;utilise aucun traceur publicitaire. Il dépose seulement ce qui est nécessaire à son
-          fonctionnement : la session de connexion, le suivi de l&apos;inscription en cours et votre choix de
-          thème clair ou sombre.
+          fonctionnement : la session de connexion ou de démonstration, le suivi de l&apos;inscription en cours,
+          votre choix de thème clair ou sombre et vos préférences d&apos;affichage. L&apos;application livreur garde
+          aussi sur l&apos;appareil les actions en attente d&apos;envoi quand le réseau manque.
         </p>
       </LegalSection>
 

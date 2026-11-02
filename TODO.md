@@ -10,7 +10,6 @@
 
 **À faire par Claude**
 
-- LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents
 - V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
 - DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
 - PROD-04 — Définir les mesures de valeur (après les pilotes)
@@ -36,6 +35,7 @@
 - AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
 - PROPRIO-2810 — Actions du propriétaire avant mise en ligne
 - ONBOARD-1 — Guider jusqu’à la première livraison (pendant les pilotes)
+- LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents (fournir les pièces et décider, puis Claude)
 - OFFER-1 — Valider la grille cible et l'offre pilote (pendant les entretiens et les pilotes)
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
@@ -54,13 +54,14 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Étude de marché (`outputs/reports/Marché TutelLiv livraison B2B France.md`, environ 840 entreprises visées, hypothèse à mesurer) : trier la liste de prospects (107 lignes sur 282 ont le bon profil), obtenir 50 réponses tirées au hasard sur la part de clients directs, demander un devis à GTLYS et à Toncarton.
 - Donner ton accord pour créer une vraie production (AUDIT-0111, point E2) : tutelliv.fr tourne aujourd'hui sur une préversion.
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
+- LEGAL-1 (section 4 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail, téléphone et les textes J5 dans `docs/legal/contrats/`, puis décider des durées de conservation.
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- LEGAL-1 : vérifier et documenter le respect des exigences applicables (contrats, RGPD, GPS, photos, conservation et fournisseurs), avec les pièces et décisions du propriétaire. Recourir à un juriste reste facultatif ; aucune conformité n’est encore déclarée.
+- LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type. Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - Relire le premier passage de la recette connectée, prévu chaque nuit à 3 h UTC (22 h à New York, première fois le 2 novembre au soir), et corriger ce qu'elle signale. Aucune recette connectée n'apparaît dans GitHub Actions depuis le 20 octobre. Non cliqués : replanifier un échec à l'écran, bandeau de prix du portail.
 - Démarchage : les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
 
@@ -135,13 +136,13 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents.**
 
-  **Qui : Claude.**
+  **Qui : Toi — fournir les pièces et décider, puis Claude.**
 
   Terminé quand : exigences applicables identifiées à partir de sources officielles à jour et vérifiées avec preuves ; contrats et documents cohérents avec le service réel ; RGPD, GPS, photos, conservation, fournisseurs, responsabilités et support examinés ; pièces manquantes et écarts consignés puis traités avant les usages concernés. Les décisions et engagements restent à confirmer par le propriétaire.
 
-  Décision du propriétaire du 1er novembre 2026 : retirer le recours obligatoire à un juriste et le remplacer par une vérification documentée de conformité. Cette décision remplace les anciennes dépendances imposant une validation professionnelle dans les documents de travail ; les obligations applicables, contrats nécessaires et contrôles avant données réelles restent à vérifier. Un avis professionnel peut être sollicité au besoin, sans être un préalable systématique. Aucun contrôle de conformité n’est réalisé par cette simple mise à jour.
+  État du 2 novembre 2026 : première vérification faite, `docs/legal/VERIFICATION_2026-11-02.md` (exigences, sources, constats, verdicts). Aucune conformité déclarée. Démo fictive et entretiens de recherche possibles sous conditions ; vente et vraies données non. Nouveaux constats : Data Act absent du dossier ; offre Vercel Hobby non commerciale, contenus utilisables pour entraîner des IA, DPA réservé aux offres Pro et Enterprise ; réception des factures électroniques déjà obligatoire ; mentions légales incomplètes. Vérifications : `npm run check` 1 529/1 529 ; `verify-docs` OK. Non vérifié : voir section 5 du document.
 
-  Vérifications de cette mise à jour documentaire : résultats consignés dans le journal de `docs/TODO-ARCHIVE.md`. Suite : effectuer la vérification LEGAL-1 ; tâche maintenue ouverte.
+  Suite : les pièces et décisions de la section 4 du document. Écarts à traiter par Claude ensuite : purge et remise des données (DATA-02), file hors ligne sans expiration, analyse d'impact type, fournisseur de cartes.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section LEGAL-1.
 
