@@ -128,6 +128,9 @@ test("AUTH-ROLE mini-admin : un écran hors de ses modules est refusé côté se
   assert.deepEqual(evaluatePageAccess("/dispatch/intake", dispatch), { kind: "redirect", location: "/dispatch" });
   assert.deepEqual(evaluatePageAccess("/dispatch/new-order", dispatch), { kind: "redirect", location: "/dispatch" });
   assert.deepEqual(evaluatePageAccess("/dashboard/orders/new", dispatch), { kind: "redirect", location: "/dispatch" });
+  const orders = subject("MINI_ADMIN", ["orders"]);
+  assert.deepEqual(evaluatePageAccess("/dashboard/orders/new", orders), { kind: "allow" });
+  assert.deepEqual(evaluatePageAccess("/dispatch/new-order", orders), { kind: "allow" });
   assert.deepEqual(evaluatePageAccess("/support", dispatch), { kind: "redirect", location: "/dispatch" });
   // Aucun module : refus explicite (l'accueil par défaut lui est aussi fermé).
   assert.deepEqual(evaluatePageAccess("/dashboard", subject("MINI_ADMIN", [])), { kind: "forbidden" });
