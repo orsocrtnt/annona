@@ -2589,3 +2589,11 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
   Changement : après le clic sur « Voir la facture », l'étape 6 dure 5,2 s au lieu de 2,3 s ; le carton vers l'étape 7 dure 3,5 s au lieu de 2,1 s. Les autres cartons ne changent pas.
 
   Vérifications : test ajouté dans `tests/landing-product-tour.test.ts` ; `npm run check` 1 527/1 527 ; parcours cliqué dans Chromium sur `tutelliv.fr` (`3b31e0a`, Vercel OK) : bulle à deux lignes visible 4,1 s, carton visible 3,9 s, aucune erreur de page. Non vérifié : WebKit et téléphone (la bulle est masquée sous 640 px).
+
+- [x] **LANDING-BARRE — Même barre sur toutes les pages publiques.** Demande du propriétaire le 2 novembre 2026 : la barre et ses boutons changeaient entre l'accueil et les autres pages ; garder celle de Tarifs.
+
+  Changement : l'accueil abandonne sa barre « à plat » et utilise la barre de Tarifs (`PublicTopNavbar`, seule version restante). La police de la barre passe dans `src/features/landing/growth-font.ts` pour être la même partout. La barre défile avec la page sur toutes les pages, comme avant. Sur l'accueil, « Se connecter » devient « Connexion », « Voir la démo » ouvre `/demonstration` au lieu de descendre à la mini-démo (le bouton « Essayer la démo » du haut de page y descend toujours), et le lien « Démonstration » et le menu téléphone apparaissent. Couleurs `--l-ink-btn` devenues inutiles retirées.
+
+  Vérifications : barre mesurée dans Chromium sur `/`, `/tarifs`, `/fonctionnalites`, `/demonstration` et `/contact` (ordinateur et tablette en Clair et Sombre, téléphone en Clair) : mêmes positions, tailles et police ; seul le lien de la page en cours ressort. Clics réels depuis l'accueil : Tarifs, logo, Voir la démo, Essayer la démo, menu téléphone, bascule de thème, sans erreur console. `npm run check` : 1 532/1 532.
+
+  Non vérifié : Safari, vrai téléphone. Pages `/mentions-legales` et `/confidentialite` non touchées : elles n'utilisent pas cette barre. Commité et poussé sur `preproduction` le 2 novembre 2026 à la demande du propriétaire.

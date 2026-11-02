@@ -602,8 +602,6 @@ input[type="radio"] {
   --l-on-mint: #0e1310;
   --l-brand: #08783f;
   --l-mint-s: #e6f8ee;
-  --l-ink-btn: #0e1310;
-  --l-ink-btn-fg: #ffffff;
   --l-shadow: 0 1px 2px rgba(14, 19, 16, 0.04), 0 20px 50px -30px rgba(14, 19, 16, 0.25);
   --l-you-bg: #fdeaea;
   --l-you-line: #f6c9ca;
@@ -638,8 +636,6 @@ input[type="radio"] {
   --l-on-mint: #1c1f1e;
   --l-brand: #7be0ab;
   --l-mint-s: #1f3a2c;
-  --l-ink-btn: #ecefed;
-  --l-ink-btn-fg: #1c1f1e;
   --l-shadow: 0 20px 50px -30px rgba(0, 0, 0, 0.6);
   --l-you-bg: #3a2326;
   --l-you-line: #5a3236;

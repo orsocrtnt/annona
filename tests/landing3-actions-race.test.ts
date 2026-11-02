@@ -37,8 +37,8 @@ test("LANDING-3 : on compte des actions, jamais des minutes ni un gain chiffré 
   }
   const home = readFileSync(new URL("../src/features/landing/home-landing.tsx", import.meta.url), "utf8");
   assert.match(home, /<ActionsRace \/>/);
-  // Ordre retenu par le propriétaire : haut de page, course, puis mini-démo ; barre « à plat » de la maquette.
-  assert.match(home, /<PublicTopNavbar variant="flat" demoHref="#demo" \/>/);
+  // Ordre retenu par le propriétaire : haut de page, course, puis mini-démo ; même barre que les autres pages.
+  assert.match(home, /<PublicTopNavbar \/>/);
   assert.ok(home.indexOf("<ActionsRace />") < home.indexOf("<LandingDemo />"));
   assert.match(home, /Toute votre société de coursiers/);
 });

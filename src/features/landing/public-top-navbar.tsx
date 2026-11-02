@@ -11,7 +11,6 @@ import {
   AppleNavbarLinks,
   appleNavbarIconButtonLightClass,
 } from "@/components/navigation/apple-navbar";
-import { BrandLogo } from "@/components/brand/brand-logo";
 import { ThemeRadioGroup } from "@/components/theme/theme-preference-choice";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import {
@@ -22,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { growthFont } from "@/features/landing/growth-font";
 import { cn } from "@/lib/utils";
 
 // L'accueil passe par le logo ; Contact rejoint la navigation pour rester visible à toutes les largeurs.
@@ -78,58 +78,13 @@ function PublicMenu({ pathname, triggerClassName }: { pathname: string; triggerC
   );
 }
 
-const flatButton =
-  "inline-flex min-h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-[10px] px-[11px] text-[13px] font-semibold min-[901px]:px-3.5 min-[901px]:text-[14px] transition-transform active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-9";
-
-/**
- * Barre « à plat » de la landing (LANDING-3), copie de la maquette validée : logo, liens, « Se connecter »,
- * « Voir la démo » ; la bascule de thème et le menu compact restent.
- */
-function FlatTopNavbar({ pathname, demoHref }: { pathname: string; demoHref: string }) {
-  return (
-    <header className="relative z-40">
-      <div className="mx-auto flex max-w-[1280px] items-center gap-2.5 px-4 py-[14px] text-[15px] min-[901px]:gap-[26px] min-[901px]:px-8 min-[901px]:py-[18px]">
-        <Link href="/" className="flex min-h-11 shrink-0 items-center rounded-lg max-[900px]:[&_img]:!h-[30px] max-[900px]:[&_img]:!w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <BrandLogo size="md" className="dark:hidden" priority />
-          <BrandLogo size="md" onDark className="hidden dark:inline-flex" />
-        </Link>
-        <nav aria-label="Navigation publique" className="hidden items-center gap-[22px] text-[var(--l-mute)] min-[901px]:flex">
-          {/* Comme la maquette : trois liens, la démo passe par le bouton « Voir la démo ». */}
-          {publicNavigation.filter((item) => item.href !== "/demonstration").map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={pathname === item.href ? "page" : undefined}
-              className="rounded-md hover:text-[var(--l-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle className="h-9 w-9 max-sm:hidden" />
-          <Link href="/login" className={cn(flatButton, "border border-[var(--l-line)] bg-[var(--l-card)] text-[var(--l-ink)]")}>
-            Se connecter
-          </Link>
-          <a href={demoHref} className={cn(flatButton, "bg-[var(--l-ink-btn)] text-[var(--l-ink-btn-fg)]")}>
-            Voir la démo
-          </a>
-          {/* Comme la maquette : sur mobile, logo et deux boutons ; les liens restent dans le pied de page. */}
-        </div>
-      </div>
-    </header>
-  );
-}
-
-/** Barre du site public : mêmes destinations partout (Démo, Connexion, Contact) et choix du thème. */
-export function PublicTopNavbar({ variant = "pill", demoHref = "/demonstration" }: { variant?: "pill" | "flat"; demoHref?: string }) {
+/** Barre unique du site public, accueil compris : même disposition, mêmes destinations et même police partout. */
+export function PublicTopNavbar() {
   const pathname = usePathname();
-
-  if (variant === "flat") return <FlatTopNavbar pathname={pathname} demoHref={demoHref} />;
 
   return (
     // Barre claire de la DA Menthe, comme les espaces connectés ; variantes Dark « Encre + Pastel ».
-    <AppleNavbar tone="light">
+    <AppleNavbar tone="light" sticky={false} className={growthFont.className}>
       <AppleNavbarBrand href="/" tone="light" />
 
       <AppleNavbarLinks

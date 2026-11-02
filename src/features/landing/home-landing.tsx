@@ -21,7 +21,7 @@ const footerLink =
 export function HomeLanding() {
   return (
     <div className="landing min-h-screen font-sans">
-      <PublicTopNavbar variant="flat" demoHref="#demo" />
+      <PublicTopNavbar />
 
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <section aria-labelledby="hero-title" className="mx-auto max-w-[1280px] px-5 pb-8 pt-4 text-center min-[901px]:px-8 min-[901px]:pb-16 min-[901px]:pt-[72px]">

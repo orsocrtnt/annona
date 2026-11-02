@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**97 tâches terminées sur 124 — 78 %**
+**98 tâches terminées sur 125 — 78 %**
 
 `████████████████░░░░` · 27 tâches restantes
 

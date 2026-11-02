@@ -1,15 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Plus_Jakarta_Sans } from "next/font/google";
 import { APP_NAME } from "@/lib/constants";
+import { growthFont } from "@/features/landing/growth-font";
 import { PublicTopNavbar } from "@/features/landing/public-top-navbar";
-
-const display = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-growth",
-  display: "swap",
-});
 
 type GrowthPage = "fonctionnalites" | "tarifs" | "demonstration" | "contact" | "mentions-legales" | "confidentialite";
 
@@ -22,7 +15,7 @@ export function GrowthShell({
 }) {
   return (
     <div
-      className={`${display.variable} relative min-h-screen overflow-hidden bg-background text-foreground`}
+      className={`${growthFont.variable} relative min-h-screen overflow-hidden bg-background text-foreground`}
       data-growth-page={active}
       style={{ fontFamily: "var(--font-growth), ui-sans-serif, system-ui, sans-serif" }}
     >
