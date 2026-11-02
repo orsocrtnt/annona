@@ -121,7 +121,7 @@ export function ProductTour() {
   const reducedMotion = usePrefersReducedMotion();
   const stage = useRef<HTMLDivElement>(null);
   const step = TOUR_STEPS[state.current] ?? "order";
-  const interludeMs = reducedMotion ? REDUCED_INTERLUDE_MS : INTERLUDE_MS;
+  const interludeMs = reducedMotion ? REDUCED_INTERLUDE_MS : (interlude?.holdMs ?? INTERLUDE_MS);
 
   /** Fin d'étape : la bulle se remet d'abord en boule, puis l'écran change. */
   const [leaving, setLeaving] = useState(false);

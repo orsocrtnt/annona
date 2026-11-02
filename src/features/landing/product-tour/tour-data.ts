@@ -30,7 +30,13 @@ export const TOUR_PROOF = { recipient: "M. Durand", time: "14 h 21" } as const;
 
 export const TOUR_INVOICE = { number: "F-2026-1042", amount: "38,00 €" } as const;
 
-export type TourInterlude = { space: "company" | "driver" | "client"; title: string; text: string };
+export type TourInterlude = {
+  space: "company" | "driver" | "client";
+  title: string;
+  text: string;
+  /** Durée d'affichage propre à ce carton, sinon la durée commune. */
+  holdMs?: number;
+};
 
 const INTERLUDES: Partial<Record<`${TourStep}>${TourStep}`, TourInterlude>> = {
   "order>dispatch": { space: "company", title: "Pendant ce temps, côté entreprise…", text: "La commande arrive au dispatch" },
@@ -38,7 +44,7 @@ const INTERLUDES: Partial<Record<`${TourStep}>${TourStep}`, TourInterlude>> = {
   "driver>tracking": { space: "client", title: "Retour côté client…", text: "Il suit sa livraison en direct" },
   "tracking>proof": { space: "driver", title: "Côté livreur…", text: "Lucas arrive et prouve la livraison" },
   "proof>receipt": { space: "client", title: "Côté client…", text: "Livraison confirmée, facture reçue" },
-  "receipt>invoices": { space: "company", title: "Côté entreprise…", text: "Les paiements se suivent tout seuls" },
+  "receipt>invoices": { space: "company", title: "Côté entreprise…", text: "Les paiements se suivent tout seuls", holdMs: 3500 },
 };
 
 /** Carton affiché quand un geste fait passer d'un espace au suivant ; aucun en arrière ni sur place. */

@@ -30,6 +30,53 @@ export async function assertDemoStorageEmpty(companyId: string): Promise<void> {
   } finally { clearTimeout(timer); }
 }
 
+type DemoPodFolder = {
+  list(path: string, options: { limit: number; offset: number; sortBy: { column: string; order: string } }): Promise<{
+    data: { id: string | null; name: string }[] | null;
+    error: unknown;
+  }>;
+  remove(paths: string[]): Promise<{ error: unknown }>;
+};
+
+const DEMO_PURGE_PAGE_SIZE = 100;
+const DEMO_PURGE_TIMEOUT_MS = 20_000;
+
+/**
+ * Vide le dossier de preuves d'un espace du stock de démonstration. Réservé au recyclage,
+ * qui a déjà vérifié le marqueur de l'entreprise. Un sous-dossier (id nul) n'est pas une
+ * preuve de démo : il reste en place et le contrôle suivant met l'espace en quarantaine.
+ */
+export async function purgeDemoPoolStorage(
+  companyId: string,
+  folder: DemoPodFolder = createAdminClient().storage.from("delivery-pods")
+): Promise<{ removed: number }> {
+  if (!/^[A-Za-z0-9_-]+$/.test(companyId)) throw new Error("INVALID_ID");
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      (async () => {
+        const paths: string[] = [];
+        for (let offset = 0; ; offset += DEMO_PURGE_PAGE_SIZE) {
+          const { data, error } = await folder.list(companyId, {
+            limit: DEMO_PURGE_PAGE_SIZE,
+            offset,
+            sortBy: { column: "name", order: "asc" },
+          });
+          if (error || !data) throw new Error("STORAGE_UNAVAILABLE");
+          paths.push(...data.filter((row) => row.id !== null).map((row) => `${companyId}/${row.name}`));
+          if (data.length < DEMO_PURGE_PAGE_SIZE) break;
+        }
+        for (let start = 0; start < paths.length; start += DEMO_PURGE_PAGE_SIZE) {
+          const { error } = await folder.remove(paths.slice(start, start + DEMO_PURGE_PAGE_SIZE));
+          if (error) throw new Error("STORAGE_UNAVAILABLE");
+        }
+        return { removed: paths.length };
+      })(),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error("STORAGE_TIMEOUT")), DEMO_PURGE_TIMEOUT_MS); }),
+    ]);
+  } finally { clearTimeout(timer); }
+}
+
 export type DemoStorageInspection =
   | "empty"
   | "objectsPresent"

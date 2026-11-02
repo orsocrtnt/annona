@@ -14,6 +14,7 @@ import { resetDemoScenario } from "@/domains/demo/demo-scenario.service";
 import {
   assertDemoStorageEmpty,
   hasCrossTenantDemoReference,
+  purgeDemoPoolStorage,
 } from "@/domains/data-lifecycle/demo-cleanup.service";
 
 export const DEMO_POOL_LEASE_MS = 8 * 60 * 60 * 1000;
@@ -38,7 +39,7 @@ type RecycleResult = {
   reason?: string;
 };
 
-class DemoPoolSafetyError extends Error {}
+export class DemoPoolSafetyError extends Error {}
 class DemoPoolLeaseRace extends Error {}
 
 export class DemoPoolUnavailableError extends Error {
@@ -366,10 +367,18 @@ export async function requestDemoPoolRecycle(companyId: string, now = new Date()
   return queued.count === 1;
 }
 
-async function assertPoolRecycleSafe(
+/**
+ * Gardes du recyclage, puis retrait des preuves ajoutées pendant la démo : elles sont fictives
+ * et leurs lignes disparaissent avec le scénario. Une panne du retrait est retentée ; seul un
+ * dossier resté non vide après le retrait met l'espace en quarantaine.
+ */
+export async function preparePoolRecycle(
   companyId: string,
   poolKey: string,
-  assertStorageEmpty: (companyId: string) => Promise<void>
+  storage: {
+    purge: (companyId: string) => Promise<unknown>;
+    assertEmpty: (companyId: string) => Promise<void>;
+  }
 ): Promise<void> {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -378,17 +387,17 @@ async function assertPoolRecycleSafe(
   if (!company || !isPoolCompany(company, poolKey)) throw new DemoPoolSafetyError("INVALID_POOL_COMPANY");
   if (company.logoUrl) throw new DemoPoolSafetyError("EXTERNAL_ASSET_REFERENCE");
   const userIds = company.users.map((user) => user.id);
-  const [photos, pdfs, runningJobs, crossTenant] = await Promise.all([
-    prisma.delivery.count({ where: { companyId, OR: [{ podPhotoPath: { not: null } }, { podSignaturePath: { not: null } }] } }),
+  const [pdfs, runningJobs, crossTenant] = await Promise.all([
     prisma.invoice.count({ where: { companyId, pdfUrl: { not: null } } }),
     prisma.operationJob.count({ where: { companyId, status: { in: ["PENDING", "PROCESSING"] } } }),
     prisma.$transaction((tx) => hasCrossTenantDemoReference(tx, companyId, userIds)),
   ]);
-  if (photos || pdfs) throw new DemoPoolSafetyError("EXTERNAL_ASSET_REFERENCE");
+  if (pdfs) throw new DemoPoolSafetyError("EXTERNAL_ASSET_REFERENCE");
   if (runningJobs) throw new DemoPoolSafetyError("UNFINISHED_JOBS");
   if (crossTenant) throw new DemoPoolSafetyError("CROSS_TENANT_REFERENCE");
+  await storage.purge(companyId);
   try {
-    await assertStorageEmpty(companyId);
+    await storage.assertEmpty(companyId);
   } catch (error) {
     throw new DemoPoolSafetyError(error instanceof Error ? error.message : "STORAGE_UNAVAILABLE");
   }
@@ -396,7 +405,11 @@ async function assertPoolRecycleSafe(
 
 export async function recycleDemoPoolEnvironment(
   companyId: string,
-  options: { now?: Date; assertStorageEmpty?: (companyId: string) => Promise<void> } = {}
+  options: {
+    now?: Date;
+    assertStorageEmpty?: (companyId: string) => Promise<void>;
+    purgeStorage?: (companyId: string) => Promise<unknown>;
+  } = {}
 ): Promise<RecycleResult> {
   const now = options.now ?? new Date();
   const environment = await prisma.demoPoolEnvironment.findUnique({ where: { companyId } });
@@ -410,11 +423,10 @@ export async function recycleDemoPoolEnvironment(
   if (claimed.count !== 1) return { companyId, status: "skipped", reason: "CONCURRENT_WORKER" };
 
   try {
-    await assertPoolRecycleSafe(
-      companyId,
-      environment.poolKey,
-      options.assertStorageEmpty ?? assertDemoStorageEmpty
-    );
+    await preparePoolRecycle(companyId, environment.poolKey, {
+      purge: options.purgeStorage ?? ((id) => purgeDemoPoolStorage(id)),
+      assertEmpty: options.assertStorageEmpty ?? assertDemoStorageEmpty,
+    });
     // Roster à jour (livreurs ajoutés au scénario) avant de recréer les livraisons.
     await ensureDemoSessionRosterUsers(companyId);
     await resetDemoScenario(companyId, now, { ensureCanonicalRoster: false });

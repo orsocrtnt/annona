@@ -31,7 +31,7 @@ L'empreinte de session est un SHA-256 ; le cookie aléatoire brut n'est pas stoc
 
 ## Recyclage et sécurité
 
-Avant de reconstruire, le worker exige : entreprise marquée `demoPool`, aucune preuve photo ou PDF, aucun job actif, aucune référence interentreprises et aucun objet dans le dossier Storage. Un échec de garde met immédiatement le slot en quarantaine. Une panne technique est retentée au maximum trois fois, puis mise en quarantaine.
+Avant de reconstruire, le worker exige : entreprise marquée `demoPool`, aucun PDF, aucun job actif et aucune référence interentreprises. Il retire ensuite les photos et signatures ajoutées pendant la démo (fichiers du dossier Storage de l'espace ; leurs lignes partent avec le scénario), puis vérifie que le dossier est vide : un sous-dossier inattendu n'est jamais supprimé et bloque le slot. Un échec de garde met immédiatement le slot en quarantaine. Une panne technique, y compris pendant le retrait des fichiers, est retentée au maximum trois fois, puis mise en quarantaine.
 
 Le reset supprime les jobs terminés du scénario précédent. Pour un compte créé pendant une démo, l'identité Supabase Auth est supprimée avant sa ligne locale ; une erreur fournisseur interrompt le recyclage. Le scénario n'est remis à `READY` qu'après contrôle d'un administrateur fictif et de huit commandes.
 

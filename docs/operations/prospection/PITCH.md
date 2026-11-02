@@ -51,7 +51,7 @@ Tant que le SIREN n'est pas arrivé : ni prix, ni offre de pilote. Les textes «
 | 2 à 5 | Administrateur : Dispatch | La file d'attente, l'affectation, les imprévus | « Votre dispatcher voit ce qui est à traiter. Une affectation n'est pas une acceptation : vous voyez quand le livreur a vraiment pris la mission. » |
 | 5 à 7 | Chauffeur : mission | Confirmer et démarrer | « Le livreur a tout sur son téléphone. Sa position n'est partagée que pendant une mission démarrée. » |
 | 7 à 9 | Client : Livraisons | Les étapes et la carte | « Votre client voit où ça en est. Est-ce que ça vous éviterait des appels ? » |
-| 9 à 10 | Aucun | Rien : ne pas ajouter de preuve dans la démo | « La preuve reste dans le dossier de la livraison. » La visite animée de l'accueil la montre, mais il faut la jouer depuis le début : à garder pour une personne qui a le temps. |
+| 9 à 10 | Aucun | Rien : ajouter une preuve prend du temps, mais ne bloque plus la place de démo | « La preuve reste dans le dossier de la livraison. » La visite animée de l'accueil la montre, mais il faut la jouer depuis le début : à garder pour une personne qui a le temps. |
 
 Pour changer de rôle : le menu « Administrateur / Client / Chauffeur » du bandeau.
 
@@ -62,7 +62,6 @@ Pour changer de rôle : le menu « Administrateur / Client / Chauffeur » du ban
 
 **Ne jamais faire dans la démo**
 
-- Ajouter une photo ou une signature : la place de démo se bloque (arrivé le 28 octobre).
 - Taper une vraie adresse e-mail ou inviter quelqu'un : ce blocage reste à corriger (AUDIT-0111).
 - Montrer les commandes récurrentes automatiques : en panne sur `tutelliv.fr` selon l'audit.
 - Cliquer sur « Créer mon espace » : le paiement est fictif.

@@ -234,3 +234,11 @@ test("entre deux étapes, la bulle se rétracte en goutte sur place et attend le
   const here = place("proof", 20, 30);
   assert.deepEqual(guideOnTarget(opened(here), null), { ...opened(here), mode: "drop" });
 });
+
+test("étape 6 vers 7 : la bulle reste lisible et le carton dure plus longtemps que les autres", () => {
+  assert.equal(interludeFor("receipt", "invoices")?.holdMs, 3500);
+  assert.equal(interludeFor("proof", "receipt")?.holdMs, undefined);
+  const scene = readFileSync("src/features/landing/product-tour/scene-receipt.tsx", "utf8");
+  assert.match(scene, /READING_MS = 5200/);
+  assert.match(scene, /useDelayedCall\(opened, READING_MS, onDone\)/);
+});

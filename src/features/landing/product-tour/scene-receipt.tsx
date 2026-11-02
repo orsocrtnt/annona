@@ -10,15 +10,13 @@ import { clientNav } from "@/features/landing/product-tour/space-nav";
 import { SpaceSidebar } from "@/features/landing/product-tour/space-sidebar";
 import { GuideSpot } from "@/features/landing/product-tour/guide-bubble";
 import { TOUR_INVOICE, TOUR_ORDER, TOUR_PROOF } from "@/features/landing/product-tour/tour-data";
-import {
-  GESTURE_RESULT_DELAY_MS,
-  useDelayedCall,
-  useTimeline,
-} from "@/features/landing/product-tour/use-timeline";
+import { useDelayedCall, useTimeline } from "@/features/landing/product-tour/use-timeline";
 
 const NAV = clientNav("Mes commandes");
 /** La preuve s'affiche, puis l'e-mail de facture arrive. */
 const ARRIVAL_DURATIONS_MS = [400, 900] as const;
+/** Après le clic : le temps de lire la facture et les deux lignes de la bulle, en bas à droite. */
+const READING_MS = 5200;
 
 function InvoicePreview() {
   return (
@@ -49,7 +47,7 @@ export function SceneReceipt({ onDone, reducedMotion }: SceneProps) {
   const phase = useTimeline(ARRIVAL_DURATIONS_MS, reducedMotion);
   const [opened, setOpened] = useState(false);
   const mailArrived = phase >= ARRIVAL_DURATIONS_MS.length;
-  useDelayedCall(opened, GESTURE_RESULT_DELAY_MS + 1300, onDone);
+  useDelayedCall(opened, READING_MS, onDone);
 
   return (
     <div className="flex h-full">
