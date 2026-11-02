@@ -51,7 +51,7 @@ export const portalApi = {
     shippingPostalCode?: string;
     requestedDeliveryDate?: string;
   }) =>
-    fetchPortal<{ enabled: boolean; amount: number | null; distanceKm: number | null }>(
+    fetchPortal<{ enabled: boolean; amount: number | null; total: number | null; distanceKm: number | null }>(
       "/api/portal/order-estimate",
       {
         method: "POST",

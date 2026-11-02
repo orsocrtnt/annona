@@ -46,7 +46,7 @@ export function CourierEstimateBanner(props: CourierEstimateBannerProps) {
     staleTime: 60_000,
   });
 
-  if (!data?.enabled || data.amount == null) return null;
+  if (!data?.enabled || data.total == null) return null;
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-brand/30 bg-brand-subtle px-4 py-3">
@@ -61,7 +61,7 @@ export function CourierEstimateBanner(props: CourierEstimateBannerProps) {
           )}
         </div>
       </div>
-      <span className="text-lg font-semibold text-brand">~ {formatCurrency(data.amount)}</span>
+      <span className="text-lg font-semibold text-brand">~ {formatCurrency(data.total)}</span>
     </div>
   );
 }

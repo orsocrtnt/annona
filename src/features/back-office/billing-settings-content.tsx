@@ -176,7 +176,7 @@ function CourierPricingSection({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-2xl font-semibold">{previewEstimate.toFixed(2)} €</p>
+          <p className="text-2xl font-semibold">{previewEstimate.toFixed(2)} € HT</p>
           <p className="mt-1 text-xs text-muted-foreground">
             max({courier.minimumPrice.toFixed(2)} €, {courier.basePrice.toFixed(2)} € +{" "}
             {courier.pricePerKm.toFixed(2)} €/km × distance)

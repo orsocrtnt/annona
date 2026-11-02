@@ -309,14 +309,14 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        {!hasTariffs ? (
+        {!hasTariffs && !courierLine && (
           <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
             Aucun tarif configuré.{" "}
             <SettingsLink>Configurez vos zones et tarifs</SettingsLink>{" "}
-            dans les paramètres.
+            dans les paramètres, ou saisissez une ligne ci-dessous.
           </div>
-        ) : (
-          <>
+        )}
+        <>
             {tariffs.tariffZones.length > 0 && (
               <div className="space-y-2">
                 <Label>Zone de livraison</Label>
@@ -447,7 +447,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
             </div>
 
             <div className="flex items-center justify-between rounded-lg bg-muted/50 p-4">
-              <span className="font-medium">Total facture</span>
+              <span className="font-medium">Total hors taxes, TVA ajoutée à l’enregistrement</span>
               <span className="text-lg font-semibold">{formatCurrency(previewTotal)}</span>
             </div>
 
@@ -459,8 +459,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
             >
               Enregistrer le relevé
             </Button>
-          </>
-        )}
+        </>
       </CardContent>
     </Card>
   );

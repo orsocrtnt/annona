@@ -1222,7 +1222,7 @@ export async function updateCompanyOrderStatus(
     for (const delivery of order.deliveries) {
       // Replanifier un échec rouvre la livraison sans livreur ; l'historique et la preuve restent.
       const replanning = order.status === "FAILED" && status === "PENDING";
-      const deliveryUpdate: Prisma.DeliveryUpdateInput = {
+      const deliveryUpdate: Prisma.DeliveryUncheckedUpdateInput = {
         status: syncDeliveryStatus(status),
         completedAt: replanning
           ? null
@@ -1231,9 +1231,9 @@ export async function updateCompanyOrderStatus(
             : delivery.completedAt,
         ...(replanning
           ? {
-              driver: { disconnect: true },
+              driverId: null,
               driverName: null,
-              round: { disconnect: true },
+              roundId: null,
               roundSequence: null,
               missionAcceptedAt: null,
               missionStartedAt: null,

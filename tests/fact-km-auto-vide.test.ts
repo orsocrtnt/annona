@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { announcedCourierLine } from "../src/domains/company/courier-estimate.service";
+import { announcedCourierLine, courierTotalWithVat } from "../src/domains/company/courier-estimate.service";
 import { listUnissuedDeliveryInvoices } from "../src/domains/invoice/company-invoices.service";
 
 const course = {
@@ -27,6 +27,12 @@ test("FACT-KM : rien d'annoncé, rien de prérempli : estimation masquée, dista
   const unused = (async () => assert.fail("pas d'estimation pour une commande classique")) as never;
   assert.equal(await announcedCourierLine("c1", { ...course, deliveryCategory: "STANDARD" }, unused), null);
   assert.equal(await announcedCourierLine("c1", { ...course, pickupAddress: null }, unused), null);
+});
+
+test("FACT-KM : le client voit le total TVA comprise, celui de sa facture", () => {
+  assert.equal(courierTotalWithVat(11.48, 20), 13.78);
+  assert.equal(courierTotalWithVat(11.48, 0), 11.48);
+  assert.equal(courierTotalWithVat(10, 20), 12);
 });
 
 function db(jobs: unknown[], orders: unknown[]) {

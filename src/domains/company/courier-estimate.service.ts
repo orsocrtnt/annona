@@ -27,8 +27,16 @@ export interface CourierEstimateInput {
 
 export interface CourierEstimateResult {
   enabled: boolean;
+  /** Prix hors taxes : la ligne de la facture. */
   amount: number | null;
+  /** Prix à payer, TVA comprise : ce que voit le client, et le total de sa facture. */
+  total: number | null;
   distanceKm: number | null;
+}
+
+/** Même arrondi que la ligne de TVA de la facture : le total annoncé égale le total facturé. */
+export function courierTotalWithVat(amount: number, vatRate: number) {
+  return Math.round((amount + Math.round(amount * vatRate) / 100) * 100) / 100;
 }
 
 /**
@@ -39,13 +47,13 @@ export async function estimateCourierPrice(
   companyId: string,
   input: CourierEstimateInput
 ): Promise<CourierEstimateResult> {
-  const { courier } = await getCompanyBillingSettings(companyId);
+  const { courier, invoice } = await getCompanyBillingSettings(companyId);
 
   if (!courier.showClientEstimate) {
-    return { enabled: false, amount: null, distanceKm: null };
+    return { enabled: false, amount: null, total: null, distanceKm: null };
   }
   if (!input.pickup.address || !input.shipping.address) {
-    return { enabled: true, amount: null, distanceKm: null };
+    return { enabled: true, amount: null, total: null, distanceKm: null };
   }
 
   const [from, to] = await Promise.all([
@@ -53,7 +61,7 @@ export async function estimateCourierPrice(
     geocodeAddress(input.shipping),
   ]);
 
-  if (!from || !to) return { enabled: true, amount: null, distanceKm: null };
+  if (!from || !to) return { enabled: true, amount: null, total: null, distanceKm: null };
 
   const distanceKm = Math.round(haversineKm(from, to) * ROAD_FACTOR * 10) / 10;
 
@@ -72,11 +80,8 @@ export async function estimateCourierPrice(
     }
   }
 
-  return {
-    enabled: true,
-    amount: Math.round(price * 100) / 100,
-    distanceKm,
-  };
+  const amount = Math.round(price * 100) / 100;
+  return { enabled: true, amount, total: courierTotalWithVat(amount, invoice.vatRate), distanceKm };
 }
 
 /**

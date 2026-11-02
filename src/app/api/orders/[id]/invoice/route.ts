@@ -16,7 +16,7 @@ export async function GET(
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   const { id } = await params;
-  return NextResponse.json({ courierLine: await getOrderAnnouncedCourierLine(companyId, id) });
+  return NextResponse.json({ data: { courierLine: await getOrderAnnouncedCourierLine(companyId, id) }, success: true });
 }
 
 export async function POST(
