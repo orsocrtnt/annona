@@ -44,6 +44,10 @@ export async function GET(request: Request) {
   await import("@/domains/delivery/delivery-rounds.service")
     .then(({ runDueAutoRounds }) => runDueAutoRounds())
     .catch((error) => console.warn("[cron.auto-rounds]", error instanceof Error ? error.message : "FAILED"));
+  // Conservation publiée des messages Contact : un échec ne doit pas bloquer le traitement des tâches.
+  await import("@/domains/growth/contact.service")
+    .then(({ purgeExpiredContactMessages }) => purgeExpiredContactMessages())
+    .catch((error) => console.warn("[cron.contact-retention]", error instanceof Error ? error.message : "FAILED"));
   try {
     const { details, ...counts } = await processDueOperationJobs();
     // Compteurs seuls pour les alertes ; le détail par tâche (identifiant interne, type, nature, code

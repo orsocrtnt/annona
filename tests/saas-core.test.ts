@@ -193,11 +193,17 @@ test("SAAS-01A : une commande est comptée une seule fois et le dépassement ne 
       },
     },
     saasUsagePeriod: {
-      upsert: async ({ where, create }: any) => {
-        const key = `${where.subscriptionId_startsAt.subscriptionId}:${where.subscriptionId_startsAt.startsAt.toISOString()}`;
-        if (!periods.has(key)) periods.set(key, { id: `period-${periods.size + 1}`, orderCount: 0, overageCount: 0, ...create });
-        return periods.get(key);
+      // Comme `ON CONFLICT DO NOTHING` : une période déjà créée par une commande simultanée reste intacte.
+      createMany: async ({ data, skipDuplicates }: any) => {
+        assert.equal(skipDuplicates, true);
+        for (const row of data) {
+          const key = `${row.subscriptionId}:${row.startsAt.toISOString()}`;
+          if (!periods.has(key)) periods.set(key, { id: `period-${periods.size + 1}`, orderCount: 0, overageCount: 0, ...row });
+        }
+        return { count: data.length };
       },
+      findUniqueOrThrow: async ({ where }: any) =>
+        periods.get(`${where.subscriptionId_startsAt.subscriptionId}:${where.subscriptionId_startsAt.startsAt.toISOString()}`),
     },
     $executeRaw: async (_strings: TemplateStringsArray, periodId: string) => {
       const period = [...periods.values()].find((candidate) => candidate.id === periodId);

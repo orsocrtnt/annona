@@ -26,6 +26,7 @@ import {
 } from "../../src/domains/order-conversation/order-conversation.service";
 import { getOrderTracking } from "../../src/domains/tracking/tracking.service";
 import { DEFAULT_DISPATCH_SETTINGS } from "../../src/lib/validations/dispatch-settings";
+import { activateManualPilot } from "../../src/domains/saas/saas.service";
 
 const outputPath = resolve(process.argv[2] ?? "outputs/test2/connected.json");
 const fixtureKey = `test2-${randomUUID()}`;
@@ -67,6 +68,13 @@ async function createCompany(
         },
       },
     },
+  });
+  // Depuis les règles SaaS du 23 octobre, une entreprise sans abonnement ni pilote ne peut plus commander.
+  await activateManualPilot({
+    companyId: company.id,
+    startsAt: new Date(Date.now() - 60_000),
+    endsAt: new Date(Date.now() + 86_400_000),
+    limits: { drivers: 5, admins: 1, dispatchers: 1, monthlyOrders: 100 },
   });
   const [admin, client, driver] = await Promise.all([
     prisma.user.create({

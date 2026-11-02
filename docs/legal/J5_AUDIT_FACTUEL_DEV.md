@@ -1,5 +1,7 @@
 # J5 — Audit factuel du dépôt, des données et des environnements
 
+> **Photo du 22 octobre 2026, non mise à jour.** État actuel : [vérification du 2 novembre 2026](VERIFICATION_2026-11-02.md). Par exemple, `provision-company-admin.ts` cité plus bas n'existe plus.
+
 **Date de l'audit :** 22 octobre 2026  
 **Périmètre :** branche locale `preproduction`, schéma Prisma, code applicatif, tests, preuves de préproduction déjà produites et configurations documentées.  
 **Nature du document :** constat technique destiné à la préparation de J5. Ce document n'est ni un avis juridique, ni une validation RGPD, ni une autorisation de traiter des données réelles.

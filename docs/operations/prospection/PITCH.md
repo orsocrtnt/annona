@@ -62,9 +62,7 @@ Pour changer de rôle : le menu « Administrateur / Client / Chauffeur » du ban
 
 **Ne jamais faire dans la démo**
 
-- Taper une vraie adresse e-mail ou inviter quelqu'un : ce blocage reste à corriger (AUDIT-0111).
-- Montrer les commandes récurrentes automatiques : en panne sur `tutelliv.fr` selon l'audit.
-- Cliquer sur « Créer mon espace » : le paiement est fictif.
+- Taper une vraie adresse e-mail : inutile, la démo refuse les invitations.
 - Laisser croire que les chiffres affichés sont réels : dire « données fictives ».
 
 ## En cas de problème

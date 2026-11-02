@@ -4,6 +4,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { NextResponse } from "next/server";
+import { prisma } from "../src/services/prisma/client";
 import {
   CONTACT_GLOBAL_LIMIT,
   CONTACT_SOURCE_LIMIT,
@@ -12,6 +13,7 @@ import {
   contactSourceHash,
   listContactMessages,
   parseContactListParams,
+  purgeExpiredContactMessages,
   sendContactAlert,
   submitContactMessage,
 } from "../src/domains/growth/contact.service";
@@ -291,4 +293,16 @@ test("GROWTH-1 contact : la boîte plateforme est en lecture seule, réservée a
   const client = readFileSync("src/features/admin/contact-messages.ts", "utf8");
   assert.equal(client.includes('fetch(`/api/admin/contact-messages?${params.toString()}`, { cache: "no-store" })'), true);
   assert.equal(/method:/.test(client), false, "aucune écriture");
+});
+
+test("Contact : seuls les messages de plus de trois ans sont supprimés", async (t) => {
+  const calls: unknown[] = [];
+  Object.defineProperty(prisma, "contactMessage", {
+    configurable: true,
+    value: { deleteMany: async (args: unknown) => { calls.push(args); return { count: 2 }; } },
+  });
+  t.after(() => { Reflect.deleteProperty(prisma, "contactMessage"); });
+  const removed = await purgeExpiredContactMessages(new Date("2026-11-02T12:00:00.000Z"));
+  assert.equal(removed, 2);
+  assert.deepEqual(calls, [{ where: { createdAt: { lt: new Date("2023-11-02T12:00:00.000Z") } } }]);
 });

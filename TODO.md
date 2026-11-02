@@ -17,7 +17,6 @@
 - SAAS-02 — Mesurer le revenu et la santé du SaaS (après les pilotes)
 - COST-1 — Simuler les coûts d'exploitation et la marge contributive (après les pilotes)
 - GROWTH-1 — Construire le site commercial relié au parcours autonome (après la vérification de conformité)
-- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (après la vérification de conformité)
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
 - MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
@@ -39,6 +38,7 @@
 - OFFER-1 — Valider la grille cible et l'offre pilote (pendant les entretiens et les pilotes)
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
+- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone, directeur de publication ; puis Claude)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -52,7 +52,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Avant le premier message du démarchage : créer une vraie boîte mail, par exemple `orso@tutelliv.fr` (les mails actuels partent de `no-reply@`, une réponse serait perdue).
 - Lundi 2 novembre, avant le premier message : demander ton SIREN sur le Guichet unique (pas encore de numéro, confirmé le 1er novembre). D'ici là, le démarchage se limite aux entretiens de recherche : aucun prix ni offre de pilote.
 - Étude de marché (`outputs/reports/Marché TutelLiv livraison B2B France.md`, environ 840 entreprises visées, hypothèse à mesurer) : trier la liste de prospects (107 lignes sur 282 ont le bon profil), obtenir 50 réponses tirées au hasard sur la part de clients directs, demander un devis à GTLYS et à Toncarton.
-- Donner ton accord pour créer une vraie production (AUDIT-0111, point E2) : tutelliv.fr tourne aujourd'hui sur une préversion.
+- Avant le premier pilote ou la première vente (décidé le 2 novembre) : passer Vercel en Pro et créer la vraie production (AUDIT-0111, point E2).
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Avant le dépôt au Guichet unique : vérifier la reprise de ton ancien SIREN, et ta capacité à exercer depuis les États-Unis sous visa J-1 avec ta résidence fiscale (checklist J5, non tranché).
 - LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, confirmer le directeur de publication, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis).
@@ -63,15 +63,14 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
-- Relire le premier passage de la recette connectée, prévu chaque nuit à 3 h UTC (22 h à New York, première fois le 2 novembre au soir), et corriger ce qu'elle signale. Aucune recette connectée n'apparaît dans GitHub Actions depuis le 20 octobre. Non cliqués : replanifier un échec à l'écran, bandeau de prix du portail.
-- Démarchage : les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
+- Recette connectée : le 2 novembre, elle ne passait plus depuis le 23 octobre (entreprises de test sans abonnement), et elle a révélé un vrai bug, corrigé (deux premières commandes simultanées du mois). Partie connectée verte sur `tutelliv-dev` ; parcours navigateur en cours de relance en ligne.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
 - Pilotes (ils attendent les entretiens du point 1, qui ne dépendent que de toi pour démarrer) : PILOT-1 et 2, PROD-04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
 - Mesures et mise en vente : SAAS-02, SAAS-03, COST-1, RELEASE-1, SMS, GROWTH-1.
 
-**Déjà fait côté agent, la case attend une action du point 1 :** SEC-AUDIT, POD-2, OPS-FIAB, INTAKE-1, FACTURX-1, MOB-01C.
+**Déjà fait côté agent, la case attend une action du point 1 :** SEC-AUDIT (protection des mots de passe : Supabase Pro), POD-2, OPS-FIAB (alertes, cadence), INTAKE-1 (vingt vrais messages), FACTURX-1 (franchise à confirmer par la plateforme), MOB-01C.
 
 Mise à jour : 29 octobre 2026, en fin de journée (revue de cohérence : matrice réalignée sur les cases ; LANDING-3, MAP-UNIFY-2, MAP-INTERACTION, E2E-MAJ, ICONES-IA et CONFIG-MSG-2 closes). Version précédente du même jour : bilan de l'intégration du 28 octobre (neuf chantiers ; voir DEMO-3, DESIGN-1, FACTURX-1, INTAKE-1, POD-2, OPS-FIAB, SEC-AUDIT, RECETTE-2810 et PROPRIO-2810). Précédente : 26 octobre 2026 (revue de cohérence : tableaux de pilotage, priorités et matrice réalignés sur le code). Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
 
@@ -84,6 +83,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Toi.**
 
   Terminé quand : la CSP passe de Report-Only à bloquante après une recette sans violation sur les cartes, Stripe, Supabase et les polices ; la migration de limitation est appliquée en préproduction ; `CONTACT_HMAC_SECRET` est défini ; la protection Supabase contre les mots de passe compromis est active ; le rattachement par e-mail est arbitré ; aucune donnée de livreur au-delà de la règle décidée n'est lisible côté client.
+
+  Constat du 2 novembre 2026 : CSP bloquante en ligne (en-tête relu), migration `auth_login_failures` appliquée en préproduction, `CONTACT_HMAC_SECRET` présent sur Vercel. Reste : la protection contre les mots de passe compromis, qui demande Supabase Pro. Non revérifié : la règle sur les données de livreur.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section SEC-AUDIT.
 
@@ -117,6 +118,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   Terminé quand : le workflow GitHub planifié a réellement tourné sur la préproduction avec ses secrets ; `after()` est vérifié sur Vercel ; Node 22 est réglé sur Vercel ; la migration d'index est appliquée en préproduction (en production avec `CONCURRENTLY`) ; une tâche en retard déclenche une alerte reçue.
 
+  Constat du 2 novembre 2026 : Node 22 réglé sur Vercel ; migration d'index appliquée ; workflow réellement lancé par GitHub, mais **toutes les 4 à 7 heures et non toutes les 5 minutes** (GitHub espace ces lancements) ; aucune variable `OPS_ALERT_WEBHOOK_URL` sur Vercel, donc une alerte ne part que dans les journaux. Reste : une cadence fiable, un canal d'alerte réel, le contrôle d'`after()` en ligne.
+
   Détail et historique : `docs/TODO-ARCHIVE.md`, section OPS-FIAB.
 
 - [ ] **V1-GO — Valider la V1 prête à être essayée.**
@@ -132,6 +135,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Toi.**
 
   Terminé quand : validation officielle (XSD et Schematron : Mustang ou validateur FNFE) passée sur des factures fictives de recette ; décision prise sur le PDF/A-3b strict (police embarquée) ; traitement BT-32 de la franchise en base confirmé ; recette navigateur des écrans administrateur et portail ; choix d'une plateforme agréée tracé (FACTURX-2 si retenu).
+
+  Constat du 2 novembre 2026 : Mustang « valid » sans erreur le 30 octobre, polices embarquées, Super PDP choisie. Reste : la franchise (BT-32), à confirmer par la plateforme quand le compte existera, et la recette navigateur.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section FACTURX-1.
 
@@ -231,7 +236,9 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public.**
 
-  **Qui : Claude — après la vérification de conformité.**
+  **Qui : Toi — SIREN, e-mail, téléphone, directeur de publication ; puis Claude.**
+
+  Constat du 2 novembre 2026 : liens, renvois aux formulaires et recette faits le 29 octobre. Reste : compléter le contenu des mentions.
 
   Terminé quand : chaque pied de page public (accueil, Fonctionnalités, Tarifs, Démonstration, Contact, inscription et connexion) mène aux mentions légales et à la politique de confidentialité ; les formulaires qui collectent des données (Contact, inscription) y renvoient au point de collecte ; contenu issu des pièces validées de LEGAL-1, sans identité, SIREN, adresse ni engagement inventés ; recette navigateur Light/Dark, 1440 et 390.
 
@@ -242,6 +249,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Toi.**
 
   Terminé quand : essai réel sur vingt messages anonymisés avec mesure de la qualité d'extraction et du coût ; clé serveur fournie et fonction activée par une entreprise de recette ; fiche F10 qualifiée avant toute donnée réelle ; parcours navigateur « coller, relire, créer » rejoué avec la spécification corrigée ; décision prise sur l'entrée dans le portail client.
+
+  Constat du 2 novembre 2026 : `ANTHROPIC_API_KEY` présente sur la préproduction. Reste : les vingt messages, le parcours rejoué, la décision sur le portail.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section INTAKE-1.
 
@@ -297,6 +306,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.**
 
   **Qui : Toi.**
+
+  Constat du 2 novembre 2026 : faits, migrations de préproduction, relais GitHub avec ses secrets, Node 22, `CONTACT_HMAC_SECRET`, clé Anthropic, Mustang, choix de la plateforme, note sur `J5_AUDIT_FACTUEL_DEV.md`. Reste : Supabase Pro, fiche F10, promotion en production.
 
   Terminé quand : chaque ligne est constatée par un agent (secret présent, migration appliquée avec un schéma sans écart, réglage visible) ; aucun secret n'est affiché ni versionné ; promotion décidée explicitement.
 

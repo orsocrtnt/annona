@@ -46,7 +46,7 @@ Le code du travail présume lucrative une activité qui recherche des clients pa
 2. En attendant le numéro : entretiens de recherche seulement. Pas de prix, pas de pilote, pas de lien vers le site dans les mails.
 3. Quand le numéro arrive : l'ajouter au pied des mails et aux mentions légales, puis ouvrir les textes marqués « Après le SIREN ».
 
-**Risque qui reste :** le site public affiche déjà les prix et une inscription. Le mode entretiens réduit le risque sans le supprimer. Pose la question à ton comptable ou au juriste dès que possible.
+**Risque qui reste :** le site public affiche déjà les prix ; l'inscription en ligne est fermée depuis le 2 novembre. Le mode entretiens réduit le risque sans le supprimer. Pose la question à ton comptable dès que possible.
 
 ## 3. Qui contacter
 

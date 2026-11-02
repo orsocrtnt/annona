@@ -23,6 +23,19 @@ export const contactMessageSchema = z.object({
   website: z.string().max(200).optional(),
 }).strict();
 
+/**
+ * Durée publiée sur la page Confidentialité : un message part trois ans après sa réception,
+ * le formulaire ne connaissant pas d'échange ultérieur.
+ */
+export const CONTACT_RETENTION_YEARS = 3;
+
+export async function purgeExpiredContactMessages(now = new Date()): Promise<number> {
+  const cutoff = new Date(now);
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - CONTACT_RETENTION_YEARS);
+  const { count } = await prisma.contactMessage.deleteMany({ where: { createdAt: { lt: cutoff } } });
+  return count;
+}
+
 export type ContactAlertMessage = {
   id: string;
   name: string;

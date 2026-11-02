@@ -10,21 +10,21 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 
 ## F01 — Supabase : base, Auth et Storage
 
-- **État constaté** : service distant configuré pour les tests autorisés ; préproduction distincte absente selon [ENV-1](../operations/env1/README.md).
+- **État constaté (2 novembre 2026)** : projets `tutelliv-preproduction` et `tutelliv-dev` distincts, région de Paris, offre gratuite. Entité et transferts relevés dans le [DPA public](https://supabase.com/legal/dpa) (Supabase Pte Ltd, Singapour ; clauses types), couverture de l'offre gratuite à confirmer.
 - **Flux envisagés en exploitation** : comptes, graphe opérationnel, GPS, messages et photos privées. Les trois services doivent être couverts, pas seulement PostgreSQL.
 - **Rôle proposé** : sous-traitant ultérieur pour les données métier, à confirmer ; traitements propres éventuels du fournisseur à examiner.
 - **À obtenir** : entité, DPA, régions DB/Auth/Storage/backups, liste des intervenants, accès support et transferts, rotation des sauvegardes, restitution et effacement. Aucun lieu d'hébergement réel n'est certifié ici.
 
 ## F02 — Vercel : hébergement envisagé et planification
 
-- **État constaté** : lien de projet local détecté ; aucune cible préproduction/production distincte validée. Pas de nouveau déploiement effectué.
+- **État constaté (2 novembre 2026)** : `tutelliv.fr` tourne sur une préversion Vercel (branche `preproduction`, Node 22). Le dépôt documente une offre Hobby : usage non commercial, contenus utilisables pour l'entraînement d'IA, DPA réservé aux offres Pro et Enterprise. Passage en Pro décidé avant le premier pilote.
 - **Flux possibles si retenu** : requêtes applicatives, IP, métadonnées, secrets serveur et données transitant dans les fonctions ; journaux, cache et fichiers temporaires à inventorier.
 - **Rôle proposé** : hébergeur/sous-traitant ultérieur à qualifier.
 - **À obtenir** : régions d'exécution et CDN, journalisation/redaction/rétention, contrats, accès transfrontaliers, cron, sous-traitants et limites de suppression.
 
 ## F03 — Resend et acheminement des e-mails
 
-- **État constaté** : choix de principe du propriétaire, configuration/envois réels non qualifiés ; voir [EMAIL/SEC-05](../AUTH_EMAIL_SETUP.md).
+- **État constaté (2 novembre 2026)** : domaine `tutelliv.fr` vérifié, envois réels reçus (authentification, alertes Contact), réception des commandes par e-mail sur `commandes.tutelliv.fr` (région Irlande). Le contenu des e-mails reçus transite donc par Resend. Contrat et DPA non relus ; voir [EMAIL/SEC-05](../AUTH_EMAIL_SETUP.md).
 - **Flux prévus** : destinataire, contenu d'invitation/récupération ou alerte ; distinguer SMTP Auth et notifications métier. Éviter de transmettre photos, GPS détaillé ou contenu de dossiers dans les alertes.
 - **Rôle proposé** : sous-traitant ultérieur pour l'acheminement ; rôle propre et métriques à examiner.
 - **À obtenir** : domaine réel, expéditeur, DPA, région, conservation des messages/logs, traitement des rebonds, pixels de suivi éventuels et sous-traitants. La boîte personnelle retenue pour recevoir les tests n'est pas un canal support de production validé.
@@ -71,7 +71,7 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 
 ## F10 — Anthropic : commande par message (fonction facultative)
 
-- **État constaté (28 octobre 2026)** : code présent sur la branche `agent/commande-ia`, **désactivé par défaut**. Il faut à la fois la variable serveur `ANTHROPIC_API_KEY` et une activation explicite par l'administration de l'entreprise. Aucune clé n'est configurée et aucun appel réel n'a été effectué. Fonctionnement : [order-intake](../operations/order-intake/README.md).
+- **État constaté (2 novembre 2026)** : code intégré, **désactivé par défaut par entreprise**. La variable `ANTHROPIC_API_KEY` existe sur la préproduction ; il faut aussi une activation explicite par l'administration de l'entreprise. Selon les [conditions commerciales](https://www.anthropic.com/legal/commercial-terms) : pas d'entraînement sur les contenus clients, DPA intégré. Fonctionnement : [order-intake](../operations/order-intake/README.md).
 - **Finalité** : transformer un message reçu (e-mail, SMS, WhatsApp) collé par un dispatcher en brouillon de commande, relu et validé par un humain avant toute création.
 - **Données envoyées** : le texte collé, qui peut contenir des noms, téléphones, e-mails et adresses de tiers (donneur d'ordre, contacts d'enlèvement et de livraison) ; l'expéditeur déclaré s'il est saisi ; la date du jour. Ne sont pas envoyés : identifiants TutelLiv, fiches clients, coordonnées GPS, historique de commandes.
 - **Conservation côté TutelLiv** : le texte et l'expéditeur ne sont pas stockés. Seul un journal d'usage est conservé (entreprise, modèle, issue, nombre de jetons, horodatage) pour le quota et le coût ; sa durée de conservation reste à fixer (LEGAL-1).

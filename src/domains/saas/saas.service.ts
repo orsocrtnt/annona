@@ -776,17 +776,21 @@ export async function recordOrderCreatedUsage(
   const existing = await db.saasUsageEvent.findUnique({ where: { eventKey } });
   if (existing) return existing;
   const { startsAt, endsAt } = utcMonthBounds(occurredAt);
-  const period = await db.saasUsagePeriod.upsert({
-    where: { subscriptionId_startsAt: { subscriptionId: access.subscriptionId, startsAt } },
-    update: {},
-    create: {
+  // Deux premières commandes simultanées du mois : `upsert` ferait échouer l'une d'elles sur la clé
+  // unique. L'insertion sans conflit attend l'autre transaction, puis la relecture trouve la période.
+  await db.saasUsagePeriod.createMany({
+    data: [{
       subscriptionId: access.subscriptionId,
       companyId: input.companyId,
       startsAt,
       endsAt,
       includedOrders: access.limits.monthlyOrders,
       orderOverageUnitPriceCents: access.orderOverageUnitPriceCents,
-    },
+    }],
+    skipDuplicates: true,
+  });
+  const period = await db.saasUsagePeriod.findUniqueOrThrow({
+    where: { subscriptionId_startsAt: { subscriptionId: access.subscriptionId, startsAt } },
   });
   const event = await db.saasUsageEvent.create({
     data: {

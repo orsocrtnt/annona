@@ -34,7 +34,7 @@ export function LegalDocument({
             data-legal-status="provisoire"
             className="mt-6 rounded-xl border border-[#ecd9b4] bg-[#fdf4e4] px-4 py-3 text-sm leading-6 text-[#6b4e16] dark:border-border dark:bg-secondary dark:text-warning"
           >
-            <strong>Version provisoire, en cours de validation juridique.</strong> Ce texte ne reprend que les
+            <strong>Version provisoire, en cours de vérification.</strong> Ce texte ne reprend que les
             informations déjà établies. Les éléments marqués « en cours » seront complétés avant l&apos;ouverture
             commerciale. Mise à jour : {LEGAL_UPDATED_AT}.
           </p>

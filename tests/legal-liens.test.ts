@@ -41,7 +41,7 @@ test("LEGAL-LIENS : les formulaires qui collectent des données renvoient à la 
 
 test("LEGAL-LIENS : contenu provisoire signalé, aucune identité inventée", () => {
   const shell = read("src/features/legal/legal-document.tsx");
-  assert.match(shell, /Version provisoire, en cours de validation juridique/);
+  assert.match(shell, /Version provisoire, en cours de vérification/);
   const mentions = read("src/app/mentions-legales/page.tsx");
   const privacy = read("src/app/confidentialite/page.tsx");
   for (const source of [mentions, privacy]) {
