@@ -11,8 +11,23 @@ import { queueInvoiceIssuedNotification } from "@/domains/client-portal/notify.s
 import { kickOperationJob, permanentJobError } from "@/domains/operations/operation-job.service";
 import { isInvoiceOutstanding, OUTSTANDING_INVOICE_STATUSES } from "@/domains/invoice/invoice-due";
 
-function generateInvoiceReference(prefix: string) {
-  return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
+/**
+ * Numéro suivant de l'entreprise, dans la transaction de la facture : un échec l'annule avec elle,
+ * et le verrou de la ligne fait attendre un envoi concurrent. La suite reste donc continue (AUDIT-0111, C2).
+ */
+async function nextInvoiceReference(tx: Prisma.TransactionClient, companyId: string, prefix: string) {
+  const rows = await tx.$queryRaw<Array<{ last_number: number }>>`
+    INSERT INTO "invoice_counters" ("company_id", "last_number") VALUES (${companyId}, 1)
+    ON CONFLICT ("company_id") DO UPDATE
+      SET "last_number" = "invoice_counters"."last_number" + 1, "updated_at" = CURRENT_TIMESTAMP
+    RETURNING "last_number"`;
+  const number = rows[0]?.last_number;
+  if (!number) throw new Error("INVOICE_COUNTER_FAILED");
+  return formatInvoiceReference(prefix, number);
+}
+
+export function formatInvoiceReference(prefix: string, number: number) {
+  return `${prefix}-${String(number).padStart(6, "0")}`;
 }
 
 export function buildInvoiceLineItems(
@@ -162,7 +177,7 @@ export async function createOrderInvoice(
     } else {
       invoice = await tx.invoice.create({
         data: {
-          reference: generateInvoiceReference(billing.invoice.referencePrefix),
+          reference: await nextInvoiceReference(tx, companyId, billing.invoice.referencePrefix),
           status: "PENDING",
           amount,
           lineItems: lineItems as unknown as Prisma.InputJsonValue,
@@ -247,7 +262,7 @@ export async function createDeliveredOrderInvoice(
     if (existing.length > 0) return null;
     const invoice = await tx.invoice.create({
       data: {
-        reference: generateInvoiceReference(billing.invoice.referencePrefix),
+        reference: await nextInvoiceReference(tx, companyId, billing.invoice.referencePrefix),
         status: "PENDING",
         amount,
         lineItems: lineItems as unknown as Prisma.InputJsonValue,

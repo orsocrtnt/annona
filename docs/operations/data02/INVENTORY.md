@@ -22,6 +22,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | OrderMessage | directe | orderId | oui |
 | OrderThreadRead | indirecte | orderId | oui |
 | Invoice | directe | companyId | oui |
+| InvoiceCounter | directe | companyId | non |
 | InvoiceReminder | indirecte | companyId | non |
 | SupportTicket | directe | companyId | oui |
 | SupportTicketMessage | directe | ticketId | oui |

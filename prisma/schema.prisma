@@ -325,6 +325,7 @@ model Company {
   orders               Order[]
   deliveries           Delivery[]
   invoices             Invoice[]
+  invoiceCounter       InvoiceCounter?
   invoiceReminders     InvoiceReminder[]
   recurringOrders      RecurringOrder[]
   supportTickets       SupportTicket[]
@@ -910,9 +911,19 @@ model OperationJob {
   @@map("operation_jobs")
 }
 
+/// Dernier numéro de facture attribué par entreprise : suite continue (AUDIT-0111, C2).
+model InvoiceCounter {
+  companyId  String   @id @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lastNumber Int      @default(0) @map("last_number")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("invoice_counters")
+}
+
 model Invoice {
   id        String        @id @default(cuid())
-  reference String        @unique
+  reference String
   status    InvoiceStatus @default(PENDING)
   amount    Decimal       @db.Decimal(10, 2)
   lineItems Json          @default("[]") @map("line_items")
@@ -938,6 +949,8 @@ model Invoice {
   @@index([status])
   @@index([orderId])
   @@map("invoices")
+
+  @@unique([companyId, reference])
 }
 
 /// DEMO-3 : trace d'une relance de facture (qui, quand, canal, résultat).

@@ -9,6 +9,7 @@ import {
 } from "../src/domains/invoice/delivery-invoice.service";
 import { createDeliveredOrderInvoice, createOrderInvoice } from "../src/domains/invoice/invoice.service";
 import { updateDeliveryStatusByDriver, adminUpdateDelivery } from "../src/domains/delivery/delivery.service";
+let invoiceNumber = 0;
 import { updateCompanyOrderStatus } from "../src/domains/order/order.service";
 
 type Row = Record<string, unknown>;
@@ -83,7 +84,7 @@ function fakeDatabase(t: TestContext, options: {
   let queue: Promise<unknown> = Promise.resolve();
 
   const db = {
-    $queryRaw: async () => [],
+    $queryRaw: async (strings: TemplateStringsArray) => strings.join("").includes("invoice_counters") ? [{ last_number: ++invoiceNumber }] : [],
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
       const run = queue.then(() => fn(db));
       queue = run.catch(() => undefined);

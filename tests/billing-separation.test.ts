@@ -17,6 +17,7 @@ import { filterMiniAdminPermissions } from "../src/lib/permissions/mini-admin";
 import type * as invoiceService from "../src/domains/invoice/invoice.service";
 import * as invoiceDue from "../src/domains/invoice/invoice-due";
 
+let invoiceNumber = 0;
 function replace(t: TestContext, target: object, key: string, fn: unknown) {
   const original = Reflect.get(target, key); Reflect.set(target, key, fn);
   t.after(() => { Reflect.set(target, key, original); });
@@ -35,7 +36,7 @@ function fixture(status = "DELIVERED") {
   let invoice: Record<string, unknown> | null = null;
   let events = 0;
   const tx = {
-    $queryRaw: async () => [],
+    $queryRaw: async (strings: TemplateStringsArray) => strings.join("").includes("invoice_counters") ? [{ last_number: ++invoiceNumber }] : [],
     invoice: {
       findMany: async () => invoice ? [invoice] : [],
       create: async ({ data }: { data: Record<string, unknown> }) => (invoice = { id: "invoice", updatedAt: date, ...data }),
