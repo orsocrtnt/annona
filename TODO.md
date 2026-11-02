@@ -62,6 +62,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1 : vérifier et documenter le respect des exigences applicables (contrats, RGPD, GPS, photos, conservation et fournisseurs), avec les pièces et décisions du propriétaire. Recourir à un juriste reste facultatif ; aucune conformité n’est encore déclarée.
 - Relire le premier passage de la recette connectée, prévu chaque nuit à 3 h UTC (22 h à New York, première fois le 2 novembre au soir), et corriger ce qu'elle signale. Aucune recette connectée n'apparaît dans GitHub Actions depuis le 20 octobre. Non cliqués : replanifier un échec à l'écran, bandeau de prix du portail.
+- Places de démo : une tâche de fond encore en cours quand une place se libère la bloque aussitôt (`UNFINISHED_JOBS`) ; la faire réessayer au lieu de bloquer. Aucune place concernée le 2 novembre.
 - Démarchage : les liens restants vers l'inscription (accueil, pied de page, Fonctionnalités, Démonstration) suivent S2 d'AUDIT-0111.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
