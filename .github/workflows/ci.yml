@@ -95,10 +95,10 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
-      # Le stockage Supabase est un service à part : seule sa table des espaces est simulée ici.
+      # Le stockage Supabase et la fonction créée d'office par la plateforme n'existent pas dans l'image : simulés ici.
       - name: Préparer le stockage Supabase
         run: |
-          docker exec -e PGPASSWORD=ci "${{ job.services.postgres.id }}" psql -h 127.0.0.1 -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS storage; CREATE TABLE IF NOT EXISTS storage.buckets (id text PRIMARY KEY, name text); ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS public boolean, ADD COLUMN IF NOT EXISTS file_size_limit bigint, ADD COLUMN IF NOT EXISTS allowed_mime_types text[]; GRANT USAGE ON SCHEMA storage TO postgres; GRANT ALL ON storage.buckets TO postgres;"
+          docker exec -e PGPASSWORD=ci "${{ job.services.postgres.id }}" psql -h 127.0.0.1 -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS storage; CREATE TABLE IF NOT EXISTS storage.buckets (id text PRIMARY KEY, name text); ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS public boolean, ADD COLUMN IF NOT EXISTS file_size_limit bigint, ADD COLUMN IF NOT EXISTS allowed_mime_types text[]; GRANT USAGE ON SCHEMA storage TO postgres; GRANT ALL ON storage.buckets TO postgres; CREATE OR REPLACE FUNCTION public.rls_auto_enable() RETURNS event_trigger LANGUAGE plpgsql AS \$\$ BEGIN NULL; END \$\$; ALTER FUNCTION public.rls_auto_enable() OWNER TO postgres;"
 
       - name: Appliquer toutes les migrations
         run: npx prisma migrate deploy
