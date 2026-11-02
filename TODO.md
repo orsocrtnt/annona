@@ -21,13 +21,14 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - Essayer l'application allégée sur ton iPhone (MOBILE-2) et dire ce qui te gêne encore.
+- INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - ENV-2 : l'ancien projet Supabase `wlomrzil…` reste en pause (ta décision du 1er novembre) ; change son mot de passe s'il est relancé un jour, et confirme l'origine de la clé Stripe de test.
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - Rien pour l'instant : le reste attend une action du point 1 ou 3.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
-- Juriste : LEGAL-1, LEGAL-LIENS, DATA-02.
+- Juriste : LEGAL-1, LEGAL-LIENS, DATA-02, et la fiche F10 d'INTAKE-1 (obligatoire avant tout vrai message de client).
 - Pilotes : PILOT-1 et 2, PROD-02 et 04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
 - Mesures et mise en vente : SAAS-02, SAAS-03, COST-1, RELEASE-1, SMS, GROWTH-1.
 
