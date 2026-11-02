@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, preproduction]
   pull_request:
+  # Parcours complets sur une vraie base chaque nuit (AUDIT-0111, C6), à 3 h UTC.
+  schedule:
+    - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
       run_connected:
@@ -58,9 +61,53 @@ jobs:
       - name: Construire l'application sans secret
         run: npm run build
 
+  migrations:
+    name: Migrations sur PostgreSQL neuf
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: "true"
+      DATABASE_URL: "postgresql://postgres:ci@127.0.0.1:5432/postgres"
+      DIRECT_URL: "postgresql://postgres:ci@127.0.0.1:5432/postgres"
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      # Les migrations retirent les droits de ces rôles, présents d'office sur Supabase.
+      - name: Créer les rôles Supabase
+        run: |
+          docker exec "${{ job.services.postgres.id }}" psql -U postgres -c "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;"
+
+      - name: Appliquer toutes les migrations
+        run: npx prisma migrate deploy
+
+      - name: Vérifier que le schéma correspond aux migrations
+        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+
   connected:
     name: Recette préproduction
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_connected }}
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_connected) }}
     needs: local
     runs-on: ubuntu-latest
     timeout-minutes: 30
