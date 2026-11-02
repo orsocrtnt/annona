@@ -11,7 +11,7 @@ test("chaque phrase publique est couverte par un écran déjà livré", () => {
   const publicNav = readFileSync(new URL("../src/features/landing/public-top-navbar.tsx", import.meta.url), "utf8");
   assert.match(page, /PUBLIC_CAPABILITIES/);
   assert.match(page, /href="\/tarifs"/);
-  assert.match(page, /href="\/register"/);
+  assert.match(page, /href="\/contact"/);
   assert.match(page, /href="\/login"/);
   assert.match(publicNav, /href: "\/fonctionnalites"/);
   assert.doesNotMatch(page, forbidden);

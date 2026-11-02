@@ -265,7 +265,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
   };
 
   const loginLinks: Record<LoginContext, { forgot: string; register?: string }> = {
-    company: { forgot: "/forgot-password", register: "/register" },
+    company: { forgot: "/forgot-password", register: "/contact" },
     client: { forgot: "/forgot-password" },
     driver: { forgot: "/forgot-password" },
   };
@@ -406,7 +406,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
                     onClick={(event) => navigateToAuthPage(event, loginLinks[loginContext].register!)}
                     className="inline-flex min-h-11 items-center font-semibold text-brand hover:underline"
                   >
-                    Créer un compte
+                    Demander un pilote
                   </Link>
                 </p>
               )}

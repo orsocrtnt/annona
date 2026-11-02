@@ -2,6 +2,7 @@ import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { type NextRequest, NextResponse } from "next/server";
 import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, reopenSignupIdentity, resendSignupConfirmation, submitSignupIdentity, updateSignupIdentityDetails, updateSignupSelection } from "@/domains/signup/signup.service";
 import { clearSignupResumeCookie, setSignupResumeCookie } from "@/domains/signup/signup-cookie";
+import { SIGNUP_CLOSED_MESSAGE, signupOpen } from "@/domains/signup/signup-availability";
 import { describeSignupValidation, signupActionSchema } from "@/lib/validations/signup";
 
 const noStore = { "Cache-Control": "no-store" };
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!signupOpen()) return NextResponse.json({ error: SIGNUP_CLOSED_MESSAGE }, { status: 503, headers: noStore });
   const parsed = signupActionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     const details = describeSignupValidation(parsed.error);

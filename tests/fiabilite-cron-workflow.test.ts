@@ -45,3 +45,14 @@ test("la route cron refuse un secret absent ou faux", async () => {
     else process.env.CRON_SECRET = previous;
   }
 });
+
+test("les tâches quotidiennes tournent sur tutelliv.fr, pas seulement en production Vercel (AUDIT-0111, E1)", () => {
+  const daily = readFileSync(resolve(".github/workflows/cron-daily.yml"), "utf8");
+  assert.match(daily, /cron: "0 6 \* \* \*"/);
+  assert.match(daily, /workflow_dispatch:/);
+  assert.match(daily, /environment: preproduction/);
+  assert.match(daily, /\/api\/cron\/recurring-orders/);
+  assert.match(daily, /\/api\/cron\/billing/);
+  assert.match(daily, /Authorization: Bearer \$\{PREPROD_CRON_SECRET\}/);
+  assert.doesNotMatch(daily, /https?:\/\/(?!\*)[a-z0-9.-]+\.[a-z]{2,}/i);
+});

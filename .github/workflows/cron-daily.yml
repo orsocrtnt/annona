@@ -1,0 +1,79 @@
+name: Tâches quotidiennes (préproduction)
+
+# tutelliv.fr tourne en préversion Vercel : les crons de vercel.json ne s'y exécutent
+# pas (ils ne visent que la production Vercel). Ce workflow les porte, avec le même
+# secret que cron-operations.yml, à 6 h UTC comme dans vercel.json.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cron-daily-preproduction
+  cancel-in-progress: false
+
+jobs:
+  quotidien:
+    name: Récurrences et rapprochement d'abonnements
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: preproduction
+    env:
+      PREPROD_BASE_URL: ${{ secrets.PREPROD_BASE_URL }}
+      PREPROD_CRON_SECRET: ${{ secrets.PREPROD_CRON_SECRET }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Vérifier les secrets
+        run: |
+          missing=0
+          for name in PREPROD_BASE_URL PREPROD_CRON_SECRET; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret GitHub manquant : $name (environnement « preproduction »). Voir docs/OPERATIONS.md."
+              missing=1
+            fi
+          done
+          case "$PREPROD_BASE_URL" in
+            https://*) ;;
+            *) echo "::error::PREPROD_BASE_URL doit commencer par https://"; missing=1 ;;
+          esac
+          exit "$missing"
+
+      - name: Générer les commandes récurrentes
+        run: |
+          url="${PREPROD_BASE_URL%/}/api/cron/recurring-orders"
+          args=(--silent --show-error --max-time 70 --output response.json --write-out '%{http_code}'
+            -H "Authorization: Bearer ${PREPROD_CRON_SECRET}")
+          if [ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+          fi
+          # 503 avec hasMore : le lot n'a pas vidé la file, on reprend. Les récurrences sont
+          # idempotentes : un nouvel appel ne regénère pas une échéance déjà traitée.
+          for attempt in 1 2 3 4 5; do
+            status=$(curl "${args[@]}" "$url") || { echo "::error::Appel impossible"; exit 1; }
+            echo "Essai $attempt : HTTP $status"
+            head -c 500 response.json; echo
+            [ "$status" = "200" ] && exit 0
+            grep -q '"hasMore":true' response.json && grep -q '"failed":0' response.json || break
+          done
+          echo "::error::/api/cron/recurring-orders a répondu HTTP $status (401 = secret faux ; 503 = échec ou file non vidée)."
+          exit 1
+
+      - name: Rapprocher les abonnements
+        if: ${{ always() }}
+        run: |
+          url="${PREPROD_BASE_URL%/}/api/cron/billing"
+          args=(--silent --show-error --max-time 70 --output response.json --write-out '%{http_code}'
+            -H "Authorization: Bearer ${PREPROD_CRON_SECRET}")
+          if [ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+          fi
+          status=$(curl "${args[@]}" "$url") || { echo "::error::Appel impossible"; exit 1; }
+          echo "HTTP $status"
+          head -c 500 response.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::/api/cron/billing a répondu HTTP $status."
+            exit 1
+          fi

@@ -120,8 +120,8 @@ export default function FonctionnalitesPage() {
             <Link href="/tarifs" className="inline-flex min-h-12 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-5 py-3 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] dark:focus-visible:ring-ring focus-visible:ring-offset-2">
               Comparer les tarifs
             </Link>
-            <Link href="/register" className="inline-flex min-h-12 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-5 py-3 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] dark:focus-visible:ring-ring focus-visible:ring-offset-2">
-              Inscription
+            <Link href="/contact" className="inline-flex min-h-12 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-5 py-3 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] dark:focus-visible:ring-ring focus-visible:ring-offset-2">
+              Demander un pilote
             </Link>
             <Link href="/login" className="inline-flex min-h-12 items-center px-3 py-3 text-sm font-bold text-[#4a544d] dark:text-text-secondary underline decoration-[#a3aca6] underline-offset-4 hover:text-foreground">
               Connexion

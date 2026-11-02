@@ -1,3 +1,4 @@
+import { signupTestShortcutsAllowed } from "../src/domains/signup/signup-availability";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
@@ -23,6 +24,7 @@ function loadSignupService(overrides: Record<string, unknown> = {}) {
     "@/lib/auth/email-links": { getPasswordLinkRedirect: () => "https://example.test/reset-password" },
     "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value.trim().toLowerCase() },
     "@/lib/utils": { slugify: (value: string) => value.toLowerCase().replaceAll(" ", "-") },
+    "@/domains/signup/signup-availability": { signupTestShortcutsAllowed },
     "@/domains/saas/saas.service": { snapshotPlan: (value: unknown) => value },
     "@/domains/operations/operation-job.service": {
       enqueueOperationJob: () => ({}),
@@ -948,9 +950,7 @@ test("SIGNUP-1 : aucun ancien endpoint ni retour navigateur ne peut provisionner
   const service = readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8");
   assert.match(legacyRoute, /status: 410/);
   assert.doesNotMatch(legacyRoute, /provisionCompanyAdmin/);
-  assert.match(paymentRoute, /SIGNUP_PAYMENT_ADAPTER === "fake"/);
-  assert.match(paymentRoute, /VERCEL_ENV !== "production"/);
-  assert.match(paymentRoute, /NODE_ENV !== "production"/);
+  assert.match(paymentRoute, /signupTestShortcutsAllowed\(\)/);
   assert.match(service, /signup_flow: "managed"/);
   assert.doesNotMatch(service, /account_type: "company"/);
   assert.doesNotMatch(service, /signup_resume_token/);
@@ -982,8 +982,7 @@ test("SIGNUP-1 : un jeton de reprise périmé relance une inscription au lieu de
 
 test("SIGNUP-1 : un quota Auth 429 confirme l’e-mail via admin hors production", async () => {
   const source = readFileSync(resolve("src/domains/signup/signup.service.ts"), "utf8");
-  assert.match(source, /signupFakeEmailBypassAllowed/);
-  assert.match(source, /SIGNUP_PAYMENT_ADAPTER === "fake"/);
+  assert.match(source, /signupTestShortcutsAllowed/);
   assert.match(source, /email_confirm: true/);
 
   const resumeToken = "resume-token-for-auth-rate-limit-bypass";
@@ -1079,11 +1078,14 @@ test("SIGNUP-1 : un quota Auth 429 confirme l’e-mail via admin hors production
   assert.equal(row.status, "EMAIL_VERIFIED");
   assert.equal(row.authUserId, "auth-rate-limit");
 
-  process.env.VERCEL_ENV = "production";
-  row.status = "DRAFT";
-  row.emailVerifiedAt = null;
-  row.authUserId = null;
-  await assert.rejects(() => service.submitSignupIdentity(resumeToken, identity), /AUTH_RATE_LIMITED/);
+  // Sur tout site hébergé, préversion comprise : tutelliv.fr tourne en préversion (AUDIT-0111, S2).
+  for (const vercelEnv of ["production", "preview"]) {
+    process.env.VERCEL_ENV = vercelEnv;
+    row.status = "DRAFT";
+    row.emailVerifiedAt = null;
+    row.authUserId = null;
+    await assert.rejects(() => service.submitSignupIdentity(resumeToken, identity), /AUTH_RATE_LIMITED/);
+  }
   if (previousVercelEnv === undefined) delete process.env.VERCEL_ENV;
   else process.env.VERCEL_ENV = previousVercelEnv;
 });
@@ -1118,4 +1120,116 @@ test("RECETTE-2810 point 10 : bienvenue — e-mail volontairement désactivé = 
     assert.equal(failed?.message, "SIGNUP_WELCOME_EMAIL_NOT_CONFIGURED", reason);
     assert.equal((failed as { skipped?: boolean }).skipped, undefined, `${reason} : vrai échec`);
   }
+});
+
+test("AUDIT-0111 S1 : une inscription ne touche jamais un compte invité non confirmé", async () => {
+  const resumeToken = "resume-token-for-invited-account";
+  const row = {
+    id: "signup-invited-1",
+    resumeTokenHash: createHash("sha256").update(resumeToken).digest("hex"),
+    status: "DRAFT" as string,
+    catalogVersionId: "catalog",
+    planCode: "STARTER",
+    billingInterval: "MONTHLY",
+    optionSelections: [],
+    quoteSnapshot: {},
+    email: null as string | null,
+    authUserId: null as string | null,
+    emailLinkTokenHash: null as string | null,
+    firstName: null as string | null,
+    lastName: null,
+    companyName: null,
+    legalName: null,
+    siren: null,
+    siret: null,
+    phone: null,
+    billingAddress: null,
+    billingPostalCode: null,
+    billingCity: null,
+    billingCountry: "FR",
+    emailVerifiedAt: null,
+    verificationEmailSentAt: null as Date | null,
+    paymentConfirmedAt: null,
+    activatedAt: null,
+    failureCode: null as string | null,
+    expiresAt: new Date(Date.now() + 60_000),
+    companyId: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const identity = {
+    firstName: "Ada",
+    lastName: "Martin",
+    email: "invite@example.test",
+    password: "Secret123",
+    companyName: "Livraison Ada",
+    billingAddress: "1 rue du Test",
+    billingPostalCode: "75001",
+    billingCity: "Paris",
+    billingCountry: "FR",
+  };
+  const authWrites: unknown[] = [];
+  let signUps = 0;
+  let resends = 0;
+  const prismaMock = {
+    signupJourney: {
+      findUnique: async () => row,
+      findUniqueOrThrow: async () => row,
+      update: async ({ data }: { data: Partial<typeof row> }) => Object.assign(row, data),
+      updateMany: async ({ data }: { data: Partial<typeof row> }) => {
+        Object.assign(row, data);
+        return { count: 1 };
+      },
+    },
+    // Le profil de l'invité existe déjà dans TutelLiv, en attente de vérification.
+    user: { findUnique: async () => null, findFirst: async () => ({ id: "user-invite" }) },
+  };
+  const service = loadSignupService({
+    "@/services/prisma/client": { prisma: prismaMock },
+    "@/services/supabase/admin": {
+      createAdminClient: () => ({ auth: { admin: {
+        getUserById: async () => ({ data: { user: null }, error: { status: 404, code: "user_not_found" } }),
+        listUsers: async () => ({ data: { users: [{ id: "auth-invite", email: "invite@example.test", email_confirmed_at: null }] }, error: null }),
+        updateUserById: async (_id: string, attributes: unknown) => {
+          authWrites.push(attributes);
+          return { error: null };
+        },
+        deleteUser: async () => {
+          authWrites.push("delete");
+          return { error: null };
+        },
+      } } }),
+    },
+    "@/services/supabase/password-link": {
+      createPasswordLinkClient: () => ({ auth: {
+        signUp: async () => {
+          signUps += 1;
+          return { data: { user: { id: "fake-hidden", identities: [] }, session: null }, error: null };
+        },
+        resend: async () => {
+          resends += 1;
+          return { error: null };
+        },
+        signOut: async () => ({ error: null }),
+      } }),
+    },
+  });
+  await service.submitSignupIdentity(resumeToken, identity);
+  assert.deepEqual(authWrites, []);
+  assert.equal(signUps, 0);
+  assert.equal(resends, 0);
+  assert.notEqual(row.authUserId, "auth-invite");
+});
+
+test("AUDIT-0111 S2 : raccourcis de test fermés sur tout site hébergé, inscription fermée sans paiement possible", async () => {
+  const { signupOpen, signupTestShortcutsAllowed } = await import("../src/domains/signup/signup-availability");
+  const env = (values: Record<string, string>) => values as unknown as NodeJS.ProcessEnv;
+  assert.equal(signupTestShortcutsAllowed(env({ NODE_ENV: "development" })), true);
+  assert.equal(signupTestShortcutsAllowed(env({ NODE_ENV: "production", SIGNUP_PAYMENT_ADAPTER: "fake" })), true);
+  assert.equal(signupTestShortcutsAllowed(env({ NODE_ENV: "production" })), false);
+  for (const VERCEL_ENV of ["preview", "production"]) {
+    assert.equal(signupTestShortcutsAllowed(env({ NODE_ENV: "production", VERCEL_ENV, SIGNUP_PAYMENT_ADAPTER: "fake" })), false);
+    assert.equal(signupOpen(env({ NODE_ENV: "production", VERCEL_ENV, SIGNUP_PAYMENT_ADAPTER: "fake" })), false);
+  }
+  assert.equal(signupOpen(env({ NODE_ENV: "production", VERCEL_ENV: "preview", SIGNUP_PAYMENT_ADAPTER: "stripe-sandbox" })), true);
 });

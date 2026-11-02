@@ -5,6 +5,7 @@ import {
   signupPaidEnvironmentPath,
 } from "@/domains/signup/signup.service";
 import { clearSignupResumeCookie } from "@/domains/signup/signup-cookie";
+import { signupTestShortcutsAllowed } from "@/domains/signup/signup-availability";
 import { createAdminClient } from "@/services/supabase/admin";
 import { createClient } from "@/services/supabase/server";
 import { sandboxBilling } from "@/domains/billing/billing.service";
@@ -41,10 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Le paiement sandbox est indisponible. Votre inscription est conservée." }, { status: 503 });
     }
   }
-  const enabled =
-    process.env.VERCEL_ENV !== "production" &&
-    (process.env.SIGNUP_PAYMENT_ADAPTER === "fake" || process.env.NODE_ENV !== "production");
-  if (!enabled) return NextResponse.json({ error: "Le paiement fictif n'est pas actif sur cet environnement." }, { status: 503 });
+  if (!signupTestShortcutsAllowed()) return NextResponse.json({ error: "Le paiement fictif n'est pas actif sur cet environnement." }, { status: 503 });
   const token = request.cookies.get(SIGNUP_COOKIE)?.value;
   const parsed = fakePaymentSchema.safeParse(await request.json().catch(() => null));
   if (!token || !parsed.success) return NextResponse.json({ error: "Demande de paiement invalide." }, { status: 400 });

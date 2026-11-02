@@ -71,8 +71,8 @@ export function HomeLanding() {
             Prêt à ranger votre journée&nbsp;?
           </h2>
           <div className="mt-[22px] flex flex-wrap justify-center gap-2.5">
-            <Link href="/register" className={landingMintButton}>
-              Créer mon espace
+            <Link href="/contact" className={landingMintButton}>
+              Demander un pilote
             </Link>
             <Link href="/tarifs" className={landingGhostButton}>
               Voir les tarifs

@@ -44,7 +44,7 @@ export function GrowthShell({
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold text-[#506070] dark:text-text-secondary">
             <Link href="/" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Accueil</Link>
-            <Link href="/register" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Créer un compte</Link>
+            <Link href="/contact" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Demander un pilote</Link>
             <Link href="/login/client" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Espace client</Link>
             <Link href="/login/driver" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Espace chauffeur</Link>
             <Link href="/contact" className="hover:text-[#243447] dark:hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">Contact</Link>

@@ -172,3 +172,7 @@ Le workflow `.github/workflows/ci.yml` exécute automatiquement les contrôles s
 La recette connectée n'est disponible que par lancement manuel dans l'environnement GitHub protégé `preproduction`. Elle exige les secrets `PREPROD_*` décrits dans `operations/ci1/README.md`, crée uniquement les fixtures temporaires de TEST-2 et conserve ses trois preuves nettoyées si toute la recette réussit. Ne jamais relier ce job à la production.
 
 Un build local réussi n'autorise aucun déploiement. Avant publication : ENV-1, DB-1, CI-1, OPS-03A/B et les décisions de V1-GO doivent être traitées selon leurs critères. Aucun push, migration ou déploiement n'est inclus dans ces instructions.
+
+### Tâches quotidiennes sur tutelliv.fr (GitHub Actions)
+
+`tutelliv.fr` tourne en préversion Vercel : les crons de `vercel.json` ne s'y exécutent pas. Le workflow `.github/workflows/cron-daily.yml` appelle chaque jour à 6 h UTC `/api/cron/recurring-orders` et `/api/cron/billing`, avec les secrets de l'environnement GitHub `preproduction`, et peut se lancer à la main avec « Run workflow ». Une fois une vraie production en place (AUDIT-0111, E2), revoir ce workflow pour éviter les doublons de planification.

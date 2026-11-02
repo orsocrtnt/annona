@@ -1,3 +1,4 @@
+import { signupTestShortcutsAllowed } from "@/domains/signup/signup-availability";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { Prisma, type SaasBillingInterval, type SaasPlanCode, type SignupPaymentStatus } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
@@ -540,13 +541,6 @@ function authEmailRedirectTo() {
   return hostname === "localhost" || hostname === "127.0.0.1" ? undefined : redirect;
 }
 
-function signupFakeEmailBypassAllowed() {
-  return (
-    process.env.VERCEL_ENV !== "production" &&
-    (process.env.SIGNUP_PAYMENT_ADAPTER === "fake" || process.env.NODE_ENV !== "production")
-  );
-}
-
 async function confirmAuthUserEmailViaAdmin(authUserId: string) {
   const admin = createAdminClient();
   const { data, error } = await admin.auth.admin.updateUserById(authUserId, { email_confirm: true });
@@ -630,7 +624,7 @@ async function resendUnconfirmedSignupEmail(email: string, redirectTo: string | 
     options: redirectTo ? { emailRedirectTo: redirectTo } : {},
   });
   if (error?.status === 429) {
-    if (!signupFakeEmailBypassAllowed()) throw new Error("AUTH_RATE_LIMITED");
+    if (!signupTestShortcutsAllowed()) throw new Error("AUTH_RATE_LIMITED");
     const found = await findAuthUserByEmail(email);
     if (!found) throw new Error("AUTH_RATE_LIMITED");
     await confirmAuthUserEmailViaAdmin(found.id);
@@ -656,7 +650,7 @@ async function createManagedAuthUser(input: {
     },
   });
   if (error?.status === 429) {
-    if (!signupFakeEmailBypassAllowed()) throw new Error("AUTH_RATE_LIMITED");
+    if (!signupTestShortcutsAllowed()) throw new Error("AUTH_RATE_LIMITED");
     return provisionAuthUserWithoutEmail(input);
   }
   if (error) throw new Error("AUTH_EMAIL_FAILED");
@@ -716,6 +710,8 @@ async function deliverOrReuseSignupConfirmation(input: {
   const found = await resolveSignupAuthUser(input.knownAuthUserId, input.email);
 
   if (found && !found.email_confirmed_at) {
+    // Un compte invité non confirmé appartient à son invité : l'inscription n'y touche jamais (AUDIT-0111, S1).
+    if (await tutellivUserExists({ authUserId: found.id, email: input.email })) return "already_registered" as const;
     await reuseUnconfirmedAuthUser({
       authUserId: found.id,
       password: input.password,
@@ -755,6 +751,7 @@ async function deliverOrReuseSignupConfirmation(input: {
 
   const leftover = await findAuthUserByEmail(input.email);
   if (leftover && !leftover.email_confirmed_at) {
+    if (await tutellivUserExists({ authUserId: leftover.id, email: input.email })) return "already_registered" as const;
     await reuseUnconfirmedAuthUser({
       authUserId: leftover.id,
       password: input.password,

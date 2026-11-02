@@ -14,7 +14,7 @@ test("la page démonstration réutilise l'entrée existante sans la déclencher"
   assert.match(page, /n'est pas ouverte sur cet environnement/);
   assert.match(page, /href="\/fonctionnalites"/);
   assert.match(page, /href="\/tarifs"/);
-  assert.match(page, /href="\/register"/);
+  assert.match(page, /href="\/contact"/);
   assert.match(page, /href="\/login"/);
   assert.doesNotMatch(page, /GPS permanent|e-mail réel|paiement|stripe|Demo2026/i);
   assert.match(reader, /DEMO_LOGIN_EMAIL/);

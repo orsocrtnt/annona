@@ -143,8 +143,8 @@ export default async function DemonstrationPage() {
               <Link href="/tarifs" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-2.5 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary">
                 Tarifs
               </Link>
-              <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-2.5 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary">
-                Inscription
+              <Link href="/contact" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-2.5 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary">
+                Demander un pilote
               </Link>
               <Link href="/login" className="inline-flex min-h-11 items-center px-3 py-2.5 text-sm font-bold text-[#4a544d] dark:text-text-secondary underline decoration-[#a3aca6] underline-offset-4 hover:text-foreground">
                 Connexion
