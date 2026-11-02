@@ -37,6 +37,7 @@ Créer `.env.local` seulement s'il n'existe pas. `npm ci` utilise le lockfile et
 
 - `AUTH_EMAIL_LINKS_ENABLED=true` seulement après configuration complète décrite dans `AUTH_EMAIL_SETUP.md` ;
 - `RESEND_API_KEY`, `MAIL_FROM` ou `EMAIL_FROM` pour les notifications e-mail ;
+- `OPS_ALERT_RECIPIENT` pour recevoir les alertes par e-mail, une fois par jour et par type de panne (vide : `EMAIL_TEST_RECIPIENT`, sinon aucun e-mail) ;
 - `OPS_ALERT_WEBHOOK_URL` et `OPS_ALERT_WEBHOOK_TOKEN` pour le canal d'incident générique ;
 - variables `NEXT_PUBLIC_MAP_*`, `NEXT_PUBLIC_OSRM_URL` et `GEOCODING_URL` pour remplacer les fournisseurs d'essai ;
 - `DATABASE_CONNECTION_LIMIT` et `DATABASE_CONNECTION_MODE` pour le pool ;
@@ -83,6 +84,18 @@ Les sessions expirées sont actuellement conservées. Avant une diffusion publiq
 Les effets différés (dispatch automatique, notifications) sont lancés après la réponse HTTP par `after()` de Next.js (`src/lib/operations/after-response.ts`) pour que Vercel ne gèle pas la fonction avant la fin ; hors requête (tests, scripts) la tâche est lancée directement. Le filet cron reprend ce qui resterait en `PENDING`.
 
 Les routes cron attendent `Authorization: Bearer <CRON_SECRET>`. Vérifier que l'hébergement choisi autorise cette cadence. Une tâche opérationnelle en échec est visible dans le dispatch et peut être relancée par un utilisateur autorisé.
+
+### Relais des tâches de fond (Supabase, depuis le 2 novembre 2026)
+
+GitHub espace ses lancements planifiés (4 à 7 heures constatées). Le rythme de 5 minutes est donc porté par la tâche pg_cron `tutelliv-operations-relay` de `tutelliv-preproduction` : elle appelle `/api/cron/operations` avec `pg_net` (fire-and-forget, 70 s au plus), l'URL `ops03b_app_url` et le secret `relay_cron_secret` du coffre Supabase, égal au `CRON_SECRET` du déploiement. Tant que ce secret manque, la tâche ne fait rien. Il est à remettre à jour si `CRON_SECRET` change. Réponses : `net._http_response` (conservées peu de temps). Le workflow GitHub ci-dessous reste un filet de secours.
+
+Pour copier le secret sans l'afficher (à lancer par le propriétaire, depuis la racine du dépôt) :
+
+```bash
+F=$(mktemp) && vercel env pull "$F" --environment=preview --git-branch=preproduction --yes && npx dotenv -e "$F" -- node scripts/ops03b/store-relay-secret.mjs; rm -f "$F"
+```
+
+Le script refuse toute autre base que la préproduction et affiche seulement un bilan, qui doit contenir `"stored":true`.
 
 ### Planificateur des tâches de fond (GitHub Actions)
 

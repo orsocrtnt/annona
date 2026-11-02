@@ -6,7 +6,7 @@ Cette liste contient les inconnues qui empêchent encore des documents définiti
 
 - forme juridique et nom : entrepreneur individuel, nom et adresse publiés sur la page Mentions légales, justificatif à fournir ;
 - SIREN/SIRET, RNE et TVA : **EN ATTENTE** (pas de numéro le 1er novembre 2026) ;
-- e-mail et téléphone publiables, directeur de la publication : **À FOURNIR** ;
+- e-mail et téléphone publiables : **À FOURNIR** ; directeur de la publication : le propriétaire, confirmé le 2 novembre 2026 ;
 - assurance responsabilité professionnelle : **INCONNUE** ;
 - responsable interne du dossier données et suppléant : **À NOMMER** ;
 - nécessité de désigner un DPO : **À ANALYSER**, sans conclure à partir de la taille seule.

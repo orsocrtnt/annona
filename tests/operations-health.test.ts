@@ -66,6 +66,56 @@ test("le signal d'incident retire secrets, URL de base et e-mail avant journal e
   assert.equal(requests[0]?.body.includes("webhook-secret"), false);
 });
 
+test("une alerte part par e-mail, avec une clé par empreinte et par jour et un corps stable", async () => {
+  const sent: Array<{ to: string; subject: string; text: string; idempotencyKey: string; replayWindowStart: unknown }> = [];
+  const sendEmail = (async (input: (typeof sent)[number]) => {
+    sent.push(input);
+    return { status: "sent" };
+  }) as never;
+  const incident = (failed: number) => ({
+    source: "cron.operations",
+    fingerprint: "operation-jobs-overdue",
+    summary: "Tâches en retard ops@example.test",
+    severity: "error" as const,
+    context: { failed },
+  });
+  const log = { error: () => undefined, warn: () => undefined };
+  const env = { NODE_ENV: "test" as const, OPS_ALERT_RECIPIENT: " ops@tutelliv.test ", EMAIL_TEST_RECIPIENT: "recette@tutelliv.test" };
+
+  const morning = await reportOperationalIncident(incident(1), { env, log, sendEmail, now: new Date("2026-11-02T08:00:00.000Z") });
+  await reportOperationalIncident(incident(7), { env, log, sendEmail, now: new Date("2026-11-02T20:00:00.000Z") });
+  await reportOperationalIncident(incident(7), { env, log, sendEmail, now: new Date("2026-11-03T00:05:00.000Z") });
+
+  assert.equal(morning.email, "sent");
+  assert.equal(sent[0]?.to, "ops@tutelliv.test");
+  assert.equal(sent[0]?.idempotencyKey, "ops-alert:operation-jobs-overdue:2026-11-02");
+  assert.equal(sent[0]?.replayWindowStart, null);
+  // Même clé et même corps dans la journée : le fournisseur n'envoie qu'une fois ; nouvelle clé le lendemain.
+  assert.deepEqual([sent[1]?.idempotencyKey, sent[1]?.subject, sent[1]?.text], [sent[0]?.idempotencyKey, sent[0]?.subject, sent[0]?.text]);
+  assert.equal(sent[2]?.idempotencyKey, "ops-alert:operation-jobs-overdue:2026-11-03");
+  assert.equal(`${sent[0]?.subject} ${sent[0]?.text}`.includes("ops@example.test"), false, "corps nettoyé");
+});
+
+test("sans destinataire, désactivé ou en échec, l'alerte e-mail ne bloque jamais l'appelant", async () => {
+  const log = { error: () => undefined, warn: () => undefined };
+  const incident = { source: "cron", fingerprint: "panne", summary: "Panne" };
+  const noRecipient = await reportOperationalIncident(incident, { env: { NODE_ENV: "test" }, log });
+  assert.equal(noRecipient.email, "disabled");
+
+  const env = { NODE_ENV: "test" as const, EMAIL_TEST_RECIPIENT: "recette@tutelliv.test" };
+  const off = await reportOperationalIncident(incident, { env, log, sendEmail: (async () => ({ status: "disabled" })) as never });
+  assert.equal(off.email, "disabled");
+
+  const warnings: string[] = [];
+  const down = await reportOperationalIncident(incident, {
+    env,
+    log: { error: () => undefined, warn: (value) => warnings.push(String(value)) },
+    sendEmail: (async () => { throw new Error("HTTP_500"); }) as never,
+  });
+  assert.equal(down.email, "failed");
+  assert.match(warnings[0] ?? "", /tutelliv\.alert_email_failed/);
+});
+
 test("la santé profonde vérifie base, stockage et file sans révéler de donnée métier", async () => {
   let countCall = 0;
   const service = load<typeof import("../src/domains/operations/service-health.service")>(

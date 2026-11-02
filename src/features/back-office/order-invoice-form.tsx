@@ -177,7 +177,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
           .map((l) => ({ label: l.label, amount: parseFloat(l.amount) })),
         notes: notes || undefined,
       });
-      toast.success("Relevé enregistré — le client peut le consulter");
+      toast.success("Facture enregistrée — le client peut la consulter");
       qc.invalidateQueries({ queryKey: ["company", "orders", order.id] });
     } catch (error) {
       toast.error("Émission impossible", {
@@ -222,7 +222,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4" />
-            Relevé de prestation
+            Facture de prestation
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
@@ -248,7 +248,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4" />
-            Relevé de prestation enregistré
+            Facture de prestation enregistrée
           </CardTitle>
           <CardDescription>
             Document opérationnel visible dans l&apos;espace factures du client. Il ne constitue pas une facture électronique réglementaire.
@@ -305,7 +305,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
           Tarifs de la prestation
         </CardTitle>
         <CardDescription>
-          Choisissez les tarifs à appliquer. Le relevé sera visible côté client. Document opérationnel, distinct de l&apos;abonnement TutelLiv, sans émission réglementaire de facture électronique.
+          Choisissez les tarifs à appliquer. La facture sera visible côté client. Document opérationnel, distinct de l&apos;abonnement TutelLiv, sans émission réglementaire de facture électronique.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -457,7 +457,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
               loading={submitting}
               onClick={handleSubmit}
             >
-              Enregistrer le relevé
+              Enregistrer la facture
             </Button>
         </>
       </CardContent>
@@ -465,7 +465,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
   );
 }
 
-/** Téléchargements du relevé : PDF classique et PDF Factur-X (XML CII embarqué). */
+/** Téléchargements de la facture : PDF classique et PDF Factur-X (XML CII embarqué). */
 function InvoiceDownloadLinks({ invoiceId }: { invoiceId: string }) {
   const { can, isRole } = usePermissions();
   if (!can("invoices:read") || !isRole(["COMPANY_ADMIN", "MINI_ADMIN"])) return null;

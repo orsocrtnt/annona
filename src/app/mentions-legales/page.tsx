@@ -22,7 +22,7 @@ export default function MentionsLegalesPage() {
             ["Éditeur", "Carotenuto - Marchetti Orso, entrepreneur individuel (EI)"],
             ["Adresse", "10 traverse de la Gaye, 13009 Marseille, France"],
             ["Immatriculation (SIREN)", pending],
-            ["Directeur de la publication", pending],
+            ["Directeur de la publication", "Carotenuto - Marchetti Orso"],
             ["Contact", "Formulaire de la page Contact"],
           ]}
         />

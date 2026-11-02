@@ -63,7 +63,7 @@ export function CompanyLogoCard({
           {optional && <span className="ml-2 text-sm font-normal text-muted-foreground">facultatif</span>}
         </CardTitle>
         <CardDescription>
-          Affiché en tête de vos factures et relevés. Sans logo, c’est le nom de l’entreprise qui apparaît.
+          Affiché en tête de vos factures. Sans logo, c’est le nom de l’entreprise qui apparaît.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">

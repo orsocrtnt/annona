@@ -50,6 +50,6 @@ test("LEGAL-LIENS : contenu provisoire signalé, aucune identité inventée", ()
     assert.doesNotMatch(source, /\b\d{9}\b|\b\d{14}\b|\b0\d(?:[ .]?\d{2}){4}\b/);
   }
   assert.match(mentions, /\["Immatriculation \(SIREN\)", pending\]/);
-  assert.match(mentions, /\["Directeur de la publication", pending\]/);
+  assert.match(mentions, /\["Directeur de la publication", "Carotenuto - Marchetti Orso"\]/);
   assert.match(privacy, /En cours de définition/);
 });

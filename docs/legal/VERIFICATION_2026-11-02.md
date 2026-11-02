@@ -84,7 +84,7 @@ Verdicts : **Cohérent** (constat conforme au texte lu), **Écart** (à corriger
 ## 4. Ce qu'il faut au propriétaire
 
 **À fournir**
-- SIREN, e-mail et téléphone publiables, et confirmation du directeur de publication.
+- SIREN, e-mail et téléphone publiables. Directeur de publication : le propriétaire, confirmé le 2 novembre 2026.
 - **Droit d'exercer depuis les États-Unis :** la checklist J5 demande de confirmer la capacité à exercer sous visa J-1, et la cohérence de la résidence fiscale avec l'activité française. Elle demande aussi de vérifier la reprise de ton **ancien SIREN**. Rien de cela n'est tranché dans le dossier : à confirmer avant toute vente, idéalement avant le dépôt au Guichet unique. L'agent ne conclut pas sur ces points.
 
 **Décidé le 2 novembre**
@@ -128,4 +128,4 @@ Lus sur Drive le 2 novembre 2026, avec l'accord du propriétaire. Complète [la 
 | **DPA, annexes B et D** | Mesures à n'inscrire qu'avec preuve. Export : archive opérateur disponible, canal de remise, délais et preuve de suppression absents | DATA-02 |
 | **Convention pilote, article 4** | Conditions préalables aux vraies données : (a) isolation testée sur les cas couverts, (f) restauration prouvée sans suivi continu, et (b), (c), (d), (e), (g), (h) non réunies | Bloque les données réelles |
 | **Notice livreurs, sections 2, 3 et 6** | Sections 2 et 3 complétables avec les faits ci-dessus, après l'essai sur téléphone (MOB-01C). Durées à fixer. Affichage du nom du livreur au client à décider (POD-2) | Compléter |
-| **Mentions légales** | Le projet désigne le propriétaire comme directeur de la publication, à confirmer. Le téléphone des hébergeurs reste à trouver. L'accord pour publier l'adresse personnelle reste à cocher dans la checklist J5 | Propriétaire |
+| **Mentions légales** | Le propriétaire est directeur de la publication, confirmé le 2 novembre 2026. Le téléphone des hébergeurs reste à trouver. L'accord pour publier l'adresse personnelle reste à cocher dans la checklist J5 | Propriétaire |

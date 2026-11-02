@@ -33,6 +33,7 @@ L'architecture devra permettre une future intégration avec un logiciel comptabl
 Décision du 28 octobre 2026 : le propriétaire lance Factur-X. Portée de la première tranche (détail et limites : [`FACTURX.md`](FACTURX.md)) :
 
 - TutelLiv produit, à la demande, un PDF Factur-X profil EN 16931 (relevé intitulé « Facture » avec les mentions légales du XML + XML CII embarqué) pour une facture de livraison émise, depuis le back-office et le portail client ; le relevé PDF classique reste inchangé ;
+- décision du 2 novembre 2026 : à l'écran, le document s'appelle « Facture », mention « ne constitue pas une facture électronique réglementaire » conservée ; le PDF classique reste « Relevé de prestation », à faire confirmer par un comptable avant le premier pilote ;
 - la société de coursiers saisit ses mentions légales et l'identité de facturation de ses clients professionnels ; sans les données obligatoires, le Factur-X est refusé avec un message clair et le PDF classique reste disponible ;
 - **TutelLiv n'est pas une plateforme agréée** et ne dépose rien : le dépôt reste fait par l'entreprise ou son expert-comptable sur sa plateforme ;
 - le fichier n'a pas encore été validé par un outil officiel (Mustang, validateur FNFE) et n'est pas PDF/A-3b strict (polices non embarquées) : il ne doit pas être présenté comme conforme ou certifié avant ces validations.

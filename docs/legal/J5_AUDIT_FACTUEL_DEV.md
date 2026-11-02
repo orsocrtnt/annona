@@ -227,7 +227,7 @@ Le produit ne contient pas de mécanisme autorisant une réutilisation commercia
 |---|---|
 | Éditeur envisagé | Carotenuto - Marchetti Orso (EI), 10 traverse de la gaye, 13009 Marseille — information fournie par le fondateur, non vérifiée par registre. |
 | SIREN/SIRET | **Non disponible — ne pas inventer.** |
-| Directeur de publication | Non confirmé. |
+| Directeur de publication | Le propriétaire, confirmé le 2 novembre 2026. |
 | Contact légal/RGPD | Non confirmé. L'e-mail ancien `orsocarot@gmail.com` a été utilisé dans le projet pour certains contacts, mais sa publication comme adresse légale/RGPD doit être décidée explicitement. |
 | Canal support | Fonction de tickets intégrée, mais aucun engagement d'e-mail public réellement actif. |
 | Hébergeur du site | Vercel Inc., 440 N Barranca Ave #4133, Covina, CA 91723, États-Unis, selon les documents officiels Vercel. |
