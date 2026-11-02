@@ -64,7 +64,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
-- Recette connectée : le 2 novembre, elle ne passait plus depuis le 23 octobre (entreprises de test sans abonnement), et elle a révélé un vrai bug, corrigé (deux premières commandes simultanées du mois). Partie connectée verte sur `tutelliv-dev` ; parcours navigateur en cours de relance en ligne.
+- OPS-FIAB, dès que tu as choisi (cadence et alerte) : mettre le relais en place, le vérifier en ligne.
 - ADMIN-COMMANDE : créer une commande directement depuis l'espace admin, avec un formulaire (demande du 2 novembre).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
@@ -288,6 +288,10 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   11. C6 — Faire tourner les parcours complets sur une base dans le contrôle automatique (dernier passage connecté : 20 octobre).
   12. P1 — Réduire cette TODO à une page de pilotage et archiver le journal.
   13. E2 — Créer une vraie production (accord du propriétaire requis), offres Vercel et Supabase payantes.
+
+  C6, relevé du 2 novembre 2026 : recette connectée réparée (test périmé depuis le 23 octobre, vrai bug de `recordOrderCreatedUsage` corrigé) et verte en ligne sur la préproduction (run 41495900652). Passage de nuit limité à cette recette ; premier passage planifié à contrôler le 3 novembre. Parcours navigateur à la demande (`run_browser`), car le montage sur la préproduction est arrêté par son garde-fou `PREPRODUCTION_PERSISTENT_DEMO_UNEXPECTED`.
+
+  E2E complet sur `tutelliv-dev`, serveur de dev, 2 novembre 2026 : 60 réussis, 22 échoués, 2 sautés sur 84. Après préparation des comptes et des données : 46 réussis, 3 échoués, 1 sauté sur les 50 tests des fichiers en échec. Les 3 restants, tous en dépassement de temps, passent seuls : `design2-theme:118` et `portal-theme:154` avec 5 minutes, `support:7` en 2,1 min (limite du test passée à 5 minutes). `/settings` à 360 px, 388 px de large au premier passage, ne se reproduit pas : cause non identifiée. `scripts/audit0111/connected.ts` : champ `monthlyOrders` corrigé, script non relancé. `npm run check` vert (1 530 tests). Limites : aucun passage complet d'une seule traite n'est vert, le navigateur n'a pas tourné en ligne, et 2 tickets de test `SUPPORT-1 navigateur` restent sur `tutelliv-dev` (suppression refusée, restes des courses interrompues).
 
   Vérifications de l'audit : `npm run check` vert (1 492 tests) ; `npm audit --omit=dev` sans faille ; journaux Vercel sur 7 jours, conseillers Supabase, comptages en base et pages publiques relus. Aucun code ni donnée modifiés. Non vérifié : intérieur de l'application non cliqué, E2E et build non relancés localement, performance non mesurée, failles lues dans le code mais non rejouées, environ 100 routes contrôlées seulement sur la présence de leur garde d'accès.
 
