@@ -2550,6 +2550,8 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
 
   Non vérifié : mission spéciale jamais créée en vrai (type non activé sur la démo : écran contrôlé avec des options simulées, création couverte par un test du service) ; mini-admin avec le module Commandes non cliqué, faute de compte de test (règle d'accès testée) ; Safari et vrai téléphone. Limites assumées : pas de carnet d'adresses du client, pas d'e-mail ajouté au client, liste de clients sans recherche dédiée.
 
+  En ligne : poussé sur `preproduction` le 2 novembre 2026 (`22c8423`) ; sur `tutelliv.fr`, nouvelles routes présentes et refus sans session contrôlés. Création connectée non rejouée en ligne : recette faite sur `tutelliv-dev`.
+
 - [x] **FACT-KM — Faire correspondre le prix annoncé et le prix facturé d'une course.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. « Tarification des courses » (forfait, prix au km, minimum, majorations) ne sert qu'à l'estimation montrée au client (`courier-estimate.service.ts`). La facture se calcule sur les zones, les suppléments, les achats et les lignes libres (`invoice.service.ts`, `order-invoice-form.tsx` : aucune référence au tarif des courses). Un client peut donc être facturé autrement que ce qu'on lui a annoncé.
 
   **Qui : Claude.**
