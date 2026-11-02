@@ -4,12 +4,13 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**99 tâches terminées sur 125 — 79 %**
+**99 tâches terminées sur 126 — 79 %**
 
-`████████████████░░░░` · 26 tâches restantes
+`████████████████░░░░` · 27 tâches restantes
 
 **À faire par Claude**
 
+- MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus
 - V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
 - DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
 - PROD-04 — Définir les mesures de valeur (après les pilotes)
@@ -66,6 +67,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
+- MAIL-ECARTS : corriger les trois défauts trouvés en testant les e-mails reçus : client jamais retrouvé sur un e-mail transféré, quantités mélangées quand un e-mail contient plusieurs livraisons, « Brouillon prêt » affiché même sans commande dans le message.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
@@ -310,6 +312,22 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   Terminé quand : un seul mot par notion dans les écrans, e-mails et PDF des trois espaces ; recherche de chaque ancien mot sans résultat visible par l'utilisateur ; tests à jour, `npm run check` vert et clic réel navigateur.
 
   Source / dépendance / blocage : vérification des exigences applicables pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
+
+- [ ] **MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus.** Essai demandé par le propriétaire le 2 novembre 2026, sur `tutelliv.fr` (espace de démonstration, 14 e-mails fictifs envoyés depuis Gmail). La chaîne marche : voir « Résultat » ci-dessous.
+
+  **Qui : Claude.**
+
+  Terminé quand : les trois défauts ci-dessous sont corrigés et testés, y compris avec de vrais e-mails.
+
+  1. **Client jamais retrouvé sur un e-mail transféré.** Le rapprochement ne regarde que l'expéditeur (`matchCustomerBySender`), qui est alors l'entreprise elle-même. Essai : e-mail transféré citant l'adresse d'un client existant, adresse bien lue par l'analyse, client non présélectionné. C'est pourtant l'usage indiqué à l'écran (« Transférez-y vos e-mails »). Le dispatcher doit choisir le client à la main.
+  2. **Plusieurs livraisons dans un e-mail : quantités mélangées.** Essai : « 1 palette » et « 3 colis ». Quantité non retenue, champ prérempli à 1 avec l'avis « Absente du message », et chaque commande porte l'article « 1 palette (livraison 1), 3 colis (livraison 2) ». Sans correction du dispatcher, la seconde partirait avec une quantité de 1 au lieu de 3.
+  3. **« Brouillon prêt » sur tout.** « Merci pour hier » et un e-mail dont tout est en pièce jointe reçoivent la même étiquette qu'une vraie commande, avec un brouillon vide. Rien n'est créé seul, mais l'étiquette trompe.
+
+  Résultat de l'essai : e-mails reçus et analysés en moins de 20 s, 11 analyses sur 11 réussies, environ 3 170 jetons en entrée et 910 en sortie par analyse. E-mail complet : adresses, contact, date et quantité justes, puis vraie commande créée (source ADMIN, assignée), un seul exemplaire malgré le double clic, e-mail retiré de la liste. Message court ou incomplet : champs signalés, création refusée. Deux livraisons : une commande par livraison, e-mail gardé tant qu'il en manque une ; reprise après rechargement sans doublon ; reprise avec un autre client refusée. Tentative d'injection : aucune consigne reprise, aucune commande. Pièce jointe signalée et non lue. Webhooks sans signature ou mal signés refusés (400). Adresse inconnue, adresse remplacée et réception désactivée : rien d'enregistré (11 lignes en base pour 11 e-mails attendus). Contenu vidé en base au classement et à la conversion. Captures locales : `outputs/recette-agents/mail-commande/`.
+
+  Non vérifié : client retrouvé par un vrai expéditeur connu (test du service seulement) ; pièce jointe lourde, très long message, volume et plafond de 200 e-mails par jour ; vrais messages de clients (INTAKE-1, F10 non qualifiée). Écart de méthode : un nettoyage trop large a visé aussi des commandes de démo de la session, refusé pour celles affichées ; la session isolée a ensuite été libérée à la déconnexion, sans effet durable. 14 e-mails de test restent dans « Envoyés » du Gmail du propriétaire.
+
+  **Modèle conseillé : Claude Opus · effort moyen.**
 
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.**
 
