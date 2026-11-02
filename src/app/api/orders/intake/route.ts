@@ -1,3 +1,4 @@
+import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { z } from "zod";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { hasPermission } from "@/lib/permissions/rbac";
@@ -45,6 +46,8 @@ export async function PATCH(request: Request) {
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
     if (!companyId) return intakeError("NO_COMPANY", "Entreprise non associée", 400);
+    const readOnly = await refuseIfReadOnly(companyId);
+    if (readOnly) return readOnly;
 
     const parsed = toggleSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return intakeError("INVALID", "Réglage invalide", 400);

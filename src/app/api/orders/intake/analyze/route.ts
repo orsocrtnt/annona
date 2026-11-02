@@ -1,3 +1,4 @@
+import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { analyzeOrderMessage } from "@/domains/order-intake/order-intake.service";
@@ -19,6 +20,8 @@ export async function POST(request: Request) {
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
     if (!companyId) return intakeError("NO_COMPANY", "Entreprise non associée", 400);
+    const readOnly = await refuseIfReadOnly(companyId);
+    if (readOnly) return readOnly;
 
     const body = (await request.json().catch(() => null)) as { text?: unknown; sender?: unknown } | null;
     if (!body || typeof body !== "object") return intakeError("INVALID_MESSAGE", "Collez le message à analyser.", 400);

@@ -1,3 +1,4 @@
+import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
@@ -12,6 +13,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
     if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+    const readOnly = await refuseIfReadOnly(companyId);
+    if (readOnly) return readOnly;
     const { id } = await params;
     const link = await getOrCreateTrackingLink(companyId, id);
     if (!link) return NextResponse.json({ error: "Commande introuvable" }, { status: 404 });

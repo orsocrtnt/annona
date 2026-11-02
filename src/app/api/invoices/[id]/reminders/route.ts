@@ -1,3 +1,4 @@
+import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { remindInvoice } from "@/domains/invoice/invoice-reminder.service";
@@ -18,6 +19,8 @@ export async function POST(
   if (denied) return denied;
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
+  const readOnly = await refuseIfReadOnly(companyId);
+  if (readOnly) return readOnly;
 
   const { id } = await params;
   try {

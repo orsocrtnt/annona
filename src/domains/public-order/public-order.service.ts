@@ -130,7 +130,8 @@ export async function submitPublicOrder(
   if (!slot.ok) return { status: "slot_invalid", message: DELIVERY_SLOT_ERROR_MESSAGES[slot.error] };
 
   const createOrder = deps.createOrder ?? createClientOrder;
-  let created;
+  let created: { id: string; reference: string };
+  let replayed: { id: string; reference: string } | null = null;
   try {
     created = await createOrder(
       null,
@@ -146,6 +147,12 @@ export async function submitPublicOrder(
         skipAutoDispatch: true,
         beforeCreate: async (tx) => {
           await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`public-order:${companyId}`}::text, 0))`;
+          // Sans client, la contrainte d'unicité (client, clé) ne joue pas : le double envoi se détecte sous ce verrou (AUDIT-0111, C3).
+          replayed = await tx.order.findFirst({
+            where: { companyId, customerId: null, idempotencyKey: input.idempotencyKey },
+            select: { id: true, reference: true },
+          });
+          if (replayed) throw new Error("PUBLIC_ORDER_REPLAYED");
           if (await overLimit(tx, companyId, sourceHash, since)) throw new Error("PUBLIC_ORDER_RATE_LIMITED");
         },
         afterCreate: async (tx, createdOrder) => {
@@ -163,6 +170,7 @@ export async function submitPublicOrder(
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
+    if (message === "PUBLIC_ORDER_REPLAYED" && replayed) return replayedResult(replayed);
     if (message === "PUBLIC_ORDER_RATE_LIMITED") return { status: "rate_limited" };
     if (message === "IDEMPOTENCY_KEY_REUSED") return { status: "invalid", field: "idempotencyKey" };
     if (REFUSALS.has(message)) return { status: "unavailable" };
@@ -174,6 +182,13 @@ export async function submitPublicOrder(
   const job = await prisma.operationJob.findUnique({ where: { jobKey: `guest-tracking:${link.id}` }, select: { id: true, status: true } });
   if (job?.status === "PENDING") kickOperationJob(job.id);
   return { status: "created", reference: created.reference, trackingUrl: `/suivi/${link.token}` };
+}
+
+/** Un second envoi du même formulaire retrouve la première commande et son lien de suivi. */
+async function replayedResult(order: { id: string; reference: string }): Promise<PublicOrderResult> {
+  const link = await prisma.orderTrackingLink.findUnique({ where: { orderId: order.id } });
+  if (!link) throw new Error("PUBLIC_ORDER_LINK_MISSING");
+  return { status: "created", reference: order.reference, trackingUrl: `/suivi/${link.token}` };
 }
 
 /** Envoi durable du lien de suivi, à la seule adresse saisie avec la commande. */

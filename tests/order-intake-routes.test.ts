@@ -55,6 +55,7 @@ function loadRoute<T>(path: string, mocks: Record<string, unknown>): T {
         if (id === "next/server") return { NextResponse };
         if (id === "zod") return zod;
         if (id in mocks) return mocks[id];
+        if (id === "@/lib/api/saas-guard") return { refuseIfReadOnly: async () => null };
         if (id.startsWith("./") || id.startsWith("../")) return load(`${join(dirname(file), id)}.ts`);
         throw new Error(`module non simulé : ${id}`);
       },

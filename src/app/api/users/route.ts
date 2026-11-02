@@ -1,3 +1,4 @@
+import { refuseDemoInvitation } from "@/lib/api/saas-guard";
 import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
@@ -38,6 +39,9 @@ export async function POST(request: Request) {
       { status: 403 }
     );
   }
+
+  const demoRefused = await refuseDemoInvitation(auth.context.user.companyId);
+  if (demoRefused) return demoRefused;
 
   const body = await request.json().catch(() => null);
   const parsed = createUserSchema.safeParse(body);

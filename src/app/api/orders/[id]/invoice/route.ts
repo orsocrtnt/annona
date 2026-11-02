@@ -1,3 +1,4 @@
+import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
@@ -17,6 +18,8 @@ export async function POST(
   if (!companyId) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
+  const readOnly = await refuseIfReadOnly(companyId);
+  if (readOnly) return readOnly;
 
   const body = await request.json().catch(() => null);
   const parsed = createOrderInvoiceSchema.safeParse(body);
@@ -68,6 +71,8 @@ export async function PATCH(
   if (denied) return denied;
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+  const readOnly = await refuseIfReadOnly(companyId);
+  if (readOnly) return readOnly;
   const parsed = markOrderInvoicePaidSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Données invalides" }, { status: 400 });
   const { id } = await params;
