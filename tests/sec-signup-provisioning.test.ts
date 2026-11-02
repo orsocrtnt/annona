@@ -144,12 +144,14 @@ test("garde serveur : session confirmée sans profil et métadonnées falsifiée
   assert.deepEqual(f.writes, []);
 });
 
-test("rattachement par e-mail : authId lié, prénom et nom de la base conservés (métadonnées ignorées)", async () => {
-  const invited = user("DRIVER");
+test("AUDIT-0111 S5 : un profil lié à un autre compte de connexion n'est jamais repris par l'adresse seule", async () => {
+  const invited = { ...user("DRIVER"), authId: "compte-de-connexion-disparu" };
   const f = authFixture(null, invited);
-  await f.service.syncUserFromSupabase({ ...FORGED_INPUT, email: invited.email, firstName: "Pirate", lastName: "Renommé" } as Parameters<AuthService["syncUserFromSupabase"]>[0]);
-  assert.equal(f.updates.length, 1);
-  assert.deepEqual(Object.keys(f.updates[0]!.data).sort(), ["authId", "email", "lastLoginAt"]);
+  await assert.rejects(
+    () => f.service.syncUserFromSupabase({ ...FORGED_INPUT, email: invited.email }),
+    /ACCOUNT_UNAVAILABLE/,
+  );
+  assert.equal(f.updates.length, 0);
   assert.deepEqual(f.writes, []);
 });
 

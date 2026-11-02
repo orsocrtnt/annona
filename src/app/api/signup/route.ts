@@ -1,3 +1,5 @@
+import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
+import { isOverRequestLimit } from "@/lib/security/request-limit";
 import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { type NextRequest, NextResponse } from "next/server";
 import { SIGNUP_COOKIE, createSignupJourney, getActiveSignupCatalog, getSignupJourney, reopenSignupIdentity, resendSignupConfirmation, submitSignupIdentity, updateSignupIdentityDetails, updateSignupSelection } from "@/domains/signup/signup.service";
@@ -52,6 +54,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   if (!signupOpen()) return NextResponse.json({ error: SIGNUP_CLOSED_MESSAGE }, { status: 503, headers: noStore });
+  if (await isOverRequestLimit("signup-source", contactSourceFromHeaders(request.headers), 30)) {
+    return NextResponse.json({ error: "Trop de demandes. Réessayez dans quelques minutes." }, { status: 429, headers: noStore });
+  }
   const parsed = signupActionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     const details = describeSignupValidation(parsed.error);

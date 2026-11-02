@@ -7,6 +7,9 @@ const OPERATION_JOB_TAKE = 50;
 const OPERATION_JOB_OVERDUE_MS = 15 * 60 * 1000;
 const OPERATION_JOB_LEASE_MS = 5 * 60 * 1000;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 30 * 60_000] as const;
+const AUTO_DISPATCH_WAITING_DRIVER = new Set(["Aucun chauffeur actif", "Aucun chauffeur compatible selon les règles"]);
+const AUTO_DISPATCH_RECHECK_MS = 10 * 60_000;
+const AUTO_DISPATCH_WAIT_MS = 24 * 60 * 60_000;
 
 type JobDatabase = Pick<Prisma.TransactionClient, "operationJob">;
 
@@ -219,6 +222,13 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
       "Statut non éligible",
       "En attente de la prochaine tournée automatique",
     ]);
+    // Personne de disponible n'est pas une panne : on repasse sans user les essais, jusqu'à ce qu'un
+    // livreur revienne. Passé 24 h, le dispatcher a la main : l'alerte « Sans livreur » reste affichée (AUDIT-0111, C5).
+    if (!result.assigned && result.skippedReason && AUTO_DISPATCH_WAITING_DRIVER.has(result.skippedReason)) {
+      const now = Date.now();
+      if (now - job.createdAt.getTime() >= AUTO_DISPATCH_WAIT_MS) throw skippedJobError("AUTO_DISPATCH_NO_DRIVER");
+      throw deferredJobError("AUTO_DISPATCH_WAITING_DRIVER", new Date(now + AUTO_DISPATCH_RECHECK_MS));
+    }
     if (!result.assigned && result.skippedReason && !terminalSkips.has(result.skippedReason)) {
       throw new Error(`AUTO_DISPATCH_RETRY:${result.skippedReason}`);
     }

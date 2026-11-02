@@ -1,4 +1,4 @@
-import { assertAccountActive } from "@/lib/auth/account-access";
+import { AccountUnavailableError, assertAccountActive } from "@/lib/auth/account-access";
 import { prisma } from "@/services/prisma/client";
 import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import { hydrateUserWithRole, getUserByAuthId } from "@/domains/user/user.service";
@@ -45,6 +45,9 @@ export async function syncUserFromSupabase(
 
   if (existingByEmail) {
     assertAccountActive(await hydrateUserWithRole(existingByEmail));
+    // Un profil déjà lié à un autre compte de connexion n'est jamais repris par l'adresse seule : un
+    // compte invité garde son identifiant dès l'invitation et passe par la recherche ci-dessus (AUDIT-0111, S5).
+    if (existingByEmail.authId !== input.authId) throw new AccountUnavailableError();
     const user = await prisma.user.update({
       where: { id: existingByEmail.id },
       // Rattachement initial du compte préparé (invitation, import) : l'identité saisie

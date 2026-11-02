@@ -1,3 +1,5 @@
+import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
+import { isOverRequestLimit } from "@/lib/security/request-limit";
 import { NextResponse } from "next/server";
 import { searchBanAddresses } from "@/lib/addresses/ban-search";
 
@@ -7,6 +9,10 @@ export async function GET(request: Request) {
 
   if (q.length < 3) {
     return NextResponse.json({ data: [], success: true });
+  }
+
+  if (await isOverRequestLimit("address-search-source", contactSourceFromHeaders(request.headers), 300)) {
+    return NextResponse.json({ error: "Trop de demandes. Réessayez dans quelques minutes." }, { status: 429 });
   }
 
   try {

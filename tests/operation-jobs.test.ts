@@ -48,6 +48,7 @@ function load<T>(deps: Record<string, unknown>): T {
 }
 
 function fixture(options?: {
+  dispatchResult?: { assigned: boolean; skippedReason?: string };
   failNotification?: boolean;
   deferNotificationUntil?: Date;
   calls?: Array<{ handler: string; arg: unknown }>;
@@ -171,7 +172,7 @@ function fixture(options?: {
           });
           throw new Error("PREMIER_WORKER_EXPIRE");
         }
-        return { assigned: true };
+        return options?.dispatchResult ?? { assigned: true };
       },
     },
     "@/domains/invoice/invoice-reminder.service": {
@@ -580,4 +581,29 @@ test("RECETTE-2810 point 9 : la reprise après une erreur de base n'exécute jam
   await f.service.processOperationJobWithRetry(job.id, { sleep: async () => undefined });
   assert.equal(f.jobs[0]!.status, "SUCCEEDED");
   assert.deepEqual(f.executions, ["dispatch:d9"]);
+});
+
+test("C5 : sans livreur disponible, la tâche attend sans user ses essais, puis rend la main après 24 h", async () => {
+  const waiting = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun chauffeur actif" } });
+  const job = waiting.addJob({
+    jobKey: "auto-dispatch:delivery-nuit",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-nuit" },
+    createdAt: new Date(),
+  } as never);
+  const first = await waiting.service.processOperationJob(job.id, waiting.base);
+  assert.equal(first?.status, "PENDING");
+  assert.equal(waiting.jobs[0]?.attempts, 0);
+  assert.equal(waiting.jobs[0]?.lastError?.includes("AUTO_DISPATCH_WAITING_DRIVER"), true);
+
+  const late = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun chauffeur compatible selon les règles" } });
+  const oldJob = late.addJob({
+    jobKey: "auto-dispatch:delivery-vieille",
+    type: "AUTO_DISPATCH",
+    payload: { companyId: "company-a", deliveryId: "delivery-vieille" },
+    createdAt: new Date(Date.now() - 25 * 60 * 60_000),
+  } as never);
+  const finished = await late.service.processOperationJob(oldJob.id, late.base);
+  assert.equal(finished?.status, "SUCCEEDED");
+  assert.equal(late.jobs[0]?.lastError?.includes("AUTO_DISPATCH_NO_DRIVER"), true);
 });
