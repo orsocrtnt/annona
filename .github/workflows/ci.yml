@@ -98,7 +98,7 @@ jobs:
       # Le stockage Supabase est un service à part : seule sa table des espaces est simulée ici.
       - name: Préparer le stockage Supabase
         run: |
-          docker exec -e PGPASSWORD=ci "${{ job.services.postgres.id }}" psql -h 127.0.0.1 -U postgres -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS storage; CREATE TABLE IF NOT EXISTS storage.buckets (id text PRIMARY KEY, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);"
+          docker exec -e PGPASSWORD=ci "${{ job.services.postgres.id }}" psql -h 127.0.0.1 -U supabase_admin -d postgres -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS storage; CREATE TABLE IF NOT EXISTS storage.buckets (id text PRIMARY KEY, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]); GRANT USAGE ON SCHEMA storage TO postgres; GRANT ALL ON storage.buckets TO postgres;"
 
       - name: Appliquer toutes les migrations
         run: npx prisma migrate deploy
