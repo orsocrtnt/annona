@@ -14,7 +14,7 @@ import {
 } from "@/lib/validations/order";
 import { DELIVERY_CATEGORY_LABELS, PORTAL_CATEGORY_DESCRIPTIONS } from "@/lib/constants/delivery";
 import { isDeliverySlotOpen } from "@/domains/order/delivery-slot";
-import { deliverySlotKey, deliverySlotLabel } from "@/lib/validations/delivery-slots";
+import { deliverySlotKey, deliverySlotLabel, type CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 import { usePortalAddresses } from "./hooks";
 import { usePortalDeliveryOptions } from "./delivery-options-hooks";
 import { PageLoader } from "@/components/ui/loader";
@@ -22,7 +22,7 @@ import type { DeliveryCategory } from "@prisma/client";
 import { Plus, Trash2, Package, Bike, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PickupStopItemsFields } from "./pickup-stop-items-fields";
-import { CourierEstimateBanner } from "./courier-estimate-banner";
+import { CourierEstimateBanner, type CourierEstimateFn } from "./courier-estimate-banner";
 import { toast } from "sonner";
 import { AddressFieldsGroup } from "@/components/addresses/address-fields-group";
 import {
@@ -43,6 +43,15 @@ interface CreateOrderFormProps {
   loading?: boolean;
   submitLabel?: string;
   initialValues?: Partial<CreateClientOrderFormInput>;
+}
+
+interface OrderFormFieldsProps extends CreateOrderFormProps {
+  addresses?: NonNullable<ReturnType<typeof usePortalAddresses>["data"]>;
+  deliveryOptions?: { enabled: DeliveryCategory[]; deliverySlots?: CompanyDeliverySlots };
+  loadingOptions: boolean;
+  /** « staff » : saisie par l'équipe pour un client, textes adaptés et sans carnet d'adresses. */
+  audience?: "client" | "staff";
+  estimateCourier?: CourierEstimateFn;
 }
 
 const DEFAULT_FORM_VALUES: CreateClientOrderFormInput = {
@@ -76,14 +85,25 @@ const DEFAULT_FORM_VALUES: CreateClientOrderFormInput = {
   addressLabel: "",
 };
 
-export function CreateOrderForm({
+/** Formulaire du portail client : ses adresses enregistrées et les options de son entreprise. */
+export function CreateOrderForm(props: CreateOrderFormProps) {
+  const { data: addresses } = usePortalAddresses();
+  const { data: deliveryOptions, isLoading: loadingOptions } = usePortalDeliveryOptions();
+  return <OrderFormFields {...props} addresses={addresses} deliveryOptions={deliveryOptions} loadingOptions={loadingOptions} />;
+}
+
+/** Champs de la commande, sans source de données : partagés entre le portail et l'espace de l'équipe. */
+export function OrderFormFields({
   onSubmit,
   loading,
   submitLabel,
   initialValues,
-}: CreateOrderFormProps) {
-  const { data: addresses } = usePortalAddresses();
-  const { data: deliveryOptions, isLoading: loadingOptions } = usePortalDeliveryOptions();
+  addresses,
+  deliveryOptions,
+  loadingOptions,
+  audience = "client",
+  estimateCourier,
+}: OrderFormFieldsProps) {
   const enabledCategories = useMemo(
     () => deliveryOptions?.enabled ?? [],
     [deliveryOptions?.enabled]
@@ -230,7 +250,9 @@ export function CreateOrderForm({
   if (enabledCategories.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Aucun type de livraison n&apos;est disponible pour le moment. Contactez votre entreprise.
+        {audience === "staff"
+          ? "Aucun type de livraison n'est activé pour votre entreprise. Activez-en un dans les réglages."
+          : "Aucun type de livraison n'est disponible pour le moment. Contactez votre entreprise."}
       </p>
     );
   }
@@ -273,7 +295,9 @@ export function CreateOrderForm({
                     <span className="font-medium">{DELIVERY_CATEGORY_LABELS[type]}</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {PORTAL_CATEGORY_DESCRIPTIONS[type]}
+                    {audience === "staff" && type === "SPECIAL_MISSION"
+                      ? "Décrivez le besoin du client, le devis se traite directement avec lui"
+                      : PORTAL_CATEGORY_DESCRIPTIONS[type]}
                   </p>
                 </button>
               );
@@ -287,10 +311,10 @@ export function CreateOrderForm({
           <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
             Fonction expérimentale hors offre pilote. TutelLiv centralise la description et les
             adresses ; le devis chiffré et son acceptation restent traités directement avec
-            l&apos;entreprise.
+            {audience === "staff" ? " le client." : " l'entreprise."}
           </p>
           <FormField
-            label="Décrivez votre mission"
+            label={audience === "staff" ? "Décrivez la mission" : "Décrivez votre mission"}
             error={errors.missionDescription?.message}
             required
           >
@@ -759,7 +783,7 @@ export function CreateOrderForm({
             <FormField label="Notes">
               <Input {...form.register("notes")} />
             </FormField>
-            {!isCourier && (
+            {!isCourier && audience !== "staff" && (
               <>
                 <label className="flex min-h-11 items-center gap-3 text-sm max-md:items-center">
                   <input className="h-5 w-5" type="checkbox" {...form.register("saveAddress")} />
@@ -785,6 +809,7 @@ export function CreateOrderForm({
           shippingCity={form.watch("shippingCity")}
           shippingPostalCode={form.watch("shippingPostalCode")}
           requestedDeliveryDate={form.watch("requestedDeliveryDate")}
+          estimate={estimateCourier}
         />
       )}
 

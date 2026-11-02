@@ -56,6 +56,7 @@ const SPACES: Record<string, SystemRole[]> = {
   "/dashboard/analytics": ["COMPANY_ADMIN", "MINI_ADMIN"],
   "/dashboard/orders": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dashboard/orders/intake": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
+  "/dashboard/orders/new": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dashboard/clients/x": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dashboard/drivers": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dashboard/deliveries/x": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
@@ -63,6 +64,7 @@ const SPACES: Record<string, SystemRole[]> = {
   "/dispatch/map": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dispatch/drivers": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dispatch/intake": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
+  "/dispatch/new-order": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/support": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/users": ["COMPANY_ADMIN", "MINI_ADMIN"],
   "/settings": ["COMPANY_ADMIN", "MINI_ADMIN"],
@@ -124,6 +126,8 @@ test("AUTH-ROLE mini-admin : un écran hors de ses modules est refusé côté se
   assert.deepEqual(evaluatePageAccess("/dispatch/drivers", dispatch), { kind: "redirect", location: "/dispatch" });
   // Saisie de commande : la permission orders:create vient du module Commandes, pas du Dispatch.
   assert.deepEqual(evaluatePageAccess("/dispatch/intake", dispatch), { kind: "redirect", location: "/dispatch" });
+  assert.deepEqual(evaluatePageAccess("/dispatch/new-order", dispatch), { kind: "redirect", location: "/dispatch" });
+  assert.deepEqual(evaluatePageAccess("/dashboard/orders/new", dispatch), { kind: "redirect", location: "/dispatch" });
   assert.deepEqual(evaluatePageAccess("/support", dispatch), { kind: "redirect", location: "/dispatch" });
   // Aucun module : refus explicite (l'accueil par défaut lui est aussi fermé).
   assert.deepEqual(evaluatePageAccess("/dashboard", subject("MINI_ADMIN", [])), { kind: "forbidden" });

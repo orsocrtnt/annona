@@ -1,4 +1,7 @@
-import type { UpdateOrderStatusInput } from "@/lib/validations/order";
+import type { DeliveryCategory } from "@prisma/client";
+import type { CreateClientOrderInput, UpdateOrderStatusInput } from "@/lib/validations/order";
+import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
+import type { CourierEstimateFn } from "@/features/client-portal/courier-estimate-banner";
 import type { CreateOrderInvoiceInput } from "@/lib/validations/invoice";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
@@ -114,6 +117,21 @@ export const backOfficeApi = {
       body: JSON.stringify({ invoiceId, expectedUpdatedAt }),
     }),
   getClients: () => fetchJson<CompanyClient[]>("/api/clients"),
+  getOrderCreateOptions: () =>
+    fetchJson<{ enabled: DeliveryCategory[]; deliverySlots: CompanyDeliverySlots }>("/api/orders/create-options"),
+  /** La même clé repart à chaque clic d'un même formulaire : une seule commande. */
+  createCustomerOrder: (customerId: string, order: CreateClientOrderInput, idempotencyKey: string) =>
+    fetchJson<{ id: string; reference?: string }>("/api/orders/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
+      body: JSON.stringify({ customerId, order }),
+    }),
+  estimateCourier: (data: Parameters<CourierEstimateFn>[0]) =>
+    fetchJson<Awaited<ReturnType<CourierEstimateFn>>>("/api/orders/courier-estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
   getClient: (id: string) => fetchJson<Record<string, unknown>>(`/api/clients/${id}`),
   getDriver: (id: string) => fetchJson<Record<string, unknown>>(`/api/drivers/${id}`),
   updateDelivery: (deliveryId: string, data: AdminUpdateDeliveryInput) =>

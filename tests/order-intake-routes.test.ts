@@ -206,6 +206,106 @@ test("INTAKE route création : refus métiers sans erreur 500", async () => {
   }
 });
 
+function adminOrderRoute(session: Session, outcome: unknown, seen: unknown[] = []) {
+  return loadRoute<{ POST: (request: Request) => Promise<Response> }>("src/app/api/orders/create/route.ts", {
+    "@/lib/api/auth-guard": fakeAuthGuard(session),
+    "@/lib/validations/order": { createClientOrderSchema: { safeParse: (value: unknown) => (value && typeof value === "object" && "deliveryCategory" in value ? { success: true, data: value } : { success: false }) } },
+    "@/domains/order/staff-order.service": {
+      createOrderForCustomer: async (input: unknown) => {
+        seen.push(input);
+        if (outcome === "throw") throw new Error("prisma secret detail");
+        return outcome;
+      },
+    },
+  });
+}
+
+test("ADMIN-COMMANDE route : rôles refusés, clé exigée, entreprise de la session, refus sans erreur 500", async () => {
+  for (const [label, session, status] of REFUSED) {
+    const seen: unknown[] = [];
+    const response = await adminOrderRoute(session, { status: "created", order: { id: "o1" } }, seen).POST(
+      post("/api/orders/create", { customerId: "client-a", order: ORDER }, { "Idempotency-Key": "admin-key-0001" })
+    );
+    assert.equal(response.status, status, label);
+    assert.equal(seen.length, 0, label);
+  }
+
+  const seen: Array<Record<string, unknown>> = [];
+  const route = adminOrderRoute(DISPATCHER, { status: "created", order: { id: "o1", reference: "CMD-1" } }, seen);
+  assert.equal((await route.POST(post("/api/orders/create", { customerId: "client-a", order: ORDER }))).status, 400);
+  assert.equal((await route.POST(post("/api/orders/create", { order: ORDER }, { "Idempotency-Key": "admin-key-0001" }))).status, 400);
+  assert.equal((await route.POST(post("/api/orders/create", { customerId: "client-a", order: { foo: 1 } }, { "Idempotency-Key": "admin-key-0001" }))).status, 400);
+  assert.equal(seen.length, 0);
+
+  const created = await route.POST(
+    post("/api/orders/create", { customerId: "client-a", order: ORDER, companyId: "company-b", source: "CLIENT" }, { "Idempotency-Key": "admin-key-0001" })
+  );
+  assert.equal(created.status, 201);
+  assert.equal(created.headers.get("cache-control"), "no-store");
+  assert.deepEqual(JSON.parse(JSON.stringify(seen)), [{ companyId: "company-a", customerId: "client-a", order: ORDER, idempotencyKey: "admin-key-0001" }]);
+
+  const cases: Array<[unknown, number]> = [
+    [{ status: "customer_not_found" }, 404],
+    [{ status: "customer_inactive" }, 409],
+    [{ status: "category_disabled" }, 403],
+    [{ status: "slot_invalid", message: "Créneau invalide" }, 400],
+    [{ status: "conflict" }, 409],
+    [{ status: "saas_blocked" }, 403],
+    [{ status: "saas_read_only" }, 403],
+    ["throw", 503],
+  ];
+  for (const [outcome, status] of cases) {
+    const response = await adminOrderRoute(ADMIN, outcome).POST(
+      post("/api/orders/create", { customerId: "client-a", order: ORDER }, { "Idempotency-Key": "admin-key-0001" })
+    );
+    assert.equal(response.status, status, JSON.stringify(outcome));
+    assert.equal(JSON.stringify(await response.json()).includes("secret detail"), false);
+  }
+});
+
+test("ADMIN-COMMANDE routes annexes : options et estimation réservées à l'équipe, entreprise de la session", async () => {
+  const withApiHandler = async (handler: () => Promise<Response>) => handler();
+  const optionsRoute = (session: Session) =>
+    loadRoute<{ GET: () => Promise<Response> }>("src/app/api/orders/create-options/route.ts", {
+      "@/lib/api/auth-guard": fakeAuthGuard(session),
+      "@/lib/api/route-handler": { withApiHandler },
+      "@/domains/company/company-settings.service": {
+        getCompanyDeliveryOptions: async (companyId: string) => ({ companyId }),
+        getCompanyDeliverySlots: async () => ({ mode: "OPEN", slots: [] }),
+        getEnabledDeliveryCategories: () => ["STANDARD"],
+      },
+    });
+  const seen: unknown[] = [];
+  const estimateRoute = (session: Session) =>
+    loadRoute<{ POST: (request: Request) => Promise<Response> }>("src/app/api/orders/courier-estimate/route.ts", {
+      "@/lib/api/auth-guard": fakeAuthGuard(session),
+      "@/lib/api/route-handler": { withApiHandler },
+      "@/lib/validations/courier-estimate": require("../src/lib/validations/courier-estimate"),
+      "@/domains/company/courier-estimate.service": {
+        estimateCourierPrice: async (companyId: string, input: unknown) => {
+          seen.push([companyId, input]);
+          return { enabled: false, amount: null, total: null, distanceKm: null };
+        },
+      },
+    });
+  for (const [label, session, status] of REFUSED) {
+    assert.equal((await optionsRoute(session).GET()).status, status, label);
+    assert.equal((await estimateRoute(session).POST(post("/api/orders/courier-estimate", {}))).status, status, label);
+  }
+  assert.equal(seen.length, 0);
+
+  const options = await optionsRoute(DISPATCHER).GET();
+  assert.equal(options.status, 200);
+  const body = (await options.json()) as { data: { enabled: string[]; options: { companyId: string } } };
+  assert.deepEqual(body.data.enabled, ["STANDARD"]);
+  assert.equal(body.data.options.companyId, "company-a");
+
+  assert.equal((await estimateRoute(DISPATCHER).POST(post("/api/orders/courier-estimate", { companyId: "company-b" }))).status, 400);
+  assert.equal(seen.length, 0);
+  assert.equal((await estimateRoute(DISPATCHER).POST(post("/api/orders/courier-estimate", { pickupAddress: "1 rue A", shippingAddress: "2 rue B" }))).status, 200);
+  assert.equal((seen[0] as unknown[])[0], "company-a");
+});
+
 test("INTAKE route réglage : activation réservée à l'administration, entreprise de la session", async () => {
   const writes: unknown[] = [];
   const settingsRoute = (session: Session) => loadRoute<{ GET: () => Promise<Response>; PATCH: (request: Request) => Promise<Response> }>("src/app/api/orders/intake/route.ts", {

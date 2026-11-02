@@ -8,7 +8,7 @@ Les commandes arrivent par e-mail, SMS ou WhatsApp et le dispatcher les ressaisi
 
 ## Parcours
 
-1. Back-office → **Commandes → « Nouvelle commande depuis un message »** (`/dashboard/orders/intake`, administrateur et mini-admin avec le module Commandes) ou **Dispatch → « Depuis un message »** (`/dispatch/intake`, administrateur et dispatcher).
+1. Back-office → **Commandes → « Depuis un message »** (`/dashboard/orders/intake`, administrateur et mini-admin avec le module Commandes) ou **Dispatch → « Depuis un message »** (`/dispatch/intake`, administrateur et dispatcher).
 2. Le dispatcher colle le texte (8 000 caractères au plus) et, s'il le connaît, l'e-mail ou le téléphone de l'expéditeur, puis clique sur **Analyser** (ou Ctrl/⌘ + Entrée).
 3. Le serveur renvoie un **brouillon** : enlèvement, livraisons (une ou plusieurs), échéance résolue dans le fuseau Europe/Paris, urgence, nature et quantité des colis, consignes, client probable. Chaque champ porte une confiance et l'extrait exact du message ; un extrait introuvable dans le texte est retiré et le champ marqué « À vérifier ». Les champs absents sont listés « À compléter ».
 4. Le dispatcher corrige, choisit le client, puis clique sur **Créer la commande**. Une commande est créée par livraison, avec `source = ADMIN`, via `createClientOrder` (inchangé) : géocodage serveur, contrôles SaaS, auto-dispatch, idempotence.

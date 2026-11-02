@@ -6,6 +6,8 @@ import { Calculator } from "lucide-react";
 import { portalApi } from "./api";
 import { formatCurrency } from "./utils";
 
+export type CourierEstimateFn = typeof portalApi.estimateCourier;
+
 interface CourierEstimateBannerProps {
   pickupAddress?: string;
   pickupCity?: string;
@@ -14,13 +16,15 @@ interface CourierEstimateBannerProps {
   shippingCity?: string;
   shippingPostalCode?: string;
   requestedDeliveryDate?: string;
+  /** Saisie par l'équipe : sa propre route ; par défaut, celle du portail client. */
+  estimate?: CourierEstimateFn;
 }
 
 /**
  * Affiche une estimation indicative du prix d'une course.
  * Ne s'affiche que si l'entreprise a activé l'option (l'API renvoie `enabled`).
  */
-export function CourierEstimateBanner(props: CourierEstimateBannerProps) {
+export function CourierEstimateBanner({ estimate, ...props }: CourierEstimateBannerProps) {
   const [params, setParams] = useState(props);
 
   useEffect(() => {
@@ -40,8 +44,8 @@ export function CourierEstimateBanner(props: CourierEstimateBannerProps) {
   const ready = Boolean(params.pickupAddress && params.shippingAddress);
 
   const { data } = useQuery({
-    queryKey: ["portal", "courier-estimate", params],
-    queryFn: () => portalApi.estimateCourier(params),
+    queryKey: [estimate ? "company" : "portal", "courier-estimate", params],
+    queryFn: () => (estimate ?? portalApi.estimateCourier)(params),
     enabled: ready,
     staleTime: 60_000,
   });

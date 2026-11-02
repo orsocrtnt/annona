@@ -59,7 +59,7 @@ test("INTAKE : coller, analyser, relire, créer une seule commande malgré le do
     });
 
     await page.goto("/dashboard/orders");
-    await page.getByRole("link", { name: "Nouvelle commande depuis un message" }).click();
+    await page.getByRole("link", { name: "Depuis un message" }).click();
     await expect(page.getByRole("heading", { name: "Nouvelle commande depuis un message" })).toBeVisible();
 
     const textarea = page.getByLabel(/Texte du message/);

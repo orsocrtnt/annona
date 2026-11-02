@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { UpdateOrderStatusInput } from "@/lib/validations/order";
+import type { CreateClientOrderInput, UpdateOrderStatusInput } from "@/lib/validations/order";
 import { backOfficeApi } from "./api";
 import type { CompanyClient, CompanyOrder, CompanySupportTicket } from "./types";
 import { QUERY_STALE_MS } from "@/lib/query/defaults";
@@ -215,6 +215,24 @@ export function useCompanyClients(initialData?: CompanyClient[]) {
     queryFn: backOfficeApi.getClients,
     initialData,
     staleTime: QUERY_STALE_MS,
+  });
+}
+
+export function useOrderCreateOptions() {
+  return useQuery({
+    queryKey: ["company", "order-create-options"],
+    queryFn: backOfficeApi.getOrderCreateOptions,
+    staleTime: QUERY_STALE_MS,
+    retry: false,
+  });
+}
+
+export function useCreateCustomerOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { customerId: string; order: CreateClientOrderInput; idempotencyKey: string }) =>
+      backOfficeApi.createCustomerOrder(input.customerId, input.order, input.idempotencyKey),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["company"] }),
   });
 }
 

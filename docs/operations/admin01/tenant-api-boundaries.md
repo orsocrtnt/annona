@@ -78,6 +78,9 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/orders/[id]/route.ts | PATCH | orders:update | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/[id]/route.ts | DELETE | orders:update | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/[id]/tracking-link/route.ts | POST | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/orders/courier-estimate/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/orders/create-options/route.ts | GET | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
+| src/app/api/orders/create/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/dashboard/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/export/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/intake/analyze/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |

@@ -31,7 +31,7 @@ import { DispatchRoundsPanel } from "@/features/back-office/dispatch-rounds-pane
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
 import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { dispatchSearchText, getDispatchColumns } from "@/features/back-office/dispatch-columns";
-import { MapPin, MessageSquareText, Radio, RefreshCw, Route, Settings2, Truck } from "lucide-react";
+import { MapPin, MessageSquareText, Plus, Radio, RefreshCw, Route, Settings2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DeliveryCategory } from "@prisma/client";
@@ -180,12 +180,18 @@ function DispatcherDashboardContent() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* Commande par message : le mini-admin passe par Commandes, seul espace de son module. */}
+          {/* Saisie de commande : le mini-admin passe par Commandes, seul espace de son module. */}
           {role !== "MINI_ADMIN" && permissions.includes("orders:create") && (
-            <Link href="/dispatch/intake" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-h-11")}>
-              <MessageSquareText className="h-4 w-4" />
-              Depuis un message
-            </Link>
+            <>
+              <Link href="/dispatch/new-order" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-h-11")}>
+                <Plus className="h-4 w-4" />
+                Nouvelle commande
+              </Link>
+              <Link href="/dispatch/intake" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-h-11")}>
+                <MessageSquareText className="h-4 w-4" />
+                Depuis un message
+              </Link>
+            </>
           )}
           <Link
             href={

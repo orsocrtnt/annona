@@ -163,6 +163,8 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 | --- | --- | --- |
 | Création de commande côté back-office | Acceptée pour le compte d'un client choisi, depuis le flux « commande par message » uniquement, après relecture et validation du dispatcher. Rôles : `COMPANY_ADMIN`, `MINI_ADMIN` (module Commandes) et `DISPATCHER`, avec la permission `orders:create`. La commande porte `source = ADMIN`. Elle passe par le service de création existant (géocodage, contrôles d'abonnement, idempotence). Le client doit être un compte actif de l'entreprise. La fonction reste désactivée tant que la clé serveur et l'activation par l'entreprise manquent. | INTAKE-1 |
 
+**Mise à jour du 2 novembre 2026 (ADMIN-COMMANDE), décision du propriétaire :** la création côté back-office n'est plus limitée au flux « commande par message ». Un formulaire « Nouvelle commande » la permet aussi, avec les mêmes rôles (`COMPANY_ADMIN`, `MINI_ADMIN` avec le module Commandes, `DISPATCHER`), la même permission `orders:create`, la même source `ADMIN` et le même service de création. Le client doit avoir un compte actif de l'entreprise : pas de commande sans compte. Ce formulaire ne dépend ni de la clé serveur ni de l'activation de la commande par message, qui restent exigées pour ce seul flux.
+
 ## C12 — Décisions du propriétaire du 29 octobre 2026 (dispatch)
 
 | Sujet | Décision | Suite |

@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { withApiHandler } from "../src/lib/api/route-handler";
 import { contactMessageSchema } from "../src/domains/growth/contact.service";
 import { salesCodeCreateSchema } from "../src/domains/sales/sales-code.service";
+import { courierEstimateRequestSchema } from "../src/lib/validations/courier-estimate";
 
 // SEC-4 : les corps JSON sont validés par Zod .strict() ; tout champ inconnu,
 // type inattendu ou JSON mal formé reçoit une réponse 400 claire, sans appel métier.
@@ -33,6 +34,7 @@ test("estimation portail : champs connus acceptés (null toléré), champ inconn
   const calls: unknown[] = [];
   const { POST } = load("src/app/api/portal/order-estimate/route.ts", {
     "@/lib/api/auth-guard": clientAuth,
+    "@/lib/validations/courier-estimate": { courierEstimateRequestSchema },
     "@/domains/company/courier-estimate.service": { estimateCourierPrice: async (companyId: string, input: unknown) => { calls.push([companyId, input]); return { enabled: false, amount: null, distanceKm: null }; } },
   });
   const valid = { pickupAddress: "1 rue A", pickupCity: "Lyon", pickupPostalCode: "69001", shippingAddress: "2 rue B", shippingCity: null, requestedDeliveryDate: "2026-11-02" };

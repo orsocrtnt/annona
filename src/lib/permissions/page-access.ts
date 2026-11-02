@@ -40,6 +40,7 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/dashboard/analytics", roles: COMPANY_ADMINS, anyPermission: ["analytics:read"] },
   { path: "/dashboard/orders", roles: COMPANY_OPS, anyPermission: ["orders:read"] },
   { path: "/dashboard/orders/intake", roles: COMPANY_OPS, anyPermission: ["orders:create"] },
+  { path: "/dashboard/orders/new", roles: COMPANY_OPS, anyPermission: ["orders:create"] },
   { path: "/dashboard/clients", roles: COMPANY_OPS, anyPermission: ["orders:read"] },
   { path: "/dashboard/drivers", roles: COMPANY_OPS, anyPermission: ["drivers:read"] },
   {
@@ -60,6 +61,12 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
     roles: COMPANY_OPS,
     anyPermission: ["orders:create"],
     // orders:create n'est donné au mini-admin que par le module Commandes.
+    miniAdminModules: ["orders"],
+  },
+  {
+    path: "/dispatch/new-order",
+    roles: COMPANY_OPS,
+    anyPermission: ["orders:create"],
     miniAdminModules: ["orders"],
   },
   { path: "/support", roles: COMPANY_OPS },
