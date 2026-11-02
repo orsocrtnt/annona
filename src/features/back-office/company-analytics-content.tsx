@@ -42,7 +42,7 @@ export function CompanyAnalyticsContent() {
 
   const maxVolume = Math.max(1, ...data.dailyVolume.map((row) => row.count));
   const volume = volumeSummary(data.dailyVolume);
-  const share = collectedShare(data.collectedAmount, data.pendingInvoiceAmount);
+  const share = collectedShare(data.collectedAmount, data.invoicedAmount);
   const maxClient = Math.max(1, ...data.topClients.map((client) => client.deliveries));
   // Axe des dates : chaque jour sur 7 jours, trois repères sur 30 jours.
   const axis = days === 7
@@ -135,7 +135,8 @@ export function CompanyAnalyticsContent() {
             {share != null && (
               <div className="flex h-2.5 overflow-hidden rounded-full bg-chart-track" aria-hidden="true">
                 <span className="h-full bg-chart-ink" style={{ width: `${share}%` }} />
-                <span className="h-full bg-[#f2b84b]" style={{ width: `${100 - share}%` }} />
+                <span className="h-full bg-[#f2b84b]" style={{ width: `${(data.pendingInvoiceAmount / data.invoicedAmount) * 100}%` }} />
+                <span className="h-full bg-destructive" style={{ width: `${(data.overdueInvoiceAmount / data.invoicedAmount) * 100}%` }} />
               </div>
             )}
             <dl className="space-y-2">
@@ -150,6 +151,12 @@ export function CompanyAnalyticsContent() {
                   <span className="h-2 w-2 rounded-full bg-[#f2b84b]" aria-hidden="true" /> En attente
                 </dt>
                 <dd className="font-medium tabular-nums">{formatCurrency(data.pendingInvoiceAmount)}</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="inline-flex items-center gap-2 text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full bg-destructive" aria-hidden="true" /> En retard
+                </dt>
+                <dd className="font-medium tabular-nums">{formatCurrency(data.overdueInvoiceAmount)}</dd>
               </div>
               <div className="flex items-center justify-between border-t border-border pt-2">
                 <dt className="text-muted-foreground">Total facturé</dt>

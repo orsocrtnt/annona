@@ -55,6 +55,7 @@ function fixture(status = "DELIVERED") {
   const service = load<typeof invoiceService>("src/domains/invoice/invoice.service.ts", {
     "@prisma/client": { Prisma },
     "@/services/prisma/client": { prisma: { order: { findFirst: async () => order }, $transaction: async (fn: (t: typeof tx) => unknown) => fn(tx) } },
+    "@/domains/company/courier-estimate.service": { announcedCourierLine: async () => null },
     "@/domains/company/tariff-settings.service": { getCompanyTariffSettings: async () => ({ tariffZones: [], tariffFees: [] }) },
     "@/domains/company/billing-settings.service": { getCompanyBillingSettings: async () => ({ invoice: { vatRate: 0, defaultDueDays: 30, referencePrefix: "TEST" } }) },
     "@/lib/query/list-limits": {},

@@ -12,6 +12,14 @@ export function useCompanyInvoices(status: CompanyInvoiceFilter) {
   });
 }
 
+export function useUnissuedDeliveryInvoices() {
+  return useQuery({
+    queryKey: ["company", "invoices", "unissued"],
+    queryFn: () => companyInvoicesApi.unissued(),
+    retry: 1,
+  });
+}
+
 export function useRemindInvoice() {
   const qc = useQueryClient();
   return useMutation({

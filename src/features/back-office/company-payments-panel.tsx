@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/features/client-portal/utils";
-import { useCompanyInvoices, useRemindInvoice } from "@/features/back-office/company-invoices-hooks";
+import { useCompanyInvoices, useRemindInvoice, useUnissuedDeliveryInvoices } from "@/features/back-office/company-invoices-hooks";
 import {
   invoiceRowStatusLabel,
   reminderOutcomeMessage,
@@ -117,6 +117,7 @@ function InvoiceRow({ row, onRemind, reminding }: { row: CompanyInvoiceRow; onRe
 export function CompanyPaymentsPanel() {
   const [filter, setFilter] = useState<CompanyInvoiceFilter>("ALL");
   const { data, isLoading, isError, error, refetch, isFetching } = useCompanyInvoices(filter);
+  const { data: unissued } = useUnissuedDeliveryInvoices();
   const remind = useRemindInvoice();
   const [remindingId, setRemindingId] = useState<string | null>(null);
 
@@ -137,6 +138,25 @@ export function CompanyPaymentsPanel() {
 
   return (
     <div className="space-y-4" data-testid="company-payments">
+      {unissued && unissued.length > 0 && (
+        <Card className="border-destructive/40" data-testid="unissued-invoices">
+          <CardContent className="space-y-2 p-4 text-sm">
+            <p className="flex items-center gap-2 font-semibold">
+              <AlertTriangle className="h-4 w-4 text-destructive" aria-hidden />
+              {unissued.length > 1 ? `${unissued.length} livraisons sans facture` : "1 livraison sans facture"}
+            </p>
+            <p className="text-muted-foreground">La facture automatique n’a pas pu partir. Émettez-la depuis la commande, ou ajoutez la zone manquante dans l’onglet Courses.</p>
+            <ul className="space-y-1">
+              {unissued.map((row) => (
+                <li key={row.orderId}>
+                  <Link href={`/dashboard/orders/${row.orderId}`} className="font-medium text-brand underline-offset-2 hover:underline">{row.orderReference}</Link>
+                  <span className="text-muted-foreground"> : {row.reason}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
       <ul className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Résumé des paiements">
         {TILES.map((tile) => {
           const Icon = tile.icon;

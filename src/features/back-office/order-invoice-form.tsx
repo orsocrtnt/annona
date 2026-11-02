@@ -16,7 +16,7 @@ import type { InvoiceLineItem } from "@/lib/validations/invoice";
 import type { CompanyOrder } from "./types";
 import { useCompanyTariffSettings } from "./tariff-settings-hooks";
 import { backOfficeApi } from "./api";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -114,9 +114,24 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
     );
   }, [tariffs, order.shippingPostalCode]);
 
+  // Course : le prix annoncé au client préremplit la facture, à la place de la zone (FACT-KM).
+  const isCourier = order.deliveryCategory === "COURIER" && !existingInvoice;
+  const { data: courierLine, isPending: courierLinePending } = useQuery({
+    queryKey: ["order-courier-line", order.id],
+    queryFn: () => backOfficeApi.getOrderCourierLine(order.id),
+    enabled: isCourier,
+    staleTime: 60_000,
+  });
+
   useEffect(() => {
+    if (!courierLine) return;
+    setCustomLines((lines) => (lines.length > 0 ? lines : [{ label: courierLine.label, amount: courierLine.amount.toFixed(2) }]));
+  }, [courierLine]);
+
+  useEffect(() => {
+    if (isCourier && (courierLinePending || courierLine)) return;
     if (suggestedZone && !zoneId) setZoneId(suggestedZone.id);
-  }, [suggestedZone, zoneId]);
+  }, [suggestedZone, zoneId, isCourier, courierLinePending, courierLine]);
 
   const previewTotal = computeTotal(
     zoneId,
@@ -373,6 +388,9 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
 
             <div className="space-y-2">
               <Label>Lignes personnalisées</Label>
+              {courierLine && (
+                <p className="text-xs text-muted-foreground">Prix repris de l’estimation annoncée au client. Vous pouvez le corriger avant d’enregistrer.</p>
+              )}
               {customLines.map((line, index) => (
                 <div key={index} className="flex gap-2">
                   <Input

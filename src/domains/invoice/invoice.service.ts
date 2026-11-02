@@ -1,3 +1,4 @@
+import { announcedCourierLine } from "@/domains/company/courier-estimate.service";
 import { prisma } from "@/services/prisma/client";
 import { Prisma, type InvoiceStatus } from "@prisma/client";
 import type { CreateOrderInvoiceInput, InvoiceLineItem } from "@/lib/validations/invoice";
@@ -206,6 +207,18 @@ export async function createOrderInvoice(
   return invoice;
 }
 
+/** Prix de course à préremplir dans le formulaire de facture ; null si rien n'a été annoncé. */
+export async function getOrderAnnouncedCourierLine(companyId: string, orderId: string) {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, companyId },
+    select: {
+      deliveryCategory: true, pickupAddress: true, pickupCity: true, pickupPostalCode: true,
+      shippingAddress: true, shippingCity: true, shippingPostalCode: true, requestedDeliveryDate: true,
+    },
+  });
+  return order ? announcedCourierLine(companyId, order) : null;
+}
+
 export type DeliveredOrderInvoiceResult =
   | { status: "created"; invoiceId: string }
   | { status: "skipped"; reason: "ORDER_NOT_FOUND" | "ORDER_NOT_DELIVERED" | "INVOICE_EXISTS" | "SETTING_DISABLED" };
@@ -237,7 +250,9 @@ export async function createDeliveredOrderInvoice(
   // Réglage relu au moment du traitement : coupé entre-temps, rien n'est émis.
   if (!billing.invoice.autoInvoiceOnDelivery) return { status: "skipped", reason: "SETTING_DISABLED" };
 
-  const zone = findTariffZoneForPostalCode(order.shippingPostalCode, tariffs.tariffZones);
+  // Le prix annoncé au client prime sur la zone : une course ne se paie pas deux fois (FACT-KM).
+  const courierLine = await announcedCourierLine(companyId, order);
+  const zone = courierLine ? null : findTariffZoneForPostalCode(order.shippingPostalCode, tariffs.tariffZones);
   const lineItems = buildInvoiceLineItems(
     order,
     tariffs,
@@ -245,7 +260,7 @@ export async function createDeliveredOrderInvoice(
       zoneId: zone?.id,
       feeIds: [],
       includePurchases: order.items.some((item) => Number(item.unitPrice) > 0),
-      customLines: [],
+      customLines: courierLine ? [courierLine] : [],
     },
     billing.invoice.vatRate
   );

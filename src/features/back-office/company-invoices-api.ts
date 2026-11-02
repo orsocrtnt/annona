@@ -1,4 +1,4 @@
-import type { CompanyInvoiceFilter, CompanyInvoiceList } from "@/domains/invoice/company-invoices.service";
+import type { CompanyInvoiceFilter, CompanyInvoiceList, UnissuedDeliveryInvoice } from "@/domains/invoice/company-invoices.service";
 
 export type InvoiceReminderResponse = {
   reminder: { id: string; result: string; channel: string; createdAt: string };
@@ -15,6 +15,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 export const companyInvoicesApi = {
   list: (status: CompanyInvoiceFilter) =>
     fetchJson<CompanyInvoiceList>(`/api/invoices?status=${encodeURIComponent(status)}`),
+  unissued: () => fetchJson<UnissuedDeliveryInvoice[]>("/api/invoices/unissued"),
   remind: (invoiceId: string) =>
     fetchJson<InvoiceReminderResponse>(`/api/invoices/${encodeURIComponent(invoiceId)}/reminders`, { method: "POST" }),
 };

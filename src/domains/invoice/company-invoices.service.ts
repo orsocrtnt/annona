@@ -131,3 +131,42 @@ export async function listCompanyInvoices(
     }),
   };
 }
+
+export type UnissuedDeliveryInvoice = { orderId: string; orderReference: string; reason: string };
+
+const UNISSUED_REASONS: Record<string, (postalCode: string | null) => string> = {
+  DELIVERY_INVOICE_EMPTY: (postalCode) =>
+    `Aucune zone tarifaire ne correspond au code postal ${postalCode ?? "de livraison"}, et la commande n'a pas d'achat.`,
+  INVOICE_AMOUNT_TOO_LARGE: () => "Le montant dépasse la limite d'une facture.",
+};
+
+/**
+ * Commandes livrées que la facture automatique n'a pas pu facturer, et qui n'ont toujours pas de
+ * facture : l'entreprise doit le voir là où elle suit ses paiements (FACT-AUTO-VIDE).
+ */
+export async function listUnissuedDeliveryInvoices(
+  companyId: string,
+  db: Pick<PrismaClient, "operationJob" | "order"> = prisma
+): Promise<UnissuedDeliveryInvoice[]> {
+  const jobs = await db.operationJob.findMany({
+    where: { companyId, type: "DELIVERY_INVOICE", status: "FAILED", lastError: { in: Object.keys(UNISSUED_REASONS) } },
+    orderBy: { updatedAt: "desc" },
+    take: 50,
+    select: { payload: true, lastError: true },
+  });
+  const errorByOrder = new Map<string, string>();
+  for (const job of jobs) {
+    const orderId = (job.payload as { orderId?: unknown } | null)?.orderId;
+    if (typeof orderId === "string" && job.lastError && !errorByOrder.has(orderId)) errorByOrder.set(orderId, job.lastError);
+  }
+  if (errorByOrder.size === 0) return [];
+  const orders = await db.order.findMany({
+    where: { companyId, id: { in: [...errorByOrder.keys()] }, invoices: { none: { status: { not: "CANCELLED" } } } },
+    select: { id: true, reference: true, shippingPostalCode: true },
+  });
+  return orders.map((order) => ({
+    orderId: order.id,
+    orderReference: order.reference,
+    reason: UNISSUED_REASONS[errorByOrder.get(order.id) ?? ""]?.(order.shippingPostalCode) ?? "Facture non émise.",
+  }));
+}

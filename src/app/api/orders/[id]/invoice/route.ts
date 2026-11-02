@@ -2,8 +2,22 @@ import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { createOrderInvoice, markOrderInvoicePaid } from "@/domains/invoice/invoice.service";
+import { createOrderInvoice, getOrderAnnouncedCourierLine, markOrderInvoicePaid } from "@/domains/invoice/invoice.service";
 import { createOrderInvoiceSchema, markOrderInvoicePaidSchema } from "@/lib/validations/invoice";
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireStaffRole("invoices:create");
+  if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  if (denied) return denied;
+  const companyId = getCompanyId(auth.context);
+  if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
+  const { id } = await params;
+  return NextResponse.json({ courierLine: await getOrderAnnouncedCourierLine(companyId, id) });
+}
 
 export async function POST(
   request: Request,

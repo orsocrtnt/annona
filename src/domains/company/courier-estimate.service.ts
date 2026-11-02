@@ -78,3 +78,31 @@ export async function estimateCourierPrice(
     distanceKm,
   };
 }
+
+/**
+ * Ligne de facture d'une course : le prix annoncé au client, si l'entreprise affiche l'estimation
+ * (FACT-KM). Sans estimation affichée ou sans distance calculable, la facture reste sur les zones.
+ */
+export async function announcedCourierLine(
+  companyId: string,
+  order: {
+    deliveryCategory: string;
+    pickupAddress: string | null;
+    pickupCity: string | null;
+    pickupPostalCode: string | null;
+    shippingAddress: string | null;
+    shippingCity: string | null;
+    shippingPostalCode: string | null;
+    requestedDeliveryDate: Date | null;
+  },
+  estimate: typeof estimateCourierPrice = estimateCourierPrice
+): Promise<{ label: string; amount: number } | null> {
+  if (order.deliveryCategory !== "COURIER" || !order.pickupAddress || !order.shippingAddress) return null;
+  const announced = await estimate(companyId, {
+    pickup: { address: order.pickupAddress, city: order.pickupCity, postalCode: order.pickupPostalCode },
+    shipping: { address: order.shippingAddress, city: order.shippingCity, postalCode: order.shippingPostalCode },
+    requestedDeliveryDate: order.requestedDeliveryDate?.toISOString() ?? null,
+  });
+  if (!announced.enabled || announced.amount == null || announced.distanceKm == null) return null;
+  return { label: `Course, environ ${announced.distanceKm} km`, amount: announced.amount };
+}

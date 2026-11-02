@@ -99,6 +99,8 @@ export const backOfficeApi = {
     }),
   deleteOrder: (orderId: string) =>
     fetchJson<void>(`/api/orders/${orderId}`, { method: "DELETE" }),
+  getOrderCourierLine: (orderId: string) =>
+    fetchJson<{ courierLine: { label: string; amount: number } | null }>(`/api/orders/${orderId}/invoice`).then((result) => result.courierLine),
   createOrderInvoice: (orderId: string, data: CreateOrderInvoiceInput) =>
     fetchJson<{ id: string; reference: string }>(`/api/orders/${orderId}/invoice`, {
       method: "POST",

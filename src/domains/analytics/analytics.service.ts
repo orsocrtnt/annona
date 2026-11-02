@@ -1,3 +1,4 @@
+import { splitInvoicedAmounts } from "@/lib/analytics/summary";
 import { prisma } from "@/services/prisma/client";
 import { formatClientFromParts } from "@/lib/format/person-labels";
 import { isLateDelivery, isDeliveredStatus } from "@/lib/dashboard/period-stats";
@@ -14,6 +15,7 @@ export interface CompanyAnalytics {
   invoicedAmount: number;
   collectedAmount: number;
   pendingInvoiceAmount: number;
+  overdueInvoiceAmount: number;
   dailyVolume: { date: string; count: number }[];
   topClients: { name: string; deliveries: number }[];
 }
@@ -73,7 +75,7 @@ export async function getCompanyAnalytics(
     }),
     prisma.invoice.findMany({
       where: { companyId, createdAt: { gte: periodStart, lt: periodEnd } },
-      select: { status: true, amount: true },
+      select: { status: true, amount: true, dueDate: true },
     }),
   ]);
 
@@ -119,13 +121,7 @@ export async function getCompanyAnalytics(
       })
     ).length,
     unassigned: snapshot.filter((row) => row.status === "PENDING" && !row.driverId).length,
-    invoicedAmount: invoices.reduce((sum, row) => sum + money(row.amount), 0),
-    collectedAmount: invoices
-      .filter((row) => row.status === "PAID")
-      .reduce((sum, row) => sum + money(row.amount), 0),
-    pendingInvoiceAmount: invoices
-      .filter((row) => row.status === "PENDING" || row.status === "DRAFT")
-      .reduce((sum, row) => sum + money(row.amount), 0),
+    ...splitInvoicedAmounts(invoices.map((row) => ({ ...row, amount: money(row.amount) }))),
     dailyVolume,
     topClients: [...clientCounts.values()]
       .sort((a, b) => b.deliveries - a.deliveries)
