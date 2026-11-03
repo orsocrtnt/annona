@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**99 tâches terminées sur 127 — 78 %**
+**100 tâches terminées sur 127 — 79 %**
 
-`████████████████░░░░` · 28 tâches restantes
+`████████████████░░░░` · 27 tâches restantes
 
 **À faire par Claude**
 
@@ -40,7 +40,6 @@
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
-- MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus (ouvrir Chrome (ou activer la réception de l'espace de démo), puis Claude)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -62,7 +61,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- MAIL-ECARTS : ouvrir Chrome (extension Claude connectée) pour que Claude finisse l'essai en ligne des e-mails reçus.
 - MAIL-PONT : relire la spécification quand Claude l'aura écrite (boîte dédiée aux commandes, décidée le 3 novembre ; plus de compte Google Cloud ni Azure à créer pour l'instant).
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
@@ -70,7 +68,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
-- MAIL-ECARTS : corrigé, testé et en ligne (3 novembre) ; reste l'essai avec le vrai modèle sur `tutelliv.fr`, dès que tu as ouvert Chrome.
 - MAIL-PONT : écrire la spécification de la boîte de commandes dédiée (renvoi automatique, tri, nouveau client à la validation, confirmation au client).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
@@ -323,42 +320,11 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   Terminé quand : une boîte de commandes Gmail et une boîte Outlook renvoient automatiquement vers TutelLiv ; le code de confirmation de Gmail est visible dans TutelLiv ; le client d'origine est reconnu ; les e-mails de commande apparaissent en brouillon et les autres sont mis « à trier » ou ignorés sans être conservés ; la validation crée la commande et, si besoin, la fiche du client ; le client reçoit la confirmation (envoyée par TutelLiv au nom de l'entreprise, « répondre à » vers sa boîte) ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
 
+  Reprend deux défauts de MAIL-ECARTS (archivée le 3 novembre) : client jamais retrouvé sur un e-mail transféré (le rapprochement ne regarde que l'expéditeur, alors l'entreprise elle-même) ; « Brouillon prêt » affiché aussi sur un e-mail qui n'est pas une commande.
+
   À prévoir : changement de schéma (fiche client sans accès, statut « à trier ») ; guide pour activer le renvoi (Gmail, Outlook, OVH), dont l'accord de l'administrateur Outlook professionnel pour les renvois externes. Option ultérieure, hors de cette tâche : connexion directe Gmail/Outlook (comptes Google Cloud et Azure, vérification Google et audit CASA, juridique plus lourd).
 
   **Modèle conseillé : Claude Opus · effort élevé.**
-
-- [ ] **MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus.** Essai demandé par le propriétaire le 2 novembre 2026, sur `tutelliv.fr` (espace de démonstration, 14 e-mails fictifs envoyés depuis Gmail). La chaîne marche : voir « Résultat » ci-dessous.
-
-  **Qui : Toi — ouvrir Chrome (ou activer la réception de l'espace de démo), puis Claude.**
-
-  Terminé quand : les défauts 2, 4, 5 et 6 sont corrigés et testés. Les défauts 1 et 3 sont repris par MAIL-PONT (décision C14 : renvoi automatique d'une boîte dédiée, qui garde le vrai expéditeur, et tri des e-mails ordinaires).
-
-  1. **Client jamais retrouvé sur un e-mail transféré.** Le rapprochement ne regarde que l'expéditeur (`matchCustomerBySender`), qui est alors l'entreprise elle-même. Essai : e-mail transféré citant l'adresse d'un client existant, adresse bien lue par l'analyse, client non présélectionné. C'est pourtant l'usage indiqué à l'écran (« Transférez-y vos e-mails »). Le dispatcher doit choisir le client à la main.
-  2. **Plusieurs livraisons dans un e-mail : quantités mélangées.** Essai : « 1 palette » et « 3 colis ». Quantité non retenue, champ prérempli à 1 avec l'avis « Absente du message », et chaque commande porte l'article « 1 palette (livraison 1), 3 colis (livraison 2) ». Sans correction du dispatcher, la seconde partirait avec une quantité de 1 au lieu de 3.
-  3. **« Brouillon prêt » sur tout.** « Merci pour hier » et un e-mail dont tout est en pièce jointe reçoivent la même étiquette qu'une vraie commande, avec un brouillon vide. Rien n'est créé seul, mais l'étiquette trompe.
-
-  4. **E-mail refusé en boucle s'il contient un caractère invalide.** Essai interne : un caractère nul (`\u0000`) ou un émoji coupé dans le texte ou l'expéditeur fait échouer l'écriture en base (Postgres 22021). Le webhook répond 503 à chaque renvoi : l'e-mail n'arrive jamais et personne n'est prévenu. Rare, mais perte silencieuse. Nettoyer le texte avant l'écriture dans `ingestInboundEmail`.
-  5. **Plafond de 200 e-mails par jour dépassé sous envois simultanés.** Essai interne : à 199/200, 8 e-mails simultanés sont tous acceptés (207 en base). Le comptage est fait hors transaction. Impact limité : le quota d'analyse (60 par heure), lui, tient.
-  6. **« Nom <adresse> » non reconnu dans le champ Expéditeur de la commande collée.** `parseSender` refuse ce format. Sans effet sur les e-mails reçus, dont l'adresse est nettoyée avant.
-
-  Essai interne du 2 novembre 2026 (`tutelliv-dev`, deux entreprises de test, réception et modèle simulés, script non conservé, données supprimées et vérifiées) : 62 contrôles, 57 réussis, les 5 échecs correspondent aux défauts 4 à 6. Exercés pour la première fois sur PostgreSQL réel : verrou du quota d'analyse (12 analyses simultanées à 55/60 : 5 passent, 60 en base) ; verrou de création (5 créations même clé : 1 commande ; deux clients en même temps : 1 commande et des refus nets) ; rapprochement par téléphone (autres formats, numéro partagé, compte suspendu). Aussi réussis : expéditeur connu reconnu, autre entreprise et équipe non reconnues, formes d'adresse de réception, webhook rejoué 10 fois en même temps (1 ligne, 1 tâche), panne de Resend puis reprise, message de 20 000 caractères coupé à 8 000, HTML nettoyé, plafond de 200 hors simultanéité, conservation 30 jours, panne et réponse invalide du modèle (« À lire », texte gardé), isolation entre entreprises, pas de résurrection après classement. Limite : 70 analyses simultanées sur 5 connexions échouent par manque de connexions (44 sur 70), charge jugée irréaliste ; non testé sur Vercel.
-
-  Résultat de l'essai réel : e-mails reçus et analysés en moins de 20 s, 11 analyses sur 11 réussies, environ 3 170 jetons en entrée et 910 en sortie par analyse. E-mail complet : adresses, contact, date et quantité justes, puis vraie commande créée (source ADMIN, assignée), un seul exemplaire malgré le double clic, e-mail retiré de la liste. Message court ou incomplet : champs signalés, création refusée. Deux livraisons : une commande par livraison, e-mail gardé tant qu'il en manque une ; reprise après rechargement sans doublon ; reprise avec un autre client refusée. Tentative d'injection : aucune consigne reprise, aucune commande. Pièce jointe signalée et non lue. Webhooks sans signature ou mal signés refusés (400). Adresse inconnue, adresse remplacée et réception désactivée : rien d'enregistré (11 lignes en base pour 11 e-mails attendus). Contenu vidé en base au classement et à la conversion. Captures locales : `outputs/recette-agents/mail-commande/`.
-
-  Non vérifié : vrai e-mail d'un expéditeur reconnu (service testé sur vraie base, sans vrai e-mail) ; pièce jointe lourde réelle ; volume réel chez Resend et sur Vercel ; vrais messages de clients (INTAKE-1, F10 non qualifiée). Écart de méthode : un nettoyage trop large a visé aussi des commandes de démo de la session, refusé pour celles affichées ; la session isolée a ensuite été libérée à la déconnexion, sans effet durable. 14 e-mails de test restent dans « Envoyés » du Gmail du propriétaire.
-
-  **Corrections du 3 novembre 2026 (commit `cfe97c0`, poussé sur `preproduction`, déploiement prêt sur `tutelliv.fr`).**
-  - Défaut 2 : chaque livraison porte ses propres colis (`deliveries[].packages`, schéma de sortie et consigne du modèle) ; à défaut, les colis communs s'appliquent. Quantité absente signalée sur sa livraison (`deliveries.1.quantity`), plus de 1 silencieux. Anciens brouillons gardés sans colis propres toujours lisibles.
-  - Défaut 4 : `dbSafeText` retire le caractère nul et remplace les moitiés d'émoji, après la coupe (qui pouvait elle-même couper un émoji), pour l'expéditeur, l'objet et le texte.
-  - Défaut 5 : recompte du plafond de 200 sous verrou par entreprise (`pg_advisory_xact_lock`) dans la transaction d'écriture, attente du verrou jusqu'à 10 s.
-  - Défaut 6 : `parseSender` accepte « Nom <adresse> ».
-  - En passant : icône ⚠/✓ affichée deux fois dans trois alertes (brouillon et formulaire de commande public), le composant `Alert` met déjà la sienne.
-  - Vérifié : tests unitaires ajoutés (quantités par livraison, quantité absente ou inventée, ancien brouillon, « Nom <adresse> », caractères invalides) ; `npm run check` vert (1 547 tests, 0 échec). Essai sur `tutelliv-dev` (entreprise de test créée puis supprimée, 0 reste) : e-mail avec caractère nul et émoji coupé enregistré et nettoyé ; à 199/200, 8 e-mails simultanés → 1 accepté, 7 refusés, 200 en base, le suivant refusé (6/6). Premier essai sans délai d'attente : refus Prisma P2028, d'où l'attente de 10 s. E2E navigateur en worktree isolé : nouveau parcours à deux livraisons (1 palette, quantité absente signalée sur la seconde seulement, saisies gardées par onglet) et parcours existant « double clic », tous deux réussis ; capture locale `outputs/recette-agents/mail-ecarts/deux-livraisons.png`.
-  - Non vérifié : le vrai modèle remplit-il `deliveries[].packages` ? Pas de clé Anthropic en local, essai possible seulement en ligne après poussée. Retrait des icônes en double non revu au navigateur (contrôle par `npm run check`).
-  - Essai en ligne bloqué le 3 novembre : l'e-mail « 1 palette / 3 colis » envoyé depuis le Gmail du propriétaire est parti vers l'ancienne adresse de démo (`a6cd…`, remplacée pendant l'essai du 2 novembre) et a été ignoré comme prévu, rien d'enregistré. L'entreprise de démo « LogiExpress Démo — environnement 1 » (base de préproduction) a une nouvelle adresse, mais sa réception est désactivée. L'activer directement en base a été refusé par l'outil de sécurité ; Chrome n'était pas connecté pour le faire par l'écran.
-  - Suite : dès que Chrome est ouvert (ou la réception activée dans Paramètres de l'espace de démo), Claude active la réception, envoie l'e-mail à la nouvelle adresse, contrôle le brouillon (1 palette sur la livraison 1, 3 colis sur la livraison 2), désactive la réception et clôt.
-
-  **Modèle conseillé : Claude Opus · effort moyen.**
 
 - [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.**
 
