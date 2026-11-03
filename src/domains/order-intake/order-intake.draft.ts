@@ -17,6 +17,9 @@ export interface IntakeCustomerMatch {
 export type IntakeDraftDelivery = IntakeStop & { packages?: IntakePackages };
 
 export interface OrderIntakeDraft {
+  /** MAIL-PONT : absent des brouillons gardés d'avant le 3 novembre 2026, lus comme « order ». */
+  kind?: "order" | "other";
+  kindReason?: string | null;
   referenceDate: string;
   pickup: IntakeStop;
   deliveries: IntakeDraftDelivery[];
@@ -137,6 +140,8 @@ export function buildOrderIntakeDraft(
   );
 
   return {
+    kind: extraction.kind.value,
+    kindReason: extraction.kind.reason,
     referenceDate: parisToday(now).date,
     pickup,
     deliveries,

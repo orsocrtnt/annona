@@ -83,6 +83,13 @@ const deadlineSchema = z
  */
 export const orderIntakeExtractionSchema = z
   .object({
+    /** MAIL-PONT : tri d'un e-mail reçu. « other » = remerciement, facture, publicité… : pas de brouillon affiché. */
+    kind: z
+      .object({
+        value: z.enum(["order", "other"]),
+        reason: z.string().max(200).nullable(),
+      })
+      .strict(),
     pickup: stopSchema,
     deliveries: z.array(deliverySchema).max(ORDER_INTAKE_MAX_DELIVERIES),
     deadline: deadlineSchema,
@@ -108,3 +115,4 @@ export type IntakeStop = z.infer<typeof stopSchema>;
 export type IntakePackages = z.infer<typeof packagesSchema>;
 export type IntakeDeliveryExtraction = z.infer<typeof deliverySchema>;
 export type IntakeDeadlineExtraction = z.infer<typeof deadlineSchema>;
+export type IntakeKind = OrderIntakeExtraction["kind"]["value"];

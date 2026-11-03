@@ -5,6 +5,8 @@ import test from "node:test";
 import {
   dbSafeText,
   htmlToText,
+  inboundAnalysisUpdate,
+  inboundSkipReason,
   inboundTokenFromRecipients,
   senderAddress,
   verifyInboundWebhook,
@@ -109,4 +111,26 @@ test("sources : anonyme sans identité ni auto-dispatch, suivi sans données sen
     assert.equal(tracking.includes(forbidden), false, forbidden);
   }
   assert.match(tracking, /\.map\(\(\{ id, label, occurredAt \}\)/, "le détail des étapes n'est pas exposé");
+});
+
+test("MAIL-PONT : seul un e-mail reconnu comme commande devient « Brouillon prêt »", () => {
+  const base = { referenceDate: "2026-11-03", missingFields: [], uncertainFields: [] } as never;
+  const order = inboundAnalysisUpdate({ status: "ok", draft: { ...(base as object), kind: "order" } as never });
+  assert.equal(order.status, "ANALYZED");
+  assert.equal(order.analysisError, null);
+  const other = inboundAnalysisUpdate({ status: "ok", draft: { ...(base as object), kind: "other", kindReason: "Remerciement" } as never });
+  assert.equal(other.status, "NOT_ORDER");
+  assert.equal(other.analysisError, "not_order");
+  assert.ok("draft" in other && other.draft, "brouillon gardé pour « C'est une commande »");
+  const legacy = inboundAnalysisUpdate({ status: "ok", draft: base });
+  assert.equal(legacy.status, "ANALYZED", "brouillon d'avant le tri : lu comme une commande");
+  const failed = inboundAnalysisUpdate({ status: "invalid_output" });
+  assert.deepEqual(failed, { status: "ANALYSIS_FAILED", analysisError: "invalid_output" });
+});
+
+test("MAIL-PONT : un e-mail sans texte n'est pas envoyé au modèle", () => {
+  assert.equal(inboundSkipReason({ subject: "Bon de commande", bodyText: "  ", attachmentCount: 2 }), "attachments_only");
+  assert.equal(inboundSkipReason({ subject: "", bodyText: "", attachmentCount: 0 }), "empty");
+  assert.equal(inboundSkipReason({ subject: "3 colis rue de Rivoli demain", bodyText: "", attachmentCount: 0 }), null, "objet seul : analysé");
+  assert.equal(inboundSkipReason({ subject: "", bodyText: "2 plis", attachmentCount: 1 }), null, "texte et pièce jointe : analysé");
 });

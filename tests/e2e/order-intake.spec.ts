@@ -17,6 +17,7 @@ const stop = (address: string, city: string, postalCode: string, contactName: st
   contactName: contactName ? field(contactName) : none(), phone: none(), instructions: none(),
 });
 const EXTRACTION: OrderIntakeExtraction = {
+  kind: { value: "order", reason: null },
   pickup: stop("12 rue de Rivoli", "Paris", "75001"),
   deliveries: [{ ...stop("5 place de la Défense", "Courbevoie", "92400", "M. Durand"), packages: { description: none(), quantity: { value: null, confidence: "low", source: null } } }],
   // Demain, pour que l'échéance ne soit jamais passée quelle que soit l'heure du test.

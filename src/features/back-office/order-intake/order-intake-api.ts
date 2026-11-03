@@ -14,7 +14,7 @@ export interface InboundEmailItem {
   subject: string;
   bodyText: string;
   attachmentCount: number;
-  status: "RECEIVED" | "ANALYZED" | "ANALYSIS_FAILED";
+  status: "RECEIVED" | "ANALYZED" | "ANALYSIS_FAILED" | "NOT_ORDER";
   draft: OrderIntakeDraft | null;
   analysisError: string | null;
   createdAt: string;

@@ -118,6 +118,8 @@ enum InboundEmailStatus {
   RECEIVED
   ANALYZED
   ANALYSIS_FAILED
+  /// MAIL-PONT : e-mail ordinaire (pas une commande), rangé dans « À trier », effacé après 7 jours.
+  NOT_ORDER
   CONVERTED
   DISMISSED
 }

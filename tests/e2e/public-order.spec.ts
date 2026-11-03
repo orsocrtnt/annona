@@ -12,6 +12,7 @@ const stop = (address: string, city: string, postalCode: string) => ({
   address: field(address), city: field(city), postalCode: field(postalCode), contactName: none(), phone: none(), instructions: none(),
 });
 const EXTRACTION: OrderIntakeExtraction = {
+  kind: { value: "order", reason: null },
   pickup: stop("12 rue de Rivoli", "Paris", "75001"),
   deliveries: [{ ...stop("5 place de la Défense", "Courbevoie", "92400"), packages: { description: none(), quantity: { value: null, confidence: "low", source: null } } }],
   deadline: { mode: "before", dayOffset: 1, date: null, time: "15:00", endTime: null, confidence: "high", source: "avant 15h" },
@@ -201,6 +202,21 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     const second = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-b`, fromAddress: "e2e-spam@tutelliv.fr", subject: "E2E à classer", bodyText: "texte", status: "ANALYSIS_FAILED", analysisError: "not_configured" } });
     emailIds.push(second.id);
 
+    // MAIL-PONT, étape 1 : un e-mail ordinaire et un e-mail fait de pièces jointes partent dans « À trier ».
+    const thanks = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-c`, fromAddress: "e2e-merci@tutelliv.fr", subject: "E2E merci pour hier", bodyText: "Merci pour la livraison d'hier, tout est parfait.", status: "RECEIVED" } });
+    emailIds.push(thanks.id);
+    const thanksDraft = buildOrderIntakeDraft({ ...EXTRACTION, kind: { value: "other", reason: "Remerciement, aucune course demandée." } }, thanks.bodyText, new Date());
+    await analyzeInboundEmailJob({ inboundEmailId: thanks.id }, { analyze: async () => ({ status: "ok", draft: thanksDraft }) });
+    const sorted = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: thanks.id } });
+    expect(sorted.status).toBe("NOT_ORDER");
+    expect(sorted.analysisError).toBe("not_order");
+    const attached = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-d`, fromAddress: "e2e-pdf@tutelliv.fr", subject: "E2E bon de commande", bodyText: "", attachmentCount: 1, status: "RECEIVED" } });
+    emailIds.push(attached.id);
+    await analyzeInboundEmailJob({ inboundEmailId: attached.id }, { analyze: async () => { throw new Error("le modèle ne doit pas être appelé"); } });
+    const attachedRow = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: attached.id } });
+    expect(attachedRow.status).toBe("NOT_ORDER");
+    expect(attachedRow.analysisError).toBe("attachments_only");
+
     // Le dispatcher relit et valide.
     await page.request.patch("/api/orders/intake", { data: { enabled: true } });
     await page.goto("/dashboard/orders/intake");
@@ -216,6 +232,22 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     const dismissed = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: second.id } });
     expect(dismissed.status).toBe("DISMISSED");
     expect(dismissed.bodyText, "contenu effacé dès le classement").toBe("");
+
+    // « À trier » : replié, sans « Brouillon prêt », raison affichée, « Ignorer » efface le contenu.
+    const toSort = page.getByTestId("inbound-to-sort");
+    await expect(toSort.getByText("À trier (2)", { exact: false })).toBeVisible();
+    await toSort.locator("summary").click();
+    const thanksItem = toSort.getByRole("listitem").filter({ hasText: "E2E merci pour hier" });
+    await expect(thanksItem.getByText("Remerciement, aucune course demandée.")).toBeVisible();
+    await expect(thanksItem.getByText("Brouillon prêt")).toHaveCount(0);
+    await expect(toSort.getByRole("listitem").filter({ hasText: "E2E bon de commande" }).getByText("Contenu en pièce jointe, non lu.")).toBeVisible();
+    await thanksItem.getByRole("button", { name: "Ignorer" }).click();
+    await expect(thanksItem).toHaveCount(0);
+    const ignored = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: thanks.id } });
+    expect(ignored.status).toBe("DISMISSED");
+    expect(ignored.bodyText).toBe("");
+    await toSort.getByRole("listitem").filter({ hasText: "E2E bon de commande" }).getByRole("button", { name: "Ignorer" }).click();
+    await expect(toSort).toHaveCount(0);
 
     // Vrai clic : le double clic ne crée qu'une commande et l'e-mail se classe seul.
     await page.getByLabel(/^Client/).selectOption({ index: 1 });

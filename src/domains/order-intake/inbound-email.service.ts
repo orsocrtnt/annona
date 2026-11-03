@@ -11,6 +11,30 @@ export const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
 /** Plafond par entreprise : une adresse divulguée ne remplit ni la base ni le quota d'analyse. */
 export const INBOUND_DAILY_LIMIT = 200;
 export const INBOUND_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+/** MAIL-PONT : un e-mail « À trier » garde son texte 7 jours pour un éventuel rattrapage, puis disparaît. */
+export const NOT_ORDER_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Raison du rangement en « À trier », gardée dans `analysisError` (aucune colonne de plus). */
+export type NotOrderReason = "not_order" | "attachments_only" | "empty";
+
+/**
+ * Un e-mail sans texte n'a rien à apprendre au modèle : on ne paie pas d'analyse. Un objet seul,
+ * sans pièce jointe, peut porter une commande (« 3 colis rue X demain ») : il reste analysé.
+ */
+export function inboundSkipReason(email: { subject: string; bodyText: string; attachmentCount: number }): NotOrderReason | null {
+  if (email.bodyText.trim()) return null;
+  if (email.attachmentCount > 0) return "attachments_only";
+  return email.subject.trim() ? null : "empty";
+}
+
+/** Statut après analyse : seul un e-mail reconnu comme commande affiche « Brouillon prêt ». */
+export function inboundAnalysisUpdate(result: Awaited<ReturnType<typeof analyzeOrderMessage>>) {
+  if (result.status !== "ok") return { status: "ANALYSIS_FAILED" as const, analysisError: result.status };
+  const draft = result.draft as unknown as Prisma.InputJsonValue;
+  return result.draft.kind === "other"
+    ? { status: "NOT_ORDER" as const, draft, analysisError: "not_order" satisfies NotOrderReason }
+    : { status: "ANALYZED" as const, draft, analysisError: null };
+}
 
 /** Vérification Svix (format des webhooks Resend) sur le corps brut, à temps constant. */
 export function verifyInboundWebhook(
@@ -159,8 +183,14 @@ export async function ingestInboundEmail(
   if (!jobId) return "duplicate";
   kickOperationJob(jobId);
   // Purge au fil de l'eau : aucun e-mail reçu ne survit à la durée de conservation.
-  await prisma.inboundOrderEmail.deleteMany({ where: { createdAt: { lt: new Date(now.getTime() - INBOUND_RETENTION_MS) } } })
-    .catch((error) => console.error("Inbound purge failed:", error instanceof Error ? error.message : "unknown"));
+  await prisma.inboundOrderEmail.deleteMany({
+    where: {
+      OR: [
+        { createdAt: { lt: new Date(now.getTime() - INBOUND_RETENTION_MS) } },
+        { status: "NOT_ORDER", createdAt: { lt: new Date(now.getTime() - NOT_ORDER_RETENTION_MS) } },
+      ],
+    },
+  }).catch((error) => console.error("Inbound purge failed:", error instanceof Error ? error.message : "unknown"));
   return "stored";
 }
 
@@ -173,6 +203,11 @@ export async function analyzeInboundEmailJob(
   if (typeof id !== "string") throw new Error("INBOUND_EMAIL_PAYLOAD_INVALID");
   const email = await prisma.inboundOrderEmail.findUnique({ where: { id } });
   if (!email || email.status !== "RECEIVED") return;
+  const skip = inboundSkipReason(email);
+  if (skip) {
+    await prisma.inboundOrderEmail.updateMany({ where: { id, status: "RECEIVED" }, data: { status: "NOT_ORDER", analysisError: skip } });
+    return;
+  }
 
   const text = [email.subject ? `Objet : ${email.subject}` : "", email.bodyText].filter(Boolean).join("\n\n").slice(0, ORDER_INTAKE_MAX_TEXT_LENGTH);
   const analyze = deps.analyze ?? analyzeOrderMessage;
@@ -181,17 +216,12 @@ export async function analyzeInboundEmailJob(
     const now = deps.now ?? new Date();
     throw deferredJobError("INBOUND_ANALYSIS_QUOTA", new Date(now.getTime() + result.retryAfterSeconds * 1000));
   }
-  await prisma.inboundOrderEmail.updateMany({
-    where: { id, status: "RECEIVED" },
-    data: result.status === "ok"
-      ? { status: "ANALYZED", draft: result.draft as unknown as Prisma.InputJsonValue, analysisError: null }
-      : { status: "ANALYSIS_FAILED", analysisError: result.status },
-  });
+  await prisma.inboundOrderEmail.updateMany({ where: { id, status: "RECEIVED" }, data: inboundAnalysisUpdate(result) });
 }
 
 export async function listInboundEmails(companyId: string) {
   const rows = await prisma.inboundOrderEmail.findMany({
-    where: { companyId, status: { in: ["RECEIVED", "ANALYZED", "ANALYSIS_FAILED"] } },
+    where: { companyId, status: { in: ["RECEIVED", "ANALYZED", "ANALYSIS_FAILED", "NOT_ORDER"] } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 50,
     select: { id: true, fromAddress: true, subject: true, bodyText: true, attachmentCount: true, status: true, draft: true, analysisError: true, createdAt: true },

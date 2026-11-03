@@ -39,6 +39,7 @@ const delivery = (
 ) => ({ ...stop(parts), packages: { description: packages.description ?? none(), quantity: packages.quantity ?? noQuantity() } });
 function extraction(overrides: Partial<OrderIntakeExtraction> = {}): OrderIntakeExtraction {
   return {
+    kind: { value: "order", reason: null },
     pickup: stop(),
     deliveries: [],
     deadline: { mode: null, dayOffset: null, date: null, time: null, endTime: null, confidence: "low", source: null },
@@ -811,4 +812,10 @@ test("INTAKE relecture 3 : un client inactif n'est ni rapproché ni présélecti
       assert.ok(result.draft.missingFields.includes("customer"));
     }
   }
+});
+
+test("MAIL-PONT : le brouillon reprend le tri du modèle", () => {
+  const draft = buildOrderIntakeDraft(extraction({ kind: { value: "other", reason: "Facture" } }), "Veuillez trouver la facture", new Date("2026-11-03T10:00:00Z"));
+  assert.equal(draft.kind, "other");
+  assert.equal(draft.kindReason, "Facture");
 });
