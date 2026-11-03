@@ -24,12 +24,15 @@ export interface InboundEmailItem {
 
 export interface IntakeChannels {
   orderLink: { enabled: boolean; url: string | null };
-  inboundEmail: { enabled: boolean; configured: boolean; address: string | null };
+  inboundEmail: { enabled: boolean; configured: boolean; address: string | null; mailbox: string | null };
+  /** Codes de confirmation envoyés par Gmail à l'adresse TutelLiv (24 dernières heures). */
+  gmailConfirmations?: { code: string; requester: string | null; receivedAt: string }[];
 }
 
 export type IntakeChannelAction =
   | { channel: "orderLink" | "inboundEmail"; enabled: boolean }
-  | { channel: "orderLink" | "inboundEmail"; rotate: true };
+  | { channel: "orderLink" | "inboundEmail"; rotate: true }
+  | { channel: "inboundEmail"; mailbox: string | null };
 
 /** Erreur lisible renvoyée par les routes ; `code` pilote l'état affiché. */
 export class OrderIntakeApiError extends Error {

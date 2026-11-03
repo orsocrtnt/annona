@@ -115,7 +115,7 @@ Chaque étape est testée et livrable seule (petites étapes, pas de refonte).
 | --- | --- | --- | --- |
 | 1 (**fait le 3 novembre**) | Tri `kind` et statut `NOT_ORDER`, rangement « À trier », bouton « C'est une commande » | Ajout d'une valeur d'énumération | Tests du tri ; E2E de la liste ; essai réel avec « Merci pour hier » |
 | 2 (**fait le 3 novembre**) | Expéditeur d'origine (renvoi automatique, transfert à la main) et provenance affichée ; lecture du bloc cité seulement si l'e-mail vient d'un membre de l'équipe | Colonne `original_sender` | Tests de lecture des blocs `De :` / `From:` en français et en anglais ; essai réel |
-| 3 | Adresse de la boîte de commandes en Paramètres, code de confirmation Gmail, guide de renvoi | Colonne `order_mailbox_address` ; valeur `FORWARDING_CONFIRMATION` | Essai réel Gmail de bout en bout ; Outlook avec redirection |
+| 3 (**fait le 3 novembre**, essai réel Gmail et Outlook à faire) | Adresse de la boîte de commandes en Paramètres, code de confirmation Gmail, guide de renvoi | Colonne `order_mailbox_address` ; valeur `FORWARDING_CONFIRMATION` | Essai réel Gmail de bout en bout ; Outlook avec redirection |
 | 4 | Fiche client à la validation (option retenue en 5.2) | Selon l'option | Tests d'isolement entre entreprises ; reprise après double clic ; export DATA-02 étendu |
 | 5 | Confirmation au client avec `Reply-To` | Aucun | Test d'unicité ; essai réel : réception, « répondre » arrive dans la boîte de commandes |
 

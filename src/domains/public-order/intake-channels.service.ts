@@ -32,16 +32,23 @@ export async function getIntakeChannels(companyId: string, db: ChannelDb = prism
       enabled: channel?.inboundEmailEnabled ?? false,
       configured: isInboundEmailConfigured(),
       address: channel?.inboundEmailToken && domain ? `${channel.inboundEmailToken}@${domain}` : null,
+      mailbox: channel?.orderMailboxAddress ?? null,
     },
   };
 }
 
 export type IntakeChannelAction =
   | { channel: "orderLink" | "inboundEmail"; enabled: boolean }
-  | { channel: "orderLink" | "inboundEmail"; rotate: true };
+  | { channel: "orderLink" | "inboundEmail"; rotate: true }
+  | { channel: "inboundEmail"; mailbox: string | null };
 
 /** Activer crée le jeton au besoin ; le renouveler rend l'ancien lien ou l'ancienne adresse inopérants. */
 export async function updateIntakeChannel(companyId: string, action: IntakeChannelAction, db: ChannelDb = prisma) {
+  if ("mailbox" in action) {
+    const orderMailboxAddress = action.mailbox?.trim().toLowerCase() || null;
+    await db.companyIntakeChannel.upsert({ where: { companyId }, update: { orderMailboxAddress }, create: { companyId, orderMailboxAddress } });
+    return getIntakeChannels(companyId, db);
+  }
   const current = await db.companyIntakeChannel.findUnique({ where: { companyId } });
   const rotate = "rotate" in action;
   const data = action.channel === "orderLink"

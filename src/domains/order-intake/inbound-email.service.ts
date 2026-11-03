@@ -38,6 +38,7 @@ export function inboundAnalysisUpdate(result: Awaited<ReturnType<typeof analyzeO
 
 const FORWARD_HEADER = /^[\s>*]*(?:De|From|Expéditeur|Envoyé par)\s*:\s*(.+)$/im;
 const EMAIL_IN_TEXT = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+const EMAIL_IN_TEXT_GLOBAL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 
 /**
  * MAIL-PONT : adresse de l'expéditeur cité dans un e-mail transféré à la main (Gmail « From: », Outlook
@@ -50,6 +51,22 @@ export function forwardedSender(body: string, forwarder: string): string | null 
   const address = (line.match(/<([^>]+)>/)?.[1] ?? line.match(EMAIL_IN_TEXT)?.[0] ?? "").trim().toLowerCase();
   if (!EMAIL_IN_TEXT.test(address) || address === forwarder) return null;
   return dbSafeText(address, 200);
+}
+
+export const GMAIL_FORWARDING_SENDER = "forwarding-noreply@google.com";
+export const FORWARDING_CONFIRMATION_RETENTION_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * MAIL-PONT : e-mail que Gmail envoie à l'adresse TutelLiv quand l'entreprise ajoute un renvoi
+ * (« (#123456789) Gmail Forwarding Confirmation - Receive Mail from x@gmail.com »). On n'en garde que le
+ * code et l'adresse qui demande le renvoi ; jamais envoyé au modèle.
+ */
+export function gmailForwardingConfirmation(from: string, subject: string, body: string): { code: string; requester: string | null } | null {
+  if (from !== GMAIL_FORWARDING_SENDER) return null;
+  const code = subject.match(/\(#\s*(\d{6,12})\)/)?.[1] ?? body.match(/(?:code|confirmation)[^\d]{0,40}(\d{6,12})/i)?.[1] ?? null;
+  if (!code) return null;
+  const requester = [subject, body].join("\n").match(EMAIL_IN_TEXT_GLOBAL)?.find((address) => !/@google\.com$/i.test(address))?.toLowerCase() ?? null;
+  return { code, requester };
 }
 
 /** Vérification Svix (format des webhooks Resend) sur le corps brut, à temps constant. */
@@ -171,6 +188,23 @@ export async function ingestInboundEmail(
     : typeof email.html === "string" ? htmlToText(email.html) : "";
 
   const from = senderAddress(typeof email.from === "string" ? email.from : "");
+  const subject = typeof email.subject === "string" ? email.subject : "";
+  const confirmation = gmailForwardingConfirmation(from, subject, body);
+  if (confirmation) {
+    // Ni analyse ni tâche : le code s'affiche dans Paramètres. Seuls le code et l'adresse sont gardés.
+    const created = await prisma.inboundOrderEmail.createMany({
+      data: [{
+        companyId,
+        providerEmailId: emailId,
+        fromAddress: from,
+        subject: "Confirmation de renvoi Gmail",
+        bodyText: JSON.stringify(confirmation),
+        status: "FORWARDING_CONFIRMATION",
+      }],
+      skipDuplicates: true,
+    });
+    return created.count === 0 ? "duplicate" : "stored";
+  }
   // Transfert à la main par l'équipe (un renvoi automatique garde, lui, le client en expéditeur) :
   // on cherche le client dans le bloc cité. Jamais pour un expéditeur extérieur, qui pourrait citer n'importe qui.
   const fromTeam = from && await prisma.user.count({
@@ -188,7 +222,7 @@ export async function ingestInboundEmail(
         providerEmailId: emailId,
         fromAddress: from,
         originalSender,
-        subject: dbSafeText(typeof email.subject === "string" ? email.subject : "", 300),
+        subject: dbSafeText(subject, 300),
         bodyText: dbSafeText(body, ORDER_INTAKE_MAX_TEXT_LENGTH),
         attachmentCount: Array.isArray(email.attachments) ? email.attachments.length : 0,
       }],
@@ -213,6 +247,7 @@ export async function ingestInboundEmail(
       OR: [
         { createdAt: { lt: new Date(now.getTime() - INBOUND_RETENTION_MS) } },
         { status: "NOT_ORDER", createdAt: { lt: new Date(now.getTime() - NOT_ORDER_RETENTION_MS) } },
+        { status: "FORWARDING_CONFIRMATION", createdAt: { lt: new Date(now.getTime() - FORWARDING_CONFIRMATION_RETENTION_MS) } },
       ],
     },
   }).catch((error) => console.error("Inbound purge failed:", error instanceof Error ? error.message : "unknown"));
@@ -242,6 +277,23 @@ export async function analyzeInboundEmailJob(
     throw deferredJobError("INBOUND_ANALYSIS_QUOTA", new Date(now.getTime() + result.retryAfterSeconds * 1000));
   }
   await prisma.inboundOrderEmail.updateMany({ where: { id, status: "RECEIVED" }, data: inboundAnalysisUpdate(result) });
+}
+
+/** Codes de confirmation Gmail des dernières 24 heures, du plus récent au plus ancien. */
+export async function listForwardingConfirmations(companyId: string, now = new Date()) {
+  const rows = await prisma.inboundOrderEmail.findMany({
+    where: { companyId, status: "FORWARDING_CONFIRMATION", createdAt: { gte: new Date(now.getTime() - FORWARDING_CONFIRMATION_RETENTION_MS) } },
+    orderBy: { createdAt: "desc" },
+    take: 3,
+    select: { bodyText: true, createdAt: true },
+  });
+  return rows.flatMap((row) => {
+    try {
+      const parsed = JSON.parse(row.bodyText) as { code?: unknown; requester?: unknown };
+      if (typeof parsed.code !== "string") return [];
+      return [{ code: parsed.code, requester: typeof parsed.requester === "string" ? parsed.requester : null, receivedAt: row.createdAt.toISOString() }];
+    } catch { return []; }
+  });
 }
 
 export async function listInboundEmails(companyId: string) {

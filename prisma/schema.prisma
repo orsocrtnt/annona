@@ -120,6 +120,8 @@ enum InboundEmailStatus {
   ANALYSIS_FAILED
   /// MAIL-PONT : e-mail ordinaire (pas une commande), rangé dans « À trier », effacé après 7 jours.
   NOT_ORDER
+  /// MAIL-PONT : e-mail de Gmail portant le code de confirmation d'un renvoi ; affiché en Paramètres, effacé après 24 h.
+  FORWARDING_CONFIRMATION
   CONVERTED
   DISMISSED
 }
@@ -1341,6 +1343,8 @@ model CompanyIntakeChannel {
   orderLinkEnabled    Boolean  @default(false) @map("order_link_enabled")
   inboundEmailToken   String?  @unique @map("inbound_email_token")
   inboundEmailEnabled Boolean  @default(false) @map("inbound_email_enabled")
+  /// MAIL-PONT : boîte de commandes de l'entreprise (ex. commandes@entreprise.fr), « répondre à » des confirmations.
+  orderMailboxAddress String?  @map("order_mailbox_address")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("company_intake_channels")

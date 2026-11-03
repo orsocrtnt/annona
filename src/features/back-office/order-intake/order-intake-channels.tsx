@@ -5,7 +5,7 @@ import { Inbox, Link2, Paperclip } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { InboundEmailItem, IntakeChannelAction } from "./order-intake-api";
+import type { InboundEmailItem, IntakeChannelAction, IntakeChannels } from "./order-intake-api";
 import { useCloseInboundEmail, useInboundEmails, useIntakeChannels, useUpdateIntakeChannel } from "./order-intake-hooks";
 
 function ChannelRow({ testId, title, description, value, enabled, disabledReason, onAction, pending }: {
@@ -50,6 +50,75 @@ function ChannelRow({ testId, title, description, value, enabled, disabledReason
   );
 }
 
+const formatCode = (code: string) => code.replace(/(\d{3})(?=\d)/g, "$1 ");
+
+/**
+ * MAIL-PONT : boîte de commandes de l'entreprise, renvoyée automatiquement vers l'adresse TutelLiv.
+ * Le renvoi garde le vrai client en expéditeur ; Gmail envoie d'abord un code, affiché ici.
+ */
+function OrderMailboxSetup({ data, pending, onSave }: {
+  data: IntakeChannels;
+  pending: boolean;
+  onSave: (mailbox: string | null) => void;
+}) {
+  const [mailbox, setMailbox] = React.useState(data.inboundEmail.mailbox ?? "");
+  React.useEffect(() => setMailbox(data.inboundEmail.mailbox ?? ""), [data.inboundEmail.mailbox]);
+  const address = data.inboundEmail.address ?? "l'adresse TutelLiv ci-dessus";
+  const confirmations = data.gmailConfirmations ?? [];
+  return (
+    <div data-testid="order-mailbox" className="space-y-3 rounded-lg border border-border p-3">
+      <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); onSave(mailbox.trim() || null); }}>
+        <label htmlFor="order-mailbox-address" className="font-medium">Votre boîte de commandes</label>
+        <p className="text-muted-foreground">Par exemple commandes@votre-entreprise.fr. Les confirmations envoyées à vos clients proposeront d&apos;y répondre.</p>
+        <div className="flex flex-wrap gap-2">
+          <input id="order-mailbox-address" type="email" value={mailbox} onChange={(event) => setMailbox(event.target.value)}
+            placeholder="commandes@votre-entreprise.fr" autoComplete="off"
+            className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background px-3" />
+          <Button type="submit" variant="outline" className="min-h-11" disabled={pending}>Enregistrer</Button>
+        </div>
+      </form>
+      {confirmations.length > 0 && (
+        <div role="status" className="rounded-lg bg-muted px-3 py-2">
+          {confirmations.map((item) => (
+            <p key={item.receivedAt}>
+              Code de confirmation Gmail : <span className="font-mono text-base font-semibold">{formatCode(item.code)}</span>
+              {item.requester ? <> (demandé par {item.requester})</> : null}, reçu le {dateTime.format(new Date(item.receivedAt))}.
+            </p>
+          ))}
+          <p className="text-xs text-muted-foreground">À saisir dans Gmail pour terminer l&apos;activation du renvoi. Effacé au bout de 24 heures.</p>
+        </div>
+      )}
+      <details>
+        <summary className="flex min-h-11 cursor-pointer items-center font-medium">Activer le renvoi automatique (Gmail, Outlook, OVH)</summary>
+        <div className="mt-2 space-y-3">
+          <div>
+            <h4 className="font-medium">Gmail ou Google Workspace</h4>
+            <ol className="ml-5 list-decimal space-y-1 text-muted-foreground">
+              <li>Dans la boîte de commandes : Paramètres, Voir tous les paramètres, Transfert et POP/IMAP.</li>
+              <li>« Ajouter une adresse de transfert », puis coller {address}.</li>
+              <li>Gmail envoie un code : il s&apos;affiche ici en quelques secondes. Le saisir dans Gmail.</li>
+              <li>Choisir « Transférer une copie des messages entrants » et garder une copie dans Gmail.</li>
+            </ol>
+          </div>
+          <div>
+            <h4 className="font-medium">Outlook ou Microsoft 365</h4>
+            <ol className="ml-5 list-decimal space-y-1 text-muted-foreground">
+              <li>En entreprise, le renvoi vers une adresse extérieure est souvent bloqué : demandez à votre administrateur de l&apos;autoriser pour cette boîte.</li>
+              <li>Paramètres, Courrier, Règles : nouvelle règle pour tous les messages.</li>
+              <li>Action « Rediriger vers » {address}. Ne pas choisir « Transférer à », qui remplace l&apos;expéditeur par votre boîte.</li>
+            </ol>
+          </div>
+          <div>
+            <h4 className="font-medium">OVH et autres hébergeurs</h4>
+            <p className="text-muted-foreground">Créer une redirection de la boîte de commandes vers {address}, en gardant une copie.</p>
+          </div>
+          <p className="text-xs text-muted-foreground">Ensuite, écrivez depuis une autre adresse à votre boîte de commandes : l&apos;e-mail doit apparaître ci-dessous avec le bon expéditeur.</p>
+        </div>
+      </details>
+    </div>
+  );
+}
+
 /** Réglages réservés à l'administration : lien de commande public et adresse de réception. */
 export function IntakeChannelsCard() {
   const channels = useIntakeChannels(true);
@@ -78,13 +147,17 @@ export function IntakeChannelsCard() {
             <ChannelRow
               testId="channel-inboundEmail"
               title="Adresse de réception des commandes"
-              description="Transférez-y vos e-mails de commande. Chacun devient un brouillon ci-dessous, à relire et valider : aucune commande n'est créée seule."
+              description="Renvoyez-y automatiquement votre boîte de commandes (guide ci-dessous), ou transférez-y vos e-mails. Chaque commande devient un brouillon ci-dessous, à relire et valider : aucune commande n'est créée seule."
               value={data.inboundEmail.address}
               enabled={data.inboundEmail.enabled}
               disabledReason={data.inboundEmail.configured ? undefined : "La réception n'est pas encore branchée sur ce serveur."}
               pending={update.isPending}
               onAction={act("inboundEmail")}
             />
+            {data.inboundEmail.enabled && (
+              <OrderMailboxSetup data={data} pending={update.isPending}
+                onSave={(mailbox) => update.mutate({ channel: "inboundEmail", mailbox })} />
+            )}
           </>
         )}
         <div aria-live="polite">{update.isError && <p role="alert" className="text-destructive">Réglage non enregistré. Réessayez.</p>}</div>

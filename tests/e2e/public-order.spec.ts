@@ -304,3 +304,49 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     await page.request.post("/api/auth/logout").catch(() => undefined);
   }
 });
+
+test("E-MAIL : boîte de commandes enregistrée et code de confirmation Gmail affiché", async ({ page }) => {
+  test.setTimeout(180_000);
+  let companyId: string | null = null;
+  const ids: string[] = [];
+  try {
+    await loginAdmin(page);
+    expect((await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", enabled: true } })).status()).toBe(200);
+    const channel = await prisma.companyIntakeChannel.findFirstOrThrow({ where: { inboundEmailEnabled: true }, orderBy: { updatedAt: "desc" } });
+    companyId = channel.companyId;
+    const env = { INBOUND_EMAIL_DOMAIN: "commandes.e2e.test", RESEND_API_KEY: "fausse-cle-de-test" };
+    const emailId = `e2e-gmail-${Date.now()}`;
+    const fetcher = (async () => new Response(JSON.stringify({
+      from: "Gmail Team <forwarding-noreply@google.com>",
+      subject: "(#246813579) Gmail Forwarding Confirmation - Receive Mail from e2e.commandes@gmail.com",
+      text: "e2e.commandes@gmail.com has requested to automatically forward mail. Confirmation code: 246813579",
+    }), { status: 200 })) as typeof fetch;
+    expect(await ingestInboundEmail({ type: "email.received", data: { email_id: emailId, to: [`${channel.inboundEmailToken}@commandes.e2e.test`] } }, { env, fetcher })).toBe("stored");
+    const row = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { providerEmailId: emailId } });
+    ids.push(row.id);
+    expect(row.status).toBe("FORWARDING_CONFIRMATION");
+    expect(row.bodyText, "seuls le code et l'adresse sont gardés").not.toContain("has requested");
+    expect(await prisma.operationJob.count({ where: { jobKey: `inbound-email:${row.id}` } }), "aucune analyse").toBe(0);
+
+    await page.request.patch("/api/orders/intake", { data: { enabled: true } });
+    await page.goto("/dashboard/orders/intake");
+    const setup = page.getByTestId("order-mailbox");
+    await expect(setup.getByText("246 813 579")).toBeVisible();
+    await expect(setup.getByText("(demandé par e2e.commandes@gmail.com)", { exact: false })).toBeVisible();
+    const inbox = (await (await page.request.get("/api/orders/intake/inbox")).json()).data as { id: string }[];
+    expect(inbox.some(({ id }) => id === row.id), "absent de la liste des commandes").toBe(false);
+
+    await setup.getByLabel("Votre boîte de commandes").fill("Commandes@E2E-Transport.test");
+    await setup.getByRole("button", { name: "Enregistrer" }).click();
+    await expect.poll(async () => (await prisma.companyIntakeChannel.findUniqueOrThrow({ where: { companyId: companyId! } })).orderMailboxAddress).toBe("commandes@e2e-transport.test");
+    await page.reload();
+    await expect(page.getByLabel("Votre boîte de commandes")).toHaveValue("commandes@e2e-transport.test");
+    await setup.getByText("Activer le renvoi automatique", { exact: false }).click();
+    await expect(setup.getByText("Rediriger vers", { exact: false })).toBeVisible();
+    expect((await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", mailbox: "pas une adresse" } })).status()).toBe(400);
+  } finally {
+    await prisma.inboundOrderEmail.deleteMany({ where: { id: { in: ids } } });
+    if (companyId) await prisma.companyIntakeChannel.deleteMany({ where: { companyId } });
+    await page.request.post("/api/auth/logout").catch(() => undefined);
+  }
+});

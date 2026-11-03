@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   dbSafeText,
   forwardedSender,
+  gmailForwardingConfirmation,
   htmlToText,
   inboundAnalysisUpdate,
   inboundSkipReason,
@@ -151,4 +152,18 @@ test("MAIL-PONT : client retrouvé dans un e-mail transféré à la main (Gmail,
   assert.equal(forwardedSender("De : Sophie Martin", team), null, "nom sans adresse");
   const twice = "From: Dernier <dernier@client.test>\n...\nFrom: Ancien <ancien@client.test>";
   assert.equal(forwardedSender(twice, team), "dernier@client.test", "premier bloc cité = dernier transfert");
+});
+
+test("MAIL-PONT : code de confirmation Gmail reconnu, jamais pour un autre expéditeur", () => {
+  const google = "forwarding-noreply@google.com";
+  assert.deepEqual(
+    gmailForwardingConfirmation(google, "(#123456789) Gmail Forwarding Confirmation - Receive Mail from Commandes.Transport@gmail.com", "Confirmation code: 123456789"),
+    { code: "123456789", requester: "commandes.transport@gmail.com" }
+  );
+  assert.deepEqual(
+    gmailForwardingConfirmation(google, "Confirmation de transfert Gmail", "commandes@transport.test a demandé le transfert. Code de confirmation : 987654321"),
+    { code: "987654321", requester: "commandes@transport.test" }
+  );
+  assert.equal(gmailForwardingConfirmation("pirate@exemple.test", "(#123456789) Gmail Forwarding Confirmation", ""), null, "autre expéditeur");
+  assert.equal(gmailForwardingConfirmation(google, "Gmail Forwarding Confirmation", "pas de code"), null);
 });
