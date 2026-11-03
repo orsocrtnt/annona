@@ -1,4 +1,4 @@
-import type { NavigationRouteStep } from "@/lib/maps/osrm-route";
+import type { NavigationRouteStep } from "@/lib/maps/navigation-route";
 import {
   formatDistance,
   haversineMeters,

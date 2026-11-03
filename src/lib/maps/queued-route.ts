@@ -1,10 +1,10 @@
-import { fetchOsrmRoute, type RouteWaypoint } from "@/lib/maps/osrm-route";
+import { fetchRoutePolyline, type RouteWaypoint } from "@/lib/maps/route-client";
 import type { LatLng } from "@/lib/maps/route-progress";
 
 /** Itinéraires déjà calculés, partagés par toutes les cartes de la page. */
 const routeCache = new Map<string, LatLng[]>();
 const ROUTE_CACHE_LIMIT = 100;
-/** Le service public d'itinéraires limite à une requête par seconde : appels en file. */
+/** Une requête par seconde au plus vers le serveur d’itinéraires : appels en file. */
 const ROUTE_REQUEST_SPACING_MS = 1_150;
 let routeQueue: Promise<unknown> = Promise.resolve();
 
@@ -26,7 +26,7 @@ export function requestQueuedRoute(waypoints: RouteWaypoint[], signal?: AbortSig
     // Une requête trop rapprochée d'un autre appel de la page renvoie null : un seul nouvel essai.
     for (let attempt = 0; attempt < 2; attempt += 1) {
       attempted = true;
-      const route = await fetchOsrmRoute(waypoints, signal);
+      const route = await fetchRoutePolyline(waypoints, signal);
       if (signal?.aborted) return null;
       if (route && route.length >= 2) {
         if (routeCache.size >= ROUTE_CACHE_LIMIT) routeCache.delete(routeCache.keys().next().value!);

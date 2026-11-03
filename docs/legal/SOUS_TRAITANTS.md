@@ -43,8 +43,9 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 - **Rôle** : service destinataire à qualifier selon les conditions ; aucune qualification de sous-traitance présumée.
 - **À obtenir** : conditions et information de confidentialité du service exact, conservation des requêtes, intervenants, destinataires, base de transmission et minimisation.
 
-## F06 — OSRM public : calcul d'itinéraires
+## F06 — OSRM public : calcul d'itinéraires (retiré le 3 novembre 2026)
 
+- **Mise à jour du 3 novembre 2026** : le navigateur n'appelle plus OSRM. Les itinéraires passent par le serveur TutelLiv (`/api/maps/route`) vers la Géoplateforme IGN (`DRIVE_ROUTE_IGN_URL`), ou vers un OSRM privé s'il est configuré ; la position et l'adresse IP du livreur ne partent plus chez FOSSGIS. Nouveau destinataire : IGN (service public français, sans compte) ; conditions d'usage commercial du calcul d'itinéraire à confirmer auprès de l'IGN. Le texte ci-dessous décrit l'état antérieur.
 - **État constaté** : démonstrateur public par défaut, requêtes navigateur ; usage SaaS commercial non validé par MAP-2.
 - **Flux** : départ/arrivée, potentiellement position du livreur, IP et métadonnées réseau.
 - **Rôle** : destinataire/prestataire à qualifier ; identité contractante de l'opérateur effectif INCONNUE dans ce dossier. La documentation technique renvoie à FOSSGIS, ce qui ne vaut pas contrat vérifié.

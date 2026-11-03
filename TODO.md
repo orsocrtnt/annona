@@ -19,6 +19,7 @@
 - GROWTH-1 — Construire le site commercial relié au parcours autonome (après la vérification de conformité)
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
 - MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
+- MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (étapes 2 et 3 ; Toi — trancher les choix de la section 9 (fiche client) et pousser)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -39,7 +40,6 @@
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
-- MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (relire la spécification et trancher les quatre choix de sa section 9, puis Claude)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -49,6 +49,7 @@ _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
+- Tout de suite, deux réglages que l'outil de sécurité a refusés à Claude le 3 novembre : (1) pousser les commits locaux sur `preproduction` (`git push origin preproduction`, puis fusionner la branche `agent/maps-ign`) ; (2) **avant** ce déploiement, ajouter sur Vercel la variable `DRIVE_ROUTE_IGN_URL=https://data.geopf.fr/navigation/itineraire` (préproduction, puis production). Sans elle, la navigation du livreur n'affiche plus de tracé.
 - OPS-FIAB, tout de suite : lancer la commande unique qui copie `CRON_SECRET` de Vercel vers le coffre Supabase (`docs/OPERATIONS.md`, section « Relais des tâches de fond »). L'outil de sécurité a refusé que Claude le fasse. Sans elle, le relais toutes les 5 minutes ne démarre pas.
 - Avant le premier pilote : faire confirmer par un comptable le mot « Facture » à l'écran pour un document sans toutes les mentions légales (le PDF classique reste « Relevé de prestation »).
 - Cette semaine, le plus important (audit du 1er novembre, PDF dans `outputs/audit-2026-11-01/`) : contacter des sociétés de livraison et tenir dix entretiens (PROD-02) ; le plan complet, les textes, la liste d'entreprises et le pitch avec déroulé de démonstration sont prêts (`docs/operations/prospection/README.md`, `docs/operations/prospection/PITCH.md`). Chaque jour à partir du 2 novembre : trouver les coordonnées, écrire et appeler de 8 h à 11 h à New York (14 h à 17 h en France).
@@ -61,15 +62,15 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis). Confirmer aussi la durée provisoire de sept jours pour la file hors ligne du livreur, et, si un pilote emploie des livreurs indépendants payés à la livraison, faire qualifier l'affectation automatique (`docs/legal/AIPD_TYPE.md`, section 3).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- MAIL-PONT : relire la spécification `docs/operations/order-intake/MAIL-PONT.md` et trancher ses quatre choix (section 9 : fiche client A ou B, durée des e-mails « À trier », nom sur la confirmation, ordre des étapes).
+- MAIL-PONT : relire la spécification `docs/operations/order-intake/MAIL-PONT.md` et trancher ses quatre choix (section 9). L'étape 1 (tri) est faite avec les choix conseillés : « À trier » gardé 7 jours ; dis-le si tu préfères autrement.
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
-- MAIL-PONT : coder l'étape 1 (tri des e-mails) dès tes choix.
-- LEGAL-1, cartes : faire passer les itinéraires du livreur par le serveur vers l'IGN, avant le premier pilote avec de vrais livreurs (`docs/operations/map-providers.md`, dernière section).
+- MAIL-PONT : étapes 2 (expéditeur d'origine) et 3 (code Gmail, guide de renvoi), qui ne dépendent pas de tes choix ; étape 4 (fiche client) après ton choix A ou B.
+- Après ton push : contrôler en ligne le tri des e-mails et les itinéraires IGN sur tutelliv.fr.
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
@@ -156,7 +157,9 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   État du 2 novembre 2026 : première vérification faite, `docs/legal/VERIFICATION_2026-11-02.md` (exigences, sources, constats, verdicts). Aucune conformité déclarée. Démo fictive et entretiens de recherche possibles sous conditions ; vente et vraies données non. Nouveaux constats : Data Act absent du dossier ; offre Vercel Hobby non commerciale, contenus utilisables pour entraîner des IA, DPA réservé aux offres Pro et Enterprise ; réception des factures électroniques déjà obligatoire ; mentions légales incomplètes. Vérifications : `npm run check` 1 529/1 529 ; `verify-docs` OK. Non vérifié : voir section 5 du document.
 
-  Textes J5 lus sur Drive le 2 novembre avec l'accord du propriétaire, en lecture seule ; écarts en section 6, rien de modifié sur Drive. Suite : les pièces et décisions de la section 4 du document. Écarts à traiter par Claude ensuite : purge et remise des données (DATA-02) ; itinéraires du livreur à faire passer par le serveur vers l'IGN (recommandation du 3 novembre dans `docs/operations/map-providers.md` : la navigation envoie aujourd'hui la position réelle du livreur au démonstrateur OSRM public ; OpenFreeMap gardé pour le fond ; usage commercial de l'IGN à confirmer).
+  Textes J5 lus sur Drive le 2 novembre avec l'accord du propriétaire, en lecture seule ; écarts en section 6, rien de modifié sur Drive. Suite : les pièces et décisions de la section 4 du document. Écarts à traiter par Claude ensuite : purge et remise des données (DATA-02).
+
+  3 novembre 2026, **itinéraires corrigés** (branche `agent/maps-ign`, commit local) : le navigateur n'appelle plus le démonstrateur OSRM public ; route serveur `/api/maps/route` (compte connecté, limite par compte) vers la Géoplateforme IGN ; CSP sans OSRM ; page Confidentialité, `SOUS_TRAITANTS.md` (F06) et `map-providers.md` mis à jour. Les noms de rue de l'IGN arrivent tronqués : écartés, consignes sans nom de rue. Vérifications : tests unitaires (lecture IGN et OSRM, serveur, client), `npm run check` 1 552/1 552, E2E `maps-route.spec.ts` avec vrai calcul IGN 1/1, clic réel Chrome sur la navigation du livreur de démo (guidage « Dans 130 m, Continuez », 4,4 km, 13 min ; deux calculs à 200 ; aucun appel OSRM). Ajout de `DRIVE_ROUTE_IGN_URL` sur Vercel refusé par l'outil de sécurité : à faire par toi avant le déploiement. Non vérifié : téléphone réel ; tracé à l'écran vu dans le code de la page mais pas en capture (la carte suivait mal la position simulée) ; usage commercial IGN à confirmer.
 
   3 novembre 2026, file hors ligne du livreur : chaque action est maintenant effacée de l'appareil au plus tard sept jours après sa création, tous comptes confondus (`purgeExpiredDriverActions` dans `src/features/driver/offline-action-queue.ts`, lancée à l'ouverture de l'application livreur ; une action en cours d'envoi n'est pas touchée). Durée provisoire, à confirmer par toi avec la section 4. Page Confidentialité et `docs/legal/VERIFICATION_2026-11-02.md` mis à jour. Vérifications : test ciblé `tests/driver-offline-actions.test.ts` + `tests/pod-signature.test.ts` 14/14 ; `npm run check` réussi (1 548 tests, types et lint). `npm run docs:verify` réussi (88 Markdown, aucun lien cassé). Non commité ni poussé : l'outil de sécurité a refusé le push, à faire sur demande. Non vérifié : purge sur un vrai téléphone (IndexedDB réel), à rejouer pendant MOB-01C ; phrase de la page Confidentialité non rouverte en navigateur (texte seul, types et lint verts).
 
@@ -321,7 +324,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv.** Décisions du propriétaire (C14) : le 2 novembre, tri automatique entre e-mails ordinaires et e-mails de commande, validation toujours humaine, client inconnu créé à la validation (fiche sans accès, informations manquantes complétées par le dispatcher), une réponse automatique au client après validation avec le lien de suivi. Révision du 3 novembre : parcours principal = boîte dédiée aux commandes, renvoyée automatiquement vers l'adresse TutelLiv (aucune connexion Gmail/Outlook) ; la connexion directe Gmail/Outlook passe en option, plus tard.
 
-  **Qui : Toi — relire la spécification et trancher les quatre choix de sa section 9, puis Claude.**
+  **Qui : Claude — étapes 2 et 3 ; Toi — trancher les choix de la section 9 (fiche client) et pousser.**
 
   Terminé quand : une boîte de commandes Gmail et une boîte Outlook renvoient automatiquement vers TutelLiv ; le code de confirmation de Gmail est visible dans TutelLiv ; le client d'origine est reconnu ; les e-mails de commande apparaissent en brouillon et les autres sont mis « à trier » ou ignorés sans être conservés ; la validation crée la commande et, si besoin, la fiche du client ; le client reçoit la confirmation (envoyée par TutelLiv au nom de l'entreprise, « répondre à » vers sa boîte) ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
 
@@ -329,7 +332,9 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   À prévoir : changement de schéma (fiche client sans accès, statut « à trier ») ; guide pour activer le renvoi (Gmail, Outlook, OVH), dont l'accord de l'administrateur Outlook professionnel pour les renvois externes. Option ultérieure, hors de cette tâche : connexion directe Gmail/Outlook (comptes Google Cloud et Azure, vérification Google et audit CASA, juridique plus lourd).
 
-  3 novembre 2026, spécification écrite : `docs/operations/order-intake/MAIL-PONT.md` (parcours, guide de renvoi Gmail/Outlook/OVH, expéditeur d'origine y compris transfert à la main, code de confirmation Gmail, tri `order`/`other` dans le même appel au modèle, confirmation avec « répondre à », sécurité, cinq étapes livrables). Point d'architecture trouvé : l'adresse e-mail d'un utilisateur est unique sur toute la plateforme, d'où la recommandation d'une fiche client propre à l'entreprise (option B) plutôt qu'un utilisateur sans connexion. Vérification : `npm run docs:verify`. Non vérifié : texte exact de l'e-mail de Gmail, redirection Outlook avec Resend, résultats SPF/DKIM chez Resend. Suite : tes quatre choix (section 9), puis Claude commence par l'étape 1 (tri).
+  3 novembre 2026, spécification écrite : `docs/operations/order-intake/MAIL-PONT.md` (parcours, guide de renvoi Gmail/Outlook/OVH, expéditeur d'origine y compris transfert à la main, code de confirmation Gmail, tri `order`/`other` dans le même appel au modèle, confirmation avec « répondre à », sécurité, cinq étapes livrables). Point d'architecture trouvé : l'adresse e-mail d'un utilisateur est unique sur toute la plateforme, d'où la recommandation d'une fiche client propre à l'entreprise (option B) plutôt qu'un utilisateur sans connexion. Vérification : `npm run docs:verify`. Non vérifié : texte exact de l'e-mail de Gmail, redirection Outlook avec Resend, résultats SPF/DKIM chez Resend. Suite : tes quatre choix (section 9).
+
+  3 novembre 2026, **étape 1 faite (tri)** : le modèle renvoie `kind` (`order`/`other`) dans le même appel ; nouveau statut `NOT_ORDER` ; section repliée « À trier » (raison affichée, « C'est une commande » ouvre le brouillon gardé, « Ignorer » efface le contenu), effacée après 7 jours ; e-mail vide ou fait de pièces jointes rangé sans appel au modèle. Corrige le défaut 3 de MAIL-ECARTS. Migration additive `20261103210000_inbound_not_order` appliquée sur `tutelliv-dev` puis sur la préproduction. Vérifications : tests unitaires ajoutés (`tests/public-order-channels.test.ts`, `tests/order-intake.test.ts`) ; `npm run check` 1 551/1 551 ; E2E en worktree isolé : `public-order.spec.ts` « E-MAIL » 1/1 (nouveau parcours « À trier » : merci rangé, pièce jointe sans appel au modèle, « Ignorer ») et `order-intake.spec.ts` 2/2 (un premier passage à froid avait échoué, non reproduit en deux reprises). Commit local `a37396b`, **non poussé** (push refusé par l'outil de sécurité). Non vérifié : vrai modèle sur un e-mail « merci » en ligne (après le push).
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 

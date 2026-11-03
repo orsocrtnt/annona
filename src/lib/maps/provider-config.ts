@@ -41,7 +41,6 @@ export function maplibreWorkerUrl(version: string) {
 export const PROVIDER_TIMEOUT_MS = 8_000;
 export const TILE_TIMEOUT_MS = 10_000;
 export const ROUTE_REFRESH_MS = 30_000;
-export const ROUTE_BASE_URL = process.env.NEXT_PUBLIC_OSRM_URL || "https://router.project-osrm.org";
 export const GEOCODING_URL = process.env.GEOCODING_URL || "https://data.geopf.fr/geocodage/search";
 
 function privateHttpsEndpoint(value: string | undefined) {

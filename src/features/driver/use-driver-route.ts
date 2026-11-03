@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchOsrmNavigationRoute, type NavigationRoute } from "@/lib/maps/osrm-route";
+import { fetchNavigationRoute, type NavigationRoute } from "@/lib/maps/route-client";
 import { ROUTE_REFRESH_MS } from "@/lib/maps/provider-config";
 
 type Point = { latitude: number; longitude: number };
 
-/** One calculation per interval; GPS updates alone never flood the public demo. */
+/** One calculation per interval; GPS updates alone never flood the route provider. */
 export function useDriverRoute(position: Point | null, target: Point | null) {
   const positionRef = useRef(position);
   positionRef.current = position;
@@ -33,7 +33,7 @@ export function useDriverRoute(position: Point | null, target: Point | null) {
       running = true;
       lastRequestAt.current = Date.now();
       setLoading(true);
-      const next = await fetchOsrmNavigationRoute([from, { latitude, longitude }], controller.signal);
+      const next = await fetchNavigationRoute([from, { latitude, longitude }], controller.signal);
       running = false;
       if (controller.signal.aborted) return;
       setRoute(next);

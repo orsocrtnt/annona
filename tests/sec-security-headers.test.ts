@@ -9,7 +9,6 @@ const ENV = {
   NEXT_PUBLIC_SUPABASE_URL: "https://abcd.supabase.co",
   NEXT_PUBLIC_MAP_TILE_URL: "https://data.geopf.fr/wmts?layer=PLAN&z={z}&x={x}&y={y}",
   NEXT_PUBLIC_MAP_STYLE_URL: "https://tiles.example-maps.test/styles/positron",
-  NEXT_PUBLIC_OSRM_URL: "https://osrm.example-routing.test",
 };
 function directives(policy: string) {
   return new Map(policy.split(";").map((part) => part.trim()).filter(Boolean).map((part) => {
@@ -38,7 +37,7 @@ test("CSP : domaines réellement utilisés autorisés, rien de plus large", () =
   assert.deepEqual(csp.get("object-src"), ["'none'"]);
   assert.deepEqual(csp.get("base-uri"), ["'self'"]);
   const connect = csp.get("connect-src") ?? [];
-  for (const origin of ["https://abcd.supabase.co", "wss://abcd.supabase.co", "https://osrm.example-routing.test", "https://tiles.example-maps.test", "https://data.geopf.fr"]) {
+  for (const origin of ["https://abcd.supabase.co", "wss://abcd.supabase.co", "https://tiles.example-maps.test", "https://data.geopf.fr"]) {
     assert.ok(connect.includes(origin), `connect-src ${origin}`);
   }
   const img = csp.get("img-src") ?? [];
@@ -49,18 +48,18 @@ test("CSP : domaines réellement utilisés autorisés, rien de plus large", () =
   for (const [name, values] of csp) assert.ok(!values.includes("*") && !values.includes("https:"), `${name} trop large`);
 });
 
-test("CSP par défaut : OSM, OpenFreeMap et OSRM publics quand aucune variable n'est fournie", () => {
+test("CSP par défaut : OSM et OpenFreeMap ; aucun service d'itinéraires appelé par le navigateur (LEGAL-1)", () => {
   const csp = directives(buildContentSecurityPolicy({}));
   const connect = csp.get("connect-src") ?? [];
   const img = csp.get("img-src") ?? [];
   assert.ok(img.includes("https://tile.openstreetmap.org"));
   assert.ok(connect.includes("https://tiles.openfreemap.org"));
-  assert.ok(connect.includes("https://router.project-osrm.org"));
+  assert.ok(!connect.some((value) => value.includes("osrm")), "itinéraires calculés par le serveur");
   assert.ok(!connect.some((value) => value.includes("undefined")));
 });
 
 test("CSP : URL de variable invalide ignorée, pas de source fantaisiste", () => {
-  const csp = buildContentSecurityPolicy({ NEXT_PUBLIC_OSRM_URL: "pas une url", NEXT_PUBLIC_SUPABASE_URL: "javascript:alert(1)" });
+  const csp = buildContentSecurityPolicy({ NEXT_PUBLIC_MAP_STYLE_URL: "pas une url", NEXT_PUBLIC_SUPABASE_URL: "javascript:alert(1)" });
   assert.doesNotMatch(csp, /pas|javascript|undefined|null/);
 });
 

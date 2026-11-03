@@ -5,7 +5,7 @@ import L from "leaflet";
 import { Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import { LeafletBaseMap } from "@/components/maps/leaflet-base-map";
 import { MAP_TILES } from "@/lib/maps/provider-config";
-import type { NavigationRoute } from "@/lib/maps/osrm-route";
+import type { NavigationRoute } from "@/lib/maps/navigation-route";
 import type { LivePosition } from "@/features/driver/use-driver-live-position";
 import { mapPalette, mapRouteStyle, type MapPaletteTheme } from "@/lib/maps/map-visual-theme";
 import { useMapTheme } from "@/hooks/use-map-theme";

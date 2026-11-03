@@ -17,8 +17,8 @@ test("carte : une demande annulée quitte la file avant tout appel fournisseur",
     setTimeout,
     AbortController,
     require: (id: string) => {
-      assert.equal(id, "@/lib/maps/osrm-route");
-      return { fetchOsrmRoute: async () => { calls += 1; return [[48.85, 2.35], [48.86, 2.35]]; } };
+      assert.equal(id, "@/lib/maps/route-client");
+      return { fetchRoutePolyline: async () => { calls += 1; return [[48.85, 2.35], [48.86, 2.35]]; } };
     },
   });
   const queued = module.exports as { requestQueuedRoute: (points: Array<{ latitude: number; longitude: number }>, signal?: AbortSignal) => Promise<unknown> };

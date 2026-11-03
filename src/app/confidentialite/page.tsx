@@ -78,7 +78,8 @@ export default function ConfidentialitePage() {
         <p>
           Les données sont hébergées par Vercel Inc., aux États-Unis (site), et Supabase Pte Ltd, à Singapour (base
           de données, région de Paris). Les e-mails sont envoyés par Resend. Les cartes et les itinéraires de
-          l&apos;application s&apos;appuient sur OpenStreetMap, OSRM et le service d&apos;adresses de l&apos;IGN. Ces
+          l&apos;application s&apos;appuient sur OpenStreetMap, OpenFreeMap et les services d&apos;adresses et
+          d&apos;itinéraires de l&apos;IGN ; les itinéraires sont demandés par nos serveurs, sans votre adresse IP. Ces
           prestataires ne sont pas tous établis dans l&apos;Union européenne. Les données ne sont ni vendues ni
           utilisées à des fins publicitaires.
         </p>

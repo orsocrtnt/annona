@@ -39,7 +39,7 @@ Créer `.env.local` seulement s'il n'existe pas. `npm ci` utilise le lockfile et
 - `RESEND_API_KEY`, `MAIL_FROM` ou `EMAIL_FROM` pour les notifications e-mail ;
 - `OPS_ALERT_RECIPIENT` pour recevoir les alertes par e-mail, une fois par jour et par type de panne (vide : `EMAIL_TEST_RECIPIENT`, sinon aucun e-mail) ;
 - `OPS_ALERT_WEBHOOK_URL` et `OPS_ALERT_WEBHOOK_TOKEN` pour le canal d'incident générique ;
-- variables `NEXT_PUBLIC_MAP_*`, `NEXT_PUBLIC_OSRM_URL` et `GEOCODING_URL` pour remplacer les fournisseurs d'essai ;
+- variables `NEXT_PUBLIC_MAP_*` et `GEOCODING_URL` pour remplacer les fournisseurs d'essai ; `DRIVE_ROUTE_IGN_URL` (recommandé : `https://data.geopf.fr/navigation/itineraire`) ou `DRIVE_ROUTE_OSRM_URL` (OSRM privé) pour les itinéraires, calculés par le serveur seulement ;
 - `DATABASE_CONNECTION_LIMIT` et `DATABASE_CONNECTION_MODE` pour le pool ;
 - `E2E_BASE_URL`, `E2E_SKIP_WEB_SERVER` et `PLAYWRIGHT_CHANNEL` pour Playwright.
 

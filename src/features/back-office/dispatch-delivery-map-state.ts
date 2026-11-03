@@ -1,5 +1,5 @@
 import type { DispatchMapDelivery } from "@/domains/delivery/dispatch-map.service";
-import type { RouteWaypoint } from "@/lib/maps/osrm-route";
+import type { RouteWaypoint } from "@/lib/maps/navigation-route";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { haversineMeters } from "@/lib/maps/navigation-utils";
 
