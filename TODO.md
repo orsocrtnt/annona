@@ -20,7 +20,6 @@
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
 - MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
 - MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (écrire la spécification, puis Toi la relire)
-- MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus (après ton accord pour pousser sur `preproduction`)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -41,6 +40,7 @@
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
+- MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus (ouvrir Chrome (ou activer la réception de l'espace de démo), puis Claude)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -62,6 +62,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
+- MAIL-ECARTS : ouvrir Chrome (extension Claude connectée) pour que Claude finisse l'essai en ligne des e-mails reçus.
 - MAIL-PONT : relire la spécification quand Claude l'aura écrite (boîte dédiée aux commandes, décidée le 3 novembre ; plus de compte Google Cloud ni Azure à créer pour l'instant).
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
@@ -69,7 +70,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
-- MAIL-ECARTS : les quatre défauts sont corrigés et testés en local (3 novembre) ; reste à pousser sur `preproduction` et à renvoyer l'e-mail « 1 palette / 3 colis » sur `tutelliv.fr` pour voir le vrai modèle.
+- MAIL-ECARTS : corrigé, testé et en ligne (3 novembre) ; reste l'essai avec le vrai modèle sur `tutelliv.fr`, dès que tu as ouvert Chrome.
 - MAIL-PONT : écrire la spécification de la boîte de commandes dédiée (renvoi automatique, tri, nouveau client à la validation, confirmation au client).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
@@ -328,7 +329,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus.** Essai demandé par le propriétaire le 2 novembre 2026, sur `tutelliv.fr` (espace de démonstration, 14 e-mails fictifs envoyés depuis Gmail). La chaîne marche : voir « Résultat » ci-dessous.
 
-  **Qui : Claude — après ton accord pour pousser sur `preproduction`.**
+  **Qui : Toi — ouvrir Chrome (ou activer la réception de l'espace de démo), puis Claude.**
 
   Terminé quand : les défauts 2, 4, 5 et 6 sont corrigés et testés. Les défauts 1 et 3 sont repris par MAIL-PONT (décision C14 : renvoi automatique d'une boîte dédiée, qui garde le vrai expéditeur, et tri des e-mails ordinaires).
 
@@ -346,7 +347,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   Non vérifié : vrai e-mail d'un expéditeur reconnu (service testé sur vraie base, sans vrai e-mail) ; pièce jointe lourde réelle ; volume réel chez Resend et sur Vercel ; vrais messages de clients (INTAKE-1, F10 non qualifiée). Écart de méthode : un nettoyage trop large a visé aussi des commandes de démo de la session, refusé pour celles affichées ; la session isolée a ensuite été libérée à la déconnexion, sans effet durable. 14 e-mails de test restent dans « Envoyés » du Gmail du propriétaire.
 
-  **Corrections du 3 novembre 2026 (code local, pas encore commité ni poussé).**
+  **Corrections du 3 novembre 2026 (commit `cfe97c0`, poussé sur `preproduction`, déploiement prêt sur `tutelliv.fr`).**
   - Défaut 2 : chaque livraison porte ses propres colis (`deliveries[].packages`, schéma de sortie et consigne du modèle) ; à défaut, les colis communs s'appliquent. Quantité absente signalée sur sa livraison (`deliveries.1.quantity`), plus de 1 silencieux. Anciens brouillons gardés sans colis propres toujours lisibles.
   - Défaut 4 : `dbSafeText` retire le caractère nul et remplace les moitiés d'émoji, après la coupe (qui pouvait elle-même couper un émoji), pour l'expéditeur, l'objet et le texte.
   - Défaut 5 : recompte du plafond de 200 sous verrou par entreprise (`pg_advisory_xact_lock`) dans la transaction d'écriture, attente du verrou jusqu'à 10 s.
@@ -354,7 +355,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   - En passant : icône ⚠/✓ affichée deux fois dans trois alertes (brouillon et formulaire de commande public), le composant `Alert` met déjà la sienne.
   - Vérifié : tests unitaires ajoutés (quantités par livraison, quantité absente ou inventée, ancien brouillon, « Nom <adresse> », caractères invalides) ; `npm run check` vert (1 547 tests, 0 échec). Essai sur `tutelliv-dev` (entreprise de test créée puis supprimée, 0 reste) : e-mail avec caractère nul et émoji coupé enregistré et nettoyé ; à 199/200, 8 e-mails simultanés → 1 accepté, 7 refusés, 200 en base, le suivant refusé (6/6). Premier essai sans délai d'attente : refus Prisma P2028, d'où l'attente de 10 s. E2E navigateur en worktree isolé : nouveau parcours à deux livraisons (1 palette, quantité absente signalée sur la seconde seulement, saisies gardées par onglet) et parcours existant « double clic », tous deux réussis ; capture locale `outputs/recette-agents/mail-ecarts/deux-livraisons.png`.
   - Non vérifié : le vrai modèle remplit-il `deliveries[].packages` ? Pas de clé Anthropic en local, essai possible seulement en ligne après poussée. Retrait des icônes en double non revu au navigateur (contrôle par `npm run check`).
-  - Suite : avec ton accord, commit + poussée sur `preproduction`, puis renvoyer l'e-mail « 1 palette / 3 colis » sur `tutelliv.fr` et clore.
+  - Essai en ligne bloqué le 3 novembre : l'e-mail « 1 palette / 3 colis » envoyé depuis le Gmail du propriétaire est parti vers l'ancienne adresse de démo (`a6cd…`, remplacée pendant l'essai du 2 novembre) et a été ignoré comme prévu, rien d'enregistré. L'entreprise de démo « LogiExpress Démo — environnement 1 » (base de préproduction) a une nouvelle adresse, mais sa réception est désactivée. L'activer directement en base a été refusé par l'outil de sécurité ; Chrome n'était pas connecté pour le faire par l'écran.
+  - Suite : dès que Chrome est ouvert (ou la réception activée dans Paramètres de l'espace de démo), Claude active la réception, envoie l'e-mail à la nouvelle adresse, contrôle le brouillon (1 palette sur la livraison 1, 3 colis sur la livraison 2), désactive la réception et clôt.
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
