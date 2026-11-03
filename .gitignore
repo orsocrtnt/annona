@@ -50,3 +50,7 @@ next-env.d.ts
 
 # Local destinations for shared TODO copies
 /.todo-share-paths.local.json
+
+# Réglages personnels de Claude Code
+.claude/settings.local.json
+.claude/worktrees/
