@@ -54,7 +54,7 @@ interface OrderIntakeDraftFormProps {
   idempotencyKeys: string[];
   ordersHref: string | null;
   /** Appelé quand chaque livraison du brouillon a sa commande (e-mail reçu : on le classe). */
-  onAllCreated?: (orderId: string) => void;
+  onAllCreated?: (orderIds: string[]) => void;
 }
 
 /**
@@ -188,7 +188,9 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
         onSuccess: (result) => {
           const next = { ...created, [active]: result };
           setCreated(next);
-          if (Object.keys(next).length >= idempotencyKeys.length) onAllCreated?.(result.id);
+          if (Object.keys(next).length >= idempotencyKeys.length) {
+            onAllCreated?.(Object.keys(next).map(Number).sort((a, b) => a - b).map((index) => next[index]!.id));
+          }
         },
         onError: (error) => setErrors([error instanceof OrderIntakeApiError ? error.message : "Création impossible. Réessayez."]),
       }

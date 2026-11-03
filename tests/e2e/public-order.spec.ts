@@ -153,7 +153,7 @@ test("LIEN : commander sans compte, suivre, plafond, lien coupé", async ({ page
 });
 
 test("E-MAIL : réception signée, doublon, brouillon validé en une commande, classement", async ({ page, request }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   const emailIds: string[] = [];
   let companyId = "";
   let orderId: string | null = null;
@@ -276,6 +276,11 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     await toSort.getByRole("listitem").filter({ hasText: "E2E bon de commande" }).getByRole("button", { name: "Ignorer" }).click();
     await expect(toSort).toHaveCount(0);
 
+    // MAIL-PONT, étape 5 : confirmation au client cochée par défaut, adressée à l'expéditeur d'origine.
+    await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", mailbox: "commandes@e2e-transport.test" } });
+    const confirmBox = page.getByLabel(/Envoyer la confirmation au client \(e2e-client@tutelliv\.fr\)/);
+    await expect(confirmBox).toBeChecked();
+
     // Vrai clic : le double clic ne crée qu'une commande et l'e-mail se classe seul.
     await page.getByLabel(/^Client/).selectOption({ index: 1 });
     await page.getByRole("button", { name: "Créer la commande" }).dblclick();
@@ -290,11 +295,18 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     expect(converted.orderId).toBe(orderId);
     expect(converted.bodyText).toBe("");
     expect(converted.draft).toBeNull();
+    const confirmationJob = await prisma.operationJob.findUnique({ where: { jobKey: `inbound-confirmation:${stored.id}` } });
+    expect(confirmationJob, "une confirmation programmée").not.toBeNull();
+    expect((confirmationJob!.payload as { replyTo?: string }).replyTo).toBe("commandes@e2e-transport.test");
+    const confirmationLink = await prisma.orderTrackingLink.findUniqueOrThrow({ where: { orderId } });
+    expect(confirmationLink.guestEmail, "expéditeur d'origine").toBe("e2e-client@tutelliv.fr");
+    await expect(page.getByText("Confirmation envoyée à e2e-client@tutelliv.fr.")).toBeVisible();
+    expect(await prisma.operationJob.count({ where: { jobKey: `inbound-confirmation:${forwarded.id}` } }), "e-mail classé sans commande : aucune confirmation").toBe(0);
     const list = (await (await page.request.get("/api/orders/intake/inbox")).json()).data as { id: string }[];
     expect(list.some(({ id }) => emailIds.includes(id)), "traités : hors de la liste").toBe(false);
     expect((await page.request.patch("/api/orders/intake/inbox/inconnu", { data: { status: "DISMISSED" } })).status()).toBe(404);
   } finally {
-    await prisma.operationJob.deleteMany({ where: { jobKey: { in: emailIds.map((id) => `inbound-email:${id}`) } } });
+    await prisma.operationJob.deleteMany({ where: { jobKey: { in: emailIds.flatMap((id) => [`inbound-email:${id}`, `inbound-confirmation:${id}`]) } } });
     await prisma.inboundOrderEmail.deleteMany({ where: { id: { in: emailIds } } });
     if (orderId) {
       await prisma.saasUsageEvent.deleteMany({ where: { orderId } }).catch(() => undefined);
@@ -316,10 +328,11 @@ test("E-MAIL : boîte de commandes enregistrée et code de confirmation Gmail af
     companyId = channel.companyId;
     const env = { INBOUND_EMAIL_DOMAIN: "commandes.e2e.test", RESEND_API_KEY: "fausse-cle-de-test" };
     const emailId = `e2e-gmail-${Date.now()}`;
+    const code = String(Date.now()).slice(-9);
     const fetcher = (async () => new Response(JSON.stringify({
       from: "Gmail Team <forwarding-noreply@google.com>",
-      subject: "(#246813579) Gmail Forwarding Confirmation - Receive Mail from e2e.commandes@gmail.com",
-      text: "e2e.commandes@gmail.com has requested to automatically forward mail. Confirmation code: 246813579",
+      subject: `(#${code}) Gmail Forwarding Confirmation - Receive Mail from e2e.commandes@gmail.com`,
+      text: `e2e.commandes@gmail.com has requested to automatically forward mail. Confirmation code: ${code}`,
     }), { status: 200 })) as typeof fetch;
     expect(await ingestInboundEmail({ type: "email.received", data: { email_id: emailId, to: [`${channel.inboundEmailToken}@commandes.e2e.test`] } }, { env, fetcher })).toBe("stored");
     const row = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { providerEmailId: emailId } });
@@ -331,8 +344,8 @@ test("E-MAIL : boîte de commandes enregistrée et code de confirmation Gmail af
     await page.request.patch("/api/orders/intake", { data: { enabled: true } });
     await page.goto("/dashboard/orders/intake");
     const setup = page.getByTestId("order-mailbox");
-    await expect(setup.getByText("246 813 579")).toBeVisible();
-    await expect(setup.getByText("(demandé par e2e.commandes@gmail.com)", { exact: false })).toBeVisible();
+    await expect(setup.getByText(code.replace(/(\d{3})(?=\d)/g, "$1 "), { exact: true })).toBeVisible();
+    await expect(setup.getByText("(demandé par e2e.commandes@gmail.com)", { exact: false }).first()).toBeVisible();
     const inbox = (await (await page.request.get("/api/orders/intake/inbox")).json()).data as { id: string }[];
     expect(inbox.some(({ id }) => id === row.id), "absent de la liste des commandes").toBe(false);
 

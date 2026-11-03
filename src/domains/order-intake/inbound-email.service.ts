@@ -306,14 +306,69 @@ export async function listInboundEmails(companyId: string) {
   return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }));
 }
 
-/** Traité ou classé : le contenu n'a plus de raison d'être conservé. */
-export async function closeInboundEmail(companyId: string, id: string, input: { status: "CONVERTED" | "DISMISSED"; orderId?: string }) {
-  const orderId = input.status === "CONVERTED" && input.orderId
-    ? (await prisma.order.findFirst({ where: { id: input.orderId, companyId }, select: { id: true } }))?.id ?? null
-    : null;
-  const updated = await prisma.inboundOrderEmail.updateMany({
-    where: { id, companyId },
-    data: { status: input.status, orderId, bodyText: "", draft: Prisma.DbNull, subject: "", analysisError: null, originalSender: null },
+/** Destinataire de la confirmation : le client d'origine, jamais un membre de l'équipe. */
+async function confirmationRecipient(companyId: string, email: { fromAddress: string; originalSender: string | null }) {
+  if (email.originalSender) return email.originalSender;
+  if (!email.fromAddress) return null;
+  const team = await prisma.user.count({
+    where: { companyId, email: { equals: email.fromAddress, mode: "insensitive" }, role: { systemRole: { not: "CLIENT" } } },
   });
-  return updated.count > 0;
+  return team > 0 ? null : email.fromAddress;
+}
+
+export type CloseInboundEmailInput = {
+  status: "CONVERTED" | "DISMISSED";
+  orderId?: string;
+  /** Toutes les commandes créées depuis l'e-mail (une par livraison). */
+  orderIds?: string[];
+  /** MAIL-PONT, étape 5 : envoyer la confirmation au client (case cochée par défaut). */
+  confirm?: boolean;
+};
+
+/**
+ * Traité ou classé : le contenu n'a plus de raison d'être conservé. Converti avec `confirm` : une seule
+ * confirmation par e-mail (clé de tâche par e-mail), programmée dans la même transaction que la clôture.
+ * Renvoie false si l'e-mail n'existe pas dans l'entreprise ; `confirmation` dit ce qui a été programmé.
+ */
+export async function closeInboundEmail(companyId: string, id: string, input: CloseInboundEmailInput) {
+  const email = await prisma.inboundOrderEmail.findFirst({
+    where: { id, companyId },
+    select: { fromAddress: true, originalSender: true, status: true },
+  });
+  if (!email) return { closed: false as const };
+  const ids = [...new Set([...(input.orderIds ?? []), ...(input.orderId ? [input.orderId] : [])])].slice(0, 10);
+  const orders = input.status === "CONVERTED" && ids.length
+    ? await prisma.order.findMany({ where: { id: { in: ids }, companyId }, select: { id: true }, orderBy: { createdAt: "asc" } })
+    : [];
+  const orderId = orders[0]?.id ?? null;
+  const recipient = input.status === "CONVERTED" && input.confirm && orders.length && email.status !== "CONVERTED"
+    ? await confirmationRecipient(companyId, email)
+    : null;
+  const channel = recipient
+    ? await prisma.companyIntakeChannel.findUnique({ where: { companyId }, select: { orderMailboxAddress: true } })
+    : null;
+
+  const jobId = await prisma.$transaction(async (tx) => {
+    let job: string | null = null;
+    if (recipient) {
+      const { trackingLinksForConfirmation } = await import("@/domains/public-order/public-order.service");
+      const linkIds = await trackingLinksForConfirmation(tx, companyId, orders.map((order) => order.id), recipient);
+      if (linkIds.length) {
+        const queued = await enqueueOperationJob(tx, {
+          jobKey: `inbound-confirmation:${id}`,
+          type: "CLIENT_NOTIFICATION",
+          companyId,
+          payload: { kind: "INBOUND_ORDER_CONFIRMATION", linkIds, replyTo: channel?.orderMailboxAddress ?? null },
+        });
+        job = queued.id;
+      }
+    }
+    await tx.inboundOrderEmail.updateMany({
+      where: { id, companyId },
+      data: { status: input.status, orderId, bodyText: "", draft: Prisma.DbNull, subject: "", analysisError: null, originalSender: null },
+    });
+    return job;
+  });
+  if (jobId) kickOperationJob(jobId);
+  return { closed: true as const, confirmation: recipient && jobId ? recipient : null };
 }

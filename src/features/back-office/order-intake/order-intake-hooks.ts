@@ -44,8 +44,8 @@ export function useInboundEmails() {
 export function useCloseInboundEmail() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; status: "CONVERTED" | "DISMISSED"; orderId?: string }) =>
-      orderIntakeApi.closeInboundEmail(input.id, input.status, input.orderId),
+    mutationFn: (input: { id: string; status: "CONVERTED" | "DISMISSED"; orderIds?: string[]; confirm?: boolean }) =>
+      orderIntakeApi.closeInboundEmail(input.id, input.status, { orderIds: input.orderIds, confirm: input.confirm }),
     onSuccess: () => qc.invalidateQueries({ queryKey: INBOX_KEY }),
   });
 }

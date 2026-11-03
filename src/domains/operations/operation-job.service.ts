@@ -251,6 +251,11 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
       await deliverOrderMessageNotification(messageId);
       return;
     }
+    if (readString(job.payload, "kind") === "INBOUND_ORDER_CONFIRMATION") {
+      const { deliverInboundOrderConfirmation } = await import("@/domains/public-order/public-order.service");
+      await deliverInboundOrderConfirmation(job.payload, job.jobKey, emailWindow(), freezeContent);
+      return;
+    }
     if (readString(job.payload, "kind") === "GUEST_TRACKING_LINK") {
       const { deliverGuestTrackingEmail } = await import("@/domains/public-order/public-order.service");
       await deliverGuestTrackingEmail(job.payload, job.jobKey, emailWindow(), freezeContent);

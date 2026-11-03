@@ -50,6 +50,8 @@ export type TransactionalEmailInput = {
   to: string;
   subject: string;
   text: string;
+  /** MAIL-PONT : « répondre à » (boîte de commandes de l'entreprise) ; ignoré s'il n'est pas une adresse. */
+  replyTo?: string | null;
   idempotencyKey: string;
   /**
    * Instant le plus ancien auquel une tentative précédente sous cette clé a pu atteindre le
@@ -241,6 +243,7 @@ export async function sendTransactionalEmail(
         subject,
         text,
         html,
+        ...(input.replyTo && hasAddress(input.replyTo.trim()) ? { reply_to: [input.replyTo.trim().toLowerCase()] } : {}),
       }),
       signal: options.signal ?? AbortSignal.timeout(EMAIL_TIMEOUT_MS),
     }

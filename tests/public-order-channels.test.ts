@@ -16,6 +16,7 @@ import {
 import { publicOrderSchema } from "../src/domains/public-order/public-order.service";
 import { isInboundEmailConfigured } from "../src/domains/public-order/intake-channels.service";
 import { isCrossOriginMutation } from "../src/lib/security/origin-check";
+import { sendTransactionalEmail } from "../src/lib/email/transactional-email";
 
 const SECRET = `whsec_${Buffer.from("secret-de-test").toString("base64")}`;
 const NOW = new Date("2026-10-30T12:00:00Z");
@@ -166,4 +167,20 @@ test("MAIL-PONT : code de confirmation Gmail reconnu, jamais pour un autre expé
   );
   assert.equal(gmailForwardingConfirmation("pirate@exemple.test", "(#123456789) Gmail Forwarding Confirmation", ""), null, "autre expéditeur");
   assert.equal(gmailForwardingConfirmation(google, "Gmail Forwarding Confirmation", "pas de code"), null);
+});
+
+test("MAIL-PONT : la confirmation porte « répondre à » vers la boîte de commandes, jamais une valeur invalide", async () => {
+  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "cle-de-test", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+  const bodies: Array<Record<string, unknown>> = [];
+  const fetcher = (async (_url: string, init: { body: string }) => {
+    bodies.push(JSON.parse(init.body));
+    return { ok: true, status: 200, json: async () => ({ id: "email_1" }), text: async () => "{}" };
+  }) as unknown as typeof fetch;
+  const base = { to: "client@exemple.test", subject: "Commande confirmée", text: "Bonjour", replayWindowStart: null };
+  await sendTransactionalEmail({ ...base, idempotencyKey: "k1", replyTo: " Commandes@Transport.test " }, { env, fetcher, now: NOW });
+  await sendTransactionalEmail({ ...base, idempotencyKey: "k2", replyTo: "pas une adresse" }, { env, fetcher, now: NOW });
+  await sendTransactionalEmail({ ...base, idempotencyKey: "k3" }, { env, fetcher, now: NOW });
+  assert.deepEqual(bodies[0]!.reply_to, ["commandes@transport.test"]);
+  assert.equal("reply_to" in bodies[1]!, false);
+  assert.equal("reply_to" in bodies[2]!, false);
 });

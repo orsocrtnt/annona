@@ -73,11 +73,11 @@ export const orderIntakeApi = {
       body: JSON.stringify({ text, sender: sender.trim() || undefined }),
     }),
   getInbox: () => request<InboundEmailItem[]>("/api/orders/intake/inbox"),
-  closeInboundEmail: (id: string, status: "CONVERTED" | "DISMISSED", orderId?: string) =>
-    request<void>(`/api/orders/intake/inbox/${encodeURIComponent(id)}`, {
+  closeInboundEmail: (id: string, status: "CONVERTED" | "DISMISSED", extra: { orderIds?: string[]; confirm?: boolean } = {}) =>
+    request<{ confirmationTo: string | null } | undefined>(`/api/orders/intake/inbox/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers: jsonHeaders,
-      body: JSON.stringify({ status, ...(orderId ? { orderId } : {}) }),
+      body: JSON.stringify({ status, ...(extra.orderIds?.length ? { orderId: extra.orderIds[0], orderIds: extra.orderIds } : {}), ...(extra.confirm ? { confirm: true } : {}) }),
     }),
   getChannels: () => request<IntakeChannels>("/api/company/intake-channels"),
   updateChannel: (action: IntakeChannelAction) =>

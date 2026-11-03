@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { getCompanyDeliveryOptions, getCompanyDeliverySlots } from "@/domains/company/company-settings.service";
 import { DELIVERY_SLOT_ERROR_MESSAGES, resolveDeliverySlot } from "@/domains/order/delivery-slot";
@@ -226,6 +227,88 @@ export async function deliverGuestTrackingEmail(
     throw new Error("GUEST_TRACKING_EMAIL_NOT_CONFIGURED");
   }
   return delivery;
+}
+
+const confirmationDate = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
+
+/**
+ * MAIL-PONT, étape 5 : une seule confirmation par e-mail reçu, après la validation humaine, à l'expéditeur
+ * d'origine. Envoyée par TutelLiv au nom de l'entreprise ; « répondre à » vers sa boîte de commandes.
+ */
+export async function deliverInboundOrderConfirmation(
+  payload: unknown,
+  jobKey: string,
+  replayWindow: ReplayWindowStart,
+  freezeContent: EmailContentFreezer
+) {
+  const data = payload as { linkIds?: unknown; replyTo?: unknown } | null;
+  const linkIds = Array.isArray(data?.linkIds) ? data.linkIds.filter((id): id is string => typeof id === "string").slice(0, 10) : [];
+  if (linkIds.length === 0) throw new Error("INBOUND_CONFIRMATION_PAYLOAD_INVALID");
+  const links = await prisma.orderTrackingLink.findMany({
+    where: { id: { in: linkIds }, revokedAt: null },
+    orderBy: { createdAt: "asc" },
+    select: { token: true, guestEmail: true, order: { select: { reference: true, requestedDeliveryDate: true } }, company: { select: { name: true } } },
+  });
+  const recipient = links[0]?.guestEmail;
+  if (!recipient) throw skippedJobError("INBOUND_CONFIRMATION_NO_RECIPIENT");
+  const company = links[0]!.company.name;
+  const replyTo = typeof data?.replyTo === "string" ? data.replyTo : null;
+  const lines = links.flatMap((link) => [
+    `Commande ${link.order.reference}${link.order.requestedDeliveryDate ? `, prévue ${confirmationDate.format(link.order.requestedDeliveryDate)}` : ""}.`,
+    `Suivi : ${appBaseUrl()}/suivi/${link.token}`,
+    "",
+  ]);
+  const delivery = await sendTransactionalEmail({
+    to: recipient,
+    replyTo,
+    subject: links.length > 1
+      ? `${company} confirme vos ${links.length} commandes`
+      : `${company} confirme votre commande ${links[0]!.order.reference}`,
+    text: [
+      "Bonjour,",
+      "",
+      `${company} a bien reçu votre demande par e-mail et l'a enregistrée.`,
+      "",
+      ...lines,
+      replyTo ? "Pour toute question, répondez simplement à cet e-mail." : "Pour toute question, contactez directement l'entreprise.",
+      "",
+      "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.",
+    ].join("\n"),
+    idempotencyKey: jobKey,
+    replayWindowStart: replayWindow,
+    freezeContent,
+  });
+  if (delivery.status === "disabled") {
+    if (delivery.reason === "disabled") throw skippedJobError("INBOUND_CONFIRMATION_EMAIL_DISABLED");
+    throw new Error("INBOUND_CONFIRMATION_EMAIL_NOT_CONFIGURED");
+  }
+  return delivery;
+}
+
+/**
+ * MAIL-PONT, étape 5 : liens de suivi des commandes créées depuis un e-mail, rattachés à l'expéditeur
+ * d'origine (un lien déjà existant garde son destinataire). Commandes d'une autre entreprise ignorées.
+ */
+export async function trackingLinksForConfirmation(
+  tx: Prisma.TransactionClient,
+  companyId: string,
+  orderIds: string[],
+  recipient: string
+) {
+  const orders = await tx.order.findMany({ where: { id: { in: orderIds }, companyId }, select: { id: true }, orderBy: { createdAt: "asc" } });
+  const links = [];
+  for (const order of orders) {
+    links.push(await tx.orderTrackingLink.upsert({
+      where: { orderId: order.id },
+      update: {},
+      create: { token: newTrackingToken(), orderId: order.id, companyId, guestEmail: recipient },
+      select: { id: true, guestEmail: true },
+    }));
+  }
+  // Un lien créé auparavant sans destinataire (copié depuis le back-office) reçoit celui de l'e-mail.
+  const missing = links.filter((link) => !link.guestEmail).map((link) => link.id);
+  if (missing.length) await tx.orderTrackingLink.updateMany({ where: { id: { in: missing } }, data: { guestEmail: recipient } });
+  return links.map((link) => link.id);
 }
 
 /** Vue minimale du suivi : ni nom de livreur, ni position, ni adresse complète, ni preuve. */

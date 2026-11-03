@@ -96,6 +96,10 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   const [result, setResult] = React.useState<{ draft: OrderIntakeDraft; keys: string[]; id: number } | null>(null);
   const [activeEmailId, setActiveEmailId] = React.useState<string | null>(null);
   const closeEmail = useCloseInboundEmail();
+  // MAIL-PONT, étape 5 : confirmation au client, cochée par défaut, décochable (commande pour un tiers…).
+  const [confirmClient, setConfirmClient] = React.useState(true);
+  const [confirmTarget, setConfirmTarget] = React.useState<string | null>(null);
+  const [confirmationSent, setConfirmationSent] = React.useState<string | null>(null);
   const draftHeadingRef = React.useRef<HTMLHeadingElement>(null);
 
   React.useEffect(() => {
@@ -112,6 +116,9 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   // Clés stables par e-mail : rouvrir le même e-mail ne peut pas créer une seconde commande.
   const openEmail = (email: InboundEmailItem) => {
     setActiveEmailId(email.id);
+    setConfirmClient(true);
+    setConfirmTarget(email.originalSender ?? email.fromAddress ?? null);
+    setConfirmationSent(null);
     setText([email.subject ? `Objet : ${email.subject}` : "", email.bodyText].filter(Boolean).join("\n\n").slice(0, maxLength));
     setSender(email.originalSender ?? email.fromAddress);
     analyze.reset();
@@ -246,11 +253,23 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
           <h2 id="intake-draft-title" ref={draftHeadingRef} tabIndex={-1} className="sr-only">
             Brouillon de commande
           </h2>
+          {activeEmailId && (
+            <label className="flex min-h-11 items-center gap-2 text-sm">
+              <input type="checkbox" className="h-4 w-4" checked={confirmClient} onChange={(event) => setConfirmClient(event.target.checked)} />
+              Envoyer la confirmation au client{confirmTarget ? <> ({confirmTarget})</> : null}, avec la date et le lien de suivi
+            </label>
+          )}
           <OrderIntakeDraftForm key={result.id} draft={result.draft} idempotencyKeys={result.keys} ordersHref={ordersHref}
-            onAllCreated={activeEmailId ? (orderId) => {
-              closeEmail.mutate({ id: activeEmailId, status: "CONVERTED", orderId });
+            onAllCreated={activeEmailId ? (orderIds) => {
+              closeEmail.mutate(
+                { id: activeEmailId, status: "CONVERTED", orderIds, confirm: confirmClient },
+                { onSuccess: (data) => setConfirmationSent(data?.confirmationTo ?? null) }
+              );
               setActiveEmailId(null);
             } : undefined} />
+          {confirmationSent && (
+            <p role="status" className="text-sm text-muted-foreground">Confirmation envoyée à {confirmationSent}.</p>
+          )}
         </section>
       )}
     </div>
