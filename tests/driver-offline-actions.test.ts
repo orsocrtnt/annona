@@ -4,6 +4,8 @@ import {
   createQueuedDriverAction,
   enqueueDriverAction,
   processQueuedDriverActions,
+  purgeExpiredDriverActions,
+  DRIVER_ACTION_MAX_AGE_MS,
   type DriverActionQueueStore,
   type QueuedDriverAction,
 } from "../src/features/driver/offline-action-queue";
@@ -26,6 +28,7 @@ function memoryStore(): DriverActionQueueStore & { rows: Map<string, QueuedDrive
         .filter((row) => row.ownerId === ownerId)
         .sort((left, right) => left.createdAt - right.createdAt);
     },
+    async listAll() { return [...rows.values()]; },
   };
 }
 
@@ -120,4 +123,33 @@ test("MOB-01B : une panne fetch est classée rejouable sans perdre le corps", as
     (error: unknown) => error instanceof DriverApiError && error.retryable === true && error.status === 0
   );
   assert.equal(calls, 1);
+});
+
+test("LEGAL-1 : la file hors ligne efface les actions de plus de sept jours, tous comptes confondus", async () => {
+  const store = memoryStore();
+  const day = 24 * 60 * 60 * 1_000;
+  const now = 100 * day;
+  const photo = new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" });
+  const make = (id: string, ownerId: string, ageMs: number) =>
+    createQueuedDriverAction({
+      id,
+      ownerId,
+      missionId: `mission-${id}`,
+      now: now - ageMs,
+      payload: { status: "DELIVERED", pod: { outcome: "SUCCESS", photo, recipientName: "Mme Martin" } },
+    });
+  await enqueueDriverAction(store, make("recent", "driver-a", 6 * day));
+  await enqueueDriverAction(store, make("limite", "driver-a", DRIVER_ACTION_MAX_AGE_MS));
+  await enqueueDriverAction(store, make("ancienne", "driver-a", 8 * day));
+  await enqueueDriverAction(store, make("autre-compte", "driver-b", 30 * day));
+  const failed = { ...make("refusee", "driver-a", 9 * day), state: "failed" as const, lastError: "refus" };
+  await store.put(failed);
+  const sending = { ...make("en-envoi", "driver-a", 9 * day), state: "sending" as const };
+  await store.put(sending);
+
+  const purged = await purgeExpiredDriverActions(store, { now });
+
+  assert.deepEqual(purged.sort(), ["ancienne", "autre-compte", "refusee"]);
+  assert.deepEqual([...store.rows.keys()].sort(), ["en-envoi", "limite", "recent"]);
+  assert.deepEqual(await purgeExpiredDriverActions(store, { now }), []);
 });

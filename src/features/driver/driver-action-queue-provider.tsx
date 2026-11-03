@@ -17,6 +17,7 @@ import {
   createQueuedDriverAction,
   enqueueDriverAction,
   processQueuedDriverActions,
+  purgeExpiredDriverActions,
   type QueuedDriverAction,
   type QueuedDriverActionPayload,
 } from "./offline-action-queue";
@@ -97,7 +98,10 @@ export function DriverActionQueueProvider({ children }: { children: React.ReactN
 
   useEffect(() => {
     if (!ownerId) return;
-    void refresh().then(() => processQueue());
+    void purgeExpiredDriverActions(browserDriverActionQueueStore)
+      .catch(() => [])
+      .then(() => refresh())
+      .then(() => processQueue());
     const onOnline = () => void processQueue(true);
     window.addEventListener("online", onOnline);
     const interval = window.setInterval(() => void processQueue(), 15_000);

@@ -19,7 +19,6 @@
 - GROWTH-1 — Construire le site commercial relié au parcours autonome (après la vérification de conformité)
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
 - MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
-- MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (écrire la spécification, puis Toi la relire)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -40,6 +39,7 @@
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
+- MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (relire la spécification et trancher les quatre choix de sa section 9, puis Claude)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -58,17 +58,18 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Avant le premier pilote ou la première vente (décidé le 2 novembre) : passer Vercel en Pro et créer la vraie production (AUDIT-0111, point E2).
 - Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
 - Avant le dépôt au Guichet unique : vérifier la reprise de ton ancien SIREN, et ta capacité à exercer depuis les États-Unis sous visa J-1 avec ta résidence fiscale (checklist J5, non tranché).
-- LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis).
+- LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis). Confirmer aussi la durée provisoire de sept jours pour la file hors ligne du livreur, et, si un pilote emploie des livreurs indépendants payés à la livraison, faire qualifier l'affectation automatique (`docs/legal/AIPD_TYPE.md`, section 3).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- MAIL-PONT : relire la spécification quand Claude l'aura écrite (boîte dédiée aux commandes, décidée le 3 novembre ; plus de compte Google Cloud ni Azure à créer pour l'instant).
+- MAIL-PONT : relire la spécification `docs/operations/order-intake/MAIL-PONT.md` et trancher ses quatre choix (section 9 : fiche client A ou B, durée des e-mails « À trier », nom sur la confirmation, ordre des étapes).
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
-- LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
+- LEGAL-1, écarts qui ne dépendent pas de toi : mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
-- MAIL-PONT : écrire la spécification de la boîte de commandes dédiée (renvoi automatique, tri, nouveau client à la validation, confirmation au client).
+- MAIL-PONT : coder l'étape 1 (tri des e-mails) dès tes choix.
+- LEGAL-1, cartes : faire passer les itinéraires du livreur par le serveur vers l'IGN, avant le premier pilote avec de vrais livreurs (`docs/operations/map-providers.md`, dernière section).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
@@ -125,7 +126,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   Constat du 2 novembre 2026 : Node 22 réglé sur Vercel ; migration d'index appliquée ; workflow réellement lancé par GitHub, mais **toutes les 4 à 7 heures et non toutes les 5 minutes** (GitHub espace ces lancements) ; aucune variable `OPS_ALERT_WEBHOOK_URL` sur Vercel, donc une alerte ne part que dans les journaux. Reste : une cadence fiable, un canal d'alerte réel, le contrôle d'`after()` en ligne.
 
-  Décisions et travaux du 2 novembre 2026 : relais par Supabase (tâche pg_cron `tutelliv-operations-relay`, pg_net activé, inactive tant que le secret `relay_cron_secret` manque ; copie du secret refusée par l'outil de sécurité, commande à lancer par le propriétaire). Alertes par e-mail : une par empreinte et par jour (`OPS_ALERT_RECIPIENT`, sinon `EMAIL_TEST_RECIPIENT`), tests ajoutés, `npm run check` vert. Non vérifié : relais réellement lancé, e-mail réellement reçu. Écart trouvé : la sonde `ops_monitor` (toutes les 30 minutes) écrit encore vers un webhook temporaire de recette, donc une panne totale de Vercel ne prévient pas le propriétaire ; à rediriger vers un vrai e-mail.
+  Décisions et travaux du 2 novembre 2026 : relais par Supabase (tâche pg_cron `tutelliv-operations-relay`, pg_net activé, inactive tant que le secret `relay_cron_secret` manque ; copie du secret refusée par l'outil de sécurité, commande à lancer par le propriétaire). Alertes par e-mail : une par empreinte et par jour (`OPS_ALERT_RECIPIENT`, sinon `EMAIL_TEST_RECIPIENT`), tests ajoutés, `npm run check` vert. Non vérifié : relais réellement lancé, e-mail réellement reçu. Constat du 3 novembre (lecture seule, base de préproduction) : le secret `relay_cron_secret` est toujours absent du coffre ; la tâche `tutelliv-operations-relay` tourne toutes les 5 minutes mais à vide. Ta commande reste à lancer. Écart trouvé : la sonde `ops_monitor` (toutes les 30 minutes) écrit encore vers un webhook temporaire de recette, donc une panne totale de Vercel ne prévient pas le propriétaire ; à rediriger vers un vrai e-mail.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section OPS-FIAB.
 
@@ -155,7 +156,11 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   État du 2 novembre 2026 : première vérification faite, `docs/legal/VERIFICATION_2026-11-02.md` (exigences, sources, constats, verdicts). Aucune conformité déclarée. Démo fictive et entretiens de recherche possibles sous conditions ; vente et vraies données non. Nouveaux constats : Data Act absent du dossier ; offre Vercel Hobby non commerciale, contenus utilisables pour entraîner des IA, DPA réservé aux offres Pro et Enterprise ; réception des factures électroniques déjà obligatoire ; mentions légales incomplètes. Vérifications : `npm run check` 1 529/1 529 ; `verify-docs` OK. Non vérifié : voir section 5 du document.
 
-  Textes J5 lus sur Drive le 2 novembre avec l'accord du propriétaire, en lecture seule ; écarts en section 6, rien de modifié sur Drive. Suite : les pièces et décisions de la section 4 du document. Écarts à traiter par Claude ensuite : purge et remise des données (DATA-02), file hors ligne sans expiration, analyse d'impact type, fournisseur de cartes.
+  Textes J5 lus sur Drive le 2 novembre avec l'accord du propriétaire, en lecture seule ; écarts en section 6, rien de modifié sur Drive. Suite : les pièces et décisions de la section 4 du document. Écarts à traiter par Claude ensuite : purge et remise des données (DATA-02) ; itinéraires du livreur à faire passer par le serveur vers l'IGN (recommandation du 3 novembre dans `docs/operations/map-providers.md` : la navigation envoie aujourd'hui la position réelle du livreur au démonstrateur OSRM public ; OpenFreeMap gardé pour le fond ; usage commercial de l'IGN à confirmer).
+
+  3 novembre 2026, file hors ligne du livreur : chaque action est maintenant effacée de l'appareil au plus tard sept jours après sa création, tous comptes confondus (`purgeExpiredDriverActions` dans `src/features/driver/offline-action-queue.ts`, lancée à l'ouverture de l'application livreur ; une action en cours d'envoi n'est pas touchée). Durée provisoire, à confirmer par toi avec la section 4. Page Confidentialité et `docs/legal/VERIFICATION_2026-11-02.md` mis à jour. Vérifications : test ciblé `tests/driver-offline-actions.test.ts` + `tests/pod-signature.test.ts` 14/14 ; `npm run check` réussi (1 548 tests, types et lint). `npm run docs:verify` réussi (88 Markdown, aucun lien cassé). Non commité ni poussé : l'outil de sécurité a refusé le push, à faire sur demande. Non vérifié : purge sur un vrai téléphone (IndexedDB réel), à rejouer pendant MOB-01C ; phrase de la page Confidentialité non rouverte en navigateur (texte seul, types et lint verts).
+
+  3 novembre 2026, analyse d'impact type et décision automatisée : `docs/legal/AIPD_TYPE.md` (trame pré-remplie avec les faits du code pour l'AIPD que chaque client fait ; analyse du Dispatch intelligent : pas d'évaluation de la personne, option désactivée par défaut, article 22 et directive (UE) 2024/2831 à qualifier si des indépendants payés à la livraison sont affectés automatiquement). Relié à l'index `docs/legal/README.md` et à la vérification. Non vérifié : portail client et suivi public non rejoués en navigateur pour ce document ; directive 2024/2831 non relue. Suite côté Claude : purge DATA-02 dès les durées décidées ; fournisseur de cartes ; textes J5 après tes décisions.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section LEGAL-1.
 
@@ -316,13 +321,15 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv.** Décisions du propriétaire (C14) : le 2 novembre, tri automatique entre e-mails ordinaires et e-mails de commande, validation toujours humaine, client inconnu créé à la validation (fiche sans accès, informations manquantes complétées par le dispatcher), une réponse automatique au client après validation avec le lien de suivi. Révision du 3 novembre : parcours principal = boîte dédiée aux commandes, renvoyée automatiquement vers l'adresse TutelLiv (aucune connexion Gmail/Outlook) ; la connexion directe Gmail/Outlook passe en option, plus tard.
 
-  **Qui : Claude — écrire la spécification, puis Toi la relire.**
+  **Qui : Toi — relire la spécification et trancher les quatre choix de sa section 9, puis Claude.**
 
   Terminé quand : une boîte de commandes Gmail et une boîte Outlook renvoient automatiquement vers TutelLiv ; le code de confirmation de Gmail est visible dans TutelLiv ; le client d'origine est reconnu ; les e-mails de commande apparaissent en brouillon et les autres sont mis « à trier » ou ignorés sans être conservés ; la validation crée la commande et, si besoin, la fiche du client ; le client reçoit la confirmation (envoyée par TutelLiv au nom de l'entreprise, « répondre à » vers sa boîte) ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
 
   Reprend deux défauts de MAIL-ECARTS (archivée le 3 novembre) : client jamais retrouvé sur un e-mail transféré (le rapprochement ne regarde que l'expéditeur, alors l'entreprise elle-même) ; « Brouillon prêt » affiché aussi sur un e-mail qui n'est pas une commande.
 
   À prévoir : changement de schéma (fiche client sans accès, statut « à trier ») ; guide pour activer le renvoi (Gmail, Outlook, OVH), dont l'accord de l'administrateur Outlook professionnel pour les renvois externes. Option ultérieure, hors de cette tâche : connexion directe Gmail/Outlook (comptes Google Cloud et Azure, vérification Google et audit CASA, juridique plus lourd).
+
+  3 novembre 2026, spécification écrite : `docs/operations/order-intake/MAIL-PONT.md` (parcours, guide de renvoi Gmail/Outlook/OVH, expéditeur d'origine y compris transfert à la main, code de confirmation Gmail, tri `order`/`other` dans le même appel au modèle, confirmation avec « répondre à », sécurité, cinq étapes livrables). Point d'architecture trouvé : l'adresse e-mail d'un utilisateur est unique sur toute la plateforme, d'où la recommandation d'une fiche client propre à l'entreprise (option B) plutôt qu'un utilisateur sans connexion. Vérification : `npm run docs:verify`. Non vérifié : texte exact de l'e-mail de Gmail, redirection Outlook avec Resend, résultats SPF/DKIM chez Resend. Suite : tes quatre choix (section 9), puis Claude commence par l'étape 1 (tri).
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 

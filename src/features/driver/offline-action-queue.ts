@@ -40,6 +40,8 @@ export type DriverActionQueueStore = {
   put(action: QueuedDriverAction): Promise<void>;
   delete(id: string): Promise<void>;
   list(ownerId: string): Promise<QueuedDriverAction[]>;
+  /** Toutes les actions de l'appareil, tous comptes confondus (purge des actions expirées). */
+  listAll(): Promise<QueuedDriverAction[]>;
 };
 
 export type DriverActionSendError = Error & {
@@ -56,6 +58,13 @@ const DB_NAME = "tutelliv-driver-actions";
 const DB_VERSION = 1;
 const STORE_NAME = "mission-status";
 const RETRY_DELAYS_MS = [0, 5_000, 30_000, 120_000, 300_000] as const;
+/**
+ * Durée maximale de conservation d'une action sur l'appareil (LEGAL-1, minimisation) : photo, signature,
+ * nom du destinataire et position ne restent pas indéfiniment dans le navigateur. Au-delà, l'action est
+ * supprimée, quel que soit le compte qui l'a créée. Valeur provisoire tant que le propriétaire n'a pas
+ * arrêté les durées de conservation (docs/legal/VERIFICATION_2026-11-02.md, section 4).
+ */
+export const DRIVER_ACTION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -128,7 +137,35 @@ export const browserDriverActionQueueStore: DriverActionQueueStore = {
       database.close();
     }
   },
+  async listAll() {
+    const database = await openQueueDatabase();
+    try {
+      const transaction = database.transaction(STORE_NAME, "readonly");
+      const actions = await requestResult(transaction.objectStore(STORE_NAME).getAll());
+      await transactionDone(transaction);
+      return actions as QueuedDriverAction[];
+    } finally {
+      database.close();
+    }
+  },
 };
+
+/**
+ * Supprime de l'appareil les actions créées depuis plus de `maxAgeMs`, tous comptes confondus : celles d'un
+ * livreur qui ne se reconnecte plus sur ce téléphone ne restent pas indéfiniment. Une action en cours
+ * d'envoi n'est pas touchée. Renvoie les identifiants supprimés.
+ */
+export async function purgeExpiredDriverActions(
+  store: DriverActionQueueStore,
+  options: { now?: number; maxAgeMs?: number } = {}
+): Promise<string[]> {
+  const cutoff = (options.now ?? Date.now()) - (options.maxAgeMs ?? DRIVER_ACTION_MAX_AGE_MS);
+  const expired = (await store.listAll()).filter(
+    (action) => action.state !== "sending" && action.createdAt < cutoff
+  );
+  for (const action of expired) await store.delete(action.id);
+  return expired.map((action) => action.id);
+}
 
 export function createQueuedDriverAction(input: {
   id?: string;

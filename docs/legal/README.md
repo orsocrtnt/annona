@@ -31,6 +31,7 @@ Les sources officielles et leurs dates sont regroupées dans [SOURCES.md](SOURCE
 ## Dossier remis au validateur
 
 - [Matrice des rôles et responsabilités](RESPONSABILITES_RGPD.md), par traitement ; toutes les qualifications restent proposées.
+- [Analyse d'impact type et décision automatisée du Dispatch intelligent](AIPD_TYPE.md), trame pré-remplie pour les clients (3 novembre 2026).
 - [Fournisseurs et destinataires connus](SOUS_TRAITANTS.md), statut d'usage et champs inconnus.
 - [Informations manquantes et décisions](POINTS_A_VALIDER.md), incluant facturation électronique 2026/2027.
 - [Checklist avant données réelles](CHECKLIST.md), preuves attendues et responsable de validation.

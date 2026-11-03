@@ -38,3 +38,15 @@ Les adresses sont envoyées à IGN côté serveur ; les coordonnées de départ/
 4. Faire confirmer les conditions FOSSGIS actuelles si son démonstrateur est envisagé, les droits/licences du fond final et les obligations de confidentialité. Si aucun fournisseur d’itinéraires exploitable n’est retenu, proposer explicitement les positions et liens de navigation externes.
 
 Budget de nouveaux fournisseurs engagé par MAP-2 : **0 €**. Cela n’affirme ni gratuité illimitée ni absence de coût d’hébergement applicatif/auto-hébergement. MAP-2 valide la correction et la documentation des limites ; V1-GO reste ouverte pour l’autorisation commerciale et la recette terrain.
+
+## Recommandation du 3 novembre 2026 pour le premier pilote (LEGAL-1)
+
+Constat dans le code : la navigation du livreur appelle le démonstrateur OSRM public **depuis le navigateur** (`src/lib/maps/osrm-route.ts`, `ROUTE_BASE_URL`, appelé par `use-driver-route.ts` et `driver-navigation-map.tsx`). La position réelle du livreur et son adresse IP partent donc chez FOSSGIS, qui journalise les requêtes, plafonne à un appel par seconde et n'autorise pas d'usage commercial. C'est l'écart principal. Les autres services : fond vectoriel OpenFreeMap (`vectorStyleConfig`), fond raster OSM en repli, géocodage IGN côté serveur.
+
+| Service | Aujourd'hui | Recommandation | Coût | Reste à confirmer |
+| --- | --- | --- | --- | --- |
+| Itinéraires du livreur | OSRM public, depuis le navigateur | Passer par le serveur TutelLiv, vers le calcul d'itinéraire de la Géoplateforme IGN (`DRIVE_ROUTE_IGN_URL`, déjà prévu pour la démo dans `drive-route-provider.ts`) ; la position du livreur ne sort plus vers un tiers non contractuel et son IP n'est plus transmise | 0 € | Limite publiée : 5 requêtes par seconde et par IP, toutes requêtes du serveur confondues ([limites d'usage](https://ignf.github.io/cartes.gouv.fr-documentation/fr/guides-utilisateur/acceder-aux-geodonnees/limites-d-usage)) ; conditions d'usage commercial non trouvées, à demander à l'IGN ; étapes détaillées de navigation moins riches qu'OSRM |
+| Fond de carte | OpenFreeMap public, OSM en repli | Garder OpenFreeMap : usage commercial autorisé par sa FAQ, sans garantie ni support ([conditions](https://openfreemap.org/tos/)). Retirer le repli OSM pour un client payant (règles des tuiles OSM) ou le remplacer par une seconde instance OpenFreeMap auto-hébergée quand le volume le justifie | 0 € au pilote | Disponibilité réelle mesurée pendant le pilote |
+| Géocodage | IGN côté serveur | Inchangé | 0 € | — |
+
+Ordre conseillé : d'abord les itinéraires par le serveur (seul écart de données personnelles), avant le premier pilote avec de vrais livreurs. Travail de code avec recette sur téléphone ; non commencé le 3 novembre (gel des nouvelles fonctions décidé par l'audit du 1er novembre, ceci étant une correction de conformité à planifier).

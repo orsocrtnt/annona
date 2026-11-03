@@ -1,5 +1,7 @@
 # Commande par message IA (tranche « coller un message »)
 
+Suite prévue : [MAIL-PONT, boîte de commandes dédiée](MAIL-PONT.md) (spécification du 3 novembre 2026, à relire par le propriétaire).
+
 État : 28 octobre 2026, branche `agent/commande-ia`. Code et tests locaux présents ; **aucun appel réel au modèle, aucune recette navigateur, migration non appliquée.**
 
 ## Problème traité

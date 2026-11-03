@@ -96,7 +96,8 @@ export default function ConfidentialitePage() {
           Le site n&apos;utilise aucun traceur publicitaire. Il dépose seulement ce qui est nécessaire à son
           fonctionnement : la session de connexion ou de démonstration, le suivi de l&apos;inscription en cours,
           votre choix de thème clair ou sombre et vos préférences d&apos;affichage. L&apos;application livreur garde
-          aussi sur l&apos;appareil les actions en attente d&apos;envoi quand le réseau manque.
+          aussi sur l&apos;appareil les actions en attente d&apos;envoi quand le réseau manque ; elles sont
+          effacées dès leur envoi, et au plus tard sept jours après leur création si elles n&apos;ont pas pu partir.
         </p>
       </LegalSection>
 

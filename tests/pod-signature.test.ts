@@ -106,6 +106,7 @@ function memoryStore(): DriverActionQueueStore & { rows: Map<string, QueuedDrive
     async put(action) { rows.set(action.id, action); },
     async delete(id) { rows.delete(id); },
     async list(ownerId) { return [...rows.values()].filter((row) => row.ownerId === ownerId); },
+    async listAll() { return [...rows.values()]; },
   };
 }
 
