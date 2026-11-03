@@ -89,11 +89,13 @@ Les routes cron attendent `Authorization: Bearer <CRON_SECRET>`. Vérifier que l
 
 GitHub espace ses lancements planifiés (4 à 7 heures constatées). Le rythme de 5 minutes est donc porté par la tâche pg_cron `tutelliv-operations-relay` de `tutelliv-preproduction` : elle appelle `/api/cron/operations` avec `pg_net` (fire-and-forget, 70 s au plus), l'URL `ops03b_app_url` et le secret `relay_cron_secret` du coffre Supabase, égal au `CRON_SECRET` du déploiement. Tant que ce secret manque, la tâche ne fait rien. Il est à remettre à jour si `CRON_SECRET` change. Réponses : `net._http_response` (conservées peu de temps). Le workflow GitHub ci-dessous reste un filet de secours.
 
-Pour copier le secret sans l'afficher (à lancer par le propriétaire, depuis la racine du dépôt) :
+Pour copier le secret sans l'afficher (depuis la racine du dépôt) :
 
 ```bash
-F=$(mktemp) && vercel env pull "$F" --environment=preview --git-branch=preproduction --yes && npx dotenv -e "$F" -- node scripts/ops03b/store-relay-secret.mjs; rm -f "$F"
+sh scripts/ops03b/copy-relay-secret.sh
 ```
+
+La source est `.env.preproduction.local` : `vercel env pull` ne rend pas les variables « sensibles » de Vercel (il écrit `[SENSITIVE]`), l'ancienne commande ne pouvait donc pas fonctionner. Si `CRON_SECRET` change sur Vercel, mettre la même valeur dans ce fichier puis relancer la commande. Fait le 3 novembre 2026.
 
 Le script refuse toute autre base que la préproduction et affiche seulement un bilan, qui doit contenir `"stored":true`.
 
