@@ -202,6 +202,27 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     const second = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-b`, fromAddress: "e2e-spam@tutelliv.fr", subject: "E2E à classer", bodyText: "texte", status: "ANALYSIS_FAILED", analysisError: "not_configured" } });
     emailIds.push(second.id);
 
+    // MAIL-PONT, étape 2 : un membre de l'équipe transfère à la main l'e-mail d'un client existant.
+    const staff = await prisma.user.findFirstOrThrow({ where: { companyId, role: { systemRole: { not: "CLIENT" } } }, select: { email: true } });
+    const client = await prisma.user.findFirstOrThrow({ where: { companyId, status: "ACTIVE", role: { systemRole: "CLIENT" } }, select: { id: true, email: true } });
+    const forwardedId = `${emailId}-fwd`;
+    const forwardedFetcher = (async () => new Response(JSON.stringify({
+      from: `Dispatch <${staff.email}>`, subject: "TR: E2E transfert",
+      text: `Pour toi\n\n---------- Forwarded message ---------\nDe : Client E2E <${client.email.toUpperCase()}>\nDate : lundi\n\n2 plis de Rivoli à la Défense`,
+    }), { status: 200 })) as typeof fetch;
+    expect(await ingestInboundEmail({ type: "email.received", data: { email_id: forwardedId, to: [`${token}@commandes.e2e.test`] } }, { env, fetcher: forwardedFetcher })).toBe("stored");
+    const forwarded = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { providerEmailId: forwardedId } });
+    emailIds.push(forwarded.id);
+    expect(forwarded.fromAddress).toBe(staff.email.toLowerCase());
+    expect(forwarded.originalSender, "client lu dans le bloc cité").toBe(client.email.toLowerCase());
+    await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: forwarded.id } })).status, { timeout: 30_000 }).not.toBe("RECEIVED");
+    await prisma.inboundOrderEmail.updateMany({ where: { id: forwarded.id }, data: { status: "RECEIVED" } });
+    let analyzedSender: unknown = null;
+    await analyzeInboundEmailJob({ inboundEmailId: forwarded.id }, { analyze: async (input) => { analyzedSender = input.sender; return { status: "ok", draft: buildOrderIntakeDraft(EXTRACTION, forwarded.bodyText, new Date()) }; } });
+    expect(analyzedSender, "rapprochement fait sur le client, pas sur l'équipe").toBe(client.email.toLowerCase());
+    // Un expéditeur extérieur qui cite quelqu'un d'autre n'est jamais remplacé.
+    expect(stored.originalSender).toBeNull();
+
     // MAIL-PONT, étape 1 : un e-mail ordinaire et un e-mail fait de pièces jointes partent dans « À trier ».
     const thanks = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-c`, fromAddress: "e2e-merci@tutelliv.fr", subject: "E2E merci pour hier", bodyText: "Merci pour la livraison d'hier, tout est parfait.", status: "RECEIVED" } });
     emailIds.push(thanks.id);
@@ -232,6 +253,12 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     const dismissed = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: second.id } });
     expect(dismissed.status).toBe("DISMISSED");
     expect(dismissed.bodyText, "contenu effacé dès le classement").toBe("");
+
+    const forwardedItem = page.getByRole("listitem").filter({ hasText: "E2E transfert" });
+    await expect(forwardedItem.getByText(`${client.email.toLowerCase()} (lu dans l'e-mail transféré par ${staff.email.toLowerCase()})`, { exact: false })).toBeVisible();
+    await forwardedItem.getByRole("button", { name: "Classer sans commande" }).click();
+    await expect(forwardedItem).toHaveCount(0);
+    expect((await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: forwarded.id } })).originalSender, "effacé au classement").toBeNull();
 
     // « À trier » : replié, sans « Brouillon prêt », raison affichée, « Ignorer » efface le contenu.
     const toSort = page.getByTestId("inbound-to-sort");

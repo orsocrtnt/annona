@@ -11,6 +11,8 @@ export interface OrderIntakeStatus {
 export interface InboundEmailItem {
   id: string;
   fromAddress: string;
+  /** Client lu dans un e-mail transféré à la main par l'équipe ; null sinon. */
+  originalSender: string | null;
   subject: string;
   bodyText: string;
   attachmentCount: number;

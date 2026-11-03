@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   dbSafeText,
+  forwardedSender,
   htmlToText,
   inboundAnalysisUpdate,
   inboundSkipReason,
@@ -133,4 +134,21 @@ test("MAIL-PONT : un e-mail sans texte n'est pas envoyé au modèle", () => {
   assert.equal(inboundSkipReason({ subject: "", bodyText: "", attachmentCount: 0 }), "empty");
   assert.equal(inboundSkipReason({ subject: "3 colis rue de Rivoli demain", bodyText: "", attachmentCount: 0 }), null, "objet seul : analysé");
   assert.equal(inboundSkipReason({ subject: "", bodyText: "2 plis", attachmentCount: 1 }), null, "texte et pièce jointe : analysé");
+});
+
+test("MAIL-PONT : client retrouvé dans un e-mail transféré à la main (Gmail, Outlook, Apple Mail)", () => {
+  const team = "dispatch@transport.test";
+  const gmail = "Voir ci-dessous\n\n---------- Forwarded message ---------\nFrom: Sophie Martin <Sophie.Martin@client.test>\nDate: Mon, 3 Nov 2026\nSubject: Livraison\n\n2 palettes demain";
+  assert.equal(forwardedSender(gmail, team), "sophie.martin@client.test");
+  const outlook = "________________________________\nDe : Cabinet Martin <compta@cabinet-martin.test>\nEnvoyé : lundi 3 novembre 2026 09:12\nÀ : commandes@transport.test";
+  assert.equal(forwardedSender(outlook, team), "compta@cabinet-martin.test");
+  const apple = "Début du message réexpédité :\n\n> De: achats@boutique.test\n> Objet: course";
+  assert.equal(forwardedSender(apple, team), "achats@boutique.test");
+  const french = "-------- Message transféré --------\nExpéditeur : Paul <paul@client.test>";
+  assert.equal(forwardedSender(french, team), "paul@client.test");
+  assert.equal(forwardedSender("De : Dispatch <dispatch@transport.test>", team), null, "l'équipe elle-même");
+  assert.equal(forwardedSender("2 plis de Rivoli à la Défense", team), null, "aucun bloc cité");
+  assert.equal(forwardedSender("De : Sophie Martin", team), null, "nom sans adresse");
+  const twice = "From: Dernier <dernier@client.test>\n...\nFrom: Ancien <ancien@client.test>";
+  assert.equal(forwardedSender(twice, team), "dernier@client.test", "premier bloc cité = dernier transfert");
 });

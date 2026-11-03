@@ -36,6 +36,22 @@ export function inboundAnalysisUpdate(result: Awaited<ReturnType<typeof analyzeO
     : { status: "ANALYZED" as const, draft, analysisError: null };
 }
 
+const FORWARD_HEADER = /^[\s>*]*(?:De|From|Expéditeur|Envoyé par)\s*:\s*(.+)$/im;
+const EMAIL_IN_TEXT = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+
+/**
+ * MAIL-PONT : adresse de l'expéditeur cité dans un e-mail transféré à la main (Gmail « From: », Outlook
+ * « De : », Apple Mail « De: »). Seul le premier bloc cité compte : c'est le dernier transfert, donc le
+ * client. Aucune adresse lisible ou adresse identique à celle qui transfère : null.
+ */
+export function forwardedSender(body: string, forwarder: string): string | null {
+  const line = FORWARD_HEADER.exec(body)?.[1];
+  if (!line) return null;
+  const address = (line.match(/<([^>]+)>/)?.[1] ?? line.match(EMAIL_IN_TEXT)?.[0] ?? "").trim().toLowerCase();
+  if (!EMAIL_IN_TEXT.test(address) || address === forwarder) return null;
+  return dbSafeText(address, 200);
+}
+
 /** Vérification Svix (format des webhooks Resend) sur le corps brut, à temps constant. */
 export function verifyInboundWebhook(
   body: string,
@@ -154,6 +170,14 @@ export async function ingestInboundEmail(
     ? email.text.trim()
     : typeof email.html === "string" ? htmlToText(email.html) : "";
 
+  const from = senderAddress(typeof email.from === "string" ? email.from : "");
+  // Transfert à la main par l'équipe (un renvoi automatique garde, lui, le client en expéditeur) :
+  // on cherche le client dans le bloc cité. Jamais pour un expéditeur extérieur, qui pourrait citer n'importe qui.
+  const fromTeam = from && await prisma.user.count({
+    where: { companyId, email: { equals: from, mode: "insensitive" }, role: { systemRole: { not: "CLIENT" } } },
+  }) > 0;
+  const originalSender = fromTeam ? forwardedSender(body, from) : null;
+
   const jobId = await prisma.$transaction(async (tx) => {
     // Recompte sous verrou par entreprise : des e-mails simultanés ne dépassent plus le plafond.
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`tutelliv:inbound-email:${companyId}`}))`;
@@ -162,7 +186,8 @@ export async function ingestInboundEmail(
       data: [{
         companyId,
         providerEmailId: emailId,
-        fromAddress: senderAddress(typeof email.from === "string" ? email.from : ""),
+        fromAddress: from,
+        originalSender,
         subject: dbSafeText(typeof email.subject === "string" ? email.subject : "", 300),
         bodyText: dbSafeText(body, ORDER_INTAKE_MAX_TEXT_LENGTH),
         attachmentCount: Array.isArray(email.attachments) ? email.attachments.length : 0,
@@ -211,7 +236,7 @@ export async function analyzeInboundEmailJob(
 
   const text = [email.subject ? `Objet : ${email.subject}` : "", email.bodyText].filter(Boolean).join("\n\n").slice(0, ORDER_INTAKE_MAX_TEXT_LENGTH);
   const analyze = deps.analyze ?? analyzeOrderMessage;
-  const result = await analyze({ companyId: email.companyId, text, sender: email.fromAddress });
+  const result = await analyze({ companyId: email.companyId, text, sender: email.originalSender ?? email.fromAddress });
   if (result.status === "rate_limited") {
     const now = deps.now ?? new Date();
     throw deferredJobError("INBOUND_ANALYSIS_QUOTA", new Date(now.getTime() + result.retryAfterSeconds * 1000));
@@ -224,7 +249,7 @@ export async function listInboundEmails(companyId: string) {
     where: { companyId, status: { in: ["RECEIVED", "ANALYZED", "ANALYSIS_FAILED", "NOT_ORDER"] } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 50,
-    select: { id: true, fromAddress: true, subject: true, bodyText: true, attachmentCount: true, status: true, draft: true, analysisError: true, createdAt: true },
+    select: { id: true, fromAddress: true, originalSender: true, subject: true, bodyText: true, attachmentCount: true, status: true, draft: true, analysisError: true, createdAt: true },
   });
   return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }));
 }
@@ -236,7 +261,7 @@ export async function closeInboundEmail(companyId: string, id: string, input: { 
     : null;
   const updated = await prisma.inboundOrderEmail.updateMany({
     where: { id, companyId },
-    data: { status: input.status, orderId, bodyText: "", draft: Prisma.DbNull, subject: "", analysisError: null },
+    data: { status: input.status, orderId, bodyText: "", draft: Prisma.DbNull, subject: "", analysisError: null, originalSender: null },
   });
   return updated.count > 0;
 }

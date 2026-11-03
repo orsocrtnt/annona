@@ -113,7 +113,9 @@ function EmailMeta({ email }: { email: InboundEmailItem }) {
   return (
     <>
       <p className="mt-1 break-all text-xs text-muted-foreground">
-        {email.fromAddress || "Expéditeur inconnu"} · {dateTime.format(new Date(email.createdAt))}
+        {email.originalSender
+          ? <>{email.originalSender} (lu dans l&apos;e-mail transféré par {email.fromAddress})</>
+          : email.fromAddress || "Expéditeur inconnu"} · {dateTime.format(new Date(email.createdAt))}
       </p>
       {email.attachmentCount > 0 && (
         <p className="mt-1 flex items-center gap-1 text-xs text-warning">

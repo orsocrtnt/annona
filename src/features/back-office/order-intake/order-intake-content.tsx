@@ -113,7 +113,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   const openEmail = (email: InboundEmailItem) => {
     setActiveEmailId(email.id);
     setText([email.subject ? `Objet : ${email.subject}` : "", email.bodyText].filter(Boolean).join("\n\n").slice(0, maxLength));
-    setSender(email.fromAddress);
+    setSender(email.originalSender ?? email.fromAddress);
     analyze.reset();
     setResult((previous) => email.draft
       ? {

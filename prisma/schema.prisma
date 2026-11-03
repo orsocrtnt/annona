@@ -1374,6 +1374,8 @@ model InboundOrderEmail {
   company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   providerEmailId String             @unique @map("provider_email_id")
   fromAddress     String             @map("from_address")
+  /// MAIL-PONT : client d'origine lu dans un e-mail transféré à la main par l'équipe (`De :` / `From:`).
+  originalSender  String?            @map("original_sender")
   subject         String             @default("")
   bodyText        String             @default("") @map("body_text")
   attachmentCount Int                @default(0) @map("attachment_count")
