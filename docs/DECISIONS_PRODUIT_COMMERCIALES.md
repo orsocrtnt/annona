@@ -184,6 +184,16 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 | Navigateurs | CROSS-BROWSER annulée. | — |
 | E-mails réels | Mot de passe oublié, invitation, confirmation de compte et e-mails métier reçus dans la boîte de test le 29 octobre 2026. | EMAIL, SEC-05. |
 
+## C14 — Décisions du propriétaire du 2 novembre 2026 (commandes reçues par e-mail)
+
+| Sujet | Décision | Suite |
+| --- | --- | --- |
+| Pont avec la messagerie | TutelLiv se connecte directement à la boîte de l'entreprise (Gmail et Outlook), au lieu du transfert vers une adresse TutelLiv. | MAIL-PONT. Google impose une vérification de l'application et un audit de sécurité (CASA, renouvelé chaque année) pour lire les e-mails ; avant cela, 100 utilisateurs au plus. Microsoft : application pour plusieurs organisations, vérification de l'éditeur, accord possible de l'administrateur du client. |
+| Tri | TutelLiv distingue seul un e-mail ordinaire d'un e-mail de commande ; seuls les e-mails de commande deviennent des brouillons. | MAIL-PONT. |
+| Validation | Toujours humaine : aucune commande n'est créée sans le clic du dispatcher (confirme MAIL-COMMANDE du 30 octobre). | — |
+| Client inconnu | Créé à la validation, sous forme de fiche client sans accès à l'espace client ; le dispatcher complète à ce moment les informations manquantes. | MAIL-PONT. |
+| Réponse au client | Une seule réponse automatique, après la validation : commande confirmée, date et lien de suivi. | MAIL-PONT. |
+
 ## Éléments encore non confirmés
 
 - identité juridique, SIREN, TVA et adresse de l'éditeur ;
