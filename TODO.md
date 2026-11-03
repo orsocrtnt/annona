@@ -20,6 +20,7 @@
 - GROWTH-1 — Construire le site commercial relié au parcours autonome (après la vérification de conformité)
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
 - MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
+- MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (écrire la spécification, puis Toi la relire)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -40,12 +41,11 @@
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
-- MAIL-PONT — Brancher TutelLiv directement sur la boîte e-mail de l'entreprise (valider la conception proposée, puis Claude écrit la spécification)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 2 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 3 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
@@ -62,7 +62,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- MAIL-PONT : valider la conception proposée le 2 novembre ; créer les comptes développeur Google Cloud et Microsoft (Azure) quand la spécification le demandera.
+- MAIL-PONT : relire la spécification quand Claude l'aura écrite (boîte dédiée aux commandes, décidée le 3 novembre ; plus de compte Google Cloud ni Azure à créer pour l'instant).
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
@@ -70,7 +70,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
 - MAIL-ECARTS : corriger les quatre défauts restants des e-mails reçus, d'abord l'e-mail refusé en boucle s'il contient un caractère invalide.
-- MAIL-PONT : écrire la spécification de la connexion Gmail et Outlook, une fois la conception validée.
+- MAIL-PONT : écrire la spécification de la boîte de commandes dédiée (renvoi automatique, tri, nouveau client à la validation, confirmation au client).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
@@ -316,13 +316,13 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   Source / dépendance / blocage : vérification des exigences applicables pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
 
-- [ ] **MAIL-PONT — Brancher TutelLiv directement sur la boîte e-mail de l'entreprise.** Décisions du propriétaire du 2 novembre 2026 (C14) : connexion directe Gmail et Outlook, tri automatique entre e-mails ordinaires et e-mails de commande, validation toujours humaine, client inconnu créé à la validation (fiche sans accès, informations manquantes complétées par le dispatcher), une réponse automatique au client après validation avec le lien de suivi.
+- [ ] **MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv.** Décisions du propriétaire (C14) : le 2 novembre, tri automatique entre e-mails ordinaires et e-mails de commande, validation toujours humaine, client inconnu créé à la validation (fiche sans accès, informations manquantes complétées par le dispatcher), une réponse automatique au client après validation avec le lien de suivi. Révision du 3 novembre : parcours principal = boîte dédiée aux commandes, renvoyée automatiquement vers l'adresse TutelLiv (aucune connexion Gmail/Outlook) ; la connexion directe Gmail/Outlook passe en option, plus tard.
 
-  **Qui : Toi — valider la conception proposée, puis Claude écrit la spécification.**
+  **Qui : Claude — écrire la spécification, puis Toi la relire.**
 
-  Terminé quand : une entreprise connecte sa boîte Gmail ou Outlook ; ses e-mails de commande apparaissent en brouillon et ses e-mails ordinaires sont ignorés sans être conservés ; la validation crée la commande et, si besoin, la fiche du client ; le client reçoit la confirmation ; tests, essai réel sur une boîte de test de chaque fournisseur, `npm run check` et clic réel navigateur.
+  Terminé quand : une boîte de commandes Gmail et une boîte Outlook renvoient automatiquement vers TutelLiv ; le code de confirmation de Gmail est visible dans TutelLiv ; le client d'origine est reconnu ; les e-mails de commande apparaissent en brouillon et les autres sont mis « à trier » ou ignorés sans être conservés ; la validation crée la commande et, si besoin, la fiche du client ; le client reçoit la confirmation (envoyée par TutelLiv au nom de l'entreprise, « répondre à » vers sa boîte) ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
 
-  À prévoir : comptes développeur Google Cloud et Microsoft (Azure) au nom de TutelLiv ; vérification Google et audit CASA avant de dépasser 100 utilisateurs ; changement de schéma (connexion à la boîte, fiche client sans accès) ; qualification juridique plus lourde, puisque TutelLiv lirait toute la boîte (F03, F10, analyse d'impact). Le transfert vers une adresse TutelLiv (MAIL-COMMANDE) reste en place en attendant.
+  À prévoir : changement de schéma (fiche client sans accès, statut « à trier ») ; guide pour activer le renvoi (Gmail, Outlook, OVH), dont l'accord de l'administrateur Outlook professionnel pour les renvois externes. Option ultérieure, hors de cette tâche : connexion directe Gmail/Outlook (comptes Google Cloud et Azure, vérification Google et audit CASA, juridique plus lourd).
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -330,7 +330,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
   **Qui : Claude.**
 
-  Terminé quand : les défauts 2, 4, 5 et 6 sont corrigés et testés. Les défauts 1 et 3 sont repris par MAIL-PONT (décision C14 : connexion directe à la boîte, l'expéditeur devient le vrai client, et tri des e-mails ordinaires).
+  Terminé quand : les défauts 2, 4, 5 et 6 sont corrigés et testés. Les défauts 1 et 3 sont repris par MAIL-PONT (décision C14 : renvoi automatique d'une boîte dédiée, qui garde le vrai expéditeur, et tri des e-mails ordinaires).
 
   1. **Client jamais retrouvé sur un e-mail transféré.** Le rapprochement ne regarde que l'expéditeur (`matchCustomerBySender`), qui est alors l'entreprise elle-même. Essai : e-mail transféré citant l'adresse d'un client existant, adresse bien lue par l'analyse, client non présélectionné. C'est pourtant l'usage indiqué à l'écran (« Transférez-y vos e-mails »). Le dispatcher doit choisir le client à la main.
   2. **Plusieurs livraisons dans un e-mail : quantités mélangées.** Essai : « 1 palette » et « 3 colis ». Quantité non retenue, champ prérempli à 1 avec l'avis « Absente du message », et chaque commande porte l'article « 1 palette (livraison 1), 3 colis (livraison 2) ». Sans correction du dispatcher, la seconde partirait avec une quantité de 1 au lieu de 3.

@@ -188,11 +188,11 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 
 | Sujet | Décision | Suite |
 | --- | --- | --- |
-| Pont avec la messagerie | TutelLiv se connecte directement à la boîte de l'entreprise (Gmail et Outlook), au lieu du transfert vers une adresse TutelLiv. | MAIL-PONT. Google impose une vérification de l'application et un audit de sécurité (CASA, renouvelé chaque année) pour lire les e-mails ; avant cela, 100 utilisateurs au plus. Microsoft : application pour plusieurs organisations, vérification de l'éditeur, accord possible de l'administrateur du client. |
+| Pont avec la messagerie | **Révisé le 3 novembre 2026 :** parcours principal = une boîte dédiée aux commandes (par exemple commandes@entreprise.fr), renvoyée automatiquement vers l'adresse TutelLiv de l'entreprise. Le renvoi automatique garde l'expéditeur d'origine, donc le vrai client. La connexion directe à Gmail et Outlook (décidée le 2 novembre) passe en option, plus tard, pour les entreprises qui refusent une boîte dédiée. | MAIL-PONT. Évite la vérification Google et l'audit CASA (lecture des e-mails, renouvelé chaque année, 100 utilisateurs au plus avant), et la lecture de toute la boîte. À prévoir : afficher le code de confirmation que Gmail envoie à l'activation d'un renvoi ; Outlook professionnel peut bloquer les renvois externes (accord de l'administrateur du client). |
 | Tri | TutelLiv distingue seul un e-mail ordinaire d'un e-mail de commande ; seuls les e-mails de commande deviennent des brouillons. | MAIL-PONT. |
 | Validation | Toujours humaine : aucune commande n'est créée sans le clic du dispatcher (confirme MAIL-COMMANDE du 30 octobre). | — |
 | Client inconnu | Créé à la validation, sous forme de fiche client sans accès à l'espace client ; le dispatcher complète à ce moment les informations manquantes. | MAIL-PONT. |
-| Réponse au client | Une seule réponse automatique, après la validation : commande confirmée, date et lien de suivi. | MAIL-PONT. |
+| Réponse au client | Une seule réponse automatique, après la validation : commande confirmée, date et lien de suivi. Avec la boîte dédiée, elle part de TutelLiv au nom de l'entreprise, « répondre à » vers la boîte de commandes. | MAIL-PONT. |
 
 ## Éléments encore non confirmés
 
