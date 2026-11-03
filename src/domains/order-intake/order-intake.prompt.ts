@@ -15,7 +15,7 @@ Règles d'extraction :
 - Un nom de rue ou de quartier seul (« Rivoli », « La Défense ») reste dans address avec confidence low ; ne complète ni le numéro ni le code postal.
 - deadline : mode vaut before (« avant 15h »), at (« à 9h », « demain 9h »), after ou between ; time et endTime au format HH:MM sur 24 heures. Pour un jour relatif, renseigne dayOffset (0 aujourd'hui, 1 demain) et laisse date à null ; pour une date explicite ou un jour de semaine, renseigne date au format AAAA-MM-JJ d'après la date de référence fournie. Ne convertis aucun fuseau horaire.
 - urgency vaut urgent seulement si le message exprime l'urgence (« urgent », « au plus vite », « ASAP »).
-- packages : nature des colis (plis, cartons, colis…) et quantité entière.
+- packages : nature des colis (plis, cartons, colis…) et quantité entière communes à toutes les livraisons. Si le message donne une nature ou une quantité propre à une livraison (« 1 palette ici, 3 colis là »), renseigne-la dans deliveries[].packages de cette livraison et laisse packages à null ; sinon laisse deliveries[].packages à null. Ne regroupe jamais les quantités de plusieurs livraisons dans un seul champ.
 - customer : nom de l'entreprise ou de la personne qui commande, et son e-mail ou téléphone s'ils figurent dans le message.
 - instructions : consignes utiles à la course qui ne relèvent d'aucun autre champ.`;
 

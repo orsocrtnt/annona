@@ -31,6 +31,12 @@ const stop = (parts: Partial<Record<"address" | "city" | "postalCode" | "contact
   phone: parts.phone ?? none(),
   instructions: parts.instructions ?? none(),
 });
+type Quantity = { value: number | null; confidence: "high" | "medium" | "low"; source: string | null };
+const noQuantity = (): Quantity => ({ value: null, confidence: "low", source: null });
+const delivery = (
+  parts: Parameters<typeof stop>[0] = {},
+  packages: { description?: Field; quantity?: Quantity } = {}
+) => ({ ...stop(parts), packages: { description: packages.description ?? none(), quantity: packages.quantity ?? noQuantity() } });
 function extraction(overrides: Partial<OrderIntakeExtraction> = {}): OrderIntakeExtraction {
   return {
     pickup: stop(),
@@ -62,7 +68,7 @@ const EMAIL_EXTRACTION = extraction({
     address: f("12 rue de Rivoli"), city: f("Paris"), postalCode: f("75001"),
     contactName: f("Mme Leroy"), phone: f("01 42 00 00 01"),
   }),
-  deliveries: [stop({
+  deliveries: [delivery({
     address: f("5 place de la Défense"), city: f("Courbevoie"), postalCode: f("92400"),
     contactName: f("M. Durand"), phone: f("06 12 34 56 78"),
   })],
@@ -74,7 +80,7 @@ const EMAIL_EXTRACTION = extraction({
 
 const SMS_EXTRACTION = extraction({
   pickup: stop({ address: f("Rivoli", "Rivoli", "low") }),
-  deliveries: [stop({ address: f("La Défense", "La Défense", "low"), contactName: f("M. Durand") })],
+  deliveries: [delivery({ address: f("La Défense", "La Défense", "low"), contactName: f("M. Durand") })],
   deadline: { mode: "before", dayOffset: 0, date: null, time: "15:00", endTime: null, confidence: "high", source: "avant 15h" },
   urgency: { value: "urgent", confidence: "high", source: "urgent" },
   packages: { description: f("plis"), quantity: { value: 2, confidence: "high", source: "2 plis" } },
@@ -82,7 +88,7 @@ const SMS_EXTRACTION = extraction({
 
 const WHATSAPP_EXTRACTION = extraction({
   pickup: stop({ address: f("8 bd Haussmann"), city: f("Paris"), postalCode: f("75009") }),
-  deliveries: [stop({ address: f("3 av. Foch"), city: f("Paris"), postalCode: f("75116") })],
+  deliveries: [delivery({ address: f("3 av. Foch"), city: f("Paris"), postalCode: f("75116") })],
   deadline: { mode: "at", dayOffset: 1, date: null, time: "09:00", endTime: null, confidence: "high", source: "demain 9h" },
   packages: { description: f("colis"), quantity: { value: 1, confidence: "high", source: "1 colis" } },
 });
@@ -90,8 +96,8 @@ const WHATSAPP_EXTRACTION = extraction({
 const MULTI_EXTRACTION = extraction({
   pickup: stop({ address: f("10 rue du Bac"), city: f("Paris"), postalCode: f("75007") }),
   deliveries: [
-    stop({ address: f("1 rue de la Paix"), city: f("Paris"), postalCode: f("75002") }),
-    stop({ address: f("20 avenue Kléber"), city: f("Paris"), postalCode: f("75116") }),
+    delivery({ address: f("1 rue de la Paix"), city: f("Paris"), postalCode: f("75002") }),
+    delivery({ address: f("20 avenue Kléber"), city: f("Paris"), postalCode: f("75116") }),
   ],
   deadline: { mode: "before", dayOffset: 0, date: null, time: "18:00", endTime: null, confidence: "high", source: "avant 18h" },
   packages: { description: f("pli"), quantity: { value: 1, confidence: "high", source: "1 pli" } },
@@ -290,6 +296,44 @@ test("INTAKE brouillon : WhatsApp avec émojis et plusieurs livraisons", () => {
   assert.deepEqual(multi.missingFields, []);
 });
 
+test("INTAKE brouillon : quantités propres à chaque livraison, jamais regroupées ni remplacées par 1", () => {
+  const text = "Enlèvement 10 rue du Bac 75007 Paris. Livrer 1 palette au 1 rue de la Paix 75002 Paris et 3 colis au 20 avenue Kléber 75116 Paris demain.";
+  const split = extraction({
+    pickup: stop({ address: f("10 rue du Bac"), city: f("Paris"), postalCode: f("75007") }),
+    deliveries: [
+      delivery({ address: f("1 rue de la Paix"), city: f("Paris"), postalCode: f("75002") },
+        { description: f("palette"), quantity: { value: 1, confidence: "high", source: "1 palette" } }),
+      delivery({ address: f("20 avenue Kléber"), city: f("Paris"), postalCode: f("75116") },
+        { description: f("colis"), quantity: { value: 3, confidence: "high", source: "3 colis" } }),
+    ],
+    deadline: { mode: "at", dayOffset: 1, date: null, time: null, endTime: null, confidence: "high", source: "demain" },
+  });
+  const draft = buildOrderIntakeDraft(split, text, NOW);
+  assert.deepEqual(draft.missingFields, []);
+  const forms = [0, 1].map((index) => draftToFormValues(draft, index));
+  assert.deepEqual(forms.map((form) => [form.packageName, form.quantity]), [["palette", 1], ["colis", 3]]);
+  const second = buildOrderInputFromForm(forms[1]!);
+  assert.deepEqual(second.pickupStops?.[0]?.items, [{ name: "colis", quantity: 3 }]);
+
+  // Seconde livraison sans quantité, rien de commun : signalée sur cette livraison seulement.
+  const partial = buildOrderIntakeDraft({ ...split, deliveries: [split.deliveries[0]!, delivery(split.deliveries[1])] }, text, NOW);
+  assert.deepEqual(partial.missingFields, ["deliveries.1.quantity"]);
+
+  // Quantité inventée pour une livraison : extrait retiré, valeur à vérifier.
+  const invented = buildOrderIntakeDraft({
+    ...split,
+    deliveries: [split.deliveries[0]!, delivery(split.deliveries[1], { quantity: { value: 5, confidence: "high", source: "5 colis" } })],
+  }, text, NOW);
+  assert.ok(invented.uncertainFields.includes("deliveries.1.quantity"));
+});
+
+test("INTAKE brouillon : colis communs repris par chaque livraison, brouillon gardé sans colis propres lisible", () => {
+  const multi = buildOrderIntakeDraft(MULTI_EXTRACTION, FIXTURES.multi, NOW);
+  assert.deepEqual([0, 1].map((index) => draftToFormValues(multi, index).quantity), [1, 1]);
+  const legacy = { ...multi, deliveries: multi.deliveries.map(({ packages: _packages, ...stopOnly }) => stopOnly) };
+  assert.deepEqual([0, 1].map((index) => draftToFormValues(legacy, index).packageName), ["pli", "pli"]);
+});
+
 test("INTAKE brouillon : message vide d'informations, tout ce qui manque est demandé", () => {
   const draft = buildOrderIntakeDraft(extraction(), "Bonjour, rappelez-moi.", NOW);
   for (const path of ["pickup.address", "pickup.city", "pickup.postalCode", "deliveries", "deadline", "packages.quantity"]) {
@@ -315,6 +359,10 @@ test("INTAKE téléphone et expéditeur : formats français normalisés", () => 
   assert.deepEqual(parseSender(" Sophie.Leroy@Cabinet-Martin.example "), { email: "sophie.leroy@cabinet-martin.example", phone: null });
   assert.deepEqual(parseSender("+33 6 12 34 56 78"), { email: null, phone: "0612345678" });
   assert.deepEqual(parseSender(undefined), { email: null, phone: null });
+  // Forme copiée d'une messagerie, nom accentué compris.
+  assert.deepEqual(parseSender("Sophie Leroy <Sophie.Leroy@Cabinet-Martin.example>"), { email: "sophie.leroy@cabinet-martin.example", phone: null });
+  assert.deepEqual(parseSender('"Élodie, Cabinet" <e.b@cabinet.example> '), { email: "e.b@cabinet.example", phone: null });
+  assert.deepEqual(parseSender("Sophie <pas une adresse>"), { email: null, phone: null });
 });
 
 // --- Prompt : le message reste une donnée ------------------------------------------------------

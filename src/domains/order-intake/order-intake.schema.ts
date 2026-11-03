@@ -54,6 +54,13 @@ const stopSchema = z
   })
   .strict();
 
+const packagesSchema = z
+  .object({ description: textFieldSchema, quantity: quantityFieldSchema })
+  .strict();
+
+/** Une livraison porte ses propres colis quand le message les distingue (« 1 palette ici, 3 colis là »). */
+const deliverySchema = stopSchema.extend({ packages: packagesSchema }).strict();
+
 /**
  * Le modèle décrit l'échéance sans la calculer : le code la résout dans le fuseau
  * Europe/Paris (order-intake.deadline.ts), ce qui la rend déterministe et testable.
@@ -77,7 +84,7 @@ const deadlineSchema = z
 export const orderIntakeExtractionSchema = z
   .object({
     pickup: stopSchema,
-    deliveries: z.array(stopSchema).max(ORDER_INTAKE_MAX_DELIVERIES),
+    deliveries: z.array(deliverySchema).max(ORDER_INTAKE_MAX_DELIVERIES),
     deadline: deadlineSchema,
     urgency: z
       .object({
@@ -86,9 +93,7 @@ export const orderIntakeExtractionSchema = z
         source: sourceSchema,
       })
       .strict(),
-    packages: z
-      .object({ description: textFieldSchema, quantity: quantityFieldSchema })
-      .strict(),
+    packages: packagesSchema,
     instructions: textFieldSchema,
     customer: z
       .object({ name: textFieldSchema, email: textFieldSchema, phone: textFieldSchema })
@@ -100,4 +105,6 @@ export type OrderIntakeExtraction = z.infer<typeof orderIntakeExtractionSchema>;
 export type IntakeTextField = z.infer<typeof textFieldSchema>;
 export type IntakeQuantityField = z.infer<typeof quantityFieldSchema>;
 export type IntakeStop = z.infer<typeof stopSchema>;
+export type IntakePackages = z.infer<typeof packagesSchema>;
+export type IntakeDeliveryExtraction = z.infer<typeof deliverySchema>;
 export type IntakeDeadlineExtraction = z.infer<typeof deadlineSchema>;

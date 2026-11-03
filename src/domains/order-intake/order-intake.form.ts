@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { createClientOrderSchema } from "@/lib/validations/order";
-import type { OrderIntakeDraft } from "./order-intake.draft";
+import { deliveryPackages, type OrderIntakeDraft } from "./order-intake.draft";
 import type { IntakeStop } from "./order-intake.schema";
 
 /** Formulaire éditable du brouillon : une livraison à la fois, comme l'écran de création. */
@@ -48,6 +48,7 @@ function stopValues(stop: IntakeStop | undefined): IntakeFormStop {
 
 export function draftToFormValues(draft: OrderIntakeDraft, deliveryIndex: number): IntakeFormValues {
   const deadline = draft.deadline;
+  const packages = deliveryPackages(draft, deliveryIndex);
   return {
     deliveryCategory: "COURIER",
     pickup: stopValues(draft.pickup),
@@ -57,8 +58,8 @@ export function draftToFormValues(draft: OrderIntakeDraft, deliveryIndex: number
     weightKg: "",
     deadlineLabel: deadline.time ? (deadline.label ?? "") : "",
     urgent: draft.urgency.value === "urgent",
-    packageName: draft.packages.description.value ?? "",
-    quantity: draft.packages.quantity.value ?? 1,
+    packageName: packages.description.value ?? "",
+    quantity: packages.quantity.value ?? 1,
     instructions: draft.instructions.value ?? "",
   };
 }

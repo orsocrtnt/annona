@@ -13,7 +13,7 @@ const stop = (address: string, city: string, postalCode: string) => ({
 });
 const EXTRACTION: OrderIntakeExtraction = {
   pickup: stop("12 rue de Rivoli", "Paris", "75001"),
-  deliveries: [stop("5 place de la Défense", "Courbevoie", "92400")],
+  deliveries: [{ ...stop("5 place de la Défense", "Courbevoie", "92400"), packages: { description: none(), quantity: { value: null, confidence: "low", source: null } } }],
   deadline: { mode: "before", dayOffset: 1, date: null, time: "15:00", endTime: null, confidence: "high", source: "avant 15h" },
   urgency: { value: "urgent", confidence: "high", source: "urgent" },
   packages: { description: field("plis"), quantity: { value: 2, confidence: "high", source: "2 plis" } },

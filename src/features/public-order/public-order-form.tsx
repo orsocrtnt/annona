@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,7 +107,6 @@ export function PublicOrderForm({ token, slots }: { token: string; slots: Compan
   if (created) {
     return (
       <Alert variant="success" className="mt-6">
-        <CheckCircle2 className="h-4 w-4" aria-hidden />
         <AlertTitle>Commande envoyée{created.reference ? ` : ${created.reference}` : ""}</AlertTitle>
         <AlertDescription>
           Le transporteur va la prendre en charge. Le lien de suivi part aussi à {email}.

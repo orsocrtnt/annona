@@ -10,7 +10,6 @@
 
 **À faire par Claude**
 
-- MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus
 - V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
 - DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
 - PROD-04 — Définir les mesures de valeur (après les pilotes)
@@ -21,6 +20,7 @@
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
 - MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
 - MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (écrire la spécification, puis Toi la relire)
+- MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus (après ton accord pour pousser sur `preproduction`)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -69,7 +69,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : file hors ligne du livreur sans expiration, analyse d'impact type, analyse de la décision automatisée du Dispatch intelligent, mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
-- MAIL-ECARTS : corriger les quatre défauts restants des e-mails reçus, d'abord l'e-mail refusé en boucle s'il contient un caractère invalide.
+- MAIL-ECARTS : les quatre défauts sont corrigés et testés en local (3 novembre) ; reste à pousser sur `preproduction` et à renvoyer l'e-mail « 1 palette / 3 colis » sur `tutelliv.fr` pour voir le vrai modèle.
 - MAIL-PONT : écrire la spécification de la boîte de commandes dédiée (renvoi automatique, tri, nouveau client à la validation, confirmation au client).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
@@ -328,7 +328,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MAIL-ECARTS — Corriger les défauts trouvés en testant les e-mails reçus.** Essai demandé par le propriétaire le 2 novembre 2026, sur `tutelliv.fr` (espace de démonstration, 14 e-mails fictifs envoyés depuis Gmail). La chaîne marche : voir « Résultat » ci-dessous.
 
-  **Qui : Claude.**
+  **Qui : Claude — après ton accord pour pousser sur `preproduction`.**
 
   Terminé quand : les défauts 2, 4, 5 et 6 sont corrigés et testés. Les défauts 1 et 3 sont repris par MAIL-PONT (décision C14 : renvoi automatique d'une boîte dédiée, qui garde le vrai expéditeur, et tri des e-mails ordinaires).
 
@@ -345,6 +345,16 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   Résultat de l'essai réel : e-mails reçus et analysés en moins de 20 s, 11 analyses sur 11 réussies, environ 3 170 jetons en entrée et 910 en sortie par analyse. E-mail complet : adresses, contact, date et quantité justes, puis vraie commande créée (source ADMIN, assignée), un seul exemplaire malgré le double clic, e-mail retiré de la liste. Message court ou incomplet : champs signalés, création refusée. Deux livraisons : une commande par livraison, e-mail gardé tant qu'il en manque une ; reprise après rechargement sans doublon ; reprise avec un autre client refusée. Tentative d'injection : aucune consigne reprise, aucune commande. Pièce jointe signalée et non lue. Webhooks sans signature ou mal signés refusés (400). Adresse inconnue, adresse remplacée et réception désactivée : rien d'enregistré (11 lignes en base pour 11 e-mails attendus). Contenu vidé en base au classement et à la conversion. Captures locales : `outputs/recette-agents/mail-commande/`.
 
   Non vérifié : vrai e-mail d'un expéditeur reconnu (service testé sur vraie base, sans vrai e-mail) ; pièce jointe lourde réelle ; volume réel chez Resend et sur Vercel ; vrais messages de clients (INTAKE-1, F10 non qualifiée). Écart de méthode : un nettoyage trop large a visé aussi des commandes de démo de la session, refusé pour celles affichées ; la session isolée a ensuite été libérée à la déconnexion, sans effet durable. 14 e-mails de test restent dans « Envoyés » du Gmail du propriétaire.
+
+  **Corrections du 3 novembre 2026 (code local, pas encore commité ni poussé).**
+  - Défaut 2 : chaque livraison porte ses propres colis (`deliveries[].packages`, schéma de sortie et consigne du modèle) ; à défaut, les colis communs s'appliquent. Quantité absente signalée sur sa livraison (`deliveries.1.quantity`), plus de 1 silencieux. Anciens brouillons gardés sans colis propres toujours lisibles.
+  - Défaut 4 : `dbSafeText` retire le caractère nul et remplace les moitiés d'émoji, après la coupe (qui pouvait elle-même couper un émoji), pour l'expéditeur, l'objet et le texte.
+  - Défaut 5 : recompte du plafond de 200 sous verrou par entreprise (`pg_advisory_xact_lock`) dans la transaction d'écriture, attente du verrou jusqu'à 10 s.
+  - Défaut 6 : `parseSender` accepte « Nom <adresse> ».
+  - En passant : icône ⚠/✓ affichée deux fois dans trois alertes (brouillon et formulaire de commande public), le composant `Alert` met déjà la sienne.
+  - Vérifié : tests unitaires ajoutés (quantités par livraison, quantité absente ou inventée, ancien brouillon, « Nom <adresse> », caractères invalides) ; `npm run check` vert (1 547 tests, 0 échec). Essai sur `tutelliv-dev` (entreprise de test créée puis supprimée, 0 reste) : e-mail avec caractère nul et émoji coupé enregistré et nettoyé ; à 199/200, 8 e-mails simultanés → 1 accepté, 7 refusés, 200 en base, le suivant refusé (6/6). Premier essai sans délai d'attente : refus Prisma P2028, d'où l'attente de 10 s. E2E navigateur en worktree isolé : nouveau parcours à deux livraisons (1 palette, quantité absente signalée sur la seconde seulement, saisies gardées par onglet) et parcours existant « double clic », tous deux réussis ; capture locale `outputs/recette-agents/mail-ecarts/deux-livraisons.png`.
+  - Non vérifié : le vrai modèle remplit-il `deliveries[].packages` ? Pas de clé Anthropic en local, essai possible seulement en ligne après poussée. Retrait des icônes en double non revu au navigateur (contrôle par `npm run check`).
+  - Suite : avec ton accord, commit + poussée sur `preproduction`, puis renvoyer l'e-mail « 1 palette / 3 colis » sur `tutelliv.fr` et clore.
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 

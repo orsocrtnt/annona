@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  dbSafeText,
   htmlToText,
   inboundTokenFromRecipients,
   senderAddress,
@@ -50,6 +51,18 @@ test("réception : le HTML devient du texte, scripts et styles retirés", () => 
   assert.match(text, /2 plis & 1 carton/);
   assert.match(text, /avant 15h/);
   assert.doesNotMatch(text, /alert|<|p\{/);
+});
+
+test("réception : caractère nul et émoji coupé nettoyés avant l'écriture en base (Postgres 22021)", () => {
+  assert.equal(dbSafeText("2 plis\u0000 avant 15h", 100), "2 plis avant 15h");
+  assert.equal(dbSafeText("colis \uD83D fragile", 100), "colis \uFFFD fragile", "moitié haute isolée");
+  assert.equal(dbSafeText("colis \uDCE6", 100), "colis \uFFFD", "moitié basse isolée");
+  assert.equal(dbSafeText("ok 📦", 100), "ok 📦", "émoji entier gardé");
+  assert.equal(dbSafeText("abc📦", 4), "abc\uFFFD", "coupe au milieu d'un émoji");
+  assert.equal(senderAddress("Client\u0000 <a\u0000@client.fr>"), "a@client.fr");
+  for (const value of [dbSafeText("x\uD800y\u0000", 100), dbSafeText("📦".repeat(5), 7)]) {
+    assert.doesNotMatch(value, /\u0000|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+  }
 });
 
 test("réception : non configurée tant qu'il manque domaine, secret ou clé", () => {

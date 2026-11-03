@@ -18,7 +18,7 @@ const stop = (address: string, city: string, postalCode: string, contactName: st
 });
 const EXTRACTION: OrderIntakeExtraction = {
   pickup: stop("12 rue de Rivoli", "Paris", "75001"),
-  deliveries: [stop("5 place de la Défense", "Courbevoie", "92400", "M. Durand")],
+  deliveries: [{ ...stop("5 place de la Défense", "Courbevoie", "92400", "M. Durand"), packages: { description: none(), quantity: { value: null, confidence: "low", source: null } } }],
   // Demain, pour que l'échéance ne soit jamais passée quelle que soit l'heure du test.
   deadline: { mode: "before", dayOffset: 1, date: null, time: "15:00", endTime: null, confidence: "high", source: "avant 15h" },
   urgency: { value: "urgent", confidence: "high", source: "urgent" },
@@ -101,6 +101,67 @@ test("INTAKE : coller, analyser, relire, créer une seule commande malgré le do
   } finally {
     if (createdOrderId) await prisma.order.delete({ where: { id: createdOrderId } }).catch(() => undefined);
     if (previousEnabled !== null) await page.request.patch("/api/orders/intake", { data: { enabled: previousEnabled } });
+    await page.request.post("/api/auth/logout").catch(() => undefined);
+    await prisma.$disconnect();
+  }
+});
+
+// MAIL-ECARTS défaut 2 : chaque livraison garde sa quantité ; une quantité absente est signalée sur sa livraison.
+const MULTI_MESSAGE = "Enlèvement 12 rue de Rivoli 75001 Paris demain. Livrer 1 palette au 5 place de la Défense 92400 Courbevoie et des cartons au 3 av. Foch 75116 Paris.";
+const MULTI_EXTRACTION: OrderIntakeExtraction = {
+  ...EXTRACTION,
+  deliveries: [
+    { ...stop("5 place de la Défense", "Courbevoie", "92400"), packages: { description: field("palette"), quantity: { value: 1, confidence: "high", source: "1 palette" } } },
+    { ...stop("3 av. Foch", "Paris", "75116"), packages: { description: field("cartons"), quantity: { value: null, confidence: "low", source: null } } },
+  ],
+  deadline: { mode: "at", dayOffset: 1, date: null, time: null, endTime: null, confidence: "high", source: "demain" },
+  urgency: { value: null, confidence: "low", source: null },
+  packages: { description: none(), quantity: { value: null, confidence: "low", source: null } },
+};
+
+test("INTAKE : deux livraisons, quantité propre à chacune et absente signalée sur la bonne", async ({ page }) => {
+  test.setTimeout(120_000);
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  try {
+    const login = await page.request.post("/api/auth/login", {
+      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    });
+    expect(login.status()).toBe(200);
+    expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);
+    await page.route("**/api/orders/intake", async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      await route.fulfill({ json: { success: true, data: { enabled: true, configured: true, canManage: true, limits: { hourly: 60, daily: 300, maxTextLength: 8000 } } } });
+    });
+    await page.route("**/api/orders/intake/analyze", (route) =>
+      route.fulfill({ json: { success: true, data: buildOrderIntakeDraft(MULTI_EXTRACTION, MULTI_MESSAGE, new Date()) } })
+    );
+
+    await page.goto("/dashboard/orders");
+    await page.getByRole("link", { name: "Depuis un message" }).click();
+    const textarea = page.getByLabel(/Texte du message/);
+    await textarea.fill(MULTI_MESSAGE);
+    await textarea.press("Control+Enter");
+    await expect(page.getByText("Brouillon à relire")).toBeVisible();
+    await expect(page.getByText(/Informations absentes du message/)).toBeVisible();
+    await expect(page.getByText(/quantité de colis/)).toBeVisible();
+
+    const quantity = page.getByLabel(/^Quantité/);
+    await expect(page.getByLabel(/^Nature des colis/)).toHaveValue("palette");
+    await expect(quantity).toHaveValue("1");
+    await expect(page.getByText("Absente du message : vérifiez.")).toHaveCount(0);
+
+    await page.getByRole("button", { name: /^Livraison 2/ }).click();
+    await expect(page.getByLabel(/^Nature des colis/)).toHaveValue("cartons");
+    await expect(page.getByText("Absente du message : vérifiez.")).toBeVisible();
+    await quantity.fill("3");
+    await page.getByRole("button", { name: /^Livraison 1/ }).click();
+    await expect(quantity).toHaveValue("1");
+    await page.getByRole("button", { name: /^Livraison 2/ }).click();
+    await expect(quantity).toHaveValue("3");
+    await page.screenshot({ path: "outputs/recette-agents/mail-ecarts/deux-livraisons.png", fullPage: true });
+    expect(pageErrors).toEqual([]);
+  } finally {
     await page.request.post("/api/auth/logout").catch(() => undefined);
     await prisma.$disconnect();
   }

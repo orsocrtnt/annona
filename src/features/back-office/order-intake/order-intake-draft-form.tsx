@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ const FIELD_LABELS: Record<string, string> = {
   postalCode: "code postal de livraison",
   deadline: "date ou échéance",
   "packages.quantity": "quantité de colis",
+  quantity: "quantité de colis",
   customer: "client",
 };
 
@@ -56,13 +57,18 @@ interface OrderIntakeDraftFormProps {
   onAllCreated?: (orderId: string) => void;
 }
 
-/** Drapeaux du brouillon ramenés à la livraison affichée (« deliveries.1.city » → « delivery.city »). */
+/**
+ * Drapeaux du brouillon ramenés à la livraison affichée (« deliveries.1.city » → « delivery.city »).
+ * Les colis communs (« packages.quantity ») valent pour chaque livraison.
+ */
 function flagsFor(paths: string[], deliveryIndex: number) {
   const flags = new Set<string>();
   for (const path of paths) {
     const match = path.match(/^deliveries\.(\d+)\.(\w+)$/);
     if (match) {
       if (Number(match[1]) === deliveryIndex) flags.add(`delivery.${match[2]}`);
+    } else if (path.startsWith("packages.")) {
+      flags.add(`delivery.${path.slice("packages.".length)}`);
     } else if (path === "deliveries") {
       for (const key of ["address", "city", "postalCode"]) flags.add(`delivery.${key}`);
     } else {
@@ -200,7 +206,6 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
         {draft.urgency.value === "urgent" && <Badge variant="warning" className="w-fit">Urgent</Badge>}
         {draft.missingFields.length > 0 && (
           <Alert variant="warning">
-            <AlertTriangle className="h-4 w-4" aria-hidden />
             <AlertTitle>Informations absentes du message</AlertTitle>
             <AlertDescription>
               {[...new Set(draft.missingFields.map(missingLabel))].join(", ")}.
@@ -301,14 +306,14 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
           </div>
 
           <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-            <FormField label="Nature des colis" hint={uncertain.has("packages.description") ? "À vérifier." : undefined}>
+            <FormField label="Nature des colis" hint={uncertain.has("delivery.description") ? "À vérifier." : undefined}>
               <Input value={values.packageName} onChange={(event) => update({ packageName: event.target.value })} placeholder="ex. plis, cartons" />
             </FormField>
             <FormField
               label="Quantité"
               required
-              error={missing.has("packages.quantity") && !values.quantity ? "À compléter." : undefined}
-              hint={missing.has("packages.quantity") ? "Absente du message : vérifiez." : uncertain.has("packages.quantity") ? "À vérifier." : undefined}
+              error={missing.has("delivery.quantity") && !values.quantity ? "À compléter." : undefined}
+              hint={missing.has("delivery.quantity") ? "Absente du message : vérifiez." : uncertain.has("delivery.quantity") ? "À vérifier." : undefined}
             >
               <Input type="number" min={1} max={999} value={values.quantity}
                 onChange={(event) => update({ quantity: Number(event.target.value) })} />
@@ -329,7 +334,6 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
             )}
             {createdHere && (
               <Alert variant="success">
-                <CheckCircle2 className="h-4 w-4" aria-hidden />
                 <AlertTitle>Commande créée{createdHere.reference ? ` : ${createdHere.reference}` : ""}</AlertTitle>
                 <AlertDescription>
                   Elle suit désormais le circuit habituel (dispatch, suivi, preuve).{" "}

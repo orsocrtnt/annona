@@ -44,7 +44,7 @@ export function inboundTokenFromRecipients(recipients: unknown[], domain: string
 }
 
 export function senderAddress(from: string) {
-  return (from.match(/<([^>]+)>/)?.[1] ?? from).trim().toLowerCase().slice(0, 200);
+  return dbSafeText((from.match(/<([^>]+)>/)?.[1] ?? from).trim().toLowerCase(), 200);
 }
 
 /** Texte brut d'un e-mail HTML : suffisant pour l'analyse, jamais réaffiché comme du HTML. */
@@ -63,6 +63,21 @@ export function htmlToText(html: string) {
     .replace(/\n\s*\n\s*/g, "\n\n")
     .trim();
 }
+
+/**
+ * Texte accepté par PostgreSQL : sans caractère nul ni moitié d'émoji (erreur 22021). Appliqué
+ * après la coupe, qui peut elle-même séparer un émoji. Sans cela, l'écriture échoue à chaque
+ * renvoi du webhook et l'e-mail est perdu sans alerte.
+ */
+export function dbSafeText(value: string, maxLength: number) {
+  return value
+    .slice(0, maxLength)
+    .replace(/\u0000/g, "")
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
+
+/** Des e-mails simultanés de la même entreprise attendent le verrou au lieu d'échouer (P2028). */
+const INGEST_TX = { maxWait: 10_000, timeout: 15_000 } as const;
 
 type ReceivedEmail = { from?: unknown; subject?: unknown; text?: unknown; html?: unknown; attachments?: unknown };
 
@@ -104,10 +119,9 @@ export async function ingestInboundEmail(
   const { companyId } = channel;
 
   if (await prisma.inboundOrderEmail.findUnique({ where: { providerEmailId: emailId }, select: { id: true } })) return "duplicate";
-  const received = await prisma.inboundOrderEmail.count({
-    where: { companyId, createdAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
-  });
-  if (received >= INBOUND_DAILY_LIMIT) return "over_limit";
+  const dayWindow = { companyId, createdAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } };
+  // Premier contrôle sans verrou : un plafond déjà atteint n'appelle pas le fournisseur.
+  if ((await prisma.inboundOrderEmail.count({ where: dayWindow })) >= INBOUND_DAILY_LIMIT) return "over_limit";
 
   const apiKey = env.RESEND_API_KEY?.trim();
   if (!apiKey) throw new Error("INBOUND_NOT_CONFIGURED");
@@ -117,13 +131,16 @@ export async function ingestInboundEmail(
     : typeof email.html === "string" ? htmlToText(email.html) : "";
 
   const jobId = await prisma.$transaction(async (tx) => {
+    // Recompte sous verrou par entreprise : des e-mails simultanés ne dépassent plus le plafond.
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`tutelliv:inbound-email:${companyId}`}))`;
+    if ((await tx.inboundOrderEmail.count({ where: dayWindow })) >= INBOUND_DAILY_LIMIT) return "over_limit" as const;
     const created = await tx.inboundOrderEmail.createMany({
       data: [{
         companyId,
         providerEmailId: emailId,
         fromAddress: senderAddress(typeof email.from === "string" ? email.from : ""),
-        subject: (typeof email.subject === "string" ? email.subject : "").slice(0, 300),
-        bodyText: body.slice(0, ORDER_INTAKE_MAX_TEXT_LENGTH),
+        subject: dbSafeText(typeof email.subject === "string" ? email.subject : "", 300),
+        bodyText: dbSafeText(body, ORDER_INTAKE_MAX_TEXT_LENGTH),
         attachmentCount: Array.isArray(email.attachments) ? email.attachments.length : 0,
       }],
       skipDuplicates: true,
@@ -137,7 +154,8 @@ export async function ingestInboundEmail(
       payload: { inboundEmailId: row.id },
     });
     return job.id;
-  });
+  }, INGEST_TX);
+  if (jobId === "over_limit") return "over_limit";
   if (!jobId) return "duplicate";
   kickOperationJob(jobId);
   // Purge au fil de l'eau : aucun e-mail reçu ne survit à la durée de conservation.
