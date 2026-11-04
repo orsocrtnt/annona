@@ -261,6 +261,8 @@ export async function deliverInboundOrderConfirmation(
   const delivery = await sendTransactionalEmail({
     to: recipient,
     replyTo,
+    // Décision C14 (3 novembre 2026) : « Entreprise via TutelLiv », sans réglage chez le client.
+    senderName: company,
     subject: links.length > 1
       ? `${company} confirme vos ${links.length} commandes`
       : `${company} confirme votre commande ${links[0]!.order.reference}`,

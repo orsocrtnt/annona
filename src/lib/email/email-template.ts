@@ -29,6 +29,8 @@ export type EmailLayoutInput = {
   note?: string;
   /** Bandeau du mode recette : rappelle le destinataire initialement visé. */
   testRecipient?: string;
+  /** MAIL-PONT : e-mail envoyé pour une entreprise avec « répondre à » ; le pied invite alors à répondre. */
+  replyAllowed?: boolean;
 };
 
 export function escapeHtml(value: string) {
@@ -103,7 +105,9 @@ ${banner}<tr><td class="email-logo-header" align="center" bgcolor="#ffffff" styl
 <tr><td class="email-padding" style="padding:32px;font-family:${FONT}">${body}</td></tr>
 </table>
 </td></tr>
-<tr><td style="padding:20px 4px 0;font-size:12px;line-height:1.5;color:${COLORS.muted}">E-mail automatique envoyé par TutelLiv, plateforme de suivi des livraisons. Merci de ne pas répondre à ce message.</td></tr>
+<tr><td style="padding:20px 4px 0;font-size:12px;line-height:1.5;color:${COLORS.muted}">${input.replyAllowed
+  ? "E-mail envoyé par TutelLiv, plateforme de suivi des livraisons, pour le compte de l&#39;entreprise. Votre réponse lui parvient directement."
+  : "E-mail automatique envoyé par TutelLiv, plateforme de suivi des livraisons. Merci de ne pas répondre à ce message."}</td></tr>
 </table>
 </td></tr>
 </table>
@@ -119,7 +123,7 @@ const ACTION_LINE = /^(.{2,80}?)\s*:\s*(https?:\/\/\S+)$/;
  * vide, et la première ligne « Libellé : URL » transformée en bouton. Fonction pure : le même texte
  * figé (reprise sous la même clé d'idempotence) donne toujours le même HTML.
  */
-export function renderTextEmailHtml(input: { subject: string; text: string; testRecipient?: string }) {
+export function renderTextEmailHtml(input: { subject: string; text: string; testRecipient?: string; replyAllowed?: boolean }) {
   let action: EmailAction | undefined;
   const paragraphs = input.text
     .split(/\n\s*\n/)
@@ -137,7 +141,7 @@ export function renderTextEmailHtml(input: { subject: string; text: string; test
     )
     .filter(Boolean);
   const presentation = emailPresentation(input.subject, input.text);
-  return renderEmailLayout({ heading: input.subject, ...presentation, paragraphs, action, testRecipient: input.testRecipient });
+  return renderEmailLayout({ heading: input.subject, ...presentation, paragraphs, action, testRecipient: input.testRecipient, replyAllowed: input.replyAllowed });
 }
 
 export type SupabaseAuthEmailType = "signup" | "invite" | "recovery";

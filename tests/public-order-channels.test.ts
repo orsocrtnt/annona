@@ -6,6 +6,7 @@ import {
   dbSafeText,
   forwardedSender,
   gmailApprovalLink,
+  listForwardingConfirmations,
   gmailForwardingConfirmation,
   htmlToText,
   inboundAnalysisUpdate,
@@ -17,7 +18,7 @@ import {
 import { publicOrderSchema } from "../src/domains/public-order/public-order.service";
 import { isInboundEmailConfigured } from "../src/domains/public-order/intake-channels.service";
 import { isCrossOriginMutation } from "../src/lib/security/origin-check";
-import { sendTransactionalEmail } from "../src/lib/email/transactional-email";
+import { senderHeader, sendTransactionalEmail } from "../src/lib/email/transactional-email";
 
 const SECRET = `whsec_${Buffer.from("secret-de-test").toString("base64")}`;
 const NOW = new Date("2026-10-30T12:00:00Z");
@@ -215,4 +216,37 @@ test("MAIL-PONT : la confirmation porte « répondre à » vers la boîte de com
   assert.deepEqual(bodies[0]!.reply_to, ["commandes@transport.test"]);
   assert.equal("reply_to" in bodies[1]!, false);
   assert.equal("reply_to" in bodies[2]!, false);
+  // Essai réel du 4 novembre : le pied ne doit plus dire « ne pas répondre » quand on peut répondre.
+  assert.match(String(bodies[0]!.html), /Votre réponse lui parvient directement/);
+  assert.doesNotMatch(String(bodies[0]!.html), /Merci de ne pas répondre/);
+  assert.match(String(bodies[2]!.html), /Merci de ne pas répondre/);
+  assert.equal(bodies[0]!.from, "TutelLiv <no-reply@example.test>", "sans nom d'entreprise : MAIL_FROM inchangé");
+  await sendTransactionalEmail({ ...base, idempotencyKey: "k4", senderName: "LogiExpress Démo" }, { env, fetcher, now: NOW });
+  assert.equal(bodies[3]!.from, '"LogiExpress Démo via TutelLiv" <no-reply@example.test>');
 });
+
+test("MAIL-PONT : nom d'expéditeur « Entreprise via TutelLiv » nettoyé, jamais une autre adresse", () => {
+  assert.equal(senderHeader("TutelLiv <no-reply@tutelliv.fr>", "Transports \"Rapides\" <pirate@x.test>\r\nBcc: y@x.test"), '"Transports Rapides pirate@x.test Bcc y@x.test via TutelLiv" <no-reply@tutelliv.fr>');
+  assert.equal(senderHeader("no-reply@tutelliv.fr", "Durand & Fils"), '"Durand & Fils via TutelLiv" <no-reply@tutelliv.fr>');
+  assert.equal(senderHeader("TutelLiv <no-reply@tutelliv.fr>", "  "), "TutelLiv <no-reply@tutelliv.fr>");
+  assert.equal(senderHeader("TutelLiv <no-reply@tutelliv.fr>", null), "TutelLiv <no-reply@tutelliv.fr>");
+});
+
+test("MAIL-PONT : la demande Gmail n'est plus affichée dès qu'un e-mail ordinaire arrive après elle", async () => {
+  const at = (minutes: number) => new Date(Date.UTC(2026, 10, 4, 1, minutes));
+  const confirmation = { bodyText: JSON.stringify({ code: null, link: "https://mail.google.com/mail/vf-x", requester: "a@gmail.com" }), createdAt: at(20) };
+  const db = (later: Date | null) => ({
+    inboundOrderEmail: {
+      findMany: async () => [confirmation],
+      findFirst: async ({ where }: { where: { createdAt: { gt: Date }; fromAddress: { not: string } } }) => {
+        assert.equal(where.fromAddress.not, "forwarding-noreply@google.com");
+        return later && later > where.createdAt.gt ? { createdAt: later } : null;
+      },
+    },
+  });
+  const now = at(30);
+  assert.equal((await listForwardingConfirmations("company-a", now, db(null) as never)).length, 1, "rien reçu depuis");
+  assert.equal((await listForwardingConfirmations("company-a", now, db(at(10)) as never)).length, 1, "e-mail plus ancien");
+  assert.deepEqual(await listForwardingConfirmations("company-a", now, db(at(25)) as never), [], "renvoi prouvé");
+});
+

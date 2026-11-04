@@ -52,6 +52,8 @@ export type TransactionalEmailInput = {
   text: string;
   /** MAIL-PONT : « répondre à » (boîte de commandes de l'entreprise) ; ignoré s'il n'est pas une adresse. */
   replyTo?: string | null;
+  /** MAIL-PONT : nom de l'entreprise, affiché « Entreprise via TutelLiv » devant l'adresse d'envoi. */
+  senderName?: string | null;
   idempotencyKey: string;
   /**
    * Instant le plus ancien auquel une tentative précédente sous cette clé a pu atteindre le
@@ -102,6 +104,17 @@ export function getTransactionalEmailConfiguration(
 
 function safeHeader(value: string, max: number) {
   return value.replace(/[\r\n]+/g, " ").trim().slice(0, max);
+}
+
+/**
+ * Expéditeur affiché « Entreprise via TutelLiv » avec l'adresse de MAIL_FROM (jamais une autre) :
+ * nom nettoyé des caractères d'en-tête, entre guillemets ; sans nom utilisable, MAIL_FROM tel quel.
+ */
+export function senderHeader(mailFrom: string, senderName: string | null | undefined) {
+  const address = /<([^<>]+)>\s*$/.exec(mailFrom)?.[1]?.trim() ?? mailFrom.trim();
+  const name = (senderName ?? "").replace(/["<>\\\r\n,;:]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60).trim();
+  if (!name || !hasAddress(address)) return mailFrom;
+  return `"${name} via TutelLiv" <${address}>`;
 }
 
 /**
@@ -182,7 +195,7 @@ export async function sendTransactionalEmail(
     return { status: "disabled" as const, mode: configuration.mode, reason: configuration.reason };
   }
 
-  const from = (env.MAIL_FROM || env.EMAIL_FROM)!.trim();
+  const from = senderHeader((env.MAIL_FROM || env.EMAIL_FROM)!.trim(), input.senderName);
   // Rendu figé à la première tentative émise : une reprise envoie exactement le même corps.
   const frozen = input.freezeContent
     ? await input.freezeContent.freeze({ to: input.to, subject: input.subject, text: input.text })
@@ -212,6 +225,7 @@ export async function sendTransactionalEmail(
     subject: safeHeader(content.subject, 180),
     text: content.text,
     testRecipient: testMode ? intendedRecipient : undefined,
+    replyAllowed: Boolean(input.replyTo && hasAddress(input.replyTo.trim())),
   });
   const idempotencyKey = safeHeader(
     input.idempotencyKey,

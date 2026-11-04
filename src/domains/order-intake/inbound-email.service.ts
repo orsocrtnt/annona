@@ -304,14 +304,26 @@ export async function analyzeInboundEmailJob(
 }
 
 /** Codes de confirmation Gmail des dernières 24 heures, du plus récent au plus ancien. */
-export async function listForwardingConfirmations(companyId: string, now = new Date()) {
-  const rows = await prisma.inboundOrderEmail.findMany({
+export async function listForwardingConfirmations(
+  companyId: string,
+  now = new Date(),
+  db: Pick<typeof prisma, "inboundOrderEmail"> = prisma
+) {
+  const rows = await db.inboundOrderEmail.findMany({
     where: { companyId, status: "FORWARDING_CONFIRMATION", createdAt: { gte: new Date(now.getTime() - FORWARDING_CONFIRMATION_RETENTION_MS) } },
     orderBy: { createdAt: "desc" },
     take: 3,
     select: { bodyText: true, createdAt: true },
   });
-  return rows.flatMap((row) => {
+  if (!rows.length) return [];
+  // Essai réel du 4 novembre : un e-mail ordinaire reçu après la demande prouve que le renvoi marche ;
+  // la demande n'est plus affichée (sinon « Approuver » restait 24 h après l'approbation).
+  const later = await db.inboundOrderEmail.findFirst({
+    where: { companyId, status: { not: "FORWARDING_CONFIRMATION" }, fromAddress: { not: GMAIL_FORWARDING_SENDER }, createdAt: { gt: rows[rows.length - 1]!.createdAt } },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  return rows.filter((row) => !later || row.createdAt > later.createdAt).flatMap((row) => {
     try {
       const parsed = JSON.parse(row.bodyText) as { code?: unknown; link?: unknown; requester?: unknown };
       const code = typeof parsed.code === "string" ? parsed.code : null;
