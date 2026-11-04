@@ -25,7 +25,7 @@ export function OrderSummary({ order }: { order: CompanyOrder }) {
   const delivery = order.deliveries?.[0];
   const client = order.customer
     ? `${order.customer.firstName} ${order.customer.lastName}`.trim()
-    : order.customerEmail?.trim() || "Client non renseigné";
+    : order.companyCustomer?.name?.trim() || order.customerEmail?.trim() || "Client non renseigné";
   const place = formatPlace(
     order.shippingAddress,
     [order.shippingPostalCode, order.shippingCity].filter(Boolean).join(" ")
