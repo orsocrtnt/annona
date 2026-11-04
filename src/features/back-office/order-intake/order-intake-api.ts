@@ -40,7 +40,8 @@ export interface IntakeChannels {
   orderLink: { enabled: boolean; url: string | null };
   inboundEmail: { enabled: boolean; configured: boolean; address: string | null; mailbox: string | null };
   /** Codes de confirmation envoyés par Gmail à l'adresse TutelLiv (24 dernières heures). */
-  gmailConfirmations?: { code: string; requester: string | null; receivedAt: string }[];
+  /** Selon le compte Gmail : un code à saisir dans Gmail, ou un lien d'approbation (format de novembre 2026). */
+  gmailConfirmations?: { code: string | null; link?: string | null; requester: string | null; receivedAt: string }[];
 }
 
 export type IntakeChannelAction =

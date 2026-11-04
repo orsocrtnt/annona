@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   dbSafeText,
   forwardedSender,
+  gmailApprovalLink,
   gmailForwardingConfirmation,
   htmlToText,
   inboundAnalysisUpdate,
@@ -159,14 +160,45 @@ test("MAIL-PONT : code de confirmation Gmail reconnu, jamais pour un autre expé
   const google = "forwarding-noreply@google.com";
   assert.deepEqual(
     gmailForwardingConfirmation(google, "(#123456789) Gmail Forwarding Confirmation - Receive Mail from Commandes.Transport@gmail.com", "Confirmation code: 123456789"),
-    { code: "123456789", requester: "commandes.transport@gmail.com" }
+    { code: "123456789", link: null, requester: "commandes.transport@gmail.com" }
   );
   assert.deepEqual(
     gmailForwardingConfirmation(google, "Confirmation de transfert Gmail", "commandes@transport.test a demandé le transfert. Code de confirmation : 987654321"),
-    { code: "987654321", requester: "commandes@transport.test" }
+    { code: "987654321", link: null, requester: "commandes@transport.test" }
   );
   assert.equal(gmailForwardingConfirmation("pirate@exemple.test", "(#123456789) Gmail Forwarding Confirmation", ""), null, "autre expéditeur");
   assert.equal(gmailForwardingConfirmation(google, "Gmail Forwarding Confirmation", "pas de code"), null);
+});
+
+test("MAIL-PONT : format Gmail de novembre 2026, lien d'approbation sans code, seulement vers Google", () => {
+  const google = "forwarding-noreply@google.com";
+  // Texte relevé le 4 novembre 2026 sur un vrai renvoi (adresses et jeton remplacés).
+  const subject = "(Gmail) Confirmation de transfert – Recevez les messages de commandes.transport@gmail.com";
+  const body = [
+    "commandes.transport@gmail.com a demandé à transférer automatiquement ses",
+    "messages vers votre adresse e-mail",
+    "(0123456789abcdef0123456789abcdef@commandes.tutelliv.fr).",
+    "",
+    "Pour autoriser commandes.transport@gmail.com à transférer ses messages vers",
+    "votre adresse e-mail, veuillez cliquer sur le lien ci-dessous pour",
+    "approuver la demande :",
+    "",
+    "https://mail-settings.google.com/mail/vf-%5BJETON-FICTIF_abc-123%5D-3GhXbD",
+    "",
+    "Si le lien ne fonctionne pas, veuillez le copier et le coller dans une",
+    "nouvelle fenêtre de navigateur.",
+  ].join("\n");
+  assert.deepEqual(gmailForwardingConfirmation(google, subject, body), {
+    code: null,
+    link: "https://mail-settings.google.com/mail/vf-%5BJETON-FICTIF_abc-123%5D-3GhXbD",
+    requester: "commandes.transport@gmail.com",
+  });
+  const fake = body.replace("https://mail-settings.google.com/mail/", "https://mail-settings.google.com.pirate.test/mail/");
+  assert.equal(gmailForwardingConfirmation(google, subject, fake), null, "autre site : ni lien ni code");
+  assert.equal(gmailApprovalLink("http://mail.google.com/mail/vf-x"), null, "http refusé");
+  assert.equal(gmailApprovalLink("https://user@mail.google.com/mail/vf-x"), null, "identifiants refusés");
+  assert.equal(gmailApprovalLink("https://mail.google.com/autre"), null, "autre chemin refusé");
+  assert.equal(gmailApprovalLink("https://mail.google.com/mail/vf-x"), "https://mail.google.com/mail/vf-x");
 });
 
 test("MAIL-PONT : la confirmation porte « répondre à » vers la boîte de commandes, jamais une valeur invalide", async () => {

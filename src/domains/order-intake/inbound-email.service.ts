@@ -57,16 +57,40 @@ export const GMAIL_FORWARDING_SENDER = "forwarding-noreply@google.com";
 export const FORWARDING_CONFIRMATION_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 /**
- * MAIL-PONT : e-mail que Gmail envoie à l'adresse TutelLiv quand l'entreprise ajoute un renvoi
- * (« (#123456789) Gmail Forwarding Confirmation - Receive Mail from x@gmail.com »). On n'en garde que le
- * code et l'adresse qui demande le renvoi ; jamais envoyé au modèle.
+ * Lien d'approbation du renvoi Gmail : seulement en https vers mail-settings.google.com ou
+ * mail.google.com (chemin /mail/), pour qu'un faux e-mail ne fasse jamais afficher un autre site.
  */
-export function gmailForwardingConfirmation(from: string, subject: string, body: string): { code: string; requester: string | null } | null {
+export function gmailApprovalLink(value: string | null | undefined): string | null {
+  if (!value || value.length > 1_000) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" || url.username || url.password || url.port) return null;
+    if (host !== "mail-settings.google.com" && host !== "mail.google.com") return null;
+    return url.pathname.startsWith("/mail/") ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * MAIL-PONT : e-mail que Gmail envoie à l'adresse TutelLiv quand l'entreprise ajoute un renvoi. Ancien
+ * format : code à 9 chiffres (« (#123456789) Gmail Forwarding Confirmation »). Format relevé le
+ * 4 novembre 2026 : « (Gmail) Confirmation de transfert – Recevez les messages de x@gmail.com », sans code,
+ * avec un lien d'approbation. On n'en garde que le code ou le lien et l'adresse qui demande le renvoi ;
+ * jamais envoyé au modèle.
+ */
+export function gmailForwardingConfirmation(
+  from: string,
+  subject: string,
+  body: string
+): { code: string | null; link: string | null; requester: string | null } | null {
   if (from !== GMAIL_FORWARDING_SENDER) return null;
   const code = subject.match(/\(#\s*(\d{6,12})\)/)?.[1] ?? body.match(/(?:code|confirmation)[^\d]{0,40}(\d{6,12})/i)?.[1] ?? null;
-  if (!code) return null;
-  const requester = [subject, body].join("\n").match(EMAIL_IN_TEXT_GLOBAL)?.find((address) => !/@google\.com$/i.test(address))?.toLowerCase() ?? null;
-  return { code, requester };
+  const link = gmailApprovalLink(body.match(/https:\/\/mail(?:-settings)?\.google\.com\/mail\/[^\s<>"')\]]+/i)?.[0]);
+  if (!code && !link) return null;
+  const requester = [subject, body].join("\n").match(EMAIL_IN_TEXT_GLOBAL)?.find((address) => !/@google\.com$/i.test(address) && !/@commandes\./i.test(address))?.toLowerCase() ?? null;
+  return { code, link, requester };
 }
 
 /** Vérification Svix (format des webhooks Resend) sur le corps brut, à temps constant. */
@@ -289,9 +313,11 @@ export async function listForwardingConfirmations(companyId: string, now = new D
   });
   return rows.flatMap((row) => {
     try {
-      const parsed = JSON.parse(row.bodyText) as { code?: unknown; requester?: unknown };
-      if (typeof parsed.code !== "string") return [];
-      return [{ code: parsed.code, requester: typeof parsed.requester === "string" ? parsed.requester : null, receivedAt: row.createdAt.toISOString() }];
+      const parsed = JSON.parse(row.bodyText) as { code?: unknown; link?: unknown; requester?: unknown };
+      const code = typeof parsed.code === "string" ? parsed.code : null;
+      const link = typeof parsed.link === "string" ? gmailApprovalLink(parsed.link) : null;
+      if (!code && !link) return [];
+      return [{ code, link, requester: typeof parsed.requester === "string" ? parsed.requester : null, receivedAt: row.createdAt.toISOString() }];
     } catch { return []; }
   });
 }

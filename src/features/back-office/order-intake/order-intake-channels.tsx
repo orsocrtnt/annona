@@ -79,13 +79,23 @@ function OrderMailboxSetup({ data, pending, onSave }: {
       </form>
       {confirmations.length > 0 && (
         <div role="status" className="rounded-lg bg-muted px-3 py-2">
-          {confirmations.map((item) => (
+          {confirmations.map((item) => item.link ? (
+            <div key={item.receivedAt} className="space-y-2">
+              <p>
+                Gmail demande votre accord pour renvoyer les e-mails{item.requester ? <> de {item.requester}</> : null} vers TutelLiv
+                (reçu le {dateTime.format(new Date(item.receivedAt))}).
+              </p>
+              <Button asChild className="min-h-11">
+                <a href={item.link} target="_blank" rel="noopener noreferrer">Approuver le renvoi dans Gmail</a>
+              </Button>
+            </div>
+          ) : (
             <p key={item.receivedAt}>
-              Code de confirmation Gmail : <span className="font-mono text-base font-semibold">{formatCode(item.code)}</span>
+              Code de confirmation Gmail : <span className="font-mono text-base font-semibold">{formatCode(item.code ?? "")}</span>
               {item.requester ? <> (demandé par {item.requester})</> : null}, reçu le {dateTime.format(new Date(item.receivedAt))}.
             </p>
           ))}
-          <p className="text-xs text-muted-foreground">À saisir dans Gmail pour terminer l&apos;activation du renvoi. Effacé au bout de 24 heures.</p>
+          <p className="text-xs text-muted-foreground">Approuvez le lien, ou saisissez le code dans Gmail, pour terminer l&apos;activation du renvoi. Effacé au bout de 24 heures.</p>
         </div>
       )}
       <details>
@@ -96,7 +106,7 @@ function OrderMailboxSetup({ data, pending, onSave }: {
             <ol className="ml-5 list-decimal space-y-1 text-muted-foreground">
               <li>Dans la boîte de commandes : Paramètres, Voir tous les paramètres, Transfert et POP/IMAP.</li>
               <li>« Ajouter une adresse de transfert », puis coller {address}.</li>
-              <li>Gmail envoie un code : il s&apos;affiche ici en quelques secondes. Le saisir dans Gmail.</li>
+              <li>Gmail envoie une demande d&apos;accord : elle s&apos;affiche ici en quelques secondes. Cliquer sur « Approuver le renvoi dans Gmail » (ou, sur les anciens comptes, saisir le code affiché dans Gmail).</li>
               <li>Choisir « Transférer une copie des messages entrants » et garder une copie dans Gmail.</li>
             </ol>
           </div>
