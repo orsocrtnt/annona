@@ -114,6 +114,12 @@ enum OperationJobType {
   INBOUND_EMAIL
 }
 
+/// WHATSAPP-1 : canal d'arrivée d'un message reçu. Même file, même analyse, même validation.
+enum InboundChannel {
+  EMAIL
+  WHATSAPP
+}
+
 enum InboundEmailStatus {
   RECEIVED
   ANALYZED
@@ -1351,6 +1357,8 @@ model CompanyIntakeChannel {
   inboundEmailEnabled Boolean  @default(false) @map("inbound_email_enabled")
   /// MAIL-PONT : boîte de commandes de l'entreprise (ex. commandes@entreprise.fr), « répondre à » des confirmations.
   orderMailboxAddress String?  @map("order_mailbox_address")
+  /// WHATSAPP-1 (option A) : messages transférés au numéro WhatsApp de TutelLiv par un membre de l'équipe.
+  whatsappEnabled     Boolean  @default(false) @map("whatsapp_enabled")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("company_intake_channels")
@@ -1383,6 +1391,9 @@ model InboundOrderEmail {
   companyId       String             @map("company_id")
   company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   providerEmailId String             @unique @map("provider_email_id")
+  /// WHATSAPP-1 : pour WhatsApp, `providerEmailId` vaut `whatsapp:<id Meta>` et `fromAddress` le numéro
+  /// du membre de l'équipe qui a transféré (jamais le client, que WhatsApp ne transmet pas).
+  channel         InboundChannel     @default(EMAIL)
   fromAddress     String             @map("from_address")
   /// MAIL-PONT : client d'origine lu dans un e-mail transféré à la main par l'équipe (`De :` / `From:`).
   originalSender  String?            @map("original_sender")

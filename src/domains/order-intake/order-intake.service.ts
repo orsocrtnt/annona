@@ -35,7 +35,11 @@ export type AnalyzeOrderMessageResult =
  * qu'après relecture et clic humain (createOrderFromIntake).
  */
 export async function analyzeOrderMessage(
-  input: { companyId: string; text: unknown; sender?: unknown },
+  /**
+   * `matchCustomerFromText` (WHATSAPP-1) : sans expéditeur client, le client est cherché par l'e-mail,
+   * sinon le téléphone, écrits dans le message (vérifiés dans le texte), jamais par le nom.
+   */
+  input: { companyId: string; text: unknown; sender?: unknown; matchCustomerFromText?: boolean },
   deps: {
     db?: OrderIntakeDb;
     env?: Record<string, string | undefined>;
@@ -82,8 +86,14 @@ export async function analyzeOrderMessage(
   await completeOrderIntakeCall(reservation.id, { status: "SUCCEEDED", ...result.usage }, db);
 
   const draft = buildOrderIntakeDraft(extraction.data, text, now);
-  draft.customerMatch = await matchCustomerBySender(input.companyId, sender, db);
-  draft.senderEmail = parseSender(sender).email;
+  // Seule une valeur retrouvée dans le texte (`source` gardée par verifyField) sert à chercher le client.
+  const fromText = (field: { value: string | null; source: string | null }) => (field.source ? field.value : null);
+  const hint = input.matchCustomerFromText && !sender
+    ? fromText(draft.customerHint.email) ?? fromText(draft.customerHint.phone)
+    : null;
+  const customerKey = sender ?? hint;
+  draft.customerMatch = await matchCustomerBySender(input.companyId, customerKey, db);
+  draft.senderEmail = parseSender(customerKey).email;
   if (!draft.customerMatch) draft.missingFields.push("customer");
   return { status: "ok", draft };
 }

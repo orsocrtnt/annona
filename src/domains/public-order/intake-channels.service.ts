@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/services/prisma/client";
+import { isWhatsAppConfigured, whatsappConfig } from "@/domains/order-intake/whatsapp.service";
 
 type ChannelDb = Pick<typeof prisma, "companyIntakeChannel">;
 
@@ -34,11 +35,17 @@ export async function getIntakeChannels(companyId: string, db: ChannelDb = prism
       address: channel?.inboundEmailToken && domain ? `${channel.inboundEmailToken}@${domain}` : null,
       mailbox: channel?.orderMailboxAddress ?? null,
     },
+    /** WHATSAPP-1 : numéro de TutelLiv vers lequel l'équipe transfère les messages des clients. */
+    whatsapp: {
+      enabled: channel?.whatsappEnabled ?? false,
+      configured: isWhatsAppConfigured(),
+      number: whatsappConfig().displayNumber,
+    },
   };
 }
 
 export type IntakeChannelAction =
-  | { channel: "orderLink" | "inboundEmail"; enabled: boolean }
+  | { channel: "orderLink" | "inboundEmail" | "whatsapp"; enabled: boolean }
   | { channel: "orderLink" | "inboundEmail"; rotate: true }
   | { channel: "inboundEmail"; mailbox: string | null };
 
@@ -47,6 +54,11 @@ export async function updateIntakeChannel(companyId: string, action: IntakeChann
   if ("mailbox" in action) {
     const orderMailboxAddress = action.mailbox?.trim().toLowerCase() || null;
     await db.companyIntakeChannel.upsert({ where: { companyId }, update: { orderMailboxAddress }, create: { companyId, orderMailboxAddress } });
+    return getIntakeChannels(companyId, db);
+  }
+  if (action.channel === "whatsapp") {
+    const whatsappEnabled = action.enabled;
+    await db.companyIntakeChannel.upsert({ where: { companyId }, update: { whatsappEnabled }, create: { companyId, whatsappEnabled } });
     return getIntakeChannels(companyId, db);
   }
   const current = await db.companyIntakeChannel.findUnique({ where: { companyId } });

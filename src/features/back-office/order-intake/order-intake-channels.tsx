@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { InboundEmailItem, IntakeChannelAction, IntakeChannels } from "./order-intake-api";
 import { useCloseInboundEmail, useInboundEmails, useIntakeChannels, useUpdateIntakeChannel } from "./order-intake-hooks";
 
-function ChannelRow({ testId, title, description, value, enabled, disabledReason, onAction, pending }: {
+function ChannelRow({ testId, title, description, value, enabled, disabledReason, onAction, pending, canRotate = true }: {
   testId: string;
   title: string;
   description: string;
@@ -17,6 +17,8 @@ function ChannelRow({ testId, title, description, value, enabled, disabledReason
   disabledReason?: string;
   onAction: (action: { enabled: boolean } | { rotate: true }) => void;
   pending: boolean;
+  /** Faux pour un numéro partagé (WhatsApp) : rien à renouveler. */
+  canRotate?: boolean;
 }) {
   const [copied, setCopied] = React.useState(false);
   return (
@@ -40,12 +42,33 @@ function ChannelRow({ testId, title, description, value, enabled, disabledReason
             }}>
               {copied ? "Copié" : "Copier"}
             </Button>
-            <Button type="button" variant="ghost" className="min-h-11" disabled={pending} onClick={() => onAction({ rotate: true })}>
-              Renouveler (l&apos;ancien cesse de marcher)
-            </Button>
+            {canRotate && (
+              <Button type="button" variant="ghost" className="min-h-11" disabled={pending} onClick={() => onAction({ rotate: true })}>
+                Renouveler (l&apos;ancien cesse de marcher)
+              </Button>
+            )}
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** WHATSAPP-1 : qui peut transférer. Sans numéro dans son profil, un message transféré est ignoré. */
+function WhatsAppTeam({ team }: { team: NonNullable<IntakeChannels["whatsappTeam"]> }) {
+  return (
+    <div data-testid="whatsapp-team" className="space-y-2 rounded-lg border border-border p-3">
+      <p className="font-medium">Numéros reconnus</p>
+      <ul className="space-y-1">
+        {team.map((member, index) => (
+          <li key={`${member.name}-${index}`} className="flex flex-wrap justify-between gap-2">
+            <span>{member.name}</span>
+            {member.phone
+              ? <span className="font-mono text-xs">{member.phone}</span>
+              : <span className="text-xs text-warning">Aucun numéro : à ajouter dans son profil</span>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -168,6 +191,20 @@ export function IntakeChannelsCard() {
               <OrderMailboxSetup data={data} pending={update.isPending}
                 onSave={(mailbox) => update.mutate({ channel: "inboundEmail", mailbox })} />
             )}
+            {data.whatsapp && (
+              <ChannelRow
+                testId="channel-whatsapp"
+                title="WhatsApp"
+                description="Enregistrez ce numéro dans vos contacts. Quand un client vous commande sur WhatsApp, appuyez longuement sur son message, « Transférer », puis choisissez ce numéro : la commande devient un brouillon ci-dessous. Seuls les numéros de l'équipe inscrits dans leur profil sont reconnus."
+                value={data.whatsapp.number}
+                enabled={data.whatsapp.enabled}
+                disabledReason={data.whatsapp.configured ? undefined : "WhatsApp n'est pas encore branché sur ce serveur."}
+                pending={update.isPending}
+                canRotate={false}
+                onAction={(action) => { if ("enabled" in action) update.mutate({ channel: "whatsapp", enabled: action.enabled }); }}
+              />
+            )}
+            {data.whatsapp?.enabled && data.whatsappTeam && <WhatsAppTeam team={data.whatsappTeam} />}
           </>
         )}
         <div aria-live="polite">{update.isError && <p role="alert" className="text-destructive">Réglage non enregistré. Réessayez.</p>}</div>
@@ -184,25 +221,31 @@ const STATE_LABEL: Record<InboundEmailItem["status"], string> = {
 };
 
 /** Raison du rangement en « À trier » (gardée dans `analysisError`). */
-export function notOrderReason(email: Pick<InboundEmailItem, "analysisError" | "draft">): string {
-  if (email.analysisError === "attachments_only") return "Contenu en pièce jointe, non lu.";
-  if (email.analysisError === "empty") return "E-mail vide.";
+export function notOrderReason(email: Pick<InboundEmailItem, "analysisError" | "draft" | "channel">): string {
+  const whatsapp = email.channel === "WHATSAPP";
+  if (email.analysisError === "attachments_only") return whatsapp ? "Photo, vocal ou document, non lu." : "Contenu en pièce jointe, non lu.";
+  if (email.analysisError === "empty") return whatsapp ? "Message vide." : "E-mail vide.";
   return email.draft?.kindReason?.trim() || "Ne demande aucune course.";
 }
 
 const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 function EmailMeta({ email }: { email: InboundEmailItem }) {
+  const whatsapp = email.channel === "WHATSAPP";
   return (
     <>
       <p className="mt-1 break-all text-xs text-muted-foreground">
-        {email.originalSender
+        {whatsapp
+          ? <>Reçu par WhatsApp, transféré par {email.fromAddress}{email.originalSender ? <> · client lu dans le message : {email.originalSender}</> : null}</>
+          : email.originalSender
           ? <>{email.originalSender} (lu dans l&apos;e-mail transféré par {email.fromAddress})</>
           : email.fromAddress || "Expéditeur inconnu"} · {dateTime.format(new Date(email.createdAt))}
       </p>
       {email.attachmentCount > 0 && (
         <p className="mt-1 flex items-center gap-1 text-xs text-warning">
-          <Paperclip className="h-3 w-3" aria-hidden /> {email.attachmentCount} pièce(s) jointe(s) non lue(s) : à consulter dans votre messagerie.
+          <Paperclip className="h-3 w-3" aria-hidden /> {whatsapp
+            ? "Photo, vocal ou document non lu : à consulter dans WhatsApp."
+            : `${email.attachmentCount} pièce(s) jointe(s) non lue(s) : à consulter dans votre messagerie.`}
         </p>
       )}
     </>
@@ -223,7 +266,7 @@ export function InboundEmailsCard({ activeId, onOpen }: { activeId: string | nul
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base"><Inbox className="h-4 w-4" aria-hidden /> E-mails de commande reçus</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base"><Inbox className="h-4 w-4" aria-hidden /> Messages de commande reçus</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         {inbox.isError && <p role="alert" className="text-destructive">Liste indisponible. Rechargez la page.</p>}
@@ -234,7 +277,7 @@ export function InboundEmailsCard({ activeId, onOpen }: { activeId: string | nul
           {toProcess.map((email) => (
             <li key={email.id} className={`rounded-lg border p-3 ${email.id === activeId ? "border-primary" : "border-border"}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="min-w-0 break-words font-medium">{email.subject || "(sans objet)"}</p>
+                <p className="min-w-0 break-words font-medium">{email.subject || (email.channel === "WHATSAPP" ? "Message WhatsApp" : "(sans objet)")}</p>
                 <Badge variant={email.status === "ANALYZED" ? "default" : "secondary"}>{STATE_LABEL[email.status]}</Badge>
               </div>
               <EmailMeta email={email} />
@@ -253,13 +296,13 @@ export function InboundEmailsCard({ activeId, onOpen }: { activeId: string | nul
         {toSort.length > 0 && (
           <details data-testid="inbound-to-sort" className="rounded-lg border border-border p-3">
             <summary className="flex min-h-11 cursor-pointer items-center font-medium">
-              À trier ({toSort.length}) : e-mails qui ne semblent pas être des commandes
+              À trier ({toSort.length}) : messages qui ne semblent pas être des commandes
             </summary>
             <p className="mt-2 text-xs text-muted-foreground">Effacés automatiquement au bout de 7 jours.</p>
             <ul className="mt-2 space-y-3">
               {toSort.map((email) => (
                 <li key={email.id} className={`rounded-lg border p-3 ${email.id === activeId ? "border-primary" : "border-border"}`}>
-                  <p className="min-w-0 break-words font-medium">{email.subject || "(sans objet)"}</p>
+                  <p className="min-w-0 break-words font-medium">{email.subject || (email.channel === "WHATSAPP" ? "Message WhatsApp" : "(sans objet)")}</p>
                   <EmailMeta email={email} />
                   <p className="mt-1 text-xs">{notOrderReason(email)}</p>
                   <div className="mt-2 flex flex-wrap gap-2">

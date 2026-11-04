@@ -10,6 +10,8 @@ export interface OrderIntakeStatus {
 
 export interface InboundEmailItem {
   id: string;
+  /** WHATSAPP-1 : pour WhatsApp, `fromAddress` est le numéro du membre de l'équipe qui a transféré. */
+  channel?: "EMAIL" | "WHATSAPP";
   fromAddress: string;
   /** Client lu dans un e-mail transféré à la main par l'équipe ; null sinon. */
   originalSender: string | null;
@@ -42,10 +44,14 @@ export interface IntakeChannels {
   /** Codes de confirmation envoyés par Gmail à l'adresse TutelLiv (24 dernières heures). */
   /** Selon le compte Gmail : un code à saisir dans Gmail, ou un lien d'approbation (format de novembre 2026). */
   gmailConfirmations?: { code: string | null; link?: string | null; requester: string | null; receivedAt: string }[];
+  /** WHATSAPP-1 : numéro de TutelLiv vers lequel l'équipe transfère les messages des clients. */
+  whatsapp?: { enabled: boolean; configured: boolean; number: string | null };
+  /** Membres qui peuvent transférer ; `phone` null quand leur profil n'a pas de numéro lisible. */
+  whatsappTeam?: { name: string; phone: string | null }[];
 }
 
 export type IntakeChannelAction =
-  | { channel: "orderLink" | "inboundEmail"; enabled: boolean }
+  | { channel: "orderLink" | "inboundEmail" | "whatsapp"; enabled: boolean }
   | { channel: "orderLink" | "inboundEmail"; rotate: true }
   | { channel: "inboundEmail"; mailbox: string | null };
 

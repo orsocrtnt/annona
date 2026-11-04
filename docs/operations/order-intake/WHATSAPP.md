@@ -110,12 +110,20 @@ Amélioration possible (à décider, section 9) : le dispatcher transfère d'abo
 
 Chaque migration passe d'abord sur `tutelliv-dev`, puis en préproduction avec ton accord demandé au début de l'étape.
 
+## 8 bis. État au 4 novembre 2026
+
+Décision du propriétaire : **option A maintenant, B préparée** pour basculer dès que Meta aura validé TutelLiv comme prestataire technique.
+
+- Codé (étapes 1 à 3) : webhook signé `/api/webhooks/whatsapp`, réglage « WhatsApp » par entreprise avec la liste des numéros reconnus de l'équipe, messages rangés avec les e-mails reçus (colonne `channel`), analyse sans prendre le membre de l'équipe pour le client, client cherché par l'e-mail ou le téléphone écrits dans le message, confirmation à l'e-mail lu.
+- Préparé pour B : `resolveWhatsAppTarget` est le seul endroit qui choisit l'entreprise ; un autre `phone_number_id` que celui de TutelLiv y est pour l'instant ignoré. B ajoutera une table des numéros reliés (entreprise, `phone_number_id`, jeton) et le bouton « Relier mon WhatsApp » (inscription intégrée de Meta) ; le reste ne change pas.
+- Pas encore fait : message d'aide au numéro inconnu (étape 4, demande un jeton d'accès Meta), essai réel sur un téléphone.
+
 ## 9. Décisions à prendre par le propriétaire
 
-1. **Option** : A (numéro TutelLiv et « Transférer ») pour commencer ? Conseil : oui ; B seulement si les pilotes le demandent.
+1. **Option** : tranché le 4 novembre 2026 : A maintenant, B dès la validation de Meta.
 2. **Numéro** : une nouvelle ligne dédiée (conseillé), ou un numéro existant jamais utilisé dans WhatsApp ?
 3. **Carte de contact** : la proposer dès l'étape 3, ou attendre de voir si les dispatchers en ont besoin ?
-4. **Calendrier** : essayer d'abord le partage par e-mail (section 3 bis, sans code) ? Puis ouvrir le compte Meta non vérifié et coder avec le numéro de test, sans attendre le SIREN ? Conseil : oui aux deux ; la vérification de l'entreprise suivra le SIREN.
+4. **Calendrier** : tranché le 4 novembre 2026 : A codée tout de suite, démarches Meta (compte, vérification, prestataire technique) dès le SIREN, puis B.
 
 ## 10. Critères de fin
 

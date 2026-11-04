@@ -40,7 +40,7 @@
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
 - MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (régler `NEXT_PUBLIC_APP_URL` sur `https://tutelliv.fr` (Vercel, Preview `preproduction`) et retirer le filtre Gmail d'essai ; Outlook plus tard (décidé le 4 novembre) ; ensuite Claude)
-- WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller (relire la spécification et trancher la section 9 ; essayer le partage par e-mail ; ouvrir le compte développeur Meta ; ensuite Claude)
+- WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller (après le SIREN : compte Meta Business, numéro dédié, variables Vercel ; ensuite Claude)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -63,7 +63,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - MAIL-PONT : essai Gmail réussi le 4 novembre. À faire : dans Vercel, mettre `NEXT_PUBLIC_APP_URL` = `https://tutelliv.fr` pour Preview `preproduction` (les liens de suivi des e-mails pointent vers l'adresse `…vercel.app`), puis redéployer ; supprimer le filtre Gmail d'essai (Paramètres > Filtres) ; fournir une boîte Outlook pour l'essai Outlook.
-- WHATSAPP-1 : relire `docs/operations/order-intake/WHATSAPP.md` et trancher la section 9 (option A conseillée) ; essayer tout de suite « Partager par e-mail » depuis WhatsApp vers l'adresse de commandes (sans code) ; ouvrir un compte développeur Meta non vérifié (pas besoin du SIREN pour coder avec le numéro de test) ; la vérification de l'entreprise et le numéro dédié viendront après le SIREN.
+- WHATSAPP-1 : option A codée (le dispatcher transfère le message au numéro TutelLiv). Dès le SIREN : créer le compte Meta Business au nom de la société et lancer sa vérification, prévoir une ligne dédiée jamais utilisée sur WhatsApp, puis me donner accès pour créer l'application Meta ; tu poseras ensuite dans Vercel `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_DISPLAY_NUMBER`. En même temps : demander à Meta le statut de prestataire technique pour l'option B.
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
@@ -374,7 +374,17 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller.** Demande du propriétaire du 4 novembre 2026. Spécification : `docs/operations/order-intake/WHATSAPP.md` (règles de Meta vérifiées en ligne le 4 novembre : pas de renvoi automatique, API officielle seulement, vérification de l'entreprise, messages reçus gratuits, message transféré sans auteur d'origine, règle de Meta sur l'IA). Conseil : option A, un numéro TutelLiv vers lequel le dispatcher transfère le message ; l'entreprise est reconnue par le numéro du dispatcher.
 
-  **Qui : Toi — relire la spécification et trancher la section 9 ; essayer le partage par e-mail ; ouvrir le compte développeur Meta ; ensuite Claude.**
+  **Qui : Toi — après le SIREN : compte Meta Business, numéro dédié, variables Vercel ; ensuite Claude.**
+
+  4 novembre 2026, décision du propriétaire : **option A maintenant, B préparée** (« part du principe que j'ai le SIREN »). Fait :
+  - Base : enum `InboundChannel` et colonne `inbound_order_emails.channel`, `company_intake_channels.whatsapp_enabled` (migration `20261104020000_whatsapp_inbound`, appliquée sur tutelliv-dev et en préproduction avec ton accord).
+  - `src/domains/order-intake/whatsapp.service.ts` : signature `X-Hub-Signature-256`, abonnement par jeton, lecture des messages (accusés et réactions écartés, légende d'une photo lue), entreprise trouvée par le numéro du membre de l'équipe (administrateur, mini-admin, dispatcher, actif ; numéro présent dans deux entreprises : ignoré), réglage par entreprise. `resolveWhatsAppTarget` est le seul point à changer pour l'option B.
+  - Route `GET/POST /api/webhooks/whatsapp` ; file commune `queueInboundMessage` (plafond, tâche d'analyse, purge) partagée avec l'e-mail.
+  - Analyse : le numéro de l'équipe n'est jamais pris pour le client ; client cherché par l'e-mail, sinon le téléphone, retrouvés dans le texte (`matchCustomerFromText`) ; l'e-mail lu reçoit la confirmation, jamais le numéro de l'équipe.
+  - Écran : ligne « WhatsApp » dans « Commandes sans connexion » (numéro, activer, liste des numéros reconnus de l'équipe), messages marqués « Reçu par WhatsApp, transféré par … », carte renommée « Messages de commande reçus ».
+  - Docs : `WHATSAPP.md` (section 8 bis, décisions), `README.md` de l'order-intake, `.env.example`.
+  Vérifications : `tests/whatsapp-intake.test.ts` (7 tests) et un test de reconnaissance par le texte dans `tests/order-intake.test.ts` ; `npm run check` vert (1 580 tests) ; build de production dans un worktree isolé ; E2E `tests/e2e/public-order.spec.ts` sur ce build (port 3110, variables WhatsApp de test) : parcours « WHATSAPP » vert (route signée et rejeu, analyse, réglage affiché, vrai clic « Créer la commande », client reconnu, confirmation programmée à l'e-mail lu), et les 4 autres parcours du fichier verts aussi (LIEN relancé seul après suppression de 3 commandes de test laissées par un passage interrompu). Les E2E existants ont été rendus robustes au mode « créneaux » de l'environnement de démo 1 (choix du créneau, lien public) et nettoient leurs commandes même en échec.
+  Non vérifié : essai réel avec Meta (pas de compte), message d'aide au numéro inconnu (étape 4, demande un jeton d'accès), option B.
 
   4 novembre 2026, question « on peut pas faire autrement ? » : section 3 bis ajoutée à la spécification. Deux chemins sans SIREN : (1) WhatsApp → Partager → e-mail vers l'adresse de commandes, qui réutilise MAIL-PONT sans code (geste à essayer sur iPhone et Android) ; (2) API officielle avec un compte Meta non vérifié, plafonné à environ 250 conversations lancées par l'entreprise par jour (sources de prestataires), ce qui ne gêne pas la réception, et numéro de test de Meta pour coder. Écarté : bibliothèques non officielles (contraires aux conditions, risque de bannissement). Vérification : `npm run docs:verify`. Non vérifié : plafonds dans l'aide de Meta, réception sur le numéro de test, geste de partage.
 

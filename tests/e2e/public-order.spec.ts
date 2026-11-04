@@ -2,9 +2,11 @@ import { createHmac } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "../../src/services/prisma/client";
 import { analyzeInboundEmailJob, ingestInboundEmail } from "../../src/domains/order-intake/inbound-email.service";
+import { ingestWhatsAppWebhook } from "../../src/domains/order-intake/whatsapp.service";
 import { buildOrderIntakeDraft } from "../../src/domains/order-intake/order-intake.draft";
 import { matchCustomerBySender } from "../../src/domains/order-intake/order-intake.customer";
 import type { OrderIntakeExtraction } from "../../src/domains/order-intake/order-intake.schema";
+import { deliverySlotKey, parseDeliverySlots } from "../../src/lib/validations/delivery-slots";
 
 /** Commande et suivi sans connexion, e-mails reçus : base de développement, données E2E supprimées à la fin. */
 const field = (value: string | null) => ({ value, confidence: "high" as const, source: value });
@@ -33,6 +35,24 @@ async function loginAdmin(page: Page) {
   expect(me.status()).toBe(200);
 }
 
+/** Créneau imposé par l'entreprise de la démo tirée (mode « créneaux ») ; null en mode « journée ». */
+async function companySlot(companyId: string): Promise<string | null> {
+  const company = await prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { settings: true } });
+  const slots = parseDeliverySlots((company.settings as Record<string, unknown> | null)?.deliverySlots);
+  return slots.mode === "SLOTS" && slots.slots[0] ? deliverySlotKey(slots.slots[0]) : null;
+}
+
+/** Choisit le premier créneau quand l'entreprise en impose ; attend que le champ soit affiché. */
+async function pickSlot(page: Page, companyId: string) {
+  if (!(await companySlot(companyId))) return;
+  const slot = page.getByRole("combobox", { name: "Créneau de livraison" });
+  await expect(slot).toBeVisible();
+  await slot.click();
+  await page.getByRole("listbox").getByRole("option").first().click();
+  await expect(slot).not.toHaveText(/Choisir/);
+}
+
+let publicSlot: string | null = null;
 const tomorrow = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const BODY = (key: string, overrides: Record<string, unknown> = {}) => ({
   idempotencyKey: key,
@@ -43,6 +63,7 @@ const BODY = (key: string, overrides: Record<string, unknown> = {}) => ({
   delivery: { address: "5 place de la Défense", city: "Courbevoie", postalCode: "92400" },
   quantity: 2,
   requestedDeliveryDate: tomorrow(),
+  ...(publicSlot ? { requestedDeliverySlot: publicSlot } : {}),
   ...overrides,
 });
 
@@ -62,6 +83,7 @@ test("LIEN : commander sans compte, suivre, plafond, lien coupé", async ({ page
     const url = (await (await page.request.get("/api/company/intake-channels")).json()).data.orderLink.url as string;
     const token = url.split("/").pop()!;
     companyId = (await prisma.companyIntakeChannel.findUniqueOrThrow({ where: { orderLinkToken: token } })).companyId;
+    publicSlot = await companySlot(companyId);
 
     // Visiteur sans session.
     const anon = await browser.newContext({ baseURL: page.url().split("/dashboard")[0] });
@@ -128,8 +150,9 @@ test("LIEN : commander sans compte, suivre, plafond, lien coupé", async ({ page
     for (let index = 0; index < 6; index += 1) {
       statuses.push((await api.post(`/api/public/orders/${token}`, { headers: source, data: BODY(`public-e2e-limit-${index}`) })).status());
     }
-    expect(statuses).toEqual([201, 201, 201, 201, 201, 429]);
+    // Rangées avant l'assertion : un échec ne laisse pas de commandes qui fausseraient le plafond suivant.
     orderIds.push(...(await prisma.order.findMany({ where: { companyId, idempotencyKey: { startsWith: "public-e2e-limit-" } }, select: { id: true } })).map(({ id }) => id));
+    expect(statuses).toEqual([201, 201, 201, 201, 201, 429]);
 
     // Lien coupé : plus rien pour le visiteur.
     expect((await page.request.patch("/api/company/intake-channels", { data: { channel: "orderLink", enabled: false } })).status()).toBe(200);
@@ -140,6 +163,7 @@ test("LIEN : commander sans compte, suivre, plafond, lien coupé", async ({ page
     expect(errors).toEqual([]);
     await anon.close();
   } finally {
+    publicSlot = null;
     if (orderIds.length) {
       const deliveries = await prisma.delivery.findMany({ where: { orderId: { in: orderIds } }, select: { id: true } });
       await prisma.operationJob.deleteMany({ where: { OR: deliveries.map(({ id }) => ({ jobKey: { contains: id } })) } }).catch(() => undefined);
@@ -275,7 +299,7 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     expect(ignored.status).toBe("DISMISSED");
     expect(ignored.bodyText).toBe("");
     await toSort.getByRole("listitem").filter({ hasText: "E2E bon de commande" }).getByRole("button", { name: "Ignorer" }).click();
-    await expect(toSort).toHaveCount(0);
+    await expect(page.getByTestId("inbound-to-sort").getByRole("listitem").filter({ hasText: /E2E (merci pour hier|bon de commande)/ })).toHaveCount(0);
 
     // MAIL-PONT, étape 5 : confirmation au client cochée par défaut, adressée à l'expéditeur d'origine.
     await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", mailbox: "commandes@e2e-transport.test" } });
@@ -284,6 +308,7 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
 
     // Vrai clic : le double clic ne crée qu'une commande et l'e-mail se classe seul.
     await page.getByLabel(/^Client/).selectOption({ index: 1 });
+    await pickSlot(page, companyId);
     await page.getByRole("button", { name: "Créer la commande" }).dblclick();
     await expect(page.getByText(/Commande créée/).first()).toBeVisible({ timeout: 60_000 });
     await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } })).status, { timeout: 30_000 }).toBe("CONVERTED");
@@ -346,13 +371,7 @@ test("E-MAIL fiche client : client inconnu créé au clic, reconnu au second e-m
     };
 
     // Selon l'espace de démo, le créneau n'est pas toujours prérempli depuis l'échéance : le choisir.
-    const pickSlotIfNeeded = async () => {
-      const slot = page.getByRole("combobox", { name: /Créneau de livraison/ });
-      if ((await slot.count()) && /Choisir/.test((await slot.textContent()) ?? "")) {
-        await slot.click();
-        await page.getByRole("listbox").getByRole("option").first().click();
-      }
-    };
+    const pickSlotIfNeeded = () => pickSlot(page, companyId);
 
     // 1. Client inconnu : « Nouveau client » présélectionné, adresse préremplie ; aucune fiche avant le clic.
     const first = await receive("E2E fiche premier");
@@ -472,6 +491,111 @@ test("E-MAIL : boîte de commandes enregistrée et code de confirmation Gmail af
     expect((await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", mailbox: "pas une adresse" } })).status()).toBe(400);
   } finally {
     await prisma.inboundOrderEmail.deleteMany({ where: { id: { in: ids } } });
+    if (companyId) await prisma.companyIntakeChannel.deleteMany({ where: { companyId } });
+    await page.request.post("/api/auth/logout").catch(() => undefined);
+  }
+});
+
+test("WHATSAPP : message transféré par l'équipe, signé, brouillon, commande et confirmation au client lu", async ({ page, request }) => {
+  test.setTimeout(300_000);
+  const rowIds: string[] = [];
+  let orderId: string | null = null;
+  let companyId = "";
+  let staff: { id: string; phone: string | null } | null = null;
+  const secret = process.env.WHATSAPP_APP_SECRET?.trim() ?? "";
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || "e2e-phone-number-id";
+  const env = { WHATSAPP_APP_SECRET: secret || "e2e", WHATSAPP_VERIFY_TOKEN: "e2e", WHATSAPP_PHONE_NUMBER_ID: phoneNumberId, WHATSAPP_DISPLAY_NUMBER: "+33 1 00 00 00 00" };
+  try {
+    // Abonnement et signature : refusés sans le bon jeton ni la bonne signature.
+    expect((await request.get("/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=faux&hub.challenge=1")).status()).toBe(403);
+    expect((await request.post("/api/webhooks/whatsapp", { data: "{}", headers: { "x-hub-signature-256": `sha256=${"0".repeat(64)}` } })).status()).toBe(401);
+
+    await loginAdmin(page);
+    expect((await page.request.patch("/api/company/intake-channels", { data: { channel: "whatsapp", enabled: true } })).status()).toBe(200);
+    companyId = (await prisma.companyIntakeChannel.findFirstOrThrow({ where: { whatsappEnabled: true }, orderBy: { updatedAt: "desc" } })).companyId;
+    staff = await prisma.user.findFirstOrThrow({ where: { companyId, status: "ACTIVE", role: { systemRole: "COMPANY_ADMIN" } }, select: { id: true, phone: true }, orderBy: { createdAt: "asc" } });
+    const digits = `7${String(Date.now()).slice(-8)}`;
+    await prisma.user.update({ where: { id: staff.id }, data: { phone: `0${digits}` } });
+    const client = await prisma.user.findFirstOrThrow({ where: { companyId, status: "ACTIVE", role: { systemRole: "CLIENT" } }, select: { id: true, email: true } });
+    const messageId = `wamid.e2e-${Date.now()}`;
+    const event = {
+      object: "whatsapp_business_account",
+      entry: [{ id: "waba", changes: [{ field: "messages", value: {
+        messaging_product: "whatsapp",
+        metadata: { phone_number_id: phoneNumberId },
+        messages: [{ id: messageId, from: `33${digits}`, type: "text", context: { forwarded: true }, text: { body: `E2E WhatsApp : 2 plis de Rivoli à la Défense, client ${client.email}` } }],
+      } }] }],
+    };
+    if (secret) {
+      // Serveur lancé avec les variables WhatsApp : vrai passage par la route signée, puis rejeu.
+      const body = JSON.stringify(event);
+      const signature = `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        expect((await request.post("/api/webhooks/whatsapp", { data: body, headers: { "content-type": "application/json", "x-hub-signature-256": signature } })).status()).toBe(200);
+      }
+    } else {
+      expect(await ingestWhatsAppWebhook(event, { env })).toEqual({ stored: 1, duplicate: 0, ignored: 0, over_limit: 0 });
+      expect(await ingestWhatsAppWebhook(event, { env }), "rejeu").toEqual({ stored: 0, duplicate: 1, ignored: 0, over_limit: 0 });
+    }
+    const rows = await prisma.inboundOrderEmail.findMany({ where: { providerEmailId: `whatsapp:${messageId}` } });
+    expect(rows, "un seul message malgré le rejeu").toHaveLength(1);
+    const stored = rows[0]!;
+    rowIds.push(stored.id);
+    expect(stored.companyId).toBe(companyId);
+    expect(stored.channel).toBe("WHATSAPP");
+    expect(stored.fromAddress).toBe(`+33${digits}`);
+
+    // Analyse simulée : le numéro de l'équipe n'est jamais passé comme client.
+    await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } })).status, { timeout: 30_000 }).not.toBe("RECEIVED");
+    await prisma.inboundOrderEmail.updateMany({ where: { id: stored.id }, data: { status: "RECEIVED", originalSender: null } });
+    let analyzed: Record<string, unknown> = {};
+    await analyzeInboundEmailJob({ inboundEmailId: stored.id }, {
+      analyze: async (input) => {
+        analyzed = input as Record<string, unknown>;
+        const draft = buildOrderIntakeDraft(EXTRACTION, stored.bodyText, new Date());
+        draft.customerMatch = await matchCustomerBySender(companyId, client.email);
+        draft.senderEmail = client.email.toLowerCase();
+        return { status: "ok", draft };
+      },
+    });
+    expect(analyzed.sender, "pas d'expéditeur client").toBeUndefined();
+    expect(analyzed.matchCustomerFromText).toBe(true);
+    const analyzedRow = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } });
+    expect(analyzedRow.status).toBe("ANALYZED");
+    expect(analyzedRow.originalSender, "client lu dans le message").toBe(client.email.toLowerCase());
+
+    // Réglage visible : numéro reconnu de l'équipe ; puis relecture et vrai clic de validation.
+    await page.request.patch("/api/orders/intake", { data: { enabled: true } });
+    await page.goto("/dashboard/orders/intake");
+    const row = page.getByTestId("channel-whatsapp");
+    if (await row.count()) {
+      await expect(row.getByText("WhatsApp", { exact: true })).toBeVisible();
+      await expect(page.getByTestId("whatsapp-team").getByText(`0${digits}`)).toBeVisible();
+    }
+    const card = page.getByRole("listitem").filter({ hasText: "Message WhatsApp" }).filter({ hasText: `+33${digits}` });
+    await expect(card.getByText("Brouillon prêt")).toBeVisible();
+    await expect(card.getByText(`Reçu par WhatsApp, transféré par +33${digits}`, { exact: false })).toBeVisible();
+    await card.getByRole("button", { name: "Relire le brouillon" }).click();
+    await pickSlot(page, companyId);
+    await expect(page.getByLabel(new RegExp(`Envoyer la confirmation au client \\(${client.email.toLowerCase().replace(/[.+]/g, "\\$&")}\\)`))).toBeChecked();
+    await page.getByRole("button", { name: "Créer la commande" }).click();
+    await expect(page.getByText(/Commande créée/).first()).toBeVisible({ timeout: 60_000 });
+    await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } })).status, { timeout: 30_000 }).toBe("CONVERTED");
+    const orders = await prisma.order.findMany({ where: { companyId, idempotencyKey: `inbound-${stored.id}-0` }, select: { id: true, customerId: true } });
+    expect(orders).toHaveLength(1);
+    orderId = orders[0]!.id;
+    expect(orders[0]!.customerId, "client reconnu par l'e-mail du message").toBe(client.id);
+    const job = await prisma.operationJob.findUnique({ where: { jobKey: `inbound-confirmation:${stored.id}` } });
+    expect(job, "confirmation au client lu, jamais au numéro de l'équipe").not.toBeNull();
+    expect((await prisma.orderTrackingLink.findUniqueOrThrow({ where: { orderId } })).guestEmail).toBe(client.email.toLowerCase());
+  } finally {
+    await prisma.operationJob.deleteMany({ where: { jobKey: { in: rowIds.flatMap((id) => [`inbound-email:${id}`, `inbound-confirmation:${id}`]) } } });
+    await prisma.inboundOrderEmail.deleteMany({ where: { id: { in: rowIds } } });
+    if (orderId) {
+      await prisma.saasUsageEvent.deleteMany({ where: { orderId } }).catch(() => undefined);
+      await prisma.order.deleteMany({ where: { id: orderId } });
+    }
+    if (staff) await prisma.user.update({ where: { id: staff.id }, data: { phone: staff.phone } });
     if (companyId) await prisma.companyIntakeChannel.deleteMany({ where: { companyId } });
     await page.request.post("/api/auth/logout").catch(() => undefined);
   }

@@ -55,9 +55,19 @@ Mise en service (propriétaire) :
 
 Garde-fous : signature Svix vérifiée sur le corps brut (5 minutes de tolérance), expéditeur jamais considéré comme prouvé, 200 e-mails par jour et par entreprise, texte seul (HTML réduit, pièces jointes non lues), corps et brouillon effacés au traitement, ligne supprimée après 30 jours.
 
+## Commandes WhatsApp (WHATSAPP-1, option A, 4 novembre 2026)
+
+Un membre de l'équipe transfère le message WhatsApp d'un client au numéro WhatsApp de TutelLiv. Le message rejoint la liste des messages reçus, avec la même analyse, le même tri et la même validation que l'e-mail. Spécification et option B (numéro de l'entreprise relié) : [WHATSAPP.md](WHATSAPP.md).
+
+- Webhook `GET/POST /api/webhooks/whatsapp` : abonnement par `WHATSAPP_VERIFY_TOKEN`, signature `X-Hub-Signature-256` vérifiée avec `WHATSAPP_APP_SECRET` sur le corps brut.
+- Entreprise reconnue par le numéro du membre (profil, rôles administrateur, mini-admin ou dispatcher, compte actif) ; numéro inconnu ou présent dans deux entreprises : ignoré, rien n'est gardé. L'entreprise doit activer « WhatsApp » dans ses réglages.
+- Le numéro du membre n'est jamais pris pour le client : le client est cherché par l'e-mail, sinon le téléphone, écrits dans le message ; l'e-mail lu reçoit la confirmation.
+- Photo, vocal ou document : non lus, rangés dans « À trier » (la légende d'une photo est lue).
+- Variables : `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_DISPLAY_NUMBER`.
+
 ## Hors tranche (documenté, non développé)
 
-- **WhatsApp Business** (spécifié depuis dans [WHATSAPP.md](WHATSAPP.md)) : API Cloud de Meta en direct ou via un fournisseur agréé ; vérification de l'entreprise, numéro dédié, modèles de messages approuvés hors fenêtre de 24 h, tarification par conversation ou par message à vérifier au moment du choix, consentement explicite des clients (opt-in) et information RGPD. Mêmes règles : brouillon puis validation humaine.
+- **WhatsApp, option B** (numéro de chaque entreprise relié par l'inscription intégrée de Meta) : voir [WHATSAPP.md](WHATSAPP.md). Modèles de messages approuvés hors fenêtre de 24 h, consentement des clients et information RGPD à traiter. Mêmes règles : brouillon puis validation humaine.
 
 Ces deux canaux réutiliseraient tel quel le domaine `src/domains/order-intake` (analyse, brouillon, quota), seule l'entrée change.
 
@@ -66,3 +76,4 @@ Ces deux canaux réutiliseraient tel quel le domaine `src/domains/order-intake` 
 - `tests/order-intake.test.ts` : extraction sur fixtures e-mail, SMS, WhatsApp, multi-livraisons ; dates relatives à Paris (heure d'hiver et d'été) ; champs manquants ; extrait inventé ; sortie hors schéma ; injection ; texte trop long ; fonction désactivée ou clé absente ; quota par entreprise et concurrent ; rapprochement client dans l'entreprise ; double clic.
 - `tests/order-intake-routes.test.ts` : rôles refusés, entreprise de la session, statuts HTTP, activation, fournisseur Anthropic simulé (paramètres, refus, troncature, JSON illisible), interface et documentation.
 - `tests/e2e/order-intake.spec.ts` : parcours navigateur écrit, **non lancé**.
+- `tests/whatsapp-intake.test.ts` : signature Meta, abonnement, lecture des messages, entreprise du membre qui transfère, numéro inconnu ou ambigu, option B ignorée tant qu'elle n'est pas branchée ; `tests/e2e/public-order.spec.ts` (« WHATSAPP ») : parcours complet jusqu'à la commande.

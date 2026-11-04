@@ -200,9 +200,8 @@ export async function ingestInboundEmail(
   const { companyId } = channel;
 
   if (await prisma.inboundOrderEmail.findUnique({ where: { providerEmailId: emailId }, select: { id: true } })) return "duplicate";
-  const dayWindow = { companyId, createdAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } };
   // Premier contrôle sans verrou : un plafond déjà atteint n'appelle pas le fournisseur.
-  if ((await prisma.inboundOrderEmail.count({ where: dayWindow })) >= INBOUND_DAILY_LIMIT) return "over_limit";
+  if ((await prisma.inboundOrderEmail.count({ where: inboundDayWindow(companyId, now) })) >= INBOUND_DAILY_LIMIT) return "over_limit";
 
   const apiKey = env.RESEND_API_KEY?.trim();
   if (!apiKey) throw new Error("INBOUND_NOT_CONFIGURED");
@@ -236,24 +235,53 @@ export async function ingestInboundEmail(
   }) > 0;
   const originalSender = fromTeam ? forwardedSender(body, from) : null;
 
+  return queueInboundMessage(companyId, {
+    providerEmailId: emailId,
+    fromAddress: from,
+    originalSender,
+    subject,
+    bodyText: body,
+    attachmentCount: Array.isArray(email.attachments) ? email.attachments.length : 0,
+  }, now);
+}
+
+const inboundDayWindow = (companyId: string, now: Date) => ({ companyId, createdAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } });
+
+export type InboundMessageData = {
+  providerEmailId: string;
+  channel?: "EMAIL" | "WHATSAPP";
+  fromAddress: string;
+  originalSender?: string | null;
+  subject: string;
+  bodyText: string;
+  attachmentCount: number;
+};
+
+/**
+ * Commun à l'e-mail et à WhatsApp (WHATSAPP-1) : enregistre le message reçu sous le plafond quotidien
+ * de l'entreprise, programme son analyse dans la même transaction, puis purge ce qui a expiré.
+ */
+export async function queueInboundMessage(companyId: string, message: InboundMessageData, now = new Date()): Promise<InboundIngestResult> {
+  const dayWindow = inboundDayWindow(companyId, now);
   const jobId = await prisma.$transaction(async (tx) => {
-    // Recompte sous verrou par entreprise : des e-mails simultanés ne dépassent plus le plafond.
+    // Recompte sous verrou par entreprise : des messages simultanés ne dépassent plus le plafond.
     await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`tutelliv:inbound-email:${companyId}`}))`;
     if ((await tx.inboundOrderEmail.count({ where: dayWindow })) >= INBOUND_DAILY_LIMIT) return "over_limit" as const;
     const created = await tx.inboundOrderEmail.createMany({
       data: [{
         companyId,
-        providerEmailId: emailId,
-        fromAddress: from,
-        originalSender,
-        subject: dbSafeText(subject, 300),
-        bodyText: dbSafeText(body, ORDER_INTAKE_MAX_TEXT_LENGTH),
-        attachmentCount: Array.isArray(email.attachments) ? email.attachments.length : 0,
+        providerEmailId: message.providerEmailId,
+        channel: message.channel ?? "EMAIL",
+        fromAddress: message.fromAddress,
+        originalSender: message.originalSender ?? null,
+        subject: dbSafeText(message.subject, 300),
+        bodyText: dbSafeText(message.bodyText, ORDER_INTAKE_MAX_TEXT_LENGTH),
+        attachmentCount: message.attachmentCount,
       }],
       skipDuplicates: true,
     });
     if (created.count === 0) return null;
-    const row = await tx.inboundOrderEmail.findUniqueOrThrow({ where: { providerEmailId: emailId }, select: { id: true } });
+    const row = await tx.inboundOrderEmail.findUniqueOrThrow({ where: { providerEmailId: message.providerEmailId }, select: { id: true } });
     const job = await enqueueOperationJob(tx, {
       jobKey: `inbound-email:${row.id}`,
       type: "INBOUND_EMAIL",
@@ -265,7 +293,7 @@ export async function ingestInboundEmail(
   if (jobId === "over_limit") return "over_limit";
   if (!jobId) return "duplicate";
   kickOperationJob(jobId);
-  // Purge au fil de l'eau : aucun e-mail reçu ne survit à la durée de conservation.
+  // Purge au fil de l'eau : aucun message reçu ne survit à la durée de conservation.
   await prisma.inboundOrderEmail.deleteMany({
     where: {
       OR: [
@@ -295,12 +323,19 @@ export async function analyzeInboundEmailJob(
 
   const text = [email.subject ? `Objet : ${email.subject}` : "", email.bodyText].filter(Boolean).join("\n\n").slice(0, ORDER_INTAKE_MAX_TEXT_LENGTH);
   const analyze = deps.analyze ?? analyzeOrderMessage;
-  const result = await analyze({ companyId: email.companyId, text, sender: email.originalSender ?? email.fromAddress });
+  // WHATSAPP-1 : l'expéditeur est le membre de l'équipe qui a transféré, jamais le client. Le client
+  // est cherché par le téléphone ou l'e-mail écrit dans le message ; l'e-mail lu devient le destinataire
+  // de la confirmation, comme le client cité d'un e-mail transféré à la main.
+  const whatsapp = email.channel === "WHATSAPP";
+  const result = await analyze(whatsapp
+    ? { companyId: email.companyId, text, matchCustomerFromText: true }
+    : { companyId: email.companyId, text, sender: email.originalSender ?? email.fromAddress });
   if (result.status === "rate_limited") {
     const now = deps.now ?? new Date();
     throw deferredJobError("INBOUND_ANALYSIS_QUOTA", new Date(now.getTime() + result.retryAfterSeconds * 1000));
   }
-  await prisma.inboundOrderEmail.updateMany({ where: { id, status: "RECEIVED" }, data: inboundAnalysisUpdate(result) });
+  const readClient = whatsapp && result.status === "ok" && result.draft.senderEmail ? { originalSender: result.draft.senderEmail } : {};
+  await prisma.inboundOrderEmail.updateMany({ where: { id, status: "RECEIVED" }, data: { ...inboundAnalysisUpdate(result), ...readClient } });
 }
 
 /** Codes de confirmation Gmail des dernières 24 heures, du plus récent au plus ancien. */
@@ -339,15 +374,16 @@ export async function listInboundEmails(companyId: string) {
     where: { companyId, status: { in: ["RECEIVED", "ANALYZED", "ANALYSIS_FAILED", "NOT_ORDER"] } },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 50,
-    select: { id: true, fromAddress: true, originalSender: true, subject: true, bodyText: true, attachmentCount: true, status: true, draft: true, analysisError: true, createdAt: true },
+    select: { id: true, channel: true, fromAddress: true, originalSender: true, subject: true, bodyText: true, attachmentCount: true, status: true, draft: true, analysisError: true, createdAt: true },
   });
   return rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }));
 }
 
 /** Destinataire de la confirmation : le client d'origine, jamais un membre de l'équipe. */
-async function confirmationRecipient(companyId: string, email: { fromAddress: string; originalSender: string | null }) {
+async function confirmationRecipient(companyId: string, email: { channel: "EMAIL" | "WHATSAPP"; fromAddress: string; originalSender: string | null }) {
   if (email.originalSender) return email.originalSender;
-  if (!email.fromAddress) return null;
+  // WhatsApp : `fromAddress` est le téléphone d'un membre de l'équipe, jamais une adresse de client.
+  if (!email.fromAddress || email.channel === "WHATSAPP") return null;
   const team = await prisma.user.count({
     where: { companyId, email: { equals: email.fromAddress, mode: "insensitive" }, role: { systemRole: { not: "CLIENT" } } },
   });
@@ -371,7 +407,7 @@ export type CloseInboundEmailInput = {
 export async function closeInboundEmail(companyId: string, id: string, input: CloseInboundEmailInput) {
   const email = await prisma.inboundOrderEmail.findFirst({
     where: { id, companyId },
-    select: { fromAddress: true, originalSender: true, status: true },
+    select: { channel: true, fromAddress: true, originalSender: true, status: true },
   });
   if (!email) return { closed: false as const };
   const ids = [...new Set([...(input.orderIds ?? []), ...(input.orderId ? [input.orderId] : [])])].slice(0, 10);

@@ -536,6 +536,25 @@ test("INTAKE quota : par entreprise, refus sans appel au modèle et sans dépass
   assert.deepEqual(raced.map((entry) => entry.status).sort(), ["ok", "rate_limited"]);
 });
 
+test("WHATSAPP-1 : sans expéditeur client, le client est cherché par l'e-mail ou le téléphone lu dans le message", async () => {
+  const memory = memoryDb({ users: CLIENTS });
+  const text = "Bonjour, c'est Sophie (sophie.leroy@cabinet-martin.example) : 2 colis demain 9h rue de Rivoli.";
+  const found = extraction({ customer: { name: none(), email: { value: "sophie.leroy@cabinet-martin.example", confidence: "high", source: "sophie.leroy@cabinet-martin.example" }, phone: none() } });
+  const byEmail = await analyzeOrderMessage({ companyId: "company-a", text, matchCustomerFromText: true }, { db: memory.db as never, env: ENV, now: NOW, provider: fakeProvider(found) });
+  assert.equal(byEmail.status, "ok");
+  if (byEmail.status === "ok") {
+    assert.equal(byEmail.draft.customerMatch?.customerId, "client-a");
+    assert.equal(byEmail.draft.senderEmail, "sophie.leroy@cabinet-martin.example");
+  }
+  // Valeur inventée par le modèle (absente du texte) : jamais utilisée pour choisir un client.
+  const invented = extraction({ customer: { name: none(), email: { value: "sophie.leroy@cabinet-martin.example", confidence: "high", source: "introuvable" }, phone: none() } });
+  const noSource = await analyzeOrderMessage({ companyId: "company-a", text, matchCustomerFromText: true }, { db: memory.db as never, env: ENV, now: NOW, provider: fakeProvider(invented) });
+  if (noSource.status === "ok") assert.equal(noSource.draft.customerMatch, null);
+  // Sans l'option (copier-coller), le texte ne choisit pas le client.
+  const plain = await analyzeOrderMessage({ companyId: "company-a", text }, { db: memory.db as never, env: ENV, now: NOW, provider: fakeProvider(found) });
+  if (plain.status === "ok") assert.equal(plain.draft.customerMatch, null);
+});
+
 test("INTAKE client : rapproché par e-mail ou téléphone, uniquement dans l'entreprise", async () => {
   const memory = memoryDb({ users: CLIENTS });
   const byPhone = await analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.sms, sender: "+33 6 12 34 56 78" }, { db: memory.db as never, env: ENV, now: NOW, provider: fakeProvider(SMS_EXTRACTION) });

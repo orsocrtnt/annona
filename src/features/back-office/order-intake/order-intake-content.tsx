@@ -117,10 +117,12 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   const openEmail = (email: InboundEmailItem) => {
     setActiveEmailId(email.id);
     setConfirmClient(true);
-    setConfirmTarget(email.originalSender ?? email.fromAddress ?? null);
+    // WHATSAPP-1 : `fromAddress` est alors le numéro d'un membre de l'équipe, ni client ni destinataire.
+    const teamForward = email.channel === "WHATSAPP";
+    setConfirmTarget(email.originalSender ?? (teamForward ? null : email.fromAddress) ?? null);
     setConfirmationSent(null);
     setText([email.subject ? `Objet : ${email.subject}` : "", email.bodyText].filter(Boolean).join("\n\n").slice(0, maxLength));
-    setSender(email.originalSender ?? email.fromAddress);
+    setSender(email.originalSender ?? (teamForward ? "" : email.fromAddress));
     analyze.reset();
     setResult((previous) => email.draft
       ? {
