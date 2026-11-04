@@ -28,6 +28,8 @@ Alternative équivalente : l'intégration Supabase du tableau de bord Resend, qu
 
 Les trois modèles à la DA TutelLiv sont générés par `npx tsx scripts/email/render-supabase-templates.ts` dans `docs/operations/email/supabase/` (`signup.html`, `invite.html`, `recovery.html`) ; coller chaque fichier dans **Authentication → Emails → Templates** (« Confirm signup », « Invite user », « Reset password ») avec le sujet affiché par le script. Ne jamais modifier ces fichiers à la main : changer `src/lib/email/email-template.ts` puis régénérer. Les versions générées le 30 octobre 2026 portent la direction « Menthe soignée » avec le logo officiel, les boutons encre et les mentions de sécurité conservées. Elles ne remplacent les versions hébergées qu’après installation dans Supabase ; aucune activation ou installation distante n’est effectuée par le générateur.
 
+Mise à jour du 4 novembre 2026 (MAIL-REPONSE) : Supabase ne permet pas de « répondre à » ; le pied des trois modèles affiche donc « Une question ? Écrivez à orso@tutelliv.fr » (constante `TUTELLIV_REPLY_TO`). Recoller les trois modèles régénérés dans chaque projet Supabase. L'e-mail de bienvenue, envoyé par l'application, porte un vrai « répondre à » vers la même adresse.
+
 ## Avant activation
 
 1. Utiliser un projet Supabase de test et une boîte e-mail contrôlée. Configurer SMTP dans Authentication ; les variables Resend des notifications métier ne configurent pas automatiquement les e-mails Supabase Auth.

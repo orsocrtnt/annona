@@ -18,6 +18,22 @@ const FONT = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica
 
 export type EmailAction = { label: string; url: string };
 
+/** Boîte de TutelLiv (OVH, créée le 4 novembre 2026) : réponses aux e-mails envoyés au nom de TutelLiv. */
+export const TUTELLIV_REPLY_TO = "orso@tutelliv.fr";
+
+/**
+ * Pied de l'e-mail : `none` = ne pas répondre ; `company` = « répondre à » l'entreprise (MAIL-PONT) ;
+ * `tutelliv` = « répondre à » TutelLiv ; `tutelliv-address` = adresse écrite (Supabase Auth, sans « répondre à »).
+ */
+export type EmailReplyMode = "none" | "company" | "tutelliv" | "tutelliv-address";
+
+const FOOTERS: Record<EmailReplyMode, string> = {
+  none: "E-mail automatique envoyé par TutelLiv, plateforme de suivi des livraisons. Merci de ne pas répondre à ce message.",
+  company: "E-mail envoyé par TutelLiv, plateforme de suivi des livraisons, pour le compte de l&#39;entreprise. Votre réponse lui parvient directement.",
+  tutelliv: "E-mail envoyé par TutelLiv, plateforme de suivi des livraisons. Une question ? Répondez simplement à cet e-mail.",
+  "tutelliv-address": `E-mail automatique envoyé par TutelLiv, plateforme de suivi des livraisons. Une question ? Écrivez à <a href="mailto:${TUTELLIV_REPLY_TO}" style="color:inherit">${TUTELLIV_REPLY_TO}</a>.`,
+};
+
 export type EmailLayoutInput = {
   heading: string;
   badge?: string;
@@ -29,8 +45,8 @@ export type EmailLayoutInput = {
   note?: string;
   /** Bandeau du mode recette : rappelle le destinataire initialement visé. */
   testRecipient?: string;
-  /** MAIL-PONT : e-mail envoyé pour une entreprise avec « répondre à » ; le pied invite alors à répondre. */
-  replyAllowed?: boolean;
+  /** Pied : à qui une réponse parvient (défaut `none`). */
+  reply?: EmailReplyMode;
 };
 
 export function escapeHtml(value: string) {
@@ -105,9 +121,7 @@ ${banner}<tr><td class="email-logo-header" align="center" bgcolor="#ffffff" styl
 <tr><td class="email-padding" style="padding:32px;font-family:${FONT}">${body}</td></tr>
 </table>
 </td></tr>
-<tr><td style="padding:20px 4px 0;font-size:12px;line-height:1.5;color:${COLORS.muted}">${input.replyAllowed
-  ? "E-mail envoyé par TutelLiv, plateforme de suivi des livraisons, pour le compte de l&#39;entreprise. Votre réponse lui parvient directement."
-  : "E-mail automatique envoyé par TutelLiv, plateforme de suivi des livraisons. Merci de ne pas répondre à ce message."}</td></tr>
+<tr><td style="padding:20px 4px 0;font-size:12px;line-height:1.5;color:${COLORS.muted}">${FOOTERS[input.reply ?? "none"]}</td></tr>
 </table>
 </td></tr>
 </table>
@@ -123,7 +137,7 @@ const ACTION_LINE = /^(.{2,80}?)\s*:\s*(https?:\/\/\S+)$/;
  * vide, et la première ligne « Libellé : URL » transformée en bouton. Fonction pure : le même texte
  * figé (reprise sous la même clé d'idempotence) donne toujours le même HTML.
  */
-export function renderTextEmailHtml(input: { subject: string; text: string; testRecipient?: string; replyAllowed?: boolean }) {
+export function renderTextEmailHtml(input: { subject: string; text: string; testRecipient?: string; reply?: EmailReplyMode }) {
   let action: EmailAction | undefined;
   const paragraphs = input.text
     .split(/\n\s*\n/)
@@ -141,7 +155,7 @@ export function renderTextEmailHtml(input: { subject: string; text: string; test
     )
     .filter(Boolean);
   const presentation = emailPresentation(input.subject, input.text);
-  return renderEmailLayout({ heading: input.subject, ...presentation, paragraphs, action, testRecipient: input.testRecipient, replyAllowed: input.replyAllowed });
+  return renderEmailLayout({ heading: input.subject, ...presentation, paragraphs, action, testRecipient: input.testRecipient, reply: input.reply });
 }
 
 export type SupabaseAuthEmailType = "signup" | "invite" | "recovery";
@@ -184,6 +198,7 @@ export function renderSupabaseAuthTemplate(type: SupabaseAuthEmailType) {
       paragraphs: copy.paragraphs,
       action: { label: copy.label, url: `{{ .SiteURL }}/reset-password#token_hash={{ .TokenHash }}&type=${type}` },
       note: copy.note,
+      reply: "tutelliv-address",
     }),
   };
 }

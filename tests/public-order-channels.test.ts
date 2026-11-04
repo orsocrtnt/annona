@@ -225,6 +225,22 @@ test("MAIL-PONT : la confirmation porte « répondre à » vers la boîte de com
   assert.equal(bodies[3]!.from, '"LogiExpress Démo via TutelLiv" <no-reply@example.test>');
 });
 
+test("e-mails au nom de TutelLiv : « répondre à » orso@tutelliv.fr, jamais à la place de l'entreprise", async () => {
+  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "cle-de-test", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+  const bodies: Array<Record<string, unknown>> = [];
+  const fetcher = (async (_url: string, init: { body: string }) => {
+    bodies.push(JSON.parse(init.body));
+    return { ok: true, status: 200, json: async () => ({ id: "email_1" }), text: async () => "{}" };
+  }) as unknown as typeof fetch;
+  const base = { to: "gerant@exemple.test", subject: "Bienvenue sur TutelLiv", text: "Bonjour", replayWindowStart: null };
+  await sendTransactionalEmail({ ...base, idempotencyKey: "t1", fromTutelLiv: true }, { env, fetcher, now: NOW });
+  await sendTransactionalEmail({ ...base, idempotencyKey: "t2", fromTutelLiv: true, replyTo: "commandes@transport.test" }, { env, fetcher, now: NOW });
+  assert.deepEqual(bodies[0]!.reply_to, ["orso@tutelliv.fr"]);
+  assert.match(String(bodies[0]!.html), /Une question \? Répondez simplement à cet e-mail/);
+  assert.doesNotMatch(String(bodies[0]!.html), /Merci de ne pas répondre|pour le compte de l&#39;entreprise/);
+  assert.deepEqual(bodies[1]!.reply_to, ["commandes@transport.test"], "une adresse explicite reste prioritaire");
+});
+
 test("MAIL-PONT : nom d'expéditeur « Entreprise via TutelLiv » nettoyé, jamais une autre adresse", () => {
   assert.equal(senderHeader("TutelLiv <no-reply@tutelliv.fr>", "Transports \"Rapides\" <pirate@x.test>\r\nBcc: y@x.test"), '"Transports Rapides pirate@x.test Bcc y@x.test via TutelLiv" <no-reply@tutelliv.fr>');
   assert.equal(senderHeader("no-reply@tutelliv.fr", "Durand & Fils"), '"Durand & Fils via TutelLiv" <no-reply@tutelliv.fr>');

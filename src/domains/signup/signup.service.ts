@@ -1098,6 +1098,7 @@ export async function deliverSignupWelcomeEmail(
   const delivery = await sendTransactionalEmail({
     to: user.email,
     subject: "Bienvenue sur TutelLiv",
+    fromTutelLiv: true,
     text: [
       `Bonjour ${user.firstName},`,
       "",

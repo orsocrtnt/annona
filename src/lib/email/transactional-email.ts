@@ -1,4 +1,4 @@
-import { renderTextEmailHtml } from "./email-template";
+import { renderTextEmailHtml, TUTELLIV_REPLY_TO } from "./email-template";
 
 const EMAIL_TIMEOUT_MS = 10_000;
 const EMAIL_IDEMPOTENCY_KEY_MAX = 256;
@@ -52,6 +52,11 @@ export type TransactionalEmailInput = {
   text: string;
   /** MAIL-PONT : « répondre à » (boîte de commandes de l'entreprise) ; ignoré s'il n'est pas une adresse. */
   replyTo?: string | null;
+  /**
+   * E-mail envoyé au nom de TutelLiv (bienvenue…) : « répondre à » la boîte TutelLiv, sauf `replyTo`
+   * explicite. Jamais pour un e-mail envoyé pour une entreprise : son client doit lui répondre à elle.
+   */
+  fromTutelLiv?: boolean;
   /** MAIL-PONT : nom de l'entreprise, affiché « Entreprise via TutelLiv » devant l'adresse d'envoi. */
   senderName?: string | null;
   idempotencyKey: string;
@@ -196,6 +201,8 @@ export async function sendTransactionalEmail(
   }
 
   const from = senderHeader((env.MAIL_FROM || env.EMAIL_FROM)!.trim(), input.senderName);
+  const requestedReplyTo = input.replyTo ?? (input.fromTutelLiv ? TUTELLIV_REPLY_TO : null);
+  const replyTo = requestedReplyTo && hasAddress(requestedReplyTo.trim()) ? requestedReplyTo.trim().toLowerCase() : null;
   // Rendu figé à la première tentative émise : une reprise envoie exactement le même corps.
   const frozen = input.freezeContent
     ? await input.freezeContent.freeze({ to: input.to, subject: input.subject, text: input.text })
@@ -225,7 +232,7 @@ export async function sendTransactionalEmail(
     subject: safeHeader(content.subject, 180),
     text: content.text,
     testRecipient: testMode ? intendedRecipient : undefined,
-    replyAllowed: Boolean(input.replyTo && hasAddress(input.replyTo.trim())),
+    reply: replyTo ? (input.fromTutelLiv ? "tutelliv" : "company") : "none",
   });
   const idempotencyKey = safeHeader(
     input.idempotencyKey,
@@ -257,7 +264,7 @@ export async function sendTransactionalEmail(
         subject,
         text,
         html,
-        ...(input.replyTo && hasAddress(input.replyTo.trim()) ? { reply_to: [input.replyTo.trim().toLowerCase()] } : {}),
+        ...(replyTo ? { reply_to: [replyTo] } : {}),
       }),
       signal: options.signal ?? AbortSignal.timeout(EMAIL_TIMEOUT_MS),
     }

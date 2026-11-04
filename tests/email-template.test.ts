@@ -60,6 +60,9 @@ test("les modèles Supabase pointent vers /reset-password avec le TokenHash et l
     assert.ok(!html.includes("ConfirmationURL"));
     assert.match(html, /<img[^>]+alt="TutelLiv"/);
     assert.equal((html.match(/<img /g) ?? []).length, 1, "logo seul, aucun pixel de suivi");
+    // Supabase n'envoie pas de « répondre à » : l'adresse de TutelLiv est écrite dans le pied.
+    assert.ok(html.includes('Écrivez à <a href="mailto:orso@tutelliv.fr"'), type);
+    assert.ok(!html.includes("Merci de ne pas répondre"), type);
   }
 });
 
