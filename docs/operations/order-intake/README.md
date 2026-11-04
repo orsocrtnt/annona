@@ -1,6 +1,6 @@
 # Commande par message IA (tranche « coller un message »)
 
-Suite prévue : [MAIL-PONT, boîte de commandes dédiée](MAIL-PONT.md) (spécification du 3 novembre 2026, à relire par le propriétaire).
+Suite prévue : [MAIL-PONT, boîte de commandes dédiée](MAIL-PONT.md) (spécification du 3 novembre 2026, à relire par le propriétaire) ; [WHATSAPP-1, commandes WhatsApp](WHATSAPP.md) (spécification du 4 novembre 2026, à relire, en attente du SIREN).
 
 État : 28 octobre 2026, branche `agent/commande-ia`. Code et tests locaux présents ; **aucun appel réel au modèle, aucune recette navigateur, migration non appliquée.**
 
@@ -57,7 +57,7 @@ Garde-fous : signature Svix vérifiée sur le corps brut (5 minutes de toléranc
 
 ## Hors tranche (documenté, non développé)
 
-- **WhatsApp Business** : API Cloud de Meta en direct ou via un fournisseur agréé ; vérification de l'entreprise, numéro dédié, modèles de messages approuvés hors fenêtre de 24 h, tarification par conversation ou par message à vérifier au moment du choix, consentement explicite des clients (opt-in) et information RGPD. Mêmes règles : brouillon puis validation humaine.
+- **WhatsApp Business** (spécifié depuis dans [WHATSAPP.md](WHATSAPP.md)) : API Cloud de Meta en direct ou via un fournisseur agréé ; vérification de l'entreprise, numéro dédié, modèles de messages approuvés hors fenêtre de 24 h, tarification par conversation ou par message à vérifier au moment du choix, consentement explicite des clients (opt-in) et information RGPD. Mêmes règles : brouillon puis validation humaine.
 
 Ces deux canaux réutiliseraient tel quel le domaine `src/domains/order-intake` (analyse, brouillon, quota), seule l'entrée change.
 
