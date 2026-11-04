@@ -58,6 +58,8 @@ Un e-mail de `forwarding-noreply@google.com` dont l'objet contient « Gmail Forw
 
 Le texte exact envoyé par Gmail sera relevé lors de l'essai réel avant de figer la détection ; repli : tout e-mail de `forwarding-noreply@google.com` est traité ainsi.
 
+**Essai réel du 4 novembre 2026** : renvoi approuvé depuis TutelLiv, filtre Gmail sur un alias, deux commandes fictives, fiche créée puis reconnue, confirmation « Entreprise via TutelLiv » avec `Reply-To` ; détail et constats dans `TODO.md` (MAIL-PONT).
+
 **Relevé du 4 novembre 2026 (vrai compte Gmail)** : objet « (Gmail) Confirmation de transfert – Recevez les messages de x@gmail.com », **sans code** ; le corps contient seulement un lien d'approbation `https://mail-settings.google.com/mail/vf-…`, et l'écran Gmail n'a plus de champ de code. TutelLiv reconnaît désormais ce lien (https vers `mail-settings.google.com` ou `mail.google.com` uniquement) et affiche « Approuver le renvoi dans Gmail » ; l'ancien format à code reste lu.
 
 ### 4.3 Tri commande / autre
