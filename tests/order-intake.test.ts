@@ -114,6 +114,8 @@ function memoryDb(options: {
   users?: UserRow[];
   orders?: Array<{ companyId: string; idempotencyKey: string; customerId: string }>;
   cards?: Array<{ id: string; companyId: string; name: string; email: string; phone: string | null }>;
+  /** OFFER-1 : abonnement de l'entreprise ; historique (toutes fonctions) par défaut, `null` pour aucun. */
+  subscription?: Record<string, unknown> | null;
 } = {}) {
   const usage: Row[] = [...(options.usage ?? [])];
   const cards = options.cards ?? [];
@@ -164,10 +166,16 @@ function memoryDb(options: {
       return row;
     },
   };
+  const subscription = options.subscription === undefined
+    ? { id: "sub-a", kind: "LEGACY", status: "ACTIVE", currentPeriodEnd: null, cancelAtPeriodEnd: false, snapshot: {}, planAssignments: [], items: [] }
+    : options.subscription;
   const db = {
     company: {
       findUnique: async ({ where }: { where: { id: string } }) =>
         where.id === "company-a" ? { settings: options.settings ?? { orderIntake: { enabled: true } } } : null,
+    },
+    saasSubscription: {
+      findUnique: async () => subscription,
     },
     user: {
       findFirst: async ({ where }: { where: Record<string, unknown> }) => {
@@ -424,6 +432,30 @@ test("INTAKE analyse : fonction désactivée par défaut ou clé absente, sans a
   assert.equal(unknownCompany.status, "disabled");
   assert.equal(calls.length, 0);
   assert.deepEqual(enabled.usage, []);
+});
+
+test("OFFER-1 analyse : sans l'option « Réception automatique des commandes », rien n'est analysé", async () => {
+  const calls: unknown[] = [];
+  const plan = (planCode: string, features: string[]) => ({
+    id: "sub-a", kind: "COMMERCIAL", status: "ACTIVE", currentPeriodEnd: null, cancelAtPeriodEnd: false, snapshot: {},
+    premiumDiscoveryEndsAt: null, items: [],
+    planAssignments: [{ snapshot: { schemaVersion: 1, planCode, planName: planCode, features } }],
+  });
+  const analyze = (db: ReturnType<typeof memoryDb>) =>
+    analyzeOrderMessage({ companyId: "company-a", text: FIXTURES.sms }, { db: db.db as never, env: ENV, now: NOW, provider: fakeProvider(SMS_EXTRACTION, calls as never) });
+
+  const starter = memoryDb({ subscription: plan("STARTER", []) });
+  assert.equal((await analyze(starter)).status, "not_included");
+  const none = memoryDb({ subscription: null });
+  assert.equal((await analyze(none)).status, "not_included");
+  const pilot = memoryDb({ subscription: { id: "sub-a", kind: "PILOT", status: "ACTIVE", currentPeriodEnd: null, cancelAtPeriodEnd: false, planAssignments: [], items: [], snapshot: { schemaVersion: 1, mode: "PILOT", limits: { monthlyOrders: 100 }, features: ["auto_dispatch"] } } });
+  assert.equal((await analyze(pilot)).status, "not_included");
+  assert.equal(calls.length, 0);
+  assert.deepEqual(starter.usage, []);
+
+  const pro = memoryDb({ subscription: plan("PRO", ["auto_dispatch", "admin_gps", "order_automation"]) });
+  assert.equal((await analyze(pro)).status, "ok");
+  assert.equal(calls.length, 1);
 });
 
 test("INTAKE analyse : texte trop long ou vide refusé avant toute réservation", async () => {

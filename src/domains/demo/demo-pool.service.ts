@@ -147,6 +147,7 @@ async function createPoolSlot(base: Company, poolKey: string, slot: number) {
                 "client_gps",
                 "advanced_analytics",
                 "priority_support",
+                "order_automation",
               ],
             },
           },

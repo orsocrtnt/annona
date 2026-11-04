@@ -5,6 +5,8 @@ import { withApiHandler } from "@/lib/api/route-handler";
 import { getIntakeChannels, updateIntakeChannel } from "@/domains/public-order/intake-channels.service";
 import { listForwardingConfirmations } from "@/domains/order-intake/inbound-email.service";
 import { listWhatsAppTeam } from "@/domains/order-intake/whatsapp.service";
+import { companyHasSaasFeature } from "@/domains/saas/saas.service";
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 
 const channel = z.enum(["orderLink", "inboundEmail"]);
 const actionSchema = z.union([
@@ -21,10 +23,11 @@ export async function GET() {
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
     if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
-    const [channels, gmailConfirmations, whatsappTeam] = await Promise.all([
+    const [channels, gmailConfirmations, whatsappTeam, automationIncluded] = await Promise.all([
       getIntakeChannels(companyId), listForwardingConfirmations(companyId), listWhatsAppTeam(companyId),
+      companyHasSaasFeature(companyId, "order_automation"),
     ]);
-    return NextResponse.json({ success: true, data: { ...channels, gmailConfirmations, whatsappTeam } });
+    return NextResponse.json({ success: true, data: { ...channels, gmailConfirmations, whatsappTeam, automationIncluded } });
   });
 }
 
@@ -38,9 +41,15 @@ export async function PATCH(request: Request) {
     if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
     const parsed = actionSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return NextResponse.json({ error: "Réglage invalide" }, { status: 400 });
+    // OFFER-1 : e-mails renvoyés et WhatsApp exigent l'option pour être activés ; le lien de commande reste au socle.
+    const automationIncluded = await companyHasSaasFeature(companyId, "order_automation");
+    const action = parsed.data;
+    if ("enabled" in action && action.enabled && action.channel !== "orderLink" && !automationIncluded) {
+      return NextResponse.json({ error: CONFIG_MESSAGES.ORDER_AUTOMATION_NOT_INCLUDED, code: "SAAS_FEATURE_NOT_AVAILABLE" }, { status: 403 });
+    }
     const [channels, gmailConfirmations, whatsappTeam] = await Promise.all([
-      updateIntakeChannel(companyId, parsed.data), listForwardingConfirmations(companyId), listWhatsAppTeam(companyId),
+      updateIntakeChannel(companyId, action), listForwardingConfirmations(companyId), listWhatsAppTeam(companyId),
     ]);
-    return NextResponse.json({ success: true, data: { ...channels, gmailConfirmations, whatsappTeam } });
+    return NextResponse.json({ success: true, data: { ...channels, gmailConfirmations, whatsappTeam, automationIncluded } });
   });
 }

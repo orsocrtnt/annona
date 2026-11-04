@@ -357,8 +357,10 @@ test("ADMIN-COMMANDE routes annexes : options et estimation réservées à l'éq
 
 test("INTAKE route réglage : activation réservée à l'administration, entreprise de la session", async () => {
   const writes: unknown[] = [];
+  let included = true;
   const settingsRoute = (session: Session) => loadRoute<{ GET: () => Promise<Response>; PATCH: (request: Request) => Promise<Response> }>("src/app/api/orders/intake/route.ts", {
     "@/lib/config-messages": require("../src/lib/config-messages"),
+    "@/domains/saas/saas.service": { companyHasSaasFeature: async (_companyId: string, feature: string) => feature === "order_automation" && included },
     "@/lib/api/auth-guard": fakeAuthGuard(session),
     "@/lib/permissions/rbac": { hasPermission: (list: string[], permission: string) => list.includes(permission) },
     "@/domains/order-intake/order-intake.settings": {
@@ -379,7 +381,7 @@ test("INTAKE route réglage : activation réservée à l'administration, entrepr
   const dispatcherGet = await settingsRoute(DISPATCHER).GET();
   assert.equal(dispatcherGet.status, 200);
   assert.deepEqual((await dispatcherGet.json() as { data: unknown }).data, {
-    enabled: false, configured: false, canManage: false, limits: { hourly: 60, daily: 300, maxTextLength: 8000 },
+    enabled: false, included: true, configured: false, canManage: false, limits: { hourly: 60, daily: 300, maxTextLength: 8000 },
   });
   const adminGet = await settingsRoute(ADMIN).GET();
   assert.equal((await adminGet.json() as { data: { canManage: boolean } }).data.canManage, true);
@@ -390,6 +392,15 @@ test("INTAKE route réglage : activation réservée à l'administration, entrepr
   for (const [label, session, status] of REFUSED) {
     assert.equal((await settingsRoute(session).GET()).status, status, label);
   }
+
+  // OFFER-1 : sans l'option, activer est refusé ; désactiver reste possible.
+  included = false;
+  const refused = await settingsRoute(ADMIN).PATCH(patch({ enabled: true }));
+  assert.equal(refused.status, 403);
+  assert.equal((await refused.json() as { code: string }).code, "SAAS_FEATURE_NOT_AVAILABLE");
+  assert.equal((await settingsRoute(ADMIN).PATCH(patch({ enabled: false }))).status, 200);
+  assert.deepEqual(writes, [["company-a", true], ["company-a", false]]);
+  assert.equal((await (await settingsRoute(ADMIN).GET()).json() as { data: { included: boolean } }).data.included, false);
 });
 
 // --- Fournisseur Anthropic, sans aucun appel réseau ----------------------------------------------

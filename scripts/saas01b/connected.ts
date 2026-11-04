@@ -77,11 +77,17 @@ class TestProvider implements SandboxBillingProvider {
 }
 async function main() {
   const catalog = await db.saasCatalogVersion.findFirstOrThrow({ where: { status: "ACTIVE" }, orderBy: { effectiveAt: "desc" }, include: { plans: true, options: true } }) as unknown as SignupCatalog;
-  assert.equal(catalog.code, "C10-2026-10-29");
+  assert.equal(catalog.code, "C11-2026-11-04");
   const c8 = await db.saasPlan.findFirstOrThrow({ where: { catalogVersionId: "saas_catalog_c8_v1", code: "BUSINESS" } });
   assert.equal(c8.unlimitedDriverSeats, true);
   assert.equal(catalog.plans.find((p) => p.code === "BUSINESS")!.includedDriverSeats, 20);
   checked("C9 active; historical C8 untouched; Business20+900 cents to50");
+  // OFFER-1 / C15 : option de réception automatique en Starter (29 € / 12 × 29 €), incluse en Pro et Business.
+  const automation = catalog.options.find((option) => option.code === "ORDER_AUTOMATION")!;
+  assert.deepEqual([automation.featureKey, automation.monthlyPriceCents, automation.annualPriceCents, automation.applicablePlans], ["order_automation", 2900, 34800, ["STARTER"]]);
+  assert.deepEqual(catalog.plans.filter((p) => p.includedFeatures.includes("order_automation")).map((p) => p.code).sort(), ["BUSINESS", "PRO"]);
+  assert.equal(catalog.options.length, (await db.saasOption.count({ where: { catalogVersionId: "saas_catalog_c10_v1" } })) + 1);
+  checked("C11 active: ORDER_AUTOMATION Starter 2900/34800, included Pro+Business, C10 options copied");
   await db.role.upsert({ where: { slug: "company-admin" }, create: { slug: "company-admin", name: "Company admin", systemRole: "COMPANY_ADMIN" }, update: {} });
   const run = Date.now().toString(36), token = `saas01b-${run}`;
   const contract = core.makeBillingContract(catalog, "STARTER", "MONTHLY", []);

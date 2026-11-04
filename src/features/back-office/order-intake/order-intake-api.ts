@@ -3,6 +3,8 @@ import type { IntakeOrderInput } from "@/domains/order-intake/order-intake.form"
 
 export interface OrderIntakeStatus {
   enabled: boolean;
+  /** OFFER-1 : option « Réception automatique des commandes » incluse dans l'offre. */
+  included: boolean;
   configured: boolean;
   canManage: boolean;
   limits: { hourly: number; daily: number; maxTextLength: number };
@@ -48,6 +50,8 @@ export interface IntakeChannels {
   whatsapp?: { enabled: boolean; configured: boolean; number: string | null };
   /** Membres qui peuvent transférer ; `phone` null quand leur profil n'a pas de numéro lisible. */
   whatsappTeam?: { name: string; phone: string | null }[];
+  /** OFFER-1 : faux quand l'offre n'inclut pas la réception automatique (e-mails renvoyés, WhatsApp). */
+  automationIncluded?: boolean;
 }
 
 export type IntakeChannelAction =

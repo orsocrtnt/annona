@@ -53,6 +53,7 @@ export const FEATURE_COMPARISON_ORDER = [
   { key: "client_gps", label: "Carte GPS client" },
   { key: "advanced_analytics", label: "Statistiques avancées" },
   { key: "priority_support", label: "Assistance prioritaire" },
+  { key: "order_automation", label: "Réception automatique des commandes" },
 ] as const;
 
 export function formatSignupMoney(cents: number, currency = "EUR") {

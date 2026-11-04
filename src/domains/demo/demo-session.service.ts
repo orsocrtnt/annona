@@ -124,6 +124,7 @@ export async function ensureDemoSessionEnvironment(
                 "client_gps",
                 "advanced_analytics",
                 "priority_support",
+                "order_automation",
               ],
             },
           },

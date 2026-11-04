@@ -31,6 +31,8 @@ export async function POST(request: Request) {
     switch (result.status) {
       case "ok":
         return intakeJson({ success: true, data: result.draft });
+      case "not_included":
+        return intakeError("SAAS_FEATURE_NOT_AVAILABLE", CONFIG_MESSAGES.ORDER_AUTOMATION_NOT_INCLUDED, 403);
       case "disabled":
         return intakeError("INTAKE_DISABLED", CONFIG_MESSAGES.INTAKE_DISABLED, 403);
       case "not_configured":

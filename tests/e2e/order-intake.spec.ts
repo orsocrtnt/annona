@@ -50,7 +50,7 @@ test("INTAKE : coller, analyser, relire, créer une seule commande malgré le do
     // La clé serveur peut manquer en local : l'état et l'analyse sont simulés.
     await page.route("**/api/orders/intake", async (route) => {
       if (route.request().method() !== "GET") return route.fallback();
-      await route.fulfill({ json: { success: true, data: { enabled: true, configured: true, canManage: true, limits: { hourly: 60, daily: 300, maxTextLength: 8000 } } } });
+      await route.fulfill({ json: { success: true, data: { enabled: true, included: true, configured: true, canManage: true, limits: { hourly: 60, daily: 300, maxTextLength: 8000 } } } });
     });
     let analyzeCalls = 0;
     await page.route("**/api/orders/intake/analyze", async (route) => {
@@ -132,7 +132,7 @@ test("INTAKE : deux livraisons, quantité propre à chacune et absente signalée
     expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);
     await page.route("**/api/orders/intake", async (route) => {
       if (route.request().method() !== "GET") return route.fallback();
-      await route.fulfill({ json: { success: true, data: { enabled: true, configured: true, canManage: true, limits: { hourly: 60, daily: 300, maxTextLength: 8000 } } } });
+      await route.fulfill({ json: { success: true, data: { enabled: true, included: true, configured: true, canManage: true, limits: { hourly: 60, daily: 300, maxTextLength: 8000 } } } });
     });
     await page.route("**/api/orders/intake/analyze", (route) =>
       route.fulfill({ json: { success: true, data: buildOrderIntakeDraft(MULTI_EXTRACTION, MULTI_MESSAGE, new Date()) } })

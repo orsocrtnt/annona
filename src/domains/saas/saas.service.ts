@@ -7,6 +7,7 @@ export const SAAS_FEATURES = [
   "client_gps",
   "advanced_analytics",
   "priority_support",
+  "order_automation",
 ] as const;
 
 export type SaasFeature = (typeof SAAS_FEATURES)[number];
@@ -17,6 +18,7 @@ export const PREMIUM_DISCOVERY_FEATURES = [
   "admin_gps",
   "client_gps",
   "advanced_analytics",
+  "order_automation",
 ] as const satisfies readonly SaasFeature[];
 
 export function premiumDiscoveryEndsAtForPaidSignup(input: {
@@ -745,6 +747,24 @@ export async function assertSaasFeature(
   const access = await resolveCompanySaasAccess(companyId, new Date(), db);
   if (!access.features.has(feature)) throw new Error("SAAS_FEATURE_NOT_AVAILABLE");
   return access;
+}
+
+/**
+ * Variante sans exception : sans abonnement ni formule, la fonction n'est pas incluse.
+ * Sert aux contrôles qui doivent répondre « non incluse » plutôt qu'échouer (OFFER-1, `order_automation`).
+ */
+export async function companyHasSaasFeature(
+  companyId: string,
+  feature: SaasFeature,
+  db: DbClient = prisma
+) {
+  try {
+    const access = await resolveCompanySaasAccess(companyId, new Date(), db);
+    return access.features.has(feature);
+  } catch (error) {
+    if (error instanceof Error && ["SAAS_SUBSCRIPTION_REQUIRED", "SAAS_PLAN_ASSIGNMENT_REQUIRED"].includes(error.message)) return false;
+    throw error;
+  }
 }
 
 export async function assertSaasMutationFeature(

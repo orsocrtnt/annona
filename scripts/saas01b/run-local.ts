@@ -83,6 +83,7 @@ function prepareIsolatedSchema(env: NodeJS.ProcessEnv) {
     "prisma/migrations/20261023180000_catalog_c8_prices/migration.sql",
     "prisma/migrations/20261024011000_catalog_c9_business/migration.sql",
     "prisma/migrations/20261029200000_catalog_c10_dispatch_intelligent/migration.sql",
+    "prisma/migrations/20261104030000_catalog_c11_order_automation/migration.sql",
   ]) {
     psql(["-f", resolve(file)]);
   }

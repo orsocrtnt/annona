@@ -1,5 +1,6 @@
 "use client";
 
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, MessageSquareText } from "lucide-react";
@@ -21,6 +22,7 @@ const MAX_TEXT = 8000;
 /** Messages des codes renvoyés par les routes : chaque état a une issue lisible, jamais une erreur brute. */
 const ERROR_TITLES: Record<string, string> = {
   INTAKE_DISABLED: "Fonction désactivée",
+  SAAS_FEATURE_NOT_AVAILABLE: "Option non incluse dans votre offre",
   INTAKE_NOT_CONFIGURED: "Fonction non configurée",
   QUOTA_REACHED: "Quota atteint",
   INVALID_MESSAGE: "Message à corriger",
@@ -109,7 +111,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
   if (status.isLoading) return <PageSkeleton />;
 
   const info = status.data;
-  const available = Boolean(info?.enabled && info.configured);
+  const available = Boolean(info?.included && info.enabled && info.configured);
   const maxLength = info?.limits.maxTextLength ?? MAX_TEXT;
   const error = analyze.error instanceof OrderIntakeApiError ? analyze.error : null;
 
@@ -175,7 +177,13 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
           </AlertDescription>
         </Alert>
       )}
-      {info && !info.enabled && (
+      {info && !info.included && (
+        <Alert variant="info" data-testid="intake-not-included">
+          <AlertTitle>Option non incluse dans votre offre</AlertTitle>
+          <AlertDescription>{CONFIG_MESSAGES.ORDER_AUTOMATION_NOT_INCLUDED}</AlertDescription>
+        </Alert>
+      )}
+      {info?.included && !info.enabled && (
         <Alert variant="info">
           <AlertTitle>{ERROR_TITLES.INTAKE_DISABLED}</AlertTitle>
           <AlertDescription>
@@ -185,7 +193,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
           </AlertDescription>
         </Alert>
       )}
-      {info?.canManage && <ActivationCard enabled={info.enabled} configured={info.configured} />}
+      {info?.canManage && (info.included || info.enabled) && <ActivationCard enabled={info.enabled} configured={info.configured} />}
       {info?.canManage && <IntakeChannelsCard />}
       <InboundEmailsCard activeId={activeEmailId} onOpen={openEmail} />
 

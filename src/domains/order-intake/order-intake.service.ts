@@ -11,6 +11,7 @@ import {
   type CreateOrderForCompanyCustomerDeps,
   type CreateOrderForCompanyCustomerResult,
 } from "@/domains/company-customer/company-customer.service";
+import { companyHasSaasFeature } from "@/domains/saas/saas.service";
 import { createAnthropicOrderIntakeProvider } from "./anthropic-provider";
 import { matchCustomerBySender } from "./order-intake.customer";
 import { buildOrderIntakeDraft, parseSender, type OrderIntakeDraft } from "./order-intake.draft";
@@ -19,10 +20,12 @@ import { orderIntakeExtractionSchema, orderIntakeRequestSchema } from "./order-i
 import { ORDER_INTAKE_API_KEY_ENV, getOrderIntakeSettings, isOrderIntakeConfigured } from "./order-intake.settings";
 import { completeOrderIntakeCall, releaseOrderIntakeCall, reserveOrderIntakeCall } from "./order-intake.usage";
 
-type OrderIntakeDb = Pick<typeof prisma, "company" | "user" | "companyCustomer" | "orderIntakeUsage" | "$transaction" | "$queryRaw">;
+type OrderIntakeDb = Pick<typeof prisma, "company" | "user" | "companyCustomer" | "orderIntakeUsage" | "saasSubscription" | "$transaction" | "$queryRaw">;
 
 export type AnalyzeOrderMessageResult =
   | { status: "ok"; draft: OrderIntakeDraft }
+  /** OFFER-1 : option « Réception automatique des commandes » absente de l'offre. */
+  | { status: "not_included" }
   | { status: "disabled" }
   | { status: "not_configured" }
   | { status: "invalid"; message: string }
@@ -51,6 +54,10 @@ export async function analyzeOrderMessage(
   const env = deps.env ?? process.env;
   const now = deps.now ?? new Date();
 
+  // OFFER-1 : message collé, e-mail renvoyé et WhatsApp passent tous par cette analyse.
+  if (!(await companyHasSaasFeature(input.companyId, "order_automation", db as Parameters<typeof companyHasSaasFeature>[2]))) {
+    return { status: "not_included" };
+  }
   const settings = await getOrderIntakeSettings(input.companyId, db);
   if (!settings.enabled) return { status: "disabled" };
   if (!isOrderIntakeConfigured(env)) return { status: "not_configured" };

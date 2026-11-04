@@ -226,6 +226,7 @@ test("SAAS-04 : la vue locale affiche la fin et les fonctions jusqu'à J59, puis
     { code: "admin_gps", name: "Carte GPS administrateur" },
     { code: "client_gps", name: "Carte GPS client" },
     { code: "advanced_analytics", name: "Statistiques avancées" },
+    { code: "order_automation", name: "Réception automatique des commandes" },
   ]);
   assert.equal(j60?.premiumDiscovery, null);
   assert.equal(
@@ -260,6 +261,7 @@ test("SAAS-04 : fonctions incluses/achetées conservées, Business et pilote dis
     "advanced_analytics",
     "auto_dispatch",
     "client_gps",
+    "order_automation",
     "priority_support",
   ]);
   assert.deepEqual(sortedFeatures(proJ60), ["admin_gps", "auto_dispatch", "priority_support"]);

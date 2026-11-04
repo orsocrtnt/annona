@@ -7,6 +7,8 @@ import {
   isOrderIntakeConfigured,
   setOrderIntakeEnabled,
 } from "@/domains/order-intake/order-intake.settings";
+import { companyHasSaasFeature } from "@/domains/saas/saas.service";
+import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { ORDER_INTAKE_DAILY_LIMIT, ORDER_INTAKE_HOURLY_LIMIT } from "@/domains/order-intake/order-intake.usage";
 import { ORDER_INTAKE_MAX_TEXT_LENGTH } from "@/domains/order-intake/order-intake.schema";
 import { intakeError, intakeJson, withIntakeErrors } from "./intake-http";
@@ -23,12 +25,16 @@ export async function GET() {
     const companyId = getCompanyId(auth.context);
     if (!companyId) return intakeError("NO_COMPANY", "Entreprise non associée", 400);
 
-    const settings = await getOrderIntakeSettings(companyId);
+    const [settings, included] = await Promise.all([
+      getOrderIntakeSettings(companyId),
+      companyHasSaasFeature(companyId, "order_automation"),
+    ]);
     const role = auth.context.user.role.systemRole;
     return intakeJson({
       success: true,
       data: {
         enabled: settings.enabled,
+        included,
         configured: isOrderIntakeConfigured(),
         canManage: (role === "COMPANY_ADMIN" || role === "MINI_ADMIN") && hasPermission(auth.context.permissions, "settings:update"),
         limits: { hourly: ORDER_INTAKE_HOURLY_LIMIT, daily: ORDER_INTAKE_DAILY_LIMIT, maxTextLength: ORDER_INTAKE_MAX_TEXT_LENGTH },
@@ -51,6 +57,10 @@ export async function PATCH(request: Request) {
 
     const parsed = toggleSchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) return intakeError("INVALID", "Réglage invalide", 400);
+    // OFFER-1 : activer exige l'option ; désactiver reste toujours possible.
+    if (parsed.data.enabled && !(await companyHasSaasFeature(companyId, "order_automation"))) {
+      return intakeError("SAAS_FEATURE_NOT_AVAILABLE", CONFIG_MESSAGES.ORDER_AUTOMATION_NOT_INCLUDED, 403);
+    }
 
     const settings = await setOrderIntakeEnabled(companyId, parsed.data.enabled);
     return intakeJson({ success: true, data: settings });

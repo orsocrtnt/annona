@@ -152,6 +152,9 @@ function OrderMailboxSetup({ data, pending, onSave }: {
   );
 }
 
+/** OFFER-1 : e-mails renvoyés et WhatsApp font partie de l'option « Réception automatique des commandes ». */
+const NOT_INCLUDED = "Option « Réception automatique des commandes » non incluse dans votre offre (incluse en Pro et Business, en option en Starter).";
+
 /** Réglages réservés à l'administration : lien de commande public et adresse de réception. */
 export function IntakeChannelsCard() {
   const channels = useIntakeChannels(true);
@@ -183,7 +186,7 @@ export function IntakeChannelsCard() {
               description="Renvoyez-y automatiquement votre boîte de commandes (guide ci-dessous), ou transférez-y vos e-mails. Chaque commande devient un brouillon ci-dessous, à relire et valider : aucune commande n'est créée seule."
               value={data.inboundEmail.address}
               enabled={data.inboundEmail.enabled}
-              disabledReason={data.inboundEmail.configured ? undefined : "La réception n'est pas encore branchée sur ce serveur."}
+              disabledReason={data.automationIncluded === false ? NOT_INCLUDED : data.inboundEmail.configured ? undefined : "La réception n'est pas encore branchée sur ce serveur."}
               pending={update.isPending}
               onAction={act("inboundEmail")}
             />
@@ -198,7 +201,7 @@ export function IntakeChannelsCard() {
                 description="Enregistrez ce numéro dans vos contacts. Quand un client vous commande sur WhatsApp, appuyez longuement sur son message, « Transférer », puis choisissez ce numéro : la commande devient un brouillon ci-dessous. Seuls les numéros de l'équipe inscrits dans leur profil sont reconnus."
                 value={data.whatsapp.number}
                 enabled={data.whatsapp.enabled}
-                disabledReason={data.whatsapp.configured ? undefined : "WhatsApp n'est pas encore branché sur ce serveur."}
+                disabledReason={data.automationIncluded === false ? NOT_INCLUDED : data.whatsapp.configured ? undefined : "WhatsApp n'est pas encore branché sur ce serveur."}
                 pending={update.isPending}
                 canRotate={false}
                 onAction={(action) => { if ("enabled" in action) update.mutate({ channel: "whatsapp", enabled: action.enabled }); }}

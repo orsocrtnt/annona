@@ -56,6 +56,7 @@ Les tarifs ci-dessous sont des décisions de configuration et de positionnement.
 | Dispatch automatique | Option | Inclus | Inclus |
 | Analytics avancés | Option | Option | Inclus |
 | Assistance prioritaire | Option | Option | Incluse |
+| Réception automatique des commandes (depuis C11, 4 novembre 2026) | Option | Incluse | Incluse |
 
 Options mensuelles HT (catalogue C9 du 24 octobre 2026) :
 
@@ -66,6 +67,7 @@ Options mensuelles HT (catalogue C9 du 24 octobre 2026) :
 | Carte GPS administrateur | 39 € |
 | Analytics avancés | 29 € |
 | Assistance prioritaire | 29 € |
+| Réception automatique des commandes (catalogue C11 du 4 novembre 2026, C15) : e-mails renvoyés vers TutelLiv, WhatsApp transféré, message collé lu par l'IA | 29 € en Starter ; incluse en Pro et Business |
 | Livreur supplémentaire Starter | 12 € |
 | Livreur supplémentaire Pro | 10 € |
 | Livreur supplémentaire Business (21 à 50) | 9 € |
@@ -193,6 +195,19 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 | Validation | Toujours humaine : aucune commande n'est créée sans le clic du dispatcher (confirme MAIL-COMMANDE du 30 octobre). | — |
 | Client inconnu | Créé à la validation, sous forme de fiche client sans accès à l'espace client ; le dispatcher complète à ce moment les informations manquantes. | MAIL-PONT. |
 | Réponse au client | Une seule réponse automatique, après la validation : commande confirmée, date et lien de suivi. Avec la boîte dédiée, elle part de TutelLiv au nom de l'entreprise, « répondre à » vers la boîte de commandes. | MAIL-PONT. |
+
+## C15 — Décisions du propriétaire du 4 novembre 2026 (fonctions ajoutées depuis le catalogue du 23 octobre)
+
+Inventaire et raisonnement : `docs/rapports/2026-11-04/offer1-fonctions-depuis-c8.md`.
+
+| Sujet | Décision | Suite |
+| --- | --- | --- |
+| Réception automatique des commandes | Nouvelle option `order_automation` : e-mails renvoyés vers l'adresse TutelLiv (MAIL-PONT), WhatsApp transféré (WHATSAPP-1), message collé lu par l'IA (INTAKE-1). 29 € HT par mois en Starter (douze mensualités en annuel, sans remise), incluse en Pro et Business. | Catalogue `C11-2026-11-04`. Contrôle serveur sur l'analyse et sur l'activation ; désactiver reste possible ; les e-mails déjà reçus restent lisibles et validables. |
+| Socle de toutes les offres | Preuve de livraison (signature, PDF horodaté envoyé au donneur d'ordre, relevés par coursier), factures créées à la livraison avec paiements et relances, Factur-X, lien de commande public, formulaire « Nouvelle commande », créneau et poids, imprévus, avis au client (arrivée estimée, prénom du livreur). | Aucune option. |
+| Découverte premium (choix de l'agent, conforme à la règle des 60 jours) | La nouvelle option fait partie des fonctions ouvertes pendant les 60 jours de découverte Starter/Pro. | SAAS-04. |
+| Pilotes et accès historiques | Un pilote qui avait les cinq fonctions reçoit la sixième (démonstrations comprises) ; un pilote restreint garde ses limites ; les accès historiques (`LEGACY`) ont tout. Les contrats commerciaux déjà instantanés gardent leur offre (nouveaux contrats seulement, comme C10). | Migration `20261104030000_catalog_c11_order_automation`. |
+
+Acceptation par le marché à confronter pendant les entretiens (PROD-02) et les pilotes (OFFER-1).
 
 ## Éléments encore non confirmés
 

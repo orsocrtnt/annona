@@ -6,6 +6,7 @@ export const SESSION_SAAS_FEATURES = [
   "client_gps",
   "advanced_analytics",
   "priority_support",
+  "order_automation",
 ] as const;
 
 export type OfferSaasFeature = (typeof SESSION_SAAS_FEATURES)[number];
@@ -95,6 +96,7 @@ export const SAAS_FEATURE_LABELS: Record<OfferSaasFeature, string> = {
   client_gps: "Carte GPS client",
   advanced_analytics: "Statistiques avancées",
   priority_support: "Assistance prioritaire",
+  order_automation: "Réception automatique des commandes",
 };
 
 export const SAAS_PLAN_LABELS: Record<SaasPlanCode, string> = {
