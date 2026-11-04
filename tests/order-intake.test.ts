@@ -6,7 +6,7 @@ import {
   type OrderIntakeExtraction,
 } from "../src/domains/order-intake/order-intake.schema";
 import { resolveDeadline } from "../src/domains/order-intake/order-intake.deadline";
-import { buildOrderIntakeDraft, normalizePhone, parseSender } from "../src/domains/order-intake/order-intake.draft";
+import { buildOrderIntakeDraft, mentionsSeveralRelativeDays, normalizePhone, parseSender } from "../src/domains/order-intake/order-intake.draft";
 import { ORDER_INTAKE_SYSTEM_PROMPT, buildOrderIntakeUserContent } from "../src/domains/order-intake/order-intake.prompt";
 import { matchCustomerBySender } from "../src/domains/order-intake/order-intake.customer";
 import { OrderIntakeProviderError, type OrderIntakeModelProvider } from "../src/domains/order-intake/order-intake.provider";
@@ -861,3 +861,25 @@ test("MAIL-PONT fiche client : le brouillon garde l'adresse de l'expéditeur pou
   assert.equal(result.draft.customerMatch, null);
   assert.equal(result.draft.senderEmail, "nouveau.client@exemple.example");
 });
+
+test("MAIL-PONT essai du 4 novembre : plusieurs jours relatifs dans le message, date à relire", () => {
+  assert.equal(mentionsSeveralRelativeDays("Même chose qu'hier : 1 pli à enlever demain avant 11h"), true);
+  assert.equal(mentionsSeveralRelativeDays("Aujourd’hui ou après-demain"), true);
+  assert.equal(mentionsSeveralRelativeDays("Pouvez-vous enlever demain 2 cartons ? Demain avant 15h."), false, "un seul jour, répété");
+  assert.equal(mentionsSeveralRelativeDays("Après-demain matin"), false, "après-demain n'est pas aussi « demain »");
+  assert.equal(mentionsSeveralRelativeDays("Voir le fichier joint, livraison demain"), false, "« hier » dans « fichier »");
+  const text = "Même chose qu'hier : 2 plis de Rivoli à la Défense, demain avant 15h";
+  const deadline = { mode: "before" as const, dayOffset: 1, date: null, time: "15:00", endTime: null, confidence: "high" as const, source: "demain avant 15h" };
+  const draft = buildOrderIntakeDraft(extraction({ deadline }), text, NOW);
+  assert.equal(draft.mixedRelativeDays, true);
+  assert.equal(draft.deadline.date, "2026-10-29", "le calcul reste celui du modèle : seule la relecture est demandée");
+  assert.ok(draft.uncertainFields.includes("deadline"));
+});
+
+test("MAIL-PONT : un seul jour relatif, date sûre non signalée", () => {
+  const deadline = { mode: "before" as const, dayOffset: 1, date: null, time: "15:00", endTime: null, confidence: "high" as const, source: "demain avant 15h" };
+  const draft = buildOrderIntakeDraft(extraction({ deadline }), "2 plis de Rivoli à la Défense, demain avant 15h", NOW);
+  assert.equal(draft.mixedRelativeDays, false);
+  assert.equal(draft.uncertainFields.includes("deadline"), false);
+});
+

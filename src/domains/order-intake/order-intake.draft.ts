@@ -38,6 +38,8 @@ export interface OrderIntakeDraft {
   missingFields: string[];
   /** Champs présents mais peu sûrs : à relire avant de créer. */
   uncertainFields: string[];
+  /** Le message cite plusieurs jours relatifs (« hier », « demain »…) : date à relire (essai du 4 novembre 2026). */
+  mixedRelativeDays?: boolean;
 }
 
 function normalizeForSearch(value: string) {
@@ -136,8 +138,9 @@ export function buildOrderIntakeDraft(
   collectStopFlags("pickup", pickup, missing, uncertain);
   if (deliveries.length === 0) missing.push("deliveries");
   deliveries.forEach((stop, index) => collectStopFlags(`deliveries.${index}`, stop, missing, uncertain));
+  const mixedDays = mentionsSeveralRelativeDays(text);
   if (!deadline.date) missing.push("deadline");
-  else if (deadline.isPast || deadline.confidence === "low") uncertain.push("deadline");
+  else if (deadline.isPast || deadline.confidence === "low" || mixedDays) uncertain.push("deadline");
   if (deliveries.length === 0) collectPackageFlags("packages", packages, missing, uncertain);
   deliveries.forEach((_, index) =>
     collectPackageFlags(`deliveries.${index}`, deliveryPackages({ packages, deliveries }, index), missing, uncertain)
@@ -157,7 +160,19 @@ export function buildOrderIntakeDraft(
     customerMatch: null,
     missingFields: missing,
     uncertainFields: uncertain,
+    mixedRelativeDays: mixedDays,
   };
+}
+
+const RELATIVE_DAY = /(?<![\p{L}-])(avant-hier|apr[eè]s-demain|aujourd['’]hui|hier|demain)(?![\p{L}-])/giu;
+
+/**
+ * Vrai si le message cite au moins deux jours relatifs différents (« Même chose qu'hier… demain ») :
+ * le modèle a lu « demain » comme aujourd'hui sur un tel message le 4 novembre 2026, la date est donc à relire.
+ */
+export function mentionsSeveralRelativeDays(text: string) {
+  const days = new Set([...text.matchAll(RELATIVE_DAY)].map((match) => match[1]!.toLowerCase().replace("’", "'").replace("è", "e")));
+  return days.size >= 2;
 }
 
 /** Normalise un numéro français : +33 / 0033 deviennent 0, seuls les chiffres restent. */

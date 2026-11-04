@@ -204,6 +204,8 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
   // Une fiche rattachée à un compte apparaît déjà parmi les comptes.
   const cards = (companyCustomers.data ?? []).filter((card) => !card.userId);
   const showErrors = errors.length > 0;
+  // Client choisi ou nouvelle fiche préremplie : « client » n'est plus une information manquante à signaler.
+  const alertFields = draft.missingFields.filter((field) => field !== "customer" || !customerId);
 
   const update = (patch: Partial<IntakeFormValues>) =>
     setForms((current) => current.map((form, index) => (index === active ? { ...form, ...patch } : form)));
@@ -246,11 +248,11 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
           « À vérifier » sont peu sûrs ; les champs « À compléter » manquent dans le message.
         </p>
         {draft.urgency.value === "urgent" && <Badge variant="warning" className="w-fit">Urgent</Badge>}
-        {draft.missingFields.length > 0 && (
+        {alertFields.length > 0 && (
           <Alert variant="warning">
             <AlertTitle>Informations absentes du message</AlertTitle>
             <AlertDescription>
-              {[...new Set(draft.missingFields.map(missingLabel))].join(", ")}.
+              {[...new Set(alertFields.map(missingLabel))].join(", ")}.
             </AlertDescription>
           </Alert>
         )}
@@ -351,7 +353,13 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
               label="Date de livraison"
               required
               error={missing.has("deadline") && !values.requestedDeliveryDate ? "À compléter : aucune date dans le message." : undefined}
-              hint={uncertain.has("deadline") ? (draft.deadline.isPast ? "À vérifier : échéance déjà passée." : "À vérifier : date peu sûre.") : undefined}
+              hint={uncertain.has("deadline")
+                ? draft.deadline.isPast
+                  ? "À vérifier : échéance déjà passée."
+                  : draft.mixedRelativeDays
+                    ? "À vérifier : le message cite plusieurs jours (hier, demain…)."
+                    : "À vérifier : date peu sûre."
+                : undefined}
             >
               <Input type="date" value={values.requestedDeliveryDate} onChange={(event) => update({ requestedDeliveryDate: event.target.value })} />
             </FormField>
