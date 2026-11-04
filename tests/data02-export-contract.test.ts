@@ -133,6 +133,16 @@ function makeRepository() {
     ],
   ]);
   const records: Record<string, ScopedValue[]> = {
+    companyCustomer: [
+      {
+        companyId: "company-a",
+        value: { id: "card-a", companyId: "company-a", name: "Client Sans Accès A", email: "commande+a@example.invalid", phone: null, userId: null, createdAt: date, updatedAt: date },
+      },
+      {
+        companyId: "company-b",
+        value: { id: "card-b", companyId: "company-b", name: "FOREIGN_B_SENTINEL", email: "commande+b@example.invalid", phone: null, userId: null, createdAt: date, updatedAt: date },
+      },
+    ],
     user: [
       {
         companyId: "company-a",
@@ -402,6 +412,7 @@ function makeRepository() {
       },
     },
     user: { findMany: async (args: QueryArgs) => findMany("user", args) },
+    companyCustomer: { findMany: async (args: QueryArgs) => findMany("companyCustomer", args) },
     recurringOrder: { findMany: async (args: QueryArgs) => findMany("recurringOrder", args) },
     order: { findMany: async (args: QueryArgs) => findMany("order", args) },
     invoice: { findMany: async (args: QueryArgs) => findMany("invoice", args) },
@@ -428,10 +439,10 @@ function makeRepository() {
 }
 
 function assertCurrentQueryContract(calls: Array<{ model: string; args: QueryArgs }>) {
-  const firstRun = calls.slice(0, 8);
+  const firstRun = calls.slice(0, 9);
   assert.deepEqual(
     firstRun.map((call) => call.model),
-    ["company", "user", "recurringOrder", "order", "invoice", "supportTicket", "operationJob", "saasSubscription"]
+    ["company", "user", "companyCustomer", "recurringOrder", "order", "invoice", "supportTicket", "operationJob", "saasSubscription"]
   );
   for (const call of firstRun.slice(1)) {
     assertJsonEqual(call.args.where, { companyId: "company-a" }, `${call.model} reste isolé à l'entreprise`);
@@ -464,7 +475,7 @@ function assertCurrentQueryContract(calls: Array<{ model: string; args: QueryArg
     "les notifications gardent un tri stable"
   );
 
-  const order = firstRun[3]?.args.select ?? {};
+  const order = firstRun[4]?.args.select ?? {};
   assert.equal("idempotencyKey" in order, false);
   assertJsonEqual((order.items as { orderBy?: unknown }).orderBy, { id: "asc" }, "les articles gardent un tri stable");
   assertJsonEqual(
@@ -496,14 +507,14 @@ function assertCurrentQueryContract(calls: Array<{ model: string; args: QueryArg
     "les lectures gardent un tri stable"
   );
 
-  const support = firstRun[5]?.args.include ?? {};
+  const support = firstRun[6]?.args.include ?? {};
   assertJsonEqual(
     (support.messages as { orderBy?: unknown }).orderBy,
     [{ createdAt: "asc" }, { id: "asc" }],
     "les réponses support gardent un tri stable"
   );
 
-  const job = firstRun[6]?.args.select ?? {};
+  const job = firstRun[7]?.args.select ?? {};
   assert.deepEqual(Object.keys(job), [
     "id",
     "jobKey",
@@ -520,7 +531,7 @@ function assertCurrentQueryContract(calls: Array<{ model: string; args: QueryArg
   assert.equal("payload" in job, false);
   assert.equal("lastError" in job, false);
 
-  const subscription = firstRun[7]?.args.select ?? {};
+  const subscription = firstRun[8]?.args.select ?? {};
   assert.deepEqual(Object.keys(subscription), [
     "id",
     "kind",
@@ -576,6 +587,7 @@ test("l'export local reste isolé, complet sur son contrat courant et reproducti
     result.counts,
     {
       users: 1,
+      companyCustomers: 1,
       addresses: 1,
       notifications: 1,
       recurringOrders: 1,
@@ -612,7 +624,8 @@ test("l'export local reste isolé, complet sur son contrat courant et reproducti
   assert.match(serialized, /subscription-a/);
   assertCurrentQueryContract(repository.calls);
 
-  assert.equal(repository.calls.length, 16, "chaque export relit uniquement les huit modèles attendus");
+  assert.equal(repository.calls.length, 18, "chaque export relit uniquement les neuf modèles attendus");
+  assert.match(serialized, /Client Sans Accès A/, "les fiches clients sans accès sont exportées");
 });
 
 test("une entreprise absente n'ouvre aucune autre catégorie", async () => {

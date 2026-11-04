@@ -3,7 +3,7 @@
 import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { IntakeOrderInput } from "@/domains/order-intake/order-intake.form";
-import { orderIntakeApi } from "./order-intake-api";
+import { orderIntakeApi, type IntakeCustomerChoice } from "./order-intake-api";
 
 const STATUS_KEY = ["company", "order-intake", "status"] as const;
 
@@ -28,10 +28,15 @@ export function useAnalyzeOrderMessage() {
 export function useCreateIntakeOrder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { customerId: string; order: IntakeOrderInput; idempotencyKey: string }) =>
-      orderIntakeApi.createOrder(input.customerId, input.order, input.idempotencyKey),
+    mutationFn: (input: { customer: IntakeCustomerChoice; order: IntakeOrderInput; idempotencyKey: string }) =>
+      orderIntakeApi.createOrder(input.customer, input.order, input.idempotencyKey),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["company"] }),
   });
+}
+
+/** MAIL-PONT, étape 4 : fiches clients sans accès de l'entreprise. */
+export function useCompanyCustomers() {
+  return useQuery({ queryKey: ["company", "order-intake", "customers"], queryFn: orderIntakeApi.getCompanyCustomers, retry: false });
 }
 
 const INBOX_KEY = ["company", "order-intake", "inbox"] as const;

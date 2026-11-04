@@ -22,6 +22,20 @@ export interface InboundEmailItem {
   createdAt: string;
 }
 
+/** Client de la commande : compte client, fiche sans accès, ou nouvelle fiche créée avec la commande. */
+export type IntakeCustomerChoice =
+  | { customerId: string }
+  | { companyCustomerId: string }
+  | { newCustomer: { name: string; email: string; phone?: string } };
+
+export interface CompanyCustomerItem {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  userId: string | null;
+}
+
 export interface IntakeChannels {
   orderLink: { enabled: boolean; url: string | null };
   inboundEmail: { enabled: boolean; configured: boolean; address: string | null; mailbox: string | null };
@@ -87,10 +101,11 @@ export const orderIntakeApi = {
       body: JSON.stringify(action),
     }),
   /** La même clé est renvoyée à chaque clic sur une même livraison : une seule commande. */
-  createOrder: (customerId: string, order: IntakeOrderInput, idempotencyKey: string) =>
+  createOrder: (customer: IntakeCustomerChoice, order: IntakeOrderInput, idempotencyKey: string) =>
     request<{ id: string; reference?: string }>("/api/orders/intake/orders", {
       method: "POST",
       headers: { ...jsonHeaders, "Idempotency-Key": idempotencyKey },
-      body: JSON.stringify({ customerId, order }),
+      body: JSON.stringify({ ...customer, order }),
     }),
+  getCompanyCustomers: () => request<CompanyCustomerItem[]>("/api/orders/intake/customers"),
 };

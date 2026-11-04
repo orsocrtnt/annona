@@ -7,7 +7,8 @@ import { prisma } from "@/services/prisma/client";
  * Les identifiants relationnels sont conservés pour permettre une reprise, mais
  * les identifiants Supabase Auth, clés d'idempotence, empreintes de requête,
  * charges de jobs, erreurs internes et identifiants du fournisseur de paiement sont exclus.
- * `subscriptions` est un ajout compatible de la version 1 (clé supplémentaire).
+ * `subscriptions` et `companyCustomers` (MAIL-PONT, fiches clients sans accès) sont des ajouts
+ * compatibles de la version 1 (clés supplémentaires).
  *
  * Les collections sont relues par pages (clé `createdAt`, `id`) dans une seule
  * transaction en lecture répétable : l'instantané reste cohérent et la mémoire
@@ -87,6 +88,7 @@ const ORDER_SELECT = {
   missionDescription: true,
   customerId: true,
   customerEmail: true,
+  companyCustomerId: true,
   recurringOrderId: true,
   createdAt: true,
   updatedAt: true,
@@ -189,10 +191,21 @@ const SUBSCRIPTION_SELECT = {
   },
 } satisfies Prisma.SaasSubscriptionSelect;
 
+const COMPANY_CUSTOMER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.CompanyCustomerSelect;
+
 export type ExportedCompany = Prisma.CompanyGetPayload<{ select: typeof COMPANY_SELECT }>;
 
 export interface CompanyExportRows {
   users: Prisma.UserGetPayload<{ select: typeof USER_SELECT }>[];
+  companyCustomers: Prisma.CompanyCustomerGetPayload<{ select: typeof COMPANY_CUSTOMER_SELECT }>[];
   recurringOrders: RecurringOrder[];
   orders: Prisma.OrderGetPayload<{ select: typeof ORDER_SELECT }>[];
   invoices: Invoice[];
@@ -219,7 +232,7 @@ export interface CompanyExportProofObject {
 
 export interface CompanyExportSummary extends CompanyExportHeader {
   counts: Record<
-    | "users" | "addresses" | "notifications" | "recurringOrders" | "orders" | "items" | "stops"
+    | "users" | "companyCustomers" | "addresses" | "notifications" | "recurringOrders" | "orders" | "items" | "stops"
     | "deliveries" | "trackingEvents" | "orderMessages" | "orderThreadReads" | "invoices"
     | "supportTickets" | "supportMessages" | "operationJobs" | "subscriptions" | "subscriptionPlans"
     | "subscriptionItems" | "usagePeriods" | "proofObjects",
@@ -275,6 +288,7 @@ export async function visitCompanyExport(
   };
   const counts: CompanyExportSummary["counts"] = {
     users: 0,
+    companyCustomers: 0,
     addresses: 0,
     notifications: 0,
     recurringOrders: 0,
@@ -317,6 +331,19 @@ export async function visitCompanyExport(
           counts.notifications += user.notifications.length;
         }
         await visitor.page("users", rows);
+      }
+    );
+    await forEachPage(
+      pageSize,
+      (after) => tx.companyCustomer.findMany({
+        where: pageWhere(companyId, after),
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: pageSize,
+        select: COMPANY_CUSTOMER_SELECT,
+      }),
+      async (rows) => {
+        counts.companyCustomers += rows.length;
+        await visitor.page("companyCustomers", rows);
       }
     );
     await forEachPage(
@@ -450,6 +477,7 @@ export async function exportCompanyData(companyId: string, options: { pageSize?:
   let company: ExportedCompany | null = null;
   const data: CompanyExportRows = {
     users: [],
+    companyCustomers: [],
     recurringOrders: [],
     orders: [],
     invoices: [],

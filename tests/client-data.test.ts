@@ -30,6 +30,11 @@ function fixtures(role = "CLIENT") {
     { id: "already-assigned", companyId: "a", customerId: "other-client", order: orders[0] },
   ];
   const deliveries = children(); const invoices = children();
+  // MAIL-PONT, étape 4 : fiches sans accès du même client, dans A et dans B.
+  const cards: Row[] = [
+    { id: "card-a", companyId: "a", email: "client@example.com", userId: null },
+    { id: "card-b", companyId: "b", email: "client@example.com", userId: null },
+  ];
   let writes = 0;
   function delegate(rows: Row[]) {
     return { updateMany: async ({ where, data }: { where: Row; data: Row }) => {
@@ -42,8 +47,9 @@ function fixtures(role = "CLIENT") {
   const tx = {
     user: { findFirst: async ({ where }: { where: Row }) => matches(user, where) ? user : null },
     order: delegate(orders), delivery: delegate(deliveries), invoice: delegate(invoices),
+    companyCustomer: delegate(cards),
   };
-  return { orders, deliveries, invoices, tx, writes: () => writes };
+  return { orders, deliveries, invoices, cards, tx, writes: () => writes };
 }
 
 test("même e-mail dans A/B : seule la chaîne de A est rattachée, sans écraser les propriétaires", async (t) => {
@@ -59,9 +65,11 @@ test("même e-mail dans A/B : seule la chaîne de A est rattachée, sans écrase
     assert.ok(rows.slice(1, -1).every((row) => row.customerId === null));
     assert.equal(rows.at(-1)?.customerId, "other-client");
   }
-  assert.equal(f.writes(), 3);
+  assert.equal(f.cards[0]?.userId, "client-a", "la fiche sans accès de A est rattachée au compte");
+  assert.equal(f.cards[1]?.userId, null, "la fiche de B reste à B");
+  assert.equal(f.writes(), 4);
   await linkPortalDataToClient("client-a", "client@example.com", "a");
-  assert.equal(f.writes(), 3, "une nouvelle connexion ne change aucun rattachement");
+  assert.equal(f.writes(), 4, "une nouvelle connexion ne change aucun rattachement");
 });
 
 for (const role of ["DRIVER", "COMPANY_ADMIN", "MINI_ADMIN", "SUPER_ADMIN"]) {

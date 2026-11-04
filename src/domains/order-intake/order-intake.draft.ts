@@ -7,6 +7,8 @@ import type {
 } from "./order-intake.schema";
 
 export interface IntakeCustomerMatch {
+  /** MAIL-PONT, étape 4 : « card » = fiche client sans accès (`customerId` est alors l'id de la fiche). Absent avant le 4 novembre 2026 : compte client. */
+  kind?: "user" | "card";
   customerId: string;
   displayName: string;
   email: string;
@@ -30,6 +32,8 @@ export interface OrderIntakeDraft {
   instructions: IntakeTextField;
   customerHint: OrderIntakeExtraction["customer"];
   customerMatch: IntakeCustomerMatch | null;
+  /** MAIL-PONT, étape 4 : adresse de l'expéditeur (préremplit une nouvelle fiche client). */
+  senderEmail?: string | null;
   /** Champs nécessaires à la création et absents du message. */
   missingFields: string[];
   /** Champs présents mais peu sûrs : à relire avant de créer. */

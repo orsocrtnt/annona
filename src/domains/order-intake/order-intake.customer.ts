@@ -1,7 +1,7 @@
 import { prisma } from "@/services/prisma/client";
 import { parseSender, type IntakeCustomerMatch } from "./order-intake.draft";
 
-type CustomerDb = Pick<typeof prisma, "user" | "$queryRaw">;
+type CustomerDb = Pick<typeof prisma, "user" | "$queryRaw" | "companyCustomer">;
 
 const displayName = (user: { firstName: string; lastName: string; email: string }) =>
   `${user.firstName} ${user.lastName}`.trim() || user.email;
@@ -9,12 +9,33 @@ const displayName = (user: { firstName: string; lastName: string; email: string 
 /**
  * Rapproche l'expéditeur d'un client de l'entreprise de la session, et d'elle seule.
  * Seuls les comptes CLIENT actifs sont candidats (les seuls proposés dans la liste du formulaire) ;
- * deux candidats pour un même numéro ne donnent rien.
+ * deux candidats pour un même numéro ne donnent rien. Sans compte, la fiche client sans accès de
+ * l'entreprise (MAIL-PONT, étape 4) est proposée.
  */
 export async function matchCustomerBySender(
   companyId: string,
   sender: string | null,
   db: CustomerDb = prisma
+): Promise<IntakeCustomerMatch | null> {
+  const account = await matchAccountBySender(companyId, sender, db);
+  if (account) return { kind: "user", ...account };
+  const parsed = parseSender(sender);
+  if (!parsed.email && !parsed.phone) return null;
+  const cards = await db.companyCustomer.findMany({
+    where: { companyId, ...(parsed.email ? { email: parsed.email } : { phone: parsed.phone }) },
+    orderBy: { id: "asc" },
+    take: 2,
+    select: { id: true, name: true, email: true },
+  });
+  if (cards.length !== 1) return null;
+  const card = cards[0]!;
+  return { kind: "card", customerId: card.id, displayName: card.name || card.email, email: card.email, matchedBy: parsed.email ? "email" : "phone" };
+}
+
+async function matchAccountBySender(
+  companyId: string,
+  sender: string | null,
+  db: CustomerDb
 ): Promise<IntakeCustomerMatch | null> {
   const parsed = parseSender(sender);
   if (parsed.email) {

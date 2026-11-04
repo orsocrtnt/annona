@@ -1,11 +1,11 @@
 import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { createOrderFromIntake } from "@/domains/order-intake/order-intake.service";
+import { createOrderFromIntake, createOrderFromIntakeForCard } from "@/domains/order-intake/order-intake.service";
 import { customerOrderResponse, parseCustomerOrderRequest } from "../../customer-order-http";
 import { intakeError, withIntakeErrors } from "../intake-http";
 
 /**
- * Crée la commande relue et validée par un humain, pour le compte d'un client de l'entreprise.
+ * Crée la commande relue et validée par un humain, pour un client de l'entreprise (compte ou fiche).
  * Même clé d'idempotence que le portail : un double clic rend une seule commande.
  */
 export async function POST(request: Request) {
@@ -17,16 +17,14 @@ export async function POST(request: Request) {
     const companyId = getCompanyId(auth.context);
     if (!companyId) return intakeError("NO_COMPANY", "Entreprise non associée", 400);
 
-    const parsed = await parseCustomerOrderRequest(request);
+    const parsed = await parseCustomerOrderRequest(request, { allowCompanyCustomer: true });
     if (!parsed.ok) return parsed.response;
 
     // Entreprise de la session ; la source ADMIN est fixée par le domaine, jamais par le corps.
-    const result = await createOrderFromIntake({
-      companyId,
-      customerId: parsed.customerId,
-      order: parsed.order,
-      idempotencyKey: parsed.idempotencyKey,
-    });
+    // Client : compte de l'entreprise, ou fiche sans accès (existante ou créée avec la commande).
+    const result = parsed.card
+      ? await createOrderFromIntakeForCard({ companyId, customer: parsed.card, order: parsed.order, idempotencyKey: parsed.idempotencyKey })
+      : await createOrderFromIntake({ companyId, customerId: parsed.customerId, order: parsed.order, idempotencyKey: parsed.idempotencyKey });
     switch (result.status) {
       case "disabled":
         return intakeError("INTAKE_DISABLED", CONFIG_MESSAGES.INTAKE_DISABLED, 403);

@@ -897,6 +897,7 @@ export async function getCompanyOrderById(companyId: string, orderId: string) {
       items: true,
       stops: { orderBy: { sequence: "asc" }, include: { items: true } },
       customer: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+      companyCustomer: { select: { name: true, email: true, phone: true } },
       deliveries: {
         include: {
           driver: { select: { id: true, firstName: true, lastName: true, phone: true } },

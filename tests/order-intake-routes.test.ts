@@ -56,6 +56,8 @@ function loadRoute<T>(path: string, mocks: Record<string, unknown>): T {
         if (id === "zod") return zod;
         if (id in mocks) return mocks[id];
         if (id === "@/lib/api/saas-guard") return { refuseIfReadOnly: async () => null };
+        if (id === "@/lib/config-messages") return require("../src/lib/config-messages");
+        if (id === "@/domains/company-customer/company-customer.schema") return require("../src/domains/company-customer/company-customer.schema");
         if (id.startsWith("./") || id.startsWith("../")) return load(`${join(dirname(file), id)}.ts`);
         throw new Error(`module non simulé : ${id}`);
       },
@@ -151,6 +153,11 @@ function createRoute(session: Session, outcome: unknown, seen: unknown[] = []) {
         if (outcome === "throw") throw new Error("prisma secret detail");
         return outcome;
       },
+      createOrderFromIntakeForCard: async (input: unknown) => {
+        seen.push({ card: input });
+        if (outcome === "throw") throw new Error("prisma secret detail");
+        return outcome;
+      },
     },
   });
 }
@@ -183,6 +190,48 @@ test("INTAKE route création : rôles refusés, clé d'idempotence exigée, entr
   );
   assert.equal(created.status, 201);
   assert.deepEqual(JSON.parse(JSON.stringify(seen)), [{ companyId: "company-a", customerId: "client-a", order: ORDER, idempotencyKey: "intake-key-0001" }]);
+});
+
+test("MAIL-PONT fiche client : fiche existante ou nouvelle, entreprise de la session, fiche invalide refusée", async () => {
+  const seen: Array<Record<string, unknown>> = [];
+  const ok = { status: "created", order: { id: "o1", reference: "CMD-1" } };
+  const existing = await createRoute(DISPATCHER, ok, seen).POST(
+    post("/api/orders/intake/orders", { companyCustomerId: "card-1", order: ORDER, companyId: "company-b" }, { "Idempotency-Key": "intake-key-0002" })
+  );
+  assert.equal(existing.status, 201);
+  const fresh = await createRoute(DISPATCHER, ok, seen).POST(
+    post("/api/orders/intake/orders", { newCustomer: { name: " Sophie Leroy ", email: "Sophie@Cabinet.FR", phone: "06 12 34 56 78" }, order: ORDER }, { "Idempotency-Key": "intake-key-0003" })
+  );
+  assert.equal(fresh.status, 201);
+  assert.deepEqual(JSON.parse(JSON.stringify(seen)), [
+    { card: { companyId: "company-a", customer: { kind: "existing", id: "card-1" }, order: ORDER, idempotencyKey: "intake-key-0002" } },
+    { card: { companyId: "company-a", customer: { kind: "new", customer: { name: "Sophie Leroy", email: "sophie@cabinet.fr", phone: "06 12 34 56 78" } }, order: ORDER, idempotencyKey: "intake-key-0003" } },
+  ]);
+
+  const before = seen.length;
+  for (const newCustomer of [{ name: "", email: "a@b.fr" }, { name: "A", email: "pas-une-adresse" }, { name: "A", email: "a@b.fr", role: "ADMIN" }, "texte"]) {
+    const response = await createRoute(DISPATCHER, ok, seen).POST(
+      post("/api/orders/intake/orders", { newCustomer, order: ORDER }, { "Idempotency-Key": "intake-key-0004" })
+    );
+    assert.equal(response.status, 400, JSON.stringify(newCustomer));
+    const body = (await response.json()) as { error: string };
+    assert.doesNotMatch(body.error, /Invalid|expected|Unrecognized/);
+  }
+  assert.equal(seen.length, before);
+
+  const account = await createRoute(DISPATCHER, { status: "customer_has_account" }).POST(
+    post("/api/orders/intake/orders", { newCustomer: { name: "A", email: "a@client.fr" }, order: ORDER }, { "Idempotency-Key": "intake-key-0005" })
+  );
+  assert.equal(account.status, 409);
+  assert.match(((await account.json()) as { error: string }).error, /déjà un compte/);
+
+  // Le formulaire complet (hors commande reçue) n'accepte que les comptes clients.
+  const adminSeen: unknown[] = [];
+  const admin = await adminOrderRoute(DISPATCHER, ok, adminSeen).POST(
+    post("/api/orders/create", { companyCustomerId: "card-1", order: ORDER }, { "Idempotency-Key": "intake-key-0006" })
+  );
+  assert.equal(admin.status, 400);
+  assert.equal(adminSeen.length, 0);
 });
 
 test("INTAKE route création : refus métiers sans erreur 500", async () => {

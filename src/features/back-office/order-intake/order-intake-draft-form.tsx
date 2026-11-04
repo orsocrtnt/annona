@@ -20,8 +20,8 @@ import {
 } from "@/domains/order-intake/order-intake.form";
 import type { IntakeStop, IntakeTextField } from "@/domains/order-intake/order-intake.schema";
 import { createClientOrderSchema } from "@/lib/validations/order";
-import { OrderIntakeApiError } from "./order-intake-api";
-import { useCreateIntakeOrder, useIntakeDeliverySlots } from "./order-intake-hooks";
+import { OrderIntakeApiError, type IntakeCustomerChoice } from "./order-intake-api";
+import { useCompanyCustomers, useCreateIntakeOrder, useIntakeDeliverySlots } from "./order-intake-hooks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { suggestDeliverySlot } from "@/domains/order/delivery-slot";
 import { deliverySlotKey, deliverySlotLabel } from "@/lib/validations/delivery-slots";
@@ -140,13 +140,49 @@ function StopFieldset({ legend, prefix, values, extracted, uncertain, missing, o
   );
 }
 
+const NEW_CUSTOMER = "new";
+const CARD_PREFIX = "card:";
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type NewCustomerValues = { name: string; email: string; phone: string };
+
+/** Client présélectionné : celui rapproché, sinon une nouvelle fiche si une adresse est connue. */
+function initialCustomerValue(draft: OrderIntakeDraft) {
+  const match = draft.customerMatch;
+  if (match) return match.kind === "card" ? `${CARD_PREFIX}${match.customerId}` : match.customerId;
+  return draft.senderEmail || draft.customerHint.email.value ? NEW_CUSTOMER : "";
+}
+
+function newCustomerProblems(values: NewCustomerValues) {
+  return [
+    ...(values.name.trim() ? [] : ["Indiquez le nom du nouveau client."]),
+    ...(EMAIL.test(values.email.trim()) ? [] : ["Indiquez une adresse e-mail valide pour le nouveau client."]),
+  ];
+}
+
+function customerChoice(value: string, values: NewCustomerValues): IntakeCustomerChoice {
+  if (value === NEW_CUSTOMER) {
+    const phone = values.phone.trim();
+    return { newCustomer: { name: values.name.trim(), email: values.email.trim(), ...(phone ? { phone } : {}) } };
+  }
+  if (value.startsWith(CARD_PREFIX)) return { companyCustomerId: value.slice(CARD_PREFIX.length) };
+  return { customerId: value };
+}
+
 export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAllCreated }: OrderIntakeDraftFormProps) {
   const deliveryCount = Math.max(1, draft.deliveries.length);
   const [active, setActive] = React.useState(0);
   const [forms, setForms] = React.useState<IntakeFormValues[]>(() =>
     Array.from({ length: deliveryCount }, (_, index) => draftToFormValues(draft, index))
   );
-  const [customerId, setCustomerId] = React.useState(draft.customerMatch?.customerId ?? "");
+  // Valeur du menu « Client » : id d'un compte, « card:<id> » pour une fiche sans accès, « new » pour une nouvelle fiche.
+  const [customerId, setCustomerId] = React.useState(() => initialCustomerValue(draft));
+  const [newCustomer, setNewCustomer] = React.useState(() => ({
+    name: draft.customerHint.name.value ?? "",
+    email: draft.senderEmail ?? draft.customerHint.email.value ?? "",
+    phone: draft.customerHint.phone.value ?? "",
+  }));
+  const companyCustomers = useCompanyCustomers();
   const [created, setCreated] = React.useState<Record<number, CreatedOrder>>({});
   const [errors, setErrors] = React.useState<string[]>([]);
   const clients = useCompanyClients();
@@ -165,6 +201,9 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
   const uncertain = flagsFor(draft.uncertainFields, active);
   const createdHere = created[active];
   const activeClients = (clients.data ?? []).filter((client) => client.status === "ACTIVE");
+  // Une fiche rattachée à un compte apparaît déjà parmi les comptes.
+  const cards = (companyCustomers.data ?? []).filter((card) => !card.userId);
+  const showErrors = errors.length > 0;
 
   const update = (patch: Partial<IntakeFormValues>) =>
     setForms((current) => current.map((form, index) => (index === active ? { ...form, ...patch } : form)));
@@ -178,12 +217,13 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
     const parsed = createClientOrderSchema.safeParse(order);
     const problems = [
       ...(customerId ? [] : ["Choisissez le client de la commande."]),
+      ...(customerId === NEW_CUSTOMER ? newCustomerProblems(newCustomer) : []),
       ...(parsed.success ? [] : [...new Set(parsed.error.issues.map((issue) => issue.message))]),
     ];
     setErrors(problems);
     if (problems.length > 0) return;
     createOrder.mutate(
-      { customerId, order, idempotencyKey: idempotencyKeys[active]! },
+      { customer: customerChoice(customerId, newCustomer), order, idempotencyKey: idempotencyKeys[active]! },
       {
         onSuccess: (result) => {
           const next = { ...created, [active]: result };
@@ -238,19 +278,55 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
               label="Client"
               required
               error={missing.has("customer") && !customerId ? "À compléter : expéditeur non rapproché." : undefined}
-              hint={draft.customerMatch && customerId === draft.customerMatch.customerId
-                ? `Rapproché par ${draft.customerMatch.matchedBy === "email" ? "e-mail" : "téléphone"} de l'expéditeur.`
-                : draft.customerHint.name.value ? `Nom lu dans le message : ${draft.customerHint.name.value}` : undefined}
+              hint={draft.customerMatch && customerId === initialCustomerValue(draft) && customerId !== NEW_CUSTOMER
+                ? `Rapproché par ${draft.customerMatch.matchedBy === "email" ? "e-mail" : "téléphone"} de l'expéditeur${draft.customerMatch.kind === "card" ? " (fiche sans accès à l'espace client)" : ""}.`
+                : customerId === NEW_CUSTOMER
+                  ? "Client inconnu : sa fiche sera créée avec la commande, sans accès à l'espace client."
+                  : draft.customerHint.name.value ? `Nom lu dans le message : ${draft.customerHint.name.value}` : undefined}
             >
-              <select className={selectClass} value={customerId} onChange={(event) => setCustomerId(event.target.value)} disabled={clients.isLoading}>
+              <select
+                aria-label="Client"
+                className={selectClass}
+                value={customerId}
+                onChange={(event) => setCustomerId(event.target.value)}
+                disabled={clients.isLoading || companyCustomers.isLoading}
+              >
                 <option value="">{clients.isLoading ? "Chargement des clients…" : "Choisir un client"}</option>
-                {activeClients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {`${client.firstName} ${client.lastName}`.trim() || client.email} — {client.email}
-                  </option>
-                ))}
+                {activeClients.length > 0 && (
+                  <optgroup label="Clients avec accès">
+                    {activeClients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {`${client.firstName} ${client.lastName}`.trim() || client.email} — {client.email}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {cards.length > 0 && (
+                  <optgroup label="Clients sans accès">
+                    {cards.map((card) => (
+                      <option key={card.id} value={`${CARD_PREFIX}${card.id}`}>
+                        {card.name || card.email} — {card.email}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <option value={NEW_CUSTOMER}>+ Nouveau client (sans accès)</option>
               </select>
             </FormField>
+            {customerId === NEW_CUSTOMER && (
+              <fieldset className="grid gap-3 rounded-lg border border-border p-3 sm:col-span-2 sm:grid-cols-3">
+                <legend className="px-1 text-sm font-medium">Nouveau client</legend>
+                <FormField label="Nom" required error={showErrors && !newCustomer.name.trim() ? "À compléter." : undefined}>
+                  <Input value={newCustomer.name} onChange={(event) => setNewCustomer({ ...newCustomer, name: event.target.value })} autoComplete="off" />
+                </FormField>
+                <FormField label="E-mail" required error={showErrors && !EMAIL.test(newCustomer.email.trim()) ? "Adresse e-mail invalide." : undefined}>
+                  <Input type="email" value={newCustomer.email} onChange={(event) => setNewCustomer({ ...newCustomer, email: event.target.value })} autoComplete="off" />
+                </FormField>
+                <FormField label="Téléphone">
+                  <Input type="tel" value={newCustomer.phone} onChange={(event) => setNewCustomer({ ...newCustomer, phone: event.target.value })} autoComplete="off" />
+                </FormField>
+              </fieldset>
+            )}
             <FormField label="Type de livraison" required>
               <select
                 className={selectClass}

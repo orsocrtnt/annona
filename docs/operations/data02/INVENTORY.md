@@ -55,6 +55,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | CompanyIntakeChannel | directe | companyId | non |
 | OrderTrackingLink | directe | companyId, orderId | non |
 | InboundOrderEmail | directe | companyId | non |
+| CompanyCustomer | directe | companyId, userId | oui |
 
 ## Absents de l'export
 

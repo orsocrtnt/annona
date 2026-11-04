@@ -19,7 +19,6 @@
 - GROWTH-1 — Construire le site commercial relié au parcours autonome (après la vérification de conformité)
 - DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
 - MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
-- MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (étapes 2 et 3 ; Toi — trancher les choix de la section 9 (fiche client) et pousser)
 - RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
 - SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
 
@@ -40,11 +39,12 @@
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
+- MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (pousser l'étape 4 et donner ton accord pour l'essai réel avec ta boîte Gmail ; ensuite Claude (essais réels))
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 3 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 4 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
@@ -61,15 +61,14 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis). Confirmer aussi la durée provisoire de sept jours pour la file hors ligne du livreur, et, si un pilote emploie des livreurs indépendants payés à la livraison, faire qualifier l'affectation automatique (`docs/legal/AIPD_TYPE.md`, section 3).
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- MAIL-PONT : fiche client tranchée le 3 novembre (option B, fiche propre à chaque entreprise). Reste à relire la spécification ; « À trier » gardé 7 jours et « Entreprise via TutelLiv » appliqués par défaut.
+- MAIL-PONT : fiche client (étape 4) codée le 4 novembre, migration déjà appliquée en préproduction ; pousser le commit local, puis me donner ton accord pour l'essai réel avec ta boîte Gmail dans Chrome.
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
-- MAIL-PONT : essais réels Gmail et Outlook après ton push ; étape 4 (fiche client, option B choisie le 3 novembre).
-- MAIL-PONT : essai réel du renvoi Gmail et Outlook (demande ton accord pour utiliser ta boîte Gmail dans Chrome).
+- MAIL-PONT : essais réels du renvoi Gmail et Outlook, après ton push et ton accord pour ta boîte Gmail ; puis, si tu le veux, les fiches dans la page « Clients » (modifier, supprimer).
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
 - Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
@@ -323,7 +322,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv.** Décisions du propriétaire (C14) : le 2 novembre, tri automatique entre e-mails ordinaires et e-mails de commande, validation toujours humaine, client inconnu créé à la validation (fiche sans accès, informations manquantes complétées par le dispatcher), une réponse automatique au client après validation avec le lien de suivi. Révision du 3 novembre : parcours principal = boîte dédiée aux commandes, renvoyée automatiquement vers l'adresse TutelLiv (aucune connexion Gmail/Outlook) ; la connexion directe Gmail/Outlook passe en option, plus tard.
 
-  **Qui : Claude — étapes 2 et 3 ; Toi — trancher les choix de la section 9 (fiche client) et pousser.**
+  **Qui : Toi — pousser l'étape 4 et donner ton accord pour l'essai réel avec ta boîte Gmail ; ensuite Claude (essais réels).**
 
   Terminé quand : une boîte de commandes Gmail et une boîte Outlook renvoient automatiquement vers TutelLiv ; le code de confirmation de Gmail est visible dans TutelLiv ; le client d'origine est reconnu ; les e-mails de commande apparaissent en brouillon et les autres sont mis « à trier » ou ignorés sans être conservés ; la validation crée la commande et, si besoin, la fiche du client ; le client reçoit la confirmation (envoyée par TutelLiv au nom de l'entreprise, « répondre à » vers sa boîte) ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
 
@@ -340,6 +339,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   3 novembre 2026, **étape 3 faite (sauf essais réels)** : champ « Votre boîte de commandes » (enregistré en minuscules, adresse invalide refusée) ; e-mail de `forwarding-noreply@google.com` reconnu, ni analysé ni listé, code affiché dans le réglage (« 246 813 579, demandé par … »), seuls le code et l'adresse gardés, effacé après 24 h ; guide de renvoi Gmail, Outlook (« Rediriger vers », accord de l'administrateur) et OVH. Vérifications : tests unitaires (formats anglais et français, autre expéditeur refusé) ; `npm run check` 1 554/1 554 ; E2E « E-MAIL » 2/2 (dont le nouveau test : code affiché, boîte enregistrée et relue après rechargement, guide ouvert). Un premier passage avait échoué : réglage masqué quand le domaine de réception n'est pas configuré (corrigé, affiché dès l'activation), puis délai de 60 s trop court à froid (porté à 180 s comme le test voisin). Migration `20261104000000_order_mailbox_forwarding` appliquée sur `tutelliv-dev` ; appliquée en préproduction le 3 novembre après ajout de la règle d'autorisation. Non vérifié : vrai renvoi Gmail et Outlook (après le push).
 
   3 novembre 2026, **étape 5 faite (confirmation au client)** : case « Envoyer la confirmation au client (adresse) » cochée par défaut à la validation ; une seule confirmation par e-mail reçu (tâche durable `inbound-confirmation:<e-mail>`, programmée dans la même transaction que la clôture), à l'expéditeur d'origine et jamais à un membre de l'équipe ; une ligne et un lien de suivi par commande créée ; `reply_to` vers la boîte de commandes (ajouté à l'envoi d'e-mails, ignoré si l'adresse est invalide) ; message « Confirmation envoyée à … » à l'écran. Vérifications : test unitaire de `reply_to` ; `npm run check` 1 555/1 555 ; E2E « E-MAIL » 2/2 (tâche programmée, `replyTo`, lien rattaché au client, aucune confirmation pour un e-mail classé) et `order-intake.spec.ts` 2/2. Le premier test E-MAIL dépassait 180 s (3,2 min) : limite portée à 300 s. Le test du code Gmail utilise maintenant un code unique par exécution (un reste d'essai le faisait échouer). Non vérifié : vrai e-mail reçu par un client (la base de développement n'envoie rien ; la préproduction envoie à l'adresse de test). Reste à MAIL-PONT : étape 4 (fiche client, ton choix A ou B) et les essais réels.
+
+  4 novembre 2026, **étape 4 faite (fiche client, option B)** : table `company_customers` (nom, e-mail unique par entreprise, téléphone, `userId` facultatif) et `orders.company_customer_id` ; menu « Client » du brouillon avec comptes, fiches et « + Nouveau client (sans accès) », prérempli depuis l'expéditeur et présélectionné quand il est inconnu ; fiche créée dans la transaction de la commande (sous verrou ; adresse connue réutilisée sans être écrasée ; adresse d'un compte client refusée ; clé déjà utilisée pour un autre client = conflit) ; second e-mail rapproché de la fiche ; nom de la fiche dans les listes de commandes et sur la page de la commande ; fiche rattachée au compte si l'entreprise en ouvre un plus tard ; export DATA-02 étendu (`companyCustomers`). Détail : `docs/operations/order-intake/MAIL-PONT.md`, section 5.3. Migration `20261104010000_company_customers` (RLS, droits retirés à `anon`/`authenticated`) appliquée sur `tutelliv-dev`, puis en préproduction avec ton accord du 4 novembre. Vérifications : `tests/company-customer.test.ts` 9/9 (isolement entre entreprises, double clic, clics simultanés, reprise, conflit, compte existant, nom dans les listes) ; tests de rapprochement, de route, d'export et de rattachement mis à jour ; `npm run check` 1 567/1 567 ; `npm run docs:verify` vert (compte de modèles porté à 48 dans `docs/DATABASE.md`) ; E2E en worktree isolé : nouveau « E-MAIL fiche client » 1/1 (client inconnu, double clic = une fiche et une commande, second e-mail reconnu, page de la commande, fiche d'une autre entreprise absente de la liste et refusée en 404), les deux autres « E-MAIL » 2/2, `order-intake.spec.ts` « deux livraisons » 1/1 et « coller » 1/1 à la relance ; captures clair et sombre du formulaire relues. Aléa vu deux fois à froid : le créneau n'était pas prérempli avant le clic (le serveur refuse proprement « Choisissez un créneau ») ; réussite à la relance, déjà observé à l'étape 1 ; le nouveau test choisit le créneau s'il est vide. Non vérifié : nom de la fiche dans la liste des commandes au navigateur (test unitaire seulement) ; page « Clients » sans les fiches ; ni modification ni suppression d'une fiche (hors étape). Commit local, non poussé.
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 

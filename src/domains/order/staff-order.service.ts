@@ -64,33 +64,15 @@ export async function createOrderForCustomer(
   });
   if (previous && previous.customerId !== customer.id) return { status: "conflict" };
 
-  try {
-    await assertCategory(input.companyId, input.order.deliveryCategory);
-  } catch (error) {
-    if (error instanceof Error && error.message === "DELIVERY_CATEGORY_DISABLED") return { status: "category_disabled" };
-    throw error;
-  }
-
-  const company = await db.company.findUnique({ where: { id: input.companyId }, select: { settings: true } });
-  const slot = resolveDeliverySlot(
-    parseDeliverySlots((company?.settings as Record<string, unknown> | null)?.deliverySlots),
-    input.order,
-    new Date()
-  );
-  if (!slot.ok) return { status: "slot_invalid", message: DELIVERY_SLOT_ERROR_MESSAGES[slot.error] };
+  const prepared = await prepareStaffOrderInput(input.companyId, input.order, { db, assertCategory });
+  if (!prepared.ok) return prepared.result;
 
   try {
     const order = await createOrder(
       customer.id,
       input.companyId,
       customer.email,
-      {
-        ...input.order,
-        ...(slot.deliverySlotStart ? { requestedDeliveryDate: slot.requestedDeliveryDate, deliverySlotStart: slot.deliverySlotStart } : {}),
-        // Le carnet d'adresses appartient au client : l'équipe ne l'écrit pas.
-        saveAddress: false,
-        source: "ADMIN",
-      },
+      prepared.order,
       {
         idempotencyKey: input.idempotencyKey,
         // Atomique : le verrou (entreprise, clé) est tenu jusqu'à la fin de la transaction de création,
@@ -107,8 +89,48 @@ export async function createOrderForCustomer(
     );
     return { status: "created", order: { id: order.id, reference: (order as { reference?: string }).reference } };
   } catch (error) {
-    const known = error instanceof Error ? CREATE_ERROR_STATUSES[error.message] : undefined;
-    if (known) return { status: known };
+    return staffOrderRefusal(error);
+  }
+}
+
+/**
+ * Contrôles communs aux commandes saisies par l'équipe (compte client ou fiche sans accès) :
+ * type de livraison activé, créneau valide ; renvoie la commande prête, source ADMIN.
+ */
+export async function prepareStaffOrderInput(
+  companyId: string,
+  order: CreateClientOrderInput,
+  deps: { db: Pick<typeof prisma, "company">; assertCategory: typeof assertDeliveryCategoryEnabled }
+): Promise<{ ok: true; order: CreateClientOrderInput & { saveAddress: false; source: "ADMIN" } } | { ok: false; result: CreateOrderForCustomerResult }> {
+  try {
+    await deps.assertCategory(companyId, order.deliveryCategory);
+  } catch (error) {
+    if (error instanceof Error && error.message === "DELIVERY_CATEGORY_DISABLED") return { ok: false, result: { status: "category_disabled" } };
     throw error;
   }
+
+  const company = await deps.db.company.findUnique({ where: { id: companyId }, select: { settings: true } });
+  const slot = resolveDeliverySlot(
+    parseDeliverySlots((company?.settings as Record<string, unknown> | null)?.deliverySlots),
+    order,
+    new Date()
+  );
+  if (!slot.ok) return { ok: false, result: { status: "slot_invalid", message: DELIVERY_SLOT_ERROR_MESSAGES[slot.error] } };
+  return {
+    ok: true,
+    order: {
+      ...order,
+      ...(slot.deliverySlotStart ? { requestedDeliveryDate: slot.requestedDeliveryDate, deliverySlotStart: slot.deliverySlotStart } : {}),
+      // Le carnet d'adresses appartient au client : l'équipe ne l'écrit pas.
+      saveAddress: false,
+      source: "ADMIN",
+    },
+  };
+}
+
+/** Traduit un refus connu de la création ; toute autre erreur remonte comme panne. */
+export function staffOrderRefusal(error: unknown): CreateOrderForCustomerResult {
+  const known = error instanceof Error ? CREATE_ERROR_STATUSES[error.message] : undefined;
+  if (known) return { status: known };
+  throw error;
 }

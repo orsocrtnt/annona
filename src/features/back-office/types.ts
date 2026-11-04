@@ -42,6 +42,8 @@ export interface CompanyOrder {
     instructions?: string | null;
   }[];
   customer?: { id: string; firstName: string; lastName: string; email: string; phone?: string | null } | null;
+  /** MAIL-PONT, étape 4 : fiche client sans accès (commande validée depuis un e-mail). */
+  companyCustomer?: { name: string; email: string; phone: string | null } | null;
   items?: { id: string; name: string; quantity: number; unitPrice: string | number }[];
   deliveries?: {
     id: string;

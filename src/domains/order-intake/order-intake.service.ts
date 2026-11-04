@@ -6,15 +6,20 @@ import {
   type CreateOrderForCustomerInput,
   type CreateOrderForCustomerResult,
 } from "@/domains/order/staff-order.service";
+import {
+  createOrderForCompanyCustomer,
+  type CreateOrderForCompanyCustomerDeps,
+  type CreateOrderForCompanyCustomerResult,
+} from "@/domains/company-customer/company-customer.service";
 import { createAnthropicOrderIntakeProvider } from "./anthropic-provider";
 import { matchCustomerBySender } from "./order-intake.customer";
-import { buildOrderIntakeDraft, type OrderIntakeDraft } from "./order-intake.draft";
+import { buildOrderIntakeDraft, parseSender, type OrderIntakeDraft } from "./order-intake.draft";
 import { OrderIntakeProviderError, type OrderIntakeModelProvider, type OrderIntakeProviderErrorCode } from "./order-intake.provider";
 import { orderIntakeExtractionSchema, orderIntakeRequestSchema } from "./order-intake.schema";
 import { ORDER_INTAKE_API_KEY_ENV, getOrderIntakeSettings, isOrderIntakeConfigured } from "./order-intake.settings";
 import { completeOrderIntakeCall, releaseOrderIntakeCall, reserveOrderIntakeCall } from "./order-intake.usage";
 
-type OrderIntakeDb = Pick<typeof prisma, "company" | "user" | "orderIntakeUsage" | "$transaction" | "$queryRaw">;
+type OrderIntakeDb = Pick<typeof prisma, "company" | "user" | "companyCustomer" | "orderIntakeUsage" | "$transaction" | "$queryRaw">;
 
 export type AnalyzeOrderMessageResult =
   | { status: "ok"; draft: OrderIntakeDraft }
@@ -78,6 +83,7 @@ export async function analyzeOrderMessage(
 
   const draft = buildOrderIntakeDraft(extraction.data, text, now);
   draft.customerMatch = await matchCustomerBySender(input.companyId, sender, db);
+  draft.senderEmail = parseSender(sender).email;
   if (!draft.customerMatch) draft.missingFields.push("customer");
   return { status: "ok", draft };
 }
@@ -99,4 +105,23 @@ export async function createOrderFromIntake(
   if (!settings.enabled) return { status: "disabled" };
   if (input.order.deliveryCategory === "SPECIAL_MISSION") return { status: "invalid" };
   return createOrderForCustomer(input, deps);
+}
+
+export type CreateOrderFromIntakeForCardResult =
+  | CreateOrderForCompanyCustomerResult
+  | { status: "disabled" }
+  | { status: "invalid" };
+
+/**
+ * MAIL-PONT, étape 4 : même création que `createOrderFromIntake`, pour une fiche client sans accès
+ * (existante, ou créée dans la transaction de la commande).
+ */
+export async function createOrderFromIntakeForCard(
+  input: Parameters<typeof createOrderForCompanyCustomer>[0],
+  deps: CreateOrderForCompanyCustomerDeps = {}
+): Promise<CreateOrderFromIntakeForCardResult> {
+  const settings = await getOrderIntakeSettings(input.companyId, deps.db ?? prisma);
+  if (!settings.enabled) return { status: "disabled" };
+  if (input.order.deliveryCategory === "SPECIAL_MISSION") return { status: "invalid" };
+  return createOrderForCompanyCustomer(input, deps);
 }

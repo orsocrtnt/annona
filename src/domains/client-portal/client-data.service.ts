@@ -35,6 +35,12 @@ export async function linkPortalDataToClient(
       data: { customerId: client.id },
     });
 
+    // MAIL-PONT, étape 4 : la fiche sans accès du même client dans l'entreprise est rattachée au compte.
+    await tx.companyCustomer.updateMany({
+      where: { companyId, email: client.email.trim().toLowerCase(), userId: null },
+      data: { userId: client.id },
+    });
+
     // Vérifier également l'entreprise des objets enfants et de leur commande.
     await tx.delivery.updateMany({
       where: { companyId, customerId: null, order: owner },

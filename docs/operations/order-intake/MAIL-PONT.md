@@ -89,7 +89,18 @@ Contrainte trouvée dans le code : l'adresse e-mail d'un utilisateur est **uniqu
 | **A. Utilisateur sans connexion** | `User.authId` devient facultatif ; fiche = utilisateur CLIENT sans `authId` | Commandes, factures, adresses et listes existantes marchent telles quelles | Migration sur la table centrale ; une vingtaine de fichiers lisent `authId` (connexion, suppression, inscription) à revoir ; la collision d'adresse entre deux entreprises reste |
 | **B. Fiche client propre à l'entreprise** (conseillée) | Nouveau modèle `CompanyCustomer` (entreprise, nom, e-mail unique **par entreprise**, téléphone, adresses, lien facultatif vers un `User` quand l'accès est donné plus tard) ; `Order` et `Invoice` gagnent `companyCustomerId` facultatif | Pas de collision entre entreprises ; aucune connexion ni siège touché ; même logique que les commandes invitées déjà en ligne | Listes de clients, facturation et export à étendre à la fiche ; plus de travail au départ |
 
-Recommandation de l'agent : **B**, parce que la collision d'adresse rendrait A fragile dès qu'un client commande à deux transporteurs. Les clients ne sont pas comptés dans les sièges de l'abonnement (seuls livreurs, administrateurs et dispatchers le sont), donc aucune option ne change la facturation TutelLiv. Décision au propriétaire (section 9).
+Recommandation de l'agent : **B**, parce que la collision d'adresse rendrait A fragile dès qu'un client commande à deux transporteurs. Les clients ne sont pas comptés dans les sièges de l'abonnement (seuls livreurs, administrateurs et dispatchers le sont), donc aucune option ne change la facturation TutelLiv. **Décision du propriétaire le 3 novembre 2026 : B.**
+
+### 5.3 Fiche client livrée (étape 4, 4 novembre 2026)
+
+- **Modèle** `CompanyCustomer` (table `company_customers`) : entreprise, nom, e-mail en minuscules **unique par entreprise**, téléphone normalisé, `userId` facultatif. `Order.companyCustomerId` facultatif. Écart avec 5.2 : pas de colonne sur `Invoice`, la facture retrouve la fiche par sa commande.
+- **Validation** : le menu « Client » du brouillon propose les comptes (« Clients avec accès »), les fiches (« Clients sans accès ») et « + Nouveau client (sans accès) », prérempli avec le nom lu, l'adresse de l'expéditeur et le téléphone lu. Il est présélectionné quand l'expéditeur est inconnu et qu'une adresse existe. Nom et e-mail obligatoires.
+- **Création** (`createOrderForCompanyCustomer`) : la fiche est créée dans la transaction de la commande, sous le verrou (entreprise, clé). Une adresse déjà connue réutilise sa fiche sans l'écraser ; une adresse qui a un compte client dans l'entreprise est refusée (« choisissez-le dans la liste ») ; une clé déjà utilisée pour un autre client est un conflit. Double clic ou reprise : la même commande, une seule fiche.
+- **Commande** : `customerId` vide, `customerEmail` = adresse de la fiche, source `ADMIN`. Le nom de la fiche s'affiche dans les listes de commandes et sur la page de la commande (« Client sans accès à l'espace client »).
+- **Second e-mail** : `matchCustomerBySender` cherche d'abord un compte actif, puis une fiche de l'entreprise (adresse, ou numéro s'il n'en désigne qu'une) ; la fiche est présélectionnée.
+- **Accès donné plus tard** : quand l'entreprise ouvre un compte client avec la même adresse, ses commandes lui sont rattachées (mécanisme existant par `customerEmail`) et la fiche reçoit `userId`.
+- **Export DATA-02** : collection `companyCustomers` (ajout compatible de la version 1) et `companyCustomerId` sur chaque commande.
+- Non fait dans cette étape : page « Clients » listant les fiches, modification ou suppression d'une fiche.
 
 ## 6. Confirmation au client
 
@@ -116,14 +127,14 @@ Chaque étape est testée et livrable seule (petites étapes, pas de refonte).
 | 1 (**fait le 3 novembre**) | Tri `kind` et statut `NOT_ORDER`, rangement « À trier », bouton « C'est une commande » | Ajout d'une valeur d'énumération | Tests du tri ; E2E de la liste ; essai réel avec « Merci pour hier » |
 | 2 (**fait le 3 novembre**) | Expéditeur d'origine (renvoi automatique, transfert à la main) et provenance affichée ; lecture du bloc cité seulement si l'e-mail vient d'un membre de l'équipe | Colonne `original_sender` | Tests de lecture des blocs `De :` / `From:` en français et en anglais ; essai réel |
 | 3 (**fait le 3 novembre**, essai réel Gmail et Outlook à faire) | Adresse de la boîte de commandes en Paramètres, code de confirmation Gmail, guide de renvoi | Colonne `order_mailbox_address` ; valeur `FORWARDING_CONFIRMATION` | Essai réel Gmail de bout en bout ; Outlook avec redirection |
-| 4 | Fiche client à la validation (option retenue en 5.2) | Selon l'option | Tests d'isolement entre entreprises ; reprise après double clic ; export DATA-02 étendu |
+| 4 (**fait le 4 novembre**, option B) | Fiche client à la validation (section 5.3) | Table `company_customers`, colonne `company_customer_id` | Tests d'isolement entre entreprises ; reprise après double clic ; export DATA-02 étendu |
 | 5 (**fait le 3 novembre**, essai réel à faire) | Confirmation au client avec `Reply-To` | Aucun | Test d'unicité ; essai réel : réception, « répondre » arrive dans la boîte de commandes |
 
 Chaque migration est d'abord appliquée sur `tutelliv-dev`, puis en préproduction avec l'accord demandé au début de l'étape.
 
 ## 9. Décisions à prendre par le propriétaire
 
-1. **Fiche client** : option A ou B (section 5.2). Conseil : B.
+1. **Fiche client** : option A ou B (section 5.2). Conseil : B. **Tranché le 3 novembre : B** (livré le 4 novembre, section 5.3).
 2. **E-mails « À trier »** : garder 7 jours avec le texte, pour permettre « C'est une commande » ? Ou ne garder que l'objet et l'expéditeur, sans possibilité de rattrapage ?
 3. **Nom affiché sur la confirmation** : « Entreprise via TutelLiv » (conseillé, honnête et sans réglage technique chez le client) ou seulement le nom de l'entreprise ?
 4. **Ordre** : commencer par l'étape 1 (tri, utile tout de suite et sans dépendance) ? Conseil : oui, puis 2 et 3, la fiche client ensuite.

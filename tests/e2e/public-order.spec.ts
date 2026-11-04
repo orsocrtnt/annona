@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "../../src/services/prisma/client";
 import { analyzeInboundEmailJob, ingestInboundEmail } from "../../src/domains/order-intake/inbound-email.service";
 import { buildOrderIntakeDraft } from "../../src/domains/order-intake/order-intake.draft";
+import { matchCustomerBySender } from "../../src/domains/order-intake/order-intake.customer";
 import type { OrderIntakeExtraction } from "../../src/domains/order-intake/order-intake.schema";
 
 /** Commande et suivi sans connexion, e-mails reçus : base de développement, données E2E supprimées à la fin. */
@@ -312,6 +313,118 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
       await prisma.saasUsageEvent.deleteMany({ where: { orderId } }).catch(() => undefined);
       await prisma.order.deleteMany({ where: { id: orderId } });
     }
+    if (companyId) await prisma.companyIntakeChannel.deleteMany({ where: { companyId } });
+    await page.request.post("/api/auth/logout").catch(() => undefined);
+  }
+});
+
+test("E-MAIL fiche client : client inconnu créé au clic, reconnu au second e-mail, isolé de l'entreprise", async ({ page }) => {
+  test.setTimeout(300_000);
+  const emailIds: string[] = [];
+  const orderIds: string[] = [];
+  let companyId = "";
+  const sender = `e2e-fiche-${Date.now()}@tutelliv.fr`;
+  try {
+    await loginAdmin(page);
+    expect((await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", enabled: true } })).status()).toBe(200);
+    companyId = (await prisma.companyIntakeChannel.findFirstOrThrow({ where: { inboundEmailEnabled: true }, orderBy: { updatedAt: "desc" } })).companyId;
+    await page.request.patch("/api/orders/intake", { data: { enabled: true } });
+
+    // E-mail reçu puis analysé (modèle simulé, rapprochement réel sur la base de développement).
+    const receive = async (subject: string) => {
+      const row = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${sender}-${subject}`, fromAddress: sender, subject, bodyText: "2 plis de Rivoli à la Défense, urgent", status: "RECEIVED" } });
+      emailIds.push(row.id);
+      await analyzeInboundEmailJob({ inboundEmailId: row.id }, {
+        analyze: async (input) => {
+          const draft = buildOrderIntakeDraft(EXTRACTION, row.bodyText, new Date());
+          draft.customerMatch = await matchCustomerBySender(companyId, typeof input.sender === "string" ? input.sender : null);
+          draft.senderEmail = sender;
+          return { status: "ok", draft };
+        },
+      });
+      return row;
+    };
+
+    // Selon l'espace de démo, le créneau n'est pas toujours prérempli depuis l'échéance : le choisir.
+    const pickSlotIfNeeded = async () => {
+      const slot = page.getByRole("combobox", { name: /Créneau de livraison/ });
+      if ((await slot.count()) && /Choisir/.test((await slot.textContent()) ?? "")) {
+        await slot.click();
+        await page.getByRole("listbox").getByRole("option").first().click();
+      }
+    };
+
+    // 1. Client inconnu : « Nouveau client » présélectionné, adresse préremplie ; aucune fiche avant le clic.
+    const first = await receive("E2E fiche premier");
+    await page.goto("/dashboard/orders/intake");
+    await page.getByRole("listitem").filter({ hasText: "E2E fiche premier" }).getByRole("button", { name: "Relire le brouillon" }).click();
+    const select = page.getByRole("combobox", { name: "Client" });
+    await expect(select).toHaveValue("new");
+    await expect(page.getByText("Client inconnu : sa fiche sera créée avec la commande")).toBeVisible();
+    const fiche = page.getByRole("group", { name: "Nouveau client" });
+    await expect(fiche.getByLabel("E-mail")).toHaveValue(sender);
+    expect(await prisma.companyCustomer.count({ where: { email: sender } }), "rien avant le clic").toBe(0);
+    await page.getByRole("button", { name: "Créer la commande" }).click();
+    await expect(page.getByText("Indiquez le nom du nouveau client.")).toBeVisible();
+    await fiche.getByLabel("Nom").fill("E2E Fiche Client");
+    await pickSlotIfNeeded();
+    await page.getByRole("button", { name: "Créer la commande" }).dblclick();
+    await expect(page.getByText(/Commande créée/).first()).toBeVisible({ timeout: 60_000 });
+    await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: first.id } })).status, { timeout: 30_000 }).toBe("CONVERTED");
+
+    const cards = await prisma.companyCustomer.findMany({ where: { email: sender } });
+    expect(cards, "une seule fiche, malgré le double clic").toHaveLength(1);
+    expect(cards[0]).toMatchObject({ companyId, name: "E2E Fiche Client", userId: null });
+    const firstOrders = await prisma.order.findMany({ where: { companyId, idempotencyKey: `inbound-${first.id}-0` } });
+    expect(firstOrders, "une seule commande").toHaveLength(1);
+    orderIds.push(firstOrders[0]!.id);
+    expect(firstOrders[0]).toMatchObject({ customerId: null, companyCustomerId: cards[0]!.id, customerEmail: sender, source: "ADMIN" });
+
+    // 2. Même expéditeur : sa fiche est reconnue et présélectionnée, aucune nouvelle fiche.
+    const second = await receive("E2E fiche second");
+    await page.goto("/dashboard/orders/intake");
+    await page.getByRole("listitem").filter({ hasText: "E2E fiche second" }).getByRole("button", { name: "Relire le brouillon" }).click();
+    await expect(select).toHaveValue(`card:${cards[0]!.id}`);
+    await expect(page.getByText("Rapproché par e-mail de l'expéditeur (fiche sans accès à l'espace client).")).toBeVisible();
+    await pickSlotIfNeeded();
+    await page.getByRole("button", { name: "Créer la commande" }).click();
+    await expect(page.getByText(/Commande créée/).first()).toBeVisible({ timeout: 60_000 });
+    await expect.poll(async () => (await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: second.id } })).status, { timeout: 30_000 }).toBe("CONVERTED");
+    const secondOrder = await prisma.order.findFirstOrThrow({ where: { companyId, idempotencyKey: `inbound-${second.id}-0` } });
+    orderIds.push(secondOrder.id);
+    expect(secondOrder.companyCustomerId).toBe(cards[0]!.id);
+    expect(await prisma.companyCustomer.count({ where: { email: sender } })).toBe(1);
+
+    // 3. Fiche de la commande et liste : le nom de la fiche s'affiche.
+    await page.goto(`/dashboard/orders/${secondOrder.id}`);
+    await expect(page.getByText("Client sans accès à l'espace client", { exact: false })).toBeVisible();
+    await expect(page.getByText("E2E Fiche Client").first()).toBeVisible();
+
+    // 4. Isolement : la liste des fiches ne montre que l'entreprise de la session, et une fiche étrangère est refusée.
+    const listed = (await (await page.request.get("/api/orders/intake/customers")).json()).data as { id: string }[];
+    expect(listed.some(({ id }) => id === cards[0]!.id)).toBe(true);
+    const other = await prisma.company.findFirstOrThrow({ where: { id: { not: companyId } }, select: { id: true } });
+    const foreign = await prisma.companyCustomer.create({ data: { companyId: other.id, name: "E2E fiche étrangère", email: sender } });
+    try {
+      expect((await (await page.request.get("/api/orders/intake/customers")).json()).data.some(({ id }: { id: string }) => id === foreign.id)).toBe(false);
+      const refused = await page.request.post("/api/orders/intake/orders", {
+        headers: { "Idempotency-Key": `e2e-fiche-foreign-${Date.now()}` },
+        data: { companyCustomerId: foreign.id, order: { deliveryCategory: "STANDARD", items: [{ name: "Colis", quantity: 1 }], shippingAddress: "5 place de la Défense", shippingCity: "Courbevoie", shippingPostalCode: "92400", requestedDeliveryDate: tomorrow() } },
+      });
+      expect(refused.status()).toBe(404);
+    } finally {
+      await prisma.companyCustomer.delete({ where: { id: foreign.id } });
+    }
+  } finally {
+    await prisma.operationJob.deleteMany({ where: { jobKey: { in: emailIds.flatMap((id) => [`inbound-email:${id}`, `inbound-confirmation:${id}`]) } } });
+    await prisma.inboundOrderEmail.deleteMany({ where: { id: { in: emailIds } } });
+    if (orderIds.length) {
+      const deliveries = await prisma.delivery.findMany({ where: { orderId: { in: orderIds } }, select: { id: true } });
+      await prisma.operationJob.deleteMany({ where: { OR: deliveries.map(({ id }) => ({ jobKey: { contains: id } })) } }).catch(() => undefined);
+      await prisma.saasUsageEvent.deleteMany({ where: { orderId: { in: orderIds } } }).catch(() => undefined);
+      await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+    }
+    await prisma.companyCustomer.deleteMany({ where: { email: sender } });
     if (companyId) await prisma.companyIntakeChannel.deleteMany({ where: { companyId } });
     await page.request.post("/api/auth/logout").catch(() => undefined);
   }

@@ -113,8 +113,10 @@ function memoryDb(options: {
   usage?: Row[];
   users?: UserRow[];
   orders?: Array<{ companyId: string; idempotencyKey: string; customerId: string }>;
+  cards?: Array<{ id: string; companyId: string; name: string; email: string; phone: string | null }>;
 } = {}) {
   const usage: Row[] = [...(options.usage ?? [])];
+  const cards = options.cards ?? [];
   const users = options.users ?? [];
   const events: string[] = [];
   const tick = () => new Promise((done) => setImmediate(done));
@@ -173,6 +175,15 @@ function memoryDb(options: {
         return found ? select(found) : null;
       },
       findMany: async ({ where }: { where: Record<string, unknown> }) => users.filter((user) => matchesUser(user, where)).map(select),
+    },
+    // MAIL-PONT, étape 4 : fiches sans accès, filtrées par entreprise puis adresse ou numéro.
+    companyCustomer: {
+      findMany: async ({ where, take }: { where: { companyId: string; email?: string; phone?: string }; take: number }) =>
+        cards
+          .filter((card) => card.companyId === where.companyId && (where.email ? card.email === where.email : card.phone === where.phone))
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .slice(0, take)
+          .map(({ id, name, email }) => ({ id, name, email })),
     },
     // Rapprochement téléphone exécuté en SQL : la base mémoire rejoue le même filtre (entreprise,
     // CLIENT actif, numéro normalisé), trié par identifiant et limité à deux lignes.
@@ -440,7 +451,7 @@ test("INTAKE analyse : extraction nominale, usage journalisé sans le texte du m
   assert.equal(calls.length, 1);
   assert.equal(calls[0]?.text, FIXTURES.email.trim());
   assert.equal(result.draft.deadline.iso, "2026-10-29T08:00:00.000Z");
-  assert.deepEqual(result.draft.customerMatch, { customerId: "client-a", displayName: "Sophie Leroy", email: "sophie.leroy@cabinet-martin.example", matchedBy: "email" });
+  assert.deepEqual(result.draft.customerMatch, { kind: "user", customerId: "client-a", displayName: "Sophie Leroy", email: "sophie.leroy@cabinet-martin.example", matchedBy: "email" });
   assert.equal(memory.usage.length, 1);
   const row = memory.usage[0] as Record<string, unknown>;
   assert.deepEqual(
@@ -797,7 +808,7 @@ test("INTAKE relecture 10 : rapprochement par téléphone comparé en SQL, déte
   assert.match(sql, /LIMIT 2/);
   assert.deepEqual(values, ["company-a", "0612345678"]);
 
-  const twins = { ...db, $queryRaw: async () => [{ id: "client-a" }, { id: "client-b" }] };
+  const twins = { ...db, $queryRaw: async () => [{ id: "client-a" }, { id: "client-b" }], companyCustomer: { findMany: async () => [] } };
   assert.equal(await matchCustomerBySender("company-a", "0612345678", twins as never), null);
 });
 
@@ -818,4 +829,35 @@ test("MAIL-PONT : le brouillon reprend le tri du modèle", () => {
   const draft = buildOrderIntakeDraft(extraction({ kind: { value: "other", reason: "Facture" } }), "Veuillez trouver la facture", new Date("2026-11-03T10:00:00Z"));
   assert.equal(draft.kind, "other");
   assert.equal(draft.kindReason, "Facture");
+});
+
+test("MAIL-PONT fiche client : expéditeur sans compte reconnu par sa fiche, dans son entreprise seulement", async () => {
+  const cards = [
+    { id: "card-a", companyId: "company-a", name: "Pharmacie du Parc", email: "commandes@pharmacie-parc.example", phone: "0611223344" },
+    { id: "card-b", companyId: "company-b", name: "Autre", email: "autre@exemple.example", phone: "0699887766" },
+    { id: "card-a2", companyId: "company-a", name: "Jumeau 1", email: "j1@exemple.example", phone: "0655555555" },
+    { id: "card-a3", companyId: "company-a", name: "Jumeau 2", email: "j2@exemple.example", phone: "0655555555" },
+  ];
+  const { db } = memoryDb({ users: CLIENTS, cards });
+  const byEmail = await matchCustomerBySender("company-a", "Pharmacie <Commandes@Pharmacie-Parc.example>", db as never);
+  assert.deepEqual(byEmail, { kind: "card", customerId: "card-a", displayName: "Pharmacie du Parc", email: "commandes@pharmacie-parc.example", matchedBy: "email" });
+  assert.equal((await matchCustomerBySender("company-a", "+33 6 11 22 33 44", db as never))?.customerId, "card-a");
+  assert.equal(await matchCustomerBySender("company-a", "autre@exemple.example", db as never), null, "fiche d'une autre entreprise");
+  assert.equal(await matchCustomerBySender("company-a", "06 55 55 55 55", db as never), null, "deux fiches pour un même numéro");
+  // Un compte client actif garde la priorité sur une fiche.
+  const account = await matchCustomerBySender("company-a", CLIENTS[0]!.email, memoryDb({ users: CLIENTS, cards: [{ ...cards[0]!, email: CLIENTS[0]!.email }] }).db as never);
+  assert.equal(account?.kind, "user");
+  assert.equal(account?.customerId, CLIENTS[0]!.id);
+});
+
+test("MAIL-PONT fiche client : le brouillon garde l'adresse de l'expéditeur pour préremplir une nouvelle fiche", async () => {
+  const { db } = memoryDb({ users: [] });
+  const result = await analyzeOrderMessage(
+    { companyId: "company-a", text: FIXTURES.sms, sender: "Inconnu <Nouveau.Client@Exemple.example>" },
+    { db: db as never, env: ENV, now: NOW, provider: fakeProvider(SMS_EXTRACTION) }
+  );
+  assert.equal(result.status, "ok");
+  if (result.status !== "ok") return;
+  assert.equal(result.draft.customerMatch, null);
+  assert.equal(result.draft.senderEmail, "nouveau.client@exemple.example");
 });

@@ -246,6 +246,19 @@ export default function CompanyOrderDetailPage() {
           </CardContent>
         </Card>
       )}
+      {!order.customer && order.companyCustomer && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Client</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-1">
+            <p className="font-medium">{order.companyCustomer.name || order.companyCustomer.email}</p>
+            <p>{order.companyCustomer.email}</p>
+            {order.companyCustomer.phone && <p>{order.companyCustomer.phone}</p>}
+            <p className="text-muted-foreground">Client sans accès à l&apos;espace client (fiche créée depuis une commande reçue).</p>
+          </CardContent>
+        </Card>
+      )}
       <OrderTrackingLinkButton orderId={order.id} />
       <OrderTracking orderId={order.id} />
       <OrderConversation orderId={order.id} />

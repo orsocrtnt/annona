@@ -272,6 +272,7 @@ model User {
   orderMessages        OrderMessage[]
   orderThreadReads     OrderThreadRead[]
   invoiceRemindersSent InvoiceReminder[]
+  companyCustomerCards CompanyCustomer[]
 
   @@index([companyId])
   @@index([roleId])
@@ -346,6 +347,7 @@ model Company {
   intakeChannel        CompanyIntakeChannel?
   orderTrackingLinks   OrderTrackingLink[]
   inboundOrderEmails   InboundOrderEmail[]
+  companyCustomers     CompanyCustomer[]
 
   @@index([slug])
   @@index([status])
@@ -739,6 +741,9 @@ model Order {
   customerId    String? @map("customer_id")
   customer      User?   @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: SetNull)
   customerEmail String? @map("customer_email")
+  /// MAIL-PONT, étape 4 : fiche client sans accès, propre à l'entreprise (commande validée depuis un e-mail).
+  companyCustomerId String?          @map("company_customer_id")
+  companyCustomer   CompanyCustomer? @relation(fields: [companyCustomerId], references: [id], onDelete: SetNull)
 
   recurringOrderId String?         @map("recurring_order_id")
   recurringOrder   RecurringOrder? @relation(fields: [recurringOrderId], references: [id], onDelete: SetNull)
@@ -763,6 +768,7 @@ model Order {
   @@index([companyId])
   @@index([customerId])
   @@index([customerEmail])
+  @@index([companyCustomerId])
   @@index([status])
   @@index([recurringOrderId])
   @@map("orders")
@@ -1393,4 +1399,28 @@ model InboundOrderEmail {
   @@index([companyId, status, createdAt])
   @@index([createdAt])
   @@map("inbound_order_emails")
+}
+
+/// MAIL-PONT, étape 4 : fiche d'un client de l'entreprise, sans accès à l'espace client.
+/// Créée à la validation d'une commande reçue (jamais avant le clic). L'adresse e-mail est unique
+/// par entreprise seulement : un même client peut avoir une fiche chez deux entreprises de livraison.
+/// `userId` est rempli quand l'entreprise lui ouvre ensuite un compte client avec la même adresse.
+model CompanyCustomer {
+  id        String   @id @default(cuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  /// En minuscules.
+  email     String
+  phone     String?
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  orders    Order[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, email])
+  @@index([companyId, createdAt])
+  @@index([userId])
+  @@map("company_customers")
 }
