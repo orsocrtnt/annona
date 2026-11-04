@@ -40,7 +40,7 @@
 - PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
 - LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
 - MAIL-PONT — Relier la boîte de commandes de l'entreprise à TutelLiv (régler `NEXT_PUBLIC_APP_URL` sur `https://tutelliv.fr` (Vercel, Preview `preproduction`) et retirer le filtre Gmail d'essai ; Outlook plus tard (décidé le 4 novembre) ; ensuite Claude)
-- WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller (relire la spécification et trancher la section 9 ; démarches Meta après le SIREN ; ensuite Claude)
+- WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller (relire la spécification et trancher la section 9 ; essayer le partage par e-mail ; ouvrir le compte développeur Meta ; ensuite Claude)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -63,7 +63,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plus tard : trouver un téléphone Android (essais MOB-01C).
 - Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
 - MAIL-PONT : essai Gmail réussi le 4 novembre. À faire : dans Vercel, mettre `NEXT_PUBLIC_APP_URL` = `https://tutelliv.fr` pour Preview `preproduction` (les liens de suivi des e-mails pointent vers l'adresse `…vercel.app`), puis redéployer ; supprimer le filtre Gmail d'essai (Paramètres > Filtres) ; fournir une boîte Outlook pour l'essai Outlook.
-- WHATSAPP-1 : relire `docs/operations/order-intake/WHATSAPP.md` et trancher la section 9 (option A conseillée) ; après le SIREN, créer le compte Meta Business, le faire vérifier et prévoir un numéro dédié.
+- WHATSAPP-1 : relire `docs/operations/order-intake/WHATSAPP.md` et trancher la section 9 (option A conseillée) ; essayer tout de suite « Partager par e-mail » depuis WhatsApp vers l'adresse de commandes (sans code) ; ouvrir un compte développeur Meta non vérifié (pas besoin du SIREN pour coder avec le numéro de test) ; la vérification de l'entreprise et le numéro dédié viendront après le SIREN.
 - INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
@@ -374,7 +374,9 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller.** Demande du propriétaire du 4 novembre 2026. Spécification : `docs/operations/order-intake/WHATSAPP.md` (règles de Meta vérifiées en ligne le 4 novembre : pas de renvoi automatique, API officielle seulement, vérification de l'entreprise, messages reçus gratuits, message transféré sans auteur d'origine, règle de Meta sur l'IA). Conseil : option A, un numéro TutelLiv vers lequel le dispatcher transfère le message ; l'entreprise est reconnue par le numéro du dispatcher.
 
-  **Qui : Toi — relire la spécification et trancher la section 9 ; démarches Meta après le SIREN ; ensuite Claude.**
+  **Qui : Toi — relire la spécification et trancher la section 9 ; essayer le partage par e-mail ; ouvrir le compte développeur Meta ; ensuite Claude.**
+
+  4 novembre 2026, question « on peut pas faire autrement ? » : section 3 bis ajoutée à la spécification. Deux chemins sans SIREN : (1) WhatsApp → Partager → e-mail vers l'adresse de commandes, qui réutilise MAIL-PONT sans code (geste à essayer sur iPhone et Android) ; (2) API officielle avec un compte Meta non vérifié, plafonné à environ 250 conversations lancées par l'entreprise par jour (sources de prestataires), ce qui ne gêne pas la réception, et numéro de test de Meta pour coder. Écarté : bibliothèques non officielles (contraires aux conditions, risque de bannissement). Vérification : `npm run docs:verify`. Non vérifié : plafonds dans l'aide de Meta, réception sur le numéro de test, geste de partage.
 
   Terminé quand : un message WhatsApp transféré par un dispatcher depuis son téléphone devient un brouillon dans TutelLiv ; un message qui n'est pas une commande va dans « À trier » ; un numéro inconnu ne laisse aucune donnée ; la validation crée la commande et, si besoin, la fiche du client ; tests, essai réel sur un vrai téléphone, `npm run check` et clic réel dans le navigateur.
 

@@ -34,6 +34,15 @@ Hors périmètre : répondre au client depuis TutelLiv, gérer les photos et les
 - **« Coexistence ».** Meta permet d'utiliser le même numéro dans l'application WhatsApp Business et dans l'API, en passant par l'inscription intégrée d'un prestataire technique de Meta. Les appels et les groupes restent dans l'application. La disponibilité en France n'a pas été confirmée.
 - **Règle de Meta sur l'IA (en vigueur depuis le 15 janvier 2026).** Elle interdit de distribuer un assistant d'IA généraliste par l'API. Selon la presse et des prestataires, l'IA utilisée dans un flux métier reste permise (support, ventes, notifications). L'usage de TutelLiv, qui lit une commande dans un message, semble relever de ce cas. Ce n'est pas vérifié dans le texte de Meta. La Commission européenne examine cette règle depuis février 2026.
 
+## 3 bis. Commencer sans attendre le SIREN (ajout du 4 novembre 2026)
+
+Le propriétaire a demandé s'il existait un autre chemin. Il y en a deux :
+
+1. **Tout de suite, sans code : WhatsApp → Partager → e-mail.** Le dispatcher sélectionne le message dans WhatsApp, le partage par e-mail vers l'adresse de commandes de l'entreprise (MAIL-PONT). Le message suit le circuit e-mail existant : tri, brouillon, fiche client, validation. Le client est reconnu par le téléphone ou l'e-mail écrit dans le message, comme en section 4.3. Le geste exact dépend du téléphone (iPhone : appui long, « Transférer », puis l'icône de partage ; Android : selon la version) : à essayer sur un vrai téléphone avant de l'écrire dans le guide.
+2. **L'API officielle sans vérification de l'entreprise.** Selon plusieurs prestataires, un compte Meta Business non vérifié peut utiliser l'API avec des plafonds bas : environ 250 conversations **lancées par l'entreprise** par jour et 2 numéros. Les messages **reçus** et les réponses dans une conversation ouverte par l'autre personne ne sont pas plafonnés de la même façon. L'option A reçoit des messages transférés et n'en lance presque pas : ces plafonds ne la gênent pas pour les pilotes. Meta fournit aussi un **numéro de test** dans l'application développeur, ce qui permet de coder et d'essayer avant d'avoir une ligne dédiée. Le compte peut être ouvert au nom du propriétaire, puis vérifié au nom de la société quand le SIREN existe. Sources secondaires : à confirmer dans l'aide de Meta lors de l'ouverture du compte.
+
+Écarté : les bibliothèques non officielles qui pilotent WhatsApp Web (`whatsapp-web.js`, Baileys). Elles sont contraires aux conditions de WhatsApp, le numéro peut être banni sans préavis, et elles cassent à chaque mise à jour. Pas pour un service qui traite les données des clients.
+
 ## 4. Deux façons de brancher WhatsApp
 
 ### 4.1 Option A, conseillée pour commencer : un numéro TutelLiv
@@ -75,10 +84,10 @@ Amélioration possible (à décider, section 9) : le dispatcher transfère d'abo
 
 | Étape | Qui | Dépendance |
 | --- | --- | --- |
-| SIREN de la société | Toi | Guichet unique (déjà prévu) |
-| Compte Meta Business au nom de la société, puis vérification de l'entreprise | Toi | SIREN, justificatif d'adresse, site tutelliv.fr |
-| Numéro dédié, capable de recevoir un SMS ou un appel pour le code Meta, jamais utilisé dans l'application WhatsApp | Toi | Une ligne fixe ou mobile à toi |
-| Application Meta (développeur), produit WhatsApp, jeton permanent d'un utilisateur système, abonnement du webhook | Claude, avec ton accès | Compte vérifié |
+| Compte développeur Meta et compte Meta Business (non vérifié au début, section 3 bis) | Toi | Ton compte Facebook |
+| Application Meta (développeur), produit WhatsApp, numéro de test, abonnement du webhook | Claude, avec ton accès | Étape précédente |
+| Numéro dédié, capable de recevoir un SMS ou un appel pour le code Meta, jamais utilisé dans l'application WhatsApp | Toi | Une ligne fixe ou mobile à toi ; utile pour les pilotes, pas pour coder |
+| Vérification de l'entreprise, jeton permanent d'un utilisateur système | Toi, puis Claude | SIREN, justificatif d'adresse, site tutelliv.fr ; seulement pour dépasser les plafonds |
 | Variables Vercel : `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN` | Toi (l'agent n'y a pas accès) | Étape précédente |
 
 ## 7. Sécurité, données et juridique
@@ -93,7 +102,7 @@ Amélioration possible (à décider, section 9) : le dispatcher transfère d'abo
 
 | Étape | Contenu | Schéma | Vérification |
 | --- | --- | --- | --- |
-| 0 | Démarches Meta : compte, vérification, numéro | Aucun | Compte vérifié, numéro actif |
+| 0 | Démarches Meta : compte développeur, application, numéro de test (la vérification viendra avec le SIREN) | Aucun | Message reçu sur le numéro de test |
 | 1 | Webhook signé, messages texte reçus d'un numéro de l'équipe, rangés dans la liste des messages reçus | Canal sur la ligne reçue (`channel`), numéro de l'expéditeur | Tests de signature, d'équipe inconnue, de doublon ; essai réel avec un téléphone |
 | 2 | Analyse, tri, « À trier », brouillon et validation (réutilisation de MAIL-PONT) | Aucun | E2E ; essai réel « Transférer » depuis WhatsApp |
 | 3 | Reconnaissance du client par le téléphone ou l'e-mail lu dans le message ; carte de contact si retenue | Aucun | Tests de rapprochement |
@@ -106,7 +115,7 @@ Chaque migration passe d'abord sur `tutelliv-dev`, puis en préproduction avec t
 1. **Option** : A (numéro TutelLiv et « Transférer ») pour commencer ? Conseil : oui ; B seulement si les pilotes le demandent.
 2. **Numéro** : une nouvelle ligne dédiée (conseillé), ou un numéro existant jamais utilisé dans WhatsApp ?
 3. **Carte de contact** : la proposer dès l'étape 3, ou attendre de voir si les dispatchers en ont besoin ?
-4. **Calendrier** : démarches Meta dès que le SIREN existe, et code ensuite ? Aucun code n'est utile avant le compte vérifié, faute de pouvoir faire un essai réel.
+4. **Calendrier** : essayer d'abord le partage par e-mail (section 3 bis, sans code) ? Puis ouvrir le compte Meta non vérifié et coder avec le numéro de test, sans attendre le SIREN ? Conseil : oui aux deux ; la vérification de l'entreprise suivra le SIREN.
 
 ## 10. Critères de fin
 
@@ -116,7 +125,9 @@ Un message WhatsApp transféré par un dispatcher depuis son téléphone appara�
 
 - Texte exact des conditions de Meta sur l'IA (*AI Providers*) : seule de la presse et des prestataires ont été lus.
 - Disponibilité de la « coexistence » en France et pour quel type de compte.
-- Plafonds sans vérification et liste française des documents acceptés : sources de prestataires seulement.
+- Plafonds sans vérification et liste française des documents acceptés : sources de prestataires seulement (Zoko, DoubleTick, Bot.space).
+- Geste « Partager par e-mail » depuis WhatsApp sur iPhone et sur Android : pas encore essayé.
+- Réception de messages entrants sur le numéro de test de Meta : d'après la documentation, à confirmer à l'essai.
 - Montants des tarifs français : grilles de Meta non ouvertes.
 
 Sources consultées le 4 novembre 2026 : page de tarification de Meta (developers.facebook.com/docs/whatsapp/pricing) ; référence des webhooks de Meta pour les messages texte (indicateurs `forwarded` et `frequently_forwarded`) ; TechCrunch et 9to5Mac (octobre 2025) sur la règle relative à l'IA ; guides de prestataires (360dialog, Sleekflow, Pepper Cloud, LeadSquared) sur la vérification et la coexistence.
