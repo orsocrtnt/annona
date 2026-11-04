@@ -331,6 +331,28 @@ test("OPS-03B : la migration du moniteur garde secrets et journal hors Data API"
   assert.doesNotMatch(migration, /sk[-_][A-Za-z0-9]/);
 });
 
+test("OPS-FIAB : la sonde externe prévient par e-mail sans secret dans la migration", () => {
+  const migration = readFileSync(resolve(
+    "prisma/migrations/20261104040000_ops_monitor_email_alerts/migration.sql"
+  ), "utf8");
+  for (const name of ["ops03b_resend_api_key", "ops03b_alert_email_to", "ops03b_alert_email_from"]) {
+    assert.match(migration, new RegExp(`secret_value\\('${name}'\\)`), name);
+  }
+  // E-mail d'abord, webhook de recette seulement si le canal e-mail n'est pas configuré.
+  const email = migration.indexOf("https://api.resend.com/emails");
+  const webhook = migration.indexOf("ELSIF webhook_url IS NULL");
+  assert.ok(email > 0 && webhook > email);
+  assert.match(migration, /idempotency-key', event_key/);
+  assert.match(migration, /\[Essai\] /);
+  assert.match(migration, /INTERVAL '2 hours'/);
+  assert.match(migration, /REVOKE ALL ON FUNCTION ops_monitor\.run\(BOOLEAN\) FROM PUBLIC, anon, authenticated/);
+  assert.doesNotMatch(migration, /re_[A-Za-z0-9]{8}/);
+  assert.doesNotMatch(migration, /@[a-z0-9-]+\.[a-z]{2,}/i);
+  const store = readFileSync(resolve("scripts/ops03b/store-alert-email.mjs"), "utf8");
+  assert.match(store, /zwwyalsslyydubtetagj/);
+  assert.doesNotMatch(store, /console\.log\([^)]*values/);
+});
+
 test("OPS-03B : le cron reste inactif tant que la reprise n'est pas validée", () => {
   const rehearsal = readFileSync(resolve(
     "scripts/ops03b/rehearse-preproduction.ts"

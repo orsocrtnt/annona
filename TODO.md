@@ -27,13 +27,13 @@
 - SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex
 - POD-2 — Preuve de livraison complète : signature, PDF, envoi et relevés
 - MOB-01C — Réaliser les essais iPhone et Android
-- OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation
 - FACTURX-1 — Factur-X EN 16931 des factures de livraison
 - PROD-02 — Documenter le travail actuel et sa difficulté principale
 - INTAKE-1 — Commande par message IA (coller un message)
 - AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
 - PROPRIO-2810 — Actions du propriétaire avant mise en ligne
 - ONBOARD-1 — Guider jusqu’à la première livraison (pendant les pilotes)
+- OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation (trois commandes, puis Claude)
 - LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents (fournir les pièces et décider, puis Claude)
 - OFFER-1 — Valider la grille cible et l'offre pilote (pendant les entretiens et les pilotes)
 - PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
@@ -50,6 +50,7 @@ _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
+- OPS-FIAB (4 novembre), alertes par e-mail prêtes, trois commandes dans l'ordre : `git push origin preproduction`, puis `npx dotenv -e .env.preproduction.local -- prisma migrate deploy`, puis `sh scripts/ops03b/copy-alert-email.sh` (doit afficher `"stored":true`). Dis-moi quand c'est fait : je teste l'e-mail. Le push et la migration couvrent aussi OFFER-1 ci-dessous.
 - Le 3 novembre, règles d'autorisation ajoutées à ta demande (`.claude/settings.local.json`, non versionné) : migration de préproduction, variable `DRIVE_ROUTE_IGN_URL`, push et copie du secret du relais faits par Claude.
 - Avant le premier pilote : faire confirmer par un comptable le mot « Facture » à l'écran pour un document sans toutes les mentions légales (le PDF classique reste « Relevé de prestation »).
 - Cette semaine, le plus important (audit du 1er novembre, PDF dans `outputs/audit-2026-11-01/`) : contacter des sociétés de livraison et tenir dix entretiens (PROD-02) ; le plan complet, les textes, la liste d'entreprises et le pitch avec déroulé de démonstration sont prêts (`docs/operations/prospection/README.md`, `docs/operations/prospection/PITCH.md`). Liste à appeler : fichier Drive « TutelLiv_Suivi_Prospection_2026 », onglets PARIS (214 entreprises) et MARSEILLE (123 entreprises, Marseille, Bouches-du-Rhône et Toulon), avec téléphone ou e-mail, refaits le 4 novembre. Chaque jour à partir du 2 novembre : trouver les coordonnées, écrire et appeler de 8 h à 11 h à New York (14 h à 17 h en France).
@@ -71,7 +72,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **2. Claude — peut le faire seul, dans cet ordre**
 - LEGAL-1, écarts qui ne dépendent pas de toi : mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
-- OPS-FIAB : contrôler le relais et la réception d'une vraie alerte, dès que tu as lancé la commande ci-dessus.
+- OPS-FIAB : dès tes trois commandes lancées, déclencher une panne fictive et vérifier l'e-mail d'alerte dans Gmail, puis l'alerte d'une tâche de fond en retard.
 - MAIL-PONT : essai Outlook plus tard, quand tu le décides ; puis, si tu le veux, les fiches dans la page « Clients ».
 
 **3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
@@ -123,13 +124,17 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation.**
 
-  **Qui : Toi.**
+  **Qui : Toi — trois commandes, puis Claude.**
 
   Terminé quand : le workflow GitHub planifié a réellement tourné sur la préproduction avec ses secrets ; `after()` est vérifié sur Vercel ; Node 22 est réglé sur Vercel ; la migration d'index est appliquée en préproduction (en production avec `CONCURRENTLY`) ; une tâche en retard déclenche une alerte reçue.
 
   Constat du 2 novembre 2026 : Node 22 réglé sur Vercel ; migration d'index appliquée ; workflow réellement lancé par GitHub, mais **toutes les 4 à 7 heures et non toutes les 5 minutes** (GitHub espace ces lancements) ; aucune variable `OPS_ALERT_WEBHOOK_URL` sur Vercel, donc une alerte ne part que dans les journaux. Reste : une cadence fiable, un canal d'alerte réel, le contrôle d'`after()` en ligne.
 
   Décisions et travaux du 2 novembre 2026 : relais par Supabase (tâche pg_cron `tutelliv-operations-relay`, pg_net activé, inactive tant que le secret `relay_cron_secret` manque ; copie du secret refusée par l'outil de sécurité, commande à lancer par le propriétaire). Alertes par e-mail : une par empreinte et par jour (`OPS_ALERT_RECIPIENT`, sinon `EMAIL_TEST_RECIPIENT`), tests ajoutés, `npm run check` vert. Non vérifié : relais réellement lancé, e-mail réellement reçu. Constat du 3 novembre (lecture seule, base de préproduction) : le secret `relay_cron_secret` est toujours absent du coffre ; la tâche `tutelliv-operations-relay` tourne toutes les 5 minutes mais à vide. Le 3 novembre au soir, à ta demande : la commande documentée ne pouvait pas marcher (Vercel ne rend pas les variables « sensibles », `[SENSITIVE]` écrit à la place ; le script de garde a refusé, rien stocké). Nouvelle commande `sh scripts/ops03b/copy-relay-secret.sh`, qui lit `.env.preproduction.local` : secret stocké (`stored: true`). Contrôlé : passage du relais de 23 h 10 UTC répondu 200 par `/api/cron/operations` (le secret correspond). Reste pour OPS-FIAB : la réception d'une vraie alerte et la sonde `ops_monitor` à rediriger vers un vrai e-mail. Écart trouvé : la sonde `ops_monitor` (toutes les 30 minutes) écrit encore vers un webhook temporaire de recette, donc une panne totale de Vercel ne prévient pas le propriétaire ; à rediriger vers un vrai e-mail.
+
+  4 novembre 2026 : la sonde externe `ops_monitor` prévient maintenant par **e-mail**, envoyé par la base elle-même via Resend (une panne totale de Vercel reste signalée). Migration `20261104040000_ops_monitor_email_alerts` : canal e-mail prioritaire dès que trois secrets existent dans le coffre Supabase (`ops03b_resend_api_key`, `ops03b_alert_email_from`, `ops03b_alert_email_to`), sinon ancien webhook. Script de copie `sh scripts/ops03b/copy-alert-email.sh` (lit `.env.local` : clé Resend, `MAIL_FROM`, destinataire `OPS_ALERT_RECIPIENT` sinon `EMAIL_TEST_RECIPIENT`, aujourd'hui ton Gmail ; n'affiche rien, refuse toute autre base). Vérifié : test ajouté dans `tests/operations-health.test.ts` ; fonction compilée sur la préproduction dans une transaction annulée (rien gardé) ; lint et 1 587 tests verts ; `npm run typecheck` échoue seulement sur `outputs/recette-wt` (dossier d'une autre session, serveur encore actif, non touché). Refusé à l'agent par l'outil de sécurité : la copie des secrets dans le coffre. Non vérifié : e-mail réellement reçu (Gmail : aucune « Alerte TutelLiv » reçue à ce jour, ni de la sonde ni de l'appli).
+
+  Suite, **toi**, dans l'ordre : `git push origin preproduction` ; `npx dotenv -e .env.preproduction.local -- prisma migrate deploy` (applique aussi C11 d'OFFER-1) ; `sh scripts/ops03b/copy-alert-email.sh` (doit afficher `"stored":true`). Puis **Claude** : `select ops_monitor.run(true);` pour un e-mail « [Essai] », contrôle dans Gmail, e-mail de retour à la normale au passage suivant ; puis une tâche de fond en retard fictive (données E2E) pour l'alerte de l'appli.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section OPS-FIAB.
 
