@@ -1552,6 +1552,12 @@ export async function getDriverDispatchWorkload(
     ])
   );
 
+  // Les missions en retard (prévues avant aujourd'hui, pas encore livrées) restent à faire aujourd'hui :
+  // sans elles, la charge affichait 0 alors que des livreurs avaient des missions en cours.
+  const overdueActive = {
+    status: { in: ["PENDING", "ASSIGNED", "PURCHASING", "IN_DELIVERY"] as DeliveryStatus[] },
+    OR: [{ scheduledAt: { lt: todayStart } }, { scheduledAt: null, createdAt: { lt: todayStart } }],
+  };
   const plannedWindow = (from: Date, to: Date) => ({
     companyId,
     driverId: { in: driverIds },
@@ -1559,6 +1565,7 @@ export async function getDriverDispatchWorkload(
     OR: [
       { scheduledAt: { gte: from, lt: to } },
       { scheduledAt: null, createdAt: { gte: from, lt: to } },
+      overdueActive,
     ],
   });
 

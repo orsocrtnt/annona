@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getAdminEditableOrderStatuses, getFulfillmentStatusLabel } from "@/lib/constants/order-status";
 import { formatDate } from "@/lib/utils";
 import { useUpdateDelivery } from "./hooks";
+import { fromParisDateTimeInput, toParisDateTimeInput } from "@/lib/format/paris-datetime-input";
 
 interface TrackingEvent {
   id: string;
@@ -55,21 +56,25 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
   const [address, setAddress] = useState(delivery.address ?? "");
   const [city, setCity] = useState(delivery.city ?? "");
   const [postalCode, setPostalCode] = useState(delivery.postalCode ?? "");
-  const [scheduledAt, setScheduledAt] = useState(
-    delivery.scheduledAt ? delivery.scheduledAt.slice(0, 16) : ""
-  );
+  // Heure de Paris dans le champ : l'ancienne lecture UTC reculait la livraison d'une heure à chaque enregistrement.
+  const initialScheduledAt = toParisDateTimeInput(delivery.scheduledAt);
+  const [scheduledAt, setScheduledAt] = useState(initialScheduledAt);
   const [reason, setReason] = useState("");
+  // Livraison terminée (livrée, facturée, payée, échouée ou annulée) : plus d'annulation possible,
+  // le serveur la refuse. L'écran la proposait encore avec « son annulation reste possible ».
+  const isFinished = ["DELIVERED", "INVOICED", "PAID", "CANCELLED", "FAILED"].includes(delivery.status);
   const isMissionInProgress =
-    Boolean(delivery.missionStartedAt) ||
-    delivery.status === "PURCHASING" ||
-    delivery.status === "IN_DELIVERY";
+    !isFinished &&
+    (Boolean(delivery.missionStartedAt) ||
+      delivery.status === "PURCHASING" ||
+      delivery.status === "IN_DELIVERY");
 
   useEffect(() => {
     setStatus(delivery.status);
     setAddress(delivery.address ?? "");
     setCity(delivery.city ?? "");
     setPostalCode(delivery.postalCode ?? "");
-    setScheduledAt(delivery.scheduledAt ? delivery.scheduledAt.slice(0, 16) : "");
+    setScheduledAt(toParisDateTimeInput(delivery.scheduledAt));
   }, [delivery]);
 
   const handleUpdate = async (extra?: { status?: DeliveryStatus; unassignDriver?: boolean }) => {
@@ -81,11 +86,13 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
           address: address !== (delivery.address ?? "") ? address : undefined,
           city: city !== (delivery.city ?? "") ? city : undefined,
           postalCode: postalCode !== (delivery.postalCode ?? "") ? postalCode : undefined,
-          scheduledAt: scheduledAt
-            ? new Date(scheduledAt).toISOString()
-            : delivery.scheduledAt
-              ? null
-              : undefined,
+          // N'envoie l'heure que si elle a été modifiée dans le champ.
+          scheduledAt:
+            scheduledAt === initialScheduledAt
+              ? undefined
+              : scheduledAt
+                ? (fromParisDateTimeInput(scheduledAt) ?? undefined)
+                : null,
           unassignDriver: extra?.unassignDriver,
           reason: reason.trim() || undefined,
         },
@@ -225,9 +232,11 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
           <Button variant="brand" loading={update.isPending} onClick={() => handleUpdate()}>
             Enregistrer les modifications
           </Button>
-          <Button variant="destructive" loading={update.isPending} onClick={handleCancel}>
-            {isMissionInProgress ? "Annuler la mission" : "Annuler la livraison"}
-          </Button>
+          {!isFinished && (
+            <Button variant="destructive" loading={update.isPending} onClick={handleCancel}>
+              {isMissionInProgress ? "Annuler la mission" : "Annuler la livraison"}
+            </Button>
+          )}
         </div>
 
         {delivery.trackingEvents && delivery.trackingEvents.length > 0 && (

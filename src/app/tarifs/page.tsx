@@ -62,7 +62,7 @@ export default async function TarifsPage() {
               Trois formules pour organiser les commandes, le dispatch et le suivi — sans cacher les quotas ni les options.
             </p>
             <p className="mt-4 text-xs font-medium text-muted-foreground">
-              {`Catalogue ${pricing.catalogCode} · Prix HT · TVA ${pricing.vatRateBps / 100} % · TTC indicatif sur la formule seule`}
+              {`Prix HT · TVA ${pricing.vatRateBps / 100} % · TTC indicatif sur la formule seule`}
             </p>
           </section>
 
@@ -115,7 +115,7 @@ export default async function TarifsPage() {
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden />
                       <span>
                         {plan.unlimitedDriverSeats
-                          ? "Livreurs en usage mesuré, plafond non chiffré dans le catalogue."
+                          ? "Livreurs en usage mesuré, selon votre activité."
                           : `Plafond de ${cap(plan.maxDriverSeats)} livreurs.`}
                       </span>
                     </p>
@@ -206,9 +206,9 @@ export default async function TarifsPage() {
                   <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground">Les règles restent simples.</h2>
                 </div>
                 <div className="grid gap-4 text-sm leading-6 text-[#4a544d] dark:text-text-secondary sm:grid-cols-3">
-                  <p>Le pilote gratuit est créé à part. Ce n’est pas une formule du catalogue et cette page ne le déclenche pas.</p>
+                  <p>Le pilote gratuit se prépare avec notre équipe : ce n’est pas une des formules ci-dessus. Demandez-le depuis la page Contact.</p>
                   <p>La découverte premium concerne Starter et Pro. Business et l’assistance prioritaire n’en font pas partie.</p>
-                  <p>L’inscription utilise le parcours fictif déjà en place. Aucun encaissement fournisseur n’est lancé ici.</p>
+                  <p>L’inscription en ligne ouvrira prochainement. En attendant, nous ouvrons votre espace avec vous.</p>
                 </div>
               </div>
             </div>

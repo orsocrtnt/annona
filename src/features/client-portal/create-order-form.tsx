@@ -121,6 +121,8 @@ export function OrderFormFields({
 
   const form = useForm<CreateClientOrderFormInput>({
     resolver: zodResolver(createClientOrderSchema),
+    // Le focus est posé par onInvalid sur le premier champ en erreur de la page (adresse comprise).
+    shouldFocusError: false,
     defaultValues: {
       ...DEFAULT_FORM_VALUES,
       ...initialValues,
@@ -266,6 +268,12 @@ export function OrderFormFields({
       setActiveStopIndex(summary.stopIndex);
     }
     toast.error(summary.title, { description: summary.description });
+    // Curseur sur le premier champ en erreur dans l'ordre de la page (et non le dernier enregistré).
+    requestAnimationFrame(() => {
+      const first = document.querySelector<HTMLElement>('form [aria-invalid="true"]');
+      first?.focus({ preventScroll: true });
+      first?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
   };
 
   return (
@@ -309,7 +317,7 @@ export function OrderFormFields({
       {isSpecialMission ? (
         <>
           <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-            Fonction expérimentale hors offre pilote. TutelLiv centralise la description et les
+            Fonction en essai. TutelLiv centralise la description et les
             adresses ; le devis chiffré et son acceptation restent traités directement avec
             {audience === "staff" ? " le client." : " l'entreprise."}
           </p>

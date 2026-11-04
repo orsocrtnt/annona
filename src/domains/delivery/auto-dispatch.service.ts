@@ -38,6 +38,7 @@ import {
   type ScoreCandidate,
 } from "@/lib/dispatch/dispatch-score";
 import { estimateTravelTimes, type TravelEstimate } from "@/lib/dispatch/travel-time";
+import { countLabel } from "@/lib/format/plural";
 
 type DriverActivity = Awaited<ReturnType<typeof getCompanyDriversWithActivity>>[number];
 
@@ -187,7 +188,7 @@ function pickByLeastLoaded(
   });
 
   const picked = sorted[0]!;
-  const base = `Moins chargé : ${activeLoad(picked)} livraison(s) active(s)`;
+  const base = `Moins chargé : ${countLabel(activeLoad(picked), "livraison active", "livraisons actives")}`;
   return {
     driverId: picked.id,
     reason: proximityDecided(

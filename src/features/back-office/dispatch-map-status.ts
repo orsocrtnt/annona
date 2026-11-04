@@ -40,11 +40,31 @@ export function getDispatchMapStatusMeta(key: DispatchMapStatusKey) {
   return DISPATCH_MAP_STATUSES.find((status) => status.key === key)!;
 }
 
+/**
+ * Filtres de la carte, comptés comme les cartes du tableau de bord : une livraison en retard compte
+ * aussi dans « Sans livreur », « À démarrer » ou « En route ». La couleur du repère garde la priorité au retard.
+ * Avant, une livraison en retard sortait des autres filtres (0 · 0 · 0 contre 5 · 4 · 5 au tableau de bord).
+ */
+export function getDispatchMapStatusMemberships(
+  delivery: Parameters<typeof getDispatchMapStatus>[0],
+  now = new Date()
+): DispatchMapStatusKey[] {
+  const operational: DispatchMapStatusKey =
+    delivery.status === "PENDING" || !delivery.driverId
+      ? "unassigned"
+      : delivery.status === "ASSIGNED" && !delivery.missionStartedAt
+        ? "pending"
+        : "route";
+  return getDispatchMapStatus(delivery, now) === "late" ? ["late", operational] : [operational];
+}
+
 export function countDispatchMapStatuses(
   deliveries: DispatchMapDelivery[],
   now = new Date()
 ): Record<DispatchMapStatusKey, number> {
   const counts: Record<DispatchMapStatusKey, number> = { late: 0, unassigned: 0, pending: 0, route: 0 };
-  for (const delivery of deliveries) counts[getDispatchMapStatus(delivery, now)] += 1;
+  for (const delivery of deliveries) {
+    for (const key of getDispatchMapStatusMemberships(delivery, now)) counts[key] += 1;
+  }
   return counts;
 }

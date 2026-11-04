@@ -8,6 +8,7 @@ import * as eligibility from "../src/lib/dispatch/driver-eligibility";
 import * as dispatchSettings from "../src/lib/validations/dispatch-settings";
 import * as dispatchScore from "../src/lib/dispatch/dispatch-score";
 import * as travelTime from "../src/lib/dispatch/travel-time";
+import * as pluralLib from "../src/lib/format/plural";
 import * as proximity from "../src/lib/dispatch/dispatch-proximity";
 import * as trackingPolicy from "../src/domains/tracking/tracking.policy";
 
@@ -147,6 +148,7 @@ test("ACK : auto-dispatch traite la perte du libre choix comme conflit terminal"
     "@/lib/query/list-limits": { AUTO_DISPATCH_QUEUE_TAKE: 100 },
     "@/lib/validations/dispatch-settings": dispatchSettings,
     "@/lib/dispatch/dispatch-score": dispatchScore,
+    "@/lib/format/plural": pluralLib,
     "@/lib/dispatch/travel-time": travelTime,
   });
   const result = await tryAutoAssignDelivery("company", "delivery");

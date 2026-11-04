@@ -40,6 +40,7 @@ export function AddressFieldsGroup({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [previewCoords, setPreviewCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [confirmedSelection, setConfirmedSelection] = useState(false);
+  const [numberUnverified, setNumberUnverified] = useState(false);
 
   const { suggestions, loading } = useAddressSearch(values.address, open);
 
@@ -105,6 +106,7 @@ export function AddressFieldsGroup({
     });
     setPreviewCoords({ lat: suggestion.latitude, lng: suggestion.longitude });
     setConfirmedSelection(true);
+    setNumberUnverified(Boolean(suggestion.numberUnverified));
     setOpen(false);
   };
 
@@ -222,8 +224,11 @@ export function AddressFieldsGroup({
         <AddressPreviewMap
           latitude={previewCoords.lat}
           longitude={previewCoords.lng}
+          warning={confirmedSelection && numberUnverified}
           label={
-            confirmedSelection
+            confirmedSelection && numberUnverified
+              ? "Numéro introuvable dans la base nationale : le pin indique la rue, vérifiez la position"
+              : confirmedSelection
               ? "Adresse confirmée — vérifiez le pin"
               : "Aperçu approximatif — sélectionnez une suggestion pour confirmer"
           }

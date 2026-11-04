@@ -10,6 +10,7 @@ type BanFeature = {
     postcode?: string;
     city?: string;
     score?: number;
+    type?: "housenumber" | "street" | "locality" | "municipality";
   };
 };
 
@@ -17,7 +18,13 @@ type BanSearchResponse = {
   features?: BanFeature[];
 };
 
-function mapBanFeature(feature: BanFeature, index: number): AddressSuggestion | null {
+/** Numéro tapé en tête de saisie : « 45 », « 12 bis », « 3B ». */
+export function leadingHouseNumber(query: string): string | null {
+  const match = /^\s*(\d{1,4}(?:\s?(?:bis|ter|quater|[a-d]))?)(?=[\s,])/i.exec(query);
+  return match ? match[1]!.replace(/\s+/g, " ").toLowerCase() : null;
+}
+
+function mapBanFeature(feature: BanFeature, index: number, houseNumber: string | null): AddressSuggestion | null {
   const coordinates = feature.geometry?.coordinates;
   const properties = feature.properties;
   if (!coordinates || !properties?.label) return null;
@@ -27,10 +34,14 @@ function mapBanFeature(feature: BanFeature, index: number): AddressSuggestion | 
   const city = properties.city?.trim() ?? "";
   const postalCode = properties.postcode?.trim() ?? "";
 
+  // La Base Adresse Nationale ne connaît pas toujours le numéro : elle renvoie alors la rue seule.
+  // On garde le numéro tapé (le livreur en a besoin) et on signale que le pin indique la rue.
+  const keepTypedNumber = houseNumber !== null && properties.type !== undefined && properties.type !== "housenumber";
   return {
     id: properties.id ?? `${latitude}-${longitude}-${index}`,
-    label: properties.label,
-    address,
+    label: keepTypedNumber ? `${houseNumber} ${properties.label}` : properties.label,
+    address: keepTypedNumber ? `${houseNumber} ${address}` : address,
+    ...(keepTypedNumber ? { numberUnverified: true } : {}),
     city,
     postalCode,
     latitude,
@@ -59,6 +70,6 @@ export async function searchBanAddresses(query: string, limit = 6): Promise<Addr
 
   const data = (await response.json()) as BanSearchResponse;
   return (data.features ?? [])
-    .map((feature, index) => mapBanFeature(feature, index))
+    .map((feature, index) => mapBanFeature(feature, index, leadingHouseNumber(trimmed)))
     .filter((item): item is AddressSuggestion => item !== null);
 }

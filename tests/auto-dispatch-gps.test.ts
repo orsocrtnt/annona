@@ -10,6 +10,7 @@ import * as trackingPolicy from "../src/domains/tracking/tracking.policy";
 import * as dispatchSettings from "../src/lib/validations/dispatch-settings";
 import * as dispatchScore from "../src/lib/dispatch/dispatch-score";
 import * as travelTime from "../src/lib/dispatch/travel-time";
+import * as plural from "../src/lib/format/plural";
 import type { DispatchProximity } from "../src/lib/dispatch/dispatch-proximity";
 
 type Row = Record<string, unknown>;
@@ -42,6 +43,7 @@ function load(deps: { prisma?: Row; settings?: Row; drivers?: Row[]; getDrivers?
     "@/lib/validations/dispatch-settings": dispatchSettings,
     "@/lib/dispatch/dispatch-score": dispatchScore,
     "@/lib/dispatch/travel-time": travelTime,
+    "@/lib/format/plural": plural,
   };
   runInNewContext(ts.transpileModule(readFileSync(resolve("src/domains/delivery/auto-dispatch.service.ts"), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
@@ -106,7 +108,7 @@ test("dispatch GPS : « moins chargé » garde la charge en premier, la distance
   assert.equal(svc.resolveDriverForDelivery(delivery, least, [{ id: "free", assigned: 0 }, { id: "close", assigned: 1 }], [], new Map([["close", near(200)]]))?.driverId, "free");
   const pick = svc.resolveDriverForDelivery(delivery, least, [{ id: "a", assigned: 0 }, { id: "b", assigned: 0 }], [], new Map([["a", near(2300)], ["b", near(900)]]));
   assert.equal(pick?.driverId, "b");
-  assert.match(pick!.reason, /^Moins chargé : 0 livraison\(s\) active\(s\) · plus proche du point de retrait$/);
+  assert.match(pick!.reason, /^Moins chargé : 0 livraison active · plus proche du point de retrait$/);
 });
 
 test("dispatch GPS : la priorité explicite et le livreur de zone l'emportent sur la distance", () => {

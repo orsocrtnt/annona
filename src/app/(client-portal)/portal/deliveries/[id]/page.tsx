@@ -80,7 +80,7 @@ export default function ClientDeliveryDetailPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{delivery.reference}</h1>
           {delivery.timing?.dueAt && (
             <p className="mt-1 text-sm" data-delivery-due="true">
-              <span className="text-muted-foreground">Prévue le</span>{" "}
+              <span className="text-muted-foreground">À livrer avant le</span>{" "}
               <time dateTime={delivery.timing.dueAt} className="font-medium">{dateTimeLabel(delivery.timing.dueAt)}</time>
               {delivery.timing.late && delivery.timing.lateByMinutes !== null && (
                 <span className="font-medium text-destructive"> · en retard de {formatLateness(delivery.timing.lateByMinutes)}</span>
@@ -145,45 +145,20 @@ export default function ClientDeliveryDetailPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Carte de suivi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DeliveryMap markers={mapMarkers} />
-          </CardContent>
-        </Card>
+        {/* Carte seulement si des positions existent : « aucune position enregistrée » contredisait le suivi partagé. */}
+        {mapMarkers.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Carte de suivi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DeliveryMap markers={mapMarkers} />
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Suivi détaillé</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {delivery.trackingEvents?.map((event, i) => (
-                <div key={event.id} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    {/* Étapes passées en encre, la dernière en vert : l'avancement se lit sans les dates. */}
-                    <div className={`h-3 w-3 rounded-full ${i === (delivery.trackingEvents?.length ?? 0) - 1 ? "bg-primary ring-4 ring-primary/20" : "bg-foreground"}`} aria-hidden="true" />
-                    {i < (delivery.trackingEvents?.length ?? 0) - 1 && (
-                      <div className="w-px flex-1 bg-border" />
-                    )}
-                  </div>
-                  <div className="pb-4">
-                    <p className="text-sm font-medium">{event.label}</p>
-                    {event.description && (
-                      <p className="text-xs text-muted-foreground">{event.description}</p>
-                    )}
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      <time dateTime={event.occurredAt}>{dateTimeLabel(event.occurredAt)}</time>
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
+      {/* La chronologie des actions est dans le suivi partagé : elle n'est plus affichée deux fois. */}
       <OrderTracking orderId={delivery.orderId} />
       <OrderConversation orderId={delivery.orderId} />
     </div>

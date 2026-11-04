@@ -111,7 +111,7 @@ test("UX-03 : variante client, échéance et retard sans consigne interne, livra
     expect("nextAction" in detail.data.timing).toBe(false);
     await page.goto(`/portal/deliveries/${mine.id}`);
     await expect(page.getByRole("heading", { level: 1, name: mine.reference })).toBeVisible();
-    if (detail.data.timing.dueAt) await expect(page.locator("[data-delivery-due=true]")).toContainText("Prévue le");
+    if (detail.data.timing.dueAt) await expect(page.locator("[data-delivery-due=true]")).toContainText("À livrer avant le");
     expect((await page.request.get(`/api/deliveries/${mine.id}`)).status()).toBe(403);
     const foreign = staffDeliveries.find((delivery) => !items.some((item) => item.id === delivery.id));
     if (foreign) expect((await page.request.get(`/api/portal/deliveries/${foreign.id}`)).status()).toBe(404);

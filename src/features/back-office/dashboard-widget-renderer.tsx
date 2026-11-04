@@ -273,14 +273,15 @@ function TodaySummaryWidget() {
           <TodayMetric
             label="En retard"
             tone="critical"
-            counts={{ standard: 0, courier: 0, total: dashboard.today.late }}
+            // Même chiffre que la carte « En retard » du haut : toutes les missions en cours dont la date client est dépassée.
+            counts={{ standard: 0, courier: 0, total: dashboard.alerts.late }}
             variant="late"
             onClick={() =>
               openDrillDown({
-                scope: "today",
+                scope: "alert",
                 key: "late",
-                title: "Missions en retard aujourd'hui",
-                description: "Date client dépassée",
+                title: "Missions en retard",
+                description: "Date demandée par le client dépassée",
               })
             }
           />
@@ -369,15 +370,15 @@ function TodayLateWidget() {
     <Card>
       <CardContent className="p-4">
         <TodayMetric
-          label="En retard aujourd'hui"
-          counts={{ standard: 0, courier: 0, total: dashboard.today.late }}
+          label="En retard"
+          counts={{ standard: 0, courier: 0, total: dashboard.alerts.late }}
           variant="late"
           onClick={() =>
             openDrillDown({
-              scope: "today",
+              scope: "alert",
               key: "late",
-              title: "Missions en retard aujourd'hui",
-              description: "Date client dépassée",
+              title: "Missions en retard",
+              description: "Date demandée par le client dépassée",
             })
           }
         />

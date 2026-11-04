@@ -801,7 +801,7 @@ export async function createClientOrder(
               },
               {
                 label: "En préparation",
-                description: "Préparation au centre de tri",
+                description: "Votre transporteur prépare la livraison",
               },
             ],
         },

@@ -83,7 +83,8 @@ export function BackOfficeLayout({
           <main
             id="main-content"
             tabIndex={-1}
-            className="flex-1 p-4 max-md:px-3 max-md:py-4 lg:px-8 lg:pb-10 lg:pt-5"
+            // Marge basse : la pastille flottante « Alertes » ne recouvre jamais le dernier élément de la page.
+            className="flex-1 p-4 max-md:px-3 max-md:pt-4 max-md:pb-32 lg:px-8 lg:pb-24 lg:pt-5"
           >
             <div className="mx-auto max-w-[1480px]">
               {showInbox && <OrderMessagesInbox enableDispatchTargets />}

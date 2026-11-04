@@ -59,7 +59,7 @@ test("ONBOARD-1 : pilote manuel, choix persistant après retour, rechargement et
 
     await expect(page.getByRole("heading", { name: "Première livraison", exact: true })).toBeVisible();
     await expect(page.getByTestId("onboarding-step")).toHaveCount(9);
-    await expect(page.getByText("Limites du pilote interne", { exact: true })).toBeVisible();
+    await expect(page.getByText("Bon à savoir", { exact: true })).toBeVisible();
     await expect(page.getByText(/Aucun import initial n’est proposé aujourd’hui/)).toBeVisible();
     const companyForm = page.getByRole("form", { name: "Informations entreprise", exact: true });
     await companyForm.getByRole("textbox", { name: /^E-mail de l’entreprise/ }).fill("invalide");

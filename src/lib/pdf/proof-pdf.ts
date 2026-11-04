@@ -186,7 +186,8 @@ export async function buildProofPdf(data: ProofPdfData): Promise<Uint8Array> {
       const height = signature.height * scale;
       ensure(height + 24);
       paragraph("Signature", 8.5, { color: MUTED });
-      y -= height + 4;
+      // Le cadre (hauteur + 8) commence sous l'étiquette : il la chevauchait de quelques points.
+      y -= height + 12;
       page.drawRectangle({ x: MARGIN, y, width: width + 8, height: height + 8, borderColor: HAIRLINE, borderWidth: 0.8 });
       page.drawImage(signature, { x: MARGIN + 4, y: y + 4, width, height });
     } else if (data.signatureRefusedReason) {
@@ -215,7 +216,7 @@ export async function buildProofPdf(data: ProofPdfData): Promise<Uint8Array> {
   pages.forEach((target, index) => {
     target.drawLine({ start: { x: MARGIN, y: 60 }, end: { x: RIGHT, y: 60 }, thickness: 0.5, color: HAIRLINE });
     target.drawImage(tutelliv, { x: MARGIN, y: 30, width: logoWidth, height: logoHeight });
-    target.drawText(pdfSafeText(`Document généré le ${dateTime(data.generatedAt)} - livraison ${data.deliveryId} - page ${index + 1}/${pages.length}`), {
+    target.drawText(pdfSafeText(`Document généré le ${dateTime(data.generatedAt)} - livraison ${data.reference} - page ${index + 1}/${pages.length}`), {
       x: MARGIN + logoWidth + 10, y: 36, size: 7.5, font: regular, color: MUTED,
     });
   });

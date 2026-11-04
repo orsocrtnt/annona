@@ -42,6 +42,7 @@ import { lockedOfferReason } from "@/domains/saas/saas-access";
 import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
 import { canSeeDispatchRules } from "@/features/back-office/dispatch-access";
 import { usePermissions } from "@/hooks/use-permissions";
+import { countLabel } from "@/lib/format/plural";
 
 type DispatchView = "queue" | "rules";
 type CategoryFilter = "ALL" | DeliveryCategory;
@@ -140,13 +141,13 @@ function DispatcherDashboardContent() {
         toast.info("Aucune livraison assignée", {
           description:
             result.skipped > 0
-              ? `${result.skipped} livraison(s) ignorée(s) — vérifiez les profils livreurs.`
+              ? `${countLabel(result.skipped, "livraison ignorée", "livraisons ignorées")} — vérifiez les profils livreurs.`
               : "La file d'attente est vide.",
         });
       } else {
-        toast.success(`${result.assigned} livraison(s) assignée(s) automatiquement`, {
+        toast.success(`${countLabel(result.assigned, "livraison assignée", "livraisons assignées")} automatiquement`, {
           description:
-            result.skipped > 0 ? `${result.skipped} non assignée(s)` : undefined,
+            result.skipped > 0 ? `${countLabel(result.skipped, "non assignée", "non assignées")}` : undefined,
         });
       }
     } catch (err) {
@@ -159,7 +160,7 @@ function DispatcherDashboardContent() {
   const handleRetryFailedJobs = async () => {
     try {
       const result = await retryFailedJobs.mutateAsync();
-      toast.success(`${result.retried} traitement(s) relancé(s)`);
+      toast.success(countLabel(result.retried, "traitement relancé", "traitements relancés"));
     } catch (err) {
       toast.error("Relance impossible", {
         description: err instanceof Error ? err.message : undefined,
@@ -288,7 +289,7 @@ function DispatcherDashboardContent() {
           <Alert variant={operationHealth.failed > 0 ? "destructive" : "info"}>
             <AlertTitle>
               {operationHealth.failed > 0
-                ? `${operationHealth.failed} traitement(s) automatique(s) en échec`
+                ? `${countLabel(operationHealth.failed, "traitement automatique", "traitements automatiques")} en échec`
                 : "Traitements automatiques en cours"}
             </AlertTitle>
             <AlertDescription className="flex flex-wrap items-center justify-between gap-3">

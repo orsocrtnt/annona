@@ -176,22 +176,25 @@ function aggregateToday(
   };
 
   for (const delivery of deliveries) {
-    const plannedAt = getPlannedAt(delivery.scheduledAt, delivery.createdAt);
-    const isToday = isInPeriod(plannedAt, todayStart, tomorrowStart);
-    if (!isToday) continue;
-
-    const item = toDashboardItem(delivery);
     const { deliveryCategory: category, status } = delivery;
 
+    // Livrée aujourd'hui = terminée aujourd'hui, même si elle était prévue un autre jour
+    // (une livraison faite en avance n'était comptée nulle part).
     if (isDeliveredStatus(status) && delivery.completedAt) {
       const completedToday =
         delivery.completedAt >= todayStart && delivery.completedAt < tomorrowStart;
       if (completedToday) {
         bumpCategory(delivered, category);
-        lists.delivered.push(item);
+        lists.delivered.push(toDashboardItem(delivery));
       }
       continue;
     }
+
+    const plannedAt = getPlannedAt(delivery.scheduledAt, delivery.createdAt);
+    const isToday = isInPeriod(plannedAt, todayStart, tomorrowStart);
+    if (!isToday) continue;
+
+    const item = toDashboardItem(delivery);
 
     if (status === "PURCHASING" || status === "IN_DELIVERY") {
       bumpCategory(inProgress, category);

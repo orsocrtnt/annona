@@ -265,7 +265,8 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
     <div className="min-h-screen bg-background">
       <PortalNavbar />
 
-      <div className="mx-auto max-w-6xl px-4 py-6 max-md:px-3 max-md:py-4 lg:px-6">
+      {/* Marge basse : la pastille flottante « Alertes » ne recouvre jamais le dernier élément de la page. */}
+      <div className="mx-auto max-w-6xl px-4 pt-6 pb-24 max-md:px-3 max-md:pt-4 max-md:pb-32 lg:px-6">
         <main id="main-content" tabIndex={-1}>
           <OrderMessagesInbox space="client" />
           {children}

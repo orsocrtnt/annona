@@ -88,7 +88,7 @@ export default function CompanyOrderDetailPage() {
           <CardContent className="space-y-4 text-sm">
             {order.status === "QUOTE_REQUESTED" && (
               <p className="rounded-lg border border-amber-200 bg-background p-3 text-amber-900 dark:text-amber-100">
-                Fonction expérimentale hors offre pilote. Le devis chiffré et son acceptation
+                Fonction en essai. Le devis chiffré et son acceptation
                 restent gérés hors TutelLiv. Après accord externe, passez manuellement le statut
                 en « En attente » pour créer la livraison.
               </p>

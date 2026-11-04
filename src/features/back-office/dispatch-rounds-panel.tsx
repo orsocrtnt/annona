@@ -11,6 +11,7 @@ import { useRoundProposals, useSubmitRound } from "@/features/back-office/hooks"
 import type { PresentedRound, RoundProposals, RoundUnplannedReason } from "@/domains/delivery/delivery-rounds.service";
 import { usePermissions } from "@/hooks/use-permissions";
 import { deliverySlotRange, formatWeightKg } from "@/lib/format/delivery-slot";
+import { countLabel } from "@/lib/format/plural";
 
 const DISPATCH_ROLES = new Set(["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
 
@@ -84,7 +85,7 @@ function RoundCard({ initial, drivers }: { initial: PresentedRound; drivers: Rou
         setConfirming(true);
       } else if (result.status === "DONE") {
         if (result.failed.length > 0) {
-          toast.warning(`${result.assigned.length} livraison(s) affectée(s), ${result.failed.length} déjà prise(s) entre-temps`);
+          toast.warning(`${countLabel(result.assigned.length, "livraison affectée", "livraisons affectées")}, ${countLabel(result.failed.length, "déjà prise", "déjà prises")} entre-temps`);
         } else {
           toast.success(`Tournée confiée à ${round.driverName}`);
         }
@@ -221,7 +222,7 @@ export function DispatchRoundsPanel() {
                 </div>
               )}
               {data.laterCount > 0 && (
-                <p className="text-sm text-muted-foreground">{data.laterCount} livraison(s) prévue(s) un autre jour, non regroupée(s).</p>
+                <p className="text-sm text-muted-foreground">{countLabel(data.laterCount, "livraison prévue un autre jour, non regroupée", "livraisons prévues un autre jour, non regroupées")}.</p>
               )}
               {data.active.length > 0 && (
                 <div className="space-y-2" data-round-active="true">

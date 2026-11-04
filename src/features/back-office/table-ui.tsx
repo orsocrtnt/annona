@@ -18,8 +18,9 @@ export const ORDER_TABLE_COL = {
   order: "min-w-[12rem]",
   type: "w-[5.5rem]",
   client: "w-[7.5rem] max-w-[7.5rem]",
-  createdAt: "w-[5rem] whitespace-nowrap",
-  deliveryDate: "w-[7.5rem] whitespace-nowrap",
+  createdAt: "w-[6rem] whitespace-nowrap",
+  // Assez large pour l’en-tête « Livraison prévue » et son icône de tri (ils chevauchaient « Créée »).
+  deliveryDate: "w-[10rem] whitespace-nowrap",
   status: "w-[7rem]",
   driver: "w-[10rem]",
   address: "min-w-0",

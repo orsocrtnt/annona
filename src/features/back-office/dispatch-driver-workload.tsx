@@ -130,7 +130,7 @@ export function DispatchDriverWorkload({
         <CardTitle className="text-base">Charge par livreur</CardTitle>
         <CardDescription>
           Équipe : {teamToday} livraison{teamToday > 1 ? "s" : ""} aujourd&apos;hui · {teamWeek} sur les 7
-          prochains jours (aujourd&apos;hui inclus)
+          prochains jours (aujourd&apos;hui et retards inclus)
         </CardDescription>
         <p className="flex items-center gap-4 pt-1 text-xs text-muted-foreground" aria-hidden="true">
           <span className="inline-flex items-center gap-1.5">

@@ -14,7 +14,7 @@ import { isLateDispatchDelivery } from "@/features/back-office/dispatch-focus";
 import {
   countDispatchMapStatuses,
   DISPATCH_MAP_STATUSES,
-  getDispatchMapStatus,
+  getDispatchMapStatusMemberships,
   type DispatchMapStatusKey,
 } from "@/features/back-office/dispatch-map-status";
 import {
@@ -108,7 +108,7 @@ export function DispatchUnifiedMap({ defaultView }: { defaultView: DashboardMapV
     () =>
       statusFilter === "all"
         ? deliveries
-        : deliveries.filter((delivery) => getDispatchMapStatus(delivery) === statusFilter),
+        : deliveries.filter((delivery) => getDispatchMapStatusMemberships(delivery).includes(statusFilter)),
     [deliveries, statusFilter]
   );
   const unlocatedCount = visibleDeliveries.filter((delivery) => !delivery.destination).length;

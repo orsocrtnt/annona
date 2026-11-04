@@ -14,11 +14,11 @@ test("la carte classe chaque livraison comme le pilotage du dashboard", () => {
   assert.equal(getDispatchMapStatus({ ...base, status: "IN_DELIVERY" }, now), "route");
 });
 
-test("les compteurs des filtres couvrent toutes les livraisons", () => {
+test("AUDIT-0411 : les filtres comptent comme le tableau de bord (un retard reste dans son état)", () => {
   const rows = [
     { ...base, id: "a", requestedDeliveryDate: "2026-10-26T10:00:00" },
     { ...base, id: "b", status: "PENDING", driverId: null },
     { ...base, id: "c" },
   ] as unknown as DispatchMapDelivery[];
-  assert.deepEqual(countDispatchMapStatuses(rows, now), { late: 1, unassigned: 1, pending: 1, route: 0 });
+  assert.deepEqual(countDispatchMapStatuses(rows, now), { late: 1, unassigned: 1, pending: 2, route: 0 });
 });

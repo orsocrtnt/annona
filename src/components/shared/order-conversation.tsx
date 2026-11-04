@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { countLabel } from "@/lib/format/plural";
 
 type Message = { id: string; body: string; kind: string; internal: boolean; authorName: string; authorRole: string; createdAt: string };
 type Thread = { reference: string; messages: Message[]; watermark: string | null; unread: number; canWrite: boolean; canNote: boolean; closed: boolean; hasMore: boolean };
@@ -49,7 +50,7 @@ export function OrderConversation({ orderId }: { orderId: string }) {
     <CardHeader><CardTitle className="text-base">Échanges</CardTitle><p className="text-sm text-muted-foreground">Visibles par le client, l’administration et le livreur affecté.</p></CardHeader>
     <CardContent className="space-y-4">
       <OrderOperationalAlerts orderId={orderId} />
-      {data.unread > 0 && <div className="flex flex-wrap items-center gap-2" role="status"><strong>{data.unread} nouveau(x) message(s)</strong><Button variant="outline" size="sm" onClick={markRead}>Marquer ces messages comme lus</Button></div>}
+      {data.unread > 0 && <div className="flex flex-wrap items-center gap-2" role="status"><strong>{countLabel(data.unread, "nouveau message", "nouveaux messages")}</strong><Button variant="outline" size="sm" onClick={markRead}>Marquer ces messages comme lus</Button></div>}
       <div className="flex gap-2">{data.hasMore && <Button variant="outline" size="sm" onClick={() => setBefore(data.messages[0]?.id ?? null)}>Messages précédents</Button>}{before && <Button variant="outline" size="sm" onClick={() => setBefore(null)}>Derniers messages</Button>}</div>
       <div className="max-h-[45vh] space-y-3 overflow-y-auto" aria-label="Fil des échanges">
         {!data.messages.length && <p className="text-sm text-muted-foreground">Aucun échange pour cette commande.</p>}

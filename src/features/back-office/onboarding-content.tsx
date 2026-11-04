@@ -173,17 +173,16 @@ export function OnboardingContent() {
       </div>
 
       <Alert>
-        <AlertTitle>Limites du pilote interne</AlertTitle>
+        <AlertTitle>Bon à savoir</AlertTitle>
         <AlertDescription className="space-y-1">
           <p>
-            Invitez les nouveaux clients, livreurs et collaborateurs depuis la gestion des comptes.
-            Pour un compte déjà présent, utilisez son accès existant ; une nouvelle invitation
-            ne modifie ni son entreprise ni ses droits. La réception réelle des e-mails reste à valider avec le pilote.
+            Invitez vos clients, livreurs et collaborateurs depuis la gestion des comptes. Une personne
+            qui a déjà un compte garde son accès : une nouvelle invitation ne change ni son entreprise
+            ni ses droits.
           </p>
           <p>
-            Aucun import initial n’est proposé aujourd’hui : commencez avec des comptes et commandes
-            fictifs saisis manuellement. Un import sera ajouté seulement après définition du format
-            réel, avec validation complète avant toute écriture.
+            L’import de fichier n’est pas encore proposé : créez vos premiers comptes et commandes à la
+            main. Vous voulez reprendre un fichier existant ? Écrivez-nous, nous le préparons avec vous.
           </p>
         </AlertDescription>
       </Alert>

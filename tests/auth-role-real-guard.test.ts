@@ -184,7 +184,8 @@ test("AUTH-ROLE garde réelle : permissions du mini-admin filtrées par ses modu
   });
   assert.equal((await guard.call("/support", session("mini"))).status, 200);
   for (const path of ["/dashboard", "/users", "/dispatch/map"]) {
-    assert.equal((await guard.call(path, session("mini"))).location, "http://localhost:3110/support", path);
+    const expected = path === "/dashboard" ? "http://localhost:3110/support" : "http://localhost:3110/support?acces-refuse=1";
+    assert.equal((await guard.call(path, session("mini"))).location, expected, path);
   }
 });
 

@@ -32,6 +32,7 @@ import {
   Truck,
   PackageCheck,
   Play,
+  Phone,
 } from "lucide-react";
 import { formatLateness } from "@/lib/format/lateness";
 import { formatClientFromParts, withoutRolePrefix } from "@/lib/format/person-labels";
@@ -49,6 +50,20 @@ function MissionNavigateButton({ missionId }: { missionId: string }) {
         <Navigation className="mr-1.5 h-4 w-4" />
         Naviguer
       </Link>
+    </Button>
+  );
+}
+
+/** Appel du client depuis la mission (AUDIT-0411 : aucun moyen de le joindre depuis la carte). */
+function MissionCallButton({ phone, name }: { phone: string | null | undefined; name: string }) {
+  const number = phone?.replace(/[^\d+]/g, "");
+  if (!number) return null;
+  return (
+    <Button variant="outline" size="lg" className="w-full" asChild>
+      <a href={`tel:${number}`} aria-label={`Appeler ${name}`}>
+        <Phone className="mr-1.5 h-4 w-4" />
+        Appeler le client
+      </a>
     </Button>
   );
 }
@@ -440,6 +455,10 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
               {mission.status === "IN_DELIVERY" && (
                 <>
                   {showNavigation && <MissionNavigateButton missionId={mission.id} />}
+                  <MissionCallButton
+                    phone={mission.order.customer?.phone}
+                    name={withoutRolePrefix(formatClientFromParts(mission.order.customer, mission.order.customerEmail))}
+                  />
                   <Button
                     variant="brand"
                     size="lg"
@@ -451,10 +470,11 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
                     <CheckCircle className="mr-1.5 h-4 w-4" />
                     Confirmer la livraison
                   </Button>
+                  {/* Action d'échec distincte et écartée de « Confirmer la livraison » : moins d'appuis par erreur. */}
                   <Button
                     variant="outline"
                     size="lg"
-                    className="w-full"
+                    className="mt-3 w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
                     disabled={actionDisabled}
                     onClick={() => setPodDialog("FAILED")}
                   >

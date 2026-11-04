@@ -30,7 +30,7 @@ const companyColumns: TableColumn<Record<string, unknown>>[] = [
     header: "Statut",
     cell: (row) => (
       <Badge variant={row.status === "ACTIVE" ? "success" : row.status === "TRIAL" ? "brand" : "secondary"}>
-        {String(row.status)}
+        {COMPANY_STATUS_LABELS[String(row.status)] ?? String(row.status)}
       </Badge>
     ),
   },
@@ -63,7 +63,7 @@ function OverviewPanel() {
   return (
     <DashboardContent
       title="Centre de contrôle"
-      description="Vue d'ensemble de la plateforme Tutelliv"
+      description="Vue d'ensemble de la plateforme TutelLiv"
       stats={stats}
       showCharts={false}
       showActivity={false}
@@ -182,6 +182,8 @@ function SaasHealthPanel() {
       </section>
   );
 }
+
+const COMPANY_STATUS_LABELS: Record<string, string> = { ACTIVE: "Active", INACTIVE: "Inactive", SUSPENDED: "Suspendue", TRIAL: "Essai" };
 
 export default function AdminDashboardPage() {
   return (

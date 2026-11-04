@@ -82,17 +82,19 @@ export function RecordRow({
 }) {
   const body = (
     <>
-      <div className="min-w-0">
+      <div className="min-w-0 max-w-full">
         <p className="truncate font-medium text-foreground" title={title}>
           {title}
         </p>
         {detail && <p className="truncate text-sm text-muted-foreground">{detail}</p>}
         {meta && <p className="truncate text-xs tabular-nums text-muted-foreground">{meta}</p>}
       </div>
-      {aside && <div className="flex shrink-0 items-center gap-2">{aside}</div>}
+      {aside && <div className="flex shrink-0 flex-wrap items-center gap-2">{aside}</div>}
     </>
   );
-  const className = "flex items-center justify-between gap-3 rounded-xl border border-border p-3 text-sm";
+  // Sur téléphone, le badge et le montant passent sous le texte : la ligne ne déborde plus de l’écran.
+  const className =
+    "flex min-w-0 flex-col items-start gap-2 rounded-xl border border-border p-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3";
   return href ? (
     <Link
       href={href}

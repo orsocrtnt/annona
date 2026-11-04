@@ -113,7 +113,7 @@ export default function CompanyClientDetailPage() {
 
       <ClientInvoiceIdentityCard clientId={client.id} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
         <Card>
           <CardHeader><CardTitle className="text-base">Commandes</CardTitle></CardHeader>
           <CardContent className="space-y-2">

@@ -140,7 +140,7 @@ export default function AdminOperationsPage() {
                 <TableCell className="font-medium">{row.company ?? "Plateforme"}</TableCell>
                 <TableCell>{typeLabel[row.type]}</TableCell>
                 <TableCell>
-                  <Badge variant={row.status === "FAILED" ? "destructive" : row.stale ? "brand" : "secondary"}>
+                  <Badge variant={row.status === "FAILED" || row.stale ? "destructive" : "secondary"}>
                     {row.stale ? "Bloqué" : statusLabel[row.status]}
                   </Badge>
                 </TableCell>

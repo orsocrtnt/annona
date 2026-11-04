@@ -59,10 +59,11 @@ const columns: TableColumn<PortalOrder>[] = [
   },
   {
     key: "actions",
-    header: "",
-    className: "w-[180px] max-md:min-w-[9rem]",
+    // Colonne titrée et bouton compact : « Commander à nouveau » n'est plus coupé par le bord du tableau.
+    header: "Action",
+    className: "w-[200px] max-md:min-w-[11rem]",
     cell: (row) =>
-      canReorderPortalOrder(row) ? <ReorderOrderButton orderId={row.id} /> : null,
+      canReorderPortalOrder(row) ? <ReorderOrderButton orderId={row.id} compact /> : null,
   },
 ];
 

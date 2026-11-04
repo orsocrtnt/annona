@@ -83,10 +83,14 @@ function loginRedirect(request: NextRequest, pathname: string) {
   return NextResponse.redirect(url);
 }
 
-function redirectTo(request: NextRequest, pathname: string) {
+/** Même valeur que `ACCESS_REFUSED_PARAM` (`src/lib/permissions/access-refused.ts`), lue par la page d'arrivée. */
+const ACCESS_REFUSED_PARAM = "acces-refuse";
+
+function redirectTo(request: NextRequest, pathname: string, notice?: string) {
   const url = request.nextUrl.clone();
   url.pathname = pathname;
   url.search = "";
+  if (notice) url.searchParams.set(notice, "1");
   return NextResponse.redirect(url);
 }
 
@@ -127,7 +131,10 @@ export async function middleware(request: NextRequest) {
     if (!subject) return withSessionCookies(loginRedirect(request, pathname), supabaseResponse);
     const decision = evaluatePageAccess(pathname, subject);
     if (decision.kind === "redirect") {
-      return withSessionCookies(redirectTo(request, decision.location), supabaseResponse);
+      // Page d'un autre rôle : l'accueil affiche pourquoi on y revient (le renvoi était silencieux).
+      // « /dashboard » est l'adresse par défaut des liens génériques : pas de message pour elle.
+      const notice = pathname === "/dashboard" ? undefined : ACCESS_REFUSED_PARAM;
+      return withSessionCookies(redirectTo(request, decision.location, notice), supabaseResponse);
     }
     if (decision.kind === "forbidden") {
       return withSessionCookies(

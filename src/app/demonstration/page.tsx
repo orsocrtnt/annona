@@ -116,7 +116,7 @@ export default async function DemonstrationPage() {
             {[
               [ShieldCheck, "Données fictives", "Aucune entreprise cliente n’est utilisée pour cette visite."],
               [Database, "Espace séparé", "La démo reste identifiable et distincte des autres environnements."],
-              [Play, "Entrée sans création", "Cette page lit seulement l’accès déjà préparé pour la démonstration."],
+              [Play, "Accès immédiat", "La démo s’ouvre en un clic, sans créer de compte."],
             ].map(([Icon, title, text]) => {
               const FeatureIcon = Icon as typeof ShieldCheck;
               return (
@@ -134,7 +134,7 @@ export default async function DemonstrationPage() {
           <div className="rounded-[1.75rem] border border-border bg-card/85 p-6 text-center shadow-sm sm:p-8">
             <h2 className="text-2xl font-bold tracking-tight text-foreground">Une visite préparée, sans surprise.</h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-              {`Les vues prévues sont ${Object.values(DEMO_PERSONA_LABELS).join(", ")}. Si l’environnement de démo est incomplet, la connexion existante refuse d’ouvrir un espace. Cette page ne crée ni compte, ni session, ni jeu de données.`}
+              {`Vous passez d’une vue à l’autre : ${Object.values(DEMO_PERSONA_LABELS).join(", ")}. Si la démo est momentanément indisponible, réessayez dans quelques instants ou écrivez-nous depuis la page Contact.`}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link href="/fonctionnalites" className="inline-flex min-h-11 items-center rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-2.5 text-sm font-bold text-foreground hover:bg-[#f0f4f1] dark:hover:bg-secondary">

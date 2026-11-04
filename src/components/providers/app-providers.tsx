@@ -12,6 +12,7 @@ import { OPERATIONAL_QUERY_DEFAULTS } from "@/lib/query/defaults";
 import { ThemeSync } from "@/components/theme/theme-sync";
 import { ScrollToTopOnNavigation } from "@/components/navigation/scroll-to-top-on-navigation";
 import { SkipLink } from "@/components/accessibility/skip-link";
+import { AccessRefusedNotice } from "@/components/shared/access-refused-notice";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -34,6 +35,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <NavigationProgress />
         <ScrollToTopOnNavigation />
         <DemoModeBar />
+        <AccessRefusedNotice />
         {children}
       </SessionProvider>
       <Toaster

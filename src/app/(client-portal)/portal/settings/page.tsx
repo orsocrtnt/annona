@@ -195,8 +195,8 @@ export default function ClientSettingsPage() {
             Alertes
           </CardTitle>
           <CardDescription>
-            Les alertes apparaissent dans la cloche du portail. Un e-mail est envoyé seulement si
-            un service d’envoi est configuré sur le serveur.
+            Les alertes apparaissent dans la cloche du portail. Vous pouvez aussi en recevoir une copie
+            par e-mail.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -237,10 +237,7 @@ export default function ClientSettingsPage() {
                   ? "Mode recette actif : les copies sont redirigées vers la boîte de test, jamais vers les clients."
                   : settings?.emailConfigured
                     ? "Les e-mails seront envoyés à l’adresse de ce compte."
-                    : "Aucun service d’e-mail n’est branché pour l’instant : les alertes restent visibles dans la cloche."}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                SMS : pas encore disponible (il faut un opérateur type Twilio).
+                    : "Les copies par e-mail ne sont pas encore actives : les alertes restent visibles dans la cloche."}
               </p>
               <Button type="submit" variant="brand" loading={updateSettings.isPending}>
                 Enregistrer les alertes

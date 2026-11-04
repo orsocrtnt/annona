@@ -138,7 +138,12 @@ export function getFirstFormErrorMessage(errors: FieldErrors) {
   if (allMessages.length > 0) {
     return {
       title: "Formulaire incomplet",
-      description: allMessages.slice(0, 3).join(" · "),
+      // Les trois premières erreurs, puis le nombre restant : aucune erreur n'est passée sous silence.
+      description:
+        allMessages.slice(0, 3).join(" · ") +
+        (allMessages.length > 3
+          ? ` · et ${allMessages.length - 3} autre${allMessages.length - 3 > 1 ? "s" : ""} champ${allMessages.length - 3 > 1 ? "s" : ""} à compléter`
+          : ""),
     };
   }
 

@@ -1,3 +1,4 @@
+import { fromParisDateTimeInput, toParisDateTimeInput } from "@/lib/format/paris-datetime-input";
 import type { DeliveryCategory, DeliveryStatus } from "@prisma/client";
 
 export type DashboardPeriodKey = "3d" | "7d" | "30d";
@@ -100,10 +101,13 @@ export function getStatusBucket(status: DeliveryStatus): keyof StatusBreakdown |
   return null;
 }
 
-export function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+/**
+ * Minuit à Paris, quel que soit le fuseau du serveur : en ligne, Vercel tourne en UTC et « aujourd'hui »
+ * commençait à 1 h (2 h en été) heure de Paris.
+ */
+export function startOfToday(now: Date = new Date()) {
+  const parisDay = toParisDateTimeInput(now).slice(0, 10);
+  return new Date(fromParisDateTimeInput(`${parisDay}T00:00`) ?? now);
 }
 
 export function addDays(date: Date, days: number) {

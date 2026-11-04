@@ -99,7 +99,16 @@ async function fillStandardOrder(page: Page, marker: string) {
   await page.getByLabel(/^Ville/).fill("Paris");
   await page.getByLabel(/^Code postal/).fill("75008");
   await page.getByLabel(/^Date de livraison souhaitée/).fill(tomorrowDate());
+  await chooseDeliverySlotIfAsked(page);
   await page.getByLabel("Notes", { exact: true }).fill(`${marker}:standard`);
+}
+
+/** Créneau demandé quand l'entreprise travaille par créneaux (réglage de la démo pour les courses). */
+async function chooseDeliverySlotIfAsked(page: Page) {
+  const slot = page.getByRole("combobox", { name: "Créneau de livraison" });
+  if (!(await slot.isVisible().catch(() => false))) return;
+  await slot.click();
+  await page.getByRole("option").first().click();
 }
 
 async function fillCourierOrder(page: Page, marker: string) {
@@ -115,6 +124,7 @@ async function fillCourierOrder(page: Page, marker: string) {
   await page.getByLabel(/^Ville/).nth(1).fill("Paris");
   await page.getByLabel(/^Code postal/).nth(1).fill("75011");
   await page.getByLabel(/^Date de livraison souhaitée/).fill(tomorrowDate());
+  await chooseDeliverySlotIfAsked(page);
   await page.getByLabel("Notes", { exact: true }).fill(`${marker}:courier`);
 }
 

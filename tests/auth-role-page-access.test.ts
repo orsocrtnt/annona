@@ -257,7 +257,8 @@ test("AUTH-ROLE middleware : mauvais rôle redirigé côté serveur, y compris e
   for (const headers of [{ RSC: "1" }, { RSC: "1", "Next-Router-Prefetch": "1" }] as Record<string, string>[]) {
     const rsc = await call({ id: "auth-driver" }, asRole("DRIVER"), "/portal/orders?_rsc=abc", headers);
     assert.equal(rsc.status, 307);
-    assert.equal(rsc.location, "http://localhost:3110/driver");
+    // AUDIT-0411 : la page d'arrivée explique le renvoi (sauf pour « /dashboard », adresse par défaut).
+    assert.equal(rsc.location, "http://localhost:3110/driver?acces-refuse=1");
   }
   // En-tête interne usurpé : ignoré, la décision vient de l'authId validé et de la base.
   const spoofed = await call({ id: "auth-client" }, asRole("CLIENT"), "/dispatch", { "x-tutelliv-auth-id": "auth-admin" });

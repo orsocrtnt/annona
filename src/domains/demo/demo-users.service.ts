@@ -146,7 +146,8 @@ export function demoPersonaSeedUsers(companyId: string) {
       lastName: client.lastName,
       roleSlug: "client" as const,
       authId: demoFixtureAuthId(index === 0 ? "client" : `client-${index + 1}`, companyId),
-      phone: null as string | null,
+      // Numéros de la plage réservée à la fiction (06 39 98) : le livreur peut « appeler le client » en démo.
+      phone: `063998001${index}` as string | null,
     })),
     ...DEMO_FIXTURE_DRIVERS.map((driver, index) => ({
       persona: index === 0 ? ("driver" as const) : null,

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import type { AutoDispatchPreview } from "@/domains/delivery/auto-dispatch.service";
+import { countLabel } from "@/lib/format/plural";
 
 const SKIP_KEY = "tutelliv-auto-dispatch-skip-confirm";
 
@@ -51,7 +52,7 @@ export function AutoDispatchConfirmDialog({ preview, onClose, onValidate }: Auto
           <DialogTitle>Valider l&apos;auto-dispatch</DialogTitle>
           <DialogDescription>
             {preview.mode === "SUGGESTION" && preview.message}
-            {preview.mode === "ROUNDS" && `${preview.pending} livraison(s) en attente seront regroupées en tournées.`}
+            {preview.mode === "ROUNDS" && `${countLabel(preview.pending, "livraison en attente sera regroupée", "livraisons en attente seront regroupées")} en tournées.`}
             {preview.mode === "PROPOSALS" && (canValidate
               ? "Rien n’est affecté tant que vous n’avez pas validé."
               : "Aucune livraison ne peut être proposée pour le moment.")}

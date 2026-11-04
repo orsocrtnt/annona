@@ -22,13 +22,22 @@ interface AddressPreviewMapProps {
   latitude: number;
   longitude: number;
   label?: string;
+  /** Position approximative (numéro introuvable) : bandeau d'avertissement au lieu de la mention discrète. */
+  warning?: boolean;
 }
 
-export function AddressPreviewMap({ latitude, longitude, label }: AddressPreviewMapProps) {
+export function AddressPreviewMap({ latitude, longitude, label, warning = false }: AddressPreviewMapProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-border">
-      <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-        <MapPin className="h-3.5 w-3.5 shrink-0 text-brand" />
+      <div
+        role={warning ? "status" : undefined}
+        className={
+          warning
+            ? "flex items-center gap-2 border-b border-warning/30 bg-warning-subtle px-3 py-2 text-sm font-medium text-warning"
+            : "flex items-center gap-2 border-b border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground"
+        }
+      >
+        <MapPin className={warning ? "h-4 w-4 shrink-0" : "h-3.5 w-3.5 shrink-0 text-brand"} />
         <span>{label ?? "Position confirmée sur la carte"}</span>
       </div>
       <div className="h-44 w-full">

@@ -35,7 +35,7 @@ const SETTINGS_CATEGORY_DESCRIPTIONS: Record<DeliveryCategory, string> = {
   STANDARD: "Achat et livraison",
   COURIER: "Collecte et livraison",
   SPECIAL_MISSION:
-    "Expérimental, hors offre pilote — demande multi-adresses ; devis et accord gérés hors TutelLiv",
+    "Demande à plusieurs adresses, en essai ; le devis et l’accord se font en dehors de TutelLiv",
 };
 
 const CATEGORY_ICONS = {

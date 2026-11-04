@@ -5,6 +5,7 @@ import { updateCompanySettingsWithClaim } from "@/lib/database/settings-claims";
 import { companyDeliveryOptionsSchema } from "@/lib/validations/company-settings";
 import { companyBillingSettingsSchema } from "@/lib/validations/billing-settings";
 import { companyDispatchSettingsSchema } from "@/lib/validations/dispatch-settings";
+import { countLabel } from "@/lib/format/plural";
 
 export type OnboardingStepKey =
   | "company"
@@ -99,7 +100,7 @@ export function buildCompanyOnboardingStatus(
   const onboardingSettings = asSettings(settings.onboarding);
   const skipped = onboardingSettings.skippedCollaborators === true;
   const hiddenFromNavigation = onboardingSettings.hiddenFromNavigation === true;
-  const pending = (count: number | undefined) => count ? ` ${count} invitation(s) en attente d’activation.` : "";
+  const pending = (count: number | undefined) => count ? ` ${countLabel(count, "invitation en attente", "invitations en attente")} d’activation.` : "";
 
   const steps: OnboardingStep[] = [
     {
@@ -121,7 +122,7 @@ export function buildCompanyOnboardingStatus(
     {
       key: "collaborators",
       title: "Inviter des collaborateurs autorisés",
-      description: `${snapshot.collaboratorCount ?? 0} collaborateur(s) actif(s).${pending(snapshot.pendingCollaboratorCount)} Cette étape est facultative si vous travaillez seul.`,
+      description: `${countLabel(snapshot.collaboratorCount ?? 0, "collaborateur actif", "collaborateurs actifs")}.${pending(snapshot.pendingCollaboratorCount)} Cette étape est facultative si vous travaillez seul.`,
       href: "/users",
       action: "Gérer les collaborateurs",
       complete: (snapshot.collaboratorCount ?? 0) > 0,
@@ -133,7 +134,7 @@ export function buildCompanyOnboardingStatus(
       title: "Ajouter un client",
       description:
         snapshot.clientCount > 0
-          ? `${snapshot.clientCount} compte(s) client actif(s).`
+          ? `${countLabel(snapshot.clientCount, "compte client actif", "comptes clients actifs")}.`
           : `Ajoutez le client qui créera la première commande test.${pending(snapshot.pendingClientCount)}`,
       href: "/users",
       action: "Gérer les comptes",
@@ -144,7 +145,7 @@ export function buildCompanyOnboardingStatus(
       title: "Ajouter un livreur",
       description:
         snapshot.driverCount > 0
-          ? `${snapshot.driverCount} compte(s) livreur actif(s).`
+          ? `${countLabel(snapshot.driverCount, "compte livreur actif", "comptes livreurs actifs")}.`
           : `Ajoutez le livreur qui prendra en charge la première mission.${pending(snapshot.pendingDriverCount)}`,
       href: "/users",
       action: "Gérer les comptes",
@@ -171,7 +172,7 @@ export function buildCompanyOnboardingStatus(
       title: "Recevoir la première commande test",
       description:
         snapshot.orderCount > 0
-          ? `${snapshot.orderCount} commande(s) déjà créée(s).`
+          ? `${countLabel(snapshot.orderCount, "commande déjà créée", "commandes déjà créées")}.`
           : "Connectez-vous avec le compte client et créez une commande fictive.",
       href: "/dashboard/orders",
       action: "Voir les commandes",
@@ -182,7 +183,7 @@ export function buildCompanyOnboardingStatus(
       title: "Terminer la première livraison test",
       description:
         snapshot.completedDeliveryCount > 0
-          ? `${snapshot.completedDeliveryCount} livraison(s) terminée(s).`
+          ? `${countLabel(snapshot.completedDeliveryCount, "livraison terminée", "livraisons terminées")}.`
           : "Affectez, faites accepter puis terminez la mission avec une preuve fictive.",
       href: "/dispatch",
       action: "Ouvrir le dispatch",

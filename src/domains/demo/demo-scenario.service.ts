@@ -627,6 +627,8 @@ async function purgeDemoTransactionalData(companyId: string) {
       where: { companyId, status: { in: ["SUCCEEDED", "FAILED"] } },
     }),
     prisma.supportTicket.deleteMany({ where: { companyId } }),
+    // E-mails de commande reçus : sans cette purge, ceux des recettes restaient visibles au prospect suivant.
+    prisma.inboundOrderEmail.deleteMany({ where: { companyId } }),
     prisma.invoice.deleteMany({ where: { companyId } }),
     ...(driverIds.length > 0
       ? [prisma.driverLocation.deleteMany({ where: { driverId: { in: driverIds } } })]

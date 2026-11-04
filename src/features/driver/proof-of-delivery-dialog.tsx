@@ -82,7 +82,7 @@ export function ProofOfDeliveryDialog({
   const [signature, setSignature] = useState<Blob | null>(null);
   const [refusedToSign, setRefusedToSign] = useState(false);
   const [refusalReason, setRefusalReason] = useState("");
-  const { data: proofRules } = useDriverProofRules();
+  const { data: proofRules, isError: proofRulesFailed } = useDriverProofRules();
 
   const success = outcome === "SUCCESS";
   // Règle jamais chargée (hors ligne dès la première mission) : signature demandée par précaution.
@@ -211,9 +211,10 @@ export function ProofOfDeliveryDialog({
               <legend className="px-1 text-sm font-medium">
                 Réception{signatureRequired ? " (signature requise)" : ""}
               </legend>
-              {!proofRules && (
+              {/* Seulement si les règles n'ont pas pu être lues (hors connexion) : plus de message pendant le chargement. */}
+              {!proofRules && proofRulesFailed && (
                 <p className="text-xs text-muted-foreground">
-                  Règles de votre entreprise pas encore chargées : la signature est demandée par précaution.
+                  Règles de votre entreprise indisponibles hors connexion : la signature est demandée par précaution.
                 </p>
               )}
               <label htmlFor={recipientId} className="block space-y-1 text-sm">
