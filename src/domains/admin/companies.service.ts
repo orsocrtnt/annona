@@ -195,6 +195,8 @@ export function parseCompanyListParams(
 
 export function platformCompanyWhere(query: CompanyListParams) {
   return {
+    // Espaces de démonstration : suivis sur la page Démos, jamais dans la liste des entreprises.
+    isDemo: false,
     ...(query.status ? { status: query.status } : {}),
     ...(query.q ? { name: { contains: query.q, mode: "insensitive" as const } } : {}),
   };

@@ -5,6 +5,7 @@ import test from "node:test";
 
 const expected = [
   "access-events/route.ts",
+  "companies/[id]/access/route.ts",
   "companies/[id]/route.ts",
   "companies/route.ts",
   "contact-messages/route.ts",
@@ -20,6 +21,7 @@ const expected = [
   "service-health/route.ts",
   "subscriptions/route.ts",
   "support-tickets/route.ts",
+  "users/[id]/access/route.ts",
   "users/route.ts",
   "waitlist/[id]/route.ts",
   "waitlist/export/route.ts",

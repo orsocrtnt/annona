@@ -88,13 +88,13 @@ export function adminSearchQueries(q: string) {
   const people = everyToken(tokens, ["name", "company", "email"]);
   return {
     companies: {
-      where: { AND: everyToken(tokens, ["name"]) },
+      where: { isDemo: false, AND: everyToken(tokens, ["name"]) },
       orderBy: [{ updatedAt: "desc" as const }, { id: "asc" as const }],
       take,
       select: { id: true, name: true, status: true, isDemo: true },
     },
     users: {
-      where: { AND: everyToken(tokens, ["firstName", "lastName", "email"]) },
+      where: { NOT: { company: { is: { isDemo: true } } }, AND: everyToken(tokens, ["firstName", "lastName", "email"]) },
       orderBy: [{ createdAt: "desc" as const }, { id: "asc" as const }],
       take,
       select: {

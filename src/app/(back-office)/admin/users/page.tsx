@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAdminUsers } from "@/features/admin/hooks";
+import { AccessToggleButton } from "@/features/admin/access/access-toggle-button";
 import { useUrlSearchQuery } from "@/features/admin/use-url-search-query";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
@@ -97,6 +98,7 @@ function AdminUsersContent() {
               <TableHead>Statut</TableHead>
               <TableHead>Entreprise</TableHead>
               <TableHead>Créé</TableHead>
+              <TableHead><span className="sr-only">Accès</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -107,6 +109,11 @@ function AdminUsersContent() {
                 <TableCell><Badge variant="secondary">{statusLabel[row.status]}</Badge></TableCell>
                 <TableCell>{row.company ?? "—"}</TableCell>
                 <TableCell>{dateFormat.format(new Date(row.createdAt))}</TableCell>
+                <TableCell className="text-right">
+                  {row.role !== "SUPER_ADMIN" && (
+                    <AccessToggleButton kind="user" id={row.id} name={row.name} status={row.status} />
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

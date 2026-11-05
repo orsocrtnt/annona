@@ -46,6 +46,9 @@ const PLATFORM_WRITES: Record<string, string[]> = {
   "src/app/api/admin/sales-codes/route.ts": ["GET", "POST"],
   // DEMO-LIVE : remise à neuf des démos, espaces de la plateforme (aucune entreprise cliente).
   "src/app/api/admin/demo-pool/route.ts": ["GET", "POST"],
+  // Couper / rétablir l'accès d'un compte ou d'une entreprise (demande du propriétaire, 5 novembre 2026).
+  "src/app/api/admin/users/[id]/access/route.ts": ["POST"],
+  "src/app/api/admin/companies/[id]/access/route.ts": ["POST"],
   // ADMIN-ESPACE lot 2 : case « contacté » d'une inscription à la liste d'attente (donnée de la plateforme).
   "src/app/api/admin/waitlist/[id]/route.ts": ["PATCH"],
 };
@@ -54,6 +57,7 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors co
   const routes = filesUnder("src/app/api/admin").filter((file) => file.endsWith("route.ts"));
   assert.deepEqual(routes, [
     "src/app/api/admin/access-events/route.ts",
+    "src/app/api/admin/companies/[id]/access/route.ts",
     "src/app/api/admin/companies/[id]/route.ts",
     "src/app/api/admin/companies/route.ts",
     "src/app/api/admin/contact-messages/route.ts",
@@ -69,6 +73,7 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors co
     "src/app/api/admin/service-health/route.ts",
     "src/app/api/admin/subscriptions/route.ts",
     "src/app/api/admin/support-tickets/route.ts",
+    "src/app/api/admin/users/[id]/access/route.ts",
     "src/app/api/admin/users/route.ts",
     "src/app/api/admin/waitlist/[id]/route.ts",
     "src/app/api/admin/waitlist/export/route.ts",

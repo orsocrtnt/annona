@@ -28,14 +28,16 @@ export async function getPlatformOverview(now: Date = new Date()): Promise<Platf
 
   const [activeCompanies, totalUsers, deliveriesToday, paidThisMonth, companies] =
     await Promise.all([
-      prisma.company.count({ where: { status: "ACTIVE" } }),
-      prisma.user.count(),
+      // Démonstrations exclues des chiffres et de la liste (suivies sur la page Démos).
+      prisma.company.count({ where: { status: "ACTIVE", isDemo: false } }),
+      prisma.user.count({ where: { NOT: { company: { is: { isDemo: true } } } } }),
       prisma.delivery.count({ where: { createdAt: { gte: startOfToday, lt: endOfToday } } }),
       prisma.invoice.aggregate({
         _sum: { amount: true },
         where: { status: "PAID", paidAt: { gte: startOfMonth, lt: endOfMonth } },
       }),
       prisma.company.findMany({
+        where: { isDemo: false },
         orderBy: { createdAt: "desc" },
         take: PLATFORM_COMPANIES_TAKE,
         select: {

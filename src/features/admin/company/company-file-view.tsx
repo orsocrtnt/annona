@@ -37,6 +37,7 @@ import { CHART_COLORS, DailyLineChart, type DailyLine } from "@/features/admin/h
 import { HomeCard } from "@/features/admin/home/home-card";
 import { UNLIMITED_MONTHLY_ORDERS } from "@/domains/billing/subscription-view.types";
 import type { PlatformCompanyFile } from "@/domains/admin/company-file.service";
+import { AccessToggleButton } from "@/features/admin/access/access-toggle-button";
 
 const LINES: ReadonlyArray<DailyLine<"orders" | "delivered">> = [
   { key: "orders", label: "Commandes créées", short: "Commandes", ...CHART_COLORS.blue },
@@ -406,9 +407,12 @@ export function CompanyFileView({ company }: { company: Company }) {
             <StatusBadge status={company.status} label={COMPANY_STATUS_LABELS[company.status] ?? company.status} />
             {company.isDemo && <Badge variant="secondary">Démonstration</Badge>}
             {company.subscription?.plan && <Badge variant="brand">{company.subscription.plan.name}</Badge>}
-            <span>{`Créée le ${formatDate(company.createdAt)} · lecture seule`}</span>
+            <span>{`Créée le ${formatDate(company.createdAt)}`}</span>
           </div>
         </div>
+        {!company.isDemo && (
+          <AccessToggleButton kind="company" id={company.id} name={company.name} status={company.status} />
+        )}
       </header>
 
       <div className="grid gap-5 xl:grid-cols-2">
