@@ -42,7 +42,7 @@ test("COUPER : une entreprise en essai est suspendue puis rendue en essai ; dém
     updateMany: async (args: (typeof writes)[number]) => { writes.push(args); return { count: 1 }; },
   });
   assert.deepEqual(await setPlatformCompanyAccess("c1", "suspend"), { ok: true, status: "SUSPENDED" });
-  assert.deepEqual(writes[0]!.where, { id: "c1", status: "TRIAL" });
+  assert.deepEqual(writes[0]!.where, { id: "c1", status: "TRIAL", settings: { equals: { theme: "x" } } });
   assert.deepEqual(writes[0]!.data.settings, { theme: "x", platformSuspendedFromStatus: "TRIAL" });
   current = { ...current, status: "SUSPENDED", settings: writes[0]!.data.settings };
   assert.deepEqual(await setPlatformCompanyAccess("c1", "restore"), { ok: true, status: "TRIAL" });

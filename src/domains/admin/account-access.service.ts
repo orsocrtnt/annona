@@ -1,4 +1,4 @@
-import type { CompanyStatus, Prisma } from "@prisma/client";
+import { Prisma, type CompanyStatus } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 
 /**
@@ -40,11 +40,13 @@ export async function setPlatformCompanyAccess(id: string, action: AccessAction)
   if (!company) return { ok: false, code: "NOT_FOUND" };
   if (company.isDemo) return { ok: false, code: "PROTECTED" };
   const settings = settingsObject(company.settings);
+  // Réclamation : les réglages lus n'ont pas changé entre la lecture et l'écriture (sinon aucune écriture).
+  const expected = company.settings === null ? Prisma.DbNull : (company.settings as Prisma.InputJsonValue);
   if (action === "suspend") {
     if (company.status !== "ACTIVE" && company.status !== "TRIAL") return { ok: false, code: "INVALID_STATE" };
     settings[SUSPENDED_FROM_KEY] = company.status;
     const result = await prisma.company.updateMany({
-      where: { id, status: company.status },
+      where: { id, status: company.status, settings: { equals: expected } },
       data: { status: "SUSPENDED", settings: settings as Prisma.InputJsonValue },
     });
     return result.count === 1 ? { ok: true, status: "SUSPENDED" } : { ok: false, code: "INVALID_STATE" };
@@ -54,7 +56,7 @@ export async function setPlatformCompanyAccess(id: string, action: AccessAction)
   const restored: CompanyStatus = previous === "TRIAL" ? "TRIAL" : "ACTIVE";
   delete settings[SUSPENDED_FROM_KEY];
   const result = await prisma.company.updateMany({
-    where: { id, status: "SUSPENDED" },
+    where: { id, status: "SUSPENDED", settings: { equals: expected } },
     data: { status: restored, settings: settings as Prisma.InputJsonValue },
   });
   return result.count === 1 ? { ok: true, status: restored } : { ok: false, code: "INVALID_STATE" };

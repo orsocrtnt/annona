@@ -231,7 +231,10 @@ test("ADMIN-ESPACE recherche : requêtes bornées à 6 lignes, sans champ sensib
       assert.equal(select.includes(forbidden), false, `${type} ${forbidden}`);
     }
   }
+  // Comptes et entreprises de démonstration exclus de la recherche (ménage du 5 novembre 2026).
+  assert.deepEqual(queries.companies.where.isDemo, false);
   assert.deepEqual(queries.users.where, {
+    NOT: { company: { is: { isDemo: true } } },
     AND: [{ OR: [
       { firstName: { contains: "ada\\%", mode: "insensitive" } },
       { lastName: { contains: "ada\\%", mode: "insensitive" } },
