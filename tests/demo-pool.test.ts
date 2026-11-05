@@ -198,3 +198,48 @@ test("recyclage : une tâche de fond coincée depuis plus d'une heure met l'espa
   assert.equal(h.updates[0]?.state, "QUARANTINED");
   assert.equal(h.purged(), 0);
 });
+
+test("DEMO-LIVE : le signe de vie ne touche qu'un espace réservé et valide ; cookie altéré ignoré", async (t) => {
+  const { touchDemoPoolLease } = await import("../src/domains/demo/demo-pool.service");
+  const calls: unknown[] = [];
+  Object.defineProperty(prisma, "demoPoolEnvironment", {
+    configurable: true,
+    value: { updateMany: async (args: unknown) => { calls.push(args); return { count: 1 }; } },
+  });
+  t.after(() => { Reflect.deleteProperty(prisma, "demoPoolEnvironment"); });
+  const now = new Date("2026-11-05T15:00:00Z");
+  const session = demoSessionIdFromRequestKey("12345678-1234-4234-8234-123456789abc");
+  assert.equal(await touchDemoPoolLease("invalide", now), false);
+  assert.equal(calls.length, 0, "aucune écriture pour un cookie altéré");
+  assert.equal(await touchDemoPoolLease(session, now), true);
+  assert.deepEqual(calls[0], {
+    where: { leaseKeyHash: demoPoolLeaseKeyHash(session), state: "LEASED", leaseExpiresAt: { gt: now } },
+    data: { updatedAt: now },
+  });
+});
+
+test("DEMO-LIVE : disponibles sur le total, réservées et en direct (moins de 2 min)", async (t) => {
+  const { getDemoPoolOccupancy, DEMO_LIVE_WINDOW_MS } = await import("../src/domains/demo/demo-pool.service");
+  const counts: unknown[] = [];
+  Object.defineProperty(prisma, "demoPoolEnvironment", {
+    configurable: true,
+    value: {
+      groupBy: async () => [
+        { state: "READY", _count: { _all: 3 } },
+        { state: "LEASED", _count: { _all: 2 } },
+        { state: "RECYCLING", _count: { _all: 1 } },
+      ],
+      count: async (args: { where: { updatedAt?: unknown } }) => { counts.push(args); return args.where.updatedAt ? 1 : 2; },
+    },
+  });
+  t.after(() => { Reflect.deleteProperty(prisma, "demoPoolEnvironment"); });
+  const now = new Date("2026-11-05T15:00:00Z");
+  assert.deepEqual(await getDemoPoolOccupancy(now), { available: 3, total: 6, reserved: 2, live: 1, preparing: 1, quarantined: 0 });
+  assert.equal(DEMO_LIVE_WINDOW_MS, 2 * 60 * 1000);
+  const live = counts.find((args) => (args as { where: { updatedAt?: unknown } }).where.updatedAt) as { where: { updatedAt: { gte: Date } } };
+  assert.equal(live.where.updatedAt.gte.toISOString(), "2026-11-05T14:58:00.000Z");
+  // La démo envoie le signe de vie ; l'accueil super admin affiche la carte.
+  assert.match(readFileSync("src/features/demo/demo-mode-bar.tsx", "utf8"), /useDemoHeartbeat\(Boolean\(demo\?\.isDemo\)\)/);
+  assert.match(readFileSync("src/app/(back-office)/admin/page.tsx", "utf8"), /<AdminDemoPoolCard \/>/);
+  assert.match(readFileSync("src/app/api/admin/demo-pool/route.ts", "utf8"), /requireRole\(auth\.context, \["SUPER_ADMIN"\]\)/);
+});

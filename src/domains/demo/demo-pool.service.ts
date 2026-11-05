@@ -257,6 +257,51 @@ export async function getDemoPoolStats(poolKey = DEMO_POOL_KEY) {
   };
 }
 
+/**
+ * Présence en direct : la démo ouverte envoie un signe de vie chaque minute tant que l'onglet est visible
+ * (`/api/demo/heartbeat`). Il est noté dans `updatedAt` de l'espace réservé : aucune autre écriture ne touche
+ * un espace LEASED avant sa remise en préparation, donc `updatedAt` = dernière activité (réservation comprise).
+ */
+export const DEMO_LIVE_WINDOW_MS = 2 * 60 * 1000;
+
+export async function touchDemoPoolLease(sessionId: string, now = new Date()): Promise<boolean> {
+  let leaseKeyHash: string;
+  try {
+    leaseKeyHash = demoPoolLeaseKeyHash(sessionId);
+  } catch {
+    return false; // cookie absent ou altéré : rien à noter
+  }
+  const result = await prisma.demoPoolEnvironment.updateMany({
+    where: { leaseKeyHash, state: "LEASED", leaseExpiresAt: { gt: now } },
+    data: { updatedAt: now },
+  });
+  return result.count === 1;
+}
+
+/** Accueil super admin : démos prêtes sur le total, réservées, et réservées avec quelqu'un dessus en ce moment. */
+export async function getDemoPoolOccupancy(now = new Date(), poolKey = DEMO_POOL_KEY) {
+  const [stats, reserved, live] = await Promise.all([
+    getDemoPoolStats(poolKey),
+    prisma.demoPoolEnvironment.count({ where: { poolKey, state: "LEASED", leaseExpiresAt: { gt: now } } }),
+    prisma.demoPoolEnvironment.count({
+      where: {
+        poolKey,
+        state: "LEASED",
+        leaseExpiresAt: { gt: now },
+        updatedAt: { gte: new Date(now.getTime() - DEMO_LIVE_WINDOW_MS) },
+      },
+    }),
+  ]);
+  return {
+    available: stats.ready,
+    total: stats.total,
+    reserved,
+    live,
+    preparing: Math.max(stats.total - stats.ready - stats.leased - stats.quarantined, 0),
+    quarantined: stats.quarantined,
+  };
+}
+
 export async function getActiveDemoPoolLease(sessionId: string, now = new Date()): Promise<Lease | null> {
   const leaseKeyHash = demoPoolLeaseKeyHash(sessionId);
   const environment = await prisma.demoPoolEnvironment.findUnique({

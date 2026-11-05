@@ -3,6 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import { useAdminOverview, useAdminSaasHealth } from "@/features/admin/hooks";
 import { AdminHomePanel } from "@/features/admin/home/admin-home-panel";
+import { AdminDemoPoolCard } from "@/features/admin/home/admin-demo-pool-card";
 import { HOME_CARD_CLASS } from "@/features/admin/home/home-card";
 import { DataGrid } from "@/components/ui/data-grid";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-5">
       <AdminHomePanel />
+      <AdminDemoPoolCard />
       <details className={cn(HOME_CARD_CLASS, "group")}>
         <summary className="-m-2 flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
           <span>

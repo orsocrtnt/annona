@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuthStore } from "@/stores/auth.store";
+import { useDemoHeartbeat } from "@/features/demo/use-demo-heartbeat";
 import {
   DEMO_PERSONA_LABELS,
   type DemoPersona,
@@ -71,6 +72,7 @@ export function DemoModeBar() {
   const barRef = useRef<HTMLDivElement>(null);
 
   const visible = Boolean(demo?.isDemo) && isDemoAppArea(pathname);
+  useDemoHeartbeat(Boolean(demo?.isDemo));
 
   useEffect(() => {
     try {
