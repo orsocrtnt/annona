@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**101 tâches terminées sur 130 — 78 %**
+**101 tâches terminées sur 131 — 77 %**
 
-`████████████████░░░░` · 29 tâches restantes
+`███████████████░░░░░` · 30 tâches restantes
 
 **À faire par Claude**
 
@@ -33,6 +33,7 @@
 - INTAKE-1 — Commande par message IA (coller un message)
 - AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
 - PROPRIO-2810 — Actions du propriétaire avant mise en ligne
+- DEMO-REFONTE — Rendre la démonstration claire (une journée lisible, remise à l'heure, liste « À essayer ») (relire le document de conception, puis Claude)
 - ONBOARD-1 — Guider jusqu’à la première livraison (pendant les pilotes)
 - OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation (une commande, puis Claude)
 - LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents (fournir les pièces et décider, puis Claude)
@@ -51,6 +52,8 @@ _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
+- Compte super admin (5 novembre, à ta demande) : son e-mail est passé de `orsocarotenuto@tutelliv.fr` (sans boîte mail) à `orso@tutelliv.fr` dans la base de préproduction (connexion Supabase, identité et fiche TutelLiv, vérifiés). À faire : https://tutelliv.fr/login → « Mot de passe oublié » → `orso@tutelliv.fr`, puis connexion sur `/admin`.
+- DEMO-REFONTE (5 novembre) : relire le document de conception de la nouvelle démo (`docs/superpowers/specs/2026-11-05-refonte-demo-design.md`) et dire « ok » ou ce qu'il faut changer.
 - Site public (5 novembre) : Démonstration retirée, Fonctionnalités mise à jour, Tarifs remplacée par une page « TutelLiv arrive bientôt » avec liste d'attente (détail dans GROWTH-1). Les inscriptions arrivent dans `/admin/contact`, marquées « Liste d'attente ». Rien à faire ; poussé sur `preproduction`.
 - OPS-FIAB (4 novembre) : push et migration faits par Claude (déploiement prêt, sonde toujours saine). Reste une commande, refusée à l'agent : `sh scripts/ops03b/copy-alert-email.sh` (doit afficher `"stored":true`). Dis-moi quand c'est fait : je teste l'e-mail.
 - Le 3 novembre, règles d'autorisation ajoutées à ta demande (`.claude/settings.local.json`, non versionné) : migration de préproduction, variable `DRIVE_ROUTE_IGN_URL`, push et copie du secret du relais faits par Claude.
@@ -122,6 +125,16 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   8. Puis les mineurs du rapport : site public (trois styles, bouton Contact, « 0 action »), typographie, listes natives, menu actif, PDF de preuve (position GPS brute).
 
   Non testé : invitations et ajout de clients ou livreurs par l'écran, commandes récurrentes, analyse IA, WhatsApp, e-mails réels, vrais téléphones, vitesse des pages connectées en ligne.
+
+- [ ] **DEMO-REFONTE — Rendre la démonstration claire (une journée lisible, remise à l'heure, liste « À essayer »).** Demande du propriétaire le 5 novembre 2026 : « les démos sont trop chargées », refonte en gardant la base.
+
+  **Qui : Toi — relire le document de conception, puis Claude.**
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé (données de démo, pool partagé, dates).**
+
+  Décisions prises en questionnaire le 5 novembre : démo pour le commercial et pour le prospect seul ; une journée riche d'environ 15 éléments (4 livrées, 3 en route, 2 affectées, 2 sans livreur, 1 seul retard, 2 demain, 1 récurrente) ; clients entreprises ; remise à l'heure par décalage des dates au prêt de l'espace ; onglet expiré renvoyé vers /demonstration ; ménage de l'espace de base (dont les deux courses au nom du propriétaire) ; liste « À essayer » à 4 étapes dans la barre de démo. Cause relevée : les espaces sont remplis à la préparation (`demo-pool.service.ts:166`) puis prêtés sans remise à l'heure.
+
+  Document : `docs/superpowers/specs/2026-11-05-refonte-demo-design.md` (non commité). Aucun code modifié. Suite : validation du document, plan de travail, puis réalisation par petites étapes testées.
 
 - [ ] **SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex.**
 
