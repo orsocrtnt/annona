@@ -2682,3 +2682,9 @@ Les tests distants d’augmentation des privilèges n’ont pas été autorisés
   Demande du propriétaire (5 novembre 2026, capture) : « rajoute de la couleur ». Fait (`src/features/back-office/dashboard-shared.tsx`, `dashboard-widget-renderer.tsx`) : chaque chiffre du jour a un fond teinté léger, sans bordure, de la couleur de sa pastille (Livrées vert, En cours bleu, Restantes gris, En retard rouge ; mêmes teintes que les cartes du haut) ; donut et légende passent du gris encre aux mêmes couleurs ; barres « Livraisons terminées par heure » en vert. Les widgets isolés sans ton (« Livrées aujourd'hui »…) gardent leur fond neutre.
 
   Vérifié : `npm run check` vert (1647 tests, 0 échec). Rendu contrôlé dans Chrome, Clair et Sombre, sur un worktree isolé (port 3111, base tutelliv-dev), puis comptes de test supprimés, serveur arrêté, worktree retiré. Non vérifié : les arcs colorés du donut (la démo utilisée n'avait aucune mission du jour ; mêmes classes que la légende, qui s'affiche bien).
+
+- [x] **LOGIN-LOGO — Notre icône en haut de la page de connexion.**
+
+  Demande du propriétaire (5 novembre 2026) : retirer l'icône « bâtiment » au-dessus de « Connexion » et mettre le logo TutelLiv. Fait (`src/features/auth/auth-form.tsx`) : l'icône d'application TutelLiv (`public/brand/icone-app-fond-clair.png`, version `fond-sombre` en thème Sombre) remplace les icônes génériques entreprise, client et livreur sur les trois pages de connexion.
+
+  Vérifié : `npm run check` vert sur une copie propre (1647 tests, 0 échec) ; dans le dossier principal, 1 échec dû au travail en cours d'une autre session (modèles `PlatformPilot` non commités dans `prisma/schema.prisma`), sans lien. Non vérifié : rendu dans le navigateur (poussé directement à la demande du propriétaire) ; à regarder sur tutelliv.fr/login après le déploiement.

@@ -25,7 +25,8 @@ import type {
 } from "@/lib/validations/auth";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 import { useRouter } from "next/navigation";
-import { Building2, Play, Truck, UserRound } from "lucide-react";
+import Image from "next/image";
+import { Play } from "lucide-react";
 import { AuthShell } from "@/features/auth/auth-shell";
 import type { LoginContext } from "@/features/auth/login-space";
 import { demoRequestKeyFor, useApplyLoginSession } from "@/features/auth/login-session";
@@ -33,11 +34,6 @@ import { AUTH_TIMEOUT_MESSAGE, RequestTimeoutError, requestJsonWithTimeout } fro
 import { createSubmitGuard } from "@/features/auth/submit-guard";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
-const SPACE_ICONS: Record<LoginContext, typeof Building2> = {
-  company: Building2,
-  client: UserRound,
-  driver: Truck,
-};
 
 type AuthMode = "login" | "register" | "forgot-password" | "reset-password";
 type PasswordLink =
@@ -273,16 +269,14 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     },
   };
 
-  const SpaceIcon = SPACE_ICONS[loginContext];
-
   return (
     <AuthShell>
         <div className="w-full max-w-[420px] animate-slide-up motion-reduce:animate-none">
           {mode === "login" && (
             <div className="mb-4 flex justify-center" aria-hidden>
-              <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-brand-subtle text-brand">
-                <SpaceIcon className="h-7 w-7" strokeWidth={1.8} />
-              </span>
+              {/* Icône TutelLiv (version claire ou sombre selon le thème). */}
+              <Image src="/brand/icone-app-fond-clair.png" alt="" width={56} height={56} priority className="h-14 w-14 rounded-[18px] shadow-sm ring-1 ring-border dark:hidden" />
+              <Image src="/brand/icone-app-fond-sombre.png" alt="" width={56} height={56} className="hidden h-14 w-14 rounded-[18px] ring-1 ring-border dark:block" />
             </div>
           )}
           <h1 className={mode === "login" ? "text-balance text-center text-[clamp(32px,5.6vw,48px)] font-bold leading-[1.04] tracking-[-0.04em]" : "text-balance text-[clamp(26px,4.4vw,36px)] font-bold leading-[1.08] tracking-[-0.035em]"}>

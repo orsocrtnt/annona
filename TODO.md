@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**104 tâches terminées sur 135 — 77 %**
+**105 tâches terminées sur 136 — 77 %**
 
 `███████████████░░░░░` · 31 tâches restantes
 
@@ -54,6 +54,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
 - Compte super admin (5 novembre, à ta demande) : son e-mail est passé de `orsocarotenuto@tutelliv.fr` (sans boîte mail) à `orso@tutelliv.fr` dans la base de préproduction (connexion Supabase, identité et fiche TutelLiv, vérifiés). À faire : https://tutelliv.fr/login → « Mot de passe oublié » → `orso@tutelliv.fr`, puis connexion sur `/admin`.
+- Page de connexion (5 novembre, LOGIN-LOGO, poussé) : l'icône « bâtiment » en haut est remplacée par notre icône TutelLiv. À regarder sur tutelliv.fr/login une fois en ligne.
 - Tableau de bord (5 novembre, DASH-COULEURS, terminé et poussé) : carte « Aujourd'hui » en couleur (fonds teintés sous chaque chiffre, donut, légende et barres par heure en vert, bleu, gris, rouge). À regarder quand une démo a des missions du jour, pour voir le donut coloré.
 - DEMO-REFONTE (5 novembre) : relire le document de conception de la nouvelle démo (`docs/superpowers/specs/2026-11-05-refonte-demo-design.md`) et dire « ok » ou ce qu'il faut changer.
 - Démos dans l'espace super admin (5 novembre, DEMO-LIVE, terminé et poussé) : carte « Démos » sur `/admin` (disponibles sur le total, en direct) ; un clic ouvre `/admin/demos` avec chaque démo (en direct ou non, depuis quand, ce que le visiteur a créé, raison d'une erreur) et les boutons « Remettre à neuf » et « Tout remettre à neuf ». À faire une fois : sur tutelliv.fr, si des démos sont « En erreur », cliquer « Tout remettre à neuf ».
