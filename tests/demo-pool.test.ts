@@ -285,7 +285,7 @@ test("DEMO-LIVE : « tout remettre à neuf » épargne les démos en direct ; un
     value: { updateMany: async (args: (typeof jobs)[number]) => { jobs.push(args); return { count: 2 }; } },
   });
   t.after(() => { Reflect.deleteProperty(prisma, "demoPoolEnvironment"); Reflect.deleteProperty(prisma, "operationJob"); });
-  assert.equal(await queueAdminDemoReset({}, now), 3);
+  assert.equal((await queueAdminDemoReset({}, now)).queued, 3);
   // Tâches bloquées depuis plus d'une heure abandonnées, seulement dans les démos remises à neuf.
   assert.deepEqual(jobs.map((job) => job.where.companyId), ["b", "c", "d"]);
   assert.equal(jobs[0]!.where.createdAt.lt.toISOString(), "2026-11-05T14:00:00.000Z");
@@ -296,9 +296,9 @@ test("DEMO-LIVE : « tout remettre à neuf » épargne les démos en direct ; un
   assert.equal(updates[2]!.data.recycleAttempts, 0);
   assert.equal(updates[2]!.data.leaseKeyHash, null);
   updates.length = 0;
-  assert.equal(await queueAdminDemoReset({ id: "live" }, now), 1);
+  assert.equal((await queueAdminDemoReset({ id: "live" }, now)).queued, 1);
   assert.deepEqual(updates.map((u) => u.where.id), ["live"]);
   const route = readFileSync("src/app/api/admin/demo-pool/route.ts", "utf8");
   assert.match(route, /gatePlatformWrite\(auth\.context, denied, "OVERVIEW", "POST"\)/);
-  assert.match(route, /after\(async/);
+  assert.match(route, /after\(rebuild\)/);
 });

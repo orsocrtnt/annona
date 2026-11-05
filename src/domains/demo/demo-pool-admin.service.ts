@@ -1,6 +1,6 @@
 import { prisma } from "@/services/prisma/client";
 import { DEMO_POOL_KEY } from "@/lib/demo/constants";
-import { DEMO_LIVE_WINDOW_MS, DEMO_POOL_JOBS_WAIT_MS } from "@/domains/demo/demo-pool.service";
+import { DEMO_LIVE_WINDOW_MS, DEMO_POOL_JOBS_WAIT_MS, recycleDemoPoolEnvironment } from "@/domains/demo/demo-pool.service";
 
 /**
  * Page « Démos » du super admin (DEMO-LIVE) : ce que l'on sait de chaque espace du stock. Les visiteurs sont
@@ -86,7 +86,8 @@ export async function listDemoPoolEnvironments(now = new Date(), poolKey = DEMO_
  * en file (RECYCLING, par exemple bloquée par une tâche de fond) peut l'être.
  * Les tâches de fond de la démo bloquées depuis plus d'une heure (notifications de commandes fictives jamais
  * parties) sont abandonnées : sinon elles bloquent la reconstruction et l'espace reste « en erreur ».
- * Renvoie le nombre d'espaces mis en file ; la reconstruction se fait ensuite par `maintainDemoPool`.
+ * Renvoie le nombre d'espaces mis en file et `rebuild`, qui reconstruit exactement ces espaces (à lancer
+ * après la réponse) ; ceux qui échouent restent en file pour la tâche planifiée.
  */
 const RESETTABLE_STATES: Array<"READY" | "LEASED" | "QUARANTINED" | "RECYCLING"> = ["READY", "LEASED", "QUARANTINED", "RECYCLING"];
 
@@ -94,7 +95,7 @@ export async function queueAdminDemoReset(
   target: { id?: string },
   now = new Date(),
   poolKey = DEMO_POOL_KEY
-): Promise<number> {
+): Promise<{ queued: number; rebuild: () => Promise<void> }> {
   const rows: EnvironmentRow[] = await prisma.demoPoolEnvironment.findMany({
     where: { poolKey, ...(target.id ? { id: target.id } : {}), state: { in: RESETTABLE_STATES } },
     select: {
@@ -103,7 +104,7 @@ export async function queueAdminDemoReset(
     },
   });
   const chosen = target.id ? rows : rows.filter((row) => demoPoolRowStatus(row, now) !== "LIVE");
-  let queued = 0;
+  const queuedCompanies: string[] = [];
   const staleBefore = new Date(now.getTime() - DEMO_POOL_JOBS_WAIT_MS);
   for (const row of chosen) {
     // updatedAt inchangé : personne n'a réservé ni recyclé l'espace entre la lecture et l'écriture.
@@ -124,7 +125,18 @@ export async function queueAdminDemoReset(
         data: { status: "FAILED", lastError: "DEMO_RESET_BY_ADMIN", lockedAt: null, completedAt: now },
       });
     }
-    queued += result.count;
+    if (result.count === 1) queuedCompanies.push(row.companyId);
   }
-  return queued;
+  return {
+    queued: queuedCompanies.length,
+    rebuild: async () => {
+      for (const companyId of queuedCompanies) {
+        try {
+          await recycleDemoPoolEnvironment(companyId);
+        } catch (error) {
+          console.error("Admin demo rebuild failed:", error);
+        }
+      }
+    },
+  };
 }

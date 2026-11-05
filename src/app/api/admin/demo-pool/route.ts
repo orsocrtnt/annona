@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { gatePlatformRead, gatePlatformWrite } from "@/lib/api/platform-access";
-import { getDemoPoolOccupancy, maintainDemoPool } from "@/domains/demo/demo-pool.service";
+import { getDemoPoolOccupancy } from "@/domains/demo/demo-pool.service";
 import { listDemoPoolEnvironments, queueAdminDemoReset } from "@/domains/demo/demo-pool-admin.service";
 
 const noStore = { "Cache-Control": "no-store" };
@@ -35,18 +35,13 @@ export async function POST(request: Request) {
   if (body?.id !== undefined && !id) {
     return NextResponse.json({ error: "Démo inconnue." }, { status: 400, headers: noStore });
   }
-  const queued = await queueAdminDemoReset({ id });
+  const { queued, rebuild } = await queueAdminDemoReset({ id });
   if (id && queued === 0) {
     return NextResponse.json({ error: "Cette démo est déjà en préparation." }, { status: 409, headers: noStore });
   }
   if (queued > 0) {
-    after(async () => {
-      try {
-        await maintainDemoPool({ limit: queued });
-      } catch (error) {
-        console.error("Admin demo reset failed:", error);
-      }
-    });
+    // Reconstruit exactement les démos demandées, après la réponse.
+    after(rebuild);
   }
   return NextResponse.json({ data: { queued }, success: true }, { status: 202, headers: noStore });
 }
