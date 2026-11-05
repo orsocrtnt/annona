@@ -4,7 +4,7 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**105 tâches terminées sur 136 — 77 %**
+**106 tâches terminées sur 137 — 77 %**
 
 `███████████████░░░░░` · 31 tâches restantes
 
@@ -57,6 +57,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Page de connexion (5 novembre, LOGIN-LOGO, poussé) : l'icône « bâtiment » en haut est remplacée par notre icône TutelLiv. À regarder sur tutelliv.fr/login une fois en ligne.
 - Tableau de bord (5 novembre, DASH-COULEURS, terminé et poussé) : carte « Aujourd'hui » en couleur (fonds teintés sous chaque chiffre, donut, légende et barres par heure en vert, bleu, gris, rouge). À regarder quand une démo a des missions du jour, pour voir le donut coloré.
 - DEMO-REFONTE (5 novembre) : relire le document de conception de la nouvelle démo (`docs/superpowers/specs/2026-11-05-refonte-demo-design.md`) et dire « ok » ou ce qu'il faut changer.
+- Ménage de ton espace (5 novembre, ADMIN-COUPER) : démos retirées des listes, bouton « Couper l'accès » / « Rétablir » sur chaque compte et chaque entreprise (poussé). À faire par toi, la suppression étant refusée à l'agent : Supabase > projet tutelliv-preproduction > SQL Editor, coller `outputs/menage-preprod/menage-2026-11-05.sql`, Run ; le résultat doit afficher 7 entreprises restantes (la démo de base et les 6 démos) et 1 compte sans entreprise (toi). Puis Storage > delivery-pods : supprimer le dossier `cmvh5u54e00006eul08tmprnj` (1 photo d'une vieille démo).
 - Démos dans l'espace super admin (5 novembre, DEMO-LIVE, terminé et poussé) : carte « Démos » sur `/admin` (disponibles sur le total, en direct) ; un clic ouvre `/admin/demos` avec chaque démo (en direct ou non, depuis quand, ce que le visiteur a créé, raison d'une erreur) et les boutons « Remettre à neuf » et « Tout remettre à neuf ». À faire une fois : sur tutelliv.fr, si des démos sont « En erreur », cliquer « Tout remettre à neuf ».
 - Connexion et démo (5 novembre, AUTH-DIRECT, terminé et poussé sur `preproduction`) : « Connexion » ouvre tout de suite le formulaire, chaque compte arrive dans son espace ; « Voir la démo » ouvre l'espace de démo sans identifiants (`/demo`). À essayer sur tutelliv.fr après le déploiement.
 - Barre du haut (5 novembre) : sur le site public, liens Fonctionnalités · Tarifs · Contact remis au centre exact de la barre, comme avant (à ta demande, après l'essai « entre le logo et les boutons ») ; l'espace client garde le réglage entre le logo et les boutons. Rien à faire ; poussé sur `preproduction`.
