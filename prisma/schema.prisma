@@ -280,6 +280,9 @@ model User {
   invoiceRemindersSent InvoiceReminder[]
   companyCustomerCards CompanyCustomer[]
   waitlistContacts     ContactMessage[]     @relation("WaitlistContactedBy")
+  pilotsCreated        PlatformPilot[]      @relation("PlatformPilotCreatedBy")
+  pilotsUpdated        PlatformPilot[]      @relation("PlatformPilotUpdatedBy")
+  pilotNotes           PlatformPilotNote[]  @relation("PlatformPilotNoteAuthor")
 
   @@index([companyId])
   @@index([roleId])
@@ -355,6 +358,7 @@ model Company {
   orderTrackingLinks   OrderTrackingLink[]
   inboundOrderEmails   InboundOrderEmail[]
   companyCustomers     CompanyCustomer[]
+  platformPilots       PlatformPilot[]
 
   @@index([slug])
   @@index([status])
@@ -1256,6 +1260,67 @@ model WaitlistFunnelDaily {
 
   @@id([day, campaignCode, event])
   @@map("waitlist_funnel_daily")
+}
+
+/// ADMIN-ESPACE lot 4 : étapes d'un pilote accompagné, alignées sur docs/operations/pilot1/README.md
+/// (semaine 0 préparation, semaine 1 activation, première valeur, semaines 2-3 usage représentatif,
+/// semaine 4 consolidation et sortie, puis décision : poursuite payante ou arrêt).
+enum PilotStage {
+  PREPARATION
+  ACTIVATION
+  FIRST_VALUE
+  REPRESENTATIVE_USE
+  CONSOLIDATION
+  CONTINUED
+  STOPPED
+}
+
+/// ADMIN-ESPACE lot 4 : pilote accompagné suivi par le super-administrateur (entreprise prospect).
+/// Donnée de la plateforme : l'entreprise TutelLiv liée est facultative et le lien tombe si elle est supprimée.
+model PlatformPilot {
+  id                String              @id @default(cuid())
+  name              String
+  companyId         String?             @map("company_id")
+  company           Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contactName       String?             @map("contact_name")
+  contactEmail      String?             @map("contact_email")
+  contactPhone      String?             @map("contact_phone")
+  stage             PilotStage          @default(PREPARATION)
+  stageChangedAt    DateTime            @default(now()) @map("stage_changed_at")
+  /// Jours civils (Paris) : début, fin prévue, fin réelle.
+  startDate         DateTime?           @map("start_date") @db.Date
+  plannedEndDate    DateTime?           @map("planned_end_date") @db.Date
+  endDate           DateTime?           @map("end_date") @db.Date
+  /// Première livraison saisie à la main ; sinon déduite des livraisons livrées de l'entreprise liée.
+  firstDeliveryDate DateTime?           @map("first_delivery_date") @db.Date
+  createdById       String?             @map("created_by_id")
+  createdBy         User?               @relation("PlatformPilotCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById       String?             @map("updated_by_id")
+  updatedBy         User?               @relation("PlatformPilotUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  notes             PlatformPilotNote[]
+
+  @@index([companyId])
+  @@index([stage])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("platform_pilots")
+}
+
+/// ADMIN-ESPACE lot 4 : note de suivi d'un pilote (texte, auteur, date), supprimée avec le pilote.
+model PlatformPilotNote {
+  id        String        @id @default(cuid())
+  pilotId   String        @map("pilot_id")
+  pilot     PlatformPilot @relation(fields: [pilotId], references: [id], onDelete: Cascade)
+  authorId  String?       @map("author_id")
+  author    User?         @relation("PlatformPilotNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([pilotId, createdAt])
+  @@index([authorId])
+  @@map("platform_pilot_notes")
 }
 
 enum SalesCommissionLevel {

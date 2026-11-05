@@ -18,6 +18,8 @@ import {
   fetchAdminWaitlist,
   fetchAdminWaitlistFunnel,
   fetchAdminSearch,
+  fetchAdminPilots,
+  fetchAdminPilot,
   type PlatformAccessListFilters,
   type WaitlistListFilters,
   type CompanyListFilters,
@@ -39,10 +41,11 @@ export function useAdminUsers(filters: PlatformUserListFilters) {
   });
 }
 
-export function useAdminCompanies(filters: CompanyListFilters) {
+export function useAdminCompanies(filters: CompanyListFilters, enabled = true) {
   return useQuery({
     queryKey: ["admin", "companies", filters],
     queryFn: () => fetchAdminCompanies(filters),
+    enabled,
     staleTime: QUERY_STALE_MS,
   });
 }
@@ -169,5 +172,25 @@ export function useAdminSearch(q: string) {
     staleTime: 30_000,
     retry: false,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** ADMIN-ESPACE lot 4 : pilotes accompagnés, par étape. */
+export function useAdminPilots() {
+  return useQuery({
+    queryKey: ["admin", "pilots"],
+    queryFn: fetchAdminPilots,
+    staleTime: QUERY_STALE_MS,
+  });
+}
+
+/** ADMIN-ESPACE lot 4 : fiche d'un pilote (notes, courbe 30 jours de l'entreprise liée). */
+export function useAdminPilot(id: string) {
+  return useQuery({
+    queryKey: ["admin", "pilot", id],
+    queryFn: () => fetchAdminPilot(id),
+    enabled: id.length > 0,
+    staleTime: QUERY_STALE_MS,
+    retry: (count, error) => !(error instanceof Error && error.message === "Pilote introuvable") && count < 2,
   });
 }

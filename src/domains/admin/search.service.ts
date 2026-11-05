@@ -4,9 +4,10 @@ import { WAITLIST_MESSAGE } from "@/domains/growth/contact.service";
 import { createFunnelSourceLimiter, type FunnelSourceLimiter } from "@/domains/growth/waitlist-funnel.service";
 import { FULFILLMENT_STATUS_LABELS } from "@/lib/constants/order-status";
 import { ROLE_LABELS } from "@/lib/permissions/rbac";
+import { PILOT_STAGE_LABELS } from "@/domains/admin/pilot-stages";
 
 /**
- * ADMIN-ESPACE, lot 3 : recherche globale du super-administrateur (barre du haut, ⌘K / Ctrl+K).
+ * ADMIN-ESPACE, lot 3 (pilotes : lot 4) : recherche globale du super-administrateur (barre du haut, ⌘K / Ctrl+K).
  * Une requête HTTP, cinq lectures parallèles bornées (5 résultats par type, +1 pour savoir s'il y en a plus),
  * `select` minimal : ni téléphone, ni message, ni identifiant de connexion, ni réglages.
  * Recherche insensible à la casse (ILIKE). Pas insensible aux accents : il faudrait l'extension `unaccent`
@@ -20,10 +21,11 @@ const MAX_TOKENS = 5;
 /** Débit : 60 recherches par minute et par compte, en mémoire de l'instance (la saisie est temporisée). */
 export const ADMIN_SEARCH_RATE = { limit: 60, windowMs: 60_000 } as const;
 
-export type AdminSearchType = "companies" | "users" | "orders" | "waitlist" | "contact";
+export type AdminSearchType = "companies" | "pilots" | "users" | "orders" | "waitlist" | "contact";
 
 export const ADMIN_SEARCH_GROUPS: ReadonlyArray<{ type: AdminSearchType; label: string }> = [
   { type: "companies", label: "Entreprises" },
+  { type: "pilots", label: "Pilotes" },
   { type: "users", label: "Utilisateurs" },
   { type: "orders", label: "Commandes" },
   { type: "waitlist", label: "Liste d'attente" },
@@ -93,6 +95,22 @@ export function adminSearchQueries(q: string) {
       take,
       select: { id: true, name: true, status: true, isDemo: true },
     },
+    // ADMIN-ESPACE lot 4 : pilote par son nom, son contact ou le nom de l'entreprise liée.
+    pilots: {
+      where: {
+        AND: tokens.map((token) => ({
+          OR: [
+            { name: contains(token) },
+            { contactName: contains(token) },
+            { contactEmail: contains(token) },
+            { company: { is: { name: contains(token) } } },
+          ],
+        })),
+      },
+      orderBy: [{ updatedAt: "desc" as const }, { id: "asc" as const }],
+      take,
+      select: { id: true, name: true, stage: true, contactName: true, company: { select: { name: true } } },
+    },
     users: {
       where: { NOT: { company: { is: { isDemo: true } } }, AND: everyToken(tokens, ["firstName", "lastName", "email"]) },
       orderBy: [{ createdAt: "desc" as const }, { id: "asc" as const }],
@@ -140,6 +158,7 @@ type UserRow = {
 };
 type OrderRow = { id: string; reference: string; status: string; company: { id: string; name: string } };
 type PersonRow = { id: string; name: string; company: string | null; email: string };
+type PilotRow = { id: string; name: string; stage: keyof typeof PILOT_STAGE_LABELS; contactName: string | null; company: { name: string } | null };
 
 const COMPANY_STATUS: Record<string, string> = { ACTIVE: "Active", INACTIVE: "Inactive", SUSPENDED: "Suspendue", TRIAL: "Essai" };
 
@@ -155,6 +174,17 @@ export function toCompanyItem(row: CompanyRow): AdminSearchItem {
     detail: join(COMPANY_STATUS[row.status] ?? row.status, row.isDemo ? "Démonstration" : null),
     badge: row.isDemo ? "Démo" : null,
     href: `/companies/${encodeURIComponent(row.id)}`,
+  };
+}
+
+export function toPilotItem(row: PilotRow): AdminSearchItem {
+  return {
+    id: row.id,
+    type: "pilots",
+    title: row.name,
+    detail: join(row.company?.name ?? "Sans entreprise liée", row.contactName),
+    badge: PILOT_STAGE_LABELS[row.stage] ?? null,
+    href: `/admin/pilots/${encodeURIComponent(row.id)}`,
   };
 }
 
@@ -214,6 +244,7 @@ export type AdminSearchDatabase = {
   user: { findMany: (args: Args) => Promise<UserRow[]> };
   order: { findMany: (args: Args) => Promise<OrderRow[]> };
   contactMessage: { findMany: (args: Args) => Promise<PersonRow[]> };
+  platformPilot?: { findMany: (args: Args) => Promise<PilotRow[]> };
 };
 
 async function readGroup<T>(
@@ -237,6 +268,10 @@ export async function searchPlatform(
   const queries = adminSearchQueries(query.q);
   const groups = await Promise.all([
     readGroup("companies", () => db.company.findMany(queries.companies), toCompanyItem),
+    readGroup("pilots", async () => {
+      if (!db.platformPilot) throw new Error("ADMIN_SEARCH_PILOTS_UNAVAILABLE");
+      return db.platformPilot.findMany(queries.pilots);
+    }, toPilotItem),
     readGroup("users", () => db.user.findMany(queries.users), toUserItem),
     readGroup("orders", () => db.order.findMany(queries.orders), toOrderItem),
     readGroup("waitlist", () => db.contactMessage.findMany(queries.waitlist), toWaitlistItem),

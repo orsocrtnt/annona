@@ -39,8 +39,10 @@
 - `PlatformAccessEvent` : journal minimal et expirant des lectures de la supervision plateforme, sans relation ni donnée personnelle.
 - `ContactMessage` : message du formulaire Contact public, lu par le super-administrateur ; l'adresse IP n'est jamais stockée, seulement une empreinte HMAC pour limiter le débit. Les inscriptions à la liste d'attente de `/tarifs` y sont aussi rangées (message `WAITLIST_MESSAGE`), avec `contacted_at`, `contacted_by_id` et `campaign_code` (ADMIN-ESPACE lot 2).
 - `WaitlistFunnelDaily` : compteurs journaliers anonymes de `/tarifs` (jour de Paris, campagne, visite / clic / inscription) ; ni cookie, ni IP, ni identifiant de visiteur.
+- `PlatformPilot` : pilote accompagné suivi par le super-administrateur (ADMIN-ESPACE lot 4) : nom affiché, entreprise TutelLiv liée facultative (`company_id`, `ON DELETE SET NULL`), contact (nom, e-mail, téléphone facultatifs), étape `PilotStage` alignée sur `docs/operations/pilot1` (Préparation, Activation, Première valeur, Usage représentatif, Consolidation et sortie, Poursuite payante, Arrêt), jours de début, fin prévue et fin réelle, première livraison saisie (sinon déduite à la lecture de la première livraison livrée de l'entreprise liée), créé par / modifié par (`SET NULL`).
+- `PlatformPilotNote` : note de suivi d'un pilote (texte, auteur, date), supprimée avec le pilote (`CASCADE`) ; auteur supprimé → note conservée sans auteur.
 
-Le schéma comprend 49 modèles Prisma (dont `CompanyCustomer`, fiche client sans accès propre à chaque entreprise, MAIL-PONT étape 4, et `WaitlistFunnelDaily`, ADMIN-ESPACE lot 2). Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 51 modèles Prisma (dont `CompanyCustomer`, fiche client sans accès propre à chaque entreprise, MAIL-PONT étape 4, `WaitlistFunnelDaily`, ADMIN-ESPACE lot 2, et `PlatformPilot` / `PlatformPilotNote`, ADMIN-ESPACE lot 4). Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
 
 ## Relations essentielles
 
@@ -59,6 +61,7 @@ Company
 ├── SupportTicket ── SupportTicketMessage
 ├── RecurringOrder
 ├── OperationJob
+├── PlatformPilot ── PlatformPilotNote   (lien facultatif, suivi plateforme)
 └── DemoPoolEnvironment
 ```
 

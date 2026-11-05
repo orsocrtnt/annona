@@ -273,8 +273,10 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
   };
   const result = await searchPlatform({ q: "acme" }, db);
   assert.equal(result.q, "acme");
-  assert.deepEqual(result.groups.map((group) => group.type), ["companies", "users", "orders", "waitlist", "contact"]);
-  const [companies, users, orders, waitlist, contact] = result.groups;
+  assert.deepEqual(result.groups.map((group) => group.type), ["companies", "pilots", "users", "orders", "waitlist", "contact"]);
+  const [companies, pilots, users, orders, waitlist, contact] = result.groups;
+  // ADMIN-ESPACE lot 4 : base sans table des pilotes (ancienne copie) → groupe « Indisponible », pas d'erreur.
+  assert.deepEqual(pilots, { type: "pilots", label: "Pilotes", items: null, hasMore: false });
   assert.equal(companies!.items?.length, 5);
   assert.equal(companies!.hasMore, true);
   assert.equal(companies!.items?.[0]?.badge, "Démo");

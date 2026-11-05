@@ -51,6 +51,10 @@ const PLATFORM_WRITES: Record<string, string[]> = {
   "src/app/api/admin/companies/[id]/access/route.ts": ["POST"],
   // ADMIN-ESPACE lot 2 : case « contacté » d'une inscription à la liste d'attente (donnée de la plateforme).
   "src/app/api/admin/waitlist/[id]/route.ts": ["PATCH"],
+  // ADMIN-ESPACE lot 4 : pilotes accompagnés, suivi propre à la plateforme (l'entreprise liée n'est que lue).
+  "src/app/api/admin/pilots/route.ts": ["GET", "POST"],
+  "src/app/api/admin/pilots/[id]/route.ts": ["GET", "PATCH"],
+  "src/app/api/admin/pilots/[id]/notes/route.ts": ["POST"],
 };
 
 test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors codes commerciaux", () => {
@@ -66,6 +70,9 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors co
     "src/app/api/admin/incidents/route.ts",
     "src/app/api/admin/operation-jobs/route.ts",
     "src/app/api/admin/overview/route.ts",
+    "src/app/api/admin/pilots/[id]/notes/route.ts",
+    "src/app/api/admin/pilots/[id]/route.ts",
+    "src/app/api/admin/pilots/route.ts",
     "src/app/api/admin/saas-health/route.ts",
     "src/app/api/admin/sales-codes/[id]/route.ts",
     "src/app/api/admin/sales-codes/route.ts",

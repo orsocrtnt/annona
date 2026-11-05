@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Inbox, Loader2, Package, Search, User, UserPlus } from "lucide-react";
+import { Building2, Flag, Inbox, Loader2, Package, Search, User, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useAdminSearch } from "@/features/admin/hooks";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ const DEBOUNCE_MS = 250;
 
 const ICONS: Record<AdminSearchType, React.ComponentType<{ className?: string }>> = {
   companies: Building2,
+  pilots: Flag,
   users: User,
   orders: Package,
   waitlist: UserPlus,

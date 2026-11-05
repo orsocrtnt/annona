@@ -8,6 +8,7 @@ import {
 } from "@/domains/admin/incidents.service";
 import { getSaasHealthIndicators } from "@/domains/admin/saas-health.service";
 import { readPlatformServiceHealth, type PlatformServiceHealth } from "@/domains/admin/service-health.service";
+import { PILOT_IN_PROGRESS, PILOT_TERMINAL } from "@/domains/admin/pilot-stages";
 import { alertActionKey } from "@/domains/operational-alerts/operational-alerts.policy";
 import { fromParisDateTimeInput, toParisDateTimeInput } from "@/lib/format/paris-datetime-input";
 
@@ -68,10 +69,14 @@ export type AdminHomeKpis = {
   subscriptionRevenue: { currentCents: number; previousCents: number | null; monthStartsAt: string } | null;
 };
 
+/** ADMIN-ESPACE lot 4 : pilotes accompagnés par étape ; `null` si la lecture échoue. */
+export type AdminHomePilots = { inProgress: number; preparing: number; finished: number };
+
 export type AdminHome = {
   generatedAt: string;
   todo: AdminHomeTodo;
   kpis: AdminHomeKpis;
+  pilots: AdminHomePilots | null;
   series: AdminHomeDay[];
   health: AdminHomeHealth;
 };
@@ -219,6 +224,28 @@ export function buildHealthSignal(health: PlatformServiceHealth | null): AdminHo
   };
 }
 
+/* ---------- Pilotes (lot 4) ---------- */
+
+export function summarizePilotStages(groups: Array<{ stage: string; _count: { _all: number } }>): AdminHomePilots {
+  const summary = { inProgress: 0, preparing: 0, finished: 0 };
+  for (const group of groups) {
+    const count = Math.max(0, group._count._all);
+    if ((PILOT_IN_PROGRESS as readonly string[]).includes(group.stage)) summary.inProgress += count;
+    else if ((PILOT_TERMINAL as readonly string[]).includes(group.stage)) summary.finished += count;
+    else if (group.stage === "PREPARATION") summary.preparing += count;
+  }
+  return summary;
+}
+
+async function readPilots(db: AdminHomeDatabase): Promise<AdminHomePilots | null> {
+  try {
+    if (!db.platformPilot) return null;
+    return summarizePilotStages(await db.platformPilot.groupBy({ by: ["stage"], _count: { _all: true } }));
+  } catch {
+    return null;
+  }
+}
+
 /* ---------- Lecture ---------- */
 
 type CountArgs = { where: Record<string, unknown> };
@@ -234,6 +261,7 @@ export type AdminHomeDatabase = {
     count: (args: CountArgs) => Promise<number>;
     findMany: (args: FindArgs) => Promise<Array<{ completedAt: Date | null }>>;
   };
+  platformPilot?: { groupBy: (args: FindArgs) => Promise<Array<{ stage: string; _count: { _all: number } }>> };
 };
 
 export type AdminHomeDependencies = {
@@ -346,6 +374,7 @@ export async function getAdminHome(
     health,
     revenueCurrent,
     revenuePrevious,
+    pilots,
   ] = await Promise.all([
     readAdminHomeTodo(params, db),
     db.company.count({ where: { status: "ACTIVE", ...NOT_DEMO } }),
@@ -365,6 +394,7 @@ export async function getAdminHome(
     readHealth().catch(() => null),
     readRevenue(now).catch(() => null),
     readRevenue(previousUtcMonthAnchor(now)).catch(() => null),
+    readPilots(db),
   ]);
 
   return {
@@ -382,6 +412,7 @@ export async function getAdminHome(
             monthStartsAt: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString(),
           },
     },
+    pilots,
     series: buildDailySeries(
       orders.map((order) => order.createdAt),
       delivered.flatMap((row) => (row.completedAt ? [row.completedAt] : [])),

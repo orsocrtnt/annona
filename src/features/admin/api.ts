@@ -1,6 +1,7 @@
 import type { PlatformCompanyPage } from "@/domains/admin/companies.service";
 import type { PlatformCompanyFile } from "@/domains/admin/company-file.service";
 import type { AdminSearchResult } from "@/domains/admin/search.service";
+import type { PilotDetail, PilotList } from "@/domains/admin/pilots.service";
 import type { PlatformUserPage } from "@/domains/admin/users.service";
 import type { PlatformIncidentPage } from "@/domains/admin/incidents.service";
 import type { PlatformServiceHealth } from "@/domains/admin/service-health.service";
@@ -329,4 +330,41 @@ export async function fetchAdminWaitlistFunnel(days: FunnelPeriod): Promise<Wait
 export async function fetchAdminSearch(q: string, signal?: AbortSignal): Promise<AdminSearchResult> {
   const res = await fetch(`/api/admin/search?q=${encodeURIComponent(q)}`, { cache: "no-store", signal });
   return readJson<AdminSearchResult>(res);
+}
+
+/* ---------- Pilotes accompagnés (ADMIN-ESPACE lot 4) ---------- */
+
+/** Corps envoyé tel quel : le serveur valide (zod stricte) et répond par un message en français. */
+export type PilotPayload = Record<string, string | null>;
+
+export async function fetchAdminPilots(): Promise<PilotList> {
+  const res = await fetch("/api/admin/pilots", { cache: "no-store" });
+  return readJson<PilotList>(res);
+}
+
+export async function fetchAdminPilot(id: string): Promise<PilotDetail> {
+  const res = await fetch(`/api/admin/pilots/${encodeURIComponent(id)}`, { cache: "no-store" });
+  return readJson<PilotDetail>(res);
+}
+
+async function sendPilot(url: string, method: "POST" | "PATCH", body: unknown): Promise<{ id: string }> {
+  const res = await fetch(url, {
+    method,
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return readJson<{ id: string }>(res);
+}
+
+export function createAdminPilot(payload: PilotPayload) {
+  return sendPilot("/api/admin/pilots", "POST", payload);
+}
+
+export function updateAdminPilot(id: string, payload: PilotPayload) {
+  return sendPilot(`/api/admin/pilots/${encodeURIComponent(id)}`, "PATCH", payload);
+}
+
+export function addAdminPilotNote(id: string, body: string) {
+  return sendPilot(`/api/admin/pilots/${encodeURIComponent(id)}/notes`, "POST", { body });
 }

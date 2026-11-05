@@ -7,6 +7,7 @@ import { useAdminLastVisits } from "@/features/admin/contact-last-visit";
 import { AdminDailyChart } from "@/features/admin/home/admin-daily-chart";
 import { AdminHealthSignal } from "@/features/admin/home/admin-health-signal";
 import { AdminKpiGrid } from "@/features/admin/home/admin-kpi-grid";
+import { AdminPilotsLine } from "@/features/admin/home/admin-pilots-line";
 import { AdminTodoList } from "@/features/admin/home/admin-todo-list";
 import { HOME_CARD_CLASS } from "@/features/admin/home/home-card";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
@@ -54,6 +55,7 @@ export function AdminHomePanel() {
         <>
           <AdminTodoList todo={data.todo} />
           <AdminKpiGrid kpis={data.kpis} />
+          <AdminPilotsLine pilots={data.pilots ?? null} />
           <AdminDailyChart series={data.series} />
           <AdminHealthSignal health={data.health} />
         </>
