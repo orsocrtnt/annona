@@ -6,7 +6,7 @@ import ts from "typescript";
 import * as zod from "zod";
 import { NextResponse } from "next/server";
 import { withApiHandler } from "../src/lib/api/route-handler";
-import { contactMessageSchema } from "../src/domains/growth/contact.service";
+import { contactMessageSchema, waitlistEntrySchema } from "../src/domains/growth/contact.service";
 import { salesCodeCreateSchema } from "../src/domains/sales/sales-code.service";
 import { courierEstimateRequestSchema } from "../src/lib/validations/courier-estimate";
 
@@ -92,6 +92,9 @@ test("contact et création de code commercial : schémas stricts côté service"
   const contact = { name: "Test Local", email: "local@example.test", message: "Bonjour, ceci est un test." };
   assert.equal(contactMessageSchema.safeParse(contact).success, true);
   assert.equal(contactMessageSchema.safeParse({ ...contact, sourceHash: "forge" }).success, false);
+  const waitlist = { firstName: "Test", lastName: "Local", company: "Société Test", email: "local@example.test", phone: "06 00 00 00 00" };
+  assert.equal(waitlistEntrySchema.safeParse(waitlist).success, true);
+  assert.equal(waitlistEntrySchema.safeParse({ ...waitlist, message: "forge" }).success, false);
   const code = { sellerName: "Vendeur Test", sellerEmail: "seller@example.test", level: "REFERRER" };
   assert.equal(salesCodeCreateSchema.safeParse(code).success, true);
   assert.equal(salesCodeCreateSchema.safeParse({ ...code, createdById: "owner" }).success, false);

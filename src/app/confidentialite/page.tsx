@@ -32,6 +32,11 @@ export default function ConfidentialitePage() {
           Les messages sont conservés trois ans après le dernier échange.
         </p>
         <p>
+          Liste d&apos;attente (page Tarifs) : prénom, nom, société, e-mail et téléphone. Ils servent uniquement à
+          vous prévenir de l&apos;ouverture et à vous recontacter, avec la même base et la même durée de conservation
+          que les messages de contact.
+        </p>
+        <p>
           Votre adresse IP n&apos;est pas enregistrée : seule une empreinte chiffrée sert à limiter les envois
           abusifs.
         </p>

@@ -46,17 +46,18 @@ test("les parcours publics locaux se rejoignent sans route absente", () => {
   }
   assert.match(home, /PublicTopNavbar/);
   assert.equal(publicNav.includes('href: "/fonctionnalites"'), true);
-  // Retirées pour le moment (5 novembre 2026) : ni lien public, et une redirection temporaire si l'adresse est tapée.
-  for (const source of [home, publicNav, features]) assert.doesNotMatch(source, /href(: |=)"\/(tarifs|demonstration)"/);
+  // Démonstration retirée pour le moment (5 novembre 2026) : aucun lien public, redirection temporaire si l'adresse est tapée.
+  for (const source of [home, publicNav, features]) assert.doesNotMatch(source, /href(: |=)"\/demonstration"/);
   const nextConfig = read("next.config.ts");
-  assert.match(nextConfig, /source: "\/tarifs", destination: "\/fonctionnalites", permanent: false/);
   assert.match(nextConfig, /source: "\/demonstration", destination: "\/#demo", permanent: false/);
+  assert.doesNotMatch(nextConfig, /source: "\/tarifs"/);
 
-  // Tant que le paiement réel n'est pas ouvert, les formules mènent à Contact, pas à l'inscription.
-  assert.match(tarifs, /href="\/contact"/);
-  assert.match(tarifs, /Demander un pilote/);
-  assert.doesNotMatch(tarifs, /\/register\?plan=/);
-  assert.match(tarifs, /getActiveSignupCatalog/);
+  // Tarifs provisoire : liste d'attente, aucun prix, aucune inscription payante.
+  assert.equal(publicNav.includes('href: "/tarifs"'), true);
+  assert.match(home, /href="\/tarifs"/);
+  assert.match(tarifs, /<WaitlistForm \/>/);
+  assert.match(tarifs, /TutelLiv arrive bientôt/);
+  assert.doesNotMatch(tarifs, /\/register\?plan=|€|getActiveSignupCatalog/);
   assert.doesNotMatch(read("src/domains/growth/public-pricing.ts"), /7900|17900|34900/);
   assert.deepEqual(signupEntryFromSearch("?plan=PRO&interval=ANNUAL"), { planCode: "PRO", billingInterval: "ANNUAL" });
 

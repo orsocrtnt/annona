@@ -24,6 +24,22 @@ export const contactMessageSchema = z.object({
 }).strict();
 
 /**
+ * Liste d'attente de la page /tarifs provisoire (5 novembre 2026) : mêmes table, débit, alerte et
+ * conservation que Contact, sans migration. Tous les champs sont obligatoires.
+ */
+export const waitlistEntrySchema = z.object({
+  firstName: z.string().trim().min(1).max(60),
+  lastName: z.string().trim().min(1).max(60),
+  company: z.string().trim().min(2).max(160),
+  email: z.string().trim().toLowerCase().email().max(200),
+  phone: z.string().trim().max(40).regex(/^[0-9+().\s-]+$/).refine((value) => value.replace(/\D/g, "").length >= 8),
+  website: z.string().max(200).optional(),
+}).strict();
+
+/** Texte enregistré comme message : il distingue l'inscription dans le back-office et l'alerte. */
+export const WAITLIST_MESSAGE = "Liste d'attente : souhaite faire partie des premières entreprises à utiliser TutelLiv.";
+
+/**
  * Durée publiée sur la page Confidentialité : un message part trois ans après sa réception,
  * le formulaire ne connaissant pas d'échange ultérieur.
  */
@@ -80,7 +96,31 @@ export async function submitContactMessage(
   const { website, ...data } = parsed.data;
   // Un robot reçoit la même réponse qu'un humain, mais rien n'est écrit.
   if (website) return { status: "accepted" };
+  return storeContactMessage(data, source, options);
+}
 
+/** Inscription à la liste d'attente, rangée avec les messages Contact (même débit et même alerte). */
+export async function submitWaitlistEntry(
+  raw: unknown,
+  source: string,
+  options: { now?: Date; secret?: string; db?: ContactWriteDatabase } = {}
+): Promise<ContactSubmitResult> {
+  const parsed = waitlistEntrySchema.safeParse(raw);
+  if (!parsed.success) return { status: "invalid", field: String(parsed.error.issues[0]?.path[0] ?? "") };
+  const { website, firstName, lastName, company, email, phone } = parsed.data;
+  if (website) return { status: "accepted" };
+  return storeContactMessage(
+    { name: `${firstName} ${lastName}`, email, company, phone, message: WAITLIST_MESSAGE },
+    source,
+    options
+  );
+}
+
+async function storeContactMessage(
+  data: Omit<ContactAlertMessage, "id">,
+  source: string,
+  options: { now?: Date; secret?: string; db?: ContactWriteDatabase }
+): Promise<ContactSubmitResult> {
   const db = options.db ?? prisma;
   const now = options.now ?? new Date();
   // Secret dédié CONTACT_HMAC_SECRET, repli sur la clé service (voir abuse-hmac.ts).
@@ -127,7 +167,9 @@ export async function sendContactAlert(
   try {
     const result = await (options.send ?? sendTransactionalEmail)({
       to,
-      subject: `Nouveau message Contact : ${message.company ?? message.name}`,
+      subject: message.message === WAITLIST_MESSAGE
+        ? `Liste d'attente : ${message.company ?? message.name}`
+        : `Nouveau message Contact : ${message.company ?? message.name}`,
       text: [
         `Nom : ${message.name}`,
         `E-mail : ${message.email}`,

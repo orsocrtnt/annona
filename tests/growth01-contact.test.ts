@@ -16,6 +16,8 @@ import {
   purgeExpiredContactMessages,
   sendContactAlert,
   submitContactMessage,
+  submitWaitlistEntry,
+  WAITLIST_MESSAGE,
 } from "../src/domains/growth/contact.service";
 
 const secret = "test-secret";
@@ -305,4 +307,45 @@ test("Contact : seuls les messages de plus de trois ans sont supprimés", async 
   const removed = await purgeExpiredContactMessages(new Date("2026-11-02T12:00:00.000Z"));
   assert.equal(removed, 2);
   assert.deepEqual(calls, [{ where: { createdAt: { lt: new Date("2023-11-02T12:00:00.000Z") } } }]);
+});
+
+test("liste d'attente : inscription complète rangée avec les messages Contact, champs obligatoires", async () => {
+  const entry = { firstName: " Camille ", lastName: "Martin", company: "Transports Exemple", email: " Camille@Example.invalid ", phone: "06 00 00 00 00" };
+  const memory = memoryDb();
+  const accepted = await submitWaitlistEntry(entry, "203.0.113.9", { now, secret, db: memory.db });
+  assert.deepEqual(accepted, {
+    status: "accepted",
+    stored: { id: "message-1", name: "Camille Martin", email: "camille@example.invalid", company: "Transports Exemple", phone: "06 00 00 00 00", message: WAITLIST_MESSAGE },
+  });
+  assert.equal(memory.rows[0]!.sourceHash, contactSourceHash("203.0.113.9", secret), "même débit que Contact");
+
+  for (const [body, field] of [
+    [{ ...entry, firstName: "" }, "firstName"],
+    [{ ...entry, lastName: "  " }, "lastName"],
+    [{ ...entry, company: "" }, "company"],
+    [{ ...entry, email: "pas-un-email" }, "email"],
+    [{ ...entry, phone: "" }, "phone"],
+    [{ ...entry, phone: "0600" }, "phone"],
+    [{ ...entry, phone: "<script>" }, "phone"],
+  ] as const) {
+    const invalid = memoryDb();
+    const result = await submitWaitlistEntry(body, "198.51.100.3", { now, secret, db: invalid.db });
+    assert.deepEqual(result, { status: "invalid", field });
+    assert.equal(invalid.rows.length, 0);
+  }
+  const robot = memoryDb();
+  assert.deepEqual(await submitWaitlistEntry({ ...entry, website: "https://spam.invalid" }, "198.51.100.4", { now, secret, db: robot.db }), { status: "accepted" });
+  assert.equal(robot.rows.length, 0);
+
+  const limited = memoryDb(Array.from({ length: CONTACT_SOURCE_LIMIT }, () => ({ sourceHash: contactSourceHash("198.51.100.5", secret), createdAt: now })));
+  assert.deepEqual(await submitWaitlistEntry(entry, "198.51.100.5", { now, secret, db: limited.db }), { status: "rate_limited" });
+});
+
+test("liste d'attente : l'alerte de l'équipe est titrée « Liste d'attente »", async () => {
+  const subjects: string[] = [];
+  const send = (async (input: { subject: string }) => { subjects.push(input.subject); return { status: "sent" }; }) as never;
+  const base = { id: "w1", name: "Camille Martin", email: "camille@example.invalid", company: "Transports Exemple", phone: "06 00 00 00 00" };
+  await sendContactAlert({ ...base, message: WAITLIST_MESSAGE }, { env: { CONTACT_ALERT_RECIPIENT: "equipe@example.invalid" }, send });
+  await sendContactAlert({ ...base, message: "Bonjour, pouvez-vous nous rappeler ?" }, { env: { CONTACT_ALERT_RECIPIENT: "equipe@example.invalid" }, send });
+  assert.deepEqual(subjects, ["Liste d'attente : Transports Exemple", "Nouveau message Contact : Transports Exemple"]);
 });

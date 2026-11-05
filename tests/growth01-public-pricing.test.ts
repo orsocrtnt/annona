@@ -78,19 +78,15 @@ test("les tarifs publics reprennent le catalogue sans prix écrits dans la page"
   assert.equal(pricing.discoveryDays, PREMIUM_DISCOVERY_DAYS);
   assert.equal(pricing.discoveryFeatures.includes("Assistance prioritaire"), false);
 
+  // Depuis le 5 novembre 2026, /tarifs est une liste d'attente provisoire : aucun prix publié.
+  // Le mapper reste prêt pour la grille réelle (ancienne page dans l'historique Git).
   const page = readFileSync(new URL("../src/app/tarifs/page.tsx", import.meta.url), "utf8");
   const mapper = readFileSync(new URL("../src/domains/growth/public-pricing.ts", import.meta.url), "utf8");
-  assert.match(page, /getActiveSignupCatalog/);
-  assert.match(page, /Les tarifs sont indisponibles/);
-  assert.match(page, /Demander un pilote/);
-  assert.doesNotMatch(page, /\/register\?plan=/);
-  assert.match(page, /pilote gratuit/);
-  assert.match(page, /usage mesuré/);
-  assert.doesNotMatch(page, /illimité|onClick|7900|34900/);
+  assert.match(page, /WaitlistForm/);
+  assert.doesNotMatch(page, /\/register\?plan=|€|onClick|7900|34900/);
   assert.doesNotMatch(mapper, /7900|34900|1111/);
   const publicNav = readFileSync(new URL("../src/features/landing/public-top-navbar.tsx", import.meta.url), "utf8");
-  // Page retirée du site public le 5 novembre 2026 (redirection temporaire) : plus de lien dans la barre.
-  assert.doesNotMatch(publicNav, /href: "\/tarifs"/);
+  assert.match(publicNav, /href: "\/tarifs"/);
   const wizard = readFileSync(new URL("../src/features/auth/signup-wizard.tsx", import.meta.url), "utf8");
   assert.match(wizard, /signupEntryFromSearch/);
 });

@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 // L'accueil passe par le logo ; Contact rejoint la navigation pour rester visible à toutes les largeurs.
 const publicNavigation = [
   { href: "/fonctionnalites", label: "Fonctionnalités" },
+  { href: "/tarifs", label: "Tarifs" },
   { href: "/contact", label: "Contact" },
 ] as const;
 

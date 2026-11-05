@@ -119,7 +119,7 @@ test("AUTH-ROLE : anonyme renvoyé vers la connexion de chaque espace", async ({
     expect(location.pathname, path).toBe(loginPath);
     expect(location.searchParams.get("redirect"), path).toBe(path);
   }
-  for (const path of ["/", "/login", "/login/client", "/login/driver", "/register", "/fonctionnalites"]) {
+  for (const path of ["/", "/login", "/login/client", "/login/driver", "/register", "/fonctionnalites", "/tarifs"]) {
     expect((await api.get(path, { maxRedirects: 0 })).status(), path).toBe(200);
   }
   await api.dispose();

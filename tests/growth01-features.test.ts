@@ -12,7 +12,7 @@ test("chaque phrase publique est couverte par un écran déjà livré", () => {
   assert.match(page, /PUBLIC_CAPABILITIES/);
   // Tarifs et démonstration en ligne retirés du site public le 5 novembre 2026 : plus aucun lien.
   assert.doesNotMatch(page, /href="\/(tarifs|demonstration)"/);
-  assert.doesNotMatch(publicNav, /\/(tarifs|demonstration)"/);
+  assert.doesNotMatch(publicNav, /\/demonstration"/);
   assert.match(page, /href="\/contact"/);
   assert.match(page, /href="\/login"/);
   assert.match(publicNav, /href: "\/fonctionnalites"/);

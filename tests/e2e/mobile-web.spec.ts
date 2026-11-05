@@ -17,7 +17,7 @@ const MIN = 44;
 // Clair seulement : le mode sombre est retiré des téléphones depuis le 30 octobre 2026 (voir `PHONE_` dans src/lib/theme.ts).
 const THEMES: ("light" | "dark")[] = ["light"];
 
-const PUBLIC = ["/", "/contact", "/fonctionnalites", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/login/driver", "/register", "/forgot-password"];
+const PUBLIC = ["/", "/tarifs", "/contact", "/fonctionnalites", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/login/driver", "/register", "/forgot-password"];
 const BACK_OFFICE = ["/dashboard", "/dashboard/orders", "/dashboard/clients", "/dashboard/drivers", "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/intake", "/users", "/support", "/settings"];
 const PORTAL = ["/portal", "/portal/orders", "/portal/orders/new", "/portal/orders/history", "/portal/deliveries", "/portal/invoices", "/portal/recurring", "/portal/support", "/portal/profile", "/portal/settings"];
 const DRIVER = ["/driver", "/driver/missions", "/driver/profile"];

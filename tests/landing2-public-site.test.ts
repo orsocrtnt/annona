@@ -143,14 +143,14 @@ test("LANDING-2 : aucune adresse de support inventée", () => {
   assert.match(read("src/features/support/public-support-link.tsx"), /href="\/contact"/);
 });
 
-test("LANDING-3 : la landing n'écrit aucun prix en dur ; /tarifs retirée pour le moment, elle renvoie vers /fonctionnalites", () => {
+test("LANDING-3 : la landing n'écrit aucun prix en dur ; /tarifs est une liste d'attente provisoire", () => {
   const page = read("src/app/page.tsx");
   const home = read("src/features/landing/home-landing.tsx");
   assert.doesNotMatch(page, /getActiveSignupCatalog/);
   assert.doesNotMatch(home, /\b(79|179|349) ?€/);
-  assert.doesNotMatch(home, /href="\/tarifs"/);
+  assert.match(home, /href="\/tarifs"/);
   assert.match(home, /href="\/fonctionnalites"/);
-  assert.match(read("src/app/tarifs/page.tsx"), /getActiveSignupCatalog/);
+  assert.match(read("src/app/tarifs/page.tsx"), /WaitlistForm/);
 });
 
 test("DESIGN-2 : le site public suit le choix Clair / Sombre / Système, le reste ne change pas", () => {
