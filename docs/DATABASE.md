@@ -37,9 +37,10 @@
 - `RecurringOrder` : modèle et planification de commandes récurrentes.
 - `DemoPoolEnvironment` : stock de démonstrations préconstruites, location exclusive et recyclage durable.
 - `PlatformAccessEvent` : journal minimal et expirant des lectures de la supervision plateforme, sans relation ni donnée personnelle.
-- `ContactMessage` : message du formulaire Contact public, lu par le super-administrateur ; l'adresse IP n'est jamais stockée, seulement une empreinte HMAC pour limiter le débit.
+- `ContactMessage` : message du formulaire Contact public, lu par le super-administrateur ; l'adresse IP n'est jamais stockée, seulement une empreinte HMAC pour limiter le débit. Les inscriptions à la liste d'attente de `/tarifs` y sont aussi rangées (message `WAITLIST_MESSAGE`), avec `contacted_at`, `contacted_by_id` et `campaign_code` (ADMIN-ESPACE lot 2).
+- `WaitlistFunnelDaily` : compteurs journaliers anonymes de `/tarifs` (jour de Paris, campagne, visite / clic / inscription) ; ni cookie, ni IP, ni identifiant de visiteur.
 
-Le schéma comprend 48 modèles Prisma (dont `CompanyCustomer`, fiche client sans accès propre à chaque entreprise, MAIL-PONT étape 4). Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 49 modèles Prisma (dont `CompanyCustomer`, fiche client sans accès propre à chaque entreprise, MAIL-PONT étape 4, et `WaitlistFunnelDaily`, ADMIN-ESPACE lot 2). Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
 
 ## Relations essentielles
 
