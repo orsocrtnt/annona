@@ -25,8 +25,8 @@ function memoryStorage(initial: Record<string, string> = {}) {
   };
 }
 
-test("LANDING-2 : /login sans paramètre montre le choix, ?espace= valide ouvre le bon formulaire", () => {
-  assert.deepEqual(resolveLoginView({}), { kind: "choose" });
+test("Connexion directe : /login sans paramètre ouvre le formulaire commun, ?espace= valide n'adapte que l'en-tête", () => {
+  assert.deepEqual(resolveLoginView({}), { kind: "form", context: "company", prefillDemo: false });
   assert.deepEqual(resolveLoginView({ espace: "entreprise" }), { kind: "form", context: "company", prefillDemo: false });
   assert.deepEqual(resolveLoginView({ espace: "client" }), { kind: "form", context: "client", prefillDemo: false });
   assert.deepEqual(resolveLoginView({ espace: "livreur" }), { kind: "form", context: "driver", prefillDemo: false });
@@ -36,9 +36,9 @@ test("LANDING-2 : /login sans paramètre montre le choix, ?espace= valide ouvre 
   assert.deepEqual(resolveLoginView({ espace: "client", demo: "1" }), { kind: "form", context: "client", prefillDemo: false });
 });
 
-test("LANDING-2 : une valeur ?espace= invalide revient au choix sans erreur", () => {
+test("Connexion directe : une valeur ?espace= invalide ouvre le formulaire commun sans erreur", () => {
   for (const espace of ["", "admin", "ENTREPRISE", "constructor", "__proto__", "toString", "<script>", "password"]) {
-    assert.deepEqual(resolveLoginView({ espace }), { kind: "choose" }, espace);
+    assert.deepEqual(resolveLoginView({ espace }), { kind: "form", context: "company", prefillDemo: false }, espace);
   }
 });
 
@@ -65,13 +65,22 @@ test("LANDING-2 : le dernier espace retenu est celui ouvert par le serveur, sans
   assert.doesNotThrow(() => rememberLastSpace(throwing, "/portal"));
 });
 
-test("LANDING-2 : chaque tuile d'espace pointe vers une route de connexion existante", () => {
-  assert.equal(LOGIN_SPACES.entreprise.href, "/login?espace=entreprise");
-  assert.equal(LOGIN_SPACES.client.href, "/login/client");
-  assert.equal(LOGIN_SPACES.livreur.href, "/login/driver");
-  const chooser = read("src/features/auth/login-space-chooser.tsx");
-  // Titre et description sur deux lignes (défaut « EntrepriseCommandes… » de la maquette).
-  assert.match(chooser, /<span className="block text-lg[^"]*">\{space\.title\}<\/span>\s*<span className="block text-sm[^"]*">\{space\.description\}<\/span>/);
+test("Connexion directe : plus d'écran de choix ; la page de connexion propose la démo sans identifiants", () => {
+  assert.equal(LOGIN_SPACES.client.context, "client");
+  assert.equal(LOGIN_SPACES.livreur.context, "driver");
+  const page = read("src/app/(auth)/login/page.tsx");
+  assert.doesNotMatch(page, /LoginSpaceChooser/);
+  const form = read("src/features/auth/auth-form.tsx");
+  assert.doesNotMatch(form, /Changer d&apos;espace/);
+  assert.match(form, /href="\/demo"/);
+  // La barre publique ouvre l'espace de démo directement.
+  const nav = read("src/features/landing/public-top-navbar.tsx");
+  assert.equal([...nav.matchAll(/href="\/demo"/g)].length, 2);
+  const launcher = read("src/features/demo/demo-launcher.tsx");
+  assert.match(launcher, /requestJsonWithTimeout\("\/api\/auth\/login"/);
+  assert.match(launcher, /demoRequestKey: demoRequestKeyFor\(DEMO_LOGIN_EMAIL\)/);
+  assert.match(launcher, /router\.replace\(destination\)/);
+  assert.match(read("src/app/demo/page.tsx"), /robots: \{ index: false/);
 });
 
 test("LANDING-2 : formulaire de connexion en POST, même appel serveur et mêmes messages", () => {
@@ -154,7 +163,7 @@ test("LANDING-3 : la landing n'écrit aucun prix en dur ; /tarifs est une liste 
 });
 
 test("DESIGN-2 : le site public suit le choix Clair / Sombre / Système, le reste ne change pas", () => {
-  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
+  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/demo", "/contact", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
   for (const path of ["/registerx", "/tarifsx", "/loginx"]) {

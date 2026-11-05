@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { FormField } from "@/components/ui/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { selectLoginRedirect } from "@/lib/auth/login-redirect";
 import {
   loginSchema,
   registerSchema,
@@ -26,16 +25,20 @@ import type {
 } from "@/lib/validations/auth";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft } from "lucide-react";
+import { Building2, Play, Truck, UserRound } from "lucide-react";
 import { AuthShell } from "@/features/auth/auth-shell";
-import { SPACE_ICONS } from "@/features/auth/login-space-chooser";
-import { browserStorage, rememberLastSpace, type LoginContext } from "@/features/auth/login-space";
+import type { LoginContext } from "@/features/auth/login-space";
+import { demoRequestKeyFor, useApplyLoginSession } from "@/features/auth/login-session";
 import { AUTH_TIMEOUT_MESSAGE, RequestTimeoutError, requestJsonWithTimeout } from "@/features/auth/request-timeout";
 import { createSubmitGuard } from "@/features/auth/submit-guard";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
-import { useAuthStore } from "@/stores/auth.store";
 import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
+const SPACE_ICONS: Record<LoginContext, typeof Building2> = {
+  company: Building2,
+  client: UserRound,
+  driver: Truck,
+};
+
 type AuthMode = "login" | "register" | "forgot-password" | "reset-password";
 type PasswordLink =
   | { tokenHash: string; type: "invite" | "recovery" | "signup" }
@@ -67,7 +70,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const applyLoginSession = useApplyLoginSession();
   const [passwordLink, setPasswordLink] = useState<PasswordLink | null>(null);
   const linkRead = useRef(false);
   const [loginGuard] = useState(createSubmitGuard);
@@ -81,7 +84,6 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     return () => window.removeEventListener("pageshow", release);
   }, [loginGuard]);
   const [completingLink, setCompletingLink] = useState(false);
-  const { setUser, setPermissions, setDemo, setSaas } = useAuthStore();
 
   useEffect(() => {
     if (mode !== "reset-password") return;
@@ -120,10 +122,6 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     resolver: zodResolver(loginSchema),
     defaultValues: prefillDemo ? { email: DEMO_LOGIN_EMAIL, password: DEMO_DEFAULT_PASSWORD } : { email: "", password: "" },
   });
-  const fillDemoAccount = () => {
-    loginForm.setValue("email", DEMO_LOGIN_EMAIL, { shouldValidate: true });
-    loginForm.setValue("password", DEMO_DEFAULT_PASSWORD, { shouldValidate: true });
-  };
 
   const registerForm = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -157,12 +155,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
   const submitLogin = async (data: LoginInput) => {
     setError(null);
     const normalizedEmail = data.email.trim().toLowerCase();
-    let demoRequestKey: string | undefined;
-    if (normalizedEmail === DEMO_LOGIN_EMAIL) {
-      const storageKey = "tutelliv-demo-request-key";
-      demoRequestKey = window.sessionStorage.getItem(storageKey) ?? window.crypto.randomUUID();
-      window.sessionStorage.setItem(storageKey, demoRequestKey);
-    }
+    const demoRequestKey = demoRequestKeyFor(normalizedEmail);
     const res = await requestJsonWithTimeout("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -184,21 +177,8 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
       setError(json.error ?? "Email ou mot de passe incorrect.");
       return;
     }
-    await queryClient.clear();
-    setSaas(json.saas ?? null);
-    setPermissions(json.permissions);
-    setDemo(json.demo ?? null);
-    setUser(json.user);
-    queryClient.setQueryData(["session"], {
-      user: json.user,
-      permissions: json.permissions,
-      demo: json.demo ?? null,
-      saas: json.saas ?? null,
-    });
     const requestedRedirect = new URLSearchParams(window.location.search).get("redirect");
-    const destination = selectLoginRedirect(requestedRedirect, json.redirectTo);
-    // Repère « Dernier utilisé » : l'espace ouvert par le serveur, sans aucune donnée personnelle.
-    rememberLastSpace(browserStorage(), destination);
+    const destination = await applyLoginSession(json, requestedRedirect);
     // Succès : la garde reste fermée pendant la navigation ; elle ne se rouvre qu'au retour arrière (pageshow).
     loginGuard.hold();
     router.push(destination);
@@ -277,7 +257,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         ? "Suivez vos commandes et livraisons en temps réel"
         : isDriver
           ? "Accédez à vos missions du jour et à la navigation"
-          : "Accédez à votre espace de pilotage",
+          : "Entreprise, client, livreur ou administrateur : votre espace s’ouvre tout seul.",
     },
     register: {
       title: "Créer un compte entreprise",
@@ -299,20 +279,11 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     <AuthShell>
         <div className="w-full max-w-[420px] animate-slide-up motion-reduce:animate-none">
           {mode === "login" && (
-            <>
-              <Link
-                href="/login"
-                className="mb-5 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card pl-2.5 pr-3.5 text-sm font-medium text-text-secondary transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <ChevronLeft className="h-[18px] w-[18px]" aria-hidden />
-                Changer d&apos;espace
-              </Link>
-              <div className="mb-4 flex justify-center" aria-hidden>
-                <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-brand-subtle text-brand">
-                  <SpaceIcon className="h-7 w-7" strokeWidth={1.8} />
-                </span>
-              </div>
-            </>
+            <div className="mb-4 flex justify-center" aria-hidden>
+              <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-brand-subtle text-brand">
+                <SpaceIcon className="h-7 w-7" strokeWidth={1.8} />
+              </span>
+            </div>
           )}
           <h1 className={mode === "login" ? "text-balance text-center text-[clamp(32px,5.6vw,48px)] font-bold leading-[1.04] tracking-[-0.04em]" : "text-balance text-[clamp(26px,4.4vw,36px)] font-bold leading-[1.08] tracking-[-0.035em]"}>
             {passwordLink?.type === "signup" ? "Confirmer votre adresse e-mail" : titles[mode].title}
@@ -322,22 +293,13 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
           </p>
 
           {mode === "login" && loginContext === "company" && (
-            <Alert variant="info" className="mt-5">
-              <AlertDescription>
-                <span className="font-medium">Démonstration commerciale :</span>{" "}
-                connectez-vous avec{" "}
-                <span className="font-mono text-xs">{DEMO_LOGIN_EMAIL}</span> /{" "}
-                <span className="font-mono text-xs">{DEMO_DEFAULT_PASSWORD}</span> pour explorer
-                l&apos;admin, le portail client et l&apos;app livreur depuis un seul compte.
-                <button
-                  type="button"
-                  onClick={fillDemoAccount}
-                  className="mt-2.5 flex min-h-11 items-center rounded-full border border-brand/30 bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Remplir avec le compte démo
-                </button>
-              </AlertDescription>
-            </Alert>
+            <Link
+              href="/demo"
+              className="mt-5 flex min-h-11 items-center justify-center gap-2 rounded-full border border-brand/30 bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Play className="h-4 w-4 fill-current text-brand" aria-hidden />
+              Pas de compte ? Ouvrir la démo
+            </Link>
           )}
 
           {isInvitedUser && mode === "login" && (

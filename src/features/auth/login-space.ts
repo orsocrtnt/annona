@@ -1,5 +1,5 @@
 /**
- * Connexion C « Trois espaces » : le choix de l'espace n'est qu'une aide visuelle. Le serveur décide toujours
+ * Connexion : l'espace demandé n'est qu'une aide visuelle. Le serveur décide toujours
  * de la destination (rôle relu en base, AUTH-ROLE) ; un mauvais choix n'ouvre ni ne ferme aucun accès.
  */
 export type LoginContext = "company" | "client" | "driver";
@@ -44,22 +44,18 @@ function first(value: SearchValue): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export type LoginView = { kind: "choose" } | { kind: "form"; context: LoginContext; prefillDemo: boolean };
+export type LoginView = { kind: "form"; context: LoginContext; prefillDemo: boolean };
 
 /**
- * Vue de `/login` d'après l'URL. `?espace=` valide ouvre le formulaire de cet espace ; toute autre valeur
- * revient au choix. Les liens existants (`?email=` de la démo, `?redirect=` du middleware et de l'inscription)
- * ouvrent directement le formulaire entreprise, comme avant.
+ * Vue de `/login` d'après l'URL. Plus d'écran de choix (5 novembre 2026) : `/login` ouvre tout de suite le
+ * formulaire commun et le serveur envoie chacun dans son espace d'après son rôle. `?espace=` valide ne change
+ * que l'en-tête (anciens liens) ; toute autre valeur ouvre le formulaire commun, sans erreur.
  */
 export function resolveLoginView(params: Record<string, SearchValue>): LoginView {
   const space = first(params.espace);
   const prefillDemo = first(params.demo) === "1";
-  if (isLoginSpaceKey(space)) {
-    const context = LOGIN_SPACES[space].context;
-    return { kind: "form", context, prefillDemo: prefillDemo && context === "company" };
-  }
-  if (first(params.email) || first(params.redirect)) return { kind: "form", context: "company", prefillDemo: false };
-  return { kind: "choose" };
+  const context = isLoginSpaceKey(space) ? LOGIN_SPACES[space].context : "company";
+  return { kind: "form", context, prefillDemo: prefillDemo && context === "company" };
 }
 
 /** Espace réellement ouvert par le serveur (et non celui choisi) : c'est lui qu'on retient. */

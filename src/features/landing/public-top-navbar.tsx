@@ -64,7 +64,7 @@ function PublicMenu({ pathname, triggerClassName }: { pathname: string; triggerC
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className={menuItemClass}>
-          <Link href="/#demo">
+          <Link href="/demo">
             <ArrowRight className="h-4 w-4" aria-hidden />
             Voir la démo
           </Link>
@@ -113,7 +113,7 @@ export function PublicTopNavbar() {
         </Link>
 
         <Link
-          href="/#demo"
+          href="/demo"
           className="group hidden min-h-11 shrink-0 items-center gap-2 rounded-xl bg-[#0e1310] px-3.5 text-sm font-semibold text-white transition-[background-color,transform] duration-300 ease-out hover:bg-[#232a26] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none dark:bg-foreground dark:text-background dark:hover:bg-foreground/90 sm:inline-flex"
         >
           Voir la démo
