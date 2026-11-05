@@ -44,6 +44,8 @@ function filesUnder(root: string) {
 const PLATFORM_WRITES: Record<string, string[]> = {
   "src/app/api/admin/sales-codes/[id]/route.ts": ["GET", "PATCH"],
   "src/app/api/admin/sales-codes/route.ts": ["GET", "POST"],
+  // DEMO-LIVE : remise à neuf des démos, espaces de la plateforme (aucune entreprise cliente).
+  "src/app/api/admin/demo-pool/route.ts": ["GET", "POST"],
   // ADMIN-ESPACE lot 2 : case « contacté » d'une inscription à la liste d'attente (donnée de la plateforme).
   "src/app/api/admin/waitlist/[id]/route.ts": ["PATCH"],
 };

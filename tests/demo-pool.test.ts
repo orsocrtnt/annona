@@ -243,3 +243,53 @@ test("DEMO-LIVE : disponibles sur le total, réservées et en direct (moins de 2
   assert.match(readFileSync("src/app/(back-office)/admin/page.tsx", "utf8"), /<AdminDemoPoolCard \/>/);
   assert.match(readFileSync("src/app/api/admin/demo-pool/route.ts", "utf8"), /requireRole\(auth\.context, \["SUPER_ADMIN"\]\)/);
 });
+
+test("DEMO-LIVE : état de chaque démo pour la page du super admin", async () => {
+  const { demoPoolRowStatus } = await import("../src/domains/demo/demo-pool-admin.service");
+  const now = new Date("2026-11-05T15:00:00Z");
+  const base = { id: "e", companyId: "c", slot: 1, leasedAt: null, leaseExpiresAt: null, updatedAt: now, lastFailureCode: null, recycleAttempts: 0 };
+  const lease = { state: "LEASED" as const, leasedAt: new Date("2026-11-05T14:00:00Z"), leaseExpiresAt: new Date("2026-11-05T22:00:00Z") };
+  assert.equal(demoPoolRowStatus({ ...base, ...lease, updatedAt: new Date("2026-11-05T14:59:00Z") }, now), "LIVE");
+  assert.equal(demoPoolRowStatus({ ...base, ...lease, updatedAt: new Date("2026-11-05T14:50:00Z") }, now), "IN_USE");
+  assert.equal(demoPoolRowStatus({ ...base, ...lease, leaseExpiresAt: new Date("2026-11-05T14:59:00Z") }, now), "PREPARING", "bail échu : bientôt recyclée");
+  assert.equal(demoPoolRowStatus({ ...base, state: "READY" }, now), "AVAILABLE");
+  assert.equal(demoPoolRowStatus({ ...base, state: "QUARANTINED" }, now), "ERROR");
+  assert.equal(demoPoolRowStatus({ ...base, state: "RECYCLING" }, now), "PREPARING");
+});
+
+test("DEMO-LIVE : « tout remettre à neuf » épargne les démos en direct ; une démo précise est toujours remise", async (t) => {
+  const { queueAdminDemoReset } = await import("../src/domains/demo/demo-pool-admin.service");
+  const now = new Date("2026-11-05T15:00:00Z");
+  const lease = { leasedAt: new Date("2026-11-05T14:00:00Z"), leaseExpiresAt: new Date("2026-11-05T22:00:00Z") };
+  const rows = [
+    { id: "live", companyId: "a", slot: 1, state: "LEASED", ...lease, updatedAt: new Date("2026-11-05T14:59:30Z"), lastFailureCode: null, recycleAttempts: 0 },
+    { id: "idle", companyId: "b", slot: 2, state: "LEASED", ...lease, updatedAt: new Date("2026-11-05T14:30:00Z"), lastFailureCode: null, recycleAttempts: 0 },
+    { id: "ready", companyId: "c", slot: 3, state: "READY", leasedAt: null, leaseExpiresAt: null, updatedAt: now, lastFailureCode: null, recycleAttempts: 0 },
+    { id: "error", companyId: "d", slot: 4, state: "QUARANTINED", leasedAt: null, leaseExpiresAt: null, updatedAt: now, lastFailureCode: "RECYCLE_FAILED", recycleAttempts: 3 },
+  ];
+  const updates: Array<{ where: { id: string; state: string }; data: Record<string, unknown> }> = [];
+  const finds: unknown[] = [];
+  Object.defineProperty(prisma, "demoPoolEnvironment", {
+    configurable: true,
+    value: {
+      findMany: async (args: { where: { id?: string; state: { in: string[] } } }) => {
+        finds.push(args);
+        return rows.filter((row) => (!args.where.id || row.id === args.where.id) && args.where.state.in.includes(row.state));
+      },
+      updateMany: async (args: { where: { id: string; state: string }; data: Record<string, unknown> }) => { updates.push(args); return { count: 1 }; },
+    },
+  });
+  t.after(() => { Reflect.deleteProperty(prisma, "demoPoolEnvironment"); });
+  assert.equal(await queueAdminDemoReset({}, now), 3);
+  assert.deepEqual(updates.map((u) => u.where.id), ["idle", "ready", "error"]);
+  assert.deepEqual((finds[0] as { where: { state: { in: string[] } } }).where.state.in, ["READY", "LEASED", "QUARANTINED"], "jamais une démo en préparation");
+  assert.equal(updates[2]!.data.state, "RECYCLING");
+  assert.equal(updates[2]!.data.recycleAttempts, 0);
+  assert.equal(updates[2]!.data.leaseKeyHash, null);
+  updates.length = 0;
+  assert.equal(await queueAdminDemoReset({ id: "live" }, now), 1);
+  assert.deepEqual(updates.map((u) => u.where.id), ["live"]);
+  const route = readFileSync("src/app/api/admin/demo-pool/route.ts", "utf8");
+  assert.match(route, /gatePlatformWrite\(auth\.context, denied, "OVERVIEW", "POST"\)/);
+  assert.match(route, /after\(async/);
+});

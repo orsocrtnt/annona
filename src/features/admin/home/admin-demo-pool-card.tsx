@@ -1,35 +1,15 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { FlaskConical, Radio } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, FlaskConical, Radio } from "lucide-react";
 import { HomeCard } from "@/features/admin/home/home-card";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { cn } from "@/lib/utils";
-
-export interface DemoPoolOccupancy {
-  available: number;
-  total: number;
-  reserved: number;
-  live: number;
-  preparing: number;
-  quarantined: number;
-}
-
-async function fetchDemoPoolOccupancy(): Promise<DemoPoolOccupancy> {
-  const res = await fetch("/api/admin/demo-pool", { cache: "no-store" });
-  const json = await res.json().catch(() => null);
-  if (!res.ok || !json?.data) throw new Error(json?.error ?? "Démos indisponibles");
-  return json.data as DemoPoolOccupancy;
-}
+import { useDemoPool } from "@/features/admin/demos/demo-pool-query";
 
 /** Démos disponibles sur le total et visiteurs en direct (signe de vie de moins de 2 min, onglet visible). */
 export function AdminDemoPoolCard() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["admin", "demo-pool"],
-    queryFn: fetchDemoPoolOccupancy,
-    // Compteur « en direct » : relu chaque minute tant que la page est au premier plan.
-    refetchInterval: 60_000,
-  });
+  const { data, isLoading, error } = useDemoPool();
 
   return (
     <HomeCard aria-labelledby="demo-pool-title">
@@ -73,6 +53,13 @@ export function AdminDemoPoolCard() {
           </div>
         </div>
       )}
+      <Link
+        href="/admin/demos"
+        className="mt-4 inline-flex min-h-11 items-center gap-1 rounded-lg text-sm font-semibold text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        Voir chaque démo et les remettre à neuf
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </Link>
     </HomeCard>
   );
 }
