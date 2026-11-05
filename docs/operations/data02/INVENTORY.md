@@ -46,6 +46,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | SaasBillingOperation | technique | accountId | non |
 | PlatformAccessEvent | plateforme | actorId, sans companyId | non |
 | ContactMessage | plateforme | aucune, prospect avant tout compte | non |
+| WaitlistFunnelDaily | plateforme | aucune, compteurs anonymes par jour et campagne (page Tarifs) | non |
 | SalesCode | plateforme | aucune, commercial de TutelLiv | non |
 | SalesAttribution | plateforme | companyId | non |
 | SalesCommissionEntry | plateforme | attributionId | non |
@@ -59,7 +60,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 
 ## Absents de l'export
 
-Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, CompanyIntakeChannel, OrderTrackingLink, InboundOrderEmail, SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent, ContactMessage, SalesCode, SalesAttribution, SalesCommissionEntry, AuthLoginFailure, OrderIntakeUsage. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise ; journal de la commande par message = compteurs d'appels et de jetons, sans texte).
+Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, CompanyIntakeChannel, OrderTrackingLink, InboundOrderEmail, SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent, ContactMessage, WaitlistFunnelDaily, SalesCode, SalesAttribution, SalesCommissionEntry, AuthLoginFailure, OrderIntakeUsage. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise ; journal de la commande par message = compteurs d'appels et de jetons, sans texte).
 
 Role et OperationJob n'y sont que partiels : le rôle est recopié par son nom sur l'utilisateur, le job est recopié sans sa charge ni son erreur.
 

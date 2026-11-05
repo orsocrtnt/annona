@@ -3,7 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAdminHome } from "@/features/admin/hooks";
-import { useContactLastVisit } from "@/features/admin/contact-last-visit";
+import { useAdminLastVisits } from "@/features/admin/contact-last-visit";
 import { AdminDailyChart } from "@/features/admin/home/admin-daily-chart";
 import { AdminHealthSignal } from "@/features/admin/home/admin-health-signal";
 import { AdminKpiGrid } from "@/features/admin/home/admin-kpi-grid";
@@ -30,8 +30,8 @@ function HomeSkeleton() {
 
 /** ADMIN-ESPACE, lot 1 : « À traiter », chiffres clés, courbe 30 jours et voyant de santé. */
 export function AdminHomePanel() {
-  const contactSince = useContactLastVisit();
-  const { data, isLoading, error } = useAdminHome(contactSince);
+  const lastVisits = useAdminLastVisits();
+  const { data, isLoading, error } = useAdminHome(lastVisits);
 
   return (
     <div className="space-y-5">

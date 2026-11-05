@@ -32,9 +32,9 @@ export default function ConfidentialitePage() {
           Les messages sont conservés trois ans après le dernier échange.
         </p>
         <p>
-          Liste d&apos;attente (page Tarifs) : prénom, nom, société, e-mail et téléphone. Ils servent uniquement à
-          vous prévenir de l&apos;ouverture et à vous recontacter, avec la même base et la même durée de conservation
-          que les messages de contact.
+          Liste d&apos;attente (page Tarifs) : prénom, nom, société, e-mail et téléphone, ainsi que le code de
+          campagne du lien suivi s&apos;il y en a un. Ils servent uniquement à vous prévenir de l&apos;ouverture et à
+          vous recontacter, avec la même base et la même durée de conservation que les messages de contact.
         </p>
         <p>
           Votre adresse IP n&apos;est pas enregistrée : seule une empreinte chiffrée sert à limiter les envois
@@ -104,6 +104,12 @@ export default function ConfidentialitePage() {
           votre choix de thème clair ou sombre et vos préférences d&apos;affichage. L&apos;application livreur garde
           aussi sur l&apos;appareil les actions en attente d&apos;envoi quand le réseau manque ; elles sont
           effacées dès leur envoi, et au plus tard sept jours après leur création si elles n&apos;ont pas pu partir.
+        </p>
+        <p>
+          Page Tarifs : les visites sont comptées de façon anonyme, sans cookie ni adresse IP. Seuls des totaux par
+          jour sont gardés (visites, clics sur « Rejoindre la liste », inscriptions), avec le code de campagne du lien
+          suivi s&apos;il y en a un ; aucun identifiant de visiteur n&apos;est créé. Une empreinte chiffrée de
+          l&apos;adresse, gardée au plus une heure en mémoire et jamais enregistrée, limite les envois abusifs.
         </p>
       </LegalSection>
 

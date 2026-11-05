@@ -9,6 +9,9 @@ import type { PlatformAccessEventPage } from "@/domains/admin/platform-access.se
 import type { PlatformOverview } from "@/domains/admin/platform.service";
 import type { SaasHealthIndicators } from "@/domains/admin/saas-health.service";
 import type { AdminHome, AdminHomeBadges } from "@/domains/admin/admin-home.service";
+import type { WaitlistContactedFilter, WaitlistEntry, WaitlistPage } from "@/domains/growth/waitlist.service";
+import type { FunnelPeriod, WaitlistFunnel } from "@/domains/growth/waitlist-funnel.service";
+import type { AdminLastVisits } from "@/features/admin/contact-last-visit";
 
 export async function fetchAdminOverview(): Promise<PlatformOverview> {
   const res = await fetch("/api/admin/overview", { cache: "no-store" });
@@ -241,10 +244,11 @@ export async function fetchAdminIncidents(filters: IncidentListFilters): Promise
   return json.data as PlatformIncidentPage;
 }
 
-async function readAdminHome<T>(view: "full" | "badges", contactSince: string | null): Promise<T> {
+async function readAdminHome<T>(view: "full" | "badges", since: AdminLastVisits): Promise<T> {
   const params = new URLSearchParams();
   if (view === "badges") params.set("view", "badges");
-  if (contactSince) params.set("contactSince", contactSince);
+  if (since.contact) params.set("contactSince", since.contact);
+  if (since.waitlist) params.set("waitlistSince", since.waitlist);
   const query = params.size > 0 ? `?${params.toString()}` : "";
   const res = await fetch(`/api/admin/home${query}`, { cache: "no-store" });
   let json: { error?: string; data?: T } = {};
@@ -258,11 +262,62 @@ async function readAdminHome<T>(view: "full" | "badges", contactSince: string | 
 }
 
 /** ADMIN-ESPACE : accueil complet (« À traiter », chiffres clés, courbe, santé). */
-export function fetchAdminHome(contactSince: string | null): Promise<AdminHome> {
-  return readAdminHome<AdminHome>("full", contactSince);
+export function fetchAdminHome(since: AdminLastVisits): Promise<AdminHome> {
+  return readAdminHome<AdminHome>("full", since);
 }
 
 /** ADMIN-ESPACE : compteurs seuls, pour les pastilles du menu. */
-export function fetchAdminHomeBadges(contactSince: string | null): Promise<AdminHomeBadges> {
-  return readAdminHome<AdminHomeBadges>("badges", contactSince);
+export function fetchAdminHomeBadges(since: AdminLastVisits): Promise<AdminHomeBadges> {
+  return readAdminHome<AdminHomeBadges>("badges", since);
+}
+
+/* ---------- Liste d'attente (ADMIN-ESPACE lot 2) ---------- */
+
+export type WaitlistListFilters = {
+  q?: string;
+  contacted: WaitlistContactedFilter;
+  page: number;
+  pageSize: number;
+};
+
+async function readJson<T>(res: Response): Promise<T> {
+  let json: { error?: string; data?: T } = {};
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(res.ok ? "Réponse invalide du serveur" : `Erreur serveur (${res.status})`);
+  }
+  if (!res.ok) throw new Error(json.error ?? `Erreur serveur (${res.status})`);
+  return json.data as T;
+}
+
+/** Filtres de la liste et de l'export : mêmes paramètres, sans la pagination pour l'export. */
+export function waitlistFilterParams(filters: Pick<WaitlistListFilters, "q" | "contacted">) {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.contacted !== "all") params.set("contacted", filters.contacted);
+  return params;
+}
+
+export async function fetchAdminWaitlist(filters: WaitlistListFilters): Promise<WaitlistPage> {
+  const params = waitlistFilterParams(filters);
+  params.set("page", String(filters.page));
+  params.set("pageSize", String(filters.pageSize));
+  const res = await fetch(`/api/admin/waitlist?${params.toString()}`, { cache: "no-store" });
+  return readJson<WaitlistPage>(res);
+}
+
+export async function updateAdminWaitlistContacted(id: string, contacted: boolean): Promise<WaitlistEntry> {
+  const res = await fetch(`/api/admin/waitlist/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contacted }),
+  });
+  return readJson<WaitlistEntry>(res);
+}
+
+export async function fetchAdminWaitlistFunnel(days: FunnelPeriod): Promise<WaitlistFunnel> {
+  const res = await fetch(`/api/admin/waitlist/funnel?days=${days}`, { cache: "no-store" });
+  return readJson<WaitlistFunnel>(res);
 }

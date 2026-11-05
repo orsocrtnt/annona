@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   fetchAdminAccessEvents,
   fetchAdminCompanies,
@@ -15,7 +15,10 @@ import {
   fetchAdminSupportTickets,
   fetchAdminHome,
   fetchAdminHomeBadges,
+  fetchAdminWaitlist,
+  fetchAdminWaitlistFunnel,
   type PlatformAccessListFilters,
+  type WaitlistListFilters,
   type CompanyListFilters,
   type PlatformUserListFilters,
   type IncidentListFilters,
@@ -23,7 +26,9 @@ import {
   type SubscriptionListFilters,
   type SupportTicketListFilters,
 } from "./api";
+import type { AdminLastVisits } from "@/features/admin/contact-last-visit";
 import { QUERY_STALE_MS } from "@/lib/query/defaults";
+import type { FunnelPeriod } from "@/domains/growth/waitlist-funnel.service";
 
 export function useAdminUsers(filters: PlatformUserListFilters) {
   return useQuery({
@@ -114,22 +119,42 @@ export function useAdminSubscriptions(filters: SubscriptionListFilters) {
   });
 }
 
-/** ADMIN-ESPACE : accueil du super-administrateur ; `contactSince` vient du navigateur (dernière visite des messages). */
-export function useAdminHome(contactSince: string | null | undefined) {
+/** ADMIN-ESPACE : accueil du super-administrateur ; dernières visites lues dans le navigateur (Contact, liste d'attente). */
+export function useAdminHome(since: AdminLastVisits | undefined) {
   return useQuery({
-    queryKey: ["admin", "home", contactSince],
-    queryFn: () => fetchAdminHome(contactSince ?? null),
-    enabled: contactSince !== undefined,
+    queryKey: ["admin", "home", since?.contact ?? null, since?.waitlist ?? null],
+    queryFn: () => fetchAdminHome(since ?? { contact: null, waitlist: null }),
+    enabled: since !== undefined,
     staleTime: QUERY_STALE_MS,
   });
 }
 
 /** Pastilles du menu : lecture légère, rafraîchie au plus une fois par minute (chaque lecture est journalisée). */
-export function useAdminNavBadges(contactSince: string | null | undefined, enabled: boolean) {
+export function useAdminNavBadges(since: AdminLastVisits | undefined, enabled: boolean) {
   return useQuery({
-    queryKey: ["admin", "home-badges", contactSince],
-    queryFn: () => fetchAdminHomeBadges(contactSince ?? null),
-    enabled: enabled && contactSince !== undefined,
+    queryKey: ["admin", "home-badges", since?.contact ?? null, since?.waitlist ?? null],
+    queryFn: () => fetchAdminHomeBadges(since ?? { contact: null, waitlist: null }),
+    enabled: enabled && since !== undefined,
     staleTime: 60_000,
+  });
+}
+
+/** ADMIN-ESPACE lot 2 : inscriptions à la liste d'attente. */
+export function useAdminWaitlist(filters: WaitlistListFilters) {
+  return useQuery({
+    queryKey: ["admin", "waitlist", filters],
+    queryFn: () => fetchAdminWaitlist(filters),
+    staleTime: QUERY_STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** ADMIN-ESPACE lot 2 : entonnoir visites → clics → inscriptions de /tarifs. */
+export function useAdminWaitlistFunnel(days: FunnelPeriod) {
+  return useQuery({
+    queryKey: ["admin", "waitlist-funnel", days],
+    queryFn: () => fetchAdminWaitlistFunnel(days),
+    staleTime: QUERY_STALE_MS,
+    placeholderData: keepPreviousData,
   });
 }

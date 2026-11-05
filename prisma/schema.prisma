@@ -279,6 +279,7 @@ model User {
   orderThreadReads     OrderThreadRead[]
   invoiceRemindersSent InvoiceReminder[]
   companyCustomerCards CompanyCustomer[]
+  waitlistContacts     ContactMessage[]     @relation("WaitlistContactedBy")
 
   @@index([companyId])
   @@index([roleId])
@@ -1226,9 +1227,35 @@ model ContactMessage {
   sourceHash String   @map("source_hash")
   createdAt  DateTime @default(now()) @map("created_at")
 
+  /// ADMIN-ESPACE lot 2 : suivi de la liste d'attente (case « contacté », date et auteur).
+  contactedAt   DateTime? @map("contacted_at")
+  contactedById String?   @map("contacted_by_id")
+  contactedBy   User?     @relation("WaitlistContactedBy", fields: [contactedById], references: [id], onDelete: SetNull)
+  /// Campagne d'origine (`/tarifs?c=<code>`, sinon « direct ») ; vide pour les inscriptions antérieures.
+  campaignCode  String?   @map("campaign_code")
+
   @@index([createdAt])
   @@index([sourceHash, createdAt])
+  @@index([contactedById])
   @@map("contact_messages")
+}
+
+enum WaitlistFunnelEvent {
+  VISIT
+  CLICK
+  SIGNUP
+}
+
+/// ADMIN-ESPACE lot 2 : entonnoir de /tarifs, compteurs par jour (Paris), campagne et étape.
+/// Aucune donnée personnelle, aucun identifiant de visiteur, aucune heure précise.
+model WaitlistFunnelDaily {
+  day          DateTime            @db.Date
+  campaignCode String              @map("campaign_code")
+  event        WaitlistFunnelEvent
+  count        Int                 @default(0)
+
+  @@id([day, campaignCode, event])
+  @@map("waitlist_funnel_daily")
 }
 
 enum SalesCommissionLevel {

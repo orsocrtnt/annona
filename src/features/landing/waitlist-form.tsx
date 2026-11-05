@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 type FormState =
@@ -22,15 +22,54 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-3 text-sm max-md:text-base text-foreground shadow-sm outline-none transition focus:border-[#08783f] dark:focus:border-ring focus:ring-2 focus:ring-[#08783f]/20";
 const labelClass = "text-sm font-semibold text-foreground";
 
+const FUNNEL_URL = "/api/waitlist/funnel";
+
+/**
+ * ADMIN-ESPACE lot 2 : visite ou clic compté de façon anonyme (compteur par jour et par campagne).
+ * `credentials: "omit"` : aucun cookie n'accompagne l'envoi ; `keepalive` : l'envoi survit à un départ de la page.
+ */
+function sendFunnelEvent(event: "visit" | "click", campaign: string | undefined) {
+  try {
+    void fetch(FUNNEL_URL, {
+      method: "POST",
+      body: JSON.stringify(campaign ? { event, campaign } : { event }),
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      credentials: "omit",
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // Comptage facultatif : jamais d'erreur visible pour le visiteur.
+  }
+}
+
+/** Code de campagne du lien (`/tarifs?c=code`), vérifié par le serveur (sinon « direct »). */
+function readCampaign(): string | undefined {
+  const code = new URLSearchParams(window.location.search).get("c");
+  return code ? code.slice(0, 100) : undefined;
+}
+
 /** Liste d'attente de la page /tarifs provisoire : envoi vers /api/waitlist, rangé avec les messages Contact. */
 export function WaitlistForm() {
   const [state, setState] = useState<FormState>({ kind: "idle" });
+  const campaign = useRef<string | undefined>(undefined);
+  const visitCounted = useRef(false);
+
+  useEffect(() => {
+    campaign.current = readCampaign();
+    // Une visite par affichage de la page (le double appel du mode strict de React est ignoré).
+    if (visitCounted.current) return;
+    visitCounted.current = true;
+    sendFunnelEvent("visit", campaign.current);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state.kind === "sending") return;
     const form = event.currentTarget;
-    const values = Object.fromEntries(new FormData(form).entries());
+    const values = {
+      ...Object.fromEntries(new FormData(form).entries()),
+      ...(campaign.current ? { campaign: campaign.current } : {}),
+    };
     setState({ kind: "sending" });
     try {
       const response = await fetch("/api/waitlist", {
@@ -122,6 +161,8 @@ export function WaitlistForm() {
       <button
         type="submit"
         disabled={state.kind === "sending"}
+        // Clic « Rejoindre la liste » : envoi tenté, compté même si un champ bloque ensuite l'envoi.
+        onClick={() => sendFunnelEvent("click", campaign.current)}
         className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00d46a] px-6 py-3 text-sm font-bold text-[#0e1310] shadow-sm transition-[transform,background-color] hover:bg-[#00c262] active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#08783f] focus-visible:ring-offset-2 sm:w-auto"
       >
         {state.kind === "sending" ? "Inscription…" : "Rejoindre la liste"}

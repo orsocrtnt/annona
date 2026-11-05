@@ -39,11 +39,13 @@ function filesUnder(root: string) {
     .sort();
 }
 
-// Seule exception, décision C10 : le super-administrateur crée et désactive les codes commerciaux,
+// Exceptions, décision C10 : le super-administrateur crée et désactive les codes commerciaux,
 // données de la plateforme et non d'une entreprise cliente (voir tests/sales01-admin-routes.test.ts).
 const PLATFORM_WRITES: Record<string, string[]> = {
   "src/app/api/admin/sales-codes/[id]/route.ts": ["GET", "PATCH"],
   "src/app/api/admin/sales-codes/route.ts": ["GET", "POST"],
+  // ADMIN-ESPACE lot 2 : case « contacté » d'une inscription à la liste d'attente (donnée de la plateforme).
+  "src/app/api/admin/waitlist/[id]/route.ts": ["PATCH"],
 };
 
 test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors codes commerciaux", () => {
@@ -64,6 +66,10 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors co
     "src/app/api/admin/subscriptions/route.ts",
     "src/app/api/admin/support-tickets/route.ts",
     "src/app/api/admin/users/route.ts",
+    "src/app/api/admin/waitlist/[id]/route.ts",
+    "src/app/api/admin/waitlist/export/route.ts",
+    "src/app/api/admin/waitlist/funnel/route.ts",
+    "src/app/api/admin/waitlist/route.ts",
   ]);
   for (const file of routes) {
     const source = readFileSync(file, "utf8");

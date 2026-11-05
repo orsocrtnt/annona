@@ -19,6 +19,10 @@ const expected = [
   "subscriptions/route.ts",
   "support-tickets/route.ts",
   "users/route.ts",
+  "waitlist/[id]/route.ts",
+  "waitlist/export/route.ts",
+  "waitlist/funnel/route.ts",
+  "waitlist/route.ts",
 ];
 
 function discover(directory: string): string[] {

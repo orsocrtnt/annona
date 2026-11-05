@@ -107,6 +107,9 @@ export function createPrismaPlatformAccessRepository(client: PlatformAccessStore
   };
 }
 
+export const JOURNAL_TRANSACTION_MAX_WAIT_MS = 10_000;
+export const JOURNAL_TRANSACTION_TIMEOUT_MS = 10_000;
+
 async function defaultRepository(): Promise<PlatformAccessRepository> {
   const { prisma } = await import("@/services/prisma/client");
   const events = prisma.platformAccessEvent as unknown as PlatformAccessStore["platformAccessEvent"] & {
@@ -127,7 +130,12 @@ async function defaultRepository(): Promise<PlatformAccessRepository> {
         deleteMany: (args) => tx.platformAccessEvent.deleteMany(args),
         create: (args) => tx.platformAccessEvent.create(args),
       },
-    })),
+    }), {
+      // ADMIN-ESPACE lot 2 : plusieurs lectures journalisées partent ensemble (liste, entonnoir, pastilles) ;
+      // l'attente par défaut de Prisma (2 s) faisait échouer la dernière en 503 derrière PgBouncer.
+      maxWait: JOURNAL_TRANSACTION_MAX_WAIT_MS,
+      timeout: JOURNAL_TRANSACTION_TIMEOUT_MS,
+    }),
     platformAccessEvent: {
       ...events,
       findPage: (args) => events.findMany(args),

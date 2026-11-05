@@ -11,7 +11,7 @@ import { applyOnboardingNavVisibility } from "@/features/navigation/onboarding-n
 import { ONBOARDING_QUERY_KEY, fetchOnboardingStatus } from "@/features/back-office/onboarding-query";
 import { applyAdminNavBadges } from "@/features/navigation/admin-nav-badges";
 import { useAdminNavBadges } from "@/features/admin/hooks";
-import { useContactLastVisit } from "@/features/admin/contact-last-visit";
+import { useAdminLastVisits } from "@/features/admin/contact-last-visit";
 import { useAuthStore } from "@/stores/auth.store";
 
 export default function BackOfficeRootLayout({ children }: { children: React.ReactNode }) {
@@ -28,10 +28,10 @@ export default function BackOfficeRootLayout({ children }: { children: React.Rea
     staleTime: 30_000,
   });
 
-  // Pastilles du menu super-administrateur : nouveautés Contact, incidents et tickets ouverts.
+  // Pastilles du menu super-administrateur : nouveautés Contact et liste d'attente, incidents et tickets ouverts.
   const isSuperAdmin = user?.role.systemRole === "SUPER_ADMIN";
-  const contactLastVisit = useContactLastVisit();
-  const { data: adminBadges } = useAdminNavBadges(contactLastVisit, isSuperAdmin);
+  const adminLastVisits = useAdminLastVisits();
+  const { data: adminBadges } = useAdminNavBadges(adminLastVisits, isSuperAdmin);
 
   const navItems = useMemo(() => {
     const items = user?.role.systemRole

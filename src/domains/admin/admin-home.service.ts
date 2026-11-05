@@ -20,7 +20,7 @@ import { fromParisDateTimeInput, toParisDateTimeInput } from "@/lib/format/paris
 export const ADMIN_HOME_DAYS = 30;
 const WAITLIST_RECENT_DAYS = 7;
 const NEW_COMPANIES_DAYS = 30;
-const PARAMS = ["view", "contactSince"] as const;
+const PARAMS = ["view", "contactSince", "waitlistSince"] as const;
 /** Livraison terminée avec succès : même règle que le tableau de bord entreprise. */
 const DELIVERED_STATUS = "DELIVERED";
 const OPEN_TICKET_STATUSES = ["OPEN", "IN_PROGRESS"] as const;
@@ -31,18 +31,21 @@ export type AdminHomeParams = {
   view: AdminHomeView;
   /** Dernière visite de la page Messages Contact (navigateur) ; absente = jamais visitée. */
   contactSince: Date | null;
+  /** Dernière visite de la page Liste d'attente (navigateur, ADMIN-ESPACE lot 2) ; absente = jamais visitée. */
+  waitlistSince: Date | null;
 };
 
 export type AdminHomeTodo = {
   /** Messages Contact (hors liste d'attente) arrivés depuis `contactSince`. */
   contactNew: number;
-  /** Inscriptions à la liste d'attente arrivées depuis `contactSince`. */
+  /** Inscriptions à la liste d'attente arrivées depuis `waitlistSince`. */
   waitlistNew: number;
   /** Incidents à l'état « Ouvert », comme sur la page Incidents. */
   openIncidents: number;
   /** Tickets support ouverts ou en cours. */
   openSupportTickets: number;
   contactSince: string | null;
+  waitlistSince: string | null;
 };
 
 export type AdminHomeComparison = { current: number; previous: number | null };
@@ -83,15 +86,17 @@ export function parseAdminHomeParams(
   }
   const viewRaw = search.get("view") ?? "full";
   if (viewRaw !== "full" && viewRaw !== "badges") return { error: "Vue invalide" };
-  const sinceRaw = search.get("contactSince");
-  let contactSince: Date | null = null;
-  if (sinceRaw !== null && sinceRaw !== "") {
-    if (sinceRaw.length > 40) return { error: "Date invalide" };
-    const parsed = new Date(sinceRaw);
-    if (Number.isNaN(parsed.getTime())) return { error: "Date invalide" };
-    contactSince = parsed;
-  }
-  return { query: { view: viewRaw, contactSince } };
+  const contactSince = parseSince(search.get("contactSince"));
+  const waitlistSince = parseSince(search.get("waitlistSince"));
+  if (contactSince === "invalid" || waitlistSince === "invalid") return { error: "Date invalide" };
+  return { query: { view: viewRaw, contactSince, waitlistSince } };
+}
+
+function parseSince(raw: string | null): Date | null | "invalid" {
+  if (raw === null || raw === "") return null;
+  if (raw.length > 40) return "invalid";
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? "invalid" : parsed;
 }
 
 /* ---------- Jours à l'heure de Paris ---------- */
@@ -253,13 +258,13 @@ export function contactWhere(kind: "contact" | "waitlist", since: Date | null) {
 const NOT_DEMO = { isDemo: false };
 
 export async function readAdminHomeTodo(
-  params: Pick<AdminHomeParams, "contactSince">,
+  params: Pick<AdminHomeParams, "contactSince" | "waitlistSince">,
   db: AdminHomeDatabase = prisma as unknown as AdminHomeDatabase
 ): Promise<AdminHomeTodo> {
   const incidentWhere = platformIncidentWhere({ page: 1, pageSize: 25 });
   const [contactNew, waitlistNew, openSupportTickets, incidents] = await Promise.all([
     db.contactMessage.count({ where: contactWhere("contact", params.contactSince) }),
-    db.contactMessage.count({ where: contactWhere("waitlist", params.contactSince) }),
+    db.contactMessage.count({ where: contactWhere("waitlist", params.waitlistSince) }),
     db.supportTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
     db.orderMessage.findMany({
       where: incidentWhere,
@@ -282,11 +287,12 @@ export async function readAdminHomeTodo(
     openIncidents: countOpenIncidents(incidents, new Set(actions.map((action) => action.requestKey))),
     openSupportTickets,
     contactSince: params.contactSince ? params.contactSince.toISOString() : null,
+    waitlistSince: params.waitlistSince ? params.waitlistSince.toISOString() : null,
   };
 }
 
 export async function getAdminHomeBadges(
-  params: Pick<AdminHomeParams, "contactSince">,
+  params: Pick<AdminHomeParams, "contactSince" | "waitlistSince">,
   deps: AdminHomeDependencies = {}
 ): Promise<AdminHomeBadges> {
   const now = deps.now ?? new Date();

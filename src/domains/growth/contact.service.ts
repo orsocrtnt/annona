@@ -2,6 +2,7 @@ import { z } from "zod";
 import { sendTransactionalEmail } from "@/lib/email/transactional-email";
 import { abuseFingerprint, getAbuseHmacSecret } from "@/lib/security/abuse-hmac";
 import { prisma } from "@/services/prisma/client";
+import { incrementFunnelCounter, normalizeCampaignCode } from "@/domains/growth/waitlist-funnel.service";
 
 /** GROWTH-1, décision C10 : messages Contact stockés et lus dans le back-office plateforme. */
 export const CONTACT_WINDOW_MS = 60 * 60 * 1000;
@@ -25,7 +26,8 @@ export const contactMessageSchema = z.object({
 
 /**
  * Liste d'attente de la page /tarifs provisoire (5 novembre 2026) : mêmes table, débit, alerte et
- * conservation que Contact, sans migration. Tous les champs sont obligatoires.
+ * conservation que Contact. Tous les champs sont obligatoires, sauf la campagne (`?c=` de l'adresse,
+ * ADMIN-ESPACE lot 2), ramenée à « direct » si elle manque ou ne respecte pas le format.
  */
 export const waitlistEntrySchema = z.object({
   firstName: z.string().trim().min(1).max(60),
@@ -33,6 +35,7 @@ export const waitlistEntrySchema = z.object({
   company: z.string().trim().min(2).max(160),
   email: z.string().trim().toLowerCase().email().max(200),
   phone: z.string().trim().max(40).regex(/^[0-9+().\s-]+$/).refine((value) => value.replace(/\D/g, "").length >= 8),
+  campaign: z.string().max(100).optional(),
   website: z.string().max(200).optional(),
 }).strict();
 
@@ -107,19 +110,28 @@ export async function submitWaitlistEntry(
 ): Promise<ContactSubmitResult> {
   const parsed = waitlistEntrySchema.safeParse(raw);
   if (!parsed.success) return { status: "invalid", field: String(parsed.error.issues[0]?.path[0] ?? "") };
-  const { website, firstName, lastName, company, email, phone } = parsed.data;
+  const { website, firstName, lastName, company, email, phone, campaign } = parsed.data;
   if (website) return { status: "accepted" };
+  const campaignCode = normalizeCampaignCode(campaign);
   return storeContactMessage(
     { name: `${firstName} ${lastName}`, email, company, phone, message: WAITLIST_MESSAGE },
     source,
-    options
+    options,
+    {
+      campaignCode,
+      // Inscription réussie comptée par le serveur, dans la même transaction que l'enregistrement.
+      afterCreate: (tx, now) => incrementFunnelCounter("SIGNUP", campaignCode, now, tx),
+    }
   );
 }
+
+type ContactTransaction = Parameters<Parameters<ContactWriteDatabase["$transaction"]>[0]>[0];
 
 async function storeContactMessage(
   data: Omit<ContactAlertMessage, "id">,
   source: string,
-  options: { now?: Date; secret?: string; db?: ContactWriteDatabase }
+  options: { now?: Date; secret?: string; db?: ContactWriteDatabase },
+  waitlist?: { campaignCode: string; afterCreate: (tx: ContactTransaction, now: Date) => Promise<void> }
 ): Promise<ContactSubmitResult> {
   const db = options.db ?? prisma;
   const now = options.now ?? new Date();
@@ -136,7 +148,10 @@ async function storeContactMessage(
     ]);
     if (fromSource >= CONTACT_SOURCE_LIMIT || total >= CONTACT_GLOBAL_LIMIT) return { status: "rate_limited" } as const;
 
-    const stored = await tx.contactMessage.create({ data: { ...data, sourceHash } });
+    const stored = await tx.contactMessage.create({
+      data: { ...data, sourceHash, ...(waitlist ? { campaignCode: waitlist.campaignCode } : {}) },
+    });
+    if (waitlist) await waitlist.afterCreate(tx, now);
     return {
       status: "accepted",
       stored: {
@@ -177,7 +192,7 @@ export async function sendContactAlert(
         `Téléphone : ${message.phone ?? "non indiqué"}`,
         "",
         message.message,
-        ...(appUrl ? ["", `Lire dans le back-office : ${appUrl}/admin/contact`] : []),
+        ...(appUrl ? ["", `Lire dans le back-office : ${appUrl}${message.message === WAITLIST_MESSAGE ? "/admin/waitlist" : "/admin/contact"}`] : []),
       ].join("\n"),
       idempotencyKey: `contact-message:${message.id}`,
       // Un seul essai par message : aucune tentative antérieure n'a pu partir sous cette clé.
@@ -208,9 +223,12 @@ export async function listContactMessages(
   query: { page: number; pageSize: number },
   db: ContactDatabase = prisma
 ) {
+  // ADMIN-ESPACE lot 2 : les inscriptions à la liste d'attente ont leur propre page (/admin/waitlist).
+  const where = { NOT: { message: WAITLIST_MESSAGE } };
   const [total, items] = await Promise.all([
-    db.contactMessage.count(),
+    db.contactMessage.count({ where }),
     db.contactMessage.findMany({
+      where,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,

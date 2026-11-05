@@ -28,6 +28,7 @@ function memoryDb(existing: Array<{ sourceHash: string; createdAt: Date }> = [])
   const rows = [...existing] as Array<Record<string, unknown> & { sourceHash: string; createdAt: Date }>;
   const counts: Array<Record<string, unknown>> = [];
   const events: string[] = [];
+  const funnel: unknown[][] = [];
   // Comme PostgreSQL : un tour de boucle entre lecture et écriture laisse les envois s'entrelacer.
   const tick = () => new Promise((done) => setImmediate(done));
   const contactMessage = {
@@ -50,6 +51,7 @@ function memoryDb(existing: Array<{ sourceHash: string; createdAt: Date }> = [])
     rows,
     counts,
     events,
+    funnel,
     db: {
       contactMessage,
       $transaction: async <T>(fn: (tx: unknown) => Promise<T>) => {
@@ -62,6 +64,12 @@ function memoryDb(existing: Array<{ sourceHash: string; createdAt: Date }> = [])
             tail = new Promise<void>((done) => { release = done; });
             await previous;
             return [{ locked: 1 }];
+          },
+          // Compteur d'inscriptions de l'entonnoir (ADMIN-ESPACE lot 2), dans la même transaction.
+          $executeRaw: async (_strings: TemplateStringsArray, ...values: unknown[]) => {
+            events.push("funnel");
+            funnel.push(values);
+            return 1;
           },
         };
         try {
@@ -183,6 +191,7 @@ test("GROWTH-1 contact : la boîte plateforme pagine sans exposer l'empreinte", 
     },
   } as never);
   assert.deepEqual(result, { items: [], total: 30, page: 2, pageSize: 25 });
+  assert.deepEqual(findArgs.where, { NOT: { message: WAITLIST_MESSAGE } }, "les inscriptions ont leur propre page");
   assert.equal(findArgs.skip, 25);
   assert.equal(findArgs.take, 25);
   assert.deepEqual(findArgs.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
@@ -339,6 +348,35 @@ test("liste d'attente : inscription complète rangée avec les messages Contact,
 
   const limited = memoryDb(Array.from({ length: CONTACT_SOURCE_LIMIT }, () => ({ sourceHash: contactSourceHash("198.51.100.5", secret), createdAt: now })));
   assert.deepEqual(await submitWaitlistEntry(entry, "198.51.100.5", { now, secret, db: limited.db }), { status: "rate_limited" });
+});
+
+test("liste d'attente : campagne enregistrée et inscription comptée dans la même transaction (ADMIN-ESPACE lot 2)", async () => {
+  const entry = { firstName: "Camille", lastName: "Martin", company: "Transports Exemple", email: "camille@example.invalid", phone: "06 00 00 00 00" };
+  const late = new Date("2026-11-05T23:30:00.000Z"); // 00 h 30 à Paris : jour du 6 novembre
+  const tracked = memoryDb();
+  assert.equal((await submitWaitlistEntry({ ...entry, campaign: "essai-lot2" }, "203.0.113.20", { now: late, secret, db: tracked.db })).status, "accepted");
+  assert.equal(tracked.rows[0]!.campaignCode, "essai-lot2");
+  assert.deepEqual(tracked.funnel, [["2026-11-06", "essai-lot2", "SIGNUP"]]);
+  assert.deepEqual(tracked.events.slice(-2), ["create", "funnel"], "compté après l'écriture, avant la fin de la transaction");
+
+  for (const campaign of [undefined, "", "Majuscules", "a b", "x".repeat(41), "<script>"]) {
+    const direct = memoryDb();
+    await submitWaitlistEntry({ ...entry, ...(campaign === undefined ? {} : { campaign }) }, "203.0.113.21", { now, secret, db: direct.db });
+    assert.equal(direct.rows[0]!.campaignCode, "direct", String(campaign));
+    assert.deepEqual(direct.funnel.map((values) => values[1]), ["direct"]);
+  }
+  assert.equal((await submitWaitlistEntry({ ...entry, campaign: "x".repeat(101) }, "203.0.113.22", { now, secret, db: memoryDb().db })).status, "invalid");
+
+  const robot = memoryDb();
+  await submitWaitlistEntry({ ...entry, campaign: "essai", website: "https://spam.invalid" }, "203.0.113.23", { now, secret, db: robot.db });
+  assert.deepEqual(robot.funnel, [], "pot de miel : rien n'est compté");
+  const limited = memoryDb(Array.from({ length: CONTACT_SOURCE_LIMIT }, () => ({ sourceHash: contactSourceHash("203.0.113.24", secret), createdAt: now })));
+  await submitWaitlistEntry(entry, "203.0.113.24", { now, secret, db: limited.db });
+  assert.deepEqual(limited.funnel, [], "inscription refusée : rien n'est compté");
+  const contact = memoryDb();
+  await submitContactMessage(valid, "203.0.113.25", { now, secret, db: contact.db });
+  assert.deepEqual(contact.funnel, [], "un message Contact n'est pas une inscription");
+  assert.equal("campaignCode" in contact.rows[0]!, false);
 });
 
 test("liste d'attente : l'alerte de l'équipe est titrée « Liste d'attente »", async () => {

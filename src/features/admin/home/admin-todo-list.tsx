@@ -16,12 +16,12 @@ const plural = (count: number, one: string, many: string) => `${count} ${count >
 
 export function buildTodoRows(todo: AdminHomeTodo): TodoRow[] {
   // Sans date de visite dans ce navigateur, tout compte comme nouveau : on le dit sans accorder au nombre.
-  const since = todo.contactSince ? ", depuis votre dernière visite" : " (page jamais ouverte sur cet appareil)";
+  const sinceText = (since: string | null) => since ? ", depuis votre dernière visite" : " (page jamais ouverte sur cet appareil)";
   const rows: TodoRow[] = [
     {
       key: "contact",
       count: todo.contactNew,
-      text: `${plural(todo.contactNew, "nouveau message Contact", "nouveaux messages Contact")}${since}`,
+      text: `${plural(todo.contactNew, "nouveau message Contact", "nouveaux messages Contact")}${sinceText(todo.contactSince)}`,
       action: "Lire les messages",
       href: "/admin/contact",
       icon: Inbox,
@@ -29,9 +29,9 @@ export function buildTodoRows(todo: AdminHomeTodo): TodoRow[] {
     {
       key: "waitlist",
       count: todo.waitlistNew,
-      text: `${plural(todo.waitlistNew, "nouvelle inscription", "nouvelles inscriptions")} à la liste d'attente${since}`,
+      text: `${plural(todo.waitlistNew, "nouvelle inscription", "nouvelles inscriptions")} à la liste d'attente${sinceText(todo.waitlistSince)}`,
       action: "Voir les inscriptions",
-      href: "/admin/contact",
+      href: "/admin/waitlist",
       icon: UserPlus,
     },
     {

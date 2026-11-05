@@ -33,11 +33,16 @@ import { groupNavItems } from "../src/lib/navigation/group-nav-items";
 /* ---------- Paramètres ---------- */
 
 test("ADMIN-ESPACE accueil : paramètres stricts", () => {
-  assert.deepEqual(parseAdminHomeParams(new URLSearchParams()), { query: { view: "full", contactSince: null } });
+  assert.deepEqual(parseAdminHomeParams(new URLSearchParams()), { query: { view: "full", contactSince: null, waitlistSince: null } });
   const since = parseAdminHomeParams(new URLSearchParams({ view: "badges", contactSince: "2026-11-01T08:00:00.000Z" }));
   assert.ok("query" in since);
   assert.equal(since.query.view, "badges");
   assert.equal(since.query.contactSince?.toISOString(), "2026-11-01T08:00:00.000Z");
+  assert.equal(since.query.waitlistSince, null);
+  const waitlist = parseAdminHomeParams(new URLSearchParams({ waitlistSince: "2026-11-02T08:00:00.000Z" }));
+  assert.ok("query" in waitlist);
+  assert.equal(waitlist.query.waitlistSince?.toISOString(), "2026-11-02T08:00:00.000Z");
+  assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ waitlistSince: "hier" })), { error: "Date invalide" });
   assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ companyId: "x" })), { error: "Paramètre inconnu" });
   assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ view: "tout" })), { error: "Vue invalide" });
   assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ contactSince: "hier" })), { error: "Date invalide" });
@@ -132,7 +137,14 @@ function fakeDb(calls: Call[]): AdminHomeDatabase {
         record("contactMessage", "count", args);
         const where = args.where as { message?: string; NOT?: unknown; createdAt?: { gt?: Date; gte?: Date } };
         if (where.NOT) return where.createdAt?.gt ? 4 : 11;
-        if (where.message === WAITLIST_MESSAGE) return where.createdAt?.gt ? 2 : where.createdAt?.gte ? 3 : 10;
+        if (where.message === WAITLIST_MESSAGE) {
+          // Liste d'attente : comptée depuis sa propre dernière visite (lot 2), jamais depuis celle de Contact.
+          if (where.createdAt?.gt) {
+            assert.equal(where.createdAt.gt.toISOString(), "2026-11-02T00:00:00.000Z");
+            return 2;
+          }
+          return where.createdAt?.gte ? 3 : 10;
+        }
         throw new Error("filtre Contact inattendu");
       },
     },
@@ -182,7 +194,7 @@ test("ADMIN-ESPACE accueil : chiffres clés hors démo, comparaisons et liste d'
   const revenueAnchors: string[] = [];
   const now = new Date("2026-11-05T10:00:00.000Z");
   const home = (await getAdminHome(
-    { view: "full", contactSince: new Date("2026-11-01T00:00:00.000Z") },
+    { view: "full", contactSince: new Date("2026-11-01T00:00:00.000Z"), waitlistSince: new Date("2026-11-02T00:00:00.000Z") },
     {
       db: fakeDb(calls),
       now,
@@ -206,6 +218,7 @@ test("ADMIN-ESPACE accueil : chiffres clés hors démo, comparaisons et liste d'
     openIncidents: 1,
     openSupportTickets: 5,
     contactSince: "2026-11-01T00:00:00.000Z",
+    waitlistSince: "2026-11-02T00:00:00.000Z",
   });
   assert.deepEqual(home.kpis.activeCompanies, { current: 7, newLast30Days: 1 });
   assert.deepEqual(home.kpis.deliveredToday, { current: 6, previous: 4 });
@@ -236,15 +249,15 @@ test("ADMIN-ESPACE accueil : chiffres clés hors démo, comparaisons et liste d'
 
 test("ADMIN-ESPACE accueil : sans visite enregistrée, tous les messages sont nouveaux ; les pastilles restent légères", async () => {
   const calls: Call[] = [];
-  const badges = (await getAdminHome({ view: "badges", contactSince: null }, { db: fakeDb(calls) })) as AdminHomeBadges;
-  assert.deepEqual(badges.todo, { contactNew: 11, waitlistNew: 10, openIncidents: 1, openSupportTickets: 5, contactSince: null });
+  const badges = (await getAdminHome({ view: "badges", contactSince: null, waitlistSince: null }, { db: fakeDb(calls) })) as AdminHomeBadges;
+  assert.deepEqual(badges.todo, { contactNew: 11, waitlistNew: 10, openIncidents: 1, openSupportTickets: 5, contactSince: null, waitlistSince: null });
   assert.equal(Object.hasOwn(badges, "kpis"), false);
   assert.equal(calls.some((entry) => ["company", "order", "delivery"].includes(entry.model)), false, "aucun calcul lourd");
 });
 
 test("ADMIN-ESPACE accueil : un chiffre illisible n'est jamais inventé", async () => {
   const home = (await getAdminHome(
-    { view: "full", contactSince: null },
+    { view: "full", contactSince: null, waitlistSince: null },
     {
       db: fakeDb([]),
       now: new Date("2026-11-05T10:00:00.000Z"),
@@ -263,7 +276,7 @@ test("ADMIN-ESPACE menu : trois groupes pour le super-administrateur, rien ne ch
   assert.deepEqual(sections, [
     [null, ["Tableau de bord /admin"]],
     [ADMIN_NAV_GROUPS.clients, ["Entreprises /companies", "Utilisateurs /admin/users", "Souscriptions /admin/subscriptions"]],
-    [ADMIN_NAV_GROUPS.commercial, ["Messages Contact /admin/contact", "Codes commerciaux /admin/sales"]],
+    [ADMIN_NAV_GROUPS.commercial, ["Messages Contact /admin/contact", "Liste d'attente /admin/waitlist", "Codes commerciaux /admin/sales"]],
     [
       ADMIN_NAV_GROUPS.technique,
       ["Exploitation /admin/operations", "Incidents /admin/incidents", "Support plateforme /admin/support", "Journal d'accès /admin/access-events"],
@@ -284,7 +297,8 @@ test("ADMIN-ESPACE menu : pastilles de nouveautés, aucune à zéro", () => {
   const items = applyAdminNavBadges(adminNavItems, { contactNew: 2, waitlistNew: 1, openIncidents: 140, openSupportTickets: 1 });
   const byHref = Object.fromEntries(items.filter((item) => item.badge !== undefined).map((item) => [item.href, [item.badge, item.badgeLabel]]));
   assert.deepEqual(byHref, {
-    "/admin/contact": [3, "3 nouveaux messages"],
+    "/admin/contact": [2, "2 nouveaux messages"],
+    "/admin/waitlist": [1, "1 nouvelle inscription"],
     "/admin/incidents": ["99+", "140 incidents ouverts"],
     "/admin/support": [1, "1 ticket ouvert"],
   });
@@ -300,7 +314,7 @@ test("ADMIN-ESPACE menu : barre latérale et menu mobile rendent les groupes et 
     assert.match(source, /<NavBadge /, file);
   }
   const layout = readFileSync("src/app/(back-office)/layout.tsx", "utf8");
-  assert.match(layout, /useAdminNavBadges\(contactLastVisit, isSuperAdmin\)/);
+  assert.match(layout, /useAdminNavBadges\(adminLastVisits, isSuperAdmin\)/);
   assert.match(layout, /isSuperAdmin \? applyAdminNavBadges/);
   const contact = readFileSync("src/app/(back-office)/admin/contact/page.tsx", "utf8");
   assert.match(contact, /markContactVisited\(\)/);
