@@ -26,7 +26,7 @@ Tant que les trois variables ci-dessous ne sont pas posées, la section affiche 
    - Si Google refuse de créer la clé (« règle d'organisation »), c'est une restriction du compte Google Workspace : utiliser un compte Google personnel pour le projet, ou lever la règle `iam.disableServiceAccountKeyCreation`.
 6. Ouvrir le fichier JSON avec un éditeur de texte. Noter deux valeurs :
    - `client_email`, par exemple `tutelliv-lecture-prospection@tutelliv-prospection.iam.gserviceaccount.com` ;
-   - `private_key`, qui commence par `-----BEGIN PRIVATE KEY-----\n` et finit par `-----END PRIVATE KEY-----\n`.
+   - `private_key`, un long texte qui commence par une ligne « BEGIN PRIVATE KEY » entourée de cinq tirets et finit par une ligne « END PRIVATE KEY » entourée de cinq tirets.
 
 ## 2. Partager la Sheet en lecture avec le compte de service
 

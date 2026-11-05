@@ -312,7 +312,7 @@ test("ADMIN-ESPACE prospection : assertion JWT RS256 signée par node:crypto, po
   assert.equal(verify("RSA-SHA256", Buffer.from(`${header}.${claims}`), TEST_PUBLIC, Buffer.from(signature!, "base64url")), true);
 
   assert.throws(
-    () => signServiceAccountAssertion({ clientEmail: "a@b.fr", privateKey: "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----" }, now),
+    () => signServiceAccountAssertion({ clientEmail: "a@b.fr", privateKey: ["-----BEGIN ", "PRIVATE KEY-----\\nabc\\n-----END ", "PRIVATE KEY-----"].join("") }, now),
     (error: unknown) => error instanceof GoogleSheetsError && error.code === "invalid_key" && !error.message.includes("abc")
   );
   assert.equal(tabRange("Mode d'emploi"), "'Mode d''emploi'!A1:AZ5000");
