@@ -80,15 +80,15 @@ export function CategoryCard({
 const DONUT_RADIUS = 42;
 const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
 
-/** Tons du diagramme en jetons : encre en Light, gris clair en Dark (classes complètes pour Tailwind). */
+/** Tons du diagramme, mêmes couleurs que les pastilles des chiffres (classes complètes pour Tailwind). */
 const DONUT_TONES = {
-  ink: { stroke: "stroke-chart-ink", dot: "bg-chart-ink" },
-  mid: { stroke: "stroke-chart-mid", dot: "bg-chart-mid" },
-  soft: { stroke: "stroke-chart-soft", dot: "bg-chart-soft" },
+  success: { stroke: "stroke-brand", dot: "bg-brand" },
+  info: { stroke: "stroke-[#2f6fd1] dark:stroke-[#8fb5ee]", dot: "bg-[#2f6fd1] dark:bg-[#8fb5ee]" },
+  neutral: { stroke: "stroke-muted-foreground/40", dot: "bg-muted-foreground/40" },
 } as const;
 export type DonutTone = keyof typeof DONUT_TONES;
 
-/** Répartition des missions du jour, en tons encre (les diagrammes suivent la direction Encre). */
+/** Répartition des missions du jour, aux couleurs des pastilles (livrées vert, en cours bleu, restantes gris). */
 export function TodayDonut({
   segments,
 }: {
@@ -142,7 +142,7 @@ export function TodayDonut({
   );
 }
 
-/** Livraisons terminées par heure, en barres encre (direction Encre pour les diagrammes). */
+/** Livraisons terminées par heure, en barres vertes (couleur des livrées). */
 export function HourlyBars({ values }: { values: number[] }) {
   const max = Math.max(...values, 0);
   return (
@@ -166,7 +166,7 @@ export function HourlyBars({ values }: { values: number[] }) {
           >
             {value > 0 && (
               <div
-                className="w-1.5 rounded-t-full bg-chart-ink"
+                className="w-1.5 rounded-t-full bg-brand"
                 style={{ height: `${Math.max((value / max) * 100, 6)}%` }}
               />
             )}
@@ -248,6 +248,15 @@ export function SevenDayBars({ days }: { days: DashboardHistoryDay[] }) {
   );
 }
 
+/** Fonds teintés des chiffres du jour (sans bordure). */
+const TODAY_TINTS: Record<Tone, string> = {
+  success: "bg-[#eef8f2] dark:bg-[#1c2722]",
+  info: "bg-[#eff4fc] dark:bg-[#1d242c]",
+  critical: "bg-[#fdf1f0] dark:bg-[#282120]",
+  warning: "bg-[#fdf4ea] dark:bg-[#26231c]",
+  neutral: "bg-muted/50",
+};
+
 export function TodayMetric({
   label,
   counts,
@@ -265,8 +274,8 @@ export function TodayMetric({
 }) {
   const isClickable = counts.total > 0 && onClick;
   const toneClasses = TONE_CLASSES[resolveTone(tone, counts.total)];
-  // Pas de carte dans la carte : une colonne sans bordure, la pastille porte l'état.
-  const surface = "rounded-lg p-3";
+  // Pas de carte dans la carte : une colonne sans bordure ; avec un ton, un fond teinté léger reprend la pastille.
+  const surface = cn("rounded-lg p-3", tone && TODAY_TINTS[resolveTone(tone, counts.total)]);
 
   const inner = (
     <>
@@ -303,7 +312,7 @@ export function TodayMetric({
     <button
       type="button"
       onClick={onClick}
-      className={cn(surface, "flex h-full w-full flex-col items-stretch justify-start text-left transition-colors hover:bg-muted/60")}
+      className={cn(surface, "flex h-full w-full flex-col items-stretch justify-start text-left transition-shadow", tone ? "hover:ring-1 hover:ring-border" : "hover:bg-muted/60")}
     >
       {inner}
     </button>

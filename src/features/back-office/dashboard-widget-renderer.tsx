@@ -261,6 +261,7 @@ function TodaySummaryWidget() {
           />
           <TodayMetric
             label="Restantes"
+            tone="neutral"
             counts={dashboard.today.remaining}
             onClick={() =>
               openDrillDown({
@@ -288,9 +289,9 @@ function TodaySummaryWidget() {
         </div>
         <TodayDonut
           segments={[
-            { label: "Livrées", value: dashboard.today.delivered.total, tone: "ink" },
-            { label: "En cours", value: dashboard.today.inProgress.total, tone: "mid" },
-            { label: "Restantes", value: dashboard.today.remaining.total, tone: "soft" },
+            { label: "Livrées", value: dashboard.today.delivered.total, tone: "success" },
+            { label: "En cours", value: dashboard.today.inProgress.total, tone: "info" },
+            { label: "Restantes", value: dashboard.today.remaining.total, tone: "neutral" },
           ]}
         />
         <div className="xl:col-span-2">
