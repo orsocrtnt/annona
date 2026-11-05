@@ -10,7 +10,9 @@ test("chaque phrase publique est couverte par un écran déjà livré", () => {
   const page = readFileSync(new URL("../src/app/fonctionnalites/page.tsx", import.meta.url), "utf8");
   const publicNav = readFileSync(new URL("../src/features/landing/public-top-navbar.tsx", import.meta.url), "utf8");
   assert.match(page, /PUBLIC_CAPABILITIES/);
-  assert.match(page, /href="\/tarifs"/);
+  // Tarifs et démonstration en ligne retirés du site public le 5 novembre 2026 : plus aucun lien.
+  assert.doesNotMatch(page, /href="\/(tarifs|demonstration)"/);
+  assert.doesNotMatch(publicNav, /\/(tarifs|demonstration)"/);
   assert.match(page, /href="\/contact"/);
   assert.match(page, /href="\/login"/);
   assert.match(publicNav, /href: "\/fonctionnalites"/);

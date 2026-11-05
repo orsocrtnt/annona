@@ -19,9 +19,9 @@ function TourUnavailable() {
   return (
     <div className="grid h-[460px] place-items-center rounded-[22px] border border-border bg-card px-6 text-center text-sm text-muted-foreground" role="status">
       <p>
-        La mini-démo n&apos;a pas pu se charger. Rechargez la page ou ouvrez la{" "}
-        <Link href="/demonstration" className="font-semibold text-brand underline underline-offset-4">
-          démonstration complète
+        La mini-démo n&apos;a pas pu se charger. Rechargez la page ou{" "}
+        <Link href="/contact" className="font-semibold text-brand underline underline-offset-4">
+          demandez-nous une présentation
         </Link>
         .
       </p>

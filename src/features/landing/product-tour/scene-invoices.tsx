@@ -159,10 +159,10 @@ export function SceneInvoices({ reducedMotion, onRestart }: SceneProps & { onRes
                 Rejouer
               </button>
               <Link
-                href="/demonstration"
+                href="/contact"
                 className="inline-flex min-h-10 max-md:min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0e1310] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#232a26] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                Voir la démo complète
+                Demander un pilote
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Link>
             </div>

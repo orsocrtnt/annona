@@ -4,12 +4,13 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**101 tâches terminées sur 129 — 78 %**
+**101 tâches terminées sur 130 — 78 %**
 
-`████████████████░░░░` · 28 tâches restantes
+`████████████████░░░░` · 29 tâches restantes
 
 **À faire par Claude**
 
+- AUDIT-0411 — Corriger ce que les pilotes remarqueraient (audit de bout en bout du 4 novembre 2026)
 - V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
 - DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
 - PROD-04 — Définir les mesures de valeur (après les pilotes)
@@ -45,11 +46,12 @@
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 4 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 5 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
+- Site public (5 novembre) : pages Tarifs et Démonstration retirées comme demandé, Fonctionnalités mise à jour (détail dans GROWTH-1). Rien à faire ; pour les rouvrir, le demander à Claude. Commité et poussé sur `preproduction` le 5 novembre.
 - OPS-FIAB (4 novembre) : push et migration faits par Claude (déploiement prêt, sonde toujours saine). Reste une commande, refusée à l'agent : `sh scripts/ops03b/copy-alert-email.sh` (doit afficher `"stored":true`). Dis-moi quand c'est fait : je teste l'e-mail.
 - Le 3 novembre, règles d'autorisation ajoutées à ta demande (`.claude/settings.local.json`, non versionné) : migration de préproduction, variable `DRIVE_ROUTE_IGN_URL`, push et copie du secret du relais faits par Claude.
 - Avant le premier pilote : faire confirmer par un comptable le mot « Facture » à l'écran pour un document sans toutes les mentions légales (le PDF classique reste « Relevé de prestation »).
@@ -71,6 +73,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
 
 **2. Claude — peut le faire seul, dans cet ordre**
+- AUDIT-0411 : corrections en ligne depuis le 5 novembre, vérifiées dans Chrome sur tutelliv.fr. Suite : session de démo expirée (ton nom visible dans la démo), date prévue vide côté client, puis le reste de la liste (statuts uniformes, téléphone du livreur, recherche du client, données de démo, console interne, mineurs).
 - LEGAL-1, écarts qui ne dépendent pas de toi : mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
 - OPS-FIAB : dès tes trois commandes lancées, déclencher une panne fictive et vérifier l'e-mail d'alerte dans Gmail, puis l'alerte d'une tâche de fond en retard.
 - MAIL-PONT : essai Outlook plus tard, quand tu le décides ; puis, si tu le veux, les fiches dans la page « Clients ».
@@ -87,6 +90,38 @@ Mise à jour : 29 octobre 2026, en fin de journée (revue de cohérence : matric
 ## Tâches ouvertes
 
 _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
+
+- [ ] **AUDIT-0411 — Corriger ce que les pilotes remarqueraient (audit de bout en bout du 4 novembre 2026).** Demande du propriétaire : utiliser TutelLiv comme un utilisateur et tout regarder, pour que les pilotes n'aient rien à redire sur l'existant. Rapport : `docs/rapports/2026-11-04/audit-bout-en-bout-pilotes.md` ; preuves locales `outputs/audit-2026-11-04/` (224 captures, parcours cliqués, journal des tests).
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : GPT‑6 Astra · effort élevé (heures, adresses, compteurs : données métier).**
+
+  Audit fait le 4 novembre : `preproduction` `31f4403` construit en production dans une copie isolée, base `tutelliv-dev` ; 224 écrans relevés (7 rôles, ordinateur et téléphone, clair et sombre), relus puis vérifiés à la main ; parcours cliqués commande → livreur (photo, signature) → preuve PDF → facture → support → réaffectation → suivi public ; 9 fichiers E2E : 21 réussis, 4 échoués (IA non branchée en local ×2, test V1 sans créneau, résidus de démo du 3 novembre), 5 ignorés.
+
+  Corrigé le 4 novembre, feu vert du propriétaire (commit `1f89520` sur la branche `agent/audit-0411`, partie de `38d874f`, **non poussé**) :
+  - Bloquants : heure de livraison stable à l'enregistrement et lue à l'heure de Paris, dates affichées à l'heure de Paris partout ; numéro de rue gardé avec un avertissement orange ; compteurs (minuit de Paris, livrées du jour, « En retard » unique, filtres de la carte, charge avec retards) ; page 404 française, avec messages pour les liens de suivi et de commande ; textes de développeur retirés de /tarifs et /demonstration ; suivi client cohérent.
+  - Écarté : /register est déjà fermé proprement sur tutelliv.fr, seule la copie locale l'ouvrait.
+  - Majeurs : annulation masquée sur une livraison terminée ; renvoi entre rôles expliqué par un message ; mentions internes reformulées et pluriels accordés ; marge pour la pastille Alertes ; fiche client sur téléphone ; « Commander à nouveau » ; en-têtes des commandes ; boutons désactivés lisibles en sombre ; livreur avec « Appeler le client » et « Échec de livraison » distinct ; premier champ en erreur ciblé ; PDF de preuve ; statuts de la console interne ; purge des e-mails reçus à la remise à zéro de la démo ; test E2E V1 avec créneau.
+  - Vérifications : `npm run check` vert (1 594 tests, 7 nouveaux ou adaptés) ; build de production vert ; recette navigateur sur `tutelliv-dev` (Chrome), 27 contrôles OK, dont l'heure inchangée après enregistrement (22:59 Z → 22:59 Z) et la saisie de 10:30 enregistrée à 09:30 Z, captures relues dans `outputs/audit-2026-11-04/correctifs/` ; E2E `v1-operational`, `auth-role-pages` et `pod-proof` verts. `ux03-delivery` n'a pas pu se connecter : pool de démo local saturé (8 espaces loués, 3 en quarantaine, pas de recyclage en local) ; son seul changement (« À livrer avant le ») a été vérifié par la recette.
+  - Données de dev : numéros fictifs 06 39 98 00 1x posés sur les 55 clients de démo. Comptes de rôle supprimés, serveur arrêté.
+
+  Mis en ligne le 5 novembre 2026 (feu vert du propriétaire) : branche fusionnée sans conflit dans `preproduction`, `npm run check` vert après fusion (1 594 tests), push `38d874f..1f89520`, `ls-remote` = `1f89520`. Contrôle sur tutelliv.fr après déploiement (3 min 30) : page introuvable en français (« introuvable | TutelLiv », code 404), plus aucun texte de développeur sur /tarifs ni /demonstration. Non refait en ligne : écrans connectés (fiche livraison, tableau de bord), déjà recettés sur `tutelliv-dev` le 4 novembre.
+
+  Recette Chrome sur tutelliv.fr le 5 novembre 2026 (démo publique) : OK — page introuvable et lien de suivi expiré en français ; /tarifs, /demonstration et /register sans texte de développeur ; tableau de bord avec un seul « En retard » (12 en haut et dans Aujourd'hui) ; fiche livraison 23:59 avant et après « Enregistrer » puis rechargement ; numéro de rue gardé (« 999 Avenue des Champs Élysées » avec l'avertissement orange) ; message « page réservée à un autre rôle » en vue Client ; aucune erreur dans la console. Non refait : annulation masquée sur une livraison livrée (aucune livraison livrée dans la démo).
+  Nouveaux constats de cette recette : (a) un ancien onglet resté connecté à la démo ouvre un espace dont la session a expiré : « Réinitialiser la démo » échoue (409 « Session de démonstration absente ») et cet espace contient deux courses au nom d'Orso Carotenuto avec son adresse Gmail ; (b) côté client, « Mes commandes » affiche « — » dans Livraison prévue pour les 3 commandes, et l'accueil client « Prochaine livraison 01:11 hier » ; (c) nouvelle commande client : les deux listes « Adresse enregistrée » et « Créneau » n'ont toujours pas de libellé lié ; (d) restent visibles : « 0 action » sur l'accueil, « 3000 / mois » sans espace sur /tarifs, LIV-… et CMD-… pour la même livraison, statut « Attente ».
+
+  Reste à faire, Claude :
+  1. Constats (a) à (c) ci-dessus : session de démo expirée et données personnelles dans la démo, date prévue côté client, libellés des listes.
+  2. Vérifier les 3 espaces de démo en quarantaine et la capacité du pool avant les appels de prospection.
+  3. Statuts et références uniformes (LIV-… au dispatch contre CMD-… dans Commandes ; Attente / En attente / Sans livreur), avec MOTS-UNIFIES.
+  4. Livreur sur téléphone : mission en cours et boutons plus haut que les quatre bandeaux.
+  5. Choix du client avec recherche dans la nouvelle commande de l'administrateur, sans e-mail technique.
+  6. Données de démo crédibles : heures de journée, peu de retards, sociétés clientes, e-mails lisibles.
+  7. Console interne : tableau des souscriptions qui déborde, journal d'accès traduit, indicateurs contradictoires.
+  8. Puis les mineurs du rapport : site public (trois styles, bouton Contact, « 0 action »), typographie, listes natives, menu actif, PDF de preuve (position GPS brute).
+
+  Non testé : invitations et ajout de clients ou livreurs par l'écran, commandes récurrentes, analyse IA, WhatsApp, e-mails réels, vrais téléphones, vitesse des pages connectées en ligne.
 
 - [ ] **SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex.**
 
@@ -198,6 +233,7 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   Suite le même jour (« rechercher jusqu'à rajouter des numéros », puis « même chose pour Marseille ») : PARIS, 21 numéros de plus pour des sociétés que l'INSEE déclare sans salarié (le standard est tenu par le dirigeant ; USEND et Cygogne écartés), chaque cellule portant une note de provenance → 67 numéros sur 131 dirigeants. Pappers (téléphone réservé aux comptes connectés, création de compte interdite à l'agent) et PagesJaunes (numéros masqués, résultats mélangés) testés dans Chrome puis abandonnés. MARSEILLE : colonne G « Tél. dirigeant » insérée comme sur PARIS ; registre + adresse + SIREN des mentions légales → 78 dirigeants sur 123 (colonne J, SIREN en Z ; Allo Express sans dirigeant et Vélos Coursiers Toulonnais non diffusible écartés) ; 38 numéros dans G avec note de provenance (1 mentions légales, 26 portables d'entreprise, 9 sociétés sans salarié, 2 entrepreneurs individuels) ; numéros d'hébergeur et standards déjà notés écartés. Vérifications : en-têtes relus avant écriture, lignes 34 et 124 relues, formules du Tableau de bord décalées automatiquement (MARSEILLE : Statut N, e-mail H, 123 / 38 / 121 inchangés). Limites : recherche web nominative non relancée pour MARSEILLE (rendement nul sur PARIS) ; « portable d'entreprise » et « sans salarié » restent des déductions, signalées dans la note de chaque cellule.
   Documentation pour les commerciaux le même jour (le propriétaire précise que le fichier leur est destiné) : onglet « Mode d'emploi », 8 lignes ajoutées (qui appeler, colonnes Interlocuteur et Tél. dirigeant, origine des numéros, conduite pendant et après l'appel, LinkedIn avec Kaspr ou Lusha à la main, chiffres au 04/11/2026) et ligne Sources complétée ; mise en forme recopiée de la ligne existante, hauteurs de ligne ajustées. Vérification : écriture confirmée par l'API ; rendu non contrôlé visuellement dans le navigateur.
   Cases vides de « Tél. dirigeant » remplies le même jour à la demande du propriétaire : « Pas de n° direct → appeler le standard et demander [nom du dirigeant] » (ou « le gérant » si inconnu), « Aucun numéro → écrire par e-mail ou passer par le site » quand l'entreprise n'a aucun téléphone. PARIS 147 cases, MARSEILLE 85 cases ; les 67 et 38 numéros conservés à l'identique, notes de provenance intactes. Ligne « Colonne Tél. dirigeant » du Mode d'emploi adaptée. Vérification : écriture confirmée par l'API, lignes 12 et 13 de PARIS relues.
+  Réparation du fichier le 5 novembre 2026 (les commerciaux l'avaient cassé) : dans le Tableau de bord, 6 calculs avaient été remplacés par des chiffres tapés à la main (entreprises contactées, intéressées, et pour Paris « pas joint » 5, « à rappeler » 1, « entretien fixé » 1, « pas intéressé » 3). Calculs remis ; onglets PARIS et MARSEILLE relus en entier (337 lignes, numérotation, statuts, e-mails, sites, dates : aucune casse). Protection « avertissement » ajoutée sur le seul Tableau de bord (retirée des en-têtes PARIS et MARSEILLE à la demande du propriétaire) ; ligne « Tableau de bord » ajoutée au Mode d'emploi. Vérification : valeurs relues par l'API, les compteurs suivent de nouveau les statuts (Paris 8 à rappeler, 2 intéressés ; Marseille 2 pas intéressés). Limite : les résultats tapés à la main ne disent pas quelles entreprises sont concernées ; le commercial doit les reporter sur les bonnes lignes de PARIS.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section PROD-02.
 
@@ -264,6 +300,8 @@ _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Claude — après la vérification de conformité.**
 
   Terminé quand : un prospect comprend pour qui est le produit, le problème résolu, les trois espaces, le prix HT/TTC indicatif, options et dépassements, la différence démo/pilote/découverte premium et la prochaine étape ; navigation responsive et accessible ; contenu cohérent avec le catalogue actif ; formulaires protégés contre abus ; pages légales publiées seulement après validation.
+
+  5 novembre 2026, à la demande du propriétaire : pages **Tarifs** et **Démonstration en ligne** retirées du site public pour le moment. Plus aucun lien (barre, menu mobile, pied de page, accueil, fin de la mini-démo) ; `/tarifs` redirige vers `/fonctionnalites` et `/demonstration` vers la mini-démo de l'accueil (`/#demo`), redirections temporaires dans `next.config.ts` ; le code des deux pages est conservé pour les rouvrir. Le bouton « Voir la démo » de la barre mène à la mini-démo. Page **Fonctionnalités** refaite et mise à jour : parcours en 4 étapes, raccourcis vers les trois espaces, 26 phrases (contre 12) dont lien de commande sans compte, arrivée estimée, preuve PDF, e-mail/WhatsApp (« En option »), 3 livreurs proposés (« Selon la formule »), carte, tournées, imprévus, facture à la livraison, notification de mission, signature ; chaque phrase reste prouvée par un texte d'écran (`src/domains/growth/public-capabilities.ts`). Volontairement absents tant que le propriétaire ne les a pas validés : Factur-X (FACTURX-1) et commande par message IA (INTAKE-1). Vérifications : tests ciblés 39/39, `npm run check` vert (1594/1594) ; Playwright sur serveur isolé (copie séparée, port 3107) : 307 sur `/tarifs` et `/demonstration`, aucun lien restant vers ces pages sur l'accueil et Fonctionnalités, pas de débordement à 390 px, Clair et Sombre sans erreur console, ancre « Côté terrain » et bouton « Voir les fonctionnalités » de l'accueil cliqués. Non vérifié : E2E Playwright complets (listes `mobile-web` et `auth-role-pages` mises à jour, non relancées) et extension Chrome non connectée. Critères « prix HT/TTC » et « différence démo/pilote » de cette tâche suspendus tant que les pages restent retirées.
 
   Détail et historique : `docs/TODO-ARCHIVE.md`, section GROWTH-1.
 

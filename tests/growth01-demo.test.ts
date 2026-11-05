@@ -22,5 +22,6 @@ test("la page démonstration réutilise l'entrée existante sans la déclencher"
   assert.doesNotMatch(reader, /leaseDemoPoolEnvironment|ensureDemoSession|provisionDemo|create\(/);
   assert.match(login, /Environnement de démo incomplet/);
   assert.match(users, /isDemo: true/);
-  assert.match(publicNav, /href: "\/demonstration"/);
+  // Page retirée du site public le 5 novembre 2026 (redirection temporaire) : plus de lien dans la barre.
+  assert.doesNotMatch(publicNav, /href: "\/demonstration"/);
 });

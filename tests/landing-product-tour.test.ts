@@ -109,9 +109,10 @@ test("le trajet de la démo suit plusieurs rues", () => {
   assert.ok(TOUR_ROUTE.length >= 5);
 });
 
-test("la fin de la démo renvoie vers la démonstration complète", () => {
+test("la fin de la démo renvoie vers la demande de pilote (démonstration en ligne retirée)", () => {
   const scene = readFileSync(fileURLToPath(new URL("../src/features/landing/product-tour/scene-invoices.tsx", import.meta.url)), "utf8");
-  assert.match(scene, /href="\/demonstration"/);
+  assert.match(scene, /href="\/contact"/);
+  assert.doesNotMatch(scene, /href="\/demonstration"/);
   assert.match(scene, /Rejouer/);
 });
 

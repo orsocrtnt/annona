@@ -89,7 +89,8 @@ test("les tarifs publics reprennent le catalogue sans prix écrits dans la page"
   assert.doesNotMatch(page, /illimité|onClick|7900|34900/);
   assert.doesNotMatch(mapper, /7900|34900|1111/);
   const publicNav = readFileSync(new URL("../src/features/landing/public-top-navbar.tsx", import.meta.url), "utf8");
-  assert.match(publicNav, /href: "\/tarifs"/);
+  // Page retirée du site public le 5 novembre 2026 (redirection temporaire) : plus de lien dans la barre.
+  assert.doesNotMatch(publicNav, /href: "\/tarifs"/);
   const wizard = readFileSync(new URL("../src/features/auth/signup-wizard.tsx", import.meta.url), "utf8");
   assert.match(wizard, /signupEntryFromSearch/);
 });

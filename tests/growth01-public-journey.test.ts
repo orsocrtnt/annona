@@ -39,15 +39,18 @@ test("les parcours publics locaux se rejoignent sans route absente", () => {
   const features = read("src/app/fonctionnalites/page.tsx");
   const tarifs = read("src/app/tarifs/page.tsx");
   const demonstration = read("src/app/demonstration/page.tsx");
-  const expected = ["/fonctionnalites", "/tarifs", "/demonstration", "/register", "/login"];
+  const expected = ["/fonctionnalites", "/contact", "/register", "/login"];
   for (const path of expected) assert.equal(known.has(path), true, path);
   for (const source of [home, publicNav, features, tarifs, demonstration]) {
     for (const href of localLinks(source)) assert.equal(known.has(href), true, href);
   }
   assert.match(home, /PublicTopNavbar/);
   assert.equal(publicNav.includes('href: "/fonctionnalites"'), true);
-  assert.equal(publicNav.includes('href: "/tarifs"'), true);
-  assert.equal(publicNav.includes('href: "/demonstration"'), true);
+  // Retirées pour le moment (5 novembre 2026) : ni lien public, et une redirection temporaire si l'adresse est tapée.
+  for (const source of [home, publicNav, features]) assert.doesNotMatch(source, /href(: |=)"\/(tarifs|demonstration)"/);
+  const nextConfig = read("next.config.ts");
+  assert.match(nextConfig, /source: "\/tarifs", destination: "\/fonctionnalites", permanent: false/);
+  assert.match(nextConfig, /source: "\/demonstration", destination: "\/#demo", permanent: false/);
 
   // Tant que le paiement réel n'est pas ouvert, les formules mènent à Contact, pas à l'inscription.
   assert.match(tarifs, /href="\/contact"/);

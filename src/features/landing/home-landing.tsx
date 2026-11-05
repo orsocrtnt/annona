@@ -10,7 +10,7 @@ import { landingGhostButton, landingMintButton } from "@/features/landing/landin
  * Accueil public (LANDING-3) : copie de la maquette validée par le propriétaire (« TutelLiv — landing
  * assemblée ») — haut de page pour les sociétés de coursiers, la course « combien d'actions pour vous ? »,
  * puis la mini-démo ouverte d'office. Couleurs `--l-*` de la maquette (globals.css), Clair et Sombre.
- * Aucun logo client ni chiffre marketing ; les prix restent sur /tarifs, lus dans le catalogue.
+ * Aucun logo client ni chiffre marketing ; aucun prix affiché (page Tarifs retirée pour le moment).
  */
 
 const page = "mx-auto max-w-[1280px] px-4 min-[901px]:px-8";
@@ -74,8 +74,8 @@ export function HomeLanding() {
             <Link href="/contact" className={landingMintButton}>
               Demander un pilote
             </Link>
-            <Link href="/tarifs" className={landingGhostButton}>
-              Voir les tarifs
+            <Link href="/fonctionnalites" className={landingGhostButton}>
+              Voir les fonctionnalités
             </Link>
           </div>
         </section>
@@ -89,8 +89,6 @@ export function HomeLanding() {
             </p>
             <nav aria-label="Pied de page" className="flex flex-wrap gap-x-2 gap-y-1">
               <Link href="/fonctionnalites" className={footerLink}>Fonctionnalités</Link>
-              <Link href="/tarifs" className={footerLink}>Tarifs</Link>
-              <Link href="/demonstration" className={footerLink}>Démonstration</Link>
               <Link href="/contact" className={footerLink}>Contact</Link>
               <Link href="/login?espace=entreprise" className={footerLink}>Entreprise</Link>
               <Link href="/login/client" className={footerLink}>Client</Link>

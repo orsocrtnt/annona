@@ -3,6 +3,14 @@ import { buildSecurityHeaders } from "./src/lib/security/security-headers";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["leaflet", "react-leaflet"],
+  // Tarifs et démonstration en ligne retirés du site public pour le moment (5 novembre 2026).
+  // Redirections temporaires (307) : les pages restent dans le code pour être rouvertes plus tard.
+  async redirects() {
+    return [
+      { source: "/tarifs", destination: "/fonctionnalites", permanent: false },
+      { source: "/demonstration", destination: "/#demo", permanent: false },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: buildSecurityHeaders() }];
   },
