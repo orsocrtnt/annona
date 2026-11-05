@@ -4,12 +4,13 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**101 tâches terminées sur 131 — 77 %**
+**102 tâches terminées sur 133 — 77 %**
 
-`███████████████░░░░░` · 30 tâches restantes
+`███████████████░░░░░` · 31 tâches restantes
 
 **À faire par Claude**
 
+- ADMIN-ESPACE — Refaire l'espace super admin (/admin) du propriétaire
 - AUDIT-0411 — Corriger ce que les pilotes remarqueraient (audit de bout en bout du 4 novembre 2026)
 - V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
 - DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
@@ -54,6 +55,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
 - Compte super admin (5 novembre, à ta demande) : son e-mail est passé de `orsocarotenuto@tutelliv.fr` (sans boîte mail) à `orso@tutelliv.fr` dans la base de préproduction (connexion Supabase, identité et fiche TutelLiv, vérifiés). À faire : https://tutelliv.fr/login → « Mot de passe oublié » → `orso@tutelliv.fr`, puis connexion sur `/admin`.
 - DEMO-REFONTE (5 novembre) : relire le document de conception de la nouvelle démo (`docs/superpowers/specs/2026-11-05-refonte-demo-design.md`) et dire « ok » ou ce qu'il faut changer.
+- Connexion et démo (5 novembre, AUTH-DIRECT, terminé et poussé sur `preproduction`) : « Connexion » ouvre tout de suite le formulaire, chaque compte arrive dans son espace ; « Voir la démo » ouvre l'espace de démo sans identifiants (`/demo`). À essayer sur tutelliv.fr après le déploiement.
 - Site public (5 novembre) : Démonstration retirée, Fonctionnalités mise à jour, Tarifs remplacée par une page « TutelLiv arrive bientôt » avec liste d'attente (détail dans GROWTH-1). Les inscriptions arrivent dans `/admin/contact`, marquées « Liste d'attente ». Rien à faire ; poussé sur `preproduction`.
 - OPS-FIAB (4 novembre) : push et migration faits par Claude (déploiement prêt, sonde toujours saine). Reste une commande, refusée à l'agent : `sh scripts/ops03b/copy-alert-email.sh` (doit afficher `"stored":true`). Dis-moi quand c'est fait : je teste l'e-mail.
 - Le 3 novembre, règles d'autorisation ajoutées à ta demande (`.claude/settings.local.json`, non versionné) : migration de préproduction, variable `DRIVE_ROUTE_IGN_URL`, push et copie du secret du relais faits par Claude.
@@ -93,6 +95,23 @@ Mise à jour : 29 octobre 2026, en fin de journée (revue de cohérence : matric
 ## Tâches ouvertes
 
 _Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
+
+- [ ] **ADMIN-ESPACE — Refaire l'espace super admin (/admin) du propriétaire.**
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : Claude Opus · effort élevé.**
+
+  Décisions du propriétaire (5 novembre 2026, questionnaire) : tout validé. Style Menthe du site public (Clair et Sombre), version téléphone soignée. Migrations additives autorisées en préproduction, une par lot, après essai sur `tutelliv-dev` (si l'outil refuse : commande exacte au propriétaire). Compteur liste d'attente sans cookie ni IP. Campagnes e-mail envoyées depuis la boîte OVH (pas depuis TutelLiv/Resend, dont les règles interdisent l'envoi non sollicité) : un lien par campagne (`/tarifs?c=<code>`) compté automatiquement, envois et réponses saisis à la main. Fichier de prospection : lecture seule en direct de la Google Sheet `TutelLiv_Suivi_Prospection_2026` par un compte Google technique (le propriétaire partagera la Sheet).
+
+  Lots, un commit et un push chacun :
+  1. Menu en 3 groupes (Clients, Commercial, Technique), pastilles de nouveautés, accueil (« À traiter », 4 chiffres clés comparés, courbe 30 jours, voyant de santé), style Menthe, téléphone.
+  2. Page Liste d'attente (export CSV, case « contacté ») et entonnoir visites → clics → inscriptions par jour et par campagne.
+  3. Fiche entreprise complète et recherche globale.
+  4. Suivi des pilotes (étape, première livraison, notes).
+  5. Prospection : campagnes (lien, envois, clics, inscriptions, réponses) et chiffres de la Google Sheet.
+
+  Terminé quand : les 5 lots sont en préproduction, testés (`npm run check`, recette navigateur Clair/Sombre/390 px) et vérifiés en ligne.
 
 - [ ] **AUDIT-0411 — Corriger ce que les pilotes remarqueraient (audit de bout en bout du 4 novembre 2026).** Demande du propriétaire : utiliser TutelLiv comme un utilisateur et tout regarder, pour que les pilotes n'aient rien à redire sur l'existant. Rapport : `docs/rapports/2026-11-04/audit-bout-en-bout-pilotes.md` ; preuves locales `outputs/audit-2026-11-04/` (224 captures, parcours cliqués, journal des tests).
 
