@@ -1,6 +1,6 @@
 import { prisma } from "@/services/prisma/client";
 import { DEMO_POOL_KEY } from "@/lib/demo/constants";
-import { DEMO_LIVE_WINDOW_MS } from "@/domains/demo/demo-pool.service";
+import { DEMO_LIVE_WINDOW_MS, DEMO_POOL_JOBS_WAIT_MS } from "@/domains/demo/demo-pool.service";
 
 /**
  * Page « Démos » du super admin (DEMO-LIVE) : ce que l'on sait de chaque espace du stock. Les visiteurs sont
@@ -19,6 +19,8 @@ export interface DemoPoolRow {
   ticketsCreated: number;
   failureCode: string | null;
   recycleAttempts: number;
+  /** Faux seulement pendant la reconstruction elle-même (PREPARING). */
+  resettable: boolean;
 }
 
 type EnvironmentRow = {
@@ -72,6 +74,7 @@ export async function listDemoPoolEnvironments(now = new Date(), poolKey = DEMO_
       ticketsCreated,
       failureCode: status === "ERROR" ? row.lastFailureCode : null,
       recycleAttempts: row.recycleAttempts,
+      resettable: row.state !== "PREPARING",
     };
   }));
 }
@@ -79,16 +82,21 @@ export async function listDemoPoolEnvironments(now = new Date(), poolKey = DEMO_
 /**
  * Remise à neuf demandée par le super admin : l'espace repart en recyclage (mêmes gardes que d'habitude ;
  * un espace en erreur qui le reste retourne en quarantaine). Sans `id` : toutes les démos sauf celles
- * où quelqu'un est en direct. Une démo en préparation n'est jamais touchée.
+ * où quelqu'un est en direct. Une démo en cours de reconstruction (PREPARING) n'est jamais touchée ; une démo
+ * en file (RECYCLING, par exemple bloquée par une tâche de fond) peut l'être.
+ * Les tâches de fond de la démo bloquées depuis plus d'une heure (notifications de commandes fictives jamais
+ * parties) sont abandonnées : sinon elles bloquent la reconstruction et l'espace reste « en erreur ».
  * Renvoie le nombre d'espaces mis en file ; la reconstruction se fait ensuite par `maintainDemoPool`.
  */
+const RESETTABLE_STATES: Array<"READY" | "LEASED" | "QUARANTINED" | "RECYCLING"> = ["READY", "LEASED", "QUARANTINED", "RECYCLING"];
+
 export async function queueAdminDemoReset(
   target: { id?: string },
   now = new Date(),
   poolKey = DEMO_POOL_KEY
 ): Promise<number> {
   const rows: EnvironmentRow[] = await prisma.demoPoolEnvironment.findMany({
-    where: { poolKey, ...(target.id ? { id: target.id } : {}), state: { in: ["READY", "LEASED", "QUARANTINED"] } },
+    where: { poolKey, ...(target.id ? { id: target.id } : {}), state: { in: RESETTABLE_STATES } },
     select: {
       id: true, companyId: true, slot: true, state: true, leasedAt: true, leaseExpiresAt: true,
       updatedAt: true, lastFailureCode: true, recycleAttempts: true,
@@ -96,6 +104,7 @@ export async function queueAdminDemoReset(
   });
   const chosen = target.id ? rows : rows.filter((row) => demoPoolRowStatus(row, now) !== "LIVE");
   let queued = 0;
+  const staleBefore = new Date(now.getTime() - DEMO_POOL_JOBS_WAIT_MS);
   for (const row of chosen) {
     // updatedAt inchangé : personne n'a réservé ni recyclé l'espace entre la lecture et l'écriture.
     const result = await prisma.demoPoolEnvironment.updateMany({
@@ -109,6 +118,12 @@ export async function queueAdminDemoReset(
         lastFailureCode: null,
       },
     });
+    if (result.count === 1) {
+      await prisma.operationJob.updateMany({
+        where: { companyId: row.companyId, status: { in: ["PENDING", "PROCESSING"] }, createdAt: { lt: staleBefore } },
+        data: { status: "FAILED", lastError: "DEMO_RESET_BY_ADMIN", lockedAt: null, completedAt: now },
+      });
+    }
     queued += result.count;
   }
   return queued;

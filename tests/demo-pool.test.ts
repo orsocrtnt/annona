@@ -279,10 +279,19 @@ test("DEMO-LIVE : « tout remettre à neuf » épargne les démos en direct ; un
       updateMany: async (args: { where: { id: string; state: string }; data: Record<string, unknown> }) => { updates.push(args); return { count: 1 }; },
     },
   });
-  t.after(() => { Reflect.deleteProperty(prisma, "demoPoolEnvironment"); });
+  const jobs: Array<{ where: { companyId: string; createdAt: { lt: Date } }; data: { status: string } }> = [];
+  Object.defineProperty(prisma, "operationJob", {
+    configurable: true,
+    value: { updateMany: async (args: (typeof jobs)[number]) => { jobs.push(args); return { count: 2 }; } },
+  });
+  t.after(() => { Reflect.deleteProperty(prisma, "demoPoolEnvironment"); Reflect.deleteProperty(prisma, "operationJob"); });
   assert.equal(await queueAdminDemoReset({}, now), 3);
+  // Tâches bloquées depuis plus d'une heure abandonnées, seulement dans les démos remises à neuf.
+  assert.deepEqual(jobs.map((job) => job.where.companyId), ["b", "c", "d"]);
+  assert.equal(jobs[0]!.where.createdAt.lt.toISOString(), "2026-11-05T14:00:00.000Z");
+  assert.equal(jobs[0]!.data.status, "FAILED");
   assert.deepEqual(updates.map((u) => u.where.id), ["idle", "ready", "error"]);
-  assert.deepEqual((finds[0] as { where: { state: { in: string[] } } }).where.state.in, ["READY", "LEASED", "QUARANTINED"], "jamais une démo en préparation");
+  assert.deepEqual((finds[0] as { where: { state: { in: string[] } } }).where.state.in, ["READY", "LEASED", "QUARANTINED", "RECYCLING"], "jamais une démo en cours de reconstruction");
   assert.equal(updates[2]!.data.state, "RECYCLING");
   assert.equal(updates[2]!.data.recycleAttempts, 0);
   assert.equal(updates[2]!.data.leaseKeyHash, null);

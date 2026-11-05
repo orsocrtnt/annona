@@ -148,7 +148,7 @@ export function AdminDemosPage() {
                 variant="outline"
                 size="sm"
                 className="mt-auto min-h-11 self-start"
-                disabled={row.status === "PREPARING" || reset.isPending}
+                disabled={!row.resettable || reset.isPending}
                 onClick={() => setPending({ kind: "one", row })}
               >
                 <RotateCcw className="h-4 w-4" aria-hidden />
