@@ -18,7 +18,9 @@ export const FUNNEL_WINDOW_MS = 60 * 60 * 1000;
 /** Taille maximale du corps accepté par la route publique (octets). */
 export const FUNNEL_BODY_MAX_BYTES = 256;
 
-export type FunnelEvent = "VISIT" | "CLICK" | "SIGNUP";
+export type FunnelEvent = "VISIT" | "CLICK" | "SIGNUP" | "MAIL_JOIN" | "MAIL_SITE";
+/** Étapes de l'entonnoir de /tarifs ; les clics des mails de campagne (lot 5) sont lus à part. */
+const PAGE_FUNNEL_EVENTS = ["VISIT", "CLICK", "SIGNUP"] as const;
 export type FunnelPeriod = (typeof FUNNEL_PERIODS)[number];
 
 /** Code de campagne lu dans `?c=` : accepté tel quel s'il respecte le format, sinon « direct ». */
@@ -137,6 +139,40 @@ export async function recordFunnelBeacon(
   return "recorded";
 }
 
+/* ---------- Liens des mails de campagne (ADMIN-ESPACE lot 5) ---------- */
+
+export const MAIL_LINK_TARGETS = { rejoindre: "MAIL_JOIN", site: "MAIL_SITE" } as const;
+export type MailLinkTarget = keyof typeof MAIL_LINK_TARGETS;
+
+export function isMailLinkTarget(value: string): value is MailLinkTarget {
+  return Object.prototype.hasOwnProperty.call(MAIL_LINK_TARGETS, value);
+}
+
+/** Page ouverte après le clic : le formulaire de candidature, ou l'accueil ; le code suit pour l'inscription. */
+export function mailLinkDestination(code: string, target: MailLinkTarget): string {
+  const query = `?c=${encodeURIComponent(code)}`;
+  return target === "rejoindre" ? `/tarifs${query}` : `/${query}`;
+}
+
+/**
+ * Clic sur un lien de mail : compté seulement pour un code valide, hors robots évidents et sous le plafond
+ * par source. Aucun cookie, aucune adresse IP, aucun identifiant du destinataire.
+ */
+export async function recordMailLinkClick(
+  code: string,
+  target: MailLinkTarget,
+  request: { userAgent: string | null; source: string },
+  deps: { now?: Date; secret?: string; limiter?: FunnelSourceLimiter; db?: FunnelWriteDatabase } = {}
+): Promise<"recorded" | "ignored" | "limited"> {
+  if (!FUNNEL_CAMPAIGN_PATTERN.test(code) || code === FUNNEL_DIRECT) return "ignored";
+  if (isLikelyBot(request.userAgent)) return "ignored";
+  const now = deps.now ?? new Date();
+  const fingerprint = abuseFingerprint("funnel-source", request.source, deps.secret ?? getAbuseHmacSecret());
+  if (!(deps.limiter ?? defaultLimiter).allow(fingerprint, now.getTime())) return "limited";
+  await incrementFunnelCounter(MAIL_LINK_TARGETS[target], code, now, deps.db);
+  return "recorded";
+}
+
 /* ---------- Lecture (super-administrateur) ---------- */
 
 export type FunnelCounts = { visits: number; clicks: number; signups: number };
@@ -173,7 +209,7 @@ export function funnelRate(numerator: number, denominator: number): number | nul
   return Math.round((numerator / denominator) * 1000) / 10;
 }
 
-const FIELD: Record<FunnelEvent, keyof FunnelCounts> = { VISIT: "visits", CLICK: "clicks", SIGNUP: "signups" };
+const FIELD: Partial<Record<FunnelEvent, keyof FunnelCounts>> = { VISIT: "visits", CLICK: "clicks", SIGNUP: "signups" };
 
 export function summarizeFunnel(rows: FunnelRow[], days: FunnelPeriod, now: Date): WaitlistFunnel {
   const today = funnelDayKey(now);
@@ -191,6 +227,7 @@ export function summarizeFunnel(rows: FunnelRow[], days: FunnelPeriod, now: Date
     const day = byDay.get(row.day.toISOString().slice(0, 10));
     if (!day) continue;
     const field = FIELD[row.event];
+    if (!field) continue;
     day[field] += row.count;
     totals[field] += row.count;
     const campaign = byCampaign.get(row.campaignCode) ?? { code: row.campaignCode, visits: 0, clicks: 0, signups: 0 };
@@ -223,7 +260,7 @@ export async function readWaitlistFunnel(
   const db = deps.db ?? (prisma as unknown as FunnelReadDatabase);
   const from = shiftDay(funnelDayKey(now), -(query.days - 1));
   const rows = await db.waitlistFunnelDaily.findMany({
-    where: { day: { gte: new Date(`${from}T00:00:00.000Z`) } },
+    where: { day: { gte: new Date(`${from}T00:00:00.000Z`) }, event: { in: [...PAGE_FUNNEL_EVENTS] } },
     select: { day: true, campaignCode: true, event: true, count: true },
   });
   return summarizeFunnel(rows, query.days, now);

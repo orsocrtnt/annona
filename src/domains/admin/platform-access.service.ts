@@ -13,6 +13,7 @@ export const PLATFORM_ACCESS_RESOURCES = [
   "CONTACT_MESSAGES",
   "SALES_CODES",
   "SALES_COMMISSIONS",
+  "PROSPECT_CAMPAIGNS",
 ] as const;
 
 export const PLATFORM_ACCESS_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
@@ -20,7 +21,7 @@ export const PLATFORM_ACCESS_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 export type PlatformAccessResource = (typeof PLATFORM_ACCESS_RESOURCES)[number];
 export type PlatformAccessRole = "SUPER_ADMIN" | "COMPANY_ADMIN" | "MINI_ADMIN" | "DISPATCHER" | "DRIVER" | "CLIENT";
 export type PlatformAccessDecision = "ALLOWED" | "DENIED";
-/** Seules les routes des codes commerciaux écrivent (SALES-1, décision C10). */
+/** Écritures plateforme : codes commerciaux (SALES-1), liste d'attente et campagnes (ADMIN-ESPACE). */
 export type PlatformAccessMethod = "GET" | "POST" | "PATCH";
 
 export type PlatformAccessEvent = {

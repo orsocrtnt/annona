@@ -168,7 +168,8 @@ test("entonnoir : lecture 7 ou 30 jours, totaux, taux de passage et campagnes", 
       },
     },
   });
-  assert.deepEqual(findArgs.where, { day: { gte: day("2026-10-31") } });
+  // Lot 5 : les clics des mails de campagne (MAIL_JOIN, MAIL_SITE) restent hors de l'entonnoir de /tarifs.
+  assert.deepEqual(findArgs.where, { day: { gte: day("2026-10-31") }, event: { in: ["VISIT", "CLICK", "SIGNUP"] } });
   assert.equal(funnel.from, "2026-10-31");
   assert.equal(funnel.to, "2026-11-06");
   assert.equal(funnel.series.length, 7);

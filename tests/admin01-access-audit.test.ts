@@ -29,6 +29,7 @@ const routes = [
   ["src/app/api/admin/contact-messages/route.ts", "@/domains/growth/contact.service", "CONTACT_MESSAGES", true],
   ["src/app/api/admin/sales-codes/route.ts", "@/domains/sales/sales-code.service", "SALES_CODES", true],
   ["src/app/api/admin/sales-codes/[id]/route.ts", "@/domains/sales/sales-code.service", "SALES_COMMISSIONS", false],
+  ["src/app/api/admin/campaigns/route.ts", "@/domains/growth/prospect/prospect-campaign.service", "PROSPECT_CAMPAIGNS", false],
 ] as const;
 
 const allowedKeys = ["actorId", "decision", "expiresAt", "id", "method", "occurredAt", "resource", "role"];

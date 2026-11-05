@@ -55,12 +55,23 @@ const PLATFORM_WRITES: Record<string, string[]> = {
   "src/app/api/admin/pilots/route.ts": ["GET", "POST"],
   "src/app/api/admin/pilots/[id]/route.ts": ["GET", "PATCH"],
   "src/app/api/admin/pilots/[id]/notes/route.ts": ["POST"],
+  // ADMIN-ESPACE lot 5 : campagnes de prospection du propriétaire (données de la plateforme).
+  "src/app/api/admin/campaigns/route.ts": ["GET", "POST"],
+  "src/app/api/admin/campaigns/[id]/route.ts": ["GET", "PATCH"],
+  "src/app/api/admin/campaigns/[id]/recipients/route.ts": ["POST"],
+  "src/app/api/admin/campaigns/[id]/send/route.ts": ["POST"],
+  "src/app/api/admin/campaigns/opt-outs/route.ts": ["POST"],
 };
 
 test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors codes commerciaux", () => {
   const routes = filesUnder("src/app/api/admin").filter((file) => file.endsWith("route.ts"));
   assert.deepEqual(routes, [
     "src/app/api/admin/access-events/route.ts",
+    "src/app/api/admin/campaigns/[id]/recipients/route.ts",
+    "src/app/api/admin/campaigns/[id]/route.ts",
+    "src/app/api/admin/campaigns/[id]/send/route.ts",
+    "src/app/api/admin/campaigns/opt-outs/route.ts",
+    "src/app/api/admin/campaigns/route.ts",
     "src/app/api/admin/companies/[id]/access/route.ts",
     "src/app/api/admin/companies/[id]/route.ts",
     "src/app/api/admin/companies/route.ts",

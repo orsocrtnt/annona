@@ -37,6 +37,7 @@ Créer `.env.local` seulement s'il n'existe pas. `npm ci` utilise le lockfile et
 
 - `AUTH_EMAIL_LINKS_ENABLED=true` seulement après configuration complète décrite dans `AUTH_EMAIL_SETUP.md` ;
 - `RESEND_API_KEY`, `MAIL_FROM` ou `EMAIL_FROM` pour les notifications e-mail ;
+- `PROSPECT_SMTP_PASSWORD` (mot de passe de la boîte OVH `orso@tutelliv.fr`) pour envoyer les campagnes de prospection depuis `/admin/campaigns` ; facultatifs : `PROSPECT_SMTP_HOST` (`smtp.mail.ovh.net`), `PROSPECT_SMTP_PORT` (465, SSL), `PROSPECT_SMTP_USER` (`orso@tutelliv.fr`), `PROSPECT_LINK_BASE_URL` (origine des liens comptés, sinon l'adresse du back-office). Sans mot de passe, la page prépare les campagnes mais n'envoie rien ;
 - `OPS_ALERT_RECIPIENT` pour recevoir les alertes par e-mail, une fois par jour et par type de panne (vide : `EMAIL_TEST_RECIPIENT`, sinon aucun e-mail) ;
 - `OPS_ALERT_WEBHOOK_URL` et `OPS_ALERT_WEBHOOK_TOKEN` pour le canal d'incident générique ;
 - variables `NEXT_PUBLIC_MAP_*` et `GEOCODING_URL` pour remplacer les fournisseurs d'essai ; `DRIVE_ROUTE_IGN_URL` (recommandé : `https://data.geopf.fr/navigation/itineraire`) ou `DRIVE_ROUTE_OSRM_URL` (OSRM privé) pour les itinéraires, calculés par le serveur seulement ;

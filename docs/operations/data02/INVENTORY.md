@@ -46,7 +46,10 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | SaasBillingOperation | technique | accountId | non |
 | PlatformAccessEvent | plateforme | actorId, sans companyId | non |
 | ContactMessage | plateforme | aucune, prospect avant tout compte | non |
-| WaitlistFunnelDaily | plateforme | aucune, compteurs anonymes par jour et campagne (page Tarifs) | non |
+| WaitlistFunnelDaily | plateforme | aucune, compteurs anonymes par jour et campagne (page Tarifs, clics des mails de campagne) | non |
+| ProspectCampaign | plateforme | aucune, campagne de prospection du propriétaire (nom, ville, origine des adresses) | non |
+| ProspectCampaignRecipient | plateforme | adresse e-mail professionnelle d'un prospect, avant tout compte | non |
+| ProspectOptOut | plateforme | adresse e-mail d'un prospect ayant répondu STOP, gardée pour ne plus lui écrire | non |
 | PlatformPilot | plateforme | companyId nullable (SET NULL), suivi des pilotes par le super-administrateur | non |
 | PlatformPilotNote | plateforme | pilotId (CASCADE), notes internes du super-administrateur | non |
 | SalesCode | plateforme | aucune, commercial de TutelLiv | non |
@@ -62,7 +65,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 
 ## Absents de l'export
 
-Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, CompanyIntakeChannel, OrderTrackingLink, InboundOrderEmail, SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent, ContactMessage, WaitlistFunnelDaily, PlatformPilot, PlatformPilotNote, SalesCode, SalesAttribution, SalesCommissionEntry, AuthLoginFailure, OrderIntakeUsage. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise ; journal de la commande par message = compteurs d'appels et de jetons, sans texte).
+Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, CompanyIntakeChannel, OrderTrackingLink, InboundOrderEmail, SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent, ContactMessage, WaitlistFunnelDaily, ProspectCampaign, ProspectCampaignRecipient, ProspectOptOut, PlatformPilot, PlatformPilotNote, SalesCode, SalesAttribution, SalesCommissionEntry, AuthLoginFailure, OrderIntakeUsage. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise ; journal de la commande par message = compteurs d'appels et de jetons, sans texte).
 
 Role et OperationJob n'y sont que partiels : le rôle est recopié par son nom sur l'utilisateur, le job est recopié sans sa charge ni son erreur.
 

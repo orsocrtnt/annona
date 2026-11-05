@@ -15,6 +15,8 @@ import {
   fetchAdminSupportTickets,
   fetchAdminHome,
   fetchAdminHomeBadges,
+  fetchAdminCampaign,
+  fetchAdminCampaigns,
   fetchAdminWaitlist,
   fetchAdminWaitlistFunnel,
   fetchAdminSearch,
@@ -192,5 +194,24 @@ export function useAdminPilot(id: string) {
     enabled: id.length > 0,
     staleTime: QUERY_STALE_MS,
     retry: (count, error) => !(error instanceof Error && error.message === "Pilote introuvable") && count < 2,
+  });
+}
+
+/** ADMIN-ESPACE lot 5 : campagnes de prospection et chiffres. */
+export function useAdminCampaigns() {
+  return useQuery({
+    queryKey: ["admin", "campaigns"],
+    queryFn: fetchAdminCampaigns,
+    staleTime: QUERY_STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useAdminCampaign(id: string | null) {
+  return useQuery({
+    queryKey: ["admin", "campaigns", id],
+    queryFn: () => fetchAdminCampaign(id!),
+    enabled: Boolean(id),
+    staleTime: QUERY_STALE_MS,
   });
 }

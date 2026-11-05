@@ -280,6 +280,8 @@ model User {
   invoiceRemindersSent InvoiceReminder[]
   companyCustomerCards CompanyCustomer[]
   waitlistContacts     ContactMessage[]     @relation("WaitlistContactedBy")
+  prospectCampaigns    ProspectCampaign[]   @relation("ProspectCampaignCreatedBy")
+  prospectOptOuts      ProspectOptOut[]     @relation("ProspectOptOutCreatedBy")
   pilotsCreated        PlatformPilot[]      @relation("PlatformPilotCreatedBy")
   pilotsUpdated        PlatformPilot[]      @relation("PlatformPilotUpdatedBy")
   pilotNotes           PlatformPilotNote[]  @relation("PlatformPilotNoteAuthor")
@@ -1200,6 +1202,7 @@ enum PlatformAccessResource {
   CONTACT_MESSAGES
   SALES_CODES
   SALES_COMMISSIONS
+  PROSPECT_CAMPAIGNS
 }
 
 /// Lecture plateforme journalisée. Aucune relation, aucune donnée personnelle.
@@ -1248,6 +1251,10 @@ enum WaitlistFunnelEvent {
   VISIT
   CLICK
   SIGNUP
+  /// ADMIN-ESPACE lot 5 : clic sur « Je veux en être » dans un mail de campagne (compté par /go).
+  MAIL_JOIN
+  /// ADMIN-ESPACE lot 5 : clic sur le lien du site dans un mail de campagne (compté par /go).
+  MAIL_SITE
 }
 
 /// ADMIN-ESPACE lot 2 : entonnoir de /tarifs, compteurs par jour (Paris), campagne et étape.
@@ -1260,6 +1267,66 @@ model WaitlistFunnelDaily {
 
   @@id([day, campaignCode, event])
   @@map("waitlist_funnel_daily")
+}
+
+/// ADMIN-ESPACE lot 5 : campagne de mails de prospection envoyée depuis la boîte OVH du propriétaire.
+/// Le code sert aux liens comptés (/go/<code>/…) et à l'origine des inscriptions (`contact_messages.campaign_code`).
+model ProspectCampaign {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  city          String
+  /// Mention « Adresse trouvée sur … » du pied de mail (CNIL : origine de l'adresse).
+  addressSource String   @map("address_source")
+  /// Réponses reçues, saisies à la main par le propriétaire.
+  repliesCount  Int      @default(0) @map("replies_count")
+  createdById   String?  @map("created_by_id")
+  createdBy     User?    @relation("ProspectCampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  recipients ProspectCampaignRecipient[]
+
+  @@index([createdById])
+  @@map("prospect_campaigns")
+}
+
+enum ProspectRecipientStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+/// Une adresse professionnelle d'une campagne : envoyée une seule fois, jamais si elle a demandé STOP.
+model ProspectCampaignRecipient {
+  id         String                  @id @default(cuid())
+  campaignId String                  @map("campaign_id")
+  campaign   ProspectCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email      String
+  status     ProspectRecipientStatus @default(PENDING)
+  /// Motif court d'un échec ou d'un saut (jamais le contenu du mail ni un secret).
+  detail     String?
+  sentAt     DateTime?               @map("sent_at")
+  claimedAt  DateTime?               @map("claimed_at")
+  createdAt  DateTime                @default(now()) @map("created_at")
+
+  @@unique([campaignId, email])
+  @@index([campaignId, status, createdAt])
+  @@index([email])
+  @@map("prospect_campaign_recipients")
+}
+
+/// Adresses ayant répondu STOP : plus aucun mail de prospection, toutes campagnes confondues.
+model ProspectOptOut {
+  email       String   @id
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("ProspectOptOutCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([createdById])
+  @@map("prospect_opt_outs")
 }
 
 /// ADMIN-ESPACE lot 4 : étapes d'un pilote accompagné, alignées sur docs/operations/pilot1/README.md

@@ -239,6 +239,22 @@ Merci, cela me fait plaisir. Je ne peux rien ouvrir pour l'instant : mes démarc
 Merci. Je prépare mes premiers pilotes : 4 semaines, accompagnés, sans obligation de vous abonner ensuite, vos données exportées à la fin. Je ne peux pas encore y mettre de vraies données : le cadre juridique est en cours de validation et je préfère le faire correctement. Je vous garde une place et je vous préviens dès que c'est prêt. Prenons 20 minutes pour regarder si cela correspond à votre activité : [jour] à [heure] ?
 ```
 
+### Mail « Il en est où ? » (version finale du 5 novembre 2026)
+
+Mail court aux couleurs de TutelLiv, validé en version finale par le propriétaire le 5 novembre 2026 : objet « Il en est où ? », aperçu « Bonjour, mon colis, il en est où ? Ça vous dit quelque chose ? » (clin d'œil assumé, jamais déguisé en message de client), « Vous en avez marre de ce genre de question ? », parcours de A à Z en cinq étapes (commande par e-mail, WhatsApp… au même endroit ; dispatch intelligent ; livreur sans appel ni message ; carte client en direct désactivable ; facture envoyée et relances automatiques), bouton « Je veux en être » vers le formulaire de liste d'attente, lien vers le site, signature « Carotenuto-Marchetti Orso », pied de mail CNIL (identité, origine de l'adresse, STOP). Modèle de référence : `docs/operations/email/prospection/teaser-il-en-est-ou.html` ; le mail réellement envoyé est produit par `src/domains/growth/prospect/prospect-email.ts`, logo joint au mail pour Outlook. Écart décidé par le propriétaire : le lien vers le site part avant le SIREN.
+
+### Envoyer et suivre une campagne (`/admin/campaigns`)
+
+Avant la première campagne (une seule fois) : migration `20261106100000_prospect_campaigns` appliquée en préproduction, variable Vercel `PROSPECT_SMTP_PASSWORD` (mot de passe de `orso@tutelliv.fr`, environnement Preview, branche `preproduction`), puis déploiement. Sans mot de passe, la page affiche « Envoi pas encore configuré ». La réception WhatsApp annoncée dans le mail n'est pas encore ouverte (WHATSAPP-1) : le dire franchement à un prospect qui pose la question.
+
+1. Créer la campagne : nom, ville (le code des liens en découle, par exemple `il-en-est-ou-paris`) et origine des adresses.
+2. Coller les adresses : doublons et adresses STOP écartés.
+3. « M'envoyer un essai » : le mail arrive dans la boîte du super-administrateur, liens au code `test`.
+4. « Lancer l'envoi » : un mail toutes les 30 secondes depuis `orso@tutelliv.fr`, page ouverte ; « Pause » à tout moment.
+5. Chaque STOP reçu : coller l'adresse dans « Adresses STOP ». Chaque réponse : bouton « + » de la colonne Réponses.
+
+Chiffres par campagne : envoyés, clics « Je veux en être », clics vers le site, visites du formulaire, candidatures, réponses. Pas de comptage des ouvertures (pixel bloqué par Outlook, faussé par l'iPhone, encadré par la CNIL). Les robots évidents et les vérifications de liens des messageries ne sont pas comptés ; certains antivirus d'entreprise peuvent tout de même gonfler un peu les clics.
+
 ## 8. Le rendez-vous de 20 à 30 minutes
 
 Pitch en 10 secondes, 30 secondes et 2 minutes, supports et démonstration minute par minute : [`PITCH.md`](PITCH.md).

@@ -15,6 +15,12 @@ import type { AdminHome, AdminHomeBadges } from "@/domains/admin/admin-home.serv
 import type { WaitlistContactedFilter, WaitlistEntry, WaitlistPage } from "@/domains/growth/waitlist.service";
 import type { FunnelPeriod, WaitlistFunnel } from "@/domains/growth/waitlist-funnel.service";
 import type { AdminLastVisits } from "@/features/admin/contact-last-visit";
+import type {
+  AddAddressesResult,
+  ProspectCampaignDetail,
+  ProspectCampaignList,
+  ProspectSendResult,
+} from "@/domains/growth/prospect/prospect-campaign.service";
 
 export async function fetchAdminOverview(): Promise<PlatformOverview> {
   const res = await fetch("/api/admin/overview", { cache: "no-store" });
@@ -367,4 +373,50 @@ export function updateAdminPilot(id: string, payload: PilotPayload) {
 
 export function addAdminPilotNote(id: string, body: string) {
   return sendPilot(`/api/admin/pilots/${encodeURIComponent(id)}/notes`, "POST", { body });
+}
+
+/* ---------- Campagnes de prospection (ADMIN-ESPACE lot 5) ---------- */
+
+async function sendJson<T>(url: string, method: "POST" | "PATCH", body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method,
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return readJson<T>(res);
+}
+
+export async function fetchAdminCampaigns(): Promise<ProspectCampaignList> {
+  const res = await fetch("/api/admin/campaigns", { cache: "no-store" });
+  return readJson<ProspectCampaignList>(res);
+}
+
+export async function fetchAdminCampaign(id: string): Promise<ProspectCampaignDetail> {
+  const res = await fetch(`/api/admin/campaigns/${encodeURIComponent(id)}`, { cache: "no-store" });
+  return readJson<ProspectCampaignDetail>(res);
+}
+
+export function createAdminCampaign(input: { name: string; city: string; addressSource: string }) {
+  return sendJson<{ id: string; code: string }>("/api/admin/campaigns", "POST", input);
+}
+
+export function addAdminCampaignAddresses(id: string, addresses: string) {
+  return sendJson<AddAddressesResult>(`/api/admin/campaigns/${encodeURIComponent(id)}/recipients`, "POST", { addresses });
+}
+
+export function adjustAdminCampaignReplies(id: string, delta: 1 | -1) {
+  return sendJson<{ replies: number }>(`/api/admin/campaigns/${encodeURIComponent(id)}`, "PATCH", { delta });
+}
+
+export function sendAdminCampaignNext(id: string) {
+  return sendJson<ProspectSendResult>(`/api/admin/campaigns/${encodeURIComponent(id)}/send`, "POST", { mode: "next" });
+}
+
+export function sendAdminCampaignTest(id: string) {
+  return sendJson<{ status: "sent"; to: string }>(`/api/admin/campaigns/${encodeURIComponent(id)}/send`, "POST", { mode: "test" });
+}
+
+export function addAdminCampaignOptOuts(addresses: string) {
+  return sendJson<{ added: number; cancelled: number; invalid: string[] }>("/api/admin/campaigns/opt-outs", "POST", { addresses });
 }
