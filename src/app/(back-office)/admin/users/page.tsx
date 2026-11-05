@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { AlertTriangle, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAdminUsers } from "@/features/admin/hooks";
+import { useUrlSearchQuery } from "@/features/admin/use-url-search-query";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 const ROLES = [
@@ -30,13 +31,19 @@ const roleLabel = Object.fromEntries(ROLES.map((item) => [item.value, item.label
 const statusLabel = Object.fromEntries(STATUSES.map((item) => [item.value, item.label]));
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeZone: "UTC" });
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
   const [draftQuery, setDraftQuery] = useState("");
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  // ADMIN-ESPACE lot 3 : `?q=` venant de la recherche globale ou de la fiche entreprise.
+  useUrlSearchQuery((value) => {
+    setDraftQuery(value);
+    setQ(value);
+    setPage(1);
+  });
   const { data, isLoading, error } = useAdminUsers({ q, role, status, page, pageSize });
 
   if (isInitialQueryLoading(isLoading, data)) return <PageSkeleton />;
@@ -124,5 +131,13 @@ export default function AdminUsersPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AdminUsersContent />
+    </Suspense>
   );
 }

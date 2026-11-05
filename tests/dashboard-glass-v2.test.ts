@@ -16,7 +16,7 @@ test("la coque Glass Light V2 couvre tout le back-office", () => {
   assert.match(shell, /className="dashboard-v2-shell min-h-screen/);
   assert.match(shell, /<Sidebar items=\{navItems\} footer=\{sidebarFooter\} premium \/>/);
   assert.match(shell, /<MobileNav items=\{navItems\} premium \/>/);
-  assert.match(shell, /<Header breadcrumbs=\{breadcrumbs\} premium \/>/);
+  assert.match(shell, /<Header breadcrumbs=\{breadcrumbs\} premium actions=\{headerActions\} \/>/);
   assert.match(shell, /OrderMessagesInbox enableDispatchTargets/);
   // Direction Menthe : barre latérale blanche avec le logo officiel, police Inter seule.
   // Page active sobre (29 octobre 2026) : surface à peine teintée et filet, ni aplat vert ni halo.

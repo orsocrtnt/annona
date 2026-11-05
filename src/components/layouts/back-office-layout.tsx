@@ -20,6 +20,8 @@ interface BackOfficeLayoutProps {
   sidebarFooter?: React.ReactNode;
   /** Carte dispatch plein écran — sans header ni max-width */
   mapFullscreen?: boolean;
+  /** Ajouts à droite de l'en-tête (recherche globale du super-administrateur). */
+  headerActions?: React.ReactNode;
 }
 
 /** Coque Glass Light V2 (barre latérale, en-tête, fond, police) commune à tout le back-office. */
@@ -29,6 +31,7 @@ export function BackOfficeLayout({
   breadcrumbs,
   sidebarFooter,
   mapFullscreen = false,
+  headerActions,
 }: BackOfficeLayoutProps) {
   const { sidebarCollapsed, toggleMobileNav } = useUIStore();
   // Super-administrateur, ou mini-admin sans lecture des commandes ni des livraisons : pas d'accès aux
@@ -52,7 +55,7 @@ export function BackOfficeLayout({
           !mapFullscreen && (sidebarCollapsed ? "lg:pl-[104px]" : "lg:pl-[292px]")
         )}
       >
-        {!mapFullscreen && <Header breadcrumbs={breadcrumbs} premium />}
+        {!mapFullscreen && <Header breadcrumbs={breadcrumbs} premium actions={headerActions} />}
         {mapFullscreen && (
           // Carte plein écran : sans en-tête, ce bouton est le seul accès au menu sur téléphone.
           <Button

@@ -12,6 +12,7 @@ import { ONBOARDING_QUERY_KEY, fetchOnboardingStatus } from "@/features/back-off
 import { applyAdminNavBadges } from "@/features/navigation/admin-nav-badges";
 import { useAdminNavBadges } from "@/features/admin/hooks";
 import { useAdminLastVisits } from "@/features/admin/contact-last-visit";
+import { AdminGlobalSearch } from "@/features/admin/search/admin-global-search";
 import { useAuthStore } from "@/stores/auth.store";
 
 export default function BackOfficeRootLayout({ children }: { children: React.ReactNode }) {
@@ -47,7 +48,11 @@ export default function BackOfficeRootLayout({ children }: { children: React.Rea
     pathname === "/dispatch/drivers" || pathname === "/dispatch/map";
 
   return (
-    <BackOfficeLayout navItems={navItems} mapFullscreen={mapFullscreen}>
+    <BackOfficeLayout
+      navItems={navItems}
+      mapFullscreen={mapFullscreen}
+      headerActions={isSuperAdmin ? <AdminGlobalSearch /> : undefined}
+    >
       {children}
     </BackOfficeLayout>
   );

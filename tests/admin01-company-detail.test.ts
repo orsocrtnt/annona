@@ -43,12 +43,13 @@ test("ADMIN-1 détail entreprise : identité, abonnement et chiffre d'affaires, 
             cancelAtPeriodEnd: false,
             endedAt: null,
             premiumDiscoveryEndsAt: null,
-            planAssignments: [{ plan: { code: "PRO" as const, name: "Pro", monthlyPriceCents: 17900, annualPriceCents: 179000 } }],
+            planAssignments: [{ plan: { code: "PRO" as const, name: "Pro", monthlyPriceCents: 17900, annualPriceCents: 179000, includedDriverSeats: 5, unlimitedDriverSeats: false, maxDriverSeats: 6 } }],
             items: [
               { code: "AUTO_DISPATCH", kind: "OPTION" as const, quantity: 1, unitPriceCents: 0, option: { name: "Affectation automatique" } },
               { code: "EXTRA_ADMIN", kind: "ADMIN_SEAT" as const, quantity: 1, unitPriceCents: 1200, option: { name: "Admin supplémentaire" } },
+              { code: "EXTRA_DRIVER", kind: "DRIVER_SEAT" as const, quantity: 3, unitPriceCents: 900, option: null },
             ],
-            usagePeriods: [{ includedOrders: 100, orderCount: 10, overageCount: 0 }],
+            usagePeriods: [{ startsAt: new Date("2026-10-01T00:00:00.000Z"), endsAt: new Date("2026-11-01T00:00:00.000Z"), includedOrders: 100, orderCount: 10, overageCount: 0 }],
           },
         };
       },
@@ -68,7 +69,13 @@ test("ADMIN-1 détail entreprise : identité, abonnement et chiffre d'affaires, 
   assert.equal(row?.revenue.overdueCents, 2000);
   assert.equal(row?.revenue.pendingCents, 0);
   assert.equal(row?.subscription?.followUp, "REMIND");
-  assert.equal(row?.subscription?.amountCents, 19100);
+  assert.equal(row?.subscription?.amountCents, 19100 + 2700);
+  // ADMIN-ESPACE lot 3 : période de consommation et livreurs prévus (5 + 3 places, plafonnés à 6).
+  assert.deepEqual(row?.subscription?.orders, {
+    consumed: 10, included: 100, overage: 0,
+    periodStartsAt: "2026-10-01T00:00:00.000Z", periodEndsAt: "2026-11-01T00:00:00.000Z",
+  });
+  assert.deepEqual(row?.subscription?.drivers, { limit: 6, unlimited: false, known: true });
   assert.deepEqual(row?.subscription?.options, [{ code: "AUTO_DISPATCH", name: "Affectation automatique", quantity: 1, unitPriceCents: 0 }]);
   assert.equal(row?.subscription?.seats.ADMIN_SEAT, 1);
   const select = JSON.stringify(platformCompanyDetailSelect(now));
@@ -110,8 +117,8 @@ test("ADMIN-1 détail entreprise : journal avant paramètres, 404 et lecture seu
           return null;
         },
       };
-      if (id === "@/domains/admin/companies.service") return {
-        getPlatformCompany: async (id: string) => {
+      if (id === "@/domains/admin/company-file.service") return {
+        getPlatformCompanyFile: async (id: string) => {
           calls.push("service");
           assert.equal(id, "company-1");
           return company;
@@ -138,6 +145,7 @@ test("ADMIN-1 détail entreprise : journal avant paramètres, 404 et lecture seu
     email: null, phone: null, address: null, city: null, country: "FR", siren: null, siret: null,
     billingAddress: null, billingPostalCode: null, billingCity: null, createdAt: now.toISOString(),
     userCount: 2, deliveryCount: 3, admin: null, revenue: { paidCents: 0, pendingCents: 0, overdueCents: 0 }, subscription: null,
+    activity: { users: null },
   };
   calls.length = 0;
   const found = await module.exports.GET!(new Request("http://local/api/admin/companies/company-1"), { params });
@@ -146,12 +154,17 @@ test("ADMIN-1 détail entreprise : journal avant paramètres, 404 et lecture seu
   assert.deepEqual(Object.keys((await found.json()).data).sort(), [
     "address", "admin", "billingAddress", "billingCity", "billingPostalCode", "city", "country", "createdAt",
     "deliveryCount", "email", "id", "isDemo", "legalName", "name", "phone", "revenue", "siren", "siret", "slug",
-    "status", "subscription", "userCount",
-  ]);
+    "status", "subscription", "userCount", "activity",
+  ].sort());
 });
 
-test("ADMIN-1 détail entreprise : l'écran et le lien restent minimaux", () => {
+test("ADMIN-1 détail entreprise : l'écran reste en lecture seule et ses liens restent internes", () => {
   const page = readFileSync("src/app/(back-office)/companies/[id]/page.tsx", "utf8");
+  const view = [
+    "src/features/admin/company/company-file-view.tsx",
+    "src/features/admin/company/company-file-blocks.tsx",
+    "src/features/admin/company/company-file-format.ts",
+  ].map((file) => readFileSync(file, "utf8")).join("\n");
   const list = readFileSync("src/app/(back-office)/companies/page.tsx", "utf8");
   const api = readFileSync("src/features/admin/api.ts", "utf8");
   const hooks = readFileSync("src/features/admin/hooks.ts", "utf8");
@@ -159,17 +172,15 @@ test("ADMIN-1 détail entreprise : l'écran et le lien restent minimaux", () => 
   assert.equal(page.includes("<PageSkeleton />"), true);
   assert.equal(page.includes("Entreprise indisponible"), true);
   assert.equal(page.includes("Entreprise introuvable"), true);
-  const fields = [...page.matchAll(/company\.(\w+)/g)].map((match) => match[1]);
-  assert.deepEqual([...new Set(fields)].sort(), [
-    "address", "admin", "billingAddress", "billingCity", "billingPostalCode", "city", "country", "createdAt",
-    "deliveryCount", "email", "isDemo", "legalName", "name", "phone", "revenue", "siren", "siret", "slug",
-    "status", "subscription", "userCount",
-  ]);
-  for (const absent of ["company.id", "settings", "Modifier", "Supprimer", "href="]) {
-    assert.equal(page.includes(absent), false, absent);
+  assert.equal(page.includes("<CompanyFileView company={company} />"), true);
+  for (const absent of ["settings", "Modifier", "Supprimer", "fetch(", "method:", "useMutation", "/api/"]) {
+    assert.equal(view.includes(absent), false, absent);
   }
-  for (const present of ["CA encaissé", "HT enregistré", "À relancer", "Aucune option"]) {
-    assert.equal(page.includes(present), true, present);
+  // Liens : liste des entreprises et pages plateforme filtrées par le nom de l'entreprise, rien d'autre.
+  const paths = [...new Set([...view.matchAll(/"(\/[a-z/-]*)"/g)].map((match) => match[1]))].sort();
+  assert.deepEqual(paths, ["/admin/incidents", "/admin/support", "/admin/users", "/companies"]);
+  for (const present of ["CA encaissé", "HT enregistré", "À relancer", "Aucune option", "Indisponible.", "Démonstration"]) {
+    assert.equal(view.includes(present), true, present);
   }
   assert.equal(list.includes("href={`/companies/${row.id}`}"), true);
   assert.equal(list.includes("{row.name}"), true);

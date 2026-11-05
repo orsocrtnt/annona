@@ -16,6 +16,7 @@ const expected = [
   "saas-health/route.ts",
   "sales-codes/[id]/route.ts",
   "sales-codes/route.ts",
+  "search/route.ts",
   "service-health/route.ts",
   "subscriptions/route.ts",
   "support-tickets/route.ts",

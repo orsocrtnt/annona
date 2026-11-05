@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { gatePlatformRead } from "@/lib/api/platform-access";
-import { getPlatformCompany } from "@/domains/admin/companies.service";
+import { getPlatformCompanyFile } from "@/domains/admin/company-file.service";
 
+/** Fiche entreprise du super-administrateur (ADMIN-ESPACE lot 3) : identité, abonnement et activité. */
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const auth = await requireStaffRole("dashboard:admin");
   if ("error" in auth) return auth.error;
@@ -11,7 +12,12 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   if (blocked) return blocked;
 
   const { id } = await context.params;
-  const data = await getPlatformCompany(id);
+  let data;
+  try {
+    data = await getPlatformCompanyFile(id);
+  } catch {
+    return NextResponse.json({ error: "Fiche entreprise indisponible." }, { status: 500, headers: { "Cache-Control": "no-store" } });
+  }
   if (!data) {
     return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404, headers: { "Cache-Control": "no-store" } });
   }

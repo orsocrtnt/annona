@@ -26,9 +26,11 @@ interface HeaderProps {
   breadcrumbs?: BreadcrumbItem[];
   className?: string;
   premium?: boolean;
+  /** Contenu ajouté à droite de la barre (recherche globale du super-administrateur, ADMIN-ESPACE lot 3). */
+  actions?: React.ReactNode;
 }
 
-export function Header({ breadcrumbs, className, premium = false }: HeaderProps) {
+export function Header({ breadcrumbs, className, premium = false, actions }: HeaderProps) {
   const { toggleMobileNav } = useUIStore();
   const { user, logout } = useAuth();
   const canOpenSettings = useCanOpenPage("/settings");
@@ -99,6 +101,7 @@ export function Header({ breadcrumbs, className, premium = false }: HeaderProps)
       )}
 
       <div className="ml-auto flex items-center gap-2">
+        {actions}
         {premium && <ThemeToggle className="max-sm:hidden rounded-full text-[#5f6a63] hover:bg-black/[0.055] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground" />}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

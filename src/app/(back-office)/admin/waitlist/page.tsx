@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { WaitlistFunnelPanel } from "@/features/admin/waitlist/waitlist-funnel-panel";
 import { WaitlistList } from "@/features/admin/waitlist/waitlist-list";
 import type { FunnelPeriod } from "@/domains/growth/waitlist-funnel.service";
@@ -18,7 +19,10 @@ export default function AdminWaitlistPage() {
         </p>
       </header>
       <WaitlistFunnelPanel days={days} onDaysChange={setDays} />
-      <WaitlistList />
+      {/* `?q=` de la recherche globale : lu par la liste (useSearchParams), donc sous Suspense. */}
+      <Suspense fallback={<PageSkeleton />}>
+        <WaitlistList />
+      </Suspense>
     </div>
   );
 }

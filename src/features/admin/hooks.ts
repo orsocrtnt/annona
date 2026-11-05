@@ -17,6 +17,7 @@ import {
   fetchAdminHomeBadges,
   fetchAdminWaitlist,
   fetchAdminWaitlistFunnel,
+  fetchAdminSearch,
   type PlatformAccessListFilters,
   type WaitlistListFilters,
   type CompanyListFilters,
@@ -155,6 +156,18 @@ export function useAdminWaitlistFunnel(days: FunnelPeriod) {
     queryKey: ["admin", "waitlist-funnel", days],
     queryFn: () => fetchAdminWaitlistFunnel(days),
     staleTime: QUERY_STALE_MS,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Recherche globale du super-administrateur : lancée à partir de 2 caractères, requête annulée si la saisie change. */
+export function useAdminSearch(q: string) {
+  return useQuery({
+    queryKey: ["admin", "search", q],
+    queryFn: ({ signal }) => fetchAdminSearch(q, signal),
+    enabled: q.length >= 2,
+    staleTime: 30_000,
+    retry: false,
     placeholderData: keepPreviousData,
   });
 }

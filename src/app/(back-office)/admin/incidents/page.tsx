@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAdminIncidents } from "@/features/admin/hooks";
+import { useUrlSearchQuery } from "@/features/admin/use-url-search-query";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 const VISIBILITIES = [
@@ -24,12 +25,18 @@ const STATES = {
 } as const;
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 
-export default function AdminIncidentsPage() {
+function AdminIncidentsContent() {
   const [draftQuery, setDraftQuery] = useState("");
   const [q, setQ] = useState("");
   const [visibility, setVisibility] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  // ADMIN-ESPACE lot 3 : `?q=` venant de la recherche globale ou de la fiche entreprise.
+  useUrlSearchQuery((value) => {
+    setDraftQuery(value);
+    setQ(value);
+    setPage(1);
+  });
   const { data, isLoading, error } = useAdminIncidents({ q, visibility, page, pageSize });
 
   if (isInitialQueryLoading(isLoading, data)) return <PageSkeleton />;
@@ -111,5 +118,13 @@ export default function AdminIncidentsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminIncidentsPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AdminIncidentsContent />
+    </Suspense>
   );
 }

@@ -22,8 +22,8 @@ const WAITLIST_RECENT_DAYS = 7;
 const NEW_COMPANIES_DAYS = 30;
 const PARAMS = ["view", "contactSince", "waitlistSince"] as const;
 /** Livraison terminée avec succès : même règle que le tableau de bord entreprise. */
-const DELIVERED_STATUS = "DELIVERED";
-const OPEN_TICKET_STATUSES = ["OPEN", "IN_PROGRESS"] as const;
+export const DELIVERED_STATUS = "DELIVERED";
+export const OPEN_TICKET_STATUSES = ["OPEN", "IN_PROGRESS"] as const;
 
 export type AdminHomeView = "full" | "badges";
 
@@ -257,20 +257,19 @@ export function contactWhere(kind: "contact" | "waitlist", since: Date | null) {
 
 const NOT_DEMO = { isDemo: false };
 
-export async function readAdminHomeTodo(
-  params: Pick<AdminHomeParams, "contactSince" | "waitlistSince">,
-  db: AdminHomeDatabase = prisma as unknown as AdminHomeDatabase
-): Promise<AdminHomeTodo> {
+/**
+ * Incidents à l'état « Ouvert », avec la même règle que la page Incidents : lecture des incidents puis
+ * de leurs actions (pris en compte, résolu). `companyId` restreint à une entreprise (fiche entreprise, lot 3).
+ */
+export async function readOpenIncidentCount(
+  db: Pick<AdminHomeDatabase, "orderMessage">,
+  companyId?: string
+): Promise<number> {
   const incidentWhere = platformIncidentWhere({ page: 1, pageSize: 25 });
-  const [contactNew, waitlistNew, openSupportTickets, incidents] = await Promise.all([
-    db.contactMessage.count({ where: contactWhere("contact", params.contactSince) }),
-    db.contactMessage.count({ where: contactWhere("waitlist", params.waitlistSince) }),
-    db.supportTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
-    db.orderMessage.findMany({
-      where: incidentWhere,
-      select: { id: true, order: platformIncidentSelect().order },
-    }) as Promise<RawIncident[]>,
-  ]);
+  const incidents = (await db.orderMessage.findMany({
+    where: companyId ? { ...incidentWhere, order: { companyId } } : incidentWhere,
+    select: { id: true, order: platformIncidentSelect().order },
+  })) as RawIncident[];
   const keys = incidents.flatMap((incident) => [
     alertActionKey(`incident:${incident.id}`, "resolve"),
     alertActionKey(`incident:${incident.id}`, "ack"),
@@ -281,10 +280,23 @@ export async function readAdminHomeTodo(
         where: { requestKey: { in: keys } },
         select: platformIncidentActionSelect(),
       })) as Array<{ requestKey: string }>);
+  return countOpenIncidents(incidents, new Set(actions.map((action) => action.requestKey)));
+}
+
+export async function readAdminHomeTodo(
+  params: Pick<AdminHomeParams, "contactSince" | "waitlistSince">,
+  db: AdminHomeDatabase = prisma as unknown as AdminHomeDatabase
+): Promise<AdminHomeTodo> {
+  const [contactNew, waitlistNew, openSupportTickets, openIncidents] = await Promise.all([
+    db.contactMessage.count({ where: contactWhere("contact", params.contactSince) }),
+    db.contactMessage.count({ where: contactWhere("waitlist", params.waitlistSince) }),
+    db.supportTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
+    readOpenIncidentCount(db),
+  ]);
   return {
     contactNew,
     waitlistNew,
-    openIncidents: countOpenIncidents(incidents, new Set(actions.map((action) => action.requestKey))),
+    openIncidents,
     openSupportTickets,
     contactSince: params.contactSince ? params.contactSince.toISOString() : null,
     waitlistSince: params.waitlistSince ? params.waitlistSince.toISOString() : null,

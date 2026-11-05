@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { updateAdminWaitlistContacted, waitlistFilterParams } from "@/features/admin/api";
 import { markWaitlistVisited, readWaitlistLastVisit } from "@/features/admin/contact-last-visit";
 import { useAdminWaitlist } from "@/features/admin/hooks";
+import { useUrlSearchQuery } from "@/features/admin/use-url-search-query";
 import { HomeCard, HOME_CARD_CLASS } from "@/features/admin/home/home-card";
 import { campaignLabel } from "@/features/admin/waitlist/waitlist-labels";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
@@ -76,6 +77,12 @@ export function WaitlistList() {
   const [contacted, setContacted] = useState<WaitlistContactedFilter>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  // ADMIN-ESPACE lot 3 : `?q=` venant de la recherche globale ou de la fiche entreprise.
+  useUrlSearchQuery((value) => {
+    setDraftQuery(value);
+    setQ(value);
+    setPage(1);
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   // Valeur cochée affichée tout de suite (état local synchrone), jusqu'à la relecture de la liste.
   const [optimistic, setOptimistic] = useState<Record<string, boolean>>({});

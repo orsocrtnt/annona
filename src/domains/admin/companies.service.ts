@@ -47,7 +47,15 @@ type CompanyReader = {
 };
 
 type Money = { toString(): string } | number | null;
-type DetailPlan = { code: "STARTER" | "PRO" | "BUSINESS"; name: string; monthlyPriceCents: number; annualPriceCents: number };
+type DetailPlan = {
+  code: "STARTER" | "PRO" | "BUSINESS";
+  name: string;
+  monthlyPriceCents: number;
+  annualPriceCents: number;
+  includedDriverSeats: number;
+  unlimitedDriverSeats: boolean;
+  maxDriverSeats: number | null;
+};
 type DetailItem = {
   code: string;
   kind: "OPTION" | "DRIVER_SEAT" | "ADMIN_SEAT" | "DISPATCHER_SEAT";
@@ -66,7 +74,7 @@ type DetailSubscription = {
   premiumDiscoveryEndsAt: Date | null;
   planAssignments: Array<{ plan: DetailPlan }>;
   items: DetailItem[];
-  usagePeriods: Array<{ includedOrders: number; orderCount: number; overageCount: number }>;
+  usagePeriods: Array<{ startsAt: Date; endsAt: Date; includedOrders: number; orderCount: number; overageCount: number }>;
 };
 type DetailRow = {
   id: string;
@@ -127,7 +135,10 @@ export type PlatformCompanyDetail = {
     amountCents: number;
     options: Array<{ code: string; name: string; quantity: number; unitPriceCents: number }>;
     seats: { DRIVER_SEAT: number; ADMIN_SEAT: number; DISPATCHER_SEAT: number };
-    orders: { consumed: number; included: number; overage: number };
+    /** Période de consommation en cours ; dates nulles = aucune période ouverte (rien de compté). */
+    orders: { consumed: number; included: number; overage: number; periodStartsAt: string | null; periodEndsAt: string | null };
+    /** Livreurs prévus par l'offre (formule + places ajoutées, plafonnées) ; `null` = illimité ou formule inconnue. */
+    drivers: { limit: number | null; unlimited: boolean; known: boolean };
   } | null;
 };
 
@@ -282,7 +293,17 @@ export function platformCompanyDetailSelect(now: Date) {
           orderBy: { effectiveFrom: "desc" as const },
           take: 1,
           select: {
-            plan: { select: { code: true, name: true, monthlyPriceCents: true, annualPriceCents: true } },
+            plan: {
+              select: {
+                code: true,
+                name: true,
+                monthlyPriceCents: true,
+                annualPriceCents: true,
+                includedDriverSeats: true,
+                unlimitedDriverSeats: true,
+                maxDriverSeats: true,
+              },
+            },
           },
         },
         items: {
@@ -297,7 +318,8 @@ export function platformCompanyDetailSelect(now: Date) {
         },
         usagePeriods: {
           where: { startsAt: { lte: now }, endsAt: { gt: now } },
-          select: { includedOrders: true, orderCount: true, overageCount: true },
+          orderBy: { startsAt: "asc" as const },
+          select: { startsAt: true, endsAt: true, includedOrders: true, orderCount: true, overageCount: true },
         },
       },
     },
@@ -344,11 +366,25 @@ export function toPlatformCompanyDetail(
       seats[item.kind] += quantity;
     }
   }
+  const usage = subscription?.usagePeriods ?? [];
   const orders = {
-    consumed: (subscription?.usagePeriods ?? []).reduce((sum, usage) => sum + nonNegative(usage.orderCount), 0),
-    included: (subscription?.usagePeriods ?? []).reduce((sum, usage) => sum + nonNegative(usage.includedOrders), 0),
-    overage: (subscription?.usagePeriods ?? []).reduce((sum, usage) => sum + nonNegative(usage.overageCount), 0),
+    consumed: usage.reduce((sum, period) => sum + nonNegative(period.orderCount), 0),
+    included: usage.reduce((sum, period) => sum + nonNegative(period.includedOrders), 0),
+    overage: usage.reduce((sum, period) => sum + nonNegative(period.overageCount), 0),
+    periodStartsAt: usage[0]?.startsAt.toISOString() ?? null,
+    periodEndsAt: usage[usage.length - 1]?.endsAt.toISOString() ?? null,
   };
+  // Même règle que le contrôle des places (saas.service, capSeats) : formule + places ajoutées, plafonnées.
+  const driverPurchased = plan ? nonNegative(plan.includedDriverSeats) + seats.DRIVER_SEAT : 0;
+  const drivers = !plan
+    ? { limit: null, unlimited: false, known: false }
+    : plan.unlimitedDriverSeats
+      ? { limit: null, unlimited: true, known: true }
+      : {
+          limit: plan.maxDriverSeats == null ? driverPurchased : Math.min(plan.maxDriverSeats, driverPurchased),
+          unlimited: false,
+          known: true,
+        };
 
   return {
     id: row.id,
@@ -387,6 +423,7 @@ export function toPlatformCompanyDetail(
       options: [...options.values()].sort((a, b) => a.code.localeCompare(b.code)),
       seats,
       orders,
+      drivers,
     } : null,
   };
 }

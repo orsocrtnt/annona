@@ -1,4 +1,6 @@
-import type { PlatformCompanyDetail, PlatformCompanyPage } from "@/domains/admin/companies.service";
+import type { PlatformCompanyPage } from "@/domains/admin/companies.service";
+import type { PlatformCompanyFile } from "@/domains/admin/company-file.service";
+import type { AdminSearchResult } from "@/domains/admin/search.service";
 import type { PlatformUserPage } from "@/domains/admin/users.service";
 import type { PlatformIncidentPage } from "@/domains/admin/incidents.service";
 import type { PlatformServiceHealth } from "@/domains/admin/service-health.service";
@@ -195,9 +197,9 @@ export async function fetchAdminCompanies(filters: CompanyListFilters): Promise<
   return json.data as PlatformCompanyPage;
 }
 
-export async function fetchAdminCompany(id: string): Promise<PlatformCompanyDetail> {
+export async function fetchAdminCompany(id: string): Promise<PlatformCompanyFile> {
   const res = await fetch(`/api/admin/companies/${id}`, { cache: "no-store" });
-  let json: { error?: string; data?: PlatformCompanyDetail } = {};
+  let json: { error?: string; data?: PlatformCompanyFile } = {};
   try {
     json = await res.json();
   } catch {
@@ -205,7 +207,7 @@ export async function fetchAdminCompany(id: string): Promise<PlatformCompanyDeta
   }
   if (res.status === 404) throw new Error("Entreprise introuvable");
   if (!res.ok) throw new Error(json.error ?? `Erreur serveur (${res.status})`);
-  return json.data as PlatformCompanyDetail;
+  return json.data as PlatformCompanyFile;
 }
 
 export async function fetchAdminServiceHealth(): Promise<PlatformServiceHealth> {
@@ -320,4 +322,11 @@ export async function updateAdminWaitlistContacted(id: string, contacted: boolea
 export async function fetchAdminWaitlistFunnel(days: FunnelPeriod): Promise<WaitlistFunnel> {
   const res = await fetch(`/api/admin/waitlist/funnel?days=${days}`, { cache: "no-store" });
   return readJson<WaitlistFunnel>(res);
+}
+
+/* ---------- Recherche globale (ADMIN-ESPACE lot 3) ---------- */
+
+export async function fetchAdminSearch(q: string, signal?: AbortSignal): Promise<AdminSearchResult> {
+  const res = await fetch(`/api/admin/search?q=${encodeURIComponent(q)}`, { cache: "no-store", signal });
+  return readJson<AdminSearchResult>(res);
 }

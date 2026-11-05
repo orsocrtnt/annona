@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { AlertTriangle, HeadphonesIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAdminSupportTickets } from "@/features/admin/hooks";
+import { useUrlSearchQuery } from "@/features/admin/use-url-search-query";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 const STATUSES = [
@@ -30,13 +31,19 @@ const statusLabel = Object.fromEntries(STATUSES.map((item) => [item.value, item.
 const priorityLabel = Object.fromEntries(PRIORITIES.map((item) => [item.value, item.label]));
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 
-export default function AdminSupportPage() {
+function AdminSupportContent() {
   const [draftQuery, setDraftQuery] = useState("");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  // ADMIN-ESPACE lot 3 : `?q=` venant de la recherche globale ou de la fiche entreprise.
+  useUrlSearchQuery((value) => {
+    setDraftQuery(value);
+    setQ(value);
+    setPage(1);
+  });
   const { data, isLoading, error } = useAdminSupportTickets({ q, status, priority, page, pageSize });
 
   if (isInitialQueryLoading(isLoading, data)) return <PageSkeleton />;
@@ -149,5 +156,13 @@ export default function AdminSupportPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminSupportPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <AdminSupportContent />
+    </Suspense>
   );
 }

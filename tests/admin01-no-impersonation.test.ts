@@ -65,6 +65,7 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors co
     "src/app/api/admin/saas-health/route.ts",
     "src/app/api/admin/sales-codes/[id]/route.ts",
     "src/app/api/admin/sales-codes/route.ts",
+    "src/app/api/admin/search/route.ts",
     "src/app/api/admin/service-health/route.ts",
     "src/app/api/admin/subscriptions/route.ts",
     "src/app/api/admin/support-tickets/route.ts",

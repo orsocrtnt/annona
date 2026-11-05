@@ -19,7 +19,7 @@ const routes = [
   ["src/app/api/admin/saas-health/route.ts", "@/domains/admin/saas-health.service", "SAAS_HEALTH", false],
   ["src/app/api/admin/service-health/route.ts", "@/domains/admin/service-health.service", "SERVICE_HEALTH", false],
   ["src/app/api/admin/companies/route.ts", "@/domains/admin/companies.service", "COMPANIES", true],
-  ["src/app/api/admin/companies/[id]/route.ts", "@/domains/admin/companies.service", "COMPANY_DETAIL", false],
+  ["src/app/api/admin/companies/[id]/route.ts", "@/domains/admin/company-file.service", "COMPANY_DETAIL", false],
   ["src/app/api/admin/users/route.ts", "@/domains/admin/users.service", "USERS", true],
   ["src/app/api/admin/subscriptions/route.ts", "@/domains/admin/subscriptions.service", "SUBSCRIPTIONS", true],
   ["src/app/api/admin/support-tickets/route.ts", "@/domains/admin/support-tickets.service", "SUPPORT_TICKETS", true],
