@@ -10,6 +10,12 @@ import { demoRequestKeyFor, useApplyLoginSession } from "@/features/auth/login-s
 import { AUTH_TIMEOUT_MESSAGE, RequestTimeoutError, requestJsonWithTimeout } from "@/features/auth/request-timeout";
 import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 
+/** Espaces tous pris : le serveur en prépare un autre ; on réessaie seul quelques fois avant d'afficher l'erreur. */
+const BUSY_RETRIES = 4;
+const MAX_BUSY_WAIT_SECONDS = 10;
+
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
 /**
  * « Voir la démo » : ouvre l'espace de démonstration sans saisir d'identifiants. Même appel serveur que le
  * formulaire (compte démo public, réservation d'un espace isolé), puis arrivée sur l'accueil de l'espace.
@@ -18,14 +24,16 @@ export function DemoLauncher() {
   const router = useRouter();
   const applyLoginSession = useApplyLoginSession();
   const [error, setError] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const running = useRef(false);
 
   const open = useCallback(async () => {
     if (running.current) return;
     running.current = true;
     setError(null);
+    setPreparing(false);
     try {
-      const res = await requestJsonWithTimeout("/api/auth/login", {
+      const request = () => requestJsonWithTimeout("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -34,6 +42,12 @@ export function DemoLauncher() {
           demoRequestKey: demoRequestKeyFor(DEMO_LOGIN_EMAIL),
         }),
       });
+      let res = await request();
+      for (let attempt = 0; attempt < BUSY_RETRIES && res.status === 503 && typeof res.json?.retryAfterSeconds === "number"; attempt += 1) {
+        setPreparing(true);
+        await wait(Math.min(Math.max(res.json.retryAfterSeconds, 1), MAX_BUSY_WAIT_SECONDS) * 1000);
+        res = await request();
+      }
       if (!res.ok || res.json === null) {
         running.current = false;
         setError(res.json?.error ?? "La démonstration est momentanément indisponible. Réessayez dans quelques instants.");
@@ -77,7 +91,11 @@ export function DemoLauncher() {
           <h1 className="mt-5 text-balance text-[clamp(28px,5vw,40px)] font-bold leading-[1.06] tracking-[-0.04em]">
             Ouverture de la démo…
           </h1>
-          <p className="mt-2.5 text-text-secondary">Un espace fictif est préparé pour vous, sans compte à créer.</p>
+          <p className="mt-2.5 text-text-secondary">
+            {preparing
+              ? "Tous les espaces sont occupés : un nouvel espace se prépare, encore quelques secondes."
+              : "Un espace fictif est préparé pour vous, sans compte à créer."}
+          </p>
         </div>
       )}
     </div>
