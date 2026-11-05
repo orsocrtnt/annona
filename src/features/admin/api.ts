@@ -2,6 +2,7 @@ import type { PlatformCompanyPage } from "@/domains/admin/companies.service";
 import type { PlatformCompanyFile } from "@/domains/admin/company-file.service";
 import type { AdminSearchResult } from "@/domains/admin/search.service";
 import type { PilotDetail, PilotList } from "@/domains/admin/pilots.service";
+import type { ProspectionSheetView } from "@/domains/admin/prospection-sheet.service";
 import type { PlatformUserPage } from "@/domains/admin/users.service";
 import type { PlatformIncidentPage } from "@/domains/admin/incidents.service";
 import type { PlatformServiceHealth } from "@/domains/admin/service-health.service";
@@ -419,4 +420,11 @@ export function sendAdminCampaignTest(id: string) {
 
 export function addAdminCampaignOptOuts(addresses: string) {
   return sendJson<{ added: number; cancelled: number; invalid: string[] }>("/api/admin/campaigns/opt-outs", "POST", { addresses });
+}
+
+/* ---------- Fichier de prospection, Google Sheet en lecture seule (ADMIN-ESPACE lot 5) ---------- */
+
+export async function fetchAdminProspectionSheet(): Promise<ProspectionSheetView> {
+  const res = await fetch("/api/admin/prospection/sheet", { cache: "no-store" });
+  return readJson<ProspectionSheetView>(res);
 }

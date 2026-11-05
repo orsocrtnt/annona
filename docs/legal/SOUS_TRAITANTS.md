@@ -82,6 +82,18 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 - **Mention affichée** : l'écran d'activation indique que le texte est transmis au sous-traitant Anthropic et qu'aucune validation juridique n'est acquise.
 - **À obtenir** : entité contractante, DPA et version, rétention et éventuelle option de non-conservation, région et mécanisme de transfert, sous-traitants ultérieurs, information des personnes dont les coordonnées figurent dans les messages transmis.
 
+## F11 — Google : lecture du fichier de prospection (API Google Sheets)
+
+**À valider par le propriétaire (LEGAL-1).** Fiche factuelle, sans qualification juridique.
+
+- **État constaté (6 novembre 2026)** : code écrit (ADMIN-ESPACE lot 5), **non branché** : aucune variable posée, aucun compte de service créé. Mise en place : [SHEET.md](../operations/prospection/SHEET.md).
+- **Finalité** : afficher au super-administrateur, dans `/admin/prospection`, des totaux et les rappels du fichier de prospection `TutelLiv_Suivi_Prospection_2026`, qui reste tenu par les commerciaux dans Google Sheets.
+- **Fonctionnement** : un compte de service Google, sans rôle, lit la Sheet partagée avec lui en lecteur (portée `spreadsheets.readonly`, API Google Sheets v4). TutelLiv n'écrit rien dans la Sheet.
+- **Données lues** : coordonnées professionnelles de prospects telles qu'elles figurent dans la Sheet (nom d'entreprise, ville, étape, dates de rappel et de dernier contact, nom du commercial ; les autres colonnes du fichier, comme les coordonnées, sont aussi lues sur la plage demandée). Données transmises par TutelLiv à Google : l'identifiant de la Sheet et l'assertion signée du compte de service.
+- **Conservation côté TutelLiv** : rien n'est écrit en base ; un résumé (totaux, au plus 15 rappels : entreprise, ville, commercial, date) reste en mémoire du serveur 5 minutes. Le navigateur ne reçoit que ce résumé.
+- **Conservation et localisation côté fournisseur** : **INCONNUES dans ce dossier** (le fichier est déjà hébergé chez Google, indépendamment de TutelLiv). Entité contractante, conditions applicables au compte Google utilisé, régions et transferts hors EEE à vérifier.
+- **Rôle** : à qualifier.
+
 ## Décision d'autorisation
 
 **Recommandation** : aucune fiche n'est marquée « validée ». Recueillir les pièces, confronter les flux au navigateur/serveur sur préproduction, puis faire qualifier les rôles, transferts et exigences contractuelles par le juriste. Une autorisation de sous-traitance ultérieure et une procédure d'information des changements doivent être organisées lorsqu'elles sont applicables. [CNIL — bonnes pratiques responsable/sous-traitant](https://www.cnil.fr/fr/responsable-de-traitement-et-sous-traitant-6-bonnes-pratiques-pour-respecter-les-donnees).

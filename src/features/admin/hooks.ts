@@ -22,6 +22,7 @@ import {
   fetchAdminSearch,
   fetchAdminPilots,
   fetchAdminPilot,
+  fetchAdminProspectionSheet,
   type PlatformAccessListFilters,
   type WaitlistListFilters,
   type CompanyListFilters,
@@ -213,5 +214,15 @@ export function useAdminCampaign(id: string | null) {
     queryFn: () => fetchAdminCampaign(id!),
     enabled: Boolean(id),
     staleTime: QUERY_STALE_MS,
+  });
+}
+
+/** ADMIN-ESPACE lot 5 : chiffres de la Google Sheet de prospection (cache serveur de 5 minutes). */
+export function useAdminProspectionSheet() {
+  return useQuery({
+    queryKey: ["admin", "prospection", "sheet"],
+    queryFn: fetchAdminProspectionSheet,
+    staleTime: 60_000,
+    retry: false,
   });
 }

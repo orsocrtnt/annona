@@ -303,6 +303,8 @@ Ne pas demander « Vous aimeriez une carte en direct ? » ni « Vous paieriez 17
 
 **Une seule ligne par entreprise** dans le fichier de prospects. À remplir tout de suite après chaque contact.
 
+Les chiffres de ce fichier (étapes, rappels du jour, revue du vendredi) s'affichent dans `/admin/prospection`, une fois la Sheet branchée : [SHEET.md](SHEET.md).
+
 Étapes : `À qualifier` → `Contacté` → `En discussion` → `Entretien fait` → `Démo faite` → `Intéressé` → `Pilote signé`, ou `Perdu`, ou `Ne plus contacter`.
 
 **Chaque matin (10 minutes) :**

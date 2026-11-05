@@ -276,7 +276,7 @@ test("ADMIN-ESPACE menu : trois groupes pour le super-administrateur, rien ne ch
   assert.deepEqual(sections, [
     [null, ["Tableau de bord /admin"]],
     [ADMIN_NAV_GROUPS.clients, ["Entreprises /companies", "Pilotes /admin/pilots", "Utilisateurs /admin/users", "Souscriptions /admin/subscriptions"]],
-    [ADMIN_NAV_GROUPS.commercial, ["Messages Contact /admin/contact", "Liste d'attente /admin/waitlist", "Campagnes /admin/campaigns", "Codes commerciaux /admin/sales"]],
+    [ADMIN_NAV_GROUPS.commercial, ["Messages Contact /admin/contact", "Liste d'attente /admin/waitlist", "Campagnes /admin/campaigns", "Prospection /admin/prospection", "Codes commerciaux /admin/sales"]],
     [
       ADMIN_NAV_GROUPS.technique,
       ["Exploitation /admin/operations", "Incidents /admin/incidents", "Support plateforme /admin/support", "Journal d'accès /admin/access-events"],

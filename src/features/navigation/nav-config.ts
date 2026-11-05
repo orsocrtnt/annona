@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Building2, Users, Settings, Radio, ClipboardList, Activity, ShieldAlert,
   Truck, Package, MapPin, Shield, UserCircle, Receipt, CreditCard, BarChart3, HeadphonesIcon, ListChecks,
-  ScrollText, BadgePercent, Inbox, UserPlus, Flag, Megaphone,
+  ScrollText, BadgePercent, Inbox, UserPlus, Flag, Megaphone, Target,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -17,6 +17,7 @@ export const adminNavItems: NavItem[] = [
   { title: "Messages Contact", href: "/admin/contact", icon: Inbox, group: ADMIN_NAV_GROUPS.commercial },
   { title: "Liste d'attente", href: "/admin/waitlist", icon: UserPlus, group: ADMIN_NAV_GROUPS.commercial },
   { title: "Campagnes", href: "/admin/campaigns", icon: Megaphone, group: ADMIN_NAV_GROUPS.commercial },
+  { title: "Prospection", href: "/admin/prospection", icon: Target, group: ADMIN_NAV_GROUPS.commercial },
   { title: "Codes commerciaux", href: "/admin/sales", icon: BadgePercent, group: ADMIN_NAV_GROUPS.commercial },
   { title: "Exploitation", href: "/admin/operations", icon: Activity, group: ADMIN_NAV_GROUPS.technique },
   { title: "Incidents", href: "/admin/incidents", icon: ShieldAlert, group: ADMIN_NAV_GROUPS.technique },
