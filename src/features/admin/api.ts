@@ -8,6 +8,7 @@ import type { CommercialSubscriptionPage } from "@/domains/admin/subscriptions.s
 import type { PlatformAccessEventPage } from "@/domains/admin/platform-access.service";
 import type { PlatformOverview } from "@/domains/admin/platform.service";
 import type { SaasHealthIndicators } from "@/domains/admin/saas-health.service";
+import type { AdminHome, AdminHomeBadges } from "@/domains/admin/admin-home.service";
 
 export async function fetchAdminOverview(): Promise<PlatformOverview> {
   const res = await fetch("/api/admin/overview", { cache: "no-store" });
@@ -238,4 +239,30 @@ export async function fetchAdminIncidents(filters: IncidentListFilters): Promise
   }
   if (!res.ok) throw new Error(json.error ?? `Erreur serveur (${res.status})`);
   return json.data as PlatformIncidentPage;
+}
+
+async function readAdminHome<T>(view: "full" | "badges", contactSince: string | null): Promise<T> {
+  const params = new URLSearchParams();
+  if (view === "badges") params.set("view", "badges");
+  if (contactSince) params.set("contactSince", contactSince);
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  const res = await fetch(`/api/admin/home${query}`, { cache: "no-store" });
+  let json: { error?: string; data?: T } = {};
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(res.ok ? "Réponse invalide du serveur" : `Erreur serveur (${res.status})`);
+  }
+  if (!res.ok) throw new Error(json.error ?? `Erreur serveur (${res.status})`);
+  return json.data as T;
+}
+
+/** ADMIN-ESPACE : accueil complet (« À traiter », chiffres clés, courbe, santé). */
+export function fetchAdminHome(contactSince: string | null): Promise<AdminHome> {
+  return readAdminHome<AdminHome>("full", contactSince);
+}
+
+/** ADMIN-ESPACE : compteurs seuls, pour les pastilles du menu. */
+export function fetchAdminHomeBadges(contactSince: string | null): Promise<AdminHomeBadges> {
+  return readAdminHome<AdminHomeBadges>("badges", contactSince);
 }

@@ -73,6 +73,10 @@ export interface NavItem {
   href: string;
   icon?: React.ComponentType<{ className?: string }>;
   badge?: string | number;
+  /** Texte lu par les lecteurs d'écran à la place de la pastille (ex. « 3 nouveaux »). */
+  badgeLabel?: string;
+  /** Titre de section du menu ; les entrées consécutives d'un même groupe sont rendues ensemble. */
+  group?: string;
   disabled?: boolean;
   disabledReason?: string;
   children?: NavItem[];

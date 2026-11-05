@@ -13,6 +13,8 @@ import {
   fetchAdminSaasHealth,
   fetchAdminSubscriptions,
   fetchAdminSupportTickets,
+  fetchAdminHome,
+  fetchAdminHomeBadges,
   type PlatformAccessListFilters,
   type CompanyListFilters,
   type PlatformUserListFilters,
@@ -109,5 +111,25 @@ export function useAdminSubscriptions(filters: SubscriptionListFilters) {
     queryKey: ["admin", "subscriptions", filters],
     queryFn: () => fetchAdminSubscriptions(filters),
     staleTime: QUERY_STALE_MS,
+  });
+}
+
+/** ADMIN-ESPACE : accueil du super-administrateur ; `contactSince` vient du navigateur (dernière visite des messages). */
+export function useAdminHome(contactSince: string | null | undefined) {
+  return useQuery({
+    queryKey: ["admin", "home", contactSince],
+    queryFn: () => fetchAdminHome(contactSince ?? null),
+    enabled: contactSince !== undefined,
+    staleTime: QUERY_STALE_MS,
+  });
+}
+
+/** Pastilles du menu : lecture légère, rafraîchie au plus une fois par minute (chaque lecture est journalisée). */
+export function useAdminNavBadges(contactSince: string | null | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ["admin", "home-badges", contactSince],
+    queryFn: () => fetchAdminHomeBadges(contactSince ?? null),
+    enabled: enabled && contactSince !== undefined,
+    staleTime: 60_000,
   });
 }

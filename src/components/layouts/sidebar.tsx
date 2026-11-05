@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment, useId } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,8 +10,11 @@ import { useUIStore } from "@/stores/ui.store";
 import { APP_NAME } from "@/lib/constants";
 import { isNavItemActive } from "@/lib/navigation/is-nav-item-active";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
+import { groupNavItems } from "@/lib/navigation/group-nav-items";
 import { ChevronLeft, Package2 } from "lucide-react";
 import type { NavItem } from "@/types";
+import { NavBadge } from "./nav-badge";
+import { NavSectionTitle } from "./nav-section-title";
 
 interface SidebarProps {
   items: NavItem[];
@@ -38,10 +42,10 @@ function SidebarNavLink({
     <Link
       key={item.href}
       href={item.href}
-      aria-label={sidebarCollapsed ? item.title : undefined}
+      aria-label={sidebarCollapsed ? (item.badgeLabel ? `${item.title}, ${item.badgeLabel}` : item.title) : undefined}
       aria-current={isActive ? "page" : undefined}
       {...prefetchHandlers}
-      className={className}
+      className={cn(className, sidebarCollapsed && item.badge !== undefined && "relative")}
     >
       {Icon && (
         <Icon
@@ -60,12 +64,11 @@ function SidebarNavLink({
       {!sidebarCollapsed && (
         <>
           <span className="flex-1">{item.title}</span>
-          {item.badge !== undefined && (
-            <span className="text-xs tabular-nums text-muted-foreground">
-              {item.badge}
-            </span>
-          )}
+          {item.badge !== undefined && <NavBadge value={item.badge} label={item.badgeLabel} />}
         </>
+      )}
+      {sidebarCollapsed && item.badge !== undefined && (
+        <span aria-hidden className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand" />
       )}
     </Link>
   );
@@ -75,6 +78,62 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
   const pathname = usePathname();
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const allHrefs = items.map((item) => item.href);
+  const sectionIdPrefix = useId();
+
+  const renderItem = (item: NavItem) => {
+    const isActive = isNavItemActive(pathname, item.href, allHrefs);
+    const Icon = item.icon;
+    const className = cn(
+      "group flex items-center gap-3 px-3 text-sm font-medium transition-all duration-200",
+      premium ? "min-h-11 rounded-xl py-2" : "rounded-lg py-2.5",
+      premium
+        ? isActive
+          ? // Page active sobre : surface à peine teintée et filet, sans aplat vert ni halo ; seule l'icône garde le vert de sélection.
+            "bg-[#f1f5f2] text-[#0e1310] ring-1 ring-inset ring-[#e4ebe6] dark:bg-muted dark:text-foreground dark:ring-border"
+          : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
+        : isActive
+          ? "bg-brand-subtle text-brand"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      item.disabled && "cursor-not-allowed opacity-50"
+    );
+
+    if (item.disabled) {
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          title={item.disabledReason}
+          aria-disabled="true"
+          className={className}
+        >
+          {Icon && (
+            <Icon className="h-[18px] w-[18px] shrink-0 text-muted-foreground" />
+          )}
+          {!sidebarCollapsed && (
+            <>
+              <span className="flex-1">{item.title}</span>
+              {item.badge !== undefined && (
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {item.badge}
+                </span>
+              )}
+            </>
+          )}
+        </Link>
+      );
+    }
+
+    return (
+      <SidebarNavLink
+        key={item.href}
+        item={item}
+        isActive={isActive}
+        sidebarCollapsed={sidebarCollapsed}
+        className={className}
+        premium={premium}
+      />
+    );
+  };
 
   return (
     <aside
@@ -150,58 +209,15 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
 
       <ScrollArea className={cn("flex-1 px-3", premium ? "py-3" : "py-4")}>
         <nav aria-label="Navigation principale" className={cn("space-y-1", premium && "space-y-0.5")}>
-          {items.map((item) => {
-            const isActive = isNavItemActive(pathname, item.href, allHrefs);
-            const Icon = item.icon;
-            const className = cn(
-              "group flex items-center gap-3 px-3 text-sm font-medium transition-all duration-200",
-              premium ? "min-h-11 rounded-xl py-2" : "rounded-lg py-2.5",
-              premium
-                ? isActive
-                  ? // Page active sobre : surface à peine teintée et filet, sans aplat vert ni halo ; seule l'icône garde le vert de sélection.
-                    "bg-[#f1f5f2] text-[#0e1310] ring-1 ring-inset ring-[#e4ebe6] dark:bg-muted dark:text-foreground dark:ring-border"
-                  : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
-                : isActive
-                  ? "bg-brand-subtle text-brand"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              item.disabled && "cursor-not-allowed opacity-50"
-            );
-
-            if (item.disabled) {
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={item.disabledReason}
-                  aria-disabled="true"
-                  className={className}
-                >
-                  {Icon && (
-                    <Icon className="h-[18px] w-[18px] shrink-0 text-muted-foreground" />
-                  )}
-                  {!sidebarCollapsed && (
-                    <>
-                      <span className="flex-1">{item.title}</span>
-                      {item.badge !== undefined && (
-                        <span className="text-xs tabular-nums text-muted-foreground">
-                          {item.badge}
-                        </span>
-                      )}
-                    </>
-                  )}
-                </Link>
-              );
-            }
-
+          {groupNavItems(items).map((section, sectionIndex) => {
+            const links = section.items.map(renderItem);
+            if (!section.title) return <Fragment key={`section-${sectionIndex}`}>{links}</Fragment>;
+            const titleId = `${sectionIdPrefix}-section-${sectionIndex}`;
             return (
-              <SidebarNavLink
-                key={item.href}
-                item={item}
-                isActive={isActive}
-                sidebarCollapsed={sidebarCollapsed}
-                className={className}
-                premium={premium}
-              />
+              <div key={section.title} role="group" aria-labelledby={titleId} className={cn("space-y-1", premium && "space-y-0.5")}>
+                <NavSectionTitle id={titleId} title={section.title} collapsed={sidebarCollapsed} premium={premium} />
+                {links}
+              </div>
             );
           })}
         </nav>

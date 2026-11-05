@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useContactMessages } from "@/features/admin/contact-messages";
+import { markContactVisited } from "@/features/admin/contact-last-visit";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" });
@@ -15,6 +16,12 @@ export default function AdminContactMessagesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const { data, isLoading, error } = useContactMessages(page, pageSize);
+  // ADMIN-ESPACE : une fois les messages affichés, la pastille « nouveaux messages » repart de zéro
+  // (date gardée dans ce navigateur seulement).
+  const loaded = Boolean(data);
+  useEffect(() => {
+    if (loaded) markContactVisited();
+  }, [loaded]);
 
   if (isInitialQueryLoading(isLoading, data)) return <PageSkeleton />;
   if (error || !data) {

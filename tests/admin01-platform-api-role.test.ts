@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 const routes = [
   ["src/app/api/admin/access-events/route.ts", "@/domains/admin/platform-access.service", true],
   ["src/app/api/admin/overview/route.ts", "@/domains/admin/platform.service", false],
+  ["src/app/api/admin/home/route.ts", "@/domains/admin/admin-home.service", true],
   ["src/app/api/admin/saas-health/route.ts", "@/domains/admin/saas-health.service", false],
   ["src/app/api/admin/service-health/route.ts", "@/domains/admin/service-health.service", false],
   ["src/app/api/admin/companies/route.ts", "@/domains/admin/companies.service", true],
@@ -87,7 +88,7 @@ test("ADMIN-1 API plateforme : SUPER_ADMIN conserve la lecture", async () => {
     assert.equal(calls.includes("service"), true);
   }
   const api = readFileSync("src/features/admin/api.ts", "utf8");
-  for (const path of ["/api/admin/overview", "/api/admin/saas-health", "/api/admin/service-health", "/api/admin/companies", "/api/admin/users", "/api/admin/subscriptions", "/api/admin/support-tickets", "/api/admin/operation-jobs", "/api/admin/incidents"]) {
+  for (const path of ["/api/admin/overview", "/api/admin/home", "/api/admin/saas-health", "/api/admin/service-health", "/api/admin/companies", "/api/admin/users", "/api/admin/subscriptions", "/api/admin/support-tickets", "/api/admin/operation-jobs", "/api/admin/incidents"]) {
     const line = api.split("\n").find((entry) => entry.includes(path));
     assert.equal(line?.includes('cache: "no-store"'), true, path);
   }

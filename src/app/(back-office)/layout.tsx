@@ -9,6 +9,9 @@ import { adminNavItems, companyNavItems } from "@/features/navigation/nav-config
 import { applyOfferNavLocks } from "@/features/saas/offer-nav";
 import { applyOnboardingNavVisibility } from "@/features/navigation/onboarding-nav";
 import { ONBOARDING_QUERY_KEY, fetchOnboardingStatus } from "@/features/back-office/onboarding-query";
+import { applyAdminNavBadges } from "@/features/navigation/admin-nav-badges";
+import { useAdminNavBadges } from "@/features/admin/hooks";
+import { useContactLastVisit } from "@/features/admin/contact-last-visit";
 import { useAuthStore } from "@/stores/auth.store";
 
 export default function BackOfficeRootLayout({ children }: { children: React.ReactNode }) {
@@ -25,14 +28,20 @@ export default function BackOfficeRootLayout({ children }: { children: React.Rea
     staleTime: 30_000,
   });
 
+  // Pastilles du menu super-administrateur : nouveautés Contact, incidents et tickets ouverts.
+  const isSuperAdmin = user?.role.systemRole === "SUPER_ADMIN";
+  const contactLastVisit = useContactLastVisit();
+  const { data: adminBadges } = useAdminNavBadges(contactLastVisit, isSuperAdmin);
+
   const navItems = useMemo(() => {
     const items = user?.role.systemRole
       ? getNavItemsForRole(user.role.systemRole, user.settings)
       : pathname.startsWith("/admin") || pathname.startsWith("/companies")
         ? adminNavItems
         : companyNavItems;
-    return applyOfferNavLocks(applyOnboardingNavVisibility(items, isCompanyAdmin ? onboarding : undefined), saas);
-  }, [user, pathname, saas, isCompanyAdmin, onboarding]);
+    const withBadges = isSuperAdmin ? applyAdminNavBadges(items, adminBadges?.todo) : items;
+    return applyOfferNavLocks(applyOnboardingNavVisibility(withBadges, isCompanyAdmin ? onboarding : undefined), saas);
+  }, [user, pathname, saas, isCompanyAdmin, onboarding, isSuperAdmin, adminBadges]);
 
   const mapFullscreen =
     pathname === "/dispatch/drivers" || pathname === "/dispatch/map";

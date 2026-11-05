@@ -1,16 +1,19 @@
 "use client";
 
-import { DashboardContent } from "@/features/dashboard/dashboard-content";
+import { ChevronDown } from "lucide-react";
 import { useAdminOverview, useAdminSaasHealth } from "@/features/admin/hooks";
-import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { AdminHomePanel } from "@/features/admin/home/admin-home-panel";
+import { HOME_CARD_CLASS } from "@/features/admin/home/home-card";
+import { DataGrid } from "@/components/ui/data-grid";
+import { cn } from "@/lib/utils";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/features/client-portal/utils";
-import { Building2, Users, Truck, ReceiptText, AlertTriangle } from "lucide-react";
-import type { DashboardStat, TableColumn } from "@/types";
+import { AlertTriangle } from "lucide-react";
+import type { TableColumn } from "@/types";
 
 const planLabels = { STARTER: "Starter", PRO: "Pro", BUSINESS: "Business" } as const;
 /** SAAS-02, décision C10 : seuils plateforme ; la consommation n'est jamais bloquée. */
@@ -38,10 +41,13 @@ const companyColumns: TableColumn<Record<string, unknown>>[] = [
   { key: "deliveries", header: "Livraisons", sortable: true, hideOnMobile: true },
 ];
 
+/** Entreprises récentes et compteurs généraux de la vue d'ensemble (lecture `/api/admin/overview`). */
 function OverviewPanel() {
   const { data, isLoading, error } = useAdminOverview();
 
-  if (isInitialQueryLoading(isLoading, data)) return <PageSkeleton />;
+  if (isInitialQueryLoading(isLoading, data)) {
+    return <p className="text-sm text-muted-foreground">Entreprises récentes en cours de chargement.</p>;
+  }
 
   if (error || !data) {
     return (
@@ -53,25 +59,28 @@ function OverviewPanel() {
     );
   }
 
-  const stats: DashboardStat[] = [
-    { label: "Entreprises actives", value: String(data.stats.activeCompanies), icon: Building2 },
-    { label: "Utilisateurs totaux", value: String(data.stats.totalUsers), icon: Users },
-    { label: "Livraisons aujourd'hui", value: String(data.stats.deliveriesToday), icon: Truck },
-    { label: "Factures de livraison payées", value: formatCurrency(data.stats.paidDeliveryInvoiceRevenue), icon: ReceiptText, changeLabel: "mois UTC · flux séparé" },
+  const figures = [
+    { label: "Utilisateurs totaux", value: String(data.stats.totalUsers), note: "toutes entreprises" },
+    { label: "Factures de livraison payées", value: formatCurrency(data.stats.paidDeliveryInvoiceRevenue), note: "mois UTC · flux séparé" },
   ];
 
   return (
-    <DashboardContent
-      title="Centre de contrôle"
-      description="Vue d'ensemble de la plateforme TutelLiv"
-      stats={stats}
-      showCharts={false}
-      showActivity={false}
-      showTable
-      tableTitle="Entreprises récentes"
-      tableData={data.companies as unknown as Record<string, unknown>[]}
-      tableColumns={companyColumns}
-    />
+    <section className={HOME_CARD_CLASS} aria-labelledby="recent-companies-title">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <h2 id="recent-companies-title" className="text-lg font-bold tracking-tight text-foreground">Entreprises récentes</h2>
+        <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {figures.map((figure) => (
+            <div key={figure.label}>
+              <dt className="text-xs text-muted-foreground">{figure.label} · {figure.note}</dt>
+              <dd className="font-semibold tabular-nums text-foreground">{figure.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <div className="mt-4">
+        <DataGrid data={data.companies as unknown as Record<string, unknown>[]} columns={companyColumns} />
+      </div>
+    </section>
   );
 }
 
@@ -187,9 +196,21 @@ const COMPANY_STATUS_LABELS: Record<string, string> = { ACTIVE: "Active", INACTI
 
 export default function AdminDashboardPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
+      <AdminHomePanel />
+      <details className={cn(HOME_CARD_CLASS, "group")}>
+        <summary className="-m-2 flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+          <span>
+            <span className="block text-lg font-bold tracking-tight text-foreground">Détail SaaS</span>
+            <span className="block text-sm text-muted-foreground">Revenus du mois, consommation par formule et alertes de seuil.</span>
+          </span>
+          <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="mt-5 min-w-0">
+          <SaasHealthPanel />
+        </div>
+      </details>
       <OverviewPanel />
-      <SaasHealthPanel />
     </div>
   );
 }

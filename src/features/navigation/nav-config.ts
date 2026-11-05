@@ -5,17 +5,20 @@ import {
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
+/** Groupes du menu super-administrateur (ADMIN-ESPACE, lot 1). */
+export const ADMIN_NAV_GROUPS = { clients: "Clients", commercial: "Commercial", technique: "Technique" } as const;
+
 export const adminNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/admin", icon: LayoutDashboard },
-  { title: "Souscriptions", href: "/admin/subscriptions", icon: ClipboardList },
-  { title: "Support plateforme", href: "/admin/support", icon: HeadphonesIcon },
-  { title: "Exploitation", href: "/admin/operations", icon: Activity },
-  { title: "Incidents", href: "/admin/incidents", icon: ShieldAlert },
-  { title: "Journal d'accès", href: "/admin/access-events", icon: ScrollText },
-  { title: "Codes commerciaux", href: "/admin/sales", icon: BadgePercent },
-  { title: "Messages Contact", href: "/admin/contact", icon: Inbox },
-  { title: "Entreprises", href: "/companies", icon: Building2 },
-  { title: "Utilisateurs", href: "/admin/users", icon: Users },
+  { title: "Entreprises", href: "/companies", icon: Building2, group: ADMIN_NAV_GROUPS.clients },
+  { title: "Utilisateurs", href: "/admin/users", icon: Users, group: ADMIN_NAV_GROUPS.clients },
+  { title: "Souscriptions", href: "/admin/subscriptions", icon: ClipboardList, group: ADMIN_NAV_GROUPS.clients },
+  { title: "Messages Contact", href: "/admin/contact", icon: Inbox, group: ADMIN_NAV_GROUPS.commercial },
+  { title: "Codes commerciaux", href: "/admin/sales", icon: BadgePercent, group: ADMIN_NAV_GROUPS.commercial },
+  { title: "Exploitation", href: "/admin/operations", icon: Activity, group: ADMIN_NAV_GROUPS.technique },
+  { title: "Incidents", href: "/admin/incidents", icon: ShieldAlert, group: ADMIN_NAV_GROUPS.technique },
+  { title: "Support plateforme", href: "/admin/support", icon: HeadphonesIcon, group: ADMIN_NAV_GROUPS.technique },
+  { title: "Journal d'accès", href: "/admin/access-events", icon: ScrollText, group: ADMIN_NAV_GROUPS.technique },
 ];
 
 /** Une seule entrée « Carte » : livreurs et livraisons sur la même carte (MAP-UNIFY-2). */
