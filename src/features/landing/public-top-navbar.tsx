@@ -88,7 +88,7 @@ export function PublicTopNavbar() {
 
       <AppleNavbarLinks
         ariaLabel="Navigation publique"
-        className="absolute left-1/2 hidden -translate-x-1/2 lg:flex"
+        className="hidden min-w-0 flex-1 justify-center lg:flex"
       >
         {publicNavigation.map((item) => (
           <AppleNavbarLink

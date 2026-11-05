@@ -142,7 +142,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
 
       <AppleNavbarLinks
         ariaLabel="Navigation de l’espace client"
-        className="absolute left-1/2 hidden -translate-x-1/2 xl:flex"
+        className="hidden min-w-0 flex-1 justify-center xl:flex"
       >
         {items.map((item) => (
           <PortalDesktopNavLink
