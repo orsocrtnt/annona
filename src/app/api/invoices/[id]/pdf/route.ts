@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   return withApiHandler(async () => {
     const auth = await requireStaffRole("invoices:read");
     if ("error" in auth) return auth.error;
-    const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+    const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
     if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 403 });
@@ -47,7 +47,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       });
     }
     const result = await buildFacturXPdf({ source: invoice.source, renderClassicPdf: (legal) => renderClassicInvoicePdf(invoice, legal), now: new Date() });
-    const http = facturXHttpResult(result, invoice.reference, "staff", auth.context.user.role.systemRole === "COMPANY_ADMIN");
+    const http = facturXHttpResult(result, invoice.reference, "staff", auth.context.user.role.systemRole === "ADMIN");
     return new NextResponse(typeof http.body === "string" ? http.body : Buffer.from(http.body), { status: http.status, headers: http.headers });
   });
 }

@@ -25,14 +25,6 @@ test("AUDIT-0411 : afficher puis enregistrer sans rien changer ne déplace plus 
   }
 });
 
-test("AUDIT-0411 : « aujourd'hui » commence à minuit heure de Paris, même sur un serveur en UTC", async () => {
-  const { startOfToday } = await import("../src/lib/dashboard/period-stats");
-  // 23 h 30 UTC le 4 novembre = 0 h 30 à Paris le 5 novembre.
-  assert.equal(startOfToday(new Date("2026-11-04T23:30:00Z")).toISOString(), "2026-11-04T23:00:00.000Z");
-  assert.equal(startOfToday(new Date("2026-11-04T12:00:00Z")).toISOString(), "2026-11-03T23:00:00.000Z");
-  assert.equal(startOfToday(new Date("2026-07-14T21:59:00Z")).toISOString(), "2026-07-13T22:00:00.000Z");
-});
-
 test("AUDIT-0411 : l'échéance affichée suit l'heure de Paris, quel que soit le fuseau du navigateur", async () => {
   const { formatDate, formatDateTime } = await import("../src/lib/utils");
   assert.match(formatDateTime("2026-11-05T22:59:00.000Z"), /5 nov\. 2026.*23:59/);

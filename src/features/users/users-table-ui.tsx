@@ -28,9 +28,9 @@ export function TableUserEmail({ email }: { email: string }) {
   );
 }
 
-export function TableUserRole({ role, title }: { role: SystemRole; title?: string | null }) {
+export function TableUserRole({ role }: { role: SystemRole }) {
   const label =
-    role === "MINI_ADMIN" && title?.trim() ? title.trim() : (ROLE_LABELS[role] ?? role);
+    ROLE_LABELS[role] ?? role;
   return (
     <Badge
       variant="outline"

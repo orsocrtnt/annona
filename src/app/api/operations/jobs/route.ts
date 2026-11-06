@@ -7,9 +7,9 @@ import {
 } from "@/domains/operations/operation-job.service";
 
 async function resolveCompany() {
-  const auth = await requireStaffRole("deliveries:dispatch");
+  const auth = await requireStaffRole("settings:read");
   if ("error" in auth) return auth;
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
+  const denied = requireRole(auth.context, ["ADMIN"]);
   if (denied) return { error: denied };
 
   const companyId = getCompanyId(auth.context);

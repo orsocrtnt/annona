@@ -32,13 +32,13 @@ export async function requireAuth(
   return { context: auth };
 }
 
-export async function requireClientRole(): Promise<
+export async function requireMerchantRole(): Promise<
   { context: AuthContext } | { error: NextResponse }
 > {
-  const result = await requireAuth("dashboard:client");
+  const result = await requireAuth("dashboard:merchant");
   if ("error" in result) return result;
 
-  if (result.context.user.role.systemRole !== "CLIENT") {
+  if (result.context.user.role.systemRole !== "MERCHANT") {
     return {
       error: NextResponse.json({ error: "Réservé aux clients" }, { status: 403 }),
     };

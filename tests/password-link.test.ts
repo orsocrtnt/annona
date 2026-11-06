@@ -9,7 +9,6 @@ import { Prisma } from "@prisma/client";
 import * as access from "../src/lib/auth/account-access";
 import * as links from "../src/lib/auth/email-links";
 import * as validation from "../src/lib/validations/auth";
-import * as mini from "../src/lib/permissions/mini-admin";
 import * as limits from "../src/lib/query/list-limits";
 import type { UserWithRole } from "../src/types";
 
@@ -32,7 +31,7 @@ function configured(t: TestContext) {
   });
 }
 function fixture(signup = false) {
-  const user = { id: "u", authId: "auth", email: "test@example.com", status: "PENDING_VERIFICATION", companyId: "a", company: { id: "a", status: "ACTIVE" }, role: { systemRole: "CLIENT" } } as UserWithRole;
+  const user = { id: "u", authId: "auth", email: "test@example.com", status: "PENDING_VERIFICATION", companyId: "a", company: { id: "a", status: "ACTIVE" }, role: { systemRole: "MERCHANT" } } as UserWithRole;
   let provisions = 0;
   let consumed = false;
   let invalid = false;
@@ -162,13 +161,11 @@ test("création réelle du service : invitation sans mot de passe, profil en att
   prismaMock.$transaction = async (callback: (tx: Record<string, unknown>) => Promise<unknown>) => callback(prismaMock);
   const service = load<typeof import("../src/domains/user/user.service")>("src/domains/user/user.service.ts", {
     "@prisma/client": { Prisma }, "@/lib/auth/email-links": links,
-    "@/lib/permissions/mini-admin": mini, "@/lib/query/list-limits": limits,
-    "@/lib/database/claimed-settings-update": { settingsSection: () => () => null }, "@/lib/database/settings-claims": { updateUserSettingsWithClaim: async () => "saved" },
-    "@/domains/client-portal/client-data.service": { linkPortalDataToClient: async () => undefined },
+    "@/lib/query/list-limits": limits,
     "@/services/prisma/client": { prisma: prismaMock },
     "@/services/supabase/admin": { createAdminClient: () => ({ auth: { admin: { inviteUserByEmail: async (...args: unknown[]) => { calls.push(args); return { data: { user: { id: "auth" } }, error: null }; } } } }) },
   });
-  const result = await service.createUserByAdmin({ firstName: "Test", lastName: "Local", email: "test@example.com", roleSlug: "driver" }, "a", "COMPANY_ADMIN");
+  const result = await service.createUserByAdmin({ firstName: "Test", lastName: "Local", email: "test@example.com", roleSlug: "driver" }, "a", "ADMIN");
   assert.equal(result.invitationSent, true);
   assert.ok(!JSON.stringify(calls).includes("password" + '\"' + ':'));
   assert.ok(!("temporaryPassword" in result));
@@ -186,7 +183,6 @@ test("connexion : e-mail non confirmé refusé sans appel administrateur", async
     "@/lib/auth/account-access": access, "@/lib/validations/auth": validation,
     "@/lib/auth/normalize-email": { normalizeEmail: (s: string) => s.trim().toLowerCase() },
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: async () => ({ data: { user: null }, error: { code: "email_not_confirmed" } }) } }) },
-    "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
     "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
     "@/lib/security/request-source": { requestSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": {}, "@/domains/user/user.service": {},

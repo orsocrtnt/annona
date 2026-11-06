@@ -26,11 +26,11 @@ function load<T>(file: string, dependencies: Record<string, unknown>): T {
   } });
   return module.exports as T;
 }
-function user(role: SystemRole = "MINI_ADMIN"): UserWithRole {
+function user(role: SystemRole = "ADMIN"): UserWithRole {
   return {
     id: "u", authId: "auth", email: "local@example.com", firstName: "Test", lastName: "Local",
     status: "ACTIVE", companyId: "a", roleId: "r", createdAt: new Date(), updatedAt: new Date(),
-    settings: { miniAdmin: { modules: ["accounts"] } },
+    settings: {},
     role: { id: "r", name: "Role", slug: "role", systemRole: role, isSystem: true, permissions: [{ slug: "users:read" }, { slug: "orders:read" }] },
     company: { id: "a", status: "ACTIVE" },
   } as UserWithRole;
@@ -44,7 +44,7 @@ test("statuts : seuls compte ACTIVE et entreprise ACTIVE/TRIAL sont admis", () =
   }
 });
 test("entreprise manquante ou incohérente : refus, sauf super-admin sans entreprise", () => {
-  for (const role of ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "CLIENT", "DRIVER", "DISPATCHER"] as SystemRole[]) {
+  for (const role of ["SUPER_ADMIN", "ADMIN", "BAKER", "MERCHANT", "DRIVER"] as SystemRole[]) {
     const u = user(role); u.company = null;
     assert.equal(access.isAccountActive(u), false);
     u.companyId = null;
@@ -86,10 +86,10 @@ function status(result: Awaited<ReturnType<typeof import("../src/lib/api/auth-gu
   return "error" in result ? result.error.status : 200;
 }
 
-test("deux instances : retrait de module effectif à la requête suivante, sans attendre", async () => {
+test("deux instances : retrait de permission effectif à la requête suivante, sans attendre", async () => {
   const e = environment(); const a = e.instance(); const b = e.instance();
   for (const i of [a, b]) assert.equal(status(await i.guard.requireStaffRole("users:read")), 200);
-  e.current!.settings = { miniAdmin: { modules: ["orders"] } };
+  e.current!.role.permissions = [{ slug: "orders:read" }] as UserWithRole["role"]["permissions"];
   for (const i of [a, b]) {
     assert.equal(status(await i.guard.requireStaffRole("users:read")), 403);
     assert.equal(status(await i.guard.requireStaffRole("orders:read")), 200);
@@ -131,7 +131,7 @@ for (const byEmail of [false, true]) {
     replace(t, prisma.user, "findUnique", async () => byEmail ? null : { ...u, role: { ...u.role, permissions: u.role.permissions.map((permission) => ({ permission })) } });
     replace(t, prisma.user, "findFirst", async () => u);
     replace(t, prisma.user, "update", async () => assert.fail("no update allowed"));
-    t.mock.method(prisma, "$queryRaw", async () => [{ id: "r", system_role: "MINI_ADMIN" }]);
+    t.mock.method(prisma, "$queryRaw", async () => [{ id: "r", system_role: "BAKER" }]);
     replace(t, prisma.rolePermission, "findMany", async () => []);
     t.mock.method(prisma, "$transaction", async () => assert.fail("no linking allowed"));
     await assert.rejects(authService.syncUserFromSupabase({ authId: "auth", email: u.email }), access.AccountUnavailableError);
@@ -140,7 +140,7 @@ for (const byEmail of [false, true]) {
 
 test("routes connexion et synchronisation : compte actif accepté, suspension refusée 403", async () => {
   for (const file of ["login", "sync"]) {
-    let current = user("COMPANY_ADMIN");
+    let current = user("ADMIN");
     const authUser = { id: "auth", email: current.email, email_confirmed_at: "2026-09-28", user_metadata: {} };
     const post = load<{ POST: (r: Request) => Promise<Response> }>(`src/app/api/auth/${file}/route.ts`, {
       zod: await import("zod"), "@/lib/auth/account-access": access, "@/lib/validations/auth": authValidation, "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
@@ -150,7 +150,6 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
         getUser: async () => ({ data: { user: authUser } }),
       } }) },
       "@/services/supabase/admin": { createAdminClient: () => assert.fail("unexpected admin call") },
-      "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
       "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
       "@/lib/security/request-source": { requestSourceFromHeaders: () => "test-source" },
       "@/domains/auth/auth.service": { ...authService, syncUserFromSupabase: async () => structuredClone(current) },
@@ -161,7 +160,7 @@ test("routes connexion et synchronisation : compte actif accepté, suspension re
     assert.equal((await post(request())).status, 200);
     current.status = "SUSPENDED";
     assert.equal((await post(request())).status, 403);
-    current = user("COMPANY_ADMIN"); current.company!.status = "INACTIVE";
+    current = user("ADMIN"); current.company!.status = "INACTIVE";
     assert.equal((await post(request())).status, 403);
   }
 });

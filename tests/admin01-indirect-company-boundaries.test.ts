@@ -7,9 +7,8 @@ import ts from "typescript";
 import { NextResponse } from "next/server";
 
 const inventoryPath = "docs/operations/admin01/tenant-api-boundaries.md";
-const roles = ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"];
-const orderActorRoles = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"];
-const supportRoles = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"];
+const roles = ["SUPER_ADMIN", "ADMIN", "BAKER", "DRIVER", "MERCHANT"];
+const supportRoles = ["ADMIN"];
 
 function requireRoleFrom(source: string, expected: string[]) {
   const match = source.match(/requireRole\(auth\.context, \[([^\]]*)\]\)/);
@@ -104,48 +103,15 @@ function load(file: string, dependencies: Record<string, unknown>) {
 
 test("ADMIN-1 frontières indirectes : l'inventaire suit les consommateurs réels", () => {
   const found = discover();
-  assert.equal(found.filter((row) => row.guard === "orderActorAuth").length, 1);
+  assert.equal(found.filter((row) => row.guard === "orderActorAuth").length, 0);
   assert.equal(found.filter((row) => row.guard === "requireSupportStaff").length, 4);
   assert.deepEqual(documented(), found);
 });
 
-test("ADMIN-1 frontières indirectes : orderActorAuth exclut la plateforme", async () => {
-  const helperSource = readFileSync("src/lib/api/order-actor-auth.ts", "utf8");
-  const requireRole = requireRoleFrom(helperSource, orderActorRoles);
-  for (const role of roles) {
-    let named = false;
-    const helper = load("src/lib/api/order-actor-auth.ts", {
-      "@/lib/api/auth-guard": {
-        requireAuth: async () => ({
-          context: {
-            permissions: [],
-            user: {
-              id: "user-1",
-              companyId: "company-1",
-              role: { systemRole: role },
-              get firstName() { named = true; return "Ada"; },
-              lastName: "Lovelace",
-            },
-          },
-        }),
-        requireRole,
-      },
-    });
-    const result = await helper.orderActorAuth!();
-    if (orderActorRoles.includes(role)) {
-      assert.equal((result.actor as { role: string }).role, role);
-      assert.equal(named, true);
-    } else {
-      assert.equal((result.error as Response).status, 403);
-      assert.equal(named, false);
-    }
-  }
-});
-
-test("ADMIN-1 frontières indirectes : le support entreprise garde son contrôle mini-admin", async () => {
+test("ADMIN-1 frontières indirectes : le support entreprise exige l'administrateur et support:read", async () => {
   const helperSource = readFileSync("src/lib/api/support-staff-auth.ts", "utf8");
   const requireRole = requireRoleFrom(helperSource, supportRoles);
-  assert.match(helperSource, /role === "MINI_ADMIN" && !auth\.context\.permissions\.includes\("support:read"\)/);
+  assert.match(helperSource, /!auth\.context\.permissions\.includes\("support:read"\)/);
   for (const role of roles) {
     for (const permissions of [[], ["support:read"]]) {
       let companyReads = 0;
@@ -164,7 +130,7 @@ test("ADMIN-1 frontières indirectes : le support entreprise garde son contrôle
         },
       });
       const result = await helper.requireSupportStaff!();
-      const allowed = supportRoles.includes(role) && (role !== "MINI_ADMIN" || permissions.includes("support:read"));
+      const allowed = supportRoles.includes(role) && permissions.includes("support:read");
       if (allowed) {
         assert.equal(result.companyId, "company-1");
         assert.equal(companyReads, 1);

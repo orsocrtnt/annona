@@ -1,5 +1,11 @@
-import { CompanyDashboardContent } from "@/features/back-office/company-dashboard-content";
+import { ComingSoon } from "@/components/shared/coming-soon";
 
 export default function CompanyDashboardPage() {
-  return <CompanyDashboardContent />;
+  return (
+    <ComingSoon
+      title="Tableau de bord"
+      description="Commandes du jour, tournées livrées, restantes et incidents."
+      task="TOUR-1"
+    />
+  );
 }

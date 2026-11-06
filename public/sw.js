@@ -20,7 +20,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const requested = event.notification.data && event.notification.data.url;
-  const path = typeof requested === "string" && requested.startsWith("/driver") ? requested : "/driver/missions";
+  const path = typeof requested === "string" && requested.startsWith("/driver") ? requested : "/driver";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
       const open = windows.find((client) => new URL(client.url).pathname.startsWith("/driver"));

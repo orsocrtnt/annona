@@ -15,7 +15,7 @@ import { useUIStore } from "@/stores/ui.store";
 import { useAuth } from "@/hooks/use-auth";
 import { useCanOpenPage } from "@/hooks/use-can-open-page";
 import { getInitials } from "@/lib/utils";
-import { Menu, LogOut, Settings, ListChecks } from "lucide-react";
+import { Menu, LogOut, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { ThemeRadioGroup } from "@/components/theme/theme-preference-choice";
 import type { BreadcrumbItem } from "@/types";
@@ -34,8 +34,6 @@ export function Header({ breadcrumbs, className, premium = false, actions }: Hea
   const { toggleMobileNav } = useUIStore();
   const { user, logout } = useAuth();
   const canOpenSettings = useCanOpenPage("/settings");
-  // Guide « Première livraison » : toujours dans l'Aide, même terminé ou masqué du menu principal.
-  const canOpenOnboarding = useCanOpenPage("/onboarding");
 
   const content = (
     <>
@@ -141,18 +139,6 @@ export function Header({ breadcrumbs, className, premium = false, actions }: Hea
             {/* Choix complet (Système compris) ; la barre garde la bascule en un clic, masquée sous 640 px. */}
             <ThemeRadioGroup />
             <DropdownMenuSeparator />
-            {canOpenOnboarding && (
-              <>
-                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Aide</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <Link href="/onboarding" data-testid="help-onboarding-link">
-                    <ListChecks className="mr-2 h-4 w-4" />
-                    Guide Première livraison
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
             {canOpenSettings && (
               <>
                 <DropdownMenuItem asChild>

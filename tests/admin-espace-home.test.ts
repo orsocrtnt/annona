@@ -18,10 +18,9 @@ import {
 import {
   ADMIN_NAV_GROUPS,
   adminNavItems,
+  bakerNavItems,
   companyNavItems,
-  dispatcherNavItems,
   driverNavItems,
-  miniAdminNavItems,
 } from "../src/features/navigation/nav-config";
 import { applyAdminNavBadges } from "../src/features/navigation/admin-nav-badges";
 import { groupNavItems } from "../src/lib/navigation/group-nav-items";
@@ -113,20 +112,17 @@ function fakeDb(calls: Call[]): AdminHomeDatabase {
       },
     },
     order: {
-      findMany: async (args) => {
-        record("order", "findMany", args);
-        return [{ createdAt: new Date("2026-11-05T08:00:00.000Z") }, { createdAt: new Date("2026-11-03T08:00:00.000Z") }];
-      },
-    },
-    delivery: {
       count: async (args) => {
-        record("delivery", "count", args);
-        const range = (args.where as { completedAt: { gte: Date } }).completedAt;
+        record("order", "count", args);
+        const range = (args.where as { deliveredAt: { gte: Date } }).deliveredAt;
         return range.gte.toISOString() === "2026-11-04T23:00:00.000Z" ? 6 : 4;
       },
       findMany: async (args) => {
-        record("delivery", "findMany", args);
-        return [{ completedAt: new Date("2026-11-05T09:00:00.000Z") }, { completedAt: null }];
+        record("order", "findMany", args);
+        if ((args.where as { deliveredAt?: unknown }).deliveredAt) {
+          return [{ createdAt: new Date("2026-11-04T08:00:00.000Z"), deliveredAt: new Date("2026-11-05T09:00:00.000Z") }];
+        }
+        return [{ createdAt: new Date("2026-11-05T08:00:00.000Z") }, { createdAt: new Date("2026-11-03T08:00:00.000Z") }];
       },
     },
   };
@@ -157,8 +153,8 @@ test("ADMIN-ESPACE accueil : chiffres clés, comparaisons et tickets ouverts", a
   assert.equal(home.series.length, 30);
   assert.deepEqual(home.series[29], { day: "2026-11-05", orders: 1, delivered: 1 });
 
-  // Livraisons : seules les livraisons terminées « DELIVERED » sont comptées.
-  for (const call of calls.filter((entry) => entry.model === "delivery")) {
+  // Livraisons : seules les commandes « DELIVERED » sont comptées comme livrées.
+  for (const call of calls.filter((entry) => entry.model === "order" && (entry.args.where as { deliveredAt?: unknown }).deliveredAt)) {
     assert.equal((call.args.where as { status: string }).status, "DELIVERED");
   }
   // Tickets ouverts = OPEN et IN_PROGRESS.
@@ -171,7 +167,7 @@ test("ADMIN-ESPACE accueil : les pastilles restent légères", async () => {
   const badges = (await getAdminHome({ view: "badges" }, { db: fakeDb(calls) })) as AdminHomeBadges;
   assert.deepEqual(badges.todo, { openSupportTickets: 5 });
   assert.equal(Object.hasOwn(badges, "kpis"), false);
-  assert.equal(calls.some((entry) => ["company", "order", "delivery"].includes(entry.model)), false, "aucun calcul lourd");
+  assert.equal(calls.some((entry) => ["company", "order"].includes(entry.model)), false, "aucun calcul lourd");
 });
 
 test("ADMIN-ESPACE menu : deux groupes pour le super-administrateur, rien ne change pour les autres rôles", () => {
@@ -182,7 +178,7 @@ test("ADMIN-ESPACE menu : deux groupes pour le super-administrateur, rien ne cha
     [ADMIN_NAV_GROUPS.technique, ["Exploitation /admin/operations", "Support plateforme /admin/support"]],
   ]);
   assert.deepEqual(Object.values(ADMIN_NAV_GROUPS), ["Clients", "Technique"]);
-  for (const items of [companyNavItems, dispatcherNavItems, miniAdminNavItems, driverNavItems]) {
+  for (const items of [companyNavItems, bakerNavItems, driverNavItems]) {
     const grouped = groupNavItems(items);
     assert.equal(grouped.length, 1);
     assert.equal(grouped[0]?.title, null);
@@ -242,7 +238,7 @@ function loadRoute(role: string, calls: string[]) {
 }
 
 test("ADMIN-ESPACE /api/admin/home : refusé à tout autre rôle, sans lecture", async () => {
-  for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"]) {
+  for (const role of ["ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "MERCHANT"]) {
     const calls: string[] = [];
     const response = await loadRoute(role, calls).GET!(new Request("http://local/api/admin/home"));
     assert.equal(response.status, 403, role);

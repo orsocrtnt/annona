@@ -1,6 +1,6 @@
 import type { SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
-import { FULFILLMENT_STATUS_LABELS } from "@/lib/constants/order-status";
+import { ORDER_STATUS_LABELS } from "@/lib/constants/order-status";
 import { ROLE_LABELS } from "@/lib/permissions/rbac";
 import { createMemoryRateLimiter, type MemoryRateLimiter } from "@/lib/security/memory-rate-limit";
 
@@ -163,7 +163,7 @@ export function toOrderItem(row: OrderRow): AdminSearchItem {
     type: "orders",
     title: row.reference,
     detail: row.company.name,
-    badge: FULFILLMENT_STATUS_LABELS[row.status as keyof typeof FULFILLMENT_STATUS_LABELS] ?? null,
+    badge: ORDER_STATUS_LABELS[row.status as keyof typeof ORDER_STATUS_LABELS] ?? null,
     href: `/companies/${encodeURIComponent(row.company.id)}`,
   };
 }

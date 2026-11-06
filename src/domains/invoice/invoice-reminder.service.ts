@@ -1,7 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { deferredJobError, enqueueOperationJob, kickOperationJob, permanentJobError } from "@/domains/operations/operation-job.service";
-import { getClientSettings } from "@/domains/client-portal/settings.service";
 import { emailSendOutcome, isIdempotentReplaySafe, sendTransactionalEmail, type EmailContentFreezer } from "@/lib/email/transactional-email";
 import { invoiceDaysOverdue, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 
@@ -149,8 +148,13 @@ function effectiveView(row: InvoiceReminderView & ReminderState, now: Date): Inv
   return { ...view(row), result: effectiveReminderResult(row, now) };
 }
 
-function hasUsableEmail(customer: { email: string; companyId: string | null } | null, companyId: string) {
-  return Boolean(customer && customer.companyId === companyId && customer.email.trim());
+type ReminderRecipient = { billingEmail: string | null; contactEmail: string | null; companyId: string };
+
+/** Destinataire d'une relance : l'adresse de facturation du commerçant, sinon celle du contact. */
+function recipientEmail(merchant: ReminderRecipient | null, companyId: string): string | null {
+  if (!merchant || merchant.companyId !== companyId) return null;
+  const email = (merchant.billingEmail ?? merchant.contactEmail ?? "").trim();
+  return email || null;
 }
 
 export async function remindInvoice(
@@ -168,7 +172,7 @@ export async function remindInvoice(
     await lockInvoiceReminders(tx, input.invoiceId);
     const invoice = await tx.invoice.findFirst({
       where: { id: input.invoiceId, companyId: input.companyId },
-      select: { id: true, status: true, customer: { select: { email: true, companyId: true } } },
+      select: { id: true, status: true, merchant: { select: { billingEmail: true, contactEmail: true, companyId: true } } },
     });
     if (!invoice) return null;
     if (!isInvoiceOutstanding(invoice.status)) throw new Error("INVOICE_NOT_REMINDABLE");
@@ -186,7 +190,7 @@ export async function remindInvoice(
 
     const result: InvoiceReminderResult = !input.emailConfigured
       ? "NOT_SENT_EMAIL_NOT_CONFIGURED"
-      : hasUsableEmail(invoice.customer, input.companyId)
+      : recipientEmail(invoice.merchant, input.companyId)
         ? "QUEUED"
         : "NOT_SENT_NO_RECIPIENT";
     if (result !== "QUEUED") {
@@ -236,11 +240,11 @@ const REMINDER_INVOICE_SELECT = {
   id: true,
   reference: true,
   status: true,
-  amount: true,
+  totalCents: true,
   dueDate: true,
   companyId: true,
-  customerId: true,
-  customer: { select: { email: true, companyId: true } },
+  merchantId: true,
+  merchant: { select: { billingEmail: true, contactEmail: true, companyId: true } },
   company: { select: { name: true } },
 } satisfies Prisma.InvoiceSelect;
 
@@ -248,7 +252,6 @@ type DeliveryDeps = {
   db?: DeliveryDatabase;
   now?: Date;
   appUrl?: string;
-  getClientSettings?: typeof getClientSettings;
   /**
    * La tâche a déjà été exécutée (essais ou erreur antérieurs). Une relance QUEUED héritée de
    * l'ancien code a pu être remise en file après un envoi accepté (500, 409) : elle est traitée
@@ -306,15 +309,11 @@ export async function deliverInvoiceReminderJob(
   const now = deps.now ?? new Date();
   const found = await db.invoiceReminder.findFirst({
     where: { id: reminderId, companyId },
-    select: { id: true, invoiceId: true, result: true, invoice: { select: { companyId: true, customerId: true } } },
+    select: { id: true, invoiceId: true, result: true, invoice: { select: { companyId: true } } },
   });
   // Relance supprimée, d'une autre entreprise, ou déjà traitée : rien à faire (rejeu idempotent).
   if (!found || found.invoice.companyId !== companyId) return;
   if (found.result !== "QUEUED" && found.result !== "SENDING") return;
-  // Préférences lues avant le verrou (aucune écriture) ; appliquées après les contrôles de la facture.
-  const settings = found.invoice.customerId
-    ? await (deps.getClientSettings ?? getClientSettings)(found.invoice.customerId)
-    : null;
 
   // Réservation courte sous le verrou de la facture : contrôles puis passage en SENDING.
   const reservation = await db.$transaction(async (transaction) => {
@@ -374,8 +373,7 @@ export async function deliverInvoiceReminderJob(
 
     const invoice = reminder.invoice;
     if (!isInvoiceOutstanding(invoice.status)) return finish("NOT_SENT_INVOICE_SETTLED");
-    if (!invoice.customerId || !hasUsableEmail(invoice.customer, companyId)) return finish("NOT_SENT_NO_RECIPIENT");
-    if (!settings?.invoiceAlerts || !settings.emailNotifications) return finish("NOT_SENT_CLIENT_PREFERENCES");
+    if (!recipientEmail(invoice.merchant, companyId)) return finish("NOT_SENT_NO_RECIPIENT");
 
     const reserved = await tx.invoiceReminder.updateMany({ where: claim, data: { result: "SENDING", completedAt: now } });
     if (reserved.count !== 1) return null;
@@ -395,16 +393,16 @@ export async function deliverInvoiceReminderJob(
   let sent: { status: string };
   try {
     sent = await (deps.send ?? sendTransactionalEmail)({
-      to: invoice.customer!.email,
+      to: recipientEmail(invoice.merchant, invoice.companyId)!,
       subject: `Rappel : facture ${reference}`,
       text: reminderText({
         reference,
         companyName: oneLine(invoice.company.name),
-        amount: Number(invoice.amount),
+        amount: invoice.totalCents / 100,
         dueDate: invoice.dueDate,
         // Gelé à la création de la relance : même contenu à chaque reprise sous la même clé.
         daysOverdue: invoiceDaysOverdue(invoice.dueDate, reservation.createdAt),
-        link: appUrl ? `${appUrl}/portal/invoices/${invoice.id}` : null,
+        link: appUrl ? `${appUrl}/portal/invoices` : null,
       }),
       idempotencyKey: invoiceReminderIdempotencyKey(reservation.reminderId),
       // Première tentative : aucune tentative antérieure n'a pu être acceptée (invariant QUEUED).

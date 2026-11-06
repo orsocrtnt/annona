@@ -11,16 +11,29 @@ import type { ClientInvoiceIdentity, EinvoicingSettings } from "@/lib/validation
 
 export const RECOVERY_INDEMNITY_NOTE = "Indemnité forfaitaire pour frais de recouvrement en cas de retard de paiement : 40 €.";
 
+/** Ligne de facture de période (table `invoice_lines`) : montants en centimes, TVA en points de base. */
+export interface FacturXSourceLine {
+  label: string;
+  quantity: number;
+  unitPriceCents: number;
+  /** 550 = 5,5 % ; 0 = ligne exonérée. */
+  vatRateBasisPoints: number;
+}
+
 export interface FacturXSourceInvoice {
   reference: string;
   status: string;
+  /** Date d'émission (BT-2). */
   createdAt: Date;
   dueDate: Date | null;
-  amount: number;
-  lineItems: unknown;
+  /** Lignes stockées, relues de façon tolérante (`unknown`) : toute ligne illisible bloque l'export. */
+  lines: unknown;
+  subtotalCents: number;
+  vatCents: number;
+  totalCents: number;
   notes: string | null;
   orderReference: string | null;
-  /** Fin de la dernière livraison terminée de la commande (BT-72), si connue. */
+  /** Dernier jour livré de la période (BT-72), si connu. */
   deliveryDate?: Date | null;
 }
 
@@ -74,37 +87,26 @@ const HINTS: Record<string, string> = {
   "BR-AE-02": BUYER_HINT,
 };
 
-interface RawLine {
-  label: string;
-  amount: number;
-  quantity: number;
-  sourceType?: string;
-}
-
-function parseLines(raw: unknown): RawLine[] | null {
+function parseLines(raw: unknown): FacturXSourceLine[] | null {
   if (!Array.isArray(raw)) return null;
-  const lines: RawLine[] = [];
+  const lines: FacturXSourceLine[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") return null;
-    const { label, amount, quantity, sourceType } = item as Record<string, unknown>;
-    const qty = quantity === undefined ? 1 : quantity;
-    if (typeof label !== "string" || typeof amount !== "number" || !Number.isFinite(amount) || typeof qty !== "number" || !Number.isInteger(qty) || qty < 1) {
+    const { label, quantity, unitPriceCents, vatRateBasisPoints } = item as Record<string, unknown>;
+    if (
+      typeof label !== "string" ||
+      typeof quantity !== "number" || !Number.isInteger(quantity) || quantity < 1 ||
+      typeof unitPriceCents !== "number" || !Number.isInteger(unitPriceCents) || unitPriceCents < 0 ||
+      typeof vatRateBasisPoints !== "number" || !Number.isInteger(vatRateBasisPoints) || vatRateBasisPoints < 0 || vatRateBasisPoints >= 10_000
+    ) {
       return null;
     }
-    lines.push({ label, amount, quantity: qty, sourceType: typeof sourceType === "string" ? sourceType : undefined });
+    lines.push({ label, quantity, unitPriceCents, vatRateBasisPoints });
   }
   return lines;
 }
 
-const cents = (euros: number) => Math.round(Number((euros * 100).toFixed(6)));
 const present = (value: string | null | undefined): value is string => Boolean(value && value.trim());
-
-function parseVatRate(label: string): number | null {
-  const match = label.match(/(\d+(?:[.,]\d+)?)\s*%/);
-  if (!match) return null;
-  const rate = Number(match[1]!.replace(",", "."));
-  return rate > 0 && rate < 100 ? rate : null;
-}
 
 const PARIS_DAY = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -116,45 +118,27 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
   const unavailable = facturXUnavailableReason(invoice.status);
   if (unavailable) errors.push({ rule: "TL-STATUT", message: unavailable });
 
-  // Lignes et TVA.
-  const rawLines = parseLines(invoice.lineItems);
+  // Lignes et TVA : un taux par ligne (pain à 5,5 %, autres produits à 10 % ou 20 %), exonération à 0.
+  const rawLines = parseLines(invoice.lines);
   let lines: FacturXLine[] = [];
-  let category: "S" | "E" = "S";
-  let rate = 0;
-  let storedVatCents: number | null = null;
-  if (!rawLines) {
+  if (!rawLines || rawLines.length === 0) {
     errors.push({ rule: "TL-LIGNES", message: "Lignes de facture illisibles : régénérez la facture avant d'exporter le Factur-X." });
   } else {
-    const vatLines = rawLines.filter((line) => line.sourceType === "VAT");
-    const itemLines = rawLines.filter((line) => line.sourceType !== "VAT");
-    if (vatLines.length > 1) {
-      errors.push({ rule: "TL-TVA", message: "Plusieurs lignes de TVA : ce cas n'est pas encore géré par l'export Factur-X." });
-    } else if (vatLines.length === 1) {
-      const parsedRate = parseVatRate(vatLines[0]!.label);
-      if (parsedRate === null) {
-        errors.push({ rule: "TL-TVA", message: `Taux de TVA illisible dans « ${vatLines[0]!.label} ».` });
-      } else {
-        rate = parsedRate;
-      }
-    } else {
-      category = "E";
-    }
-    lines = itemLines.map((line, index) => ({
+    lines = rawLines.map((line, index) => ({
       id: String(index + 1),
       name: line.label,
       quantity: line.quantity,
-      unitPrice: line.amount,
-      vatCategory: category,
-      vatRate: category === "S" ? rate : 0,
+      unitPrice: line.unitPriceCents / 100,
+      vatCategory: line.vatRateBasisPoints > 0 ? "S" : "E",
+      vatRate: line.vatRateBasisPoints / 100,
     }));
-
-    const storedTotal = rawLines.reduce((sum, line) => sum + cents(line.amount * line.quantity), 0);
-    if (storedTotal !== cents(invoice.amount)) {
+    const linesTotal = rawLines.reduce((sum, line) => sum + line.quantity * line.unitPriceCents, 0);
+    if (linesTotal !== invoice.subtotalCents || invoice.subtotalCents + invoice.vatCents !== invoice.totalCents) {
       errors.push({ rule: "TL-TOTAL", message: "Le total de la facture ne correspond pas à la somme de ses lignes : export Factur-X refusé." });
     }
-    // TVA stockée, comparée plus bas aux totaux calculés une seule fois sur la facture construite.
-    if (vatLines.length === 1 && rate > 0 && errors.length === 0) storedVatCents = cents(vatLines[0]!.amount * vatLines[0]!.quantity);
   }
+  const hasExempt = lines.some((line) => line.vatCategory === "E");
+  const allExempt = lines.length > 0 && lines.every((line) => line.vatCategory === "E");
 
   // Mentions françaises obligatoires entre professionnels (art. L441-9 du Code de commerce).
   // Règle partagée avec l'enregistrement des mentions légales (facturx-readiness.ts) : une seule source.
@@ -189,7 +173,7 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
 
   const exemptionReason = einvoicing.vatExemptionReason;
   const franchiseTaxId =
-    category === "E" && !einvoicing.vatNumber ? einvoicing.taxRegistrationId ?? (present(seller.siren) ? seller.siren : undefined) : undefined;
+    allExempt && !einvoicing.vatNumber ? einvoicing.taxRegistrationId ?? (present(seller.siren) ? seller.siren : undefined) : undefined;
   if (franchiseTaxId && !einvoicing.taxRegistrationId) {
     warnings.push({ rule: "TL-W-BT32-SIREN", message: "Sans n° de TVA, l'identifiant fiscal (BT-32) reprend le SIREN : à confirmer avec votre plateforme ou votre expert-comptable." });
   }
@@ -231,21 +215,21 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
     deliveryDate: invoice.deliveryDate ?? undefined,
     lines,
     vatExemptions:
-      category === "E" && present(exemptionReason)
+      hasExempt && present(exemptionReason)
         ? { E: { reason: exemptionReason, code: /293\s*B/i.test(exemptionReason) ? "VATEX-FR-FRANCHISE" : undefined } }
         : {},
     payment: einvoicing.iban ? { typeCode: "58", iban: einvoicing.iban, bic: einvoicing.bic } : undefined,
     paymentReference: invoice.reference,
     // Facture réglée : le Factur-X porte le montant payé et un solde nul (BT-113, BT-115).
-    prepaidAmount: invoice.status === "PAID" ? invoice.amount : undefined,
+    prepaidAmount: invoice.status === "PAID" ? invoice.totalCents / 100 : undefined,
   };
 
   const totals = computeFacturXTotals(facturx);
-  if (storedVatCents !== null && totals.taxTotalCents !== storedVatCents) {
+  if (lines.length > 0 && !errors.some((e) => e.rule === "TL-TOTAL") && totals.taxTotalCents !== invoice.vatCents) {
     // Placée en tête : c'est la cause première, avant toute règle dérivée.
     errors.unshift({
       rule: "TL-TVA",
-      message: `TVA enregistrée (${(storedVatCents / 100).toFixed(2)} €) différente de ${rate} % du total HT (${(totals.taxTotalCents / 100).toFixed(2)} €).`,
+      message: `TVA enregistrée (${(invoice.vatCents / 100).toFixed(2)} €) différente de la TVA recalculée par taux (${(totals.taxTotalCents / 100).toFixed(2)} €).`,
     });
   }
 

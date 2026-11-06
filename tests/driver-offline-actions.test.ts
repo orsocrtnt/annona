@@ -9,7 +9,7 @@ import {
   type DriverActionQueueStore,
   type QueuedDriverAction,
 } from "../src/features/driver/offline-action-queue";
-import { driverApi, DriverApiError } from "../src/features/driver/api";
+import { DriverApiError } from "../src/features/driver/driver-api-error";
 
 function memoryStore(): DriverActionQueueStore & { rows: Map<string, QueuedDriverAction> } {
   const rows = new Map<string, QueuedDriverAction>();
@@ -108,21 +108,6 @@ test("MOB-01B : une action refusée reste visible et aucun double envoi par miss
   assert.ok(kept);
   assert.equal(kept.state, "failed");
   assert.equal(kept.lastError, "mission modifiée");
-});
-
-test("MOB-01B : une panne fetch est classée rejouable sans perdre le corps", async (t) => {
-  let calls = 0;
-  t.mock.method(globalThis, "fetch", async () => {
-    calls++;
-    throw new TypeError("offline");
-  });
-  await assert.rejects(
-    driverApi.updateMissionStatus("mission", "DELIVERED", {
-      pod: { outcome: "SUCCESS", photo: new Blob(["photo"], { type: "image/jpeg" }) },
-    }),
-    (error: unknown) => error instanceof DriverApiError && error.retryable === true && error.status === 0
-  );
-  assert.equal(calls, 1);
 });
 
 test("LEGAL-1 : la file hors ligne efface les actions de plus de sept jours, tous comptes confondus", async () => {

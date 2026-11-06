@@ -31,15 +31,15 @@ test("ADMIN-1 détail entreprise : identité et chiffre d'affaires, sans réglag
           billingPostalCode: "69001",
           billingCity: "Lyon",
           createdAt: now,
-          _count: { users: 2, deliveries: 3 },
+          _count: { users: 2, orders: 3 },
           users: [{ firstName: "Ada", lastName: "Lovelace", email: "ada@acme.fr", phone: null }],
         };
       },
     },
     invoice: {
       groupBy: async () => [
-        { status: "PAID" as const, _sum: { amount: "100.50" } },
-        { status: "OVERDUE" as const, _sum: { amount: "20" } },
+        { status: "PAID" as const, _sum: { totalCents: 10050 } },
+        { status: "OVERDUE" as const, _sum: { totalCents: 2000 } },
       ],
     },
   });

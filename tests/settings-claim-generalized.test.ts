@@ -4,13 +4,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { updateSettingsWithClaim, settingsSection } from "../src/lib/database/claimed-settings-update";
 import { resolveApiError } from "../src/lib/api/route-handler";
-import { updateCompanyDispatchSettings } from "../src/domains/company/dispatch-settings.service";
 import { updateCompanyLocationSettings } from "../src/domains/company/location-settings.service";
-import { updateCompanyDeliveryOptions } from "../src/domains/company/company-settings.service";
-import { resetDashboardLayout } from "../src/domains/back-office/dashboard-settings.service";
-import { resetPortalDashboardLayout } from "../src/domains/client-portal/portal-dashboard-settings.service";
 import { updateClientSettings } from "../src/domains/client-portal/settings.service";
-import { DEFAULT_DISPATCH_SETTINGS } from "../src/lib/validations/dispatch-settings";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "../src/lib/validations/driver-location-settings";
 import { prisma } from "../src/services/prisma/client";
 
@@ -63,60 +58,6 @@ test("section : deux enregistrements simultanés du même réglage — le second
   assert.deepEqual(row.settings, { billing: { a: 1 }, dispatchRules: { v: winner } }, "seul le premier enregistrement est écrit");
 });
 
-test("entreprise : dispatch, localisation et catégories enregistrés en même temps — aucune clé perdue", async (t) => {
-  const store = memoryStore(t, prisma.company, "findUnique", { billing: { invoice: { vatRate: 20 } }, einvoicing: { vatNumber: "FR00" } });
-  const dispatch = { ...DEFAULT_DISPATCH_SETTINGS, maxActiveDeliveriesPerDriver: 4 };
-  const location = { ...DEFAULT_DRIVER_LOCATION_SETTINGS, idleIntervalSeconds: 30 };
-  const categories = { deliveryCategories: { STANDARD: true, COURIER: false, SPECIAL_MISSION: true } };
-  const results = await Promise.all([
-    settle(updateCompanyDispatchSettings("company-a", dispatch)),
-    settle(updateCompanyLocationSettings("company-a", location)),
-    settle(updateCompanyDeliveryOptions("company-a", categories)),
-  ]);
-  // Trois écrivains, dix tentatives espacées chacun : un conflit reste permis, jamais une perte silencieuse.
-  const saved = results.filter((result) => result === "saved").length;
-  assert.ok(results.every((result) => result === "saved" || result === "SETTINGS_CONFLICT"), results.join());
-  assert.equal(store.writes, saved, "une écriture par enregistrement réussi");
-  assert.deepEqual(store.row.settings.billing, { invoice: { vatRate: 20 } });
-  assert.deepEqual(store.row.settings.einvoicing, { vatNumber: "FR00" });
-  if (results[0] === "saved") assert.equal((store.row.settings.dispatchRules as { maxActiveDeliveriesPerDriver: number }).maxActiveDeliveriesPerDriver, 4);
-  if (results[1] === "saved") assert.equal((store.row.settings.locationTracking as { idleIntervalSeconds: number }).idleIntervalSeconds, 30);
-  if (results[2] === "saved") assert.deepEqual(store.row.settings.deliveryCategories, categories.deliveryCategories);
-});
-
-test("entreprise : deux enregistrements simultanés des règles de dispatch — 409 au second, le premier reste", async (t) => {
-  const store = memoryStore(t, prisma.company, "findUnique", { billing: {} });
-  const results = await Promise.all([
-    settle(updateCompanyDispatchSettings("company-a", { ...DEFAULT_DISPATCH_SETTINGS, maxActiveDeliveriesPerDriver: 5 })),
-    settle(updateCompanyDispatchSettings("company-a", { ...DEFAULT_DISPATCH_SETTINGS, maxActiveDeliveriesPerDriver: 6 })),
-  ]);
-  assert.deepEqual([...results].sort(), ["SETTINGS_CONFLICT", "saved"]);
-  const expected = results[0] === "saved" ? 5 : 6;
-  assert.equal((store.row.settings.dispatchRules as { maxActiveDeliveriesPerDriver: number }).maxActiveDeliveriesPerDriver, expected);
-  assert.deepEqual(resolveApiError(new Error(results.find((r) => r !== "saved"))), {
-    status: 409,
-    message: "Les réglages ont changé pendant l'enregistrement. Rechargez puis réessayez.",
-  });
-});
-
-test("compte : tableaux de bord et préférences client enregistrés en même temps — les clés du suivi restent", async (t) => {
-  const tracking = { trackingService: { active: true, startedAt: "2026-10-29T07:00:00.000Z", endedAt: null } };
-  const store = memoryStore(t, prisma.user, "findFirst", { ...tracking, invoiceIdentity: { city: "Lyon" } });
-  const results = await Promise.all([
-    settle(resetDashboardLayout("user-a")),
-    settle(resetPortalDashboardLayout("user-a")),
-    settle(updateClientSettings("user-a", { invoiceAlerts: false })),
-  ]);
-  assert.ok(results.every((result) => result === "saved" || result === "SETTINGS_CONFLICT"), results.join());
-  assert.deepEqual(store.row.settings.trackingService, tracking.trackingService);
-  assert.deepEqual(store.row.settings.invoiceIdentity, { city: "Lyon" });
-  if (results[2] === "saved") {
-    assert.equal(store.row.settings.invoiceAlerts, false);
-    assert.equal(store.row.settings.emailNotifications, true, "valeur par défaut conservée");
-    assert.equal(store.row.settings.smsNotifications, false);
-  }
-});
-
 test("compte : deux enregistrements simultanés des préférences — le second reçoit SETTINGS_CONFLICT", async (t) => {
   const store = memoryStore(t, prisma.user, "findFirst", {});
   const results = await Promise.all([
@@ -125,13 +66,6 @@ test("compte : deux enregistrements simultanés des préférences — le second 
   ]);
   assert.deepEqual([...results].sort(), ["SETTINGS_CONFLICT", "saved"]);
   assert.equal(store.writes, 1);
-});
-
-test("compte : utilisateur absent — USER_NOT_FOUND, aucune écriture", async (t) => {
-  stub(t, prisma.user, "findFirst", async () => null);
-  stub(t, prisma.user, "updateMany", async () => { throw new Error("ne doit pas écrire"); });
-  await assert.rejects(updateClientSettings("user-z", { invoiceAlerts: false }), /USER_NOT_FOUND/);
-  await assert.rejects(resetDashboardLayout("user-z"), /USER_NOT_FOUND/);
 });
 
 // Inventaire statique : toute écriture de `settings` sur Company ou User passe par une réclamation.
@@ -165,17 +99,15 @@ test("inventaire : aucune lecture-réécriture de settings sans réclamation dan
 
 test("inventaire (contrôle statique du texte SQL) : une écriture SQL brute de settings fait avancer updated_at", () => {
   const offenders: string[] = [];
-  let found = 0;
   for (const file of sourceFiles("src")) {
     const source = readFileSync(file, "utf8");
     for (const match of source.matchAll(/SET "settings" =/g)) {
-      found += 1;
       const statement = source.slice(match.index!, source.indexOf("`", match.index!));
       if (!/"updated_at" = GREATEST\(\(now\(\) AT TIME ZONE 'UTC'\)::timestamp\(3\), "updated_at" \+ interval '1 millisecond'\)/.test(statement)) {
         offenders.push(`${file}:${source.slice(0, match.index!).split("\n").length}`);
       }
     }
   }
-  assert.ok(found >= 1, "preuves de livraison");
+  // SCHEMA-1 : plus aucune écriture SQL brute de settings (l'ancienne preuve de livraison est retirée).
   assert.deepEqual(offenders, []);
 });

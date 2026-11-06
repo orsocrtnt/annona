@@ -1,9 +1,19 @@
 // =============================================================================
-// ANNONA — Schéma de base de données fondamental
+// ANNONA — Commande et livraison B2B pour boulangerie (SCHEMA-1, 6 novembre 2026)
 // =============================================================================
-// Ce schéma définit les entités fondamentales du système.
-// Les modules métier futurs (Deliveries, Orders, Drivers, etc.) sont anticipés
-// via les relations et commentaires documentés ci-dessous.
+// Référence : cahier des charges, section 7 ; docs/cahier-des-charges/TRI-BASE.md §3 et §4.
+//
+// Isolation (PLA-01) : toute table métier porte `company_id`, indexé. Exceptions motivées :
+//   - companies : c'est l'entreprise elle-même ;
+//   - users.company_id est vide pour le super-administrateur (seul rôle hors entreprise) ;
+//   - operation_jobs.company_id est vide pour une tâche de plateforme ;
+//   - roles, permissions, role_permissions : données de référence de la plateforme, identiques
+//     pour toutes les entreprises, sans donnée métier ;
+//   - auth_login_failures : limitation des connexions, avant toute identification.
+//
+// Montants : entiers en centimes (suffixe `Cents`). Taux de TVA : points de base (550 = 5,5 %).
+// Heures (`cutoffTime`, créneaux) : texte « HH:MM », heure locale du fuseau de l'entreprise.
+// Dates de livraison et de période : type `date` (jour civil, sans heure).
 // =============================================================================
 
 generator client {
@@ -17,20 +27,19 @@ datasource db {
 }
 
 // -----------------------------------------------------------------------------
-// ENUMS
+// ÉNUMÉRATIONS
 // -----------------------------------------------------------------------------
 
-/// Rôles système prédéfinis — utilisés pour le RBAC
+/// Les cinq rôles du cahier des charges (section 3).
 enum SystemRole {
   SUPER_ADMIN
-  COMPANY_ADMIN
-  MINI_ADMIN
-  DISPATCHER
+  ADMIN
+  BAKER
   DRIVER
-  CLIENT
+  MERCHANT
 }
 
-/// Statut d'un compte utilisateur
+/// Statut d'un compte : ACTIVE ou INACTIVE (désactivé) en usage courant.
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -38,7 +47,6 @@ enum UserStatus {
   PENDING_VERIFICATION
 }
 
-/// Statut d'une entreprise
 enum CompanyStatus {
   ACTIVE
   INACTIVE
@@ -46,37 +54,53 @@ enum CompanyStatus {
   TRIAL
 }
 
+/// DRAFT → VALIDATED → LOCKED (heure limite) → PREPARED (boulanger) → DELIVERED (livreur).
+/// CANCELLED : annulée avant l'heure limite (la ligne reste, l'unicité aussi).
 enum OrderStatus {
-  QUOTE_REQUESTED
-  PENDING
-  ASSIGNED
-  PURCHASING
-  IN_DELIVERY
+  DRAFT
+  VALIDATED
+  LOCKED
+  PREPARED
   DELIVERED
-  INVOICED
-  PAID
   CANCELLED
-  FAILED
 }
 
-enum DeliveryStatus {
-  PENDING
+enum OrderOrigin {
+  MANUAL
+  RECURRING
+}
+
+/// Périodicité de facturation d'un commerçant et type de période d'une facture.
+enum BillingPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+/// Modes de règlement (RG-07), saisis par l'administrateur.
+enum PaymentMethod {
+  VIREMENT
+  PRELEVEMENT
+  ESPECES
+}
+
+/// DRAFT : calculée à l'heure limite ; ASSIGNED : validée et attribuée à un livreur.
+enum RoundStatus {
+  DRAFT
   ASSIGNED
-  PURCHASING
-  IN_DELIVERY
-  DELIVERED
-  INVOICED
-  PAID
+  IN_PROGRESS
+  COMPLETED
   CANCELLED
-  FAILED
 }
 
-enum DeliveryCategory {
-  STANDARD
-  COURIER
-  SPECIAL_MISSION
+enum StopStatus {
+  PENDING
+  DELIVERED
+  INCIDENT
 }
 
+/// Statut de règlement d'une facture.
 enum InvoiceStatus {
   DRAFT
   PENDING
@@ -99,15 +123,13 @@ enum SupportTicketPriority {
   URGENT
 }
 
-enum OrderSource {
+enum SupportContactType {
   ADMIN
-  CLIENT
-  RECURRING
+  DRIVER
 }
 
 enum OperationJobType {
   CLIENT_NOTIFICATION
-  DELIVERY_INVOICE
   DRIVER_NOTIFICATION
 }
 
@@ -118,34 +140,72 @@ enum OperationJobStatus {
   FAILED
 }
 
-enum RecurrenceFrequency {
-  WEEKLY
-  BIWEEKLY
-  MONTHLY
-}
-
-enum RecurrenceUnit {
-  DAYS
-  WEEKS
-  MONTHS
-}
-
-enum RecurrenceStatus {
-  ACTIVE
-  PAUSED
-  CANCELLED
-}
-
-enum SupportContactType {
-  ADMIN
-  DRIVER
-}
-
 // -----------------------------------------------------------------------------
-// CORE ENTITIES
+// ENTREPRISE, COMPTES ET RÔLES
 // -----------------------------------------------------------------------------
 
-/// Utilisateur du système — lié à Supabase Auth via authId
+/// Entreprise cliente de la plateforme (la boulangerie) : unité d'isolation.
+model Company {
+  id                  String        @id @default(cuid())
+  name                String
+  slug                String        @unique
+  logoUrl             String?       @map("logo_url")
+  email               String?
+  phone               String?
+  address             String?
+  city                String?
+  country             String?       @default("FR")
+  status              CompanyStatus @default(TRIAL)
+  /// Heure limite de commande pour le lendemain (RG-01), « HH:MM » dans `timezone`.
+  cutoffTime          String        @default("17:00") @map("cutoff_time")
+  timezone            String        @default("Europe/Paris")
+  /// Délai du rappel avant l'heure limite (NOT-01), en minutes.
+  reminderLeadMinutes Int           @default(120) @map("reminder_lead_minutes")
+  /// Le reste du paramétrage (unités, libellés, facturation, mentions légales…) : PLA-04.
+  settings            Json?         @default("{}")
+  legalName           String?       @map("legal_name")
+  siren               String?       @unique
+  siret               String?       @unique
+  billingAddress      String?       @map("billing_address")
+  billingPostalCode   String?       @map("billing_postal_code")
+  billingCity         String?       @map("billing_city")
+  /// Point de départ des tournées (laboratoire).
+  depotLatitude       Float?        @map("depot_latitude")
+  depotLongitude      Float?        @map("depot_longitude")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users                   User[]
+  merchants               Merchant[]
+  categories              Category[]
+  products                Product[]
+  merchantPrices          MerchantPrice[]
+  slots                   Slot[]
+  orders                  Order[]
+  orderLines              OrderLine[]
+  recurringOrders         RecurringOrder[]
+  recurringOrderLines     RecurringOrderLine[]
+  rounds                  Round[]
+  stops                   Stop[]
+  invoices                Invoice[]
+  invoiceLines            InvoiceLine[]
+  payments                Payment[]
+  invoiceCounter          InvoiceCounter?
+  invoiceReminders        InvoiceReminder[]
+  auditLogs               AuditLog[]
+  supportTickets          SupportTicket[]
+  supportTicketMessages   SupportTicketMessage[]
+  operationJobs           OperationJob[]
+  driverLocations         DriverLocation[]
+  driverPushSubscriptions DriverPushSubscription[]
+  notifications           ClientNotification[]
+
+  @@index([status])
+  @@map("companies")
+}
+
+/// Utilisateur, lié à Supabase Auth par `authId`. Vide `companyId` seulement pour SUPER_ADMIN.
 model User {
   id        String     @id @default(cuid())
   authId    String     @unique @map("auth_id")
@@ -157,97 +217,37 @@ model User {
   settings  Json?      @default("{}")
   status    UserStatus @default(PENDING_VERIFICATION)
 
-  // Relations
   companyId String?  @map("company_id")
   company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
 
   roleId String @map("role_id")
   role   Role   @relation(fields: [roleId], references: [id])
 
-  // Timestamps
+  /// Commerçant représenté (rôle MERCHANT) ; un commerçant peut avoir plusieurs comptes.
+  merchantId String?   @map("merchant_id")
+  merchant   Merchant? @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   lastLoginAt DateTime? @map("last_login_at")
 
-  ordersAsCustomer     Order[]              @relation("CustomerOrders")
-  deliveriesAsCustomer Delivery[]           @relation("CustomerDeliveries")
-  deliveriesAsDriver   Delivery[]           @relation("DriverDeliveries")
-  invoicesAsCustomer   Invoice[]            @relation("CustomerInvoices")
-  supportTickets       SupportTicket[]      @relation("CustomerTickets")
-  addresses            CustomerAddress[]
-  recurringOrders      RecurringOrder[]
-  driverLocation       DriverLocation?
+  ordersCreated           Order[]                  @relation("OrderCreatedBy")
+  roundsAsDriver          Round[]                  @relation("RoundDriver")
+  paymentsRecorded        Payment[]
+  auditLogs               AuditLog[]
+  supportTickets          SupportTicket[]          @relation("CustomerTickets")
+  driverLocation          DriverLocation?
   driverPushSubscriptions DriverPushSubscription[]
-  notifications        ClientNotification[]
-  invoiceRemindersSent InvoiceReminder[]
-  companyCustomerCards CompanyCustomer[]
+  notifications           ClientNotification[]
+  invoiceRemindersSent    InvoiceReminder[]
 
   @@index([companyId])
   @@index([roleId])
-  @@index([email])
+  @@index([merchantId])
   @@map("users")
 }
 
-model ClientNotification {
-  id             String        @id @default(cuid())
-  type           String
-  title          String
-  body           String
-  href           String?
-  readAt         DateTime?     @map("read_at")
-
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([userId, createdAt])
-  @@map("client_notifications")
-}
-
-/// Entreprise cliente — unité d'organisation principale (multi-tenant)
-model Company {
-  id       String        @id @default(cuid())
-  name     String
-  slug     String        @unique
-  logoUrl  String?       @map("logo_url")
-  email    String?
-  phone    String?
-  address  String?
-  city     String?
-  country  String?       @default("FR")
-  status   CompanyStatus @default(TRIAL)
-  settings Json?         @default("{}")
-  legalName         String? @map("legal_name")
-  siren             String? @unique
-  siret             String? @unique
-  billingAddress    String? @map("billing_address")
-  billingPostalCode String? @map("billing_postal_code")
-  billingCity       String? @map("billing_city")
-
-  // Timestamps
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  users                User[]
-  orders               Order[]
-  deliveries           Delivery[]
-  invoices             Invoice[]
-  invoiceCounter       InvoiceCounter?
-  invoiceReminders     InvoiceReminder[]
-  recurringOrders      RecurringOrder[]
-  supportTickets       SupportTicket[]
-  operationJobs        OperationJob[]
-  driverPushSubscriptions DriverPushSubscription[]
-  companyCustomers     CompanyCustomer[]
-
-  @@index([slug])
-  @@index([status])
-  @@map("companies")
-}
-
-/// Rôle — définit un ensemble de permissions
+/// Rôle système et ses permissions : données de référence de la plateforme (sans entreprise).
 model Role {
   id          String     @id @default(cuid())
   name        String
@@ -256,7 +256,6 @@ model Role {
   systemRole  SystemRole @map("system_role")
   isSystem    Boolean    @default(false) @map("is_system")
 
-  // Relations
   users       User[]
   permissions RolePermission[]
 
@@ -267,7 +266,6 @@ model Role {
   @@map("roles")
 }
 
-/// Permission — action granulaire sur une ressource
 model Permission {
   id          String  @id @default(cuid())
   name        String
@@ -276,17 +274,14 @@ model Permission {
   resource    String
   action      String
 
-  // Relations
   roles RolePermission[]
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([resource, action])
-  @@index([resource])
   @@map("permissions")
 }
 
-/// Table de liaison Role ↔ Permission (many-to-many)
 model RolePermission {
   roleId       String @map("role_id")
   permissionId String @map("permission_id")
@@ -300,189 +295,565 @@ model RolePermission {
 }
 
 // -----------------------------------------------------------------------------
-// CLIENT PORTAL — Commandes, livraisons, factures
+// COMMERÇANTS, CATALOGUE, PRIX, CRÉNEAUX
 // -----------------------------------------------------------------------------
 
+/// Commerçant livré (le « client » de la boulangerie).
+model Merchant {
+  id                 String         @id @default(cuid())
+  companyId          String         @map("company_id")
+  company            Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Raison sociale.
+  name               String
+  /// Enseigne affichée, si différente de la raison sociale.
+  tradeName          String?        @map("trade_name")
+  siren              String?
+  vatNumber          String?        @map("vat_number")
+  address            String
+  postalCode         String?        @map("postal_code")
+  city               String?
+  latitude           Float?
+  longitude          Float?
+  accessInstructions String?        @map("access_instructions")
+  contactName        String?        @map("contact_name")
+  contactPhone       String?        @map("contact_phone")
+  contactEmail       String?        @map("contact_email")
+  billingEmail       String?        @map("billing_email")
+  /// Adresse de facturation, si différente de l'adresse de livraison.
+  billingAddress     String?        @map("billing_address")
+  billingPostalCode  String?        @map("billing_postal_code")
+  billingCity        String?        @map("billing_city")
+  billingPeriod      BillingPeriod  @default(MONTHLY) @map("billing_period")
+  paymentMethod      PaymentMethod? @map("payment_method")
+  active             Boolean        @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users           User[]
+  prices          MerchantPrice[]
+  orders          Order[]
+  recurringOrders RecurringOrder[]
+  invoices        Invoice[]
+
+  @@index([companyId, active])
+  @@index([companyId, name])
+  @@map("merchants")
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int     @default(0) @map("sort_order")
+
+  products Product[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, name])
+  @@index([companyId, sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id                 String   @id @default(cuid())
+  companyId          String   @map("company_id")
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  categoryId         String   @map("category_id")
+  category           Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name               String
+  description        String?
+  photoUrl           String?  @map("photo_url")
+  /// Unité de vente en texte libre (« pièce », « kg », « plaque de 12 »…) : PLA-04.
+  unit               String
+  basePriceCents     Int      @map("base_price_cents")
+  vatRateBasisPoints Int      @default(550) @map("vat_rate_basis_points")
+  sortOrder          Int      @default(0) @map("sort_order")
+  active             Boolean  @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  merchantPrices      MerchantPrice[]
+  orderLines          OrderLine[]
+  recurringOrderLines RecurringOrderLine[]
+  invoiceLines        InvoiceLine[]
+
+  @@unique([companyId, name])
+  @@index([categoryId, sortOrder])
+  @@index([companyId, active])
+  @@map("products")
+}
+
+/// Prix spécifique d'un produit pour un commerçant (RG-05).
+model MerchantPrice {
+  id         String   @id @default(cuid())
+  companyId  String   @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  merchantId String   @map("merchant_id")
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  productId  String   @map("product_id")
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceCents Int      @map("price_cents")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([merchantId, productId])
+  @@index([companyId])
+  @@index([productId])
+  @@map("merchant_prices")
+}
+
+/// Créneau de livraison (RG-08) : une tournée correspond à un créneau.
+model Slot {
+  id        String  @id @default(cuid())
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  label     String?
+  /// « HH:MM », heure locale de l'entreprise.
+  startTime String  @map("start_time")
+  endTime   String  @map("end_time")
+  active    Boolean @default(true)
+  sortOrder Int     @default(0) @map("sort_order")
+
+  orders          Order[]
+  recurringOrders RecurringOrder[]
+  rounds          Round[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, startTime, endTime])
+  @@index([companyId, sortOrder])
+  @@map("slots")
+}
+
+// -----------------------------------------------------------------------------
+// COMMANDES
+// -----------------------------------------------------------------------------
+
+/// Une commande par commerçant, par date de livraison et par créneau (CLI-05, RG-02).
 model Order {
-  id          String      @id @default(cuid())
-  reference   String      @unique
-  status      OrderStatus @default(PENDING)
-  source      OrderSource @default(ADMIN)
-  totalAmount Decimal     @map("total_amount") @db.Decimal(10, 2)
-  itemCount   Int         @default(1) @map("item_count")
-  notes       String?
+  id           String      @id @default(cuid())
+  companyId    String      @map("company_id")
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reference    String
+  merchantId   String      @map("merchant_id")
+  merchant     Merchant    @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  deliveryDate DateTime    @map("delivery_date") @db.Date
+  slotId       String      @map("slot_id")
+  slot         Slot        @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  status       OrderStatus @default(DRAFT)
+  origin       OrderOrigin @default(MANUAL)
+  notes        String?
 
-  deliveryCategory   DeliveryCategory @default(STANDARD) @map("delivery_category")
-  pickupAddress      String?          @map("pickup_address")
-  pickupCity         String?          @map("pickup_city")
-  pickupPostalCode   String?          @map("pickup_postal_code")
-  pickupInstructions String?          @map("pickup_instructions")
-
-  shippingAddress       String?   @map("shipping_address")
-  shippingCity          String?   @map("shipping_city")
-  shippingPostalCode    String?   @map("shipping_postal_code")
-  deliveryInstructions  String?   @map("delivery_instructions")
-  requestedDeliveryDate DateTime? @map("requested_delivery_date")
-  /// Début du créneau promis ; sa fin est `requestedDeliveryDate`. Vide en mode « au jour ».
-  deliverySlotStart     DateTime? @map("delivery_slot_start")
-  weightKg              Decimal?  @map("weight_kg") @db.Decimal(7, 2)
-  missionDescription    String?   @map("mission_description")
-
-  companyId     String  @map("company_id")
-  company       Company @relation(fields: [companyId], references: [id])
-  customerId    String? @map("customer_id")
-  customer      User?   @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: SetNull)
-  customerEmail String? @map("customer_email")
-  /// MAIL-PONT, étape 4 : fiche client sans accès, propre à l'entreprise (commande validée depuis un e-mail).
-  companyCustomerId String?          @map("company_customer_id")
-  companyCustomer   CompanyCustomer? @relation(fields: [companyCustomerId], references: [id], onDelete: SetNull)
+  validatedAt DateTime? @map("validated_at")
+  lockedAt    DateTime? @map("locked_at")
+  preparedAt  DateTime? @map("prepared_at")
+  deliveredAt DateTime? @map("delivered_at")
+  cancelledAt DateTime? @map("cancelled_at")
 
   recurringOrderId String?         @map("recurring_order_id")
   recurringOrder   RecurringOrder? @relation(fields: [recurringOrderId], references: [id], onDelete: SetNull)
+  createdById      String?         @map("created_by_id")
+  createdBy        User?           @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  /// Facture de période qui regroupe cette commande (une seule).
+  invoiceId        String?         @map("invoice_id")
+  invoice          Invoice?        @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
-  idempotencyKey     String? @map("idempotency_key")
-  requestFingerprint String? @map("request_fingerprint")
-
-  items           OrderItem[]
-  stops           OrderStop[]
-  deliveries      Delivery[]
-  invoices        Invoice[]
-  tickets         SupportTicket[]
+  lines   OrderLine[]
+  stop    Stop?
+  tickets SupportTicket[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([customerId, idempotencyKey])
-  @@index([companyId])
-  @@index([customerId])
-  @@index([customerEmail])
-  @@index([companyCustomerId])
-  @@index([status])
+  @@unique([merchantId, deliveryDate, slotId])
+  @@unique([companyId, reference])
+  @@index([companyId, deliveryDate, slotId])
+  @@index([companyId, status])
+  @@index([slotId])
   @@index([recurringOrderId])
+  @@index([createdById])
+  @@index([invoiceId])
   @@map("orders")
 }
 
-model OrderItem {
-  id          String     @id @default(cuid())
-  name        String
-  quantity    Int        @default(1)
-  unitPrice   Decimal    @map("unit_price") @db.Decimal(10, 2)
-  orderId     String     @map("order_id")
-  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderStopId String?    @map("order_stop_id")
-  orderStop   OrderStop? @relation(fields: [orderStopId], references: [id], onDelete: SetNull)
+model OrderLine {
+  id                   String  @id @default(cuid())
+  companyId            String  @map("company_id")
+  company              Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderId              String  @map("order_id")
+  order                Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId            String  @map("product_id")
+  product              Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantityOrdered      Int     @map("quantity_ordered")
+  /// Quantité réellement livrée (après manquant signalé) ; vide tant que non préparée.
+  quantityDelivered    Int?    @map("quantity_delivered")
+  /// Prix unitaire HT figé au verrouillage (RG-05) ; vide avant.
+  unitPriceFrozenCents Int?    @map("unit_price_frozen_cents")
 
-  @@index([orderId])
-  @@index([orderStopId])
-  @@map("order_items")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([orderId, productId])
+  @@index([companyId])
+  @@index([productId])
+  @@map("order_lines")
 }
 
-model OrderStop {
-  id           String      @id @default(cuid())
-  orderId      String      @map("order_id")
-  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  sequence     Int
-  label        String?
-  address      String
-  city         String?
-  postalCode   String?     @map("postal_code")
-  latitude     Float?
-  longitude    Float?
-  instructions String?
-  items        OrderItem[]
+/// Commande type, générée à l'heure limite si aucune commande manuelle n'existe (RG-04).
+model RecurringOrder {
+  id         String   @id @default(cuid())
+  companyId  String   @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  merchantId String   @map("merchant_id")
+  merchant   Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  slotId     String   @map("slot_id")
+  slot       Slot     @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  label      String?
+  /// Jours ISO de livraison : 1 = lundi … 7 = dimanche.
+  weekdays   Int[]
+  active     Boolean  @default(true)
 
-  @@index([orderId])
-  @@map("order_stops")
+  lines  RecurringOrderLine[]
+  orders Order[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId, active])
+  @@index([merchantId])
+  @@index([slotId])
+  @@map("recurring_orders")
 }
 
-model Delivery {
-  id                String           @id @default(cuid())
-  reference         String           @unique
-  status            DeliveryStatus   @default(PENDING)
-  deliveryCategory  DeliveryCategory @default(STANDARD) @map("delivery_category")
-  pickupAddress     String?          @map("pickup_address")
-  pickupCity        String?          @map("pickup_city")
-  pickupPostalCode  String?          @map("pickup_postal_code")
-  pickupLatitude    Float?           @map("pickup_latitude")
-  pickupLongitude   Float?           @map("pickup_longitude")
-  address           String
-  city              String?
-  postalCode        String?          @map("postal_code")
-  latitude          Float?
-  longitude         Float?
-  driverName        String?          @map("driver_name")
-  driverId          String?          @map("driver_id")
-  driver            User?            @relation("DriverDeliveries", fields: [driverId], references: [id], onDelete: SetNull)
-  scheduledAt       DateTime?        @map("scheduled_at")
-  /// Tournée (DISPATCH-4) : même identifiant pour les livraisons groupées, ordre de passage.
-  roundId           String?          @map("round_id")
-  roundSequence     Int?             @map("round_sequence")
-  estimatedArrival  DateTime?        @map("estimated_arrival")
-  completedAt       DateTime?        @map("completed_at")
-  missionAcceptedAt DateTime?        @map("mission_accepted_at")
-  missionStartedAt  DateTime?        @map("mission_started_at")
-  podOutcome        String?          @map("pod_outcome")
-  podPhotoPath      String?          @map("pod_photo_path")
-  podFailureCode    String?          @map("pod_failure_code")
-  podNote           String?          @map("pod_note")
-  podCapturedAt     DateTime?        @map("pod_captured_at")
-  podSignaturePath  String?          @map("pod_signature_path")
-  podRecipientName  String?          @map("pod_recipient_name")
-  podSignatureRefusedReason String?  @map("pod_signature_refused_reason")
-  podLatitude       Float?           @map("pod_latitude")
-  podLongitude      Float?           @map("pod_longitude")
-  podPositionAt     DateTime?        @map("pod_position_at")
+model RecurringOrderLine {
+  id               String         @id @default(cuid())
+  companyId        String         @map("company_id")
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  recurringOrderId String         @map("recurring_order_id")
+  recurringOrder   RecurringOrder @relation(fields: [recurringOrderId], references: [id], onDelete: Cascade)
+  productId        String         @map("product_id")
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity         Int
 
-  companyId  String  @map("company_id")
-  company    Company @relation(fields: [companyId], references: [id])
-  orderId    String  @map("order_id")
-  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  customerId String? @map("customer_id")
-  customer   User?   @relation("CustomerDeliveries", fields: [customerId], references: [id], onDelete: SetNull)
+  @@unique([recurringOrderId, productId])
+  @@index([companyId])
+  @@index([productId])
+  @@map("recurring_order_lines")
+}
 
-  trackingEvents TrackingEvent[]
-  tickets        SupportTicket[]
+// -----------------------------------------------------------------------------
+// TOURNÉES
+// -----------------------------------------------------------------------------
+
+/// Tournée d'un livreur pour un jour et un créneau (plusieurs tournées possibles par créneau).
+model Round {
+  id          String      @id @default(cuid())
+  companyId   String      @map("company_id")
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  date        DateTime    @db.Date
+  slotId      String      @map("slot_id")
+  slot        Slot        @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  driverId    String?     @map("driver_id")
+  driver      User?       @relation("RoundDriver", fields: [driverId], references: [id], onDelete: SetNull)
+  name        String?
+  status      RoundStatus @default(DRAFT)
+  startedAt   DateTime?   @map("started_at")
+  completedAt DateTime?   @map("completed_at")
+
+  stops Stop[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId, date, slotId])
+  @@index([slotId])
+  @@index([driverId, date])
+  @@map("rounds")
+}
+
+/// Arrêt d'une tournée : livre exactement une commande.
+model Stop {
+  id                 String     @id @default(cuid())
+  companyId          String     @map("company_id")
+  company            Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  roundId            String     @map("round_id")
+  round              Round      @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  orderId            String     @unique @map("order_id")
+  order              Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Ordre de passage (1 = premier arrêt), alimenté par le calcul de tournée.
+  sequence           Int
+  status             StopStatus @default(PENDING)
+  estimatedArrivalAt DateTime?  @map("estimated_arrival_at")
+  deliveredAt        DateTime?  @map("delivered_at")
+  incidentCode       String?    @map("incident_code")
+  incidentComment    String?    @map("incident_comment")
+  incidentPhotoPath  String?    @map("incident_photo_path")
+  incidentAt         DateTime?  @map("incident_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([companyId])
-  @@index([customerId])
-  @@index([orderId])
-  @@index([driverId])
-  @@index([status])
-  @@map("deliveries")
-
-  @@index([companyId, roundId])
+  @@index([roundId, sequence])
+  @@map("stops")
 }
 
-/// Dernière position GPS connue d'un chauffeur (fréquence configurable par entreprise)
+// -----------------------------------------------------------------------------
+// FACTURES ET RÈGLEMENTS
+// -----------------------------------------------------------------------------
+
+/// Facture d'un commerçant pour une période (CLI-10, ADM-10), sur les quantités livrées (RG-06).
+model Invoice {
+  id            String         @id @default(cuid())
+  companyId     String         @map("company_id")
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  merchantId    String         @map("merchant_id")
+  merchant      Merchant       @relation(fields: [merchantId], references: [id], onDelete: Restrict)
+  /// Numéro continu par entreprise (InvoiceCounter) et sa forme affichée.
+  number        Int
+  reference     String
+  periodType    BillingPeriod  @map("period_type")
+  periodStart   DateTime       @map("period_start") @db.Date
+  periodEnd     DateTime       @map("period_end") @db.Date
+  issuedAt      DateTime       @default(now()) @map("issued_at")
+  dueDate       DateTime?      @map("due_date")
+  subtotalCents Int            @map("subtotal_cents")
+  vatCents      Int            @map("vat_cents")
+  totalCents    Int            @map("total_cents")
+  status        InvoiceStatus  @default(PENDING)
+  paymentMethod PaymentMethod? @map("payment_method")
+  paidAt        DateTime?      @map("paid_at")
+  notes         String?
+  pdfUrl        String?        @map("pdf_url")
+
+  lines     InvoiceLine[]
+  orders    Order[]
+  payments  Payment[]
+  reminders InvoiceReminder[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, number])
+  @@unique([companyId, reference])
+  @@index([merchantId, periodStart])
+  @@index([companyId, status])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id                 String   @id @default(cuid())
+  companyId          String   @map("company_id")
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId          String   @map("invoice_id")
+  invoice            Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId          String?  @map("product_id")
+  product            Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  label              String
+  unit               String?
+  quantity           Int
+  unitPriceCents     Int      @map("unit_price_cents")
+  vatRateBasisPoints Int      @map("vat_rate_basis_points")
+  /// Quantité × prix unitaire, HT.
+  totalCents         Int      @map("total_cents")
+  sortOrder          Int      @default(0) @map("sort_order")
+
+  @@index([companyId])
+  @@index([invoiceId, sortOrder])
+  @@index([productId])
+  @@map("invoice_lines")
+}
+
+/// Règlement saisi par l'administrateur (RG-07) ; plusieurs possibles par facture.
+model Payment {
+  id           String        @id @default(cuid())
+  companyId    String        @map("company_id")
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoiceId    String        @map("invoice_id")
+  invoice      Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amountCents  Int           @map("amount_cents")
+  method       PaymentMethod
+  paidAt       DateTime      @map("paid_at")
+  note         String?
+  recordedById String?       @map("recorded_by_id")
+  recordedBy   User?         @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@index([recordedById])
+  @@map("payments")
+}
+
+/// Dernier numéro de facture attribué par entreprise : suite continue (AUDIT-0111, C2).
+model InvoiceCounter {
+  companyId  String   @id @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lastNumber Int      @default(0) @map("last_number")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("invoice_counters")
+}
+
+/// Trace d'une relance de facture (qui, quand, canal, résultat). Voir invoice-reminder.service.ts.
+model InvoiceReminder {
+  id          String    @id @default(cuid())
+  channel     String    @default("EMAIL")
+  result      String
+  completedAt DateTime? @map("completed_at")
+
+  invoiceId      String        @map("invoice_id")
+  invoice        Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  companyId      String        @map("company_id")
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sentById       String?       @map("sent_by_id")
+  sentBy         User?         @relation(fields: [sentById], references: [id], onDelete: SetNull)
+  operationJobId String?       @map("operation_job_id")
+  operationJob   OperationJob? @relation(fields: [operationJobId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([invoiceId, createdAt])
+  @@index([companyId, createdAt])
+  @@index([sentById])
+  @@index([operationJobId])
+  @@map("invoice_reminders")
+}
+
+// -----------------------------------------------------------------------------
+// JOURNAL, SUPPORT, NOTIFICATIONS, TÂCHES
+// -----------------------------------------------------------------------------
+
+/// Journal des modifications (RG-10, ADM-05) : qui, quand, quoi, avant / après.
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String   @map("company_id")
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actorId    String?  @map("actor_id")
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  action     String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, createdAt])
+  @@index([companyId, entityType, entityId])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+/// Réclamation d'un commerçant (ou demande d'un livreur) traitée par l'entreprise.
+model SupportTicket {
+  id          String                @id @default(cuid())
+  subject     String
+  message     String
+  status      SupportTicketStatus   @default(OPEN)
+  priority    SupportTicketPriority @default(NORMAL)
+  contactType SupportContactType?   @map("contact_type")
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  customerId String @map("customer_id")
+  customer   User   @relation("CustomerTickets", fields: [customerId], references: [id], onDelete: Cascade)
+
+  relatedOrderId String? @map("related_order_id")
+  relatedOrder   Order?  @relation(fields: [relatedOrderId], references: [id], onDelete: SetNull)
+
+  messages SupportTicketMessage[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId, status])
+  @@index([customerId])
+  @@index([relatedOrderId])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id      String  @id @default(cuid())
+  body    String
+  isStaff Boolean @default(false) @map("is_staff")
+
+  companyId String        @map("company_id")
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ticketId  String        @map("ticket_id")
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId  String        @map("author_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@index([ticketId])
+  @@map("support_ticket_messages")
+}
+
+/// Notification affichée dans l'espace d'un utilisateur (cloche).
+model ClientNotification {
+  id     String    @id @default(cuid())
+  type   String
+  title  String
+  body   String
+  href   String?
+  readAt DateTime? @map("read_at")
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String  @map("user_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@index([userId, createdAt])
+  @@map("client_notifications")
+}
+
+/// Dernière position GPS d'un livreur, pendant sa tournée seulement (ENF-04).
 model DriverLocation {
   driverId  String   @id @map("driver_id")
   driver    User     @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   latitude  Float
   longitude Float
   accuracy  Float?
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([companyId])
   @@map("driver_locations")
 }
 
-model TrackingEvent {
-  id          String   @id @default(cuid())
-  label       String
-  description String?
-  latitude    Float?
-  longitude   Float?
-  occurredAt  DateTime @default(now()) @map("occurred_at")
+/// Abonnement aux notifications d'un appareil de livreur : aucun contenu de tournée n'y est stocké.
+model DriverPushSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  deliveryId String   @map("delivery_id")
-  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
-
-  @@index([deliveryId])
-  @@map("tracking_events")
+  @@index([userId, companyId])
+  @@index([companyId])
+  @@map("driver_push_subscriptions")
 }
 
+/// File de tâches (e-mails, push, relances) traitée par le cron.
 model OperationJob {
   id            String             @id @default(cuid())
   jobKey        String             @unique @map("job_key")
@@ -509,185 +880,7 @@ model OperationJob {
   @@map("operation_jobs")
 }
 
-/// Dernier numéro de facture attribué par entreprise : suite continue (AUDIT-0111, C2).
-model InvoiceCounter {
-  companyId  String   @id @map("company_id")
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  lastNumber Int      @default(0) @map("last_number")
-  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("invoice_counters")
-}
-
-model Invoice {
-  id        String        @id @default(cuid())
-  reference String
-  status    InvoiceStatus @default(PENDING)
-  amount    Decimal       @db.Decimal(10, 2)
-  lineItems Json          @default("[]") @map("line_items")
-  notes     String?
-  dueDate   DateTime?     @map("due_date")
-  paidAt    DateTime?     @map("paid_at")
-  pdfUrl    String?       @map("pdf_url")
-
-  companyId  String  @map("company_id")
-  company    Company @relation(fields: [companyId], references: [id])
-  orderId    String? @map("order_id")
-  order      Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  customerId String? @map("customer_id")
-  customer   User?   @relation("CustomerInvoices", fields: [customerId], references: [id], onDelete: SetNull)
-
-  reminders InvoiceReminder[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([companyId])
-  @@index([customerId])
-  @@index([status])
-  @@index([orderId])
-  @@map("invoices")
-
-  @@unique([companyId, reference])
-}
-
-/// DEMO-3 : trace d'une relance de facture (qui, quand, canal, résultat).
-/// result : QUEUED, SENDING (réservée ; completed_at = heure de réservation), SENT,
-/// SEND_UNCONFIRMED (C5 : peut-être reçue, aucun renvoi automatique), NOT_SENT_EMAIL_NOT_CONFIGURED,
-/// NOT_SENT_NO_RECIPIENT, NOT_SENT_CLIENT_PREFERENCES, NOT_SENT_INVOICE_SETTLED, SKIPPED_SUPERSEDED.
-/// FAILED n'est jamais stocké : résultat affiché d'une relance QUEUED dont la tâche est épuisée.
-model InvoiceReminder {
-  id          String    @id @default(cuid())
-  channel     String    @default("EMAIL")
-  result      String
-  completedAt DateTime? @map("completed_at")
-
-  invoiceId      String        @map("invoice_id")
-  invoice        Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  companyId      String        @map("company_id")
-  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sentById       String?       @map("sent_by_id")
-  sentBy         User?         @relation(fields: [sentById], references: [id], onDelete: SetNull)
-  operationJobId String?       @map("operation_job_id")
-  operationJob   OperationJob? @relation(fields: [operationJobId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([invoiceId, createdAt])
-  @@index([companyId, createdAt])
-  @@index([sentById])
-  @@index([operationJobId])
-  @@map("invoice_reminders")
-}
-
-model SupportTicket {
-  id          String                @id @default(cuid())
-  subject     String
-  message     String
-  status      SupportTicketStatus   @default(OPEN)
-  priority    SupportTicketPriority @default(NORMAL)
-  contactType SupportContactType?   @map("contact_type")
-
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id])
-
-  customerId String @map("customer_id")
-  customer   User   @relation("CustomerTickets", fields: [customerId], references: [id], onDelete: Cascade)
-
-  relatedOrderId    String?   @map("related_order_id")
-  relatedOrder      Order?    @relation(fields: [relatedOrderId], references: [id], onDelete: SetNull)
-  relatedDeliveryId String?   @map("related_delivery_id")
-  relatedDelivery   Delivery? @relation(fields: [relatedDeliveryId], references: [id], onDelete: SetNull)
-
-  messages SupportTicketMessage[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([customerId])
-  @@index([companyId])
-  @@index([status])
-  @@index([relatedDeliveryId])
-  @@index([relatedOrderId])
-  @@map("support_tickets")
-}
-
-model SupportTicketMessage {
-  id      String  @id @default(cuid())
-  body    String
-  isStaff Boolean @default(false) @map("is_staff")
-
-  ticketId String        @map("ticket_id")
-  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  authorId String        @map("author_id")
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([ticketId])
-  @@map("support_ticket_messages")
-}
-
-model CustomerAddress {
-  id         String  @id @default(cuid())
-  label      String
-  address    String
-  city       String?
-  postalCode String? @map("postal_code")
-  isDefault  Boolean @default(false) @map("is_default")
-
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@map("customer_addresses")
-}
-
-model RecurringOrder {
-  id                   String              @id @default(cuid())
-  label                String
-  frequency            RecurrenceFrequency
-  intervalValue        Int                 @default(1) @map("interval_value")
-  intervalUnit         RecurrenceUnit      @default(WEEKS) @map("interval_unit")
-  status               RecurrenceStatus    @default(ACTIVE)
-  deliverySlot         String?             @map("delivery_slot")
-  weightKg             Decimal?            @map("weight_kg") @db.Decimal(7, 2)
-  startAt              DateTime            @default(now()) @map("start_at")
-  nextRunAt            DateTime            @map("next_run_at")
-  endAt                DateTime?           @map("end_at")
-  deliveryCategory     DeliveryCategory    @default(STANDARD) @map("delivery_category")
-  pickupAddress        String?             @map("pickup_address")
-  pickupCity           String?             @map("pickup_city")
-  pickupPostalCode     String?             @map("pickup_postal_code")
-  pickupInstructions   String?             @map("pickup_instructions")
-  pickupStops          Json?               @map("pickup_stops")
-  shippingAddress      String              @map("shipping_address")
-  shippingCity         String?             @map("shipping_city")
-  shippingPostalCode   String?             @map("shipping_postal_code")
-  deliveryInstructions String?             @map("delivery_instructions")
-  notes                String?
-  items                Json
-
-  companyId  String  @map("company_id")
-  company    Company @relation(fields: [companyId], references: [id])
-  customerId String  @map("customer_id")
-  customer   User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  orders Order[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([customerId])
-  @@index([companyId])
-  @@index([status])
-  @@map("recurring_orders")
-}
-
-/// SEC-2 : échecs de connexion récents, identifiés par une empreinte HMAC de l'e-mail
-/// normalisé ou de la source (jamais la valeur brute). Purgés au-delà de 15 minutes.
+/// SEC-2 : échecs de connexion récents, identifiés par une empreinte HMAC (jamais la valeur brute).
 model AuthLoginFailure {
   id        String   @id @default(cuid())
   keyHash   String   @map("key_hash")
@@ -696,46 +889,4 @@ model AuthLoginFailure {
   @@index([keyHash, createdAt])
   @@index([createdAt])
   @@map("auth_login_failures")
-}
-
-/// Abonnement aux notifications d'un appareil de livreur : aucun contenu de mission n'y est stocké.
-model DriverPushSubscription {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyId String   @map("company_id")
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@index([userId, companyId])
-  @@index([companyId])
-  @@map("driver_push_subscriptions")
-}
-
-/// MAIL-PONT, étape 4 : fiche d'un client de l'entreprise, sans accès à l'espace client.
-/// Créée à la validation d'une commande reçue (jamais avant le clic). L'adresse e-mail est unique
-/// par entreprise seulement : un même client peut avoir une fiche chez deux entreprises de livraison.
-/// `userId` est rempli quand l'entreprise lui ouvre ensuite un compte client avec la même adresse.
-model CompanyCustomer {
-  id        String   @id @default(cuid())
-  companyId String   @map("company_id")
-  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  name      String
-  /// En minuscules.
-  email     String
-  phone     String?
-  userId    String?  @map("user_id")
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  orders    Order[]
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([companyId, email])
-  @@index([companyId, createdAt])
-  @@index([userId])
-  @@map("company_customers")
 }

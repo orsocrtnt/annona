@@ -1,13 +1,9 @@
 import { Prisma, type SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
-import { settingsSection } from "@/lib/database/claimed-settings-update";
-import { updateUserSettingsWithClaim } from "@/lib/database/settings-claims";
 import { createAdminClient } from "@/services/supabase/admin";
-import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import type { UserWithRole } from "@/types";
 import { COMPANY_USERS_TAKE } from "@/lib/query/list-limits";
-import type { CreateUserInput, UpdateMiniAdminInput, UpdateProfileInput } from "@/lib/validations/user";
-import { filterMiniAdminPermissions, buildMiniAdminSettings, canManageMiniAdmins } from "@/lib/permissions/mini-admin";
+import type { CreateUserInput, UpdateProfileInput } from "@/lib/validations/user";
 import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
 
 type RoleRecord = {
@@ -107,9 +103,7 @@ export async function getUserByAuthId(authId: string): Promise<UserWithRole | nu
 }
 
 export function extractPermissionSlugs(user: UserWithRole): string[] {
-  const slugs = user.role.permissions.map((p) => p.slug);
-  if (user.role.systemRole !== "MINI_ADMIN") return slugs;
-  return filterMiniAdminPermissions(slugs, user.settings);
+  return user.role.permissions.map((p) => p.slug);
 }
 
 export async function getUserPermissions(authId: string): Promise<string[]> {
@@ -156,7 +150,8 @@ export async function listCompanyDrivers(companyId: string) {
   });
 }
 
-const CREATABLE_SYSTEM_ROLES = ["CLIENT", "DRIVER", "DISPATCHER", "MINI_ADMIN"] as const;
+/** Comptes qu'un administrateur ouvre dans son entreprise (le lien client ↔ commerçant viendra avec ADM-1). */
+const CREATABLE_SYSTEM_ROLES = ["ADMIN", "BAKER", "DRIVER", "MERCHANT"] as const;
 
 async function findCreatableRoleBySlug(slug: string) {
   const rows = await prisma.$queryRaw<
@@ -199,13 +194,6 @@ export async function createUserByAdmin(
     throw new Error("INVALID_ROLE");
   }
 
-  if (
-    (role.systemRole === "MINI_ADMIN" || role.systemRole === "DISPATCHER") &&
-    !canManageMiniAdmins(actorRole)
-  ) {
-    throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
-  }
-
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new Error("EMAIL_EXISTS");
 
@@ -240,14 +228,6 @@ export async function createUserByAdmin(
           roleId: role.id,
           companyId,
           status: "PENDING_VERIFICATION",
-          ...(input.roleSlug === "mini-admin"
-            ? {
-                settings: buildMiniAdminSettings(
-                  input.miniAdminTitle ?? "",
-                  input.miniAdminModules ?? []
-                ),
-              }
-            : {}),
         },
         include: { company: true },
       });
@@ -257,10 +237,6 @@ export async function createUserByAdmin(
     // Le fournisseur peut avoir renvoyé une ancienne invitation : ne pas supprimer ce compte.
     // Aucun accès applicatif sans profil ; l’administrateur peut retenter la création.
     throw new Error("INVITATION_PROFILE_FAILED");
-  }
-
-  if (input.roleSlug === "client") {
-    await linkPortalDataToClient(user.id, input.email, user.companyId);
   }
 
   return {
@@ -277,7 +253,7 @@ export async function createUserByAdmin(
   };
 }
 
-const DELETABLE_ROLES = ["CLIENT", "DRIVER", "DISPATCHER", "MINI_ADMIN"] as const;
+const DELETABLE_ROLES = ["ADMIN", "BAKER", "DRIVER", "MERCHANT"] as const;
 
 export async function deleteUserByAdmin(
   targetUserId: string,
@@ -303,10 +279,6 @@ export async function deleteUserByAdmin(
     throw new Error("ROLE_NOT_DELETABLE");
   }
 
-  if (role.systemRole === "MINI_ADMIN" && !canManageMiniAdmins(actorRole)) {
-    throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
-  }
-
   const supabase = createAdminClient();
 
   await prisma.$transaction(
@@ -317,18 +289,15 @@ export async function deleteUserByAdmin(
       if (lockedUsers.length === 0) throw new Error("USER_NOT_FOUND");
 
       if (role.systemRole === "DRIVER") {
-        const activeDeliveries = await tx.delivery.count({
-          where: {
-            driverId: user.id,
-            status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] },
-          },
+        const activeRounds = await tx.round.count({
+          where: { driverId: user.id, status: { in: ["ASSIGNED", "IN_PROGRESS"] } },
         });
-        if (activeDeliveries > 0) {
+        if (activeRounds > 0) {
           throw new Error("DRIVER_HAS_ACTIVE_DELIVERIES");
         }
       }
 
-      // La FK met driverId à null sur l'historique ; driverName reste la preuve lisible.
+      // La FK met driverId à null sur les tournées passées.
       await tx.user.delete({ where: { id: user.id } });
     },
     { maxWait: 10_000, timeout: 30_000 }
@@ -338,36 +307,6 @@ export async function deleteUserByAdmin(
   if (error) {
     console.error("Supabase delete user failed:", error.message);
   }
-
-  return { success: true };
-}
-
-export async function updateMiniAdminByAdmin(
-  targetUserId: string,
-  input: UpdateMiniAdminInput,
-  companyId: string | null,
-  actorRole: SystemRole
-) {
-  if (actorRole === "SUPER_ADMIN") throw new Error("PLATFORM_USER_MUTATION_FORBIDDEN");
-  if (!canManageMiniAdmins(actorRole)) {
-    throw new Error("MINI_ADMIN_MANAGEMENT_FORBIDDEN");
-  }
-  const user = await prisma.user.findUnique({ where: { id: targetUserId } });
-  if (!user || !companyId || user.companyId !== companyId) throw new Error("USER_NOT_FOUND");
-
-  const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
-  if (!role || role.systemRole !== "MINI_ADMIN") {
-    throw new Error("ROLE_NOT_EDITABLE");
-  }
-
-  // Réclamation sur updatedAt, bornée à l'entreprise : les autres clés du compte (suivi, tableau de
-  // bord…) ne sont jamais écrasées ; deux modifications simultanées : SETTINGS_CONFLICT à la seconde.
-  const result = await updateUserSettingsWithClaim(user.id, {
-    companyId,
-    apply: (current) => ({ ...current, ...buildMiniAdminSettings(input.miniAdminTitle, input.miniAdminModules) }),
-    section: settingsSection("miniAdmin"),
-  });
-  if (result === "missing") throw new Error("USER_NOT_FOUND");
 
   return { success: true };
 }

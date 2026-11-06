@@ -6,14 +6,14 @@ import {
   addClientTicketMessage, InvalidSupportReferenceError,
 } from "../src/domains/support/support.service";
 
-// In-memory records; no network or database credentials needed.
-const own = { id: "order-a", customerId: "client-a", companyId: "company-a" };
-const otherClient = { id: "order-other", customerId: "other", companyId: "company-a" };
-const foreign = { id: "order-b", customerId: "client-b", companyId: "company-b" };
+// En mémoire, sans base : une commande appartient à un commerçant, lui-même représenté par des comptes clients.
+const merchantA = { id: "m-a", companyId: "company-a", users: [{ id: "client-a", companyId: "company-a" }] };
+const merchantOther = { id: "m-o", companyId: "company-a", users: [{ id: "other", companyId: "company-a" }] };
+const merchantB = { id: "m-b", companyId: "company-b", users: [{ id: "client-b", companyId: "company-b" }] };
+const own = { id: "order-a", companyId: "company-a", merchant: merchantA };
+const otherClient = { id: "order-other", companyId: "company-a", merchant: merchantOther };
+const foreign = { id: "order-b", companyId: "company-b", merchant: merchantB };
 const orders = [own, otherClient, foreign];
-const deliveries = orders.map((order) => ({
-  ...order, id: `delivery-${order.id}`, orderId: order.id, order,
-}));
 
 type Row = Record<string, unknown>;
 function matches(row: Row, where: Row): boolean {
@@ -22,6 +22,9 @@ function matches(row: Row, where: Row): boolean {
     if (key === "OR") return (value as Row[]).some((part) => matches(row, part));
     if (value && typeof value === "object" && "is" in value) {
       return !!row[key] && matches(row[key] as Row, value.is as Row);
+    }
+    if (value && typeof value === "object" && "some" in value) {
+      return Array.isArray(row[key]) && (row[key] as Row[]).some((item) => matches(item, value.some as Row));
     }
     return row[key] === value;
   });
@@ -33,58 +36,33 @@ function replaceMethod(t: TestContext, target: object, key: string, fn: unknown)
 }
 const payload = { subject: "Test support", message: "Message de test support" };
 
-test("création support : propriété client ET entreprise, avant toute insertion", async (t) => {
+test("réclamation : commande du commerçant du client ET de son entreprise, vérifiée avant toute insertion", async (t) => {
   const created: Row[] = [];
   const tx = {
     order: { findFirst: async ({ where }: { where: Row }) => orders.find((r) => matches(r, where)) ?? null },
-    delivery: { findFirst: async ({ where }: { where: Row }) => deliveries.find((r) => matches(r, where)) ?? null },
     supportTicket: { create: async ({ data }: { data: Row }) => { created.push(data); return data; } },
   };
   t.mock.method(prisma, "$transaction", async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx));
-  for (const refs of [
-    {}, { relatedOrderId: own.id }, { relatedDeliveryId: deliveries[0]!.id },
-    { relatedOrderId: own.id, relatedDeliveryId: deliveries[0]!.id },
-  ]) {
+  for (const refs of [{}, { relatedOrderId: own.id }]) {
     await createClientTicket("client-a", "company-a", { ...payload, ...refs });
   }
-  assert.equal(created.length, 4);
-  for (const refs of [
-    { relatedOrderId: foreign.id }, { relatedOrderId: otherClient.id },
-    { relatedDeliveryId: deliveries[1]!.id }, { relatedDeliveryId: deliveries[2]!.id },
-    { relatedOrderId: "missing" }, { relatedDeliveryId: "missing" },
-    { relatedOrderId: "" }, { relatedDeliveryId: "" },
-    { relatedOrderId: own.id, relatedDeliveryId: deliveries[2]!.id },
-  ]) {
+  assert.equal(created.length, 2);
+  // Le premier message porte aussi l'entreprise (PLA-01).
+  assert.equal((created[0]!.messages as { create: Row }).create.companyId, "company-a");
+  for (const refs of [{ relatedOrderId: foreign.id }, { relatedOrderId: otherClient.id }, { relatedOrderId: "missing" }, { relatedOrderId: "" }]) {
     await assert.rejects(createClientTicket("client-a", "company-a", { ...payload, ...refs }), InvalidSupportReferenceError);
   }
   await assert.rejects(createClientTicket("client-a", "company-b", { ...payload, relatedOrderId: own.id }), InvalidSupportReferenceError);
-  assert.equal(created.length, 4, "aucun ticket/message inséré lors d'un refus");
-});
-
-test("deux ressources personnelles doivent appartenir à la même commande", async (t) => {
-  let writes = 0;
-  t.mock.method(prisma, "$transaction", async (fn: (tx: unknown) => Promise<unknown>) => fn({
-    order: { findFirst: async () => own },
-    delivery: { findFirst: async ({ where }: { where: Row }) => {
-      const delivery = { ...deliveries[0], orderId: "another-owned-order" };
-      return matches(delivery, where) ? delivery : null;
-    } },
-    supportTicket: { create: async () => { writes++; } },
-  }));
-  await assert.rejects(createClientTicket("client-a", "company-a", {
-    ...payload, relatedOrderId: own.id, relatedDeliveryId: deliveries[0]!.id,
-  }), InvalidSupportReferenceError);
-  assert.equal(writes, 0);
+  assert.equal(created.length, 2, "aucun ticket/message inséré lors d'un refus");
 });
 
 test("anciens tickets étrangers masqués dans liste, détail et réponses", async (t) => {
-  const base = { customerId: "client-a", companyId: "company-a", relatedOrderId: null, relatedDeliveryId: null };
+  const base = { customerId: "client-a", companyId: "company-a", relatedOrderId: null };
   const tickets = [
     { ...base, id: "general" },
     { ...base, id: "valid", relatedOrderId: own.id, relatedOrder: own },
     { ...base, id: "bad-order", relatedOrderId: foreign.id, relatedOrder: foreign },
     { ...base, id: "other-client", relatedOrderId: otherClient.id, relatedOrder: otherClient },
-    { ...base, id: "bad-delivery", relatedDeliveryId: deliveries[2]!.id, relatedDelivery: deliveries[2] },
     { ...base, id: "wrong-company", companyId: "company-b" },
     { ...base, id: "wrong-customer", customerId: "client-b" },
   ];
@@ -94,7 +72,7 @@ test("anciens tickets étrangers masqués dans liste, détail et réponses", asy
   replaceMethod(t, prisma.supportTicketMessage, "create", async ({ data }: { data: Row }) => { messages.push(data); return data; });
   replaceMethod(t, prisma.supportTicket, "update", async () => ({}));
   assert.deepEqual((await getClientTickets("client-a", "company-a")).map((r) => r.id), ["general", "valid"]);
-  for (const id of ["bad-order", "other-client", "bad-delivery", "wrong-company", "wrong-customer", "missing"]) {
+  for (const id of ["bad-order", "other-client", "wrong-company", "wrong-customer", "missing"]) {
     assert.equal(await getClientTicketById("client-a", "company-a", id), null);
     assert.equal(await addClientTicketMessage("client-a", "company-a", id, "message"), null);
   }
@@ -102,4 +80,5 @@ test("anciens tickets étrangers masqués dans liste, détail et réponses", asy
   assert.ok(await getClientTicketById("client-a", "company-a", "valid"));
   assert.ok(await addClientTicketMessage("client-a", "company-a", "valid", "message"));
   assert.equal(messages.length, 1);
+  assert.equal(messages[0]!.companyId, "company-a");
 });

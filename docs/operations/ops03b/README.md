@@ -61,3 +61,8 @@ OPS-03B est terminée. OPS-03A couvre séparément la sauvegarde et la restaurat
 Pour arrêter sans supprimer les preuves, désactiver le job nommé `ops03b-preproduction-health` dans Supabase Cron. Pour retirer complètement le moniteur de recette, révoquer ensuite le jeton Automation Bypass dans Vercel, puis les quatre secrets `ops03b_*` dans Vault. Ne supprimer le schéma `ops_monitor` qu'après export du journal utile. Aucune de ces opérations ne touche les tables métier.
 
 La vérification connectée en lecture seule s'exécute avec `npm run test:ops03b`. Elle lance vingt lectures auth simultanées et contrôle le diagnostic profond sans créer ni modifier de donnée métier.
+
+## SCHEMA-1 (6 novembre 2026) : scripts hors migrations Prisma
+
+La migration initiale unique du nouveau produit (`prisma/migrations/20261106200000_init`) ne contient que le schéma applicatif. Le moniteur, qui dépend des extensions `http` et `pg_cron` et de Supabase Vault, est conservé à part dans ce dossier, dans l'ordre d'application : `20261023190000_ops03b_monitor_extensions.sql`, `20261023191000_ops03b_monitor.sql`, `20261023192000_ops03b_monitor_fix.sql`, `20261104040000_ops_monitor_email_alerts.sql`. À appliquer manuellement (`prisma db execute --file`) sur l'environnement qui doit être surveillé, après décision du propriétaire ; aucun n'a été appliqué à `annona-dev`.
+

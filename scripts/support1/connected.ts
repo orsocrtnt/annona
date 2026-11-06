@@ -91,7 +91,7 @@ async function residue() {
 
 async function scenario() {
   const roleRows = await prisma.role.findMany({
-    where: { systemRole: { in: ["COMPANY_ADMIN", "CLIENT"] } },
+    where: { systemRole: { in: ["ADMIN", "MERCHANT"] } },
     select: { id: true, systemRole: true },
   });
   const roles = Object.fromEntries(roleRows.map((role) => [role.systemRole, role.id])) as {

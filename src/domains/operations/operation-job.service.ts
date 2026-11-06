@@ -199,13 +199,6 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
     return;
   }
 
-  if (job.type === "DELIVERY_INVOICE") {
-    // DEMO-3 : facture émise après le passage en « Livrée », hors de la transition.
-    const { runDeliveryInvoiceJob } = await import("@/domains/invoice/delivery-invoice.service");
-    await runDeliveryInvoiceJob(job.payload);
-    return;
-  }
-
   if (job.type === "DRIVER_NOTIFICATION") {
     const { deliverDriverMissionPush } = await import("@/domains/driver/driver-push.service");
     await deliverDriverMissionPush(job.payload);

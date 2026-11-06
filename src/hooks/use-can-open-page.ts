@@ -8,5 +8,5 @@ export function useCanOpenPage(href: string): boolean {
   const user = useAuthStore((state) => state.user);
   const permissions = useAuthStore((state) => state.permissions);
   if (!user) return false;
-  return canOpenPage(href, { role: user.role.systemRole, permissions, settings: user.settings });
+  return canOpenPage(href, { role: user.role.systemRole, permissions });
 }

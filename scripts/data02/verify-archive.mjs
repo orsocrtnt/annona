@@ -16,7 +16,7 @@ async function run() {
   const manifestPath = join(directory, "manifest.json");
   if ((await lstat(manifestPath)).size > 1024 * 1024 || await sha256(manifestPath) !== expectedManifestHash) throw new Error("Manifest mismatch");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  if (manifest.schema !== "annona-company-archive" || manifest.version !== 1 || manifest.complete !== true || manifest.algorithm !== "sha256" || !Array.isArray(manifest.entries)) throw new Error("Invalid manifest");
+  if (manifest.schema !== "annona-company-archive" || manifest.version !== 2 || manifest.complete !== true || manifest.algorithm !== "sha256" || !Array.isArray(manifest.entries)) throw new Error("Invalid manifest");
   const seen = new Set();
   let totalProofBytes = 0;
   for (const entry of manifest.entries) {

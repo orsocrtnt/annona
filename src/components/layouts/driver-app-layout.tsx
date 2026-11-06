@@ -1,5 +1,4 @@
 "use client";
-import { DriverServiceControl } from "@/features/driver/driver-service-control";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -7,14 +6,13 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
-import { Home, MapPin, User } from "lucide-react";
+import { Home, User } from "lucide-react";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { AppleNavbar, AppleNavbarBrand } from "@/components/navigation/apple-navbar";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const bottomNav = [
-  { title: "Accueil", href: "/driver", icon: Home },
-  { title: "Missions", href: "/driver/missions", icon: MapPin },
+  { title: "Ma tournée", href: "/driver", icon: Home },
   { title: "Profil", href: "/driver/profile", icon: User },
 ];
 
@@ -78,7 +76,7 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
         </div>
       </AppleNavbar>
 
-      <main id="main-content" tabIndex={-1}><DriverServiceControl />{children}</main>
+      <main id="main-content" tabIndex={-1}>{children}</main>
 
       <nav aria-label="Navigation livreur" className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1.5">

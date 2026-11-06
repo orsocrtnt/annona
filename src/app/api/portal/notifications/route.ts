@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireClientRole } from "@/lib/api/auth-guard";
+import { requireMerchantRole } from "@/lib/api/auth-guard";
 import { withApiHandler } from "@/lib/api/route-handler";
 import {
   listClientNotifications,
@@ -11,7 +11,7 @@ const markReadSchema = z.object({ ids: z.array(z.string().min(1).max(100)).max(5
 
 export async function GET() {
   return withApiHandler(async () => {
-    const auth = await requireClientRole();
+    const auth = await requireMerchantRole();
     if ("error" in auth) return auth.error;
 
     const notifications = await listClientNotifications(auth.context.user.id);
@@ -21,7 +21,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   return withApiHandler(async () => {
-    const auth = await requireClientRole();
+    const auth = await requireMerchantRole();
     if ("error" in auth) return auth.error;
 
     const parsed = markReadSchema.safeParse(await request.json().catch(() => null));

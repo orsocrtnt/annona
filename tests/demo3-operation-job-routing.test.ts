@@ -78,28 +78,3 @@ test("DEMO-3 tâches : une relance de facture part par son propre traitement", a
   assert.deepEqual(calls, ["reminder:rem_1:client-notification:invoice-reminder:rem_1"]);
   assert.equal(result?.status, "SUCCEEDED");
 });
-
-test("DEMO-3 tâches : la facture à la livraison a son propre type et une erreur permanente n'est pas relancée", async () => {
-  const calls: string[] = [];
-  const { service, job } = loadService(calls, { failInvoice: "permanent" });
-  job.type = "DELIVERY_INVOICE";
-  job.jobKey = "delivery-invoice:order_1:evt_1";
-  job.payload = { orderId: "order_1", companyId: "company_a" };
-
-  const result = await service.processOperationJob("job-1", new Date("2026-10-28T10:00:00.000Z"));
-
-  assert.deepEqual(calls, ["delivery-invoice:order_1"]);
-  assert.equal(result?.status, "FAILED", "échec définitif dès la première tentative");
-  assert.equal(result?.attempts, 1);
-  assert.equal(result?.lastError, "DELIVERY_INVOICE_EMPTY", "erreur visible sur la tâche");
-});
-
-test("DEMO-3 tâches : une erreur passagère de la facture à la livraison est rejouée", async () => {
-  const calls: string[] = [];
-  const { service, job } = loadService(calls, { failInvoice: "transient" });
-  job.type = "DELIVERY_INVOICE";
-  job.payload = { orderId: "order_1", companyId: "company_a" };
-  const result = await service.processOperationJob("job-1", new Date("2026-10-28T10:00:00.000Z"));
-  assert.equal(result?.status, "PENDING");
-  assert.equal(result?.lastError, "connexion perdue");
-});

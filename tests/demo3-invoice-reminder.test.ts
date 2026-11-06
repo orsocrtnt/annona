@@ -8,9 +8,9 @@ import {
 import { createInvoiceFakeDb, invoice, type FakeInvoice, type FakeReminder } from "./helpers/invoice-fake-db";
 
 const NOW = new Date("2026-10-28T10:00:00.000Z");
-const USERS = [
-  { id: "client_a", companyId: "company_a", email: "client.a@example.test", firstName: "Studio", lastName: "Oberkampf" },
-  { id: "client_b", companyId: "company_b", email: "client.b@example.test", firstName: "Autre", lastName: "Client" },
+const MERCHANTS = [
+  { id: "merchant_a", companyId: "company_a", billingEmail: "client.a@example.test", contactEmail: null },
+  { id: "merchant_b", companyId: "company_b", billingEmail: "client.b@example.test", contactEmail: null },
 ];
 const COMPANIES = [
   { id: "company_a", name: "Coursiers A", settings: {} },
@@ -18,7 +18,7 @@ const COMPANIES = [
 ];
 
 function setup(invoices: FakeInvoice[]) {
-  const db = createInvoiceFakeDb({ invoices, users: USERS, companies: COMPANIES });
+  const db = createInvoiceFakeDb({ invoices, merchants: MERCHANTS, companies: COMPANIES });
   const kicks: string[] = [];
   const remind = (overrides: Partial<Parameters<typeof remindInvoice>[0]> = {}) =>
     remindInvoice(
@@ -122,19 +122,19 @@ test("DEMO-3 relance : e-mail non configuré, relance tracée « non envoyée »
 });
 
 test("DEMO-3 relance : client sans adresse e-mail ou supprimé, relance tracée sans destinataire", async () => {
-  for (const customerId of [null, "client_b"]) {
-    const { db, remind } = setup([invoice({ id: "inv", customerId })]);
+  for (const merchantId of ["merchant_missing", "merchant_b"]) {
+    const { db, remind } = setup([invoice({ id: "inv", merchantId })]);
     const result = await remind();
-    assert.equal(result?.reminder.result, "NOT_SENT_NO_RECIPIENT", `client ${customerId}`);
+    assert.equal(result?.reminder.result, "NOT_SENT_NO_RECIPIENT", `client ${merchantId}`);
     assert.equal(db.jobs.length, 0);
   }
   const { db, remind } = setup([invoice({ id: "inv" })]);
-  (db as unknown as { invoices: FakeInvoice[] }).invoices[0]!.customerId = "client_empty";
-  USERS.push({ id: "client_empty", companyId: "company_a", email: " ", firstName: "Sans", lastName: "Adresse" });
+  (db as unknown as { invoices: FakeInvoice[] }).invoices[0]!.merchantId = "merchant_empty";
+  MERCHANTS.push({ id: "merchant_empty", companyId: "company_a", billingEmail: " ", contactEmail: null });
   try {
     assert.equal((await remind())?.reminder.result, "NOT_SENT_NO_RECIPIENT");
   } finally {
-    USERS.pop();
+    MERCHANTS.pop();
   }
 });
 
@@ -148,15 +148,15 @@ test("DEMO-3 relance : facture payée, annulée ou brouillon non relançable", a
 });
 
 test("DEMO-3 relance : la facture d'une autre entreprise est introuvable et rien n'est tracé", async () => {
-  const { db, remind } = setup([invoice({ id: "inv", companyId: "company_b", customerId: "client_b" })]);
+  const { db, remind } = setup([invoice({ id: "inv", companyId: "company_b", merchantId: "merchant_b" })]);
   assert.equal(await remind(), null);
   assert.equal(db.reminders.length, 0);
 });
 
 function deliverySetup(overrides: Partial<FakeInvoice> = {}, companyName = "Coursiers A", others: FakeReminder[] = []) {
   const db = createInvoiceFakeDb({
-    invoices: [invoice({ id: "inv", status: "OVERDUE", amount: 45, reference: "FAC-1027", dueDate: new Date("2026-10-16T09:00:00.000Z"), ...overrides })],
-    users: USERS,
+    invoices: [invoice({ id: "inv", status: "OVERDUE", totalCents: 4500, reference: "FAC-1027", dueDate: new Date("2026-10-16T09:00:00.000Z"), ...overrides })],
+    merchants: MERCHANTS,
     companies: [{ id: "company_a", name: companyName, settings: {} }],
     reminders: [{ id: "rem_1", invoiceId: "inv", companyId: "company_a", sentById: "admin_a", channel: "EMAIL", result: "QUEUED", operationJobId: "job_1", completedAt: null, createdAt: NOW }, ...others],
   });
@@ -166,7 +166,6 @@ function deliverySetup(overrides: Partial<FakeInvoice> = {}, companyName = "Cour
     db: db as never,
     now: NOW,
     appUrl: "https://app.example.test/",
-    getClientSettings: async () => prefs,
     send: async (input: { to: string; subject: string; text: string; idempotencyKey: string }) => {
       sent.push(input);
       return { status: "sent" as const };
@@ -190,7 +189,7 @@ test("DEMO-3 relance (envoi) : l'e-mail part une fois, avec montant, retard et l
   assert.match(sent[0]!.text, /45,00\s€/);
   assert.match(sent[0]!.text, /Coursiers A/);
   assert.match(sent[0]!.text, /en retard de 12 jours/);
-  assert.match(sent[0]!.text, /https:\/\/app\.example\.test\/portal\/invoices\/inv/);
+  assert.match(sent[0]!.text, /https:\/\/app\.example\.test\/portal\/invoices/);
   assert.equal(db.reminders[0]!.result, "SENT");
   assert.ok(db.reminders[0]!.completedAt instanceof Date);
 });
@@ -207,16 +206,6 @@ test("DEMO-3 relance (envoi) : facture réglée entre le clic et l'envoi, rien n
   await deliver();
   assert.equal(sent.length, 0);
   assert.equal(db.reminders[0]!.result, "NOT_SENT_INVOICE_SETTLED");
-});
-
-test("DEMO-3 relance (envoi) : préférences du client respectées", async () => {
-  for (const key of ["emailNotifications", "invoiceAlerts"] as const) {
-    const { db, sent, prefs, deliver } = deliverySetup();
-    prefs[key] = false;
-    await deliver();
-    assert.equal(sent.length, 0, key);
-    assert.equal(db.reminders[0]!.result, "NOT_SENT_CLIENT_PREFERENCES");
-  }
 });
 
 test("DEMO-3 relance (envoi) : e-mail désactivé au moment de l'envoi, trace « non configuré »", async () => {

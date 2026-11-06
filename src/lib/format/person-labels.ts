@@ -59,11 +59,11 @@ export function formatPersonNameByRole(
   const name = `${firstName} ${lastName}`.trim();
   if (!name) {
     if (systemRole === "DRIVER") return "Livreur";
-    if (systemRole === "CLIENT") return "Client";
+    if (systemRole === "MERCHANT") return "Client";
     return "—";
   }
   if (systemRole === "DRIVER") return formatDriverDisplayName(name);
-  if (systemRole === "CLIENT") return formatClientDisplayName(name);
+  if (systemRole === "MERCHANT") return formatClientDisplayName(name);
   return name;
 }
 

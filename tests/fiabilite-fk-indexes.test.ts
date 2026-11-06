@@ -3,52 +3,49 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const EXPECTED = [
-  ["client_notifications", "order_message_id"],
-  ["invoices", "order_id"],
-  ["order_messages", "author_id"],
-  ["order_thread_reads", "user_id"],
-  ["role_permissions", "permission_id"],
-  ["saas_plan_assignments", "plan_id"],
-  ["saas_seat_reservations", "subscription_id"],
-  ["saas_subscription_items", "option_id"],
-  ["saas_subscriptions", "catalog_version_id"],
-  ["saas_usage_events", "subscription_id"],
-  ["support_tickets", "related_delivery_id"],
-  ["support_tickets", "related_order_id"],
-] as const;
+// FIABILITE / SCHEMA-1 : chaque clé étrangère de la migration initiale est servie par un index
+// (ou la clé primaire) dont elle est la première colonne. Sans cet index, une suppression en
+// cascade ou une jointure parcourt toute la table enfant.
+const sql = readFileSync(resolve("prisma/migrations/20261106200000_init/migration.sql"), "utf8");
 
-const sql = readFileSync(
-  resolve("prisma/migrations/20261028090000_fk_indexes/migration.sql"),
-  "utf8"
+const columns = (list: string) => [...list.matchAll(/"([a-z_]+)"/g)].map((match) => match[1]!);
+
+const foreignKeys = [...sql.matchAll(/ALTER TABLE "([a-z_]+)" ADD CONSTRAINT "[^"]+" FOREIGN KEY \(([^)]*)\) REFERENCES "([a-z_]+)"/g)].map(
+  (match) => ({ table: match[1]!, columns: columns(match[2]!), references: match[3]! })
 );
-const schema = readFileSync(resolve("prisma/schema.prisma"), "utf8");
 
-test("la migration crée les 12 index de clé étrangère de façon idempotente", () => {
-  for (const [table, column] of EXPECTED) {
-    assert.ok(
-      sql.includes(
-        `CREATE INDEX IF NOT EXISTS "${table}_${column}_idx" ON "${table}"("${column}");`
-      ),
-      `${table}.${column}`
-    );
-  }
-  assert.equal((sql.match(/CREATE INDEX/g) ?? []).length, 12);
+/** Colonnes de tête de chaque index, contrainte unique ou clé primaire, par table. */
+const leading = new Map<string, string[][]>();
+function add(table: string, cols: string[]) {
+  leading.set(table, [...(leading.get(table) ?? []), cols]);
+}
+for (const match of sql.matchAll(/CREATE (?:UNIQUE )?INDEX "[^"]+" ON "([a-z_]+)"\(([^)]*)\)/g)) add(match[1]!, columns(match[2]!));
+for (const match of sql.matchAll(/CREATE TABLE "([a-z_]+)" \(([\s\S]*?)\n\);/g)) {
+  const pk = /CONSTRAINT "[^"]+" PRIMARY KEY \(([^)]*)\)/.exec(match[2]!);
+  if (pk) add(match[1]!, columns(pk[1]!));
+}
+
+test("la migration initiale déclare des clés étrangères (lecture du SQL)", () => {
+  assert.ok(foreignKeys.length >= 40, `clés étrangères trouvées : ${foreignKeys.length}`);
 });
 
-test("la migration ne supprime ni ne modifie rien d'existant", () => {
-  assert.doesNotMatch(sql, /\b(DROP|ALTER|DELETE|TRUNCATE|UPDATE)\b/i);
-});
-
-// NET-1 (6 novembre 2026) : index de tables retirées du schéma (order_messages…) encore dans la migration
-// historique ; réactiver avec la migration initiale de SCHEMA-1.
-test.skip("le schéma Prisma déclare chaque index (pas de dérive avec la migration)", () => {
-  for (const [table] of EXPECTED) {
-    const block = schema.split(/^model /m).find((part) => part.includes(`@@map("${table}")`));
-    assert.ok(block, table);
-  }
-  assert.equal(
-    (schema.match(/@@index\(\[(orderMessageId|authorId|planId|optionId|catalogVersionId|relatedDeliveryId|relatedOrderId|permissionId)\]\)/g) ?? []).length >= 8,
-    true
+test("chaque clé étrangère est la tête d'un index ou de la clé primaire de sa table", () => {
+  const missing = foreignKeys.filter(({ table, columns: fk }) =>
+    !(leading.get(table) ?? []).some((index) => fk.every((column, position) => index[position] === column))
   );
+  assert.deepEqual(missing.map(({ table, columns: fk }) => `${table}(${fk.join(", ")})`), []);
+});
+
+test("chaque table rattachée à une entreprise a sa clé étrangère vers companies et un index en tête company_id", () => {
+  const tablesWithCompany = [...sql.matchAll(/CREATE TABLE "([a-z_]+)" \(([\s\S]*?)\n\);/g)]
+    .filter((match) => /\n\s+"company_id" TEXT/.test(match[2]!))
+    .map((match) => match[1]!);
+  assert.ok(tablesWithCompany.length >= 24, `tables avec company_id : ${tablesWithCompany.length}`);
+  for (const table of tablesWithCompany) {
+    assert.ok(
+      foreignKeys.some((fk) => fk.table === table && fk.columns.join() === "company_id" && fk.references === "companies"),
+      `${table} : clé étrangère company_id → companies`
+    );
+    assert.ok((leading.get(table) ?? []).some((index) => index[0] === "company_id"), `${table} : index en tête company_id`);
+  }
 });

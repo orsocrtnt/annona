@@ -9,7 +9,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { CreateUserDialog } from "@/features/users/create-user-dialog";
-import { EditMiniAdminDialog } from "@/features/users/edit-mini-admin-dialog";
 import { DeleteUserButton } from "@/features/users/delete-user-button";
 import {
   TableUserEmail,
@@ -20,7 +19,6 @@ import {
 } from "@/features/users/users-table-ui";
 import { formatPersonNameByRole } from "@/lib/format/person-labels";
 import { usePermissions } from "@/hooks/use-permissions";
-import { canManageMiniAdmins, parseMiniAdminSettings } from "@/lib/permissions/mini-admin";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "@/types";
 import type { SystemRole } from "@prisma/client";
@@ -31,28 +29,26 @@ interface UserRow {
   lastName: string;
   email: string;
   status: string;
-  settings?: unknown;
-  miniAdminTitle?: string;
   role: { name: string; systemRole: SystemRole };
   company?: { name: string } | null;
 }
 
-type RoleFilter = "all" | "DRIVER" | "CLIENT" | "MINI_ADMIN";
+type RoleFilter = "all" | Exclude<SystemRole, "SUPER_ADMIN">;
 
 const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
   { value: "all", label: "Tous" },
+  { value: "MERCHANT", label: "Clients" },
   { value: "DRIVER", label: "Livreurs" },
-  { value: "CLIENT", label: "Clients" },
-  { value: "MINI_ADMIN", label: "Mini-admins" },
+  { value: "BAKER", label: "Boulangers" },
+  { value: "ADMIN", label: "Administrateurs" },
 ];
 
 const ROLE_SORT_ORDER: Record<SystemRole, number> = {
-  DRIVER: 0,
-  DISPATCHER: 1,
-  MINI_ADMIN: 2,
-  CLIENT: 3,
-  COMPANY_ADMIN: 4,
-  SUPER_ADMIN: 5,
+  MERCHANT: 0,
+  DRIVER: 1,
+  BAKER: 2,
+  ADMIN: 3,
+  SUPER_ADMIN: 4,
 };
 
 async function fetchUsers() {
@@ -65,7 +61,6 @@ async function fetchUsers() {
 export default function UsersPage() {
   const { role } = usePermissions();
   const platformReadOnly = role === "SUPER_ADMIN";
-  const canDelegate = canManageMiniAdmins(role) && !platformReadOnly;
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -95,10 +90,7 @@ export default function UsersPage() {
       header: "Rôle",
       className: USER_TABLE_COL.role,
       cell: (row) => (
-        <TableUserRole
-          role={row.role.systemRole}
-          title={row.miniAdminTitle}
-        />
+<TableUserRole role={row.role.systemRole} />
       ),
     },
     {
@@ -113,35 +105,23 @@ export default function UsersPage() {
       className: USER_TABLE_COL.actions,
       cell: (row) => (
         <div className="flex items-center justify-end gap-0.5">
-          {canDelegate && row.role.systemRole === "MINI_ADMIN" ? (
-            <EditMiniAdminDialog
-              userId={row.id}
-              userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
-              settings={row.settings}
-            />
-          ) : null}
           {platformReadOnly ? null : (
             <DeleteUserButton
               userId={row.id}
               userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
               role={row.role.systemRole}
-              locked={row.role.systemRole === "MINI_ADMIN" && !canDelegate}
             />
           )}
         </div>
       ),
     },
-  ], [canDelegate, platformReadOnly]);
+  ], [platformReadOnly]);
 
   const rows = useMemo(() => {
     const mapped = (users ?? []).map((u) => ({
       ...u,
       // Le rôle a sa colonne : le nom s'affiche sans préfixe « Client » / « Livreur ».
       name: `${u.firstName} ${u.lastName}`.trim(),
-      miniAdminTitle:
-        u.role.systemRole === "MINI_ADMIN"
-          ? parseMiniAdminSettings(u.settings).title
-          : undefined,
     }));
 
     const filtered =
@@ -161,9 +141,10 @@ export default function UsersPage() {
     const all = users ?? [];
     return {
       all: all.length,
+      MERCHANT: all.filter((u) => u.role.systemRole === "MERCHANT").length,
       DRIVER: all.filter((u) => u.role.systemRole === "DRIVER").length,
-      CLIENT: all.filter((u) => u.role.systemRole === "CLIENT").length,
-      MINI_ADMIN: all.filter((u) => u.role.systemRole === "MINI_ADMIN").length,
+      BAKER: all.filter((u) => u.role.systemRole === "BAKER").length,
+      ADMIN: all.filter((u) => u.role.systemRole === "ADMIN").length,
     };
   }, [users]);
 
@@ -175,7 +156,7 @@ export default function UsersPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gestion des comptes</h1>
           <p className="mt-1 text-muted-foreground max-md:hidden">
-            Clients, livreurs et mini-admins de votre entreprise
+            Clients, livreurs, boulangers et administrateurs de votre entreprise
           </p>
         </div>
         {platformReadOnly ? null : <CreateUserDialog />}
@@ -218,13 +199,9 @@ export default function UsersPage() {
             searchPlaceholder="Rechercher un compte..."
             paginate={false}
             emptyTitle={
-              roleFilter === "DRIVER"
-                ? "Aucun livreur"
-                : roleFilter === "CLIENT"
-                  ? "Aucun client"
-                  : roleFilter === "MINI_ADMIN"
-                    ? "Aucun mini-admin"
-                    : "Aucun utilisateur"
+              roleFilter === "all"
+                ? "Aucun utilisateur"
+                : `Aucun compte « ${ROLE_FILTER_OPTIONS.find((o) => o.value === roleFilter)?.label ?? ""} »`
             }
             emptyDescription={platformReadOnly ? "Aucun compte ne correspond à cette recherche." : "Créez un compte avec le bouton « Inviter un utilisateur »."}
           />

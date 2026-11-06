@@ -1,51 +1,62 @@
 # Base de données Annona
 
-État de référence : 22 octobre 2026. La définition actuelle est `prisma/schema.prisma`; ce document décrit les groupes fonctionnels et les règles de modification sans recopier chaque colonne.
+État de référence : 6 novembre 2026 (SCHEMA-1). La définition actuelle est `prisma/schema.prisma`; ce document décrit les groupes fonctionnels et les règles de modification sans recopier chaque colonne.
 
 ## Modèles actuels
 
-> 6 novembre 2026 (NET-1) : les modèles de l'ancien produit (offres et souscriptions SaaS, inscription, démonstrations, prospection, ventes, pilotes, liste d'attente, contact, journal d'accès plateforme, commande par message, liens de suivi publics, conversation de commande) ont été retirés du schéma. Le modèle métier (commande, livraison, rôles) reste celui de l'ancien produit jusqu'à SCHEMA-1, qui le remplace par le modèle de `docs/cahier-des-charges/` avec une migration initiale. Les migrations historiques de `prisma/migrations` ne correspondent donc plus au schéma.
+> 6 novembre 2026 (SCHEMA-1) : schéma propre du produit de commande et livraison B2B pour boulangerie (cahier des charges section 7, `docs/cahier-des-charges/TRI-BASE.md` §3 et §4), créé par une **migration initiale unique** `prisma/migrations/20261106200000_init` (RLS et révocation des droits `PUBLIC`, `anon`, `authenticated` sur toutes les tables, contraintes CHECK, rôles et permissions de référence). Les migrations historiques ont été supprimées (l'historique git les conserve). Le moniteur OPS-03B est conservé hors migrations dans `docs/operations/ops03b/`.
 
-### Identité et isolation
+Conventions : toute table porte `company_id` indexé sauf `companies`, les données de référence globales (`roles`, `permissions`, `role_permissions`) et `auth_login_failures` ; `users.company_id` est vide pour le seul super-administrateur et `operation_jobs.company_id` pour une tâche de plateforme. Montants en centimes entiers (`*_cents`), TVA en points de base (550 = 5,5 %), heures « HH:MM » dans le fuseau de l'entreprise, dates de livraison et de période en `date`.
 
-- `Company` : entreprise locataire, statut et réglages ;
-- `User` : identité métier liée à Supabase Auth, entreprise, rôle et statut ;
-- `Role`, `Permission`, `RolePermission` : RBAC ;
-- `ClientNotification` : notifications intégrées au portail ;
-- `AuthLoginFailure` : empreintes transitoires des échecs de connexion.
+### Entreprise, comptes, rôles
 
-### Commande et livraison
+- `Company` : nom, logo, heure limite `cutoffTime` (17:00), fuseau `Europe/Paris`, délai du rappel, laboratoire (départ des tournées), `settings` JSON pour le reste (PLA-04) ;
+- `User` : identité liée à Supabase Auth, rôle (SUPER_ADMIN, ADMIN, BAKER, DRIVER, MERCHANT), commerçant représenté (`merchantId`) ;
+- `Role`, `Permission`, `RolePermission` : RBAC (`prisma/reference-data.ts`).
 
-- `Order`, `OrderItem`, `OrderStop` : commande, articles et collectes ordonnées ;
-- `Delivery` : mission logistique, livreur, états, horaires, preuve et idempotence ;
-- `DriverLocation`, `TrackingEvent` : dernière position autorisée et chronologie ;
-- `DriverPushSubscription` : abonnements aux notifications push du livreur ;
-- `OperationJob` : notifications et factures différées avec reprise.
+### Commerçants, catalogue, créneaux
 
-### Client et exploitation
+- `Merchant` : raison sociale, adresse et coordonnées GPS, consignes d'accès, contact, facturation (périodicité DAILY/WEEKLY/MONTHLY/YEARLY, mode de règlement) ;
+- `Category`, `Product` (unité libre, prix de base, TVA, actif), `MerchantPrice` (unique commerçant × produit) ;
+- `Slot` : créneaux de livraison.
 
-- `Invoice`, `InvoiceCounter`, `InvoiceReminder` : facturation, numérotation continue et relances ;
-- `SupportTicket`, `SupportTicketMessage` : support client et historique ;
-- `CustomerAddress` : carnet d'adresses client ;
-- `CompanyCustomer` : fiche client sans accès propre à chaque entreprise ;
-- `RecurringOrder` : modèle et planification de commandes récurrentes.
+### Commandes et tournées
 
-Le schéma comprend 23 modèles Prisma.
+- `Order` : une par commerçant, date de livraison et créneau ; statut DRAFT → VALIDATED → LOCKED → PREPARED → DELIVERED (ou CANCELLED), origine MANUAL/RECURRING ;
+- `OrderLine` : quantité commandée, quantité livrée (manquant), prix unitaire figé au verrouillage ;
+- `RecurringOrder`, `RecurringOrderLine` : commande type par jours de la semaine (1 = lundi … 7 = dimanche) ;
+- `Round`, `Stop` : tournée d'un livreur pour un jour et un créneau, arrêts ordonnés (un par commande), incident et photo.
+
+### Factures et règlements
+
+- `Invoice` : facture d'un commerçant par période, numéro continu (`InvoiceCounter`), montants HT/TVA/TTC, statut et mode de règlement ; regroupe des commandes (`Order.invoiceId`) ;
+- `InvoiceLine`, `Payment`, `InvoiceReminder`.
+
+### Exploitation
+
+- `AuditLog` : journal avant/après des corrections (RG-10) ;
+- `SupportTicket`, `SupportTicketMessage` : réclamations ;
+- `ClientNotification`, `DriverLocation`, `DriverPushSubscription`, `OperationJob`, `AuthLoginFailure`.
+
+Le schéma comprend 29 modèles Prisma. Données de démonstration : `npm run db:seed` (identifiants `demo_`, comptes dans `outputs/comptes-demo.md`, non versionné).
 
 ## Relations essentielles
 
 ```text
 Company
 ├── User ── Role ── RolePermission ── Permission
-├── Order ── OrderItem / OrderStop
-│     ├── Delivery ── DriverLocation / TrackingEvent
-│     └── Invoice
+├── Merchant ── MerchantPrice ── Product ── Category
+├── Slot
+├── Order ── OrderLine ── Product
+│     ├── Stop ── Round ── (User livreur)
+│     └── Invoice ── InvoiceLine / Payment / InvoiceReminder
+├── RecurringOrder ── RecurringOrderLine
 ├── SupportTicket ── SupportTicketMessage
-├── RecurringOrder
+├── AuditLog
 └── OperationJob
 ```
 
-Les liens vers un client, un livreur, une commande ou une livraison ne suffisent jamais seuls : l'entreprise doit aussi correspondre.
+Les liens vers un commerçant, un livreur, une commande ou une tournée ne suffisent jamais seuls : l'entreprise doit aussi correspondre.
 
 ## Connexions
 
@@ -95,11 +106,6 @@ La préproduction, la baseline et la restauration fournisseur sont terminées. L
 
 Le socle DATA-02 ajoute un export JSON versionné du graphe d'une entreprise dans `src/domains/data-lifecycle/company-export.service.ts`. Il exclut les identifiants Auth et les clés internes, et produit un manifeste des preuves privées à extraire séparément. La procédure et ses limites sont dans `operations/data02/README.md` ; aucune suppression générique d'entreprise existante n'est exposée.
 
-### Preuve de livraison : signature, position et conservation (POD-2)
+### Photo d'incident (SCHEMA-1)
 
-- Colonnes de `deliveries` ajoutées par `20261028120000_pod_signature` : `pod_signature_path`, `pod_recipient_name`, `pod_signature_refused_reason`, `pod_latitude`, `pod_longitude`, `pod_position_at`. La signature (PNG aplati sur fond blanc) est stockée dans le bucket privé existant `delivery-pods`, sous `companyId/deliveryId-sig-<horodatage>-<uuid>.png` ; aucun nouveau bucket.
-- Export et archive DATA-02 : le JSON exporte déjà ces colonnes avec la livraison ; le manifeste `externalAssets.proofObjects` liste désormais la signature (`kind: "signature"`, la photo n'a pas de `kind`) et l'archive la télécharge dans `proofs/` avec le même contrôle de chemin (entreprise et livraison) et le même manifeste SHA256 (`proofCount` compte photos et signatures).
-- Purge de démonstration (`demo-cleanup`, `demo-pool`, inventaire hérité) : une signature compte comme une référence externe, au même titre que la photo, et bloque le recyclage tant que l'objet Storage existe.
-- Durée de conservation : la signature suit exactement le sort de la photo et de la livraison. Aucune durée n'est encore validée (projet `operations/data02/RETENTION_POLICY_DRAFT.md` : durée nécessaire au suivi et aux contestations, jusqu'à cinq ans si la preuve commerciale le justifie) et aucun purgeur général n'existe : ne présenter aucune durée comme effective. La position (`pod_latitude`, `pod_longitude`) est une donnée de géolocalisation du livreur : à aligner sur la décision GPS (point 7 de `legal/README.md`) avant données réelles.
-- Les photos sont ré-encodées côté serveur (EXIF, dont la position GPS, supprimé) ; les liens Storage ne sont jamais renvoyés par l'API : ils sont générés à la demande (5 minutes) par les routes `.../proof/photo` et `.../proof/signature`.
-- Règles par entreprise : `companies.settings.proofRules` = `{ signatureRequired: false, emailToClient: true }` (défauts), via `GET/PATCH /api/company/proof-rules`. La signature est donc facultative par défaut.
+La signature et le PDF de preuve de l'ancien produit sont retirés. Seule reste la photo d'incident d'un arrêt (`stops.incident_photo_path`), dans le bucket privé `delivery-pods` sous `companyId/stopId-<horodatage>.jpg|png`. L'export (version 2) la liste dans `externalAssets.proofObjects` (`stopId`, `orderId`, `objectKey`) et l'archive la télécharge avec son empreinte SHA256. Aucune durée de conservation n'est encore validée.

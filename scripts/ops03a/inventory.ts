@@ -51,8 +51,8 @@ async function main() {
     FROM storage.objects
     WHERE bucket_id = 'delivery-pods'
   `);
-  const proofReferences = await prisma.delivery.count({
-    where: { podPhotoPath: { not: null } },
+  const proofReferences = await prisma.stop.count({
+    where: { incidentPhotoPath: { not: null } },
   });
   const bucket = await createAdminClient().storage.getBucket("delivery-pods");
   if (bucket.error || !bucket.data) throw new Error("OPS03A_POD_BUCKET_UNAVAILABLE");

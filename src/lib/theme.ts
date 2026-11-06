@@ -5,7 +5,7 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "annona-theme";
 
 /**
- * Espaces ayant migré vers les jetons Dark : portail client, back-office et dispatch, espace `/admin`, app livreur,
+ * Espaces ayant migré vers les jetons Dark : portail client, back-office, espace boulanger, espace `/admin`, app livreur,
  * et site public (LANDING-2, DESIGN-2) : accueil, pages publiques, connexion, inscription (`/register` et
  * `/register/client`) et mot de passe, pour ne pas changer de thème entre connexion et inscription.
  * « / » ne vaut que pour l'accueil exact (aucune route ne commence par « // »).
@@ -13,12 +13,11 @@ export const THEME_STORAGE_KEY = "annona-theme";
 export const THEME_SCOPED_PATH_PREFIXES = [
   "/portal",
   "/dashboard",
-  "/dispatch",
+  "/bakery",
   "/settings",
   "/support",
   "/users",
   "/companies",
-  "/onboarding",
   "/admin",
   "/driver",
   "/",

@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/loader";
 import { EinvoicingSettingsCard } from "@/features/back-office/einvoicing-settings-card";
-import { CompanyPaymentsPanel } from "@/features/back-office/company-payments-panel";
 import {
   useCompanyBillingSettings,
   useUpdateCompanyBillingSettings,
@@ -194,7 +193,9 @@ export function BillingSettingsContent() {
       </div>
 
       {tab === "payments" ? (
-        <CompanyPaymentsPanel />
+        <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+          Factures par période, règlements et relances : à venir avec la tâche FACT-1.
+        </p>
       ) : (
         <InvoiceGeneralSection local={local} setLocal={setLocal} />
       )}

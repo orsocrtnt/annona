@@ -1,122 +1,71 @@
 import { prisma } from "@/services/prisma/client";
-import type { DeliveryStatus } from "@prisma/client";
 import { getPortalShowDriverPhone } from "@/domains/company/portal-settings.service";
-import { clientDriverSelect, toClientDriver } from "@/domains/delivery/client-driver";
 
+/** Le livreur reste joignable pendant sa tournée et les 24 h qui suivent la livraison. */
 const DRIVER_CONTACT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-function isDriverContactEligible(
-  status: DeliveryStatus,
-  completedAt: Date | null
-): boolean {
-  if (status === "IN_DELIVERY" || status === "PURCHASING" || status === "ASSIGNED") return true;
-  if (status === "DELIVERED" && completedAt) {
-    return Date.now() - completedAt.getTime() < DRIVER_CONTACT_WINDOW_MS;
-  }
-  return false;
-}
-
+/**
+ * Contacts proposés au client pour une réclamation : l'administrateur de l'entreprise et, si une
+ * commande de son commerçant est en tournée (ou livrée depuis moins de 24 h), le prénom du livreur.
+ * Le nom de famille du livreur ne sort jamais ; son téléphone seulement si l'entreprise l'autorise.
+ */
 export async function getSupportContactsForClient(
   customerId: string,
   companyId: string | null | undefined,
-  deliveryId?: string
+  orderId?: string
 ) {
   if (!companyId) {
     return { recommended: "ADMIN" as const, admin: null, driver: null, delivery: null };
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: {
-      name: true,
-      email: true,
-      phone: true,
-      users: {
-        where: { role: { systemRole: "COMPANY_ADMIN" }, status: "ACTIVE" },
-        take: 1,
-        select: { firstName: true, lastName: true, email: true, phone: true },
-      },
-    },
-  });
+  const [adminUser, company] = await Promise.all([
+    prisma.user.findFirst({
+      where: { companyId, role: { systemRole: "ADMIN" }, status: "ACTIVE" },
+      orderBy: { createdAt: "asc" },
+      select: { firstName: true, lastName: true, email: true, phone: true },
+    }),
+    prisma.company.findUnique({ where: { id: companyId }, select: { name: true, email: true, phone: true } }),
+  ]);
 
-  const adminUser = company?.users[0];
   const admin = {
-    name: adminUser
-      ? `${adminUser.firstName} ${adminUser.lastName}`
-      : company?.name ?? "Administrateur",
+    name: adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : company?.name ?? "Administrateur",
     email: adminUser?.email ?? company?.email ?? null,
     phone: adminUser?.phone ?? company?.phone ?? null,
   };
 
-  let delivery = null;
-  let driver = null;
-  // Client : prénom du livreur, téléphone selon le réglage de l'entreprise, jamais le nom de famille.
   const showDriverPhone = await getPortalShowDriverPhone(companyId);
+  const stop = await prisma.stop.findFirst({
+    where: {
+      companyId,
+      ...(orderId ? { orderId } : {}),
+      order: { is: { companyId, merchant: { is: { users: { some: { id: customerId, companyId } } } } } },
+      round: { is: { companyId, driverId: { not: null } } },
+      OR: [
+        { status: "PENDING", round: { is: { status: "IN_PROGRESS" } } },
+        { status: "DELIVERED", deliveredAt: { gte: new Date(Date.now() - DRIVER_CONTACT_WINDOW_MS) } },
+      ],
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      status: true,
+      order: { select: { id: true, reference: true } },
+      round: { select: { driver: { select: { firstName: true, phone: true, companyId: true } } } },
+    },
+  });
 
-  if (deliveryId) {
-    delivery = await prisma.delivery.findFirst({
-      where: { id: deliveryId, customerId },
-      select: {
-        id: true,
-        reference: true,
-        status: true,
-        completedAt: true,
-        driverName: true,
-        driver: { select: clientDriverSelect(showDriverPhone) },
-      },
-    });
-
-    if (delivery && isDriverContactEligible(delivery.status, delivery.completedAt)) {
-      const d = delivery.driver;
-      driver = {
-        name: toClientDriver({ driver: d, driverName: delivery.driverName }, showDriverPhone)?.firstName ?? "Livreur",
-        phone: toClientDriver({ driver: d }, showDriverPhone)?.phone ?? null,
-        deliveryReference: delivery.reference,
-      };
-    }
-  } else {
-    const activeDelivery = await prisma.delivery.findFirst({
-      where: {
-        customerId,
-        OR: [
-          { status: { in: ["IN_DELIVERY", "PURCHASING", "ASSIGNED"] } },
-          {
-            status: "DELIVERED",
-            completedAt: { gte: new Date(Date.now() - DRIVER_CONTACT_WINDOW_MS) },
-          },
-        ],
-      },
-      orderBy: { updatedAt: "desc" },
-      select: {
-        id: true,
-        reference: true,
-        status: true,
-        completedAt: true,
-        driverName: true,
-        driver: { select: clientDriverSelect(showDriverPhone) },
-      },
-    });
-
-    if (activeDelivery) {
-      delivery = activeDelivery;
-      const d = activeDelivery.driver;
-      driver = {
-        name: toClientDriver({ driver: d, driverName: activeDelivery.driverName }, showDriverPhone)?.firstName ?? "Livreur",
-        phone: toClientDriver({ driver: d }, showDriverPhone)?.phone ?? null,
-        deliveryReference: activeDelivery.reference,
-      };
-    }
-  }
-
-  // Le nom complet et la fiche du livreur ne sortent pas : seul `driver` (prénom, téléphone) est exposé.
-  const publicDelivery = delivery
-    ? { id: delivery.id, reference: delivery.reference, status: delivery.status, completedAt: delivery.completedAt }
+  const driverUser = stop?.round.driver?.companyId === companyId ? stop.round.driver : null;
+  const driver = stop && driverUser
+    ? {
+        name: driverUser.firstName || "Livreur",
+        phone: showDriverPhone ? driverUser.phone ?? null : null,
+        deliveryReference: stop.order.reference,
+      }
     : null;
 
   return {
     recommended: driver ? ("DRIVER" as const) : ("ADMIN" as const),
     admin,
     driver,
-    delivery: publicDelivery,
+    delivery: stop ? { id: stop.order.id, reference: stop.order.reference, status: stop.status } : null,
   };
 }

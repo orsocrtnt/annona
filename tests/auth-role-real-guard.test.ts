@@ -7,7 +7,6 @@ import { runInThisContext } from "node:vm";
 import ts from "typescript";
 import { NextRequest } from "next/server";
 import { ROLE_PERMISSIONS } from "../prisma/reference-data";
-import { buildMiniAdminSettings } from "../src/lib/permissions/mini-admin";
 
 // AUTH-ROLE : le vrai chemin de la garde (middleware → updateSession → resolveServerAuthForAuthId →
 // getUserByAuthId → isAccountActive → evaluatePageAccess) est exécuté.
@@ -141,7 +140,7 @@ function loadGuard(db: Db) {
 const session = (authId: string) => ({ "sb-test-auth-token": `jwt:${authId}` });
 
 test("AUTH-ROLE garde réelle : les vrais modules sont exécutés, seuls Prisma, Supabase et next/headers sont simulés", async () => {
-  const guard = loadGuard({ usersByAuthId: { admin: user("admin", "COMPANY_ADMIN") } });
+  const guard = loadGuard({ usersByAuthId: { admin: user("admin", "ADMIN") } });
   const allowed = await guard.call("/dashboard", session("admin"));
   assert.equal(allowed.status, 200);
   for (const file of [
@@ -156,12 +155,12 @@ test("AUTH-ROLE garde réelle : les vrais modules sont exécutés, seuls Prisma,
 test("AUTH-ROLE garde réelle : compte désactivé et entreprise suspendue renvoyés à la connexion", async () => {
   const guard = loadGuard({
     usersByAuthId: {
-      off: user("off", "COMPANY_ADMIN", { status: "INACTIVE" }),
-      suspended: user("suspended", "DISPATCHER", { company: company("c2", { status: "SUSPENDED" }) }),
-      client: user("client", "CLIENT"),
+      off: user("off", "ADMIN", { status: "INACTIVE" }),
+      suspended: user("suspended", "BAKER", { company: company("c2", { status: "SUSPENDED" }) }),
+      client: user("client", "MERCHANT"),
     },
   });
-  for (const [authId, path] of [["off", "/dashboard"], ["suspended", "/dispatch"]] as const) {
+  for (const [authId, path] of [["off", "/dashboard"], ["suspended", "/bakery"]] as const) {
     const response = await guard.call(path, session(authId));
     assert.equal(response.status, 307, authId);
     assert.equal(response.location, `http://localhost:3110/login?redirect=${encodeURIComponent(path)}`, authId);
@@ -172,19 +171,26 @@ test("AUTH-ROLE garde réelle : compte désactivé et entreprise suspendue renvo
   assert.equal(wrongRole.location, "http://localhost:3110/portal");
 });
 
-test("AUTH-ROLE garde réelle : permissions du mini-admin filtrées par ses modules en base", async () => {
+test("AUTH-ROLE garde réelle : chaque rôle relu en base est envoyé vers son espace", async () => {
   const guard = loadGuard({
-    usersByAuthId: { mini: user("mini", "MINI_ADMIN", { settings: buildMiniAdminSettings("Support", ["support"]) }) },
+    usersByAuthId: {
+      admin: user("admin", "ADMIN"),
+      baker: user("baker", "BAKER"),
+      driver: user("driver", "DRIVER"),
+      client: user("client", "MERCHANT"),
+    },
   });
-  assert.equal((await guard.call("/support", session("mini"))).status, 200);
-  for (const path of ["/dashboard", "/users", "/dispatch/map"]) {
-    const expected = path === "/dashboard" ? "http://localhost:3110/support" : "http://localhost:3110/support?acces-refuse=1";
-    assert.equal((await guard.call(path, session("mini"))).location, expected, path);
+  for (const [authId, home] of [["admin", "/dashboard"], ["baker", "/bakery"], ["driver", "/driver"], ["client", "/portal"]] as const) {
+    assert.equal((await guard.call(home, session(authId))).status, 200, authId);
+    assert.equal((await guard.call("/login", session(authId))).location, `http://localhost:3110${home}`, authId);
   }
+  // Le boulanger n'ouvre ni le back-office ni le portail.
+  assert.equal((await guard.call("/users", session("baker"))).location, "http://localhost:3110/bakery?acces-refuse=1");
+  assert.equal((await guard.call("/portal", session("baker"))).location, "http://localhost:3110/bakery?acces-refuse=1");
 });
 
 test("AUTH-ROLE garde réelle : l'en-tête interne usurpé est effacé et remplacé par l'identité vérifiée", async () => {
-  const guard = loadGuard({ usersByAuthId: { admin: user("admin", "COMPANY_ADMIN"), client: user("client", "CLIENT") } });
+  const guard = loadGuard({ usersByAuthId: { admin: user("admin", "ADMIN"), client: user("client", "MERCHANT") } });
   const spoof = { "x-annona-auth-id": "admin" };
   // Anonyme : l'en-tête transmis aux API et pages est supprimé.
   // L'en-tête témoin prouve que la liste des en-têtes transmis est bien réécrite (et pas laissée intacte).

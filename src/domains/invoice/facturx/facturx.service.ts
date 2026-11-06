@@ -1,18 +1,17 @@
 /**
  * Accès base pour Factur-X : chargement d'une facture strictement limitée à l'entreprise
- * (et au client propriétaire côté portail), lecture/écriture des mentions légales de
- * l'entreprise et de l'identité de facturation des clients. Aucune migration : JSON `settings`.
+ * (et au commerçant du client côté portail), lecture/écriture des mentions légales de
+ * l'entreprise (JSON `settings`). L'identité de facturation de l'acheteur vient de la fiche `Merchant`.
  */
 import { Prisma } from "@prisma/client";
 import type { FacturXSource } from "@/domains/invoice/facturx/facturx-mapping";
-import { companyClientWhere, facturXInvoiceWhere, type FacturXInvoiceScope } from "@/domains/invoice/facturx/facturx-scope";
+import { facturXInvoiceWhere, type FacturXInvoiceScope } from "@/domains/invoice/facturx/facturx-scope";
 import { parseBillingSettings } from "@/domains/company/billing-settings.service";
 import { readCompanyLogo } from "@/domains/company/company-logo.service";
 import { generateInvoicePdf, type InvoicePdfData, type InvoicePdfLegalMentions } from "@/lib/pdf/invoice-pdf";
 import {
-  parseStoredClientInvoiceIdentity,
+  clientInvoiceIdentitySchema,
   parseStoredEinvoicingSettings,
-  type ClientInvoiceIdentity,
   type CompanyEinvoicingUpdate,
 } from "@/lib/validations/einvoicing";
 import { settingsSection, updateSettingsWithClaim } from "@/lib/database/claimed-settings-update";
@@ -24,7 +23,7 @@ const asRecord = (value: unknown): Record<string, unknown> =>
 export interface LoadedFacturXInvoice {
   companyId: string;
   reference: string;
-  /** null si la facture n'a plus de client rattaché. */
+  /** Toujours présent : une facture de période a toujours un commerçant (relation obligatoire). */
   source: FacturXSource | null;
   pdf: Omit<InvoicePdfData, "companyLogoPng" | "legal">;
 }
@@ -35,18 +34,26 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
     select: {
       reference: true,
       status: true,
-      createdAt: true,
+      issuedAt: true,
       dueDate: true,
       paidAt: true,
-      amount: true,
-      lineItems: true,
+      periodStart: true,
+      periodEnd: true,
+      subtotalCents: true,
+      vatCents: true,
+      totalCents: true,
       notes: true,
       companyId: true,
-      order: {
-        select: {
-          reference: true,
-          deliveries: { where: { completedAt: { not: null } }, select: { completedAt: true }, orderBy: { completedAt: "desc" }, take: 1 },
-        },
+      lines: {
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+        select: { label: true, quantity: true, unitPriceCents: true, vatRateBasisPoints: true, totalCents: true },
+      },
+      // Dernière commande livrée de la période : date de livraison (BT-72).
+      orders: {
+        where: { status: "DELIVERED" },
+        orderBy: { deliveryDate: "desc" },
+        take: 1,
+        select: { deliveryDate: true },
       },
       company: {
         select: {
@@ -64,81 +71,105 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
           settings: true,
         },
       },
-      customer: {
+      merchant: {
         select: {
-          firstName: true,
-          lastName: true,
-          email: true,
-          settings: true,
-          addresses: { where: { isDefault: true }, select: { address: true, postalCode: true, city: true }, take: 1 },
+          name: true,
+          siren: true,
+          vatNumber: true,
+          address: true,
+          postalCode: true,
+          city: true,
+          billingAddress: true,
+          billingPostalCode: true,
+          billingCity: true,
+          billingEmail: true,
+          contactEmail: true,
         },
       },
     },
   });
   if (!invoice) return null;
 
-  const amount = Number(invoice.amount);
-  const rawLines = Array.isArray(invoice.lineItems) ? (invoice.lineItems as Array<Record<string, unknown>>) : [];
-  const customer = invoice.customer;
   const company = invoice.company;
+  const merchant = invoice.merchant;
   const storedEinvoicing = parseStoredEinvoicingSettings(asRecord(company.settings).einvoicing);
+  const buyerEmail = merchant.billingEmail ?? merchant.contactEmail ?? null;
+  const identity = clientInvoiceIdentitySchema.safeParse({
+    companyName: merchant.name,
+    siren: merchant.siren ?? undefined,
+    vatNumber: merchant.vatNumber ?? undefined,
+    address: merchant.billingAddress ?? merchant.address,
+    postalCode: merchant.billingPostalCode ?? merchant.postalCode ?? "",
+    city: merchant.billingCity ?? merchant.city ?? "",
+    countryCode: "FR",
+  });
+  // Montant affiché du relevé : HT par ligne, puis TVA par taux (même calcul que le Factur-X).
+  const vatByRate = new Map<number, number>();
+  for (const line of invoice.lines) {
+    vatByRate.set(line.vatRateBasisPoints, (vatByRate.get(line.vatRateBasisPoints) ?? 0) + line.totalCents);
+  }
 
   return {
     companyId: invoice.companyId,
     reference: invoice.reference,
-    source: customer
-      ? {
-          invoice: {
-            reference: invoice.reference,
-            status: invoice.status,
-            createdAt: invoice.createdAt,
-            dueDate: invoice.dueDate,
-            amount,
-            lineItems: invoice.lineItems,
-            notes: invoice.notes,
-            orderReference: invoice.order?.reference ?? null,
-            deliveryDate: invoice.order?.deliveries[0]?.completedAt ?? null,
-          },
-          seller: {
-            name: company.name,
-            legalName: company.legalName,
-            siren: company.siren,
-            siret: company.siret,
-            email: company.email,
-            billingAddress: company.billingAddress,
-            billingPostalCode: company.billingPostalCode,
-            billingCity: company.billingCity,
-            country: company.country,
-          },
-          einvoicing: storedEinvoicing.settings,
-          einvoicingInvalidFields: storedEinvoicing.invalidFields,
-          buyer: {
-            firstName: customer.firstName,
-            lastName: customer.lastName,
-            email: customer.email,
-            identity: parseStoredClientInvoiceIdentity(asRecord(customer.settings).invoiceIdentity),
-            defaultAddress: customer.addresses[0] ?? null,
-          },
-        }
-      : null,
-    // Mêmes données que le relevé PDF actuel, pour un rendu visuel identique.
+    source: {
+      invoice: {
+        reference: invoice.reference,
+        status: invoice.status,
+        createdAt: invoice.issuedAt,
+        dueDate: invoice.dueDate,
+        lines: invoice.lines.map(({ label, quantity, unitPriceCents, vatRateBasisPoints }) => ({ label, quantity, unitPriceCents, vatRateBasisPoints })),
+        subtotalCents: invoice.subtotalCents,
+        vatCents: invoice.vatCents,
+        totalCents: invoice.totalCents,
+        notes: invoice.notes,
+        orderReference: null,
+        deliveryDate: invoice.orders[0]?.deliveryDate ?? invoice.periodEnd,
+      },
+      seller: {
+        name: company.name,
+        legalName: company.legalName,
+        siren: company.siren,
+        siret: company.siret,
+        email: company.email,
+        billingAddress: company.billingAddress,
+        billingPostalCode: company.billingPostalCode,
+        billingCity: company.billingCity,
+        country: company.country,
+      },
+      einvoicing: storedEinvoicing.settings,
+      einvoicingInvalidFields: storedEinvoicing.invalidFields,
+      buyer: {
+        firstName: merchant.name,
+        lastName: "",
+        email: buyerEmail,
+        identity: identity.success ? identity.data : null,
+        defaultAddress: { address: merchant.address, postalCode: merchant.postalCode, city: merchant.city },
+      },
+    },
+    // Relevé PDF : lignes HT puis une ligne de TVA par taux, en euros (format du générateur PDF).
     pdf: {
       reference: invoice.reference,
       status: invoice.status,
-      createdAt: invoice.createdAt,
+      createdAt: invoice.issuedAt,
       dueDate: invoice.dueDate,
       paidAt: invoice.paidAt,
-      amount,
-      lineItems: rawLines.map((line) => ({
-        label: String(line.label ?? ""),
-        amount: line.amount as number,
-        quantity: line.quantity as number,
-      })),
+      amount: invoice.totalCents / 100,
+      lineItems: [
+        ...invoice.lines.map((line) => ({ label: line.label, amount: line.unitPriceCents / 100, quantity: line.quantity })),
+        ...[...vatByRate.entries()]
+          .filter(([rate]) => rate > 0)
+          .map(([rate, basis]) => ({
+            label: `TVA (${(rate / 100).toLocaleString("fr-FR")} %)`,
+            amount: Math.round((basis * rate) / 10_000) / 100,
+            quantity: 1,
+          })),
+      ],
       notes: invoice.notes,
-      orderReference: invoice.order?.reference ?? null,
+      orderReference: null,
       company: { name: company.name, email: company.email, address: company.address, city: company.city },
-      customerName: customer ? `${customer.firstName} ${customer.lastName}`.trim() : null,
-      customerEmail: customer?.email ?? null,
+      customerName: merchant.name,
+      customerEmail: buyerEmail,
       // Pied de page lu dans les réglages déjà chargés : pas de seconde lecture de Company.settings.
       footerNote: parseBillingSettings(asRecord(company.settings).billing).invoice.footerNote ?? null,
     },
@@ -211,31 +242,4 @@ export async function updateCompanyEinvoicing(companyId: string, input: CompanyE
   });
   if (result === "missing") throw new Error("COMPANY_NOT_FOUND");
   return input;
-}
-
-// ---------------------------------------------------------------------------
-// Identité de facturation d'un client de l'entreprise
-// ---------------------------------------------------------------------------
-
-export async function getClientInvoiceIdentity(companyId: string, clientId: string) {
-  const client = await prisma.user.findFirst({ where: companyClientWhere(companyId, clientId), select: { settings: true } });
-  if (!client) return undefined;
-  return parseStoredClientInvoiceIdentity(asRecord(client.settings).invoiceIdentity);
-}
-
-export async function updateClientInvoiceIdentity(companyId: string, clientId: string, identity: ClientInvoiceIdentity) {
-  const where = companyClientWhere(companyId, clientId);
-  const result = await updateSettingsWithClaim({
-    load: () => prisma.user.findFirst({ where, select: { settings: true, updatedAt: true } }),
-    apply: (current) => ({ ...current, invoiceIdentity: identity }),
-    section: settingsSection("invoiceIdentity"),
-    save: async (settings, claim) => {
-      const claimed = await prisma.user.updateMany({
-        where: { ...where, updatedAt: claim.expected },
-        data: { settings: settings as Prisma.InputJsonValue, updatedAt: claim.next },
-      });
-      return claimed.count === 1;
-    },
-  });
-  return result === "saved" ? identity : null;
 }

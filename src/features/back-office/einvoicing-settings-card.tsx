@@ -38,7 +38,7 @@ const FIELDS: Field[] = [
 /** Mentions légales et Factur-X : visible et modifiable par l'administrateur de l'entreprise uniquement. */
 export function EinvoicingSettingsCard() {
   const { isRole } = usePermissions();
-  const isAdmin = isRole(["COMPANY_ADMIN"]);
+  const isAdmin = isRole(["ADMIN"]);
   const { data, isError } = useCompanyEinvoicing(isAdmin);
   const update = useUpdateCompanyEinvoicing();
   const [values, setValues] = useState<Record<string, string>>({});

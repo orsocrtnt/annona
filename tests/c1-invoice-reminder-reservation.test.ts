@@ -13,7 +13,7 @@ import { createInvoiceFakeDb, invoice, type FakeInvoice, type FakeReminder } fro
 // ou envoyée dans les 24 h ; la création (bouton) et l'envoi (tâche) prennent le même verrou.
 const NOW = new Date("2026-10-28T10:00:00.000Z");
 const HOUR = 3_600_000;
-const USERS = [{ id: "client_a", companyId: "company_a", email: "client.a@example.test", firstName: "Studio", lastName: "Oberkampf" }];
+const MERCHANTS = [{ id: "merchant_a", companyId: "company_a", billingEmail: "client.a@example.test", contactEmail: null }];
 const KEY = "client-notification:invoice-reminder:r1";
 
 const EMAIL_ENV = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "Annona <no-reply@example.test>" };
@@ -25,7 +25,7 @@ const providerSend = (status: number, name: string) =>
 function setup(r1: Partial<FakeReminder> = {}, invoiceOverrides: Partial<FakeInvoice> = {}) {
   const db = createInvoiceFakeDb({
     invoices: [invoice({ id: "inv", status: "OVERDUE", ...invoiceOverrides })],
-    users: USERS,
+    merchants: MERCHANTS,
     companies: [{ id: "company_a", name: "Coursiers A", settings: {} }],
     // R1 : ancienne relance, créée il y a plus de 24 h, remise en file par l'exploitation.
     reminders: [{
@@ -39,7 +39,6 @@ function setup(r1: Partial<FakeReminder> = {}, invoiceOverrides: Partial<FakeInv
     db: db as never,
     now: NOW,
     appUrl: "https://app.example.test",
-    getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
     send: async (input: { to: string; subject: string; text: string; idempotencyKey: string }) => {
       sent.push({ to: input.to, idempotencyKey: input.idempotencyKey });
       const hook = hooks.duringSend;
@@ -151,7 +150,7 @@ test("C1 : facture payée entre-temps — aucun envoi ; une reprise orpheline de
 
 test("C1 : limite de débit (429) sur une première tentative — réservation libérée (QUEUED) pour le rejeu", async () => {
   const { db, deliver, r } = setup();
-  const deps = { db: db as never, now: NOW, getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }) };
+  const deps = { db: db as never, now: NOW };
   await assert.rejects(
     deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
       ...deps, send: providerSend(429, "rate_limit_exceeded"),
@@ -170,7 +169,6 @@ test("C5 : 503 du fournisseur = issue inconnue — la réservation SENDING est g
   await assert.rejects(
     deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
       db: db as never, now: NOW,
-      getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
       send: providerSend(503, "service_unavailable"),
     }),
     /EMAIL_PROVIDER_HTTP_503/
@@ -188,7 +186,6 @@ test("C4 : acceptation avec réponse perdue — R1 reste SENDING et un clic ne c
   const sentKeys: string[] = [];
   const deps = {
     db: db as never, now: NOW,
-    getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
     send: async (input: { idempotencyKey: string }) => { sentKeys.push(input.idempotencyKey); throw lostResponse(); },
   };
   await assert.rejects(
@@ -214,12 +211,12 @@ test("C4 : reprise après expiration de la réservation — même clé d'idempot
   const payload = { kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never;
   const keys: string[] = [];
   await assert.rejects(deliverInvoiceReminderJob(payload, KEY, {
-    db: db as never, now: NOW, getClientSettings: settings,
+    db: db as never, now: NOW,
     send: async (input: { idempotencyKey: string }) => { keys.push(input.idempotencyKey); throw lostResponse(); },
   }));
   const later = new Date(NOW.getTime() + (INVOICE_REMINDER_SENDING_TTL_MINUTES + 1) * 60_000);
   await deliverInvoiceReminderJob(payload, "autre-cle-de-tache", {
-    db: db as never, now: later, getClientSettings: settings,
+    db: db as never, now: later,
     send: async (input: { idempotencyKey: string }) => { keys.push(input.idempotencyKey); return { status: "sent" }; },
   });
   assert.deepEqual(keys, [KEY, KEY], "le fournisseur déduplique : un seul e-mail");
@@ -231,7 +228,6 @@ test("C4 : refus 4xx certain — réservation libérée, une nouvelle relance es
   const { db, remind, r } = setup();
   await assert.rejects(deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
     db: db as never, now: NOW,
-    getClientSettings: async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true }),
     send: providerSend(422, "missing_required_field"),
   }), /EMAIL_PROVIDER_HTTP_422/);
   assert.equal(r("r1")?.result, "QUEUED");

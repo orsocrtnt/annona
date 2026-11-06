@@ -1,6 +1,5 @@
 import { AccountUnavailableError, assertAccountActive } from "@/lib/auth/account-access";
 import { prisma } from "@/services/prisma/client";
-import { linkPortalDataToClient } from "@/domains/client-portal/client-data.service";
 import { hydrateUserWithRole, getUserByAuthId } from "@/domains/user/user.service";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
 import type { SystemRole } from "@prisma/client";
@@ -30,11 +29,7 @@ export async function syncUserFromSupabase(
   if (existing) {
     const hydrated = existing;
     assertAccountActive(hydrated);
-    await Promise.all([
-      prisma.user.update({ where: { id: existing.id }, data: { lastLoginAt: new Date() } }),
-      ...(hydrated.role.systemRole === "CLIENT"
-        ? [linkPortalDataToClient(existing.id, email, existing.companyId ?? null)] : []),
-    ]);
+    await prisma.user.update({ where: { id: existing.id }, data: { lastLoginAt: new Date() } });
     return hydrated;
   }
 
@@ -59,7 +54,6 @@ export async function syncUserFromSupabase(
       },
       include: { company: true },
     });
-    await linkPortalDataToClient(user.id, email, user.companyId);
     return hydrateUserWithRole(user);
   }
 
@@ -69,6 +63,6 @@ export async function syncUserFromSupabase(
   throw new UserNotProvisionedError();
 }
 
-export function getDashboardPathForRole(role: SystemRole, settings?: unknown): string {
-  return getRoleHomePath(role, settings);
+export function getDashboardPathForRole(role: SystemRole): string {
+  return getRoleHomePath(role);
 }

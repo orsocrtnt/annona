@@ -3,7 +3,15 @@ import { prisma } from "@/services/prisma/client";
 import { STAFF_ROLES } from "@/lib/permissions/rbac";
 
 /** Utilisateur connecté qui lit une commande : son entreprise, son rôle et ses permissions viennent de la session. */
-export type OrderActor = { id: string; companyId: string | null; role: SystemRole; permissions: string[]; name: string };
+export type OrderActor = {
+  id: string;
+  companyId: string | null;
+  /** Commerçant représenté (rôle MERCHANT). */
+  merchantId?: string | null;
+  role: SystemRole;
+  permissions: string[];
+  name: string;
+};
 
 export class OrderAccessError extends Error {
   constructor(public status: number, message: string) { super(message); this.name = "OrderAccessError"; }
@@ -11,12 +19,21 @@ export class OrderAccessError extends Error {
 
 export function isOrderStaff(actor: OrderActor) { return STAFF_ROLES.includes(actor.role); }
 
-/** Commandes visibles : celles du client, celles confiées au livreur, ou toute l'entreprise pour l'équipe. */
+/**
+ * Commandes visibles, toujours bornées à l'entreprise (PLA-01) : celles de son commerçant pour un
+ * client, celles de ses tournées pour un livreur, toute l'entreprise pour l'administrateur et le boulanger.
+ */
 export function orderActorScope(actor: OrderActor): Prisma.OrderWhereInput {
   if (!actor.companyId) throw new OrderAccessError(403, "Entreprise non associée.");
-  if (actor.role === "CLIENT" && actor.permissions.includes("dashboard:client")) return { companyId: actor.companyId, customerId: actor.id };
-  if (actor.role === "DRIVER" && actor.permissions.includes("dashboard:driver")) return { companyId: actor.companyId, deliveries: { some: { companyId: actor.companyId, driverId: actor.id } } };
-  if (isOrderStaff(actor) && actor.permissions.some(p => ["orders:read", "deliveries:read"].includes(p))) return { companyId: actor.companyId };
+  const companyId = actor.companyId;
+  if (actor.role === "MERCHANT" && actor.permissions.includes("dashboard:merchant")) {
+    if (!actor.merchantId) throw new OrderAccessError(403, "Compte client non rattaché à un commerçant.");
+    return { companyId, merchantId: actor.merchantId };
+  }
+  if (actor.role === "DRIVER" && actor.permissions.includes("dashboard:driver")) {
+    return { companyId, stop: { is: { companyId, round: { is: { companyId, driverId: actor.id } } } } };
+  }
+  if ((isOrderStaff(actor) || actor.role === "BAKER") && actor.permissions.includes("orders:read")) return { companyId };
   throw new OrderAccessError(403, "Accès refusé.");
 }
 

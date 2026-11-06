@@ -17,7 +17,7 @@ function loadRoute(options: { role?: string; serviceError?: string; logo?: Buffe
     }
     static json(body: unknown, init?: { status?: number }) { return { status: init?.status ?? 200, body }; }
   }
-  const context = { user: { companyId: "company_a" }, role: options.role ?? "COMPANY_ADMIN" };
+  const context = { user: { companyId: "company_a" }, role: options.role ?? "ADMIN" };
   const deps: Record<string, unknown> = {
     "next/server": { NextResponse: FakeResponse },
     "@/lib/api/auth-guard": {

@@ -4,15 +4,16 @@ import { getPageAccessRule } from "./page-access";
 export const RESOURCES = [
   "users",
   "companies",
-  "deliveries",
+  "merchants",
+  "catalog",
   "orders",
-  "drivers",
-  "vehicles",
-  "analytics",
-  "settings",
-  "dashboard",
+  "production",
+  "rounds",
+  "stops",
   "invoices",
+  "settings",
   "support",
+  "dashboard",
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];
@@ -23,12 +24,11 @@ export const ACTIONS = [
   "update",
   "delete",
   "manage",
-  "dispatch",
   "admin",
   "company",
-  "dispatcher",
+  "baker",
   "driver",
-  "client",
+  "merchant",
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];
@@ -37,29 +37,22 @@ export type PermissionSlug = `${Resource}:${Action}`;
 
 export const ROLE_HIERARCHY: Record<SystemRole, number> = {
   SUPER_ADMIN: 100,
-  COMPANY_ADMIN: 80,
-  MINI_ADMIN: 70,
-  DISPATCHER: 60,
+  ADMIN: 80,
+  BAKER: 50,
   DRIVER: 40,
-  CLIENT: 20,
+  MERCHANT: 20,
 };
 
 export const ROLE_LABELS: Record<SystemRole, string> = {
-  SUPER_ADMIN: "Super Admin",
-  COMPANY_ADMIN: "Administrateur",
-  MINI_ADMIN: "Mini-admin",
-  DISPATCHER: "Dispatcher",
+  SUPER_ADMIN: "Super-administrateur",
+  ADMIN: "Administrateur",
+  BAKER: "Boulanger",
   DRIVER: "Livreur",
-  CLIENT: "Client",
+  MERCHANT: "Client",
 };
 
-/** Personnel interne (back-office), hors client et livreur. */
-export const STAFF_ROLES: SystemRole[] = [
-  "SUPER_ADMIN",
-  "COMPANY_ADMIN",
-  "MINI_ADMIN",
-  "DISPATCHER",
-];
+/** Personnel de l'entreprise qui gère le back-office (hors boulanger, livreur et client). */
+export const STAFF_ROLES: SystemRole[] = ["SUPER_ADMIN", "ADMIN"];
 
 export function hasPermission(
   userPermissions: string[],

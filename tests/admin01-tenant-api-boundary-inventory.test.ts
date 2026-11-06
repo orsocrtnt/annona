@@ -25,10 +25,6 @@ function functionBodies(source: string) {
 }
 
 function observe(scan: string) {
-  // Garde partagée de DISPATCHER-403 (src/lib/api/dispatch-settings-read-guard.ts), décrite dans l'inventaire.
-  if (scan.includes("requireDispatchSettingsReader()")) {
-    return { permission: "settings:read ou deliveries:dispatch", role: "COMPANY_ADMIN, MINI_ADMIN, DISPATCHER" };
-  }
   const permissions = [...scan.matchAll(/requireStaffRole\(\s*"([^"]+)"\s*\)/g)].map((match) => match[1]);
   const permission = permissions.length > 0 ? permissions.join(", ") : scan.includes("requireStaffRole()") ? "requireStaffRole()" : "aucun";
   const roles = scan.match(/requireRole\([^)]*\[([^\]]*)\]/);
@@ -77,11 +73,11 @@ function documented() {
 test("ADMIN-1 inventaire entreprise : chaque route avec getCompanyId est documentée", () => {
   const found = discover();
   const listed = documented();
-  assert.equal(found.length, 63);
-  assert.equal(new Set(found.map((row) => row.file)).size, 44);
+  assert.equal(found.length, 13);
+  assert.equal(new Set(found.map((row) => row.file)).size, 7);
   assert.deepEqual(listed, found);
   const note = readFileSync(inventoryPath, "utf8");
-  assert.equal(note.includes("orderActorAuth"), true);
   assert.equal(note.includes("requireSupportStaff"), true);
-  assert.equal(note.includes("requireDispatchSettingsReader"), true);
+  // SCHEMA-1 : seul l'administrateur de l'entreprise reste derrière ces routes.
+  for (const row of found) assert.ok(row.role === "ADMIN" || row.role === "aucun", `${row.file} ${row.method}`);
 });

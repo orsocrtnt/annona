@@ -16,14 +16,13 @@ export type FakeInvoice = {
   id: string;
   reference: string;
   status: "DRAFT" | "PENDING" | "PAID" | "OVERDUE" | "CANCELLED";
-  amount: number;
-  lineItems: unknown[];
+  /** Montant TTC en centimes. */
+  totalCents: number;
   notes: string | null;
   dueDate: Date | null;
   paidAt: Date | null;
   companyId: string;
-  orderId: string | null;
-  customerId: string | null;
+  merchantId: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -86,15 +85,14 @@ export function createInvoiceFakeDb(seed: {
   invoices?: FakeInvoice[];
   reminders?: FakeReminder[];
   jobs?: FakeJob[];
-  users?: Array<{ id: string; companyId: string | null; email: string; firstName: string; lastName: string }>;
-  orders?: Array<{ id: string; companyId: string; reference: string }>;
+  /** Commerçants facturés : la relance part vers `billingEmail`, sinon `contactEmail`. */
+  merchants?: Array<{ id: string; companyId: string; billingEmail: string | null; contactEmail: string | null }>;
   companies?: Array<{ id: string; name: string; settings: unknown }>;
 } = {}) {
   const invoices = seed.invoices ?? [];
   const reminders = seed.reminders ?? [];
   const jobs = seed.jobs ?? [];
-  const users = seed.users ?? [];
-  const orders = seed.orders ?? [];
+  const merchants = seed.merchants ?? [];
   const companies = seed.companies ?? [];
   const log: string[] = [];
   let sequence = 0;
@@ -103,14 +101,13 @@ export function createInvoiceFakeDb(seed: {
   const tick = () => new Date((clock += 1000));
 
   const withInvoiceRelations = (invoice: FakeInvoice) => {
-    const customer = users.find((user) => user.id === invoice.customerId) ?? null;
-    const order = orders.find((candidate) => candidate.id === invoice.orderId) ?? null;
+    const merchant = merchants.find((candidate) => candidate.id === invoice.merchantId) ?? null;
     const company = companies.find((candidate) => candidate.id === invoice.companyId) ?? null;
     const last = reminders
       .filter((reminder) => reminder.invoiceId === invoice.id)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .map((reminder) => ({ ...reminder, operationJob: jobs.find((job) => job.id === reminder.operationJobId) ?? null }));
-    return { ...invoice, customer, order, company, reminders: last };
+    return { ...invoice, merchant, company, reminders: last };
   };
 
   const db = {
@@ -118,7 +115,7 @@ export function createInvoiceFakeDb(seed: {
     invoices,
     reminders,
     jobs,
-    users,
+    merchants,
     companies,
     async $queryRaw(strings: TemplateStringsArray, ...values: unknown[]) {
       log.push(`lock:${strings.join("?").replace(/\s+/g, " ").trim()}:${values.join(",")}`);
@@ -259,14 +256,12 @@ export function invoice(overrides: Partial<FakeInvoice> & { id: string }): FakeI
   return {
     reference: `FAC-${overrides.id.toUpperCase()}`,
     status: "PENDING",
-    amount: 45,
-    lineItems: [],
+    totalCents: 4500,
     notes: null,
     dueDate: new Date("2026-10-20T10:00:00.000Z"),
     paidAt: null,
     companyId: "company_a",
-    orderId: null,
-    customerId: "client_a",
+    merchantId: "merchant_a",
     createdAt: new Date("2026-09-20T10:00:00.000Z"),
     updatedAt: new Date("2026-09-20T10:00:00.000Z"),
     ...overrides,

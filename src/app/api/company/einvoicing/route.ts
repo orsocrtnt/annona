@@ -12,7 +12,7 @@ export async function GET() {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("settings:read");
     if ("error" in auth) return auth.error;
-    const denied = requireRole(auth.context, ["COMPANY_ADMIN"]);
+    const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
     if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
@@ -31,7 +31,7 @@ export async function PATCH(request: Request) {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("settings:update");
     if ("error" in auth) return auth.error;
-    const denied = requireRole(auth.context, ["COMPANY_ADMIN"]);
+    const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
     if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });

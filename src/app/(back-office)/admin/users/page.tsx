@@ -16,11 +16,10 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 const ROLES = [
   { value: "SUPER_ADMIN", label: "Super admin" },
-  { value: "COMPANY_ADMIN", label: "Administrateur" },
-  { value: "MINI_ADMIN", label: "Mini-admin" },
-  { value: "DISPATCHER", label: "Dispatcher" },
+  { value: "ADMIN", label: "Administrateur" },
+  { value: "BAKER", label: "Boulanger" },
   { value: "DRIVER", label: "Livreur" },
-  { value: "CLIENT", label: "Client" },
+  { value: "MERCHANT", label: "Client" },
 ] as const;
 const STATUSES = [
   { value: "ACTIVE", label: "Actif" },

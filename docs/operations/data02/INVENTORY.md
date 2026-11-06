@@ -1,6 +1,6 @@
 # DATA-02 — inventaire technique
 
-Date : 2026-10-25. Inventaire des modèles Prisma observés. Aucune durée de conservation n'est choisie ici. Aucune suppression n'est décidée. Auth et Storage ne sont pas lus.
+Date : 2026-10-25, mis à jour le 2026-11-06 (SCHEMA-1, modèle boulangerie, export version 2). Inventaire des modèles Prisma observés. Aucune durée de conservation n'est choisie ici. Aucune suppression n'est décidée. Auth et Storage ne sont pas lus.
 
 Classes : directe (activité de l'entreprise), indirecte (trace rattachée), plateforme (hors entreprise cliente), partagée (à la fois entreprise et plateforme), technique (mécanisme).
 
@@ -9,28 +9,34 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | Modèle | Classe | Clé d'isolation observée | Export entreprise |
 | --- | --- | --- | --- |
 | Company | directe | id | oui |
-| User | partagée | companyId nullable | oui |
-| ClientNotification | indirecte | userId | oui |
-| CustomerAddress | directe | userId | oui |
-| DriverLocation | directe | driverId | oui |
+| User | partagée | companyId nullable (super-administrateur) | oui |
+| Merchant | directe | companyId | oui |
+| Category | directe | companyId | oui |
+| Product | directe | companyId | oui |
+| MerchantPrice | directe | companyId | oui |
+| Slot | directe | companyId | oui |
 | Order | directe | companyId | oui |
-| OrderItem | directe | orderId | oui |
-| OrderStop | directe | orderId | oui |
-| Delivery | directe | companyId | oui |
-| TrackingEvent | directe | deliveryId | oui |
+| OrderLine | directe | companyId | oui |
 | RecurringOrder | directe | companyId | oui |
+| RecurringOrderLine | directe | companyId | oui |
+| Round | directe | companyId | oui |
+| Stop | directe | companyId | oui |
 | Invoice | directe | companyId | oui |
+| InvoiceLine | directe | companyId | oui |
+| Payment | directe | companyId | oui |
 | InvoiceCounter | directe | companyId | non |
 | InvoiceReminder | indirecte | companyId | non |
+| AuditLog | directe | companyId | oui |
 | SupportTicket | directe | companyId | oui |
-| SupportTicketMessage | directe | ticketId | oui |
+| SupportTicketMessage | directe | companyId | oui |
+| ClientNotification | indirecte | companyId, userId | oui |
+| DriverLocation | directe | companyId, driverId | oui |
+| DriverPushSubscription | directe | companyId, userId | non |
 | OperationJob | technique | companyId nullable | partiel |
 | Role | plateforme | aucune, table globale | partiel |
 | Permission | plateforme | aucune, table globale | non |
 | RolePermission | plateforme | roleId | non |
 | AuthLoginFailure | technique | aucune, empreinte HMAC transitoire (15 min) | non |
-| DriverPushSubscription | directe | userId, companyId | non |
-| CompanyCustomer | directe | companyId, userId | oui |
 
 ## Absents de l'export
 
@@ -41,7 +47,7 @@ Role et OperationJob n'y sont que partiels : le rôle est recopié par son nom s
 
 ## Auth et Storage
 
-Non lus pour cet inventaire. L'export exclut déjà les identifiants Auth. Les preuves photo sont des clés d'objets d'un bucket privé, listées à part, pas copiées par l'inventaire.
+Non lus pour cet inventaire. L'export exclut déjà les identifiants Auth. Les photos d'incident des arrêts sont des clés d'objets d'un bucket privé, listées à part, pas copiées par l'inventaire.
 
 ## Contrat d'export local
 

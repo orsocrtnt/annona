@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireClientRole } from "@/lib/api/auth-guard";
+import { requireMerchantRole } from "@/lib/api/auth-guard";
 import { buildFacturXPdf, facturXHttpResult, safeFilename } from "@/domains/invoice/facturx/facturx-document";
 import { loadFacturXInvoice, renderClassicInvoicePdf } from "@/domains/invoice/facturx/facturx.service";
 
@@ -13,7 +13,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireClientRole();
+  const auth = await requireMerchantRole();
   if ("error" in auth) return auth.error;
   const companyId = auth.context.user.companyId;
   if (!companyId) {

@@ -22,12 +22,12 @@ test("ADMIN-1 vue plateforme : les entreprises récentes n'emportent plus le slu
             seen.select = args.select;
             seen.orderBy = args.orderBy;
             seen.take = args.take;
-            return [{ id: "company-1", name: "Nord", status: "ACTIVE", _count: { users: 2, deliveries: 3 } }];
+            return [{ id: "company-1", name: "Nord", status: "ACTIVE", _count: { users: 2, orders: 3 } }];
           },
         },
         user: { count: async () => 9 },
-        delivery: { count: async () => 6 },
-        invoice: { aggregate: async (args: unknown) => { seen.invoice = args; return { _sum: { amount: 12 } }; } },
+        order: { count: async () => 6 },
+        invoice: { aggregate: async (args: unknown) => { seen.invoice = args; return { _sum: { totalCents: 1200 } }; } },
       },
     },
     "@/lib/query/list-limits": limits.exports,
@@ -41,7 +41,7 @@ test("ADMIN-1 vue plateforme : les entreprises récentes n'emportent plus le slu
   });
   const overview = await module.exports.getPlatformOverview!(new Date("2026-10-25T12:00:00.000Z"));
   assert.equal(Object.keys(seen.select ?? {}).sort().join(","), "_count,id,name,status");
-  assert.equal(JSON.stringify(seen.select?._count), JSON.stringify({ select: { users: true, deliveries: true } }));
+  assert.equal(JSON.stringify(seen.select?._count), JSON.stringify({ select: { users: true, orders: true } }));
   assert.equal(JSON.stringify(seen.orderBy), JSON.stringify({ createdAt: "desc" }));
   assert.equal(seen.take, limits.exports.PLATFORM_COMPANIES_TAKE);
   assert.equal(JSON.stringify(seen.invoice).includes("PAID"), true);

@@ -22,7 +22,7 @@ function load(role: string, calls: string[]) {
       },
       requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => {
         calls.push("role");
-        assert.equal([...roles].join(","), "COMPANY_ADMIN,MINI_ADMIN,DISPATCHER");
+        assert.equal([...roles].join(","), "ADMIN");
         return roles.includes(context.user.role.systemRole)
           ? null
           : NextResponse.json({ error: "Accès refusé" }, { status: 403 });
@@ -52,11 +52,11 @@ test("ADMIN-1 jobs entreprise : santé et relance refusées avant l'entreprise",
   const route = load("SUPER_ADMIN", calls);
   assert.equal((await route.GET!()).status, 403);
   assert.equal((await route.POST!()).status, 403);
-  assert.deepEqual(calls, ["staff:deliveries:dispatch", "role", "staff:deliveries:dispatch", "role"]);
+  assert.deepEqual(calls, ["staff:settings:read", "role", "staff:settings:read", "role"]);
 });
 
 test("ADMIN-1 jobs entreprise : les trois rôles conservent santé et relance", async () => {
-  for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]) {
+  for (const role of ["ADMIN"]) {
     const calls: string[] = [];
     const route = load(role, calls);
     const health = await route.GET!();

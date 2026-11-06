@@ -6,6 +6,7 @@ export interface PlatformCompany {
   name: string;
   status: string;
   users: number;
+  /** Commandes de l'entreprise (tous statuts). */
   deliveries: number;
 }
 
@@ -30,9 +31,9 @@ export async function getPlatformOverview(now: Date = new Date()): Promise<Platf
     await Promise.all([
       prisma.company.count({ where: { status: "ACTIVE" } }),
       prisma.user.count(),
-      prisma.delivery.count({ where: { createdAt: { gte: startOfToday, lt: endOfToday } } }),
+      prisma.order.count({ where: { status: "DELIVERED", deliveredAt: { gte: startOfToday, lt: endOfToday } } }),
       prisma.invoice.aggregate({
-        _sum: { amount: true },
+        _sum: { totalCents: true },
         where: { status: "PAID", paidAt: { gte: startOfMonth, lt: endOfMonth } },
       }),
       prisma.company.findMany({
@@ -42,7 +43,7 @@ export async function getPlatformOverview(now: Date = new Date()): Promise<Platf
           id: true,
           name: true,
           status: true,
-          _count: { select: { users: true, deliveries: true } },
+          _count: { select: { users: true, orders: true } },
         },
       }),
     ]);
@@ -52,14 +53,14 @@ export async function getPlatformOverview(now: Date = new Date()): Promise<Platf
       activeCompanies,
       totalUsers,
       deliveriesToday,
-      paidDeliveryInvoiceRevenue: Number(paidThisMonth._sum.amount ?? 0),
+      paidDeliveryInvoiceRevenue: (paidThisMonth._sum.totalCents ?? 0) / 100,
     },
     companies: companies.map((c) => ({
       id: c.id,
       name: c.name,
       status: c.status,
       users: c._count.users,
-      deliveries: c._count.deliveries,
+      deliveries: c._count.orders,
     })),
   };
 }

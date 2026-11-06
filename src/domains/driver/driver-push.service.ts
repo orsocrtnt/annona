@@ -6,12 +6,12 @@ const MAX_SUBSCRIPTIONS_PER_DRIVER = 5;
 const PUSH_TTL_SECONDS = 60 * 60;
 const PUSH_TIMEOUT_MS = 10_000;
 
-/** Texte générique : le service de notification du fabricant ne reçoit aucune donnée de mission. */
+/** Texte générique : le service de notification du fabricant ne reçoit aucune donnée de tournée. */
 export const NEW_MISSION_PUSH = {
-  title: "Nouvelle mission",
-  body: "Une mission vous a été confiée. Ouvrez Annona pour la voir.",
-  url: "/driver/missions",
-  tag: "nouvelle-mission",
+  title: "Nouvelle tournée",
+  body: "Une tournée vous a été attribuée. Ouvrez Annona pour la voir.",
+  url: "/driver",
+  tag: "nouvelle-tournee",
 } as const;
 
 type PushTarget = { endpoint: string; p256dh: string; auth: string };
@@ -72,9 +72,9 @@ export async function removeDriverPushSubscription(
 
 function readPayload(payload: Prisma.JsonValue) {
   if (!payload || Array.isArray(payload) || typeof payload !== "object") return null;
-  const { companyId, deliveryId, driverId } = payload;
-  if (typeof companyId !== "string" || typeof deliveryId !== "string" || typeof driverId !== "string") return null;
-  return { companyId, deliveryId, driverId };
+  const { companyId, roundId, driverId } = payload;
+  if (typeof companyId !== "string" || typeof roundId !== "string" || typeof driverId !== "string") return null;
+  return { companyId, roundId, driverId };
 }
 
 function isGoneSubscription(error: unknown) {
@@ -85,7 +85,7 @@ function isGoneSubscription(error: unknown) {
 export async function deliverDriverMissionPush(
   payload: Prisma.JsonValue,
   deps: {
-    db?: Pick<typeof prisma, "delivery" | "driverPushSubscription">;
+    db?: Pick<typeof prisma, "round" | "driverPushSubscription">;
     send?: PushSender;
     config?: PushConfig | null;
   } = {}
@@ -97,10 +97,10 @@ export async function deliverDriverMissionPush(
   const db = deps.db ?? prisma;
   const send = deps.send ?? sendWebPush;
 
-  // Relu à l'envoi : une mission retirée ou réaffectée entre-temps ne sonne plus chez ce livreur.
-  const mission = await db.delivery.findFirst({
+  // Relu à l'envoi : une tournée retirée ou réattribuée entre-temps ne sonne plus chez ce livreur.
+  const round = await db.round.findFirst({
     where: {
-      id: input.deliveryId,
+      id: input.roundId,
       companyId: input.companyId,
       driverId: input.driverId,
       status: "ASSIGNED",
@@ -108,7 +108,7 @@ export async function deliverDriverMissionPush(
     },
     select: { id: true },
   });
-  if (!mission) throw skippedJobError("DRIVER_PUSH_MISSION_OBSOLETE");
+  if (!round) throw skippedJobError("DRIVER_PUSH_MISSION_OBSOLETE");
 
   const targets = await db.driverPushSubscription.findMany({
     where: { userId: input.driverId, companyId: input.companyId },

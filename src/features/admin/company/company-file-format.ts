@@ -10,20 +10,18 @@ export const COMPANY_STATUS_LABELS: Record<string, string> = {
 };
 
 export const ROLE_LABELS_PLURAL: Record<SystemRole, string> = {
-  COMPANY_ADMIN: "Administrateurs",
-  MINI_ADMIN: "Mini-admins",
-  DISPATCHER: "Dispatchers",
+  ADMIN: "Administrateurs",
+  BAKER: "Boulangers",
   DRIVER: "Livreurs",
-  CLIENT: "Clients",
+  MERCHANT: "Clients",
   SUPER_ADMIN: "Super admins",
 };
 
 export const ROLE_LABELS_SINGULAR: Record<SystemRole, string> = {
-  COMPANY_ADMIN: "Administrateur",
-  MINI_ADMIN: "Mini-admin",
-  DISPATCHER: "Dispatcher",
+  ADMIN: "Administrateur",
+  BAKER: "Boulanger",
   DRIVER: "Livreur",
-  CLIENT: "Client",
+  MERCHANT: "Client",
   SUPER_ADMIN: "Super admin",
 };
 

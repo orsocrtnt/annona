@@ -10,13 +10,10 @@ import {
   type CompanyExportVisitor,
 } from "@/domains/data-lifecycle/company-export.service";
 import { checkPodStorageHealth, isPodPhotoPathForDelivery, MAX_POD_BYTES } from "@/lib/storage/pod";
-import { isPodSignaturePathForDelivery } from "@/lib/storage/pod-signature";
 
 // Technical ceilings, not retention policy. Binary downloads are sequential.
 export const COMPANY_ARCHIVE_LIMITS = {
-  // Plafonds distincts : une photo et sa signature ne consomment pas le même quota.
   maxProofs: 1_000,
-  maxSignatures: 1_000,
   maxProofBytes: MAX_POD_BYTES,
   maxTotalProofBytes: 256 * 1024 * 1024,
   // company.json is streamed page by page: this caps the file on disk, not memory.
@@ -24,9 +21,10 @@ export const COMPANY_ARCHIVE_LIMITS = {
   downloadTimeoutMs: 30_000,
 } as const;
 type Limits = { [K in keyof typeof COMPANY_ARCHIVE_LIMITS]: number };
-interface ArchiveOrder {
+/** Tournée exportée : ses arrêts portent la photo d'incident éventuelle (`companyId/stopId-…`). */
+interface ArchiveRound {
   id: string; companyId: string;
-  deliveries: { id: string; companyId: string; orderId: string; podPhotoPath: string | null; podSignaturePath?: string | null }[];
+  stops: { id: string; companyId: string; roundId: string; orderId: string; incidentPhotoPath: string | null }[];
 }
 interface Dependencies {
   visitExport: (companyId: string, visitor: CompanyExportVisitor) => Promise<CompanyExportSummary | null>;
@@ -49,41 +47,33 @@ async function downloadPrivateProof(objectKey: string, signal: AbortSignal) {
 // Checks the streamed graph page by page, so the whole export is never held in memory.
 function createGraphGuard(companyId: string, limits: Limits) {
   const expected = new Map<string, string>();
-  const counts = { photo: 0, signature: 0 };
-  const orders = new Set<string>();
-  const deliveries = new Set<string>();
+  let photos = 0;
+  const rounds = new Set<string>();
+  const stops = new Set<string>();
   let started = false;
   return {
     start(header: CompanyExportHeader, company: { id: string }) {
-      if (header.schema !== "annona-company-export" || header.version !== 1 || company.id !== companyId) {
+      if (header.schema !== "annona-company-export" || header.version !== 2 || company.id !== companyId) {
         throw new Error("ARCHIVE_COMPANY_MISMATCH");
       }
       started = true;
     },
-    orders(page: ArchiveOrder[]) {
-      for (const order of page) {
-        if (order.companyId !== companyId || orders.has(order.id)) throw new Error("ARCHIVE_ORDER_MISMATCH");
-        orders.add(order.id);
-        for (const delivery of order.deliveries) {
-          if (delivery.companyId !== companyId || delivery.orderId !== order.id || deliveries.has(delivery.id)) {
-            throw new Error("ARCHIVE_DELIVERY_MISMATCH");
+    rounds(page: ArchiveRound[]) {
+      for (const round of page) {
+        if (round.companyId !== companyId || rounds.has(round.id)) throw new Error("ARCHIVE_ROUND_MISMATCH");
+        rounds.add(round.id);
+        for (const stop of round.stops) {
+          if (stop.companyId !== companyId || stop.roundId !== round.id || stops.has(stop.id)) {
+            throw new Error("ARCHIVE_STOP_MISMATCH");
           }
-          deliveries.add(delivery.id);
-          if (delivery.podPhotoPath !== null) {
-            if (!isPodPhotoPathForDelivery(delivery.podPhotoPath, companyId, delivery.id)) {
+          stops.add(stop.id);
+          if (stop.incidentPhotoPath !== null) {
+            if (!isPodPhotoPathForDelivery(stop.incidentPhotoPath, companyId, stop.id)) {
               throw new Error("ARCHIVE_INVALID_PROOF_PATH");
             }
-            expected.set(`${delivery.id}:photo`, delivery.podPhotoPath);
-            counts.photo += 1;
-            if (counts.photo > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
-          }
-          if (delivery.podSignaturePath) {
-            if (!isPodSignaturePathForDelivery(delivery.podSignaturePath, companyId, delivery.id)) {
-              throw new Error("ARCHIVE_INVALID_PROOF_PATH");
-            }
-            expected.set(`${delivery.id}:signature`, delivery.podSignaturePath);
-            counts.signature += 1;
-            if (counts.signature > limits.maxSignatures) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
+            expected.set(stop.id, stop.incidentPhotoPath);
+            photos += 1;
+            if (photos > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
           }
         }
       }
@@ -91,15 +81,11 @@ function createGraphGuard(companyId: string, limits: Limits) {
     proofs(summary: CompanyExportSummary) {
       if (!started) throw new Error("ARCHIVE_COMPANY_MISMATCH");
       const proofs = summary.externalAssets.proofObjects;
-      if (proofs.filter((proof) => proof.kind !== "signature").length > limits.maxProofs ||
-        proofs.filter((proof) => proof.kind === "signature").length > limits.maxSignatures) {
-        throw new Error("ARCHIVE_TOO_MANY_PROOFS");
-      }
+      if (proofs.length > limits.maxProofs) throw new Error("ARCHIVE_TOO_MANY_PROOFS");
       if (expected.size !== proofs.length) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
       for (const proof of proofs) {
-        const key = `${proof.deliveryId}:${proof.kind ?? "photo"}`;
-        if (expected.get(key) !== proof.objectKey) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
-        expected.delete(key);
+        if (expected.get(proof.stopId) !== proof.objectKey) throw new Error("ARCHIVE_MANIFEST_MISMATCH");
+        expected.delete(proof.stopId);
       }
       return proofs;
     },
@@ -159,7 +145,7 @@ export async function exportCompanyArchive(
           await writer.visitor.start(header, company);
         },
         async page(collection, rows) {
-          if (collection === "orders") guard.orders(rows as ArchiveOrder[]);
+          if (collection === "rounds") guard.rounds(rows as ArchiveRound[]);
           await writer.visitor.page(collection, rows);
         },
       });
@@ -171,8 +157,8 @@ export async function exportCompanyArchive(
     const jsonSha256 = jsonHash.digest("hex");
     if (await digestFile(jsonPath) !== jsonSha256) throw new Error("ARCHIVE_INTEGRITY_FAILED");
     if (proofs.length) await dependencies.checkStorage();
-    const entries: Array<{ path: string; bytes: number; sha256: string; deliveryId: string | null; kind?: "photo" | "signature" }> = [
-      { path: "company.json", bytes: jsonBytes, sha256: jsonSha256, deliveryId: null },
+    const entries: Array<{ path: string; bytes: number; sha256: string; stopId: string | null }> = [
+      { path: "company.json", bytes: jsonBytes, sha256: jsonSha256, stopId: null },
     ];
     let totalProofBytes = 0;
     for (const [index, proof] of proofs.entries()) {
@@ -214,7 +200,7 @@ export async function exportCompanyArchive(
         } finally { await file.close(); }
         const sha256 = hash.digest("hex");
         if (await digestFile(destination) !== sha256) throw new Error("ARCHIVE_INTEGRITY_FAILED");
-        entries.push({ path: relativePath, bytes, sha256, deliveryId: proof.deliveryId, kind: proof.kind ?? "photo" });
+        entries.push({ path: relativePath, bytes, sha256, stopId: proof.stopId });
       } catch (error) {
         if (controller.signal.aborted) throw new Error("ARCHIVE_DOWNLOAD_TIMEOUT");
         // Do not expose provider URLs, signed query parameters or response bodies.
@@ -227,10 +213,8 @@ export async function exportCompanyArchive(
       }
     }
     const manifest = {
-      schema: "annona-company-archive", version: 1, complete: true, companyId,
-      createdAt: new Date().toISOString(), algorithm: "sha256", totalProofBytes, proofCount: proofs.length,
-      photoCount: proofs.filter((proof) => proof.kind !== "signature").length,
-      signatureCount: proofs.filter((proof) => proof.kind === "signature").length, entries,
+      schema: "annona-company-archive", version: 2, complete: true, companyId,
+      createdAt: new Date().toISOString(), algorithm: "sha256", totalProofBytes, proofCount: proofs.length, entries,
     };
     await writeFile(join(staging, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n", { mode: 0o600, flag: "wx" });
     const manifestSha256 = await digestFile(join(staging, "manifest.json"));

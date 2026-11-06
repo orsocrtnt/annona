@@ -54,36 +54,36 @@ test("ADMIN-ESPACE fiche : rôles, livraisons et factures agrégés sans chiffre
       { roleId: "r-admin", status: "ACTIVE", _count: { _all: 1 }, _max: { lastLoginAt: null } },
       { roleId: "r-unknown", status: "ACTIVE", _count: { _all: 9 }, _max: { lastLoginAt: null } },
     ],
-    [{ id: "r-driver", systemRole: "DRIVER" }, { id: "r-admin", systemRole: "COMPANY_ADMIN" }]
+    [{ id: "r-driver", systemRole: "DRIVER" }, { id: "r-admin", systemRole: "ADMIN" }]
   );
   assert.deepEqual(roles, [
-    { role: "COMPANY_ADMIN", total: 1, seated: 1, lastLoginAt: null },
+    { role: "ADMIN", total: 1, seated: 1, lastLoginAt: null },
     { role: "DRIVER", total: 6, seated: 4, lastLoginAt: "2026-11-05T08:00:00.000Z" },
   ]);
 
   assert.deepEqual(
     summarizeDeliveries(
       [
-        { status: "PENDING", _count: { _all: 2 } },
-        { status: "IN_DELIVERY", _count: { _all: 1 } },
-        { status: "DELIVERED", _count: { _all: 4 } },
-        { status: "PAID", _count: { _all: 1 } },
-        { status: "FAILED", _count: { _all: 1 } },
+        { status: "DRAFT", _count: { _all: 1 } },
+        { status: "VALIDATED", _count: { _all: 1 } },
+        { status: "LOCKED", _count: { _all: 1 } },
+        { status: "PREPARED", _count: { _all: 1 } },
+        { status: "DELIVERED", _count: { _all: 5 } },
         { status: "CANCELLED", _count: { _all: 2 } },
       ],
       3
     ),
-    { created: 11, inProgress: 3, done: 5, failed: 1, cancelled: 2, delivered: 3 }
+    { created: 11, inProgress: 4, done: 5, failed: 0, cancelled: 2, delivered: 3 }
   );
 
   assert.deepEqual(
     summarizeInvoices([
-      { status: "PAID", _count: { _all: 2 }, _sum: { amount: "120.50" } },
-      { status: "PENDING", _count: { _all: 1 }, _sum: { amount: 30 } },
-      { status: "OVERDUE", _count: { _all: 1 }, _sum: { amount: null } },
+      { status: "PAID", _count: { _all: 2 }, _sum: { totalCents: 12050 } },
+      { status: "PENDING", _count: { _all: 1 }, _sum: { totalCents: 3000 } },
+      { status: "OVERDUE", _count: { _all: 1 }, _sum: { totalCents: null } },
       // Exclues même si la base les renvoyait : brouillon et annulée ne sont pas des factures émises.
-      { status: "DRAFT", _count: { _all: 5 }, _sum: { amount: "999" } },
-      { status: "CANCELLED", _count: { _all: 5 }, _sum: { amount: "999" } },
+      { status: "DRAFT", _count: { _all: 5 }, _sum: { totalCents: 99900 } },
+      { status: "CANCELLED", _count: { _all: 5 }, _sum: { totalCents: 99900 } },
     ]),
     { count: 4, paidCents: 12050, pendingCents: 3000, overdueCents: 0 }
   );
@@ -107,18 +107,21 @@ function fakeCompanyDb(calls: Call[], failing: string[] = []): CompanyFileDataba
       }))),
     },
     role: { findMany: track("role", "findMany", [{ id: "r-driver", systemRole: "DRIVER" as const }]) },
-    delivery: {
-      groupBy: track("delivery", "groupBy", [{ status: "DELIVERED", _count: { _all: 2 } }]),
-      count: track("delivery", "count", 2),
-      findMany: track("delivery", "findMany", [{ completedAt: new Date("2026-11-05T09:00:00.000Z") }, { completedAt: null }]),
-    },
     order: {
-      findMany: track("order", "findMany", [
-        { createdAt: new Date("2026-11-04T23:30:00.000Z") }, // 5 novembre à Paris
-        { createdAt: new Date("2026-10-01T10:00:00.000Z") }, // hors des 30 jours : ignorée
-      ]),
+      groupBy: track("order", "groupBy", [{ status: "DELIVERED", _count: { _all: 2 } }]),
+      count: track("order", "count", 2),
+      findMany: async (args: Record<string, unknown>) => {
+        calls.push({ model: "order", method: "findMany", args });
+        if (failing.includes("order.findMany")) throw new Error("boom");
+        return (args.where as { deliveredAt?: unknown }).deliveredAt
+          ? [{ createdAt: new Date("2026-11-04T10:00:00.000Z"), deliveredAt: new Date("2026-11-05T09:00:00.000Z") }]
+          : [
+              { createdAt: new Date("2026-11-04T23:30:00.000Z") }, // 5 novembre à Paris
+              { createdAt: new Date("2026-10-01T10:00:00.000Z") }, // hors des 30 jours : ignorée
+            ];
+      },
     },
-    invoice: { groupBy: track("invoice", "groupBy", [{ status: "PAID" as const, _count: { _all: 1 }, _sum: { amount: "10" } }]) },
+    invoice: { groupBy: track("invoice", "groupBy", [{ status: "PAID" as const, _count: { _all: 1 }, _sum: { totalCents: 1000 } }]) },
     supportTicket: {
       count: track("supportTicket", "count", 1),
       findMany: track("supportTicket", "findMany", [
@@ -140,15 +143,15 @@ test("ADMIN-ESPACE fiche : lecture bornée à l'entreprise et au mois, select mi
     assert.ok(where.includes("company-1"), `${call.model}.${call.method} borné à l'entreprise`);
   }
   const byKey = (key: string) => calls.filter((call) => `${call.model}.${call.method}` === key).map((call) => call.args);
-  const [deliveryGroup] = byKey("delivery.groupBy");
-  assert.deepEqual((deliveryGroup!.where as { createdAt: unknown }).createdAt, { gte: month.startsAt, lt: month.endsAt });
-  const [deliveredCount] = byKey("delivery.count");
-  assert.deepEqual(deliveredCount!.where, { companyId: "company-1", status: "DELIVERED", completedAt: { gte: month.startsAt, lt: month.endsAt } });
+  const [orderGroup] = byKey("order.groupBy");
+  assert.deepEqual((orderGroup!.where as { createdAt: unknown }).createdAt, { gte: month.startsAt, lt: month.endsAt });
+  const [deliveredCount] = byKey("order.count");
+  assert.deepEqual(deliveredCount!.where, { companyId: "company-1", status: "DELIVERED", deliveredAt: { gte: month.startsAt, lt: month.endsAt } });
   const [invoices] = byKey("invoice.groupBy");
-  assert.deepEqual(invoices!.where, { companyId: "company-1", createdAt: { gte: month.startsAt, lt: month.endsAt }, status: { in: ["PENDING", "PAID", "OVERDUE"] } });
+  assert.deepEqual(invoices!.where, { companyId: "company-1", issuedAt: { gte: month.startsAt, lt: month.endsAt }, status: { in: ["PENDING", "PAID", "OVERDUE"] } });
   const [team] = byKey("user.findMany");
   assert.equal(team!.take, COMPANY_TEAM_LIMIT + 1);
-  assert.deepEqual(team!.where, { companyId: "company-1", role: { systemRole: { not: "CLIENT" } } });
+  assert.deepEqual(team!.where, { companyId: "company-1", role: { systemRole: { not: "MERCHANT" } } });
   const [tickets] = byKey("supportTicket.findMany");
   assert.equal(tickets!.take, 5);
   assert.deepEqual((tickets!.where as { status: unknown }).status, { in: ["OPEN", "IN_PROGRESS"] });
@@ -342,7 +345,7 @@ test("ADMIN-ESPACE routes : recherche refusée sans session (401) et aux autres 
   assert.equal(unauth.status, 401);
   assert.deepEqual(anonymous, ["staff"]);
 
-  for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"]) {
+  for (const role of ["ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "MERCHANT"]) {
     const calls: string[] = [];
     const denied = await loadRoute(file, service, role, calls, searchService(calls)).GET!(watchedRequest("http://local/api/admin/search?q=acme", calls));
     assert.equal(denied.status, 403, role);

@@ -1,19 +1,11 @@
 import type {
-  PortalAddress,
-  PortalRecurringOrder,
   PortalSettings,
   PortalSupportContacts,
+  PortalSupportTicket,
   PortalClientNotification,
 } from "./types";
-import type { CreateClientOrderInput, CreateRecurringOrderInput, UpdateRecurringOrderInput } from "@/lib/validations/order";
-import type { CustomerAddressInput } from "@/lib/validations/address";
 import type { CreateSupportTicketInput } from "@/lib/validations/support";
 import type { ClientSettingsInput } from "@/lib/validations/settings";
-import {
-  orderHistorySearchParams,
-  type OrderHistoryPage,
-  type OrderHistoryQuery,
-} from "@/lib/query/order-history";
 
 async function fetchPortal<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(path, options);
@@ -27,58 +19,6 @@ async function fetchPortal<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const portalApi = {
-  getDashboard: () => fetchPortal<import("./types").PortalDashboardStats>("/api/portal/dashboard"),
-  getOrders: (query: OrderHistoryQuery) =>
-    fetchPortal<OrderHistoryPage<import("./types").PortalOrder>>(
-      `/api/portal/orders?${orderHistorySearchParams(query)}`
-    ),
-  getOrder: (id: string) => fetchPortal<import("./types").PortalOrder>(`/api/portal/orders/${id}`),
-  createOrder: (data: CreateClientOrderInput, idempotencyKey: string) =>
-    fetchPortal<import("./types").PortalOrder>("/api/portal/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify(data),
-    }),
-  getDeliveries: () => fetchPortal<import("./types").PortalDelivery[]>("/api/portal/deliveries"),
-  getDelivery: (id: string) => fetchPortal<import("./types").PortalDelivery>(`/api/portal/deliveries/${id}`),
-  getInvoices: () => fetchPortal<import("./types").PortalInvoice[]>("/api/portal/invoices"),
-  getInvoice: (id: string) => fetchPortal<import("./types").PortalInvoice>(`/api/portal/invoices/${id}`),
-  getRecurringOrders: () => fetchPortal<PortalRecurringOrder[]>("/api/portal/recurring-orders"),
-  createRecurringOrder: (data: CreateRecurringOrderInput) =>
-    fetchPortal<PortalRecurringOrder>("/api/portal/recurring-orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }),
-  updateRecurringOrder: (id: string, data: UpdateRecurringOrderInput) =>
-    fetchPortal<PortalRecurringOrder>(`/api/portal/recurring-orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }),
-  getAddresses: () => fetchPortal<PortalAddress[]>("/api/portal/addresses"),
-  createAddress: (data: CustomerAddressInput) =>
-    fetchPortal<PortalAddress>("/api/portal/addresses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }),
-  updateAddress: (id: string, data: Partial<CustomerAddressInput>) =>
-    fetchPortal<PortalAddress>(`/api/portal/addresses/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }),
-  deleteAddress: (id: string) =>
-    fetch(`/api/portal/addresses/${id}`, { method: "DELETE" }).then(async (res) => {
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error ?? "Erreur");
-      }
-    }),
   getSettings: () => fetchPortal<PortalSettings>("/api/portal/settings"),
   updateSettings: (data: ClientSettingsInput) =>
     fetchPortal<PortalSettings>("/api/portal/settings", {
@@ -93,15 +33,15 @@ export const portalApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(ids ? { ids } : {}),
     }),
-  getSupportTickets: () => fetchPortal<import("./types").PortalSupportTicket[]>("/api/portal/support"),
+  getSupportTickets: () => fetchPortal<PortalSupportTicket[]>("/api/portal/support"),
   getSupportTicket: (id: string) =>
-    fetchPortal<import("./types").PortalSupportTicket>(`/api/portal/support/${id}`),
-  getSupportContacts: (deliveryId?: string) =>
+    fetchPortal<PortalSupportTicket>(`/api/portal/support/${id}`),
+  getSupportContacts: (orderId?: string) =>
     fetchPortal<PortalSupportContacts>(
-      `/api/portal/support/contacts${deliveryId ? `?deliveryId=${deliveryId}` : ""}`
+      `/api/portal/support/contacts${orderId ? `?orderId=${encodeURIComponent(orderId)}` : ""}`
     ),
   createSupportTicket: (data: CreateSupportTicketInput) =>
-    fetchPortal<import("./types").PortalSupportTicket>("/api/portal/support", {
+    fetchPortal<PortalSupportTicket>("/api/portal/support", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

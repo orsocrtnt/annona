@@ -2,7 +2,7 @@ import { prisma } from "@/services/prisma/client";
 import { formatPersonNameByRole } from "@/lib/format/person-labels";
 import type { SystemRole, UserStatus } from "@prisma/client";
 
-const ROLES = ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"] as const;
+const ROLES = ["SUPER_ADMIN", "ADMIN", "BAKER", "DRIVER", "MERCHANT"] as const;
 const STATUSES = ["ACTIVE", "INACTIVE", "SUSPENDED", "PENDING_VERIFICATION"] as const;
 const PAGE_SIZES = [25, 50, 100] as const;
 const PARAMS = ["q", "role", "status", "page", "pageSize"] as const;

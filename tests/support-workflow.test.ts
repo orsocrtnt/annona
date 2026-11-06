@@ -36,7 +36,7 @@ test("SUPPORT-1 : les listes staff restent limitées à l’entreprise et à ses
   for (const call of calls) {
     const where = call.where as Record<string, unknown>;
     assert.equal(where.companyId, "company-a");
-    assert.ok(Array.isArray(where.AND));
+    assert.deepEqual(where.OR, [{ relatedOrderId: null }, { relatedOrder: { is: { companyId: "company-a" } } }]);
     assert.deepEqual(where.customer, { is: { companyId: "company-a" } });
   }
   assert.equal((calls[1]!.where as Record<string, unknown>).id, "ticket-a");
@@ -91,6 +91,7 @@ test("SUPPORT-1 : réponse staff atomique, notification client et aucun accès �
   );
   assert.equal(result?.ticket.status, "IN_PROGRESS");
   assert.deepEqual(messages[0], {
+    companyId: "company-a",
     ticketId: "ticket-a",
     body: "Votre demande est prise en charge.",
     authorId: "staff-a",
@@ -98,6 +99,7 @@ test("SUPPORT-1 : réponse staff atomique, notification client et aucun accès �
   });
   assert.equal(updates[0]!.status, "IN_PROGRESS");
   assert.deepEqual(notifications[0], {
+    companyId: "company-a",
     userId: "client-a",
     type: "SUPPORT",
     title: "Nouvelle réponse du support",

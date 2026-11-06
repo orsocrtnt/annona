@@ -318,7 +318,7 @@ test("une erreur de requête non gérée produit un incident sans chemin réel n
 
 test("OPS-03B : la migration du moniteur garde secrets et journal hors Data API", () => {
   const migration = readFileSync(resolve(
-    "prisma/migrations/20261023191000_ops03b_monitor/migration.sql"
+    "docs/operations/ops03b/20261023191000_ops03b_monitor.sql"
   ), "utf8");
   assert.match(migration, /CREATE SCHEMA IF NOT EXISTS ops_monitor/);
   assert.match(migration, /vault\.decrypted_secrets/);
@@ -333,7 +333,7 @@ test("OPS-03B : la migration du moniteur garde secrets et journal hors Data API"
 
 test("OPS-FIAB : la sonde externe prévient par e-mail sans secret dans la migration", () => {
   const migration = readFileSync(resolve(
-    "prisma/migrations/20261104040000_ops_monitor_email_alerts/migration.sql"
+    "docs/operations/ops03b/20261104040000_ops_monitor_email_alerts.sql"
   ), "utf8");
   for (const name of ["ops03b_resend_api_key", "ops03b_alert_email_to", "ops03b_alert_email_from"]) {
     assert.match(migration, new RegExp(`secret_value\\('${name}'\\)`), name);

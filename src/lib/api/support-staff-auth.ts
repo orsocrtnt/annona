@@ -5,11 +5,10 @@ import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guar
 export async function requireSupportStaff() {
   const auth = await requireStaffRole();
   if ("error" in auth) return auth;
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
+  const denied = requireRole(auth.context, ["ADMIN"]);
   if (denied) return { error: denied };
 
-  const role = auth.context.user.role.systemRole;
-  if (role === "MINI_ADMIN" && !auth.context.permissions.includes("support:read")) {
+  if (!auth.context.permissions.includes("support:read")) {
     return { error: NextResponse.json({ error: "Accès refusé" }, { status: 403 }) };
   }
 

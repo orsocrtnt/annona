@@ -32,7 +32,7 @@ export function RoleGuard({ role, loginHref, children }: RoleGuardProps) {
     }
 
     if (user.role.systemRole !== role) {
-      router.replace(getRoleHomePath(user.role.systemRole, user.settings));
+      router.replace(getRoleHomePath(user.role.systemRole));
     }
   }, [user, isLoading, isAuthenticated, router, role, loginHref]);
 

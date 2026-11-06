@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { DeliveryStatus, Prisma } from "@prisma/client";
+import type { Prisma, StopStatus } from "@prisma/client";
 import { CLIENT_NOTIFICATIONS_TAKE } from "@/lib/query/list-limits";
 import {
   enqueueOperationJob,
@@ -12,7 +12,6 @@ import {
   type ReplayWindowStart,
 } from "@/lib/email/transactional-email";
 import { prisma } from "@/services/prisma/client";
-import { parseProofRules } from "@/domains/delivery/pod-evidence";
 import { getClientSettings } from "./settings.service";
 
 export type ClientNotificationType = "DELIVERY" | "INVOICE" | "SUPPORT";
@@ -29,23 +28,14 @@ export interface ClientNotificationItem {
 
 type NotificationDatabase = Pick<Prisma.TransactionClient, "operationJob">;
 
+/** Arrêt livré ou en incident : le client du commerçant est prévenu (NOT-03 complétera « en approche »). */
 type DeliveryNotificationPayload = {
   kind: "DELIVERY";
   customerId: string;
   companyId: string;
-  status: DeliveryStatus;
+  status: StopStatus;
   reference: string;
-  deliveryId: string;
-};
-
-/** DEMO-3 : le livreur a accepté la mission (bouton « Prendre en charge »). */
-type DeliveryAcceptedNotificationPayload = {
-  kind: "DELIVERY_ACCEPTED";
-  customerId: string;
-  companyId: string;
-  reference: string;
-  deliveryId: string;
-  acceptedAt: string;
+  orderId: string;
 };
 
 type InvoiceNotificationPayload = {
@@ -54,47 +44,27 @@ type InvoiceNotificationPayload = {
   companyId: string;
   reference: string;
   invoiceId: string;
-  amount: number;
+  /** Montant TTC en centimes. */
+  amountCents: number;
 };
 
-type ClientNotificationJobPayload =
-  | DeliveryNotificationPayload
-  | DeliveryAcceptedNotificationPayload
-  | InvoiceNotificationPayload;
+type ClientNotificationJobPayload = DeliveryNotificationPayload | InvoiceNotificationPayload;
 
-const ACCEPTED_COPY = {
-  title: "Prise en charge",
-  body: (ref: string) => `Votre livreur a pris en charge ${ref}.`,
-};
-
-const DELIVERY_COPY: Partial<
-  Record<DeliveryStatus, { title: string; body: (ref: string) => string }>
-> = {
-  ASSIGNED: {
-    title: "Livreur assigné",
-    body: (ref) => `Un livreur a été assigné à ${ref}.`,
-  },
-  PURCHASING: {
-    title: "Courses en cours",
-    body: (ref) => `Les courses de ${ref} ont commencé.`,
-  },
-  IN_DELIVERY: {
-    title: "En cours de livraison",
-    body: (ref) => `${ref} est en route.`,
-  },
+const DELIVERY_COPY: Partial<Record<StopStatus, { title: string; body: (ref: string) => string }>> = {
   DELIVERED: {
-    title: "Livraison effectuée",
+    title: "Commande livrée",
     body: (ref) => `${ref} a été livrée.`,
   },
-  CANCELLED: {
-    title: "Livraison annulée",
-    body: (ref) => `${ref} a été annulée.`,
-  },
-  FAILED: {
+  INCIDENT: {
     title: "Livraison non effectuée",
-    body: (ref) => `${ref} n’a pas pu être livrée.`,
+    body: (ref) => `${ref} n’a pas pu être livrée. Nous revenons vers vous.`,
   },
 };
+
+/** Commandes et factures du commerçant que représente ce compte client. */
+function merchantOwner(customerId: string, companyId: string) {
+  return { companyId, merchant: { is: { companyId, users: { some: { id: customerId, companyId } } } } };
+}
 
 export function getEmailDeliveryConfigured() {
   return getTransactionalEmailConfiguration().enabled;
@@ -135,6 +105,7 @@ async function insertNotification(
   eventKey: string,
   input: {
     userId: string;
+    companyId: string;
     type: ClientNotificationType;
     title: string;
     body: string;
@@ -149,6 +120,7 @@ async function insertNotification(
     update: {},
     create: {
       id: stableNotificationId(eventKey),
+      companyId: input.companyId,
       userId: input.userId,
       type: input.type,
       title: input.title,
@@ -186,15 +158,15 @@ export async function queueDeliveryStatusNotification(
   input: {
     customerId: string | null;
     companyId: string;
-    status: DeliveryStatus;
+    status: StopStatus;
     reference: string;
-    deliveryId: string;
+    orderId: string;
     eventId: string;
   }
 ) {
   if (!input.customerId || !DELIVERY_COPY[input.status]) return null;
   return enqueueOperationJob(db, {
-    jobKey: `client-notification:delivery:${input.deliveryId}:${input.eventId}`,
+    jobKey: `client-notification:delivery:${input.orderId}:${input.eventId}`,
     type: "CLIENT_NOTIFICATION",
     companyId: input.companyId,
     payload: {
@@ -203,35 +175,7 @@ export async function queueDeliveryStatusNotification(
       companyId: input.companyId,
       status: input.status,
       reference: input.reference,
-      deliveryId: input.deliveryId,
-    },
-  });
-}
-
-export async function queueDeliveryAcceptedNotification(
-  db: NotificationDatabase,
-  input: {
-    customerId: string | null;
-    companyId: string;
-    reference: string;
-    deliveryId: string;
-    acceptedAt: Date;
-  }
-) {
-  if (!input.customerId) return null;
-  const acceptedAt = input.acceptedAt.toISOString();
-  return enqueueOperationJob(db, {
-    // Une acceptation = une date : un rejeu garde la tâche, une nouvelle acceptation en crée une.
-    jobKey: `client-notification:delivery:${input.deliveryId}:accepted:${acceptedAt}`,
-    type: "CLIENT_NOTIFICATION",
-    companyId: input.companyId,
-    payload: {
-      kind: "DELIVERY_ACCEPTED",
-      customerId: input.customerId,
-      companyId: input.companyId,
-      reference: input.reference,
-      deliveryId: input.deliveryId,
-      acceptedAt,
+      orderId: input.orderId,
     },
   });
 }
@@ -243,7 +187,7 @@ export async function queueInvoiceIssuedNotification(
     companyId: string;
     reference: string;
     invoiceId: string;
-    amount: number;
+    amountCents: number;
   }
 ) {
   if (!input.customerId) return null;
@@ -257,7 +201,7 @@ export async function queueInvoiceIssuedNotification(
       companyId: input.companyId,
       reference: input.reference,
       invoiceId: input.invoiceId,
-      amount: input.amount,
+      amountCents: input.amountCents,
     },
   });
 }
@@ -275,69 +219,26 @@ function parseNotificationPayload(payload: Prisma.JsonValue): ClientNotification
   }
 
   if (value.kind === "DELIVERY") {
-    const deliveryId = typeof value.deliveryId === "string" ? value.deliveryId : null;
-    const status = typeof value.status === "string" ? value.status as DeliveryStatus : null;
-    if (!deliveryId || !status || !DELIVERY_COPY[status]) {
+    const orderId = typeof value.orderId === "string" ? value.orderId : null;
+    const status = typeof value.status === "string" ? (value.status as StopStatus) : null;
+    if (!orderId || !status || !DELIVERY_COPY[status]) {
       throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
     }
-    return { kind: "DELIVERY", customerId, companyId, reference, deliveryId, status };
-  }
-
-  if (value.kind === "DELIVERY_ACCEPTED") {
-    const deliveryId = typeof value.deliveryId === "string" ? value.deliveryId : null;
-    const acceptedAt = typeof value.acceptedAt === "string" ? value.acceptedAt : null;
-    if (!deliveryId || !acceptedAt || !Number.isFinite(Date.parse(acceptedAt))) {
-      throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
-    }
-    return { kind: "DELIVERY_ACCEPTED", customerId, companyId, reference, deliveryId, acceptedAt };
+    return { kind: "DELIVERY", customerId, companyId, reference, orderId, status };
   }
 
   if (value.kind === "INVOICE") {
     const invoiceId = typeof value.invoiceId === "string" ? value.invoiceId : null;
-    const amount = typeof value.amount === "number" ? value.amount : null;
-    if (!invoiceId || amount === null) throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
-    return { kind: "INVOICE", customerId, companyId, reference, invoiceId, amount };
+    const amountCents = typeof value.amountCents === "number" && Number.isInteger(value.amountCents) ? value.amountCents : null;
+    if (!invoiceId || amountCents === null) throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
+    return { kind: "INVOICE", customerId, companyId, reference, invoiceId, amountCents };
   }
 
   throw new Error("CLIENT_NOTIFICATION_PAYLOAD_INVALID");
 }
 
-type DeliveryForMessage = {
-  missionAcceptedAt: Date | null;
-  company: { settings: Prisma.JsonValue } | null;
-};
-type DeliveryMessage = { title: string; body: string; emailText: string };
-
-function composeDeliveryStatusMessage(
-  payload: DeliveryNotificationPayload,
-  delivery: DeliveryForMessage
-): DeliveryMessage {
-  const copy = DELIVERY_COPY[payload.status]!;
-  const body = copy.body(payload.reference);
-  // Livrée ou en échec : la preuve est envoyée au donneur d'ordre, sauf coupure par l'entreprise.
-  const isProofStatus = payload.status === "DELIVERED" || payload.status === "FAILED";
-  const proofRules = parseProofRules(
-    (delivery.company?.settings as Record<string, unknown> | null | undefined)?.proofRules
-  );
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
-  // `emailToClient=false` retire seulement le lien de preuve : le client reçoit toujours l'e-mail de statut.
-  const emailText =
-    isProofStatus && proofRules.emailToClient && appUrl
-      ? `${body}\nPreuve de livraison (signature, photo, PDF) : ${appUrl}/portal/deliveries/${payload.deliveryId}`
-      : !isProofStatus && appUrl ? `${body}\nConsulter ma livraison : ${appUrl}/portal/deliveries/${payload.deliveryId}` : body;
-  return { title: copy.title, body, emailText };
-}
-
-function composeDeliveryAcceptedMessage(
-  payload: DeliveryAcceptedNotificationPayload,
-  delivery: DeliveryForMessage
-): DeliveryMessage | null {
-  // Refus ou nouvelle acceptation depuis la mise en file : cette prise en charge n'est plus vraie.
-  if (delivery.missionAcceptedAt?.getTime() !== Date.parse(payload.acceptedAt)) return null;
-  const body = ACCEPTED_COPY.body(payload.reference);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
-  const emailText = appUrl ? `${body}\nConsulter ma livraison : ${appUrl}/portal/deliveries/${payload.deliveryId}` : body;
-  return { title: ACCEPTED_COPY.title, body, emailText };
+function appUrl() {
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ?? null;
 }
 
 /**
@@ -348,14 +249,12 @@ export async function deliverClientNotificationJob(
   rawPayload: Prisma.JsonValue,
   eventKey: string,
   replayWindow: ReplayWindowStart = null,
-  // Rendu figé à la première tentative émise (preuve de livraison, e-mail du client modifiés).
+  // Rendu figé à la première tentative émise (e-mail du client modifié entre deux essais).
   freezeContent?: EmailContentFreezer
 ) {
   const payload = parseNotificationPayload(rawPayload);
   const settings = await getClientSettings(payload.customerId);
-  const enabled = payload.kind === "INVOICE"
-    ? settings.invoiceAlerts
-    : settings.deliveryAlerts;
+  const enabled = payload.kind === "INVOICE" ? settings.invoiceAlerts : settings.deliveryAlerts;
   if (!enabled) return;
 
   const user = await prisma.user.findFirst({
@@ -363,57 +262,47 @@ export async function deliverClientNotificationJob(
     select: { email: true },
   });
   if (!user) return;
+  const base = appUrl();
 
-  if (payload.kind === "DELIVERY" || payload.kind === "DELIVERY_ACCEPTED") {
-    const delivery = await prisma.delivery.findFirst({
-      where: {
-        id: payload.deliveryId,
-        customerId: payload.customerId,
-        companyId: payload.companyId,
-      },
-      select: { id: true, missionAcceptedAt: true, company: { select: { settings: true } } },
+  if (payload.kind === "DELIVERY") {
+    const order = await prisma.order.findFirst({
+      where: { id: payload.orderId, ...merchantOwner(payload.customerId, payload.companyId) },
+      select: { id: true },
     });
-    if (!delivery) return;
-    const message = payload.kind === "DELIVERY"
-      ? composeDeliveryStatusMessage(payload, delivery)
-      : composeDeliveryAcceptedMessage(payload, delivery);
-    if (!message) return;
+    if (!order) return;
+    const copy = DELIVERY_COPY[payload.status]!;
+    const body = copy.body(payload.reference);
+    const emailText = base ? `${body}\nMes commandes : ${base}/portal` : body;
     await insertNotification(eventKey, {
       userId: payload.customerId,
+      companyId: payload.companyId,
       type: "DELIVERY",
-      title: message.title,
-      body: message.body,
-      href: `/portal/deliveries/${payload.deliveryId}`,
+      title: copy.title,
+      body,
+      href: "/portal",
       email:
         settings.emailNotifications && user.email
-          ? { to: user.email, subject: message.title, text: message.emailText }
+          ? { to: user.email, subject: copy.title, text: emailText }
           : undefined,
     }, replayWindow, freezeContent);
     return;
   }
 
   const invoice = await prisma.invoice.findFirst({
-    where: {
-      id: payload.invoiceId,
-      customerId: payload.customerId,
-      companyId: payload.companyId,
-    },
+    where: { id: payload.invoiceId, ...merchantOwner(payload.customerId, payload.companyId) },
     select: { id: true },
   });
   if (!invoice) return;
-  const amount = new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(payload.amount);
+  const amount = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(payload.amountCents / 100);
   const body = `La facture ${payload.reference} (${amount}) est disponible.`;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "");
-  const emailText = appUrl ? `${body}\nConsulter ma facture : ${appUrl}/portal/invoices/${payload.invoiceId}` : body;
+  const emailText = base ? `${body}\nMes factures : ${base}/portal/invoices` : body;
   await insertNotification(eventKey, {
     userId: payload.customerId,
+    companyId: payload.companyId,
     type: "INVOICE",
     title: "Nouvelle facture",
     body,
-    href: `/portal/invoices/${payload.invoiceId}`,
+    href: "/portal/invoices",
     email:
       settings.emailNotifications && user.email
         ? { to: user.email, subject: `Facture ${payload.reference}`, text: emailText }
@@ -424,9 +313,9 @@ export async function deliverClientNotificationJob(
 export async function notifyDeliveryStatusChange(input: {
   customerId: string | null;
   companyId: string;
-  status: DeliveryStatus;
+  status: StopStatus;
   reference: string;
-  deliveryId: string;
+  orderId: string;
   eventId: string;
 }) {
   const job = await queueDeliveryStatusNotification(prisma, input);
@@ -438,7 +327,7 @@ export async function notifyInvoiceIssued(input: {
   companyId: string;
   reference: string;
   invoiceId: string;
-  amount: number;
+  amountCents: number;
 }) {
   const job = await queueInvoiceIssuedNotification(prisma, input);
   if (job) kickOperationJob(job.id);

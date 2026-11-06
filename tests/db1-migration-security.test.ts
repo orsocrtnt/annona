@@ -24,16 +24,17 @@ for (const { name, text } of statements) {
 }
 const tables = [...created.keys()].filter((table) => !dropped.has(table)).sort();
 
-// NET-1 (6 novembre 2026) : le schéma a perdu les modèles de l'ancien produit, mais les migrations
-// historiques restent en place jusqu'à la migration initiale de SCHEMA-1. Réactiver avec elle.
-test.skip("DB-1 migrations : les tables publiques correspondent exactement aux @@map du schéma", () => {
+// SCHEMA-1 (6 novembre 2026) : une seule migration initiale, réactivé avec elle.
+test("DB-1 migrations : une seule migration initiale, dont les tables correspondent exactement aux @@map du schéma", () => {
+  assert.deepEqual(migrations.map(({ name }) => name), ["20261106200000_init"]);
   const schema = readFileSync("prisma/schema.prisma", "utf8");
   const mapped = [...schema.matchAll(/@@map\("([a-z_]+)"\)/g)].map((match) => match[1]!).sort();
-  assert.ok(mapped.length > 30, "schéma lu");
+  assert.ok(mapped.length >= 25, "schéma lu");
   assert.deepEqual(tables, mapped, "une table sans migration, ou une migration sans modèle");
 });
 
 test("DB-1 migrations : chaque table a la RLS et aucun droit pour PUBLIC, anon ni authenticated", () => {
+  assert.ok(tables.length >= 25, `tables créées : ${tables.length}`);
   const revoked = new Map<string, Set<string>>();
   for (const { text } of statements) {
     // Forme simple ou bloc DO conditionnel : REVOKE ALL [PRIVILEGES] ON [TABLE] "a", "b" FROM r1, r2
@@ -60,4 +61,10 @@ test("DB-1 migrations : aucune politique ni aucun GRANT n'ouvre une table aux r�
     .filter(({ text }) => /^CREATE POLICY\b/i.test(text) || /^GRANT\b[^]*\bON (?:TABLE |ALL TABLES )?[^]*\bTO\b[^]*\b(anon|authenticated|public)\b/i.test(text))
     .map(({ name, text }) => `${name} : ${text.slice(0, 120)}`);
   assert.deepEqual(opened, []);
+});
+
+test("DB-1 migrations : la table de suivi de Prisma est fermée elle aussi", () => {
+  const texts = statements.map(({ text }) => text);
+  assert.ok(texts.includes('ALTER TABLE "_prisma_migrations" ENABLE ROW LEVEL SECURITY'));
+  assert.ok(texts.includes('REVOKE ALL PRIVILEGES ON TABLE "_prisma_migrations" FROM PUBLIC, anon, authenticated'));
 });

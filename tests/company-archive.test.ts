@@ -10,9 +10,9 @@ import type { CompanyExportSummary, CompanyExportVisitor } from "../src/domains/
 
 interface CompanyArchiveSnapshot {
   schema: string; version: number;
-  externalAssets: { proofObjects: { deliveryId: string; objectKey: string }[] };
-  data: { company: { id: string }; orders: { id: string; companyId: string; deliveries: {
-    id: string; companyId: string; orderId: string; podPhotoPath: string | null;
+  externalAssets: { proofObjects: { stopId: string; orderId: string; objectKey: string }[] };
+  data: { company: { id: string }; rounds: { id: string; companyId: string; stops: {
+    id: string; companyId: string; roundId: string; orderId: string; incidentPhotoPath: string | null;
   }[] }[] };
 }
 const exportedAt = "2026-10-27T12:00:00.000Z";
@@ -21,19 +21,19 @@ function replay(s: CompanyArchiveSnapshot) {
   return async (_companyId: string, visitor: CompanyExportVisitor) => {
     await visitor.start({ schema: s.schema, version: s.version, exportedAt } as never, s.data.company as never);
     await visitor.page("users", []);
-    if (!s.data.orders.length) await visitor.page("orders", []);
-    for (const order of s.data.orders) await visitor.page("orders", [order] as never);
-    return { schema: s.schema, version: s.version, exportedAt, counts: { orders: s.data.orders.length },
+    if (!s.data.rounds.length) await visitor.page("rounds", []);
+    for (const round of s.data.rounds) await visitor.page("rounds", [round] as never);
+    return { schema: s.schema, version: s.version, exportedAt, counts: { rounds: s.data.rounds.length },
       externalAssets: s.externalAssets } as unknown as CompanyExportSummary;
   };
 }
 
 function snapshot(): CompanyArchiveSnapshot {
   return {
-    schema: "annona-company-export", version: 1,
-    data: { company: { id: "companyA" }, orders: [{ id: "orderA", companyId: "companyA", deliveries: [
-      { id: "deliveryA", companyId: "companyA", orderId: "orderA", podPhotoPath: "companyA/deliveryA-123.png" },
-    ] }] }, externalAssets: { proofObjects: [{ deliveryId: "deliveryA", objectKey: "companyA/deliveryA-123.png" }] },
+    schema: "annona-company-export", version: 2,
+    data: { company: { id: "companyA" }, rounds: [{ id: "roundA", companyId: "companyA", stops: [
+      { id: "stopA", companyId: "companyA", roundId: "roundA", orderId: "orderA", incidentPhotoPath: "companyA/stopA-123.png" },
+    ] }] }, externalAssets: { proofObjects: [{ stopId: "stopA", orderId: "orderA", objectKey: "companyA/stopA-123.png" }] },
   };
 }
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
@@ -71,33 +71,33 @@ test("company archive preserves bytes and SHA256, private permissions and relati
     const companyJson = JSON.parse(await readFile(join(result.path, "company.json"), "utf8"));
     assert.deepEqual(companyJson.data, { ...c.data.data, users: [] });
     assert.deepEqual(companyJson.externalAssets, c.data.externalAssets);
-    assert.deepEqual([companyJson.schema, companyJson.version, companyJson.exportedAt], ["annona-company-export", 1, exportedAt]);
+    assert.deepEqual([companyJson.schema, companyJson.version, companyJson.exportedAt], ["annona-company-export", 2, exportedAt]);
     const verify = () => spawnSync(process.execPath, ["scripts/data02/verify-archive.mjs", result.path, result.manifestSha256], { encoding: "utf8" });
     assert.equal(verify().status, 0);
     await writeFile(join(result.path, "proofs/000001.png"), "tampered");
     assert.equal(verify().status, 1);
     assert.notEqual(digest(await readFile(join(result.path, "proofs/000001.png"))), manifest.entries[1].sha256);
-    assert.deepEqual(c.reads, ["private-bucket", "companyA/deliveryA-123.png"]);
+    assert.deepEqual(c.reads, ["private-bucket", "companyA/stopA-123.png"]);
     assert.equal((await readdir(c.parent)).length, 1);
   } finally { await c.cleanup(); }
 });
 
-test("company archive rejects foreign company/order/delivery, invalid paths and altered manifests before Storage", async () => {
+test("company archive rejects foreign company/round/stop, invalid paths and altered manifests before Storage", async () => {
   const mutations: ((s: CompanyArchiveSnapshot) => void)[] = [
     (s) => { s.data.company.id = "companyB"; },
-    (s) => { s.data.orders[0]!.companyId = "companyB"; },
-    (s) => { s.data.orders[0]!.deliveries[0]!.companyId = "companyB"; },
-    (s) => { s.data.orders[0]!.deliveries[0]!.orderId = "orderB"; },
-    ...["companyB/deliveryA-123.png", "companyA/deliveryB-123.png", "companyA/../deliveryA-123.png", "companyA/deliveryA-123.png?token=x", "https://example.invalid/x", "companyA/deliveryA-123.png/extra"].map((path) => (s: CompanyArchiveSnapshot) => {
-      s.data.orders[0]!.deliveries[0]!.podPhotoPath = path;
+    (s) => { s.data.rounds[0]!.companyId = "companyB"; },
+    (s) => { s.data.rounds[0]!.stops[0]!.companyId = "companyB"; },
+    (s) => { s.data.rounds[0]!.stops[0]!.roundId = "roundB"; },
+    ...["companyB/stopA-123.png", "companyA/stopB-123.png", "companyA/../stopA-123.png", "companyA/stopA-123.png?token=x", "https://example.invalid/x", "companyA/stopA-123.png/extra"].map((path) => (s: CompanyArchiveSnapshot) => {
+      s.data.rounds[0]!.stops[0]!.incidentPhotoPath = path;
       s.externalAssets.proofObjects[0]!.objectKey = path;
     }),
     (s) => { s.externalAssets.proofObjects = []; },
-    (s) => { s.externalAssets.proofObjects[0]!.deliveryId = "deliveryB"; },
-    (s) => { s.externalAssets.proofObjects[0]!.objectKey = "companyA/deliveryA-456.png"; },
+    (s) => { s.externalAssets.proofObjects[0]!.stopId = "stopB"; },
+    (s) => { s.externalAssets.proofObjects[0]!.objectKey = "companyA/stopA-456.png"; },
     (s) => { addSecond(s); s.externalAssets.proofObjects[1] = s.externalAssets.proofObjects[0]!; },
-    (s) => { s.data.orders.push(s.data.orders[0]!); },
-    (s) => { s.data.orders[0]!.deliveries.push(s.data.orders[0]!.deliveries[0]!); },
+    (s) => { s.data.rounds.push(s.data.rounds[0]!); },
+    (s) => { s.data.rounds[0]!.stops.push(s.data.rounds[0]!.stops[0]!); },
   ];
   for (const mutate of mutations) {
     const c = await context();
@@ -111,8 +111,8 @@ test("company archive rejects foreign company/order/delivery, invalid paths and 
 });
 
 function addSecond(s: CompanyArchiveSnapshot) {
-  s.data.orders[0]!.deliveries.push({ id: "second", companyId: "companyA", orderId: "orderA", podPhotoPath: "companyA/second-123.jpg" });
-  s.externalAssets.proofObjects.push({ deliveryId: "second", objectKey: "companyA/second-123.jpg" });
+  s.data.rounds[0]!.stops.push({ id: "second", companyId: "companyA", roundId: "roundA", orderId: "orderB", incidentPhotoPath: "companyA/second-123.jpg" });
+  s.externalAssets.proofObjects.push({ stopId: "second", orderId: "orderB", objectKey: "companyA/second-123.jpg" });
 }
 
 test("company archive removes every partial file if a later object is missing or Storage fails", async () => {
@@ -120,7 +120,7 @@ test("company archive removes every partial file if a later object is missing or
     const c = await context();
     addSecond(c.data);
     c.dependencies.download = async (key) => {
-      if (key.includes("deliveryA")) return new Response("first");
+      if (key.includes("stopA")) return new Response("first");
       if (failure === "network") throw new Error("https://secret.invalid?token=private");
       if (failure === "stream") return new Response(new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array([1])); controller.error(new Error("broken")); } }));
       return new Response(null, { status: failure });
@@ -180,7 +180,7 @@ test("company archive rejects non-private folder, unsafe limits, oversized JSON/
 
 test("company archive allows empty proof set without Storage and refuses missing company", async () => {
   const c = await context();
-  c.data.data.orders[0]!.deliveries[0]!.podPhotoPath = null;
+  c.data.data.rounds[0]!.stops[0]!.incidentPhotoPath = null;
   c.data.externalAssets.proofObjects = [];
   try {
     const result = await exportCompanyArchive("companyA", c.parent, { dependencies: c.dependencies });

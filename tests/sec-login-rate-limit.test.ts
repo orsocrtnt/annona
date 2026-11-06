@@ -216,7 +216,7 @@ test("contention (expiration de transaction ou de pool) : refus bref, jamais une
 function loadLoginRoute(options: { blocked?: number; busy?: boolean; signIn: "ok" | "invalid" | "down"; demo?: boolean; realLimiter?: boolean }) {
   const calls: string[] = [];
   const afterTasks: Array<() => Promise<void>> = [];
-  const user = { id: "u", email: "user@example.test", companyId: "a", company: { id: "a" }, role: { systemRole: "CLIENT" }, settings: null };
+  const user = { id: "u", email: "user@example.test", companyId: "a", company: { id: "a" }, role: { systemRole: "MERCHANT" }, settings: null };
   const deps: Record<string, unknown> = {
     "next/server": { NextResponse, after: (task: () => Promise<void>) => { afterTasks.push(task); } },
     "@/lib/auth/account-access": { assertAccountActive: () => {}, AccountUnavailableError: class extends Error {} },

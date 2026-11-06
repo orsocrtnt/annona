@@ -11,17 +11,17 @@ import { getDriverPushAvailability, vapidKeyToBytes } from "../src/features/driv
 import { driverPushSubscriptionSchema, isAllowedPushEndpoint } from "../src/lib/validations/driver-push";
 
 const CONFIG = { subject: "https://annona.fr", publicKey: "pub", privateKey: "priv" };
-const PAYLOAD = { kind: "NEW_MISSION", companyId: "c1", deliveryId: "d1", driverId: "u1" };
+const PAYLOAD = { kind: "NEW_ROUND", companyId: "c1", roundId: "r1", driverId: "u1" };
 const target = (id: string) => ({ id, endpoint: `https://web.push.apple.com/${id}`, p256dh: "k", auth: "a" });
 
 type Where = Record<string, unknown>;
 function fakeDb(options: { mission?: boolean; targets?: ReturnType<typeof target>[] }) {
   const calls: { missionWhere?: Where; targetWhere?: Where; deleted?: unknown } = {};
   const db = {
-    delivery: {
+    round: {
       findFirst: async ({ where }: { where: Where }) => {
         calls.missionWhere = where;
-        return options.mission === false ? null : { id: "d1" };
+        return options.mission === false ? null : { id: "r1" };
       },
     },
     driverPushSubscription: {
@@ -63,10 +63,10 @@ test("le message envoyé ne contient aucune donnée de mission ni d'identifiant"
   const sent: string[] = [];
   await deliverDriverMissionPush(PAYLOAD, { db, config: CONFIG, send: async (_t, body) => { sent.push(body); } });
   assert.deepEqual(JSON.parse(sent[0]!), NEW_MISSION_PUSH);
-  for (const secret of ["d1", "u1", "c1"]) assert.ok(!sent[0]!.includes(`"${secret}"`));
+  for (const secret of ["r1", "u1", "c1"]) assert.ok(!sent[0]!.includes(`"${secret}"`));
   assert.deepEqual(calls.targetWhere, { userId: "u1", companyId: "c1" }, "abonnements du seul livreur, dans son entreprise");
   assert.deepEqual(calls.missionWhere, {
-    id: "d1", companyId: "c1", driverId: "u1", status: "ASSIGNED",
+    id: "r1", companyId: "c1", driverId: "u1", status: "ASSIGNED",
     driver: { status: "ACTIVE", companyId: "c1" },
   });
 });
@@ -161,11 +161,4 @@ test("le service worker ne garde que les pages livreur et n'intercepte pas le r�
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.start_url, "/driver");
   assert.equal(manifest.theme_color, undefined, "une couleur fixe garderait la barre du haut blanche en mode sombre");
-});
-
-test("l'affectation inscrit la notification dans la transaction, sauf prise par le livreur lui-même", () => {
-  const source = readFileSync("src/domains/delivery/delivery.service.ts", "utf8");
-  assert.match(source, /options\?\.selfClaimed\s*\? null\s*: await enqueueOperationJob\(tx,/);
-  assert.match(source, /jobKey: `driver-push:mission:\$\{deliveryId\}:\$\{trackingEvent\.id\}`/);
-  assert.match(source, /Libre affectation par le livreur[^}]+selfClaimed: true/);
 });

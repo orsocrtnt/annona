@@ -6,7 +6,7 @@ import { facturXUnavailableReason } from "../src/domains/invoice/facturx/facturx
 import { generateFacturXXml } from "../src/domains/invoice/facturx/cii-generator";
 import { buildFacturXPdf, facturXHttpResult, facturXVisibleMentions } from "../src/domains/invoice/facturx/facturx-document";
 import { mapInvoiceToFacturX, type FacturXSource } from "../src/domains/invoice/facturx/facturx-mapping";
-import { companyClientWhere, facturXInvoiceWhere } from "../src/domains/invoice/facturx/facturx-scope";
+import { facturXInvoiceWhere } from "../src/domains/invoice/facturx/facturx-scope";
 import { generateInvoicePdf, type InvoicePdfLegalMentions } from "../src/lib/pdf/invoice-pdf";
 import { pdfText } from "./helpers/pdf-text";
 import {
@@ -27,11 +27,10 @@ function source(overrides: { invoice?: Partial<FacturXSource["invoice"]>; seller
       status: "PENDING",
       createdAt: new Date("2026-10-27T09:00:00Z"),
       dueDate: new Date("2026-11-26T09:00:00Z"),
-      amount: 30,
-      lineItems: [
-        { label: "Course Paris intra-muros", amount: 25, quantity: 1, sourceType: "ZONE", sourceId: "z1" },
-        { label: "TVA (20%)", amount: 5, quantity: 1, sourceType: "VAT" },
-      ],
+      lines: [{ label: "Baguettes tradition (semaine)", quantity: 1, unitPriceCents: 2500, vatRateBasisPoints: 2000 }],
+      subtotalCents: 2500,
+      vatCents: 500,
+      totalCents: 3000,
       notes: null,
       orderReference: "CMD-72011242",
       ...overrides.invoice,
@@ -87,19 +86,20 @@ test("facture simple à 20 % : mapping complet, mentions PMD/PMT/AAB et totaux i
   assert.deepEqual(xmlTexts(xml, "ram:Description"), ["SAS au capital de 10 000 € — RCS Paris 732 829 320", "Paiement au plus tard le 26/11/2026."]);
   assert.deepEqual(xmlTexts(xml, "ram:IssuerAssignedID"), ["CMD-72011242"]);
   assert.ok(xmlTexts(xml, "ram:Name").includes("Client Démo SARL"));
-  assert.equal(result.invoice.lines.length, 1, "la ligne de TVA devient une ventilation, pas une ligne");
+  assert.equal(result.invoice.lines.length, 1, "la TVA est une ventilation par taux, pas une ligne");
 });
 
-test("plusieurs lignes et quantités : arrondi au centime identique à buildInvoiceLineItems", () => {
+test("plusieurs lignes et quantités : arrondi au centime de la TVA par taux", () => {
   const result = mapInvoiceToFacturX(
     source({
       invoice: {
-        amount: 47.6,
-        lineItems: [
-          { label: "Course express", amount: 12.35, quantity: 2, sourceType: "ZONE" },
-          { label: "Attente", amount: 4.99, quantity: 3, sourceType: "FEE" },
-          { label: "TVA (20%)", amount: 7.93, quantity: 1, sourceType: "VAT" },
+        lines: [
+          { label: "Fraisier 6 parts", quantity: 2, unitPriceCents: 1235, vatRateBasisPoints: 2000 },
+          { label: "Cookie aux pépites", quantity: 3, unitPriceCents: 499, vatRateBasisPoints: 2000 },
         ],
+        subtotalCents: 3967,
+        vatCents: 793,
+        totalCents: 4760,
       },
     })
   );
@@ -109,30 +109,53 @@ test("plusieurs lignes et quantités : arrondi au centime identique à buildInvo
   assert.deepEqual(xmlTexts(xml, "ram:GrandTotalAmount"), ["47.60"]);
 });
 
-test("taux réduit décimal (5,5 %) lu depuis le libellé de la ligne TVA", () => {
+test("taux réduit décimal (5,5 %) lu sur la ligne, en points de base", () => {
   const result = mapInvoiceToFacturX(
-    source({ invoice: { amount: 13.19, lineItems: [{ label: "Repas", amount: 12.5, quantity: 1, sourceType: "CUSTOM" }, { label: "TVA (5.5%)", amount: 0.69, quantity: 1, sourceType: "VAT" }] } })
+    source({ invoice: { lines: [{ label: "Baguette tradition", quantity: 1, unitPriceCents: 1250, vatRateBasisPoints: 550 }], subtotalCents: 1250, vatCents: 69, totalCents: 1319 } })
   );
-  assert.ok(result.ok);
+  assert.ok(result.ok, JSON.stringify(!result.ok && result.errors));
   assert.equal(result.invoice.lines[0]!.vatRate, 5.5);
 });
 
+test("plusieurs taux sur une même facture (5,5 % et 20 %) : une ventilation de TVA par taux", () => {
+  const result = mapInvoiceToFacturX(
+    source({
+      invoice: {
+        lines: [
+          { label: "Baguette tradition", quantity: 100, unitPriceCents: 110, vatRateBasisPoints: 550 },
+          { label: "Boisson", quantity: 10, unitPriceCents: 150, vatRateBasisPoints: 2000 },
+        ],
+        // 11 000 × 5,5 % = 605 ; 1 500 × 20 % = 300.
+        subtotalCents: 12500,
+        vatCents: 905,
+        totalCents: 13405,
+      },
+    })
+  );
+  assert.ok(result.ok, JSON.stringify(!result.ok && result.errors));
+  const xml = generateFacturXXml(result.invoice);
+  assert.deepEqual(xmlWellFormednessErrors(xml), []);
+  assert.deepEqual(xmlTexts(xml, "ram:CalculatedAmount").sort(), ["3.00", "6.05"]);
+  assert.deepEqual(xmlTexts(xml, "ram:GrandTotalAmount"), ["134.05"]);
+});
+
 test("incohérences refusées : TVA différente du taux, total différent des lignes, lignes illisibles", () => {
-  const badVat = mapInvoiceToFacturX(source({ invoice: { amount: 30.01, lineItems: [{ label: "Course", amount: 25, quantity: 1, sourceType: "ZONE" }, { label: "TVA (20%)", amount: 5.01, quantity: 1, sourceType: "VAT" }] } }));
+  const badVat = mapInvoiceToFacturX(source({ invoice: { vatCents: 501, totalCents: 3001 } }));
   assert.deepEqual(rules(badVat), ["TL-TVA"]);
-  assert.deepEqual(rules(mapInvoiceToFacturX(source({ invoice: { amount: 31 } }))), ["TL-TOTAL"]);
-  assert.ok(rules(mapInvoiceToFacturX(source({ invoice: { lineItems: "oops" } }))).includes("TL-LIGNES"));
-  assert.ok(rules(mapInvoiceToFacturX(source({ invoice: { lineItems: [{ label: "x", amount: "10", quantity: 1 }] } }))).includes("TL-LIGNES"));
+  assert.deepEqual(rules(mapInvoiceToFacturX(source({ invoice: { totalCents: 3100 } }))), ["TL-TOTAL"]);
+  assert.deepEqual(rules(mapInvoiceToFacturX(source({ invoice: { subtotalCents: 2400, totalCents: 2900 } }))), ["TL-TOTAL"]);
+  assert.ok(rules(mapInvoiceToFacturX(source({ invoice: { lines: "oops" } }))).includes("TL-LIGNES"));
+  assert.ok(rules(mapInvoiceToFacturX(source({ invoice: { lines: [{ label: "x", quantity: 1, unitPriceCents: "10", vatRateBasisPoints: 2000 }] } }))).includes("TL-LIGNES"));
+  assert.ok(rules(mapInvoiceToFacturX(source({ invoice: { lines: [] } }))).includes("TL-LIGNES"));
 });
 
 test("facture sans ligne de TVA : exonération avec motif (293 B → VATEX-FR-FRANCHISE), refusée sans motif", () => {
-  const lineItems = [{ label: "Course", amount: 18, quantity: 1, sourceType: "ZONE" }];
-  const exempt = mapInvoiceToFacturX(source({ invoice: { amount: 18, lineItems }, einvoicing: { vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } }));
+  const exempt = mapInvoiceToFacturX(source({ invoice: { lines: [{ label: "Course", quantity: 1, unitPriceCents: 1800, vatRateBasisPoints: 0 }], subtotalCents: 1800, vatCents: 0, totalCents: 1800 }, einvoicing: { vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } }));
   assert.ok(exempt.ok);
   assert.deepEqual(exempt.invoice.vatExemptions.E, { reason: "TVA non applicable, art. 293 B du CGI", code: "VATEX-FR-FRANCHISE" });
   assert.match(generateFacturXXml(exempt.invoice), /<ram:CategoryCode>E<\/ram:CategoryCode>/);
 
-  const missing = mapInvoiceToFacturX(source({ invoice: { amount: 18, lineItems } }));
+  const missing = mapInvoiceToFacturX(source({ invoice: { lines: [{ label: "Course", quantity: 1, unitPriceCents: 1800, vatRateBasisPoints: 0 }], subtotalCents: 1800, vatCents: 0, totalCents: 1800 } }));
   assert.ok(!missing.ok);
   const issue = missing.errors.find((e) => e.rule === "BR-E-10");
   assert.match(issue!.message, /Réglages › Facturation/);
@@ -164,12 +187,10 @@ test("client sans identité de facturation : adresse par défaut et avertissemen
   assert.equal(result.invoice.payment, undefined);
 });
 
-test("disponibilité du Factur-X par statut : même règle pour le bouton du portail et le mapping", () => {
+test("disponibilité du Factur-X par statut : une seule règle (le bouton du portail viendra avec FACT-1)", () => {
   assert.match(facturXUnavailableReason("DRAFT")!, /brouillon/);
   assert.match(facturXUnavailableReason("CANCELLED")!, /annulée/);
   for (const status of ["PENDING", "PAID", "OVERDUE"]) assert.equal(facturXUnavailableReason(status), null, status);
-  const page = readFileSync("src/app/(client-portal)/portal/invoices/[id]/page.tsx", "utf8");
-  assert.match(page, /facturXUnavailableReason\(invoice\.status\)/, "le portail masque le bouton selon le statut");
   const cancelled = mapInvoiceToFacturX(source({ invoice: { status: "CANCELLED" } }));
   assert.ok(!cancelled.ok && cancelled.errors[0]!.message === facturXUnavailableReason("CANCELLED"));
 });
@@ -186,8 +207,10 @@ test("caractères spéciaux et accents dans les libellés, raisons sociales et n
     source({
       invoice: {
         notes: "Livré à l'accueil — « bât. B » & 2e étage <code 12>",
-        amount: 12,
-        lineItems: [{ label: "Pli « urgent » & fragile <A4>", amount: 10, quantity: 1, sourceType: "CUSTOM" }, { label: "TVA (20%)", amount: 2, quantity: 1, sourceType: "VAT" }],
+        lines: [{ label: "Pli « urgent » & fragile <A4>", quantity: 1, unitPriceCents: 1000, vatRateBasisPoints: 2000 }],
+        subtotalCents: 1000,
+        vatCents: 200,
+        totalCents: 1200,
       },
       seller: { legalName: "Établissements Ñandú & Cie" },
     })
@@ -202,11 +225,13 @@ test("caractères spéciaux et accents dans les libellés, raisons sociales et n
 
 test("isolation : l'entreprise de la session est toujours imposée, le client aussi côté portail", () => {
   assert.deepEqual(facturXInvoiceWhere({ invoiceId: "inv", companyId: "company_a" }), { id: "inv", companyId: "company_a" });
-  assert.deepEqual(facturXInvoiceWhere({ invoiceId: "inv", companyId: "company_a", customerId: "u1" }), { id: "inv", companyId: "company_a", customerId: "u1" });
+  assert.deepEqual(facturXInvoiceWhere({ invoiceId: "inv", companyId: "company_a", customerId: "u1" }), {
+    id: "inv",
+    companyId: "company_a",
+    merchant: { is: { companyId: "company_a", users: { some: { id: "u1", companyId: "company_a" } } } },
+  });
   assert.throws(() => facturXInvoiceWhere({ invoiceId: "inv", companyId: "" }), /FACTURX_SCOPE_REQUIRED/);
   assert.throws(() => facturXInvoiceWhere({ invoiceId: "inv", companyId: "company_a", customerId: "" }), /FACTURX_SCOPE_REQUIRED/);
-  assert.deepEqual(companyClientWhere("company_a", "c1"), { id: "c1", companyId: "company_a", role: { systemRole: "CLIENT" } });
-  assert.throws(() => companyClientWhere("", "c1"), /CLIENT_SCOPE_REQUIRED/);
 });
 
 test("assemblage : refus sans générer de PDF ; succès avec XML embarqué ; réponses HTTP lisibles", async () => {
@@ -301,7 +326,7 @@ test("partie visible du Factur-X : mentions légales vendeur/acheteur alignées 
   assert.ok(!visible.includes("ne constitue pas une facture électronique réglementaire"));
 
   const exempt = await buildFacturXPdf({
-    source: source({ invoice: { amount: 18, lineItems: [{ label: "Course", amount: 18, quantity: 1, sourceType: "ZONE" }] }, einvoicing: { vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } }),
+    source: source({ invoice: { lines: [{ label: "Course", quantity: 1, unitPriceCents: 1800, vatRateBasisPoints: 0 }], subtotalCents: 1800, vatCents: 0, totalCents: 1800 }, einvoicing: { vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } }),
     renderClassicPdf: render,
     now,
   });
@@ -323,8 +348,7 @@ test("réglages stockés : un champ invalide est écarté et signalé, les autre
 });
 
 test("micro-coursier en franchise (293 B) sans n° de TVA : export possible avec BT-32, avertissement si déduit du SIREN", () => {
-  const lineItems = [{ label: "Course", amount: 18, quantity: 1, sourceType: "ZONE" }];
-  const base = { invoice: { amount: 18, lineItems }, einvoicing: { vatNumber: undefined, vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } };
+  const base = { invoice: { lines: [{ label: "Course", quantity: 1, unitPriceCents: 1800, vatRateBasisPoints: 0 }], subtotalCents: 1800, vatCents: 0, totalCents: 1800 }, einvoicing: { vatNumber: undefined, vatExemptionReason: "TVA non applicable, art. 293 B du CGI" } };
   const derived = mapInvoiceToFacturX(source(base));
   assert.ok(derived.ok, JSON.stringify(!derived.ok && derived.errors));
   assert.equal(derived.invoice.seller.taxRegistrationId, "732829320");

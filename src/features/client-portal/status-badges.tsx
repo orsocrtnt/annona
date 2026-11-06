@@ -1,40 +1,20 @@
 import { Badge } from "@/components/ui/badge";
-import type {
-  DeliveryCategory,
-  OrderStatus,
-  DeliveryStatus,
-  InvoiceStatus,
-  SupportTicketStatus,
-} from "@prisma/client";
-import { getFulfillmentStatusLabel } from "@/lib/constants/order-status";
+import type { InvoiceStatus, OrderStatus, SupportTicketStatus } from "@prisma/client";
+import { ORDER_STATUS_LABELS } from "@/lib/constants/order-status";
 import { INVOICE_STATUS_LABELS } from "@/lib/constants/invoice-status";
 
-const ORDER_VARIANTS: Record<OrderStatus, "success" | "brand" | "warning" | "secondary" | "error"> = {
-  QUOTE_REQUESTED: "warning",
-  PENDING: "secondary",
-  ASSIGNED: "brand",
-  PURCHASING: "warning",
-  IN_DELIVERY: "brand",
+type Variant = "success" | "brand" | "warning" | "secondary" | "error";
+
+const ORDER_VARIANTS: Record<OrderStatus, Variant> = {
+  DRAFT: "secondary",
+  VALIDATED: "brand",
+  LOCKED: "warning",
+  PREPARED: "brand",
   DELIVERED: "success",
-  INVOICED: "warning",
-  PAID: "success",
   CANCELLED: "error",
-  FAILED: "error",
 };
 
-const DELIVERY_VARIANTS: Record<DeliveryStatus, "success" | "brand" | "warning" | "secondary" | "error"> = {
-  PENDING: "secondary",
-  ASSIGNED: "brand",
-  PURCHASING: "warning",
-  IN_DELIVERY: "brand",
-  DELIVERED: "success",
-  INVOICED: "warning",
-  PAID: "success",
-  CANCELLED: "error",
-  FAILED: "error",
-};
-
-const INVOICE_VARIANTS: Record<InvoiceStatus, "success" | "brand" | "warning" | "secondary" | "error"> = {
+const INVOICE_VARIANTS: Record<InvoiceStatus, Variant> = {
   PAID: "success",
   PENDING: "warning",
   OVERDUE: "error",
@@ -42,32 +22,8 @@ const INVOICE_VARIANTS: Record<InvoiceStatus, "success" | "brand" | "warning" | 
   CANCELLED: "error",
 };
 
-export function OrderStatusBadge({
-  status,
-  deliveryCategory,
-}: {
-  status: OrderStatus;
-  deliveryCategory?: DeliveryCategory | null;
-}) {
-  return (
-    <Badge variant={ORDER_VARIANTS[status]}>
-      {getFulfillmentStatusLabel(status, deliveryCategory)}
-    </Badge>
-  );
-}
-
-export function DeliveryStatusBadge({
-  status,
-  deliveryCategory,
-}: {
-  status: DeliveryStatus;
-  deliveryCategory?: DeliveryCategory | null;
-}) {
-  return (
-    <Badge variant={DELIVERY_VARIANTS[status]}>
-      {getFulfillmentStatusLabel(status, deliveryCategory)}
-    </Badge>
-  );
+export function OrderStatusBadge({ status }: { status: OrderStatus }) {
+  return <Badge variant={ORDER_VARIANTS[status]}>{ORDER_STATUS_LABELS[status]}</Badge>;
 }
 
 export function InvoiceStatusBadge({ status, daysOverdue = 0 }: { status: InvoiceStatus; daysOverdue?: number }) {

@@ -25,7 +25,7 @@ function load(file: string, dependencies: Record<string, unknown>): Handlers {
 }
 const json = (body: unknown, method = "POST") =>
   new Request("http://local", { method, headers: { "Content-Type": "application/json" }, body: typeof body === "string" ? body : JSON.stringify(body) });
-const clientAuth = { requireClientRole: async () => ({ context: { user: { id: "client-1", companyId: "company-1" } } }) };
+const clientAuth = { requireMerchantRole: async () => ({ context: { user: { id: "client-1", companyId: "company-1" } } }) };
 
 test("notifications portail : ids facultatifs, champ inconnu ou id non texte refusé", async () => {
   const marked: unknown[] = [];

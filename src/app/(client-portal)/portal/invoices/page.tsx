@@ -1,5 +1,11 @@
-import { ClientInvoicesContent } from "@/features/client-portal/client-invoices-content";
+import { ComingSoon } from "@/components/shared/coming-soon";
 
 export default function ClientInvoicesPage() {
-  return <ClientInvoicesContent />;
+  return (
+    <ComingSoon
+      title="Mes factures"
+      description="Relevés de factures par période, téléchargeables en PDF."
+      task="FACT-1"
+    />
+  );
 }

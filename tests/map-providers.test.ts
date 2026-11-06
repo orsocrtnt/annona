@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import { renderToStaticMarkup } from "react-dom/server";
-import { DriverNavigationHud } from "../src/features/driver/driver-navigation-hud";
 import * as config from "../src/lib/maps/provider-config";
 import { fetchProviderJson } from "../src/lib/maps/provider-request";
 import { parseIgnNavigationRoute, parseOsrmNavigationRoute, readableStreetName, validWaypoints } from "../src/lib/maps/navigation-route";
@@ -141,69 +140,4 @@ test("MAP-2 : lot géocodage plafonné à huit appels", async () => {
   const g = geocoder({ features: [] });
   await g.module.geocodeManyCapped(Array.from({ length: 20 }, (_, i) => ({ key: String(i), parts: { address: `test ${i}` } })));
   assert.equal(g.calls(), 8);
-});
-test("MAP-2 : panne géocodage laisse les coordonnées nulles, sans persistence inventée", async () => {
-  let writes = 0;
-  const m = moduleAt("src/domains/delivery/delivery-coordinates.ts", {
-    "@/lib/geocoding": { geocodeAddress: async () => null },
-    "@/services/prisma/client": { prisma: { delivery: { update: async () => { writes++; } }, orderStop: { update: async () => { writes++; } } } },
-  });
-  const result = await m.resolveDeliveryCoordinateFields({ address: "test", pickupAddress: "test" });
-  assert.equal(result.latitude, null); assert.equal(result.pickupLongitude, null);
-  await m.ensureDeliveryCoordinates({ id: "test", address: "test" });
-  await m.ensureOrderStopCoordinates({ id: "test", address: "test" });
-  assert.equal(writes, 0);
-});
-test("MAP-2 : adresse non localisée bloque la navigation et la première collecte ne se décale pas", async () => {
-  const mission = { id: "test", reference: "MAP-2", deliveryCategory: "COURIER", status: "ASSIGNED", missionStartedAt: new Date(), order: { stops: [] } };
-  let i = 0;
-  const m = moduleAt("src/domains/delivery/driver-navigation.service.ts", {
-    "@/lib/maps/provider-config": config,
-    "@/domains/delivery/delivery.service": { getDriverMissionById: async () => mission },
-    "@/lib/order/courier-pickups": { getCourierPickupStops: () => [{ address: "première" }, { address: "seconde" }] },
-    "@/lib/geocoding": { formatAddressQuery: () => "test", isLegacyFakeTrackingCoord: () => false, geocodeAddress: async () => (++i === 3 ? { lat: 48, lng: 2 } : null) },
-  });
-  const result = await m.getDriverMissionNavigation("d", "c", "m");
-  assert.equal(result.destination, null); assert.equal(result.pickup, null); assert.equal(result.canNavigate, false);
-  assert.match(result.unavailableReason, /Adresse non localisée/);
-});
-test("MAP-2 : HUD panne et attente GPS explicites, jamais durée zéro ni calcul permanent", () => {
-  const html = renderToStaticMarkup(DriverNavigationHud({ guidance: null, destinationLabel: "test", etaLabel: null, remainingLabel: null, unavailable: true }));
-  assert.match(html, /Itinéraire indisponible/); assert.doesNotMatch(html, /Calcul du guidage|0 min/);
-  const waiting = renderToStaticMarkup(DriverNavigationHud({ guidance: null, destinationLabel: "test", etaLabel: null, remainingLabel: null, waitingForPosition: true }));
-  assert.match(waiting, /attente de la position GPS/);
-});
-test("MAP-2 : carte historique reste importable sans window", async () => {
-  assert.equal(typeof window, "undefined");
-  assert.equal(typeof (await import("../src/components/maps/delivery-map")).DeliveryMap, "function");
-});
-test("MAP-2 : cible inconnue ne devient jamais proximité confirmée", async () => {
-  const m = moduleAt("src/domains/delivery/driver-proximity.service.ts", {
-    "@/services/prisma/client": { prisma: {} },
-    "@/domains/delivery/driver-navigation.service": { getDriverMissionNavigation: async () => ({ destination: null, pickup: null, pickups: [] }) },
-    "@/lib/maps/driver-proximity": { DRIVER_PROXIMITY_THRESHOLD_METERS: 150, isNearLocation: () => true },
-    "@/lib/maps/navigation-utils": { haversineMeters: () => 0 },
-  });
-  const result = await m.checkDriverMissionProximity("d", "c", "m", "delivery");
-  assert.equal(result.near, false); assert.equal(result.hasLocation, false); assert.equal(result.distanceMeters, null);
-});
-test("MAP-2 : destination inconnue sans marqueur ni itinéraire inventé", async () => {
-  const { buildDeliveryMapMarkers, getDeliveryRouteWaypoints, getDeliveryMapPhaseHint } = await import("../src/features/back-office/dispatch-delivery-map-state");
-  const delivery = { id: "test", destination: null, pickup: null, pickups: [], deliveryCategory: "STANDARD", status: "IN_DELIVERY", driverLocation: { latitude: 48, longitude: 2 }, trackingSteps: [] } as any;
-  assert.equal(buildDeliveryMapMarkers(delivery).length, 0);
-  assert.equal(getDeliveryRouteWaypoints(delivery), null);
-  assert.equal(getDeliveryMapPhaseHint(delivery), null);
-});
-
-test("TRACK-2 : la couche d'itinéraire reprend après la prochaine étape du livreur", async () => {
-  const { getDeliveryRouteWaypoints, getRouteWaypointsAfterDriver } = await import("../src/features/back-office/dispatch-delivery-map-state");
-  const pickup = { id: "p", latitude: 48.84, longitude: 2.37, address: "Gare", label: "Collecte" };
-  const base = { id: "c", deliveryCategory: "COURIER", status: "ASSIGNED", destination: { latitude: 48.88, longitude: 2.34 }, pickup: null, pickups: [pickup], driverName: "Karim", trackingSteps: [] } as any;
-  const toPickup = { ...base, driverLocation: { latitude: 48.85, longitude: 2.36, motion: { from: { latitude: 48.85, longitude: 2.36 }, target: { latitude: 48.84, longitude: 2.37 }, since: "2026-10-27T12:00:00Z" } } };
-  const rest = getRouteWaypointsAfterDriver(toPickup)!;
-  assert.deepEqual(rest.map((w: any) => [w.latitude, w.longitude]), [[48.84, 2.37], [48.88, 2.34]], "collecte → livraison ; le tronçon livreur → collecte est au marqueur");
-  const collected = { ...toPickup, status: "IN_DELIVERY", driverLocation: { ...toPickup.driverLocation, motion: { ...toPickup.driverLocation.motion, target: { latitude: 48.88, longitude: 2.34 } } } };
-  assert.equal(getRouteWaypointsAfterDriver(collected), null, "prochaine étape = livraison : rien d'autre à tracer");
-  const still = { ...base, driverLocation: { latitude: 48.85, longitude: 2.36, motion: null } };
-  assert.deepEqual(getRouteWaypointsAfterDriver(still), getDeliveryRouteWaypoints(still), "sans trajectoire : parcours complet inchangé");
 });

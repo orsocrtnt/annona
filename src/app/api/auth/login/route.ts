@@ -1,5 +1,4 @@
 import { zodIssueMessage } from "@/lib/config-messages";
-import { resolveOnboardingLoginPath } from "@/domains/onboarding/onboarding.service";
 import { after, NextResponse } from "next/server";
 import { assertAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
 import { loginSchema } from "@/lib/validations/auth";
@@ -111,7 +110,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       user,
       permissions,
-      redirectTo: await resolveOnboardingLoginPath(user, getDashboardPathForRole(user.role.systemRole, user.settings)),
+      redirectTo: getDashboardPathForRole(user.role.systemRole),
     });
   } catch (error) {
     if (error instanceof AccountUnavailableError) {

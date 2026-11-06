@@ -2,43 +2,42 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { SystemRole } from "@prisma/client";
 import { adminNavItems } from "../src/features/navigation/nav-config";
-import { buildMiniAdminSettings, MINI_ADMIN_MODULE_IDS } from "../src/lib/permissions/mini-admin";
 import { getAllowedRolesForPath } from "../src/lib/permissions/rbac";
 import { canOpenPage, getRoleHomePath } from "../src/lib/permissions/page-access";
+
+const ROLES: SystemRole[] = ["SUPER_ADMIN", "ADMIN", "BAKER", "DRIVER", "MERCHANT"];
 
 const expected: Record<string, SystemRole[]> = {
   "/admin": ["SUPER_ADMIN"],
   "/companies": ["SUPER_ADMIN"],
-  "/dashboard": ["COMPANY_ADMIN", "MINI_ADMIN"],
-  "/dispatch": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-  "/support": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-  "/settings": ["COMPANY_ADMIN", "MINI_ADMIN"],
-  "/users": ["COMPANY_ADMIN", "MINI_ADMIN"],
-  "/onboarding": ["COMPANY_ADMIN"],
+  "/dashboard": ["ADMIN"],
+  "/support": ["ADMIN"],
+  "/settings": ["ADMIN"],
+  "/users": ["ADMIN"],
+  "/bakery": ["BAKER"],
   "/driver": ["DRIVER"],
-  "/portal": ["CLIENT"],
+  "/portal": ["MERCHANT"],
 };
 
 const permissionFor: Record<string, string> = {
   "/admin": "dashboard:admin",
   "/companies": "companies:read",
   "/dashboard": "dashboard:company",
-  "/dispatch": "dashboard:dispatcher",
+  "/support": "support:read",
   "/settings": "settings:read",
   "/users": "users:read",
-  "/onboarding": "settings:read",
+  "/bakery": "dashboard:baker",
   "/driver": "dashboard:driver",
-  "/portal": "dashboard:client",
+  "/portal": "dashboard:merchant",
 };
 
 test("ADMIN-1 routes : le super-admin reste dans l'espace plateforme", () => {
   assert.equal(getRoleHomePath("SUPER_ADMIN"), "/admin");
   for (const [path, roles] of Object.entries(expected)) {
     assert.deepEqual([...getAllowedRolesForPath(path)].sort(), [...roles].sort(), path);
-    for (const role of ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"] as const) {
+    for (const role of ROLES) {
       const permission = permissionFor[path];
-      const settings = role === "MINI_ADMIN" ? buildMiniAdminSettings("Tous", [...MINI_ADMIN_MODULE_IDS]) : {};
-      const allowed = canOpenPage(path, { role, permissions: permission ? [permission] : [], settings });
+      const allowed = canOpenPage(path, { role, permissions: permission ? [permission] : [] });
       assert.equal(allowed, roles.includes(role), `guard ${role} ${path}`);
     }
   }

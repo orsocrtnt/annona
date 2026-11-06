@@ -16,7 +16,6 @@ import {
   usePortalSupportTickets,
   useCreateSupportTicket,
   usePortalSupportContacts,
-  usePortalDeliveries,
 } from "@/features/client-portal/hooks";
 import { TicketStatusBadge } from "@/features/client-portal/status-badges";
 import { createSupportTicketSchema, type CreateSupportTicketInput } from "@/lib/validations/support";
@@ -27,7 +26,6 @@ import { formatDate } from "@/lib/utils";
 export default function ClientSupportPage() {
   const { data: tickets, isLoading, error, refetch } = usePortalSupportTickets();
   const { data: contacts } = usePortalSupportContacts();
-  const { data: deliveries } = usePortalDeliveries();
   const createTicket = useCreateSupportTicket();
 
   const form = useForm<CreateSupportTicketInput>({
@@ -170,29 +168,6 @@ export default function ClientSupportPage() {
               />
             </FormField>
 
-            {deliveries && deliveries.length > 0 && (
-              <FormField label="Livraison concernée (optionnel)">
-                <Controller
-                  name="relatedDeliveryId"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {deliveries.map((d) => (
-                          <SelectItem key={d.id} value={d.id}>
-                            {d.reference} — {d.status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </FormField>
-            )}
-
             {activeContact && (
               <div className="rounded-lg bg-muted/50 p-3 text-sm">
                 <p className="font-medium">Contact sélectionné : {activeContact.name}</p>
@@ -242,9 +217,9 @@ export default function ClientSupportPage() {
                     <p className="font-medium">{ticket.subject}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{ticket.message}</p>
                     <p className="mt-1 text-xs text-muted-foreground">{formatDate(ticket.createdAt)}</p>
-                    {ticket.relatedDelivery && (
+                    {ticket.relatedOrder && (
                       <p className="text-xs text-muted-foreground">
-                        Livraison {ticket.relatedDelivery.reference}
+                        Commande {ticket.relatedOrder.reference}
                       </p>
                     )}
                     <Link

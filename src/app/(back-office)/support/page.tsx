@@ -81,13 +81,8 @@ function SupportTicketCard({ ticket }: { ticket: CompanySupportTicket }) {
             </a>
           ) : null}
           {ticket.relatedOrder ? (
-            <Link className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center" href={`/dashboard/orders/${ticket.relatedOrder.id}`}>
+            <Link className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center" href="/dashboard/orders">
               Commande {ticket.relatedOrder.reference}
-            </Link>
-          ) : null}
-          {ticket.relatedDelivery ? (
-            <Link className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center" href={`/dashboard/deliveries/${ticket.relatedDelivery.id}`}>
-              Livraison {ticket.relatedDelivery.reference}
             </Link>
           ) : null}
         </div>

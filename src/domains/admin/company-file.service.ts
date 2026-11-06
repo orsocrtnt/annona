@@ -24,12 +24,13 @@ export const COMPANY_TEAM_LIMIT = 20;
 export const COMPANY_TICKETS_LIMIT = 5;
 
 /** Ordre d'affichage des rôles d'une entreprise (le super-administrateur n'appartient à aucune entreprise). */
-export const COMPANY_ROLE_ORDER: SystemRole[] = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT", "SUPER_ADMIN"];
+export const COMPANY_ROLE_ORDER: SystemRole[] = ["ADMIN", "BAKER", "DRIVER", "MERCHANT", "SUPER_ADMIN"];
 /** Comptes comptés comme occupés : actifs ou invités (en attente de validation). */
 const SEATED_STATUSES: UserStatus[] = ["ACTIVE", "PENDING_VERIFICATION"];
 const BILLED_INVOICE_STATUSES: InvoiceStatus[] = ["PENDING", "PAID", "OVERDUE"];
-const IN_PROGRESS_DELIVERY = new Set(["PENDING", "ASSIGNED", "PURCHASING", "IN_DELIVERY"]);
-const DONE_DELIVERY = new Set(["DELIVERED", "INVOICED", "PAID"]);
+/** Commandes non encore livrées (de la saisie à la préparation). */
+const IN_PROGRESS_ORDER = new Set(["DRAFT", "VALIDATED", "LOCKED", "PREPARED"]);
+const DONE_ORDER = new Set(["DELIVERED"]);
 
 export type CompanyRoleSummary = {
   role: SystemRole;
@@ -54,17 +55,17 @@ export type CompanyActivity = {
   month: { startsAt: string; endsAt: string };
   users: { byRole: CompanyRoleSummary[]; team: CompanyTeamMember[]; teamTruncated: boolean } | null;
   deliveries: {
-    /** Livraisons créées dans le mois, réparties par état actuel. */
+    /** Commandes créées dans le mois, réparties par état actuel. */
     created: number;
     inProgress: number;
     done: number;
     failed: number;
     cancelled: number;
-    /** Livraisons terminées « Livrée » dans le mois (date de fin), même règle que l'accueil. */
+    /** Commandes livrées dans le mois (date de livraison effective), même règle que l'accueil. */
     delivered: number;
   } | null;
   series: AdminHomeDay[] | null;
-  /** Factures de livraison émises dans le mois (brouillons et annulées exclus). */
+  /** Factures émises dans le mois (brouillons et annulées exclus). */
   invoices: { count: number; paidCents: number; pendingCents: number; overdueCents: number } | null;
   support: {
     open: number;
@@ -74,7 +75,6 @@ export type CompanyActivity = {
 
 export type PlatformCompanyFile = PlatformCompanyDetail & { activity: CompanyActivity };
 
-type Money = { toString(): string } | number | null;
 type Args = Record<string, unknown>;
 
 export type CompanyFileDatabase = {
@@ -83,14 +83,13 @@ export type CompanyFileDatabase = {
     findMany: (args: Args) => Promise<Array<{ id: string; firstName: string; lastName: string; status: UserStatus; lastLoginAt: Date | null; role: { systemRole: SystemRole } }>>;
   };
   role: { findMany: (args: Args) => Promise<Array<{ id: string; systemRole: SystemRole }>> };
-  delivery: {
+  order: {
     groupBy: (args: Args) => Promise<Array<{ status: string; _count: { _all: number } }>>;
     count: (args: Args) => Promise<number>;
-    findMany: (args: Args) => Promise<Array<{ completedAt: Date | null }>>;
+    findMany: (args: Args) => Promise<Array<{ createdAt: Date; deliveredAt?: Date | null }>>;
   };
-  order: { findMany: (args: Args) => Promise<Array<{ createdAt: Date }>> };
   invoice: {
-    groupBy: (args: Args) => Promise<Array<{ status: InvoiceStatus; _count: { _all: number }; _sum: { amount: Money } }>>;
+    groupBy: (args: Args) => Promise<Array<{ status: InvoiceStatus; _count: { _all: number }; _sum: { totalCents: number | null } }>>;
   };
   supportTicket: {
     count: (args: Args) => Promise<number>;
@@ -110,10 +109,8 @@ export function parisMonthBounds(now: Date) {
 
 /* ---------- Mise en forme (pures, testées) ---------- */
 
-function cents(value: Money) {
-  if (value == null) return 0;
-  const euros = Number(value.toString());
-  return Number.isFinite(euros) ? Math.max(0, Math.round(euros * 100)) : 0;
+function cents(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
 }
 
 export function summarizeRoles(
@@ -146,20 +143,20 @@ export function summarizeDeliveries(groups: Array<{ status: string; _count: { _a
   for (const group of groups) {
     const count = Math.max(0, group._count._all);
     summary.created += count;
-    if (IN_PROGRESS_DELIVERY.has(group.status)) summary.inProgress += count;
-    else if (DONE_DELIVERY.has(group.status)) summary.done += count;
+    if (IN_PROGRESS_ORDER.has(group.status)) summary.inProgress += count;
+    else if (DONE_ORDER.has(group.status)) summary.done += count;
     else if (group.status === "FAILED") summary.failed += count;
     else if (group.status === "CANCELLED") summary.cancelled += count;
   }
   return summary;
 }
 
-export function summarizeInvoices(groups: Array<{ status: InvoiceStatus; _count: { _all: number }; _sum: { amount: Money } }>) {
+export function summarizeInvoices(groups: Array<{ status: InvoiceStatus; _count: { _all: number }; _sum: { totalCents: number | null } }>) {
   const summary = { count: 0, paidCents: 0, pendingCents: 0, overdueCents: 0 };
   for (const group of groups) {
     if (!BILLED_INVOICE_STATUSES.includes(group.status)) continue;
     summary.count += Math.max(0, group._count._all);
-    const amount = cents(group._sum.amount);
+    const amount = cents(group._sum.totalCents);
     if (group.status === "PAID") summary.paidCents += amount;
     if (group.status === "PENDING") summary.pendingCents += amount;
     if (group.status === "OVERDUE") summary.overdueCents += amount;
@@ -198,7 +195,7 @@ export async function readCompanyActivity(
         }),
         db.role.findMany({ where: { users: { some: { companyId } } }, select: { id: true, systemRole: true } }),
         db.user.findMany({
-          where: { companyId, role: { systemRole: { not: "CLIENT" } } },
+          where: { companyId, role: { systemRole: { not: "MERCHANT" } } },
           orderBy: [{ lastLoginAt: { sort: "desc", nulls: "last" } }, { id: "asc" }],
           take: COMPANY_TEAM_LIMIT + 1,
           select: { id: true, firstName: true, lastName: true, status: true, lastLoginAt: true, role: { select: { systemRole: true } } },
@@ -218,22 +215,22 @@ export async function readCompanyActivity(
     }),
     block(async () => {
       const [groups, delivered] = await Promise.all([
-        db.delivery.groupBy({ by: ["status"], where: { companyId, createdAt: inMonth }, _count: { _all: true } }),
-        db.delivery.count({ where: { companyId, status: DELIVERED_STATUS, completedAt: inMonth } }),
+        db.order.groupBy({ by: ["status"], where: { companyId, createdAt: inMonth }, _count: { _all: true } }),
+        db.order.count({ where: { companyId, status: DELIVERED_STATUS, deliveredAt: inMonth } }),
       ]);
       return summarizeDeliveries(groups, delivered);
     }),
     block(async () => {
       const [orders, delivered] = await Promise.all([
         db.order.findMany({ where: { companyId, createdAt: { gte: seriesStart } }, select: { createdAt: true } }),
-        db.delivery.findMany({
-          where: { companyId, status: DELIVERED_STATUS, completedAt: { gte: seriesStart } },
-          select: { completedAt: true },
+        db.order.findMany({
+          where: { companyId, status: DELIVERED_STATUS, deliveredAt: { gte: seriesStart } },
+          select: { createdAt: true, deliveredAt: true },
         }),
       ]);
       return buildDailySeries(
         orders.map((order) => order.createdAt),
-        delivered.flatMap((row) => (row.completedAt ? [row.completedAt] : [])),
+        delivered.flatMap((row) => (row.deliveredAt ? [row.deliveredAt] : [])),
         now
       );
     }),
@@ -241,9 +238,9 @@ export async function readCompanyActivity(
       summarizeInvoices(
         await db.invoice.groupBy({
           by: ["status"],
-          where: { companyId, createdAt: inMonth, status: { in: BILLED_INVOICE_STATUSES } },
+          where: { companyId, issuedAt: inMonth, status: { in: BILLED_INVOICE_STATUSES } },
           _count: { _all: true },
-          _sum: { amount: true },
+          _sum: { totalCents: true },
         })
       )
     ),

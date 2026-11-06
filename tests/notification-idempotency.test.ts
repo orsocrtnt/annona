@@ -5,7 +5,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
-import * as podEvidence from "../src/domains/delivery/pod-evidence";
 import { countingSender, jobPayloadDb } from "./helpers/job-email-window";
 
 type Row = Record<string, unknown>;
@@ -37,7 +36,7 @@ function fixture(settings?: {
   deliveryAlerts?: boolean;
   invoiceAlerts?: boolean;
   emailNotifications?: boolean;
-}, options?: { companySettings?: unknown; appUrl?: string; send?: (input: never) => Promise<unknown> }) {
+}, options?: { appUrl?: string; send?: (input: never) => Promise<unknown> }) {
   const notifications = new Map<string, Row>();
   const emails: Array<{ idempotencyKey: string | null; body: string }> = [];
   const providerDeliveries = new Map<string, string>();
@@ -58,12 +57,15 @@ function fixture(settings?: {
           ? { email: "client@example.test" }
           : null,
     },
-    delivery: {
-      findFirst: async ({ where }: { where: { id: string; customerId: string; companyId: string } }) =>
-        where.id === "delivery-a" &&
-        where.customerId === "client-a" &&
-        where.companyId === "company-a"
-          ? { id: where.id, company: { settings: options?.companySettings ?? {} } }
+    order: {
+      // Commande du commerçant que représente le compte client, dans son entreprise.
+      findFirst: async ({ where }: { where: { id: string; companyId: string; merchant: { is: { companyId: string; users: { some: { id: string; companyId: string } } } } } }) =>
+        where.id === "order-a" &&
+        where.companyId === "company-a" &&
+        where.merchant.is.companyId === "company-a" &&
+        where.merchant.is.users.some.id === "client-a" &&
+        where.merchant.is.users.some.companyId === "company-a"
+          ? { id: where.id }
           : null,
     },
     invoice: {
@@ -104,7 +106,6 @@ function fixture(settings?: {
         },
       },
       "@/services/prisma/client": { prisma },
-      "@/domains/delivery/pod-evidence": podEvidence,
       "./settings.service": {
         getClientSettings: async () => ({
           deliveryAlerts: settings?.deliveryAlerts ?? true,
@@ -126,8 +127,8 @@ const payload = {
   customerId: "client-a",
   companyId: "company-a",
   status: "DELIVERED" as const,
-  reference: "LIV-TEST",
-  deliveryId: "delivery-a",
+  reference: "CMD-TEST",
+  orderId: "order-a",
 };
 
 test("C5 : notification — fenêtre de la tâche ; hors fenêtre l'e-mail n'est jamais renvoyé, l'in-app reste", async () => {
@@ -136,7 +137,7 @@ test("C5 : notification — fenêtre de la tâche ; hors fenêtre l'e-mail n'est
   const { fetches, send } = countingSender(now);
   const { payloads, windowFor } = jobPayloadDb();
   const f = fixture(undefined, { send });
-  const eventKey = "client-notification:delivery:delivery-a:c5";
+  const eventKey = "client-notification:delivery:order-a:c5";
   await f.service.deliverClientNotificationJob(payload, eventKey, windowFor({ id: "j1", createdAt: now, previouslyAttempted: false }));
   assert.equal(fetches.length, 1);
   assert.ok(payloads.get("j1")?.emailFirstAttemptAt, "marqueur inscrit avant l'appel");
@@ -152,25 +153,25 @@ test("C5 : notification — fenêtre de la tâche ; hors fenêtre l'e-mail n'est
   assert.equal(f.notifications.size, 3, "la notification in-app est conservée");
 });
 
-test("C5 : notification — rendu figé à la première tentative émise (lien de preuve désactivé entre deux essais)", async () => {
+test("C5 : notification — rendu figé à la première tentative émise (adresse de l'application changée entre deux essais)", async () => {
   const now = new Date("2026-10-28T10:00:00.000Z");
   const { bodies, send } = countingSender(now);
   const { payloads, windowFor, freezerFor } = jobPayloadDb();
-  const eventKey = "client-notification:delivery:delivery-a:freeze";
+  const eventKey = "client-notification:delivery:order-a:freeze";
   const withLink = fixture(undefined, { send, appUrl: "https://app.example.test" });
   await withLink.service.deliverClientNotificationJob(payload, eventKey, windowFor({ id: "j1", createdAt: now, previouslyAttempted: false }), freezerFor("j1"));
   assert.ok(payloads.get("j1")?.emailSnapshot);
-  // L'entreprise coupe l'envoi de la preuve avant la reprise : le corps recalculé changerait.
-  const withoutLink = fixture(undefined, { send, appUrl: "https://app.example.test", companySettings: { proofRules: { emailToClient: false } } });
+  // Sans adresse d'application à la reprise, le corps recalculé changerait (plus de lien).
+  const withoutLink = fixture(undefined, { send });
   await withoutLink.service.deliverClientNotificationJob(payload, eventKey, windowFor({ id: "j1", createdAt: now, previouslyAttempted: true }), freezerFor("j1"));
   assert.equal(bodies.length, 2);
   assert.equal(bodies[1], bodies[0], "même corps sous la même clé");
-  assert.match(bodies[0]!, /Preuve de livraison/);
+  assert.match(bodies[0]!, /Mes commandes : https:\/\/app\.example\.test\/portal/);
 });
 
 test("rejouer une notification conserve une ligne et la même clé fournisseur", async () => {
   const f = fixture();
-  const eventKey = "client-notification:delivery:delivery-a:event-a";
+  const eventKey = "client-notification:delivery:order-a:event-a";
 
   await f.service.deliverClientNotificationJob(payload, eventKey);
   await f.service.deliverClientNotificationJob(payload, eventKey);
@@ -190,7 +191,7 @@ test("une notification ne traverse pas la frontière d'entreprise", async () => 
   const f = fixture();
   await f.service.deliverClientNotificationJob(
     { ...payload, companyId: "company-b" },
-    "client-notification:delivery:delivery-a:event-b"
+    "client-notification:delivery:order-a:event-b"
   );
 
   assert.equal(f.notifications.size, 0);
@@ -201,7 +202,7 @@ test("les préférences désactivent l'alerte entière ou seulement sa copie e-m
   const muted = fixture({ deliveryAlerts: false });
   await muted.service.deliverClientNotificationJob(
     payload,
-    "client-notification:delivery:delivery-a:muted"
+    "client-notification:delivery:order-a:muted"
   );
   assert.equal(muted.notifications.size, 0);
   assert.equal(muted.emails.length, 0);
@@ -209,7 +210,7 @@ test("les préférences désactivent l'alerte entière ou seulement sa copie e-m
   const inAppOnly = fixture({ emailNotifications: false });
   await inAppOnly.service.deliverClientNotificationJob(
     payload,
-    "client-notification:delivery:delivery-a:in-app"
+    "client-notification:delivery:order-a:in-app"
   );
   assert.equal(inAppOnly.notifications.size, 1);
   assert.equal(inAppOnly.emails.length, 0);
@@ -220,9 +221,9 @@ test("deux transitions légitimes vers le même statut ont deux tâches, un reje
   const base = {
     customerId: "client-a",
     companyId: "company-a",
-    status: "ASSIGNED" as const,
-    reference: "LIV-TEST",
-    deliveryId: "delivery-a",
+    status: "DELIVERED" as const,
+    reference: "CMD-TEST",
+    orderId: "order-a",
   };
 
   const first = await f.service.queueDeliveryStatusNotification(f.prisma as never, {
@@ -243,37 +244,21 @@ test("deux transitions légitimes vers le même statut ont deux tâches, un reje
   assert.equal(f.jobs.size, 2);
 });
 
-test("preuve de livraison : livrée ou en échec, l'e-mail porte le lien du portail et la clé d'idempotence de l'événement", async () => {
-  for (const status of ["DELIVERED", "FAILED"] as const) {
+test("livrée ou en incident : l'e-mail porte le lien du portail et la clé d'idempotence de l'événement", async () => {
+  for (const status of ["DELIVERED", "INCIDENT"] as const) {
     const f = fixture(undefined, { appUrl: "https://app.annona.test" });
-    const eventKey = `client-notification:delivery:delivery-a:${status}`;
+    const eventKey = `client-notification:delivery:order-a:${status}`;
     await f.service.deliverClientNotificationJob({ ...payload, status }, eventKey);
     assert.equal(f.emails.length, 1);
     assert.equal(f.emails[0]?.idempotencyKey, eventKey);
-    assert.match(f.emails[0]!.body, /https:\/\/app\.annona\.test\/portal\/deliveries\/delivery-a/);
+    assert.match(f.emails[0]!.body, /https:\/\/app\.annona\.test\/portal/);
     assert.equal(f.notifications.size, 1);
   }
 });
 
-test("preuve de livraison : l'entreprise coupe seulement le lien de preuve ; l'e-mail de statut part toujours", async () => {
-  for (const status of ["DELIVERED", "FAILED"] as const) {
-    const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } }, appUrl: "https://app.annona.test" });
-    await f.service.deliverClientNotificationJob({ ...payload, status }, `client-notification:delivery:delivery-a:off-${status}`);
-    assert.equal(f.emails.length, 1, "l'information de livraison n'est pas supprimée");
-    assert.doesNotMatch(f.emails[0]!.body, /https?:/);
-    assert.equal(f.notifications.size, 1);
-  }
-});
-
-test("preuve de livraison : le coupe-circuit de l'entreprise ne concerne pas les autres statuts", async () => {
-  const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } } });
-  await f.service.deliverClientNotificationJob({ ...payload, status: "IN_DELIVERY" }, "client-notification:delivery:delivery-a:transit");
-  assert.equal(f.emails.length, 1);
-});
-
-test("preuve de livraison : sans URL d'application, le message part sans lien (aucun lien inventé)", async () => {
+test("sans URL d'application, le message part sans lien (aucun lien inventé)", async () => {
   const f = fixture();
-  await f.service.deliverClientNotificationJob(payload, "client-notification:delivery:delivery-a:nolink");
+  await f.service.deliverClientNotificationJob(payload, "client-notification:delivery:order-a:nolink");
   assert.equal(f.emails.length, 1);
   assert.doesNotMatch(f.emails[0]!.body, /https?:/);
 });

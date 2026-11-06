@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { listCompanyInvoices } from "../src/domains/invoice/company-invoices.service";
-import { reminderOutcomeMessage } from "../src/features/back-office/company-payments-labels";
 import {
   deliverInvoiceReminderJob,
   effectiveReminderResult,
@@ -62,7 +60,7 @@ function fakeResend() {
 function setup(r1: Partial<FakeReminder> = {}, job: Partial<FakeJob> = {}, options: { snapshot?: boolean } = {}) {
   const db = createInvoiceFakeDb({
     invoices: [invoice({ id: "inv", status: "OVERDUE", dueDate: new Date("2026-10-20T10:00:00.000Z") })],
-    users: [{ id: "client_a", companyId: "company_a", email: "client.a@example.test", firstName: "Studio", lastName: "Oberkampf" }],
+    merchants: [{ id: "merchant_a", companyId: "company_a", billingEmail: "client.a@example.test", contactEmail: null }],
     companies: [{ id: "company_a", name: "Coursiers A", settings: {} }],
     jobs: [{ id: "job_1", jobKey: KEY, type: "CLIENT_NOTIFICATION", status: "PENDING", payload: {}, companyId: "company_a", maxAttempts: 3, lastError: null, ...job }],
     reminders: [{
@@ -77,7 +75,7 @@ function setup(r1: Partial<FakeReminder> = {}, job: Partial<FakeJob> = {}, optio
   const deliver = (at: Date, previouslyAttempted = false) => {
     resend.setClock(at);
     return deliverInvoiceReminderJob({ kind: "INVOICE_REMINDER", reminderId: "r1", companyId: "company_a" } as never, KEY, {
-      db: db as never, now: at, appUrl: "https://app.example.test", getClientSettings: SETTINGS, previouslyAttempted, freezeContent,
+      db: db as never, now: at, appUrl: "https://app.example.test", previouslyAttempted, freezeContent,
       send: (input) => sendTransactionalEmail(input, { env: ENV, now: at, fetcher: resend.fetcher }),
     });
   };
@@ -156,8 +154,8 @@ test("C5 : rendu figé — montant, e-mail du client et nom modifiés avant la r
   resend.script.push({ timeout: true, accepted: true });
   await settle(deliver(T0));
   assert.ok(jobPayloads.payloads.get("job_1")?.emailSnapshot, "instantané inscrit à la première tentative émise");
-  db.invoices[0]!.amount = 99;
-  db.users[0]!.email = "nouvelle.adresse@example.test";
+  db.invoices[0]!.totalCents = 9900;
+  db.merchants[0]!.billingEmail = "nouvelle.adresse@example.test";
   db.companies[0]!.name = "Coursiers A renommée";
   await deliver(new Date(T0.getTime() + 6 * MIN)); // après minuit à Paris
   assert.equal(r1Row().result, "SENT");
@@ -172,7 +170,7 @@ test("C5 : tâche héritée sans instantané, contenu changé — 409 invalid : 
   resend.script.push({ timeout: true, accepted: true });
   await settle(deliver(T0));
   // Le contenu a changé entre-temps sous la même clé (ex. montant corrigé) : 409 invalid.
-  db.invoices[0]!.amount = 99 as never;
+  db.invoices[0]!.totalCents = 9900 as never;
   const error = await settle(deliver(new Date(T0.getTime() + 6 * MIN)));
   assert.match(error!.message, /EMAIL_PROVIDER_HTTP_409:invalid_idempotent_request/);
   assert.equal(error!.permanent, true);
@@ -291,39 +289,13 @@ test("C5 transition : QUEUED dont la tâche est épuisée = non confirmée et bl
   assert.equal(reminderBlocksNewOne(noCall, now), false);
 });
 
-test("C5 affichage : le clic sur une relance SENDING dont la tâche est épuisée répond « non confirmée », comme la liste", async () => {
-  const { remind } = setup({ result: "SENDING", completedAt: T0 }, { status: "FAILED" });
-  const click = await remind(new Date(T0.getTime() + HOUR));
-  assert.equal(click?.duplicate, true);
-  assert.equal(click?.reminder.result, "SEND_UNCONFIRMED");
-  const message = reminderOutcomeMessage(click!);
-  assert.equal(message.kind, "warning");
-  assert.doesNotMatch(message.text, /en cours d'envoi/);
-});
-
-test("C5 liste : « Relancer » suit la règle du serveur (dernière relance en échec, SENT plus ancienne encore bloquante)", async () => {
-  const now = new Date(T0.getTime() + 2 * HOUR);
-  const { db, remind } = setup({ result: "SENT", createdAt: new Date(T0.getTime() - 20 * HOUR), completedAt: T0, operationJobId: null });
-  // Dernière relance : en file, tâche épuisée sans appel fournisseur possible → FAILED, non bloquante.
-  db.jobs.push({ id: "job_2", jobKey: "k2", type: "CLIENT_NOTIFICATION", status: "FAILED", payload: {}, companyId: "company_a", maxAttempts: 3, lastError: "INVOICE_REMINDER_PAYLOAD_INVALID" });
-  db.reminders.push({ id: "r2", invoiceId: "inv", companyId: "company_a", sentById: "admin_a", channel: "EMAIL", result: "QUEUED", operationJobId: "job_2", completedAt: null, createdAt: new Date(T0.getTime() + HOUR) });
-  const list = await listCompanyInvoices("company_a", { status: "ALL", now }, db as never);
-  const row = list.invoices.find((entry) => entry.id === "inv")!;
-  assert.equal(row.lastReminder?.result, "FAILED");
-  assert.equal(row.canRemind, false, "le bouton n'est pas actif…");
-  assert.equal((await remind(now))?.duplicate, true, "…puisque le clic répondrait « déjà relancée »");
-  const dayLater = new Date(T0.getTime() + 25 * HOUR);
-  assert.equal((await listCompanyInvoices("company_a", { status: "ALL", now: dayLater }, db as never)).invoices.find((entry) => entry.id === "inv")!.canRemind, true);
-  assert.equal((await remind(dayLater))?.duplicate, false);
-});
-
 test("C5 : rendu figé — refus certain d'une PREMIÈRE tentative : instantané effacé, l'adresse corrigée s'applique", async () => {
   const { db, resend, deliver, r1Row, jobPayloads } = setup();
   resend.script.push({ status: 422, name: "validation_error", accepted: false });
   await settle(deliver(T0));
   assert.equal(r1Row().result, "QUEUED");
   assert.equal(jobPayloads.payloads.get("job_1")?.emailSnapshot, undefined, "instantané effacé : rien n'est parti");
-  db.users[0]!.email = "adresse.corrigee@example.test";
+  db.merchants[0]!.billingEmail = "adresse.corrigee@example.test";
   await deliver(new Date(T0.getTime() + 6 * MIN), true);
   assert.equal(r1Row().result, "SENT");
   assert.match(resend.calls[1]!.body, /adresse\.corrigee@example\.test/);
@@ -342,7 +314,7 @@ test("C5 : rendu figé — refus certain d'une REPRISE (après une issue inconnu
   await settle(retry.deliver(new Date(T0.getTime() + 6 * MIN)));
   assert.deepEqual(retry.jobPayloads.payloads.get("job_1")?.emailSnapshot, snapshot);
   assert.equal(retry.r1Row().result, "SENDING");
-  db.invoices[0]!.amount = 1;
+  db.invoices[0]!.totalCents = 100;
   assert.equal(r1Row().result, "SENDING");
 });
 
@@ -369,9 +341,6 @@ for (const refusal of [
     const now = new Date(T0.getTime() + HOUR);
     assert.equal(effectiveReminderResult({ ...r1Row(), operationJob: job }, now), "FAILED");
     assert.equal(reminderBlocksNewOne({ ...r1Row(), operationJob: job }, now), false);
-    const row = (await listCompanyInvoices("company_a", { status: "ALL", now }, db as never)).invoices.find((entry) => entry.id === "inv")!;
-    assert.equal(row.lastReminder?.result, "FAILED");
-    assert.equal(row.canRemind, true);
     const click = await remind(now);
     assert.equal(click?.duplicate, false, "une nouvelle relance est créée");
     assert.equal(db.reminders.length, 2);

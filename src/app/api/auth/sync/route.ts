@@ -1,4 +1,3 @@
-import { resolveOnboardingLoginPath } from "@/domains/onboarding/onboarding.service";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { assertAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
@@ -38,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       user,
       permissions,
-      redirectTo: await resolveOnboardingLoginPath(user, getDashboardPathForRole(user.role.systemRole, user.settings)),
+      redirectTo: getDashboardPathForRole(user.role.systemRole),
     });
   } catch (error) {
     if (error instanceof AccountUnavailableError) {

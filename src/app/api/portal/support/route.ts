@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireClientRole } from "@/lib/api/auth-guard";
+import { requireMerchantRole } from "@/lib/api/auth-guard";
 import { getClientTickets, createClientTicket, InvalidSupportReferenceError } from "@/domains/support/support.service";
 import { createSupportTicketSchema } from "@/lib/validations/support";
 
 export async function GET() {
-  const auth = await requireClientRole();
+  const auth = await requireMerchantRole();
   if ("error" in auth) return auth.error;
 
   const companyId = auth.context.user.companyId;
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireClientRole();
+  const auth = await requireMerchantRole();
   if ("error" in auth) return auth.error;
 
   const body = await request.json().catch(() => null);

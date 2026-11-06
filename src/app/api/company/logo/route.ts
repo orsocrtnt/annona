@@ -27,7 +27,7 @@ function logoError(error: unknown) {
 async function requireLogoEditor() {
   const auth = await requireStaffRole("settings:update");
   if ("error" in auth) return { error: auth.error };
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  const denied = requireRole(auth.context, ["ADMIN"]);
   if (denied) return { error: denied };
   const companyId = getCompanyId(auth.context);
   if (!companyId) return { error: NextResponse.json({ error: "Entreprise non associée" }, { status: 400 }) };

@@ -19,10 +19,7 @@ function exportWithVat(input: ReadinessInput) {
   const base = exportWithSource(input);
   return mapInvoiceToFacturX({
     ...base,
-    invoice: { ...base.invoice, amount: 30, lineItems: [
-      { label: "Course", amount: 25, quantity: 1, sourceType: "ZONE" },
-      { label: "TVA (20%)", amount: 5, quantity: 1, sourceType: "VAT" },
-    ] },
+    invoice: { ...base.invoice, lines: [{ label: "Course", quantity: 1, unitPriceCents: 2500, vatRateBasisPoints: 2000 }], subtotalCents: 2500, vatCents: 500, totalCents: 3000 },
   });
 }
 
@@ -31,7 +28,8 @@ function exportWithSource(input: ReadinessInput): FacturXSource {
   return {
     invoice: {
       reference: "FAC-1", status: "PENDING", createdAt: new Date("2026-10-27T09:00:00Z"), dueDate: new Date("2026-11-26T09:00:00Z"),
-      amount: 25, lineItems: [{ label: "Course", amount: 25, quantity: 1, sourceType: "ZONE" }], notes: null, orderReference: null,
+      lines: [{ label: "Course", quantity: 1, unitPriceCents: 2500, vatRateBasisPoints: 0 }], subtotalCents: 2500, vatCents: 0, totalCents: 2500,
+      notes: null, orderReference: null,
     },
     seller: {
       name: "Coursiers", legalName: null, siren: input.identity.siren ?? null, siret: null, email: null,
@@ -105,7 +103,7 @@ test("identifiant fiscal seul avec TVA : ni accepté ni avertissement levé, l'e
   const withVat = mapInvoiceToFacturX({
     ...source,
     einvoicing: { ...source.einvoicing, taxRegistrationId: "12345678901" },
-    invoice: { ...source.invoice, amount: 30, lineItems: [{ label: "Course", amount: 25, quantity: 1, sourceType: "ZONE" }, { label: "TVA (20%)", amount: 5, quantity: 1, sourceType: "VAT" }] },
+    invoice: { ...source.invoice, lines: [{ label: "Course", quantity: 1, unitPriceCents: 2500, vatRateBasisPoints: 2000 }], subtotalCents: 2500, vatCents: 500, totalCents: 3000 },
   });
   assert.ok(!withVat.ok && withVat.errors.some((e) => e.rule === "BR-S-02"));
 });

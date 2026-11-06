@@ -17,7 +17,7 @@ export async function GET() {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("settings:read");
     if ("error" in auth) return auth.error;
-    const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+    const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;
 
     const companyId = getCompanyId(auth.context);
@@ -34,7 +34,7 @@ export async function PATCH(request: Request) {
   return withApiHandler(async () => {
     const auth = await requireStaffRole("settings:update");
     if ("error" in auth) return auth.error;
-    const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+    const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;
 
     const companyId = getCompanyId(auth.context);

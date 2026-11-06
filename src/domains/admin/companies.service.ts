@@ -35,7 +35,7 @@ type RawRow = {
   name: string;
   status: Status;
   createdAt: Date;
-  _count: { users: number; deliveries: number };
+  _count: { users: number; orders: number };
 };
 
 type CompanyReader = {
@@ -45,7 +45,6 @@ type CompanyReader = {
   };
 };
 
-type Money = { toString(): string } | number | null;
 type DetailRow = {
   id: string;
   name: string;
@@ -63,7 +62,7 @@ type DetailRow = {
   billingPostalCode: string | null;
   billingCity: string | null;
   createdAt: Date;
-  _count: { users: number; deliveries: number };
+  _count: { users: number; orders: number };
   users: Array<{ firstName: string; lastName: string; email: string; phone: string | null }>;
 };
 
@@ -95,7 +94,7 @@ type CompanyDetailReader = {
     findUnique: (args: { where: { id: string }; select: ReturnType<typeof platformCompanyDetailSelect> }) => Promise<DetailRow | null>;
   };
   invoice: {
-    groupBy: (args: { by: ["status"]; where: { companyId: string; status: { in: Array<"PAID" | "PENDING" | "OVERDUE"> } }; _sum: { amount: true } }) => Promise<Array<{ status: "PAID" | "PENDING" | "OVERDUE"; _sum: { amount: Money } }>>;
+    groupBy: (args: { by: ["status"]; where: { companyId: string; status: { in: Array<"PAID" | "PENDING" | "OVERDUE"> } }; _sum: { totalCents: true } }) => Promise<Array<{ status: "PAID" | "PENDING" | "OVERDUE"; _sum: { totalCents: number | null } }>>;
   };
 };
 
@@ -154,7 +153,7 @@ export function platformCompanySelect() {
     name: true,
     status: true,
     createdAt: true,
-    _count: { select: { users: true, deliveries: true } },
+    _count: { select: { users: true, orders: true } },
   };
 }
 
@@ -165,7 +164,7 @@ export function toPlatformCompanyRow(row: RawRow): PlatformCompanyRow {
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     userCount: row._count.users,
-    deliveryCount: row._count.deliveries,
+    deliveryCount: row._count.orders,
   };
 }
 
@@ -211,9 +210,9 @@ export function platformCompanyDetailSelect() {
     billingPostalCode: true,
     billingCity: true,
     createdAt: true,
-    _count: { select: { users: true, deliveries: true } },
+    _count: { select: { users: true, orders: true } },
     users: {
-      where: { role: { systemRole: "COMPANY_ADMIN" as const }, status: "ACTIVE" as const },
+      where: { role: { systemRole: "ADMIN" as const }, status: "ACTIVE" as const },
       orderBy: { createdAt: "asc" as const },
       take: 1,
       select: { firstName: true, lastName: true, email: true, phone: true },
@@ -221,20 +220,15 @@ export function platformCompanyDetailSelect() {
   };
 }
 
-function eurosToCents(value: Money) {
-  if (value == null) return 0;
-  const euros = Number(value.toString());
-  return Number.isFinite(euros) ? Math.max(0, Math.round(euros * 100)) : 0;
-}
 
 export function toPlatformCompanyDetail(
   row: DetailRow,
-  invoices: Array<{ status: "PAID" | "PENDING" | "OVERDUE"; _sum: { amount: Money } }>,
+  invoices: Array<{ status: "PAID" | "PENDING" | "OVERDUE"; _sum: { totalCents: number | null } }>,
 ): PlatformCompanyDetail {
   const admin = row.users[0];
   const revenue = { paidCents: 0, pendingCents: 0, overdueCents: 0 };
   for (const invoice of invoices) {
-    const cents = eurosToCents(invoice._sum.amount);
+    const cents = Math.max(0, invoice._sum.totalCents ?? 0);
     if (invoice.status === "PAID") revenue.paidCents += cents;
     if (invoice.status === "PENDING") revenue.pendingCents += cents;
     if (invoice.status === "OVERDUE") revenue.overdueCents += cents;
@@ -258,7 +252,7 @@ export function toPlatformCompanyDetail(
     billingCity: row.billingCity,
     createdAt: row.createdAt.toISOString(),
     userCount: row._count.users,
-    deliveryCount: row._count.deliveries,
+    deliveryCount: row._count.orders,
     admin: admin ? { name: `${admin.firstName} ${admin.lastName}`.trim(), email: admin.email, phone: admin.phone } : null,
     revenue,
   };
@@ -273,7 +267,7 @@ export async function getPlatformCompany(
   const invoices = await db.invoice.groupBy({
     by: ["status"],
     where: { companyId: id, status: { in: ["PAID", "PENDING", "OVERDUE"] } },
-    _sum: { amount: true },
+    _sum: { totalCents: true },
   });
   return toPlatformCompanyDetail(row, invoices);
 }

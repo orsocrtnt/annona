@@ -24,15 +24,6 @@ function load(spec: (typeof files)[number], role: string, calls: string[]) {
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse },
     "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
-    "@/lib/api/dispatch-settings-read-guard": {
-      // Garde de lecture testée à part (tests/dispatcher-403-settings-read.test.ts).
-      requireDispatchSettingsReader: async () => {
-        calls.push("reader");
-        return ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"].includes(role)
-          ? { context: { user: { role: { systemRole: role } } } }
-          : { error: NextResponse.json({ error: "Accès refusé" }, { status: 403 }) };
-      },
-    },
     "@/lib/api/auth-guard": {
       requireStaffRole: async () => {
         calls.push("staff");
@@ -40,7 +31,7 @@ function load(spec: (typeof files)[number], role: string, calls: string[]) {
       },
       requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => {
         calls.push("role");
-        assert.equal([...roles].join(","), "COMPANY_ADMIN,MINI_ADMIN");
+        assert.equal([...roles].join(","), "ADMIN");
         return roles.includes(context.user.role.systemRole)
           ? null
           : NextResponse.json({ error: "Accès refusé" }, { status: 403 });
@@ -67,24 +58,23 @@ function load(spec: (typeof files)[number], role: string, calls: string[]) {
 
 test("ADMIN-1 configuration entreprise : emplacements refusés avant lecture", async () => {
   for (const spec of files) {
-    for (const role of ["SUPER_ADMIN", "DISPATCHER"]) {
+    for (const role of ["SUPER_ADMIN", "BAKER", "DRIVER", "MERCHANT"]) {
       const calls: string[] = [];
       const route = load(spec, role, calls);
       const request = new Request("http://local/api", { method: "PATCH", body: "{}" });
       const read = request.json.bind(request);
       Object.defineProperty(request, "json", { value: async () => { calls.push("body"); return read(); } });
-      // DISPATCHER-403 : le dispatcher lit (assignation), n'écrit jamais ; le super-administrateur ne fait ni l'un ni l'autre.
-      const reads = role === "DISPATCHER";
-      assert.equal((await route.GET!()).status, reads ? 200 : 403, `${role} ${spec.file}`);
+      // Lecture et écriture réservées à l'administrateur de l'entreprise, refusées avant l'entreprise.
+      assert.equal((await route.GET!()).status, 403, `${role} ${spec.file}`);
       assert.equal((await route.PATCH!(request)).status, 403);
-      assert.deepEqual(calls, reads ? ["reader", "company", "read", "staff", "role"] : ["reader", "staff", "role"]);
+      assert.deepEqual(calls, ["staff", "role", "staff", "role"]);
     }
-    for (const role of ["COMPANY_ADMIN", "MINI_ADMIN"]) {
+    for (const role of ["ADMIN"]) {
       const calls: string[] = [];
       const route = load(spec, role, calls);
       assert.equal((await route.GET!()).status, 200);
       assert.equal((await route.PATCH!(new Request("http://local/api", { method: "PATCH", body: "{}" }))).status, 200);
-      assert.deepEqual(calls, ["reader", "company", "read", "staff", "role", "company", "parse", "write"]);
+      assert.deepEqual(calls, ["staff", "role", "company", "read", "staff", "role", "company", "parse", "write"]);
     }
   }
 });

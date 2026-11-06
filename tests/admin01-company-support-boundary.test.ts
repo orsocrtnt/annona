@@ -23,7 +23,7 @@ function loadStaff(role: string, permissions: string[], calls: string[]) {
       },
       requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => {
         calls.push("role");
-        assert.equal([...roles].join(","), "COMPANY_ADMIN,MINI_ADMIN,DISPATCHER");
+        assert.equal([...roles].join(","), "ADMIN");
         return roles.includes(context.user.role.systemRole)
           ? null
           : NextResponse.json({ error: "Accès refusé" }, { status: 403 });
@@ -112,9 +112,9 @@ test("ADMIN-1 support entreprise : quatre méthodes refusées avant entreprise, 
   assert.deepEqual(calls, ["staff", "role", "staff", "role", "staff", "role", "staff", "role"]);
 });
 
-test("ADMIN-1 support entreprise : mini-admin sans droit refusé avant l'entreprise", async () => {
+test("ADMIN-1 support entreprise : administrateur sans support:read refusé avant l'entreprise", async () => {
   const calls: string[] = [];
-  const responses = await callAll("MINI_ADMIN", [], calls);
+  const responses = await callAll("ADMIN", [], calls);
   assert.equal(responses.list.status, 403);
   assert.equal(responses.detail.status, 403);
   assert.equal(responses.post.status, 403);
@@ -123,8 +123,8 @@ test("ADMIN-1 support entreprise : mini-admin sans droit refusé avant l'entrepr
   assert.equal(calls.filter((call) => call === "role").length, 4);
 });
 
-test("ADMIN-1 support entreprise : les trois rôles conservent les réponses", async () => {
-  for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]) {
+test("ADMIN-1 support entreprise : l'administrateur conserve les réponses", async () => {
+  for (const role of ["ADMIN"]) {
     const calls: string[] = [];
     const responses = await callAll(role, ["support:read"], calls);
     assert.equal(responses.list.status, 200);

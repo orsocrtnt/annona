@@ -25,7 +25,7 @@ const subjectInflight = new Map<string, Promise<PageAccessSubject | null>>();
 async function loadSubject(authId: string): Promise<PageAccessSubject | null> {
   const auth = await resolveServerAuthForAuthId(authId);
   if (!auth) return null;
-  return { role: auth.user.role.systemRole, permissions: auth.permissions, settings: auth.user.settings };
+  return { role: auth.user.role.systemRole, permissions: auth.permissions };
 }
 
 async function resolvePageSubject(request: NextRequest, authId: string): Promise<PageAccessSubject | null> {
@@ -145,7 +145,7 @@ export async function middleware(request: NextRequest) {
     // connexion reste affichée (sinon boucle connexion ↔ espace protégé). Base indisponible : idem.
     const subject = await resolvePageSubject(request, user.id).catch(() => null);
     if (subject) {
-      const home = getRoleHomePath(subject.role, subject.settings);
+      const home = getRoleHomePath(subject.role);
       if (evaluatePageAccess(home, subject).kind === "allow") {
         return withSessionCookies(redirectTo(request, home), supabaseResponse);
       }
@@ -165,10 +165,8 @@ export const config = {
     "/admin/:path*",
     "/dashboard",
     "/dashboard/:path*",
-    "/onboarding",
-    "/onboarding/:path*",
-    "/dispatch",
-    "/dispatch/:path*",
+    "/bakery",
+    "/bakery/:path*",
     "/driver",
     "/driver/:path*",
     "/portal",

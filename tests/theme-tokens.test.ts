@@ -131,7 +131,7 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
   assert.equal(isThemeScopedPath("/portal/orders/new"), true);
   assert.equal(isThemeScopedPath("/portalx"), false);
   // DESIGN-2 : back-office et dispatch, /admin, app livreur.
-  for (const path of ["/dashboard", "/dashboard/drivers", "/dispatch", "/settings/billing", "/support", "/users", "/companies", "/onboarding", "/admin", "/admin/users", "/driver", "/driver/missions"]) {
+  for (const path of ["/dashboard", "/dashboard/rounds", "/bakery", "/settings/billing", "/support", "/users", "/companies", "/admin", "/admin/users", "/driver", "/driver/profile"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
   // Site public et connexion (LANDING-2, DESIGN-2) : même choix de thème.
@@ -139,11 +139,11 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
     assert.equal(isThemeScopedPath(path), true, path);
   }
   // Préfixes voisins : hors Dark.
-  for (const path of ["/loginx", "/dashboardx", "/administration", "/dispatch/mapx"].filter((path) => path !== "/dispatch/mapx")) {
+  for (const path of ["/loginx", "/dashboardx", "/administration", "/bakeryx"]) {
     assert.equal(isThemeScopedPath(path), false, path);
   }
   // Écrans de carte : en Dark depuis le lot B (plus aucune exclusion).
-  for (const path of ["/dispatch/map", "/dispatch/drivers", "/driver/navigate", "/driver/navigate/abc"]) {
+  for (const path of ["/driver/navigate", "/driver/navigate/abc"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
   assert.deepEqual([...THEME_EXCLUDED_PATH_PREFIXES], []);
@@ -159,7 +159,6 @@ test("le verre respecte prefers-reduced-transparency et le mouvement prefers-red
   assert.match(reduced, /:root\[data-theme\] \[data-glass\] \{[^}]*backdrop-filter: none/);
   assert.match(reduced, /--map-glass-blur: none/);
   assert.match(read("src/components/navigation/apple-navbar.tsx"), /data-glass\s+className=\{cn\(\s+light/);
-  assert.match(read("src/features/client-portal/create-order-form.tsx"), /data-glass className="sticky/);
   assert.match(read("src/components/maps/map-glass-styles.ts"), /backdropFilter: "var\(--map-glass-blur, blur\(8px\)\)"/);
   assert.doesNotMatch(reduced, /\.glass\b/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
@@ -197,9 +196,9 @@ test("applyThemeToRoot résout « système » et retire l'attribut hors des espa
   assert.equal(attrs.get("data-theme"), "dark");
   applyThemeToRoot(root, "/registerx", "dark", true);
   assert.equal(attrs.has("data-theme"), false);
-  applyThemeToRoot(root, "/dispatch", "system", true);
+  applyThemeToRoot(root, "/bakery", "system", true);
   assert.equal(attrs.get("data-theme"), "dark");
-  applyThemeToRoot(root, "/dispatch/map", "dark", true);
+  applyThemeToRoot(root, "/dashboard/rounds", "dark", true);
   assert.equal(attrs.get("data-theme"), "dark");
   applyThemeToRoot(root, "/driver/navigate/abc", "light", true);
   assert.equal(attrs.get("data-theme"), "light");
@@ -263,8 +262,6 @@ test("verre des cartes : valeurs historiques en repli hors portail, surfaces som
 test("cartes partagées : un fond blanc codé en dur avec un texte en jeton porte sa variante dark:", () => {
   const files = [
     "src/components/maps/provider-tile-layer.tsx",
-    "src/components/maps/deliveries-live-map.tsx",
-    "src/components/maps/delivery-map-status-bar.tsx",
     "src/components/maps/leaflet-base-map.tsx",
   ];
   for (const file of files) {
@@ -288,7 +285,7 @@ test("le script d'initialisation et ThemeSync (applyThemeToRoot) décident parei
   assert.ok(THEME_INIT_SCRIPT.includes("resolveRootTheme"));
   assert.ok(THEME_INIT_SCRIPT.includes(JSON.stringify(THEME_SCOPED_PATH_PREFIXES)));
   assert.ok(THEME_INIT_SCRIPT.includes(JSON.stringify(THEME_EXCLUDED_PATH_PREFIXES)));
-  const paths = ["/portal", "/portal/orders/new", "/portalx", "/portal-old", "/dashboard", "/", "/driver/missions", "/driver/navigate/x", "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/mapx", "/admin/users", "/login", "/tarifs"];
+  const paths = ["/portal", "/portal/orders/new", "/portalx", "/portal-old", "/dashboard", "/", "/driver/profile", "/driver/navigate/x", "/bakery", "/bakeryx", "/dashboard/rounds", "/admin/users", "/login", "/tarifs"];
   const stored = [null, "light", "dark", "system", "nimporte"];
   for (const pathname of paths) {
     for (const value of [...stored, "throws"]) {
@@ -325,7 +322,7 @@ test("DESIGN-2 : dans les espaces migrés, aucune couleur claire codée en dur s
   const { join } = await import("node:path");
   const roots = [
     "src/features/back-office", "src/features/driver", "src/features/admin", "src/features/support", "src/features/users",
-    "src/features/deliveries", "src/features/dashboard", "src/app/(back-office)", "src/app/(driver-app)",
+    "src/app/(back-office)", "src/app/(driver-app)",
     "src/components/ui", "src/components/shared", "src/components/layouts", "src/components/theme", "src/lib/permissions",
   ];
   // Aucune exclusion : les écrans de carte sont en Dark et doivent suivre la même règle.

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireClientRole } from "@/lib/api/auth-guard";
+import { requireMerchantRole } from "@/lib/api/auth-guard";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import {
   getClientSettings,
@@ -13,7 +13,7 @@ import {
 
 export async function GET() {
   return withApiHandler(async () => {
-    const auth = await requireClientRole();
+    const auth = await requireMerchantRole();
     if ("error" in auth) return auth.error;
 
     const settings = await getClientSettings(auth.context.user.id);
@@ -30,7 +30,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   return withApiHandler(async () => {
-    const auth = await requireClientRole();
+    const auth = await requireMerchantRole();
     if ("error" in auth) return auth.error;
 
     const body = await readJsonBody(request);

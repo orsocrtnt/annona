@@ -9,7 +9,6 @@ import {
   createUserByAdmin,
   deleteUserByAdmin,
   resolveCompanyIdForUserCreation,
-  updateMiniAdminByAdmin,
 } from "../src/domains/user/user.service";
 
 const input = {
@@ -44,7 +43,6 @@ test("ADMIN-1 comptes : super-admin refusé avant Prisma et sans entreprise impl
     assert.equal(await resolveCompanyIdForUserCreation("company-1"), "company-1");
     assert.equal(lookups, 0);
     await assert.rejects(createUserByAdmin(input, "company-1", "SUPER_ADMIN"), /PLATFORM_USER_MUTATION_FORBIDDEN/);
-    await assert.rejects(updateMiniAdminByAdmin("user-1", { miniAdminTitle: "Ops", miniAdminModules: [] }, "company-1", "SUPER_ADMIN"), /PLATFORM_USER_MUTATION_FORBIDDEN/);
     await assert.rejects(deleteUserByAdmin("user-1", "admin-1", "company-1", "SUPER_ADMIN"), /PLATFORM_USER_MUTATION_FORBIDDEN/);
   } finally {
     prisma.company.findFirst = original;
@@ -65,8 +63,8 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
         },
       }),
       requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) => {
-        assert.equal([...roles].join(","), "COMPANY_ADMIN,MINI_ADMIN");
-        return ["COMPANY_ADMIN", "MINI_ADMIN"].includes(context.user.role.systemRole)
+        assert.equal([...roles].join(","), "ADMIN");
+        return ["ADMIN"].includes(context.user.role.systemRole)
           ? null
           : NextResponse.json({ error: "Accès refusé" }, { status: 403 });
       },
@@ -75,13 +73,11 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
   }
   const service = {
     createUserByAdmin: async () => { calls.push("create"); return { user: { id: "user-1" }, invitationSent: true }; },
-    updateMiniAdminByAdmin: async () => { calls.push("update"); },
     deleteUserByAdmin: async () => { calls.push("delete"); },
     listUsersForCompany: async () => { calls.push("list"); return []; },
   };
   const validation = {
     createUserSchema: { safeParse: () => { calls.push("parse"); return { success: true, data: input }; } },
-    updateMiniAdminSchema: { safeParse: () => { calls.push("parse"); return { success: true, data: input }; } },
   };
   function tracked(url: string, method: string) {
     const request = new Request(url, { method, body: JSON.stringify(input) });
@@ -98,7 +94,7 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
     }) as typeof params.then;
     return params;
   }
-  for (const role of ["SUPER_ADMIN", "DISPATCHER"]) {
+  for (const role of ["SUPER_ADMIN", "BAKER", "DRIVER", "MERCHANT"]) {
     const users = load("src/app/api/users/route.ts", {
       "next/server": { NextResponse },
       "@/lib/config-messages": require("../src/lib/config-messages"),
@@ -116,7 +112,6 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
     for (const response of [
       await users.GET!(),
       await users.POST!(tracked("http://local/api/users", "POST")),
-      await item.PATCH!(tracked("http://local/api/users/user-1", "PATCH"), { params: pendingParams() }),
       await item.DELETE!(new Request("http://local/api/users/user-1", { method: "DELETE" }), { params: pendingParams() }),
     ]) {
       assert.equal(response.status, 403);
@@ -127,7 +122,7 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
   const allowed = load("src/app/api/users/route.ts", {
     "next/server": { NextResponse },
     "@/lib/config-messages": require("../src/lib/config-messages"),
-    "@/lib/api/auth-guard": auth("COMPANY_ADMIN"),
+    "@/lib/api/auth-guard": auth("ADMIN"),
     "@/lib/validations/user": validation,
     "@/domains/user/user.service": service,
   });

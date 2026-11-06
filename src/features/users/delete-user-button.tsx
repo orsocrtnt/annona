@@ -15,7 +15,7 @@ import type { SystemRole } from "@prisma/client";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-const DELETABLE_ROLES: SystemRole[] = ["CLIENT", "DRIVER", "DISPATCHER", "MINI_ADMIN"];
+const DELETABLE_ROLES: SystemRole[] = ["ADMIN", "BAKER", "DRIVER", "MERCHANT"];
 
 interface DeleteUserButtonProps {
   userId: string;

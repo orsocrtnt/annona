@@ -7,7 +7,7 @@ import { createUserByAdmin, listUsersForCompany } from "@/domains/user/user.serv
 export async function GET() {
   const auth = await requireStaffRole("users:read");
   if ("error" in auth) return auth.error;
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  const denied = requireRole(auth.context, ["ADMIN"]);
   if (denied) return denied;
 
   if (auth.context.user.role.systemRole === "SUPER_ADMIN") {
@@ -30,7 +30,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const auth = await requireStaffRole("users:create");
   if ("error" in auth) return auth.error;
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
+  const denied = requireRole(auth.context, ["ADMIN"]);
   if (denied) return denied;
   if (auth.context.user.role.systemRole === "SUPER_ADMIN") {
     return NextResponse.json(
@@ -68,7 +68,6 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "UNKNOWN";
     const statusMap: Record<string, number> = {
-      MINI_ADMIN_MANAGEMENT_FORBIDDEN: 403,
       AUTH_EMAIL_NOT_CONFIGURED: 503,
       AUTH_RATE_LIMITED: 429,
       INVITATION_FAILED: 502,
@@ -78,7 +77,6 @@ export async function POST(request: Request) {
       COMPANY_REQUIRED: 400,
     };
     const labels: Record<string, string> = {
-      MINI_ADMIN_MANAGEMENT_FORBIDDEN: "La gestion des mini-admins est réservée aux administrateurs principaux.",
       AUTH_EMAIL_NOT_CONFIGURED: CONFIG_MESSAGES.INVITATION_EMAIL_NOT_CONFIGURED,
       AUTH_RATE_LIMITED: "Trop de demandes. Réessayez plus tard.",
       INVITATION_FAILED: "L’invitation n’a pas pu être envoyée : le service d’e-mail a refusé l’envoi. Vérifiez l’adresse du destinataire puis réessayez ; si cela se répète, contactez l’administrateur de la plateforme.",

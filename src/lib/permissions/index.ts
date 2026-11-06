@@ -1,4 +1,5 @@
 import type { SystemRole } from "@prisma/client";
+import { ROLE_LABELS } from "./rbac";
 
 export const PERMISSIONS = {
   USERS_READ: "users:read",
@@ -9,26 +10,30 @@ export const PERMISSIONS = {
   COMPANIES_CREATE: "companies:create",
   COMPANIES_UPDATE: "companies:update",
   COMPANIES_DELETE: "companies:delete",
-  DELIVERIES_READ: "deliveries:read",
-  DELIVERIES_CREATE: "deliveries:create",
-  DELIVERIES_UPDATE: "deliveries:update",
-  DELIVERIES_DELETE: "deliveries:delete",
-  DELIVERIES_DISPATCH: "deliveries:dispatch",
+  MERCHANTS_READ: "merchants:read",
+  MERCHANTS_MANAGE: "merchants:manage",
+  CATALOG_READ: "catalog:read",
+  CATALOG_MANAGE: "catalog:manage",
   ORDERS_READ: "orders:read",
   ORDERS_CREATE: "orders:create",
   ORDERS_UPDATE: "orders:update",
-  DRIVERS_READ: "drivers:read",
-  DRIVERS_MANAGE: "drivers:manage",
-  VEHICLES_READ: "vehicles:read",
-  VEHICLES_MANAGE: "vehicles:manage",
-  ANALYTICS_READ: "analytics:read",
+  PRODUCTION_READ: "production:read",
+  PRODUCTION_UPDATE: "production:update",
+  ROUNDS_READ: "rounds:read",
+  ROUNDS_MANAGE: "rounds:manage",
+  STOPS_UPDATE: "stops:update",
+  INVOICES_READ: "invoices:read",
+  INVOICES_CREATE: "invoices:create",
+  INVOICES_UPDATE: "invoices:update",
   SETTINGS_READ: "settings:read",
   SETTINGS_UPDATE: "settings:update",
+  SUPPORT_READ: "support:read",
+  SUPPORT_CREATE: "support:create",
   DASHBOARD_ADMIN: "dashboard:admin",
   DASHBOARD_COMPANY: "dashboard:company",
-  DASHBOARD_DISPATCHER: "dashboard:dispatcher",
+  DASHBOARD_BAKER: "dashboard:baker",
   DASHBOARD_DRIVER: "dashboard:driver",
-  DASHBOARD_CLIENT: "dashboard:client",
+  DASHBOARD_MERCHANT: "dashboard:merchant",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -49,25 +54,16 @@ export function hasAnyPermission(
 }
 
 export function getRoleLabel(role: SystemRole): string {
-  const labels: Record<SystemRole, string> = {
-    SUPER_ADMIN: "Super Admin",
-    COMPANY_ADMIN: "Administrateur",
-    MINI_ADMIN: "Mini-admin",
-    DISPATCHER: "Dispatcher",
-    DRIVER: "Livreur",
-    CLIENT: "Client",
-  };
-  return labels[role];
+  return ROLE_LABELS[role];
 }
 
 export function getRoleColor(role: SystemRole): string {
   const colors: Record<SystemRole, string> = {
     SUPER_ADMIN: "border-transparent bg-red-100 text-red-800 dark:bg-error-subtle dark:text-error",
-    COMPANY_ADMIN: "border-transparent bg-red-100 text-red-800 dark:bg-error-subtle dark:text-error",
-    MINI_ADMIN: "border-transparent bg-indigo-100 text-indigo-800 dark:bg-[#26283f] dark:text-[#b4b8f0]",
-    DISPATCHER: "border-transparent bg-slate-100 text-slate-800 dark:bg-muted dark:text-foreground",
+    ADMIN: "border-transparent bg-red-100 text-red-800 dark:bg-error-subtle dark:text-error",
+    BAKER: "border-transparent bg-amber-100 text-amber-800 dark:bg-warning-subtle dark:text-warning",
     DRIVER: "border-transparent bg-orange-100 text-orange-800 dark:bg-warning-subtle dark:text-warning",
-    CLIENT: "border-transparent bg-blue-100 text-blue-800 dark:bg-[#1f2c40] dark:text-[#8fb5ee]",
+    MERCHANT: "border-transparent bg-blue-100 text-blue-800 dark:bg-[#1f2c40] dark:text-[#8fb5ee]",
   };
   return colors[role];
 }

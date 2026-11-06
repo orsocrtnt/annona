@@ -50,7 +50,7 @@ test("ADMIN-1 entreprises : filtres, pagination, select minimal et compteurs", a
           name: "Acme",
           status: "TRIAL" as const,
           createdAt: now,
-          _count: { users: 4, deliveries: 9 },
+          _count: { users: 4, orders: 9 },
         }];
       },
     },

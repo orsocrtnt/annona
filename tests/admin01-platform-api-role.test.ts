@@ -64,7 +64,7 @@ function watched(calls: string[]) {
 }
 
 test("ADMIN-1 API plateforme : un autre rôle reste refusé malgré dashboard:admin", async () => {
-  for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]) {
+  for (const role of ["ADMIN", "MINI_ADMIN", "DISPATCHER"]) {
     for (const [file, service, usesRequest] of routes) {
       const calls: string[] = [];
       const route = load(file, service, role, calls);

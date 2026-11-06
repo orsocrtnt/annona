@@ -9,20 +9,17 @@ export class InvalidSupportReferenceError extends Error {
     this.name = "InvalidSupportReferenceError";
   }
 }
-// Masquer aussi les anciens tickets liés à des ressources hors du périmètre client.
+/** Commandes du commerçant que représente ce compte client, dans son entreprise. */
+function clientOrderScope(customerId: string, companyId: string): Prisma.OrderWhereInput {
+  return { companyId, merchant: { is: { companyId, users: { some: { id: customerId, companyId } } } } };
+}
+
+// Masquer aussi les anciens tickets liés à des commandes hors du périmètre client.
 function clientTicketScope(customerId: string, companyId: string): Prisma.SupportTicketWhereInput {
-  const owner = { customerId, companyId };
   return {
-    ...owner,
-    AND: [
-      { OR: [{ relatedOrderId: null }, { relatedOrder: { is: owner } }] },
-      {
-        OR: [
-          { relatedDeliveryId: null },
-          { relatedDelivery: { is: { ...owner, order: { is: owner } } } },
-        ],
-      },
-    ],
+    customerId,
+    companyId,
+    OR: [{ relatedOrderId: null }, { relatedOrder: { is: clientOrderScope(customerId, companyId) } }],
   };
 }
 
@@ -32,7 +29,6 @@ export async function getClientTickets(customerId: string, companyId: string) {
     include: {
       messages: { orderBy: { createdAt: "asc" }, take: 5 },
       relatedOrder: { select: { reference: true } },
-      relatedDelivery: { select: { reference: true } },
     },
     orderBy: { createdAt: "desc" },
     take: CLIENT_TICKETS_TAKE,
@@ -45,7 +41,6 @@ export async function getClientTicketById(customerId: string, companyId: string,
     include: {
       messages: { orderBy: { createdAt: "asc" } },
       relatedOrder: { select: { reference: true } },
-      relatedDelivery: { select: { reference: true } },
     },
   });
 }
@@ -56,25 +51,12 @@ export async function createClientTicket(
   data: CreateSupportTicketInput
 ) {
   return prisma.$transaction(async (tx) => {
-    const owner = { customerId, companyId };
     if (data.relatedOrderId !== undefined) {
       const order = await tx.order.findFirst({
-        where: { id: data.relatedOrderId, ...owner },
+        where: { id: data.relatedOrderId, ...clientOrderScope(customerId, companyId) },
         select: { id: true },
       });
       if (!order) throw new InvalidSupportReferenceError();
-    }
-    if (data.relatedDeliveryId !== undefined) {
-      const delivery = await tx.delivery.findFirst({
-        where: {
-          id: data.relatedDeliveryId,
-          ...owner,
-          order: { is: owner },
-          ...(data.relatedOrderId !== undefined ? { orderId: data.relatedOrderId } : {}),
-        },
-        select: { id: true },
-      });
-      if (!delivery) throw new InvalidSupportReferenceError();
     }
     return tx.supportTicket.create({
       data: {
@@ -86,9 +68,9 @@ export async function createClientTicket(
         priority: "NORMAL",
         contactType: data.contactType,
         relatedOrderId: data.relatedOrderId,
-        relatedDeliveryId: data.relatedDeliveryId,
         messages: {
           create: {
+            companyId,
             body: data.message,
             authorId: customerId,
             isStaff: false,
@@ -98,7 +80,6 @@ export async function createClientTicket(
       include: {
         messages: true,
         relatedOrder: { select: { reference: true } },
-        relatedDelivery: { select: { reference: true } },
       },
     });
   });
@@ -116,7 +97,7 @@ export async function addClientTicketMessage(
   if (!ticket) return null;
 
   const message = await prisma.supportTicketMessage.create({
-    data: { ticketId, body, authorId: customerId, isStaff: false },
+    data: { companyId, ticketId, body, authorId: customerId, isStaff: false },
   });
 
   await prisma.supportTicket.update({
@@ -131,19 +112,7 @@ function staffTicketScope(companyId: string): Prisma.SupportTicketWhereInput {
   return {
     companyId,
     customer: { is: { companyId } },
-    AND: [
-      { OR: [{ relatedOrderId: null }, { relatedOrder: { is: { companyId } } }] },
-      {
-        OR: [
-          { relatedDeliveryId: null },
-          {
-            relatedDelivery: {
-              is: { companyId, order: { is: { companyId } } },
-            },
-          },
-        ],
-      },
-    ],
+    OR: [{ relatedOrderId: null }, { relatedOrder: { is: { companyId } } }],
   };
 }
 
@@ -153,7 +122,6 @@ const staffTicketInclude = {
   },
   messages: { orderBy: { createdAt: "asc" as const } },
   relatedOrder: { select: { id: true, reference: true } },
-  relatedDelivery: { select: { id: true, reference: true } },
 } satisfies Prisma.SupportTicketInclude;
 
 export async function getStaffTickets(companyId: string) {
@@ -196,7 +164,7 @@ export async function addStaffTicketMessage(
     if (!ticket) return null;
 
     const message = await tx.supportTicketMessage.create({
-      data: { ticketId, body, authorId: staffId, isStaff: true },
+      data: { companyId, ticketId, body, authorId: staffId, isStaff: true },
     });
     // Une résolution concurrente doit gagner : seule une demande encore OPEN
     // passe automatiquement à IN_PROGRESS lors de la première réponse.
@@ -211,6 +179,7 @@ export async function addStaffTicketMessage(
     if (!updated) return null;
     await tx.clientNotification.create({
       data: {
+        companyId,
         userId: ticket.customerId,
         type: "SUPPORT",
         title: "Nouvelle réponse du support",
@@ -249,6 +218,7 @@ export async function updateStaffTicketStatus(
     const copy = supportNotification(status);
     await tx.clientNotification.create({
       data: {
+        companyId,
         userId: current.customerId,
         type: "SUPPORT",
         title: copy.title,

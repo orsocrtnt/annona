@@ -5,13 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   FileText,
   HeadphonesIcon,
-  LayoutDashboard,
   LogOut,
   Menu,
-  RefreshCw,
   Settings,
   ShoppingBag,
-  Truck,
 } from "lucide-react";
 
 import {
@@ -38,12 +35,9 @@ import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { cn, getInitials } from "@/lib/utils";
 
 const navItems = [
-  { title: "Tableau de bord", href: "/portal", icon: LayoutDashboard },
-  { title: "Mes commandes", href: "/portal/orders", icon: ShoppingBag },
-  { title: "Récurrentes", href: "/portal/recurring", icon: RefreshCw },
-  { title: "Livraisons", href: "/portal/deliveries", icon: Truck },
+  { title: "Commander", href: "/portal", icon: ShoppingBag },
   { title: "Factures", href: "/portal/invoices", icon: FileText },
-  { title: "Support", href: "/portal/support", icon: HeadphonesIcon },
+  { title: "Réclamations", href: "/portal/support", icon: HeadphonesIcon },
   { title: "Paramètres", href: "/portal/settings", icon: Settings },
 ];
 

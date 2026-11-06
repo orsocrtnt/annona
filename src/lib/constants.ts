@@ -15,7 +15,7 @@ export const ROUTES = {
   // Back Office
   ADMIN_DASHBOARD: "/admin",
   COMPANY_DASHBOARD: "/dashboard",
-  DISPATCHER_DASHBOARD: "/dispatch",
+  BAKER_DASHBOARD: "/bakery",
   SETTINGS: "/settings",
   USERS: "/users",
   COMPANIES: "/companies",

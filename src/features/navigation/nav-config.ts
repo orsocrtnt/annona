@@ -1,6 +1,6 @@
 import {
-  LayoutDashboard, Building2, Users, Settings, Radio, Activity,
-  Truck, Package, MapPin, Shield, UserCircle, Receipt, BarChart3, HeadphonesIcon, ListChecks,
+  LayoutDashboard, Building2, Users, Settings, Activity, Truck, Package, Shield, UserCircle, Receipt,
+  HeadphonesIcon, BookOpen, ChefHat, Route,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -15,52 +15,24 @@ export const adminNavItems: NavItem[] = [
   { title: "Support plateforme", href: "/admin/support", icon: HeadphonesIcon, group: ADMIN_NAV_GROUPS.technique },
 ];
 
-/** Une seule entrée « Carte » : livreurs et livraisons sur la même carte (MAP-UNIFY-2). */
-const dispatchMapItems: NavItem[] = [{ title: "Carte", href: "/dispatch/map", icon: MapPin }];
-
+/** Administrateur de l'entreprise (back-office). */
 export const companyNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Première livraison", href: "/onboarding", icon: ListChecks },
-  { title: "Analyse", href: "/dashboard/analytics", icon: BarChart3 },
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
-  { title: "Dispatch", href: "/dispatch", icon: Radio },
-  ...dispatchMapItems,
-  { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
+  { title: "Tournées", href: "/dashboard/rounds", icon: Route },
+  { title: "Clients", href: "/dashboard/merchants", icon: UserCircle },
+  { title: "Catalogue", href: "/dashboard/catalog", icon: BookOpen },
+  { title: "Factures", href: "/dashboard/invoices", icon: Receipt },
   { title: "Support", href: "/support", icon: HeadphonesIcon },
-  { title: "Livreurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
   { title: "Paramètres", href: "/settings", icon: Settings },
 ];
 
-export const dispatcherNavItems: NavItem[] = [
-  { title: "Dispatch", href: "/dispatch", icon: Radio },
-  { title: "Commandes", href: "/dashboard/orders", icon: Package },
-  ...dispatchMapItems,
-  { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
-  { title: "Support", href: "/support", icon: HeadphonesIcon },
-  { title: "Livreurs", href: "/dashboard/drivers", icon: Truck },
-];
-
-/** Tous les écrans back-office, filtrés ensuite par les accès du mini-admin. */
-export const miniAdminNavItems: NavItem[] = [
-  { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Analyse", href: "/dashboard/analytics", icon: BarChart3 },
-  { title: "Commandes", href: "/dashboard/orders", icon: Package },
-  { title: "Dispatch", href: "/dispatch", icon: Radio },
-  ...dispatchMapItems,
-  // Mini-admin qui n'a que l'ancien module « Carte livreurs » : même carte, par son ancienne adresse.
-  { title: "Carte", href: "/dispatch/drivers", icon: MapPin },
-  { title: "Clients", href: "/dashboard/clients", icon: UserCircle },
-  { title: "Support", href: "/support", icon: HeadphonesIcon },
-  { title: "Livreurs", href: "/dashboard/drivers", icon: Truck },
-  { title: "Gestion des comptes", href: "/users", icon: Users },
-  { title: "Facturation", href: "/settings/billing", icon: Receipt },
-  { title: "Paramètres", href: "/settings", icon: Settings },
-];
+/** Boulanger : un seul espace, la production. */
+export const bakerNavItems: NavItem[] = [{ title: "Production", href: "/bakery", icon: ChefHat }];
 
 export const driverNavItems: NavItem[] = [
-  { title: "Accueil", href: "/driver", icon: LayoutDashboard },
-  { title: "Missions", href: "/driver/missions", icon: Truck },
+  { title: "Ma tournée", href: "/driver", icon: Truck },
   { title: "Profil", href: "/driver/profile", icon: Shield },
 ];

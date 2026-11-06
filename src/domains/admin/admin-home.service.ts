@@ -172,10 +172,9 @@ type FindArgs = Record<string, unknown>;
 export type AdminHomeDatabase = {
   supportTicket: { count: (args: CountArgs) => Promise<number> };
   company: { count: (args: CountArgs) => Promise<number> };
-  order: { findMany: (args: FindArgs) => Promise<Array<{ createdAt: Date }>> };
-  delivery: {
+  order: {
     count: (args: CountArgs) => Promise<number>;
-    findMany: (args: FindArgs) => Promise<Array<{ completedAt: Date | null }>>;
+    findMany: (args: FindArgs) => Promise<Array<{ createdAt: Date; deliveredAt?: Date | null }>>;
   };
 };
 
@@ -211,19 +210,19 @@ export async function getAdminHome(
   const seriesStart = parisDayStart(shiftDayKey(today, -(ADMIN_HOME_DAYS - 1)));
   const windows = sameDayLastWeekWindows(now);
   const companiesSince = new Date(now.getTime() - NEW_COMPANIES_DAYS * 86_400_000);
-  const deliveredWhere = (range: { gte: Date; lt: Date }) => ({ status: DELIVERED_STATUS, completedAt: range });
+  const deliveredWhere = (range: { gte: Date; lt: Date }) => ({ status: DELIVERED_STATUS, deliveredAt: range });
 
   const [todo, activeCompanies, newCompanies, deliveredToday, deliveredLastWeek, orders, delivered, health] =
     await Promise.all([
       readAdminHomeTodo(db),
       db.company.count({ where: { status: "ACTIVE" } }),
       db.company.count({ where: { status: "ACTIVE", createdAt: { gte: companiesSince } } }),
-      db.delivery.count({ where: deliveredWhere(windows.today) }),
-      db.delivery.count({ where: deliveredWhere(windows.lastWeek) }),
+      db.order.count({ where: deliveredWhere(windows.today) }),
+      db.order.count({ where: deliveredWhere(windows.lastWeek) }),
       db.order.findMany({ where: { createdAt: { gte: seriesStart } }, select: { createdAt: true } }),
-      db.delivery.findMany({
-        where: { status: DELIVERED_STATUS, completedAt: { gte: seriesStart } },
-        select: { completedAt: true },
+      db.order.findMany({
+        where: { status: DELIVERED_STATUS, deliveredAt: { gte: seriesStart } },
+        select: { createdAt: true, deliveredAt: true },
       }),
       readHealth().catch(() => null),
     ]);
@@ -237,7 +236,7 @@ export async function getAdminHome(
     },
     series: buildDailySeries(
       orders.map((order) => order.createdAt),
-      delivered.flatMap((row) => (row.completedAt ? [row.completedAt] : [])),
+      delivered.flatMap((row) => (row.deliveredAt ? [row.deliveredAt] : [])),
       now
     ),
     health: buildHealthSignal(health),

@@ -1,4 +1,4 @@
-import { Prisma, type Invoice, type RecurringOrder } from "@prisma/client";
+import { Prisma, type AuditLog, type Category, type Product, type Slot } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 
 /**
@@ -7,7 +7,7 @@ import { prisma } from "@/services/prisma/client";
  * Les identifiants relationnels sont conservés pour permettre une reprise, mais
  * les identifiants Supabase Auth, clés d'idempotence, empreintes de requête,
  * charges de jobs et erreurs internes sont exclus.
- * `companyCustomers` (fiches clients sans accès) est un ajout compatible de la version 1.
+ * Version 2 (SCHEMA-1) : modèle boulangerie (commerçants, catalogue, commandes, tournées, factures de période).
  *
  * Les collections sont relues par pages (clé `createdAt`, `id`) dans une seule
  * transaction en lecture répétable : l'instantané reste cohérent et la mémoire
@@ -43,12 +43,12 @@ const USER_SELECT = {
   avatarUrl: true,
   settings: true,
   status: true,
+  merchantId: true,
   role: { select: { name: true, slug: true, systemRole: true } },
   createdAt: true,
   updatedAt: true,
   lastLoginAt: true,
-  addresses: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
-  driverLocation: true,
+  driverLocation: { select: { latitude: true, longitude: true, accuracy: true, updatedAt: true } },
   notifications: {
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: {
@@ -63,43 +63,27 @@ const USER_SELECT = {
   },
 } satisfies Prisma.UserSelect;
 
-const ORDER_SELECT = {
-  id: true,
-  companyId: true,
-  reference: true,
-  status: true,
-  source: true,
-  totalAmount: true,
-  itemCount: true,
-  notes: true,
-  deliveryCategory: true,
-  pickupAddress: true,
-  pickupCity: true,
-  pickupPostalCode: true,
-  pickupInstructions: true,
-  shippingAddress: true,
-  shippingCity: true,
-  shippingPostalCode: true,
-  deliveryInstructions: true,
-  requestedDeliveryDate: true,
-  missionDescription: true,
-  customerId: true,
-  customerEmail: true,
-  companyCustomerId: true,
-  recurringOrderId: true,
-  createdAt: true,
-  updatedAt: true,
-  items: { orderBy: { id: "asc" } },
+const MERCHANT_INCLUDE = {
+  prices: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+} satisfies Prisma.MerchantInclude;
+
+const RECURRING_ORDER_INCLUDE = {
+  lines: { orderBy: { id: "asc" } },
+} satisfies Prisma.RecurringOrderInclude;
+
+const ORDER_INCLUDE = {
+  lines: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+  stop: true,
+} satisfies Prisma.OrderInclude;
+
+const ROUND_INCLUDE = {
   stops: { orderBy: [{ sequence: "asc" }, { id: "asc" }] },
-  deliveries: {
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    include: {
-      trackingEvents: {
-        orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
-      },
-    },
-  },
-} satisfies Prisma.OrderSelect;
+} satisfies Prisma.RoundInclude;
+
+const INVOICE_INCLUDE = {
+  lines: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
+  payments: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+} satisfies Prisma.InvoiceInclude;
 
 const SUPPORT_TICKET_INCLUDE = {
   messages: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
@@ -119,25 +103,21 @@ const OPERATION_JOB_SELECT = {
   updatedAt: true,
 } satisfies Prisma.OperationJobSelect;
 
-const COMPANY_CUSTOMER_SELECT = {
-  id: true,
-  name: true,
-  email: true,
-  phone: true,
-  userId: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.CompanyCustomerSelect;
-
 export type ExportedCompany = Prisma.CompanyGetPayload<{ select: typeof COMPANY_SELECT }>;
 
+/** Collections dans l'ordre d'écriture : référentiel, commandes, tournées, factures, échanges. */
 export interface CompanyExportRows {
   users: Prisma.UserGetPayload<{ select: typeof USER_SELECT }>[];
-  companyCustomers: Prisma.CompanyCustomerGetPayload<{ select: typeof COMPANY_CUSTOMER_SELECT }>[];
-  recurringOrders: RecurringOrder[];
-  orders: Prisma.OrderGetPayload<{ select: typeof ORDER_SELECT }>[];
-  invoices: Invoice[];
+  merchants: Prisma.MerchantGetPayload<{ include: typeof MERCHANT_INCLUDE }>[];
+  categories: Category[];
+  products: Product[];
+  slots: Slot[];
+  recurringOrders: Prisma.RecurringOrderGetPayload<{ include: typeof RECURRING_ORDER_INCLUDE }>[];
+  orders: Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE }>[];
+  rounds: Prisma.RoundGetPayload<{ include: typeof ROUND_INCLUDE }>[];
+  invoices: Prisma.InvoiceGetPayload<{ include: typeof INVOICE_INCLUDE }>[];
   supportTickets: Prisma.SupportTicketGetPayload<{ include: typeof SUPPORT_TICKET_INCLUDE }>[];
+  auditLogs: AuditLog[];
   operationJobs: Prisma.OperationJobGetPayload<{ select: typeof OPERATION_JOB_SELECT }>[];
 }
 
@@ -145,23 +125,22 @@ export type CompanyExportCollection = keyof CompanyExportRows;
 
 export interface CompanyExportHeader {
   schema: "annona-company-export";
-  version: 1;
+  version: 2;
   exportedAt: string;
 }
 
+/** Photo d'incident d'un arrêt, stockée dans le bucket privé. */
 export interface CompanyExportProofObject {
-  deliveryId: string;
-  deliveryReference: string;
+  stopId: string;
+  orderId: string;
   objectKey: string;
-  /** Absent pour la photo de preuve ; « signature » pour la signature du réceptionnaire. */
-  kind?: "signature";
 }
 
 export interface CompanyExportSummary extends CompanyExportHeader {
   counts: Record<
-    | "users" | "companyCustomers" | "addresses" | "notifications" | "recurringOrders" | "orders" | "items" | "stops"
-    | "deliveries" | "trackingEvents" | "invoices"
-    | "supportTickets" | "supportMessages" | "operationJobs" | "proofObjects",
+    | "users" | "notifications" | "merchants" | "merchantPrices" | "categories" | "products" | "slots"
+    | "recurringOrders" | "orders" | "orderLines" | "rounds" | "stops" | "invoices" | "invoiceLines" | "payments"
+    | "supportTickets" | "supportMessages" | "auditLogs" | "operationJobs" | "proofObjects",
     number
   >;
   externalAssets: { proofObjects: CompanyExportProofObject[]; note: string };
@@ -209,150 +188,78 @@ export async function visitCompanyExport(
   }
   const header: CompanyExportHeader = {
     schema: "annona-company-export",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
   };
   const counts: CompanyExportSummary["counts"] = {
-    users: 0,
-    companyCustomers: 0,
-    addresses: 0,
-    notifications: 0,
-    recurringOrders: 0,
-    orders: 0,
-    items: 0,
-    stops: 0,
-    deliveries: 0,
-    trackingEvents: 0,
-    invoices: 0,
-    supportTickets: 0,
-    supportMessages: 0,
-    operationJobs: 0,
-    proofObjects: 0,
+    users: 0, notifications: 0, merchants: 0, merchantPrices: 0, categories: 0, products: 0, slots: 0,
+    recurringOrders: 0, orders: 0, orderLines: 0, rounds: 0, stops: 0, invoices: 0, invoiceLines: 0, payments: 0,
+    supportTickets: 0, supportMessages: 0, auditLogs: 0, operationJobs: 0, proofObjects: 0,
   };
   const proofObjects: CompanyExportProofObject[] = [];
+  const page = { orderBy: [{ createdAt: "asc" as const }, { id: "asc" as const }], take: pageSize };
 
   const found = await prisma.$transaction(async (tx) => {
     const company = await tx.company.findUnique({ where: { id: companyId }, select: COMPANY_SELECT });
     if (!company) return false;
     await visitor.start(header, company);
 
-    await forEachPage(
-      pageSize,
-      (after) => tx.user.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-        select: USER_SELECT,
-      }),
+    await forEachPage(pageSize, (after) => tx.user.findMany({ where: pageWhere(companyId, after), ...page, select: USER_SELECT }),
       async (rows) => {
         counts.users += rows.length;
-        for (const user of rows) {
-          counts.addresses += user.addresses.length;
-          counts.notifications += user.notifications.length;
-        }
+        for (const user of rows) counts.notifications += user.notifications.length;
         await visitor.page("users", rows);
-      }
-    );
-    await forEachPage(
-      pageSize,
-      (after) => tx.companyCustomer.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-        select: COMPANY_CUSTOMER_SELECT,
-      }),
+      });
+    await forEachPage(pageSize, (after) => tx.merchant.findMany({ where: pageWhere(companyId, after), ...page, include: MERCHANT_INCLUDE }),
       async (rows) => {
-        counts.companyCustomers += rows.length;
-        await visitor.page("companyCustomers", rows);
-      }
-    );
-    await forEachPage(
-      pageSize,
-      (after) => tx.recurringOrder.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-      }),
-      async (rows) => {
-        counts.recurringOrders += rows.length;
-        await visitor.page("recurringOrders", rows);
-      }
-    );
-    await forEachPage(
-      pageSize,
-      (after) => tx.order.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-        select: ORDER_SELECT,
-      }),
+        counts.merchants += rows.length;
+        for (const merchant of rows) counts.merchantPrices += merchant.prices.length;
+        await visitor.page("merchants", rows);
+      });
+    await forEachPage(pageSize, (after) => tx.category.findMany({ where: pageWhere(companyId, after), ...page }),
+      async (rows) => { counts.categories += rows.length; await visitor.page("categories", rows); });
+    await forEachPage(pageSize, (after) => tx.product.findMany({ where: pageWhere(companyId, after), ...page }),
+      async (rows) => { counts.products += rows.length; await visitor.page("products", rows); });
+    await forEachPage(pageSize, (after) => tx.slot.findMany({ where: pageWhere(companyId, after), ...page }),
+      async (rows) => { counts.slots += rows.length; await visitor.page("slots", rows); });
+    await forEachPage(pageSize, (after) => tx.recurringOrder.findMany({ where: pageWhere(companyId, after), ...page, include: RECURRING_ORDER_INCLUDE }),
+      async (rows) => { counts.recurringOrders += rows.length; await visitor.page("recurringOrders", rows); });
+    await forEachPage(pageSize, (after) => tx.order.findMany({ where: pageWhere(companyId, after), ...page, include: ORDER_INCLUDE }),
       async (rows) => {
         counts.orders += rows.length;
-        for (const order of rows) {
-          counts.items += order.items.length;
-          counts.stops += order.stops.length;
-          counts.deliveries += order.deliveries.length;
-          for (const delivery of order.deliveries) {
-            counts.trackingEvents += delivery.trackingEvents.length;
-            if (delivery.podPhotoPath) {
-              proofObjects.push({
-                deliveryId: delivery.id,
-                deliveryReference: delivery.reference,
-                objectKey: delivery.podPhotoPath,
-              });
-            }
-            if (delivery.podSignaturePath) {
-              proofObjects.push({
-                deliveryId: delivery.id,
-                deliveryReference: delivery.reference,
-                objectKey: delivery.podSignaturePath,
-                kind: "signature",
-              });
-            }
+        for (const order of rows) counts.orderLines += order.lines.length;
+        await visitor.page("orders", rows);
+      });
+    await forEachPage(pageSize, (after) => tx.round.findMany({ where: pageWhere(companyId, after), ...page, include: ROUND_INCLUDE }),
+      async (rows) => {
+        counts.rounds += rows.length;
+        for (const round of rows) {
+          counts.stops += round.stops.length;
+          for (const stop of round.stops) {
+            if (stop.incidentPhotoPath) proofObjects.push({ stopId: stop.id, orderId: stop.orderId, objectKey: stop.incidentPhotoPath });
           }
         }
-        await visitor.page("orders", rows);
-      }
-    );
-    await forEachPage(
-      pageSize,
-      (after) => tx.invoice.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-      }),
+        await visitor.page("rounds", rows);
+      });
+    await forEachPage(pageSize, (after) => tx.invoice.findMany({ where: pageWhere(companyId, after), ...page, include: INVOICE_INCLUDE }),
       async (rows) => {
         counts.invoices += rows.length;
+        for (const invoice of rows) {
+          counts.invoiceLines += invoice.lines.length;
+          counts.payments += invoice.payments.length;
+        }
         await visitor.page("invoices", rows);
-      }
-    );
-    await forEachPage(
-      pageSize,
-      (after) => tx.supportTicket.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-        include: SUPPORT_TICKET_INCLUDE,
-      }),
+      });
+    await forEachPage(pageSize, (after) => tx.supportTicket.findMany({ where: pageWhere(companyId, after), ...page, include: SUPPORT_TICKET_INCLUDE }),
       async (rows) => {
         counts.supportTickets += rows.length;
         for (const ticket of rows) counts.supportMessages += ticket.messages.length;
         await visitor.page("supportTickets", rows);
-      }
-    );
-    await forEachPage(
-      pageSize,
-      (after) => tx.operationJob.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-        select: OPERATION_JOB_SELECT,
-      }),
-      async (rows) => {
-        counts.operationJobs += rows.length;
-        await visitor.page("operationJobs", rows);
-      }
-    );
+      });
+    await forEachPage(pageSize, (after) => tx.auditLog.findMany({ where: pageWhere(companyId, after), ...page }),
+      async (rows) => { counts.auditLogs += rows.length; await visitor.page("auditLogs", rows); });
+    await forEachPage(pageSize, (after) => tx.operationJob.findMany({ where: pageWhere(companyId, after), ...page, select: OPERATION_JOB_SELECT }),
+      async (rows) => { counts.operationJobs += rows.length; await visitor.page("operationJobs", rows); });
     return true;
   }, {
     isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
@@ -367,7 +274,7 @@ export async function visitCompanyExport(
     counts,
     externalAssets: {
       proofObjects,
-      note: "Les fichiers binaires doivent être exportés séparément depuis le bucket privé.",
+      note: "Les photos d'incident doivent être exportées séparément depuis le bucket privé.",
     },
   };
 }
@@ -377,11 +284,16 @@ export async function exportCompanyData(companyId: string, options: { pageSize?:
   let company: ExportedCompany | null = null;
   const data: CompanyExportRows = {
     users: [],
-    companyCustomers: [],
+    merchants: [],
+    categories: [],
+    products: [],
+    slots: [],
     recurringOrders: [],
     orders: [],
+    rounds: [],
     invoices: [],
     supportTickets: [],
+    auditLogs: [],
     operationJobs: [],
   };
   const summary = await visitCompanyExport(companyId, {
@@ -398,7 +310,7 @@ export async function exportCompanyData(companyId: string, options: { pageSize?:
 }
 
 /**
- * Sérialise l'export au fil des pages, dans le même document v1 que `exportCompanyData`
+ * Sérialise l'export au fil des pages, dans le même document v2 que `exportCompanyData`
  * (`counts` et `externalAssets` sont écrits après `data`, une fois connus).
  */
 export function createCompanyExportJsonWriter(write: (text: string) => Promise<void>) {

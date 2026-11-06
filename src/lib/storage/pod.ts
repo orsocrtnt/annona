@@ -9,27 +9,11 @@ export const MAX_POD_REQUEST_BYTES = MAX_POD_BYTES + 512 * 1024;
 const MAX_POD_DIMENSION = 12_000;
 const MAX_POD_PIXELS = 40_000_000;
 
+/** Chemin d'une photo de preuve ou d'incident : `companyId/<arrêt>-<horodatage>.jpg|png`. */
 export function isPodPhotoPathForDelivery(path: string, companyId: string, deliveryId: string): boolean {
   if (![companyId, deliveryId].every((id) => /^[A-Za-z0-9_-]+$/.test(id))) return false;
   const prefix = `${companyId}/${deliveryId}-`;
   return path.startsWith(prefix) && /^\d+(?:-[0-9a-f-]{36})?\.(jpg|png)$/.test(path.slice(prefix.length));
-}
-
-const SAFE_ID = /^[A-Za-z0-9_-]+$/;
-
-/** Chemin de la signature : même préfixe `companyId/deliveryId-` que la photo, infixe `sig-` pour les distinguer. */
-export function isPodSignaturePathForDelivery(path: string, companyId: string, deliveryId: string): boolean {
-  if (![companyId, deliveryId].every((id) => SAFE_ID.test(id))) return false;
-  const prefix = `${companyId}/${deliveryId}-sig-`;
-  return path.startsWith(prefix) && /^\d+-[0-9a-f-]{36}\.png$/.test(path.slice(prefix.length));
-}
-
-export type PodObjectKind = "photo" | "signature";
-
-export function isPodObjectPath(kind: PodObjectKind, path: string, companyId: string, deliveryId: string): boolean {
-  return kind === "signature"
-    ? isPodSignaturePathForDelivery(path, companyId, deliveryId)
-    : isPodPhotoPathForDelivery(path, companyId, deliveryId);
 }
 
 function validDimensions(width: number, height: number) {
@@ -112,6 +96,15 @@ export async function checkPodStorageHealth() {
   if (data.public) throw new Error("POD_STORAGE_PUBLIC");
 }
 
+const SAFE_ID = /^[A-Za-z0-9_-]+$/;
+
+/** Seule la photo existe désormais (photo d'incident d'un arrêt) ; la signature a été retirée. */
+export type PodObjectKind = "photo";
+
+function isPodObjectPath(_kind: PodObjectKind, path: string, companyId: string, deliveryId: string): boolean {
+  return isPodPhotoPathForDelivery(path, companyId, deliveryId);
+}
+
 export async function ensurePodBucket() {
   if (!bucketReady) {
     bucketReady = (async () => {
@@ -145,8 +138,7 @@ export async function putPodObject(params: {
   if (![params.companyId, params.deliveryId].every((id) => SAFE_ID.test(id))) throw new Error("POD_INVALID_PATH");
   await ensurePodBucket();
   const ext = params.contentType === "image/png" ? "png" : "jpg";
-  const infix = params.kind === "signature" ? "sig-" : "";
-  const path = `${params.companyId}/${params.deliveryId}-${infix}${Date.now()}-${randomUUID()}.${ext}`;
+  const path = `${params.companyId}/${params.deliveryId}-${Date.now()}-${randomUUID()}.${ext}`;
   const { error } = await createAdminClient().storage.from(POD_BUCKET).upload(path, params.bytes, {
     contentType: params.contentType,
     upsert: false,

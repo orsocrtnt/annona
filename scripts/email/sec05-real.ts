@@ -34,7 +34,7 @@ async function main() {
   const anon = () => createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, options);
 
   const company = await prisma.company.findFirst({ where: { status: { in: ["ACTIVE", "TRIAL"] } }, select: { id: true }, orderBy: { createdAt: "asc" } });
-  const role = await prisma.role.findFirst({ where: { systemRole: "CLIENT" }, select: { id: true } });
+  const role = await prisma.role.findFirst({ where: { systemRole: "MERCHANT" }, select: { id: true } });
   if (!company || !role) throw new Error("FIXTURE_MISSING");
 
   const report: Record<string, unknown> = { email };
