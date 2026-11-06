@@ -84,7 +84,9 @@ test("lot 5 : mail fidèle au modèle validé, liens comptés, logo joint, pas d
   assert.deepEqual(email.html.match(/<img\b[^>]*src="([^"]+)"/g)?.map((tag) => tag.match(/src="([^"]+)"/)![1]), [`cid:${PROSPECT_LOGO_CID}`]);
   assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
   assert.ok(email.text.startsWith(PROSPECT_PREHEADER), "aperçu aussi dans la version texte");
-  assert.match(email.text.split("\n")[0]!, /\u200c/);
+  // Le texte caché en masse envoyait le mail en indésirables chez Microsoft 365 (5 novembre 2026).
+  assert.equal(/[\u034f\u200c\u2007\ufeff\u00ad]/.test(email.text), false, "aucun caractère invisible dans la version texte");
+  assert.equal(/&#847;|&zwnj;|&#8199;|&#65279;|&shy;/.test(email.html), false, "aucun caractère invisible dans la version HTML");
   assert.equal(email.headers["List-Unsubscribe"], "<mailto:orso@tutelliv.fr?subject=STOP>");
   assert.equal(email.attachments.length, 1);
   assert.equal(email.attachments[0]!.cid, PROSPECT_LOGO_CID);

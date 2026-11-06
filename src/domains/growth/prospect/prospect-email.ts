@@ -49,10 +49,11 @@ const STEPS = [
 ] as const;
 
 const FONT = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-/** Caractères invisibles après l'aperçu : la suite du mail n'apparaît ni dans la liste ni dans les notifications. */
-const PREHEADER_FILLER = "&#847;&zwnj;&nbsp;&#8199;&#65279;&shy;".repeat(220);
-/** Même remplissage pour la version texte, dont certaines messageries (iPhone, Outlook) tirent l'aperçu. */
-const TEXT_PREHEADER_FILLER = "\u034f\u200c\u00a0\u2007\ufeff\u00ad".repeat(220);
+/*
+ * Pas de caractères invisibles après l'aperçu : le 5 novembre 2026, Microsoft 365 (Kedge) classait le mail
+ * en indésirables alors qu'un mail simple de la même boîte arrivait (mail-tester 10/10). Le texte caché en masse
+ * est un signal de spam ; ne pas le remettre.
+ */
 
 function stepRow(step: (typeof STEPS)[number], index: number) {
   const border = index === 0 ? "" : ";border-top:1px solid #dfe8e1";
@@ -74,7 +75,7 @@ export function renderProspectEmail(input: ProspectEmailInput): ProspectEmail {
 <style>@media only screen and (max-width:480px){.email-padding{padding:24px !important}}</style>
 </head>
 <body style="margin:0;padding:0;background:#f5f8f6;font-family:${FONT}">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f5f8f6">${escapeHtml(PROSPECT_PREHEADER)}${PREHEADER_FILLER}</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f5f8f6">${escapeHtml(PROSPECT_PREHEADER)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f8f6">
 <tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
@@ -105,7 +106,7 @@ ${STEPS.map(stepRow).join("\n")}
 </html>`;
 
   const text = [
-    `${PROSPECT_PREHEADER}${TEXT_PREHEADER_FILLER}`,
+    PROSPECT_PREHEADER,
     "",
     PROSPECT_SUBJECT,
     "",
