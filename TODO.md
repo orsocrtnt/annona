@@ -1,533 +1,187 @@
-# TODO Annona — du produit existant au SaaS vendable
+# TODO Annona — application de commande et livraison B2B (boulangerie)
 
 
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**106 tâches terminées sur 137 — 77 %**
+**0 tâches terminées sur 13 — 0 %**
 
-`███████████████░░░░░` · 31 tâches restantes
+`░░░░░░░░░░░░░░░░░░░░` · 13 tâches restantes
 
 **À faire par Claude**
 
-- AUDIT-0411 — Corriger ce que les pilotes remarqueraient (audit de bout en bout du 4 novembre 2026)
-- DEMO-REFONTE — Rendre la démonstration claire (une journée lisible, remise à l'heure, liste « À essayer »)
-- V1-GO — Valider la V1 prête à être essayée (après les essais téléphone et la vérification de conformité)
-- DATA-02 — Prévoir sortie, export et conservation des données (après la vérification de conformité)
-- PROD-04 — Définir les mesures de valeur (après les pilotes)
-- SAAS-03 — Permettre la gestion autonome de l'abonnement (après la vérification de conformité)
-- SAAS-02 — Mesurer le revenu et la santé du SaaS (après les pilotes)
-- COST-1 — Simuler les coûts d'exploitation et la marge contributive (après les pilotes)
-- GROWTH-1 — Construire le site commercial relié au parcours autonome (après la vérification de conformité)
-- DISPATCH-5 — Imprévus et mesure du dispatch (après les pilotes)
-- MOTS-UNIFIES — Employer les mêmes mots partout à l'écran (après la vérification de conformité)
-- RELEASE-1 — Réaliser la recette de mise en vente (en dernier, avant la mise en vente)
-- SMS — Ajouter seulement les extensions justifiées (seulement si les pilotes le demandent)
+- NET-1 — Nettoyer la base de l'ancien produit
+- SCHEMA-1 — Nouveau schéma de données et base de démonstration
+- CAT-1 — Catalogue et prix
+- CMD-1 — Commande côté commerçant
+- LOCK-1 — Heure limite, verrouillage et consolidation
+- BOU-1 — Espace boulanger
+- TOUR-1 — Tournées : administrateur et livreur
+- FACT-1 — Factures par période
+- NOTIF-1 — Notifications
+- ADM-1 — Comptes, paramètres et plateforme
+- MOBILE-1 — Applications iOS et Android (Capacitor)
+- RECETTE-V1 — Recette des dix critères (en dernier)
 
 **À faire par toi**
 
-- SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex
-- POD-2 — Preuve de livraison complète : signature, PDF, envoi et relevés
-- MOB-01C — Réaliser les essais iPhone et Android
-- FACTURX-1 — Factur-X EN 16931 des factures de livraison
-- PROD-02 — Documenter le travail actuel et sa difficulté principale
-- INTAKE-1 — Commande par message IA (coller un message)
-- AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote
-- PROPRIO-2810 — Actions du propriétaire avant mise en ligne
-- ADMIN-ESPACE — Refaire l'espace super admin (/admin) du propriétaire (brancher le fichier Google (`docs/operations/prospection/SHEET.md`), puis Claude vérifie la lecture réelle ; campagnes : l'autre session les fusionne)
-- ONBOARD-1 — Guider jusqu’à la première livraison (pendant les pilotes)
-- OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation (une commande, puis Claude)
-- LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents (fournir les pièces et décider, puis Claude)
-- OFFER-1 — Valider la grille cible et l'offre pilote (pendant les entretiens et les pilotes)
-- PILOT-1 — Recruter et conduire trois pilotes accompagnés (après les entretiens)
-- PILOT-2 — Décider avec les preuves des pilotes (après les pilotes)
-- LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public (SIREN, e-mail, téléphone ; puis Claude)
-- MAIL-PONT — Relier la boîte de commandes de l'entreprise à Annona (régler `NEXT_PUBLIC_APP_URL` sur `https://annona.fr` (Vercel, Preview `preproduction`) et retirer le filtre Gmail d'essai ; Outlook plus tard (décidé le 4 novembre) ; ensuite Claude)
-- WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller (après le SIREN : compte Meta Business, numéro dédié, variables Vercel ; ensuite Claude)
+- ACCES-1 — Accès et réponses du propriétaire
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 5 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 6 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
-**1. Toi (le 30 octobre, Claude a fait le reste de ta liste : voir PROPRIO-2810)**
-- Espace super admin (ADMIN-ESPACE, 5 novembre) : lots 1 à 5 en ligne. Pour voir ton fichier de prospection dans `/admin/prospection`, suivre `docs/operations/prospection/SHEET.md` (compte de service Google, partage de la Sheet en lecteur, 4 variables sur Vercel Preview `preproduction`, redéploiement), puis dire à Claude de vérifier.
-- Mailing « Il en est où ? » (en ligne le 5 novembre) : envoi réel par OVH réparé (mot de passe changé par toi dans OVH puis Vercel, redéployé) ; essai du 5 novembre au soir reçu sur Gmail, ni sur `@lalique.com` (filtre Altospam) ni sur `@kedgebs.com` (Microsoft 365) : le mail lui-même est jugé suspect par les filtres d'entreprise. Suspects relevés par Claude dans le code : 1 320 caractères invisibles cachés après l'aperçu (HTML et version texte), domaine neuf, signature DKIM OVH présente dans le DNS mais activation non vérifiée, nom de machine d'envoi non fixé. mail-tester.com (5 novembre, lu par Claude) : 10/10, SPF, DKIM (OVH, 2048 bits) et DMARC valides, IP OVH sur aucune liste noire, liens valides ; la configuration technique est donc saine, et le refus vient de la réputation d'un domaine neuf ou du contenu. Chez Kedge, le mail de campagne était en indésirables, alors qu'un mail simple envoyé depuis le webmail OVH arrivait : c'est donc le contenu. Choix en questionnaire : retirer les 1 320 caractères invisibles et garder le design, le logo et le bouton (la suite du mail peut réapparaître dans l'aperçu). Fait par Claude : `prospect-email.ts` sans remplissage, test qui interdit ces caractères (HTML et texte), modèle de référence régénéré ; `npm run check` 1 699/1 699, `npm run docs:verify` réussi. Essai du propriétaire après le déploiement (campagne `il-en-est-ou-marseille-2`, 02 h 10-02 h 12 heure de Paris) : les 3 mails sont « Envoyé » dans la base (acceptés par OVH), mais aucun n'est arrivé chez Gmail, Kedge ou Lalique, même en indésirables. Essai de Claude à 02 h 19 (adresse mail-tester ajoutée à la même campagne, depuis annona.fr/admin/campaigns dans Chrome) : livré en 1 s, version sans caractères invisibles, SpamAssassin -0,2, SPF, DKIM et DMARC valides, filtre sortant d'OVH « OK » (score 50). OVH envoie donc bien : les mails non arrivés sont soit retardés par les destinataires (même mail répété au même endroit en peu de temps, domaine neuf), soit refusés avec un message de retour dans la boîte `orso@annona.fr` (webmail non connecté dans Chrome, mot de passe non saisi par l'agent). Essais sur adresses neuves (ami du propriétaire) : Gmail et Columbia (Proofpoint) reçus, ENPC (Microsoft 365) non reçu, Kedge (Microsoft 365) en indésirables. Décision en questionnaire : mail personnel simple. Fait par Claude : `prospect-email.ts` réécrit (même texte, cinq étapes, lien « Je veux en être », lien du site dans la signature, pied CNIL ; ni logo joint, ni encadré, ni bouton, ni aperçu caché), `prospect-logo.ts` supprimé, test qui interdit image, tableau de mise en page et texte caché, modèle de référence régénéré, `docs/operations/prospection/README.md` mis à jour ; `npm run check` 1 699/1 699, `npm run docs:verify` réussi. Déployé (`0dc7e72`, prêt) ; essai de Claude vers `orsocarotenuto+essai@gmail.com` (campagne `il-en-est-ou-marseille-2`) : reçu en boîte de réception, marqué important, groupé par Gmail avec le premier « Il en est où ? » (même objet). Le propriétaire trouve le mail simple trop peu pro ; décision en questionnaire : garder la mise en forme et mettre de côté Microsoft et les filtres stricts jusqu'à ce que le domaine ait un historique. Fait par Claude : version mise en forme rétablie (sans caractères invisibles) ; `prospect-mail-provider.ts` reconnaît à l'ajout Microsoft (hotmail, outlook, live, msn, MX `*.protection.outlook.com`), Altospam (`arsmtp.com`) et Mailinblack ; ces adresses sont ajoutées « Mis de côté » (statut SKIPPED, sans migration) et jamais envoyées ; DNS lent ou en erreur = adresse envoyable ; bouton « Remettre … dans l'envoi » (PATCH super-admin, journal d'accès) ; tuile « À envoyer » avec le nombre mis de côté ; doc de prospection à jour ; tests ajoutés (domaines réels relevés, un appel DNS par domaine, délai) ; `npm run check` 1 701/1 701, `npm run docs:verify` réussi. Vérifié en ligne par Claude dans Chrome après le déploiement `1e5e1aa` : campagne « Essai tri (Claude, ne pas envoyer) », 5 adresses fictives collées : hotmail.fr et kedgebs.com « Mis de côté : Microsoft », lalique.com « Altospam », gmail.com et columbia.edu « À envoyer » ; message « 5 ajoutées (dont 3 mises de côté) », bouton « Lancer l'envoi (2) » ; « Remettre les 3 adresses dans l'envoi » passe à 5 à envoyer ; aucun mail envoyé, puis les 5 adresses fictives bloquées (STOP, « 5 envois annulés »). Reste visible : 5 adresses STOP fictives. Bouton « Supprimer la campagne » ajouté à la demande du propriétaire (confirmation dans la page « Oui, supprimer », adresses supprimées avec la campagne, STOP conservés, refus 409 si un mail est en cours d'envoi, bouton grisé pendant l'envoi, DELETE super-admin journalisé) ; `npm run check` 1 702/1 702 ; vérifié en ligne après le déploiement `ba4d59b` : « Supprimer la campagne » puis « Oui, supprimer » sur « Essai tri » : campagne et ses 5 adresses retirées, la page passe à Marseille-2, STOP conservés. Clics faux signalés par le propriétaire (6 novembre : aucun clic de sa part, mais clics « Je veux en être », site et visites comptés) : antivirus des messageries qui ouvrent chaque lien (Marseille : 3 clics par lien = Lalique, Kedge, mail-tester ; Gmail 0). Corrigé par Claude : `/go` ne compte plus rien et redirige avec `?c=<code>&m=<lien>` ; la page d'arrivée (`MailLinkBeacon` sur l'accueil et /tarifs) compte le clic, et /tarifs sa visite, seulement après un geste réel (`human-presence.ts` : appui, touche, molette ou 3 mouvements de souris, événements réels) ; rien n'est stocké dans le navigateur ; supprimer une campagne efface aussi ses compteurs (plus de reprise des clics par une nouvelle campagne de la même ville), candidatures conservées ; `npm run check` 1 703/1 703. Vérifié en ligne après le déploiement `b388f1b` (code `test`, hors campagne ; Chrome déconnecté, essai par Playwright avec un user-agent de navigateur ordinaire) : `curl` sur `/go/test/rejoindre` → 302 vers `/tarifs?c=test&m=rejoindre`, rien compté ; deux ouvertures sans geste (4 s) : aucun envoi ; avec trois mouvements de souris : un `mail_join` et une `visit`, base `test` : MAIL_JOIN 1, VISIT 1 ; `m` retiré de l'adresse. Limite : un antivirus qui simule des gestes serait compté ; les visites de /tarifs sans aucun geste ne sont plus comptées. Les anciens chiffres faux restent sur les deux campagnes Marseille d'essai : les supprimer avec le bouton. Puis nouvelle campagne Paris, coller les e-mails de l'onglet PARIS, « Lancer l'envoi » et laisser la page ouverte ; noter les STOP et les réponses sur la même page.
-- Compte super admin (5 novembre, à ta demande) : son e-mail est passé de `orsocarotenuto@annona.fr` (sans boîte mail) à `orso@annona.fr` dans la base de préproduction (connexion Supabase, identité et fiche Annona, vérifiés). À faire : https://annona.fr/login → « Mot de passe oublié » → `orso@annona.fr`, puis connexion sur `/admin`.
-- Page de connexion (5 novembre, LOGIN-LOGO, poussé) : l'icône « bâtiment » en haut est remplacée par notre icône Annona. À regarder sur annona.fr/login une fois en ligne.
-- Tableau de bord (5 novembre, DASH-COULEURS, terminé et poussé) : carte « Aujourd'hui » en couleur (fonds teintés sous chaque chiffre, donut, légende et barres par heure en vert, bleu, gris, rouge). À regarder quand une démo a des missions du jour, pour voir le donut coloré.
-- DEMO-REFONTE (5 novembre, lots 1 et 2 en ligne) : la démo est remise à l'heure au moment où on te la donne, et raconte une journée claire (1 seul retard, 4 livrées dans les dernières heures, 2 sans livreur, 2 demain, 7 jours d'historique). À regarder sur annona.fr en ouvrant une démo neuve. Ouverte la nuit, elle montre des heures de nuit (limite acceptée).
-- Ménage de ton espace (5 novembre, ADMIN-COUPER, fait) : démos retirées des listes, bouton « Couper l'accès » / « Rétablir » sur chaque compte et chaque entreprise ; base de annona.fr nettoyée par toi (vérifié : 7 entreprises, toutes de démo, seul compte hors démo = toi, 0 connexion de test restante). Photo de la vieille démo supprimée du stockage par Claude (vérifié). Rien à faire.
-- Démos dans l'espace super admin (5 novembre, DEMO-LIVE, terminé et poussé) : carte « Démos » sur `/admin` (disponibles sur le total, en direct) ; un clic ouvre `/admin/demos` avec chaque démo (en direct ou non, depuis quand, ce que le visiteur a créé, raison d'une erreur) et les boutons « Remettre à neuf » et « Tout remettre à neuf ». À faire une fois : sur annona.fr, si des démos sont « En erreur », cliquer « Tout remettre à neuf ».
-- Connexion et démo (5 novembre, AUTH-DIRECT, terminé et poussé sur `preproduction`) : « Connexion » ouvre tout de suite le formulaire, chaque compte arrive dans son espace ; « Voir la démo » ouvre l'espace de démo sans identifiants (`/demo`). À essayer sur annona.fr après le déploiement.
-- Barre du haut (5 novembre) : sur le site public, liens Fonctionnalités · Tarifs · Contact remis au centre exact de la barre, comme avant (à ta demande, après l'essai « entre le logo et les boutons ») ; l'espace client garde le réglage entre le logo et les boutons. Rien à faire ; poussé sur `preproduction`.
-- Site public (5 novembre) : Démonstration retirée, Fonctionnalités mise à jour, Tarifs remplacée par une page « Annona arrive bientôt » avec liste d'attente (détail dans GROWTH-1). Les inscriptions arrivent dans `/admin/contact`, marquées « Liste d'attente ». Rien à faire ; poussé sur `preproduction`.
-- OPS-FIAB (4 novembre) : push et migration faits par Claude (déploiement prêt, sonde toujours saine). Reste une commande, refusée à l'agent : `sh scripts/ops03b/copy-alert-email.sh` (doit afficher `"stored":true`). Dis-moi quand c'est fait : je teste l'e-mail.
-- Le 3 novembre, règles d'autorisation ajoutées à ta demande (`.claude/settings.local.json`, non versionné) : migration de préproduction, variable `DRIVE_ROUTE_IGN_URL`, push et copie du secret du relais faits par Claude.
-- Avant le premier pilote : faire confirmer par un comptable le mot « Facture » à l'écran pour un document sans toutes les mentions légales (le PDF classique reste « Relevé de prestation »).
-- Cette semaine, le plus important (audit du 1er novembre, PDF dans `outputs/audit-2026-11-01/`) : contacter des sociétés de livraison et tenir dix entretiens (PROD-02) ; le plan complet, les textes, la liste d'entreprises et le pitch avec déroulé de démonstration sont prêts (`docs/operations/prospection/README.md`, `docs/operations/prospection/PITCH.md`). Liste à appeler : fichier Drive « Annona_Suivi_Prospection_2026 », onglets PARIS (214 entreprises) et MARSEILLE (123 entreprises, Marseille, Bouches-du-Rhône et Toulon), avec téléphone ou e-mail, refaits le 4 novembre. Chaque jour à partir du 2 novembre : trouver les coordonnées, écrire et appeler de 8 h à 11 h à New York (14 h à 17 h en France).
-- Boîtes mail (4 novembre) : `orso@annona.fr` créée chez OVH (Zimbra Starter, organisation Annona ; annona.fr et annona.com ajoutés en configuration DNS recommandée, enregistrements Resend relus et inchangés). La facture du 29 octobre ne compte que 2 boîtes au total (une offerte par domaine, 3,60 € HT par an chacune) : il reste 1 place (prévue pour `ugo.macaluso@annona.com`) ; `marie.frey@annona.com` demande une boîte de plus à commander (bouton « Commander » de Zimbra). Réponses aux e-mails de Annona vers `orso@annona.fr` : terminé le 4 novembre (MAIL-REPONSE). Comptes d'Ugo et Marie en pause à ta demande ; ensuite Claude prépare les comptes (mots de passe tapés par toi) et donne les réglages Outlook/Gmail.
-- Supports des commerciaux (4 novembre, sans prix) : `outputs/commercial/kit/Annona-antiseche-commercial.pdf` (3 pages : l'appel en 5 étapes avec les phrases à dire, quel statut mettre dans le tableau, réponses aux objections et « ne jamais ») et `outputs/commercial/kit/Annona-plaquette-client.pdf` (2 pages, à donner au dirigeant ; cases « Votre contact / Téléphone » à remplir). Sources HTML à côté, PDF refaits par `node outputs/commercial/kit/simple-pdf.cjs` (0 débordement, 0 image cassée, rendu relu en capture). Rangés dans le Drive : Commercial > « Supports pour les commerciaux » (2 PDF, 498 Ko et 3,3 Mo, vérifiés dans la page du dossier). Antisèche complétée le même jour : c’est Orso qui mène les rendez-vous (créneaux lundi-vendredi 14 h-17 h, heure française), le commercial le prévient par mail à orso@annona.fr. Catalogue avec prix laissé dans Commercial : partager aux commerciaux seulement « Supports pour les commerciaux » et le tableau de suivi (droit de modification). Restent à toi : leur contrat (J7 encore en brouillon) et leur adresse mail ; dire si le ton te va. Drive rangé le même jour : 75 éléments à la corbeille (doublons, archives V1, copies obsolètes), « Identité visuelle » gardée.
-- OFFER-1 (4 novembre) : option « Réception automatique des commandes » en place (29 € en Starter, incluse Pro et Business). Push et migration C11 faits par Claude le 4 novembre au soir (déploiement prêt ; `https://annona.fr/tarifs` affiche l'option). Reste à toi (Drive refusé à l'agent) : remplacer le catalogue avec prix du Drive (Commercial) par `outputs/commercial/kit/Annona-kit-commercial.pdf` (Drive refusé à l'agent). Le worktree `outputs/recette-wt` d'une autre session fait échouer `npm run typecheck` : le supprimer quand cette session a fini.
-- Lundi 2 novembre, avant le premier message : demander ton SIREN sur le Guichet unique (pas encore de numéro, confirmé le 1er novembre). D'ici là, le démarchage se limite aux entretiens de recherche : aucun prix ni offre de pilote.
-- Étude de marché (`outputs/reports/Marché Annona livraison B2B France.md`, environ 840 entreprises visées, hypothèse à mesurer) : trier la liste de prospects (107 lignes sur 282 ont le bon profil), obtenir 50 réponses tirées au hasard sur la part de clients directs, demander un devis à GTLYS et à Toncarton.
-- Avant le premier pilote ou la première vente (décidé le 2 novembre) : passer Vercel en Pro et créer la vraie production (AUDIT-0111, point E2).
-- Plateforme Factur-X : ouvrir le compte Super PDP au nom de la société quand elle existe (choix fait par Claude le 30 octobre, carte blanche : compte gratuit jusqu'à 1 000 factures par mois, API publique, pas de devis nécessaire).
-- Avant le dépôt au Guichet unique : vérifier la reprise de ton ancien SIREN, et ta capacité à exercer depuis les États-Unis sous visa J-1 avec ta résidence fiscale (checklist J5, non tranché).
-- LEGAL-1 (sections 4 et 6 de `docs/legal/VERIFICATION_2026-11-02.md`) : fournir SIREN, e-mail et téléphone, décider des durées de conservation et des clauses des CGV (plafond de responsabilité, préavis). Confirmer aussi la durée provisoire de sept jours pour la file hors ligne du livreur, et, si un pilote emploie des livreurs indépendants payés à la livraison, faire qualifier l'affectation automatique (`docs/legal/AIPD_TYPE.md`, section 3).
-- Plus tard : trouver un téléphone Android (essais MOB-01C).
-- Plus tard : passer Supabase en Pro (environ 25 $/mois) avant les vraies données, pour la protection contre les mots de passe compromis.
-- MAIL-PONT : essai Gmail réussi le 4 novembre. À faire : dans Vercel, mettre `NEXT_PUBLIC_APP_URL` = `https://annona.fr` pour Preview `preproduction` (les liens de suivi des e-mails pointent vers l'adresse `…vercel.app`), puis redéployer (contrôlé par Claude le 4 novembre : `https://annona.fr/reset-password` est déjà autorisé dans Supabase, donc le changement ne casse pas « mot de passe oublié » ; modification refusée à l'agent par l'outil de sécurité) ; supprimer le filtre Gmail d'essai (Paramètres > Filtres) ; fournir une boîte Outlook pour l'essai Outlook.
-- WHATSAPP-1 : option A codée (le dispatcher transfère le message au numéro Annona). Dès le SIREN : créer le compte Meta Business au nom de la société et lancer sa vérification, prévoir une ligne dédiée jamais utilisée sur WhatsApp, puis me donner accès pour créer l'application Meta ; tu poseras ensuite dans Vercel `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_DISPLAY_NUMBER`. En même temps : demander à Meta le statut de prestataire technique pour l'option B.
-- INTAKE-1 : fournir une vingtaine de vrais messages de commande anonymisés pour mesurer la qualité d'extraction et le coût ; décider si la fonction entre dans le portail client.
-- Si tu relances un jour l'ancien projet Supabase `wlomrzil…` (en pause, plus utilisé) : change d'abord son mot de passe, exposé le 26 octobre.
+**1. Toi**
+- Coller dans `.env.local` le mot de passe de la base `annona-dev` et la clé `service_role` (détail dans ACCES-1). Sans eux, l'application ne peut pas tourner en local ; le code avance quand même.
+- Répondre aux questions ouvertes du cahier des charges quand tu les as (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
 
-**2. Claude — peut le faire seul, dans cet ordre**
-- DEMO-REFONTE : lot 3 (clients en entreprises : Pharmacie du Marais, etc., e-mails lisibles), puis session expirée renvoyée vers /demonstration, liste « À essayer », photo et signature sur les preuves, ménage de l'espace de base (liste à te montrer avant suppression).
-- AUDIT-0411 : corrections en ligne depuis le 5 novembre, vérifiées dans Chrome sur annona.fr. Suite : session de démo expirée (ton nom visible dans la démo), date prévue vide côté client, puis le reste de la liste (statuts uniformes, téléphone du livreur, recherche du client, données de démo, console interne, mineurs).
-- LEGAL-1, écarts qui ne dépendent pas de toi : mise à jour des textes J5 une fois tes décisions prises (sur Drive : à reprendre dans le dépôt, Drive non modifié). Première vérification faite le 2 novembre (`docs/legal/VERIFICATION_2026-11-02.md`), aucune conformité déclarée.
-- OPS-FIAB : dès tes trois commandes lancées, déclencher une panne fictive et vérifier l'e-mail d'alerte dans Gmail, puis l'alerte d'une tâche de fond en retard.
-- MAIL-PONT : essai Outlook plus tard, quand tu le décides ; puis, si tu le veux, les fiches dans la page « Clients ».
+**2. Claude (en autonomie, dans l'ordre)**
+- NET-1 : retirer de la base tout ce qui relève de l'ancien produit (coursiers, vente du SaaS, prospection).
+- SCHEMA-1, puis CAT-1, CMD-1, LOCK-1, BOU-1, TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
 
-**3. En attente de quelqu'un d'autre** (rien à faire tant que ça n'arrive pas)
-- Propriétaire et fournisseurs : fournir les justificatifs, contrats et décisions manquants pour la vérification LEGAL-1, DATA-02 et la fiche F10 d’INTAKE-1 avant les données réelles. LEGAL-LIENS suit la vérification des documents.
-- Pilotes (ils attendent les entretiens du point 1, qui ne dépendent que de toi pour démarrer) : PILOT-1 et 2, PROD-04, OFFER-1, V1-GO, ONBOARD-1, DISPATCH-5 (mesure).
-- Mesures et mise en vente : SAAS-02, SAAS-03, COST-1, RELEASE-1, SMS, GROWTH-1.
+**3. Attente extérieure**
+- Comptes Apple Developer et Google Play pour publier les applications (MOBILE-1, plus tard).
 
-**Déjà fait côté agent, la case attend une action du point 1 :** SEC-AUDIT (protection des mots de passe : Supabase Pro), POD-2, OPS-FIAB (alertes, cadence), INTAKE-1 (vingt vrais messages), FACTURX-1 (franchise à confirmer par la plateforme), MOB-01C.
+## Cadre
 
-Mise à jour : 29 octobre 2026, en fin de journée (revue de cohérence : matrice réalignée sur les cases ; LANDING-3, MAP-UNIFY-2, MAP-INTERACTION, E2E-MAJ, ICONES-IA et CONFIG-MSG-2 closes). Version précédente du même jour : bilan de l'intégration du 28 octobre (neuf chantiers ; voir DEMO-3, DESIGN-1, FACTURX-1, INTAKE-1, POD-2, OPS-FIAB, SEC-AUDIT, RECETTE-2810 et PROPRIO-2810). Précédente : 26 octobre 2026 (revue de cohérence : tableaux de pilotage, priorités et matrice réalignés sur le code). Source unique des priorités du projet. Cette version consolide l’audit initial, l’audit SaaS autonome, les sondes locales et les tests E2E. La copie dans les outputs de la tâche doit rester synchronisée avec ce fichier.
+- Référence : `docs/cahier-des-charges/Cahier des charges - version developpeur.pdf` (identifiants CLI, BOU, LIV, ADM, PLA, NOT, RG, ENF, à citer dans le code et les tests) et `docs/cahier-des-charges/TRI-BASE.md` (ce qu'on garde, supprime, modifie et crée).
+- Décisions du 6 novembre 2026 : nom **Annona** ; applications mobiles par **Capacitor** ; tickets de support gardés pour les réclamations ; nouveau schéma Prisma propre avec une seule migration initiale ; nouvelle base.
+- Branche de travail : `base`. Un commit par lot, **aucun push** sans demande : `preproduction` et annona.fr portent encore l'ancien produit.
+- Base de développement : projet Supabase `annona-dev` (`fqzlfszgyeyfeshllqtj`, Paris, créé le 6 novembre 2026). L'ancienne base `tutelliv-dev` a été mise en pause pour libérer la place gratuite (réactivable depuis le tableau Supabase) ; `tutelliv-preproduction` (annona.fr) n'est pas touchée.
+- L'ancienne TODO (106 tâches closes, produit coursier) reste dans l'historique git : `git show 0475b8d:TODO.md`.
 
 ## Tâches ouvertes
 
-_Tâches closes, anciens tableaux et journal : `docs/TODO-ARCHIVE.md`._
+_Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
-- [ ] **ADMIN-ESPACE — Refaire l'espace super admin (/admin) du propriétaire.**
+- [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
-  **Qui : Toi — brancher le fichier Google (`docs/operations/prospection/SHEET.md`), puis Claude vérifie la lecture réelle ; campagnes : l'autre session les fusionne.**
+  **Qui : Toi.**
 
-  **Modèle conseillé : Claude Opus · effort élevé.**
+  - `.env.local` : Supabase → projet `annona-dev` → Database → « Reset database password », puis remplir `DATABASE_URL` et `DIRECT_URL` ; Project Settings → API → copier la clé `service_role` dans `SUPABASE_SERVICE_ROLE_KEY`. Les valeurs publiques sont déjà en place.
+  - Questions ouvertes du cahier des charges (section 9) : liste des créneaux du premier client ; délai du rappel avant 17h ; volumes à deux ans ; service de cartographie (les services gratuits OSRM et IGN suffisent pour les essais, pas pour 200 arrêts par jour). En attendant, valeurs par défaut réglables : créneaux 5h-6h, 6h-7h, 7h-8h ; rappel à 15h.
 
-  Décisions du propriétaire (5 novembre 2026, questionnaire) : tout validé. Style Menthe du site public (Clair et Sombre), version téléphone soignée. Migrations additives autorisées en préproduction, une par lot, après essai sur `annona-dev` (si l'outil refuse : commande exacte au propriétaire). Compteur liste d'attente sans cookie ni IP. Campagnes e-mail envoyées depuis la boîte OVH (pas depuis Annona/Resend, dont les règles interdisent l'envoi non sollicité) : un lien par campagne (`/tarifs?c=<code>`) compté automatiquement, envois et réponses saisis à la main. Fichier de prospection : lecture seule en direct de la Google Sheet `Annona_Suivi_Prospection_2026` par un compte Google technique (le propriétaire partagera la Sheet).
+  Terminé quand : `.env.local` complet (vérifié par Claude avec une connexion Prisma) et les quatre réponses notées ici.
 
-  Lots, un commit et un push chacun :
-  1. Menu en 3 groupes (Clients, Commercial, Technique), pastilles de nouveautés, accueil (« À traiter », 4 chiffres clés comparés, courbe 30 jours, voyant de santé), style Menthe, téléphone.
-  2. Page Liste d'attente (export CSV, case « contacté ») et entonnoir visites → clics → inscriptions par jour et par campagne.
-  3. Fiche entreprise complète et recherche globale.
-  4. Suivi des pilotes (étape, première livraison, notes).
-  5. Prospection : campagnes (lien, envois, clics, inscriptions, réponses) et chiffres de la Google Sheet.
-
-  Terminé quand : les 5 lots sont en préproduction, testés (`npm run check`, recette navigateur Clair/Sombre/390 px) et vérifiés en ligne.
-
-  Lot 1 fait le 5 novembre 2026 : menu super admin en 3 groupes (barre latérale et menu mobile, autres rôles inchangés), pastilles Contact / Incidents / Support (Contact = arrivés depuis la dernière visite, gardée dans le navigateur, sans migration), accueil `/admin` refait en style Menthe : « À traiter » (Contact, liste d'attente, incidents ouverts, tickets ouverts), 4 chiffres clés comparés (entreprises actives hors démo, livraisons livrées aujourd'hui vs J-7 à la même heure, inscrits liste d'attente, abonnements encaissés HT vs mois précédent ; « Indisponible » plutôt qu'un chiffre inventé), courbe SVG 30 jours (commandes et livraisons, hors démo, jours de Paris, tableau jour par jour), voyant de santé (`readPlatformServiceHealth`), Détail SaaS replié et entreprises récentes conservés. Route unique `GET /api/admin/home` (`?view=badges` pour les pastilles), réservée au SUPER_ADMIN et journalisée (ressource `OVERVIEW`). Vérifications : 14 tests ajoutés (`tests/admin-espace-home.test.ts`), 3 tests d'inventaire admin adaptés, `npm run check` vert (1610/1610) ; recette Playwright sur worktree isolé et `annona-dev` (45/45 : menu, pastilles, 4 boutons, courbe, 390 px sans débordement, refus 403 pour dispatcher, mini-admin et admin entreprise, 401 sans session), données E2E supprimées. Limites : Sombre non visible sur téléphone (thème Clair imposé depuis le 30 octobre) ; incidents et tickets comptent les entreprises de démo, comme leurs pages.
-
-  Lot 2 fait le 5 novembre 2026 : page `/admin/waitlist` (groupe Commercial, pastille propre) avec entonnoir 7/30 jours (visites → clics → inscriptions, taux, courbe, tableau par campagne), liste paginée, recherche, filtres, case « contacté » (date et auteur), export CSV pour Excel (BOM, `;`, protection contre les formules) ; Messages Contact n'affiche plus les inscriptions ; accueil et alerte e-mail mènent à la nouvelle page. Entonnoir de `/tarifs` sans cookie, IP ni identifiant : `POST /api/waitlist/funnel` (corps strict, robots écartés, 30 événements par heure et par empreinte HMAC en mémoire), inscriptions comptées côté serveur dans la même transaction, campagne `?c=` gardée sur l'inscription (invalide ou absente → « direct »). Confidentialité complétée. Journal d'accès plateforme : attente de transaction portée de 2 à 10 s (des lectures simultanées tombaient en 503). Migration additive `20261105120000_waitlist_funnel` appliquée sur `annona-dev` puis en préproduction par Claude (diff schéma vide). Vérifications : 19 tests ajoutés (`tests/admin-espace-waitlist.test.ts`), `npm run check` vert (1630/1630) ; recette Playwright 68/68 sur worktree isolé et `annona-dev` (compteurs 1/1/1 pour une campagne d'essai, case contacté, CSV ouvert, refus 401/403, Clair, Sombre, 390 px), données E2E supprimées. Limites : plafond de l'entonnoir par instance Vercel ; inscriptions antérieures sans campagne (« Inconnue »).
-
-  Lot 3 fait le 5 novembre 2026 : fiche `/companies/[id]` complète en style Menthe (en-tête avec badge Démo, consommation de la période vs incluses — « illimitées » au plafond technique —, livreurs vs prévus, livraisons du mois par état, courbe 30 jours de l'entreprise, factures de livraison du mois payé / en attente / en retard, utilisateurs par rôle avec dernière connexion `lastLoginAt`, tickets et incidents ouverts avec liens filtrés ; chaque bloc « Indisponible » s'il échoue, sans bloquer les autres ; environ 11 requêtes groupées, sans N+1). Recherche globale super admin (`⌘K` / `Ctrl+K`, loupe sur téléphone) : `GET /api/admin/search?q=` (2 à 80 caractères, tous les mots, 5 résultats par groupe : entreprises, utilisateurs, commandes, liste d'attente, messages Contact), journalisée, 60 recherches par minute et par compte, jokers `%` `_` échappés, aucune donnée sensible renvoyée ; pages Support, Incidents, Utilisateurs et Liste d'attente filtrées par `?q=`. Vérifications : 13 tests ajoutés (`tests/admin-espace-company-search.test.ts`), 6 tests existants adaptés, `npm run check` vert (1647/1647) ; recette Chrome 71/71 sur worktree isolé et `annona-dev` (deux défauts trouvés et corrigés : « 2147483647 incluses », fin de période au 1er décembre), données E2E supprimées. Limites : recherche sensible aux accents (il faudrait l'extension `unaccent`, donc une migration) ; `/admin/contact` ne filtre pas par `?q=` ; « Livrées » = statut DELIVERED seulement, comme l'accueil.
-
-  Lot 4 fait le 5 novembre 2026 : suivi des pilotes. Page `/admin/pilots` (groupe Clients) : résumé, filtres et sections par étape (Préparation → Activation → Première valeur → Usage représentatif → Consolidation et sortie → Poursuite payante ou Arrêt, d'après `docs/operations/pilot1`), cartes avec entreprise liée, jours depuis le début, première livraison et sa source, livrées sur 30 jours, dernière note ; création et modification avec recherche d'entreprise. Fiche `/admin/pilots/[id]` : passages d'étape autorisés, suivi, notes, activité et courbe 30 jours de l'entreprise liée. Règles : un pas en avant ou en arrière, Arrêt à tout moment, dates posées seules, dates incohérentes refusées, Première valeur impossible sans première livraison, une entreprise liée à un seul pilote en cours, conflit d'édition signalé ; première livraison saisie prioritaire, sinon déduite de la première livraison livrée. Accueil : ligne « Pilotes en cours · en préparation · sortis » ; recherche globale : groupe Pilotes. Migration additive `20261106090000_platform_pilots` (tables `platform_pilots`, `platform_pilot_notes`, RLS, aucun droit API) appliquée sur `annona-dev` puis en préproduction par Claude (aucune différence avec le schéma). Vérifications : 13 tests ajoutés (`tests/admin-espace-pilots.test.ts`), `npm run check` vert (1663/1663), `npm run docs:verify` vert (51 modèles) ; recette Playwright sur `annona-dev` (46 contrôles puis 8 de reprise ; défaut corrigé : liens e-mail et téléphone à 17 px sur téléphone), données E2E supprimées. Limites : pas de suppression de pilote (l'Arrêt en tient lieu) ; accès journalisés sous « entreprises ».
-
-  Lot 5 fait le 5 novembre 2026, réduit sur décision du propriétaire (questionnaire) : les campagnes e-mail sont celles de l'autre session (branche `agent/campagnes`, `/admin/campaigns`, envoi par la boîte OVH depuis Annona), qu'elle fusionne elle-même ; la version « envoi à la main » de Claude a été retirée avant tout commit, sans migration. Livré ici : page `/admin/prospection` (menu Commercial) qui lit en direct, en lecture seule, la Google Sheet de prospection par un compte de service (`src/services/google/sheets-reader.ts`, JWT signé avec `node:crypto`, sans nouvelle dépendance, délai 8 s, cache 5 min) : revue du vendredi, seuils de décision du README calculables, rappels du jour et en retard (jour de Paris), répartitions par étape, ville et commercial, en-têtes manquants par onglet ; colonnes repérées par le nom d'en-tête (ligne réglable, 5 par défaut), jamais par position ; seuls des totaux et les rappels partent au navigateur. Variables : `GOOGLE_SHEETS_CLIENT_EMAIL`, `GOOGLE_SHEETS_PRIVATE_KEY`, `PROSPECTION_SHEET_ID`, `PROSPECTION_SHEET_HEADER_ROW` ; sans elles, état « À brancher ». Mode d'emploi : `docs/operations/prospection/SHEET.md`. Fiche F11 Google ajoutée à `docs/legal/SOUS_TRAITANTS.md`, à valider (LEGAL-1). Vérifications : 12 tests (`tests/admin-espace-prospection.test.ts`, réponses Google simulées), `npm run check` vert (1675/1675), `npm run docs:verify` vert ; recette 42/42 sur `annona-dev` en état « À brancher » (refus 401/403, Clair, Sombre, 390 px). Non vérifié : lecture d'une vraie Sheet (aucune clé encore). Défaut mineur : à 390 px, les longs noms de variables se coupent au milieu du mot.
-
-  Fusion du 5 novembre au soir avec les campagnes de l'autre session (menu : Campagnes puis Prospection) ; CI corrigée deux fois : en-tête de clé privée réécrit pour le détecteur de secrets (aucune vraie clé), `nodemailer` passé de 7 à 10.3.1 (faille « élevée » signalée par `npm run audit:prod`, 0 faille ensuite ; `npm run check` 1687/1687). CI du commit `4d0741d` verte (secrets, audit, documentation, build). Nodemailer 10 vérifié : ruptures 8 → 10 sans effet ici (code `NoAuth` non utilisé, logo joint en mémoire, Node 22) et envoi de bout en bout vers un faux serveur SMTP local (authentification, expéditeur, objet, HTML, logo `cid`, `List-Unsubscribe` présents). Non vérifié : envoi réel par OVH (aucun mot de passe `PROSPECT_SMTP_PASSWORD` dans les fichiers locaux ; à poser par le propriétaire sur Vercel si l'autre session ne l'a pas déjà fait).
-
-  Lot 5 fait le 5 novembre 2026 (demande du propriétaire : suivre le mail « Il en est où ? » : envois, clics « Je veux en être », clics site, candidatures ; décisions en questionnaire : pas d'ouvertures, outil d'envoi qui compte, suivi par campagne et non par personne) : page `/admin/campaigns` (groupe Commercial) : créer une campagne (nom, ville → code `il-en-est-ou-<ville>`, origine des adresses), coller les adresses (dédoublonnées, STOP écartées), « M'envoyer un essai » (liens au code `test`), « Lancer l'envoi » (un mail toutes les 30 s, page ouverte, Pause ; le serveur impose 25 s et verrouille la campagne, un envoi resté « en cours » 10 min passe en échec sans renvoi), adresses STOP bloquées pour toutes les campagnes, réponses +/− à la main ; tableau par campagne : envoyés, clics « Je veux en être », clics site, visites du formulaire, candidatures, réponses, taux. Mail produit par `src/domains/growth/prospect/prospect-email.ts` (copie fidèle du modèle validé, logo joint `cid`, en-tête List-Unsubscribe, aucun pixel), envoyé par la boîte OVH (`smtp.mail.ovh.net:465`, nodemailer, jamais Resend). Liens comptés `/go/<code>/rejoindre` → `/tarifs?c=<code>` et `/go/<code>/site` → `/?c=<code>` (GET seulement, robots et HEAD ignorés, plafond par source, sans cookie ni IP). Migration additive `20261106100000_prospect_campaigns` (3 tables, 2 valeurs `MAIL_JOIN`/`MAIL_SITE`, ressource `PROSPECT_CAMPAIGNS`). Vérifications : `npm run check` 1 675/1 675, `npm run build` réussi, `npm run docs:verify` réussi ; migration appliquée sur `annona-dev` ; recette navigateur (worktree, faux serveur mail local, aucun vrai mail) : création, ajout (3 ajoutées, 1 invalide, doublon refusé), STOP (1 envoi annulé), essai reçu, envoi 2/3 avec compte à rebours puis « Envoi terminé », logo joint et List-Unsubscribe présents, liens vers `/tarifs?c=…` et `/?c=…`, clics comptés (2 + 1) avec un navigateur normal, navigateur sans tête et HEAD ignorés, réponses +1, dispatcher 403, visiteur 401, 0 erreur console, captures clair/sombre/390 px (`outputs/recette-agents/campagnes/`) ; données E2E et comptes de rôle supprimés, ports libérés. Étapes du mail revues à la demande du propriétaire (5 étapes : commande par e-mail, WhatsApp… au même endroit ; dispatch intelligent ; livreur « sans appel ni message » ; carte client en direct désactivable ; facture envoyée et relances automatiques, rien à saisir) ; aperçu renvoyé par Resend à ses deux adresses (réponse 200), modèle de référence régénéré depuis le code. Réserve : la réception WhatsApp n'est pas encore ouverte (WHATSAPP-1, après le SIREN). Puis « Vous en avez marre de ce genre de question ? » et caractères invisibles renforcés après l'aperçu (220 groupes de 6) ; aperçu renvoyé (200), affichage dans la notification non vérifié par l'agent. Le propriétaire voyait encore la suite du mail dans l'aperçu : version texte du mail désormais ouverte par la même phrase d'aperçu et les mêmes caractères invisibles (certaines messageries tirent l'aperçu de cette version) ; nouvel aperçu envoyé (200), résultat à confirmer par le propriétaire (il accepte que ce soit impossible). Version finale validée par le propriétaire le 5 novembre (« on enregistre ça en V final ») et notée dans `docs/operations/prospection/README.md`. Deuxième tentative de migration en préproduction refusée par le garde-fou (« modification d'une ressource partagée ») : ni contournement ni outil Supabase. Copie de travail déplacée dans `.claude/worktrees/campagnes` (le dossier temporaire de session pouvait disparaître). Commit `e305c38` sur la branche locale `agent/campagnes`, en avance rapide sur `preproduction` (`a56107c`), rebasé sur `preproduction` (lot 4 compris). **En ligne le 5 novembre** : migration `20261106100000_prospect_campaigns` appliquée en préproduction et push `a56107c..e305c38` sur `preproduction`, faits par le propriétaire dans son Terminal (refusés à l'agent par le garde-fou) ; variable `PROSPECT_SMTP_PASSWORD` saisie par le propriétaire dans Vercel (Preview, `preproduction`), formulaire ouvert et préparé par l'agent sans le mot de passe ; vérifié en ligne : `https://annona.fr/go/test/site` répond 302 vers `/?c=test`. Reste du lot 5 non fait : chiffres de la Google Sheet de prospection. CI du push `e305c38` en échec (mails « Run failed ») : audit des dépendances, faille haute de nodemailer 7 ; corrigé par nodemailer 10.3.1 (commit `3792271`, rebasé sur `e3ee699`) : `npm audit --omit=dev` 0 faille, `npm run check` 1 687/1 687, envoi vérifié sur un faux serveur SMTP local (logo joint). Push refusé à l'agent, commande donnée au propriétaire. Ensuite : mot de passe de la boîte OVH dans Vercel (`PROSPECT_SMTP_PASSWORD`), puis un essai réel. Non vérifié : envoi réel par OVH (aucun mot de passe en local), rendu du bouton dans Outlook depuis OVH, plafond d'envoi quotidien d'OVH.
-
-- [ ] **AUDIT-0411 — Corriger ce que les pilotes remarqueraient (audit de bout en bout du 4 novembre 2026).** Demande du propriétaire : utiliser Annona comme un utilisateur et tout regarder, pour que les pilotes n'aient rien à redire sur l'existant. Rapport : `docs/rapports/2026-11-04/audit-bout-en-bout-pilotes.md` ; preuves locales `outputs/audit-2026-11-04/` (224 captures, parcours cliqués, journal des tests).
+- [ ] **NET-1 — Nettoyer la base de l'ancien produit.**
 
   **Qui : Claude.**
 
-  **Modèle conseillé : GPT‑6 Astra · effort élevé (heures, adresses, compteurs : données métier).**
+  **Modèle conseillé : Claude Opus · effort élevé (suppression large).**
 
-  Audit fait le 4 novembre : `preproduction` `31f4403` construit en production dans une copie isolée, base `annona-dev` ; 224 écrans relevés (7 rôles, ordinateur et téléphone, clair et sombre), relus puis vérifiés à la main ; parcours cliqués commande → livreur (photo, signature) → preuve PDF → facture → support → réaffectation → suivi public ; 9 fichiers E2E : 21 réussis, 4 échoués (IA non branchée en local ×2, test V1 sans créneau, résidus de démo du 3 novembre), 5 ignorés.
+  Supprimer tout ce que liste `TRI-BASE.md` §2 : abonnements SaaS, prospection et vente, site public commercial et démo, inscription autonome, commandes par message (e-mail, WhatsApp, IA) en gardant les fonctions d'heure de Paris, lien de commande et suivi publics, messagerie de commande, affectation automatique mission par mission, signature et PDF de preuve, zones tarifaires, atelier de design, journal des accès plateforme, fichiers de l'ancien produit. Remettre `AGENTS.md`, `README.md`, `PRODUCT.md` et `docs/README.md` au nouveau produit (sans Drive, Notion ni `preproduction`).
 
-  Corrigé le 4 novembre, feu vert du propriétaire (commit `1f89520` sur la branche `agent/audit-0411`, partie de `38d874f`, **non poussé**) :
-  - Bloquants : heure de livraison stable à l'enregistrement et lue à l'heure de Paris, dates affichées à l'heure de Paris partout ; numéro de rue gardé avec un avertissement orange ; compteurs (minuit de Paris, livrées du jour, « En retard » unique, filtres de la carte, charge avec retards) ; page 404 française, avec messages pour les liens de suivi et de commande ; textes de développeur retirés de /tarifs et /demonstration ; suivi client cohérent.
-  - Écarté : /register est déjà fermé proprement sur annona.fr, seule la copie locale l'ouvrait.
-  - Majeurs : annulation masquée sur une livraison terminée ; renvoi entre rôles expliqué par un message ; mentions internes reformulées et pluriels accordés ; marge pour la pastille Alertes ; fiche client sur téléphone ; « Commander à nouveau » ; en-têtes des commandes ; boutons désactivés lisibles en sombre ; livreur avec « Appeler le client » et « Échec de livraison » distinct ; premier champ en erreur ciblé ; PDF de preuve ; statuts de la console interne ; purge des e-mails reçus à la remise à zéro de la démo ; test E2E V1 avec créneau.
-  - Vérifications : `npm run check` vert (1 594 tests, 7 nouveaux ou adaptés) ; build de production vert ; recette navigateur sur `annona-dev` (Chrome), 27 contrôles OK, dont l'heure inchangée après enregistrement (22:59 Z → 22:59 Z) et la saisie de 10:30 enregistrée à 09:30 Z, captures relues dans `outputs/audit-2026-11-04/correctifs/` ; E2E `v1-operational`, `auth-role-pages` et `pod-proof` verts. `ux03-delivery` n'a pas pu se connecter : pool de démo local saturé (8 espaces loués, 3 en quarantaine, pas de recyclage en local) ; son seul changement (« À livrer avant le ») a été vérifié par la recette.
-  - Données de dev : numéros fictifs 06 39 98 00 1x posés sur les 55 clients de démo. Comptes de rôle supprimés, serveur arrêté.
+  Terminé quand : plus aucun écran, route, domaine ni test de ces éléments ; `npm run check` vert ; `npm run build` vert.
 
-  Mis en ligne le 5 novembre 2026 (feu vert du propriétaire) : branche fusionnée sans conflit dans `preproduction`, `npm run check` vert après fusion (1 594 tests), push `38d874f..1f89520`, `ls-remote` = `1f89520`. Contrôle sur annona.fr après déploiement (3 min 30) : page introuvable en français (« introuvable | Annona », code 404), plus aucun texte de développeur sur /tarifs ni /demonstration. Non refait en ligne : écrans connectés (fiche livraison, tableau de bord), déjà recettés sur `annona-dev` le 4 novembre.
-
-  Recette Chrome sur annona.fr le 5 novembre 2026 (démo publique) : OK — page introuvable et lien de suivi expiré en français ; /tarifs, /demonstration et /register sans texte de développeur ; tableau de bord avec un seul « En retard » (12 en haut et dans Aujourd'hui) ; fiche livraison 23:59 avant et après « Enregistrer » puis rechargement ; numéro de rue gardé (« 999 Avenue des Champs Élysées » avec l'avertissement orange) ; message « page réservée à un autre rôle » en vue Client ; aucune erreur dans la console. Non refait : annulation masquée sur une livraison livrée (aucune livraison livrée dans la démo).
-  Nouveaux constats de cette recette : (a) un ancien onglet resté connecté à la démo ouvre un espace dont la session a expiré : « Réinitialiser la démo » échoue (409 « Session de démonstration absente ») et cet espace contient deux courses au nom d'Orso Carotenuto avec son adresse Gmail ; (b) côté client, « Mes commandes » affiche « — » dans Livraison prévue pour les 3 commandes, et l'accueil client « Prochaine livraison 01:11 hier » ; (c) nouvelle commande client : les deux listes « Adresse enregistrée » et « Créneau » n'ont toujours pas de libellé lié ; (d) restent visibles : « 0 action » sur l'accueil, « 3000 / mois » sans espace sur /tarifs, LIV-… et CMD-… pour la même livraison, statut « Attente ».
-
-  Reste à faire, Claude :
-  1. Constats (a) à (c) ci-dessus : session de démo expirée et données personnelles dans la démo, date prévue côté client, libellés des listes.
-  2. Vérifier les 3 espaces de démo en quarantaine et la capacité du pool avant les appels de prospection.
-  3. Statuts et références uniformes (LIV-… au dispatch contre CMD-… dans Commandes ; Attente / En attente / Sans livreur), avec MOTS-UNIFIES.
-  4. Livreur sur téléphone : mission en cours et boutons plus haut que les quatre bandeaux.
-  5. Choix du client avec recherche dans la nouvelle commande de l'administrateur, sans e-mail technique.
-  6. Données de démo crédibles : heures de journée, peu de retards, sociétés clientes, e-mails lisibles.
-  7. Console interne : tableau des souscriptions qui déborde, journal d'accès traduit, indicateurs contradictoires.
-  8. Puis les mineurs du rapport : site public (trois styles, bouton Contact, « 0 action »), typographie, listes natives, menu actif, PDF de preuve (position GPS brute).
-
-  Non testé : invitations et ajout de clients ou livreurs par l'écran, commandes récurrentes, analyse IA, WhatsApp, e-mails réels, vrais téléphones, vitesse des pages connectées en ligne.
-
-- [ ] **DEMO-REFONTE — Rendre la démonstration claire (une journée lisible, remise à l'heure, liste « À essayer »).** Demande du propriétaire le 5 novembre 2026 : « les démos sont trop chargées », refonte en gardant la base.
+- [ ] **SCHEMA-1 — Nouveau schéma de données et base de démonstration.**
 
   **Qui : Claude.**
 
-  **Modèle conseillé : GPT‑6 Astra · effort élevé (données de démo, pool partagé, dates).**
+  **Modèle conseillé : Claude Opus · effort élevé (schéma, isolation).**
 
-  Décisions prises en questionnaire le 5 novembre : démo pour le commercial et pour le prospect seul ; une journée riche d'environ 15 éléments (4 livrées, 3 en route, 2 affectées, 2 sans livreur, 1 seul retard, 2 demain, 1 récurrente) ; clients entreprises ; remise à l'heure par décalage des dates au prêt de l'espace ; onglet expiré renvoyé vers /demonstration ; ménage de l'espace de base (dont les deux courses au nom du propriétaire) ; liste « À essayer » à 4 étapes dans la barre de démo. Cause relevée : les espaces sont remplis à la préparation (`demo-pool.service.ts:166`) puis prêtés sans remise à l'heure.
+  Schéma Prisma propre selon la section 7 du cahier des charges et `TRI-BASE.md` §3 et §4 : Entreprise (heure limite, fuseau, délai du rappel), Utilisateur (rôles SUPER_ADMIN, ADMIN, BAKER, DRIVER, MERCHANT), Commerçant, Catégorie, Produit, Prix spécifique, Créneau, Commande (DRAFT → VALIDATED → LOCKED → PREPARED → DELIVERED, origine MANUAL ou RECURRING, unique par commerçant, date et créneau), Ligne, Commande récurrente et ses lignes, Tournée, Arrêt, Facture, Règlement, Journal ; tous avec `companyId`. Une seule migration initiale appliquée sur `annona-dev`. Données de démonstration : une boulangerie, 100 produits, 20 commerçants, 5 livreurs.
 
-  Document : `docs/superpowers/specs/2026-11-05-refonte-demo-design.md`, validé par le propriétaire le 5 novembre au soir (« ok »).
+  Terminé quand : `prisma validate` et `npm run check` verts ; migration appliquée sur `annona-dev` ; démo chargée et relue.
 
-  Lot 1 fait le 5 novembre 2026 (remise à l'heure au prêt, partie 2 points 1 à 3) : nouveau `src/domains/demo/demo-time-shift.service.ts`. `resetDemoScenario` enregistre l'ancrage `demoScenarioAnchorAt` dans `Company.settings` ; `leaseDemoPoolEnvironment` appelle `realignDemoScenarioClock` après un prêt neuf (pas pour une session qui rouvre son espace) : toutes les colonnes de date de 14 modèles (commandes, livraisons, étapes de suivi, positions, factures, relances, tickets et leurs messages, commandes récurrentes, e-mails reçus, liens de suivi, messages et lectures de fil, notifications client) avancent du temps passé en réserve, arrondi au quart d'heure, en une transaction ; l'ancrage avance d'autant. Espace sans ancrage : date de sa commande la plus récente. Un échec du recalage n'empêche pas d'ouvrir la démo (journalisé). Choix technique : `createdAt` et `updatedAt` avancent aussi, pour garder « reçue il y a 2 h » et les compteurs du jour justes (la spec prévoyait de les exclure). Test de complétude : tout modèle daté rattaché à une entreprise, une commande, une livraison, un ticket ou un utilisateur doit être décalé ou exclu avec une raison (`DEMO_UNSHIFTED_MODELS`).
-  Vérifications : `tests/demo-time-shift.test.ts` (5 tests) ; `npm run check` vert (1 692 tests) ; essai réel sur `annona-dev` sur deux espaces prêts depuis 4,6 h : 3 retards à la préparation, 8 sans correction, 3 après recalage (décalage 4,5 h, ancrage déplacé). Le cas signalé par le propriétaire (« des fois 5 en retard, des fois 8 ») est reproduit et corrigé.
-  Non vérifié : recalage observé sur annona.fr après déploiement (à contrôler sur une session neuve).
-  Lot 2 fait le 5 novembre 2026 (partie 1, l'histoire) : `buildScenario(anchor)` réécrit, ancrage arrondi au quart d'heure (`demoScenarioAnchor`). 14 livraisons : 4 livrées entre T−4 h et T−1 h avec preuve (nom du réceptionnaire, heure, position ; une facture payée, une à régler), 3 en route (suivi en direct pour le client 0 et le livreur 0, course à trois collectes, course en achat), 1 en retard (échéance T−25 min, en route), 2 affectées (T+2 h 30, T+3 h), 2 sans livreur (T+3 h, T+4 h), 2 demain (10 h et 14 h 30, heure de Paris) ; 1 seule commande récurrente (chaque lundi 9 h, les anciennes sont purgées) ; 1 seul ticket ; aucun texte « démo ». `buildScenarioHistory` : 21 livraisons terminées sur les 7 jours précédents (2 à 4 par jour), une seule en retard, créées en lot (`createManyAndReturn`, références par lot `generateOrderReferences` / `generateDeliveryReferences`). `DEMO_SCENARIO_VERSION` = `2026-11-05-journee` : les espaces prêts d'avant sont recyclés à la prochaine maintenance (connexion démo ou cron).
-  Vérifications : `tests/demo-scenario-story.test.ts` (7 tests, dont la vraie règle des alertes `computeDispatchIncidents` : une seule alerte « En retard », livreurs en service ou non) ; `npm run check` vert (1 699 tests) ; essai réel sur `annona-dev` (espace 10) : 35 livraisons, espace neuf = 1 alerte, 4 livrées sur les 5 dernières heures, 25 preuves, 1 ticket, 1 récurrente, 2 factures ; vieilli de 20 h sans recalage = 8 alertes ; après recalage = 1 alerte. Remise à zéro : 66 s avec une transaction par livraison, 32 s avec l'historique en lot (depuis New York, base en Europe ; même ordre que l'ancien scénario de 15 transactions).
-  Recette Chrome sur annona.fr après déploiement (`0082106`, 6 novembre vers 2 h à Paris) : une démo ouverte juste après la mise en ligne venait d'un espace préparé avant (ancienne histoire), recalée au prêt : 3 retards, le compte exact d'un espace neuf de l'ancienne histoire (lot 1 confirmé en ligne). Après « Réinitialiser la démo » : 1 seule alerte (retard de 19 min), 2 sans livreur, 4 en route, 21 livrées en 7 jours dont 1 en retard (avant : 1 seule sur la semaine). « Livrées aujourd'hui » = 2 car deux des quatre livraisons du jour tombent avant minuit la nuit (limite acceptée). Texte de la fenêtre « Réinitialiser » corrigé (il annonçait encore « 8 livraisons ») : « La journée type est recréée à l'heure actuelle. »
-  À noter, hors de ce lot : de nuit, l'en-tête du tableau de bord affichait « Jeudi 5 novembre » alors qu'il était déjà vendredi à Paris (date du navigateur à New York ?), à vérifier dans AUDIT-0411.
-  Non vérifié : photo et signature des preuves (non stockées, le PDF de preuve s'en passe).
-  Suite : lot 3, clients en entreprises (noms, e-mails `.demo`, téléphones) ; puis session expirée, liste « À essayer », ménage de l'espace de base.
+- [ ] **CAT-1 — Catalogue et prix.**
 
-- [ ] **SEC-AUDIT — Durcissement du 28 octobre et correctifs de l'audit Codex.**
+  **Qui : Claude.**
 
-  **Qui : Toi.**
+  **Modèle conseillé : Claude Opus · effort moyen.**
 
-  Terminé quand : la CSP passe de Report-Only à bloquante après une recette sans violation sur les cartes, Stripe, Supabase et les polices ; la migration de limitation est appliquée en préproduction ; `CONTACT_HMAC_SECRET` est défini ; la protection Supabase contre les mots de passe compromis est active ; le rattachement par e-mail est arbitré ; aucune donnée de livreur au-delà de la règle décidée n'est lisible côté client.
+  ADM-02, ADM-03, RG-05, PLA-04 : catégories ordonnées, produits (nom, photo, unité, prix de base, actif), prix spécifique par commerçant ; un seul calcul du prix appliqué, utilisé partout.
 
-  Constat du 2 novembre 2026 : CSP bloquante en ligne (en-tête relu), migration `auth_login_failures` appliquée en préproduction, `CONTACT_HMAC_SECRET` présent sur Vercel. Reste : la protection contre les mots de passe compromis, qui demande Supabase Pro. Non revérifié : la règle sur les données de livreur.
+  Terminé quand : tests du prix appliqué (critère 3) ; écrans d'administration cliqués dans le navigateur.
 
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section SEC-AUDIT.
+- [ ] **CMD-1 — Commande côté commerçant.**
 
-- [ ] **POD-2 — Preuve de livraison complète : signature, PDF, envoi et relevés.**
-
-  **Qui : Toi.**
-
-  Terminé quand : essai sur téléphone réel de la signature tactile et de la reprise hors ligne ; règles de preuve pilotables depuis l'interface ; décision prise sur le nom obligatoire ou non ; position enregistrée alignée sur la décision GPS ; durée de conservation validée (LEGAL-1/DATA-02) ; e-mail réel du lien de preuve reçu.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section POD-2.
-
-- [ ] **MOB-01C — Réaliser les essais iPhone et Android.**
-
-  **Qui : Toi.**
-
-  Terminé quand : Matrice appareils/scénarios avec preuves ; décider PWA/app native seulement si une limite bloque la promesse.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section MOB-01C.
-
-- [ ] **ONBOARD-1 — Guider jusqu’à la première livraison.**
-
-  **Qui : Toi — pendant les pilotes.**
-
-  Terminé quand : une entreprise fictive puis un pilote réalisent une livraison test sans intervention obligatoire ; progression fiable après reconnexion ; invitations d'utilisateurs existants ou nouveaux cohérentes ; étapes facultatives sautables ; temps et interventions mesurés ; import invalide ne corrompt rien.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section ONBOARD-1.
-
-- [ ] **OPS-FIAB — Fiabiliser les tâches de fond et l'exploitation.**
-
-  **Qui : Toi — une commande, puis Claude.**
-
-  Terminé quand : le workflow GitHub planifié a réellement tourné sur la préproduction avec ses secrets ; `after()` est vérifié sur Vercel ; Node 22 est réglé sur Vercel ; la migration d'index est appliquée en préproduction (en production avec `CONCURRENTLY`) ; une tâche en retard déclenche une alerte reçue.
-
-  Constat du 2 novembre 2026 : Node 22 réglé sur Vercel ; migration d'index appliquée ; workflow réellement lancé par GitHub, mais **toutes les 4 à 7 heures et non toutes les 5 minutes** (GitHub espace ces lancements) ; aucune variable `OPS_ALERT_WEBHOOK_URL` sur Vercel, donc une alerte ne part que dans les journaux. Reste : une cadence fiable, un canal d'alerte réel, le contrôle d'`after()` en ligne.
-
-  Décisions et travaux du 2 novembre 2026 : relais par Supabase (tâche pg_cron `annona-operations-relay`, pg_net activé, inactive tant que le secret `relay_cron_secret` manque ; copie du secret refusée par l'outil de sécurité, commande à lancer par le propriétaire). Alertes par e-mail : une par empreinte et par jour (`OPS_ALERT_RECIPIENT`, sinon `EMAIL_TEST_RECIPIENT`), tests ajoutés, `npm run check` vert. Non vérifié : relais réellement lancé, e-mail réellement reçu. Constat du 3 novembre (lecture seule, base de préproduction) : le secret `relay_cron_secret` est toujours absent du coffre ; la tâche `annona-operations-relay` tourne toutes les 5 minutes mais à vide. Le 3 novembre au soir, à ta demande : la commande documentée ne pouvait pas marcher (Vercel ne rend pas les variables « sensibles », `[SENSITIVE]` écrit à la place ; le script de garde a refusé, rien stocké). Nouvelle commande `sh scripts/ops03b/copy-relay-secret.sh`, qui lit `.env.preproduction.local` : secret stocké (`stored: true`). Contrôlé : passage du relais de 23 h 10 UTC répondu 200 par `/api/cron/operations` (le secret correspond). Reste pour OPS-FIAB : la réception d'une vraie alerte et la sonde `ops_monitor` à rediriger vers un vrai e-mail. Écart trouvé : la sonde `ops_monitor` (toutes les 30 minutes) écrit encore vers un webhook temporaire de recette, donc une panne totale de Vercel ne prévient pas le propriétaire ; à rediriger vers un vrai e-mail.
-
-  4 novembre 2026 : la sonde externe `ops_monitor` prévient maintenant par **e-mail**, envoyé par la base elle-même via Resend (une panne totale de Vercel reste signalée). Migration `20261104040000_ops_monitor_email_alerts` : canal e-mail prioritaire dès que trois secrets existent dans le coffre Supabase (`ops03b_resend_api_key`, `ops03b_alert_email_from`, `ops03b_alert_email_to`), sinon ancien webhook. Script de copie `sh scripts/ops03b/copy-alert-email.sh` (lit `.env.local` : clé Resend, `MAIL_FROM`, destinataire `OPS_ALERT_RECIPIENT` sinon `EMAIL_TEST_RECIPIENT`, aujourd'hui ton Gmail ; n'affiche rien, refuse toute autre base). Vérifié : test ajouté dans `tests/operations-health.test.ts` ; fonction compilée sur la préproduction dans une transaction annulée (rien gardé) ; lint et 1 587 tests verts ; `npm run typecheck` échoue seulement sur `outputs/recette-wt` (dossier d'une autre session, serveur encore actif, non touché). Refusé à l'agent par l'outil de sécurité : la copie des secrets dans le coffre. Non vérifié : e-mail réellement reçu (Gmail : aucune « Alerte Annona » reçue à ce jour, ni de la sonde ni de l'appli).
-
-  4 novembre au soir, à ta demande (« je te donne tous les accès ») : push et `prisma migrate deploy` faits par Claude ; déploiement `233b73f` prêt ; fonction e-mail présente en base ; passage de 21 h 30 UTC sain. Copie des secrets toujours refusée par l'outil de sécurité (« Secret-Store Writes »). Suite, **toi** : `sh scripts/ops03b/copy-alert-email.sh` (doit afficher `"stored":true`). Puis **Claude** : `select ops_monitor.run(true);` pour un e-mail « [Essai] », contrôle dans Gmail, e-mail de retour à la normale au passage suivant ; puis une tâche de fond en retard fictive (données E2E) pour l'alerte de l'appli.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section OPS-FIAB.
-
-- [ ] **V1-GO — Valider la V1 prête à être essayée.**
-
-  **Qui : Claude — après les essais téléphone et la vérification de conformité.**
-
-  Terminé quand : Parcours complet validé avec preuves ; aucun défaut bloquant connu sur ce parcours ; limites documentées ; fonctions non qualifiées explicitement hors promesse. Ce jalon ne vaut ni validation commerciale ni autorisation de production.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section V1-GO.
-
-- [ ] **FACTURX-1 — Factur-X EN 16931 des factures de livraison.**
-
-  **Qui : Toi.**
-
-  Terminé quand : validation officielle (XSD et Schematron : Mustang ou validateur FNFE) passée sur des factures fictives de recette ; décision prise sur le PDF/A-3b strict (police embarquée) ; traitement BT-32 de la franchise en base confirmé ; recette navigateur des écrans administrateur et portail ; choix d'une plateforme agréée tracé (FACTURX-2 si retenu).
-
-  Constat du 2 novembre 2026 : Mustang « valid » sans erreur le 30 octobre, polices embarquées, Super PDP choisie. Reste : la franchise (BT-32), à confirmer par la plateforme quand le compte existera, et la recette navigateur.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section FACTURX-1.
-
-- [ ] **LEGAL-1 — Vérifier le respect des exigences applicables et préparer les documents.**
-
-  **Qui : Toi — fournir les pièces et décider, puis Claude.**
-
-  Terminé quand : exigences applicables identifiées à partir de sources officielles à jour et vérifiées avec preuves ; contrats et documents cohérents avec le service réel ; RGPD, GPS, photos, conservation, fournisseurs, responsabilités et support examinés ; pièces manquantes et écarts consignés puis traités avant les usages concernés. Les décisions et engagements restent à confirmer par le propriétaire.
-
-  État du 2 novembre 2026 : première vérification faite, `docs/legal/VERIFICATION_2026-11-02.md` (exigences, sources, constats, verdicts). Aucune conformité déclarée. Démo fictive et entretiens de recherche possibles sous conditions ; vente et vraies données non. Nouveaux constats : Data Act absent du dossier ; offre Vercel Hobby non commerciale, contenus utilisables pour entraîner des IA, DPA réservé aux offres Pro et Enterprise ; réception des factures électroniques déjà obligatoire ; mentions légales incomplètes. Vérifications : `npm run check` 1 529/1 529 ; `verify-docs` OK. Non vérifié : voir section 5 du document.
-
-  Textes J5 lus sur Drive le 2 novembre avec l'accord du propriétaire, en lecture seule ; écarts en section 6, rien de modifié sur Drive. Suite : les pièces et décisions de la section 4 du document. Écarts à traiter par Claude ensuite : purge et remise des données (DATA-02).
-
-  3 novembre 2026, **itinéraires corrigés** (branche `agent/maps-ign`, commit local) : le navigateur n'appelle plus le démonstrateur OSRM public ; route serveur `/api/maps/route` (compte connecté, limite par compte) vers la Géoplateforme IGN ; CSP sans OSRM ; page Confidentialité, `SOUS_TRAITANTS.md` (F06) et `map-providers.md` mis à jour. Les noms de rue de l'IGN arrivent tronqués : écartés, consignes sans nom de rue. Vérifications : tests unitaires (lecture IGN et OSRM, serveur, client), `npm run check` 1 552/1 552, E2E `maps-route.spec.ts` avec vrai calcul IGN 1/1, clic réel Chrome sur la navigation du livreur de démo (guidage « Dans 130 m, Continuez », 4,4 km, 13 min ; deux calculs à 200 ; aucun appel OSRM). `DRIVE_ROUTE_IGN_URL` ajoutée sur Vercel (préproduction) le 3 novembre ; production à régler lors de la promotion. En ligne le 3 novembre (déploiement `35e0c6f` prêt) : `/api/maps/route` refuse sans connexion (401), OSRM absent de la CSP, page Confidentialité à jour, E2E `maps-route.spec.ts` lancé contre annona.fr avec le livreur de démo : vrai calcul IGN 1/1. Non vérifié : téléphone réel ; tracé à l'écran vu dans le code de la page mais pas en capture ; usage commercial IGN à confirmer.
-
-  3 novembre 2026, file hors ligne du livreur : chaque action est maintenant effacée de l'appareil au plus tard sept jours après sa création, tous comptes confondus (`purgeExpiredDriverActions` dans `src/features/driver/offline-action-queue.ts`, lancée à l'ouverture de l'application livreur ; une action en cours d'envoi n'est pas touchée). Durée provisoire, à confirmer par toi avec la section 4. Page Confidentialité et `docs/legal/VERIFICATION_2026-11-02.md` mis à jour. Vérifications : test ciblé `tests/driver-offline-actions.test.ts` + `tests/pod-signature.test.ts` 14/14 ; `npm run check` réussi (1 548 tests, types et lint). `npm run docs:verify` réussi (88 Markdown, aucun lien cassé). Non commité ni poussé : l'outil de sécurité a refusé le push, à faire sur demande. Non vérifié : purge sur un vrai téléphone (IndexedDB réel), à rejouer pendant MOB-01C ; phrase de la page Confidentialité non rouverte en navigateur (texte seul, types et lint verts).
-
-  3 novembre 2026, analyse d'impact type et décision automatisée : `docs/legal/AIPD_TYPE.md` (trame pré-remplie avec les faits du code pour l'AIPD que chaque client fait ; analyse du Dispatch intelligent : pas d'évaluation de la personne, option désactivée par défaut, article 22 et directive (UE) 2024/2831 à qualifier si des indépendants payés à la livraison sont affectés automatiquement). Relié à l'index `docs/legal/README.md` et à la vérification. Non vérifié : portail client et suivi public non rejoués en navigateur pour ce document ; directive 2024/2831 non relue. Suite côté Claude : purge DATA-02 dès les durées décidées ; fournisseur de cartes ; textes J5 après tes décisions.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section LEGAL-1.
-
-- [ ] **DATA-02 — Prévoir sortie, export et conservation des données.**
-
-  **Qui : Claude — après la vérification de conformité.**
-
-  Terminé quand : Export exploitable et test de suppression sur fixtures ; aucun effet sur une autre entreprise ; politique appliquée au stockage et sauvegardes.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section DATA-02.
-
-- [ ] **PROD-02 — Documenter le travail actuel et sa difficulté principale.**
-
-  **Qui : Toi.**
-
-  Terminé quand : Synthèse des problèmes récurrents, fréquence, coût et outils actuels ; sélectionner un problème prioritaire avec preuves.
-
-  Préparation du commit et de la publication le 1er novembre 2026 : pitch de prospection (10 secondes, 30 secondes, 2 minutes), choix des supports et déroulé de démonstration ajoutés dans `docs/operations/prospection/PITCH.md`, reliés aux deux index. Vérifications : `npm run check` réussi (1 518 tests, types et lint), `npm run docs:verify` réussi (86 Markdown, aucun lien cassé). Limites : démonstration réelle et PDF non recettés dans cette intervention documentaire ; fichiers `outputs/` exclus de la publication. Suite : mener les entretiens et consigner les preuves ; la tâche reste ouverte.
-
-  Liste de prospection refaite le 4 novembre 2026 (demande du propriétaire : la liste locale n'avait presque aucune coordonnée). Constat : sur les 106 entreprises prioritaires du registre SIRENE, 2 seulement ont des coordonnées trouvables en ligne (micro-sociétés invisibles). Nouvelle source : Google Maps (Chrome du propriétaire), sites officiels et annuaire ColisActiv. Résultat dans le fichier Drive du propriétaire « Annona_Suivi_Prospection_2026 », refait aux couleurs Annona avec logo : onglets Tableau de bord, PARIS (214 entreprises dédoublonnées, 204 avec téléphone, 91 avec e-mail générique), MARSEILLE (20, reprises de l'ancien rapport), Mode d'emploi ; listes déroulantes de statut, couleurs par statut, relances dues en orange, compteurs automatiques. Anciens onglets renommés « Archive » et masqués, non supprimés. Vérifications : formules relues par l'API (234 entreprises, 0 erreur), rendu contrôlé dans le navigateur. Limites : coordonnées Google Maps non vérifiées une par une (fiabilité « Moyenne ») ; département déduit de la position Google, approximatif ; 123 entreprises PARIS sans e-mail ; MARSEILLE non enrichi par Google Maps. Suite : lancer les appels depuis les onglets PARIS et MARSEILLE (filtre Priorité = A).
-  MARSEILLE enrichi le 4 novembre 2026 (demande du propriétaire « même chose pour Marseille et les alentours ») : 14 recherches Google Maps (Marseille, Aix, Aubagne, Vitrolles/Marignane, Martigues/Istres, Salon, La Ciotat, Gémenos/Rousset, Arles, Toulon), 329 fiches relevées, tri manuel (points relais DHL/UPS, supermarchés, restaurants, taxis, transitaires maritimes et grands groupes écartés), recherche d'e-mails génériques sur 59 sites, fusion avec les 20 anciennes lignes. Résultat : 123 entreprises dédoublonnées (112 dans le 13, 11 dans le Var), 121 avec téléphone, 38 avec e-mail ; priorité A 22, B 38, C 63 ; grands groupes (Transcausse, Star Service, Rocca, Ciblex…) forcés en C. Vérifications : compteurs de l'onglet et du Tableau de bord relus par l'API (123 / 38 e-mails), rendu contrôlé dans le navigateur. Limites : mêmes que PARIS (coordonnées non vérifiées une par une, ville déduite de la position Google) ; e-mails nominatifs ou d'autres agences écartés.
-  Dirigeants PARIS ajoutés le 4 novembre 2026 (demande du propriétaire : numéros des dirigeants via Pappers ou autre). Pappers et le registre ne publient pas de numéro de téléphone des dirigeants ; on a donc relevé leurs noms dans le registre public (API recherche-entreprises.api.gouv.fr, même source que Pappers). Pour chaque entreprise, recherche par nom, puis rapprochement par adresse ; holdings remplacées par la personne qui les dirige ; commissaires aux comptes écartés. Résultat dans l'onglet PARIS, colonne Interlocuteur : 111 entreprises sur 214 avec dirigeant (69 sûres par adresse ou SIREN, 42 marquées « à confirmer »), SIREN complété en colonne Y ; 3 interlocuteurs déjà notés conservés ; 2 rapprochements faux retirés (Coursier Express, PRINE) ; 1001 Courses et Trans Zohra laissés sans dirigeant (doute). Aucun numéro privé recherché : la règle de `docs/operations/prospection/README.md` reste d'appeler les lignes d'entreprise et de demander le dirigeant par son nom. Vérification : écriture relue par l'API (214 cellules par colonne). Limites : les 42 « à confirmer » n'ont pas d'adresse correspondante ; 103 entreprises sans dirigeant trouvé (nom commercial différent du nom légal). MARSEILLE non traité.
-  Téléphones des dirigeants PARIS ajoutés le 4 novembre 2026 (demande du propriétaire). Pappers refuse l'accès automatique (403) et ne publie pas ces numéros. Sources retenues, toutes publiées par l'entreprise elle-même : mentions légales, contact et « qui sommes-nous » de 150 sites lus automatiquement (numéro gardé seulement s'il est à côté du nom du dirigeant, numéros d'hébergeur écartés à la main) ; portable 06/07 publié comme numéro de l'entreprise ; ligne d'un entrepreneur individuel. Résultat : 32 entreprises avec « TÉL. DIRIGEANT » dans la colonne Interlocuteur (2 par les mentions légales : Freedom7, Trans-Drive ; 3 entrepreneurs individuels ; 27 portables d'entreprise, « sans doute le sien ») ; Freedom7, qui n'avait aucun téléphone, a reçu son numéro en colonne F. Aucun annuaire de numéros privés ni outil payant utilisé. Vérification : écriture relue par l'API. Limites : un portable d'entreprise peut appartenir à un salarié ; 79 dirigeants connus restent sans numéro direct (passer par le standard en les demandant par leur nom). Retiré le même jour à la demande du propriétaire : la colonne Interlocuteur est revenue à « Nom, fonction — registre », sans numéro ; le téléphone reste seulement dans la colonne Téléphone (F), où Freedom7 garde le 06 41 17 14 47 ajouté. Écriture relue par l'API (214 cellules). Puis, à sa demande, nouvelle colonne J « Tél. dirigeant » insérée après Interlocuteur dans l'onglet PARIS, avec les 32 numéros (numéro seul, sans commentaire). Vérification : formules de l'onglet et du Tableau de bord décalées automatiquement (Statut M→N, Relance P→Q), compteurs inchangés (214 à contacter, 91 e-mails, 205 téléphones). Limite : MARSEILLE n'a pas cette colonne, donc les deux onglets n'ont plus les mêmes lettres de colonnes.
-  Recherche approfondie le même jour (demande du propriétaire : « le plus possible ») : (1) SIREN relevés dans les mentions légales des sites des entreprises sans dirigeant, puis registre → 20 dirigeants de plus (SIREN d'hébergeurs OVH/Linkeo et d'agences web écartés), soit 131 dirigeants sur 214 ; (2) deux agents de recherche web sur les 99 dirigeants sans numéro : aucun numéro écrit à côté d'un nom, 18 portables publiés par les entreprises, chacun revérifié sur sa page source ; 4 écartés (ligne recrutement et service client de Cygogne, WhatsApp 07 68 63 81 28 commun à trois sites). Résultat : 46 numéros dans « Tél. dirigeant », colonne que le propriétaire a déplacée en G. Incident : ce déplacement, fait pendant le travail, a fait écraser 20 cellules « Site web » ; sites restaurés depuis la lecture initiale, noms remis dans « Interlocuteur », alignement relu par l'API. Règle ajoutée en mémoire : relire les en-têtes avant chaque écriture. Extensions LinkedIn (Kaspr, Lusha) : impossibles pour l'agent (compte à créer, risque de blocage LinkedIn en cas d'automatisation) ; à faire à la main par l'ami prospecteur. Limites : 85 dirigeants sans numéro direct ; 83 entreprises sans dirigeant identifié.
-  Suite le même jour (« rechercher jusqu'à rajouter des numéros », puis « même chose pour Marseille ») : PARIS, 21 numéros de plus pour des sociétés que l'INSEE déclare sans salarié (le standard est tenu par le dirigeant ; USEND et Cygogne écartés), chaque cellule portant une note de provenance → 67 numéros sur 131 dirigeants. Pappers (téléphone réservé aux comptes connectés, création de compte interdite à l'agent) et PagesJaunes (numéros masqués, résultats mélangés) testés dans Chrome puis abandonnés. MARSEILLE : colonne G « Tél. dirigeant » insérée comme sur PARIS ; registre + adresse + SIREN des mentions légales → 78 dirigeants sur 123 (colonne J, SIREN en Z ; Allo Express sans dirigeant et Vélos Coursiers Toulonnais non diffusible écartés) ; 38 numéros dans G avec note de provenance (1 mentions légales, 26 portables d'entreprise, 9 sociétés sans salarié, 2 entrepreneurs individuels) ; numéros d'hébergeur et standards déjà notés écartés. Vérifications : en-têtes relus avant écriture, lignes 34 et 124 relues, formules du Tableau de bord décalées automatiquement (MARSEILLE : Statut N, e-mail H, 123 / 38 / 121 inchangés). Limites : recherche web nominative non relancée pour MARSEILLE (rendement nul sur PARIS) ; « portable d'entreprise » et « sans salarié » restent des déductions, signalées dans la note de chaque cellule.
-  Documentation pour les commerciaux le même jour (le propriétaire précise que le fichier leur est destiné) : onglet « Mode d'emploi », 8 lignes ajoutées (qui appeler, colonnes Interlocuteur et Tél. dirigeant, origine des numéros, conduite pendant et après l'appel, LinkedIn avec Kaspr ou Lusha à la main, chiffres au 04/11/2026) et ligne Sources complétée ; mise en forme recopiée de la ligne existante, hauteurs de ligne ajustées. Vérification : écriture confirmée par l'API ; rendu non contrôlé visuellement dans le navigateur.
-  Cases vides de « Tél. dirigeant » remplies le même jour à la demande du propriétaire : « Pas de n° direct → appeler le standard et demander [nom du dirigeant] » (ou « le gérant » si inconnu), « Aucun numéro → écrire par e-mail ou passer par le site » quand l'entreprise n'a aucun téléphone. PARIS 147 cases, MARSEILLE 85 cases ; les 67 et 38 numéros conservés à l'identique, notes de provenance intactes. Ligne « Colonne Tél. dirigeant » du Mode d'emploi adaptée. Vérification : écriture confirmée par l'API, lignes 12 et 13 de PARIS relues.
-  Réparation du fichier le 5 novembre 2026 (les commerciaux l'avaient cassé) : dans le Tableau de bord, 6 calculs avaient été remplacés par des chiffres tapés à la main (entreprises contactées, intéressées, et pour Paris « pas joint » 5, « à rappeler » 1, « entretien fixé » 1, « pas intéressé » 3). Calculs remis ; onglets PARIS et MARSEILLE relus en entier (337 lignes, numérotation, statuts, e-mails, sites, dates : aucune casse). Protection « avertissement » ajoutée sur le seul Tableau de bord (retirée des en-têtes PARIS et MARSEILLE à la demande du propriétaire) ; ligne « Tableau de bord » ajoutée au Mode d'emploi. Vérification : valeurs relues par l'API, les compteurs suivent de nouveau les statuts (Paris 8 à rappeler, 2 intéressés ; Marseille 2 pas intéressés). Limite : les résultats tapés à la main ne disent pas quelles entreprises sont concernées ; le commercial doit les reporter sur les bonnes lignes de PARIS.
-
-  Mail d'accroche « Il en est où ? » le 5 novembre 2026 (demande du propriétaire : un mailing catchy qui montre que Annona existe et intrigue). Choix en questionnaire : mail personnel envoyé un par un depuis `orso@annona.fr`, signé Orso, pas encore de SIREN ; objet « Il en est où ? », première ligne « Vous en avez marre de cette question ? », annonce « quelque chose arrive pour les entreprises de coursiers de [Ville] », parcours de A à Z en 4 étapes à emojis, bouton « Je veux en être » qui ouvre une réponse déjà écrite (mailto, un vrai formulaire est bloqué par Gmail et Outlook), aucun lien vers le site ni prix avant le SIREN, pied de mail CNIL (identité, provenance de l'adresse, « stop »). Mise en forme Annona reprise du mail visuel du 30 octobre : `docs/operations/email/prospection/teaser-il-en-est-ou.html`. Vérifications : logo distant joignable (HTTP 200) ; deux mails test envoyés depuis le Gmail du propriétaire vers son Gmail et `orso@annona.fr` (version texte, puis version mise en forme) ; l'outil Gmail de l'agent retire toute image (distante, `cid`, `data:`, essais en brouillons supprimés ensuite), d'où un mail sans logo ; troisième envoi test avec logo par Resend (`no-reply@annona.fr`, réponse vers `orso@annona.fr`), uniquement vers les deux adresses du propriétaire, réponse 200. Retouches du même jour (demandes du propriétaire) : signature « Carotenuto-Marchetti Orso », guillemets retirés de l'objet et du titre (« Il en est où ? » devient Il en est où ?), lien « annona.fr » ajouté, bouton « Je veux en être » vers le formulaire de liste d'attente déjà en ligne `https://annona.fr/tarifs?c=il-en-est-ou-[ville]` (page sans prix, code de campagne compté par `waitlist_funnel_daily`) au lieu de la réponse pré-écrite ; page dédiée /rejoindre envisagée puis écartée par le propriétaire. Texte d'aperçu invisible (sous l'objet dans la boîte) : « Bonjour, mon colis, il en est où ? Ça vous dit quelque chose ? » ; le propriétaire voulait faire croire à un message de client, déconseillé (mail commercial devant être identifiable dès réception et ne pas masquer l'émetteur) puis remplacé par ce clin d'œil ; cinquième envoi test, réponse 200. Puis 180 caractères invisibles ajoutés après l'aperçu pour que la suite du mail n'apparaisse ni dans la liste ni dans la notification ; sixième envoi test, réponse 200 (rendu des notifications non vérifié par l'agent). Pastille « BIENTÔT À [VILLE] » déplacée sous le premier paragraphe, au-dessus de l'encadré ; septième envoi test, réponse 200. Outlook (capture du propriétaire) bloquait le logo distant (« Télécharger des images externes ») : logo désormais joint au mail (`cid:logo-annona`, pièce jointe en ligne) et texte de secours « Annona » centré ; huitième envoi test par Resend avec le logo joint, réponse 200. Conséquence : l'outil d'envoi réel doit joindre `public/brand/email-bandeau-logo.png` avec l'identifiant `logo-annona` (un copier-coller dans le webmail OVH ne le fera pas) ; moyen d'envoi depuis `orso@annona.fr` à décider. Quatrième envoi test par Resend (code `test-il-en-est-ou` pour ne pas fausser les chiffres), réponse 200. Écart au plan de démarchage, décidé par le propriétaire : lien vers le site avant le SIREN. Non vérifié : rendu Gmail/Outlook et bouton, à relire par le propriétaire ; arrivée en boîte de réception plutôt qu'en indésirables ; un mail mis en forme dès le premier contact passe plus souvent en indésirables que du texte simple (risque accepté par le propriétaire). Suite : retour du propriétaire, puis texte final, deux relances et version « après SIREN » dans `docs/operations/prospection/README.md`.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section PROD-02.
-
-- [ ] **PROD-04 — Définir les mesures de valeur.**
-
-  **Qui : Claude — après les pilotes.**
-
-  Terminé quand : Valeur de départ avant pilote et objectif convenu avec chaque entreprise ; instruments utilisables sans collecte excessive.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section PROD-04.
-
-- [ ] **OFFER-1 — Valider la grille cible et l'offre pilote.**
-
-  **Qui : Toi — pendant les entretiens et les pilotes.**
-
-  Terminé quand : Offre acceptée par prospects ; coûts infrastructure/cartes/stockage/messages/support mesurés ; pas d’illimité non maîtrisé.
-
-  4 novembre 2026, **revue des options faite (demande du jour)** : inventaire des fonctions ajoutées depuis le catalogue du 23 octobre dans `docs/rapports/2026-11-04/offer1-fonctions-depuis-c8.md` (seules 5 fonctions étaient contrôlées par l'offre ; tout le reste était ouvert à tous). Décision du propriétaire (C15 dans `docs/DECISIONS_PRODUIT_COMMERCIALES.md`) : nouvelle option « Réception automatique des commandes » (`order_automation` : e-mails renvoyés, WhatsApp, message collé lu par l'IA), 29 € HT par mois en Starter, incluse en Pro et Business ; preuve de livraison, factures, relances et Factur-X restent dans toutes les offres. Code : clé ajoutée au serveur, à la session, au comparatif et à la découverte premium de 60 jours ; contrôle unique dans l'analyse des messages (couvre les trois canaux) et à l'activation (refus 403 « option non incluse », désactiver reste possible, les e-mails déjà reçus restent lisibles) ; écran « Commande par message » avec l'encart « Option non incluse dans votre offre » ; démonstrations créées avec la sixième fonction. Catalogue `C11-2026-11-04` par la migration `20261104030000_catalog_c11_order_automation` (recopie de C10 ; pilotes complets complétés, pilotes restreints inchangés ; contrats existants inchangés). Documents : `docs/SAAS_OFFERS_ARCHITECTURE.md`, `docs/DECISIONS_PRODUIT_COMMERCIALES.md` ; supports locaux refaits (`outputs/commercial/kit/Annona-kit-commercial.pdf`, plaquette `…-apres-siren-MODELE.pdf`, 0 débordement après fusion de deux lignes). Vérifications : `npm run check` 1 586/1 586 ; tests ajoutés (`tests/catalog-c11-order-automation.test.ts`, cas « non incluse » dans `tests/order-intake.test.ts` et `tests/order-intake-routes.test.ts`) ; `npm run test:saas01b` vert sur PostgreSQL jetable avec C11 (option Starter 2 900 / 34 800 centimes, incluse Pro et Business, options de C10 recopiées). **Vérifié ensuite (même jour, « fais tout toi-même »)** : migration appliquée sur `annona-dev` et relue (C11 actif, C10 retiré, option 2 900 / 34 800 centimes en Starter, `order_automation` inclus en Pro et Business, 11 options au lieu de 10, 12 pilotes sur 12 complétés) ; E2E dans un worktree à moi : `public-order.spec.ts` 5/5 (lien, trois parcours e-mail, WhatsApp) et `order-intake.spec.ts` 2/2 après correction de la réponse simulée du test (champ `included` ajouté : sans lui l'écran se croyait « option non incluse ») ; écran « Option non incluse » vérifié au navigateur (encart affiché, « Activer » grisé pour l'adresse de réception, lien de commande toujours activable, capture relue). `npm run check` : 1 586/1 586, lint vert ; le contrôle de types complet échoue seulement sur `outputs/recette-wt`, worktree d'une autre session rangé dans le dépôt (vert sans ce dossier). **Non fait** : remplacer le catalogue avec prix du Drive (accès Drive refusé à l'agent, à faire par toi).
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section OFFER-1.
-
-- [ ] **PILOT-1 — Recruter et conduire trois pilotes accompagnés.**
-
-  **Qui : Toi — après les entretiens.**
-
-  Terminé quand : Mesures avant/après, incidents, adoption par les trois rôles, coût support et retours consignés chaque semaine.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section PILOT-1.
-
-- [ ] **PILOT-2 — Décider avec les preuves des pilotes.**
-
-  **Qui : Toi — après les pilotes.**
-
-  Terminé quand : Décision poursuivre/resserrer/revoir l’offre documentée ; ne pas ajouter des fonctions pour masquer l’absence de valeur.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section PILOT-2.
-
-- [ ] **SAAS-03 — Permettre la gestion autonome de l'abonnement.**
-
-  **Qui : Claude — après la vérification de conformité.**
-
-  Terminé quand : chaque action passe par le serveur et un journal auditable ; l'état affiché se réconcilie avec le fournisseur ; seuils de commandes/livreurs produisent des alertes sans doublon ; les rétrogradations avec ressources excédentaires sont refusées ou planifiées selon la règle décidée, jamais destructives ; résiliation conserve l'accès/export selon la politique ; seuls les rôles autorisés gèrent l'abonnement.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section SAAS-03.
-
-- [ ] **SAAS-02 — Mesurer le revenu et la santé du SaaS.**
-
-  **Qui : Claude — après les pilotes.**
-
-  Terminé quand : Indicateurs réconciliés avec paiements ; définitions écrites ; quotas et alertes de coûts testés.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section SAAS-02.
-
-- [ ] **COST-1 — Simuler les coûts d'exploitation et la marge contributive.**
-
-  **Qui : Claude — après les pilotes.**
-
-  Terminé quand : hypothèses et sources datées ; volumes par livraison explicités ; frais de paiement et support distingués ; commissions 15/25/35 % simulées séparément ; coût mensuel total, marge contributive et coût marginal approximatif par client pour chaque scénario ; seuils de changement de plan et sensibilité haute/basse ; risque des livreurs Business illimités isolé ; comparaison aux prix HT sans confondre marge contributive, marge brute et résultat ; chiffres exportables vers le prévisionnel. Aucun test facturable lancé sans accord.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section COST-1.
-
-- [ ] **GROWTH-1 — Construire le site commercial relié au parcours autonome.**
-
-  **Qui : Claude — après la vérification de conformité.**
-
-  Terminé quand : un prospect comprend pour qui est le produit, le problème résolu, les trois espaces, le prix HT/TTC indicatif, options et dépassements, la différence démo/pilote/découverte premium et la prochaine étape ; navigation responsive et accessible ; contenu cohérent avec le catalogue actif ; formulaires protégés contre abus ; pages légales publiées seulement après validation.
-
-  5 novembre 2026, à la demande du propriétaire : pages **Tarifs** et **Démonstration en ligne** retirées du site public pour le moment. Plus aucun lien (barre, menu mobile, pied de page, accueil, fin de la mini-démo) ; `/tarifs` redirige vers `/fonctionnalites` et `/demonstration` vers la mini-démo de l'accueil (`/#demo`), redirections temporaires dans `next.config.ts` ; le code des deux pages est conservé pour les rouvrir. Le bouton « Voir la démo » de la barre mène à la mini-démo. Page **Fonctionnalités** refaite et mise à jour : parcours en 4 étapes, raccourcis vers les trois espaces, 26 phrases (contre 12) dont lien de commande sans compte, arrivée estimée, preuve PDF, e-mail/WhatsApp (« En option »), 3 livreurs proposés (« Selon la formule »), carte, tournées, imprévus, facture à la livraison, notification de mission, signature ; chaque phrase reste prouvée par un texte d'écran (`src/domains/growth/public-capabilities.ts`). Volontairement absents tant que le propriétaire ne les a pas validés : Factur-X (FACTURX-1) et commande par message IA (INTAKE-1). Vérifications : tests ciblés 39/39, `npm run check` vert (1594/1594) ; Playwright sur serveur isolé (copie séparée, port 3107) : 307 sur `/tarifs` et `/demonstration`, aucun lien restant vers ces pages sur l'accueil et Fonctionnalités, pas de débordement à 390 px, Clair et Sombre sans erreur console, ancre « Côté terrain » et bouton « Voir les fonctionnalités » de l'accueil cliqués. Non vérifié : E2E Playwright complets (listes `mobile-web` et `auth-role-pages` mises à jour, non relancées) et extension Chrome non connectée. Critères « prix HT/TTC » et « différence démo/pilote » de cette tâche suspendus tant que les pages restent retirées.
-
-  5 novembre 2026 (suite), à la demande du propriétaire : `/tarifs` devient une **page provisoire « Annona arrive bientôt »** avec liste d'attente (prénom, nom, entreprise, e-mail, téléphone, tous obligatoires). Lien « Tarifs » remis dans la barre et le pied de page de l'accueil, redirection `/tarifs` retirée (celle de `/demonstration` reste). Envoi vers `/api/waitlist` (`submitWaitlistEntry`, `src/domains/growth/contact.service.ts`) : même table `contact_messages` que Contact (aucune migration), même débit (3 par source et 50 par heure), pot de miel, alerte e-mail titrée « Liste d'attente : <entreprise> » ; les inscriptions se lisent dans `/admin/contact` (message « Liste d'attente : … »). Page Confidentialité complétée (données de la liste d'attente, même conservation que Contact). L'ancienne grille lue dans le catalogue est dans l'historique Git (commit 5f87f2f) ; `toPublicPricing` reste en place pour la remettre. Vérifications : tests ajoutés (inscription normalisée, champs obligatoires, téléphone de moins de 8 chiffres refusé, pot de miel, débit, titre de l'alerte, schéma strict, lien confidentialité) ; `npm run check` vert (1596/1596) ; Playwright sur serveur isolé (port 3108, base `annona-dev`, alertes coupées) : envoi vide bloqué, vraie inscription E2E acceptée (202) puis message de confirmation, ligne vérifiée en base puis supprimée, téléphone trop court refusé (400, champ `phone`), lien Tarifs de la barre et du pied de page cliqué, Clair, Sombre et 390 px sans débordement ni erreur console. Non vérifié : réception réelle de l'alerte e-mail en préproduction (dépend de `CONTACT_ALERT_RECIPIENT` sur Vercel).
-
-  5 novembre 2026 (suite), à la demande du propriétaire : **liens de la barre du haut recentrés à l'œil**. Ils étaient au centre exact de la barre, mais paraissaient décalés (petit logo à gauche, gros bloc Connexion + Voir la démo à droite) ; ils sont maintenant au milieu de l'espace libre entre le logo et les boutons (`public-top-navbar.tsx`, même réglage dans la barre de l'espace client `client-portal-layout.tsx`). Vérifications : Playwright sur serveur isolé (worktree, port 3199) — milieu des liens = milieu de l'espace libre à 1440 et 1024 px sur l'accueil et Fonctionnalités, Clair et Sombre, pas de débordement à 800 px ; `npm run check` vert (1596/1596). Non vérifié : barre de l'espace client à l'écran (connexion nécessaire), police Plus Jakarta Sans non téléchargée sur le serveur de test (police de secours).
-
-  5 novembre 2026 (suite), à la demande du propriétaire (« recentre comme avant les boutons en haut en page d'accueil ») : barre du site public remise au centre géométrique (`absolute left-1/2 -translate-x-1/2`, `public-top-navbar.tsx`), comme avant `72a8800`. Barre de l'espace client inchangée. Vérifié : `npx eslint` du fichier, tests `landing2-public-site` et `growth01-public-journey` verts. Non revu au navigateur : retour à l'état déjà en ligne avant ce matin.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section GROWTH-1.
-
-- [ ] **LEGAL-LIENS — Rendre accessibles les mentions légales et la politique de confidentialité depuis le site public.**
-
-  **Qui : Toi — SIREN, e-mail, téléphone ; puis Claude.**
-
-  Constat du 2 novembre 2026 : liens, renvois aux formulaires et recette faits le 29 octobre. Reste : compléter le contenu des mentions.
-
-  Terminé quand : chaque pied de page public (accueil, Fonctionnalités, Tarifs, Démonstration, Contact, inscription et connexion) mène aux mentions légales et à la politique de confidentialité ; les formulaires qui collectent des données (Contact, inscription) y renvoient au point de collecte ; contenu issu des pièces validées de LEGAL-1, sans identité, SIREN, adresse ni engagement inventés ; recette navigateur Light/Dark, 1440 et 390.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section LEGAL-LIENS.
-
-- [ ] **INTAKE-1 — Commande par message IA (coller un message).**
-
-  **Qui : Toi.**
-
-  Terminé quand : essai réel sur vingt messages anonymisés avec mesure de la qualité d'extraction et du coût ; clé serveur fournie et fonction activée par une entreprise de recette ; fiche F10 qualifiée avant toute donnée réelle ; parcours navigateur « coller, relire, créer » rejoué avec la spécification corrigée ; décision prise sur l'entrée dans le portail client.
-
-  Constat du 2 novembre 2026 : `ANTHROPIC_API_KEY` présente sur la préproduction. Reste : les vingt messages, le parcours rejoué, la décision sur le portail.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section INTAKE-1.
-
-- [ ] **DISPATCH-5 — Imprévus et mesure du dispatch.**
-
-  **Qui : Claude — après les pilotes.**
-
-  Terminé quand : chaque proposition reste explicable et validable par le dispatcher ; aucune coordonnée de livreur exposée au client ; tests métier et `npm run check` verts ; recette navigateur.
-
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section DISPATCH-5.
-
-- [ ] **AUDIT-0111 — Corrections de l'audit complet du 1er novembre 2026 avant le premier pilote.** Audit demandé par le propriétaire en carte blanche ; rapport PDF de 15 pages avec étude de marché, local et confidentiel : `outputs/audit-2026-11-01/Annona-Audit-2026-11-01.pdf` (constats, fichiers et lignes en annexe). Conclusion : produit sérieux, aucune confrontation au marché ; geler les nouvelles fonctions, corriger ce qui suit, mener dix entretiens en parallèle, puis un seul pilote.
-
-  **Qui : Toi.**
-
-  État du 2 novembre 2026 : tout est en préproduction sauf E2 (accord du propriétaire) ; numérotation C2 à confirmer par un comptable ; S4 : la limite contournable en appelant Supabase directement reste ouverte. Inscription en ligne fermée sur annona.fr tant que le paiement n\'est pas réel.
-
-  **Modèle conseillé : GPT‑6 Astra · effort élevé (sécurité, états métier).**
-
-  Terminé quand : chaque point est corrigé avec un test du comportement réel, `npm run check` vert, parcours complets rejoués sur `annona-dev`, et le point E2 tranché par le propriétaire.
-
-  À faire, dans l'ordre :
-  1. E1 — Commandes récurrentes et facturation : les tâches quotidiennes de `vercel.json` ne tournent qu'en production Vercel (ancienne version du 7 septembre, base en pause, échec quotidien constaté) ; rien ne les appelle sur annona.fr, 10 récurrences de test sur 23 en retard le 1er novembre.
-  2. S1 — Une inscription ne doit pas pouvoir toucher un compte invité non confirmé (`signup.service.ts`, `reuseUnconfirmedAuthUser`).
-  3. S2 — Retirer le raccourci de confirmation d'e-mail et désactiver le paiement fictif sur le site public.
-  4. C1 — Définir les changements d'état permis des commandes et livraisons côté équipe, avec tests.
-  5. C3 — Double commande par lien public : clé d'unicité inopérante sans client.
-  6. C4 — Appliquer la lecture seule d'un abonnement expiré aux modifications de commandes et livraisons.
-  7. S3 — Bloquer les invitations depuis la démo publique.
-  8. C2 — Numéroter les factures en suite continue (à confirmer par un comptable).
-  9. C5 — Relancer le dispatch automatique abandonné après trois essais sans livreur actif.
-  10. S4 et S5 — Compléter les limites de tentatives, revoir le rattachement par e-mail.
-  11. C6 — Faire tourner les parcours complets sur une base dans le contrôle automatique (dernier passage connecté : 20 octobre).
-  12. P1 — Réduire cette TODO à une page de pilotage et archiver le journal.
-  13. E2 — Créer une vraie production (accord du propriétaire requis), offres Vercel et Supabase payantes.
-
-  C6, relevé du 2 novembre 2026 : recette connectée réparée (test périmé depuis le 23 octobre, vrai bug de `recordOrderCreatedUsage` corrigé) et verte en ligne sur la préproduction (run 41495900652). Passage de nuit limité à cette recette ; premier passage planifié à contrôler le 3 novembre. Parcours navigateur à la demande (`run_browser`), car le montage sur la préproduction est arrêté par son garde-fou `PREPRODUCTION_PERSISTENT_DEMO_UNEXPECTED`.
-
-  E2E complet sur `annona-dev`, serveur de dev, 2 novembre 2026 : 60 réussis, 22 échoués, 2 sautés sur 84. Après préparation des comptes et des données : 46 réussis, 3 échoués, 1 sauté sur les 50 tests des fichiers en échec. Les 3 restants, tous en dépassement de temps, passent seuls : `design2-theme:118` et `portal-theme:154` avec 5 minutes, `support:7` en 2,1 min (limite du test passée à 5 minutes). `/settings` à 360 px, 388 px de large au premier passage, ne se reproduit pas : cause non identifiée. `scripts/audit0111/connected.ts` : champ `monthlyOrders` corrigé, script non relancé. `npm run check` vert (1 530 tests). Limites : aucun passage complet d'une seule traite n'est vert, le navigateur n'a pas tourné en ligne, et 2 tickets de test `SUPPORT-1 navigateur` restent sur `annona-dev` (suppression refusée, restes des courses interrompues).
-
-  Vérifications de l'audit : `npm run check` vert (1 492 tests) ; `npm audit --omit=dev` sans faille ; journaux Vercel sur 7 jours, conseillers Supabase, comptages en base et pages publiques relus. Aucun code ni donnée modifiés. Non vérifié : intérieur de l'application non cliqué, E2E et build non relancés localement, performance non mesurée, failles lues dans le code mais non rejouées, environ 100 routes contrôlées seulement sur la présence de leur garde d'accès.
-
-- [ ] **MOTS-UNIFIES — Employer les mêmes mots partout à l'écran.** Écart relevé le 1er novembre 2026 en écrivant les vidéos de formation ; le propriétaire demande de le régler. Mélanges constatés : « Chauffeur » et « Livreur » ; « Relevé » et « Facture » ; « Équipe » pour « Gestion des comptes » ; « Nouvel utilisateur » pour « Inviter un utilisateur » ; « Analytics avancés » et « Statistiques avancées » ; « Support prioritaire » et « Assistance prioritaire » ; « Dispatch automatique » et « Dispatch intelligent ».
-
-  **Qui : Claude — après la vérification de conformité.**
-
-  « Livreur » et les autres mots sont unifiés. Décision du propriétaire du 2 novembre 2026 : « Facture » à l'écran, avec la mention « ne constitue pas une facture électronique réglementaire » conservée ; le PDF classique reste « Relevé de prestation » car il n'a pas toutes les mentions légales ; le « relevé par livreur » est une autre notion et ne change pas. Écrans modifiés, non cliqués en navigateur. Reste : confirmation d'un comptable, puis le PDF classique.
-
-  **Modèle conseillé : GPT‑6 Luna · effort moyen.**
-
-  À garder en tête : « Relevé » avait été choisi exprès parce que le document n'est pas une facture électronique réglementaire. Le PDF classique ne doit pas changer sans vérification des exigences applicables (LEGAL-1), en lien avec le point C2 d'AUDIT-0111.
-
-  Terminé quand : un seul mot par notion dans les écrans, e-mails et PDF des trois espaces ; recherche de chaque ancien mot sans résultat visible par l'utilisateur ; tests à jour, `npm run check` vert et clic réel navigateur.
-
-  Source / dépendance / blocage : vérification des exigences applicables pour « Relevé » et « Facture » seulement. À faire avant de capturer les écrans des vidéos de formation.
-
-- [ ] **MAIL-PONT — Relier la boîte de commandes de l'entreprise à Annona.** Décisions du propriétaire (C14) : le 2 novembre, tri automatique entre e-mails ordinaires et e-mails de commande, validation toujours humaine, client inconnu créé à la validation (fiche sans accès, informations manquantes complétées par le dispatcher), une réponse automatique au client après validation avec le lien de suivi. Révision du 3 novembre : parcours principal = boîte dédiée aux commandes, renvoyée automatiquement vers l'adresse Annona (aucune connexion Gmail/Outlook) ; la connexion directe Gmail/Outlook passe en option, plus tard.
-
-  **Qui : Toi — régler `NEXT_PUBLIC_APP_URL` sur `https://annona.fr` (Vercel, Preview `preproduction`) et retirer le filtre Gmail d'essai ; Outlook plus tard (décidé le 4 novembre) ; ensuite Claude.**
-
-  Terminé quand : une boîte de commandes Gmail et une boîte Outlook renvoient automatiquement vers Annona ; le code de confirmation de Gmail est visible dans Annona ; le client d'origine est reconnu ; les e-mails de commande apparaissent en brouillon et les autres sont mis « à trier » ou ignorés sans être conservés ; la validation crée la commande et, si besoin, la fiche du client ; le client reçoit la confirmation (envoyée par Annona au nom de l'entreprise, « répondre à » vers sa boîte) ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
-
-  Reprend deux défauts de MAIL-ECARTS (archivée le 3 novembre) : client jamais retrouvé sur un e-mail transféré (le rapprochement ne regarde que l'expéditeur, alors l'entreprise elle-même) ; « Brouillon prêt » affiché aussi sur un e-mail qui n'est pas une commande.
-
-  À prévoir : changement de schéma (fiche client sans accès, statut « à trier ») ; guide pour activer le renvoi (Gmail, Outlook, OVH), dont l'accord de l'administrateur Outlook professionnel pour les renvois externes. Option ultérieure, hors de cette tâche : connexion directe Gmail/Outlook (comptes Google Cloud et Azure, vérification Google et audit CASA, juridique plus lourd).
-
-  3 novembre 2026, spécification écrite : `docs/operations/order-intake/MAIL-PONT.md` (parcours, guide de renvoi Gmail/Outlook/OVH, expéditeur d'origine y compris transfert à la main, code de confirmation Gmail, tri `order`/`other` dans le même appel au modèle, confirmation avec « répondre à », sécurité, cinq étapes livrables). Point d'architecture trouvé : l'adresse e-mail d'un utilisateur est unique sur toute la plateforme, d'où la recommandation d'une fiche client propre à l'entreprise (option B) plutôt qu'un utilisateur sans connexion. Vérification : `npm run docs:verify`. Non vérifié : texte exact de l'e-mail de Gmail, redirection Outlook avec Resend, résultats SPF/DKIM chez Resend. Suite : tes quatre choix (section 9).
-
-  3 novembre 2026, **étape 1 faite (tri)** : le modèle renvoie `kind` (`order`/`other`) dans le même appel ; nouveau statut `NOT_ORDER` ; section repliée « À trier » (raison affichée, « C'est une commande » ouvre le brouillon gardé, « Ignorer » efface le contenu), effacée après 7 jours ; e-mail vide ou fait de pièces jointes rangé sans appel au modèle. Corrige le défaut 3 de MAIL-ECARTS. Migration additive `20261103210000_inbound_not_order` appliquée sur `annona-dev` puis sur la préproduction. Vérifications : tests unitaires ajoutés (`tests/public-order-channels.test.ts`, `tests/order-intake.test.ts`) ; `npm run check` 1 551/1 551 ; E2E en worktree isolé : `public-order.spec.ts` « E-MAIL » 1/1 (nouveau parcours « À trier » : merci rangé, pièce jointe sans appel au modèle, « Ignorer ») et `order-intake.spec.ts` 2/2 (un premier passage à froid avait échoué, non reproduit en deux reprises). Commit local `a37396b`, **non poussé** (push refusé par l'outil de sécurité). Non vérifié : vrai modèle sur un e-mail « merci » en ligne (après le push).
-
-  3 novembre 2026, **étape 2 faite (vrai client sur un e-mail transféré à la main)** : si l'e-mail vient d'un membre de l'équipe, le premier bloc cité (`De :`, `From:`, `Expéditeur :`) donne le client, gardé dans `originalSender`, utilisé pour le rapprochement et affiché « lu dans l'e-mail transféré par … » ; un expéditeur extérieur n'est jamais remplacé ; effacé au classement. Corrige le défaut 1 de MAIL-ECARTS. Migration additive `20261103230000_inbound_original_sender` appliquée sur `annona-dev` et en préproduction. Vérifications : tests unitaires (Gmail, Outlook, Apple Mail, transfert en français, équipe elle-même, nom sans adresse) ; `npm run check` 1 553/1 553 ; E2E « E-MAIL » 1/1 avec le nouveau scénario. Non poussé (push à faire par toi).
-
-  3 novembre 2026, **étape 3 faite (sauf essais réels)** : champ « Votre boîte de commandes » (enregistré en minuscules, adresse invalide refusée) ; e-mail de `forwarding-noreply@google.com` reconnu, ni analysé ni listé, code affiché dans le réglage (« 246 813 579, demandé par … »), seuls le code et l'adresse gardés, effacé après 24 h ; guide de renvoi Gmail, Outlook (« Rediriger vers », accord de l'administrateur) et OVH. Vérifications : tests unitaires (formats anglais et français, autre expéditeur refusé) ; `npm run check` 1 554/1 554 ; E2E « E-MAIL » 2/2 (dont le nouveau test : code affiché, boîte enregistrée et relue après rechargement, guide ouvert). Un premier passage avait échoué : réglage masqué quand le domaine de réception n'est pas configuré (corrigé, affiché dès l'activation), puis délai de 60 s trop court à froid (porté à 180 s comme le test voisin). Migration `20261104000000_order_mailbox_forwarding` appliquée sur `annona-dev` ; appliquée en préproduction le 3 novembre après ajout de la règle d'autorisation. Non vérifié : vrai renvoi Gmail et Outlook (après le push).
-
-  3 novembre 2026, **étape 5 faite (confirmation au client)** : case « Envoyer la confirmation au client (adresse) » cochée par défaut à la validation ; une seule confirmation par e-mail reçu (tâche durable `inbound-confirmation:<e-mail>`, programmée dans la même transaction que la clôture), à l'expéditeur d'origine et jamais à un membre de l'équipe ; une ligne et un lien de suivi par commande créée ; `reply_to` vers la boîte de commandes (ajouté à l'envoi d'e-mails, ignoré si l'adresse est invalide) ; message « Confirmation envoyée à … » à l'écran. Vérifications : test unitaire de `reply_to` ; `npm run check` 1 555/1 555 ; E2E « E-MAIL » 2/2 (tâche programmée, `replyTo`, lien rattaché au client, aucune confirmation pour un e-mail classé) et `order-intake.spec.ts` 2/2. Le premier test E-MAIL dépassait 180 s (3,2 min) : limite portée à 300 s. Le test du code Gmail utilise maintenant un code unique par exécution (un reste d'essai le faisait échouer). Non vérifié : vrai e-mail reçu par un client (la base de développement n'envoie rien ; la préproduction envoie à l'adresse de test). Reste à MAIL-PONT : étape 4 (fiche client, ton choix A ou B) et les essais réels.
-
-  4 novembre 2026, **étape 4 faite (fiche client, option B)** : table `company_customers` (nom, e-mail unique par entreprise, téléphone, `userId` facultatif) et `orders.company_customer_id` ; menu « Client » du brouillon avec comptes, fiches et « + Nouveau client (sans accès) », prérempli depuis l'expéditeur et présélectionné quand il est inconnu ; fiche créée dans la transaction de la commande (sous verrou ; adresse connue réutilisée sans être écrasée ; adresse d'un compte client refusée ; clé déjà utilisée pour un autre client = conflit) ; second e-mail rapproché de la fiche ; nom de la fiche dans les listes de commandes et sur la page de la commande ; fiche rattachée au compte si l'entreprise en ouvre un plus tard ; export DATA-02 étendu (`companyCustomers`). Détail : `docs/operations/order-intake/MAIL-PONT.md`, section 5.3. Migration `20261104010000_company_customers` (RLS, droits retirés à `anon`/`authenticated`) appliquée sur `annona-dev`, puis en préproduction avec ton accord du 4 novembre. Vérifications : `tests/company-customer.test.ts` 9/9 (isolement entre entreprises, double clic, clics simultanés, reprise, conflit, compte existant, nom dans les listes) ; tests de rapprochement, de route, d'export et de rattachement mis à jour ; `npm run check` 1 567/1 567 ; `npm run docs:verify` vert (compte de modèles porté à 48 dans `docs/DATABASE.md`) ; E2E en worktree isolé : nouveau « E-MAIL fiche client » 1/1 (client inconnu, double clic = une fiche et une commande, second e-mail reconnu, page de la commande, fiche d'une autre entreprise absente de la liste et refusée en 404), les deux autres « E-MAIL » 2/2, `order-intake.spec.ts` « deux livraisons » 1/1 et « coller » 1/1 à la relance ; captures clair et sombre du formulaire relues. Aléa vu deux fois à froid : le créneau n'était pas prérempli avant le clic (le serveur refuse proprement « Choisissez un créneau ») ; réussite à la relance, déjà observé à l'étape 1 ; le nouveau test choisit le créneau s'il est vide. Non vérifié : nom de la fiche dans la liste des commandes au navigateur (test unitaire seulement) ; page « Clients » sans les fiches ; ni modification ni suppression d'une fiche (hors étape). Commit local, non poussé.
-
-  4 novembre 2026, **essai réel Gmail commencé** (ton accord pour ta boîte Gmail dans Chrome) : étape 4 poussée (`972554c`), route `/api/orders/intake/customers` en ligne (401 au lieu de 404). Dans la démo de annona.fr : adresse de réception activée, boîte de commandes `+commandes` enregistrée (relue par l'API). Dans Gmail : adresse Annona ajoutée comme adresse de transfert (clé d'accès validée par toi), transfert global **non** activé. Résultat : l'e-mail de Google est bien arrivé dans Annona, mais **non reconnu** : le format a changé, objet « (Gmail) Confirmation de transfert – Recevez les messages de … », **aucun code**, seulement un lien d'approbation `mail-settings.google.com`. Correctif `d92e7eb` (local, push refusé par le contrôle automatique) : lien reconnu (https vers `mail-settings.google.com` ou `mail.google.com`, chemin `/mail/`, sinon ignoré), gardé 24 h, bouton « Approuver le renvoi dans Gmail » ; ancien format à code toujours lu ; guide mis à jour. Vérifications : test unitaire sur le texte réel (anonymisé) et sur un faux lien ; `npm run check` 1 568/1 568. Non vérifié : affichage du bouton en ligne (après le push). La fonction d'analyse de la démo est encore désactivée (case d'acceptation du sous-traitant à cocher par toi).
-
-  4 novembre 2026, suite de l'essai Gmail : correctif poussé (`bc83a1a`, déploiement Vercel prêt). « Renvoyer l'e-mail » dans Gmail → Annona a reconnu le lien (`mail.google.com/mail/vf-…`, demandeur lu) et affiché « Approuver le renvoi dans Gmail » ; clic → page Google « Confirmez le transfert » → « Opération effectuée ». **Le code de confirmation Gmail est donc vérifié en vrai, au nouveau format.** Ancien e-mail non reconnu classé. Bloqué : la création du filtre Gmail (À `+commandes`, Transférer à Annona) ne part pas depuis l'agent (trois clics sans effet, aucun filtre créé) ; à faire par toi. Constat : le bandeau « Approuver » reste 24 h même après approbation (effacement au premier e-mail renvoyé non codé) ; correction à décider après lecture d'un vrai e-mail renvoyé (en-têtes Gmail).
-
-  4 novembre 2026, **essai réel Gmail réussi de bout en bout** (démo de annona.fr, filtre Gmail limité à `orsocarotenuto+commandes@gmail.com` créé par toi, fonction activée par toi). 1er e-mail fictif : renvoyé par Gmail, reçu avec le vrai expéditeur, analysé par le vrai modèle (adresses, contact « M. Durand », échéance, 2 cartons corrects), « + Nouveau client (sans accès) » présélectionné et prérempli (nom lu dans la signature) → commande CRS-11495439 et fiche créées, page de la commande avec la carte « Client sans accès », confirmation reçue avec `Reply-To` vers la boîte de commandes. 2e e-mail : fiche reconnue (« Rapproché par e-mail de l'expéditeur (fiche sans accès à l'espace client) ») → CRS-60537708 sans nouvelle fiche ; bandeau Gmail disparu ; confirmation affichée « LogiExpress Démo via Annona ». Corrections faites pendant l'essai et poussées (`89bcdfe`, `1b46667`) : expéditeur « Entreprise via Annona » (nom nettoyé, adresse de `MAIL_FROM` seulement), pied « Votre réponse lui parvient directement » quand `Reply-To` existe, demande Gmail masquée dès qu'un e-mail ordinaire arrive après elle, en-tête de la commande avec le nom de la fiche. Vérifications : tests unitaires ajoutés (expéditeur, injection d'en-tête, pied, masquage) ; `npm run check` 1 570/1 570 ; relecture des e-mails reçus. Constats non corrigés : (1) les liens de suivi pointent vers `annona-git-preproduction-annona.vercel.app` : variable Vercel `NEXT_PUBLIC_APP_URL` à régler par toi ; (2) le modèle a lu « demain » comme le 04/11 au lieu du 05/11 sur « Même chose qu'hier : … demain … avant 11h » (calcul du code vérifié correct ; relecture humaine non faite par l'agent) : à suivre dans la mesure de qualité d'INTAKE-1 ; (3) « Informations absentes du message : client » reste affiché alors que la nouvelle fiche est préremplie (formulation à revoir). Reste à MAIL-PONT : essai Outlook. Données d'essai laissées dans la démo (deux commandes fictives, une fiche).
-
-  4 novembre 2026, **corrections après l'essai** (Outlook reporté par toi) : (3) « Informations absentes du message : client » n'est plus affiché quand un client est choisi ou qu'une nouvelle fiche est préremplie ; (2) un message qui cite plusieurs jours relatifs (« hier », « demain », « aujourd'hui », « après-demain »…) marque la date « À vérifier : le message cite plusieurs jours (hier, demain…) » (le calcul du code reste celui du modèle ; la relecture est demandée, pas une correction automatique). Vérifications : tests unitaires (mots répétés, « après-demain », « fichier », brouillon marqué ou non) ; `npm run check` 1 572/1 572. Non vérifié au navigateur : ces deux affichages (logique couverte par les tests, affichage non relu). (1) `NEXT_PUBLIC_APP_URL` : modification Vercel refusée à l'agent par l'outil de sécurité ; commande prête pour toi.
+  **Qui : Claude.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
-- [ ] **PROPRIO-2810 — Actions du propriétaire avant mise en ligne.**
+  CLI-01 à CLI-09, RG-02, RG-08, ENF-03 : connexion, profil, catalogue par catégorie avec + / − et saisie directe, panier, date (J+1 ou plus) et créneau, modification et annulation jusqu'à l'heure limite, historique, « Recommander » à l'identique ou dans le panier, commande récurrente (jours, créneau, suspendre).
 
-  **Qui : Toi.**
+  Terminé quand : critère 1 (recopier une commande en moins d'une minute) chronométré dans le navigateur ; tests du refus serveur ; `npm run check` vert.
 
-  Constat du 2 novembre 2026 : faits, migrations de préproduction, relais GitHub avec ses secrets, Node 22, `CONTACT_HMAC_SECRET`, clé Anthropic, Mustang, choix de la plateforme, note sur `J5_AUDIT_FACTUEL_DEV.md`. Reste : Supabase Pro, fiche F10, promotion en production.
+- [ ] **LOCK-1 — Heure limite, verrouillage et consolidation.**
 
-  Terminé quand : chaque ligne est constatée par un agent (secret présent, migration appliquée avec un schéma sans écart, réglage visible) ; aucun secret n'est affiché ni versionné ; promotion décidée explicitement.
+  **Qui : Claude.**
 
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section PROPRIO-2810.
+  **Modèle conseillé : Claude Opus · effort élevé (heures de Paris, tâche planifiée).**
 
-- [ ] **RELEASE-1 — Réaliser la recette de mise en vente.**
+  RG-01, RG-04, RG-09, RG-10, ADM-05 : refus côté serveur à partir de 17h00:00 heure de Paris (paramétrable) ; tâche planifiée qui verrouille, fige les prix, génère les récurrentes seulement sans commande manuelle, calcule les totaux et les tournées du lendemain ; correction administrateur après l'heure limite journalisée (qui, quand, avant, après).
 
-  **Qui : Claude — en dernier, avant la mise en vente.**
+  Terminé quand : tests des critères 2 (16h59 modifiable, 17h00 verrouillée, changements d'heure compris) et 4 ; tâche idempotente testée.
 
-  Terminé quand : Aucun défaut bloquant connu ouvert ; responsabilités opérationnelles définies ; décision de lancement explicite et surveillance prête.
+- [ ] **BOU-1 — Espace boulanger.**
 
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section RELEASE-1.
+  **Qui : Claude.**
 
-- [ ] **WHATSAPP-1 — Recevoir les commandes WhatsApp sans copier-coller.** Demande du propriétaire du 4 novembre 2026. Spécification : `docs/operations/order-intake/WHATSAPP.md` (règles de Meta vérifiées en ligne le 4 novembre : pas de renvoi automatique, API officielle seulement, vérification de l'entreprise, messages reçus gratuits, message transféré sans auteur d'origine, règle de Meta sur l'IA). Conseil : option A, un numéro Annona vers lequel le dispatcher transfère le message ; l'entreprise est reconnue par le numéro du dispatcher.
+  **Modèle conseillé : Claude Opus · effort moyen.**
 
-  **Qui : Toi — après le SIREN : compte Meta Business, numéro dédié, variables Vercel ; ensuite Claude.**
+  BOU-01 à BOU-06 : total à produire par produit, détail par commerçant, groupement par tournée dans l'ordre de chargement, impression des bons et étiquettes, case « préparée », manquant ou quantité réduite reporté sur la quantité livrée.
 
-  4 novembre 2026, décision du propriétaire : **option A maintenant, B préparée** (« part du principe que j'ai le SIREN »). Fait :
-  - Base : enum `InboundChannel` et colonne `inbound_order_emails.channel`, `company_intake_channels.whatsapp_enabled` (migration `20261104020000_whatsapp_inbound`, appliquée sur annona-dev et en préproduction avec ton accord).
-  - `src/domains/order-intake/whatsapp.service.ts` : signature `X-Hub-Signature-256`, abonnement par jeton, lecture des messages (accusés et réactions écartés, légende d'une photo lue), entreprise trouvée par le numéro du membre de l'équipe (administrateur, mini-admin, dispatcher, actif ; numéro présent dans deux entreprises : ignoré), réglage par entreprise. `resolveWhatsAppTarget` est le seul point à changer pour l'option B.
-  - Route `GET/POST /api/webhooks/whatsapp` ; file commune `queueInboundMessage` (plafond, tâche d'analyse, purge) partagée avec l'e-mail.
-  - Analyse : le numéro de l'équipe n'est jamais pris pour le client ; client cherché par l'e-mail, sinon le téléphone, retrouvés dans le texte (`matchCustomerFromText`) ; l'e-mail lu reçoit la confirmation, jamais le numéro de l'équipe.
-  - Écran : ligne « WhatsApp » dans « Commandes sans connexion » (numéro, activer, liste des numéros reconnus de l'équipe), messages marqués « Reçu par WhatsApp, transféré par … », carte renommée « Messages de commande reçus ».
-  - Docs : `WHATSAPP.md` (section 8 bis, décisions), `README.md` de l'order-intake, `.env.example`.
-  Vérifications : `tests/whatsapp-intake.test.ts` (7 tests) et un test de reconnaissance par le texte dans `tests/order-intake.test.ts` ; `npm run check` vert (1 580 tests) ; build de production dans un worktree isolé ; E2E `tests/e2e/public-order.spec.ts` sur ce build (port 3110, variables WhatsApp de test) : parcours « WHATSAPP » vert (route signée et rejeu, analyse, réglage affiché, vrai clic « Créer la commande », client reconnu, confirmation programmée à l'e-mail lu), et les 4 autres parcours du fichier verts aussi (LIEN relancé seul après suppression de 3 commandes de test laissées par un passage interrompu). Les E2E existants ont été rendus robustes au mode « créneaux » de l'environnement de démo 1 (choix du créneau, lien public) et nettoient leurs commandes même en échec.
-  Non vérifié : essai réel avec Meta (pas de compte), message d'aide au numéro inconnu (étape 4, demande un jeton d'accès), option B. Un essai réel est possible sans SIREN avec le numéro de test gratuit de Meta (compte développeur ouvert avec ton Facebook) : proposé le 4 novembre, reporté par toi (« plus tard »).
+  Terminé quand : critère 5 testé ; impression vérifiée dans le navigateur (format tablette).
 
-  4 novembre 2026, question « on peut pas faire autrement ? » : section 3 bis ajoutée à la spécification. Deux chemins sans SIREN : (1) WhatsApp → Partager → e-mail vers l'adresse de commandes, qui réutilise MAIL-PONT sans code (geste à essayer sur iPhone et Android) ; (2) API officielle avec un compte Meta non vérifié, plafonné à environ 250 conversations lancées par l'entreprise par jour (sources de prestataires), ce qui ne gêne pas la réception, et numéro de test de Meta pour coder. Écarté : bibliothèques non officielles (contraires aux conditions, risque de bannissement). Vérification : `npm run docs:verify`. Non vérifié : plafonds dans l'aide de Meta, réception sur le numéro de test, geste de partage.
+- [ ] **TOUR-1 — Tournées : administrateur et livreur.**
 
-  Terminé quand : un message WhatsApp transféré par un dispatcher depuis son téléphone devient un brouillon dans Annona ; un message qui n'est pas une commande va dans « À trier » ; un numéro inconnu ne laisse aucune donnée ; la validation crée la commande et, si besoin, la fiche du client ; tests, essai réel sur un vrai téléphone, `npm run check` et clic réel dans le navigateur.
+  **Qui : Claude.**
 
-  Source / dépendance / blocage : SIREN, puis compte Meta Business vérifié et numéro dédié (propriétaire) ; Meta à ajouter aux sous-traitants (LEGAL-1). Aucun code avant le compte vérifié, faute d'essai réel possible. Jusque-là, le copier-coller d'INTAKE-1 suffit.
+  **Modèle conseillé : Claude Opus · effort élevé (hors réseau, ordre des arrêts).**
 
-  4 novembre 2026, spécification écrite : réutilisation de MAIL-PONT (file des messages reçus, tri, « À trier », fiche client, validation), webhook signé `X-Hub-Signature-256`, messages texte seuls, numéro inconnu sans stockage, quatre étapes après les démarches Meta. Vérification : `npm run docs:verify`. Non vérifié : texte officiel de la règle de Meta sur l'IA, coexistence en France, plafonds sans vérification, tarifs français.
+  ADM-04, ADM-06 à ADM-08, LIV-01 à LIV-06 : tournée par créneau calculée avec le calcul existant, réordonner, déplacer un arrêt, changer de livreur, attribution ; suivi en direct ; côté livreur : arrêts dans l'ordre (colis, consignes), liste de chargement, « Livré » en un appui, arrêt suivant puis « Ouvrir dans Plans », « Ouvrir dans Waze », « Y aller seul » ; problème avec commentaire et photo ; hors réseau avec la file existante.
+
+  Terminé quand : critères 6, 7 et 8 vérifiés (dont un « livré » hors réseau resynchronisé, cliqué dans le navigateur).
+
+- [ ] **FACT-1 — Factures par période.**
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : Claude Opus · effort élevé (montants, numérotation).**
+
+  CLI-10, ADM-10, RG-06, RG-07, ENF-05 : une facture par commerçant et par période (jour, semaine, mois, année) sur les quantités livrées, numérotation continue, PDF et Factur-X conservés, envoi, règlements saisis (virement, prélèvement, espèces), téléchargement côté commerçant.
+
+  Terminé quand : critère 9 testé ; PDF relu ; `npm run check` vert.
+
+- [ ] **NOTIF-1 — Notifications.**
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : Claude Opus · effort moyen.**
+
+  NOT-01 (rappel avant l'heure limite sans commande pour le lendemain, délai paramétrable), NOT-02 (confirmation à chaque commande validée ou modifiée), NOT-03 (« livreur en approche » quand l'arrêt précédent est livré).
+
+  Terminé quand : tests des déclencheurs ; un envoi réel reçu sur une adresse de test.
+
+- [ ] **ADM-1 — Comptes, paramètres et plateforme.**
+
+  **Qui : Claude.**
+
+  **Modèle conseillé : Claude Opus · effort moyen.**
+
+  ADM-01, ADM-09, PLA-01 à PLA-04, ENF-07 : comptes commerçants, boulangers, livreurs, administrateurs ; heure limite, créneaux, catégories, délai du rappel ; super-administrateur (créer, configurer, suspendre une entreprise) ; nom et logo de l'entreprise ; textes centralisés en français (« client », « livreur », « tournée », « arrêt »).
+
+  Terminé quand : critère 10 testé (aucune donnée d'une entreprise B visible depuis A, routes comprises) ; écrans cliqués.
+
+- [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
+
+  **Qui : Claude.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
-- [ ] **SMS — Ajouter seulement les extensions justifiées.**
+  ENF-01 : emballer les espaces commerçant et livreur avec Capacitor ; notifications natives ; ouverture de Plans et Waze. Publication : comptes Apple Developer et Google Play à ouvrir par le propriétaire.
 
-  **Qui : Claude — seulement si les pilotes le demandent.**
+  Terminé quand : les deux applications s'installent sur un vrai téléphone et passent les critères 1, 7 et 8.
 
-  Terminé quand : Chaque extension a un problème mesuré, un coût, un critère de réussite et une place validée dans la roadmap.
+- [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  Détail et historique : `docs/TODO-ARCHIVE.md`, section SMS.
+  **Qui : Claude — en dernier.**
+
+  **Modèle conseillé : Claude Opus · effort élevé.**
+
+  Rejouer les dix critères de la section 10 du cahier des charges sur `annona-dev`, dans le navigateur, avec un rapport et des captures.
+
+  Terminé quand : les dix critères passent et le rapport est dans `docs/rapports/`.
