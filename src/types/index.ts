@@ -12,6 +12,8 @@ export interface User {
   avatarUrl?: string | null;
   status: UserStatus;
   companyId?: string | null;
+  /** Commerçant représenté (rôle MERCHANT). */
+  merchantId?: string | null;
   roleId: string;
   createdAt: Date;
   updatedAt: Date;

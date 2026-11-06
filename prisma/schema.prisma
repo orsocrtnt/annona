@@ -347,6 +347,8 @@ model Category {
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name      String
   sortOrder Int     @default(0) @map("sort_order")
+  /// Catégorie désactivée : masquée du catalogue client avec ses produits (ADM-02).
+  active    Boolean @default(true)
 
   products Product[]
 

@@ -4,8 +4,8 @@ const INTERNAL_ERROR_MESSAGE = "Erreur interne du serveur";
 /** Réglages modifiés par un autre enregistrement pendant celui-ci (réclamation sur updatedAt). */
 export const SETTINGS_CONFLICT_MESSAGE = "Les réglages ont changé pendant l'enregistrement. Rechargez puis réessayez.";
 
-export function apiError(message: string, status = 500) {
-  return NextResponse.json({ error: message, success: false }, { status });
+export function apiError(message: string, status = 500, extra?: { code?: string; details?: Record<string, unknown> }) {
+  return NextResponse.json({ error: message, success: false, ...extra }, { status });
 }
 
 /** Erreur dont le message, rédigé pour l'utilisateur, peut être renvoyé tel quel. */
@@ -38,16 +38,21 @@ export async function readJsonBody(request: Request): Promise<unknown> {
 
 // Erreurs de domaine dont le message est rédigé pour l'utilisateur (comparaison par nom :
 // importer les services ici chargerait Prisma dans chaque route).
-function namedDomainError(error: Error): { status: number; message: string } | null {
+function namedDomainError(error: Error): { status: number; message: string; code?: string; details?: Record<string, unknown> } | null {
   if (error.name === "InvalidSupportReferenceError") return { status: 404, message: error.message };
   const status = (error as { status?: unknown }).status;
+  // Règle métier (CAT-1, CMD-1) : message rédigé pour l'utilisateur, code pour l'action suivante.
+  if (error.name === "DomainRuleError" && typeof status === "number" && status >= 400 && status < 500) {
+    const { code, details } = error as { code?: string; details?: Record<string, unknown> };
+    return { status, message: error.message, ...(code ? { code } : {}), ...(details ? { details } : {}) };
+  }
   if (error.name === "OrderAccessError" && typeof status === "number" && status >= 400 && status < 500) {
     return { status, message: error.message };
   }
   return null;
 }
 
-export function resolveApiError(error: unknown): { status: number; message: string } {
+export function resolveApiError(error: unknown): { status: number; message: string; code?: string; details?: Record<string, unknown> } {
   if (error instanceof ApiRouteError) return { status: error.status, message: error.message };
   if (error instanceof Error) {
     if (error.name === "ZodError") return { status: 400, message: "Données invalides." };
@@ -64,8 +69,9 @@ export async function withApiHandler(
   try {
     return await handler();
   } catch (error) {
-    console.error("[API Error]", error);
-    const { status, message } = resolveApiError(error);
-    return apiError(message, status);
+    const { status, message, code, details } = resolveApiError(error);
+    // Un refus métier attendu (heure limite, doublon…) n'est pas une panne : pas de trace d'erreur.
+    if (!(error instanceof Error && error.name === "DomainRuleError" && status < 500)) console.error("[API Error]", error);
+    return apiError(message, status, code || details ? { code, details } : undefined);
   }
 }
