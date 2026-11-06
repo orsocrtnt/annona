@@ -46,7 +46,7 @@ export const DEMO_POOL_MIN_READY = 3;
  * Version du scénario de démo. À changer à chaque modification du scénario : les espaces
  * du pool préparés avec une autre version sont recyclés par la maintenance du pool.
  */
-export const DEMO_SCENARIO_VERSION = "2026-10-26-paris";
+export const DEMO_SCENARIO_VERSION = "2026-11-05-journee";
 
 export function isDemoScenarioOutdated(settings: unknown): boolean {
   const marker = settings && typeof settings === "object" && !Array.isArray(settings)

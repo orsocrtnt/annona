@@ -68,5 +68,5 @@ test("DEMO-REFONTE : l'espace est remis à l'heure au prêt, l'ancrage est posé
   const pool = readFileSync("src/domains/demo/demo-pool.service.ts", "utf8");
   assert.match(pool, /if \(!lease\.reused\) await realignLeasedDemo\(lease\.companyId, now\);/);
   const scenario = readFileSync("src/domains/demo/demo-scenario.service.ts", "utf8");
-  assert.match(scenario, /\[DEMO_SCENARIO_ANCHOR_KEY\]: referenceDate\.toISOString\(\)/);
+  assert.match(scenario, /\[DEMO_SCENARIO_ANCHOR_KEY\]: anchor\.toISOString\(\)/);
 });

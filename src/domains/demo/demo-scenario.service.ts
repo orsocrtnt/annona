@@ -21,12 +21,15 @@ import { createAdminClient } from "@/services/supabase/admin";
 import { formatDriverDisplayName } from "@/lib/format/person-labels";
 import {
   generateDeliveryReference,
+  generateDeliveryReferences,
   generateOrderReference,
+  generateOrderReferences,
 } from "@/lib/order-reference";
 import { getPrimaryCourierPickupFields } from "@/lib/order/courier-pickups";
 import { demoInvoiceLineItems } from "@/domains/demo/demo-invoice-lines";
 import { DEMO_SIGNAL_LAG_SECONDS } from "@/lib/demo/demo-live-position";
 import { DEMO_SCENARIO_ANCHOR_KEY } from "@/domains/demo/demo-time-shift.service";
+import { fromParisDateTimeInput, toParisDateTimeInput } from "@/lib/format/paris-datetime-input";
 
 interface DemoActors {
   companyId: string;
@@ -44,9 +47,11 @@ interface TrackingSeed {
   offsetHours: number;
 }
 
-interface ScenarioItem {
+export interface ScenarioItem {
   label: string;
-  /** Livreur imposé (index dans DEMO_FIXTURE_DRIVERS) ; sinon rotation. */
+  /** Client imposé (index dans DEMO_FIXTURE_CLIENTS ; 0 = compte de la vue Client) ; sinon rotation. */
+  clientIndex?: number;
+  /** Livreur imposé (index dans DEMO_FIXTURE_DRIVERS ; 0 = compte de la vue Livreur) ; sinon rotation. */
   driverIndex?: number;
   deliveryCategory: DeliveryCategory;
   orderStatus: OrderStatus;
@@ -70,7 +75,8 @@ interface ScenarioItem {
   notes?: string;
   deliveryInstructions?: string;
   tracking: TrackingSeed[];
-  invoice?: { status: InvoiceStatus; dueInDays?: number; paidDaysAgo?: number };
+  invoice?: { status: InvoiceStatus; dueInDays?: number; paidOffsetHours?: number };
+  proof?: { recipientName: string };
   supportTicket?: { subject: string; message: string };
 }
 
@@ -111,267 +117,157 @@ function hoursFromNow(hours: number, referenceDate: Date = new Date()): Date {
   return new Date(referenceDate.getTime() + hours * 60 * 60 * 1000);
 }
 
-function buildScenario(): ScenarioItem[] {
+const QUARTER_HOUR_MS = 15 * 60 * 1000;
+
+/** Instant d'ancrage du scénario : arrondi au quart d'heure, pour des heures lisibles. */
+export function demoScenarioAnchor(referenceDate: Date): Date {
+  return new Date(Math.round(referenceDate.getTime() / QUARTER_HOUR_MS) * QUARTER_HOUR_MS);
+}
+
+/** Écart en heures entre l'ancrage et une heure de Paris, `days` jours plus tard (négatif = avant). */
+export function parisClockOffsetHours(anchor: Date, days: number, time: string): number {
+  const [datePart] = toParisDateTimeInput(anchor).split("T");
+  const day = new Date(`${datePart}T12:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+  const target = fromParisDateTimeInput(`${day.toISOString().slice(0, 10)}T${time}`);
+  if (!target) throw new Error("DEMO_SCENARIO_PARIS_TIME_INVALID");
+  return (new Date(target).getTime() - anchor.getTime()) / (60 * 60 * 1000);
+}
+
+/** Preuve de remise : nom du réceptionnaire, heure et position (sans photo ni signature stockées). */
+const proof = (recipientName: string) => ({ recipientName });
+
+/**
+ * Journée type d'une société de coursiers (DEMO-REFONTE, partie 1), relative à l'ancrage T :
+ * 4 livrées aujourd'hui (T−4 h à T−1 h), 3 en route, 1 en retard, 2 affectées, 2 sans livreur, 2 demain.
+ * Le client 0 et le livreur 0 sont les comptes des vues Client et Livreur.
+ */
+export function buildScenario(anchor: Date): ScenarioItem[] {
+  const tomorrowMorning = parisClockOffsetHours(anchor, 1, "10:00");
+  const tomorrowAfternoon = parisClockOffsetHours(anchor, 1, "14:30");
   return [
+    // — Livrées aujourd'hui (T−5 h à T−1 h), avec preuve —
     {
-      label: "Livrée + facture payée",
+      label: "Livrée — facture payée",
+      clientIndex: 0,
       driverIndex: 0,
       deliveryCategory: "STANDARD",
       orderStatus: "DELIVERED",
       deliveryStatus: "DELIVERED",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: -72,
-      completedAtOffsetHours: -24,
-      shipping: {
-        address: "12 Rue de Rivoli",
-        city: "Paris",
-        postalCode: "75001",
-      },
+      requestedDeliveryDateOffsetHours: -3.5,
+      missionStartedAtOffsetHours: -4.5,
+      completedAtOffsetHours: -4,
+      shipping: { address: "12 Rue de Rivoli", city: "Paris", postalCode: "75001" },
       items: [
         { name: "Colis documents", quantity: 2, unitPrice: 29.95 },
         { name: "Emballage fragile", quantity: 1, unitPrice: 30.0 },
       ],
-      notes: "Livraison démo — historique client",
       tracking: [
-        { label: "Commande reçue", offsetHours: -72 },
-        { label: "En préparation", offsetHours: -48 },
-        { label: "En livraison", offsetHours: -30, latitude: 48.8566, longitude: 2.3522 },
-        {
-          label: "Livré",
-          description: "Colis remis au destinataire",
-          offsetHours: -24,
-          latitude: 48.8566,
-          longitude: 2.3522,
-        },
+        { label: "Commande reçue", offsetHours: -5.5 },
+        { label: "En livraison", offsetHours: -4.5, latitude: 48.8606, longitude: 2.3376 },
+        { label: "Livré", description: "Colis remis au destinataire", offsetHours: -4, latitude: 48.86244, longitude: 2.3362 },
       ],
-      invoice: { status: "PAID", paidDaysAgo: 2 },
+      proof: proof("Marie Dubois"),
+      invoice: { status: "PAID", paidOffsetHours: -1 },
     },
     {
-      label: "En livraison (suivi actif)",
-      driverIndex: 0,
-      deliveryCategory: "STANDARD",
-      orderStatus: "IN_DELIVERY",
-      deliveryStatus: "IN_DELIVERY",
-      assignDriver: true,
-      requestedDeliveryDateOffsetHours: -4,
-      estimatedArrivalOffsetHours: 2,
-      missionStartedAtOffsetHours: -1,
-      shipping: {
-        address: "45 Avenue des Champs-Élysées",
-        city: "Paris",
-        postalCode: "75008",
-      },
-      items: [{ name: "Livraison express", quantity: 1, unitPrice: 45.0 }],
-      deliveryInstructions: "Sonner à l'interphone — 3e étage",
-      tracking: [
-        { label: "Commande reçue", offsetHours: -6 },
-        { label: "Assignée", description: "Livreur affecté", offsetHours: -3 },
-        {
-          label: "En livraison",
-          description: "Le livreur est en route",
-          offsetHours: -1,
-          latitude: 48.8698,
-          longitude: 2.3078,
-        },
-      ],
-      invoice: { status: "PENDING", dueInDays: 15 },
-      supportTicket: {
-        subject: "Question sur l'heure de livraison",
-        message:
-          "Bonjour, pouvez-vous me confirmer l'heure estimée d'arrivée du livreur ? Merci.",
-      },
-    },
-    {
-      label: "En attente dispatch",
-      deliveryCategory: "STANDARD",
-      orderStatus: "PENDING",
-      deliveryStatus: "PENDING",
-      assignDriver: false,
-      requestedDeliveryDateOffsetHours: 24,
-      scheduledAtOffsetHours: 24,
-      shipping: {
-        address: "8 Boulevard Haussmann",
-        city: "Paris",
-        postalCode: "75009",
-      },
-      items: [{ name: "Carton 5 kg", quantity: 1, unitPrice: 38.5 }],
-      tracking: [
-        {
-          label: "Commande reçue",
-          description: "En attente d'assignation livreur",
-          offsetHours: -2,
-        },
-      ],
-    },
-    {
-      label: "En retard",
-      deliveryCategory: "STANDARD",
-      orderStatus: "PENDING",
-      deliveryStatus: "PENDING",
-      assignDriver: false,
-      requestedDeliveryDateOffsetHours: -48,
-      scheduledAtOffsetHours: -48,
-      shipping: {
-        address: "22 Rue de la Roquette",
-        city: "Paris",
-        postalCode: "75011",
-      },
-      items: [{ name: "Pièces détachées", quantity: 1, unitPrice: 62.0 }],
-      notes: "Date demandée dépassée — priorité dispatch",
-      tracking: [
-        { label: "Commande reçue", offsetHours: -72 },
-        { label: "En attente livreur", description: "Retard sur la date prévue", offsetHours: -24 },
-      ],
-    },
-    {
-      label: "Planifiée à venir",
-      deliveryCategory: "STANDARD",
-      orderStatus: "PENDING",
-      deliveryStatus: "PENDING",
-      assignDriver: false,
-      requestedDeliveryDateOffsetHours: 48,
-      scheduledAtOffsetHours: 48,
-      shipping: {
-        address: "5 Place de la Bastille",
-        city: "Paris",
-        postalCode: "75012",
-      },
-      items: [{ name: "Fournitures bureau", quantity: 3, unitPrice: 18.0 }],
-      tracking: [{ label: "Commande reçue", description: "Livraison planifiée", offsetHours: -1 }],
-    },
-    {
-      label: "Course simple — en achat",
+      label: "Livrée — facture à régler",
+      clientIndex: 1,
       driverIndex: 1,
-      deliveryCategory: "COURIER",
-      orderStatus: "PURCHASING",
-      deliveryStatus: "PURCHASING",
+      deliveryCategory: "STANDARD",
+      orderStatus: "DELIVERED",
+      deliveryStatus: "DELIVERED",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: 4,
-      estimatedArrivalOffsetHours: 6,
-      missionStartedAtOffsetHours: -1,
-      pickup: {
-        address: "2 Rue du Louvre",
-        city: "Paris",
-        postalCode: "75001",
-      },
-      shipping: {
-        address: "18 Rue de Vaugirard",
-        city: "Paris",
-        postalCode: "75015",
-      },
-      pickupStops: [
-        {
-          label: "Collecte pharmacie",
-          address: "2 Rue du Louvre",
-          city: "Paris",
-          postalCode: "75001",
-          items: [{ name: "Ordonnance urgente", quantity: 1, unitPrice: 25.0 }],
-        },
-      ],
-      deliveryInstructions: "Livraison en main propre",
+      requestedDeliveryDateOffsetHours: -2.5,
+      missionStartedAtOffsetHours: -3.5,
+      completedAtOffsetHours: -3,
+      shipping: { address: "30 Rue de la Boétie", city: "Paris", postalCode: "75008" },
+      items: [{ name: "Dossier de plaidoirie", quantity: 1, unitPrice: 35.0 }],
       tracking: [
-        { label: "Course reçue", offsetHours: -3 },
-        { label: "Livreur en route collecte", offsetHours: -1, latitude: 48.8606, longitude: 2.3376 },
-        { label: "En cours d'achat", description: "Récupération en cours", offsetHours: 0 },
+        { label: "Commande reçue", offsetHours: -4.5 },
+        { label: "En livraison", offsetHours: -3.5 },
+        { label: "Livré", description: "Remis à l'accueil", offsetHours: -3, latitude: 48.87393, longitude: 2.31534 },
       ],
+      proof: proof("Accueil du cabinet"),
+      invoice: { status: "PENDING", dueInDays: 30 },
     },
     {
-      label: "Course — collectes multiples",
-      driverIndex: 0,
+      label: "Course livrée",
+      clientIndex: 2,
+      driverIndex: 2,
       deliveryCategory: "COURIER",
-      orderStatus: "ASSIGNED",
-      deliveryStatus: "ASSIGNED",
+      orderStatus: "DELIVERED",
+      deliveryStatus: "DELIVERED",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: 8,
-      estimatedArrivalOffsetHours: 10,
-      shipping: {
-        address: "14 Avenue de Versailles",
-        city: "Paris",
-        postalCode: "75016",
-      },
+      requestedDeliveryDateOffsetHours: -1.5,
+      missionStartedAtOffsetHours: -2.75,
+      completedAtOffsetHours: -2,
+      shipping: { address: "50 Rue de Belleville", city: "Paris", postalCode: "75020" },
       pickupStops: [
         {
-          label: "Collecte 1 — Imprimerie",
-          address: "30 Rue de la Boétie",
-          city: "Paris",
-          postalCode: "75008",
-          items: [{ name: "Documents à signer", quantity: 1, unitPrice: 0 }],
-        },
-        {
-          label: "Collecte 2 — Showroom",
-          address: "15 Rue Oberkampf",
-          city: "Paris",
-          postalCode: "75011",
-          items: [{ name: "Échantillons produits", quantity: 2, unitPrice: 35.0 }],
-        },
-        {
-          label: "Collecte 3 — Entrepôt",
+          label: "Collecte grossiste",
           address: "4 Place d'Italie",
           city: "Paris",
           postalCode: "75013",
-          items: [{ name: "Petit colis", quantity: 1, unitPrice: 12.0 }],
+          items: [{ name: "Bouquets de saison", quantity: 6, unitPrice: 12.0 }],
         },
       ],
-      notes: "Course multi-points démo",
       tracking: [
-        { label: "Course reçue", offsetHours: -2 },
-        { label: "Collecte 1", description: "30 Rue de la Boétie, Paris", offsetHours: -1 },
-        { label: "Collecte 2", description: "15 Rue Oberkampf, Paris", offsetHours: 0 },
-        { label: "Collecte 3", description: "4 Place d'Italie, Paris", offsetHours: 0 },
-        {
-          label: "Livraison",
-          description: "14 Avenue de Versailles, Paris",
-          offsetHours: 0,
-        },
+        { label: "Course reçue", offsetHours: -4 },
+        { label: "Collecte faite", offsetHours: -2.5 },
+        { label: "Livré", description: "Remis en boutique", offsetHours: -2, latitude: 48.87311, longitude: 2.38148 },
       ],
+      proof: proof("Léa Martin"),
     },
     {
-      label: "Commande multi-articles",
-      driverIndex: 1,
+      label: "Livrée",
+      clientIndex: 3,
+      driverIndex: 4,
       deliveryCategory: "STANDARD",
-      orderStatus: "ASSIGNED",
-      deliveryStatus: "ASSIGNED",
+      orderStatus: "DELIVERED",
+      deliveryStatus: "DELIVERED",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: 12,
-      estimatedArrivalOffsetHours: 14,
-      shipping: {
-        address: "27 Rue de Lévis",
-        city: "Paris",
-        postalCode: "75017",
-      },
-      items: [
-        { name: "Matériel informatique", quantity: 1, unitPrice: 120.0 },
-        { name: "Câbles réseau", quantity: 4, unitPrice: 15.0 },
-        { name: "Écran 24 pouces", quantity: 1, unitPrice: 189.0 },
-        { name: "Souris sans fil", quantity: 2, unitPrice: 25.0 },
-        { name: "Clavier mécanique", quantity: 1, unitPrice: 89.0 },
-      ],
-      deliveryInstructions: "Accès parking livraison — badge à l'accueil",
+      requestedDeliveryDateOffsetHours: -0.5,
+      missionStartedAtOffsetHours: -1.75,
+      completedAtOffsetHours: -1,
+      shipping: { address: "5 Place de la Bastille", city: "Paris", postalCode: "75012" },
+      items: [{ name: "Jeux de clés et dossiers", quantity: 1, unitPrice: 28.0 }],
       tracking: [
-        { label: "Commande reçue", offsetHours: -4 },
-        { label: "Assignée au livreur", offsetHours: -2 },
+        { label: "Commande reçue", offsetHours: -3 },
+        { label: "En livraison", offsetHours: -1.75 },
+        { label: "Livré", description: "Remis en main propre", offsetHours: -1, latitude: 48.85277, longitude: 2.36994 },
       ],
+      proof: proof("Hugo Lambert"),
     },
-    // Carte « suivi en direct » : plusieurs livreurs en route, toutes les missions à Paris.
+    // — En route : suivi en direct, plusieurs collectes, achat —
     {
-      label: "En route — Convention",
-      driverIndex: 3,
+      label: "En route — suivi en direct",
+      clientIndex: 0,
+      driverIndex: 0,
       deliveryCategory: "STANDARD",
       orderStatus: "IN_DELIVERY",
       deliveryStatus: "IN_DELIVERY",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: 3,
-      estimatedArrivalOffsetHours: 1,
-      missionStartedAtOffsetHours: -0.4,
-      shipping: { address: "120 Rue de la Convention", city: "Paris", postalCode: "75015" },
-      items: [{ name: "Matériel événementiel", quantity: 3, unitPrice: 42.0 }],
+      requestedDeliveryDateOffsetHours: 1.5,
+      estimatedArrivalOffsetHours: 0.5,
+      missionStartedAtOffsetHours: -0.5,
+      shipping: { address: "45 Avenue des Champs-Élysées", city: "Paris", postalCode: "75008" },
+      items: [{ name: "Préparations magistrales", quantity: 1, unitPrice: 45.0 }],
+      deliveryInstructions: "Sonner à l'interphone, 3e étage",
       tracking: [
-        { label: "Commande reçue", offsetHours: -3 },
-        { label: "En livraison", description: "Le livreur est en route", offsetHours: -0.4 },
+        { label: "Commande reçue", offsetHours: -2 },
+        { label: "Assignée", description: "Livreur affecté", offsetHours: -1 },
+        { label: "En livraison", description: "Le livreur est en route", offsetHours: -0.5, latitude: 48.8698, longitude: 2.3078 },
       ],
+      supportTicket: {
+        subject: "Heure d'arrivée du livreur",
+        message: "Bonjour, pouvez-vous me confirmer l'heure d'arrivée du livreur ? Le cabinet ferme à 13 h. Merci.",
+      },
     },
     {
-      label: "Course en route — Gare de Lyon",
+      label: "Course en route — trois collectes",
+      clientIndex: 4,
       driverIndex: 2,
       deliveryCategory: "COURIER",
       orderStatus: "IN_DELIVERY",
@@ -379,97 +275,220 @@ function buildScenario(): ScenarioItem[] {
       assignDriver: true,
       requestedDeliveryDateOffsetHours: 2,
       estimatedArrivalOffsetHours: 1,
-      missionStartedAtOffsetHours: -0.6,
-      shipping: { address: "15 Rue des Martyrs", city: "Paris", postalCode: "75009" },
+      missionStartedAtOffsetHours: -0.75,
+      shipping: { address: "14 Avenue de Versailles", city: "Paris", postalCode: "75016" },
       pickupStops: [
         {
-          label: "Collecte — Gare de Lyon",
+          label: "Collecte 1 — Imprimerie",
+          address: "15 Rue Oberkampf",
+          city: "Paris",
+          postalCode: "75011",
+          items: [{ name: "Catalogues imprimés", quantity: 2, unitPrice: 15.0 }],
+        },
+        {
+          label: "Collecte 2 — Showroom",
+          address: "8 Place de la Nation",
+          city: "Paris",
+          postalCode: "75011",
+          items: [{ name: "Échantillons de tissus", quantity: 1, unitPrice: 20.0 }],
+        },
+        {
+          label: "Collecte 3 — Entrepôt",
           address: "20 Boulevard Diderot",
           city: "Paris",
           postalCode: "75012",
-          items: [{ name: "Pli urgent", quantity: 1, unitPrice: 18.0 }],
+          items: [{ name: "Petit colis", quantity: 1, unitPrice: 12.0 }],
         },
       ],
       tracking: [
-        { label: "Course reçue", offsetHours: -2 },
-        { label: "En livraison", description: "Collecte faite, en route", offsetHours: -0.3 },
+        { label: "Course reçue", offsetHours: -2.5 },
+        { label: "Collecte 1", description: "15 Rue Oberkampf, Paris", offsetHours: -0.75 },
+        { label: "Collecte 2", description: "8 Place de la Nation, Paris", offsetHours: -0.5 },
+        { label: "Collecte 3", description: "20 Boulevard Diderot, Paris", offsetHours: -0.25 },
       ],
     },
     {
-      label: "En route — Nation",
-      driverIndex: 4,
+      label: "Course — en achat",
+      clientIndex: 2,
+      driverIndex: 3,
+      deliveryCategory: "COURIER",
+      orderStatus: "PURCHASING",
+      deliveryStatus: "PURCHASING",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: 2.5,
+      estimatedArrivalOffsetHours: 1.5,
+      missionStartedAtOffsetHours: -0.5,
+      shipping: { address: "12 Rue Lepic", city: "Paris", postalCode: "75018" },
+      pickupStops: [
+        {
+          label: "Achat papeterie",
+          address: "2 Rue du Louvre",
+          city: "Paris",
+          postalCode: "75001",
+          items: [{ name: "Rubans et papier cadeau", quantity: 3, unitPrice: 8.0 }],
+        },
+      ],
+      deliveryInstructions: "Livraison en main propre",
+      tracking: [
+        { label: "Course reçue", offsetHours: -1.5 },
+        { label: "En cours d'achat", description: "Le livreur fait les achats", offsetHours: -0.5, latitude: 48.86285, longitude: 2.34182 },
+      ],
+    },
+    // — La seule alerte attendue : en route, échéance dépassée de 25 minutes —
+    {
+      label: "En retard — en route",
+      clientIndex: 1,
+      driverIndex: 1,
       deliveryCategory: "STANDARD",
       orderStatus: "IN_DELIVERY",
       deliveryStatus: "IN_DELIVERY",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: 4,
-      estimatedArrivalOffsetHours: 1,
-      missionStartedAtOffsetHours: -0.5,
-      shipping: { address: "8 Place de la Nation", city: "Paris", postalCode: "75011" },
-      items: [{ name: "Palette textile", quantity: 1, unitPrice: 95.0 }],
+      requestedDeliveryDateOffsetHours: -25 / 60,
+      estimatedArrivalOffsetHours: 0.25,
+      missionStartedAtOffsetHours: -1,
+      shipping: { address: "25 Rue de Passy", city: "Paris", postalCode: "75016" },
+      items: [{ name: "Actes à signer", quantity: 1, unitPrice: 35.0 }],
       tracking: [
-        { label: "Commande reçue", offsetHours: -5 },
-        { label: "En livraison", description: "Départ de l'entrepôt", offsetHours: -0.5 },
+        { label: "Commande reçue", offsetHours: -3 },
+        { label: "En livraison", description: "Circulation dense, arrivée décalée", offsetHours: -1 },
       ],
     },
+    // — Affectées, non démarrées —
     {
-      label: "Assignée en retard",
-      driverIndex: 1,
+      label: "Affectée — à démarrer",
+      clientIndex: 0,
+      driverIndex: 0,
       deliveryCategory: "STANDARD",
       orderStatus: "ASSIGNED",
       deliveryStatus: "ASSIGNED",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: -3,
-      estimatedArrivalOffsetHours: 1,
-      shipping: { address: "25 Rue de Passy", city: "Paris", postalCode: "75016" },
-      items: [{ name: "Dossier juridique", quantity: 1, unitPrice: 35.0 }],
-      notes: "Créneau dépassé — mission pas encore démarrée",
+      requestedDeliveryDateOffsetHours: 2.5,
+      estimatedArrivalOffsetHours: 2.25,
+      shipping: { address: "18 Rue Mouffetard", city: "Paris", postalCode: "75005" },
+      items: [{ name: "Fournitures médicales", quantity: 2, unitPrice: 24.0 }],
       tracking: [
-        { label: "Commande reçue", offsetHours: -8 },
-        { label: "Assignée au livreur", offsetHours: -5 },
+        { label: "Commande reçue", offsetHours: -1.5 },
+        { label: "Assignée au livreur", offsetHours: -1 },
       ],
     },
     {
-      label: "Sans livreur — Montmartre",
+      label: "Affectée — après-midi",
+      clientIndex: 3,
+      driverIndex: 4,
+      deliveryCategory: "STANDARD",
+      orderStatus: "ASSIGNED",
+      deliveryStatus: "ASSIGNED",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: 3,
+      estimatedArrivalOffsetHours: 2.75,
+      shipping: { address: "27 Rue de Lévis", city: "Paris", postalCode: "75017" },
+      items: [{ name: "Panneaux d'affichage", quantity: 2, unitPrice: 30.0 }],
+      deliveryInstructions: "Accès parking livraison, badge à l'accueil",
+      tracking: [
+        { label: "Commande reçue", offsetHours: -2 },
+        { label: "Assignée au livreur", offsetHours: -1.5 },
+      ],
+    },
+    // — Sans livreur (étape 1 de « À essayer ») —
+    {
+      label: "Sans livreur",
+      clientIndex: 4,
       deliveryCategory: "STANDARD",
       orderStatus: "PENDING",
       deliveryStatus: "PENDING",
       assignDriver: false,
       requestedDeliveryDateOffsetHours: 3,
-      scheduledAtOffsetHours: 3,
-      shipping: { address: "12 Rue Lepic", city: "Paris", postalCode: "75018" },
-      items: [{ name: "Fleurs — commande boutique", quantity: 2, unitPrice: 28.0 }],
-      tracking: [{ label: "Commande reçue", description: "En attente d'assignation livreur", offsetHours: -1 }],
+      shipping: { address: "22 Rue de la Roquette", city: "Paris", postalCode: "75011" },
+      items: [{ name: "Pièces détachées", quantity: 1, unitPrice: 42.0 }],
+      tracking: [{ label: "Commande reçue", description: "En attente d'un livreur", offsetHours: -0.5 }],
     },
     {
-      label: "Sans livreur — Belleville",
+      label: "Sans livreur",
+      clientIndex: 2,
       deliveryCategory: "STANDARD",
       orderStatus: "PENDING",
       deliveryStatus: "PENDING",
       assignDriver: false,
-      requestedDeliveryDateOffsetHours: 6,
-      scheduledAtOffsetHours: 6,
-      shipping: { address: "50 Rue de Belleville", city: "Paris", postalCode: "75020" },
-      items: [{ name: "Colis boutique", quantity: 4, unitPrice: 22.0 }],
-      tracking: [{ label: "Commande reçue", offsetHours: -2 }],
+      requestedDeliveryDateOffsetHours: 4,
+      shipping: { address: "120 Rue de la Convention", city: "Paris", postalCode: "75015" },
+      items: [{ name: "Compositions florales", quantity: 2, unitPrice: 28.0 }],
+      tracking: [{ label: "Commande reçue", description: "En attente d'un livreur", offsetHours: -0.25 }],
     },
+    // — Prévues demain (heure de Paris) —
     {
-      label: "À démarrer — Mouffetard",
+      label: "Demain matin",
+      clientIndex: 0,
       driverIndex: 3,
       deliveryCategory: "STANDARD",
       orderStatus: "ASSIGNED",
       deliveryStatus: "ASSIGNED",
       assignDriver: true,
-      requestedDeliveryDateOffsetHours: 5,
-      estimatedArrivalOffsetHours: 5,
-      shipping: { address: "18 Rue Mouffetard", city: "Paris", postalCode: "75005" },
-      items: [{ name: "Fournitures médicales", quantity: 2, unitPrice: 54.0 }],
-      tracking: [
-        { label: "Commande reçue", offsetHours: -2 },
-        { label: "Assignée au livreur", offsetHours: -1 },
-      ],
+      requestedDeliveryDateOffsetHours: tomorrowMorning,
+      estimatedArrivalOffsetHours: tomorrowMorning - 0.25,
+      shipping: { address: "8 Boulevard Haussmann", city: "Paris", postalCode: "75009" },
+      items: [{ name: "Carton de médicaments", quantity: 1, unitPrice: 38.5 }],
+      tracking: [{ label: "Commande reçue", description: "Livraison prévue demain matin", offsetHours: -1 }],
+    },
+    {
+      label: "Demain après-midi",
+      clientIndex: 3,
+      driverIndex: 1,
+      deliveryCategory: "STANDARD",
+      orderStatus: "ASSIGNED",
+      deliveryStatus: "ASSIGNED",
+      assignDriver: true,
+      requestedDeliveryDateOffsetHours: tomorrowAfternoon,
+      estimatedArrivalOffsetHours: tomorrowAfternoon - 0.25,
+      shipping: { address: "15 Rue des Martyrs", city: "Paris", postalCode: "75009" },
+      items: [{ name: "Mobilier de bureau", quantity: 1, unitPrice: 95.0 }],
+      tracking: [{ label: "Commande reçue", description: "Livraison prévue demain après-midi", offsetHours: -2 }],
     },
   ];
+}
+
+const HISTORY_SLOTS = ["09:40", "11:15", "14:30", "16:50"] as const;
+/** Livraisons terminées par jour, de la veille (J−1) à J−7. */
+const HISTORY_DAILY_COUNTS = [3, 2, 4, 3, 2, 3, 4] as const;
+const HISTORY_ADDRESSES = [
+  { address: "12 Rue de Rivoli", city: "Paris", postalCode: "75001" },
+  { address: "30 Rue de la Boétie", city: "Paris", postalCode: "75008" },
+  { address: "50 Rue de Belleville", city: "Paris", postalCode: "75020" },
+  { address: "5 Place de la Bastille", city: "Paris", postalCode: "75012" },
+  { address: "18 Rue Mouffetard", city: "Paris", postalCode: "75005" },
+  { address: "27 Rue de Lévis", city: "Paris", postalCode: "75017" },
+  { address: "8 Boulevard Haussmann", city: "Paris", postalCode: "75009" },
+] as const;
+
+/** Sept jours d'historique : graphiques non vides, une seule livraison en retard sur la période. */
+export function buildScenarioHistory(anchor: Date): ScenarioItem[] {
+  const items: ScenarioItem[] = [];
+  HISTORY_DAILY_COUNTS.forEach((count, dayIndex) => {
+    for (let slot = 0; slot < count; slot += 1) {
+      const n = items.length;
+      const completed = parisClockOffsetHours(anchor, -(dayIndex + 1), HISTORY_SLOTS[slot] ?? "12:00");
+      const late = dayIndex === 2 && slot === 1;
+      items.push({
+        label: late ? "Historique — livrée en retard" : "Historique — livrée",
+        clientIndex: n % 5,
+        driverIndex: n % 5,
+        deliveryCategory: "STANDARD",
+        orderStatus: "DELIVERED",
+        deliveryStatus: "DELIVERED",
+        assignDriver: true,
+        requestedDeliveryDateOffsetHours: late ? completed - 40 / 60 : completed + 0.5,
+        missionStartedAtOffsetHours: completed - 0.75,
+        completedAtOffsetHours: completed,
+        shipping: { ...HISTORY_ADDRESSES[n % HISTORY_ADDRESSES.length]! },
+        items: [{ name: "Colis", quantity: 1, unitPrice: 25.0 + (n % 4) * 5 }],
+        tracking: [
+          { label: "Commande reçue", offsetHours: completed - 3 },
+          { label: "Livré", offsetHours: completed },
+        ],
+        proof: proof("Réception"),
+      });
+    }
+  });
+  return items;
 }
 
 const CLIENT_ADDRESS_SEEDS = [
@@ -635,6 +654,8 @@ async function purgeDemoTransactionalData(companyId: string) {
       ? [prisma.driverLocation.deleteMany({ where: { driverId: { in: driverIds } } })]
       : []),
     prisma.order.deleteMany({ where: { companyId } }),
+    // Une seule commande récurrente dans le scénario : les anciennes (deux par espace) disparaissent.
+    prisma.recurringOrder.deleteMany({ where: { companyId } }),
   ]);
 }
 
@@ -669,10 +690,16 @@ async function purgeDemoExtraAccounts(companyId: string) {
   });
 }
 
+/** Jours écoulés depuis lundi, à l'heure de Paris (0 = lundi). */
+function daysSinceMonday(anchor: Date): number {
+  const [datePart] = toParisDateTimeInput(anchor).split("T");
+  return (new Date(`${datePart}T12:00:00Z`).getUTCDay() + 6) % 7;
+}
+
 async function ensureRecurringOrder(
   actors: DemoActors,
   referenceDate: Date = new Date(),
-  label = "Livraison hebdomadaire fournitures"
+  label = "Réassort hebdomadaire de la pharmacie"
 ) {
   const existing = await prisma.recurringOrder.findFirst({
     where: { companyId: actors.companyId, customerId: actors.clientId },
@@ -684,14 +711,14 @@ async function ensureRecurringOrder(
     intervalValue: 1,
     intervalUnit: "WEEKS" as const,
     status: "ACTIVE" as const,
-    startAt: hoursFromNow(-168, referenceDate),
-    nextRunAt: hoursFromNow(120, referenceDate),
+    startAt: hoursFromNow(parisClockOffsetHours(referenceDate, -daysSinceMonday(referenceDate) - 7, "09:00"), referenceDate),
+    nextRunAt: hoursFromNow(parisClockOffsetHours(referenceDate, 7 - daysSinceMonday(referenceDate), "09:00"), referenceDate),
     deliveryCategory: "STANDARD" as const,
     shippingAddress: "11 Rue de la Paix",
     shippingCity: "Neuilly-sur-Seine",
     shippingPostalCode: "92200",
     deliveryInstructions: "Déposer au bureau — étage 2",
-    notes: "Commande récurrente démo",
+    notes: "Chaque lundi à 9 h",
     items: [{ name: "Pack fournitures", quantity: 1, estimatedPrice: 55 }],
   };
 
@@ -853,6 +880,16 @@ async function createScenarioDelivery(
           scenario.missionStartedAtOffsetHours != null
             ? hoursFromNow(scenario.missionStartedAtOffsetHours, referenceDate)
             : null,
+        ...(scenario.proof && scenario.completedAtOffsetHours != null
+          ? {
+            podOutcome: "SUCCESS",
+            podRecipientName: scenario.proof.recipientName,
+            podCapturedAt: hoursFromNow(scenario.completedAtOffsetHours, referenceDate),
+            podLatitude: destinationCoordinates?.latitude ?? null,
+            podLongitude: destinationCoordinates?.longitude ?? null,
+            podPositionAt: destinationCoordinates ? hoursFromNow(scenario.completedAtOffsetHours, referenceDate) : null,
+          }
+          : {}),
         trackingEvents: {
           create: scenario.tracking.map((event) => ({
             label: event.label,
@@ -880,8 +917,8 @@ async function createScenarioDelivery(
           dueDate: scenario.invoice.dueInDays
             ? hoursFromNow(scenario.invoice.dueInDays * 24, referenceDate)
             : null,
-          paidAt: scenario.invoice.paidDaysAgo
-            ? hoursFromNow(-scenario.invoice.paidDaysAgo * 24, referenceDate)
+          paidAt: scenario.invoice.paidOffsetHours != null
+            ? hoursFromNow(scenario.invoice.paidOffsetHours, referenceDate)
             : null,
         },
       });
@@ -911,6 +948,113 @@ async function createScenarioDelivery(
     }
 
     return { orderId: order.id, deliveryId: delivery.id };
+  }, { maxWait: 10_000, timeout: 60_000 });
+}
+
+/**
+ * Historique des 7 jours en quelques requêtes groupées : livraisons standard terminées,
+ * sans facture ni ticket. Une transaction par livraison prenait plus d'une minute.
+ */
+async function createScenarioHistory(
+  items: ScenarioItem[],
+  actorsFor: (item: ScenarioItem, index: number) => DemoActors,
+  referenceDate: Date
+): Promise<void> {
+  if (items.length === 0) return;
+  if (items.some((item) => item.deliveryCategory !== "STANDARD" || item.invoice || item.supportTicket || item.pickupStops)) {
+    throw new Error("DEMO_HISTORY_ITEM_UNSUPPORTED");
+  }
+  const [orderReferences, deliveryReferences] = await Promise.all([
+    generateOrderReferences("STANDARD", items.length),
+    generateDeliveryReferences(items.length),
+  ]);
+  const actors = items.map(actorsFor);
+  const at = (offset: number | undefined) => (offset != null ? hoursFromNow(offset, referenceDate) : null);
+
+  await prisma.$transaction(async (tx) => {
+    const orders = await tx.order.createManyAndReturn({
+      data: items.map((item, index) => {
+        const lines = item.items ?? [];
+        return {
+          reference: orderReferences[index]!,
+          status: item.orderStatus,
+          source: "CLIENT" as const,
+          totalAmount: lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0),
+          itemCount: Math.max(lines.reduce((sum, line) => sum + line.quantity, 0), 1),
+          notes: item.notes ?? null,
+          deliveryCategory: item.deliveryCategory,
+          shippingAddress: item.shipping.address,
+          shippingCity: item.shipping.city,
+          shippingPostalCode: item.shipping.postalCode,
+          deliveryInstructions: item.deliveryInstructions ?? null,
+          requestedDeliveryDate: hoursFromNow(item.requestedDeliveryDateOffsetHours, referenceDate),
+          companyId: actors[index]!.companyId,
+          customerId: actors[index]!.clientId,
+          customerEmail: actors[index]!.clientEmail,
+        };
+      }),
+      select: { id: true, reference: true },
+    });
+    const orderIds = new Map(orders.map((order) => [order.reference, order.id]));
+    const orderIdAt = (index: number) => orderIds.get(orderReferences[index]!)!;
+
+    await tx.orderItem.createMany({
+      data: items.flatMap((item, index) => (item.items ?? []).map((line) => ({
+        orderId: orderIdAt(index),
+        name: line.name,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+      }))),
+    });
+
+    const deliveries = await tx.delivery.createManyAndReturn({
+      data: items.map((item, index) => {
+        const coordinates = demoCoordinates(item.shipping);
+        const completedAt = at(item.completedAtOffsetHours);
+        return {
+          reference: deliveryReferences[index]!,
+          status: item.deliveryStatus,
+          deliveryCategory: item.deliveryCategory,
+          address: item.shipping.address,
+          city: item.shipping.city,
+          postalCode: item.shipping.postalCode,
+          latitude: coordinates?.latitude ?? null,
+          longitude: coordinates?.longitude ?? null,
+          driverId: item.assignDriver ? actors[index]!.driverId : null,
+          driverName: item.assignDriver ? formatDriverDisplayName(actors[index]!.driverName) : null,
+          companyId: actors[index]!.companyId,
+          orderId: orderIdAt(index),
+          customerId: actors[index]!.clientId,
+          scheduledAt: at(item.scheduledAtOffsetHours ?? item.requestedDeliveryDateOffsetHours),
+          estimatedArrival: at(item.estimatedArrivalOffsetHours),
+          completedAt,
+          missionStartedAt: at(item.missionStartedAtOffsetHours),
+          ...(item.proof && completedAt
+            ? {
+              podOutcome: "SUCCESS",
+              podRecipientName: item.proof.recipientName,
+              podCapturedAt: completedAt,
+              podLatitude: coordinates?.latitude ?? null,
+              podLongitude: coordinates?.longitude ?? null,
+              podPositionAt: coordinates ? completedAt : null,
+            }
+            : {}),
+        };
+      }),
+      select: { id: true, reference: true },
+    });
+    const deliveryIds = new Map(deliveries.map((delivery) => [delivery.reference, delivery.id]));
+
+    await tx.trackingEvent.createMany({
+      data: items.flatMap((item, index) => item.tracking.map((event) => ({
+        deliveryId: deliveryIds.get(deliveryReferences[index]!)!,
+        label: event.label,
+        description: event.description ?? null,
+        latitude: event.latitude ?? null,
+        longitude: event.longitude ?? null,
+        occurredAt: hoursFromNow(event.offsetHours, referenceDate),
+      }))),
+    });
   }, { maxWait: 10_000, timeout: 60_000 });
 }
 
@@ -946,12 +1090,26 @@ export async function resetDemoScenario(
 
   const firstClient = clients[0];
   const firstDriver = drivers[0];
-  const secondClient = clients[1];
   if (!firstClient || !firstDriver) {
     throw new Error("DEMO_PERSONAS_MISSING");
   }
 
-  const scenarios = buildScenario();
+  const anchor = demoScenarioAnchor(referenceDate);
+  const scenarios = buildScenario(anchor);
+  const history = buildScenarioHistory(anchor);
+  const actorsFor = (scenario: ScenarioItem, index: number): DemoActors => {
+    const client = clients[scenario.clientIndex ?? index % clients.length] ?? firstClient;
+    const driver =
+      (scenario.driverIndex != null ? drivers[scenario.driverIndex] : drivers[index % drivers.length]) ??
+      firstDriver;
+    return {
+      companyId,
+      clientId: client.id,
+      clientEmail: client.email,
+      driverId: driver.id,
+      driverName: `${driver.firstName} ${driver.lastName}`,
+    };
+  };
   // Chaque scénario utilise une transaction interactive. Les lancer tous ensemble
   // peut saturer le petit pool applicatif et faire échouer les démos suivantes.
   // Deux transactions simultanées conservent un montage rapide tout en laissant de
@@ -959,51 +1117,21 @@ export async function resetDemoScenario(
   const scenarioConcurrency = 2;
   for (let start = 0; start < scenarios.length; start += scenarioConcurrency) {
     const batch = scenarios.slice(start, start + scenarioConcurrency);
-    await Promise.all(batch.map(async (scenario, batchIndex) => {
-      const index = start + batchIndex;
-      const client = clients[index % clients.length] ?? firstClient;
-      const driver =
-        (scenario.driverIndex != null ? drivers[scenario.driverIndex] : drivers[index % drivers.length]) ??
-        firstDriver;
-      await createScenarioDelivery(
-        {
-          companyId,
-          clientId: client.id,
-          clientEmail: client.email,
-          driverId: driver.id,
-          driverName: `${driver.firstName} ${driver.lastName}`,
-        },
-        scenario,
-        referenceDate
-      );
-    }));
+    await Promise.all(batch.map((scenario, batchIndex) =>
+      createScenarioDelivery(actorsFor(scenario, start + batchIndex), scenario, anchor)));
   }
+  await createScenarioHistory(history, actorsFor, anchor);
 
-  await Promise.all([
-    ensureRecurringOrder(
-      {
-        companyId,
-        clientId: firstClient.id,
-        clientEmail: firstClient.email,
-        driverId: firstDriver.id,
-        driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
-      },
-      referenceDate
-    ),
-    secondClient
-      ? ensureRecurringOrder(
-          {
-            companyId,
-            clientId: secondClient.id,
-            clientEmail: secondClient.email,
-            driverId: firstDriver.id,
-            driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
-          },
-          referenceDate,
-          "Collecte documents chaque semaine"
-        )
-      : Promise.resolve(null),
-  ]);
+  await ensureRecurringOrder(
+    {
+      companyId,
+      clientId: firstClient.id,
+      clientEmail: firstClient.email,
+      driverId: firstDriver.id,
+      driverName: `${firstDriver.firstName} ${firstDriver.lastName}`,
+    },
+    anchor
+  );
 
   await Promise.all([
     ensureDemoDriverLocations(drivers),
@@ -1020,9 +1148,9 @@ export async function resetDemoScenario(
     apply: (settings) => ({
       ...settings,
       demoScenarioVersion: DEMO_SCENARIO_VERSION,
-      [DEMO_SCENARIO_ANCHOR_KEY]: referenceDate.toISOString(),
+      [DEMO_SCENARIO_ANCHOR_KEY]: anchor.toISOString(),
     }),
   });
 
-  return { deliveries: scenarios.length };
+  return { deliveries: scenarios.length + history.length };
 }

@@ -1,6 +1,6 @@
 # Refonte de la démonstration — design
 
-Date : 5 novembre 2026 · Statut : validé par le propriétaire le 5 novembre 2026 ; lot 1 (remise à l'heure au prêt) fait
+Date : 5 novembre 2026 · Statut : validé par le propriétaire le 5 novembre 2026 ; lots 1 (remise à l'heure au prêt) et 2 (l'histoire, sans les clients entreprises) faits. Écart assumé : les 4 livrées du jour sont entre T−4 h et T−1 h, pour qu'aucune échéance ne tombe avant 7 h quand la démo est ouverte vers 11 h
 
 ## Objectif
 
