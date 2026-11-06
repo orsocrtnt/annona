@@ -4,14 +4,12 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**2 tâches terminées sur 13 — 15 %**
+**4 tâches terminées sur 13 — 31 %**
 
-`███░░░░░░░░░░░░░░░░░` · 11 tâches restantes
+`██████░░░░░░░░░░░░░░` · 9 tâches restantes
 
 **À faire par Claude**
 
-- CAT-1 — Catalogue et prix
-- CMD-1 — Commande côté commerçant
 - LOCK-1 — Heure limite, verrouillage et consolidation
 - BOU-1 — Espace boulanger
 - TOUR-1 — Tournées : administrateur et livreur
@@ -36,7 +34,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Répondre aux questions ouvertes du cahier des charges quand tu les as (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
 
 **2. Claude (en autonomie, dans l'ordre)**
-- Faits le 6 novembre : NET-1 (ancien produit retiré) et SCHEMA-1 (nouveau modèle, base annona-dev chargée avec une boulangerie de démo, un compte par rôle). En cours : CAT-1 et CMD-1, puis LOCK-1, BOU-1, TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
+- Faits le 6 novembre : NET-1 (ancien produit retiré) SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix) et CMD-1 (commande du client, recopie chronométrée à 33 s). En cours : LOCK-1 et BOU-1, puis TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
 
 **3. Attente extérieure**
 - Comptes Apple Developer et Google Play pour publier les applications (MOBILE-1, plus tard).
@@ -61,26 +59,6 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Questions ouvertes du cahier des charges (section 9) : liste des créneaux du premier client ; délai du rappel avant 17h ; volumes à deux ans ; service de cartographie (les services gratuits OSRM et IGN suffisent pour les essais, pas pour 200 arrêts par jour). En attendant, valeurs par défaut réglables : créneaux 5h-6h, 6h-7h, 7h-8h ; rappel à 15h.
 
   Terminé quand : les quatre réponses sont notées ici (`.env.local` déjà fait).
-
-- [ ] **CAT-1 — Catalogue et prix.**
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : Claude Opus · effort moyen.**
-
-  ADM-02, ADM-03, RG-05, PLA-04 : catégories ordonnées, produits (nom, photo, unité, prix de base, actif), prix spécifique par commerçant ; un seul calcul du prix appliqué, utilisé partout.
-
-  Terminé quand : tests du prix appliqué (critère 3) ; écrans d'administration cliqués dans le navigateur.
-
-- [ ] **CMD-1 — Commande côté commerçant.**
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : Claude Opus · effort élevé.**
-
-  CLI-01 à CLI-09, RG-02, RG-08, ENF-03 : connexion, profil, catalogue par catégorie avec + / − et saisie directe, panier, date (J+1 ou plus) et créneau, modification et annulation jusqu'à l'heure limite, historique, « Recommander » à l'identique ou dans le panier, commande récurrente (jours, créneau, suspendre).
-
-  Terminé quand : critère 1 (recopier une commande en moins d'une minute) chronométré dans le navigateur ; tests du refus serveur ; `npm run check` vert.
 
 - [ ] **LOCK-1 — Heure limite, verrouillage et consolidation.**
 
