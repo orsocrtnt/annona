@@ -4,13 +4,12 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**1 tâches terminées sur 13 — 8 %**
+**2 tâches terminées sur 13 — 15 %**
 
-`██░░░░░░░░░░░░░░░░░░` · 12 tâches restantes
+`███░░░░░░░░░░░░░░░░░` · 11 tâches restantes
 
 **À faire par Claude**
 
-- SCHEMA-1 — Nouveau schéma de données et base de démonstration
 - CAT-1 — Catalogue et prix
 - CMD-1 — Commande côté commerçant
 - LOCK-1 — Heure limite, verrouillage et consolidation
@@ -37,7 +36,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Répondre aux questions ouvertes du cahier des charges quand tu les as (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
 
 **2. Claude (en autonomie, dans l'ordre)**
-- NET-1 fait le 6 novembre (ancien produit retiré, `npm run check` vert). En cours : SCHEMA-1, puis CAT-1, CMD-1, LOCK-1, BOU-1, TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
+- Faits le 6 novembre : NET-1 (ancien produit retiré) et SCHEMA-1 (nouveau modèle, base annona-dev chargée avec une boulangerie de démo, un compte par rôle). En cours : CAT-1 et CMD-1, puis LOCK-1, BOU-1, TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
 
 **3. Attente extérieure**
 - Comptes Apple Developer et Google Play pour publier les applications (MOBILE-1, plus tard).
@@ -62,16 +61,6 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Questions ouvertes du cahier des charges (section 9) : liste des créneaux du premier client ; délai du rappel avant 17h ; volumes à deux ans ; service de cartographie (les services gratuits OSRM et IGN suffisent pour les essais, pas pour 200 arrêts par jour). En attendant, valeurs par défaut réglables : créneaux 5h-6h, 6h-7h, 7h-8h ; rappel à 15h.
 
   Terminé quand : les quatre réponses sont notées ici (`.env.local` déjà fait).
-
-- [ ] **SCHEMA-1 — Nouveau schéma de données et base de démonstration.**
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : Claude Opus · effort élevé (schéma, isolation).**
-
-  Schéma Prisma propre selon la section 7 du cahier des charges et `TRI-BASE.md` §3 et §4 : Entreprise (heure limite, fuseau, délai du rappel), Utilisateur (rôles SUPER_ADMIN, ADMIN, BAKER, DRIVER, MERCHANT), Commerçant, Catégorie, Produit, Prix spécifique, Créneau, Commande (DRAFT → VALIDATED → LOCKED → PREPARED → DELIVERED, origine MANUAL ou RECURRING, unique par commerçant, date et créneau), Ligne, Commande récurrente et ses lignes, Tournée, Arrêt, Facture, Règlement, Journal ; tous avec `companyId`. Une seule migration initiale appliquée sur `annona-dev`. Données de démonstration : une boulangerie, 100 produits, 20 commerçants, 5 livreurs.
-
-  Terminé quand : `prisma validate` et `npm run check` verts ; migration appliquée sur `annona-dev` ; démo chargée et relue.
 
 - [ ] **CAT-1 — Catalogue et prix.**
 
