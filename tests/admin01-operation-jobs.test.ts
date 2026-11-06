@@ -17,7 +17,7 @@ const now = new Date("2026-10-25T12:00:00.000Z");
 function row(status: "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED", lockedAt: Date | null) {
   return {
     id: "job-1",
-    type: "AUTO_DISPATCH" as const,
+    type: "DRIVER_NOTIFICATION" as const,
     status,
     attempts: 1,
     maxAttempts: 3,

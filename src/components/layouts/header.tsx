@@ -179,7 +179,7 @@ export function Header({ breadcrumbs, className, premium = false, actions }: Hea
       <header
         className={cn(
           // Fond plein au-dessus de la barre, fondu dessous : le contenu ne défile plus en clair dans la marge.
-          "sticky top-[var(--demo-banner-height,0px)] z-30 bg-[linear-gradient(to_bottom,var(--color-background)_72%,transparent)] px-3 pb-2 pt-3 lg:px-8 lg:pt-4",
+          "sticky top-0 z-30 bg-[linear-gradient(to_bottom,var(--color-background)_72%,transparent)] px-3 pb-2 pt-3 lg:px-8 lg:pt-4",
           className
         )}
       >

@@ -6,25 +6,15 @@ import ts from "typescript";
 import { NextResponse } from "next/server";
 
 const routes = [
-  ["src/app/api/admin/access-events/route.ts", "@/domains/admin/platform-access.service", true],
   ["src/app/api/admin/overview/route.ts", "@/domains/admin/platform.service", false],
   ["src/app/api/admin/home/route.ts", "@/domains/admin/admin-home.service", true],
-  ["src/app/api/admin/saas-health/route.ts", "@/domains/admin/saas-health.service", false],
   ["src/app/api/admin/service-health/route.ts", "@/domains/admin/service-health.service", false],
   ["src/app/api/admin/companies/route.ts", "@/domains/admin/companies.service", true],
   ["src/app/api/admin/companies/[id]/route.ts", "@/domains/admin/company-file.service", false],
   ["src/app/api/admin/users/route.ts", "@/domains/admin/users.service", true],
-  ["src/app/api/admin/subscriptions/route.ts", "@/domains/admin/subscriptions.service", true],
   ["src/app/api/admin/support-tickets/route.ts", "@/domains/admin/support-tickets.service", true],
   ["src/app/api/admin/operation-jobs/route.ts", "@/domains/admin/operation-jobs.service", true],
-  ["src/app/api/admin/incidents/route.ts", "@/domains/admin/incidents.service", true],
-  ["src/app/api/admin/waitlist/route.ts", "@/domains/growth/waitlist.service", true],
-  ["src/app/api/admin/waitlist/export/route.ts", "@/domains/growth/waitlist.service", true],
-  ["src/app/api/admin/waitlist/funnel/route.ts", "@/domains/growth/waitlist-funnel.service", true],
   ["src/app/api/admin/search/route.ts", "@/domains/admin/search.service", true],
-  ["src/app/api/admin/pilots/route.ts", "@/domains/admin/pilots.service", false],
-  ["src/app/api/admin/pilots/[id]/route.ts", "@/domains/admin/pilots.service", false],
-  ["src/app/api/admin/prospection/sheet/route.ts", "@/domains/admin/prospection-sheet.service", false],
 ] as const;
 
 function load(file: string, service: string, role: string, calls: string[]) {
@@ -57,7 +47,6 @@ function load(file: string, service: string, role: string, calls: string[]) {
         },
       };
       if (id === service) return sink;
-      if (id === "@/lib/api/platform-access") return { gatePlatformRead: async (_context: unknown, denied: Response | null) => denied };
       throw new Error(`Unexpected dependency ${id}`);
     },
   });
@@ -95,7 +84,7 @@ test("ADMIN-1 API plateforme : SUPER_ADMIN conserve la lecture", async () => {
     assert.equal(calls.includes("service"), true);
   }
   const api = readFileSync("src/features/admin/api.ts", "utf8");
-  for (const path of ["/api/admin/overview", "/api/admin/home", "/api/admin/saas-health", "/api/admin/service-health", "/api/admin/companies", "/api/admin/users", "/api/admin/subscriptions", "/api/admin/support-tickets", "/api/admin/operation-jobs", "/api/admin/incidents", "/api/admin/waitlist?", "/api/admin/waitlist/funnel", "/api/admin/search", "/api/admin/pilots", "/api/admin/prospection/sheet"]) {
+  for (const path of ["/api/admin/overview", "/api/admin/home", "/api/admin/service-health", "/api/admin/companies", "/api/admin/users", "/api/admin/support-tickets", "/api/admin/operation-jobs", "/api/admin/search"]) {
     const line = api.split("\n").find((entry) => entry.includes(path));
     assert.equal(line?.includes('cache: "no-store"'), true, path);
   }
@@ -119,7 +108,6 @@ test("ADMIN-1 API plateforme : une erreur locale n'est pas mise en cache", async
         parseCompanyListParams: () => ({ error: "Page invalide" }),
         listPlatformCompanies: async () => { calls.push("service"); return { rows: [] }; },
       };
-      if (id === "@/lib/api/platform-access") return { gatePlatformRead: async (_context: unknown, denied: Response | null) => denied };
       throw new Error(id);
     },
   });

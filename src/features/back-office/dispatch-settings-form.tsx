@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,30 +15,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  BEST_SCORE_STRATEGY_LABEL,
-  DISPATCH_STRATEGY_LABELS,
   type CompanyDispatchSettings,
   type DispatchDriverRule,
-  type DispatchStrategy,
-  type GpsNumericSetting,
   normalizeDispatchDriverRule,
-  parseGpsSettingInput,
 } from "@/lib/validations/dispatch-settings";
 import { DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import { useCompanyDrivers } from "./hooks";
-import { useCompanyTariffSettings } from "./tariff-settings-hooks";
 import {
   useCompanyDispatchSettings,
   useUpdateCompanyDispatchSettings,
 } from "./dispatch-settings-hooks";
 import { formatDriverFromParts } from "@/lib/format/person-labels";
 import { formatPostalCodeList, parsePostalCodeList } from "@/lib/dispatch/postal-codes";
-import { Bike, MapPin, Package, Plus, Radio, Trash2, Users } from "lucide-react";
+import { Bike, Package, Plus, Radio, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { lockedOfferReason } from "@/domains/saas/saas-access";
-import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
-import { useCanOpenPage } from "@/hooks/use-can-open-page";
 
 function driverLabel(firstName: string, lastName: string) {
   return formatDriverFromParts({ firstName, lastName }, null);
@@ -50,64 +40,24 @@ function createDefaultRule(driverId: string, priority: number): DispatchDriverRu
     driverId,
     priority,
     allowedCategories: { STANDARD: true, COURIER: true, SPECIAL_MISSION: false },
-    zoneIds: [],
     postalCodePrefixes: [],
     dispatchStatus: "ACTIVE",
   });
 }
 
-/** Lien vers la facturation, ou simple libellé pour un rôle qui n'y a pas accès (dispatcher). */
-function BillingLink() {
-  const canOpen = useCanOpenPage("/settings/billing");
-  if (!canOpen) return <>Facturation</>;
-  return (
-    <Link href="/settings/billing" className="text-brand underline underline-offset-2 hover:decoration-2">
-      Facturation
-    </Link>
-  );
-}
-
 export function DispatchSettingsForm() {
   const { data: settings, isLoading } = useCompanyDispatchSettings();
   const { data: drivers } = useCompanyDrivers();
-  const { data: tariffSettings } = useCompanyTariffSettings();
   const updateSettings = useUpdateCompanyDispatchSettings();
-  const offerAccess = useOfferAccess();
-  const hasAutoDispatch = useHasOfferFeature("auto_dispatch");
   const [local, setLocal] = useState<CompanyDispatchSettings | null>(null);
   const [postalDrafts, setPostalDrafts] = useState<Record<string, string>>({});
-  const [gpsDrafts, setGpsDrafts] = useState<Partial<Record<GpsNumericSetting, string>>>({});
 
   useEffect(() => {
     if (settings) {
       setLocal(settings);
       setPostalDrafts({});
-      setGpsDrafts({});
     }
   }, [settings]);
-
-  const withGpsDrafts = (base: CompanyDispatchSettings): CompanyDispatchSettings => {
-    const next = { ...base };
-    for (const field of Object.keys(gpsDrafts) as GpsNumericSetting[]) {
-      const parsed = parseGpsSettingInput(field, gpsDrafts[field] ?? "");
-      if (parsed !== null) next[field] = parsed;
-    }
-    return next;
-  };
-
-  const commitGpsDraft = (field: GpsNumericSetting) => {
-    const draft = gpsDrafts[field];
-    if (!local || draft === undefined) return;
-    const parsed = parseGpsSettingInput(field, draft);
-    if (parsed !== null) setLocal({ ...local, [field]: parsed });
-    setGpsDrafts((drafts) => {
-      const next = { ...drafts };
-      delete next[field];
-      return next;
-    });
-  };
-
-  const zones = tariffSettings?.tariffZones ?? [];
 
   const syncAllDrivers = () => {
     if (!local || !drivers?.length) return;
@@ -149,10 +99,7 @@ export function DispatchSettingsForm() {
     }
 
     try {
-      const toSave = withGpsDrafts(local);
-      await updateSettings.mutateAsync(
-        hasAutoDispatch ? toSave : { ...toSave, enabled: false }
-      );
+      await updateSettings.mutateAsync(local);
       toast.success("Règles de dispatch enregistrées");
     } catch (error) {
       toast.error("Enregistrement impossible", {
@@ -196,24 +143,6 @@ export function DispatchSettingsForm() {
     });
   };
 
-  const setZoneDriver = (zoneId: string, driverId: string) => {
-    if (!local) return;
-    setLocal({
-      ...local,
-      zoneDriverMap: { ...local.zoneDriverMap, [zoneId]: driverId },
-    });
-  };
-
-  const toggleDriverZone = (index: number, zoneId: string, checked: boolean) => {
-    if (!local) return;
-    const rule = local.driverRules[index];
-    if (!rule) return;
-    const zoneIds = new Set(rule.zoneIds ?? []);
-    if (checked) zoneIds.add(zoneId);
-    else zoneIds.delete(zoneId);
-    updateRule(index, { zoneIds: [...zoneIds] });
-  };
-
   const unconfiguredCount = useMemo(() => {
     if (!drivers?.length || !local) return 0;
     const configured = new Set(local.driverRules.map((r) => r.driverId));
@@ -232,8 +161,8 @@ export function DispatchSettingsForm() {
             Profils livreurs
           </CardTitle>
           <CardDescription>
-            Définissez pour chaque livreur ce qu&apos;il peut faire : commandes, courses, zones
-            géographiques, charge max et pause. Sans profil, un livreur accepte tout par défaut.
+            Définissez pour chaque livreur ce qu&apos;il peut faire : commandes, courses, codes
+            postaux, charge max et pause. Sans profil, un livreur accepte tout par défaut.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -241,7 +170,7 @@ export function DispatchSettingsForm() {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
               <p className="text-sm">
                 <span className="font-medium">{unconfiguredCount} livreur(s)</span> sans profil
-                dispatch — les règles par catégorie et par zone ne s&apos;appliquent pas encore.
+                dispatch — les règles par catégorie et par code postal ne s&apos;appliquent pas encore.
               </p>
               <Button type="button" variant="brand" size="sm" onClick={syncAllDrivers}>
                 <Plus className="mr-1 h-4 w-4" />
@@ -273,7 +202,7 @@ export function DispatchSettingsForm() {
               <p className="mt-3 font-medium">Aucun profil livreur</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Cliquez sur « Configurer tous les livreurs » pour définir les règles par catégorie
-                (commandes / courses) et par zone.
+                (commandes / courses) et par code postal.
               </p>
               {drivers?.length ? (
                 <Button type="button" variant="brand" size="sm" className="mt-4" onClick={syncAllDrivers}>
@@ -326,11 +255,6 @@ export function DispatchSettingsForm() {
                         {isPaused && (
                           <Badge variant="outline" className="text-xs text-warning">
                             En pause
-                          </Badge>
-                        )}
-                        {(rule.zoneIds ?? []).length > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            {(rule.zoneIds ?? []).length} zone(s)
                           </Badge>
                         )}
                         {(rule.postalCodePrefixes ?? []).length > 0 && (
@@ -510,45 +434,10 @@ export function DispatchSettingsForm() {
                           <span className="font-mono">75009</span>,{" "}
                           <span className="font-mono">75007</span> ou{" "}
                           <span className="font-mono">75</span> pour tout Paris). Laissez vide pour
-                          couvrir toutes les zones. Les courses utilisent le code postal de
-                          collecte.
+                          couvrir tous les codes postaux.
                         </p>
                       </div>
 
-                      {zones.length > 0 && (
-                        <div className="space-y-2">
-                          <Label className="text-xs">Ou zones tarifaires (Facturation)</Label>
-                          <p className="text-xs text-muted-foreground">
-                            Alternative aux codes postaux : cochez les zones définies dans{" "}
-                            <BillingLink />
-                            . Un livreur est éligible si le code postal OU la zone correspond.
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {zones.map((zone) => {
-                              const checked = (rule.zoneIds ?? []).includes(zone.id);
-                              return (
-                                <label
-                                  key={zone.id}
-                                  className={cn(
-                                    "flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs max-md:min-h-11",
-                                    checked ? "border-brand/30 bg-brand-subtle/20" : "border-border"
-                                  )}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="max-md:size-5"
-                                    checked={checked}
-                                    onChange={(e) =>
-                                      toggleDriverZone(index, zone.id, e.target.checked)
-                                    }
-                                  />
-                                  {zone.name}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     <label className="flex cursor-pointer items-center gap-2 text-sm max-md:min-h-11">
@@ -562,7 +451,7 @@ export function DispatchSettingsForm() {
                           })
                         }
                       />
-                      <span>Mettre en pause (exclu de l&apos;auto-dispatch)</span>
+                      <span>Mettre en pause (exclu des affectations)</span>
                     </label>
                   </div>
                 );
@@ -572,314 +461,50 @@ export function DispatchSettingsForm() {
         </CardContent>
       </Card>
 
-      {/* ── Section 2 : Auto-dispatch global ── */}
+      {/* ── Section 2 : Tournées ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Radio className="h-4 w-4" />
-            Dispatch intelligent
+            Tournées
           </CardTitle>
           <CardDescription>
-            Les missions sont assignées par le dispatch — les livreurs ne peuvent pas les prendre
-            eux-mêmes. Relancez la file depuis l&apos;onglet File d&apos;attente.
+            Limites appliquées aux propositions de tournées. L&apos;équipe attribue chaque tournée à un livreur.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* DISPATCH-4 : le mode est stocké dans `enabled` (aucune migration) — Suggestion = false. */}
-          <fieldset
-            className={cn("space-y-2", !hasAutoDispatch && "opacity-60")}
-            disabled={!hasAutoDispatch}
-            title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
-          >
-            <legend className="mb-2 text-sm font-medium">Mode d&apos;affectation</legend>
-            {([
-              {
-                value: false,
-                title: "Suggestion",
-                text: "Les 3 meilleurs livreurs sont proposés pour chaque livraison ; le dispatcher valide en un clic.",
-              },
-              {
-                value: true,
-                title: "Automatique",
-                text: "Chaque nouvelle livraison est affectée sans intervention, selon la stratégie ci-dessous.",
-              },
-            ] as const).map((mode) => (
-              <label
-                key={mode.title}
-                className={cn(
-                  "flex items-start gap-3 rounded-xl border p-4",
-                  hasAutoDispatch ? "cursor-pointer" : "cursor-not-allowed"
-                )}
-              >
-                <input
-                  type="radio"
-                  name="dispatch-assignment-mode"
-                  className="mt-1 max-md:size-5"
-                  checked={hasAutoDispatch && local.enabled === mode.value}
-                  onChange={() => setLocal({ ...local, enabled: mode.value })}
-                />
-                <div>
-                  <p className="font-medium">{mode.title}</p>
-                  <p className="text-sm text-muted-foreground">{mode.text}</p>
-                </div>
-              </label>
-            ))}
-            {!hasAutoDispatch && (
-              <p className="text-sm text-muted-foreground">
-                {lockedOfferReason("auto_dispatch", offerAccess?.planCode)} Les suggestions et
-                l&apos;affectation automatique en font partie.
-              </p>
-            )}
-          </fieldset>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Stratégie principale</Label>
-              <Select
-                value={local.bestScore ? "BEST_SCORE" : local.strategy}
-                onValueChange={(value) =>
-                  value === "BEST_SCORE"
-                    ? setLocal({ ...local, bestScore: true })
-                    : setLocal({ ...local, bestScore: false, strategy: value as DispatchStrategy })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="BEST_SCORE">{BEST_SCORE_STRATEGY_LABEL}</SelectItem>
-                  {(Object.keys(DISPATCH_STRATEGY_LABELS) as DispatchStrategy[]).map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {DISPATCH_STRATEGY_LABELS[key]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {!local.bestScore && local.strategy === "PRIORITY_LIST" &&
-                  "Premier livreur compatible par ordre de priorité."}
-                {!local.bestScore && local.strategy === "LEAST_LOADED" &&
-                  "Livreur compatible avec le moins de missions actives."}
-                {!local.bestScore && local.strategy === "ZONE_THEN_PRIORITY" &&
-                  "Livreur préféré de la zone, puis priorité."}
-                {local.bestScore &&
-                  "Score sur 100 : temps de trajet jusqu'au retrait 50 %, charge 30 %, zone 10 %, priorité 10 %."}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="max-active">Max livraisons actives / livreur (global)</Label>
-              <Input
-                id="max-active"
-                type="number"
-                min={1}
-                value={local.maxActiveDeliveriesPerDriver}
-                onChange={(e) =>
-                  setLocal({
-                    ...local,
-                    maxActiveDeliveriesPerDriver: Math.max(1, Number(e.target.value) || 1),
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed p-3 max-md:min-h-11">
-            <input
-              type="checkbox"
-              className="max-md:size-5"
-              checked={local.prioritizeCourier}
-              onChange={(e) => setLocal({ ...local, prioritizeCourier: e.target.checked })}
-            />
-            <div>
-              <p className="text-sm font-medium">Prioriser les courses dans la file</p>
-              <p className="text-xs text-muted-foreground">
-                Les courses passent avant les commandes lors de l&apos;auto-dispatch.
-              </p>
-            </div>
-          </label>
-
-          <div className="space-y-3 rounded-lg border border-dashed p-3">
-            <label className="flex cursor-pointer items-center gap-3 max-md:min-h-11">
-              <input
-                type="checkbox"
-                className="max-md:size-5"
-                checked={local.gpsProximityEnabled}
-                onChange={(e) => setLocal({ ...local, gpsProximityEnabled: e.target.checked })}
-              />
-              <div>
-                <p className="text-sm font-medium">Tenir compte de la position GPS</p>
-                <p className="text-xs text-muted-foreground">
-                  À égalité, le livreur en service le plus proche du retrait est choisi. Avec le
-                  meilleur score et les suggestions : temps de trajet jusqu&apos;au retrait.
-                </p>
-              </div>
-            </label>
-            <div className="space-y-3 rounded-lg border border-border p-3">
-              <p className="text-sm font-medium">Tournées</p>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="round-day">Durée maximale (minutes)</Label>
-                  <Input id="round-day" type="number" min={30} max={1440} value={local.rounds.dayMinutes}
-                    onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, dayMinutes: Math.min(1440, Math.max(30, Number(e.target.value) || 30)) } })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="round-stop">Temps à chaque arrêt (minutes)</Label>
-                  <Input id="round-stop" type="number" min={1} max={60} value={local.rounds.stopMinutes}
-                    onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, stopMinutes: Math.min(60, Math.max(1, Number(e.target.value) || 1)) } })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="round-max">Livraisons par tournée</Label>
-                  <Input id="round-max" type="number" min={2} max={40} value={local.rounds.maxDeliveries}
-                    onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, maxDeliveries: Math.min(40, Math.max(2, Number(e.target.value) || 2)) } })} />
-                </div>
-              </div>
-              <label className="flex items-start gap-3">
-                <input type="checkbox" className="mt-1" checked={local.rounds.autoAssign}
-                  onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, autoAssign: e.target.checked } })} />
-                <span className="text-sm">
-                  Affecter les tournées automatiquement
-                  <span className="block text-muted-foreground">Avec l&apos;affectation automatique active, les livraisons sont regroupées toutes les 5 minutes environ, sans validation.</span>
-                </span>
-              </label>
-            </div>
-            {local.gpsProximityEnabled && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="gps-max-age">Position récente si moins de (minutes)</Label>
-                  <Input
-                    id="gps-max-age"
-                    type="number"
-                    min={1}
-                    max={120}
-                    step="1"
-                    inputMode="numeric"
-                    value={gpsDrafts.gpsPositionMaxAgeMinutes ?? String(local.gpsPositionMaxAgeMinutes)}
-                    onChange={(e) => setGpsDrafts({ ...gpsDrafts, gpsPositionMaxAgeMinutes: e.target.value })}
-                    onBlur={() => commitGpsDraft("gpsPositionMaxAgeMinutes")}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gps-max-distance">Proche du retrait si moins de (km)</Label>
-                  <Input
-                    id="gps-max-distance"
-                    type="number"
-                    min={1}
-                    max={100}
-                    step="0.1"
-                    inputMode="decimal"
-                    value={gpsDrafts.gpsMaxDistanceKm ?? String(local.gpsMaxDistanceKm)}
-                    onChange={(e) => setGpsDrafts({ ...gpsDrafts, gpsMaxDistanceKm: e.target.value })}
-                    onBlur={() => commitGpsDraft("gpsMaxDistanceKm")}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
           <div className="space-y-2">
-            <Label>Types auto-assignés</Label>
-            <div className="flex flex-wrap gap-3">
-              {(["STANDARD", "COURIER", "SPECIAL_MISSION"] as const).map((category) => (
-                <label
-                  key={category}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    className="max-md:size-5"
-                    checked={local.autoAssignCategories[category]}
-                    onChange={(e) =>
-                      setLocal({
-                        ...local,
-                        autoAssignCategories: {
-                          ...local.autoAssignCategories,
-                          [category]: e.target.checked,
-                        },
-                      })
-                    }
-                  />
-                  {DELIVERY_CATEGORY_LABELS[category]}
-                </label>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Section 3 : Zones & secours ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MapPin className="h-4 w-4" />
-            Zones & secours
-          </CardTitle>
-          <CardDescription>
-            Préférence par zone (stratégie « Zone puis priorité ») et livreur de secours.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {zones.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-              Aucune zone tarifaire — configurez-les dans{" "}
-              <BillingLink />{" "}
-              pour activer le dispatch par zone.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              <Label>Livreur préféré par zone</Label>
-              {zones.map((zone) => (
-                <div
-                  key={zone.id}
-                  className="flex flex-wrap items-center gap-3 rounded-lg border p-3"
-                >
-                  <span className="min-w-[120px] text-sm font-medium">{zone.name}</span>
-                  <Select
-                    value={local.zoneDriverMap[zone.id] ?? ""}
-                    onValueChange={(value) => setZoneDriver(zone.id, value)}
-                  >
-                    <SelectTrigger className="max-w-xs">
-                      <SelectValue placeholder="Choisir un livreur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(drivers ?? []).map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          {driverLabel(d.firstName, d.lastName)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>Livreur par défaut (secours)</Label>
-            <Select
-              value={local.defaultDriverId ?? "none"}
-              onValueChange={(value) =>
+            <Label htmlFor="max-active">Max livraisons actives / livreur (global)</Label>
+            <Input
+              id="max-active"
+              type="number"
+              min={1}
+              className="max-w-xs"
+              value={local.maxActiveDeliveriesPerDriver}
+              onChange={(e) =>
                 setLocal({
                   ...local,
-                  defaultDriverId: value === "none" ? null : value,
+                  maxActiveDeliveriesPerDriver: Math.max(1, Number(e.target.value) || 1),
                 })
               }
-            >
-              <SelectTrigger className="max-w-xs">
-                <SelectValue placeholder="Aucun" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Aucun</SelectItem>
-                {(drivers ?? []).map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {driverLabel(d.firstName, d.lastName)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Assigné si aucun livreur compatible n&apos;est trouvé (doit respecter le profil).
-            </p>
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="round-day">Durée maximale (minutes)</Label>
+              <Input id="round-day" type="number" min={30} max={1440} value={local.rounds.dayMinutes}
+                onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, dayMinutes: Math.min(1440, Math.max(30, Number(e.target.value) || 30)) } })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="round-stop">Temps à chaque arrêt (minutes)</Label>
+              <Input id="round-stop" type="number" min={1} max={60} value={local.rounds.stopMinutes}
+                onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, stopMinutes: Math.min(60, Math.max(1, Number(e.target.value) || 1)) } })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="round-max">Livraisons par tournée</Label>
+              <Input id="round-max" type="number" min={2} max={40} value={local.rounds.maxDeliveries}
+                onChange={(e) => setLocal({ ...local, rounds: { ...local.rounds, maxDeliveries: Math.min(40, Math.max(2, Number(e.target.value) || 2)) } })} />
+            </div>
           </div>
         </CardContent>
       </Card>

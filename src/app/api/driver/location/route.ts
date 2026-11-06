@@ -1,5 +1,5 @@
 import { zodIssueMessage } from "@/lib/config-messages";
-import { ConversationError } from "@/domains/order-conversation/order-conversation.service";
+import { OrderAccessError } from "@/domains/order/order-access";
 import { NextResponse } from "next/server";
 import { requireDriverRole } from "@/lib/api/auth-guard";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 
     let location;
     try { location = await upsertDriverLocation(auth.context.user.id, auth.context.user.companyId ?? "", parsed.data); }
-    catch (error) { if (error instanceof ConversationError) return NextResponse.json({ error: error.message }, { status: error.status }); throw error; }
+    catch (error) { if (error instanceof OrderAccessError) return NextResponse.json({ error: error.message }, { status: error.status }); throw error; }
     return NextResponse.json({
       data: { updatedAt: location.updatedAt.toISOString() },
       success: true,

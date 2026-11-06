@@ -32,8 +32,6 @@ import {
 import { useDriverLiveLocations } from "@/features/back-office/dispatch-map-hooks";
 import { DashboardMapPanel } from "@/features/back-office/dashboard-map-panel";
 import { usePermissions } from "@/hooks/use-permissions";
-import { lockedOfferReason } from "@/domains/saas/saas-access";
-import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
 
 /** Écart des retards avec hier à la même heure, sur la même définition reconstituée. */
 function lateDelta(dashboard: CompanyDashboardStats): StatDelta {
@@ -784,8 +782,7 @@ function StatusStatWidget({ widget }: { widget: DashboardWidgetLayout }) {
 }
 
 function DriversOnlineWidget() {
-  const hasAdminGps = useHasOfferFeature("admin_gps");
-  const { data: drivers } = useDriverLiveLocations(hasAdminGps);
+  const { data: drivers } = useDriverLiveLocations();
   const onlineCount = (drivers ?? []).filter((d) => d.isOnline).length;
 
   return (
@@ -816,24 +813,7 @@ function HistoryWidget() {
 
 /** Carte unique du tableau de bord : une seule zone, bascule Tout / Livreurs / Livraisons (MAP-UNIFY-2). */
 function UnifiedMapWidget({ height = 280 }: { height?: number }) {
-  const access = useOfferAccess();
   const { can } = usePermissions();
-  const hasAdminGps = useHasOfferFeature("admin_gps");
-  if (!hasAdminGps) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Carte en direct</CardTitle>
-          <CardDescription>{lockedOfferReason("admin_gps", access?.planCode)}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-[180px] items-center justify-center rounded-xl border border-dashed bg-muted/20 text-sm text-muted-foreground">
-            Carte GPS indisponible dans cette offre
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
   return (
     <Card>
       <CardHeader className="pb-3">

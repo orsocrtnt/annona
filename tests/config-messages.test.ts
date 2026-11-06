@@ -1,26 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { billingFailureMessage, CONFIG_MESSAGES, firstFieldMessage } from "../src/lib/config-messages";
+import { CONFIG_MESSAGES, firstFieldMessage } from "../src/lib/config-messages";
 import { facturXHttpResult } from "../src/domains/invoice/facturx/facturx-document";
 import { POD_EVIDENCE_MESSAGES } from "../src/domains/delivery/pod-evidence";
-
-test("paiement : service non configuré, fournisseur injoignable, autre cause", () => {
-  assert.equal(billingFailureMessage(new Error("BILLING_SANDBOX_REQUIRED"), "x"), CONFIG_MESSAGES.PAYMENT_NOT_CONFIGURED);
-  assert.equal(billingFailureMessage(new Error("BILLING_WEBHOOK_SECRET_REQUIRED"), "x"), CONFIG_MESSAGES.PAYMENT_NOT_CONFIGURED);
-  assert.equal(billingFailureMessage(new Error("BILLING_PROVIDER_UNAVAILABLE"), "x"), CONFIG_MESSAGES.PAYMENT_PROVIDER_UNAVAILABLE);
-  assert.equal(billingFailureMessage(new Error("autre"), "repli"), "repli");
-  assert.equal(billingFailureMessage("pas une erreur", "repli"), "repli");
-});
 
 test("chaque message de configuration dit la cause, l'action, et ne révèle aucun détail interne", () => {
   for (const [key, message] of Object.entries(CONFIG_MESSAGES)) {
     assert.ok(message.length > 60, `${key} trop court pour porter cause et action`);
     assert.doesNotMatch(message, /STRIPE|RESEND|SUPABASE|OPENAI|ANTHROPIC|_KEY|_SECRET|process\.env|sk_|whsec/i, key);
   }
-  assert.match(CONFIG_MESSAGES.INTAKE_NOT_CONFIGURED, /à la main/);
-  assert.match(CONFIG_MESSAGES.INTAKE_DISABLED, /Activez/);
   assert.match(CONFIG_MESSAGES.INVITATION_EMAIL_NOT_CONFIGURED, /recréez l'invitation/);
-  assert.match(CONFIG_MESSAGES.DISPATCH_FEATURE_NOT_IN_PLAN, /Abonnement/);
   assert.match(POD_EVIDENCE_MESSAGES.POD_SIGNATURE_REQUIRED, /faites signer/);
 });
 
@@ -53,12 +42,11 @@ test("Factur-X refusé : le back-office reçoit la liste avec lien direct vers c
 test("réglages : un champ à énumération ou de mauvais type donne une phrase française, sans nom technique ni anglais", async () => {
   const { companyDispatchSettingsSchema } = await import("../src/lib/validations/dispatch-settings");
   const { proofRulesPatchSchema } = await import("../src/domains/delivery/pod-evidence");
-  const labels = { strategy: "Stratégie", gpsMaxDistanceKm: "Distance maximale au retrait", enabled: "Activation", driverRules: "Règles par livreur", signatureRequired: "Signature obligatoire" };
-  const base = { enabled: true, strategy: "PRIORITY_LIST", autoAssignCategories: { STANDARD: true, COURIER: true, SPECIAL_MISSION: false } };
+  const labels = { maxActiveDeliveriesPerDriver: "Livraisons actives maximum par livreur", allowDriverSelfClaim: "Prise libre par le livreur", driverRules: "Règles par livreur", signatureRequired: "Signature obligatoire" };
+  const base = {};
   const cases: Array<[string, unknown, RegExp]> = [
-    ["strategy", { ...base, strategy: "N_IMPORTE_QUOI" }, /^Stratégie : valeur non reconnue\. Choisissez/],
-    ["type nombre", { ...base, gpsMaxDistanceKm: "dix" }, /^Distance maximale au retrait : saisissez un nombre/],
-    ["type booléen", { ...base, enabled: "oui" }, /^Activation : choisissez Activé/],
+    ["type nombre", { ...base, maxActiveDeliveriesPerDriver: "dix" }, /^Livraisons actives maximum par livreur : saisissez un nombre/],
+    ["type booléen", { ...base, allowDriverSelfClaim: "oui" }, /^Prise libre par le livreur : choisissez Activé/],
     ["énumération imbriquée", { ...base, driverRules: [{ driverId: "d", priority: 1, dispatchStatus: "SLEEPING" }] }, /^Règles par livreur : valeur non reconnue/],
   ];
   for (const [name, input, expected] of cases) {

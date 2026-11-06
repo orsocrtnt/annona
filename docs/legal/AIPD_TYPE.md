@@ -57,7 +57,7 @@
 ### 3.1 Ce que fait le code
 
 - **Option désactivée par défaut** : l'entreprise l'active dans Paramètres, catégorie par catégorie (`enabled`, `autoAssignCategories` dans [dispatch-settings.ts](../../src/lib/validations/dispatch-settings.ts)). Les tournées ne sont affectées sans validation que si `rounds.autoAssign` est activé, également faux par défaut.
-- **Critères** : un score de 0 à 100 calculé sur les livreurs éligibles : trajet jusqu'au retrait 50 %, charge en cours 30 %, zone 10 %, priorité fixée par l'entreprise 10 % ([dispatch-score.ts](../../src/lib/dispatch/dispatch-score.ts)). L'éligibilité dépend des règles posées par l'entreprise : livreur actif ou en pause, catégories autorisées, zones, codes postaux, charge maximale, capacité du véhicule.
+- **Critères** : un score de 0 à 100 calculé sur les livreurs éligibles : trajet jusqu'au retrait 50 %, charge en cours 30 %, zone 10 %, priorité fixée par l'entreprise 10 % (`dispatch-score.ts`, retiré le 6 novembre 2026 avec l'affectation automatique). L'éligibilité dépend des règles posées par l'entreprise : livreur actif ou en pause, catégories autorisées, zones, codes postaux, charge maximale, capacité du véhicule.
 - **Aucune évaluation de la personne** : pas de note client, de vitesse, de taux de réussite, d'ancienneté ni de comportement dans le score.
 - **Explication gardée** : la raison est écrite dans l'historique de la livraison (« Meilleur score (trajet, charge, zone) » ou « Suggestion validée par le dispatch »).
 - **Intervention humaine** : le dispatcher peut réaffecter à tout moment ; le livreur peut être mis en pause, ce qui l'exclut.

@@ -17,14 +17,6 @@ import { canManageMiniAdmins } from "@/lib/permissions/mini-admin";
 import { usePermissions } from "@/hooks/use-permissions";
 import { MiniAdminModulesField } from "./mini-admin-modules-field";
 import { UserPlus } from "lucide-react";
-import {
-  canInviteSaasSeat,
-  lockedSeatReason,
-  seatRemainingLabel,
-  type SessionSaasSeatMeter,
-} from "@/domains/saas/saas-access";
-import { useHasOfferSeat, useOfferAccess } from "@/features/saas/use-offer-access";
-import { useAuthStore } from "@/stores/auth.store";
 import { toast } from "sonner";
 const MINI_ADMIN_DEFAULTS = {
   miniAdminTitle: "",
@@ -34,17 +26,6 @@ const MINI_ADMIN_DEFAULTS = {
 export function CreateUserDialog() {
   const { role } = usePermissions();
   const canDelegate = canManageMiniAdmins(role);
-  const offerAccess = useOfferAccess();
-  const seats = offerAccess?.seats;
-  const hasDispatcherSeat = useHasOfferSeat("dispatchers");
-  const driverMeter = seats?.drivers;
-  const dispatcherMeter = seats?.dispatchers;
-  const canInviteDriver = seats ? canInviteSaasSeat(driverMeter) : true;
-  const canInviteDispatcher = seats ? canInviteSaasSeat(dispatcherMeter) : hasDispatcherSeat;
-  const dispatcherReason = lockedSeatReason("dispatchers", offerAccess?.planCode);
-
-  const roleSeatHint = (meter: SessionSaasSeatMeter | undefined) =>
-    meter ? seatRemainingLabel(meter) : null;
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -77,8 +58,6 @@ export function CreateUserDialog() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["company", "drivers"] });
       queryClient.invalidateQueries({ queryKey: ["company", "clients"] });
-      const session = await fetch("/api/auth/session").then((res) => res.json()).catch(() => null);
-      if (session?.saas !== undefined) useAuthStore.getState().setSaas(session.saas);
       toast.success("Invitation envoyée", {
         description: "Le destinataire recevra un lien pour choisir son mot de passe.",
       });
@@ -139,43 +118,14 @@ export function CreateUserDialog() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="driver" disabled={!canInviteDriver}>
-                      {canInviteDriver
-                        ? driverMeter
-                          ? `Livreur — ${seatRemainingLabel(driverMeter)}`
-                          : "Livreur"
-                        : `Livreur — ${driverMeter ? seatRemainingLabel(driverMeter) : "aucun poste restant"}`}
-                    </SelectItem>
-                    {canDelegate && (
-                      <SelectItem value="dispatcher" disabled={!canInviteDispatcher}>
-                        {dispatcherMeter
-                          ? `Dispatcher — ${seatRemainingLabel(dispatcherMeter)}`
-                          : canInviteDispatcher
-                            ? "Dispatcher"
-                            : `Dispatcher — ${dispatcherReason}`}
-                      </SelectItem>
-                    )}
-                    {canDelegate && (
-                      <SelectItem value="mini-admin" disabled={!canInviteDispatcher}>
-                        {dispatcherMeter
-                          ? `Mini-admin personnalisé — ${seatRemainingLabel(dispatcherMeter)}`
-                          : canInviteDispatcher
-                            ? "Mini-admin personnalisé"
-                            : `Mini-admin — ${dispatcherReason}`}
-                      </SelectItem>
-                    )}
+                    <SelectItem value="driver">Livreur</SelectItem>
+                    {canDelegate && <SelectItem value="dispatcher">Dispatcher</SelectItem>}
+                    {canDelegate && <SelectItem value="mini-admin">Mini-admin personnalisé</SelectItem>}
                   </SelectContent>
                 </Select>
               )}
             />
           </FormField>
-          {roleSlug === "driver" && roleSeatHint(driverMeter) ? (
-            <p className="text-sm text-muted-foreground">{roleSeatHint(driverMeter)}</p>
-          ) : null}
-          {(roleSlug === "dispatcher" || roleSlug === "mini-admin") && roleSeatHint(dispatcherMeter) ? (
-            <p className="text-sm text-muted-foreground">{roleSeatHint(dispatcherMeter)}</p>
-          ) : null}
-
           {isMiniAdmin && (
             <>
               <FormField

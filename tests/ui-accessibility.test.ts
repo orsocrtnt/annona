@@ -43,14 +43,14 @@ test("UI-2 : les couples de texte essentiels respectent le contraste AA", () => 
 
 test("UI-2 : le lien d'évitement précède l'interface et les espaces exposent la cible", () => {
   const providers = readFileSync("src/components/providers/app-providers.tsx", "utf8");
-  assert.ok(providers.indexOf("<SkipLink />") < providers.indexOf("<DemoModeBar />"));
+  assert.ok(providers.indexOf("<SkipLink />") < providers.indexOf("<AccessRefusedNotice />"));
 
   for (const file of [
     "src/components/layouts/back-office-layout.tsx",
     "src/components/layouts/client-portal-layout.tsx",
     "src/components/layouts/driver-app-layout.tsx",
     "src/app/(auth)/layout.tsx",
-    "src/features/landing/home-landing.tsx",
+    "src/features/legal/legal-document.tsx",
   ]) {
     assert.match(readFileSync(file, "utf8"), /id="main-content"/);
   }

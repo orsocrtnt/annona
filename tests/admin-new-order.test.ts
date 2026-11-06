@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { createOrderForCustomer } from "../src/domains/order/staff-order.service";
-import { createOrderFromIntake } from "../src/domains/order-intake/order-intake.service";
 
 type UserRow = { id: string; companyId: string; email: string; status: string; systemRole: string };
 
@@ -64,7 +63,7 @@ const input = (customerId: string, order: unknown = STANDARD) => ({
   idempotencyKey: "admin-key-0001",
 });
 
-test("ADMIN-COMMANDE : créée pour le client choisi, source ADMIN, même si la commande par message est désactivée", async () => {
+test("ADMIN-COMMANDE : créée pour le client choisi, source ADMIN", async () => {
   const { calls, deps: d } = deps();
   const result = await createOrderForCustomer(input("client-a"), d);
   assert.deepEqual(result, { status: "created", order: { id: "order-1", reference: "CMD-1" } });
@@ -91,25 +90,6 @@ test("ADMIN-COMMANDE : seul un client actif de l'entreprise est accepté", async
   assert.equal(calls.length, 0);
 });
 
-test("ADMIN-COMMANDE : la mission spéciale passe, contrairement à la commande par message", async () => {
-  const mission = { deliveryCategory: "SPECIAL_MISSION", missionDescription: "Déménagement", stops: [] };
-  const { calls, deps: d } = deps();
-  const result = await createOrderForCustomer(input("client-a", mission), d);
-  assert.equal(result.status, "created");
-  assert.equal(calls.length, 1);
-
-  const intake = deps(memoryDb({ settings: { orderIntake: { enabled: true } } }));
-  const refused = await createOrderFromIntake(input("client-a", mission), intake.deps);
-  assert.deepEqual(refused, { status: "invalid" });
-  assert.equal(intake.calls.length, 0);
-});
-
-test("ADMIN-COMMANDE : la commande par message reste soumise à son activation", async () => {
-  const { calls, deps: d } = deps();
-  assert.deepEqual(await createOrderFromIntake(input("client-a"), d), { status: "disabled" });
-  assert.equal(calls.length, 0);
-});
-
 test("ADMIN-COMMANDE : type de livraison désactivé et créneau invalide refusés sans création", async () => {
   const off = deps(memoryDb(), {
     assertCategory: async () => {
@@ -125,10 +105,8 @@ test("ADMIN-COMMANDE : type de livraison désactivé et créneau invalide refus�
   assert.equal(slots.calls.length, 0);
 });
 
-test("ADMIN-COMMANDE : quota, lecture seule et clé réutilisée deviennent des refus explicites", async () => {
+test("ADMIN-COMMANDE : clé réutilisée devient un refus explicite", async () => {
   const cases: Array<[string, string]> = [
-    ["SAAS_ORDER_CREATION_BLOCKED", "saas_blocked"],
-    ["SAAS_ACCOUNT_READ_ONLY", "saas_read_only"],
     ["IDEMPOTENCY_KEY_REUSED", "conflict"],
   ];
   for (const [message, status] of cases) {

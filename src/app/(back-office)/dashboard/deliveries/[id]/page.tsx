@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Truck } from "lucide-react";
-import { OrderConversation } from "@/components/shared/order-conversation";
 import { DeliveryRouteDisplay } from "@/components/shared/delivery-route-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { AssignDriverSelect } from "@/features/back-office/assign-driver-select";
-import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { DeliveryAdminPanel } from "@/features/back-office/delivery-admin-panel";
 import { useCompanyDelivery } from "@/features/back-office/hooks";
 import { DeliveryStatusBadge } from "@/features/client-portal/status-badges";
@@ -116,10 +114,6 @@ export default function CompanyDeliveryDetailPage() {
             <CardTitle className="text-base">Assigner à un livreur</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <DispatchSuggestionsPanel
-              deliveryId={delivery.id}
-              pending={delivery.status === "PENDING" && !delivery.driverId}
-            />
             <AssignDriverSelect
               deliveryId={delivery.id}
               status={delivery.status}
@@ -194,8 +188,6 @@ export default function CompanyDeliveryDetailPage() {
           </div>
         </details>
       )}
-
-      <OrderConversation orderId={order.id} />
 
       <details className="rounded-xl border bg-card" data-delivery-technical="true">
         <summary className="cursor-pointer list-none p-4 text-sm font-medium text-muted-foreground">Informations techniques</summary>

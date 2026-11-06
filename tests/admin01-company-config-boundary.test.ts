@@ -14,14 +14,6 @@ const files = [
     validation: "@/lib/validations/driver-location-settings",
     schema: "driverLocationSettingsSchema",
   },
-  {
-    file: "src/app/api/company/tariffs/route.ts",
-    service: "@/domains/company/tariff-settings.service",
-    read: "getCompanyTariffSettings",
-    write: "updateCompanyTariffSettings",
-    validation: "@/lib/validations/tariff-settings",
-    schema: "companyTariffSettingsSchema",
-  },
 ] as const;
 
 function load(spec: (typeof files)[number], role: string, calls: string[]) {
@@ -73,7 +65,7 @@ function load(spec: (typeof files)[number], role: string, calls: string[]) {
   return module.exports;
 }
 
-test("ADMIN-1 configuration entreprise : emplacements et tarifs refusés avant lecture", async () => {
+test("ADMIN-1 configuration entreprise : emplacements refusés avant lecture", async () => {
   for (const spec of files) {
     for (const role of ["SUPER_ADMIN", "DISPATCHER"]) {
       const calls: string[] = [];

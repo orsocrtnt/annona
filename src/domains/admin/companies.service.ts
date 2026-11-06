@@ -1,5 +1,4 @@
 import { prisma } from "@/services/prisma/client";
-import { recordedPriceCents, subscriptionFollowUp, type SubscriptionFollowUp } from "@/domains/admin/subscriptions.service";
 
 const STATUSES = ["ACTIVE", "INACTIVE", "SUSPENDED", "TRIAL"] as const;
 const PAGE_SIZES = [25, 50, 100] as const;
@@ -47,42 +46,12 @@ type CompanyReader = {
 };
 
 type Money = { toString(): string } | number | null;
-type DetailPlan = {
-  code: "STARTER" | "PRO" | "BUSINESS";
-  name: string;
-  monthlyPriceCents: number;
-  annualPriceCents: number;
-  includedDriverSeats: number;
-  unlimitedDriverSeats: boolean;
-  maxDriverSeats: number | null;
-};
-type DetailItem = {
-  code: string;
-  kind: "OPTION" | "DRIVER_SEAT" | "ADMIN_SEAT" | "DISPATCHER_SEAT";
-  quantity: number;
-  unitPriceCents: number;
-  option: { name: string } | null;
-};
-type DetailSubscription = {
-  status: "PENDING_PAYMENT" | "ACTIVE" | "PAST_DUE" | "RESTRICTED" | "READ_ONLY" | "CANCEL_AT_PERIOD_END" | "CANCELLED" | "EXPIRED";
-  kind: "COMMERCIAL" | "PILOT" | "LEGACY";
-  billingInterval: "MONTHLY" | "ANNUAL" | null;
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date | null;
-  cancelAtPeriodEnd: boolean;
-  endedAt: Date | null;
-  premiumDiscoveryEndsAt: Date | null;
-  planAssignments: Array<{ plan: DetailPlan }>;
-  items: DetailItem[];
-  usagePeriods: Array<{ startsAt: Date; endsAt: Date; includedOrders: number; orderCount: number; overageCount: number }>;
-};
 type DetailRow = {
   id: string;
   name: string;
   legalName: string | null;
   slug: string;
   status: Status;
-  isDemo: boolean;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -96,7 +65,6 @@ type DetailRow = {
   createdAt: Date;
   _count: { users: number; deliveries: number };
   users: Array<{ firstName: string; lastName: string; email: string; phone: string | null }>;
-  saasSubscription: DetailSubscription | null;
 };
 
 export type PlatformCompanyDetail = {
@@ -105,7 +73,6 @@ export type PlatformCompanyDetail = {
   legalName: string | null;
   slug: string;
   status: Status;
-  isDemo: boolean;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -121,25 +88,6 @@ export type PlatformCompanyDetail = {
   deliveryCount: number;
   admin: { name: string; email: string; phone: string | null } | null;
   revenue: { paidCents: number; pendingCents: number; overdueCents: number };
-  subscription: {
-    kind: DetailSubscription["kind"];
-    status: DetailSubscription["status"];
-    followUp: SubscriptionFollowUp;
-    interval: "MONTHLY" | "ANNUAL" | null;
-    periodStart: string;
-    periodEnd: string | null;
-    cancelAtPeriodEnd: boolean;
-    endedAt: string | null;
-    premiumDiscoveryEndsAt: string | null;
-    plan: { code: DetailPlan["code"]; name: string } | null;
-    amountCents: number;
-    options: Array<{ code: string; name: string; quantity: number; unitPriceCents: number }>;
-    seats: { DRIVER_SEAT: number; ADMIN_SEAT: number; DISPATCHER_SEAT: number };
-    /** Période de consommation en cours ; dates nulles = aucune période ouverte (rien de compté). */
-    orders: { consumed: number; included: number; overage: number; periodStartsAt: string | null; periodEndsAt: string | null };
-    /** Livreurs prévus par l'offre (formule + places ajoutées, plafonnées) ; `null` = illimité ou formule inconnue. */
-    drivers: { limit: number | null; unlimited: boolean; known: boolean };
-  } | null;
 };
 
 type CompanyDetailReader = {
@@ -195,8 +143,6 @@ export function parseCompanyListParams(
 
 export function platformCompanyWhere(query: CompanyListParams) {
   return {
-    // Espaces de démonstration : suivis sur la page Démos, jamais dans la liste des entreprises.
-    isDemo: false,
     ...(query.status ? { status: query.status } : {}),
     ...(query.q ? { name: { contains: query.q, mode: "insensitive" as const } } : {}),
   };
@@ -247,21 +193,13 @@ export async function listPlatformCompanies(
   };
 }
 
-function activeAt(now: Date) {
-  return {
-    effectiveFrom: { lte: now },
-    OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
-  };
-}
-
-export function platformCompanyDetailSelect(now: Date) {
+export function platformCompanyDetailSelect() {
   return {
     id: true,
     name: true,
     legalName: true,
     slug: true,
     status: true,
-    isDemo: true,
     email: true,
     phone: true,
     address: true,
@@ -280,51 +218,6 @@ export function platformCompanyDetailSelect(now: Date) {
       take: 1,
       select: { firstName: true, lastName: true, email: true, phone: true },
     },
-    saasSubscription: {
-      select: {
-        status: true,
-        kind: true,
-        billingInterval: true,
-        currentPeriodStart: true,
-        currentPeriodEnd: true,
-        cancelAtPeriodEnd: true,
-        endedAt: true,
-        premiumDiscoveryEndsAt: true,
-        planAssignments: {
-          where: activeAt(now),
-          orderBy: { effectiveFrom: "desc" as const },
-          take: 1,
-          select: {
-            plan: {
-              select: {
-                code: true,
-                name: true,
-                monthlyPriceCents: true,
-                annualPriceCents: true,
-                includedDriverSeats: true,
-                unlimitedDriverSeats: true,
-                maxDriverSeats: true,
-              },
-            },
-          },
-        },
-        items: {
-          where: activeAt(now),
-          select: {
-            code: true,
-            kind: true,
-            quantity: true,
-            unitPriceCents: true,
-            option: { select: { name: true } },
-          },
-        },
-        usagePeriods: {
-          where: { startsAt: { lte: now }, endsAt: { gt: now } },
-          orderBy: { startsAt: "asc" as const },
-          select: { startsAt: true, endsAt: true, includedOrders: true, orderCount: true, overageCount: true },
-        },
-      },
-    },
   };
 }
 
@@ -332,10 +225,6 @@ function eurosToCents(value: Money) {
   if (value == null) return 0;
   const euros = Number(value.toString());
   return Number.isFinite(euros) ? Math.max(0, Math.round(euros * 100)) : 0;
-}
-
-function nonNegative(value: number) {
-  return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
 
 export function toPlatformCompanyDetail(
@@ -350,43 +239,6 @@ export function toPlatformCompanyDetail(
     if (invoice.status === "PENDING") revenue.pendingCents += cents;
     if (invoice.status === "OVERDUE") revenue.overdueCents += cents;
   }
-  const subscription = row.saasSubscription;
-  const plan = subscription?.planAssignments[0]?.plan ?? null;
-  const options = new Map<string, { code: string; name: string; quantity: number; unitPriceCents: number }>();
-  const seats = { DRIVER_SEAT: 0, ADMIN_SEAT: 0, DISPATCHER_SEAT: 0 };
-  for (const item of subscription?.items ?? []) {
-    const quantity = nonNegative(item.quantity);
-    if (item.kind === "OPTION") {
-      const current = options.get(item.code);
-      options.set(item.code, {
-        code: item.code,
-        name: item.option?.name ?? item.code,
-        quantity: (current?.quantity ?? 0) + quantity,
-        unitPriceCents: nonNegative(item.unitPriceCents),
-      });
-    } else {
-      seats[item.kind] += quantity;
-    }
-  }
-  const usage = subscription?.usagePeriods ?? [];
-  const orders = {
-    consumed: usage.reduce((sum, period) => sum + nonNegative(period.orderCount), 0),
-    included: usage.reduce((sum, period) => sum + nonNegative(period.includedOrders), 0),
-    overage: usage.reduce((sum, period) => sum + nonNegative(period.overageCount), 0),
-    periodStartsAt: usage[0]?.startsAt.toISOString() ?? null,
-    periodEndsAt: usage[usage.length - 1]?.endsAt.toISOString() ?? null,
-  };
-  // Même règle que le contrôle des places (saas.service, capSeats) : formule + places ajoutées, plafonnées.
-  const driverPurchased = plan ? nonNegative(plan.includedDriverSeats) + seats.DRIVER_SEAT : 0;
-  const drivers = !plan
-    ? { limit: null, unlimited: false, known: false }
-    : plan.unlimitedDriverSeats
-      ? { limit: null, unlimited: true, known: true }
-      : {
-          limit: plan.maxDriverSeats == null ? driverPurchased : Math.min(plan.maxDriverSeats, driverPurchased),
-          unlimited: false,
-          known: true,
-        };
 
   return {
     id: row.id,
@@ -394,7 +246,6 @@ export function toPlatformCompanyDetail(
     legalName: row.legalName,
     slug: row.slug,
     status: row.status,
-    isDemo: row.isDemo,
     email: row.email,
     phone: row.phone,
     address: row.address,
@@ -410,32 +261,14 @@ export function toPlatformCompanyDetail(
     deliveryCount: row._count.deliveries,
     admin: admin ? { name: `${admin.firstName} ${admin.lastName}`.trim(), email: admin.email, phone: admin.phone } : null,
     revenue,
-    subscription: subscription ? {
-      kind: subscription.kind,
-      status: subscription.status,
-      followUp: subscriptionFollowUp(subscription.status),
-      interval: subscription.billingInterval,
-      periodStart: subscription.currentPeriodStart.toISOString(),
-      periodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-      endedAt: subscription.endedAt?.toISOString() ?? null,
-      premiumDiscoveryEndsAt: subscription.premiumDiscoveryEndsAt?.toISOString() ?? null,
-      plan: plan ? { code: plan.code, name: plan.name } : null,
-      amountCents: recordedPriceCents(subscription.billingInterval, plan, subscription.items),
-      options: [...options.values()].sort((a, b) => a.code.localeCompare(b.code)),
-      seats,
-      orders,
-      drivers,
-    } : null,
   };
 }
 
 export async function getPlatformCompany(
   id: string,
   db: CompanyDetailReader = prisma as unknown as CompanyDetailReader,
-  now = new Date(),
 ): Promise<PlatformCompanyDetail | null> {
-  const row = await db.company.findUnique({ where: { id }, select: platformCompanyDetailSelect(now) });
+  const row = await db.company.findUnique({ where: { id }, select: platformCompanyDetailSelect() });
   if (!row) return null;
   const invoices = await db.invoice.groupBy({
     by: ["status"],

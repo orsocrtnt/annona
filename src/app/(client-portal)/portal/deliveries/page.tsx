@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { PageLoader } from "@/components/ui/loader";
-import { OfferFeatureGate } from "@/features/saas/locked-offer-feature";
 
 const PortalDeliveriesMap = dynamic(
   () =>
@@ -19,9 +18,9 @@ const PortalDeliveriesMap = dynamic(
 
 export default function ClientDeliveriesPage() {
   return (
-    <OfferFeatureGate feature="client_gps">
+    <>
       <h1 className="sr-only">Carte des livraisons</h1>
       <PortalDeliveriesMap fullscreen />
-    </OfferFeatureGate>
+    </>
   );
 }

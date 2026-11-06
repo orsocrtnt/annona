@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
-import { outOfRangeIncidentBody } from "../src/lib/maps/out-of-range-note";
 
 function proximityModule(position: { latitude: number; longitude: number } | null, near: boolean, distance: number) {
   const module = { exports: {} as Record<string, (...args: unknown[]) => Promise<unknown>> };
@@ -42,27 +41,4 @@ test("MOB-01C : position inconnue confirmée = signalée sans distance inventée
   const forced = (await unknown.assertDriverMissionProximityOrThrow!("d", "c", "m", "delivery", true)) as Record<string, unknown>;
   assert.equal(forced.hasLocation, false);
   assert.equal(forced.distanceMeters, null);
-});
-
-test("MOB-01C : texte du signalement avec la distance arrondie, sans donnée du client", () => {
-  assert.equal(
-    outOfRangeIncidentBody({ kind: "delivery", status: "DELIVERED", hasLocation: true, distanceMeters: 373.4, thresholdMeters: 200 }),
-    "Livraison validée hors zone par le livreur : à 373 m du point de livraison (zone attendue : 200 m)."
-  );
-  assert.match(outOfRangeIncidentBody({ kind: "pickup", status: "PURCHASING", hasLocation: true, distanceMeters: 1200, thresholdMeters: 200 }), /^Retrait confirmé hors zone .* 1200 m du point de retrait/);
-  assert.match(outOfRangeIncidentBody({ kind: "delivery", status: "FAILED", hasLocation: false, distanceMeters: null, thresholdMeters: 200 }), /^Échec de livraison déclaré hors zone .*position inconnue/);
-});
-
-test("MOB-01C : le signalement est une note interne de type incident, rattachée à l'étape (jamais visible du client)", () => {
-  const source = readFileSync("src/domains/delivery/delivery.service.ts", "utf8");
-  const start = source.indexOf("if (forcedOutOfRange) {");
-  assert.ok(start > 0);
-  const block = source.slice(start, source.indexOf("const notificationJob = await queueDeliveryStatusNotification", start));
-  assert.match(block, /tx\.orderMessage\.create/);
-  assert.match(block, /kind: "INCIDENT"/);
-  assert.match(block, /internal: true/);
-  assert.match(block, /requestKey: `out-of-range:\$\{trackingEvent\.id\}`/);
-  // Les messages internes sont filtrés pour tout acteur qui n'est pas de l'équipe.
-  const conversation = readFileSync("src/domains/order-conversation/order-conversation.service.ts", "utf8");
-  assert.match(conversation, /isConversationStaff\(actor\) \? \{\} : \{ internal: false \}/);
 });

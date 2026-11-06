@@ -1,7 +1,5 @@
 import type { DeliveryCategory } from "@prisma/client";
 import { matchesPostalCodePrefix } from "@/lib/dispatch/postal-codes";
-import { findTariffZoneForPostalCode } from "@/lib/tariff/find-tariff-zone";
-import type { TariffZone } from "@/lib/validations/tariff-settings";
 import type {
   CompanyDispatchSettings,
   DispatchDriverRule,
@@ -111,32 +109,20 @@ export function isCategoryAllowed(
 
 export function isZoneAllowed(
   rule: DispatchDriverRule | null,
-  postalCode: string | null,
-  tariffZones: TariffZone[]
+  postalCode: string | null
 ): boolean {
-  const zoneIds = rule?.zoneIds ?? [];
   const postalPrefixes = rule?.postalCodePrefixes ?? [];
 
-  if (zoneIds.length === 0 && postalPrefixes.length === 0) return true;
+  if (postalPrefixes.length === 0) return true;
   if (!postalCode) return false;
 
-  if (postalPrefixes.length > 0 && matchesPostalCodePrefix(postalCode, postalPrefixes)) {
-    return true;
-  }
-
-  if (zoneIds.length > 0) {
-    const zone = findTariffZoneForPostalCode(postalCode, tariffZones);
-    if (zone && zoneIds.includes(zone.id)) return true;
-  }
-
-  return false;
+  return matchesPostalCodePrefix(postalCode, postalPrefixes);
 }
 
 export function getDriverEligibilityReasons(
   driver: DriverActivityForEligibility,
   delivery: DeliveryForEligibility,
-  settings: CompanyDispatchSettings,
-  tariffZones: TariffZone[]
+  settings: CompanyDispatchSettings
 ): DriverEligibilityReason[] {
   const rule = getDispatchDriverRule(settings, driver.id);
   const normalized = rule ? normalizeDispatchDriverRule(rule) : null;
@@ -151,7 +137,7 @@ export function getDriverEligibilityReasons(
   }
 
   const postalCode = getDispatchPostalCode(delivery);
-  if (!isZoneAllowed(normalized, postalCode, tariffZones)) {
+  if (!isZoneAllowed(normalized, postalCode)) {
     reasons.push("ZONE_NOT_COVERED");
   }
 
@@ -177,10 +163,9 @@ export function getDriverEligibilityReasons(
 export function isDriverEligibleForDelivery(
   driver: DriverActivityForEligibility,
   delivery: DeliveryForEligibility,
-  settings: CompanyDispatchSettings,
-  tariffZones: TariffZone[]
+  settings: CompanyDispatchSettings
 ): boolean {
-  return getDriverEligibilityReasons(driver, delivery, settings, tariffZones).length === 0;
+  return getDriverEligibilityReasons(driver, delivery, settings).length === 0;
 }
 
 export function formatEligibilityReasons(reasons: DriverEligibilityReason[]): string {

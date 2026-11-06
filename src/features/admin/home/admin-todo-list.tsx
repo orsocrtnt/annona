@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, HeadphonesIcon, Inbox, ShieldAlert, UserPlus } from "lucide-react";
+import { ArrowRight, CheckCircle2, HeadphonesIcon } from "lucide-react";
 import { HomeCard } from "@/features/admin/home/home-card";
 import type { AdminHomeTodo } from "@/domains/admin/admin-home.service";
 
@@ -15,33 +15,7 @@ type TodoRow = {
 const plural = (count: number, one: string, many: string) => `${count} ${count > 1 ? many : one}`;
 
 export function buildTodoRows(todo: AdminHomeTodo): TodoRow[] {
-  // Sans date de visite dans ce navigateur, tout compte comme nouveau : on le dit sans accorder au nombre.
-  const sinceText = (since: string | null) => since ? ", depuis votre dernière visite" : " (page jamais ouverte sur cet appareil)";
   const rows: TodoRow[] = [
-    {
-      key: "contact",
-      count: todo.contactNew,
-      text: `${plural(todo.contactNew, "nouveau message Contact", "nouveaux messages Contact")}${sinceText(todo.contactSince)}`,
-      action: "Lire les messages",
-      href: "/admin/contact",
-      icon: Inbox,
-    },
-    {
-      key: "waitlist",
-      count: todo.waitlistNew,
-      text: `${plural(todo.waitlistNew, "nouvelle inscription", "nouvelles inscriptions")} à la liste d'attente${sinceText(todo.waitlistSince)}`,
-      action: "Voir les inscriptions",
-      href: "/admin/waitlist",
-      icon: UserPlus,
-    },
-    {
-      key: "incidents",
-      count: todo.openIncidents,
-      text: plural(todo.openIncidents, "incident ouvert", "incidents ouverts"),
-      action: "Voir les incidents",
-      href: "/admin/incidents",
-      icon: ShieldAlert,
-    },
     {
       key: "support",
       count: todo.openSupportTickets,
@@ -64,7 +38,7 @@ export function AdminTodoList({ todo }: { todo: AdminHomeTodo }) {
           <CheckCircle2 className="h-5 w-5 shrink-0 text-brand" aria-hidden />
           <p>
             <span className="font-semibold">Rien à traiter.</span>{" "}
-            <span className="text-muted-foreground">Aucun message, inscription, incident ou ticket en attente.</span>
+            <span className="text-muted-foreground">Aucun ticket en attente.</span>
           </p>
         </div>
       ) : (

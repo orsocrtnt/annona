@@ -1,52 +1,26 @@
 import { prisma } from "@/services/prisma/client";
-import { WAITLIST_MESSAGE } from "@/domains/growth/contact.service";
-import {
-  deriveIncidentState,
-  platformIncidentActionSelect,
-  platformIncidentSelect,
-  platformIncidentWhere,
-} from "@/domains/admin/incidents.service";
-import { getSaasHealthIndicators } from "@/domains/admin/saas-health.service";
 import { readPlatformServiceHealth, type PlatformServiceHealth } from "@/domains/admin/service-health.service";
-import { PILOT_IN_PROGRESS, PILOT_TERMINAL } from "@/domains/admin/pilot-stages";
-import { alertActionKey } from "@/domains/operational-alerts/operational-alerts.policy";
 import { fromParisDateTimeInput, toParisDateTimeInput } from "@/lib/format/paris-datetime-input";
 
 /**
  * ADMIN-ESPACE, lot 1 : accueil du super-administrateur.
  * Une seule lecture pour « À traiter », les chiffres clés, la courbe 30 jours et le voyant de santé.
- * Les entreprises de démonstration (`isDemo`) sont exclues des chiffres clés et de la courbe.
  */
 
 export const ADMIN_HOME_DAYS = 30;
-const WAITLIST_RECENT_DAYS = 7;
 const NEW_COMPANIES_DAYS = 30;
-const PARAMS = ["view", "contactSince", "waitlistSince"] as const;
+const PARAMS = ["view"] as const;
 /** Livraison terminée avec succès : même règle que le tableau de bord entreprise. */
 export const DELIVERED_STATUS = "DELIVERED";
 export const OPEN_TICKET_STATUSES = ["OPEN", "IN_PROGRESS"] as const;
 
 export type AdminHomeView = "full" | "badges";
 
-export type AdminHomeParams = {
-  view: AdminHomeView;
-  /** Dernière visite de la page Messages Contact (navigateur) ; absente = jamais visitée. */
-  contactSince: Date | null;
-  /** Dernière visite de la page Liste d'attente (navigateur, ADMIN-ESPACE lot 2) ; absente = jamais visitée. */
-  waitlistSince: Date | null;
-};
+export type AdminHomeParams = { view: AdminHomeView };
 
 export type AdminHomeTodo = {
-  /** Messages Contact (hors liste d'attente) arrivés depuis `contactSince`. */
-  contactNew: number;
-  /** Inscriptions à la liste d'attente arrivées depuis `waitlistSince`. */
-  waitlistNew: number;
-  /** Incidents à l'état « Ouvert », comme sur la page Incidents. */
-  openIncidents: number;
   /** Tickets support ouverts ou en cours. */
   openSupportTickets: number;
-  contactSince: string | null;
-  waitlistSince: string | null;
 };
 
 export type AdminHomeComparison = { current: number; previous: number | null };
@@ -64,19 +38,12 @@ export type AdminHomeHealth = {
 export type AdminHomeKpis = {
   activeCompanies: { current: number; newLast30Days: number };
   deliveredToday: AdminHomeComparison;
-  waitlist: { total: number; last7Days: number };
-  /** Abonnements encaissés HT du mois (centimes), mois civil UTC comme la santé SaaS. */
-  subscriptionRevenue: { currentCents: number; previousCents: number | null; monthStartsAt: string } | null;
 };
-
-/** ADMIN-ESPACE lot 4 : pilotes accompagnés par étape ; `null` si la lecture échoue. */
-export type AdminHomePilots = { inProgress: number; preparing: number; finished: number };
 
 export type AdminHome = {
   generatedAt: string;
   todo: AdminHomeTodo;
   kpis: AdminHomeKpis;
-  pilots: AdminHomePilots | null;
   series: AdminHomeDay[];
   health: AdminHomeHealth;
 };
@@ -91,17 +58,7 @@ export function parseAdminHomeParams(
   }
   const viewRaw = search.get("view") ?? "full";
   if (viewRaw !== "full" && viewRaw !== "badges") return { error: "Vue invalide" };
-  const contactSince = parseSince(search.get("contactSince"));
-  const waitlistSince = parseSince(search.get("waitlistSince"));
-  if (contactSince === "invalid" || waitlistSince === "invalid") return { error: "Date invalide" };
-  return { query: { view: viewRaw, contactSince, waitlistSince } };
-}
-
-function parseSince(raw: string | null): Date | null | "invalid" {
-  if (raw === null || raw === "") return null;
-  if (raw.length > 40) return "invalid";
-  const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? "invalid" : parsed;
+  return { query: { view: viewRaw } };
 }
 
 /* ---------- Jours à l'heure de Paris ---------- */
@@ -161,23 +118,6 @@ export function sameDayLastWeekWindows(now: Date) {
   };
 }
 
-/** Mois UTC précédent : un instant au milieu du mois, pour `getSaasHealthIndicators`. */
-export function previousUtcMonthAnchor(now: Date): Date {
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 12));
-}
-
-/* ---------- À traiter ---------- */
-
-type RawIncident = {
-  id: string;
-  order: { status: string; deliveries: Array<{ status: string; completedAt: Date | null }> };
-};
-
-/** Nombre d'incidents à l'état « Ouvert » (ni pris en compte, ni résolu, ni commande close). */
-export function countOpenIncidents(incidents: RawIncident[], actionKeys: ReadonlySet<string>): number {
-  return incidents.filter((incident) => deriveIncidentState(incident.id, incident.order, actionKeys) === "OPEN").length;
-}
-
 /* ---------- Voyant de santé ---------- */
 
 const CHECK_NAMES = { database: "base de données", storage: "stockage des preuves" } as const;
@@ -224,178 +164,69 @@ export function buildHealthSignal(health: PlatformServiceHealth | null): AdminHo
   };
 }
 
-/* ---------- Pilotes (lot 4) ---------- */
-
-export function summarizePilotStages(groups: Array<{ stage: string; _count: { _all: number } }>): AdminHomePilots {
-  const summary = { inProgress: 0, preparing: 0, finished: 0 };
-  for (const group of groups) {
-    const count = Math.max(0, group._count._all);
-    if ((PILOT_IN_PROGRESS as readonly string[]).includes(group.stage)) summary.inProgress += count;
-    else if ((PILOT_TERMINAL as readonly string[]).includes(group.stage)) summary.finished += count;
-    else if (group.stage === "PREPARATION") summary.preparing += count;
-  }
-  return summary;
-}
-
-async function readPilots(db: AdminHomeDatabase): Promise<AdminHomePilots | null> {
-  try {
-    if (!db.platformPilot) return null;
-    return summarizePilotStages(await db.platformPilot.groupBy({ by: ["stage"], _count: { _all: true } }));
-  } catch {
-    return null;
-  }
-}
-
 /* ---------- Lecture ---------- */
 
 type CountArgs = { where: Record<string, unknown> };
 type FindArgs = Record<string, unknown>;
 
 export type AdminHomeDatabase = {
-  contactMessage: { count: (args: CountArgs) => Promise<number> };
   supportTicket: { count: (args: CountArgs) => Promise<number> };
-  orderMessage: { findMany: (args: FindArgs) => Promise<unknown[]> };
   company: { count: (args: CountArgs) => Promise<number> };
   order: { findMany: (args: FindArgs) => Promise<Array<{ createdAt: Date }>> };
   delivery: {
     count: (args: CountArgs) => Promise<number>;
     findMany: (args: FindArgs) => Promise<Array<{ completedAt: Date | null }>>;
   };
-  platformPilot?: { groupBy: (args: FindArgs) => Promise<Array<{ stage: string; _count: { _all: number } }>> };
 };
 
 export type AdminHomeDependencies = {
   db?: AdminHomeDatabase;
   readServiceHealth?: () => Promise<PlatformServiceHealth>;
-  readSubscriptionRevenueCents?: (at: Date) => Promise<number>;
   now?: Date;
 };
 
-async function defaultSubscriptionRevenueCents(at: Date) {
-  return (await getSaasHealthIndicators(at)).revenue.subscriptionPaidHtCents;
-}
-
-/** Messages Contact et liste d'attente partagent la table ; la liste d'attente porte un message fixe. */
-export function contactWhere(kind: "contact" | "waitlist", since: Date | null) {
-  return {
-    ...(kind === "waitlist" ? { message: WAITLIST_MESSAGE } : { NOT: { message: WAITLIST_MESSAGE } }),
-    ...(since ? { createdAt: { gt: since } } : {}),
-  };
-}
-
-const NOT_DEMO = { isDemo: false };
-
-/**
- * Incidents à l'état « Ouvert », avec la même règle que la page Incidents : lecture des incidents puis
- * de leurs actions (pris en compte, résolu). `companyId` restreint à une entreprise (fiche entreprise, lot 3).
- */
-export async function readOpenIncidentCount(
-  db: Pick<AdminHomeDatabase, "orderMessage">,
-  companyId?: string
-): Promise<number> {
-  const incidentWhere = platformIncidentWhere({ page: 1, pageSize: 25 });
-  const incidents = (await db.orderMessage.findMany({
-    where: companyId ? { ...incidentWhere, order: { companyId } } : incidentWhere,
-    select: { id: true, order: platformIncidentSelect().order },
-  })) as RawIncident[];
-  const keys = incidents.flatMap((incident) => [
-    alertActionKey(`incident:${incident.id}`, "resolve"),
-    alertActionKey(`incident:${incident.id}`, "ack"),
-  ]);
-  const actions = keys.length === 0
-    ? []
-    : ((await db.orderMessage.findMany({
-        where: { requestKey: { in: keys } },
-        select: platformIncidentActionSelect(),
-      })) as Array<{ requestKey: string }>);
-  return countOpenIncidents(incidents, new Set(actions.map((action) => action.requestKey)));
-}
-
 export async function readAdminHomeTodo(
-  params: Pick<AdminHomeParams, "contactSince" | "waitlistSince">,
   db: AdminHomeDatabase = prisma as unknown as AdminHomeDatabase
 ): Promise<AdminHomeTodo> {
-  const [contactNew, waitlistNew, openSupportTickets, openIncidents] = await Promise.all([
-    db.contactMessage.count({ where: contactWhere("contact", params.contactSince) }),
-    db.contactMessage.count({ where: contactWhere("waitlist", params.waitlistSince) }),
-    db.supportTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } }),
-    readOpenIncidentCount(db),
-  ]);
-  return {
-    contactNew,
-    waitlistNew,
-    openIncidents,
-    openSupportTickets,
-    contactSince: params.contactSince ? params.contactSince.toISOString() : null,
-    waitlistSince: params.waitlistSince ? params.waitlistSince.toISOString() : null,
-  };
+  const openSupportTickets = await db.supportTicket.count({ where: { status: { in: [...OPEN_TICKET_STATUSES] } } });
+  return { openSupportTickets };
 }
 
-export async function getAdminHomeBadges(
-  params: Pick<AdminHomeParams, "contactSince" | "waitlistSince">,
-  deps: AdminHomeDependencies = {}
-): Promise<AdminHomeBadges> {
+export async function getAdminHomeBadges(deps: AdminHomeDependencies = {}): Promise<AdminHomeBadges> {
   const now = deps.now ?? new Date();
-  return { generatedAt: now.toISOString(), todo: await readAdminHomeTodo(params, deps.db) };
+  return { generatedAt: now.toISOString(), todo: await readAdminHomeTodo(deps.db) };
 }
 
 export async function getAdminHome(
   params: AdminHomeParams,
   deps: AdminHomeDependencies = {}
 ): Promise<AdminHome | AdminHomeBadges> {
-  if (params.view === "badges") return getAdminHomeBadges(params, deps);
+  if (params.view === "badges") return getAdminHomeBadges(deps);
 
   const db = deps.db ?? (prisma as unknown as AdminHomeDatabase);
   const now = deps.now ?? new Date();
   const readHealth = deps.readServiceHealth ?? (() => readPlatformServiceHealth());
-  const readRevenue = deps.readSubscriptionRevenueCents ?? defaultSubscriptionRevenueCents;
 
   const today = parisDayKey(now);
   const seriesStart = parisDayStart(shiftDayKey(today, -(ADMIN_HOME_DAYS - 1)));
   const windows = sameDayLastWeekWindows(now);
-  const waitlistSince = new Date(now.getTime() - WAITLIST_RECENT_DAYS * 86_400_000);
   const companiesSince = new Date(now.getTime() - NEW_COMPANIES_DAYS * 86_400_000);
-  const deliveredWhere = (range: { gte: Date; lt: Date }) => ({
-    status: DELIVERED_STATUS,
-    completedAt: range,
-    company: NOT_DEMO,
-  });
+  const deliveredWhere = (range: { gte: Date; lt: Date }) => ({ status: DELIVERED_STATUS, completedAt: range });
 
-  const [
-    todo,
-    activeCompanies,
-    newCompanies,
-    deliveredToday,
-    deliveredLastWeek,
-    waitlistTotal,
-    waitlistRecent,
-    orders,
-    delivered,
-    health,
-    revenueCurrent,
-    revenuePrevious,
-    pilots,
-  ] = await Promise.all([
-    readAdminHomeTodo(params, db),
-    db.company.count({ where: { status: "ACTIVE", ...NOT_DEMO } }),
-    db.company.count({ where: { status: "ACTIVE", ...NOT_DEMO, createdAt: { gte: companiesSince } } }),
-    db.delivery.count({ where: deliveredWhere(windows.today) }),
-    db.delivery.count({ where: deliveredWhere(windows.lastWeek) }),
-    db.contactMessage.count({ where: contactWhere("waitlist", null) }),
-    db.contactMessage.count({ where: { message: WAITLIST_MESSAGE, createdAt: { gte: waitlistSince } } }),
-    db.order.findMany({
-      where: { createdAt: { gte: seriesStart }, company: NOT_DEMO },
-      select: { createdAt: true },
-    }),
-    db.delivery.findMany({
-      where: { status: DELIVERED_STATUS, completedAt: { gte: seriesStart }, company: NOT_DEMO },
-      select: { completedAt: true },
-    }),
-    readHealth().catch(() => null),
-    readRevenue(now).catch(() => null),
-    readRevenue(previousUtcMonthAnchor(now)).catch(() => null),
-    readPilots(db),
-  ]);
+  const [todo, activeCompanies, newCompanies, deliveredToday, deliveredLastWeek, orders, delivered, health] =
+    await Promise.all([
+      readAdminHomeTodo(db),
+      db.company.count({ where: { status: "ACTIVE" } }),
+      db.company.count({ where: { status: "ACTIVE", createdAt: { gte: companiesSince } } }),
+      db.delivery.count({ where: deliveredWhere(windows.today) }),
+      db.delivery.count({ where: deliveredWhere(windows.lastWeek) }),
+      db.order.findMany({ where: { createdAt: { gte: seriesStart } }, select: { createdAt: true } }),
+      db.delivery.findMany({
+        where: { status: DELIVERED_STATUS, completedAt: { gte: seriesStart } },
+        select: { completedAt: true },
+      }),
+      readHealth().catch(() => null),
+    ]);
 
   return {
     generatedAt: now.toISOString(),
@@ -403,16 +234,7 @@ export async function getAdminHome(
     kpis: {
       activeCompanies: { current: activeCompanies, newLast30Days: newCompanies },
       deliveredToday: { current: deliveredToday, previous: deliveredLastWeek },
-      waitlist: { total: waitlistTotal, last7Days: waitlistRecent },
-      subscriptionRevenue: revenueCurrent === null
-        ? null
-        : {
-            currentCents: revenueCurrent,
-            previousCents: revenuePrevious,
-            monthStartsAt: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString(),
-          },
     },
-    pilots,
     series: buildDailySeries(
       orders.map((order) => order.createdAt),
       delivered.flatMap((row) => (row.completedAt ? [row.completedAt] : [])),

@@ -12,7 +12,6 @@ const pending = <em>en cours</em>;
 export default function MentionsLegalesPage() {
   return (
     <LegalDocument
-      active="mentions-legales"
       title="Mentions légales"
       intro={`Qui édite et qui héberge le site et l'application ${APP_NAME}.`}
     >
@@ -23,7 +22,6 @@ export default function MentionsLegalesPage() {
             ["Adresse", "10 traverse de la Gaye, 13009 Marseille, France"],
             ["Immatriculation (SIREN)", pending],
             ["Directeur de la publication", "Carotenuto - Marchetti Orso"],
-            ["Contact", "Formulaire de la page Contact"],
           ]}
         />
       </LegalSection>

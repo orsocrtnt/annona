@@ -147,7 +147,6 @@ export interface PortalDelivery {
   podNote?: string | null;
   podOutcome?: string | null;
   podSignatureUrl?: string | null;
-  podPdfUrl?: string | null;
   podRecipientName?: string | null;
   podSignatureRefusedReason?: string | null;
 }

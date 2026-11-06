@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { getCompanyOnboardingStatus, onboardingPreferenceSchema, onboardingCompanyProfileSchema, updateOnboardingPreference, updateOnboardingCompanyProfile } from "@/domains/onboarding/onboarding.service";
 
-import { resolveCompanySaasAccess } from "@/domains/saas/saas.service";
 
 const updateSchema = z.union([onboardingPreferenceSchema, z.object({ step: z.literal("company"), profile: onboardingCompanyProfileSchema }).strict()]);
 
@@ -41,17 +40,12 @@ export async function PATCH(request: Request) {
   const parsed = updateSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Informations ou choix d’étape invalides" }, { status: 400 });
   try {
-    const access = await resolveCompanySaasAccess(companyId);
-    if (!access.canMutate) return NextResponse.json({ error: "Ce compte est en lecture seule." }, { status: 403 });
     if (parsed.data.step === "company") await updateOnboardingCompanyProfile(companyId, parsed.data.profile);
     else await updateOnboardingPreference(companyId, parsed.data);
     return NextResponse.json({ data: await getCompanyOnboardingStatus(companyId), success: true });
   } catch (error) {
     if (error instanceof Error && error.message === "COMPANY_NOT_FOUND") {
       return NextResponse.json({ error: "Entreprise introuvable" }, { status: 404 });
-    }
-    if (error instanceof Error && error.message === "SAAS_SUBSCRIPTION_REQUIRED") {
-      return NextResponse.json({ error: "Aucun abonnement ou pilote actif n’est associé à cette entreprise." }, { status: 409 });
     }
     if (error instanceof Error && error.message === "ONBOARDING_CONFLICT") {
       return NextResponse.json({ error: "Les réglages ont changé. Réessayez." }, { status: 409 });

@@ -45,8 +45,8 @@ test("DISPATCHER-403 : lecture des réglages d'assignation ouverte au dispatcher
   assert.equal(await allowed("DRIVER", ["deliveries:dispatch"], false), false);
 });
 
-test("DISPATCHER-403 : les trois routes lisent avec la garde et écrivent toujours avec settings:update", () => {
-  for (const route of ["dispatch", "tariffs", "location-settings"]) {
+test("DISPATCHER-403 : les deux routes lisent avec la garde et écrivent toujours avec settings:update", () => {
+  for (const route of ["dispatch", "location-settings"]) {
     const source = readFileSync(`src/app/api/company/${route}/route.ts`, "utf8");
     const get = source.slice(source.indexOf("export async function GET"), source.indexOf("export async function PATCH"));
     const patch = source.slice(source.indexOf("export async function PATCH"));

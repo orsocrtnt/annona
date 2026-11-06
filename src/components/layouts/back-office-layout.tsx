@@ -1,5 +1,4 @@
 "use client";
-import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,8 +8,6 @@ import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { MobileNav } from "./mobile-nav";
 import { useUIStore } from "@/stores/ui.store";
-import { useAuthStore } from "@/stores/auth.store";
-import { canOpenStaffInbox } from "@/lib/constants/conversation-roles";
 import type { NavItem, BreadcrumbItem } from "@/types";
 
 interface BackOfficeLayoutProps {
@@ -34,11 +31,6 @@ export function BackOfficeLayout({
   headerActions,
 }: BackOfficeLayoutProps) {
   const { sidebarCollapsed, toggleMobileNav } = useUIStore();
-  // Super-administrateur, ou mini-admin sans lecture des commandes ni des livraisons : pas d'accès aux
-  // échanges ni aux alertes, donc ne pas appeler ces API (403).
-  const role = useAuthStore((state) => state.user?.role.systemRole);
-  const permissions = useAuthStore((state) => state.permissions);
-  const showInbox = canOpenStaffInbox(role, permissions);
   const isLg = useMediaQuery("(min-width: 1024px)");
   // Même retrait que le contenu : barre latérale flottante (12 px + 80/264 px) et son écart.
   const mapSidebarWidth = sidebarCollapsed ? 104 : 292;
@@ -77,7 +69,7 @@ export function BackOfficeLayout({
             className="fixed right-0 bottom-0 z-0 overflow-hidden transition-[left,top] duration-300 ease-in-out"
             style={{
               left: isLg ? mapSidebarWidth : 0,
-              top: "var(--demo-banner-height, 0px)",
+              top: 0,
             }}
           >
             {children}
@@ -86,11 +78,9 @@ export function BackOfficeLayout({
           <main
             id="main-content"
             tabIndex={-1}
-            // Marge basse : la pastille flottante « Alertes » ne recouvre jamais le dernier élément de la page.
             className="flex-1 p-4 max-md:px-3 max-md:pt-4 max-md:pb-32 lg:px-8 lg:pb-24 lg:pt-5"
           >
             <div className="mx-auto max-w-[1480px]">
-              {showInbox && <OrderMessagesInbox enableDispatchTargets />}
               {children}
             </div>
           </main>

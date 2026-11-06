@@ -1,11 +1,6 @@
-import { announcedCourierLine } from "@/domains/company/courier-estimate.service";
 import { prisma } from "@/services/prisma/client";
 import { Prisma, type InvoiceStatus } from "@prisma/client";
 import type { CreateOrderInvoiceInput, InvoiceLineItem } from "@/lib/validations/invoice";
-import {
-  getCompanyTariffSettings,
-  findTariffZoneForPostalCode,
-} from "@/domains/company/tariff-settings.service";
 import { getCompanyBillingSettings } from "@/domains/company/billing-settings.service";
 import { CLIENT_INVOICES_TAKE } from "@/lib/query/list-limits";
 import { queueInvoiceIssuedNotification } from "@/domains/client-portal/notify.service";
@@ -34,39 +29,11 @@ export function formatInvoiceReference(prefix: string, number: number) {
 export function buildInvoiceLineItems(
   order: {
     items: { name: string; quantity: number; unitPrice: Prisma.Decimal | number }[];
-    shippingPostalCode: string | null;
   },
-  tariffs: Awaited<ReturnType<typeof getCompanyTariffSettings>>,
   input: CreateOrderInvoiceInput,
   vatRate = 0
 ): InvoiceLineItem[] {
   const lines: InvoiceLineItem[] = [];
-
-  if (input.zoneId) {
-    const zone = tariffs.tariffZones.find((z) => z.id === input.zoneId);
-    if (zone) {
-      lines.push({
-        label: `Livraison — ${zone.name}`,
-        amount: zone.price,
-        quantity: 1,
-        sourceType: "ZONE",
-        sourceId: zone.id,
-      });
-    }
-  }
-
-  for (const feeId of input.feeIds) {
-    const fee = tariffs.tariffFees.find((f) => f.id === feeId);
-    if (fee) {
-      lines.push({
-        label: fee.name,
-        amount: fee.price,
-        quantity: 1,
-        sourceType: "FEE",
-        sourceId: fee.id,
-      });
-    }
-  }
 
   if (input.includePurchases) {
     for (const item of order.items) {
@@ -129,15 +96,8 @@ export async function createOrderInvoice(
   const paidInvoice = order.invoices.find((inv) => inv.status === "PAID");
   if (paidInvoice) throw new Error("INVOICE_ALREADY_PAID");
 
-  const [tariffs, billing] = await Promise.all([
-    getCompanyTariffSettings(companyId),
-    getCompanyBillingSettings(companyId),
-  ]);
-  const lineItems = buildInvoiceLineItems(order, tariffs, input, billing.invoice.vatRate);
-
-  if (input.zoneId && !lineItems.some((l) => l.sourceType === "ZONE")) {
-    throw new Error("ZONE_NOT_FOUND");
-  }
+  const billing = await getCompanyBillingSettings(companyId);
+  const lineItems = buildInvoiceLineItems(order, input, billing.invoice.vatRate);
 
   if (lineItems.length === 0) {
     if (input.includePurchases) {
@@ -207,26 +167,14 @@ export async function createOrderInvoice(
   return invoice;
 }
 
-/** Prix de course à préremplir dans le formulaire de facture ; null si rien n'a été annoncé. */
-export async function getOrderAnnouncedCourierLine(companyId: string, orderId: string) {
-  const order = await prisma.order.findFirst({
-    where: { id: orderId, companyId },
-    select: {
-      deliveryCategory: true, pickupAddress: true, pickupCity: true, pickupPostalCode: true,
-      shippingAddress: true, shippingCity: true, shippingPostalCode: true, requestedDeliveryDate: true,
-    },
-  });
-  return order ? announcedCourierLine(companyId, order) : null;
-}
-
 export type DeliveredOrderInvoiceResult =
   | { status: "created"; invoiceId: string }
   | { status: "skipped"; reason: "ORDER_NOT_FOUND" | "ORDER_NOT_DELIVERED" | "INVOICE_EXISTS" | "SETTING_DISABLED" };
 
 /**
  * DEMO-3 : facture émise automatiquement pour une commande livrée, avec les mêmes
- * valeurs par défaut que le formulaire manuel (zone suggérée par le code postal,
- * achats validés par le livreur, délai de paiement de l'entreprise). Une facture
+ * valeurs par défaut que le formulaire manuel (achats validés par le livreur,
+ * délai de paiement de l'entreprise). Une facture
  * active par commande, comme le flux manuel : si la commande en a déjà une non
  * annulée (manuelle ou automatique), rien n'est créé ni modifié ; une facture
  * annulée ne bloque pas.
@@ -243,24 +191,15 @@ export async function createDeliveredOrderInvoice(
   if (order.status !== "DELIVERED") return { status: "skipped", reason: "ORDER_NOT_DELIVERED" };
   if (order.invoices.length > 0) return { status: "skipped", reason: "INVOICE_EXISTS" };
 
-  const [tariffs, billing] = await Promise.all([
-    getCompanyTariffSettings(companyId),
-    getCompanyBillingSettings(companyId),
-  ]);
+  const billing = await getCompanyBillingSettings(companyId);
   // Réglage relu au moment du traitement : coupé entre-temps, rien n'est émis.
   if (!billing.invoice.autoInvoiceOnDelivery) return { status: "skipped", reason: "SETTING_DISABLED" };
 
-  // Le prix annoncé au client prime sur la zone : une course ne se paie pas deux fois (FACT-KM).
-  const courierLine = await announcedCourierLine(companyId, order);
-  const zone = courierLine ? null : findTariffZoneForPostalCode(order.shippingPostalCode, tariffs.tariffZones);
   const lineItems = buildInvoiceLineItems(
     order,
-    tariffs,
     {
-      zoneId: zone?.id,
-      feeIds: [],
       includePurchases: order.items.some((item) => Number(item.unitPrice) > 0),
-      customLines: courierLine ? [courierLine] : [],
+      customLines: [],
     },
     billing.invoice.vatRate
   );
@@ -301,35 +240,6 @@ export async function createDeliveredOrderInvoice(
   if (!outcome) return { status: "skipped", reason: "INVOICE_EXISTS" };
   if (outcome.notificationJobId) kickOperationJob(outcome.notificationJobId);
   return { status: "created", invoiceId: outcome.invoiceId };
-}
-
-export async function getOrderInvoicePreview(
-  companyId: string,
-  orderId: string,
-  input: CreateOrderInvoiceInput
-) {
-  const order = await prisma.order.findFirst({
-    where: { id: orderId, companyId },
-    include: { items: true },
-  });
-  if (!order) return null;
-
-  const [tariffs, billing] = await Promise.all([
-    getCompanyTariffSettings(companyId),
-    getCompanyBillingSettings(companyId),
-  ]);
-  const lineItems = buildInvoiceLineItems(order, tariffs, input, billing.invoice.vatRate);
-  const suggestedZone = findTariffZoneForPostalCode(
-    order.shippingPostalCode,
-    tariffs.tariffZones
-  );
-
-  return {
-    lineItems,
-    total: computeInvoiceTotal(lineItems),
-    suggestedZoneId: suggestedZone?.id ?? null,
-    tariffs,
-  };
 }
 
 export async function getClientInvoices(customerId: string, companyId: string) {

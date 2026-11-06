@@ -101,8 +101,6 @@ export function parsePlatformUserListParams(
 export function platformUserWhere(query: PlatformUserListParams) {
   const name = query.q ? { contains: query.q, mode: "insensitive" as const } : null;
   return {
-    // Comptes des espaces de démonstration exclus (personas fictifs) ; les comptes sans entreprise restent.
-    NOT: { company: { is: { isDemo: true } } },
     ...(query.role ? { role: { systemRole: query.role } } : {}),
     ...(query.status ? { status: query.status } : {}),
     ...(name

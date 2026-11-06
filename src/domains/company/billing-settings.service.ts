@@ -4,14 +4,12 @@ import { prisma } from "@/services/prisma/client";
 import type { CompanyBillingSettings } from "@/lib/validations/billing-settings";
 import {
   DEFAULT_BILLING_SETTINGS,
-  DEFAULT_COURIER_PRICING,
   DEFAULT_INVOICE_GENERAL,
 } from "@/lib/validations/billing-settings";
 
 export function parseBillingSettings(raw: unknown): CompanyBillingSettings {
   const stored = (raw ?? {}) as Partial<CompanyBillingSettings>;
   return {
-    courier: { ...DEFAULT_COURIER_PRICING, ...stored.courier },
     invoice: { ...DEFAULT_INVOICE_GENERAL, ...stored.invoice },
   };
 }

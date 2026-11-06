@@ -65,13 +65,6 @@ test("fichier absent ou trop lourd : refus avant d'appeler le service", async ()
   assert.deepEqual(calls, []);
 });
 
-test("en démo, le refus du service devient un 403 explicite", async () => {
-  const { route } = loadRoute({ serviceError: "LOGO_DEMO_DISABLED" });
-  const res = await route.POST(upload(Buffer.from("x")));
-  assert.equal(res.status, 403);
-  assert.match(JSON.stringify(res.body), /démonstration/);
-});
-
 test("un envoi valide renvoie la taille du logo enregistré", async () => {
   const { route, calls } = loadRoute();
   const res = await route.POST(upload(Buffer.from("x")));

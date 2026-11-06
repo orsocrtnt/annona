@@ -11,9 +11,7 @@ export type CreateOrderForCustomerResult =
   | { status: "customer_inactive" }
   | { status: "category_disabled" }
   | { status: "slot_invalid"; message: string }
-  | { status: "conflict" }
-  | { status: "saas_blocked" }
-  | { status: "saas_read_only" };
+  | { status: "conflict" };
 
 export type CreateOrderForCustomerInput = {
   companyId: string;
@@ -28,16 +26,14 @@ export type CreateOrderForCustomerDeps = {
   assertCategory?: typeof assertDeliveryCategoryEnabled;
 };
 
-/** Refus métier connus de createClientOrder / assertCanCreateOrder ; le reste remonte comme panne. */
-const CREATE_ERROR_STATUSES: Record<string, "conflict" | "saas_blocked" | "saas_read_only"> = {
+/** Refus métier connus de createClientOrder ; le reste remonte comme panne. */
+const CREATE_ERROR_STATUSES: Record<string, "conflict"> = {
   IDEMPOTENCY_KEY_REUSED: "conflict",
-  SAAS_ORDER_CREATION_BLOCKED: "saas_blocked",
-  SAAS_ACCOUNT_READ_ONLY: "saas_read_only",
 };
 
 /**
- * Crée une commande saisie par l'équipe (formulaire ou message validé) pour un client de l'entreprise.
- * Réutilise createClientOrder sans le modifier : géocodage serveur, contrôles SaaS, dispatch,
+ * Crée une commande saisie par l'équipe pour un client de l'entreprise.
+ * Réutilise createClientOrder sans le modifier : géocodage serveur,
  * idempotence par clé (un double clic rend la même commande) et source ADMIN.
  */
 export async function createOrderForCustomer(

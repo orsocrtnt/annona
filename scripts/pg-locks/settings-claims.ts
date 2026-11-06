@@ -29,7 +29,6 @@ async function main() {
   const { updateCompanySettingsWithClaim, updateUserSettingsWithClaim } = await import("../../src/lib/database/settings-claims");
   const { updateCompanyDispatchSettings } = await import("../../src/domains/company/dispatch-settings.service");
   const { updateCompanyLocationSettings } = await import("../../src/domains/company/location-settings.service");
-  const { updateCompanyTariffSettings } = await import("../../src/domains/company/tariff-settings.service");
   const { updateCompanyDeliveryOptions } = await import("../../src/domains/company/company-settings.service");
   const { updatePortalShowDriverPhone } = await import("../../src/domains/company/portal-settings.service");
   const { updateCompanyBillingSettings } = await import("../../src/domains/company/billing-settings.service");
@@ -70,7 +69,6 @@ async function main() {
     const writers: Array<[string, () => Promise<unknown>]> = [
       ["dispatchRules", () => updateCompanyDispatchSettings(company.id, { ...DEFAULT_DISPATCH_SETTINGS, maxActiveDeliveriesPerDriver: 7 })],
       ["locationTracking", () => updateCompanyLocationSettings(company.id, { ...DEFAULT_DRIVER_LOCATION_SETTINGS, idleIntervalSeconds: 31 })],
-      ["tariffZones", () => updateCompanyTariffSettings(company.id, { tariffZones: [], tariffFees: [] })],
       ["deliveryCategories", () => updateCompanyDeliveryOptions(company.id, { deliveryCategories: { STANDARD: true, COURIER: false, SPECIAL_MISSION: true } })],
       ["portalShowDriverPhone", () => updatePortalShowDriverPhone(company.id, false)],
       ["billing", () => updateCompanyBillingSettings(company.id, DEFAULT_BILLING_SETTINGS)],

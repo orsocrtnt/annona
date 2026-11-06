@@ -1,6 +1,6 @@
 import { resolveTrackingPosition } from "@/domains/tracking/tracking-position.service";
 import { trackingService, trackingTarget, type TrackingMotion } from "@/domains/tracking/tracking.policy";
-import { transaction, ConversationError } from "@/domains/order-conversation/order-conversation.service";
+import { OrderAccessError, serializableTransaction } from "@/domains/order/order-access";
 import { prisma } from "@/services/prisma/client";
 import type { UpdateDriverLocationInput } from "@/lib/validations/driver-location";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS } from "@/lib/validations/driver-location-settings";
@@ -23,15 +23,15 @@ export type LiveDriverLocation = {
 };
 
 export async function upsertDriverLocation(driverId: string, companyId: string, data: UpdateDriverLocationInput) {
-  return transaction(async tx => {
+  return serializableTransaction(async tx => {
     const driver = await tx.user.findFirst({ where: { id: driverId, companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } }, select: { settings: true, updatedAt: true } });
-    if (!driver || !trackingService(driver.settings).active) throw new ConversationError(409, "Service arrêté : position non enregistrée.");
+    if (!driver || !trackingService(driver.settings).active) throw new OrderAccessError(409, "Service arrêté : position non enregistrée.");
     const mission = await tx.delivery.findFirst({ where: { driverId, companyId, status: { in: ["ASSIGNED", "PURCHASING", "IN_DELIVERY"] }, missionStartedAt: { not: null }, completedAt: null }, select: { id: true, updatedAt: true } });
-    if (!mission) throw new ConversationError(409, "Aucune mission démarrée : position non enregistrée.");
+    if (!mission) throw new OrderAccessError(409, "Aucune mission démarrée : position non enregistrée.");
     // Same driver lock as service closure; delivery lock serializes completion.
     const claimed = await tx.delivery.updateMany({ where: { id: mission.id, driverId, companyId, updatedAt: mission.updatedAt, completedAt: null }, data: { updatedAt: mission.updatedAt } });
     const locked = await tx.user.updateMany({ where: { id: driverId, companyId, updatedAt: driver.updatedAt }, data: { updatedAt: driver.updatedAt } });
-    if (locked.count !== 1 || claimed.count !== 1) throw new ConversationError(409, "La mission ou le service a changé.");
+    if (locked.count !== 1 || claimed.count !== 1) throw new OrderAccessError(409, "La mission ou le service a changé.");
     return tx.driverLocation.upsert({ where: { driverId }, create: { driverId, ...data }, update: data });
   });
 }

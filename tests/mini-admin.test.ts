@@ -112,7 +112,6 @@ function route(file: string, role: SystemRole, companyId: string | null = "a") {
       ),
       getCompanyId: (context: { user: { companyId: string | null } }) => context.user.companyId,
     },
-    "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
     "@/domains/user/user.service": users,
     "@/lib/validations/user": validation,
   };

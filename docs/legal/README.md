@@ -8,7 +8,7 @@ Version de travail du 18 octobre 2026, destinée au propriétaire. Ce dossier or
 
 - **Exigence sourcée** : règle décrite par un texte ou une autorité, dont le champ d'application doit être vérifié pour l'exploitant et chaque pilote.
 - **Recommandation** : mesure proposée ou repère de l'autorité, à distinguer d'une obligation légale automatique.
-- **Décision produit** : choix du propriétaire, consigné dans [les décisions commerciales](../DECISIONS_PRODUIT_COMMERCIALES.md) ; il ne constitue pas une validation juridique.
+- **Décision produit** : choix du propriétaire, consigné dans les décisions commerciales de l'ancien produit (historique git) ; il ne constitue pas une validation juridique.
 - **À qualifier** : fait, rôle ou arbitrage encore inconnu. Ne pas le remplacer par une hypothèse dans un document publié.
 
 Les sources officielles et leurs dates sont regroupées dans [SOURCES.md](SOURCES.md). Les liens techniques du dépôt servent de preuves de fonctionnement, pas de sources de droit.

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { gatePlatformWrite } from "@/lib/api/platform-access";
 import { ACCESS_ERROR_MESSAGES, parseAccessAction, setPlatformCompanyAccess } from "@/domains/admin/account-access.service";
 
 const noStore = { "Cache-Control": "no-store" };
@@ -10,8 +9,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const auth = await requireStaffRole("dashboard:admin");
   if ("error" in auth) return auth.error;
   const denied = requireRole(auth.context, ["SUPER_ADMIN"]);
-  const blocked = await gatePlatformWrite(auth.context, denied, "COMPANY_DETAIL", "POST");
-  if (blocked) return blocked;
+  if (denied) return denied;
 
   const action = parseAccessAction(await request.json().catch(() => null));
   if (!action) return NextResponse.json({ error: "Action inconnue." }, { status: 400, headers: noStore });

@@ -1,15 +1,15 @@
 import { prisma } from "@/services/prisma/client";
-import { conversationScope, ConversationError, transaction, type ConversationActor } from "@/domains/order-conversation/order-conversation.service";
+import { OrderAccessError, orderActorScope, serializableTransaction, type OrderActor } from "@/domains/order/order-access";
 import { getFulfillmentStatusLabel } from "@/lib/constants/order-status";
 import { clientDriverLabel, loadCompanyDriverNames, redactClientTimeline } from "@/domains/delivery/client-driver";
 import { DEFAULT_DRIVER_LOCATION_SETTINGS, driverLocationSettingsSchema } from "@/lib/validations/driver-location-settings";
 import { trackingService, trackingTarget, trackingTimeline } from "./tracking.policy";
 import { resolveTrackingPosition } from "./tracking-position.service";
 
-export async function getOrderTracking(actor: ConversationActor, orderId: string) {
-  const scope = conversationScope(actor);
+export async function getOrderTracking(actor: OrderActor, orderId: string) {
+  const scope = orderActorScope(actor);
   // Lecture en transaction ; l'itinéraire des livreurs est résolu après, sans garder la connexion.
-  const { order, threshold, companyDrivers } = await transaction(async tx => {
+  const { order, threshold, companyDrivers } = await serializableTransaction(async tx => {
     const order = await tx.order.findFirst({ where: { id: orderId, ...scope }, select: {
       id: true, reference: true, status: true, deliveryCategory: true, updatedAt: true,
       company: { select: { settings: true } },
@@ -20,7 +20,7 @@ export async function getOrderTracking(actor: ConversationActor, orderId: string
         trackingEvents: { select: { id: true, label: true, description: true, occurredAt: true } },
       } },
     } });
-    if (!order) throw new ConversationError(404, "Commande introuvable.");
+    if (!order) throw new OrderAccessError(404, "Commande introuvable.");
     const raw = (order.company.settings as { locationTracking?: unknown } | null)?.locationTracking;
     const config = driverLocationSettingsSchema.safeParse(raw ?? {});
     const threshold = config.success ? config.data.onlineThresholdSeconds : DEFAULT_DRIVER_LOCATION_SETTINGS.onlineThresholdSeconds;
@@ -37,20 +37,20 @@ export async function getOrderTracking(actor: ConversationActor, orderId: string
 }
 export async function getDriverService(driverId: string, companyId: string) {
   const driver = await prisma.user.findFirst({ where: { id: driverId, companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } }, select: { settings: true } });
-  if (!driver) throw new ConversationError(404, "Livreur introuvable.");
+  if (!driver) throw new OrderAccessError(404, "Livreur introuvable.");
   return trackingService(driver.settings);
 }
 export async function setDriverService(driverId: string, companyId: string, active: boolean) {
-  return transaction(async tx => {
+  return serializableTransaction(async tx => {
     const driver = await tx.user.findFirst({ where: { id: driverId, companyId, status: "ACTIVE", role: { systemRole: "DRIVER" } }, select: { settings: true, updatedAt: true } });
-    if (!driver) throw new ConversationError(404, "Livreur introuvable.");
+    if (!driver) throw new OrderAccessError(404, "Livreur introuvable.");
     const current = trackingService(driver.settings);
     if (current.active === active) return current;
     const now = new Date(Math.max(Date.now(), +driver.updatedAt + 1));
     const state = { active, startedAt: active ? now.toISOString() : current.startedAt, endedAt: active ? null : now.toISOString() };
     const settings = driver.settings && typeof driver.settings === "object" && !Array.isArray(driver.settings) ? driver.settings : {};
     const claimed = await tx.user.updateMany({ where: { id: driverId, companyId, updatedAt: driver.updatedAt }, data: { settings: { ...settings, trackingService: state }, updatedAt: now } });
-    if (claimed.count !== 1) throw new ConversationError(409, "Le service a changé. Actualisez puis réessayez.");
+    if (claimed.count !== 1) throw new OrderAccessError(409, "Le service a changé. Actualisez puis réessayez.");
     // New service never revives a location received during a previous service.
     await tx.driverLocation.deleteMany({ where: { driverId } });
     return state;

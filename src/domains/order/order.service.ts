@@ -25,10 +25,7 @@ import {
   resolveStopCoordinates,
 } from "@/domains/delivery/delivery-coordinates";
 import { CLIENT_ORDERS_TAKE, COMPANY_ORDERS_TAKE } from "@/lib/query/list-limits";
-import {
-  enqueueAutoDispatchJob,
-  kickOperationJob,
-} from "@/domains/operations/operation-job.service";
+import { kickOperationJob } from "@/domains/operations/operation-job.service";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
 import { queueDeliveryInvoiceJob } from "@/domains/invoice/delivery-invoice.service";
 import { isInvoiceOutstanding, OUTSTANDING_INVOICE_STATUSES } from "@/domains/invoice/invoice-due";
@@ -38,11 +35,6 @@ import {
   type OrderHistoryPage,
   type OrderHistoryQuery,
 } from "@/lib/query/order-history";
-import {
-  assertCanCreateOrder,
-  recordOrderCreatedUsage,
-  resolveCompanySaasAccess,
-} from "@/domains/saas/saas.service";
 
 type CreateOrderOptions = CreateClientOrderInput & {
   /** Calculé par `resolveDeliverySlot`, jamais lu de la requête. */
@@ -61,7 +53,6 @@ type CreateOrderRequest = {
   /** Fin de la transaction de création : écritures liées à la commande (lien de suivi, e-mail). */
   afterCreate?: (tx: Prisma.TransactionClient, order: { id: string }) => Promise<void>;
   /** Commande anonyme : un dispatcher la regarde avant toute affectation à un livreur. */
-  skipAutoDispatch?: boolean;
 };
 
 function canonicalize(value: unknown): unknown {
@@ -542,7 +533,6 @@ export async function createClientOrder(
     try {
       return await prisma.$transaction(async (tx) => {
         await request.beforeCreate?.(tx);
-        await assertCanCreateOrder(companyId, tx);
         const order = await tx.order.create({
           data: {
             reference: orderReference,
@@ -579,7 +569,6 @@ export async function createClientOrder(
           },
           include: { stops: { orderBy: { sequence: "asc" } } },
         });
-        await recordOrderCreatedUsage(tx, { companyId, orderId: order.id });
         return order;
       }, { maxWait: 10_000, timeout: 30_000 });
     } catch (error) {
@@ -649,7 +638,6 @@ export async function createClientOrder(
   try {
     transactionResult = await prisma.$transaction(async (tx) => {
     await request.beforeCreate?.(tx);
-    const saasAccess = await assertCanCreateOrder(companyId, tx);
     const createdOrder = await tx.order.create({
       data: {
         reference: orderReference,
@@ -715,7 +703,6 @@ export async function createClientOrder(
     });
 
     const order = createdOrder;
-    await recordOrderCreatedUsage(tx, { companyId, orderId: order.id });
 
     if (isCourier && pickupStops.length > 0 && order.stops.length > 0) {
       const itemRows = order.stops.flatMap((stop) => {
@@ -810,16 +797,9 @@ export async function createClientOrder(
 
       await request.afterCreate?.(tx, order);
 
-      const operationJob = saasAccess.features.has("auto_dispatch") && !request.skipAutoDispatch
-        ? await enqueueAutoDispatchJob(tx, {
-            companyId,
-            deliveryId: delivery.id,
-          })
-        : null;
-
-      return { order, delivery, operationJobId: operationJob?.id ?? null };
+      return { order, delivery };
     // Une dizaine d'allers-retours séquentiels : le délai Prisma par défaut (5 s) expirait
-    // sur la base distante avec le dispatch automatique (ONBOARD-1, DISPATCH-3).
+    // sur la base distante (ONBOARD-1, DISPATCH-3).
     }, { maxWait: 10_000, timeout: 30_000 });
   } catch (error) {
     if (idempotencyKey && requestFingerprint && isUniqueConstraintError(error)) {
@@ -834,7 +814,7 @@ export async function createClientOrder(
     throw error;
   }
 
-  const { order, operationJobId } = transactionResult;
+  const { order } = transactionResult;
 
   if (customerId && input.saveAddress && input.addressLabel) {
     try {
@@ -849,7 +829,6 @@ export async function createClientOrder(
     }
   }
 
-  if (operationJobId) kickOperationJob(operationJobId);
 
   return order;
 }
@@ -1174,8 +1153,7 @@ export async function updateCompanyOrderStatus(
     });
 
     if (acceptingQuote) {
-      const saasAccess = await resolveCompanySaasAccess(companyId, new Date(), tx);
-      const delivery = await tx.delivery.create({
+      await tx.delivery.create({
         data: {
           reference: quoteDeliveryReference!,
           status: "PENDING",
@@ -1209,14 +1187,6 @@ export async function updateCompanyOrderStatus(
           },
         },
       });
-
-      if (saasAccess.features.has("auto_dispatch")) {
-        const operationJob = await enqueueAutoDispatchJob(tx, {
-          companyId,
-          deliveryId: delivery.id,
-        });
-        operationJobIds.push(operationJob.id);
-      }
     }
 
     let passageKey: string | null = null;

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { gatePlatformRead } from "@/lib/api/platform-access";
 import { allowAdminSearch, parseAdminSearchParams, searchPlatform } from "@/domains/admin/search.service";
 
 /** ADMIN-ESPACE lot 3 : recherche globale du super-administrateur (entreprises, utilisateurs, commandes, contacts). */
@@ -9,8 +8,7 @@ export async function GET(request: Request) {
   if ("error" in auth) return auth.error;
   const denied = requireRole(auth.context, ["SUPER_ADMIN"]);
   // Ressource « vue d'ensemble » du journal : la recherche traverse toute la plateforme (enum inchangé, aucune migration).
-  const blocked = await gatePlatformRead(auth.context, denied, "OVERVIEW");
-  if (blocked) return blocked;
+  if (denied) return denied;
 
   const parsed = parseAdminSearchParams(new URL(request.url).searchParams);
   if ("error" in parsed) {

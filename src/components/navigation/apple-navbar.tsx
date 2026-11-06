@@ -31,7 +31,7 @@ export function AppleNavbar({
     <header
       className={cn(
         "z-40 px-3 pb-2 pt-3 sm:px-5 sm:pb-3 sm:pt-4",
-        sticky ? "sticky top-[var(--demo-banner-height,0px)]" : "relative",
+        sticky ? "sticky top-0" : "relative",
         // Fond plein au-dessus de la barre claire : le contenu ne défile pas en clair dans la marge.
         light && sticky && "bg-[linear-gradient(to_bottom,var(--color-background)_72%,transparent)]",
         className

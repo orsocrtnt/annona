@@ -88,7 +88,7 @@ export default function InvoiceDetailPage() {
         )}
       </section>
 
-      <p className="text-sm text-muted-foreground">Facture de prestation de livraison. Document opérationnel, distinct de l&apos;abonnement Annona ; il ne constitue pas une facture électronique réglementaire.</p>
+      <p className="text-sm text-muted-foreground">Facture de prestation de livraison. Document opérationnel ; il ne constitue pas une facture électronique réglementaire.</p>
 
       {(invoice.lineItems?.length ?? 0) > 0 && (
         <Card>

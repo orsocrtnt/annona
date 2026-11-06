@@ -13,32 +13,27 @@ import { FormField } from "@/components/ui/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   loginSchema,
-  registerSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "@/lib/validations/auth";
 import type {
   LoginInput,
-  RegisterInput,
   ForgotPasswordInput,
   ResetPasswordInput,
 } from "@/lib/validations/auth";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Play } from "lucide-react";
 import { AuthShell } from "@/features/auth/auth-shell";
 import type { LoginContext } from "@/features/auth/login-space";
-import { demoRequestKeyFor, useApplyLoginSession } from "@/features/auth/login-session";
+import { useApplyLoginSession } from "@/features/auth/login-session";
 import { AUTH_TIMEOUT_MESSAGE, RequestTimeoutError, requestJsonWithTimeout } from "@/features/auth/request-timeout";
 import { createSubmitGuard } from "@/features/auth/submit-guard";
-import { DEMO_DEFAULT_PASSWORD, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
-import { navigateToAuthPage } from "@/lib/navigation/auth-page-navigation";
 
-type AuthMode = "login" | "register" | "forgot-password" | "reset-password";
+type AuthMode = "login" | "forgot-password" | "reset-password";
 type PasswordLink =
-  | { tokenHash: string; type: "invite" | "recovery" | "signup" }
-  | { accessToken: string; refreshToken: string; type: "invite" | "recovery" | "signup" };
+  | { tokenHash: string; type: "invite" | "recovery" }
+  | { accessToken: string; refreshToken: string; type: "invite" | "recovery" };
 
 function LoginEmailPrefill({ form }: { form: UseFormReturn<LoginInput> }) {
   const searchParams = useSearchParams();
@@ -54,15 +49,13 @@ function LoginEmailPrefill({ form }: { form: UseFormReturn<LoginInput> }) {
 interface AuthFormProps {
   mode: AuthMode;
   loginContext?: LoginContext;
-  /** Lien « Essayer la démo » : remplit le compte de démonstration public (affiché en clair sur la page). */
-  prefillDemo?: boolean;
 }
 
 /** Champs de la connexion : 52 px de haut, bordure contrastée (3:1) en Light comme en Dark. */
 const loginInputClass =
   "h-[52px] rounded-[14px] border-[#858f88] bg-card px-4 text-base dark:border-[#6b746f]";
 
-export function AuthForm({ mode, loginContext = "company", prefillDemo = false }: AuthFormProps) {
+export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
@@ -94,10 +87,10 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
       // Le fragment n'est pas envoyé au serveur ; le retirer de l'historique après lecture.
       window.history.replaceState(null, "", window.location.pathname);
       setSuccess(null);
-      if (tokenHash && (type === "invite" || type === "recovery" || type === "signup")) {
+      if (tokenHash && (type === "invite" || type === "recovery")) {
         setPasswordLink({ tokenHash, type });
         setError(null);
-      } else if (accessToken && refreshToken && (type === "invite" || type === "recovery" || type === "signup")) {
+      } else if (accessToken && refreshToken && (type === "invite" || type === "recovery")) {
         setPasswordLink({ accessToken, refreshToken, type });
         setError(null);
       } else {
@@ -116,15 +109,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
 
   const loginForm = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: prefillDemo ? { email: DEMO_LOGIN_EMAIL, password: DEMO_DEFAULT_PASSWORD } : { email: "", password: "" },
-  });
-
-  const registerForm = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      firstName: "", lastName: "", email: "",
-      password: "", confirmPassword: "", companyName: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
   const forgotForm = useForm<ForgotPasswordInput>({
@@ -151,14 +136,12 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
   const submitLogin = async (data: LoginInput) => {
     setError(null);
     const normalizedEmail = data.email.trim().toLowerCase();
-    const demoRequestKey = demoRequestKeyFor(normalizedEmail);
     const res = await requestJsonWithTimeout("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: normalizedEmail,
         password: data.password,
-        demoRequestKey,
       }),
     });
     const json = res.json;
@@ -180,32 +163,6 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     router.push(destination);
   };
 
-  const onRegister = async (data: RegisterInput) => {
-    setError(null);
-    let res;
-    try {
-      res = await requestJsonWithTimeout("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          email: data.email.trim().toLowerCase(),
-        }),
-      });
-    } catch (caught) {
-      setError(caught instanceof RequestTimeoutError ? AUTH_TIMEOUT_MESSAGE : "Connexion interrompue. Vérifiez votre réseau puis réessayez.");
-      return;
-    }
-    const json = res.json ?? {};
-    if (!res.ok) {
-      setError(json.error ?? "Impossible de créer le compte.");
-      return;
-    }
-
-    registerForm.reset();
-    setSuccess("Consultez votre messagerie pour confirmer votre adresse, puis connectez-vous.");
-  };
-
   const onForgotPassword = async (data: ForgotPasswordInput) => {
     setError(null);
     try {
@@ -217,7 +174,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
     } catch (caught) { setError(caught instanceof RequestTimeoutError ? AUTH_TIMEOUT_MESSAGE : "Connexion interrompue. Réessayez plus tard."); }
   };
 
-  const onResetPassword = async (data?: ResetPasswordInput) => {
+  const onResetPassword = async (data: ResetPasswordInput) => {
     setError(null);
     if (!passwordLink || completingLink) { setError("Demandez un nouveau lien ou attendez la fin de la demande."); return; }
     setCompletingLink(true);
@@ -235,13 +192,13 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         router.push(json.redirectTo);
         return;
       }
-      setSuccess(passwordLink.type === "signup" ? "Adresse confirmée. Vous pouvez vous connecter." : "Mot de passe enregistré. Vous pouvez vous connecter.");
+      setSuccess("Mot de passe enregistré. Vous pouvez vous connecter.");
     } catch (caught) { setError(caught instanceof RequestTimeoutError ? `${AUTH_TIMEOUT_MESSAGE}. Si le lien a été utilisé, demandez-en un nouveau.` : "Connexion interrompue. Si le lien a été utilisé, demandez-en un nouveau."); }
     finally { setCompletingLink(false); }
   };
 
-  const loginLinks: Record<LoginContext, { forgot: string; register?: string }> = {
-    company: { forgot: "/forgot-password", register: "/contact" },
+  const loginLinks: Record<LoginContext, { forgot: string }> = {
+    company: { forgot: "/forgot-password" },
     client: { forgot: "/forgot-password" },
     driver: { forgot: "/forgot-password" },
   };
@@ -254,10 +211,6 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         : isDriver
           ? "Accédez à vos missions du jour et à la navigation"
           : "Entreprise, client, livreur ou administrateur : votre espace s’ouvre tout seul.",
-    },
-    register: {
-      title: "Créer un compte entreprise",
-      subtitle: "Inscription réservée aux administrateurs d'entreprise",
     },
     "forgot-password": {
       title: "Mot de passe oublié",
@@ -280,21 +233,11 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
             </div>
           )}
           <h1 className={mode === "login" ? "text-balance text-center text-[clamp(32px,5.6vw,48px)] font-bold leading-[1.04] tracking-[-0.04em]" : "text-balance text-[clamp(26px,4.4vw,36px)] font-bold leading-[1.08] tracking-[-0.035em]"}>
-            {passwordLink?.type === "signup" ? "Confirmer votre adresse e-mail" : titles[mode].title}
+            {titles[mode].title}
           </h1>
           <p className={mode === "login" ? "mt-2.5 text-center text-text-secondary" : "mt-2 text-text-secondary"}>
-            {passwordLink?.type === "signup" ? "Confirmez votre adresse pour activer votre espace entreprise." : titles[mode].subtitle}
+            {titles[mode].subtitle}
           </p>
-
-          {mode === "login" && loginContext === "company" && (
-            <Link
-              href="/demo"
-              className="mt-5 flex min-h-11 items-center justify-center gap-2 rounded-full border border-brand/30 bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Play className="h-4 w-4 fill-current text-brand" aria-hidden />
-              Pas de compte ? Ouvrir la démo
-            </Link>
-          )}
 
           {isInvitedUser && mode === "login" && (
             <Alert variant="info" className="mt-5">
@@ -315,8 +258,8 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
             </Alert>
           )}
 
-          {(mode === "reset-password" || (mode === "register" && success)) && (
-            <p className="mt-4 text-sm"><Link href={success ? "/login" : passwordLink?.type === "signup" ? "/register" : "/forgot-password"} className="text-brand underline underline-offset-2 hover:decoration-2">{success ? "Se connecter" : passwordLink?.type === "signup" ? "Reprendre l’inscription" : "Demander un nouveau lien"}</Link></p>
+          {mode === "reset-password" && (
+            <p className="mt-4 text-sm"><Link href={success ? "/login" : "/forgot-password"} className="text-brand underline underline-offset-2 hover:decoration-2">{success ? "Se connecter" : "Demander un nouveau lien"}</Link></p>
           )}
 
           {mode === "login" && (
@@ -354,57 +297,6 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
               <Button type="submit" variant="brand" size="lg" className="h-[52px] w-full rounded-full text-base font-semibold" loading={loginForm.formState.isSubmitting}>
                 Se connecter
               </Button>
-              {loginLinks[loginContext].register && (
-                <p className="text-center text-sm text-text-secondary">
-                  Pas encore de compte entreprise ?{" "}
-                  <Link
-                    href={loginLinks[loginContext].register!}
-                    onClick={(event) => navigateToAuthPage(event, loginLinks[loginContext].register!)}
-                    className="inline-flex min-h-11 items-center font-semibold text-brand hover:underline"
-                  >
-                    Demander un pilote
-                  </Link>
-                </p>
-              )}
-            </form>
-          )}
-
-          {mode === "register" && !success && (
-            <form onSubmit={registerForm.handleSubmit(onRegister)} className="mt-8 space-y-5">
-              <Alert variant="info">
-                <AlertDescription>
-                  Cette inscription est réservée aux administrateurs d&apos;entreprise. Les comptes clients et livreurs sont créés par l&apos;administrateur.
-                </AlertDescription>
-              </Alert>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Prénom" error={registerForm.formState.errors.firstName?.message} required>
-                  <Input placeholder="Jean" {...registerForm.register("firstName")} />
-                </FormField>
-                <FormField label="Nom" error={registerForm.formState.errors.lastName?.message} required>
-                  <Input placeholder="Dupont" {...registerForm.register("lastName")} />
-                </FormField>
-              </div>
-              <FormField label="Email" error={registerForm.formState.errors.email?.message} required>
-                <Input type="email" autoComplete="email" placeholder="vous@entreprise.fr" {...registerForm.register("email")} />
-              </FormField>
-              <FormField label="Entreprise" hint="Optionnel">
-                <Input autoComplete="organization" placeholder="Nom de votre entreprise" {...registerForm.register("companyName")} />
-              </FormField>
-              <FormField label="Mot de passe" error={registerForm.formState.errors.password?.message} required>
-                <PasswordInput autoComplete="new-password" placeholder="••••••••" {...registerForm.register("password")} />
-              </FormField>
-              <FormField label="Confirmer" error={registerForm.formState.errors.confirmPassword?.message} required>
-                <PasswordInput autoComplete="new-password" placeholder="••••••••" {...registerForm.register("confirmPassword")} />
-              </FormField>
-              <Button type="submit" variant="brand" size="lg" className="w-full" loading={registerForm.formState.isSubmitting}>
-                Créer mon compte entreprise
-              </Button>
-              <p className="text-center text-sm text-muted-foreground">
-                Déjà un compte ?{" "}
-                <Link href="/login" className="font-medium text-brand hover:underline max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center">
-                  Se connecter
-                </Link>
-              </p>
             </form>
           )}
 
@@ -424,11 +316,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
             </form>
           )}
 
-          {mode === "reset-password" && !success && passwordLink?.type === "signup" && (
-            <Button className="mt-8 w-full" loading={completingLink} onClick={() => { void onResetPassword(); }}>Confirmer mon adresse</Button>
-          )}
-
-          {mode === "reset-password" && !success && passwordLink?.type !== "signup" && (
+          {mode === "reset-password" && !success && (
             <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="mt-8 space-y-5">
               <FormField label="Nouveau mot de passe" error={resetForm.formState.errors.password?.message} required>
                 <PasswordInput

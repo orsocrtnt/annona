@@ -175,26 +175,7 @@ function fixture(failureStage: FailureStage) {
       "@/lib/query/list-limits": { CLIENT_ORDERS_TAKE: 100, COMPANY_ORDERS_TAKE: 100 },
       "@/lib/query/order-history": { ORDER_EXPORT_CHUNK_SIZE: 500 },
       "@/domains/operations/operation-job.service": {
-        enqueueAutoDispatchJob: async (
-          db: typeof tx,
-          input: { companyId: string; deliveryId: string }
-        ) =>
-          db.operationJob.upsert({
-            create: {
-              jobKey: `auto-dispatch:${input.deliveryId}`,
-              type: "AUTO_DISPATCH",
-              companyId: input.companyId,
-              payload: input,
-            },
-          }),
         kickOperationJob: (jobId: string) => state.jobKicks.push(jobId),
-      },
-      "@/domains/saas/saas.service": {
-        assertCanCreateOrder: async () => ({ features: new Set(["auto_dispatch"]) }),
-        recordOrderCreatedUsage: async (_db: unknown, input: { orderId: string }) => {
-          state.usage.push(input.orderId);
-        },
-        resolveCompanySaasAccess: async () => ({ features: new Set(["auto_dispatch"]) }),
       },
       "@/domains/client-portal/notify.service": {
         queueDeliveryStatusNotification: async () => null,
@@ -246,7 +227,6 @@ for (const [stage, input] of [
   ["order", standardInput],
   ["items", courierInput],
   ["delivery", courierInput],
-  ["job", courierInput],
 ] as const) {
   test(`panne injectée à l'étape ${stage} : aucune commande, article, étape ou livraison partielle`, async () => {
     const f = fixture(stage);
@@ -288,8 +268,8 @@ for (const [label, input] of [
     assert.equal(f.state.items.length, 1);
     assert.equal(f.state.stops.length, label === "coursier" ? 1 : 0);
     assert.equal(f.state.addresses.length, label === "standard" ? 1 : 0);
-    assert.equal(f.state.jobs.length, 1);
-    assert.deepEqual(f.state.jobKicks, ["job-1"]);
+    assert.equal(f.state.jobs.length, 0, "aucune affectation automatique mise en file");
+    assert.deepEqual(f.state.jobKicks, []);
   });
 }
 
@@ -302,7 +282,7 @@ for (const [label, input] of [
   ["standard", standardInput],
   ["coursier", courierInput],
 ] as const) {
-  test(`création ${label} avec dispatch automatique : délai de transaction adapté à la base distante`, async () => {
+  test(`création ${label} : délai de transaction adapté à la base distante`, async () => {
     const f = fixture(null);
     await f.service.createClientOrder("client-a", "company-a", "client@example.com", input);
     assert.equal(f.transactionOptions.length, 1);
@@ -312,11 +292,10 @@ for (const [label, input] of [
       `délai ${timeout} ms inférieur au budget mesuré ${REMOTE_ORDER_TRANSACTION_BUDGET_MS} ms`
     );
     assert.ok((f.transactionOptions[0]?.maxWait ?? 0) >= 10_000);
-    assert.equal(f.state.jobs.length, 1, "le job d'auto-dispatch reste dans la même transaction");
   });
 }
 
-test("double envoi avec la même clé : une seule commande, livraison et tâche", async () => {
+test("double envoi avec la même clé : une seule commande et livraison", async () => {
   const f = fixture(null);
   const request = { idempotencyKey: "checkout-double-click-1" };
 
@@ -338,8 +317,6 @@ test("double envoi avec la même clé : une seule commande, livraison et tâche"
   assert.equal(replay.id, first.id);
   assert.equal(f.state.orders.length, 1);
   assert.equal(f.state.deliveries.length, 1);
-  assert.equal(f.state.jobs.length, 1);
-  assert.equal(f.state.jobKicks.length, 1);
 });
 
 test("réutiliser une clé avec une autre commande est refusé", async () => {

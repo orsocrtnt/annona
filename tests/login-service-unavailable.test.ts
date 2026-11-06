@@ -17,20 +17,9 @@ function loadLoginRoute(signIn: () => Promise<SignInResult>, syncUser: () => Pro
     "@/services/supabase/server": { createClient: async () => ({ auth: { signInWithPassword: signIn, signOut: async () => undefined } }) },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
     "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
-    "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
+    "@/lib/security/request-source": { requestSourceFromHeaders: () => "test-source" },
     "@/domains/auth/auth.service": { syncUserFromSupabase: syncUser, getDashboardPathForRole: () => "/dashboard", UserNotProvisionedError: class extends Error {} },
     "@/domains/user/user.service": { extractPermissionSlugs: () => [], getUserByAuthId: async () => null, updateLastLogin: async () => undefined },
-    "@/lib/demo/constants": { isDemoLoginEmail: () => false, DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },
-    "@/lib/demo/persona-cookie": { setDemoPersonaCookie: async () => {}, clearDemoPersonaCookie: async () => {}, clearDemoSessionCookie: async () => {} },
-    "@/domains/demo/demo-auth.service": { resolveDemoActiveUser: async () => null },
-    "@/domains/demo/demo-session.service": { ensureDemoSessionForLogin: async () => "company" },
-    "@/domains/demo/demo-pool.service": {
-      DemoPoolUnavailableError: class extends Error {},
-      maintainDemoPool: async () => [],
-      requestDemoPoolRecycle: async () => false,
-      recycleDemoPoolEnvironment: async () => ({ status: "ready" }),
-    },
-    "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/auth/login/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   runInNewContext(source, { exports: module.exports, module, console: { error() {} }, require: (id: string) => dependencies[id] });

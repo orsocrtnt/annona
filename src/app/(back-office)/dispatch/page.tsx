@@ -16,30 +16,19 @@ import { useDispatchOverview } from "@/features/back-office/hooks";
 import {
   useOperationJobHealth,
   useRetryFailedOperationJobs,
-  usePreviewAutoDispatch,
-  useRunAutoDispatch,
 } from "@/features/back-office/dispatch-settings-hooks";
-import {
-  AutoDispatchConfirmDialog,
-  readAutoDispatchSkip,
-  writeAutoDispatchSkip,
-} from "@/features/back-office/auto-dispatch-confirm-dialog";
-import type { AutoDispatchPreview } from "@/domains/delivery/auto-dispatch.service";
 import { DispatchDriverWorkload } from "@/features/back-office/dispatch-driver-workload";
 import { DispatchIncidentsPanel } from "@/features/back-office/dispatch-incidents-panel";
 import { DispatchRoundsPanel } from "@/features/back-office/dispatch-rounds-panel";
 import { DispatchSettingsForm } from "@/features/back-office/dispatch-settings-form";
-import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { dispatchSearchText, getDispatchColumns } from "@/features/back-office/dispatch-columns";
-import { MapPin, MessageSquareText, Plus, Radio, RefreshCw, Route, Settings2, Truck } from "lucide-react";
+import { MapPin, Plus, Radio, RefreshCw, Settings2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { DeliveryCategory } from "@prisma/client";
 import type { TableColumn } from "@/types";
 import type { CompanyDelivery } from "@/features/back-office/types";
 import { resolveDispatchFocus } from "@/features/back-office/dispatch-focus";
-import { lockedOfferReason } from "@/domains/saas/saas-access";
-import { useHasOfferFeature, useOfferAccess } from "@/features/saas/use-offer-access";
 import { canSeeDispatchRules } from "@/features/back-office/dispatch-access";
 import { usePermissions } from "@/hooks/use-permissions";
 import { countLabel } from "@/lib/format/plural";
@@ -69,14 +58,6 @@ function DispatcherDashboardContent() {
   const deliveries = overview?.deliveries;
   const stats = overview?.stats;
   const dispatchSettings = overview?.settings;
-  const runAutoDispatch = useRunAutoDispatch();
-  const previewAutoDispatch = usePreviewAutoDispatch();
-  const [autoPreview, setAutoPreview] = useState<AutoDispatchPreview | null>(null);
-  const [skipAutoConfirm, setSkipAutoConfirm] = useState(false);
-  useEffect(() => setSkipAutoConfirm(readAutoDispatchSkip()), []);
-  const offerAccess = useOfferAccess();
-  const hasAdminGps = useHasOfferFeature("admin_gps");
-  const hasAutoDispatch = useHasOfferFeature("auto_dispatch");
   const { data: operationHealth } = useOperationJobHealth();
   const retryFailedJobs = useRetryFailedOperationJobs();
   const dispatchFocus = useMemo(
@@ -111,52 +92,6 @@ function DispatcherDashboardContent() {
     [queue]
   );
 
-  // Sauf « Ne plus me demander » : proposition d'abord, rien n'est affecté sans validation.
-  const handleLaunchAutoDispatch = async () => {
-    if (skipAutoConfirm) return runAuto();
-    try {
-      setAutoPreview(await previewAutoDispatch.mutateAsync());
-    } catch (err) {
-      toast.error("Proposition impossible", { description: err instanceof Error ? err.message : undefined });
-    }
-  };
-
-  const handleValidateAutoDispatch = async (assignments: Array<{ deliveryId: string; driverId: string }> | undefined, neverAsk: boolean) => {
-    if (neverAsk) {
-      writeAutoDispatchSkip(true);
-      setSkipAutoConfirm(true);
-    }
-    setAutoPreview(null);
-    await runAuto(assignments);
-  };
-
-  const runAuto = async (assignments?: Array<{ deliveryId: string; driverId: string }>) => {
-    try {
-      const result = await runAutoDispatch.mutateAsync(assignments);
-      if (result.message) {
-        toast.info(result.message);
-        return;
-      }
-      if (result.assigned === 0) {
-        toast.info("Aucune livraison assignée", {
-          description:
-            result.skipped > 0
-              ? `${countLabel(result.skipped, "livraison ignorée", "livraisons ignorées")} — vérifiez les profils livreurs.`
-              : "La file d'attente est vide.",
-        });
-      } else {
-        toast.success(`${countLabel(result.assigned, "livraison assignée", "livraisons assignées")} automatiquement`, {
-          description:
-            result.skipped > 0 ? `${countLabel(result.skipped, "non assignée", "non assignées")}` : undefined,
-        });
-      }
-    } catch (err) {
-      toast.error("Auto-dispatch impossible", {
-        description: err instanceof Error ? err.message : undefined,
-      });
-    }
-  };
-
   const handleRetryFailedJobs = async () => {
     try {
       const result = await retryFailedJobs.mutateAsync();
@@ -177,22 +112,15 @@ function DispatcherDashboardContent() {
           <h1 className="text-2xl font-semibold tracking-tight">Centre de dispatch</h1>
           <p className="mt-1 text-muted-foreground max-md:hidden">
             Assignez les missions aux livreurs selon leurs profils
-            {hasAutoDispatch && dispatchSettings ? (dispatchSettings.enabled ? " — mode automatique" : " — mode suggestion") : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {/* Saisie de commande : le mini-admin passe par Commandes, seul espace de son module. */}
           {role !== "MINI_ADMIN" && permissions.includes("orders:create") && (
-            <>
-              <Link href="/dispatch/new-order" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-h-11")}>
-                <Plus className="h-4 w-4" />
-                Nouvelle commande
-              </Link>
-              <Link href="/dispatch/intake" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-h-11")}>
-                <MessageSquareText className="h-4 w-4" />
-                Depuis un message
-              </Link>
-            </>
+            <Link href="/dispatch/new-order" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "min-h-11")}>
+              <Plus className="h-4 w-4" />
+              Nouvelle commande
+            </Link>
           )}
           <Link
             href={
@@ -204,52 +132,13 @@ function DispatcherDashboardContent() {
                   }`
                 : "/dispatch/map"
             }
-            title={hasAdminGps ? undefined : lockedOfferReason("admin_gps", offerAccess?.planCode)}
-            className={cn(
-              buttonVariants({ variant: "outline", size: "sm" }),
-              !hasAdminGps && "opacity-50"
-            )}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             <MapPin className="h-4 w-4" />
             Carte
           </Link>
-          {view === "queue" && (
-            <Button
-              variant="brand"
-              size="sm"
-              loading={runAutoDispatch.isPending || previewAutoDispatch.isPending}
-              disabled={!hasAutoDispatch || !dispatchSettings?.enabled || runAutoDispatch.isPending || previewAutoDispatch.isPending}
-              title={hasAutoDispatch ? undefined : lockedOfferReason("auto_dispatch", offerAccess?.planCode)}
-              onClick={handleLaunchAutoDispatch}
-            >
-              <Route className="mr-2 h-4 w-4" aria-hidden />
-              Lancer auto-dispatch
-            </Button>
-          )}
         </div>
       </div>
-
-      {skipAutoConfirm && activeView === "queue" && (
-        <p className="text-sm text-muted-foreground">
-          L&apos;auto-dispatch s&apos;applique sans validation.{" "}
-          <button
-            type="button"
-            className="underline underline-offset-4 max-md:min-h-11"
-            onClick={() => {
-              writeAutoDispatchSkip(false);
-              setSkipAutoConfirm(false);
-            }}
-          >
-            Demander à nouveau une validation
-          </button>
-        </p>
-      )}
-
-      <AutoDispatchConfirmDialog
-        preview={autoPreview}
-        onClose={() => setAutoPreview(null)}
-        onValidate={handleValidateAutoDispatch}
-      />
 
       <div className="inline-flex rounded-lg border border-border bg-muted/30 p-1">
         <button
@@ -331,21 +220,12 @@ function DispatcherDashboardContent() {
                 href={`/dispatch/map?delivery=${encodeURIComponent(focusedDelivery.id)}${
                   dispatchFocus.reason === "late" ? "&focus=late" : ""
                 }`}
-                title={hasAdminGps ? undefined : lockedOfferReason("admin_gps", offerAccess?.planCode)}
-                className={cn(!hasAdminGps && "opacity-50")}
               >
                 Voir sur la carte
               </Link>
             </Button>
           </AlertDescription>
         </Alert>
-      )}
-
-      {dispatchFocus.state === "ready" && focusedDelivery && (
-        <DispatchSuggestionsPanel
-          deliveryId={focusedDelivery.id}
-          pending={focusedDelivery.status === "PENDING" && !focusedDelivery.driverId}
-        />
       )}
 
       {dispatchFocus.state === "unavailable" && (
@@ -404,11 +284,9 @@ function DispatcherDashboardContent() {
             />
           </MobileFold>
 
-          {hasAutoDispatch && (
-            <MobileFold title="Tournées">
-              <DispatchRoundsPanel />
-            </MobileFold>
-          )}
+          <MobileFold title="Tournées">
+            <DispatchRoundsPanel />
+          </MobileFold>
 
           {error ? (
             <EmptyState

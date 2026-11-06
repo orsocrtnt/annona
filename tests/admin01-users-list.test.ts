@@ -111,7 +111,6 @@ test("ADMIN-1 comptes plateforme : autorisation avant lecture et ancien GET refu
       requireRole: () => NextResponse.json({ error: "Accès refusé" }, { status: 403 }),
     },
     "@/lib/validations/user": { createUserSchema: {} },
-    "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
     "@/domains/user/user.service": {
       listUsersForCompany: async () => { reads.push("legacy"); return []; },
       createUserByAdmin: async () => { reads.push("create"); },

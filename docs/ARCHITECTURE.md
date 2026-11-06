@@ -8,7 +8,7 @@
 Navigateur
 ├── Back-office : administration, commandes, dispatch, support
 ├── Portail client : commandes, suivi, factures, support
-└── Espace chauffeur : missions, navigation, preuve, mode réseau faible
+└── Espace livreur : missions, navigation, preuve, mode réseau faible
         │
         ▼
 Next.js 15 App Router
@@ -29,11 +29,11 @@ Next.js 15 App Router
 
 - `src/app/` contient les pages et routes HTTP. Les groupes `(back-office)`, `(client-portal)` et `(driver-app)` portent les trois espaces.
 - `src/features/` contient les composants et hooks propres à un parcours. Les appels HTTP du navigateur passent principalement par TanStack Query.
-- `src/domains/` contient les règles métier : commandes, livraisons, factures, support, suivi, alertes, conversations, comptes et tâches opérationnelles.
+- `src/domains/` contient les règles métier : commandes, livraisons, tournées, factures, support, suivi, comptes et tâches opérationnelles.
 - `src/lib/` contient validations Zod, permissions, cartographie et utilitaires transversaux.
 - `src/services/` contient les clients Prisma et Supabase.
 - `prisma/schema.prisma` est la définition ORM actuelle. Le dépôt ne possède pas encore de baseline de migrations complète ; DB-1 reste ouverte.
-- `tests/*.test.ts` couvre les règles sans services externes. `tests/e2e/` et `scripts/test-v1/` couvrent les parcours connectés.
+- `tests/*.test.ts` couvre les règles sans services externes. `tests/e2e/` couvre les parcours connectés (à reprendre après SCHEMA-1 : plusieurs specs dépendaient des comptes de démonstration retirés).
 
 ## Flux d'une requête protégée
 
@@ -41,7 +41,7 @@ Next.js 15 App Router
 2. La route API résout l'utilisateur courant depuis l'identité Supabase.
 3. Le serveur relit le compte, l'entreprise, le rôle et les permissions dans PostgreSQL. Un compte ou une entreprise suspendus sont refusés.
 4. La garde vérifie le rôle et les permissions nécessaires.
-5. Le service de domaine ajoute les frontières `companyId`, propriétaire client ou chauffeur courant avant toute lecture ou écriture.
+5. Le service de domaine ajoute les frontières `companyId`, propriétaire client ou livreur courant avant toute lecture ou écriture.
 6. Prisma exécute l'opération, souvent dans une transaction pour les chaînes métier.
 
 Le contrôle du menu ou de la page n'est jamais considéré comme une autorisation. Les routes et services restent responsables du refus.
@@ -51,16 +51,14 @@ Le contrôle du menu ou de la page n'est jamais considéré comme une autorisati
 ```text
 Commande client
   → création atomique commande/livraison
-  → tâche durable d'auto-dispatch
-  → affectation d'un chauffeur
+  → affectation d'un livreur (manuelle ou par tournée validée)
   → prise en charge explicite
   → départ et suivi daté
-  → échanges et incidents liés à la commande
   → preuve de livraison ou échec motivé
   → historique et facturation séparée
 ```
 
-Les écritures sensibles utilisent des clés d'idempotence ou des versions attendues lorsque le rejeu ou la concurrence sont possibles. Les tâches `operation_jobs` conservent l'auto-dispatch et les notifications différées avec bail, tentatives bornées et reprise.
+Les écritures sensibles utilisent des clés d'idempotence ou des versions attendues lorsque le rejeu ou la concurrence sont possibles. Les tâches `operation_jobs` conservent les notifications et factures différées avec bail, tentatives bornées et reprise.
 
 ## Multi-tenant
 
@@ -71,7 +69,7 @@ La défense comporte plusieurs niveaux :
 - statut du compte et de l'entreprise ;
 - rôle système et permissions ;
 - filtres Prisma par entreprise et ressource ;
-- vérification du propriétaire client ou du chauffeur affecté ;
+- vérification du propriétaire client ou du livreur affecté ;
 - bucket Storage privé et liens signés après autorisation ;
 - RLS et droits publics verrouillés sur la base de test contrôlée.
 

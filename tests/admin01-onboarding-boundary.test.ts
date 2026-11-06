@@ -32,9 +32,6 @@ function load(role: string, calls: string[]) {
       },
       getCompanyId: () => { calls.push("company"); return "company-1"; },
     },
-    "@/domains/saas/saas.service": {
-      resolveCompanySaasAccess: async () => { calls.push("saas"); return { canMutate: true }; },
-    },
     "@/domains/onboarding/onboarding.service": {
       onboardingPreferenceSchema,
       onboardingCompanyProfileSchema,

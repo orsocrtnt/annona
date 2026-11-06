@@ -43,7 +43,7 @@ test("BILL-01B exige dates calendaires UTC et statut explicites ; rejette pagina
 test("BILL-01B décimaux exacts, TVA demi-centime arrondie et entrées monétaires bornées", () => {
   assert.equal(computeInvoiceTotal([{ label: "x", amount: 0.1, quantity: 3, sourceType: "CUSTOM" }]), 0.3);
   const input = createOrderInvoiceSchema.parse({ customLines: [{ label: "A", amount: 0.05 }] });
-  const lines = buildInvoiceLineItems({ items: [], shippingPostalCode: null }, { tariffZones: [], tariffFees: [] }, input, 10);
+  const lines = buildInvoiceLineItems({ items: [] }, input, 10);
   assert.equal(lines.at(-1)?.amount, 0.01);
   assert.equal(computeInvoiceTotal(lines), 0.06);
   for (const amount of [0.001, Infinity, NaN, -1, 100_000_000]) {

@@ -91,26 +91,6 @@ export function Stat({ label, value, note, tone }: { label: string; value: strin
 }
 
 /** Jauge « consommé / inclus » ; au-delà de 100 %, la barre est pleine et orange. */
-export function Meter({ value, max, label }: { value: number; max: number; label: string }) {
-  const ratio = max > 0 ? Math.min(1, value / max) : value > 0 ? 1 : 0;
-  const over = max > 0 ? value > max : value > 0;
-  return (
-    <div
-      role="meter"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={Math.max(max, value)}
-      aria-valuenow={value}
-      className="h-2.5 w-full overflow-hidden rounded-full bg-muted dark:bg-secondary"
-    >
-      <div
-        className={cn("h-full rounded-full", over ? "bg-[#b85c00] dark:bg-[#e8913a]" : "bg-[#08783f] dark:bg-[#2fae6f]")}
-        style={{ width: `${Math.round(ratio * 100)}%` }}
-      />
-    </div>
-  );
-}
-
 export function LinkButton({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link

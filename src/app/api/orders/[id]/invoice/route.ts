@@ -1,23 +1,8 @@
-import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { zodIssueMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { createOrderInvoice, getOrderAnnouncedCourierLine, markOrderInvoicePaid } from "@/domains/invoice/invoice.service";
+import { createOrderInvoice, markOrderInvoicePaid } from "@/domains/invoice/invoice.service";
 import { createOrderInvoiceSchema, markOrderInvoicePaidSchema } from "@/lib/validations/invoice";
-
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const auth = await requireStaffRole("invoices:create");
-  if ("error" in auth) return auth.error;
-  const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN"]);
-  if (denied) return denied;
-  const companyId = getCompanyId(auth.context);
-  if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
-  const { id } = await params;
-  return NextResponse.json({ data: { courierLine: await getOrderAnnouncedCourierLine(companyId, id) }, success: true });
-}
 
 export async function POST(
   request: Request,
@@ -32,8 +17,6 @@ export async function POST(
   if (!companyId) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
-  const readOnly = await refuseIfReadOnly(companyId);
-  if (readOnly) return readOnly;
 
   const body = await request.json().catch(() => null);
   const parsed = createOrderInvoiceSchema.safeParse(body);
@@ -58,7 +41,6 @@ export async function POST(
         INVOICE_AMOUNT_TOO_LARGE: "Le montant dépasse la limite du document",
         INVOICE_ALREADY_PAID: "Cette commande a déjà une facture payée",
         INVOICE_EMPTY: "Sélectionnez au moins une zone, un supplément ou une ligne",
-        ZONE_NOT_FOUND: "La zone tarifaire sélectionnée n'existe plus — rechargez la page",
         PURCHASES_EMPTY:
           "Aucun achat facturable : les articles n'ont pas de prix (le livreur doit valider les achats)",
       };
@@ -85,8 +67,6 @@ export async function PATCH(
   if (denied) return denied;
   const companyId = getCompanyId(auth.context);
   if (!companyId) return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
-  const readOnly = await refuseIfReadOnly(companyId);
-  if (readOnly) return readOnly;
   const parsed = markOrderInvoicePaidSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Données invalides" }, { status: 400 });
   const { id } = await params;

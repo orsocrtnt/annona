@@ -6,9 +6,8 @@ import { prisma } from "@/services/prisma/client";
  *
  * Les identifiants relationnels sont conservés pour permettre une reprise, mais
  * les identifiants Supabase Auth, clés d'idempotence, empreintes de requête,
- * charges de jobs, erreurs internes et identifiants du fournisseur de paiement sont exclus.
- * `subscriptions` et `companyCustomers` (MAIL-PONT, fiches clients sans accès) sont des ajouts
- * compatibles de la version 1 (clés supplémentaires).
+ * charges de jobs et erreurs internes sont exclus.
+ * `companyCustomers` (fiches clients sans accès) est un ajout compatible de la version 1.
  *
  * Les collections sont relues par pages (clé `createdAt`, `id`) dans une seule
  * transaction en lecture répétable : l'instantané reste cohérent et la mémoire
@@ -30,7 +29,6 @@ const COMPANY_SELECT = {
   city: true,
   country: true,
   status: true,
-  isDemo: true,
   settings: true,
   createdAt: true,
   updatedAt: true,
@@ -60,7 +58,6 @@ const USER_SELECT = {
       body: true,
       href: true,
       readAt: true,
-      orderMessageId: true,
       createdAt: true,
     },
   },
@@ -102,23 +99,6 @@ const ORDER_SELECT = {
       },
     },
   },
-  messages: {
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      authorId: true,
-      authorName: true,
-      authorRole: true,
-      body: true,
-      kind: true,
-      internal: true,
-      createdAt: true,
-    },
-  },
-  threadReads: {
-    orderBy: { id: "asc" },
-    select: { id: true, userId: true, seenAt: true, seenId: true },
-  },
 } satisfies Prisma.OrderSelect;
 
 const SUPPORT_TICKET_INCLUDE = {
@@ -138,58 +118,6 @@ const OPERATION_JOB_SELECT = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.OperationJobSelect;
-
-// Contrat SaaS de l'entreprise : formules, options et consommation. Les identifiants
-// du fournisseur de paiement, instantanés internes et journaux techniques restent exclus.
-const SUBSCRIPTION_SELECT = {
-  id: true,
-  kind: true,
-  status: true,
-  billingInterval: true,
-  startsAt: true,
-  currentPeriodStart: true,
-  currentPeriodEnd: true,
-  cancelAtPeriodEnd: true,
-  endedAt: true,
-  premiumDiscoveryEndsAt: true,
-  createdAt: true,
-  updatedAt: true,
-  planAssignments: {
-    orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      effectiveFrom: true,
-      effectiveTo: true,
-      plan: { select: { code: true, name: true } },
-    },
-  },
-  items: {
-    orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      code: true,
-      kind: true,
-      source: true,
-      quantity: true,
-      unitPriceCents: true,
-      effectiveFrom: true,
-      effectiveTo: true,
-    },
-  },
-  usagePeriods: {
-    orderBy: [{ startsAt: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      startsAt: true,
-      endsAt: true,
-      includedOrders: true,
-      orderCount: true,
-      overageCount: true,
-      orderOverageUnitPriceCents: true,
-      closedAt: true,
-    },
-  },
-} satisfies Prisma.SaasSubscriptionSelect;
 
 const COMPANY_CUSTOMER_SELECT = {
   id: true,
@@ -211,7 +139,6 @@ export interface CompanyExportRows {
   invoices: Invoice[];
   supportTickets: Prisma.SupportTicketGetPayload<{ include: typeof SUPPORT_TICKET_INCLUDE }>[];
   operationJobs: Prisma.OperationJobGetPayload<{ select: typeof OPERATION_JOB_SELECT }>[];
-  subscriptions: Prisma.SaasSubscriptionGetPayload<{ select: typeof SUBSCRIPTION_SELECT }>[];
 }
 
 export type CompanyExportCollection = keyof CompanyExportRows;
@@ -233,9 +160,8 @@ export interface CompanyExportProofObject {
 export interface CompanyExportSummary extends CompanyExportHeader {
   counts: Record<
     | "users" | "companyCustomers" | "addresses" | "notifications" | "recurringOrders" | "orders" | "items" | "stops"
-    | "deliveries" | "trackingEvents" | "orderMessages" | "orderThreadReads" | "invoices"
-    | "supportTickets" | "supportMessages" | "operationJobs" | "subscriptions" | "subscriptionPlans"
-    | "subscriptionItems" | "usagePeriods" | "proofObjects",
+    | "deliveries" | "trackingEvents" | "invoices"
+    | "supportTickets" | "supportMessages" | "operationJobs" | "proofObjects",
     number
   >;
   externalAssets: { proofObjects: CompanyExportProofObject[]; note: string };
@@ -297,16 +223,10 @@ export async function visitCompanyExport(
     stops: 0,
     deliveries: 0,
     trackingEvents: 0,
-    orderMessages: 0,
-    orderThreadReads: 0,
     invoices: 0,
     supportTickets: 0,
     supportMessages: 0,
     operationJobs: 0,
-    subscriptions: 0,
-    subscriptionPlans: 0,
-    subscriptionItems: 0,
-    usagePeriods: 0,
     proofObjects: 0,
   };
   const proofObjects: CompanyExportProofObject[] = [];
@@ -372,8 +292,6 @@ export async function visitCompanyExport(
           counts.items += order.items.length;
           counts.stops += order.stops.length;
           counts.deliveries += order.deliveries.length;
-          counts.orderMessages += order.messages.length;
-          counts.orderThreadReads += order.threadReads.length;
           for (const delivery of order.deliveries) {
             counts.trackingEvents += delivery.trackingEvents.length;
             if (delivery.podPhotoPath) {
@@ -435,24 +353,6 @@ export async function visitCompanyExport(
         await visitor.page("operationJobs", rows);
       }
     );
-    await forEachPage(
-      pageSize,
-      (after) => tx.saasSubscription.findMany({
-        where: pageWhere(companyId, after),
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: pageSize,
-        select: SUBSCRIPTION_SELECT,
-      }),
-      async (rows) => {
-        counts.subscriptions += rows.length;
-        for (const subscription of rows) {
-          counts.subscriptionPlans += subscription.planAssignments.length;
-          counts.subscriptionItems += subscription.items.length;
-          counts.usagePeriods += subscription.usagePeriods.length;
-        }
-        await visitor.page("subscriptions", rows);
-      }
-    );
     return true;
   }, {
     isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
@@ -483,7 +383,6 @@ export async function exportCompanyData(companyId: string, options: { pageSize?:
     invoices: [],
     supportTickets: [],
     operationJobs: [],
-    subscriptions: [],
   };
   const summary = await visitCompanyExport(companyId, {
     async start(_header, exported) {

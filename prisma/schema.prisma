@@ -103,33 +103,12 @@ enum OrderSource {
   ADMIN
   CLIENT
   RECURRING
-  PUBLIC_LINK
 }
 
 enum OperationJobType {
-  AUTO_DISPATCH
   CLIENT_NOTIFICATION
   DELIVERY_INVOICE
   DRIVER_NOTIFICATION
-  INBOUND_EMAIL
-}
-
-/// WHATSAPP-1 : canal d'arrivée d'un message reçu. Même file, même analyse, même validation.
-enum InboundChannel {
-  EMAIL
-  WHATSAPP
-}
-
-enum InboundEmailStatus {
-  RECEIVED
-  ANALYZED
-  ANALYSIS_FAILED
-  /// MAIL-PONT : e-mail ordinaire (pas une commande), rangé dans « À trier », effacé après 7 jours.
-  NOT_ORDER
-  /// MAIL-PONT : e-mail de Gmail portant le code de confirmation d'un renvoi ; affiché en Paramètres, effacé après 24 h.
-  FORWARDING_CONFIRMATION
-  CONVERTED
-  DISMISSED
 }
 
 enum OperationJobStatus {
@@ -160,81 +139,6 @@ enum RecurrenceStatus {
 enum SupportContactType {
   ADMIN
   DRIVER
-}
-
-enum SaasCatalogStatus {
-  DRAFT
-  ACTIVE
-  RETIRED
-}
-
-enum SaasPlanCode {
-  STARTER
-  PRO
-  BUSINESS
-}
-
-enum SaasSubscriptionKind {
-  COMMERCIAL
-  PILOT
-  LEGACY
-}
-
-enum SaasSubscriptionStatus {
-  PENDING_PAYMENT
-  ACTIVE
-  PAST_DUE
-  RESTRICTED
-  READ_ONLY
-  CANCEL_AT_PERIOD_END
-  CANCELLED
-  EXPIRED
-}
-
-enum SaasBillingInterval {
-  MONTHLY
-  ANNUAL
-}
-
-enum SaasSubscriptionItemKind {
-  OPTION
-  DRIVER_SEAT
-  ADMIN_SEAT
-  DISPATCHER_SEAT
-}
-
-enum SaasSubscriptionItemSource {
-  INITIAL
-  ADDED_LATER
-}
-
-enum SaasUsageEventKind {
-  ORDER_CREATED
-  ORDER_REVERSED
-}
-
-enum DemoPoolState {
-  PREPARING
-  READY
-  LEASED
-  RECYCLING
-  QUARANTINED
-}
-
-enum SignupStatus {
-  DRAFT
-  EMAIL_PENDING
-  EMAIL_VERIFIED
-  PAYMENT_PENDING
-  PAYMENT_CONFIRMED
-  ACTIVATED
-  FAILED
-}
-
-enum SignupPaymentStatus {
-  PENDING
-  CONFIRMED
-  DECLINED
 }
 
 // -----------------------------------------------------------------------------
@@ -275,16 +179,8 @@ model User {
   driverLocation       DriverLocation?
   driverPushSubscriptions DriverPushSubscription[]
   notifications        ClientNotification[]
-  orderMessages        OrderMessage[]
-  orderThreadReads     OrderThreadRead[]
   invoiceRemindersSent InvoiceReminder[]
   companyCustomerCards CompanyCustomer[]
-  waitlistContacts     ContactMessage[]     @relation("WaitlistContactedBy")
-  prospectCampaigns    ProspectCampaign[]   @relation("ProspectCampaignCreatedBy")
-  prospectOptOuts      ProspectOptOut[]     @relation("ProspectOptOutCreatedBy")
-  pilotsCreated        PlatformPilot[]      @relation("PlatformPilotCreatedBy")
-  pilotsUpdated        PlatformPilot[]      @relation("PlatformPilotUpdatedBy")
-  pilotNotes           PlatformPilotNote[]  @relation("PlatformPilotNoteAuthor")
 
   @@index([companyId])
   @@index([roleId])
@@ -299,8 +195,6 @@ model ClientNotification {
   body           String
   href           String?
   readAt         DateTime?     @map("read_at")
-  orderMessageId String?       @map("order_message_id")
-  orderMessage   OrderMessage? @relation(fields: [orderMessageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -308,7 +202,6 @@ model ClientNotification {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([userId, createdAt])
-  @@index([orderMessageId])
   @@map("client_notifications")
 }
 
@@ -324,7 +217,6 @@ model Company {
   city     String?
   country  String?       @default("FR")
   status   CompanyStatus @default(TRIAL)
-  isDemo   Boolean       @default(false) @map("is_demo")
   settings Json?         @default("{}")
   legalName         String? @map("legal_name")
   siren             String? @unique
@@ -347,116 +239,12 @@ model Company {
   recurringOrders      RecurringOrder[]
   supportTickets       SupportTicket[]
   operationJobs        OperationJob[]
-  saasSubscription     SaasSubscription?
-  salesAttribution     SalesAttribution?
-  saasUsagePeriods     SaasUsagePeriod[]
-  saasUsageEvents      SaasUsageEvent[]
-  saasSeatReservations SaasSeatReservation[]
-  orderIntakeUsage     OrderIntakeUsage[]
   driverPushSubscriptions DriverPushSubscription[]
-  demoPoolEnvironment  DemoPoolEnvironment?
-  signupJourney        SignupJourney?
-  intakeChannel        CompanyIntakeChannel?
-  orderTrackingLinks   OrderTrackingLink[]
-  inboundOrderEmails   InboundOrderEmail[]
   companyCustomers     CompanyCustomer[]
-  platformPilots       PlatformPilot[]
 
   @@index([slug])
   @@index([status])
   @@map("companies")
-}
-
-/// Brouillon durable d'inscription. Le jeton de reprise n'est jamais stocké en clair.
-model SignupJourney {
-  id                 String              @id @default(cuid())
-  resumeTokenHash    String              @unique @map("resume_token_hash")
-  status             SignupStatus        @default(DRAFT)
-  catalogVersionId   String              @map("catalog_version_id")
-  catalogVersion     SaasCatalogVersion  @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
-  planCode           SaasPlanCode        @map("plan_code")
-  billingInterval    SaasBillingInterval @map("billing_interval")
-  optionSelections   Json                @default("[]") @map("option_selections")
-  quoteSnapshot      Json                @map("quote_snapshot")
-  email              String?
-  authUserId         String?             @unique @map("auth_user_id")
-  emailLinkTokenHash String?             @map("email_link_token_hash")
-  firstName          String?             @map("first_name")
-  lastName           String?             @map("last_name")
-  companyName        String?             @map("company_name")
-  legalName          String?             @map("legal_name")
-  siren              String?
-  siret              String?
-  phone              String?
-  billingAddress     String?             @map("billing_address")
-  billingPostalCode  String?             @map("billing_postal_code")
-  billingCity        String?              @map("billing_city")
-  billingCountry     String               @default("FR") @map("billing_country")
-  emailVerifiedAt    DateTime?            @map("email_verified_at")
-  verificationEmailSentAt DateTime?       @map("verification_email_sent_at")
-  paymentConfirmedAt DateTime?            @map("payment_confirmed_at")
-  activatedAt        DateTime?            @map("activated_at")
-  failureCode        String?               @map("failure_code")
-  expiresAt          DateTime              @map("expires_at")
-  companyId          String?               @unique @map("company_id")
-  company            Company?              @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  createdAt          DateTime              @default(now()) @map("created_at")
-  updatedAt          DateTime              @updatedAt @map("updated_at")
-
-  salesCodeId        String?               @map("sales_code_id")
-  salesCode          SalesCode?            @relation(fields: [salesCodeId], references: [id], onDelete: Restrict)
-
-  paymentEvents SignupPaymentEvent[]
-  billingAccount SaasBillingAccount?
-
-  @@index([salesCodeId])
-  @@index([email, status])
-  @@index([catalogVersionId])
-  @@index([siren, status])
-  @@index([siret, status])
-  @@index([expiresAt])
-  @@map("signup_journeys")
-}
-
-model SignupPaymentEvent {
-  id          String              @id @default(cuid())
-  eventKey    String              @unique @map("event_key")
-  signupId    String              @map("signup_id")
-  signup      SignupJourney       @relation(fields: [signupId], references: [id], onDelete: Cascade)
-  status      SignupPaymentStatus
-  amountCents Int                 @map("amount_cents")
-  currency    String              @default("EUR")
-  snapshot    Json                @default("{}")
-  receivedAt  DateTime            @default(now()) @map("received_at")
-  createdAt   DateTime            @default(now()) @map("created_at")
-
-  @@index([signupId, receivedAt])
-  @@map("signup_payment_events")
-}
-
-/// Environnement fictif préconstruit, attribué à une seule session de démo.
-/// L'état persistant sert aussi de file de recyclage durable après une coupure worker.
-model DemoPoolEnvironment {
-  id                 String        @id @default(cuid())
-  companyId          String        @unique @map("company_id")
-  company            Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  poolKey            String        @default("public") @map("pool_key")
-  slot               Int
-  state              DemoPoolState @default(PREPARING)
-  leaseKeyHash       String?       @unique @map("lease_key_hash")
-  leasedAt           DateTime?     @map("leased_at")
-  leaseExpiresAt     DateTime?     @map("lease_expires_at")
-  recycleRequestedAt DateTime?     @map("recycle_requested_at")
-  recycleStartedAt   DateTime?     @map("recycle_started_at")
-  recycleAttempts    Int           @default(0) @map("recycle_attempts")
-  lastFailureCode    String?       @map("last_failure_code")
-  createdAt          DateTime      @default(now()) @map("created_at")
-  updatedAt          DateTime      @updatedAt @map("updated_at")
-
-  @@unique([poolKey, slot])
-  @@index([poolKey, state, slot])
-  @@index([state, leaseExpiresAt])
-  @@map("demo_pool_environments")
 }
 
 /// Rôle — définit un ensemble de permissions
@@ -512,215 +300,6 @@ model RolePermission {
 }
 
 // -----------------------------------------------------------------------------
-// SAAS — catalogue, souscription, droits, quotas et compteurs
-// -----------------------------------------------------------------------------
-
-model SaasCatalogVersion {
-  id          String            @id @default(cuid())
-  code        String            @unique
-  status      SaasCatalogStatus @default(DRAFT)
-  currency    String            @default("EUR")
-  vatRateBps  Int               @default(2000) @map("vat_rate_bps")
-  effectiveAt DateTime          @map("effective_at")
-  retiredAt   DateTime?         @map("retired_at")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-
-  plans         SaasPlan[]
-  options       SaasOption[]
-  subscriptions SaasSubscription[]
-  signupJourneys SignupJourney[]
-
-  @@index([status, effectiveAt])
-  @@map("saas_catalog_versions")
-}
-
-model SaasPlan {
-  id                         String             @id @default(cuid())
-  catalogVersionId           String             @map("catalog_version_id")
-  catalogVersion             SaasCatalogVersion @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
-  code                       SaasPlanCode
-  name                       String
-  monthlyPriceCents          Int                @map("monthly_price_cents")
-  annualPriceCents           Int                @map("annual_price_cents")
-  includedDriverSeats        Int                @map("included_driver_seats")
-  unlimitedDriverSeats       Boolean            @default(false) @map("unlimited_driver_seats")
-  maxDriverSeats             Int?               @map("max_driver_seats")
-  includedAdminSeats         Int                @map("included_admin_seats")
-  maxAdminSeats              Int?               @map("max_admin_seats")
-  includedDispatcherSeats    Int                @map("included_dispatcher_seats")
-  maxDispatcherSeats         Int?               @map("max_dispatcher_seats")
-  includedMonthlyOrders      Int                @map("included_monthly_orders")
-  orderOverageUnitPriceCents Int                @map("order_overage_unit_price_cents")
-  includedFeatures           String[]           @default([]) @map("included_features")
-  createdAt                  DateTime           @default(now()) @map("created_at")
-  updatedAt                  DateTime           @updatedAt @map("updated_at")
-
-  assignments SaasPlanAssignment[]
-
-  @@unique([catalogVersionId, code])
-  @@index([code])
-  @@map("saas_plans")
-}
-
-model SaasOption {
-  id                String                   @id @default(cuid())
-  catalogVersionId  String                   @map("catalog_version_id")
-  catalogVersion    SaasCatalogVersion       @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
-  code              String
-  name              String
-  kind              SaasSubscriptionItemKind
-  featureKey        String?                  @map("feature_key")
-  seatRole          SystemRole?              @map("seat_role")
-  monthlyPriceCents Int                      @map("monthly_price_cents")
-  annualPriceCents  Int                      @map("annual_price_cents")
-  applicablePlans   SaasPlanCode[]           @default([]) @map("applicable_plans")
-  createdAt         DateTime                 @default(now()) @map("created_at")
-  updatedAt         DateTime                 @updatedAt @map("updated_at")
-
-  subscriptionItems SaasSubscriptionItem[]
-
-  @@unique([catalogVersionId, code])
-  @@index([kind])
-  @@map("saas_options")
-}
-
-model SaasSubscription {
-  id                     String                 @id @default(cuid())
-  companyId              String                 @unique @map("company_id")
-  company                Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  catalogVersionId       String?                @map("catalog_version_id")
-  catalogVersion         SaasCatalogVersion?    @relation(fields: [catalogVersionId], references: [id], onDelete: Restrict)
-  kind                   SaasSubscriptionKind
-  status                 SaasSubscriptionStatus
-  billingInterval        SaasBillingInterval?   @map("billing_interval")
-  startsAt               DateTime               @map("starts_at")
-  currentPeriodStart     DateTime               @map("current_period_start")
-  currentPeriodEnd       DateTime?              @map("current_period_end")
-  cancelAtPeriodEnd      Boolean                @default(false) @map("cancel_at_period_end")
-  endedAt                DateTime?              @map("ended_at")
-  premiumDiscoveryEndsAt DateTime?              @map("premium_discovery_ends_at")
-  providerCustomerId     String?                @unique @map("provider_customer_id")
-  providerSubscriptionId String?                @unique @map("provider_subscription_id")
-  snapshot               Json                   @default("{}")
-  createdAt              DateTime               @default(now()) @map("created_at")
-  updatedAt              DateTime               @updatedAt @map("updated_at")
-
-  billingAccount   SaasBillingAccount?
-  planAssignments  SaasPlanAssignment[]
-  items            SaasSubscriptionItem[]
-  usagePeriods     SaasUsagePeriod[]
-  usageEvents      SaasUsageEvent[]
-  seatReservations SaasSeatReservation[]
-
-  @@index([status])
-  @@index([kind])
-  @@index([catalogVersionId])
-  @@map("saas_subscriptions")
-}
-
-model SaasPlanAssignment {
-  id             String           @id @default(cuid())
-  subscriptionId String           @map("subscription_id")
-  subscription   SaasSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  planId         String           @map("plan_id")
-  plan           SaasPlan         @relation(fields: [planId], references: [id], onDelete: Restrict)
-  effectiveFrom  DateTime         @map("effective_from")
-  effectiveTo    DateTime?        @map("effective_to")
-  snapshot       Json
-  createdAt      DateTime         @default(now()) @map("created_at")
-
-  @@index([subscriptionId, effectiveFrom])
-  @@index([subscriptionId, effectiveTo])
-  @@index([planId])
-  @@map("saas_plan_assignments")
-}
-
-model SaasSubscriptionItem {
-  id             String                     @id @default(cuid())
-  subscriptionId String                     @map("subscription_id")
-  subscription   SaasSubscription           @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  optionId       String?                    @map("option_id")
-  option         SaasOption?                @relation(fields: [optionId], references: [id], onDelete: Restrict)
-  code           String
-  kind           SaasSubscriptionItemKind
-  source         SaasSubscriptionItemSource @default(INITIAL)
-  quantity       Int                        @default(1)
-  unitPriceCents Int                        @map("unit_price_cents")
-  effectiveFrom  DateTime                   @map("effective_from")
-  effectiveTo    DateTime?                  @map("effective_to")
-  snapshot       Json                       @default("{}")
-  createdAt      DateTime                   @default(now()) @map("created_at")
-
-  @@index([subscriptionId, effectiveFrom])
-  @@index([subscriptionId, effectiveTo])
-  @@index([optionId])
-  @@map("saas_subscription_items")
-}
-
-model SaasUsagePeriod {
-  id                         String           @id @default(cuid())
-  subscriptionId             String           @map("subscription_id")
-  subscription               SaasSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  companyId                  String           @map("company_id")
-  company                    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  startsAt                   DateTime         @map("starts_at")
-  endsAt                     DateTime         @map("ends_at")
-  includedOrders             Int              @map("included_orders")
-  orderCount                 Int              @default(0) @map("order_count")
-  overageCount               Int              @default(0) @map("overage_count")
-  orderOverageUnitPriceCents Int              @map("order_overage_unit_price_cents")
-  closedAt                   DateTime?        @map("closed_at")
-  createdAt                  DateTime         @default(now()) @map("created_at")
-  updatedAt                  DateTime         @updatedAt @map("updated_at")
-
-  events SaasUsageEvent[]
-
-  @@unique([subscriptionId, startsAt])
-  @@index([companyId, startsAt])
-  @@map("saas_usage_periods")
-}
-
-model SaasUsageEvent {
-  id             String             @id @default(cuid())
-  eventKey       String             @unique @map("event_key")
-  kind           SaasUsageEventKind
-  quantity       Int                @default(1)
-  companyId      String             @map("company_id")
-  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  subscriptionId String             @map("subscription_id")
-  subscription   SaasSubscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  usagePeriodId  String             @map("usage_period_id")
-  usagePeriod    SaasUsagePeriod    @relation(fields: [usagePeriodId], references: [id], onDelete: Cascade)
-  orderId        String?            @map("order_id")
-  order          Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  reversedAt     DateTime?          @map("reversed_at")
-  createdAt      DateTime           @default(now()) @map("created_at")
-
-  @@unique([orderId, kind])
-  @@index([companyId, createdAt])
-  @@index([usagePeriodId, kind])
-  @@index([subscriptionId])
-  @@map("saas_usage_events")
-}
-
-model SaasSeatReservation {
-  id             String           @id @default(cuid())
-  reservationKey String           @unique @map("reservation_key")
-  companyId      String           @map("company_id")
-  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  subscriptionId String           @map("subscription_id")
-  subscription   SaasSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  role           SystemRole
-  expiresAt      DateTime         @map("expires_at")
-  createdAt      DateTime         @default(now()) @map("created_at")
-
-  @@index([companyId, role, expiresAt])
-  @@index([subscriptionId])
-  @@map("saas_seat_reservations")
-}
-
-// -----------------------------------------------------------------------------
 // CLIENT PORTAL — Commandes, livraisons, factures
 // -----------------------------------------------------------------------------
 
@@ -769,10 +348,6 @@ model Order {
   deliveries      Delivery[]
   invoices        Invoice[]
   tickets         SupportTicket[]
-  messages        OrderMessage[]
-  threadReads     OrderThreadRead[]
-  saasUsageEvents SaasUsageEvent[]
-  trackingLink    OrderTrackingLink?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1111,349 +686,6 @@ model RecurringOrder {
   @@map("recurring_orders")
 }
 
-/// Coordination opérationnelle de la commande, distincte des tickets d'assistance.
-model OrderMessage {
-  id            String               @id @default(cuid())
-  orderId       String               @map("order_id")
-  order         Order                @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  authorId      String               @map("author_id")
-  author        User                 @relation(fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  authorName    String               @map("author_name")
-  authorRole    String               @map("author_role")
-  body          String
-  kind          String               @default("QUESTION")
-  internal      Boolean              @default(false)
-  requestKey    String               @map("request_key")
-  createdAt     DateTime             @default(now()) @map("created_at")
-  notifications ClientNotification[]
-
-  @@unique([orderId, authorId, requestKey])
-  @@index([orderId, createdAt, id])
-  @@index([authorId])
-  @@map("order_messages")
-}
-
-model OrderThreadRead {
-  id      String   @id @default(cuid())
-  orderId String   @map("order_id")
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  userId  String   @map("user_id")
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  seenAt  DateTime @map("seen_at")
-  seenId  String   @map("seen_id")
-
-  @@unique([orderId, userId])
-  @@index([userId])
-  @@map("order_thread_reads")
-}
-
-/// Durable sandbox ledger. Never exposed to browser clients or Supabase Data API.
-model SaasBillingAccount {
-  id String @id @default(cuid())
-  signupId String @unique @map("signup_id")
-  signup SignupJourney @relation(fields: [signupId], references: [id], onDelete: Restrict)
-  subscriptionId String? @unique @map("subscription_id")
-  subscription SaasSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
-  providerSubscriptionId String? @unique @map("provider_subscription_id")
-  providerCustomerId String? @unique @map("provider_customer_id")
-  checkoutId String? @unique @map("checkout_id")
-  state Json
-  revision Int @default(0)
-  pendingOperationId String? @map("pending_operation_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  operations SaasBillingOperation[]
-  @@map("saas_billing_accounts")
-}
-
-model SaasBillingOperation {
-  id String @id
-  accountId String @map("account_id")
-  account SaasBillingAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
-  kind String
-  status String @default("PREPARED")
-  input Json
-  result Json?
-  attempts Int @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  completedAt DateTime? @map("completed_at")
-  @@index([accountId, createdAt])
-  @@index([status, createdAt])
-  @@map("saas_billing_operations")
-}
-
-enum PlatformAccessDecision {
-  ALLOWED
-  DENIED
-}
-
-enum PlatformAccessResource {
-  OVERVIEW
-  SAAS_HEALTH
-  SERVICE_HEALTH
-  COMPANIES
-  COMPANY_DETAIL
-  USERS
-  SUBSCRIPTIONS
-  SUPPORT_TICKETS
-  OPERATION_JOBS
-  INCIDENTS
-  ACCESS_EVENTS
-  CONTACT_MESSAGES
-  SALES_CODES
-  SALES_COMMISSIONS
-  PROSPECT_CAMPAIGNS
-}
-
-/// Lecture plateforme journalisée. Aucune relation, aucune donnée personnelle.
-model PlatformAccessEvent {
-  id         String                   @id @default(cuid())
-  occurredAt DateTime                 @map("occurred_at")
-  expiresAt  DateTime                 @map("expires_at")
-  actorId    String                   @map("actor_id")
-  role       SystemRole
-  method     String
-  resource   PlatformAccessResource
-  decision   PlatformAccessDecision
-
-  @@index([occurredAt])
-  @@index([expiresAt])
-  @@index([actorId])
-  @@map("platform_access_events")
-}
-
-/// Message du formulaire Contact public (GROWTH-1, décision C10), lu par le super-administrateur.
-/// L'adresse IP n'est jamais stockée : seule une empreinte HMAC sert à limiter le débit.
-model ContactMessage {
-  id         String   @id @default(cuid())
-  name       String
-  email      String
-  company    String?
-  phone      String?
-  message    String
-  sourceHash String   @map("source_hash")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  /// ADMIN-ESPACE lot 2 : suivi de la liste d'attente (case « contacté », date et auteur).
-  contactedAt   DateTime? @map("contacted_at")
-  contactedById String?   @map("contacted_by_id")
-  contactedBy   User?     @relation("WaitlistContactedBy", fields: [contactedById], references: [id], onDelete: SetNull)
-  /// Campagne d'origine (`/tarifs?c=<code>`, sinon « direct ») ; vide pour les inscriptions antérieures.
-  campaignCode  String?   @map("campaign_code")
-
-  @@index([createdAt])
-  @@index([sourceHash, createdAt])
-  @@index([contactedById])
-  @@map("contact_messages")
-}
-
-enum WaitlistFunnelEvent {
-  VISIT
-  CLICK
-  SIGNUP
-  /// ADMIN-ESPACE lot 5 : clic sur « Je veux en être » dans un mail de campagne (compté par /go).
-  MAIL_JOIN
-  /// ADMIN-ESPACE lot 5 : clic sur le lien du site dans un mail de campagne (compté par /go).
-  MAIL_SITE
-}
-
-/// ADMIN-ESPACE lot 2 : entonnoir de /tarifs, compteurs par jour (Paris), campagne et étape.
-/// Aucune donnée personnelle, aucun identifiant de visiteur, aucune heure précise.
-model WaitlistFunnelDaily {
-  day          DateTime            @db.Date
-  campaignCode String              @map("campaign_code")
-  event        WaitlistFunnelEvent
-  count        Int                 @default(0)
-
-  @@id([day, campaignCode, event])
-  @@map("waitlist_funnel_daily")
-}
-
-/// ADMIN-ESPACE lot 5 : campagne de mails de prospection envoyée depuis la boîte OVH du propriétaire.
-/// Le code sert aux liens comptés (/go/<code>/…) et à l'origine des inscriptions (`contact_messages.campaign_code`).
-model ProspectCampaign {
-  id            String   @id @default(cuid())
-  code          String   @unique
-  name          String
-  city          String
-  /// Mention « Adresse trouvée sur … » du pied de mail (CNIL : origine de l'adresse).
-  addressSource String   @map("address_source")
-  /// Réponses reçues, saisies à la main par le propriétaire.
-  repliesCount  Int      @default(0) @map("replies_count")
-  createdById   String?  @map("created_by_id")
-  createdBy     User?    @relation("ProspectCampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  recipients ProspectCampaignRecipient[]
-
-  @@index([createdById])
-  @@map("prospect_campaigns")
-}
-
-enum ProspectRecipientStatus {
-  PENDING
-  SENDING
-  SENT
-  FAILED
-  SKIPPED
-}
-
-/// Une adresse professionnelle d'une campagne : envoyée une seule fois, jamais si elle a demandé STOP.
-model ProspectCampaignRecipient {
-  id         String                  @id @default(cuid())
-  campaignId String                  @map("campaign_id")
-  campaign   ProspectCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  email      String
-  status     ProspectRecipientStatus @default(PENDING)
-  /// Motif court d'un échec ou d'un saut (jamais le contenu du mail ni un secret).
-  detail     String?
-  sentAt     DateTime?               @map("sent_at")
-  claimedAt  DateTime?               @map("claimed_at")
-  createdAt  DateTime                @default(now()) @map("created_at")
-
-  @@unique([campaignId, email])
-  @@index([campaignId, status, createdAt])
-  @@index([email])
-  @@map("prospect_campaign_recipients")
-}
-
-/// Adresses ayant répondu STOP : plus aucun mail de prospection, toutes campagnes confondues.
-model ProspectOptOut {
-  email       String   @id
-  createdById String?  @map("created_by_id")
-  createdBy   User?    @relation("ProspectOptOutCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  @@index([createdById])
-  @@map("prospect_opt_outs")
-}
-
-/// ADMIN-ESPACE lot 4 : étapes d'un pilote accompagné, alignées sur docs/operations/pilot1/README.md
-/// (semaine 0 préparation, semaine 1 activation, première valeur, semaines 2-3 usage représentatif,
-/// semaine 4 consolidation et sortie, puis décision : poursuite payante ou arrêt).
-enum PilotStage {
-  PREPARATION
-  ACTIVATION
-  FIRST_VALUE
-  REPRESENTATIVE_USE
-  CONSOLIDATION
-  CONTINUED
-  STOPPED
-}
-
-/// ADMIN-ESPACE lot 4 : pilote accompagné suivi par le super-administrateur (entreprise prospect).
-/// Donnée de la plateforme : l'entreprise Annona liée est facultative et le lien tombe si elle est supprimée.
-model PlatformPilot {
-  id                String              @id @default(cuid())
-  name              String
-  companyId         String?             @map("company_id")
-  company           Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  contactName       String?             @map("contact_name")
-  contactEmail      String?             @map("contact_email")
-  contactPhone      String?             @map("contact_phone")
-  stage             PilotStage          @default(PREPARATION)
-  stageChangedAt    DateTime            @default(now()) @map("stage_changed_at")
-  /// Jours civils (Paris) : début, fin prévue, fin réelle.
-  startDate         DateTime?           @map("start_date") @db.Date
-  plannedEndDate    DateTime?           @map("planned_end_date") @db.Date
-  endDate           DateTime?           @map("end_date") @db.Date
-  /// Première livraison saisie à la main ; sinon déduite des livraisons livrées de l'entreprise liée.
-  firstDeliveryDate DateTime?           @map("first_delivery_date") @db.Date
-  createdById       String?             @map("created_by_id")
-  createdBy         User?               @relation("PlatformPilotCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedById       String?             @map("updated_by_id")
-  updatedBy         User?               @relation("PlatformPilotUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  createdAt         DateTime            @default(now()) @map("created_at")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
-  notes             PlatformPilotNote[]
-
-  @@index([companyId])
-  @@index([stage])
-  @@index([createdById])
-  @@index([updatedById])
-  @@map("platform_pilots")
-}
-
-/// ADMIN-ESPACE lot 4 : note de suivi d'un pilote (texte, auteur, date), supprimée avec le pilote.
-model PlatformPilotNote {
-  id        String        @id @default(cuid())
-  pilotId   String        @map("pilot_id")
-  pilot     PlatformPilot @relation(fields: [pilotId], references: [id], onDelete: Cascade)
-  authorId  String?       @map("author_id")
-  author    User?         @relation("PlatformPilotNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-  body      String
-  createdAt DateTime      @default(now()) @map("created_at")
-
-  @@index([pilotId, createdAt])
-  @@index([authorId])
-  @@map("platform_pilot_notes")
-}
-
-enum SalesCommissionLevel {
-  REFERRER
-  ASSISTED
-  AUTONOMOUS
-}
-
-/// SALES-1, décision C10 : un code permanent par commercial, créé par le super-administrateur,
-/// sans date de fin et désactivable. L'adresse du commercial est unique : un seul code chacun.
-model SalesCode {
-  id           String               @id @default(cuid())
-  code         String               @unique
-  sellerName   String               @map("seller_name")
-  sellerEmail  String               @unique @map("seller_email")
-  level        SalesCommissionLevel
-  createdById  String               @map("created_by_id")
-  disabledAt   DateTime?            @map("disabled_at")
-  disabledById String?              @map("disabled_by_id")
-  createdAt    DateTime             @default(now()) @map("created_at")
-
-  signupJourneys SignupJourney[]
-  attributions   SalesAttribution[]
-
-  @@map("sales_codes")
-}
-
-/// Attribution figée à l'activation : niveau, taux, fenêtre de douze mois et lignes initiales.
-model SalesAttribution {
-  id            String               @id @default(cuid())
-  companyId     String               @unique @map("company_id")
-  company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  salesCodeId   String               @map("sales_code_id")
-  salesCode     SalesCode            @relation(fields: [salesCodeId], references: [id], onDelete: Restrict)
-  signupId      String               @unique @map("signup_id")
-  level         SalesCommissionLevel
-  rateBps       Int                  @map("rate_bps")
-  attributedAt  DateTime             @map("attributed_at")
-  eligibleUntil DateTime             @map("eligible_until")
-  snapshot      Json
-  createdAt     DateTime             @default(now()) @map("created_at")
-
-  commissionEntries SalesCommissionEntry[]
-
-  @@index([salesCodeId, attributedAt])
-  @@map("sales_attributions")
-}
-
-/// Commission théorique d'un règlement, clé déterministe ; aucun versement automatisé.
-model SalesCommissionEntry {
-  id              String           @id
-  attributionId   String           @map("attribution_id")
-  attribution     SalesAttribution @relation(fields: [attributionId], references: [id], onDelete: Cascade)
-  settlementKey   String           @map("settlement_key")
-  explanation     String
-  eligibleHtCents Int              @map("eligible_ht_cents")
-  rateBps         Int              @map("rate_bps")
-  commissionCents Int              @map("commission_cents")
-  receivedAt      DateTime         @map("received_at")
-  createdAt       DateTime         @default(now()) @map("created_at")
-
-  @@unique([attributionId, settlementKey])
-  @@index([receivedAt])
-  @@map("sales_commission_entries")
-}
-
 /// SEC-2 : échecs de connexion récents, identifiés par une empreinte HMAC de l'e-mail
 /// normalisé ou de la source (jamais la valeur brute). Purgés au-delà de 15 minutes.
 model AuthLoginFailure {
@@ -1464,28 +696,6 @@ model AuthLoginFailure {
   @@index([keyHash, createdAt])
   @@index([createdAt])
   @@map("auth_login_failures")
-}
-
-enum OrderIntakeUsageStatus {
-  PENDING
-  SUCCEEDED
-  FAILED
-}
-
-/// Commande par message IA : journal minimal d'usage et base du quota par entreprise.
-/// Ni texte du message, ni expéditeur, ni utilisateur : seulement l'issue et les jetons.
-model OrderIntakeUsage {
-  id           String                 @id @default(cuid())
-  companyId    String                 @map("company_id")
-  company      Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  status       OrderIntakeUsageStatus @default(PENDING)
-  model        String
-  inputTokens  Int                    @default(0) @map("input_tokens")
-  outputTokens Int                    @default(0) @map("output_tokens")
-  createdAt    DateTime               @default(now()) @map("created_at")
-
-  @@index([companyId, createdAt])
-  @@map("order_intake_usage")
 }
 
 /// Abonnement aux notifications d'un appareil de livreur : aucun contenu de mission n'y est stocké.
@@ -1504,71 +714,6 @@ model DriverPushSubscription {
   @@index([userId, companyId])
   @@index([companyId])
   @@map("driver_push_subscriptions")
-}
-
-/// Canaux d'entrée sans connexion d'une entreprise : lien de commande et adresse de réception.
-model CompanyIntakeChannel {
-  companyId           String   @id @map("company_id")
-  company             Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  orderLinkToken      String?  @unique @map("order_link_token")
-  orderLinkEnabled    Boolean  @default(false) @map("order_link_enabled")
-  inboundEmailToken   String?  @unique @map("inbound_email_token")
-  inboundEmailEnabled Boolean  @default(false) @map("inbound_email_enabled")
-  /// MAIL-PONT : boîte de commandes de l'entreprise (ex. commandes@entreprise.fr), « répondre à » des confirmations.
-  orderMailboxAddress String?  @map("order_mailbox_address")
-  /// WHATSAPP-1 (option A) : messages transférés au numéro WhatsApp de Annona par un membre de l'équipe.
-  whatsappEnabled     Boolean  @default(false) @map("whatsapp_enabled")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-
-  @@map("company_intake_channels")
-}
-
-/// Lien de suivi sans connexion d'une commande. Les champs guest* ne sont remplis que pour une
-/// commande passée par le lien public : ils n'identifient personne et ne rattachent aucun compte.
-model OrderTrackingLink {
-  id         String    @id @default(cuid())
-  token      String    @unique
-  orderId    String    @unique @map("order_id")
-  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  companyId  String    @map("company_id")
-  company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  guestEmail String?   @map("guest_email")
-  /// Empreinte HMAC de la source (jamais l'adresse IP) : base du débit du lien public.
-  sourceHash String?   @map("source_hash")
-  revokedAt  DateTime? @map("revoked_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
-
-  @@index([companyId, createdAt])
-  @@index([sourceHash, createdAt])
-  @@map("order_tracking_links")
-}
-
-/// E-mail reçu sur l'adresse de commande : jamais une commande, seulement un brouillon à valider.
-/// Corps et brouillon sont effacés dès le traitement, et la ligne après 30 jours.
-model InboundOrderEmail {
-  id              String             @id @default(cuid())
-  companyId       String             @map("company_id")
-  company         Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  providerEmailId String             @unique @map("provider_email_id")
-  /// WHATSAPP-1 : pour WhatsApp, `providerEmailId` vaut `whatsapp:<id Meta>` et `fromAddress` le numéro
-  /// du membre de l'équipe qui a transféré (jamais le client, que WhatsApp ne transmet pas).
-  channel         InboundChannel     @default(EMAIL)
-  fromAddress     String             @map("from_address")
-  /// MAIL-PONT : client d'origine lu dans un e-mail transféré à la main par l'équipe (`De :` / `From:`).
-  originalSender  String?            @map("original_sender")
-  subject         String             @default("")
-  bodyText        String             @default("") @map("body_text")
-  attachmentCount Int                @default(0) @map("attachment_count")
-  status          InboundEmailStatus @default(RECEIVED)
-  draft           Json?
-  analysisError   String?            @map("analysis_error")
-  orderId         String?            @map("order_id")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-
-  @@index([companyId, status, createdAt])
-  @@index([createdAt])
-  @@map("inbound_order_emails")
 }
 
 /// MAIL-PONT, étape 4 : fiche d'un client de l'entreprise, sans accès à l'espace client.

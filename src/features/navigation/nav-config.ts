@@ -1,28 +1,18 @@
 import {
-  LayoutDashboard, Building2, Users, Settings, Radio, ClipboardList, Activity, ShieldAlert,
-  Truck, Package, MapPin, Shield, UserCircle, Receipt, CreditCard, BarChart3, HeadphonesIcon, ListChecks,
-  ScrollText, BadgePercent, Inbox, UserPlus, Flag, Megaphone, Target,
+  LayoutDashboard, Building2, Users, Settings, Radio, Activity,
+  Truck, Package, MapPin, Shield, UserCircle, Receipt, BarChart3, HeadphonesIcon, ListChecks,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
 /** Groupes du menu super-administrateur (ADMIN-ESPACE, lot 1). */
-export const ADMIN_NAV_GROUPS = { clients: "Clients", commercial: "Commercial", technique: "Technique" } as const;
+export const ADMIN_NAV_GROUPS = { clients: "Clients", technique: "Technique" } as const;
 
 export const adminNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/admin", icon: LayoutDashboard },
   { title: "Entreprises", href: "/companies", icon: Building2, group: ADMIN_NAV_GROUPS.clients },
-  { title: "Pilotes", href: "/admin/pilots", icon: Flag, group: ADMIN_NAV_GROUPS.clients },
   { title: "Utilisateurs", href: "/admin/users", icon: Users, group: ADMIN_NAV_GROUPS.clients },
-  { title: "Souscriptions", href: "/admin/subscriptions", icon: ClipboardList, group: ADMIN_NAV_GROUPS.clients },
-  { title: "Messages Contact", href: "/admin/contact", icon: Inbox, group: ADMIN_NAV_GROUPS.commercial },
-  { title: "Liste d'attente", href: "/admin/waitlist", icon: UserPlus, group: ADMIN_NAV_GROUPS.commercial },
-  { title: "Campagnes", href: "/admin/campaigns", icon: Megaphone, group: ADMIN_NAV_GROUPS.commercial },
-  { title: "Prospection", href: "/admin/prospection", icon: Target, group: ADMIN_NAV_GROUPS.commercial },
-  { title: "Codes commerciaux", href: "/admin/sales", icon: BadgePercent, group: ADMIN_NAV_GROUPS.commercial },
   { title: "Exploitation", href: "/admin/operations", icon: Activity, group: ADMIN_NAV_GROUPS.technique },
-  { title: "Incidents", href: "/admin/incidents", icon: ShieldAlert, group: ADMIN_NAV_GROUPS.technique },
   { title: "Support plateforme", href: "/admin/support", icon: HeadphonesIcon, group: ADMIN_NAV_GROUPS.technique },
-  { title: "Journal d'accès", href: "/admin/access-events", icon: ScrollText, group: ADMIN_NAV_GROUPS.technique },
 ];
 
 /** Une seule entrée « Carte » : livreurs et livraisons sur la même carte (MAP-UNIFY-2). */
@@ -39,7 +29,6 @@ export const companyNavItems: NavItem[] = [
   { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Livreurs", href: "/dashboard/drivers", icon: Truck },
   { title: "Gestion des comptes", href: "/users", icon: Users },
-  { title: "Mon abonnement", href: "/settings/subscription", icon: CreditCard },
   { title: "Facturation", href: "/settings/billing", icon: Receipt },
   { title: "Paramètres", href: "/settings", icon: Settings },
 ];

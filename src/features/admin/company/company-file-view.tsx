@@ -9,18 +9,14 @@ import {
   Field,
   FieldGrid,
   LinkButton,
-  Meter,
   Stat,
   StatusBadge,
   Unavailable,
 } from "@/features/admin/company/company-file-blocks";
 import {
   COMPANY_STATUS_LABELS,
-  FOLLOW_UP_LABELS,
   ROLE_LABELS_PLURAL,
   ROLE_LABELS_SINGULAR,
-  SUBSCRIPTION_KIND_LABELS,
-  SUBSCRIPTION_STATUS_LABELS,
   TICKET_PRIORITY_LABELS,
   TICKET_STATUS_LABELS,
   USER_STATUS_LABELS,
@@ -28,14 +24,12 @@ import {
   euros,
   formatDate,
   formatDateTime,
-  formatEndInclusive,
   formatMonth,
   plural,
   text,
 } from "@/features/admin/company/company-file-format";
 import { CHART_COLORS, DailyLineChart, type DailyLine } from "@/features/admin/home/daily-line-chart";
 import { HomeCard } from "@/features/admin/home/home-card";
-import { UNLIMITED_MONTHLY_ORDERS } from "@/domains/billing/subscription-view.types";
 import type { PlatformCompanyFile } from "@/domains/admin/company-file.service";
 import { AccessToggleButton } from "@/features/admin/access/access-toggle-button";
 
@@ -59,7 +53,6 @@ function IdentityBlock({ company }: { company: Company }) {
         <Field label="Statut">
           <StatusBadge status={company.status} label={COMPANY_STATUS_LABELS[company.status] ?? company.status} />
         </Field>
-        <Field label="Démonstration">{company.isDemo ? "Oui" : "Non"}</Field>
         <Field label="Créée le">{formatDate(company.createdAt)}</Field>
         <Field label="Slug">{company.slug}</Field>
         <Field label="E-mail">{text(company.email)}</Field>
@@ -70,117 +63,6 @@ function IdentityBlock({ company }: { company: Company }) {
         <Field label="SIREN">{text(company.siren)}</Field>
         <Field label="SIRET">{text(company.siret)}</Field>
       </FieldGrid>
-    </Block>
-  );
-}
-
-function SubscriptionBlock({ company }: { company: Company }) {
-  const subscription = company.subscription;
-  return (
-    <Block id="company-subscription" title="Abonnement" hint="Formule, options et dates de la période en cours.">
-      {!subscription ? (
-        <Empty>Aucun abonnement enregistré.</Empty>
-      ) : (
-        <FieldGrid>
-          <Field label="Formule">{subscription.plan ? subscription.plan.name : "Non déterminée"}</Field>
-          <Field label="Type">{SUBSCRIPTION_KIND_LABELS[subscription.kind] ?? subscription.kind}</Field>
-          <Field label="Statut">{SUBSCRIPTION_STATUS_LABELS[subscription.status] ?? subscription.status}</Field>
-          <Field label="Suivi">
-            <Badge variant={subscription.followUp === "CURRENT" ? "success" : subscription.followUp === "REMIND" ? "brand" : "secondary"}>
-              {FOLLOW_UP_LABELS[subscription.followUp]}
-            </Badge>
-          </Field>
-          <Field label="Périodicité">
-            {subscription.interval === "ANNUAL" ? "Annuel" : subscription.interval === "MONTHLY" ? "Mensuel" : "—"}
-          </Field>
-          <Field label="HT enregistré">{euros(subscription.amountCents)}</Field>
-          <Field label="Début de période">{formatDate(subscription.periodStart)}</Field>
-          <Field label="Fin de période">{formatDate(subscription.periodEnd)}</Field>
-          <Field label="Résiliation en fin de période">{subscription.cancelAtPeriodEnd ? "Oui" : "Non"}</Field>
-          <Field label="Arrêté le">{formatDate(subscription.endedAt)}</Field>
-          <Field label="Fin de découverte">{formatDate(subscription.premiumDiscoveryEndsAt)}</Field>
-          <Field label="Places ajoutées">
-            {`${plural(subscription.seats.DRIVER_SEAT, "livreur", "livreurs")}, ${plural(subscription.seats.ADMIN_SEAT, "admin", "admins")}, ${plural(subscription.seats.DISPATCHER_SEAT, "dispatcher", "dispatchers")}`}
-          </Field>
-          <Field label="Options actives" wide>
-            {subscription.options.length === 0 ? (
-              "Aucune option"
-            ) : (
-              <ul className="flex flex-wrap gap-2">
-                {subscription.options.map((option) => (
-                  <li key={option.code}>
-                    <Badge variant="brand">
-                      {option.name} × {option.quantity} ({euros(option.unitPriceCents)})
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Field>
-        </FieldGrid>
-      )}
-    </Block>
-  );
-}
-
-function ConsumptionBlock({ company }: { company: Company }) {
-  const subscription = company.subscription;
-  const users = company.activity.users;
-  const drivers = users?.byRole.find((entry) => entry.role === "DRIVER")?.seated ?? 0;
-  const orders = subscription?.orders;
-  return (
-    <Block id="company-consumption" title="Consommation" hint="Commandes de la période d'abonnement et livreurs comptés dans l'offre.">
-      <div className="space-y-5">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Commandes de la période</p>
-          {!subscription ? (
-            <p className="mt-1 text-sm text-muted-foreground">Sans abonnement : rien n&apos;est décompté.</p>
-          ) : !orders?.periodStartsAt ? (
-            <p className="mt-1 text-sm text-muted-foreground">Aucune période de consommation ouverte : rien n&apos;est décompté.</p>
-          ) : orders.included >= UNLIMITED_MONTHLY_ORDERS ? (
-            <p className="mt-1 text-sm text-foreground">
-              <span className="text-2xl font-bold tabular-nums">{count(orders.consumed)}</span>{" "}
-              <span className="text-muted-foreground">
-                {`commandes du ${formatDate(orders.periodStartsAt)} au ${formatEndInclusive(orders.periodEndsAt)} · illimitées`}
-              </span>
-            </p>
-          ) : (
-            <div className="mt-2 space-y-2">
-              <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
-                {count(orders.consumed)} <span className="text-base font-semibold text-muted-foreground">/ {count(orders.included)} incluses</span>
-              </p>
-              <Meter value={orders.consumed} max={orders.included} label="Commandes consommées sur les commandes incluses" />
-              <p className="text-xs text-muted-foreground">
-                Du {formatDate(orders.periodStartsAt)} au {formatEndInclusive(orders.periodEndsAt)}
-                {orders.overage > 0 ? ` · ${plural(orders.overage, "commande", "commandes")} au-delà du forfait` : " · aucun dépassement"}
-              </p>
-            </div>
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">Livreurs</p>
-          {!users ? (
-            <div className="mt-2"><Unavailable what="Comptes de l'entreprise illisibles." /></div>
-          ) : !subscription?.drivers.known ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              {plural(drivers, "livreur actif ou invité", "livreurs actifs ou invités")} · formule inconnue, pas de plafond à comparer.
-            </p>
-          ) : subscription.drivers.unlimited ? (
-            <p className="mt-1 text-sm text-foreground">
-              <span className="text-2xl font-bold tabular-nums">{count(drivers)}</span>{" "}
-              <span className="text-muted-foreground">livreurs · illimité dans cette formule</span>
-            </p>
-          ) : (
-            <div className="mt-2 space-y-2">
-              <p className="text-2xl font-bold tabular-nums tracking-tight text-foreground">
-                {count(drivers)} <span className="text-base font-semibold text-muted-foreground">/ {count(subscription.drivers.limit ?? 0)} prévus</span>
-              </p>
-              <Meter value={drivers} max={subscription.drivers.limit ?? 0} label="Livreurs actifs sur les livreurs prévus" />
-              <p className="text-xs text-muted-foreground">Comptes livreur actifs ou en attente de validation.</p>
-            </div>
-          )}
-        </div>
-      </div>
     </Block>
   );
 }
@@ -213,7 +95,7 @@ function InvoicesBlock({ company }: { company: Company }) {
     <Block
       id="company-invoices"
       title="Factures de livraison"
-      hint="Factures de l'entreprise à ses clients, pas l'abonnement Annona."
+      hint="Factures de l'entreprise à ses clients."
     >
       <div className="space-y-4">
         <div>
@@ -250,7 +132,7 @@ function InvoicesBlock({ company }: { company: Company }) {
             </div>
           </dl>
           <p className="mt-2 text-xs text-muted-foreground">
-            {"Le chiffre d'affaires est la somme des factures de livraison, pas le prix de l'abonnement."}
+            {"Le chiffre d'affaires est la somme des factures de livraison."}
           </p>
         </div>
       </div>
@@ -318,23 +200,10 @@ function UsersBlock({ company }: { company: Company }) {
 }
 
 function SupportBlock({ company }: { company: Company }) {
-  const { support, incidents } = company.activity;
+  const { support } = company.activity;
   return (
-    <Block id="company-support" title="Support et incidents" hint="Tickets ouverts ou en cours, incidents encore ouverts.">
+    <Block id="company-support" title="Support" hint="Tickets ouverts ou en cours.">
       <div className="space-y-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-foreground">Incidents ouverts</p>
-            {!incidents ? (
-              <div className="mt-2"><Unavailable what="Incidents illisibles." /></div>
-            ) : (
-              <p className={incidents.open > 0 ? "mt-1 text-2xl font-bold tabular-nums text-[#c43b2f] dark:text-error" : "mt-1 text-sm text-muted-foreground"}>
-                {incidents.open > 0 ? count(incidents.open) : "Aucun incident ouvert."}
-              </p>
-            )}
-          </div>
-          {incidents && incidents.open > 0 && <LinkButton href={filtered("/admin/incidents", company.name)}>Voir les incidents</LinkButton>}
-        </div>
         <div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -405,20 +274,13 @@ export function CompanyFileView({ company }: { company: Company }) {
           <h1 className="mt-1 break-words text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{company.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <StatusBadge status={company.status} label={COMPANY_STATUS_LABELS[company.status] ?? company.status} />
-            {company.isDemo && <Badge variant="secondary">Démonstration</Badge>}
-            {company.subscription?.plan && <Badge variant="brand">{company.subscription.plan.name}</Badge>}
             <span>{`Créée le ${formatDate(company.createdAt)}`}</span>
           </div>
         </div>
-        {!company.isDemo && (
-          <AccessToggleButton kind="company" id={company.id} name={company.name} status={company.status} />
-        )}
+        <AccessToggleButton kind="company" id={company.id} name={company.name} status={company.status} />
       </header>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <ConsumptionBlock company={company} />
-        <DeliveriesBlock company={company} />
-      </div>
+      <DeliveriesBlock company={company} />
 
       {activity.series ? (
         <DailyLineChart
@@ -443,10 +305,7 @@ export function CompanyFileView({ company }: { company: Company }) {
 
       <UsersBlock company={company} />
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <SubscriptionBlock company={company} />
-        <IdentityBlock company={company} />
-      </div>
+      <IdentityBlock company={company} />
 
       <BillingContactBlock company={company} />
     </div>

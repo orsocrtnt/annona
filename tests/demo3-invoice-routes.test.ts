@@ -13,7 +13,6 @@ function load(file: string, role: string, calls: string[], service: Record<strin
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
   }).outputText;
   const dependencies: Record<string, unknown> = {
-    "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": {
       requireStaffRole: async (permission: string) => {

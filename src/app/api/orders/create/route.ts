@@ -1,17 +1,16 @@
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createOrderForCustomer } from "@/domains/order/staff-order.service";
-import { customerOrderResponse, parseCustomerOrderRequest } from "../customer-order-http";
-import { intakeError, withIntakeErrors } from "../intake/intake-http";
+import { customerOrderResponse, orderError, parseCustomerOrderRequest, withOrderErrors } from "../customer-order-http";
 
 /** Commande saisie par l'équipe avec le formulaire, pour le compte d'un client de l'entreprise (ADMIN-COMMANDE). */
 export async function POST(request: Request) {
-  return withIntakeErrors(async () => {
+  return withOrderErrors(async () => {
     const auth = await requireStaffRole("orders:create");
     if ("error" in auth) return auth.error;
     const denied = requireRole(auth.context, ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]);
     if (denied) return denied;
     const companyId = getCompanyId(auth.context);
-    if (!companyId) return intakeError("NO_COMPANY", "Entreprise non associée", 400);
+    if (!companyId) return orderError("NO_COMPANY", "Entreprise non associée", 400);
 
     const parsed = await parseCustomerOrderRequest(request);
     if (!parsed.ok) return parsed.response;

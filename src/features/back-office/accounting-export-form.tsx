@@ -16,7 +16,7 @@ export function AccountingExportForm() {
   return <Card>
     <CardHeader><CardTitle className="text-base">Export comptable des prestations</CardTitle></CardHeader>
     <CardContent className="space-y-3">
-      <p className="text-sm text-muted-foreground">Documents de livraison enregistrés, distincts de votre abonnement Annona. CSV à transmettre à votre outil comptable ; ce fichier ne constitue pas une facture électronique réglementaire.</p>
+      <p className="text-sm text-muted-foreground">Documents de livraison enregistrés. CSV à transmettre à votre outil comptable ; ce fichier ne constitue pas une facture électronique réglementaire.</p>
       <form className="flex flex-wrap items-end gap-3" onSubmit={async (event) => {
         event.preventDefault();
         if (busy) return;

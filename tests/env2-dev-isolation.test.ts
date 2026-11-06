@@ -15,7 +15,6 @@ function validEnvironment() {
     SUPABASE_SERVICE_ROLE_KEY: "private-key",
     DATABASE_URL: `${databaseUrl(DEV_SUPABASE_REF, 6543)}?pgbouncer=true`,
     DIRECT_URL: databaseUrl(DEV_SUPABASE_REF, 5432),
-    STRIPE_SECRET_KEY: ["sk", "test", "fixture"].join("_"),
   };
 }
 
@@ -41,14 +40,13 @@ test("ENV-2 : refuse une base qui ne suit pas le projet Auth", () => {
   assert.deepEqual(errors, ["DATABASE_URL_TARGET_MISMATCH"]);
 });
 
-test("ENV-2 : refuse une application publique, une clé Stripe live et un mot de passe absent", () => {
+test("ENV-2 : refuse une application publique et un mot de passe absent", () => {
   const errors = validateDevEnvironment({
     ...validEnvironment(),
     NEXT_PUBLIC_APP_URL: "https://preproduction.example.test",
-    STRIPE_SECRET_KEY: ["sk", "live", "fixture"].join("_"),
     DIRECT_URL: databaseUrl(DEV_SUPABASE_REF, 5432).replace(":password", ""),
   });
-  assert.deepEqual(errors, ["DEV_APP_URL_NOT_LOCAL", "DIRECT_URL_CREDENTIALS_MISSING", "STRIPE_KEY_NOT_TEST_MODE"]);
+  assert.deepEqual(errors, ["DEV_APP_URL_NOT_LOCAL", "DIRECT_URL_CREDENTIALS_MISSING"]);
 });
 
 test("ENV-2 : les erreurs ne contiennent jamais de valeur d'environnement", () => {

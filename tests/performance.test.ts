@@ -60,19 +60,16 @@ function sessionRoute(auth: unknown) {
   const dependencies: Record<string, unknown> = {
     "next/server": { NextResponse, after: () => undefined },
     "@/lib/api/server-auth": { getServerAuth: async () => { calls++; return auth; } },
-    "@/lib/demo/constants": { demoPersonaForRole: (role: string) => role === "DRIVER" ? "driver" : "admin", DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },
-    "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
   };
   const source = ts.transpileModule(readFileSync("src/app/api/auth/session/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   runInNewContext(source, { exports: module.exports, module, require: (id: string) => { assert.ok(id in dependencies, `Lecture supplémentaire interdite : ${id}`); return dependencies[id]; } });
   return { route: module.exports, calls: () => calls };
 }
-test("session : aucune relecture du profil hors démo ou pour une persona démo", async () => {
-  for (const isDemoSession of [false, true]) {
-    const e = sessionRoute({ user: { id: "u", role: { systemRole: "DRIVER" } }, permissions: ["dashboard:driver"], isDemoSession });
+test("session : aucune relecture du profil", async () => {
+  {
+    const e = sessionRoute({ user: { id: "u", role: { systemRole: "DRIVER" } }, permissions: ["dashboard:driver"] });
     const res = await e.route.GET(); const json = await res.json();
     assert.equal(e.calls(), 1); assert.equal(res.status, 200);
-    assert.equal(json.demo?.persona ?? null, isDemoSession ? "driver" : null);
     assert.deepEqual(json.permissions, ["dashboard:driver"]);
   }
   const e = sessionRoute(null); assert.equal((await (await e.route.GET()).json()).user, null);
@@ -99,97 +96,6 @@ test("cache : mutation invalide aussi une page inactive ; retour et changement d
   await new Promise((resolve) => setImmediate(resolve)); assert.equal(client.getQueryData(options.queryKey), "après");
   unsubscribe(); client.clear(); assert.equal(client.getQueryData(options.queryKey), undefined);
 });
-test("connexion démo : préparer une session isolée puis résoudre son administrateur", async () => {
-  const module = { exports: {} as { POST: (request: Request) => Promise<Response> } };
-  const user = { id: "demo", companyId: "company", company: { isDemo: true }, role: { systemRole: "COMPANY_ADMIN" }, settings: {} };
-  let cookieWrites = 0;
-  let cookieClears = 0;
-  let signOuts = 0;
-  let sessionPreparations = 0;
-  let poolUnavailable = false;
-  let resolvedCompanyId: string | null = null;
-  const sessionOptions: unknown[] = [];
-  class DemoPoolUnavailableError extends Error {
-    code = "DEMO_POOL_BUSY";
-    retryAfterSeconds = 5;
-  }
-  const dependencies: Record<string, unknown> = {
-    "next/server": { NextResponse, after: () => undefined },
-    "@/lib/auth/account-access": { assertAccountActive: () => {}, AccountUnavailableError: class extends Error {} },
-    "@/lib/config-messages": { zodIssueMessage: (e: { issues: Array<{ message: string }> }, f: string) => e.issues[0]?.message ?? f },
-    "@/lib/validations/auth": { loginSchema: { safeParse: () => ({ success: true, data: { email: "demo@fixture.invalid", password: "fixture-password" } }) } },
-    "@/lib/auth/normalize-email": { normalizeEmail: (value: string) => value },
-    "@/services/supabase/server": { createClient: async () => ({ auth: {
-      signInWithPassword: async () => ({ data: { user: { id: "auth", email: "demo@fixture.invalid", email_confirmed_at: "2026-10-15", user_metadata: {} } } }),
-      signOut: async () => { signOuts++; },
-    } }) },
-    "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
-    "@/domains/auth/login-rate-limit.service": { startLoginAttempt: async () => ({ allowed: true, attempt: null }), settleLoginAttempt: async () => {} },
-    "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "test-source" },
-    "@/domains/auth/auth.service": { syncUserFromSupabase: async () => user, getDashboardPathForRole: () => "/dashboard", UserNotProvisionedError: class extends Error {} },
-    "@/domains/user/user.service": {
-      extractPermissionSlugs: () => ["orders:read"],
-      getUserByAuthId: async () => user,
-      updateLastLogin: async () => undefined,
-    },
-    "@/lib/demo/constants": { isDemoLoginEmail: () => true, DEMO_LOGIN_EMAIL: "demo@fixture.invalid" },
-    "@/lib/demo/persona-cookie": {
-      setDemoPersonaCookie: async () => { cookieWrites++; },
-      clearDemoPersonaCookie: async () => { cookieClears++; },
-      clearDemoSessionCookie: async () => { cookieClears++; },
-    },
-    "@/domains/demo/demo-auth.service": {
-      resolveDemoActiveUser: async (_user: unknown, _persona: unknown, companyId: string) => {
-        resolvedCompanyId = companyId;
-        return user;
-      },
-    },
-    "@/domains/demo/demo-session.service": {
-      ensureDemoSessionForLogin: async (_base: string, _key: string | undefined, options: unknown) => {
-        sessionOptions.push(options);
-        sessionPreparations++;
-        if (poolUnavailable) throw new DemoPoolUnavailableError();
-        return "session-company";
-      },
-    },
-    "@/domains/demo/demo-pool.service": {
-      DemoPoolUnavailableError,
-      maintainDemoPool: async () => [],
-      requestDemoPoolRecycle: async () => true,
-      recycleDemoPoolEnvironment: async () => ({ status: "recycled" }),
-    },
-    "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
-  };
-  const source = ts.transpileModule(readFileSync("src/app/api/auth/login/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  runInNewContext(source, { exports: module.exports, module, console, require: (id: string) => { assert.ok(id in dependencies, `Aucune dépendance reset/seed autorisée au login : ${id}`); return dependencies[id]; } });
-  const response = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body: "{}" }));
-  assert.equal(response.status, 200); assert.equal(cookieWrites, 1);
-  assert.equal(sessionPreparations, 1); assert.equal(resolvedCompanyId, "session-company");
-  assert.equal((await response.json()).demo.persona, "admin");
-  user.company.isDemo = false;
-  const missing = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body: "{}" }));
-  assert.equal(missing.status, 503); assert.equal(cookieWrites, 1); assert.equal(sessionPreparations, 2);
-  assert.equal(signOuts, 1); assert.equal(cookieClears, 2);
-  user.company.isDemo = true; poolUnavailable = true;
-  const busy = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body: "{}" }));
-  assert.equal(busy.status, 503); assert.equal(sessionPreparations, 3);
-  assert.equal(signOuts, 2); assert.equal(cookieClears, 4);
-
-  // Décision C10 : seule une recette qui l'annonce explicitement obtient une location d'une heure.
-  poolUnavailable = false;
-  for (const body of ['{"demoTestSession":true}', '{"demoTestSession":"true"}']) {
-    const flagged = await module.exports.POST(new Request("https://fixture.invalid/api/auth/login", { method: "POST", body }));
-    assert.equal(flagged.status, 200);
-  }
-  assert.deepEqual(JSON.parse(JSON.stringify(sessionOptions)), [
-    { testSession: false },
-    { testSession: false },
-    { testSession: false },
-    { testSession: true },
-    { testSession: false },
-  ]);
-});
-
 test("compteurs agrégés : états actifs, date logistique, client/entreprise restent isolés", async (t) => {
   const now = new Date(); const today = new Date(now); today.setHours(0, 0, 0, 0);
   const rows = [

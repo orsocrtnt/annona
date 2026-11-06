@@ -20,7 +20,6 @@ function load(file: string, dependencies: Record<string, unknown>) {
 test("ONBOARD-1 : API réelle, société du serveur, entrées strictes et refus des autres rôles", async () => {
   let actor = "COMPANY_ADMIN";
   let permitted = true;
-  let canMutate = true;
   let companyId: string | null = "company-a";
   const writes: string[] = [];
   const route = load("src/app/api/onboarding/route.ts", {
@@ -34,7 +33,6 @@ test("ONBOARD-1 : API réelle, société du serveur, entrées strictes et refus 
       requireRole: (context: { role: string }, roles: string[]) => roles.includes(context.role) ? null : NextResponse.json({}, { status: 403 }),
       getCompanyId: (context: { companyId: string | null }) => context.companyId,
     },
-    "@/domains/saas/saas.service": { resolveCompanySaasAccess: async () => ({ canMutate }) },
     "@/domains/onboarding/onboarding.service": {
       onboardingPreferenceSchema,
       onboardingCompanyProfileSchema,
@@ -62,14 +60,10 @@ test("ONBOARD-1 : API réelle, société du serveur, entrées strictes et refus 
   assert.deepEqual(writes, ["company-a"]);
   const profile = { name: "Pilote", email: "contact@example.test", phone: "", address: "1 rue du Test", city: "Paris", country: "FR" };
   assert.equal((await patch(request({ step: "company", profile }))).status, 200);
-  canMutate = false;
-  for (const body of [{ step: "company", profile }, { step: "collaborators", skipped: true }]) {
-    assert.equal((await patch(request(body))).status, 403);
-  }
   assert.deepEqual(writes, ["company-a", "company-a"]);
 });
 
-function invitations(options: { roleSlug?: "client" | "driver" | "dispatcher"; existing?: object; providerError?: { message: string; status?: number }; profileFails?: boolean; seatFails?: boolean } = {}) {
+function invitations(options: { roleSlug?: "client" | "driver" | "dispatcher"; existing?: object; providerError?: { message: string; status?: number }; profileFails?: boolean } = {}) {
   const events: string[] = [];
   const roleSlug = options.roleSlug ?? "client";
   const role = { id: "role", name: roleSlug, slug: roleSlug, system_role: roleSlug.toUpperCase() };
@@ -86,7 +80,7 @@ function invitations(options: { roleSlug?: "client" | "driver" | "dispatcher"; e
     } } }),
   };
   const service = load("src/domains/user/user.service.ts", {
-    "node:crypto": { randomUUID: () => "reservation-id" }, "@prisma/client": { Prisma },
+    "@prisma/client": { Prisma },
     "@/services/prisma/client": { prisma },
     "@/services/supabase/admin": { createAdminClient: () => ({ auth: { admin: { inviteUserByEmail: async () => {
       events.push("invite"); return { data: { user: options.providerError ? null : provider }, error: options.providerError };
@@ -96,11 +90,6 @@ function invitations(options: { roleSlug?: "client" | "driver" | "dispatcher"; e
     "@/lib/database/claimed-settings-update": { settingsSection: () => () => null }, "@/lib/database/settings-claims": { updateUserSettingsWithClaim: async () => "saved" },
     "@/lib/permissions/mini-admin": { canManageMiniAdmins: () => true },
     "@/lib/auth/email-links": { getPasswordLinkRedirect: () => "http://localhost/reset-password" },
-    "@/lib/demo/constants": {},
-    "@/domains/saas/saas.service": {
-      reserveSaasSeat: async () => { events.push("reserve"); if (options.seatFails) throw new Error("SAAS_ACCOUNT_READ_ONLY"); return "seat"; },
-      releaseSaasSeat: async () => { events.push("release"); },
-    },
   });
   const create = service.createUserByAdmin as unknown as (input: unknown, companyId: string, actor: string) => Promise<{ invitationSent: boolean }>;
   return { events, create: () => create({ email: "new@example.test", firstName: "Test", lastName: "Pilote", roleSlug }, "company-a", "COMPANY_ADMIN") };
@@ -110,7 +99,7 @@ test("ONBOARD-1 : un nouveau compte est invité une seule fois et reste en atten
   for (const roleSlug of ["client", "driver", "dispatcher"] as const) {
     const fixture = invitations({ roleSlug });
     assert.equal((await fixture.create()).invitationSent, true);
-    assert.deepEqual(fixture.events, ["reserve", "invite", "profile", "release", ...(roleSlug === "client" ? ["link"] : [])]);
+    assert.deepEqual(fixture.events, ["invite", "profile", ...(roleSlug === "client" ? ["link"] : [])]);
   }
 });
 
@@ -132,15 +121,12 @@ test("ONBOARD-1 : e-mail déjà connu du fournisseur et panne ne créent aucun p
   ] as const) {
     const fixture = invitations({ providerError });
     await assert.rejects(fixture.create(), new RegExp(message));
-    assert.deepEqual(fixture.events, ["reserve", "invite", "release"]);
+    assert.deepEqual(fixture.events, ["invite"]);
   }
 });
 
-test("ONBOARD-1 : échec profil libère la place ; droits SaaS refusés avant tout envoi", async () => {
+test("ONBOARD-1 : échec du profil, erreur explicite sans compte créé", async () => {
   const profile = invitations({ profileFails: true });
   await assert.rejects(profile.create(), /INVITATION_PROFILE_FAILED/);
-  assert.deepEqual(profile.events, ["reserve", "invite", "profile", "release"]);
-  const denied = invitations({ seatFails: true });
-  await assert.rejects(denied.create(), /SAAS_ACCOUNT_READ_ONLY/);
-  assert.deepEqual(denied.events, ["reserve"]);
+  assert.deepEqual(profile.events, ["invite", "profile"]);
 });

@@ -92,9 +92,6 @@ export function validatePreproductionEnvironment(environment: Environment) {
   if (environment.EMAIL_DELIVERY_MODE === "test" && !environment.EMAIL_TEST_RECIPIENT?.trim()) {
     errors.push("EMAIL_TEST_RECIPIENT_MISSING");
   }
-  if (environment.DEMO_CLEANUP_ENABLED !== "false") {
-    errors.push("DEMO_CLEANUP_MUST_BE_FALSE");
-  }
 
   return [...new Set(errors)].sort();
 }

@@ -22,7 +22,6 @@ import type { DeliveryCategory } from "@prisma/client";
 import { Plus, Trash2, Package, Bike, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PickupStopItemsFields } from "./pickup-stop-items-fields";
-import { CourierEstimateBanner, type CourierEstimateFn } from "./courier-estimate-banner";
 import { toast } from "sonner";
 import { AddressFieldsGroup } from "@/components/addresses/address-fields-group";
 import {
@@ -51,7 +50,6 @@ interface OrderFormFieldsProps extends CreateOrderFormProps {
   loadingOptions: boolean;
   /** « staff » : saisie par l'équipe pour un client, textes adaptés et sans carnet d'adresses. */
   audience?: "client" | "staff";
-  estimateCourier?: CourierEstimateFn;
 }
 
 const DEFAULT_FORM_VALUES: CreateClientOrderFormInput = {
@@ -102,7 +100,6 @@ export function OrderFormFields({
   deliveryOptions,
   loadingOptions,
   audience = "client",
-  estimateCourier,
 }: OrderFormFieldsProps) {
   const enabledCategories = useMemo(
     () => deliveryOptions?.enabled ?? [],
@@ -806,19 +803,6 @@ export function OrderFormFields({
             )}
           </div>
         </>
-      )}
-
-      {isCourier && (
-        <CourierEstimateBanner
-          pickupAddress={form.watch("pickupStops.0.address")}
-          pickupCity={form.watch("pickupStops.0.city")}
-          pickupPostalCode={form.watch("pickupStops.0.postalCode")}
-          shippingAddress={form.watch("shippingAddress")}
-          shippingCity={form.watch("shippingCity")}
-          shippingPostalCode={form.watch("shippingPostalCode")}
-          requestedDeliveryDate={form.watch("requestedDeliveryDate")}
-          estimate={estimateCourier}
-        />
       )}
 
       {/* Une seule action principale, toujours à portée du pouce sur mobile. */}

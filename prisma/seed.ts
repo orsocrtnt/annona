@@ -46,7 +46,6 @@ async function main() {
   }
 
   console.log("✅ Seed completed");
-  console.log("ℹ️  Pour l'environnement de démo commerciale : npm run db:seed-demo");
 }
 
 main()

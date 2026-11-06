@@ -64,8 +64,6 @@ export function validateDevEnvironment(environment: Environment) {
   if (environment.NEXT_PUBLIC_SUPABASE_ANON_KEY === environment.SUPABASE_SERVICE_ROLE_KEY) {
     errors.push("SUPABASE_KEYS_MUST_DIFFER");
   }
-  const stripeKey = environment.STRIPE_SECRET_KEY?.trim();
-  if (stripeKey && !/^(sk|rk)_test_/.test(stripeKey)) errors.push("STRIPE_KEY_NOT_TEST_MODE");
 
   return [...new Set(errors)].sort();
 }

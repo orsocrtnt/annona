@@ -65,7 +65,6 @@ function loadMiddleware(calls: string[]) {
     "@/services/supabase/middleware": { updateSession: async () => { calls.push("session"); return { supabaseResponse: NextResponse.next(), user: null }; } },
     "@/lib/constants": { AUTH_ROUTES: ["/login"] },
     "@/lib/security/origin-check": { isCrossOriginMutation, isOriginCheckExempt },
-    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "annona-demo-persona", DEMO_SESSION_COOKIE: "annona-demo-session" },
     "@/lib/permissions/page-access": pageAccess,
     "@/lib/api/server-auth": { resolveServerAuthForAuthId: async () => { calls.push("auth"); return null; } },
   };

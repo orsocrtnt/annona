@@ -1,4 +1,4 @@
-import { CONFIG_MESSAGES, firstFieldMessage } from "@/lib/config-messages";
+import { firstFieldMessage } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { requireDispatchSettingsReader } from "@/lib/api/dispatch-settings-read-guard";
@@ -9,12 +9,8 @@ import {
 import { companyDispatchSettingsSchema } from "@/lib/validations/dispatch-settings";
 
 const DISPATCH_FIELD_LABELS = {
-  strategy: "Stratégie",
   maxActiveDeliveriesPerDriver: "Livraisons actives maximum par livreur",
-  gpsPositionMaxAgeMinutes: "Ancienneté maximale de la position GPS",
-  gpsMaxDistanceKm: "Distance maximale au retrait",
   driverRules: "Règles par livreur",
-  autoAssignCategories: "Catégories attribuées automatiquement",
 };
 
 export async function GET() {
@@ -61,12 +57,6 @@ export async function PATCH(request: Request) {
     }
     if (error instanceof Error && error.message === "SETTINGS_CONFLICT") {
       return NextResponse.json({ error: "Les réglages ont changé pendant l'enregistrement. Rechargez puis réessayez." }, { status: 409 });
-    }
-    if (error instanceof Error && error.message === "SAAS_FEATURE_NOT_AVAILABLE") {
-      return NextResponse.json(
-        { error: CONFIG_MESSAGES.DISPATCH_FEATURE_NOT_IN_PLAN },
-        { status: 403 }
-      );
     }
     throw error;
   }

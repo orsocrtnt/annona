@@ -1,15 +1,11 @@
 import type { OperationJob, Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
-import { assertSaasMutationFeature } from "@/domains/saas/saas.service";
 import { runAfterResponse } from "@/lib/operations/after-response";
 
 const OPERATION_JOB_TAKE = 50;
 const OPERATION_JOB_OVERDUE_MS = 15 * 60 * 1000;
 const OPERATION_JOB_LEASE_MS = 5 * 60 * 1000;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 30 * 60_000] as const;
-const AUTO_DISPATCH_WAITING_DRIVER = new Set(["Aucun livreur actif", "Aucun livreur compatible selon les règles"]);
-const AUTO_DISPATCH_RECHECK_MS = 10 * 60_000;
-const AUTO_DISPATCH_WAIT_MS = 24 * 60 * 60_000;
 
 type JobDatabase = Pick<Prisma.TransactionClient, "operationJob">;
 
@@ -166,21 +162,6 @@ export async function enqueueOperationJob(
   });
 }
 
-export async function enqueueAutoDispatchJob(
-  db: JobDatabase,
-  input: { companyId: string; deliveryId: string }
-) {
-  return enqueueOperationJob(db, {
-    jobKey: `auto-dispatch:${input.deliveryId}`,
-    type: "AUTO_DISPATCH",
-    companyId: input.companyId,
-    payload: {
-      companyId: input.companyId,
-      deliveryId: input.deliveryId,
-    },
-  });
-}
-
 export type OperationJobRunDetail = {
   id: string;
   type: OperationJob["type"];
@@ -204,63 +185,7 @@ function readString(payload: Prisma.JsonValue, key: string) {
 async function executeJob(job: OperationJob, context: { previouslyAttempted: boolean }) {
   const emailWindow = () => jobEmailReplayWindow({ id: job.id, createdAt: job.createdAt, previouslyAttempted: context.previouslyAttempted });
   const freezeContent = jobEmailContentFreezer(job.id);
-  if (job.type === "AUTO_DISPATCH") {
-    const companyId = readString(job.payload, "companyId");
-    const deliveryId = readString(job.payload, "deliveryId");
-    if (!companyId || !deliveryId) throw new Error("AUTO_DISPATCH_PAYLOAD_INVALID");
-    await assertSaasMutationFeature(companyId, "auto_dispatch");
-
-    const { tryAutoAssignDelivery } = await import(
-      "@/domains/delivery/auto-dispatch.service"
-    );
-    const result = await tryAutoAssignDelivery(companyId, deliveryId);
-    const terminalSkips = new Set([
-      "Auto-dispatch désactivé",
-      "Livraison introuvable",
-      "Déjà assignée",
-      "Déjà assignée entre-temps",
-      "Statut non éligible",
-      "En attente de la prochaine tournée automatique",
-    ]);
-    // Personne de disponible n'est pas une panne : on repasse sans user les essais, jusqu'à ce qu'un
-    // livreur revienne. Passé 24 h, le dispatcher a la main : l'alerte « Sans livreur » reste affichée (AUDIT-0111, C5).
-    if (!result.assigned && result.skippedReason && AUTO_DISPATCH_WAITING_DRIVER.has(result.skippedReason)) {
-      const now = Date.now();
-      if (now - job.createdAt.getTime() >= AUTO_DISPATCH_WAIT_MS) throw skippedJobError("AUTO_DISPATCH_NO_DRIVER");
-      throw deferredJobError("AUTO_DISPATCH_WAITING_DRIVER", new Date(now + AUTO_DISPATCH_RECHECK_MS));
-    }
-    if (!result.assigned && result.skippedReason && !terminalSkips.has(result.skippedReason)) {
-      throw new Error(`AUTO_DISPATCH_RETRY:${result.skippedReason}`);
-    }
-    return;
-  }
-
   if (job.type === "CLIENT_NOTIFICATION") {
-    if (readString(job.payload, "kind") === "SIGNUP_WELCOME") {
-      const { deliverSignupWelcomeEmail } = await import(
-        "@/domains/signup/signup.service"
-      );
-      // Fenêtre de déduplication du fournisseur d'e-mail, bornée par la première tentative émise (C5).
-      await deliverSignupWelcomeEmail(job.payload, job.jobKey, emailWindow(), freezeContent);
-      return;
-    }
-    if (readString(job.payload, "kind") === "ORDER_MESSAGE") {
-      const messageId = readString(job.payload, "messageId");
-      if (!messageId) throw new Error("ORDER_MESSAGE_PAYLOAD_INVALID");
-      const { deliverOrderMessageNotification } = await import("@/domains/order-conversation/order-conversation.service");
-      await deliverOrderMessageNotification(messageId);
-      return;
-    }
-    if (readString(job.payload, "kind") === "INBOUND_ORDER_CONFIRMATION") {
-      const { deliverInboundOrderConfirmation } = await import("@/domains/public-order/public-order.service");
-      await deliverInboundOrderConfirmation(job.payload, job.jobKey, emailWindow(), freezeContent);
-      return;
-    }
-    if (readString(job.payload, "kind") === "GUEST_TRACKING_LINK") {
-      const { deliverGuestTrackingEmail } = await import("@/domains/public-order/public-order.service");
-      await deliverGuestTrackingEmail(job.payload, job.jobKey, emailWindow(), freezeContent);
-      return;
-    }
     // DEMO-3 : relance de facture (e-mail au client).
     if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
       const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");
@@ -284,12 +209,6 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
   if (job.type === "DRIVER_NOTIFICATION") {
     const { deliverDriverMissionPush } = await import("@/domains/driver/driver-push.service");
     await deliverDriverMissionPush(job.payload);
-    return;
-  }
-
-  if (job.type === "INBOUND_EMAIL") {
-    const { analyzeInboundEmailJob } = await import("@/domains/order-intake/inbound-email.service");
-    await analyzeInboundEmailJob(job.payload);
     return;
   }
 

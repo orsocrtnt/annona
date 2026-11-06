@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Toaster } from "sonner";
 import { SessionProvider } from "./session-provider";
-import { DemoModeBar } from "@/features/demo/demo-mode-bar";
 import { NavigationProgress } from "@/components/navigation/navigation-progress";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { OPERATIONAL_QUERY_DEFAULTS } from "@/lib/query/defaults";
@@ -34,7 +33,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <SkipLink />
         <NavigationProgress />
         <ScrollToTopOnNavigation />
-        <DemoModeBar />
         <AccessRefusedNotice />
         {children}
       </SessionProvider>

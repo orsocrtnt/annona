@@ -19,7 +19,7 @@ Une recette prouve qu'un parcours marche **dans le navigateur**. Lire le JSX ou 
 
 ## Déroulé
 
-1. **Préparer** (dans le worktree de la branche) : `git log --oneline preproduction..HEAD`, puis `npm ci` si `node_modules` manque, puis `npx prisma generate`. Lire le rapport de l'agent (`docs/rapports/agents/2026-10-28-*.md`) : il liste les écrans et les parcours à recetter.
+1. **Préparer** (dans le worktree de la branche) : `git log --oneline base..HEAD`, puis `npm ci` si `node_modules` manque, puis `npx prisma generate`. Lire le rapport de l'agent (`docs/rapports/agents/2026-10-28-*.md`) : il liste les écrans et les parcours à recetter.
 2. **Démarrer un serveur** sur le port libre attribué (3110 ou 3111), en arrière-plan, journal dans `outputs/recette-agents/<branche>/server.log` :
    `npx dotenv -e /Users/orso/Developer/Annona/.env.local -- env DATABASE_CONNECTION_MODE=session DATABASE_CONNECTION_LIMIT=5 npx next dev --turbopack -H 127.0.0.1 -p 3110`
    Attendre que `curl -s -o /dev/null -w '%{http_code}' http://localhost:3110/login` renvoie 200, en vérifiant par tranches de 30 s au moins.

@@ -104,7 +104,6 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
       "@/lib/config-messages": require("../src/lib/config-messages"),
       "@/lib/api/auth-guard": auth(role),
       "@/lib/validations/user": validation,
-      "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
       "@/domains/user/user.service": service,
     });
     const item = load("src/app/api/users/[id]/route.ts", {
@@ -112,7 +111,6 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
       "@/lib/config-messages": require("../src/lib/config-messages"),
       "@/lib/api/auth-guard": auth(role),
       "@/lib/validations/user": validation,
-      "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
       "@/domains/user/user.service": service,
     });
     for (const response of [
@@ -131,14 +129,13 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
     "@/lib/config-messages": require("../src/lib/config-messages"),
     "@/lib/api/auth-guard": auth("COMPANY_ADMIN"),
     "@/lib/validations/user": validation,
-    "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
     "@/domains/user/user.service": service,
   });
   const listed = await allowed.GET!();
   const created = await allowed.POST!(tracked("http://local/api/users", "POST"));
   assert.equal(listed.status, 200);
   assert.equal(created.status, 201);
-  assert.deepEqual(calls, ["company", "list", "company", "body", "parse", "company", "create"]);
+  assert.deepEqual(calls, ["company", "list", "body", "parse", "company", "create"]);
 
   const screen = readFileSync("src/app/(back-office)/users/page.tsx", "utf8");
   assert.equal(screen.includes("platformReadOnly ? null : <CreateUserDialog"), true);

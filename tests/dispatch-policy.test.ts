@@ -120,8 +120,7 @@ test("éligibilité : pause, catégorie et zone sont des règles dures non forç
   const paused = getDriverEligibilityReasons(
     { id: "driver-a" },
     standardDelivery,
-    settingsFor({ driverId: "driver-a", priority: 1, dispatchStatus: "PAUSED" }),
-    []
+    settingsFor({ driverId: "driver-a", priority: 1, dispatchStatus: "PAUSED" })
   );
   assert.deepEqual(paused, ["DISPATCH_PAUSED"]);
   assert.deepEqual(splitEligibilityReasons(paused), { soft: [], hard: ["DISPATCH_PAUSED"] });
@@ -134,8 +133,7 @@ test("éligibilité : pause, catégorie et zone sont des règles dures non forç
       driverId: "driver-a",
       priority: 1,
       allowedCategories: { STANDARD: false, COURIER: true, SPECIAL_MISSION: true },
-    }),
-    []
+    })
   );
   assert.deepEqual(category, ["CATEGORY_NOT_ALLOWED"]);
   assert.equal(isOnlySoftIneligibility(category), false);
@@ -143,8 +141,7 @@ test("éligibilité : pause, catégorie et zone sont des règles dures non forç
   const zone = getDriverEligibilityReasons(
     { id: "driver-a" },
     standardDelivery,
-    settingsFor({ driverId: "driver-a", priority: 1, postalCodePrefixes: ["69"] }),
-    []
+    settingsFor({ driverId: "driver-a", priority: 1, postalCodePrefixes: ["69"] })
   );
   assert.deepEqual(zone, ["ZONE_NOT_COVERED"]);
   assert.equal(isOnlySoftIneligibility(zone), false);
@@ -154,8 +151,7 @@ test("éligibilité : seule une limite de capacité peut être forcée", () => {
   const capacityOnly = getDriverEligibilityReasons(
     { id: "driver-a", assigned: 1 },
     standardDelivery,
-    settingsFor({ driverId: "driver-a", priority: 1 }, 1),
-    []
+    settingsFor({ driverId: "driver-a", priority: 1 }, 1)
   );
   assert.deepEqual(capacityOnly, ["MAX_LOAD_REACHED"]);
   assert.deepEqual(splitEligibilityReasons(capacityOnly), {
@@ -167,8 +163,7 @@ test("éligibilité : seule une limite de capacité peut être forcée", () => {
   const mixed = getDriverEligibilityReasons(
     { id: "driver-a", assigned: 1 },
     standardDelivery,
-    settingsFor({ driverId: "driver-a", priority: 1, dispatchStatus: "PAUSED" }, 1),
-    []
+    settingsFor({ driverId: "driver-a", priority: 1, dispatchStatus: "PAUSED" }, 1)
   );
   assert.deepEqual(mixed, ["DISPATCH_PAUSED", "MAX_LOAD_REACHED"]);
   assert.equal(isOnlySoftIneligibility(mixed), false);

@@ -85,10 +85,6 @@ const documentedEnv = [
   "E2E_BASE_URL",
   "E2E_SKIP_WEB_SERVER",
   "PLAYWRIGHT_CHANNEL",
-  "GOOGLE_SHEETS_CLIENT_EMAIL",
-  "GOOGLE_SHEETS_PRIVATE_KEY",
-  "PROSPECTION_SHEET_ID",
-  "PROSPECTION_SHEET_HEADER_ROW",
 ];
 const missingEnv = documentedEnv.filter(
   (name) => !new RegExp(`^(?:#\\s*)?${name}=`, "m").test(envExample)

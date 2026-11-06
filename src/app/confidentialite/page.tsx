@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function ConfidentialitePage() {
   return (
     <LegalDocument
-      active="confidentialite"
       title="Politique de confidentialité"
       intro={`Ce que ${APP_NAME} collecte sur ce site, pourquoi, et comment exercer vos droits.`}
     >
@@ -23,52 +22,6 @@ export default function ConfidentialitePage() {
           </Link>
           .
         </p>
-      </LegalSection>
-
-      <LegalSection title="Formulaire de contact">
-        <p>
-          Données demandées : nom, e-mail et message ; société et téléphone si vous les indiquez. Elles servent
-          uniquement à vous répondre. Ce traitement repose sur notre intérêt légitime à répondre aux demandes reçues.
-          Les messages sont conservés trois ans après le dernier échange.
-        </p>
-        <p>
-          Liste d&apos;attente (page Tarifs) : prénom, nom, société, e-mail et téléphone, ainsi que le code de
-          campagne du lien suivi s&apos;il y en a un. Ils servent uniquement à vous prévenir de l&apos;ouverture et à
-          vous recontacter, avec la même base et la même durée de conservation que les messages de contact.
-        </p>
-        <p>
-          Votre adresse IP n&apos;est pas enregistrée : seule une empreinte chiffrée sert à limiter les envois
-          abusifs.
-        </p>
-      </LegalSection>
-
-      <LegalSection title="Prospection commerciale">
-        <p>
-          Annona peut contacter par e-mail ou par téléphone des entreprises de coursiers et de livraison, au sujet
-          de leur activité professionnelle. Les coordonnées proviennent de registres publics d&apos;entreprises, des
-          sites de ces entreprises et d&apos;annuaires professionnels ; le premier message indique leur origine. Ce
-          traitement repose sur notre intérêt légitime à faire connaître notre service à ces professionnels.
-        </p>
-        <p>
-          Données utilisées : nom de l&apos;entreprise, nom et fonction de l&apos;interlocuteur, e-mail et téléphone
-          professionnels, échanges. Elles sont conservées au plus trois ans après le dernier échange.
-        </p>
-        <p>
-          Vous pouvez refuser à tout moment, gratuitement et sans justification : répondez « stop » à un message ou
-          écrivez-nous depuis la page Contact. Nous retirons alors vos coordonnées et ne gardons que ce qui évite de
-          vous recontacter.
-        </p>
-      </LegalSection>
-
-      <LegalSection title="Création d'un compte entreprise">
-        <p>
-          Données demandées : prénom, nom, e-mail professionnel, mot de passe, nom de l&apos;entreprise, adresse
-          de facturation ; raison sociale, SIREN, SIRET et téléphone si vous les indiquez. Elles servent à créer
-          votre compte, à gérer votre abonnement et à vous facturer. Ce traitement repose sur le contrat si vous
-          contractez vous-même, sinon sur notre intérêt légitime à gérer la relation avec votre entreprise ; les
-          documents comptables relèvent de nos obligations légales.
-        </p>
-        <p>L&apos;inscription en ligne n&apos;est pas encore ouverte : aucun paiement n&apos;est possible sur ce site pour l&apos;instant.</p>
       </LegalSection>
 
       <LegalSection title="Données traitées dans l'application">
@@ -92,7 +45,6 @@ export default function ConfidentialitePage() {
 
       <LegalSection title="Durée de conservation">
         <p>
-          Messages de contact et prospection : trois ans après le dernier échange. Autres données :{" "}
           <em>En cours de définition.</em> Ces durées seront publiées ici avant l&apos;ouverture commerciale.
         </p>
       </LegalSection>
@@ -100,27 +52,21 @@ export default function ConfidentialitePage() {
       <LegalSection title="Cookies et stockage local">
         <p>
           Le site n&apos;utilise aucun traceur publicitaire. Il dépose seulement ce qui est nécessaire à son
-          fonctionnement : la session de connexion ou de démonstration, le suivi de l&apos;inscription en cours,
+          fonctionnement : la session de connexion,
           votre choix de thème clair ou sombre et vos préférences d&apos;affichage. L&apos;application livreur garde
           aussi sur l&apos;appareil les actions en attente d&apos;envoi quand le réseau manque ; elles sont
           effacées dès leur envoi, et au plus tard sept jours après leur création si elles n&apos;ont pas pu partir.
-        </p>
-        <p>
-          Page Tarifs : les visites sont comptées de façon anonyme, sans cookie ni adresse IP. Seuls des totaux par
-          jour sont gardés (visites, clics sur « Rejoindre la liste », inscriptions), avec le code de campagne du lien
-          suivi s&apos;il y en a un ; aucun identifiant de visiteur n&apos;est créé. Une empreinte chiffrée de
-          l&apos;adresse, gardée au plus une heure en mémoire et jamais enregistrée, limite les envois abusifs.
         </p>
       </LegalSection>
 
       <LegalSection title="Vos droits">
         <p>
           Vous pouvez demander l&apos;accès à vos données, leur rectification, leur effacement, leur portabilité,
-          la limitation de leur traitement ou vous y opposer, depuis la{" "}
-          <Link href="/contact" className="font-semibold text-brand underline underline-offset-4">
-            page Contact
+          la limitation de leur traitement ou vous y opposer, en écrivant à l&apos;éditeur (adresse dans les{" "}
+          <Link href="/mentions-legales" className="font-semibold text-brand underline underline-offset-4">
+            mentions légales
           </Link>
-          . Vous pouvez aussi adresser une réclamation à la CNIL (cnil.fr).
+          ). Vous pouvez aussi adresser une réclamation à la CNIL (cnil.fr).
         </p>
       </LegalSection>
     </LegalDocument>

@@ -7,18 +7,14 @@ import { NextResponse } from "next/server";
 import {
   buildDailySeries,
   buildHealthSignal,
-  countOpenIncidents,
   getAdminHome,
   parisDayKey,
   parseAdminHomeParams,
-  previousUtcMonthAnchor,
   sameDayLastWeekWindows,
   type AdminHome,
   type AdminHomeBadges,
   type AdminHomeDatabase,
 } from "../src/domains/admin/admin-home.service";
-import { WAITLIST_MESSAGE } from "../src/domains/growth/contact.service";
-import { alertActionKey } from "../src/domains/operational-alerts/operational-alerts.policy";
 import {
   ADMIN_NAV_GROUPS,
   adminNavItems,
@@ -33,19 +29,10 @@ import { groupNavItems } from "../src/lib/navigation/group-nav-items";
 /* ---------- Paramètres ---------- */
 
 test("ADMIN-ESPACE accueil : paramètres stricts", () => {
-  assert.deepEqual(parseAdminHomeParams(new URLSearchParams()), { query: { view: "full", contactSince: null, waitlistSince: null } });
-  const since = parseAdminHomeParams(new URLSearchParams({ view: "badges", contactSince: "2026-11-01T08:00:00.000Z" }));
-  assert.ok("query" in since);
-  assert.equal(since.query.view, "badges");
-  assert.equal(since.query.contactSince?.toISOString(), "2026-11-01T08:00:00.000Z");
-  assert.equal(since.query.waitlistSince, null);
-  const waitlist = parseAdminHomeParams(new URLSearchParams({ waitlistSince: "2026-11-02T08:00:00.000Z" }));
-  assert.ok("query" in waitlist);
-  assert.equal(waitlist.query.waitlistSince?.toISOString(), "2026-11-02T08:00:00.000Z");
-  assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ waitlistSince: "hier" })), { error: "Date invalide" });
+  assert.deepEqual(parseAdminHomeParams(new URLSearchParams()), { query: { view: "full" } });
+  assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ view: "badges" })), { query: { view: "badges" } });
   assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ companyId: "x" })), { error: "Paramètre inconnu" });
   assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ view: "tout" })), { error: "Vue invalide" });
-  assert.deepEqual(parseAdminHomeParams(new URLSearchParams({ contactSince: "hier" })), { error: "Date invalide" });
 });
 
 /* ---------- Jours à l'heure de Paris ---------- */
@@ -88,25 +75,6 @@ test("ADMIN-ESPACE accueil : même jour la semaine dernière, à la même heure,
   assert.equal(dst.lastWeek.lt.toISOString(), "2026-10-19T09:00:00.000Z");
 });
 
-test("ADMIN-ESPACE accueil : le mois précédent tombe dans le mois UTC d'avant, même en janvier", () => {
-  assert.equal(previousUtcMonthAnchor(new Date("2026-11-05T10:00:00.000Z")).toISOString().slice(0, 7), "2026-10");
-  assert.equal(previousUtcMonthAnchor(new Date("2027-01-01T00:30:00.000Z")).toISOString().slice(0, 7), "2026-12");
-});
-
-/* ---------- Incidents et santé ---------- */
-
-test("ADMIN-ESPACE accueil : seuls les incidents à l'état « Ouvert » comptent", () => {
-  const open = { status: "PENDING", deliveries: [{ status: "ASSIGNED", completedAt: null }] };
-  const incidents = [
-    { id: "i1", order: open },
-    { id: "i2", order: open },
-    { id: "i3", order: open },
-    { id: "i4", order: { status: "CANCELLED", deliveries: [] } },
-  ];
-  const keys = new Set([alertActionKey("incident:i2", "ack"), alertActionKey("incident:i3", "resolve")]);
-  assert.equal(countOpenIncidents(incidents, keys), 1);
-});
-
 test("ADMIN-ESPACE accueil : voyant vert, orange ou rouge avec une phrase", () => {
   const base = {
     status: "ok" as const,
@@ -132,35 +100,10 @@ type Call = { model: string; method: string; args: Record<string, unknown> };
 function fakeDb(calls: Call[]): AdminHomeDatabase {
   const record = (model: string, method: string, args: Record<string, unknown>) => calls.push({ model, method, args });
   return {
-    contactMessage: {
-      count: async (args) => {
-        record("contactMessage", "count", args);
-        const where = args.where as { message?: string; NOT?: unknown; createdAt?: { gt?: Date; gte?: Date } };
-        if (where.NOT) return where.createdAt?.gt ? 4 : 11;
-        if (where.message === WAITLIST_MESSAGE) {
-          // Liste d'attente : comptée depuis sa propre dernière visite (lot 2), jamais depuis celle de Contact.
-          if (where.createdAt?.gt) {
-            assert.equal(where.createdAt.gt.toISOString(), "2026-11-02T00:00:00.000Z");
-            return 2;
-          }
-          return where.createdAt?.gte ? 3 : 10;
-        }
-        throw new Error("filtre Contact inattendu");
-      },
-    },
     supportTicket: {
       count: async (args) => {
         record("supportTicket", "count", args);
         return 5;
-      },
-    },
-    orderMessage: {
-      findMany: async (args) => {
-        record("orderMessage", "findMany", args);
-        const where = args.where as { requestKey?: { in?: string[] } };
-        if (where.requestKey?.in) return [{ orderId: "o1", requestKey: alertActionKey("incident:i2", "resolve") }];
-        const order = { status: "PENDING", deliveries: [{ status: "ASSIGNED", completedAt: null }] };
-        return [{ id: "i1", order }, { id: "i2", order }];
       },
     },
     company: {
@@ -189,12 +132,11 @@ function fakeDb(calls: Call[]): AdminHomeDatabase {
   };
 }
 
-test("ADMIN-ESPACE accueil : chiffres clés hors démo, comparaisons et liste d'attente séparée des messages", async () => {
+test("ADMIN-ESPACE accueil : chiffres clés, comparaisons et tickets ouverts", async () => {
   const calls: Call[] = [];
-  const revenueAnchors: string[] = [];
   const now = new Date("2026-11-05T10:00:00.000Z");
   const home = (await getAdminHome(
-    { view: "full", contactSince: new Date("2026-11-01T00:00:00.000Z"), waitlistSince: new Date("2026-11-02T00:00:00.000Z") },
+    { view: "full" },
     {
       db: fakeDb(calls),
       now,
@@ -205,39 +147,16 @@ test("ADMIN-ESPACE accueil : chiffres clés hors démo, comparaisons et liste d'
         storage: { status: "ok", durationMs: 1 },
         queue: { status: "ok", failed: 0, stale: 0 },
       }),
-      readSubscriptionRevenueCents: async (at) => {
-        revenueAnchors.push(at.toISOString().slice(0, 7));
-        return at.getUTCMonth() === 10 ? 25_800 : 12_900;
-      },
     }
   )) as AdminHome;
 
-  assert.deepEqual(home.todo, {
-    contactNew: 4,
-    waitlistNew: 2,
-    openIncidents: 1,
-    openSupportTickets: 5,
-    contactSince: "2026-11-01T00:00:00.000Z",
-    waitlistSince: "2026-11-02T00:00:00.000Z",
-  });
+  assert.deepEqual(home.todo, { openSupportTickets: 5 });
   assert.deepEqual(home.kpis.activeCompanies, { current: 7, newLast30Days: 1 });
   assert.deepEqual(home.kpis.deliveredToday, { current: 6, previous: 4 });
-  assert.deepEqual(home.kpis.waitlist, { total: 10, last7Days: 3 });
-  assert.deepEqual(home.kpis.subscriptionRevenue, {
-    currentCents: 25_800,
-    previousCents: 12_900,
-    monthStartsAt: "2026-11-01T00:00:00.000Z",
-  });
-  assert.deepEqual(revenueAnchors.sort(), ["2026-10", "2026-11"]);
   assert.equal(home.health.level, "green");
   assert.equal(home.series.length, 30);
   assert.deepEqual(home.series[29], { day: "2026-11-05", orders: 1, delivered: 1 });
 
-  // Exclusion des entreprises de démonstration partout où l'on compte l'activité.
-  for (const call of calls.filter((entry) => ["company", "order", "delivery"].includes(entry.model))) {
-    const where = call.args.where as { isDemo?: boolean; company?: { isDemo?: boolean } };
-    assert.equal(where.isDemo ?? where.company?.isDemo, false, `${call.model}.${call.method}`);
-  }
   // Livraisons : seules les livraisons terminées « DELIVERED » sont comptées.
   for (const call of calls.filter((entry) => entry.model === "delivery")) {
     assert.equal((call.args.where as { status: string }).status, "DELIVERED");
@@ -247,42 +166,22 @@ test("ADMIN-ESPACE accueil : chiffres clés hors démo, comparaisons et liste d'
   assert.deepEqual((tickets?.args.where as { status: { in: string[] } }).status.in, ["OPEN", "IN_PROGRESS"]);
 });
 
-test("ADMIN-ESPACE accueil : sans visite enregistrée, tous les messages sont nouveaux ; les pastilles restent légères", async () => {
+test("ADMIN-ESPACE accueil : les pastilles restent légères", async () => {
   const calls: Call[] = [];
-  const badges = (await getAdminHome({ view: "badges", contactSince: null, waitlistSince: null }, { db: fakeDb(calls) })) as AdminHomeBadges;
-  assert.deepEqual(badges.todo, { contactNew: 11, waitlistNew: 10, openIncidents: 1, openSupportTickets: 5, contactSince: null, waitlistSince: null });
+  const badges = (await getAdminHome({ view: "badges" }, { db: fakeDb(calls) })) as AdminHomeBadges;
+  assert.deepEqual(badges.todo, { openSupportTickets: 5 });
   assert.equal(Object.hasOwn(badges, "kpis"), false);
   assert.equal(calls.some((entry) => ["company", "order", "delivery"].includes(entry.model)), false, "aucun calcul lourd");
 });
 
-test("ADMIN-ESPACE accueil : un chiffre illisible n'est jamais inventé", async () => {
-  const home = (await getAdminHome(
-    { view: "full", contactSince: null, waitlistSince: null },
-    {
-      db: fakeDb([]),
-      now: new Date("2026-11-05T10:00:00.000Z"),
-      readServiceHealth: async () => { throw new Error("hors ligne"); },
-      readSubscriptionRevenueCents: async () => { throw new Error("journal illisible"); },
-    }
-  )) as AdminHome;
-  assert.equal(home.kpis.subscriptionRevenue, null);
-  assert.equal(home.health.level, "red");
-});
-
-/* ---------- Menu ---------- */
-
-test("ADMIN-ESPACE menu : trois groupes pour le super-administrateur, rien ne change pour les autres rôles", () => {
+test("ADMIN-ESPACE menu : deux groupes pour le super-administrateur, rien ne change pour les autres rôles", () => {
   const sections = groupNavItems(adminNavItems).map((section) => [section.title, section.items.map((item) => `${item.title} ${item.href}`)]);
   assert.deepEqual(sections, [
     [null, ["Tableau de bord /admin"]],
-    [ADMIN_NAV_GROUPS.clients, ["Entreprises /companies", "Pilotes /admin/pilots", "Utilisateurs /admin/users", "Souscriptions /admin/subscriptions"]],
-    [ADMIN_NAV_GROUPS.commercial, ["Messages Contact /admin/contact", "Liste d'attente /admin/waitlist", "Campagnes /admin/campaigns", "Prospection /admin/prospection", "Codes commerciaux /admin/sales"]],
-    [
-      ADMIN_NAV_GROUPS.technique,
-      ["Exploitation /admin/operations", "Incidents /admin/incidents", "Support plateforme /admin/support", "Journal d'accès /admin/access-events"],
-    ],
+    [ADMIN_NAV_GROUPS.clients, ["Entreprises /companies", "Utilisateurs /admin/users"]],
+    [ADMIN_NAV_GROUPS.technique, ["Exploitation /admin/operations", "Support plateforme /admin/support"]],
   ]);
-  assert.deepEqual(Object.values(ADMIN_NAV_GROUPS), ["Clients", "Commercial", "Technique"]);
+  assert.deepEqual(Object.values(ADMIN_NAV_GROUPS), ["Clients", "Technique"]);
   for (const items of [companyNavItems, dispatcherNavItems, miniAdminNavItems, driverNavItems]) {
     const grouped = groupNavItems(items);
     assert.equal(grouped.length, 1);
@@ -291,18 +190,13 @@ test("ADMIN-ESPACE menu : trois groupes pour le super-administrateur, rien ne ch
   }
 });
 
-test("ADMIN-ESPACE menu : pastilles de nouveautés, aucune à zéro", () => {
-  const none = applyAdminNavBadges(adminNavItems, { contactNew: 0, waitlistNew: 0, openIncidents: 0, openSupportTickets: 0 });
+test("ADMIN-ESPACE menu : pastille des tickets, aucune à zéro", () => {
+  const none = applyAdminNavBadges(adminNavItems, { openSupportTickets: 0 });
   assert.equal(none.some((item) => item.badge !== undefined), false);
-  const items = applyAdminNavBadges(adminNavItems, { contactNew: 2, waitlistNew: 1, openIncidents: 140, openSupportTickets: 1 });
+  const items = applyAdminNavBadges(adminNavItems, { openSupportTickets: 140 });
   const byHref = Object.fromEntries(items.filter((item) => item.badge !== undefined).map((item) => [item.href, [item.badge, item.badgeLabel]]));
-  assert.deepEqual(byHref, {
-    "/admin/contact": [2, "2 nouveaux messages"],
-    "/admin/waitlist": [1, "1 nouvelle inscription"],
-    "/admin/incidents": ["99+", "140 incidents ouverts"],
-    "/admin/support": [1, "1 ticket ouvert"],
-  });
-  assert.equal(items.find((item) => item.href === "/admin/contact")?.group, "Commercial", "le groupe est conservé");
+  assert.deepEqual(byHref, { "/admin/support": ["99+", "140 tickets ouverts"] });
+  assert.equal(items.find((item) => item.href === "/admin/support")?.group, "Technique", "le groupe est conservé");
   assert.equal(applyAdminNavBadges(adminNavItems, undefined), adminNavItems);
 });
 
@@ -314,10 +208,8 @@ test("ADMIN-ESPACE menu : barre latérale et menu mobile rendent les groupes et 
     assert.match(source, /<NavBadge /, file);
   }
   const layout = readFileSync("src/app/(back-office)/layout.tsx", "utf8");
-  assert.match(layout, /useAdminNavBadges\(adminLastVisits, isSuperAdmin\)/);
+  assert.match(layout, /useAdminNavBadges\(isSuperAdmin\)/);
   assert.match(layout, /isSuperAdmin \? applyAdminNavBadges/);
-  const contact = readFileSync("src/app/(back-office)/admin/contact/page.tsx", "utf8");
-  assert.match(contact, /markContactVisited\(\)/);
 });
 
 /* ---------- Route ---------- */
@@ -339,12 +231,6 @@ function loadRoute(role: string, calls: string[]) {
         requireRole: (context: { user: { role: { systemRole: string } } }, roles: string[]) =>
           roles.includes(context.user.role.systemRole) ? null : NextResponse.json({ error: "Accès refusé" }, { status: 403 }),
       };
-      if (id === "@/lib/api/platform-access") return {
-        gatePlatformRead: async (_context: unknown, denied: Response | null, resource: string) => {
-          calls.push(`journal:${resource}:${denied ? "DENIED" : "ALLOWED"}`);
-          return denied;
-        },
-      };
       if (id === "@/domains/admin/admin-home.service") return {
         parseAdminHomeParams,
         getAdminHome: async () => { calls.push("service"); return { todo: {} }; },
@@ -355,12 +241,12 @@ function loadRoute(role: string, calls: string[]) {
   return module.exports;
 }
 
-test("ADMIN-ESPACE /api/admin/home : refusé à tout autre rôle, journalisé, sans lecture", async () => {
+test("ADMIN-ESPACE /api/admin/home : refusé à tout autre rôle, sans lecture", async () => {
   for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"]) {
     const calls: string[] = [];
     const response = await loadRoute(role, calls).GET!(new Request("http://local/api/admin/home"));
     assert.equal(response.status, 403, role);
-    assert.deepEqual(calls, ["staff:dashboard:admin", "journal:OVERVIEW:DENIED"], role);
+    assert.deepEqual(calls, ["staff:dashboard:admin"], role);
   }
 });
 
@@ -369,7 +255,7 @@ test("ADMIN-ESPACE /api/admin/home : le super-administrateur lit, sans cache ; p
   const ok = await loadRoute("SUPER_ADMIN", calls).GET!(new Request("http://local/api/admin/home?view=badges"));
   assert.equal(ok.status, 200);
   assert.equal(ok.headers.get("Cache-Control"), "no-store");
-  assert.deepEqual(calls, ["staff:dashboard:admin", "journal:OVERVIEW:ALLOWED", "service"]);
+  assert.deepEqual(calls, ["staff:dashboard:admin", "service"]);
 
   const badCalls: string[] = [];
   const bad = await loadRoute("SUPER_ADMIN", badCalls).GET!(new Request("http://local/api/admin/home?companyId=x"));

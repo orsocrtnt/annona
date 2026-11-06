@@ -10,7 +10,6 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { PageLoader } from "@/components/ui/loader";
-import { backOfficeApi } from "@/features/back-office/api";
 import { useCompanyClients, useCreateCustomerOrder, useOrderCreateOptions } from "@/features/back-office/hooks";
 import { OrderFormFields } from "@/features/client-portal/create-order-form";
 import { useCanOpenPage } from "@/hooks/use-can-open-page";
@@ -162,7 +161,6 @@ export function NewOrderContent({ backHref, backLabel, ordersHref }: NewOrderCon
               audience="staff"
               deliveryOptions={options.data}
               loadingOptions={false}
-              estimateCourier={backOfficeApi.estimateCourier}
               onSubmit={handleSubmit}
               loading={createOrder.isPending}
               submitLabel="Créer la commande"

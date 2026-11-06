@@ -95,12 +95,8 @@ async function createFixture(suffix: "a" | "b") {
   const path = await uploadPodPhoto({ companyId: company.id, deliveryId: delivery.id, bytes: proofBytes, contentType: "image/png" });
   uploaded.push({ path, companyId: company.id, deliveryId: delivery.id });
   await prisma.delivery.update({ where: { id: delivery.id }, data: { podPhotoPath: path } });
-  const message = await prisma.orderMessage.create({
-    data: { orderId: order.id, authorId: admin.id, authorName: "Admin DATA-02", authorRole: "COMPANY_ADMIN", body: fixtureKey, kind: "INSTRUCTION", requestKey: `${fixtureKey}-${suffix}` },
-  });
   await Promise.all([
-    prisma.orderThreadRead.create({ data: { orderId: order.id, userId: client.id, seenAt: new Date(), seenId: message.id } }),
-    prisma.clientNotification.create({ data: { type: "ORDER_MESSAGE", title: "DATA-02", body: fixtureKey, href: `/portal/orders/${order.id}`, orderMessageId: message.id, userId: client.id } }),
+    prisma.clientNotification.create({ data: { type: "ORDER_MESSAGE", title: "DATA-02", body: fixtureKey, href: `/portal/orders/${order.id}`, userId: client.id } }),
     prisma.invoice.create({ data: { reference: `FAC-DATA02-${suffix}-${randomUUID()}`, amount: 25, lineItems: [{ label: "Livraison", amount: 25 }], companyId: company.id, orderId: order.id, customerId: client.id } }),
     prisma.supportTicket.create({ data: { subject: "DATA-02", message: fixtureKey, companyId: company.id, customerId: client.id, relatedOrderId: order.id, relatedDeliveryId: delivery.id, messages: { create: { body: fixtureKey, isStaff: false, authorId: client.id } } } }),
     prisma.operationJob.create({ data: { jobKey: `${fixtureKey}-${suffix}`, type: "CLIENT_NOTIFICATION", status: "SUCCEEDED", payload: { fixture: true }, completedAt: new Date(), companyId: company.id } }),

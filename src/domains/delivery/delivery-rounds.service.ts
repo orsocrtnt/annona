@@ -1,9 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getCompanyDispatchSettings } from "@/domains/company/dispatch-settings.service";
-import { getCompanyTariffSettings } from "@/domains/company/tariff-settings.service";
 import { assignDeliveryToDriver, getCompanyDriversWithActivity } from "@/domains/delivery/delivery.service";
-import { parisInstant, parisToday } from "@/domains/order-intake/order-intake.deadline";
-import { assertSaasMutationFeature } from "@/domains/saas/saas.service";
+import { parisInstant, parisToday } from "@/lib/time/paris";
 import { trackingService } from "@/domains/tracking/tracking.policy";
 import { getDriverEligibilityReasons, splitEligibilityReasons } from "@/lib/dispatch/driver-eligibility";
 import {
@@ -29,7 +27,8 @@ const ROUND_PENDING_TAKE = 200;
 /** Temps supposé pour finir une mission déjà en cours avant de commencer la tournée. */
 const BUSY_SECONDS_PER_ACTIVE_MISSION = 15 * 60;
 export const ROUND_ASSIGNMENT_REASON = "Tournée validée par le dispatch";
-export const ROUND_AUTO_ASSIGNMENT_REASON = "Tournée automatique";
+/** Au-delà, la position du livreur est jugée périmée et la tournée part du premier arrêt. */
+const DRIVER_POSITION_MAX_AGE_MS = 15 * 60_000;
 
 export type RoundUnplannedReason = UnplannedReason | "NOT_LOCATED" | "MULTI_PICKUP";
 
@@ -59,9 +58,8 @@ const pendingSelect = {
 };
 
 async function loadRoundContext(companyId: string, now: Date) {
-  const [settings, tariffSettings, drivers, pending] = await Promise.all([
+  const [settings, drivers, pending] = await Promise.all([
     getCompanyDispatchSettings(companyId),
-    getCompanyTariffSettings(companyId),
     getCompanyDriversWithActivity(companyId, { withDispatchPosition: true }),
     prisma.delivery.findMany({
       where: {
@@ -139,7 +137,7 @@ async function loadRoundContext(companyId: string, now: Date) {
   }
 
   const nowMs = now.getTime();
-  const maxAgeMs = settings.gpsPositionMaxAgeMinutes * 60_000;
+  const maxAgeMs = DRIVER_POSITION_MAX_AGE_MS;
   const roundDrivers: RoundDriver[] = drivers.map((driver) => {
     const location = driver.driverLocation;
     const fresh = trackingService(driver.settings).active && location && nowMs - location.updatedAt.getTime() <= maxAgeMs;
@@ -149,8 +147,7 @@ async function loadRoundContext(companyId: string, now: Date) {
           const reasons = getDriverEligibilityReasons(
             driver,
             { deliveryCategory: delivery.deliveryCategory, postalCode: delivery.postalCode, pickupPostalCode: delivery.pickupPostalCode },
-            settings,
-            tariffSettings.tariffZones
+            settings
           );
           // Le plafond de charge (règle souple) ne limite pas une tournée : elle a sa propre limite.
           return splitEligibilityReasons(reasons).hard.length === 0;
@@ -292,18 +289,15 @@ export async function previewRound(companyId: string, driverId: string, stops: R
   return { round: presentRound(context, driverId, evaluation), evaluation };
 }
 
-type RoundAssignOptions = { automatic?: boolean };
-
 /** Une transaction courte par livraison : un conflit sur l'une n'annule pas les autres. */
-async function assignInOrder(companyId: string, driverId: string, deliveryIds: string[], options: RoundAssignOptions = {}) {
+async function assignInOrder(companyId: string, driverId: string, deliveryIds: string[]) {
   const roundId = randomUUID();
   const assigned: string[] = [];
   const failed: Array<{ deliveryId: string; code: string }> = [];
   for (const [index, deliveryId] of deliveryIds.entries()) {
     try {
       await assignDeliveryToDriver(companyId, deliveryId, driverId, {
-        automatic: options.automatic,
-        reason: options.automatic ? ROUND_AUTO_ASSIGNMENT_REASON : ROUND_ASSIGNMENT_REASON,
+        reason: ROUND_ASSIGNMENT_REASON,
         expectUnassigned: true,
         force: true,
         round: { id: roundId, sequence: index + 1 },
@@ -325,40 +319,4 @@ export async function validateRound(companyId: string, driverId: string, stops: 
   const blocking = evaluation.violations.filter((violation: RoundViolation) => violation.code !== "NOT_ELIGIBLE");
   if (blocking.length > 0 && !acceptViolations) return { status: "NEEDS_CONFIRMATION" as const, round };
   return { status: "DONE" as const, round, ...(await assignInOrder(companyId, driverId, dropoffOrder(stops))) };
-}
-
-/** Mode automatique (C12) : les tournées proposées sont affectées sans validation. */
-export async function runAutoRounds(companyId: string, now = new Date()) {
-  const context = await loadRoundContext(companyId, now);
-  const plan = planRounds(context.deliveries, context.roundDrivers, context.options);
-  let assigned = 0;
-  let failed = 0;
-  for (const round of plan.rounds) {
-    const result = await assignInOrder(companyId, round.driverId, dropoffOrder(round.evaluation.stops), { automatic: true });
-    assigned += result.assigned.length;
-    failed += result.failed.length;
-  }
-  return { assigned, skipped: failed + plan.unplanned.length + context.rejected.length };
-}
-
-/** Passage du filet cron : seules les entreprises en mode tournées automatiques sont traitées. */
-export async function runDueAutoRounds() {
-  const companies = await prisma.delivery.findMany({
-    where: { status: "PENDING", driverId: null },
-    distinct: ["companyId"],
-    select: { companyId: true },
-    take: 100,
-  });
-  let assigned = 0;
-  for (const { companyId } of companies) {
-    const settings = await getCompanyDispatchSettings(companyId);
-    if (!settings.enabled || !settings.rounds.autoAssign) continue;
-    try {
-      await assertSaasMutationFeature(companyId, "auto_dispatch");
-      assigned += (await runAutoRounds(companyId)).assigned;
-    } catch (error) {
-      console.warn("[auto-rounds]", companyId, error instanceof Error ? error.message : "ROUND_FAILED");
-    }
-  }
-  return { assigned };
 }

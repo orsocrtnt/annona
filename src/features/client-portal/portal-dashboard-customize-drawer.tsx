@@ -119,7 +119,7 @@ export function PortalDashboardCustomizeDrawer({
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent side="right" className="top-[var(--demo-banner-height,0px)] flex h-auto w-full max-w-md flex-col p-0 [&>button:last-child]:right-2 [&>button:last-child]:top-2.5 [&>button:last-child]:rounded-xl [&>button:last-child]:p-3.5 [&>button:last-child]:focus-visible:ring-2 [&>button:last-child]:focus-visible:ring-ring">
+      <DrawerContent side="right" className="top-0 flex h-auto w-full max-w-md flex-col p-0 [&>button:last-child]:right-2 [&>button:last-child]:top-2.5 [&>button:last-child]:rounded-xl [&>button:last-child]:p-3.5 [&>button:last-child]:focus-visible:ring-2 [&>button:last-child]:focus-visible:ring-ring">
         <DrawerHeader className="border-b px-6 py-5 pr-14">
           <DrawerTitle className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5" />

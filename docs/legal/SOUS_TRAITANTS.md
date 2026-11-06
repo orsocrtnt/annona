@@ -72,7 +72,7 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 
 ## F10 — Anthropic : commande par message (fonction facultative)
 
-- **État constaté (2 novembre 2026)** : code intégré, **désactivé par défaut par entreprise**. La variable `ANTHROPIC_API_KEY` existe sur la préproduction ; il faut aussi une activation explicite par l'administration de l'entreprise. Selon les [conditions commerciales](https://www.anthropic.com/legal/commercial-terms) : pas d'entraînement sur les contenus clients, DPA intégré. Fonctionnement : [order-intake](../operations/order-intake/README.md).
+- **État constaté (2 novembre 2026)** : code intégré, **désactivé par défaut par entreprise**. La variable `ANTHROPIC_API_KEY` existe sur la préproduction ; il faut aussi une activation explicite par l'administration de l'entreprise. Selon les [conditions commerciales](https://www.anthropic.com/legal/commercial-terms) : pas d'entraînement sur les contenus clients, DPA intégré. Fonctionnement : order-intake.
 - **Finalité** : transformer un message reçu (e-mail, SMS, WhatsApp) collé par un dispatcher en brouillon de commande, relu et validé par un humain avant toute création.
 - **Données envoyées** : le texte collé, qui peut contenir des noms, téléphones, e-mails et adresses de tiers (donneur d'ordre, contacts d'enlèvement et de livraison) ; l'expéditeur déclaré s'il est saisi ; la date du jour. Ne sont pas envoyés : identifiants Annona, fiches clients, coordonnées GPS, historique de commandes.
 - **Conservation côté Annona** : le texte et l'expéditeur ne sont pas stockés. Seul un journal d'usage est conservé (entreprise, modèle, issue, nombre de jetons, horodatage) pour le quota et le coût ; sa durée de conservation reste à fixer (LEGAL-1).
@@ -86,7 +86,7 @@ Identité légale contractante ; adresse ; service/plan et compte concerné ; r�
 
 **À valider par le propriétaire (LEGAL-1).** Fiche factuelle, sans qualification juridique.
 
-- **État constaté (6 novembre 2026)** : code écrit (ADMIN-ESPACE lot 5), **non branché** : aucune variable posée, aucun compte de service créé. Mise en place : [SHEET.md](../operations/prospection/SHEET.md).
+- **État constaté (6 novembre 2026)** : code écrit (ADMIN-ESPACE lot 5), **non branché** : aucune variable posée, aucun compte de service créé. Mise en place : SHEET.md.
 - **Finalité** : afficher au super-administrateur, dans `/admin/prospection`, des totaux et les rappels du fichier de prospection `Annona_Suivi_Prospection_2026`, qui reste tenu par les commerciaux dans Google Sheets.
 - **Fonctionnement** : un compte de service Google, sans rôle, lit la Sheet partagée avec lui en lecteur (portée `spreadsheets.readonly`, API Google Sheets v4). Annona n'écrit rien dans la Sheet.
 - **Données lues** : coordonnées professionnelles de prospects telles qu'elles figurent dans la Sheet (nom d'entreprise, ville, étape, dates de rappel et de dernier contact, nom du commercial ; les autres colonnes du fichier, comme les coordonnées, sont aussi lues sur la plage demandée). Données transmises par Annona à Google : l'identifiant de la Sheet et l'assertion signée du compte de service.

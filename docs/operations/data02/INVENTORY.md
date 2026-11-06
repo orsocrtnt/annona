@@ -19,8 +19,6 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | Delivery | directe | companyId | oui |
 | TrackingEvent | directe | deliveryId | oui |
 | RecurringOrder | directe | companyId | oui |
-| OrderMessage | directe | orderId | oui |
-| OrderThreadRead | indirecte | orderId | oui |
 | Invoice | directe | companyId | oui |
 | InvoiceCounter | directe | companyId | non |
 | InvoiceReminder | indirecte | companyId | non |
@@ -30,46 +28,16 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | Role | plateforme | aucune, table globale | partiel |
 | Permission | plateforme | aucune, table globale | non |
 | RolePermission | plateforme | roleId | non |
-| SignupJourney | partagée | companyId nullable | non |
-| SignupPaymentEvent | plateforme | signupId | non |
-| DemoPoolEnvironment | technique | companyId | non |
-| SaasCatalogVersion | plateforme | aucune, catalogue global | non |
-| SaasPlan | plateforme | catalogVersionId | partiel |
-| SaasOption | plateforme | catalogVersionId | non |
-| SaasSubscription | partagée | companyId | partiel |
-| SaasPlanAssignment | partagée | subscriptionId | partiel |
-| SaasSubscriptionItem | partagée | subscriptionId | partiel |
-| SaasUsagePeriod | indirecte | companyId | oui |
-| SaasUsageEvent | indirecte | companyId | non |
-| SaasSeatReservation | indirecte | companyId | non |
-| SaasBillingAccount | partagée | signupId | non |
-| SaasBillingOperation | technique | accountId | non |
-| PlatformAccessEvent | plateforme | actorId, sans companyId | non |
-| ContactMessage | plateforme | aucune, prospect avant tout compte | non |
-| WaitlistFunnelDaily | plateforme | aucune, compteurs anonymes par jour et campagne (page Tarifs, clics des mails de campagne) | non |
-| ProspectCampaign | plateforme | aucune, campagne de prospection du propriétaire (nom, ville, origine des adresses) | non |
-| ProspectCampaignRecipient | plateforme | adresse e-mail professionnelle d'un prospect, avant tout compte | non |
-| ProspectOptOut | plateforme | adresse e-mail d'un prospect ayant répondu STOP, gardée pour ne plus lui écrire | non |
-| PlatformPilot | plateforme | companyId nullable (SET NULL), suivi des pilotes par le super-administrateur | non |
-| PlatformPilotNote | plateforme | pilotId (CASCADE), notes internes du super-administrateur | non |
-| SalesCode | plateforme | aucune, commercial de Annona | non |
-| SalesAttribution | plateforme | companyId | non |
-| SalesCommissionEntry | plateforme | attributionId | non |
 | AuthLoginFailure | technique | aucune, empreinte HMAC transitoire (15 min) | non |
-| OrderIntakeUsage | indirecte | companyId | non |
 | DriverPushSubscription | directe | userId, companyId | non |
-| CompanyIntakeChannel | directe | companyId | non |
-| OrderTrackingLink | directe | companyId, orderId | non |
-| InboundOrderEmail | directe | companyId | non |
 | CompanyCustomer | directe | companyId, userId | oui |
 
 ## Absents de l'export
 
-Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, CompanyIntakeChannel, OrderTrackingLink, InboundOrderEmail, SignupJourney, SignupPaymentEvent, DemoPoolEnvironment, Permission, RolePermission, SaasCatalogVersion, SaasOption, SaasUsageEvent, SaasSeatReservation, SaasBillingAccount, SaasBillingOperation, PlatformAccessEvent, ContactMessage, WaitlistFunnelDaily, ProspectCampaign, ProspectCampaignRecipient, ProspectOptOut, PlatformPilot, PlatformPilotNote, SalesCode, SalesAttribution, SalesCommissionEntry, AuthLoginFailure, OrderIntakeUsage. Ils relèvent du catalogue global, de la plateforme, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées (événements d'usage = commandes ; brouillon d'inscription = entreprise ; journal de la commande par message = compteurs d'appels et de jetons, sans texte).
+Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, Permission, RolePermission, AuthLoginFailure, InvoiceCounter, InvoiceReminder. Ils relèvent du catalogue global, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées.
 
 Role et OperationJob n'y sont que partiels : le rôle est recopié par son nom sur l'utilisateur, le job est recopié sans sa charge ni son erreur.
 
-Ajout du 2026-10-27, compatible avec la version 1 (`data.subscriptions`) : la souscription de l'entreprise, sans identifiants du fournisseur de paiement ni instantané interne ; l'historique des formules réduit au code et au nom de la formule ; les options et sièges sans instantané ; les périodes de consommation complètes. Compteurs `subscriptions`, `subscriptionPlans`, `subscriptionItems` et `usagePeriods`.
 
 ## Auth et Storage
 

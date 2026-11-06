@@ -9,7 +9,6 @@ export function ProofOfDeliveryCard({
   failureCode,
   note,
   signatureUrl,
-  pdfUrl,
   recipientName,
   signatureRefusedReason,
 }: {
@@ -19,8 +18,6 @@ export function ProofOfDeliveryCard({
   note?: string | null;
   /** Lien interne vers la signature (URL signée générée à la demande). */
   signatureUrl?: string | null;
-  /** Lien interne vers le PDF de preuve horodaté. */
-  pdfUrl?: string | null;
   recipientName?: string | null;
   signatureRefusedReason?: string | null;
 }) {
@@ -63,11 +60,6 @@ export function ProofOfDeliveryCard({
       ) : failed ? null : (
         <p className="text-xs text-muted-foreground">Aucune photo jointe.</p>
       )}
-      {pdfUrl ? (
-        <a href={pdfUrl} download className="inline-block text-sm font-medium underline underline-offset-2">
-          Télécharger la preuve (PDF)
-        </a>
-      ) : null}
     </div>
   );
 }

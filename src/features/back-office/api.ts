@@ -1,12 +1,10 @@
 import type { DeliveryCategory } from "@prisma/client";
 import type { CreateClientOrderInput, UpdateOrderStatusInput } from "@/lib/validations/order";
 import type { CompanyDeliverySlots } from "@/lib/validations/delivery-slots";
-import type { CourierEstimateFn } from "@/features/client-portal/courier-estimate-banner";
 import type { CreateOrderInvoiceInput } from "@/lib/validations/invoice";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import type { CompanyDashboardStats } from "@/lib/dashboard/dashboard-types";
 import type { CompanyAnalytics } from "@/domains/analytics/analytics.service";
-import type { DispatchSuggestions } from "@/domains/delivery/auto-dispatch.service";
 import type { DispatchIncident } from "@/lib/dispatch/dispatch-incidents";
 import type { PresentedRound, RoundProposals } from "@/domains/delivery/delivery-rounds.service";
 import {
@@ -84,16 +82,6 @@ export const backOfficeApi = {
       body: JSON.stringify(body),
     }),
   getDispatchIncidents: () => fetchJson<DispatchIncident[]>("/api/dispatch/incidents"),
-  getDispatchSuggestions: (deliveryId: string, replacesDriverId?: string) =>
-    fetchJson<DispatchSuggestions>(
-      `/api/dispatch/suggestions?deliveryId=${encodeURIComponent(deliveryId)}${replacesDriverId ? `&replacesDriverId=${encodeURIComponent(replacesDriverId)}` : ""}`
-    ),
-  assignFromSuggestion: (deliveryId: string, driverId: string, replacesDriverId?: string) =>
-    fetchJson<{ id: string; driverId: string | null; status: string }>("/api/dispatch/suggestions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deliveryId, driverId, replacesDriverId }),
-    }),
   updateOrderStatus: (orderId: string, data: UpdateOrderStatusInput) =>
     fetchJson<CompanyOrder>(`/api/orders/${orderId}`, {
       method: "PATCH",
@@ -102,8 +90,6 @@ export const backOfficeApi = {
     }),
   deleteOrder: (orderId: string) =>
     fetchJson<void>(`/api/orders/${orderId}`, { method: "DELETE" }),
-  getOrderCourierLine: (orderId: string) =>
-    fetchJson<{ courierLine: { label: string; amount: number } | null }>(`/api/orders/${orderId}/invoice`).then((result) => result.courierLine),
   createOrderInvoice: (orderId: string, data: CreateOrderInvoiceInput) =>
     fetchJson<{ id: string; reference: string }>(`/api/orders/${orderId}/invoice`, {
       method: "POST",
@@ -125,12 +111,6 @@ export const backOfficeApi = {
       method: "POST",
       headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
       body: JSON.stringify({ customerId, order }),
-    }),
-  estimateCourier: (data: Parameters<CourierEstimateFn>[0]) =>
-    fetchJson<Awaited<ReturnType<CourierEstimateFn>>>("/api/orders/courier-estimate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
     }),
   getClient: (id: string) => fetchJson<Record<string, unknown>>(`/api/clients/${id}`),
   getDriver: (id: string) => fetchJson<Record<string, unknown>>(`/api/drivers/${id}`),

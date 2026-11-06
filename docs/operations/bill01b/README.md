@@ -1,12 +1,12 @@
 # BILL-01B — Export comptable des prestations V1
 
-Référence : 18 octobre 2026. Décision propriétaire [BILL-01A](../../DECISIONS_PRODUIT_COMMERCIALES.md).
+Référence : 18 octobre 2026. Décision propriétaire BILL-01A (ancien document de décisions commerciales, historique git).
 
 ## Usage et périmètre
 
 Dans **Commandes → Export comptable des prestations**, choisir les dates UTC inclusives de création du document et son statut, puis télécharger. Route : `GET /api/invoices/export?from=2026-10-01&to=2026-10-31&status=ALL`.
 
-L'export lit les documents `Invoice` de prestations déjà enregistrés, et non toutes les commandes ni les futures souscriptions SaaS. Le CSV d'historique `/api/orders/export` reste un autre fichier : il ne doit pas être traité comme cet export comptable. Les futurs contrats/revenus d'abonnement doivent rester dans un domaine séparé, selon [l'architecture des offres](../../SAAS_OFFERS_ARCHITECTURE.md).
+L'export lit les documents `Invoice` de prestations déjà enregistrés, et non toutes les commandes ni les futures souscriptions SaaS. Le CSV d'historique `/api/orders/export` reste un autre fichier : il ne doit pas être traité comme cet export comptable. Les futurs contrats/revenus d'abonnement doivent rester dans un domaine séparé, selon l'architecture des offres.
 
 Le fichier permet de rapprocher documents, clients et commandes et de transmettre les montants enregistrés à un outil comptable. Il ne constitue ni FEC, ni journal comptable automatiquement imputé, ni facture électronique réglementaire, ni avoir. Le comptable configure l'imputation et les comptes tiers ; Annona n'invente ni numéros de comptes, ni identité légale, ni taux de TVA absent, ni conformité. Les documents PDF portent la qualification de relevé opérationnel.
 

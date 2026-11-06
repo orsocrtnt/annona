@@ -26,10 +26,6 @@ export type DispatchIncident = {
   title: string;
   detail: string;
   deadline: string | null;
-  /** Une nouvelle proposition est possible : la mission n'a pas démarré. */
-  canPropose: boolean;
-  /** Livreur à remplacer ; `null` si la livraison n'en a pas. */
-  replacesDriverId: string | null;
 };
 
 const ACTIVE = new Set(["PENDING", "ASSIGNED", "PURCHASING", "IN_DELIVERY"]);
@@ -77,14 +73,11 @@ export function computeDispatchIncidents(rows: DispatchIncidentInput[], now = ne
     if (!ACTIVE.has(row.status)) continue;
     const found = classify(row, now);
     if (!found) continue;
-    const reassignable = row.status === "ASSIGNED" && Boolean(row.driverId) && !row.missionStarted;
     incidents.push({
       ...found,
       deliveryId: row.id,
       reference: row.reference,
       deadline: row.deadline ? row.deadline.toISOString() : null,
-      canPropose: reassignable || (row.status === "PENDING" && !row.driverId),
-      replacesDriverId: reassignable ? row.driverId : null,
     });
   }
   return incidents.sort((a, b) =>

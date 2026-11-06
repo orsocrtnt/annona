@@ -27,45 +27,6 @@ test.describe("téléphone", () => {
   });
 });
 
-test("ordinateur : proposition, annulation sans effet, validation, puis « Ne plus me demander »", async ({ page }) => {
-  test.setTimeout(300_000);
-  await demo(page);
-  const session = (await (await page.request.get("/api/auth/session")).json()) as { user: { companyId: string } };
-  const assignedCount = () => prisma.delivery.count({ where: { companyId: session.user.companyId, status: "PENDING", driverId: null } });
-  try {
-    await page.goto("/dispatch");
-    const launch = page.getByRole("button", { name: "Lancer auto-dispatch" });
-    await expect(launch).toBeEnabled({ timeout: 45_000 });
-    const before = await assignedCount();
-    await launch.click();
-    const dialog = page.getByTestId("auto-dispatch-confirm");
-    await expect(dialog).toBeVisible({ timeout: 45_000 });
-    await expect(dialog.getByRole("button", { name: "Valider", exact: true })).toBeVisible();
-    await expect(dialog.getByLabel("Ne plus me demander")).toBeVisible();
-    expect(await assignedCount(), "aucune affectation sans validation").toBe(before);
-    await dialog.getByRole("button", { name: "Annuler" }).click();
-    await expect(dialog).toBeHidden();
-    expect(await assignedCount()).toBe(before);
-
-    await launch.click();
-    await expect(dialog).toBeVisible({ timeout: 45_000 });
-    await dialog.getByLabel("Ne plus me demander").check();
-    const posted = page.waitForResponse((r) => r.url().includes("/api/dispatch/auto-assign") && r.request().method() === "POST");
-    await dialog.getByRole("button", { name: "Valider", exact: true }).click();
-    expect((await posted).status()).toBe(200);
-    await expect.poll(assignedCount).toBeLessThan(before);
-
-    await expect(page.getByRole("button", { name: "Demander à nouveau une validation" })).toBeVisible();
-    await page.reload();
-    await expect(page.getByRole("button", { name: "Demander à nouveau une validation" })).toBeVisible({ timeout: 120_000 });
-    await page.getByRole("button", { name: "Demander à nouveau une validation" }).click();
-    await expect(page.getByRole("button", { name: "Demander à nouveau une validation" })).toHaveCount(0);
-  } finally {
-    await page.request.post("/api/auth/logout").catch(() => undefined);
-    await prisma.$disconnect();
-  }
-});
-
 test("ordinateur : une mission en cours sélectionnée affiche son itinéraire", async ({ page }) => {
   test.setTimeout(120_000);
   await demo(page);

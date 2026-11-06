@@ -21,7 +21,6 @@ import {
   AppleNavbarLinks,
   appleNavbarIconButtonLightClass,
 } from "@/components/navigation/apple-navbar";
-import { OrderMessagesInbox } from "@/components/shared/order-conversation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,8 +33,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemeMenuItem, ThemeToggle } from "@/components/theme/theme-toggle";
 import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
-import { applyOfferNavLocks } from "@/features/saas/offer-nav";
-import { useOfferAccess } from "@/features/saas/use-offer-access";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { cn, getInitials } from "@/lib/utils";
@@ -125,8 +122,7 @@ function PortalMobileNavLink({
 
 function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
   const pathname = usePathname();
-  const saas = useOfferAccess();
-  const items = applyOfferNavLocks(navItems, saas);
+  const items = navItems;
   const { user, logout } = useAuth();
 
   return (
@@ -246,11 +242,10 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
   if (mapFullscreen) {
     return (
       <div
-        className="relative h-[calc(100dvh-var(--demo-banner-height,0px))] overflow-hidden bg-[#f0f0f0] [--portal-chrome:4.75rem] dark:bg-muted"
+        className="relative h-dvh overflow-hidden bg-[#f0f0f0] [--portal-chrome:4.75rem] dark:bg-muted"
         data-portal-map-page
       >
         <main id="main-content" tabIndex={-1} className="absolute inset-0 z-0">
-          <OrderMessagesInbox space="client" />
           {children}
         </main>
 
@@ -264,11 +259,8 @@ export function ClientPortalLayout({ children }: ClientPortalLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <PortalNavbar />
-
-      {/* Marge basse : la pastille flottante « Alertes » ne recouvre jamais le dernier élément de la page. */}
       <div className="mx-auto max-w-6xl px-4 pt-6 pb-24 max-md:px-3 max-md:pt-4 max-md:pb-32 lg:px-6">
         <main id="main-content" tabIndex={-1}>
-          <OrderMessagesInbox space="client" />
           {children}
         </main>
       </div>

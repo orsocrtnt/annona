@@ -34,12 +34,3 @@ test("l'itinéraire est tracé par la carte quand le serveur n'en fournit pas", 
   assert.match(map, /driverMoving=\{Boolean\(showDriver && delivery\.driverLocation\?\.motion\?\.route\)\}/);
 });
 
-test("le lancement passe par une proposition, sauf « Ne plus me demander »", () => {
-  const page = readFileSync("src/app/(back-office)/dispatch/page.tsx", "utf8");
-  assert.match(page, /if \(skipAutoConfirm\) return runAuto\(\);\s+try \{\s+setAutoPreview\(await previewAutoDispatch\.mutateAsync\(\)\)/);
-  const route = readFileSync("src/app/api/dispatch/auto-assign/route.ts", "utf8");
-  assert.match(route, /confirmAutoDispatch\(companyId, parsed\.data\.assignments\)/);
-  const service = readFileSync("src/domains/delivery/auto-dispatch.service.ts", "utf8");
-  const preview = service.slice(service.indexOf("export async function previewAutoDispatch"), service.indexOf("const STALE_PROPOSAL_ERRORS"));
-  assert.ok(!preview.includes("assignDeliveryToDriver"), "la proposition n'affecte rien");
-});

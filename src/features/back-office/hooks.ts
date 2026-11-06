@@ -160,28 +160,6 @@ export function useDispatchIncidents() {
   });
 }
 
-export function useDispatchSuggestions(deliveryId: string | null, enabled = true, replacesDriverId?: string) {
-  return useQuery({
-    queryKey: ["company", "dispatch", "suggestions", deliveryId, replacesDriverId ?? null],
-    queryFn: () => backOfficeApi.getDispatchSuggestions(deliveryId!, replacesDriverId),
-    enabled: Boolean(deliveryId) && enabled,
-    staleTime: QUERY_STALE_MS,
-    retry: false,
-  });
-}
-
-export function useAssignFromSuggestion() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ deliveryId, driverId, replacesDriverId }: { deliveryId: string; driverId: string; replacesDriverId?: string }) =>
-      backOfficeApi.assignFromSuggestion(deliveryId, driverId, replacesDriverId),
-    // Succès comme conflit : la file et les suggestions sont relues.
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["company"] });
-    },
-  });
-}
-
 export function useUnassignDelivery() {
   const qc = useQueryClient();
   return useMutation({

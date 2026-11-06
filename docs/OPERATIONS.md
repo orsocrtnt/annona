@@ -31,13 +31,12 @@ Créer `.env.local` seulement s'il n'existe pas. `npm ci` utilise le lockfile et
 - `DIRECT_URL` : opérations directes de schéma ;
 - `CRON_SECRET` : secret partagé pour les deux routes cron.
 - `OPS_HEALTH_SECRET` : accès distinct au diagnostic profond `/api/health?deep=1`.
-- `CONTACT_HMAC_SECRET` : secret des empreintes anti-abus (formulaire Contact, échecs de connexion) ; repli sur `SUPABASE_SERVICE_ROLE_KEY` s'il est absent. Le changer remet seulement les compteurs à zéro.
+- `CONTACT_HMAC_SECRET` : secret des empreintes anti-abus (échecs de connexion) ; repli sur `SUPABASE_SERVICE_ROLE_KEY` s'il est absent. Le changer remet seulement les compteurs à zéro.
 
 ### Optionnelles
 
 - `AUTH_EMAIL_LINKS_ENABLED=true` seulement après configuration complète décrite dans `AUTH_EMAIL_SETUP.md` ;
 - `RESEND_API_KEY`, `MAIL_FROM` ou `EMAIL_FROM` pour les notifications e-mail ;
-- `PROSPECT_SMTP_PASSWORD` (mot de passe de la boîte OVH `orso@annona.fr`) pour envoyer les campagnes de prospection depuis `/admin/campaigns` ; facultatifs : `PROSPECT_SMTP_HOST` (`smtp.mail.ovh.net`), `PROSPECT_SMTP_PORT` (465, SSL), `PROSPECT_SMTP_USER` (`orso@annona.fr`), `PROSPECT_LINK_BASE_URL` (origine des liens comptés, sinon l'adresse du back-office). Sans mot de passe, la page prépare les campagnes mais n'envoie rien ;
 - `OPS_ALERT_RECIPIENT` pour recevoir les alertes par e-mail, une fois par jour et par type de panne (vide : `EMAIL_TEST_RECIPIENT`, sinon aucun e-mail) ;
 - `OPS_ALERT_WEBHOOK_URL` et `OPS_ALERT_WEBHOOK_TOKEN` pour le canal d'incident générique ;
 - variables `NEXT_PUBLIC_MAP_*` et `GEOCODING_URL` pour remplacer les fournisseurs d'essai ; `DRIVE_ROUTE_IGN_URL` (recommandé : `https://data.geopf.fr/navigation/itineraire`) ou `DRIVE_ROUTE_OSRM_URL` (OSRM privé) pour les itinéraires, calculés par le serveur seulement ;
@@ -58,10 +57,9 @@ Ouvrir `http://127.0.0.1:3106/login`. Pour la production locale : arrêter le se
 
 ```bash
 npm run check
-npm run test:v1
 ```
 
-`test:v1` écrit sur la base de test uniquement avec des fixtures temporaires et exige leur nettoyage. Ne pas l'exécuter contre une future production. Installer Chromium avec `npx playwright install chromium` si aucun navigateur compatible n'est disponible.
+Pour les parcours navigateur (`npm run test:e2e`), installer Chromium avec `npx playwright install chromium` si aucun navigateur compatible n'est disponible.
 
 ## Mise à jour de la TODO partagée
 
@@ -69,20 +67,14 @@ npm run test:v1
 
 Les anciens chemins de partage externes sont obsolètes. La commande de progression et les contrôles de documentation ne lisent ni n'écrivent hors du dépôt.
 
-La lecture courante se fait exclusivement dans ce Markdown du dépôt, pas dans Drive, Notion, PDF ou Word. Après modification, seul le fichier versionné est mis à jour sur `preproduction`, conformément aux autorisations Git de `AGENTS.md`. Aucune copie externe n'est publiée. Règle : `.cursor/rules/contexte-markdown.mdc`.
-
-## Démonstration
-
-Le compte de démonstration authentifie l'entrée, puis chaque navigateur travaille dans une entreprise fictive isolée pendant huit heures. Changer de persona ou se reconnecter conserve cette même session. Le bouton de remise à zéro recrée uniquement ses huit livraisons et n'agit pas sur une autre démonstration. Vérifier ce comportement avec `npm run test:demo1` et consulter `operations/demo1/README.md`.
-
-Les sessions expirées sont actuellement conservées. Avant une diffusion publique importante, définir leur rétention et le nettoyage associé, notamment pour Storage ; ne jamais supprimer une entreprise dont le slug n'utilise pas le préfixe de session de démonstration.
+La lecture courante se fait exclusivement dans ce Markdown du dépôt. Après modification, le fichier est committé sur `base`, sans push sauf demande explicite (`AGENTS.md`). Règle : `.cursor/rules/contexte-markdown.mdc`.
 
 ## Tâches planifiées
 
 - `/api/cron/recurring-orders` génère les occurrences récurrentes ; plan actuel à 06:00 chaque jour.
-- `/api/cron/operations` reprend auto-dispatch et notifications ; appelée toutes les 5 minutes par GitHub Actions (voir ci-dessous), non déclarée dans `vercel.json` car l'offre Vercel Hobby n'autorise qu'un cron par jour.
+- `/api/cron/operations` reprend les notifications et factures différées ; appelée toutes les 5 minutes par GitHub Actions (voir ci-dessous), non déclarée dans `vercel.json` car l'offre Vercel Hobby n'autorise qu'un cron par jour.
 
-Les effets différés (dispatch automatique, notifications) sont lancés après la réponse HTTP par `after()` de Next.js (`src/lib/operations/after-response.ts`) pour que Vercel ne gèle pas la fonction avant la fin ; hors requête (tests, scripts) la tâche est lancée directement. Le filet cron reprend ce qui resterait en `PENDING`.
+Les effets différés (notifications, factures) sont lancés après la réponse HTTP par `after()` de Next.js (`src/lib/operations/after-response.ts`) pour que Vercel ne gèle pas la fonction avant la fin ; hors requête (tests, scripts) la tâche est lancée directement. Le filet cron reprend ce qui resterait en `PENDING`.
 
 Les routes cron attendent `Authorization: Bearer <CRON_SECRET>`. Vérifier que l'hébergement choisi autorise cette cadence. Une tâche opérationnelle en échec est visible dans le dispatch et peut être relancée par un utilisateur autorisé.
 
@@ -125,7 +117,7 @@ Procédure de vérification :
 
 1. Déclencher le workflow à la main et vérifier « HTTP 200 » et le corps `{"data":{...},"success":true}` dans le journal.
 2. Après un passage planifié, contrôler dans l'onglet Actions qu'une exécution toutes les 5 minutes environ apparaît (GitHub peut retarder les crons de quelques minutes).
-3. Contrôle de bout en bout : créer une livraison avec auto-dispatch sur la préproduction et vérifier que la tâche passe à `SUCCEEDED` (page admin des tâches) ; `/api/health?deep=1` ne doit plus signaler de file `degraded`.
+3. Contrôle de bout en bout : passer une livraison en « Livrée » (notification client) et vérifier que la tâche passe à `SUCCEEDED` (page admin des tâches) ; `/api/health?deep=1` ne doit plus signaler de file `degraded`.
 4. Les migrations d'index (`20261028090000_fk_indexes`) sont à appliquer séparément, après accord du propriétaire. Cette migration crée les index avec `CREATE INDEX IF NOT EXISTS` (non concurrent, verrou d'écriture le temps de la création) : acceptable sur une base de développement aux tables petites. En production avec un volume réel, créer ces index en `CREATE INDEX CONCURRENTLY IF NOT EXISTS`, hors transaction (une instruction par exécution, hors `prisma migrate deploy` en bloc).
 
 Le retard comprend les tâches `PENDING` dont l'échéance a plus de 15 minutes et les tâches `PROCESSING` dont le bail a expiré depuis plus de 15 minutes sans reprise. Un échec terminal et un retard simultanés émettent deux incidents distincts.

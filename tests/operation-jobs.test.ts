@@ -9,7 +9,7 @@ type JobStatus = "PENDING" | "PROCESSING" | "SUCCEEDED" | "FAILED";
 type Job = {
   id: string;
   jobKey: string;
-  type: "AUTO_DISPATCH" | "CLIENT_NOTIFICATION";
+  type: "DRIVER_NOTIFICATION" | "CLIENT_NOTIFICATION";
   status: JobStatus;
   payload: Record<string, unknown>;
   attempts: number;
@@ -48,13 +48,12 @@ function load<T>(deps: Record<string, unknown>): T {
 }
 
 function fixture(options?: {
-  dispatchResult?: { assigned: boolean; skippedReason?: string };
   failNotification?: boolean;
   deferNotificationUntil?: Date;
   calls?: Array<{ handler: string; arg: unknown }>;
   failFirstNotification?: boolean;
   slowFirstDispatchFailure?: boolean;
-  skipSignup?: boolean;
+  skipPush?: boolean;
 }) {
   const base = new Date("2026-10-05T12:00:00.000Z");
   const jobs: Job[] = [];
@@ -161,10 +160,10 @@ function fixture(options?: {
   const service = load<typeof import("../src/domains/operations/operation-job.service")>({
     "@/services/prisma/client": { prisma },
     "@/lib/operations/after-response": { runAfterResponse: (task: () => Promise<unknown>) => void task() },
-    "@/domains/saas/saas.service": { assertSaasMutationFeature: async () => ({}) },
-    "@/domains/delivery/auto-dispatch.service": {
-      tryAutoAssignDelivery: async (_companyId: string, deliveryId: string) => {
-        executions.push(`dispatch:${deliveryId}`);
+    "@/domains/driver/driver-push.service": {
+      deliverDriverMissionPush: async (payload: { deliveryId?: string }) => {
+        executions.push(`dispatch:${payload.deliveryId}`);
+        if (options?.skipPush) throw Object.assign(new Error("DRIVER_PUSH_NOT_CONFIGURED"), { skipped: true });
         if (options?.slowFirstDispatchFailure && executions.length === 1) {
           await new Promise<void>((resolve) => {
             releaseFirstDispatch = resolve;
@@ -172,18 +171,11 @@ function fixture(options?: {
           });
           throw new Error("PREMIER_WORKER_EXPIRE");
         }
-        return options?.dispatchResult ?? { assigned: true };
       },
     },
     "@/domains/invoice/invoice-reminder.service": {
       deliverInvoiceReminderJob: async (_payload: unknown, _jobKey: string, deps: unknown) => {
         options?.calls?.push({ handler: "reminder", arg: deps });
-      },
-    },
-    "@/domains/signup/signup.service": {
-      deliverSignupWelcomeEmail: async (_payload: unknown, _jobKey: string, window: unknown) => {
-        options?.calls?.push({ handler: "signup", arg: window });
-        if (options?.skipSignup) throw Object.assign(new Error("SIGNUP_WELCOME_EMAIL_DISABLED"), { skipped: true });
       },
     },
     "@/domains/client-portal/notify.service": {
@@ -235,8 +227,8 @@ function fixture(options?: {
 test("deux producteurs enregistrent une seule tâche durable", async () => {
   const f = fixture();
   const input = {
-    jobKey: "auto-dispatch:delivery-1",
-    type: "AUTO_DISPATCH" as const,
+    jobKey: "driver-push:delivery-1",
+    type: "DRIVER_NOTIFICATION" as const,
     payload: { companyId: "company-a", deliveryId: "delivery-1" },
     companyId: "company-a",
   };
@@ -249,8 +241,8 @@ test("deux producteurs enregistrent une seule tâche durable", async () => {
 test("une tâche interrompue est reprise après expiration du verrou, une seule fois", async () => {
   const f = fixture();
   const job = f.addJob({
-    jobKey: "auto-dispatch:delivery-2",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-2",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-2" },
     status: "PROCESSING",
     lockedAt: new Date(f.base.getTime() - 6 * 60_000),
@@ -267,8 +259,8 @@ test("une tâche interrompue est reprise après expiration du verrou, une seule 
 test("deux workers concurrents ne produisent qu'un effet", async () => {
   const f = fixture();
   const job = f.addJob({
-    jobKey: "auto-dispatch:delivery-3",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-3",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-3" },
   });
 
@@ -285,8 +277,8 @@ test("deux passages du filet cron qui se chevauchent n'exécutent chaque tâche 
   const f = fixture();
   for (const n of [1, 2, 3]) {
     f.addJob({
-      jobKey: `auto-dispatch:delivery-cron-${n}`,
-      type: "AUTO_DISPATCH",
+      jobKey: `driver-push:delivery-cron-${n}`,
+      type: "DRIVER_NOTIFICATION",
       payload: { companyId: "company-a", deliveryId: `delivery-cron-${n}` },
     });
   }
@@ -311,8 +303,8 @@ test("le filet cron signale les tâches PENDING en retard de plus de 15 minutes"
     nextAttemptAt: new Date(f.base.getTime() - 20 * 60_000),
   });
   f.addJob({
-    jobKey: "auto-dispatch:delivery-fresh",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-fresh",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-fresh" },
     nextAttemptAt: new Date(f.base.getTime() + 60_000),
   });
@@ -320,8 +312,8 @@ test("le filet cron signale les tâches PENDING en retard de plus de 15 minutes"
   // La tâche en échec est replanifiée dans le futur : elle n'est plus en retard.
   assert.equal(result.overdue, 0);
   const late = f.addJob({
-    jobKey: "auto-dispatch:delivery-stuck",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-stuck",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-stuck" },
     nextAttemptAt: new Date(f.base.getTime() - 20 * 60_000),
     status: "PROCESSING",
@@ -337,15 +329,15 @@ test("le filet cron signale les tâches PENDING en retard de plus de 15 minutes"
 test("le retard compte aussi les tâches PROCESSING dont le bail a expiré sans reprise", async () => {
   const f = fixture();
   f.addJob({
-    jobKey: "auto-dispatch:delivery-frozen",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-frozen",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-frozen" },
     status: "PROCESSING",
     lockedAt: new Date(f.base.getTime() - 30 * 60_000),
   });
   f.addJob({
-    jobKey: "auto-dispatch:delivery-running",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-running",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-running" },
     status: "PROCESSING",
     lockedAt: new Date(f.base.getTime() - 60_000),
@@ -372,12 +364,10 @@ test("C5 : « déjà exécutée » est lu AVANT la prise (essais ou lastError, y
   const f = fixture({ calls });
   const fresh = f.addJob({ jobKey: "client-notification:invoice-reminder:r1", type: "CLIENT_NOTIFICATION", payload: { kind: "INVOICE_REMINDER" } });
   const retried = f.addJob({ jobKey: "client-notification:invoice-reminder:r2", type: "CLIENT_NOTIFICATION", payload: { kind: "INVOICE_REMINDER" }, attempts: 0, lastError: "EMAIL_PROVIDER_HTTP_500" });
-  const welcome = f.addJob({ jobKey: "signup-welcome:s1", type: "CLIENT_NOTIFICATION", payload: { kind: "SIGNUP_WELCOME" } });
   const notify = f.addJob({ jobKey: "client-notification:delivery:d1:e1", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY" } });
-  for (const job of [fresh, retried, welcome, notify]) await f.service.processOperationJob(job.id, f.base);
+  for (const job of [fresh, retried, notify]) await f.service.processOperationJob(job.id, f.base);
   assert.deepEqual(calls.filter((call) => call.handler === "reminder").map((call) => (call.arg as { previouslyAttempted: boolean }).previouslyAttempted), [false, true]);
   assert.equal(typeof (calls.find((call) => call.handler === "reminder")?.arg as { freezeContent?: unknown }).freezeContent, "object", "relance : instantané du rendu");
-  assert.equal(typeof calls.find((call) => call.handler === "signup")?.arg, "function", "bienvenue : fenêtre de la tâche");
   assert.equal(typeof calls.find((call) => call.handler === "notify")?.arg, "function", "notification : fenêtre de la tâche");
 });
 
@@ -472,8 +462,8 @@ test("une panne de notification est visible puis reprise avec la même clé", as
 test("une interruption après la dernière tentative devient un échec visible sans quatrième essai", async () => {
   const f = fixture();
   const job = f.addJob({
-    jobKey: "auto-dispatch:delivery-max",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-max",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-max" },
     status: "PROCESSING",
     attempts: 3,
@@ -492,8 +482,8 @@ test("une interruption après la dernière tentative devient un échec visible s
 test("un worker expiré ne peut pas écraser le succès de sa reprise", async () => {
   const f = fixture({ slowFirstDispatchFailure: true });
   const job = f.addJob({
-    jobKey: "auto-dispatch:delivery-fencing",
-    type: "AUTO_DISPATCH",
+    jobKey: "driver-push:delivery-fencing",
+    type: "DRIVER_NOTIFICATION",
     payload: { companyId: "company-a", deliveryId: "delivery-fencing" },
   });
 
@@ -513,22 +503,21 @@ test("un worker expiré ne peut pas écraser le succès de sa reprise", async ()
 });
 
 test("RECETTE-2810 point 10 : tâche ignorée (e-mail désactivé) close sans échec ; détail par tâche sans texte libre", async () => {
-  const f = fixture({ skipSignup: true, failNotification: true });
-  f.addJob({ jobKey: "signup-welcome:s1", type: "CLIENT_NOTIFICATION", payload: { kind: "SIGNUP_WELCOME", signupId: "s1" } });
-  f.addJob({ jobKey: "auto-dispatch:d1", type: "AUTO_DISPATCH", payload: { companyId: "company-a", deliveryId: "d1" } });
+  const f = fixture({ skipPush: true, failNotification: true });
+  f.addJob({ jobKey: "driver-push:d1", type: "DRIVER_NOTIFICATION", payload: { kind: "MISSION_ASSIGNED", companyId: "company-a", deliveryId: "d1" } });
   // Notification en échec à son dernier essai : vrai échec ; message brut multi-ligne jamais publié.
   f.addJob({ jobKey: "client-notification:x", type: "CLIENT_NOTIFICATION", payload: { kind: "DELIVERY", customerId: "client-a" }, attempts: 2 });
   const result = await f.service.processDueOperationJobs(f.base);
-  assert.equal(result.processed, 3);
-  assert.equal(result.succeeded, 1);
+  assert.equal(result.processed, 2);
+  assert.equal(result.succeeded, 0);
   assert.equal(result.skipped, 1);
   assert.equal(result.failed, 1);
-  const welcome = f.jobs.find((job) => job.jobKey === "signup-welcome:s1")!;
-  assert.equal(welcome.status, "SUCCEEDED", "ignorée : aucun nouvel essai");
-  assert.equal(welcome.attempts, 1);
-  assert.equal(welcome.lastError, "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED", "trace conservée");
+  const push = f.jobs.find((job) => job.jobKey === "driver-push:d1")!;
+  assert.equal(push.status, "SUCCEEDED", "ignorée : aucun nouvel essai");
+  assert.equal(push.attempts, 1);
+  assert.equal(push.lastError, "SKIPPED:DRIVER_PUSH_NOT_CONFIGURED", "trace conservée");
   assert.deepEqual(JSON.parse(JSON.stringify(result.details.map((d) => [d.kind, d.outcome, d.error]))), [
-    ["SIGNUP_WELCOME", "skipped", "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED"],
+    ["MISSION_ASSIGNED", "skipped", "SKIPPED:DRIVER_PUSH_NOT_CONFIGURED"],
     ["DELIVERY", "failed", "PROVIDER"],
   ]);
   assert.doesNotMatch(JSON.stringify(result), /client-a|TEMPORARILY/, "ni identifiant client ni texte libre");
@@ -542,10 +531,10 @@ test("RECETTE-2810 point 10 : code d'erreur publiable — préfixe et `name` fou
   assert.equal(code(null), null);
   assert.equal(code("EMAIL_PROVIDER_HTTP_422:validation_error"), "EMAIL_PROVIDER_HTTP_422:validation_error");
   assert.equal(code("INVOICE_REMINDER_SEND_UNCONFIRMED:SEND_UNCONFIRMED"), "INVOICE_REMINDER_SEND_UNCONFIRMED:SEND_UNCONFIRMED");
-  assert.equal(code("AUTO_DISPATCH_RETRY:Aucun livreur disponible"), "AUTO_DISPATCH_RETRY");
+  assert.equal(code("DRIVER_PUSH_RETRY:Aucun abonnement"), "DRIVER_PUSH_RETRY");
   assert.equal(code("ERR:camille"), "ERR", "un mot sans tiret bas n'est jamais repris");
   assert.equal(code("Invalid `prisma.user.update()` invocation: email = 'camille@example.test'"), "ERREUR_NON_CLASSEE");
-  assert.equal(code("SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED"), "SKIPPED:SIGNUP_WELCOME_EMAIL_DISABLED");
+  assert.equal(code("SKIPPED:DRIVER_PUSH_NOT_CONFIGURED"), "SKIPPED:DRIVER_PUSH_NOT_CONFIGURED");
 });
 
 test("RECETTE-2810 point 9 : traitement immédiat — une erreur de base avant la prise est réessayée, pas laissée au cron", async () => {
@@ -572,7 +561,7 @@ test("RECETTE-2810 point 9 : traitement immédiat — une erreur de base avant l
 
 test("RECETTE-2810 point 9 : la reprise après une erreur de base n'exécute jamais deux fois la tâche", async () => {
   const f = fixture();
-  const job = f.addJob({ jobKey: "auto-dispatch:d9", type: "AUTO_DISPATCH", payload: { companyId: "company-a", deliveryId: "d9" } });
+  const job = f.addJob({ jobKey: "driver-push:d9", type: "DRIVER_NOTIFICATION", payload: { companyId: "company-a", deliveryId: "d9" } });
   const original = f.prisma.operationJob.findUnique;
   let first = true;
   // La première lecture échoue (pool saturé), comme au redémarrage du serveur.
@@ -583,27 +572,3 @@ test("RECETTE-2810 point 9 : la reprise après une erreur de base n'exécute jam
   assert.deepEqual(f.executions, ["dispatch:d9"]);
 });
 
-test("C5 : sans livreur disponible, la tâche attend sans user ses essais, puis rend la main après 24 h", async () => {
-  const waiting = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun livreur actif" } });
-  const job = waiting.addJob({
-    jobKey: "auto-dispatch:delivery-nuit",
-    type: "AUTO_DISPATCH",
-    payload: { companyId: "company-a", deliveryId: "delivery-nuit" },
-    createdAt: new Date(),
-  } as never);
-  const first = await waiting.service.processOperationJob(job.id, waiting.base);
-  assert.equal(first?.status, "PENDING");
-  assert.equal(waiting.jobs[0]?.attempts, 0);
-  assert.equal(waiting.jobs[0]?.lastError?.includes("AUTO_DISPATCH_WAITING_DRIVER"), true);
-
-  const late = fixture({ dispatchResult: { assigned: false, skippedReason: "Aucun livreur compatible selon les règles" } });
-  const oldJob = late.addJob({
-    jobKey: "auto-dispatch:delivery-vieille",
-    type: "AUTO_DISPATCH",
-    payload: { companyId: "company-a", deliveryId: "delivery-vieille" },
-    createdAt: new Date(Date.now() - 25 * 60 * 60_000),
-  } as never);
-  const finished = await late.service.processOperationJob(oldJob.id, late.base);
-  assert.equal(finished?.status, "SUCCEEDED");
-  assert.equal(late.jobs[0]?.lastError?.includes("AUTO_DISPATCH_NO_DRIVER"), true);
-});

@@ -50,16 +50,16 @@ function supabaseAdmin() {
 
 async function templateCompanyId() {
   const company = await prisma.company.findFirst({
-    where: { isDemo: true, name: "LogiExpress Démo", demoPoolEnvironment: { is: null } },
+    where: { name: "LogiExpress Démo" },
     select: { id: true, _count: { select: { deliveries: true } } },
   });
   if (!company || company._count.deliveries === 0) throw new Error("TEMPLATE_DEMO_COMPANY_MISSING");
   return company.id;
 }
 
-async function billingCompanyIds() {
+async function billingCompanyIds(templateId: string) {
   const companies = await prisma.company.findMany({
-    where: { isDemo: false, saasSubscription: { is: { kind: "COMMERCIAL", status: "ACTIVE", billingAccount: { isNot: null } } } },
+    where: { status: "ACTIVE", id: { not: templateId } },
     orderBy: { createdAt: "desc" },
     take: 2,
     select: { id: true },
@@ -70,7 +70,8 @@ async function billingCompanyIds() {
 
 async function setup() {
   const admin = supabaseAdmin();
-  const companies: Record<string, string> = { template: await templateCompanyId(), ...(await billingCompanyIds()) };
+  const template = await templateCompanyId();
+  const companies: Record<string, string> = { template, ...(await billingCompanyIds(template)) };
   const manifest: Record<string, { email: string; password: string }> = {};
 
   for (const account of ACCOUNTS) {

@@ -1,7 +1,7 @@
 /**
  * Liens internes vers les pièces de la preuve de livraison. Aucun lien Storage n'est exposé dans les
  * réponses d'API : chaque lien passe par une route authentifiée qui génère, au clic, une URL signée de
- * 5 minutes (photo, signature) ou le PDF de preuve.
+ * 5 minutes (photo, signature).
  */
 type ProofLinkRow = {
   id: string;
@@ -13,12 +13,9 @@ type ProofLinkRow = {
 
 export function proofLinks(basePath: string, row: ProofLinkRow) {
   const base = `${basePath}/${encodeURIComponent(row.id)}/proof`;
-  // Le PDF n'existe que si une preuve a été saisie (`podOutcome`) ; sinon la route répondrait 404.
-  const hasProof = Boolean(row.podOutcome);
   return {
     podPhotoUrl: row.podPhotoPath ? `${base}/photo` : null,
     podSignatureUrl: row.podSignaturePath ? `${base}/signature` : null,
-    podPdfUrl: hasProof ? `${base}/pdf` : null,
   };
 }
 
@@ -40,7 +37,7 @@ export function omitStoragePaths<T>(value: T): T {
   return value;
 }
 
-/** Retire les chemins de stockage de la ligne et ajoute les liens internes (`podPhotoUrl`, `podSignatureUrl`, `podPdfUrl`). */
+/** Retire les chemins de stockage de la ligne et ajoute les liens internes (`podPhotoUrl`, `podSignatureUrl`). */
 export function withProofLinks<T extends ProofLinkRow>(basePath: string, row: T) {
   const { podPhotoPath: _photo, podSignaturePath: _signature, ...rest } = row;
   void _photo;

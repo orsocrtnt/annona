@@ -41,7 +41,7 @@ type Service = {
   removeCompanyLogo(companyId: string): Promise<void>;
 };
 
-function loadService(company: { isDemo: boolean; logoUrl: string | null }, options: { failUpdate?: boolean } = {}) {
+function loadService(company: { logoUrl: string | null }, options: { failUpdate?: boolean } = {}) {
   const calls: string[] = [];
   const storage = {
     isCompanyLogoPath: (path: string | null, companyId: string) => Boolean(path?.startsWith(`${companyId}/logo-`)),
@@ -70,28 +70,21 @@ function loadService(company: { isDemo: boolean; logoUrl: string | null }, optio
   return { service: loaded.exports as Service, calls };
 }
 
-test("en démo, le logo est refusé avant tout envoi de fichier", async () => {
-  const { service, calls } = loadService({ isDemo: true, logoUrl: null });
-  await assert.rejects(service.setCompanyLogo("company_a", Buffer.from("x")), /LOGO_DEMO_DISABLED/);
-  await assert.rejects(service.removeCompanyLogo("company_a"), /LOGO_DEMO_DISABLED/);
-  assert.deepEqual(calls, []);
-});
-
 test("remplacer un logo enregistre le nouveau puis supprime l'ancien", async () => {
-  const { service, calls } = loadService({ isDemo: false, logoUrl: "company_a/logo-old.png" });
+  const { service, calls } = loadService({ logoUrl: "company_a/logo-old.png" });
   const size = await service.setCompanyLogo("company_a", Buffer.from("x"));
   assert.deepEqual([size.width, size.height], [480, 96]);
   assert.deepEqual(calls, ["upload", "update:company_a/logo-new.png", "delete:company_a/logo-old.png"]);
 });
 
 test("si l'enregistrement échoue, le fichier envoyé est supprimé et l'ancien conservé", async () => {
-  const { service, calls } = loadService({ isDemo: false, logoUrl: "company_a/logo-old.png" }, { failUpdate: true });
+  const { service, calls } = loadService({ logoUrl: "company_a/logo-old.png" }, { failUpdate: true });
   await assert.rejects(service.setCompanyLogo("company_a", Buffer.from("x")), /DB_DOWN/);
   assert.deepEqual(calls, ["upload", "delete:company_a/logo-new.png"]);
 });
 
 test("retirer le logo vide la référence puis supprime le fichier", async () => {
-  const { service, calls } = loadService({ isDemo: false, logoUrl: "company_a/logo-old.png" });
+  const { service, calls } = loadService({ logoUrl: "company_a/logo-old.png" });
   await service.removeCompanyLogo("company_a");
   assert.deepEqual(calls, ["update:null", "delete:company_a/logo-old.png"]);
 });

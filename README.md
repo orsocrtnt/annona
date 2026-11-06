@@ -1,8 +1,8 @@
 # Annona
 
-Annona est un SaaS multi-entreprise pour centraliser les commandes de livraison, l'affectation des chauffeurs, les échanges, le suivi daté, les preuves et l'historique. Le produit comporte trois espaces : administration/dispatch, portail client et application web chauffeur.
+Annona devient une application de commande et de livraison B2B pour boulangerie : les commerçants commandent au laboratoire avant l'heure limite, la boulangerie produit, prépare, puis livre par tournées. Résumé : [`PRODUCT.md`](PRODUCT.md). Référence des exigences : [`docs/cahier-des-charges/`](docs/cahier-des-charges/TRI-BASE.md).
 
-L'état et l'ordre du travail sont suivis dans [`TODO.md`](TODO.md). Les instructions persistantes destinées aux contributeurs et agents se trouvent dans [`AGENTS.md`](AGENTS.md).
+La base de code vient d'un SaaS de coursiers ; les éléments sans rapport avec le nouveau produit ont été retirés (NET-1). Le modèle de données sera refait (SCHEMA-1). L'état et l'ordre du travail sont suivis dans [`TODO.md`](TODO.md). Les instructions destinées aux contributeurs et agents se trouvent dans [`AGENTS.md`](AGENTS.md).
 
 ## Démarrage local
 
@@ -27,14 +27,9 @@ npm run lint            # ESLint sur le code applicatif, zéro avertissement adm
 npm test                # règles locales sans service externe
 npm run check           # typecheck + lint + tests locaux
 npm run audit:prod      # vulnérabilités des dépendances livrées
-npm run test:v1         # recette locale, connectée et navigateur sur base de test
 npm run test:ops01      # récurrences connectées sur fixtures isolées
-npm run test:special1   # socle missions spéciales sur fixtures isolées
-npm run test:demo1      # deux démonstrations isolées et reset limité
 npm run build           # build de production, serveur dev arrêté
 ```
-
-La recette V1 crée uniquement des fixtures identifiables, les supprime de façon ciblée et contrôle leur absence. Elle nécessite la base de test autorisée et Chrome/Chromium. Voir [`docs/operations/test2/README.md`](docs/operations/test2/README.md).
 
 ## Configuration
 
@@ -57,7 +52,7 @@ Les services cartographiques publics actuellement configurés servent aux essais
 - Prisma pour tous les accès métier à PostgreSQL ;
 - Supabase pour l'identité et le stockage privé des preuves.
 
-Les données métier sont bornées par `companyId` et, selon le rôle, par le client propriétaire ou le chauffeur affecté. Les contrôles d'interface complètent les contrôles serveur ; ils ne les remplacent pas.
+Les données métier sont bornées par `companyId` et, selon le rôle, par le client propriétaire ou le livreur affecté. Les contrôles d'interface complètent les contrôles serveur ; ils ne les remplacent pas.
 
 ## Documentation
 
@@ -67,11 +62,10 @@ Les données métier sont bornées par `companyId` et, selon le rôle, par le cl
 - [`docs/RBAC.md`](docs/RBAC.md) — rôles et contrôles d'accès ;
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — installation, configuration, dépannage et reprise ;
 - [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) — conventions de contribution ;
-- [`docs/RECETTE_V1.md`](docs/RECETTE_V1.md) — scénarios fonctionnels ;
-- [`docs/VISION_PRODUIT_COMMERCIALE.md`](docs/VISION_PRODUIT_COMMERCIALE.md) — vision commerciale, avec hypothèses clairement séparées.
+- [`docs/cahier-des-charges/TRI-BASE.md`](docs/cahier-des-charges/TRI-BASE.md) — ce que la base garde, modifie et doit créer.
 
-Les rapports datés dans `docs/rapports/` prouvent un état à leur date. Ils ne remplacent ni `TODO.md` ni la documentation courante.
+Les rapports datés dans `docs/rapports/` prouvent un état de l'ancien produit à leur date. Ils ne remplacent ni `TODO.md` ni la documentation courante.
 
-## Limites avant vente
+## Branche et publication
 
-Le code et la recette locale ne constituent pas une mise en production. Une préproduction séparée, un historique de migrations reproductible, une restauration chronométrée, la configuration e-mail réelle, les essais iPhone/Android, les fournisseurs cartographiques avec garanties et les décisions juridiques/comptables restent ouverts dans `TODO.md`.
+Le travail se fait sur la branche `base`. Aucun push sans demande explicite : `preproduction` et le site en ligne portent encore l'ancien produit.

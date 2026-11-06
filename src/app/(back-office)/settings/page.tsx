@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loader";
 import { CompanyLogoCard } from "@/features/back-office/company-logo-card";
 import { DeliverySlotsCard } from "@/features/back-office/delivery-slots-card";
-import { useAuthStore } from "@/stores/auth.store";
 import { DELIVERY_CATEGORY_DESCRIPTIONS, DELIVERY_CATEGORY_LABELS } from "@/lib/constants/delivery";
 import {
   useCompanyDeliveryOptions,
@@ -51,7 +50,6 @@ export default function SettingsPage() {
   const updatePortal = useUpdateCompanyPortalSettings();
   const { data: proofRules } = useCompanyProofRules();
   const updateProofRules = useUpdateCompanyProofRules();
-  const readOnly = useAuthStore((state) => state.saas?.canMutate === false);
   const [local, setLocal] = useState(options?.deliveryCategories);
 
   useEffect(() => {
@@ -125,7 +123,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <CompanyLogoCard readOnly={readOnly} />
+      <CompanyLogoCard />
 
       <Card>
         <CardHeader>
@@ -178,7 +176,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <DeliverySlotsCard readOnly={readOnly} />
+      <DeliverySlotsCard />
 
       <Card>
         <CardHeader>
@@ -193,7 +191,7 @@ export default function SettingsPage() {
               type="checkbox"
               className="h-5 w-5 shrink-0"
               checked={portal?.portalShowDriverPhone ?? true}
-              disabled={!portal || readOnly || updatePortal.isPending}
+              disabled={!portal || updatePortal.isPending}
               onChange={(event) => handleDriverPhone(event.target.checked)}
             />
             <span className="text-sm font-medium">Afficher le téléphone du livreur aux clients</span>
@@ -215,7 +213,7 @@ export default function SettingsPage() {
               type="checkbox"
               className="mt-0.5 h-5 w-5 shrink-0"
               checked={proofRules?.signatureRequired ?? false}
-              disabled={!proofRules || readOnly || updateProofRules.isPending}
+              disabled={!proofRules || updateProofRules.isPending}
               onChange={(event) => handleProofRule({ signatureRequired: event.target.checked })}
             />
             <span className="text-sm">
@@ -230,7 +228,7 @@ export default function SettingsPage() {
               type="checkbox"
               className="mt-0.5 h-5 w-5 shrink-0"
               checked={proofRules?.emailToClient ?? true}
-              disabled={!proofRules || readOnly || updateProofRules.isPending}
+              disabled={!proofRules || updateProofRules.isPending}
               onChange={(event) => handleProofRule({ emailToClient: event.target.checked })}
             />
             <span className="text-sm">

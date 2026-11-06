@@ -24,10 +24,7 @@ test("UX-03 : la fiche lit la livraison filtrée par entreprise et relègue la c
   assert.match(read("src/domains/delivery/delivery.service.ts"), /where: \{ id: deliveryId, companyId \}/);
 });
 
-test("UX-03 : alertes et liste du tableau de bord ouvrent la fiche livraison", () => {
-  const alerts = read("src/components/shared/operational-alerts.tsx");
-  assert.match(alerts, /href=\{`\/dashboard\/deliveries\/\$\{encodeURIComponent\(row\.deliveryId\)\}`\}/);
-  assert.doesNotMatch(alerts, /buildDispatchTargetHref/);
+test("UX-03 : la liste du tableau de bord ouvre la fiche livraison", () => {
   assert.match(read("src/features/back-office/dashboard-delivery-list-dialog.tsx"), /href=\{`\/dashboard\/deliveries\/\$\{encodeURIComponent\(delivery\.id\)\}`\}/);
 });
 

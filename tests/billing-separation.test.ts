@@ -55,8 +55,6 @@ function fixture(status = "DELIVERED") {
   const service = load<typeof invoiceService>("src/domains/invoice/invoice.service.ts", {
     "@prisma/client": { Prisma },
     "@/services/prisma/client": { prisma: { order: { findFirst: async () => order }, $transaction: async (fn: (t: typeof tx) => unknown) => fn(tx) } },
-    "@/domains/company/courier-estimate.service": { announcedCourierLine: async () => null },
-    "@/domains/company/tariff-settings.service": { getCompanyTariffSettings: async () => ({ tariffZones: [], tariffFees: [] }) },
     "@/domains/company/billing-settings.service": { getCompanyBillingSettings: async () => ({ invoice: { vatRate: 0, defaultDueDays: 30, referencePrefix: "TEST" } }) },
     "@/lib/query/list-limits": {},
     "@/domains/client-portal/notify.service": { queueInvoiceIssuedNotification: async () => null },
@@ -98,7 +96,6 @@ test("BILL : permissions dédiées émission et règlement ; commandes seules re
   let permissions = filterMiniAdminPermissions(["orders:update", "invoices:create", "invoices:update"], { miniAdmin: { modules: ["orders"] } });
   let calls = 0;
   const route = load<{POST: (r: Request, p: {params: Promise<{id: string}>}) => Promise<Response>; PATCH: (r: Request, p: {params: Promise<{id: string}>}) => Promise<Response>}>("src/app/api/orders/[id]/invoice/route.ts", {
-    "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
     "next/server": { NextResponse },
     "@/lib/api/auth-guard": { requireStaffRole: async (permission: string) => permissions.includes(permission) ? { context: {} } : { error: NextResponse.json({}, { status: 403 }) }, requireRole: () => null, getCompanyId: () => "company" },
     "@/domains/invoice/invoice.service": { createOrderInvoice: async () => { calls++; return {}; }, markOrderInvoicePaid: async () => { calls++; return {}; } },

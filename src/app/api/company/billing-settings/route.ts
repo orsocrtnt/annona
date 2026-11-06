@@ -11,7 +11,7 @@ import {
 import { companyBillingSettingsSchema } from "@/lib/validations/billing-settings";
 import { readinessFieldErrors } from "@/lib/validations/einvoicing";
 
-const BILLING_FIELD_LABELS = { courier: "Tarifs course", invoice: "Facturation", vatRate: "Taux de TVA", defaultDueDays: "Délai de paiement", referencePrefix: "Préfixe des références" };
+const BILLING_FIELD_LABELS = { invoice: "Facturation", vatRate: "Taux de TVA", defaultDueDays: "Délai de paiement", referencePrefix: "Préfixe des références" };
 
 export async function GET() {
   return withApiHandler(async () => {

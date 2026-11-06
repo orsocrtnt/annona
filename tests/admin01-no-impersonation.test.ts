@@ -39,65 +39,27 @@ function filesUnder(root: string) {
     .sort();
 }
 
-// Exceptions, décision C10 : le super-administrateur crée et désactive les codes commerciaux,
-// données de la plateforme et non d'une entreprise cliente (voir tests/sales01-admin-routes.test.ts).
+// Exceptions : écritures de la plateforme, jamais des données d'une entreprise cliente.
 const PLATFORM_WRITES: Record<string, string[]> = {
-  "src/app/api/admin/sales-codes/[id]/route.ts": ["GET", "PATCH"],
-  "src/app/api/admin/sales-codes/route.ts": ["GET", "POST"],
-  // DEMO-LIVE : remise à neuf des démos, espaces de la plateforme (aucune entreprise cliente).
-  "src/app/api/admin/demo-pool/route.ts": ["GET", "POST"],
   // Couper / rétablir l'accès d'un compte ou d'une entreprise (demande du propriétaire, 5 novembre 2026).
   "src/app/api/admin/users/[id]/access/route.ts": ["POST"],
   "src/app/api/admin/companies/[id]/access/route.ts": ["POST"],
-  // ADMIN-ESPACE lot 2 : case « contacté » d'une inscription à la liste d'attente (donnée de la plateforme).
-  "src/app/api/admin/waitlist/[id]/route.ts": ["PATCH"],
-  // ADMIN-ESPACE lot 4 : pilotes accompagnés, suivi propre à la plateforme (l'entreprise liée n'est que lue).
-  "src/app/api/admin/pilots/route.ts": ["GET", "POST"],
-  "src/app/api/admin/pilots/[id]/route.ts": ["GET", "PATCH"],
-  "src/app/api/admin/pilots/[id]/notes/route.ts": ["POST"],
-  // ADMIN-ESPACE lot 5 : campagnes de prospection du propriétaire (données de la plateforme).
-  "src/app/api/admin/campaigns/route.ts": ["GET", "POST"],
-  "src/app/api/admin/campaigns/[id]/route.ts": ["GET", "PATCH", "DELETE"],
-  "src/app/api/admin/campaigns/[id]/recipients/route.ts": ["POST", "PATCH"],
-  "src/app/api/admin/campaigns/[id]/send/route.ts": ["POST"],
-  "src/app/api/admin/campaigns/opt-outs/route.ts": ["POST"],
 };
 
-test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors codes commerciaux", () => {
+test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors coupure d'accès", () => {
   const routes = filesUnder("src/app/api/admin").filter((file) => file.endsWith("route.ts"));
   assert.deepEqual(routes, [
-    "src/app/api/admin/access-events/route.ts",
-    "src/app/api/admin/campaigns/[id]/recipients/route.ts",
-    "src/app/api/admin/campaigns/[id]/route.ts",
-    "src/app/api/admin/campaigns/[id]/send/route.ts",
-    "src/app/api/admin/campaigns/opt-outs/route.ts",
-    "src/app/api/admin/campaigns/route.ts",
     "src/app/api/admin/companies/[id]/access/route.ts",
     "src/app/api/admin/companies/[id]/route.ts",
     "src/app/api/admin/companies/route.ts",
-    "src/app/api/admin/contact-messages/route.ts",
-    "src/app/api/admin/demo-pool/route.ts",
     "src/app/api/admin/home/route.ts",
-    "src/app/api/admin/incidents/route.ts",
     "src/app/api/admin/operation-jobs/route.ts",
     "src/app/api/admin/overview/route.ts",
-    "src/app/api/admin/pilots/[id]/notes/route.ts",
-    "src/app/api/admin/pilots/[id]/route.ts",
-    "src/app/api/admin/pilots/route.ts",
-    "src/app/api/admin/prospection/sheet/route.ts",
-    "src/app/api/admin/saas-health/route.ts",
-    "src/app/api/admin/sales-codes/[id]/route.ts",
-    "src/app/api/admin/sales-codes/route.ts",
     "src/app/api/admin/search/route.ts",
     "src/app/api/admin/service-health/route.ts",
-    "src/app/api/admin/subscriptions/route.ts",
     "src/app/api/admin/support-tickets/route.ts",
     "src/app/api/admin/users/[id]/access/route.ts",
     "src/app/api/admin/users/route.ts",
-    "src/app/api/admin/waitlist/[id]/route.ts",
-    "src/app/api/admin/waitlist/export/route.ts",
-    "src/app/api/admin/waitlist/funnel/route.ts",
-    "src/app/api/admin/waitlist/route.ts",
   ]);
   for (const file of routes) {
     const source = readFileSync(file, "utf8");

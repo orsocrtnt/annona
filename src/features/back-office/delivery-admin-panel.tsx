@@ -43,7 +43,6 @@ interface DeliveryAdminPanelProps {
     podFailureCode?: string | null;
     podNote?: string | null;
     podSignatureUrl?: string | null;
-    podPdfUrl?: string | null;
     podRecipientName?: string | null;
     podSignatureRefusedReason?: string | null;
   };
@@ -147,7 +146,6 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
             failureCode={delivery.podFailureCode}
             note={delivery.podNote}
             signatureUrl={delivery.podSignatureUrl}
-            pdfUrl={delivery.podPdfUrl}
             recipientName={delivery.podRecipientName}
             signatureRefusedReason={delivery.podSignatureRefusedReason}
           />
@@ -253,7 +251,6 @@ export function DeliveryAdminPanel({ delivery, deliveryCategory }: DeliveryAdmin
             failureCode={delivery.podFailureCode}
             note={delivery.podNote}
             signatureUrl={delivery.podSignatureUrl}
-            pdfUrl={delivery.podPdfUrl}
             recipientName={delivery.podRecipientName}
             signatureRefusedReason={delivery.podSignatureRefusedReason}
           />

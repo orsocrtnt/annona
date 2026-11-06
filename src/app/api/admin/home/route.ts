@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { gatePlatformRead } from "@/lib/api/platform-access";
 import { getAdminHome, parseAdminHomeParams } from "@/domains/admin/admin-home.service";
 
 /** ADMIN-ESPACE : accueil du super-administrateur, et pastilles du menu avec `view=badges`. */
@@ -9,8 +8,7 @@ export async function GET(request: Request) {
   if ("error" in auth) return auth.error;
   const denied = requireRole(auth.context, ["SUPER_ADMIN"]);
   // Même ressource journalisée que la vue d'ensemble : l'enum du journal reste inchangé (aucune migration).
-  const blocked = await gatePlatformRead(auth.context, denied, "OVERVIEW");
-  if (blocked) return blocked;
+  if (denied) return denied;
 
   const parsed = parseAdminHomeParams(new URL(request.url).searchParams);
   if ("error" in parsed) {

@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/api/auth-guard";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import { changePasswordSchema } from "@/lib/validations/auth";
 import { LOGIN_BUSY_MESSAGE, loginBusyResponseInit, settleLoginAttempt, startLoginAttempt } from "@/domains/auth/login-rate-limit.service";
-import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
+import { requestSourceFromHeaders } from "@/lib/security/request-source";
 import { createAdminClient } from "@/services/supabase/admin";
 
 // Panne réseau ou serveur Supabase Auth : ne compte pas comme un mauvais mot de passe.
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const email = auth.context.user.email;
 
   // SEC-2 : la vérification du mot de passe actuel suit la même limite que la connexion.
-  const rateLimit = await startLoginAttempt({ email, source: contactSourceFromHeaders(request.headers), trackEmail: true });
+  const rateLimit = await startLoginAttempt({ email, source: requestSourceFromHeaders(request.headers), trackEmail: true });
   if (!rateLimit.allowed && rateLimit.busy) {
     return NextResponse.json({ error: LOGIN_BUSY_MESSAGE }, loginBusyResponseInit());
   }

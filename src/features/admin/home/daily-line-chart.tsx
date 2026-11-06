@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 /**
  * Courbe par jour de l'espace super-administrateur (ADMIN-ESPACE) : une ligne par série, jours civils
  * (« 2026-11-05 ») à l'heure de Paris. SVG maison, sans bibliothèque ; tableau jour par jour replié.
- * Sert à l'accueil (commandes, livraisons) et à la liste d'attente (visites, clics, inscriptions).
+ * Sert à l'accueil et à la fiche entreprise (commandes, livraisons).
  */
 export type DailyLine<K extends string> = {
   key: K;

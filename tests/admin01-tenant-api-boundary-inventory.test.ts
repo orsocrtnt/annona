@@ -77,11 +77,11 @@ function documented() {
 test("ADMIN-1 inventaire entreprise : chaque route avec getCompanyId est documentée", () => {
   const found = discover();
   const listed = documented();
-  assert.equal(found.length, 86);
-  assert.equal(new Set(found.map((row) => row.file)).size, 60);
+  assert.equal(found.length, 63);
+  assert.equal(new Set(found.map((row) => row.file)).size, 44);
   assert.deepEqual(listed, found);
   const note = readFileSync(inventoryPath, "utf8");
-  assert.equal(note.includes("conversationAuth"), true);
+  assert.equal(note.includes("orderActorAuth"), true);
   assert.equal(note.includes("requireSupportStaff"), true);
   assert.equal(note.includes("requireDispatchSettingsReader"), true);
 });

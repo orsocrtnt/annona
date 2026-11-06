@@ -92,22 +92,3 @@ test("occurrence rejouée après la fin du créneau : résultat identique, la cl
   assert.ok(recurringOccurrenceDelivery(slots, { deliveryCategory: "STANDARD", date: "2020-01-06", key: "09:00-12:00" }).deliverySlotStart);
 });
 
-test("message IA : l'heure du message choisit le créneau, sans jamais en inventer", async () => {
-  const { suggestDeliverySlot } = await import("../src/domains/order/delivery-slot");
-  assert.equal(suggestDeliverySlot(slots.slots, "10:30")?.start, "09:00");
-  assert.equal(suggestDeliverySlot(slots.slots, "13:00")?.start, "14:00");
-  assert.equal(suggestDeliverySlot(slots.slots, "20:00"), null);
-  assert.equal(suggestDeliverySlot(slots.slots, null), null);
-});
-
-test("message IA : créneau et poids transmis à la commande, champs vides absents", async () => {
-  const { buildOrderInputFromForm } = await import("../src/domains/order-intake/order-intake.form");
-  const stop = { address: "", city: "", postalCode: "", contactName: "", phone: "", instructions: "" };
-  const values = { deliveryCategory: "STANDARD" as const, pickup: stop, delivery: stop, requestedDeliveryDate: "2026-11-02", deadlineLabel: "", urgent: false, packageName: "Colis", quantity: 1, instructions: "" };
-  const filled = buildOrderInputFromForm({ ...values, requestedDeliverySlot: "09:00-12:00", weightKg: "4.5" });
-  assert.equal(filled.requestedDeliverySlot, "09:00-12:00");
-  assert.equal(filled.weightKg, "4.5");
-  const empty = buildOrderInputFromForm({ ...values, requestedDeliverySlot: "", weightKg: "" });
-  assert.equal("requestedDeliverySlot" in empty, false);
-  assert.equal("weightKg" in empty, false);
-});

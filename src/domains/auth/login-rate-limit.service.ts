@@ -56,12 +56,12 @@ function isContentionError(error: unknown) {
   return typeof message === "string" && /\b(55P03|57014)\b|lock timeout|canceling statement due to (lock|statement) timeout/i.test(message);
 }
 
-/** Valeur de `contactSourceFromHeaders` sans x-forwarded-for ni x-real-ip. */
+/** Valeur de `requestSourceFromHeaders` sans x-forwarded-for ni x-real-ip. */
 const UNKNOWN_SOURCE = "unknown";
 
 /**
- * Empreintes HMAC de l'e-mail normalisé et de la source. `trackEmail: false` sert au compte
- * de démonstration public : son e-mail ne doit pas pouvoir être verrouillé par un tiers.
+ * Empreintes HMAC de l'e-mail normalisé et de la source. `trackEmail: false` limite par source
+ * seulement (compte partagé dont l'e-mail ne doit pas pouvoir être verrouillé par un tiers).
  * Source inconnue (dev, E2E, proxy sans en-tête) : pas de clé, sinon toutes les requêtes
  * partageraient un seau global que n'importe qui pourrait remplir.
  */

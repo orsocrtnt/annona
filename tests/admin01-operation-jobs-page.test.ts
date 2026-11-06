@@ -25,7 +25,7 @@ test("ADMIN-1 file technique : recherche, filtres, pagination et états propres"
   assert.equal(jobs.includes("Entreprise"), true);
   assert.equal(jobs.includes('placeholder="Nom"'), true);
   for (const status of ["PENDING", "PROCESSING", "SUCCEEDED", "FAILED"]) assert.equal(page.includes(status), true, status);
-  for (const type of ["AUTO_DISPATCH", "CLIENT_NOTIFICATION"]) assert.equal(page.includes(type), true, type);
+  for (const type of ["DRIVER_NOTIFICATION", "CLIENT_NOTIFICATION"]) assert.equal(page.includes(type), true, type);
   for (const size of ["25", "50", "100"]) assert.equal(jobs.includes(`<SelectItem value="${size}">${size}</SelectItem>`), true, size);
   assert.equal(jobs.includes("Précédent"), true);
   assert.equal(jobs.includes("Suivant"), true);

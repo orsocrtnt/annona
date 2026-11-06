@@ -39,7 +39,6 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/dashboard", roles: COMPANY_ADMINS, anyPermission: ["dashboard:company"] },
   { path: "/dashboard/analytics", roles: COMPANY_ADMINS, anyPermission: ["analytics:read"] },
   { path: "/dashboard/orders", roles: COMPANY_OPS, anyPermission: ["orders:read"] },
-  { path: "/dashboard/orders/intake", roles: COMPANY_OPS, anyPermission: ["orders:create"] },
   { path: "/dashboard/orders/new", roles: COMPANY_OPS, anyPermission: ["orders:create"] },
   { path: "/dashboard/clients", roles: COMPANY_OPS, anyPermission: ["orders:read"] },
   { path: "/dashboard/drivers", roles: COMPANY_OPS, anyPermission: ["drivers:read"] },
@@ -57,23 +56,16 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/dispatch/drivers", roles: COMPANY_OPS, anyPermission: ["drivers:read"] },
   { path: "/dispatch/map", roles: COMPANY_OPS, anyPermission: ["deliveries:read"] },
   {
-    path: "/dispatch/intake",
-    roles: COMPANY_OPS,
-    anyPermission: ["orders:create"],
-    // orders:create n'est donné au mini-admin que par le module Commandes.
-    miniAdminModules: ["orders"],
-  },
-  {
     path: "/dispatch/new-order",
     roles: COMPANY_OPS,
     anyPermission: ["orders:create"],
+    // orders:create n'est donné au mini-admin que par le module Commandes.
     miniAdminModules: ["orders"],
   },
   { path: "/support", roles: COMPANY_OPS },
   { path: "/users", roles: COMPANY_ADMINS, anyPermission: ["users:read"] },
   { path: "/settings", roles: COMPANY_ADMINS, anyPermission: ["settings:read"] },
   { path: "/settings/billing", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"] },
-  { path: "/settings/subscription", roles: ["COMPANY_ADMIN"], anyPermission: ["settings:read"] },
   { path: "/onboarding", roles: ["COMPANY_ADMIN"], anyPermission: ["settings:read"] },
   // Portail client et application livreur
   { path: "/portal", roles: ["CLIENT"], anyPermission: ["dashboard:client"] },

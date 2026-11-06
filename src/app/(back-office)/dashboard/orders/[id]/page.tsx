@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { OrderTracking } from "@/components/shared/order-tracking";
-import { OrderConversation } from "@/components/shared/order-conversation";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +9,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCompanyOrder } from "@/features/back-office/hooks";
-import { OrderTrackingLinkButton } from "@/features/back-office/order-tracking-link-button";
 import { AssignDriverSelect } from "@/features/back-office/assign-driver-select";
-import { DispatchSuggestionsPanel } from "@/features/back-office/dispatch-suggestions-panel";
 import { OrderStatusSelect } from "@/features/back-office/order-status-select";
 import { OrderInvoiceForm } from "@/features/back-office/order-invoice-form";
 import { DeliveryAdminPanel } from "@/features/back-office/delivery-admin-panel";
@@ -115,10 +112,6 @@ export default function CompanyOrderDetailPage() {
             <CardTitle className="text-base">Assigner à un livreur</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <DispatchSuggestionsPanel
-              deliveryId={order.deliveries[0].id}
-              pending={order.deliveries[0].status === "PENDING" && !order.deliveries[0].driverId}
-            />
             <AssignDriverSelect
               deliveryId={order.deliveries[0].id}
               status={order.deliveries[0].status}
@@ -259,9 +252,7 @@ export default function CompanyOrderDetailPage() {
           </CardContent>
         </Card>
       )}
-      <OrderTrackingLinkButton orderId={order.id} />
       <OrderTracking orderId={order.id} />
-      <OrderConversation orderId={order.id} />
     </div>
   );
 }

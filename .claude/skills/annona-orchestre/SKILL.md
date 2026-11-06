@@ -5,6 +5,8 @@ description: Lancer et piloter en autonomie un chantier multi-agents Annona — 
 
 # Orchestre — chantier multi-agents Annona
 
+> **6 novembre 2026 (NET-1)** : la branche de travail est `base` (nouveau produit). Aucun push — ni `base`, ni `preproduction`, ni `main` — sans demande explicite du propriétaire : `preproduction` et le site en ligne portent encore l'ancien produit. Partout ci-dessous, lire `base` à la place de `preproduction` et s'arrêter avant toute étape de push ou de déploiement.
+
 Lancement : `/annona-orchestre`, ou « lance le chantier multi-agents ». Les lots ci-dessous sont ceux du chantier n° 2 ; pour un chantier suivant, les recalculer depuis `TODO.md` selon la même méthode.
 
 ## Mandat : autonomie totale

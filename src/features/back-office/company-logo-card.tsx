@@ -22,14 +22,12 @@ async function sendLogo(file: File | null) {
 
 /**
  * Logo de l'entreprise, affiché en tête de ses factures. Partagé par les Paramètres et
- * l'onboarding ; indisponible en démo (le pool démo doit rester recyclable).
+ * l'onboarding.
  */
 export function CompanyLogoCard({
-  readOnly = false,
   title = "Logo de l’entreprise",
   optional = false,
 }: {
-  readOnly?: boolean;
   title?: string;
   optional?: boolean;
 }) {
@@ -37,10 +35,9 @@ export function CompanyLogoCard({
   const hintId = `${inputId}-hint`;
   const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
-  const { isDemo, hasLogo, src } = useCompanyLogo();
+  const { hasLogo, src } = useCompanyLogo();
   const [version, setVersion] = useState(() => Date.now());
   const [status, setStatus] = useState<{ tone: "success" | "error"; message: string } | null>(null);
-  const disabled = readOnly || isDemo;
 
   const save = useMutation({
     mutationFn: sendLogo,
@@ -88,9 +85,7 @@ export function CompanyLogoCard({
 
         <div className="min-w-0 space-y-3">
           <p id={hintId} className="text-sm text-muted-foreground">
-            {isDemo
-              ? "Indisponible dans l’environnement de démonstration : les espaces démo sont réinitialisés à chaque session."
-              : "PNG, JPEG ou WebP, 2 Mo maximum. Il sera ajusté à 480 × 160 pixels au plus."}
+            PNG, JPEG ou WebP, 2 Mo maximum. Il sera ajusté à 480 × 160 pixels au plus.
           </p>
           <div className="flex flex-wrap gap-2">
             <input
@@ -100,7 +95,7 @@ export function CompanyLogoCard({
               accept="image/png,image/jpeg,image/webp"
               className="peer sr-only"
               aria-describedby={hintId}
-              disabled={disabled || save.isPending}
+              disabled={save.isPending}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) {
@@ -113,7 +108,7 @@ export function CompanyLogoCard({
               htmlFor={inputId}
               className={cn(
                 "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-foreground transition-colors hover:bg-[#f0f4f1] dark:bg-card dark:hover:bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
-                (disabled || save.isPending) && "cursor-not-allowed opacity-60 hover:bg-white dark:hover:bg-card"
+                save.isPending && "cursor-not-allowed opacity-60 hover:bg-white dark:hover:bg-card"
               )}
             >
               <Upload className="h-4 w-4" aria-hidden="true" />
@@ -123,7 +118,7 @@ export function CompanyLogoCard({
               <Button
                 type="button"
                 variant="ghost"
-                disabled={disabled || save.isPending}
+                disabled={save.isPending}
                 onClick={() => {
                   setStatus(null);
                   save.mutate(null);

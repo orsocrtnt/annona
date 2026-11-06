@@ -30,12 +30,10 @@ const SPACES = [
   "/dispatch",
   "/dispatch/map",
   "/dispatch/drivers",
-  "/dispatch/intake",
   "/support",
   "/users",
   "/settings",
   "/settings/billing",
-  "/settings/subscription",
   "/onboarding",
   "/portal",
   "/portal/orders",
@@ -51,8 +49,8 @@ const COMPANY_ADMIN: Expectation = {
   home: "/dashboard",
   allowed: [
     "/dashboard", "/dashboard/analytics", "/dashboard/orders", "/dashboard/clients", "/dashboard/drivers",
-    "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/intake", "/support", "/users",
-    "/settings", "/settings/billing", "/settings/subscription", "/onboarding",
+    "/dispatch", "/dispatch/map", "/dispatch/drivers", "/support", "/users",
+    "/settings", "/settings/billing", "/onboarding",
   ],
 };
 
@@ -65,7 +63,7 @@ const EXPECTED: Record<"admin" | "client" | "driver" | RoleKey, Expectation> = {
     home: "/dispatch",
     allowed: [
       "/dashboard/orders", "/dashboard/clients", "/dashboard/drivers",
-      "/dispatch", "/dispatch/map", "/dispatch/drivers", "/dispatch/intake", "/support",
+      "/dispatch", "/dispatch/map", "/dispatch/drivers", "/support",
     ],
   },
   // Mini-admin avec les modules Dispatch et Carte livraison : ni carte livreurs, ni saisie, ni comptes.
@@ -119,7 +117,7 @@ test("AUTH-ROLE : anonyme renvoyé vers la connexion de chaque espace", async ({
     expect(location.pathname, path).toBe(loginPath);
     expect(location.searchParams.get("redirect"), path).toBe(path);
   }
-  for (const path of ["/", "/login", "/login/client", "/login/driver", "/register", "/fonctionnalites", "/tarifs"]) {
+  for (const path of ["/login", "/login/client", "/login/driver", "/mentions-legales", "/confidentialite"]) {
     expect((await api.get(path, { maxRedirects: 0 })).status(), path).toBe(200);
   }
   await api.dispose();

@@ -60,10 +60,10 @@ test("connexion : à l'expiration la garde d'envoi est relâchée et le bouton r
   } finally { mock.timers.reset(); }
 });
 
-test("le formulaire de connexion utilise le délai pour les quatre requêtes d'authentification, sans fetch nu", () => {
+test("le formulaire de connexion utilise le délai pour les trois requêtes d’authentification, sans fetch nu", () => {
   const source = readFileSync("src/features/auth/auth-form.tsx", "utf8");
   assert.equal([...source.matchAll(/\bfetch\(/g)].length, 0);
-  assert.equal([...source.matchAll(/requestJsonWithTimeout\(/g)].length, 4);
+  assert.equal([...source.matchAll(/requestJsonWithTimeout\(/g)].length, 3);
   assert.match(source, /RequestTimeoutError/);
   assert.match(source, /AUTH_TIMEOUT_MESSAGE/);
 });

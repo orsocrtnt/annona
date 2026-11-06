@@ -5,29 +5,6 @@ test.afterEach(async ({ page }) => {
   await page.request.post("/api/auth/logout").catch(() => undefined);
 });
 
-test("la navigation publique reproduit le soulignement lumineux au survol", async ({
-  page,
-}, testInfo) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  // L'accueil a sa barre plate (LANDING-3) ; les autres pages publiques gardent le soulignement.
-  await page.goto("/contact");
-
-  const nav = page.getByRole("navigation", { name: "Navigation publique" });
-  const pricingLink = nav.getByRole("link", { name: "Tarifs" });
-  const underline = pricingLink.locator("span[aria-hidden]").first();
-
-  await expect(nav).toBeVisible();
-  await expect(underline).toHaveCSS("opacity", "0");
-
-  await pricingLink.hover();
-
-  // Barre publique claire (DA Menthe) : le lien survolé passe à l'encre #0e1310.
-  await expect(pricingLink).toHaveCSS("color", "rgb(14, 19, 16)");
-  await expect(underline).toHaveCSS("opacity", "1");
-  await expect(underline).not.toHaveCSS("transform", "matrix(0, 0, 0, 1, 0, 0)");
-  await page.screenshot({ path: testInfo.outputPath("navbar-hover.png") });
-});
-
 test("la barre Apple reste identique dans le portail client, du bureau au mobile", async ({
   page,
 }) => {

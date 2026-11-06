@@ -4,69 +4,48 @@
 
 ## Modèles actuels
 
+> 6 novembre 2026 (NET-1) : les modèles de l'ancien produit (offres et souscriptions SaaS, inscription, démonstrations, prospection, ventes, pilotes, liste d'attente, contact, journal d'accès plateforme, commande par message, liens de suivi publics, conversation de commande) ont été retirés du schéma. Le modèle métier (commande, livraison, rôles) reste celui de l'ancien produit jusqu'à SCHEMA-1, qui le remplace par le modèle de `docs/cahier-des-charges/` avec une migration initiale. Les migrations historiques de `prisma/migrations` ne correspondent donc plus au schéma.
+
 ### Identité et isolation
 
 - `Company` : entreprise locataire, statut et réglages ;
 - `User` : identité métier liée à Supabase Auth, entreprise, rôle et statut ;
 - `Role`, `Permission`, `RolePermission` : RBAC ;
-- `ClientNotification` : notifications intégrées au portail.
+- `ClientNotification` : notifications intégrées au portail ;
+- `AuthLoginFailure` : empreintes transitoires des échecs de connexion.
 
 ### Commande et livraison
 
 - `Order`, `OrderItem`, `OrderStop` : commande, articles et collectes ordonnées ;
-- `Delivery` : mission logistique, chauffeur, états, horaires, preuve et idempotence ;
+- `Delivery` : mission logistique, livreur, états, horaires, preuve et idempotence ;
 - `DriverLocation`, `TrackingEvent` : dernière position autorisée et chronologie ;
-- `OrderMessage`, `OrderThreadRead` : conversation liée à la commande et marqueurs de lecture ;
-- `OperationJob` : auto-dispatch et notifications différées avec reprise.
-
-### Offres et souscriptions SaaS
-
-- `SaasCatalogVersion`, `SaasPlan`, `SaasOption` : catalogue commercial versionné et prix centralisés ;
-- `SaasSubscription`, `SaasPlanAssignment`, `SaasSubscriptionItem` : souscription ou pilote par entreprise, historique d'offre, options et sièges supplémentaires ;
-- `SaasUsagePeriod`, `SaasUsageEvent` : consommation mensuelle, dépassements et événements idempotents ;
-- `SaasSeatReservation` : réservation atomique d'une place pendant une invitation concurrente.
-- `SaasBillingAccount`, `SaasBillingOperation` : journal sandbox Stripe, commandes idempotentes et rapprochement.
-- `SignupJourney`, `SignupPaymentEvent` : brouillon d'inscription autonome et événements de paiement idempotents.
-- `SalesCode`, `SalesAttribution`, `SalesCommissionEntry` : code commercial permanent par commercial, attribution figée à l'activation (niveau, taux, lignes initiales, douze mois) et commissions théoriques par règlement, sans versement automatisé.
+- `DriverPushSubscription` : abonnements aux notifications push du livreur ;
+- `OperationJob` : notifications et factures différées avec reprise.
 
 ### Client et exploitation
 
-- `Invoice` : facturation de livraison séparée de l'état logistique ;
+- `Invoice`, `InvoiceCounter`, `InvoiceReminder` : facturation, numérotation continue et relances ;
 - `SupportTicket`, `SupportTicketMessage` : support client et historique ;
 - `CustomerAddress` : carnet d'adresses client ;
+- `CompanyCustomer` : fiche client sans accès propre à chaque entreprise ;
 - `RecurringOrder` : modèle et planification de commandes récurrentes.
-- `DemoPoolEnvironment` : stock de démonstrations préconstruites, location exclusive et recyclage durable.
-- `PlatformAccessEvent` : journal minimal et expirant des lectures de la supervision plateforme, sans relation ni donnée personnelle.
-- `ContactMessage` : message du formulaire Contact public, lu par le super-administrateur ; l'adresse IP n'est jamais stockée, seulement une empreinte HMAC pour limiter le débit. Les inscriptions à la liste d'attente de `/tarifs` y sont aussi rangées (message `WAITLIST_MESSAGE`), avec `contacted_at`, `contacted_by_id` et `campaign_code` (ADMIN-ESPACE lot 2).
-- `WaitlistFunnelDaily` : compteurs journaliers anonymes de `/tarifs` (jour de Paris, campagne, visite / clic / inscription) et, depuis ADMIN-ESPACE lot 5, des clics sur les liens des mails de campagne (`MAIL_JOIN`, `MAIL_SITE`, comptés par `/go/<code>/…`) ; ni cookie, ni IP, ni identifiant de visiteur.
-- `ProspectCampaign`, `ProspectCampaignRecipient`, `ProspectOptOut` (ADMIN-ESPACE lot 5) : campagnes de prospection du propriétaire, adresses professionnelles destinataires (une fois par campagne, état d'envoi) et adresses ayant répondu STOP (plus jamais contactées). Aucun pixel ni suivi individuel des clics.
-- `PlatformPilot` : pilote accompagné suivi par le super-administrateur (ADMIN-ESPACE lot 4) : nom affiché, entreprise Annona liée facultative (`company_id`, `ON DELETE SET NULL`), contact (nom, e-mail, téléphone facultatifs), étape `PilotStage` alignée sur `docs/operations/pilot1` (Préparation, Activation, Première valeur, Usage représentatif, Consolidation et sortie, Poursuite payante, Arrêt), jours de début, fin prévue et fin réelle, première livraison saisie (sinon déduite à la lecture de la première livraison livrée de l'entreprise liée), créé par / modifié par (`SET NULL`).
-- `PlatformPilotNote` : note de suivi d'un pilote (texte, auteur, date), supprimée avec le pilote (`CASCADE`) ; auteur supprimé → note conservée sans auteur.
 
-Le schéma comprend 54 modèles Prisma (dont `CompanyCustomer`, fiche client sans accès propre à chaque entreprise, MAIL-PONT étape 4, `WaitlistFunnelDaily`, ADMIN-ESPACE lot 2, et `PlatformPilot` / `PlatformPilotNote`, ADMIN-ESPACE lot 4). Les anciens enum `INVOICED` et `PAID` existent encore dans les statuts commande/livraison pour compatibilité historique ; les services courants refusent de les utiliser comme transitions logistiques.
+Le schéma comprend 23 modèles Prisma.
 
 ## Relations essentielles
 
 ```text
 Company
 ├── User ── Role ── RolePermission ── Permission
-├── SaasSubscription
-├── SalesAttribution ── SalesCode / SalesCommissionEntry
-│     ├── SaasPlanAssignment ── SaasPlan ── SaasCatalogVersion
-│     ├── SaasSubscriptionItem ── SaasOption
-│     ├── SaasUsagePeriod ── SaasUsageEvent
-│     └── SaasSeatReservation
-├── Order ── OrderItem / OrderStop / OrderMessage
+├── Order ── OrderItem / OrderStop
 │     ├── Delivery ── DriverLocation / TrackingEvent
 │     └── Invoice
 ├── SupportTicket ── SupportTicketMessage
 ├── RecurringOrder
-├── OperationJob
-├── PlatformPilot ── PlatformPilotNote   (lien facultatif, suivi plateforme)
-└── DemoPoolEnvironment
+└── OperationJob
 ```
 
-Les liens vers un client, un chauffeur, une commande ou une livraison ne suffisent jamais seuls : l'entreprise doit aussi correspondre.
+Les liens vers un client, un livreur, une commande ou une livraison ne suffisent jamais seuls : l'entreprise doit aussi correspondre.
 
 ## Connexions
 

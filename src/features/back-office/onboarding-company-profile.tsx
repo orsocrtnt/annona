@@ -21,10 +21,9 @@ const fields = [
 
 interface CompanyOnboardingProfileProps {
   profile: OnboardingCompanyProfile;
-  readOnly: boolean;
 }
 
-export function CompanyOnboardingProfile({ profile, readOnly }: CompanyOnboardingProfileProps) {
+export function CompanyOnboardingProfile({ profile }: CompanyOnboardingProfileProps) {
   const [draft, setDraft] = useState(profile);
   const queryClient = useQueryClient();
   const save = useMutation({
@@ -44,7 +43,7 @@ export function CompanyOnboardingProfile({ profile, readOnly }: CompanyOnboardin
   });
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!save.isPending && !readOnly) save.mutate();
+    if (!save.isPending) save.mutate();
   };
 
   return (
@@ -56,7 +55,7 @@ export function CompanyOnboardingProfile({ profile, readOnly }: CompanyOnboardin
       <CardContent>
         <form onSubmit={submit} className="space-y-4" aria-label="Informations entreprise">
           {save.error && <Alert variant="destructive" role="alert"><AlertDescription>{save.error.message}</AlertDescription></Alert>}
-          <fieldset disabled={readOnly || save.isPending} className="grid min-w-0 gap-4 sm:grid-cols-2">
+          <fieldset disabled={save.isPending} className="grid min-w-0 gap-4 sm:grid-cols-2">
             <legend className="sr-only">Coordonnées de l’entreprise</legend>
             {fields.map((field) => (
               <FormField key={field.key} label={field.label} required={!("optional" in field)}>
@@ -73,7 +72,7 @@ export function CompanyOnboardingProfile({ profile, readOnly }: CompanyOnboardin
               </FormField>
             ))}
           </fieldset>
-          <Button type="submit" variant="brand" disabled={readOnly || save.isPending} loading={save.isPending}>Enregistrer les informations entreprise</Button>
+          <Button type="submit" variant="brand" disabled={save.isPending} loading={save.isPending}>Enregistrer les informations entreprise</Button>
         </form>
       </CardContent>
     </Card>

@@ -14,7 +14,7 @@ export default async function LoginPage({
   const view = resolveLoginView(await searchParams);
   return (
     <Suspense>
-      <AuthForm key={view.context} mode="login" loginContext={view.context} prefillDemo={view.prefillDemo} />
+      <AuthForm key={view.context} mode="login" loginContext={view.context} />
     </Suspense>
   );
 }

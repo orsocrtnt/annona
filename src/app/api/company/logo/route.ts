@@ -11,7 +11,6 @@ import { MAX_LOGO_UPLOAD_BYTES } from "@/lib/storage/company-logo";
 export const runtime = "nodejs";
 
 const LOGO_ERRORS: Record<string, { status: number; error: string }> = {
-  LOGO_DEMO_DISABLED: { status: 403, error: "Le logo n’est pas modifiable dans l’environnement de démonstration." },
   LOGO_TOO_LARGE: { status: 413, error: "Logo trop lourd : 2 Mo maximum." },
   LOGO_INVALID_IMAGE: { status: 400, error: "Format non pris en charge : envoyez une image PNG, JPEG ou WebP." },
   LOGO_COMPANY_NOT_FOUND: { status: 404, error: "Entreprise introuvable" },

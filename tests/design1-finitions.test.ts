@@ -23,8 +23,7 @@ test("DESIGN-1 : transparence réduite, aucun flou d'arrière-plan dans tous les
   assert.match(block, /:root\[data-theme\] \[class\*="backdrop-blur"\] \{\s*-webkit-backdrop-filter: none;\s*backdrop-filter: none;/);
 });
 
-test("DESIGN-1 : contrastes AA relevés par axe (barre de démo, pastille d'alerte de la carte)", () => {
-  assert.doesNotMatch(read("src/features/demo/demo-mode-bar.tsx"), /text-amber-800\/80/);
+test("DESIGN-1 : contrastes AA relevés (pastille d'alerte de la carte)", () => {
   const status = read("src/features/back-office/dispatch-map-status.ts");
   assert.doesNotMatch(status, /#a8560d/);
   assert.match(status, /text-\[#9a4e0c\]/);

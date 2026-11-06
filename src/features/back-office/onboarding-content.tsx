@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PageLoader } from "@/components/ui/loader";
 import { CompanyOnboardingProfile } from "@/features/back-office/onboarding-company-profile";
 import { CompanyLogoCard } from "@/features/back-office/company-logo-card";
-import { useAuthStore } from "@/stores/auth.store";
 import type { CompanyOnboardingStatus } from "@/domains/onboarding/onboarding.service";
 import { ONBOARDING_QUERY_KEY, fetchOnboardingStatus } from "@/features/back-office/onboarding-query";
 
@@ -18,7 +17,6 @@ type OnboardingPreference = { step: "collaborators"; skipped: boolean } | { step
 
 export function OnboardingContent() {
   const queryClient = useQueryClient();
-  const readOnly = useAuthStore((state) => state.saas?.canMutate === false);
   const preference = useMutation({
     mutationFn: async (body: OnboardingPreference) => {
       const response = await fetch("/api/onboarding", {
@@ -88,7 +86,7 @@ export function OnboardingContent() {
             variant="outline"
             size="sm"
             className="shrink-0"
-            disabled={readOnly || preference.isPending}
+            disabled={preference.isPending}
             onClick={() => savePreference({ step: "navigation", hidden: !data.hiddenFromNavigation })}
           >
             {data.hiddenFromNavigation ? "Afficher dans le menu" : "Masquer du menu"}
@@ -128,10 +126,8 @@ export function OnboardingContent() {
           )}
         </CardContent>
       </Card>
-
-      {readOnly && <Alert><AlertDescription>Ce compte est en lecture seule. Votre avancement reste consultable.</AlertDescription></Alert>}
-      <CompanyOnboardingProfile key={JSON.stringify(data.companyProfile)} profile={data.companyProfile} readOnly={readOnly} />
-      <CompanyLogoCard readOnly={readOnly} title="Ajoutez votre logo" optional />
+      <CompanyOnboardingProfile key={JSON.stringify(data.companyProfile)} profile={data.companyProfile} />
+      <CompanyLogoCard title="Ajoutez votre logo" optional />
       {preference.error && <Alert variant="destructive" role="alert"><AlertDescription>{preference.error.message}</AlertDescription></Alert>}
       <div className="space-y-3" aria-label="Étapes de démarrage">
         {data.steps.map((step, index) => (
@@ -157,7 +153,7 @@ export function OnboardingContent() {
                 </div>
               </div>
               {step.optional && !step.complete && (
-                <Button variant="ghost" size="sm" disabled={readOnly || preference.isPending} onClick={() => savePreference({ step: "collaborators", skipped: !step.skipped })}>
+                <Button variant="ghost" size="sm" disabled={preference.isPending} onClick={() => savePreference({ step: "collaborators", skipped: !step.skipped })}>
                   {step.skipped ? "Reprendre cette étape" : "Passer cette étape"}
                 </Button>
               )}

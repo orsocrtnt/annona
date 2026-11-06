@@ -24,8 +24,7 @@ import {
   searchTokens,
   type AdminSearchDatabase,
 } from "../src/domains/admin/search.service";
-import { createFunnelSourceLimiter } from "../src/domains/growth/waitlist-funnel.service";
-import { WAITLIST_MESSAGE } from "../src/domains/growth/contact.service";
+import { createMemoryRateLimiter } from "../src/lib/security/memory-rate-limit";
 import type { PlatformCompanyDetail } from "../src/domains/admin/companies.service";
 
 /* ====================== Fiche entreprise ====================== */
@@ -126,7 +125,6 @@ function fakeCompanyDb(calls: Call[], failing: string[] = []): CompanyFileDataba
         { id: "t1", subject: "Colis abîmé", status: "OPEN", priority: "HIGH", createdAt: new Date("2026-11-03T10:00:00.000Z") },
       ]),
     },
-    orderMessage: { findMany: track("orderMessage", "findMany", []) },
   };
 }
 
@@ -154,8 +152,6 @@ test("ADMIN-ESPACE fiche : lecture bornée à l'entreprise et au mois, select mi
   const [tickets] = byKey("supportTicket.findMany");
   assert.equal(tickets!.take, 5);
   assert.deepEqual((tickets!.where as { status: unknown }).status, { in: ["OPEN", "IN_PROGRESS"] });
-  const [incidents] = byKey("orderMessage.findMany");
-  assert.deepEqual((incidents!.where as { order: unknown }).order, { companyId: "company-1" });
 
   // Aucun champ sensible lu : ni e-mail, ni téléphone, ni identifiant de connexion, ni corps de message.
   const selects = JSON.stringify(calls.map((call) => call.args.select ?? null));
@@ -174,17 +170,15 @@ test("ADMIN-ESPACE fiche : lecture bornée à l'entreprise et au mois, select mi
     open: 1,
     latest: [{ id: "t1", subject: "Colis abîmé", status: "OPEN", priority: "HIGH", createdAt: "2026-11-03T10:00:00.000Z" }],
   });
-  assert.deepEqual(activity.incidents, { open: 0 });
   assert.equal(activity.series?.length, 30);
   assert.deepEqual(activity.series?.at(-1), { day: "2026-11-05", orders: 1, delivered: 1 });
   assert.equal(activity.series?.reduce((sum, day) => sum + day.orders, 0), 1);
 });
 
 test("ADMIN-ESPACE fiche : un bloc illisible devient « indisponible » sans faire tomber les autres", async () => {
-  const activity = await readCompanyActivity("company-1", fakeCompanyDb([], ["invoice.groupBy", "role.findMany", "orderMessage.findMany"]), NOW);
+  const activity = await readCompanyActivity("company-1", fakeCompanyDb([], ["invoice.groupBy", "role.findMany"]), NOW);
   assert.equal(activity.invoices, null);
   assert.equal(activity.users, null);
-  assert.equal(activity.incidents, null);
   assert.notEqual(activity.deliveries, null);
   assert.notEqual(activity.support, null);
   assert.notEqual(activity.series, null);
@@ -231,22 +225,16 @@ test("ADMIN-ESPACE recherche : requêtes bornées à 6 lignes, sans champ sensib
       assert.equal(select.includes(forbidden), false, `${type} ${forbidden}`);
     }
   }
-  // Comptes et entreprises de démonstration exclus de la recherche (ménage du 5 novembre 2026).
-  assert.deepEqual(queries.companies.where.isDemo, false);
   assert.deepEqual(queries.users.where, {
-    NOT: { company: { is: { isDemo: true } } },
     AND: [{ OR: [
       { firstName: { contains: "ada\\%", mode: "insensitive" } },
       { lastName: { contains: "ada\\%", mode: "insensitive" } },
       { email: { contains: "ada\\%", mode: "insensitive" } },
     ] }],
   });
-  assert.equal(queries.waitlist.where.message, WAITLIST_MESSAGE);
-  assert.deepEqual(queries.contact.where.NOT, { message: WAITLIST_MESSAGE });
   assert.deepEqual(Object.keys(queries.users.select).sort(), ["company", "email", "firstName", "id", "lastName", "role"]);
-  assert.deepEqual(Object.keys(queries.companies.select).sort(), ["id", "isDemo", "name", "status"]);
+  assert.deepEqual(Object.keys(queries.companies.select).sort(), ["id", "name", "status"]);
   assert.deepEqual(Object.keys(queries.orders.select).sort(), ["company", "id", "reference", "status"]);
-  assert.deepEqual(Object.keys(queries.waitlist.select).sort(), ["company", "email", "id", "name"]);
 });
 
 test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et groupe illisible", async () => {
@@ -255,7 +243,7 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
     company: {
       findMany: async (args) => {
         seen.push(args);
-        return Array.from({ length: 6 }, (_, index) => ({ id: `c${index}`, name: `Acme ${index}`, status: "ACTIVE", isDemo: index === 0 }));
+        return Array.from({ length: 6 }, (_, index) => ({ id: `c${index}`, name: `Acme ${index}`, status: "ACTIVE" }));
       },
     },
     user: {
@@ -265,21 +253,14 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
       ],
     },
     order: { findMany: async () => { throw new Error("down"); } },
-    contactMessage: {
-      findMany: async (args) => (args.where as { message?: string }).message === WAITLIST_MESSAGE
-        ? [{ id: "w1", name: "Léa", company: "Transports L", email: "lea+test@exemple.fr" }]
-        : [{ id: "m1", name: "Marc", company: null, email: "marc@exemple.fr" }],
-    },
   };
   const result = await searchPlatform({ q: "acme" }, db);
   assert.equal(result.q, "acme");
-  assert.deepEqual(result.groups.map((group) => group.type), ["companies", "pilots", "users", "orders", "waitlist", "contact"]);
-  const [companies, pilots, users, orders, waitlist, contact] = result.groups;
-  // ADMIN-ESPACE lot 4 : base sans table des pilotes (ancienne copie) → groupe « Indisponible », pas d'erreur.
-  assert.deepEqual(pilots, { type: "pilots", label: "Pilotes", items: null, hasMore: false });
+  assert.deepEqual(result.groups.map((group) => group.type), ["companies", "users", "orders"]);
+  const [companies, users, orders] = result.groups;
   assert.equal(companies!.items?.length, 5);
   assert.equal(companies!.hasMore, true);
-  assert.equal(companies!.items?.[0]?.badge, "Démo");
+  assert.equal(companies!.items?.[0]?.badge, null);
   assert.equal(companies!.items?.[0]?.href, "/companies/c0");
   assert.equal(seen.length, 1);
   assert.equal(users!.hasMore, false);
@@ -287,9 +268,6 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
   assert.equal(users!.items?.[0]?.detail, "ada@acme.fr · Acme");
   assert.equal(users!.items?.[1]?.href, "/admin/users?q=Dupr%C3%A9%20%C3%84");
   assert.deepEqual(orders, { type: "orders", label: "Commandes", items: null, hasMore: false });
-  assert.equal(waitlist!.items?.[0]?.href, "/admin/waitlist?q=lea%2Btest%40exemple.fr");
-  assert.equal(contact!.items?.[0]?.href, "/admin/contact");
-  assert.equal(contact!.items?.[0]?.detail, "marc@exemple.fr");
   for (const group of result.groups) {
     for (const item of group.items ?? []) {
       assert.deepEqual(Object.keys(item).sort(), ["badge", "detail", "href", "id", "title", "type"]);
@@ -298,7 +276,7 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
 });
 
 test("ADMIN-ESPACE recherche : 60 recherches par minute et par compte", () => {
-  const limiter = createFunnelSourceLimiter({ limit: 60, windowMs: 60_000 });
+  const limiter = createMemoryRateLimiter({ limit: 60, windowMs: 60_000 });
   for (let index = 0; index < 60; index += 1) assert.equal(allowAdminSearch("actor-1", 1_000, limiter), true);
   assert.equal(allowAdminSearch("actor-1", 1_000, limiter), false);
   assert.equal(allowAdminSearch("actor-2", 1_000, limiter), true);
@@ -332,12 +310,6 @@ function loadRoute(
         },
         requireRole: (_context: unknown, roles: string[]) =>
           roles.includes(role) ? null : NextResponse.json({ error: "Accès refusé" }, { status: 403 }),
-      };
-      if (id === "@/lib/api/platform-access") return {
-        gatePlatformRead: async (_context: unknown, denied: Response | null, resource: string) => {
-          calls.push(`audit:${resource}:${denied ? "DENIED" : "ALLOWED"}`);
-          return denied;
-        },
       };
       if (id === service) return serviceExports;
       throw new Error(`Unexpected dependency ${id}`);
@@ -374,14 +346,14 @@ test("ADMIN-ESPACE routes : recherche refusée sans session (401) et aux autres 
     const calls: string[] = [];
     const denied = await loadRoute(file, service, role, calls, searchService(calls)).GET!(watchedRequest("http://local/api/admin/search?q=acme", calls));
     assert.equal(denied.status, 403, role);
-    assert.deepEqual(calls, ["staff", "audit:OVERVIEW:DENIED"], role);
+    assert.deepEqual(calls, ["staff"], role);
   }
 
   const allowed: string[] = [];
   const ok = await loadRoute(file, service, "SUPER_ADMIN", allowed, searchService(allowed)).GET!(watchedRequest("http://local/api/admin/search?q=acme", allowed));
   assert.equal(ok.status, 200);
   assert.equal(ok.headers.get("Cache-Control"), "no-store");
-  assert.deepEqual(allowed, ["staff", "audit:OVERVIEW:ALLOWED", "url", "limit", "service"]);
+  assert.deepEqual(allowed, ["staff", "url", "limit", "service"]);
   assert.deepEqual((await ok.json()).data, { q: "acme", groups: [] });
 
   const invalid: string[] = [];
@@ -417,7 +389,7 @@ test("ADMIN-ESPACE routes : fiche entreprise refusée (401, 403), 500 sans déta
   const denied: string[] = [];
   const forbidden = await loadRoute(file, service, "MINI_ADMIN", denied, fileService(denied)).GET!(new Request("http://local"), { params: params() });
   assert.equal(forbidden.status, 403);
-  assert.deepEqual(denied, ["staff", "audit:COMPANY_DETAIL:DENIED"]);
+  assert.deepEqual(denied, ["staff"]);
 
   const failing: string[] = [];
   const failed = await loadRoute(file, service, "SUPER_ADMIN", failing, fileService(failing, true)).GET!(new Request("http://local"), { params: params() });
@@ -441,13 +413,10 @@ test("ADMIN-ESPACE écrans : recherche réservée au super-administrateur, clavi
   // Les pages ouvertes depuis la recherche ou la fiche reprennent `?q=` (sous Suspense pour useSearchParams).
   for (const file of [
     "src/app/(back-office)/admin/support/page.tsx",
-    "src/app/(back-office)/admin/incidents/page.tsx",
     "src/app/(back-office)/admin/users/page.tsx",
   ]) {
     const source = readFileSync(file, "utf8");
     assert.equal(source.includes("useUrlSearchQuery("), true, file);
     assert.equal(source.includes("<Suspense fallback={<PageSkeleton />}>"), true, file);
   }
-  assert.equal(readFileSync("src/features/admin/waitlist/waitlist-list.tsx", "utf8").includes("useUrlSearchQuery("), true);
-  assert.equal(readFileSync("src/app/(back-office)/admin/waitlist/page.tsx", "utf8").includes("<Suspense"), true);
 });

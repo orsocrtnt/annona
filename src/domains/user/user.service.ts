@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { Prisma, type SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { settingsSection } from "@/lib/database/claimed-settings-update";
@@ -10,8 +9,6 @@ import { COMPANY_USERS_TAKE } from "@/lib/query/list-limits";
 import type { CreateUserInput, UpdateMiniAdminInput, UpdateProfileInput } from "@/lib/validations/user";
 import { filterMiniAdminPermissions, buildMiniAdminSettings, canManageMiniAdmins } from "@/lib/permissions/mini-admin";
 import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
-import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
-import { releaseSaasSeat, reserveSaasSeat } from "@/domains/saas/saas.service";
 
 type RoleRecord = {
   id: string;
@@ -214,7 +211,6 @@ export async function createUserByAdmin(
 
   const redirectTo = getPasswordLinkRedirect();
   const supabase = createAdminClient();
-  const reservationKey = await reserveSaasSeat(companyId, role.systemRole, randomUUID());
 
   const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(input.email, {
     redirectTo,
@@ -225,7 +221,6 @@ export async function createUserByAdmin(
   });
 
   if (authError || !authData.user) {
-    await releaseSaasSeat(reservationKey);
     const msg = authError?.message?.toLowerCase() ?? "";
     if (msg.includes("already") || msg.includes("exists") || msg.includes("registered")) {
       throw new Error("EMAIL_EXISTS");
@@ -256,11 +251,9 @@ export async function createUserByAdmin(
         },
         include: { company: true },
       });
-      await releaseSaasSeat(reservationKey, tx);
       return created;
     });
   } catch {
-    await releaseSaasSeat(reservationKey);
     // Le fournisseur peut avoir renvoyé une ancienne invitation : ne pas supprimer ce compte.
     // Aucun accès applicatif sans profil ; l’administrateur peut retenter la création.
     throw new Error("INVITATION_PROFILE_FAILED");
@@ -305,10 +298,6 @@ export async function deleteUserByAdmin(
 
   const role = (await fetchRolesByIds([user.roleId])).get(user.roleId);
   if (!role) throw new Error("USER_NOT_FOUND");
-
-  if (isDemoLockedAccountEmail(user.email)) {
-    throw new Error("DEMO_ACCOUNT_LOCKED");
-  }
 
   if (!DELETABLE_ROLES.includes(role.systemRole as (typeof DELETABLE_ROLES)[number])) {
     throw new Error("ROLE_NOT_DELETABLE");

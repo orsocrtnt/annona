@@ -38,8 +38,6 @@ const TABLES_IN_RESTORE_ORDER = [
   "invoices",
   "support_tickets",
   "support_ticket_messages",
-  "order_messages",
-  "order_thread_reads",
   "client_notifications",
 ] as const;
 
@@ -170,7 +168,6 @@ async function createFixture(prisma: PrismaClient, suffix: string, proofPath: st
   const recurringId = `ops03a_recurring_${suffix}`;
   const orderId = `ops03a_order_${suffix}`;
   const deliveryId = `ops03a_delivery_${suffix}`;
-  const messageId = `ops03a_message_${suffix}`;
   const now = new Date("2026-10-21T16:00:00.000Z");
   const roles = await prisma.role.findMany({
     where: { slug: { in: ["company-admin", "client", "driver"] } },
@@ -272,9 +269,7 @@ async function createFixture(prisma: PrismaClient, suffix: string, proofPath: st
     await tx.invoice.create({ data: { id: `ops03a_invoice_${suffix}`, reference: `OPS03A-FAC-${suffix}`, status: "PENDING", amount: new Prisma.Decimal("42.50"), lineItems: [{ label: "Livraison OPS-03A", amount: 42.5 }], companyId, orderId, customerId: clientId, createdAt: now, updatedAt: now } });
     await tx.supportTicket.create({ data: { id: `ops03a_ticket_${suffix}`, subject: "Test restauration", message: "Fixture OPS-03A", status: "OPEN", priority: "NORMAL", companyId, customerId: clientId, relatedOrderId: orderId, relatedDeliveryId: deliveryId, createdAt: now, updatedAt: now } });
     await tx.supportTicketMessage.create({ data: { id: `ops03a_ticket_message_${suffix}`, body: "Message restauré", isStaff: true, ticketId: `ops03a_ticket_${suffix}`, authorId: adminId, createdAt: now } });
-    await tx.orderMessage.create({ data: { id: messageId, orderId, authorId: clientId, authorName: "OPS03A Client", authorRole: "CLIENT", body: "Preuve reçue", kind: "QUESTION", internal: false, requestKey: `ops03a-message-${suffix}`, createdAt: now } });
-    await tx.orderThreadRead.create({ data: { id: `ops03a_read_${suffix}`, orderId, userId: adminId, seenAt: now, seenId: messageId } });
-    await tx.clientNotification.create({ data: { id: `ops03a_notification_${suffix}`, type: "ORDER_MESSAGE", title: "Nouveau message", body: "Message OPS-03A", href: `/orders/${orderId}`, orderMessageId: messageId, userId: adminId, createdAt: now } });
+    await tx.clientNotification.create({ data: { id: `ops03a_notification_${suffix}`, type: "ORDER_MESSAGE", title: "Nouveau message", body: "Message OPS-03A", href: `/orders/${orderId}`, userId: adminId, createdAt: now } });
   }, { timeout: 30_000 });
   return { companyId, orderId, deliveryId };
 }

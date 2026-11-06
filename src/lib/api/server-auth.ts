@@ -2,22 +2,19 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { createClient } from "@/services/supabase/server";
-import { getUserByAuthId } from "@/domains/user/user.service";
+import { extractPermissionSlugs, getUserByAuthId } from "@/domains/user/user.service";
 import { syncUserFromSupabase, UserNotProvisionedError } from "@/domains/auth/auth.service";
 import { hasPermission } from "@/lib/permissions/rbac";
 import type { PermissionSlug } from "@/lib/permissions/rbac";
 import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
-import { resolveAuthUserWithDemoPersona } from "@/domains/demo/demo-auth.service";
 import { isAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
-import { isDemoLoginEmail } from "@/lib/demo/constants";
 import { ANNONA_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
 
 export interface ServerAuthContext {
   authId: string;
   user: UserWithRole;
   permissions: string[];
-  isDemoSession: boolean;
 }
 
 async function resolveUserFromAuthId(
@@ -37,25 +34,16 @@ async function resolveUserFromAuthId(
   }
   if (!user || !isAccountActive(user)) return null;
 
-  let resolved;
-  try {
-    resolved = await resolveAuthUserWithDemoPersona(authId, user);
-  } catch (error) {
-    if (error instanceof AccountUnavailableError) return null;
-    throw error;
-  }
-  if (!isAccountActive(resolved.user)) return null;
   return {
     authId,
-    user: resolved.user,
-    permissions: resolved.permissions,
-    isDemoSession: user.company?.isDemo === true && isDemoLoginEmail(user.email),
+    user,
+    permissions: extractPermissionSlugs(user),
   };
 }
 
 /**
  * Contexte relu en base pour un authId déjà vérifié (JWT validé par le middleware) :
- * compte et entreprise actifs, rôle, permissions et persona de démo. Ne lit jamais
+ * compte et entreprise actifs, rôle et permissions. Ne lit jamais
  * l'en-tête interne : le middleware l'appelle avec l'authId qu'il vient de valider.
  */
 export async function resolveServerAuthForAuthId(authId: string): Promise<ServerAuthContext | null> {

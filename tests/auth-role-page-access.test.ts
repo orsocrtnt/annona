@@ -43,8 +43,8 @@ function discoverAllPages(): string[] {
 
 /** Seules pages publiques admises : toute nouvelle page doit être couverte par la table ou ajoutée ici. */
 const PUBLIC_PAGES = [
-  "/", "/commander/x", "/suivi/x", "/contact", "/demonstration", "/demo", "/fonctionnalites", "/tarifs", "/mentions-legales", "/confidentialite",
-  "/login", "/login/client", "/login/driver", "/register", "/register/client", "/forgot-password", "/reset-password",
+  "/", "/mentions-legales", "/confidentialite",
+  "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password",
 ];
 
 // Matrice attendue rôle × espace (comptes de référence, mini-admin avec tous ses modules).
@@ -55,7 +55,6 @@ const SPACES: Record<string, SystemRole[]> = {
   "/dashboard": ["COMPANY_ADMIN", "MINI_ADMIN"],
   "/dashboard/analytics": ["COMPANY_ADMIN", "MINI_ADMIN"],
   "/dashboard/orders": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-  "/dashboard/orders/intake": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dashboard/orders/new": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dashboard/clients/x": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dashboard/drivers": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
@@ -63,13 +62,11 @@ const SPACES: Record<string, SystemRole[]> = {
   "/dispatch": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dispatch/map": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dispatch/drivers": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
-  "/dispatch/intake": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/dispatch/new-order": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/support": ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"],
   "/users": ["COMPANY_ADMIN", "MINI_ADMIN"],
   "/settings": ["COMPANY_ADMIN", "MINI_ADMIN"],
   "/settings/billing": ["COMPANY_ADMIN", "MINI_ADMIN"],
-  "/settings/subscription": ["COMPANY_ADMIN"],
   "/onboarding": ["COMPANY_ADMIN"],
   "/portal/orders": ["CLIENT"],
   "/portal/invoices/x": ["CLIENT"],
@@ -125,7 +122,6 @@ test("AUTH-ROLE mini-admin : un écran hors de ses modules est refusé côté se
   assert.deepEqual(evaluatePageAccess("/dashboard/deliveries/x", dispatch), { kind: "allow" });
   assert.deepEqual(evaluatePageAccess("/dispatch/drivers", dispatch), { kind: "redirect", location: "/dispatch" });
   // Saisie de commande : la permission orders:create vient du module Commandes, pas du Dispatch.
-  assert.deepEqual(evaluatePageAccess("/dispatch/intake", dispatch), { kind: "redirect", location: "/dispatch" });
   assert.deepEqual(evaluatePageAccess("/dispatch/new-order", dispatch), { kind: "redirect", location: "/dispatch" });
   assert.deepEqual(evaluatePageAccess("/dashboard/orders/new", dispatch), { kind: "redirect", location: "/dispatch" });
   const orders = subject("MINI_ADMIN", ["orders"]);
@@ -150,9 +146,9 @@ test("AUTH-ROLE permissions : le rôle seul ne suffit pas, la permission relue e
 
 test("AUTH-ROLE inventaire : chaque page de src/app est publique (liste fermée) ou couverte par une règle", () => {
   const pages = discoverAllPages();
-  assert.ok(pages.length >= 61, `pages trouvées : ${pages.length}`);
+  assert.ok(pages.length >= 51, `pages trouvées : ${pages.length}`);
   const protectedPages = pages.filter((page) => !PUBLIC_PAGES.includes(page));
-  assert.ok(protectedPages.length >= 49, `pages protégées : ${protectedPages.length}`);
+  assert.ok(protectedPages.length >= 43, `pages protégées : ${protectedPages.length}`);
   for (const page of protectedPages) {
     assert.equal(isProtectedPagePath(page), true, `page ni publique ni protégée : ${page}`);
     assert.ok(getPageAccessRule(page), page);
@@ -209,7 +205,6 @@ function loadMiddleware(session: { id: string } | null, auth: Auth | Error, refr
       },
     },
     "@/lib/constants": { AUTH_ROUTES: ["/login", "/register", "/forgot-password", "/reset-password", "/login/client", "/login/driver"] },
-    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "annona-demo-persona", DEMO_SESSION_COOKIE: "annona-demo-session" },
     "@/lib/security/origin-check": { isCrossOriginMutation: () => false, isOriginCheckExempt: () => false },
     "@/lib/permissions/page-access": pageAccess,
     "@/lib/api/server-auth": {
@@ -294,7 +289,7 @@ test("AUTH-ROLE middleware : anonyme, compte inactif, connexion et refus explici
   const noModuleLogin = await call({ id: "auth-mini" }, asRole("MINI_ADMIN", buildMiniAdminSettings("x", [])), "/login");
   assert.equal(noModuleLogin.status, 200);
 
-  const publicPage = await call({ id: "auth-client" }, asRole("CLIENT"), "/demonstration");
+  const publicPage = await call({ id: "auth-client" }, asRole("CLIENT"), "/mentions-legales");
   assert.equal(publicPage.status, 200);
   assert.deepEqual(publicPage.resolved, []);
 });
@@ -305,12 +300,9 @@ test("AUTH-ROLE middleware : cookies rafraîchis conservés, no-store, base en p
   assert.equal(redirect.status, 307);
   assert.equal(redirect.headers.get("cache-control"), "no-store");
   assert.match(redirect.headers.get("set-cookie") ?? "", /sb-x-auth-token=rotated.*HttpOnly/i);
-  // Rafale de préchargements : une seule relecture en base pour la même session et persona…
+  // Rafale de préchargements : une seule relecture en base pour la même session.
   await Promise.all(["/dispatch", "/driver", "/users"].map((path) => middleware(new NextRequest(`http://localhost:3110${path}`))));
   assert.deepEqual(resolved, ["auth-client"]);
-  // … mais un changement de persona de démo relit la base.
-  await middleware(new NextRequest("http://localhost:3110/portal", { headers: { cookie: "annona-demo-persona=driver" } }));
-  assert.deepEqual(resolved, ["auth-client", "auth-client"]);
 
   const down = loadMiddleware({ id: "auth-x" }, new Error("db down"), true);
   const failed = await down.middleware(new NextRequest("http://localhost:3110/dashboard"));

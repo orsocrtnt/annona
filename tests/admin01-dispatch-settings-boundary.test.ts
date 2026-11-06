@@ -89,5 +89,4 @@ test("ADMIN-1 règles dispatch : visibilité et refus anticipés", async () => {
   assert.equal(screen.includes("canSeeDispatchRules"), true);
   assert.equal(screen.includes("activeView === \"rules\" ? ("), true);
   assert.equal(screen.includes("File d&apos;attente"), true);
-  assert.equal(screen.includes("useRunAutoDispatch"), true);
 });

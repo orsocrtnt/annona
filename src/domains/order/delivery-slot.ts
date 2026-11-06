@@ -1,4 +1,4 @@
-import { parisInstant } from "@/domains/order-intake/order-intake.deadline";
+import { parisInstant } from "@/lib/time/paris";
 import { WHOLE_DAY_DUE_TIME } from "@/lib/orders/whole-day-due";
 import { deliverySlotKey, type CompanyDeliverySlots, type DeliverySlot } from "@/lib/validations/delivery-slots";
 
@@ -43,12 +43,6 @@ export function recurringOccurrenceDelivery(settings: CompanyDeliverySlots, inpu
   return resolved?.ok && resolved.deliverySlotStart
     ? { requestedDeliveryDate: resolved.requestedDeliveryDate!, deliverySlotStart: resolved.deliverySlotStart }
     : { requestedDeliveryDate: input.date };
-}
-
-/** Message IA : créneau qui contient l'heure trouvée, sinon le premier qui finit après elle. */
-export function suggestDeliverySlot(slots: DeliverySlot[], time: string | null | undefined): DeliverySlot | null {
-  if (!time) return null;
-  return slots.find((slot) => slot.start <= time && time <= slot.end) ?? slots.find((slot) => slot.end >= time) ?? null;
 }
 
 export type ResolvedDeliverySlot =

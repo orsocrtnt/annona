@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
-import { gatePlatformRead } from "@/lib/api/platform-access";
 import { listPlatformUsers, parsePlatformUserListParams } from "@/domains/admin/users.service";
 
 export async function GET(request: Request) {
   const auth = await requireStaffRole("dashboard:admin");
   if ("error" in auth) return auth.error;
   const denied = requireRole(auth.context, ["SUPER_ADMIN"]);
-  const blocked = await gatePlatformRead(auth.context, denied, "USERS");
-  if (blocked) return blocked;
+  if (denied) return denied;
 
   const parsed = parsePlatformUserListParams(new URL(request.url).searchParams);
   if ("error" in parsed) {

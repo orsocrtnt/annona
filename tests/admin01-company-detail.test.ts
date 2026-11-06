@@ -8,7 +8,7 @@ import { getPlatformCompany, platformCompanyDetailSelect, toPlatformCompanyDetai
 
 const now = new Date("2026-10-25T12:00:00.000Z");
 
-test("ADMIN-1 détail entreprise : identité, abonnement et chiffre d'affaires, sans réglages ni fournisseur", async () => {
+test("ADMIN-1 détail entreprise : identité et chiffre d'affaires, sans réglages", async () => {
   let seen: { where: { id: string }; select: ReturnType<typeof platformCompanyDetailSelect> } | undefined;
   const row = await getPlatformCompany("company-1", {
     company: {
@@ -20,7 +20,6 @@ test("ADMIN-1 détail entreprise : identité, abonnement et chiffre d'affaires, 
           legalName: "Acme SAS",
           slug: "acme",
           status: "ACTIVE" as const,
-          isDemo: false,
           email: "contact@acme.fr",
           phone: "0102030405",
           address: "1 rue",
@@ -34,23 +33,6 @@ test("ADMIN-1 détail entreprise : identité, abonnement et chiffre d'affaires, 
           createdAt: now,
           _count: { users: 2, deliveries: 3 },
           users: [{ firstName: "Ada", lastName: "Lovelace", email: "ada@acme.fr", phone: null }],
-          saasSubscription: {
-            status: "PAST_DUE" as const,
-            kind: "COMMERCIAL" as const,
-            billingInterval: "MONTHLY" as const,
-            currentPeriodStart: now,
-            currentPeriodEnd: null,
-            cancelAtPeriodEnd: false,
-            endedAt: null,
-            premiumDiscoveryEndsAt: null,
-            planAssignments: [{ plan: { code: "PRO" as const, name: "Pro", monthlyPriceCents: 17900, annualPriceCents: 179000, includedDriverSeats: 5, unlimitedDriverSeats: false, maxDriverSeats: 6 } }],
-            items: [
-              { code: "AUTO_DISPATCH", kind: "OPTION" as const, quantity: 1, unitPriceCents: 0, option: { name: "Affectation automatique" } },
-              { code: "EXTRA_ADMIN", kind: "ADMIN_SEAT" as const, quantity: 1, unitPriceCents: 1200, option: { name: "Admin supplémentaire" } },
-              { code: "EXTRA_DRIVER", kind: "DRIVER_SEAT" as const, quantity: 3, unitPriceCents: 900, option: null },
-            ],
-            usagePeriods: [{ startsAt: new Date("2026-10-01T00:00:00.000Z"), endsAt: new Date("2026-11-01T00:00:00.000Z"), includedOrders: 100, orderCount: 10, overageCount: 0 }],
-          },
         };
       },
     },
@@ -60,26 +42,16 @@ test("ADMIN-1 détail entreprise : identité, abonnement et chiffre d'affaires, 
         { status: "OVERDUE" as const, _sum: { amount: "20" } },
       ],
     },
-  }, now);
-  assert.deepEqual(seen?.select, platformCompanyDetailSelect(now));
+  });
+  assert.deepEqual(seen?.select, platformCompanyDetailSelect());
   assert.equal(seen?.where.id, "company-1");
   assert.equal(row?.legalName, "Acme SAS");
   assert.equal(row?.admin?.name, "Ada Lovelace");
   assert.equal(row?.revenue.paidCents, 10050);
   assert.equal(row?.revenue.overdueCents, 2000);
   assert.equal(row?.revenue.pendingCents, 0);
-  assert.equal(row?.subscription?.followUp, "REMIND");
-  assert.equal(row?.subscription?.amountCents, 19100 + 2700);
-  // ADMIN-ESPACE lot 3 : période de consommation et livreurs prévus (5 + 3 places, plafonnés à 6).
-  assert.deepEqual(row?.subscription?.orders, {
-    consumed: 10, included: 100, overage: 0,
-    periodStartsAt: "2026-10-01T00:00:00.000Z", periodEndsAt: "2026-11-01T00:00:00.000Z",
-  });
-  assert.deepEqual(row?.subscription?.drivers, { limit: 6, unlimited: false, known: true });
-  assert.deepEqual(row?.subscription?.options, [{ code: "AUTO_DISPATCH", name: "Affectation automatique", quantity: 1, unitPriceCents: 0 }]);
-  assert.equal(row?.subscription?.seats.ADMIN_SEAT, 1);
-  const select = JSON.stringify(platformCompanyDetailSelect(now));
-  for (const forbidden of ["settings", "snapshot", "providerCustomerId", "providerSubscriptionId", "logoUrl"]) {
+  const select = JSON.stringify(platformCompanyDetailSelect());
+  for (const forbidden of ["settings", "logoUrl"]) {
     assert.equal(select.includes(forbidden), false, forbidden);
   }
   assert.equal(await getPlatformCompany("missing", {
@@ -89,10 +61,10 @@ test("ADMIN-1 détail entreprise : identité, abonnement et chiffre d'affaires, 
   assert.equal(toPlatformCompanyDetail.length, 2);
 });
 
-test("ADMIN-1 détail entreprise : journal avant paramètres, 404 et lecture seule", async () => {
+test("ADMIN-1 détail entreprise : rôle avant paramètres, 404 et lecture seule", async () => {
   const source = readFileSync("src/app/api/admin/companies/[id]/route.ts", "utf8");
   assert.deepEqual([...source.matchAll(/export\s+(?:async\s+)?function\s+(GET|POST|PATCH|PUT|DELETE)\b/g)].map((match) => match[1]), ["GET"]);
-  assert.ok(source.indexOf("gatePlatformRead") < source.indexOf("context.params"));
+  assert.ok(source.indexOf("requireRole") < source.indexOf("context.params"));
   assert.equal(source.includes("request.url"), false);
 
   const module = { exports: {} as { GET?: (request: Request, context: { params: Promise<{ id: string }> }) => Promise<Response> } };
@@ -108,14 +80,6 @@ test("ADMIN-1 détail entreprise : journal avant paramètres, 404 et lecture seu
       if (id === "@/lib/api/auth-guard") return {
         requireStaffRole: async () => ({ context: { user: { id: "actor-1", role: { systemRole: "SUPER_ADMIN" } } } }),
         requireRole: () => null,
-      };
-      if (id === "@/lib/api/platform-access") return {
-        gatePlatformRead: async (...args: unknown[]) => {
-          calls.push("audit");
-          assert.equal(JSON.stringify(args).includes("company-1"), false);
-          assert.equal(args[2], "COMPANY_DETAIL");
-          return null;
-        },
       };
       if (id === "@/domains/admin/company-file.service") return {
         getPlatformCompanyFile: async (id: string) => {
@@ -138,13 +102,13 @@ test("ADMIN-1 détail entreprise : journal avant paramètres, 404 et lecture seu
   assert.equal(missing.status, 404);
   assert.equal(missing.headers.get("Cache-Control"), "no-store");
   assert.equal((await missing.json()).error, "Entreprise introuvable");
-  assert.deepEqual(calls, ["audit", "params", "service"]);
+  assert.deepEqual(calls, ["params", "service"]);
 
   company = {
-    id: "company-1", name: "Acme", legalName: null, slug: "acme", status: "ACTIVE", isDemo: false,
+    id: "company-1", name: "Acme", legalName: null, slug: "acme", status: "ACTIVE",
     email: null, phone: null, address: null, city: null, country: "FR", siren: null, siret: null,
     billingAddress: null, billingPostalCode: null, billingCity: null, createdAt: now.toISOString(),
-    userCount: 2, deliveryCount: 3, admin: null, revenue: { paidCents: 0, pendingCents: 0, overdueCents: 0 }, subscription: null,
+    userCount: 2, deliveryCount: 3, admin: null, revenue: { paidCents: 0, pendingCents: 0, overdueCents: 0 },
     activity: { users: null },
   };
   calls.length = 0;
@@ -153,8 +117,8 @@ test("ADMIN-1 détail entreprise : journal avant paramètres, 404 et lecture seu
   assert.equal(found.headers.get("Cache-Control"), "no-store");
   assert.deepEqual(Object.keys((await found.json()).data).sort(), [
     "address", "admin", "billingAddress", "billingCity", "billingPostalCode", "city", "country", "createdAt",
-    "deliveryCount", "email", "id", "isDemo", "legalName", "name", "phone", "revenue", "siren", "siret", "slug",
-    "status", "subscription", "userCount", "activity",
+    "deliveryCount", "email", "id", "legalName", "name", "phone", "revenue", "siren", "siret", "slug",
+    "status", "userCount", "activity",
   ].sort());
 });
 
@@ -178,8 +142,8 @@ test("ADMIN-1 détail entreprise : l'écran reste en lecture seule et ses liens 
   }
   // Liens : liste des entreprises et pages plateforme filtrées par le nom de l'entreprise, rien d'autre.
   const paths = [...new Set([...view.matchAll(/"(\/[a-z/-]*)"/g)].map((match) => match[1]))].sort();
-  assert.deepEqual(paths, ["/admin/incidents", "/admin/support", "/admin/users", "/companies"]);
-  for (const present of ["CA encaissé", "HT enregistré", "À relancer", "Aucune option", "Indisponible.", "Démonstration"]) {
+  assert.deepEqual(paths, ["/admin/support", "/admin/users", "/companies"]);
+  for (const present of ["CA encaissé", "Indisponible."]) {
     assert.equal(view.includes(present), true, present);
   }
   assert.equal(list.includes("href={`/companies/${row.id}`}"), true);

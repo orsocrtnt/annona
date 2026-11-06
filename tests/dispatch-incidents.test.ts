@@ -29,28 +29,22 @@ test("retard : la commande au jour ne l'est qu'une fois la journée passée", ()
   assert.equal(one({ deadline: YESTERDAY_WHOLE_DAY })?.kind, "LATE");
 });
 
-test("une mission démarrée en retard ne propose pas de remplacement", () => {
+test("une mission démarrée en retard reste un retard", () => {
   const incident = one({ status: "IN_DELIVERY", missionStarted: true, deadline: minutes(-5) });
   assert.equal(incident?.kind, "LATE");
-  assert.equal(incident?.canPropose, false);
-  assert.equal(incident?.replacesDriverId, null);
 });
 
 test("livreur indisponible : compte inactif, ou hors service à l'approche de l'échéance", () => {
   const inactive = one({ driverActive: false });
   assert.equal(inactive?.kind, "DRIVER_UNAVAILABLE");
-  assert.equal(inactive?.replacesDriverId, "u1");
-  assert.equal(inactive?.canPropose, true);
   assert.equal(one({ driverOnDuty: false, deadline: minutes(90) })?.kind, "DRIVER_OFF_DUTY");
   assert.equal(one({ driverOnDuty: false, deadline: minutes(-5) })?.kind, "DRIVER_OFF_DUTY");
   assert.equal(one({ driverOnDuty: false, deadline: minutes(180) }), undefined, "trop tôt pour alerter");
 });
 
-test("commande urgente sans livreur : proposition sans remplacement", () => {
+test("commande urgente sans livreur", () => {
   const urgent = one({ status: "PENDING", driverId: null, driverName: null, driverActive: false, driverOnDuty: false, deadline: minutes(45) });
   assert.equal(urgent?.kind, "DUE_SOON_UNASSIGNED");
-  assert.equal(urgent?.canPropose, true);
-  assert.equal(urgent?.replacesDriverId, null);
   assert.equal(one({ status: "PENDING", driverId: null, deadline: minutes(90) }), undefined);
 });
 
@@ -63,15 +57,6 @@ test("tri par gravité puis échéance, sans aucune coordonnée en sortie", () =
   ], NOW);
   assert.deepEqual(list.map((incident) => incident.deliveryId), ["absent", "plustard", "tard", "urgent"]);
   assert.ok(!/latitude|longitude|accuracy/i.test(JSON.stringify(list)));
-});
-
-test("le remplacement refuse une livraison changée entre-temps et n'exclut que le livreur remplacé", () => {
-  const service = readFileSync("src/domains/delivery/delivery.service.ts", "utf8");
-  assert.match(service, /options\?\.expectedDriverId && !alreadyThisDriver && current\.driverId !== options\.expectedDriverId/);
-  const dispatch = readFileSync("src/domains/delivery/auto-dispatch.service.ts", "utf8");
-  assert.match(dispatch, /delivery\.driverId === replacesDriverId\s+&& !delivery\.missionStartedAt/);
-  assert.match(dispatch, /\.filter\(\(driver\) => driver\.id !== delivery\.driverId\)/);
-  assert.match(dispatch, /replacesDriverId \? \{ expectedDriverId: replacesDriverId \} : \{ expectUnassigned: true \}/);
 });
 
 test("la route exige un rôle de dispatch et ne lit pas les positions", () => {

@@ -9,7 +9,7 @@ Avant de modifier quoi que ce soit, lis `AGENTS.md`, la tâche concernée dans `
 
 Travaille jusqu'au résultat vérifié : inspecte l'existant, précise les scénarios, implémente, ajoute uniquement les tests utiles, exécute les contrôles adaptés, corrige les échecs, reteste, rédige la preuve dans le dépôt et mets à jour la seule TODO technique `TODO.md`. Exécute `npm run todo:progress` si elle a changé. Ne maintiens aucune copie externe. Une présence dans le code ou une réponse HTTP isolée ne suffit pas.
 
-Ne cherche, ne lis et ne modifie aucun document sur Google Drive/Docs/Sheets ou Notion pour te remettre en contexte. Consulte uniquement le dépôt (`AGENTS.md`, `TODO.md`, `docs/README.md`, `docs/`). Si une pièce externe manque, consigne le blocage et laisse le fondateur la traiter avec ChatGPT.
+Consulte uniquement le dépôt (`AGENTS.md`, `TODO.md`, `docs/README.md`, `docs/cahier-des-charges/`, `docs/`). Si une pièce manque, note le blocage dans `TODO.md`.
 
 N'invente pas d'identifiants, de résultats terrain, de validation commerciale ou de conformité. N'affiche aucun secret. Ne pousse, ne déploie, ne réinitialise Git, ne supprime des données et ne lance aucune migration implicite.
 

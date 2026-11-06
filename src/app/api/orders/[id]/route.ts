@@ -1,4 +1,3 @@
-import { refuseIfReadOnly } from "@/lib/api/saas-guard";
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import {
@@ -48,8 +47,6 @@ export async function PATCH(
   if (!companyId) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
-  const readOnly = await refuseIfReadOnly(companyId);
-  if (readOnly) return readOnly;
 
   const body = await request.json().catch(() => null);
   const parsed = updateOrderStatusSchema.safeParse(body);
@@ -145,8 +142,6 @@ export async function DELETE(
   if (!companyId) {
     return NextResponse.json({ error: "Entreprise non associée" }, { status: 400 });
   }
-  const readOnly = await refuseIfReadOnly(companyId);
-  if (readOnly) return readOnly;
 
   const { id } = await params;
   let order;

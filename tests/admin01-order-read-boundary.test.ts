@@ -28,7 +28,6 @@ function load(file: string, role: string, calls: string[]) {
     },
   });
   const dependencies: Record<string, unknown> = {
-    "@/lib/api/saas-guard": { refuseIfReadOnly: async () => null, refuseDemoInvitation: async () => null },
     "next/server": { NextResponse },
     "@/lib/api/route-handler": { withApiHandler },
     "@/lib/api/auth-guard": {

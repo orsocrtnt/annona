@@ -1,26 +1,21 @@
 "use client";
 
 import { usePermissions } from "@/hooks/use-permissions";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { InvoiceStatusBadge } from "@/features/client-portal/status-badges";
 import { formatCurrency } from "@/features/client-portal/utils";
 import { effectiveInvoiceStatus, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 import { formatDate } from "@/lib/utils";
 import type { InvoiceLineItem } from "@/lib/validations/invoice";
 import type { CompanyOrder } from "./types";
-import { useCompanyTariffSettings } from "./tariff-settings-hooks";
 import { backOfficeApi } from "./api";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
-import { useCanOpenPage } from "@/hooks/use-can-open-page";
 
 interface OrderInvoiceFormProps {
   order: CompanyOrder & {
@@ -39,23 +34,11 @@ interface OrderInvoiceFormProps {
 }
 
 function computeTotal(
-  zoneId: string,
-  feeIds: string[],
   includePurchases: boolean,
   customLines: { label: string; amount: string }[],
-  order: OrderInvoiceFormProps["order"],
-  tariffs: ReturnType<typeof useCompanyTariffSettings>["data"]
+  order: OrderInvoiceFormProps["order"]
 ) {
-  if (!tariffs) return 0;
   let total = 0;
-
-  const zone = tariffs.tariffZones.find((z) => z.id === zoneId);
-  if (zone) total += zone.price;
-
-  for (const feeId of feeIds) {
-    const fee = tariffs.tariffFees.find((f) => f.id === feeId);
-    if (fee) total += fee.price;
-  }
 
   if (includePurchases && order.items) {
     for (const item of order.items) {
@@ -72,25 +55,11 @@ function computeTotal(
   return total;
 }
 
-/** Lien vers les paramètres, ou simple texte pour un rôle que la garde serveur y refuserait. */
-function SettingsLink({ children }: { children: ReactNode }) {
-  const canOpen = useCanOpenPage("/settings");
-  if (!canOpen) return <>{children}</>;
-  return (
-    <Link href="/settings" className="text-brand underline underline-offset-2 hover:decoration-2">
-      {children}
-    </Link>
-  );
-}
-
 export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
-  const { data: tariffs, isLoading, isError } = useCompanyTariffSettings();
   const qc = useQueryClient();
   const { can } = usePermissions();
   const hasPurchasePrices =
     order.items?.some((item) => Number(item.unitPrice) > 0) ?? false;
-  const [zoneId, setZoneId] = useState("");
-  const [feeIds, setFeeIds] = useState<string[]>([]);
   const [includePurchases, setIncludePurchases] = useState(hasPurchasePrices);
   const [customLines, setCustomLines] = useState<{ label: string; amount: string }[]>([]);
   const [notes, setNotes] = useState("");
@@ -104,73 +73,23 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
   // Une facture en retard reste émise : on l'affiche, on ne propose pas d'en refaire une.
   const isInvoiced = existingInvoice ? isInvoiceOutstanding(existingInvoice.status) : false;
 
-  const suggestedZone = useMemo(() => {
-    if (!tariffs || !order.shippingPostalCode) return null;
-    const normalized = order.shippingPostalCode.trim();
-    return (
-      tariffs.tariffZones.find((zone) =>
-        zone.postalCodePrefixes.some((prefix) => normalized.startsWith(prefix.trim()))
-      ) ?? null
-    );
-  }, [tariffs, order.shippingPostalCode]);
-
-  // Course : le prix annoncé au client préremplit la facture, à la place de la zone (FACT-KM).
-  const isCourier = order.deliveryCategory === "COURIER" && !existingInvoice;
-  const { data: courierLine, isPending: courierLinePending } = useQuery({
-    queryKey: ["order-courier-line", order.id],
-    queryFn: () => backOfficeApi.getOrderCourierLine(order.id),
-    enabled: isCourier,
-    staleTime: 60_000,
-  });
-
-  useEffect(() => {
-    if (!courierLine) return;
-    setCustomLines((lines) => (lines.length > 0 ? lines : [{ label: courierLine.label, amount: courierLine.amount.toFixed(2) }]));
-  }, [courierLine]);
-
-  useEffect(() => {
-    if (isCourier && (courierLinePending || courierLine)) return;
-    if (suggestedZone && !zoneId) setZoneId(suggestedZone.id);
-  }, [suggestedZone, zoneId, isCourier, courierLinePending, courierLine]);
-
-  const previewTotal = computeTotal(
-    zoneId,
-    feeIds,
-    includePurchases,
-    customLines,
-    order,
-    tariffs
-  );
-
-  const toggleFee = (id: string) => {
-    setFeeIds((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
-    );
-  };
+  const previewTotal = computeTotal(includePurchases, customLines, order);
 
   const handleSubmit = async () => {
     if (previewTotal <= 0) {
       if (includePurchases && !hasPurchasePrices) {
         toast.error("Aucun prix d'achat", {
           description:
-            "Le livreur doit d'abord valider les prix des articles, ou ajoutez une zone tarifaire.",
+            "Le livreur doit d'abord valider les prix des articles, ou ajoutez une ligne.",
         });
       } else {
-        toast.error("Sélectionnez au moins une zone, un supplément ou une ligne");
+        toast.error("Ajoutez au moins une ligne");
       }
-      return;
-    }
-    if (zoneId && !tariffs?.tariffZones.some((z) => z.id === zoneId)) {
-      toast.error("Zone tarifaire invalide", {
-        description: "Rechargez la page ou sélectionnez une autre zone.",
-      });
       return;
     }
     setSubmitting(true);
     try {
       await backOfficeApi.createOrderInvoice(order.id, {
-        zoneId: zoneId || undefined,
-        feeIds,
         includePurchases,
         customLines: customLines
           .filter((l) => l.label && parseFloat(l.amount) > 0)
@@ -201,20 +120,6 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
       setSubmitting(false);
     }
   };
-
-  if (isInitialQueryLoading(isLoading, tariffs)) return <PageSkeleton />;
-
-  if (isError || !tariffs) {
-    return (
-      <Card>
-        <CardContent className="p-5 text-sm text-muted-foreground">
-          Impossible de charger les tarifs. Vérifiez votre connexion ou configurez-les dans{" "}
-          <SettingsLink>Paramètres</SettingsLink>
-          .
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (isPaid && existingInvoice) {
     return (
@@ -294,81 +199,19 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
 
   if (!can("invoices:create")) return null;
 
-  const hasTariffs =
-    tariffs.tariffZones.length > 0 || tariffs.tariffFees.length > 0;
-
   return (
     <Card className="border-brand/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <FileText className="h-4 w-4" />
-          Tarifs de la prestation
+          Facture de la commande
         </CardTitle>
         <CardDescription>
-          Choisissez les tarifs à appliquer. La facture sera visible côté client. Document opérationnel, distinct de l&apos;abonnement Annona, sans émission réglementaire de facture électronique.
+          Choisissez les lignes à facturer. La facture sera visible côté client. Document opérationnel, sans émission réglementaire de facture électronique.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        {!hasTariffs && !courierLine && (
-          <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-            Aucun tarif configuré.{" "}
-            <SettingsLink>Configurez vos zones et tarifs</SettingsLink>{" "}
-            dans les paramètres, ou saisissez une ligne ci-dessous.
-          </div>
-        )}
         <>
-            {tariffs.tariffZones.length > 0 && (
-              <div className="space-y-2">
-                <Label>Zone de livraison</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm max-md:text-base max-md:h-11"
-                  value={zoneId}
-                  onChange={(e) => setZoneId(e.target.value)}
-                >
-                  <option value="">— Aucune zone —</option>
-                  {tariffs.tariffZones.map((zone) => (
-                    <option key={zone.id} value={zone.id}>
-                      {zone.name} — {formatCurrency(zone.price)}
-                      {suggestedZone?.id === zone.id ? " (suggérée)" : ""}
-                    </option>
-                  ))}
-                </select>
-                {order.shippingPostalCode && (
-                  <p className="text-xs text-muted-foreground">
-                    Code postal livraison : {order.shippingPostalCode}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {tariffs.tariffFees.length > 0 && (
-              <div className="space-y-2">
-                <Label>Suppléments</Label>
-                <div className="space-y-2">
-                  {tariffs.tariffFees.map((fee) => (
-                    <label
-                      key={fee.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 max-md:min-h-11"
-                    >
-                      <input
-                        type="checkbox"
-                        className="max-md:size-5"
-                        checked={feeIds.includes(fee.id)}
-                        onChange={() => toggleFee(fee.id)}
-                      />
-                      <div className="flex-1">
-                        <span className="font-medium">{fee.name}</span>
-                        {fee.description && (
-                          <p className="text-xs text-muted-foreground">{fee.description}</p>
-                        )}
-                      </div>
-                      <span className="text-sm font-medium">{formatCurrency(fee.price)}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {order.items && order.items.some((i) => Number(i.unitPrice) > 0) && (
               <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3 max-md:min-h-11">
                 <input
@@ -388,9 +231,6 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
 
             <div className="space-y-2">
               <Label>Lignes personnalisées</Label>
-              {courierLine && (
-                <p className="text-xs text-muted-foreground">Prix repris de l’estimation annoncée au client. Vous pouvez le corriger avant d’enregistrer.</p>
-              )}
               {customLines.map((line, index) => (
                 <div key={index} className="flex gap-2">
                   <Input

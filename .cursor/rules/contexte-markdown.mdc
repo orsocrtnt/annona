@@ -1,27 +1,25 @@
 ---
-description: Lire et mettre à jour la TODO et le contexte exclusivement dans le dépôt GitHub (aucune recherche ni publication Drive)
+description: Lire et mettre à jour la TODO et le contexte exclusivement dans le dépôt (branche base, aucun push sans demande)
 alwaysApply: true
 ---
 
 # Contexte technique uniquement dans le dépôt
 
-Lire le contexte et les statuts dans les fichiers Markdown présents dans `orsocrtnt/annona` sur `preproduction`. Ne jamais utiliser Google Drive, Docs, Sheets, Notion, un PDF ou un Word pour rechercher un contexte, relire une TODO ou publier une copie : le fondateur gère ces ressources séparément dans ChatGPT.
+Lire le contexte et les statuts dans les fichiers Markdown du dépôt, sur la branche de travail `base`. Aucune source extérieure au dépôt ne sert de contexte.
 
 ## Sources canoniques
 
 - Priorités, statuts et critères de sortie : `TODO.md` (source unique).
 - Consignes agents : `AGENTS.md`, `docs/CONVENTIONS.md`, `.cursor/rules/`.
-- Index des références locales : `docs/README.md`.
-- Produit et commerce : `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, `docs/SAAS_OFFERS_ARCHITECTURE.md`, `docs/VISION_PRODUIT_COMMERCIALE.md`.
+- Produit : `PRODUCT.md` et `docs/cahier-des-charges/` (exigences CLI, BOU, LIV, ADM, PLA, NOT, RG, ENF ; tri de la base dans `TRI-BASE.md`).
 - Architecture et opérations : `docs/ARCHITECTURE.md`, `docs/DATABASE.md`, `docs/RBAC.md`, `docs/OPERATIONS.md`, `docs/operations/`.
 - Design : `docs/DESIGN_SYSTEM.md`. Juridique et limites : `docs/legal/`.
-- Preuves historiques : `docs/rapports/`, à vérifier selon leur date.
+- Preuves historiques de l'ancien produit : `docs/rapports/`, à lire selon leur date.
 
 ## Après une tâche
 
 1. Modifier le code, les tests, les documents pertinents et la case de `TODO.md` seulement si les critères sont réellement vérifiés.
-2. Exécuter `npm run todo:progress` si `TODO.md` a changé ; ce script ne doit écrire que dans le dépôt local et n'envoie rien vers Drive/Notion.
-3. Commit/push vers `preproduction` uniquement selon les autorisations de `AGENTS.md`. L'exception de publication autonome ne concerne que les Markdown de suivi/documents canoniques qui viennent d'être modifiés ; ne jamais embarquer des secrets, fichiers `outputs/`, changements utilisateur ni autres fichiers sans autorisation.
-4. Ne pas faire de recherche Drive, d'export, d'upload, de miroir externe ni de seconde mise à jour de TODO. Aucun statut Notion ou document Drive n'est synchronisé automatiquement.
+2. Exécuter `npm run todo:progress` si `TODO.md` a changé.
+3. Committer sur `base` seulement. Aucun push (ni `base`, ni `preproduction`, ni `main`) sans demande explicite du propriétaire : `preproduction` et le site en ligne portent encore l'ancien produit.
 
-Si une pièce contractuelle extérieure ou une décision absente du dépôt est indispensable, noter le blocage et le transmettre au fondateur pour traitement dans ChatGPT. Ne pas chercher à récupérer cette pièce de manière autonome.
+Si une pièce ou une décision absente du dépôt est indispensable, noter le blocage dans `TODO.md` et le signaler au propriétaire.

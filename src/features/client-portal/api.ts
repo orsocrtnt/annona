@@ -42,23 +42,6 @@ export const portalApi = {
       },
       body: JSON.stringify(data),
     }),
-  estimateCourier: (data: {
-    pickupAddress?: string;
-    pickupCity?: string;
-    pickupPostalCode?: string;
-    shippingAddress?: string;
-    shippingCity?: string;
-    shippingPostalCode?: string;
-    requestedDeliveryDate?: string;
-  }) =>
-    fetchPortal<{ enabled: boolean; amount: number | null; total: number | null; distanceKm: number | null }>(
-      "/api/portal/order-estimate",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }
-    ),
   getDeliveries: () => fetchPortal<import("./types").PortalDelivery[]>("/api/portal/deliveries"),
   getDelivery: (id: string) => fetchPortal<import("./types").PortalDelivery>(`/api/portal/deliveries/${id}`),
   getInvoices: () => fetchPortal<import("./types").PortalInvoice[]>("/api/portal/invoices"),

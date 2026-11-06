@@ -21,9 +21,9 @@ test("en-têtes de sécurité et CSP bloquante sur une page publique et une cart
 });
 
 test("mutation depuis une autre origine refusée par le middleware (403)", async ({ request }) => {
-  const response = await request.post("/api/contact", {
+  const response = await request.post("/api/auth/password-recovery", {
     headers: { Origin: "https://evil.example", "Content-Type": "application/json" },
-    data: { name: "Test", email: "e2e-sec@example.invalid", message: "Message de test E2E sécurité." },
+    data: { email: "e2e-sec@example.invalid" },
   });
   expect(response.status()).toBe(403);
   expect((await response.json()).error).toMatch(/Origine/);

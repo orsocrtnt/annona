@@ -140,7 +140,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       className={cn(
         "fixed z-40 flex flex-col transition-all duration-300",
         premium
-          ? "bottom-3 left-3 top-[calc(var(--demo-banner-height,0px)+12px)] rounded-3xl border border-[#e4ebe6] bg-white text-[#0e1310] shadow-[0_10px_30px_rgba(15,50,30,0.06)] dark:border-border dark:bg-card dark:text-foreground dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+          ? "bottom-3 left-3 top-3 rounded-3xl border border-[#e4ebe6] bg-white text-[#0e1310] shadow-[0_10px_30px_rgba(15,50,30,0.06)] dark:border-border dark:bg-card dark:text-foreground dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
           : "inset-y-0 left-0 border-r border-border bg-card",
         sidebarCollapsed ? (premium ? "w-[80px]" : "w-[72px]") : (premium ? "w-[264px]" : "w-64"),
         "hidden lg:flex"

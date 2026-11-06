@@ -56,15 +56,6 @@ for (const size of widths) {
   });
 }
 
-test("UX-NAV-SCROLL : site public, un lien vers une autre page démarre en haut", async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto("/");
-  await scrollDown(page, 600);
-  await page.getByRole("navigation", { name: "Navigation publique" }).getByRole("link", { name: "Tarifs" }).click();
-  await page.waitForURL(/\/tarifs/);
-  await expect.poll(() => scrollTop(page)).toBe(0);
-});
-
 for (const size of widths) {
   test(`UX-NAV-SCROLL : portail client, /portal/settings vers /portal/orders démarre en haut (${size.width} px)`, async ({ page }) => {
     await page.setViewportSize(size);

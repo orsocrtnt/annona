@@ -13,7 +13,6 @@ import {
 import { getDispatchDriverRule } from "@/lib/validations/dispatch-settings";
 import { useCompanyDrivers } from "./hooks";
 import { useCompanyDispatchSettings } from "./dispatch-settings-hooks";
-import { useCompanyTariffSettings } from "./tariff-settings-hooks";
 import type { CompanyDriver } from "./types";
 
 export type DispatchDriverOption = {
@@ -27,10 +26,9 @@ export type DispatchDriverOption = {
 export function useDispatchDriverOptions(delivery: DeliveryForEligibility) {
   const { data: drivers } = useCompanyDrivers();
   const { data: settings } = useCompanyDispatchSettings();
-  const { data: tariffSettings } = useCompanyTariffSettings();
 
   return useMemo(() => {
-    if (!drivers?.length || !settings || !tariffSettings) {
+    if (!drivers?.length || !settings) {
       return {
         compatible: [] as DispatchDriverOption[],
         overCapacity: [] as DispatchDriverOption[],
@@ -42,8 +40,7 @@ export function useDispatchDriverOptions(delivery: DeliveryForEligibility) {
       const reasonCodes = getDriverEligibilityReasons(
         driver,
         delivery,
-        settings,
-        tariffSettings.tariffZones
+        settings
       );
       const { soft } = splitEligibilityReasons(reasonCodes);
       const overCapacity = isOnlySoftIneligibility(reasonCodes);
@@ -62,7 +59,7 @@ export function useDispatchDriverOptions(delivery: DeliveryForEligibility) {
       overCapacity: options.filter((item) => item.overCapacity),
       incompatible: options.filter((item) => !item.eligible && !item.overCapacity),
     };
-  }, [drivers, settings, tariffSettings, delivery]);
+  }, [drivers, settings, delivery]);
 }
 
 export function useDriverDispatchProfile(driverId: string) {

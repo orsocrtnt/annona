@@ -5,7 +5,7 @@ import { getClientDeliveryById } from "../src/domains/delivery/delivery.service"
 import { getClientDeliveriesMap, getDispatchMapDeliveries } from "../src/domains/delivery/dispatch-map.service";
 import { getSupportContactsForClient } from "../src/domains/client-portal/support-contacts.service";
 import { getOrderTracking } from "../src/domains/tracking/tracking.service";
-import { getOrderConversation, type ConversationActor } from "../src/domains/order-conversation/order-conversation.service";
+import type { OrderActor } from "../src/domains/order/order-access";
 import { redactClientTimeline } from "../src/domains/delivery/client-driver";
 import { prisma } from "../src/services/prisma/client";
 
@@ -19,9 +19,6 @@ const EVENTS = [
   // C3 : anciens livreurs (particule, inactif, trait d'union, majuscules), hors des libellés connus.
   { id: "e4", label: "Assignée automatiquement", description: "Livraison confiée à Livreur Jean de La Fontaine — choix automatique", occurredAt: NOW, latitude: null, longitude: null },
   { id: "e5", label: "Information", description: "Relais prévu : le livreur jean de la fontaine passe le colis à MARIE-CLAIRE DUPONT-MARTIN", occurredAt: NOW, latitude: null, longitude: null },
-];
-const MESSAGES = [
-  { id: "m1", requestKey: "k1", orderId: "o1", authorId: "drv1", authorName: "Karim Benali", authorRole: "DRIVER", body: "Je suis devant l'entrée", kind: "QUESTION", internal: false, createdAt: NOW },
 ];
 
 function stub(t: import("node:test").TestContext, delegate: object, key: string, fn: unknown) {
@@ -77,14 +74,11 @@ function stubDatabase(t: import("node:test").TestContext, settings: Record<strin
   stub(t, prisma.order, "findFirst", async (args: OrderArgs) => order(args));
   stub(t, prisma.delivery, "findFirst", async (args: Args) => (args.include?.order?.include ? null : delivery(args)));
   stub(t, prisma.delivery, "findMany", async () => [delivery({})]);
-  stub(t, prisma.orderMessage, "findMany", async () => MESSAGES);
-  stub(t, prisma.orderMessage, "count", async () => 0);
-  stub(t, prisma.orderThreadRead, "findUnique", async () => null);
   stub(t, prisma, "$transaction", async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
 }
 
-const client: ConversationActor = { id: "client-a", companyId: "company-a", role: "CLIENT", permissions: ["dashboard:client"], name: "Cli Ent" };
-const admin: ConversationActor = { id: "admin-a", companyId: "company-a", role: "COMPANY_ADMIN", permissions: ["orders:read", "deliveries:read"], name: "Ad Min" };
+const client: OrderActor = { id: "client-a", companyId: "company-a", role: "CLIENT", permissions: ["dashboard:client"], name: "Cli Ent" };
+const admin: OrderActor = { id: "admin-a", companyId: "company-a", role: "COMPANY_ADMIN", permissions: ["orders:read", "deliveries:read"], name: "Ad Min" };
 
 for (const [label, settings] of [["téléphone visible", {}], ["téléphone masqué", { portalShowDriverPhone: false }]] as const) {
   test(`C2 : aucune sortie client n'expose le nom de famille du livreur (${label})`, async (t) => {
@@ -95,7 +89,6 @@ for (const [label, settings] of [["téléphone visible", {}], ["téléphone masq
       "portal/deliveries/map": await getClientDeliveriesMap("client-a", "company-a"),
       "portal/support/contacts": await getSupportContactsForClient("client-a", "company-a", "d1"),
       "tracking/[id] (suivi partagé)": await getOrderTracking(client, "o1"),
-      "order-conversations/[id]": await getOrderConversation(client, "o1"),
     };
     for (const [name, output] of Object.entries(outputs)) {
       const json = JSON.stringify(output);
@@ -104,7 +97,7 @@ for (const [label, settings] of [["téléphone visible", {}], ["téléphone masq
       for (const surname of ["Fontaine", "FONTAINE", "fontaine", "DUPONT", "Dupont", "MARTIN"]) {
         assert.equal(json.includes(surname), false, `${name} expose « ${surname} » (ancien livreur)`);
       }
-      const phoneExpected = label === "téléphone visible" && /orders\/\[id\]|deliveries\/\[id\]|support/.test(name) && !name.startsWith("order-conversations");
+      const phoneExpected = label === "téléphone visible" && /orders\/\[id\]|deliveries\/\[id\]|support/.test(name);
       assert.equal(json.includes("33611223344"), phoneExpected, `${name} : téléphone selon le réglage`);
     }
     const clientOrder = outputs["portal/orders/[id]"] as { deliveries: Array<Record<string, unknown>> };
@@ -112,8 +105,6 @@ for (const [label, settings] of [["téléphone visible", {}], ["téléphone masq
     assert.deepEqual(clientOrder.deliveries[0]!.driver, label === "téléphone visible" ? { firstName: "Karim", phone: "+33611223344" } : { firstName: "Karim" });
     const steps = (outputs["portal/deliveries/map"] as { active: Array<{ trackingSteps: Array<{ description: string | null }> }> }).active[0]!.trackingSteps;
     assert.equal(steps[0]!.description, "Karim a confirmé la prise en charge");
-    const conversation = outputs["order-conversations/[id]"] as { messages: Array<{ authorName: string }> };
-    assert.equal(conversation.messages[0]!.authorName, "Karim");
     assert.equal(steps[4]!.description, "Relais prévu : le livreur Jean passe le colis à Marie-Claire");
     // Noms des livreurs de l'entreprise, inactifs compris, limités à l'entreprise.
     assert.ok(driverQueries.length > 0);
@@ -124,12 +115,10 @@ for (const [label, settings] of [["téléphone visible", {}], ["téléphone masq
   });
 }
 
-test("C2 : le back-office garde le nom complet (suivi, échanges, carte de dispatch)", async (t) => {
+test("C2 : le back-office garde le nom complet (suivi, carte de dispatch)", async (t) => {
   stubDatabase(t, {});
   const tracking = JSON.stringify(await getOrderTracking(admin, "o1"));
   assert.ok(tracking.includes("Karim Benali a confirmé la prise en charge"));
-  const conversation = await getOrderConversation(admin, "o1");
-  assert.equal(conversation.messages[0]!.authorName, "Karim Benali");
   const dispatch = await getDispatchMapDeliveries("company-a");
   assert.equal(dispatch.deliveries[0]!.trackingSteps[0]!.description, "Karim Benali a confirmé la prise en charge");
 });

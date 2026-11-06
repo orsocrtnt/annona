@@ -216,7 +216,7 @@ test("contention (expiration de transaction ou de pool) : refus bref, jamais une
 function loadLoginRoute(options: { blocked?: number; busy?: boolean; signIn: "ok" | "invalid" | "down"; demo?: boolean; realLimiter?: boolean }) {
   const calls: string[] = [];
   const afterTasks: Array<() => Promise<void>> = [];
-  const user = { id: "u", email: "user@example.test", companyId: "a", company: { isDemo: false }, role: { systemRole: "CLIENT" }, settings: null };
+  const user = { id: "u", email: "user@example.test", companyId: "a", company: { id: "a" }, role: { systemRole: "CLIENT" }, settings: null };
   const deps: Record<string, unknown> = {
     "next/server": { NextResponse, after: (task: () => Promise<void>) => { afterTasks.push(task); } },
     "@/lib/auth/account-access": { assertAccountActive: () => {}, AccountUnavailableError: class extends Error {} },
@@ -242,16 +242,10 @@ function loadLoginRoute(options: { blocked?: number; busy?: boolean; signIn: "ok
       },
       settleLoginAttempt: async (_attempt: unknown, outcome: string) => { calls.push(`settle:${outcome}`); },
     },
-    "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "203.0.113.10" },
+    "@/lib/security/request-source": { requestSourceFromHeaders: () => "203.0.113.10" },
     "@/domains/onboarding/onboarding.service": { resolveOnboardingLoginPath: async (_user: unknown, path: string) => path },
     "@/domains/auth/auth.service": { syncUserFromSupabase: async () => user, getDashboardPathForRole: () => "/portal", UserNotProvisionedError: class extends Error {} },
     "@/domains/user/user.service": { extractPermissionSlugs: () => [], getUserByAuthId: async () => null, updateLastLogin: async () => undefined },
-    "@/lib/demo/constants": { isDemoLoginEmail: (email: string) => options.demo === true && email === "demo@example.test", DEMO_LOGIN_EMAIL: "demo@example.test" },
-    "@/lib/demo/persona-cookie": {},
-    "@/domains/demo/demo-auth.service": {},
-    "@/domains/demo/demo-session.service": {},
-    "@/domains/demo/demo-pool.service": { DemoPoolUnavailableError: class extends Error {} },
-    "@/domains/saas/saas-session": { getSessionSaasAccess: async () => null },
   };
   const module = { exports: {} as { POST: (request: Request) => Promise<Response> } };
   const source = ts.transpileModule(readFileSync("src/app/api/auth/login/route.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
@@ -300,12 +294,6 @@ test("route : échec d'identifiants conservé, panne Supabase annulée, succès 
   await ok.runAfter();
   assert.ok(ok.calls.includes("settle:success"));
   assert.ok(!ok.calls.includes("settle:failure"));
-});
-
-test("route : compte démo public limité par source seulement", async () => {
-  const route = loadLoginRoute({ signIn: "invalid", demo: true });
-  await route.POST(loginRequest("demo@example.test"));
-  assert.equal(route.calls[0], "begin:demo@example.test:203.0.113.10:source-only");
 });
 
 function withoutSecrets(t: test.TestContext) {

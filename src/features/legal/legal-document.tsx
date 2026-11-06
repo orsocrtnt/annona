@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { GrowthShell } from "@/features/landing/growth-shell";
+import { APP_NAME } from "@/lib/constants";
 
 /**
  * Gabarit des pages légales publiques (LEGAL-LIENS). Version provisoire décidée par le propriétaire le
@@ -10,19 +10,41 @@ import { GrowthShell } from "@/features/landing/growth-shell";
  */
 export const LEGAL_UPDATED_AT = "2 novembre 2026";
 
+const FOOTER_LINK =
+  "hover:text-foreground hover:underline hover:underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center";
+
+/** Gabarit public minimal : nom de l'application, contenu, liens légaux et connexion. */
+function LegalShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-border">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
+          <Link href="/" className="font-bold tracking-tight">{APP_NAME}</Link>
+          <Link href="/login" className="text-sm font-semibold hover:underline hover:underline-offset-4">Se connecter</Link>
+        </div>
+      </header>
+      {children}
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-5 gap-y-3 px-5 py-8 text-sm font-semibold text-muted-foreground sm:px-6">
+          <Link href="/mentions-legales" className={FOOTER_LINK}>Mentions légales</Link>
+          <Link href="/confidentialite" className={FOOTER_LINK}>Confidentialité</Link>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
 export function LegalDocument({
-  active,
   title,
   intro,
   children,
 }: {
-  active: "mentions-legales" | "confidentialite";
   title: string;
   intro: string;
   children: ReactNode;
 }) {
   return (
-    <GrowthShell active={active}>
+    <LegalShell>
       <main id="main-content" tabIndex={-1} className="pb-20 focus:outline-none">
         <article className="mx-auto max-w-3xl px-5 pt-14 sm:px-6 sm:pt-20">
           <h1 className="text-balance text-4xl font-bold tracking-[-0.04em] text-[#172334] dark:text-foreground sm:text-5xl">
@@ -40,15 +62,15 @@ export function LegalDocument({
           </p>
           <div className="mt-10 space-y-10">{children}</div>
           <p className="mt-12 border-t border-border pt-6 text-sm text-muted-foreground">
-            Une question sur ces informations ?{" "}
-            <Link href="/contact" className="font-semibold text-brand underline underline-offset-4">
-              Écrivez-nous depuis la page Contact
+            Une question sur ces informations ? Écrivez à l&apos;éditeur, à l&apos;adresse indiquée dans les{" "}
+            <Link href="/mentions-legales" className="font-semibold text-brand underline underline-offset-4">
+              mentions légales
             </Link>
             .
           </p>
         </article>
       </main>
-    </GrowthShell>
+    </LegalShell>
   );
 }
 

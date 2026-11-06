@@ -52,7 +52,6 @@ test("ADMIN-1 tableau de bord : super-admin refusé avant toute lecture aval", a
     "@/lib/api/route-handler": { withApiHandler },
     "@/lib/api/auth-guard": guard,
     "@/domains/analytics/analytics.service": { getCompanyAnalytics: async () => { calls.push("service"); return {}; } },
-    "@/domains/saas/saas.service": { assertSaasFeature: async () => { calls.push("saas"); } },
   });
   const layout = load("src/app/api/back-office/dashboard-layout/route.ts", {
     "next/server": { NextResponse },

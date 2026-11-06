@@ -21,8 +21,6 @@ export class ApiRouteError extends Error {
 const KNOWN_ERROR_CODES: Record<string, { status: number; message: string }> = {
   ACCOUNT_UNAVAILABLE: { status: 403, message: "Compte ou entreprise indisponible. Contactez votre administrateur." },
   USER_NOT_PROVISIONED: { status: 403, message: "Votre compte n'a pas été activé. Contactez votre administrateur." },
-  SAAS_FEATURE_NOT_AVAILABLE: { status: 403, message: "Cette fonctionnalité n'est pas incluse dans votre offre." },
-  SAAS_ACCOUNT_READ_ONLY: { status: 403, message: "Le compte est en lecture seule." },
   COMPANY_NOT_FOUND: { status: 404, message: "Entreprise introuvable." },
   SETTINGS_CONFLICT: { status: 409, message: SETTINGS_CONFLICT_MESSAGE },
   USER_NOT_FOUND: { status: 404, message: "Compte introuvable." },
@@ -43,7 +41,7 @@ export async function readJsonBody(request: Request): Promise<unknown> {
 function namedDomainError(error: Error): { status: number; message: string } | null {
   if (error.name === "InvalidSupportReferenceError") return { status: 404, message: error.message };
   const status = (error as { status?: unknown }).status;
-  if (error.name === "ConversationError" && typeof status === "number" && status >= 400 && status < 500) {
+  if (error.name === "OrderAccessError" && typeof status === "number" && status >= 400 && status < 500) {
     return { status, message: error.message };
   }
   return null;

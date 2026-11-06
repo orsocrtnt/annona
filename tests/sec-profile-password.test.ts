@@ -16,7 +16,7 @@ function load(options: Options) {
     "@/lib/api/route-handler": { withApiHandler, readJsonBody: async (request: Request) => request.json() },
     "@/lib/api/auth-guard": { requireAuth: async () => ({ context: { authId: "auth-1", user: { email: "user@example.test" } } }) },
     "@/lib/validations/auth": { changePasswordSchema: { safeParse: (body: unknown) => ({ success: true, data: body }) } },
-    "@/domains/growth/contact.service": { contactSourceFromHeaders: () => "203.0.113.10" },
+    "@/lib/security/request-source": { requestSourceFromHeaders: () => "203.0.113.10" },
     "@/domains/auth/login-rate-limit.service": {
       startLoginAttempt: async (input: { email: string; trackEmail: boolean }) => {
         calls.push(`begin:${input.email}:${input.trackEmail}`);

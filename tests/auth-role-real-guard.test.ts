@@ -7,13 +7,10 @@ import { runInThisContext } from "node:vm";
 import ts from "typescript";
 import { NextRequest } from "next/server";
 import { ROLE_PERMISSIONS } from "../prisma/reference-data";
-import { demoRetentionSettings } from "../src/lib/demo/retention";
-import { demoSessionCompanySlug } from "../src/domains/demo/demo-session.service";
 import { buildMiniAdminSettings } from "../src/lib/permissions/mini-admin";
-import { demoPersonaAuthId } from "../src/lib/demo/constants";
 
 // AUTH-ROLE : le vrai chemin de la garde (middleware → updateSession → resolveServerAuthForAuthId →
-// getUserByAuthId → isAccountActive → persona et session de démo → evaluatePageAccess) est exécuté.
+// getUserByAuthId → isAccountActive → evaluatePageAccess) est exécuté.
 // Seuls Prisma, le client Supabase (@supabase/ssr) et next/headers sont simulés.
 
 const nodeRequire = createRequire(resolve("package.json"));
@@ -35,7 +32,7 @@ function role(systemRole: keyof typeof ROLE_PERMISSIONS) {
 }
 
 function company(id: string, extra: Row = {}): Row {
-  return { id, status: "ACTIVE", isDemo: false, slug: id, settings: {}, createdAt: new Date(), ...extra };
+  return { id, status: "ACTIVE", slug: id, settings: {}, createdAt: new Date(), ...extra };
 }
 
 function user(authId: string, systemRole: keyof typeof ROLE_PERMISSIONS, extra: Row = {}): Row {
@@ -56,7 +53,6 @@ function fakePrisma(db: Db) {
     company: {
       findUnique: async ({ where }: { where: { slug: string } }) => structuredClone(db.companiesBySlug?.[where.slug] ?? null),
     },
-    demoPoolEnvironment: { findUnique: async () => null },
   };
 }
 
@@ -90,8 +86,6 @@ function loadGuard(db: Db) {
       UserNotProvisionedError: class extends Error {},
     },
     "@/domains/client-portal/client-data.service": { linkPortalDataToClient: async () => undefined },
-    "@/domains/saas/saas.service": { releaseSaasSeat: async () => undefined, reserveSaasSeat: async () => undefined },
-    "@/domains/demo/demo-scenario.service": { resetDemoScenario: async () => undefined },
     "@/lib/auth/email-links": { getPasswordLinkRedirect: () => "/" },
     "@/lib/security/origin-check": { isCrossOriginMutation: () => false, isOriginCheckExempt: () => false },
   };
@@ -152,7 +146,7 @@ test("AUTH-ROLE garde réelle : les vrais modules sont exécutés, seuls Prisma,
   assert.equal(allowed.status, 200);
   for (const file of [
     "middleware.ts", "services/supabase/middleware.ts", "lib/api/server-auth.ts", "domains/user/user.service.ts",
-    "domains/demo/demo-auth.service.ts", "domains/demo/demo-session.service.ts", "lib/auth/account-access.ts",
+    "lib/auth/account-access.ts",
     "lib/permissions/page-access.ts",
   ]) {
     assert.ok(guard.loaded.includes(file), file);
@@ -187,34 +181,6 @@ test("AUTH-ROLE garde réelle : permissions du mini-admin filtrées par ses modu
     const expected = path === "/dashboard" ? "http://localhost:3110/support" : "http://localhost:3110/support?acces-refuse=1";
     assert.equal((await guard.call(path, session("mini"))).location, expected, path);
   }
-});
-
-test("AUTH-ROLE garde réelle : persona de démo active, puis session de démo expirée", async () => {
-  const sessionId = "a".repeat(64);
-  const slug = demoSessionCompanySlug(sessionId);
-  const template = company("demo-template", { isDemo: true });
-  const live = new Date();
-  const sessionCompany = (createdAt: Date) =>
-    company("demo-session", { isDemo: true, slug, createdAt, settings: { demoSession: true, demoRetention: demoRetentionSettings(createdAt) } });
-  const base = user("demo", "COMPANY_ADMIN", { email: "demo@annona.fr", company: template });
-  const sessionCompanyRow = sessionCompany(live);
-  const clientPersona = user(demoPersonaAuthId("client", "demo-session"), "CLIENT", { company: sessionCompanyRow });
-  const cookies = { ...session("demo"), "annona-demo-session": sessionId, "annona-demo-persona": "client" };
-
-  const active = loadGuard({ usersByAuthId: { demo: base }, personaUsers: [clientPersona], companiesBySlug: { [slug]: sessionCompanyRow } });
-  assert.equal((await active.call("/portal/orders", cookies)).status, 200);
-  assert.equal((await active.call("/dashboard", cookies)).location, "http://localhost:3110/portal");
-
-  // Session expirée : getDemoSessionCompanyId lève AccountUnavailableError → aucun accès, connexion.
-  const expired = loadGuard({
-    usersByAuthId: { demo: base },
-    personaUsers: [clientPersona],
-    companiesBySlug: { [slug]: sessionCompany(new Date(Date.now() - 9 * 60 * 60 * 1000)) },
-  });
-  const denied = await expired.call("/portal/orders", cookies);
-  assert.equal(denied.status, 307);
-  assert.equal(denied.location, "http://localhost:3110/login/client?redirect=%2Fportal%2Forders");
-  assert.equal((await expired.call("/login", cookies)).status, 200);
 });
 
 test("AUTH-ROLE garde réelle : l'en-tête interne usurpé est effacé et remplacé par l'identité vérifiée", async () => {

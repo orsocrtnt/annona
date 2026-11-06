@@ -2,9 +2,9 @@
 
 Inventaire du 2026-10-25. Il recense les `route.ts` hors `src/app/api/admin` qui appellent `getCompanyId`. Il décrit la permission et le `requireRole` écrits dans la méthode, ou dans une fonction du même fichier appelée par cette méthode. Il n'ajoute aucune garde et ne choisit aucun rôle.
 
-60 fichiers, 86 méthodes (compte vérifié par `tests/admin01-tenant-api-boundary-inventory.test.ts` ; le 28 octobre 2026, ajout des trois routes `src/app/api/orders/intake/**` de la commande par message ; le 4 novembre 2026, ajout de `orders/intake/customers`, fiches clients sans accès).
+44 fichiers, 63 méthodes (compte vérifié par `tests/admin01-tenant-api-boundary-inventory.test.ts` ; 6 novembre 2026, retrait des routes de l'ancien produit : abonnements, tarifs, commande par message, liens publics).
 
-Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas listée. C'est le cas de `conversationAuth` et de `requireSupportStaff`. Un refus écrit par comparaison directe du rôle, sans `requireRole`, est noté « aucun ».
+Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas listée. C'est le cas de `orderActorAuth` et de `requireSupportStaff`. Un refus écrit par comparaison directe du rôle, sans `requireRole`, est noté « aucun ».
 
 <!-- TENANT_API_BOUNDARIES_START -->
 | Chemin | Méthode | Permission | Rôles |
@@ -12,9 +12,6 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/back-office/analytics/route.ts | GET | analytics:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/back-office/courier-statements/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/back-office/dashboard/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN |
-| src/app/api/billing/route.ts | GET | settings:read | COMPANY_ADMIN |
-| src/app/api/billing/route.ts | POST | settings:read | COMPANY_ADMIN |
-| src/app/api/billing/subscription/route.ts | GET | settings:read | COMPANY_ADMIN |
 | src/app/api/clients/[id]/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/clients/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/company/billing-settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
@@ -27,8 +24,6 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/dispatch/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/einvoicing/route.ts | GET | settings:read | COMPANY_ADMIN |
 | src/app/api/company/einvoicing/route.ts | PATCH | settings:update | COMPANY_ADMIN |
-| src/app/api/company/intake-channels/route.ts | GET | settings:update | COMPANY_ADMIN, MINI_ADMIN |
-| src/app/api/company/intake-channels/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/location-settings/route.ts | GET | settings:read ou deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/company/location-settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/logo/route.ts | GET | aucun | aucun |
@@ -40,26 +35,19 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/company/proof-rules/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | GET | settings:read | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/company/settings/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
-| src/app/api/company/tariffs/route.ts | GET | settings:read ou deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/company/tariffs/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/deliveries/[id]/assign/route.ts | PATCH | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/[id]/proof/[kind]/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/[id]/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/[id]/route.ts | PATCH | deliveries:update | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/deliveries/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/dispatch/auto-assign/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/dispatch/auto-assign/route.ts | POST | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/drivers-locations/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/drivers-map/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/drivers-workload/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/dispatch/eligible-drivers/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/incidents/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/map/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/overview/route.ts | GET | deliveries:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/rounds/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/dispatch/rounds/route.ts | POST | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/dispatch/suggestions/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/dispatch/suggestions/route.ts | POST | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/drivers/[id]/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/drivers/route.ts | GET | drivers:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/invoices/[id]/pdf/route.ts | GET | invoices:read | COMPANY_ADMIN, MINI_ADMIN |
@@ -71,26 +59,15 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/onboarding/route.ts | PATCH | settings:update | COMPANY_ADMIN |
 | src/app/api/operations/jobs/route.ts | GET | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/operations/jobs/route.ts | POST | deliveries:dispatch | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/[id]/invoice/route.ts | GET | invoices:create | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/orders/[id]/invoice/route.ts | POST | invoices:create | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/orders/[id]/invoice/route.ts | PATCH | invoices:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/orders/[id]/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/[id]/route.ts | PATCH | orders:update | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/[id]/route.ts | DELETE | orders:update | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/[id]/tracking-link/route.ts | POST | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/courier-estimate/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/create-options/route.ts | GET | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/create/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/dashboard/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/export/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/analyze/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/customers/route.ts | GET | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/delivery-slots/route.ts | GET | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/inbox/[id]/route.ts | PATCH | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/inbox/route.ts | GET | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/orders/route.ts | POST | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/route.ts | GET | orders:create | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
-| src/app/api/orders/intake/route.ts | PATCH | settings:update | COMPANY_ADMIN, MINI_ADMIN |
 | src/app/api/orders/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/orders/stats/route.ts | GET | orders:read | COMPANY_ADMIN, MINI_ADMIN, DISPATCHER |
 | src/app/api/users/[id]/route.ts | PATCH | users:update | COMPANY_ADMIN, MINI_ADMIN |
@@ -103,7 +80,7 @@ Logo d'entreprise (2026-10-27) : `GET /api/company/logo` n'exige qu'une session 
 
 Ces routes n'appellent pas `getCompanyId`. Elles passent par un garde partagé déjà en place. Cette section ne modifie aucun rôle.
 
-`conversationAuth` autorise uniquement `COMPANY_ADMIN`, `MINI_ADMIN`, `DISPATCHER`, `DRIVER` et `CLIENT`. `SUPER_ADMIN` est exclu.
+`orderActorAuth` autorise uniquement `COMPANY_ADMIN`, `MINI_ADMIN`, `DISPATCHER`, `DRIVER` et `CLIENT`. `SUPER_ADMIN` est exclu.
 
 `requireSupportStaff` autorise uniquement `COMPANY_ADMIN`, `MINI_ADMIN` et `DISPATCHER`. `SUPER_ADMIN` est exclu. Un `MINI_ADMIN` sans `support:read` reste refusé avant l'entreprise.
 
@@ -112,16 +89,9 @@ Ces routes n'appellent pas `getCompanyId`. Elles passent par un garde partagé d
 <!-- INDIRECT_COMPANY_BOUNDARIES_START -->
 | Chemin | Méthode | Garde |
 | --- | --- | --- |
-| src/app/api/operational-alerts/[id]/route.ts | GET | conversationAuth |
-| src/app/api/operational-alerts/[id]/route.ts | POST | conversationAuth |
-| src/app/api/operational-alerts/route.ts | GET | conversationAuth |
-| src/app/api/order-conversations/[id]/route.ts | GET | conversationAuth |
-| src/app/api/order-conversations/[id]/route.ts | POST | conversationAuth |
-| src/app/api/order-conversations/[id]/route.ts | PATCH | conversationAuth |
-| src/app/api/order-conversations/notifications/route.ts | GET | conversationAuth |
 | src/app/api/support/[id]/route.ts | GET | requireSupportStaff |
 | src/app/api/support/[id]/route.ts | POST | requireSupportStaff |
 | src/app/api/support/[id]/route.ts | PATCH | requireSupportStaff |
 | src/app/api/support/route.ts | GET | requireSupportStaff |
-| src/app/api/tracking/[id]/route.ts | GET | conversationAuth |
+| src/app/api/tracking/[id]/route.ts | GET | orderActorAuth |
 <!-- INDIRECT_COMPANY_BOUNDARIES_END -->

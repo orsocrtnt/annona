@@ -1,4 +1,4 @@
-import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
+import { requestSourceFromHeaders } from "@/lib/security/request-source";
 import { isOverRequestLimit } from "@/lib/security/request-limit";
 import { CONFIG_MESSAGES } from "@/lib/config-messages";
 import { NextResponse } from "next/server";
@@ -8,7 +8,7 @@ import { requestPasswordRecovery } from "@/domains/auth/password-link.service";
 export async function POST(request: Request) {
   const parsed = forgotPasswordSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Adresse e-mail invalide." }, { status: 400 });
-  const source = contactSourceFromHeaders(request.headers);
+  const source = requestSourceFromHeaders(request.headers);
   if (await isOverRequestLimit("password-recovery-source", source, 10) || await isOverRequestLimit("password-recovery-email", parsed.data.email.trim().toLowerCase(), 3)) {
     return NextResponse.json({ error: "Trop de demandes. Réessayez plus tard." }, { status: 429 });
   }

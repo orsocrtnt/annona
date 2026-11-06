@@ -38,7 +38,6 @@ function loadService(calls: string[], options: { failInvoice?: "permanent" | "tr
   const deps: Record<string, unknown> = {
     "@/services/prisma/client": { prisma },
     "@/lib/operations/after-response": { runAfterResponse: () => undefined },
-    "@/domains/saas/saas.service": { assertSaasMutationFeature: async () => ({}) },
     "@/domains/client-portal/notify.service": {
       deliverClientNotificationJob: async () => { calls.push("notify"); },
     },

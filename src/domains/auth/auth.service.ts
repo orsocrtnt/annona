@@ -64,8 +64,8 @@ export async function syncUserFromSupabase(
   }
 
   // Aucun provisionnement à partir des métadonnées Supabase, modifiables par
-  // l'utilisateur : une entreprise et son abonnement ne naissent que du parcours
-  // d'inscription vérifié côté serveur (SignupJourney), de la démo ou du back-office.
+  // l'utilisateur : une entreprise et ses comptes ne naissent que du back-office
+  // (éditeur de la plateforme, puis administrateur de l'entreprise).
   throw new UserNotProvisionedError();
 }
 

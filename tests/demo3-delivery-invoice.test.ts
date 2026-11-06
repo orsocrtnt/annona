@@ -24,12 +24,8 @@ function replace(t: TestContext, target: object, key: string, value: unknown) {
   });
 }
 
-const ZONE = { id: "zone_paris", name: "Paris", postalCodePrefixes: ["75"], price: 12.5 };
-
 function settings(autoInvoiceOnDelivery: boolean | undefined) {
   return {
-    tariffZones: [ZONE],
-    tariffFees: [],
     billing: {
       invoice: {
         vatRate: 20,
@@ -58,7 +54,7 @@ function fakeDatabase(t: TestContext, options: {
     deliveryCategory: "STANDARD",
     shippingPostalCode: "75011",
     customerId: "client_a",
-    items: [],
+    items: [{ name: "Pain", quantity: 1, unitPrice: 12.5 }],
     stops: [],
     ...options.order,
   };
@@ -79,7 +75,6 @@ function fakeDatabase(t: TestContext, options: {
   order.deliveries = [delivery];
   const invoices: Row[] = options.invoices ?? [];
   const jobs: Row[] = [];
-  const outOfRangeNotes: Row[] = [];
   let sequence = 0;
   let queue: Promise<unknown> = Promise.resolve();
 
@@ -118,8 +113,6 @@ function fakeDatabase(t: TestContext, options: {
     },
     driverLocation: { findUnique: async () => null },
     trackingEvent: { create: async () => ({ id: `evt_${++sequence}` }) },
-    // MOB-01C : une étape confirmée hors zone laisse une note interne d'incident.
-    orderMessage: { create: async ({ data }: { data: Row }) => { outOfRangeNotes.push(data); return { id: `msg_${++sequence}`, ...data }; } },
     invoice: {
       findMany: async ({ where }: { where: Row }) => invoices.filter((row) =>
         row.orderId === where.orderId
@@ -148,7 +141,7 @@ function fakeDatabase(t: TestContext, options: {
       findUnique: async () => null,
     },
   };
-  for (const key of ["$queryRaw", "$transaction", "company", "order", "delivery", "driverLocation", "trackingEvent", "orderMessage", "invoice", "operationJob"]) {
+  for (const key of ["$queryRaw", "$transaction", "company", "order", "delivery", "driverLocation", "trackingEvent", "invoice", "operationJob"]) {
     replace(t, prisma, key, (db as Row)[key]);
   }
   replace(t, console, "error", () => undefined);
@@ -184,7 +177,7 @@ test("DEMO-3 file : réglage désactivé, aucune tâche ; activé, une tâche pa
   assert.deepEqual(on.jobs[0]!.payload, { orderId: "order_1", companyId: "company_a" });
 });
 
-test("DEMO-3 génération : commande livrée, une facture émise avec zone, TVA, échéance et e-mail existant", async (t) => {
+test("DEMO-3 génération : commande livrée, une facture émise avec achats, TVA, échéance et e-mail existant", async (t) => {
   const { invoices, jobs } = fakeDatabase(t, { autoInvoiceOnDelivery: true });
   const before = Date.now();
 
@@ -195,20 +188,11 @@ test("DEMO-3 génération : commande livrée, une facture émise avec zone, TVA,
   const invoice = invoices[0]!;
   assert.equal(invoice.status, "PENDING");
   assert.equal(invoice.amount, 15);
-  assert.deepEqual((invoice.lineItems as Row[]).map((line) => line.sourceType), ["ZONE", "VAT"]);
+  assert.deepEqual((invoice.lineItems as Row[]).map((line) => line.sourceType), ["PURCHASE", "VAT"]);
   assert.equal(invoice.customerId, "client_a");
   const dueInDays = ((invoice.dueDate as Date).getTime() - before) / 86_400_000;
   assert.ok(dueInDays > 29.9 && dueInDays < 30.1, "délai de paiement de l'entreprise");
   assert.ok(jobs.some((job) => job.jobKey === `client-notification:invoice:${invoice.id}:issued`), "e-mail « Nouvelle facture » réutilisé");
-});
-
-test("DEMO-3 génération : achats validés par le livreur repris quand il n'y a pas de zone", async (t) => {
-  const { invoices } = fakeDatabase(t, {
-    autoInvoiceOnDelivery: true,
-    order: { shippingPostalCode: "69001", items: [{ name: "Pain", quantity: 2, unitPrice: 1.5 }] },
-  });
-  assert.equal((await createDeliveredOrderInvoice("company_a", "order_1")).status, "created");
-  assert.deepEqual((invoices[0]!.lineItems as Row[]).map((line) => line.sourceType), ["PURCHASE", "VAT"]);
 });
 
 test("DEMO-3 génération : rejeu et course entre deux traitements ne créent qu'une facture", async (t) => {
@@ -258,8 +242,8 @@ test("DEMO-3 génération : livraison échouée ou commande d'une autre entrepri
   assert.equal(foreign.invoices.length, 0);
 });
 
-test("DEMO-3 génération : sans zone ni achat, l'erreur est explicite (tâche en échec visible)", async (t) => {
-  const { invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true, order: { shippingPostalCode: "69001" } });
+test("DEMO-3 génération : sans achat, l'erreur est explicite (tâche en échec visible)", async (t) => {
+  const { invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true, order: { items: [] } });
   await assert.rejects(createDeliveredOrderInvoice("company_a", "order_1"), (error: Error & { permanent?: boolean }) =>
     error.message === "DELIVERY_INVOICE_EMPTY" && error.permanent === true);
   assert.equal(invoices.length, 0);
@@ -283,7 +267,7 @@ test("DEMO-3 tâche : charge utile contrôlée, entreprise et commande transmise
 test("DEMO-3 facturation manuelle : une facture en retard réémise est mise à jour, pas doublée", async (t) => {
   const late = { id: "late", reference: "FAC-OLD", orderId: "order_1", status: "OVERDUE", amount: 10, customerId: "client_a" };
   const { invoices } = fakeDatabase(t, { invoices: [late] });
-  const invoice = await createOrderInvoice("company_a", "order_1", { zoneId: ZONE.id, feeIds: [], includePurchases: false, customLines: [] });
+  const invoice = await createOrderInvoice("company_a", "order_1", { includePurchases: false, customLines: [{ label: "Livraison", amount: 12.5 }] });
   assert.equal(invoice?.id, "late");
   assert.equal(invoices.length, 1);
   assert.equal(invoices[0]!.status, "PENDING");
@@ -348,7 +332,7 @@ test("DEMO-3 génération : facture automatique et facture manuelle simultanées
   const { invoices } = fakeDatabase(t, { autoInvoiceOnDelivery: true });
   await Promise.all([
     createDeliveredOrderInvoice("company_a", "order_1"),
-    createOrderInvoice("company_a", "order_1", { zoneId: ZONE.id, feeIds: [], includePurchases: false, customLines: [] }),
+    createOrderInvoice("company_a", "order_1", { includePurchases: false, customLines: [{ label: "Livraison", amount: 12.5 }] }),
   ]);
   assert.equal(invoices.filter((row) => row.status !== "CANCELLED").length, 1);
 });

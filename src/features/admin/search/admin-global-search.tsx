@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Flag, Inbox, Loader2, Package, Search, User, UserPlus } from "lucide-react";
+import { Building2, Loader2, Package, Search, User } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useAdminSearch } from "@/features/admin/hooks";
 import { cn } from "@/lib/utils";
@@ -19,11 +19,8 @@ const DEBOUNCE_MS = 250;
 
 const ICONS: Record<AdminSearchType, React.ComponentType<{ className?: string }>> = {
   companies: Building2,
-  pilots: Flag,
   users: User,
   orders: Package,
-  waitlist: UserPlus,
-  contact: Inbox,
 };
 
 /** Même normalisation que le serveur : espaces regroupés, bords retirés. */
@@ -213,7 +210,7 @@ function AdminSearchDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       <DialogContent className="top-3 max-w-xl translate-y-0 gap-0 overflow-hidden rounded-[1.5rem] border-border bg-card p-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 sm:top-[12vh] max-md:p-0 dark:bg-card">
         <DialogTitle className="sr-only">Recherche globale</DialogTitle>
         <DialogDescription className="sr-only">
-          Entreprises, utilisateurs, commandes, inscriptions à la liste d&apos;attente et messages Contact. Flèches pour choisir, Entrée pour ouvrir, Échap pour fermer.
+          Entreprises, utilisateurs et commandes. Flèches pour choisir, Entrée pour ouvrir, Échap pour fermer.
         </DialogDescription>
         <SearchPanel
           onNavigate={(href) => {

@@ -4,7 +4,6 @@ import { prisma } from "@/services/prisma/client";
 import type { DeliveryCategory, DeliveryStatus, OrderStatus, Prisma } from "@prisma/client";
 import type { AdminUpdateDeliveryInput } from "@/lib/validations/delivery";
 import { getCompanyDispatchSettings, parseDispatchSettings } from "@/domains/company/dispatch-settings.service";
-import { parseTariffSettings } from "@/domains/company/tariff-settings.service";
 import {
   formatEligibilityReasons,
   getDriverEligibilityReasons,
@@ -22,7 +21,6 @@ import {
   assertDriverMissionProximityOrThrow,
   statusNeedsProximityCheck,
 } from "@/domains/delivery/driver-proximity.service";
-import { outOfRangeIncidentBody } from "@/lib/maps/out-of-range-note";
 import { resolveCustomersByEmail } from "@/domains/order/resolve-customer";
 import { queueDeliveryStatusNotification } from "@/domains/client-portal/notify.service";
 import { enqueueOperationJob, kickOperationJob } from "@/domains/operations/operation-job.service";
@@ -394,7 +392,6 @@ export async function assignDeliveryToDriver(
   deliveryId: string,
   driverId: string,
   options?: {
-    automatic?: boolean;
     reason?: string;
     /** Dépasse uniquement les plafonds de charge, jamais les règles dures ni l'état métier. */
     force?: boolean;
@@ -464,7 +461,6 @@ export async function assignDeliveryToDriver(
 
     const rawSettings = (company.settings ?? {}) as Record<string, unknown>;
     const settings = parseDispatchSettings(rawSettings.dispatchRules);
-    const tariffSettings = parseTariffSettings(rawSettings);
     const activity = await getDriverActivityForAssignment(
       tx,
       companyId,
@@ -478,8 +474,7 @@ export async function assignDeliveryToDriver(
         postalCode: current.postalCode,
         pickupPostalCode: current.pickupPostalCode,
       },
-      settings,
-      tariffSettings.tariffZones
+      settings
     );
     const { soft, hard } = splitEligibilityReasons(reasons);
     if (hard.length > 0) {
@@ -543,15 +538,13 @@ export async function assignDeliveryToDriver(
     });
     if (!updated) throw new Error("DELIVERY_ASSIGNMENT_CONFLICT");
 
-    const trackingLabel = options?.automatic
-      ? "Assignée automatiquement"
-      : options?.force
-        ? current.driverId
-          ? "Réassignation forcée"
-          : "Assignation forcée"
-        : current.driverId
-          ? "Livreur réassigné"
-          : "Assignée au livreur";
+    const trackingLabel = options?.force
+      ? current.driverId
+        ? "Réassignation forcée"
+        : "Assignation forcée"
+      : current.driverId
+        ? "Livreur réassigné"
+        : "Assignée au livreur";
     const newDriverLabel = formatDriverDisplayName(driverName);
     const transition = current.driverId
       ? `${formatDriverDisplayName(current.driverName)} → ${newDriverLabel}`
@@ -830,14 +823,13 @@ export async function updateDeliveryStatusByDriver(
   }
 
   const proximityRule = statusNeedsProximityCheck(status, delivery.deliveryCategory);
-  let forcedOutOfRange: Awaited<ReturnType<typeof assertDriverMissionProximityOrThrow>> = null;
   if (proximityRule.required) {
     const overridePosition =
       options?.latitude != null && options?.longitude != null
         ? { latitude: options.latitude, longitude: options.longitude }
         : null;
 
-    forcedOutOfRange = await assertDriverMissionProximityOrThrow(
+    await assertDriverMissionProximityOrThrow(
       driverId,
       delivery.companyId,
       deliveryId,
@@ -950,23 +942,6 @@ export async function updateDeliveryStatusByDriver(
         longitude: eventLongitude,
       },
     });
-
-    // MOB-01C : étape confirmée hors zone, signalée avec la distance à l'équipe seulement (note interne
-    // de type incident, donc alerte « Incident interne » ; jamais visible du client).
-    if (forcedOutOfRange) {
-      await tx.orderMessage.create({
-        data: {
-          orderId: delivery.orderId,
-          authorId: driverId,
-          authorName: delivery.driverName?.trim() || "Livreur",
-          authorRole: "DRIVER",
-          body: outOfRangeIncidentBody({ ...forcedOutOfRange, status }),
-          kind: "INCIDENT",
-          internal: true,
-          requestKey: `out-of-range:${trackingEvent.id}`,
-        },
-      });
-    }
 
     const notificationJob = await queueDeliveryStatusNotification(tx, {
       customerId: delivery.customerId,
@@ -1411,7 +1386,7 @@ const DRIVER_ACTIVITY_SELECT = {
   lastLoginAt: true,
 } satisfies Prisma.UserSelect;
 
-/** Réservé à l'auto-dispatch : état de service et dernière position, jamais renvoyés tels quels. */
+/** Réservé au calcul des tournées : état de service et dernière position, jamais renvoyés tels quels. */
 const DRIVER_DISPATCH_POSITION_SELECT = {
   ...DRIVER_ACTIVITY_SELECT,
   settings: true,

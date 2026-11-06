@@ -6,17 +6,15 @@ import {
   OPEN_TICKET_STATUSES,
   parisDayKey,
   parisDayStart,
-  readOpenIncidentCount,
   shiftDayKey,
   ADMIN_HOME_DAYS,
-  type AdminHomeDatabase,
   type AdminHomeDay,
 } from "@/domains/admin/admin-home.service";
 import { getPlatformCompany, type PlatformCompanyDetail } from "@/domains/admin/companies.service";
 
 /**
  * ADMIN-ESPACE, lot 3 : fiche entreprise complète du super-administrateur.
- * Une lecture serveur : la fiche existante (identité, abonnement, chiffre d'affaires), puis l'activité
+ * Une lecture serveur : la fiche existante (identité, chiffre d'affaires), puis l'activité
  * de l'entreprise en requêtes groupées et parallèles (`groupBy`, `count`, `select` minimal, aucun N+1).
  * Chaque bloc vaut `null` si sa lecture échoue : l'écran affiche « Indisponible », jamais un chiffre inventé.
  * Mois et jours à l'heure de Paris.
@@ -27,7 +25,7 @@ export const COMPANY_TICKETS_LIMIT = 5;
 
 /** Ordre d'affichage des rôles d'une entreprise (le super-administrateur n'appartient à aucune entreprise). */
 export const COMPANY_ROLE_ORDER: SystemRole[] = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT", "SUPER_ADMIN"];
-/** Comptes qui occupent une place de l'offre : même règle que le contrôle des places (saas.service). */
+/** Comptes comptés comme occupés : actifs ou invités (en attente de validation). */
 const SEATED_STATUSES: UserStatus[] = ["ACTIVE", "PENDING_VERIFICATION"];
 const BILLED_INVOICE_STATUSES: InvoiceStatus[] = ["PENDING", "PAID", "OVERDUE"];
 const IN_PROGRESS_DELIVERY = new Set(["PENDING", "ASSIGNED", "PURCHASING", "IN_DELIVERY"]);
@@ -72,7 +70,6 @@ export type CompanyActivity = {
     open: number;
     latest: Array<{ id: string; subject: string; status: string; priority: string; createdAt: string }>;
   } | null;
-  incidents: { open: number } | null;
 };
 
 export type PlatformCompanyFile = PlatformCompanyDetail & { activity: CompanyActivity };
@@ -80,7 +77,7 @@ export type PlatformCompanyFile = PlatformCompanyDetail & { activity: CompanyAct
 type Money = { toString(): string } | number | null;
 type Args = Record<string, unknown>;
 
-export type CompanyFileDatabase = Pick<AdminHomeDatabase, "orderMessage"> & {
+export type CompanyFileDatabase = {
   user: {
     groupBy: (args: Args) => Promise<Array<{ roleId: string; status: UserStatus; _count: { _all: number }; _max: { lastLoginAt: Date | null } }>>;
     findMany: (args: Args) => Promise<Array<{ id: string; firstName: string; lastName: string; status: UserStatus; lastLoginAt: Date | null; role: { systemRole: SystemRole } }>>;
@@ -190,7 +187,7 @@ export async function readCompanyActivity(
   const inMonth = { gte: month.startsAt, lt: month.endsAt };
   const seriesStart = parisDayStart(shiftDayKey(parisDayKey(now), -(ADMIN_HOME_DAYS - 1)));
 
-  const [users, deliveries, series, invoices, support, incidents] = await Promise.all([
+  const [users, deliveries, series, invoices, support] = await Promise.all([
     block(async () => {
       const [groups, roles, team] = await Promise.all([
         db.user.groupBy({
@@ -266,7 +263,6 @@ export async function readCompanyActivity(
         latest: latest.map((ticket) => ({ ...ticket, createdAt: ticket.createdAt.toISOString() })),
       };
     }),
-    block(async () => ({ open: await readOpenIncidentCount(db, companyId) })),
   ]);
 
   return {
@@ -277,7 +273,6 @@ export async function readCompanyActivity(
     series,
     invoices,
     support,
-    incidents,
   };
 }
 
@@ -293,7 +288,7 @@ export async function getPlatformCompanyFile(
   deps: CompanyFileDependencies = {}
 ): Promise<PlatformCompanyFile | null> {
   const now = deps.now ?? new Date();
-  const readDetail = deps.readDetail ?? ((companyId: string, at: Date) => getPlatformCompany(companyId, undefined, at));
+  const readDetail = deps.readDetail ?? ((companyId: string) => getPlatformCompany(companyId));
   const detail = await readDetail(id, now);
   if (!detail) return null;
   const activity = await readCompanyActivity(id, deps.db, now);

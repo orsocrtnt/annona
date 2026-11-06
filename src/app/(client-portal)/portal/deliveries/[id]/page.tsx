@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { OrderTracking } from "@/components/shared/order-tracking";
-import { OrderConversation } from "@/components/shared/order-conversation";
 import { MissionAcknowledgement } from "@/components/shared/mission-acknowledgement";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -136,7 +135,6 @@ export default function ClientDeliveryDetailPage() {
                   failureCode={delivery.podFailureCode}
                   note={delivery.podNote}
                   signatureUrl={delivery.podSignatureUrl}
-                  pdfUrl={delivery.podPdfUrl}
                   recipientName={delivery.podRecipientName}
                   signatureRefusedReason={delivery.podSignatureRefusedReason}
                 />
@@ -160,7 +158,6 @@ export default function ClientDeliveryDetailPage() {
       </div>
       {/* La chronologie des actions est dans le suivi partagé : elle n'est plus affichée deux fois. */}
       <OrderTracking orderId={delivery.orderId} />
-      <OrderConversation orderId={delivery.orderId} />
     </div>
   );
 }

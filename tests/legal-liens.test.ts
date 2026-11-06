@@ -18,27 +18,11 @@ test("LEGAL-LIENS : les deux pages légales existent et suivent le thème", () =
 });
 
 test("LEGAL-LIENS : chaque pied de page public mène aux mentions légales et à la confidentialité", () => {
-  // Accueil ; Fonctionnalités, Tarifs, Démonstration, Contact (GrowthShell) ; connexions (AuthShell) ; inscription.
-  for (const file of [
-    "src/features/landing/home-landing.tsx",
-    "src/features/landing/growth-shell.tsx",
-    "src/features/auth/auth-shell.tsx",
-    "src/features/auth/signup-wizard.tsx",
-  ]) {
+  // Pages légales (LegalDocument) ; connexions (AuthShell).
+  for (const file of ["src/features/legal/legal-document.tsx", "src/features/auth/auth-shell.tsx"]) {
     const source = read(file);
     for (const href of LEGAL_HREFS) assert.ok(source.includes(href), `${file} : ${href}`);
   }
-});
-
-test("LEGAL-LIENS : les formulaires qui collectent des données renvoient à la confidentialité", () => {
-  const contact = read("src/features/landing/contact-form.tsx");
-  assert.ok(contact.includes('href="/confidentialite"'));
-  assert.ok(read("src/features/landing/waitlist-form.tsx").includes('href="/confidentialite"'), "liste d'attente");
-  assert.match(read("src/app/confidentialite/page.tsx"), /Liste d&apos;attente \(page Tarifs\)/);
-  const signup = read("src/features/auth/signup-wizard.tsx");
-  const start = signup.indexOf('stage === "identity"');
-  const identity = signup.slice(start, signup.indexOf('stage === "payment"', start));
-  assert.ok(identity.includes('href="/confidentialite"'), "étape identité de l'inscription");
 });
 
 test("LEGAL-LIENS : contenu provisoire signalé, aucune identité inventée", () => {

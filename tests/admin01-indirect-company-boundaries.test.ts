@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 
 const inventoryPath = "docs/operations/admin01/tenant-api-boundaries.md";
 const roles = ["SUPER_ADMIN", "COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"];
-const conversationRoles = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"];
+const orderActorRoles = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER", "DRIVER", "CLIENT"];
 const supportRoles = ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"];
 
 function requireRoleFrom(source: string, expected: string[]) {
@@ -45,7 +45,7 @@ function functionBodies(source: string) {
 
 function guardsIn(scan: string) {
   const guards: string[] = [];
-  if (/\bconversationAuth\s*\(/.test(scan)) guards.push("conversationAuth");
+  if (/\borderActorAuth\s*\(/.test(scan)) guards.push("orderActorAuth");
   if (/\brequireSupportStaff\s*\(/.test(scan)) guards.push("requireSupportStaff");
   return guards;
 }
@@ -104,17 +104,17 @@ function load(file: string, dependencies: Record<string, unknown>) {
 
 test("ADMIN-1 frontières indirectes : l'inventaire suit les consommateurs réels", () => {
   const found = discover();
-  assert.equal(found.filter((row) => row.guard === "conversationAuth").length, 8);
+  assert.equal(found.filter((row) => row.guard === "orderActorAuth").length, 1);
   assert.equal(found.filter((row) => row.guard === "requireSupportStaff").length, 4);
   assert.deepEqual(documented(), found);
 });
 
-test("ADMIN-1 frontières indirectes : conversationAuth exclut la plateforme", async () => {
-  const helperSource = readFileSync("src/lib/api/conversation-auth.ts", "utf8");
-  const requireRole = requireRoleFrom(helperSource, conversationRoles);
+test("ADMIN-1 frontières indirectes : orderActorAuth exclut la plateforme", async () => {
+  const helperSource = readFileSync("src/lib/api/order-actor-auth.ts", "utf8");
+  const requireRole = requireRoleFrom(helperSource, orderActorRoles);
   for (const role of roles) {
     let named = false;
-    const helper = load("src/lib/api/conversation-auth.ts", {
+    const helper = load("src/lib/api/order-actor-auth.ts", {
       "@/lib/api/auth-guard": {
         requireAuth: async () => ({
           context: {
@@ -131,8 +131,8 @@ test("ADMIN-1 frontières indirectes : conversationAuth exclut la plateforme", a
         requireRole,
       },
     });
-    const result = await helper.conversationAuth!();
-    if (conversationRoles.includes(role)) {
+    const result = await helper.orderActorAuth!();
+    if (orderActorRoles.includes(role)) {
       assert.equal((result.actor as { role: string }).role, role);
       assert.equal(named, true);
     } else {

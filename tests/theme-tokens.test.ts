@@ -135,11 +135,11 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
     assert.equal(isThemeScopedPath(path), true, path);
   }
   // Site public et connexion (LANDING-2, DESIGN-2) : même choix de thème.
-  for (const path of ["/", "/tarifs", "/fonctionnalites", "/demonstration", "/contact", "/login", "/login/client", "/forgot-password", "/reset-password", "/register", "/register/client"]) {
+  for (const path of ["/", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/forgot-password", "/reset-password"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
   // Préfixes voisins : hors Dark.
-  for (const path of ["/registerx", "/dashboardx", "/administration", "/dispatch/mapx"].filter((path) => path !== "/dispatch/mapx")) {
+  for (const path of ["/loginx", "/dashboardx", "/administration", "/dispatch/mapx"].filter((path) => path !== "/dispatch/mapx")) {
     assert.equal(isThemeScopedPath(path), false, path);
   }
   // Écrans de carte : en Dark depuis le lot B (plus aucune exclusion).
@@ -325,7 +325,7 @@ test("DESIGN-2 : dans les espaces migrés, aucune couleur claire codée en dur s
   const { join } = await import("node:path");
   const roots = [
     "src/features/back-office", "src/features/driver", "src/features/admin", "src/features/support", "src/features/users",
-    "src/features/deliveries", "src/features/saas", "src/features/dashboard", "src/app/(back-office)", "src/app/(driver-app)",
+    "src/features/deliveries", "src/features/dashboard", "src/app/(back-office)", "src/app/(driver-app)",
     "src/components/ui", "src/components/shared", "src/components/layouts", "src/components/theme", "src/lib/permissions",
   ];
   // Aucune exclusion : les écrans de carte sont en Dark et doivent suivre la même règle.

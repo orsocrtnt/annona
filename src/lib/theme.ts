@@ -22,19 +22,11 @@ export const THEME_SCOPED_PATH_PREFIXES = [
   "/admin",
   "/driver",
   "/",
-  "/fonctionnalites",
-  "/tarifs",
-  "/demonstration",
-  "/demo",
-  "/contact",
-  "/commander",
-  "/suivi",
   "/mentions-legales",
   "/confidentialite",
   "/login",
   "/forgot-password",
   "/reset-password",
-  "/register",
 ] as const;
 
 /**

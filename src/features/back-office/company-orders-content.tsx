@@ -16,7 +16,7 @@ import {
   type OrderHistoryPage,
   type OrderHistoryQuery,
 } from "@/lib/query/order-history";
-import { MessageSquareText, Package, Plus } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import type { TableColumn } from "@/types";
 import type { CompanyOrder } from "@/features/back-office/types";
 import { AccountingExportForm } from "@/features/back-office/accounting-export-form";
@@ -46,10 +46,6 @@ export function CompanyOrdersContent({ initialOrders }: CompanyOrdersContentProp
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/dashboard/orders/intake" className={cn(buttonVariants({ variant: "outline" }), "min-h-11")}>
-            <MessageSquareText className="h-4 w-4" />
-            Depuis un message
-          </Link>
           <Link href="/dashboard/orders/new" className={cn(buttonVariants({ variant: "brand" }), "min-h-11")}>
             <Plus className="h-4 w-4" />
             Nouvelle commande

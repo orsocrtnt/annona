@@ -11,8 +11,6 @@ export const invoiceLineItemSchema = z.object({
 });
 
 export const createOrderInvoiceSchema = z.object({
-  zoneId: z.string().optional(),
-  feeIds: z.array(z.string()).default([]),
   includePurchases: z.boolean().default(false),
   customLines: z
     .array(

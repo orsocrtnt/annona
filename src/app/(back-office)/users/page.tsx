@@ -21,7 +21,6 @@ import {
 import { formatPersonNameByRole } from "@/lib/format/person-labels";
 import { usePermissions } from "@/hooks/use-permissions";
 import { canManageMiniAdmins, parseMiniAdminSettings } from "@/lib/permissions/mini-admin";
-import { isDemoLockedAccountEmail } from "@/lib/demo/constants";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "@/types";
 import type { SystemRole } from "@prisma/client";
@@ -126,7 +125,7 @@ export default function UsersPage() {
               userId={row.id}
               userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
               role={row.role.systemRole}
-              locked={isDemoLockedAccountEmail(row.email) || (row.role.systemRole === "MINI_ADMIN" && !canDelegate)}
+              locked={row.role.systemRole === "MINI_ADMIN" && !canDelegate}
             />
           )}
         </div>

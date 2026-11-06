@@ -8,185 +8,25 @@ import { Label } from "@/components/ui/label";
 import { PageLoader } from "@/components/ui/loader";
 import { EinvoicingSettingsCard } from "@/features/back-office/einvoicing-settings-card";
 import { CompanyPaymentsPanel } from "@/features/back-office/company-payments-panel";
-import { TariffSettingsForm } from "@/features/back-office/tariff-settings-form";
 import {
   useCompanyBillingSettings,
   useUpdateCompanyBillingSettings,
 } from "@/features/back-office/billing-settings-hooks";
 import type { CompanyBillingSettings } from "@/lib/validations/billing-settings";
 import { cn } from "@/lib/utils";
-import { Bike, FileText, Receipt, Wallet } from "lucide-react";
+import { FileText, Receipt, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
-type BillingTab = "payments" | "courses" | "general";
+type BillingTab = "payments" | "general";
 
-const TABS: { key: BillingTab; label: string; icon: typeof Bike }[] = [
+const TABS: { key: BillingTab; label: string; icon: typeof Wallet }[] = [
   { key: "payments", label: "Paiements", icon: Wallet },
-  { key: "courses", label: "Courses", icon: Bike },
   { key: "general", label: "Factures", icon: FileText },
 ];
 
 function parseNumber(value: string) {
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function CourierPricingSection({
-  local,
-  setLocal,
-}: {
-  local: CompanyBillingSettings;
-  setLocal: (next: CompanyBillingSettings) => void;
-}) {
-  const courier = local.courier;
-
-  const updateCourier = (patch: Partial<CompanyBillingSettings["courier"]>) => {
-    setLocal({ ...local, courier: { ...courier, ...patch } });
-  };
-
-  const previewEstimate = Math.max(
-    courier.minimumPrice,
-    courier.basePrice + courier.pricePerKm * 5
-  );
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Bike className="h-4 w-4" />
-            Tarification des courses
-          </CardTitle>
-          <CardDescription>
-            Paramètres de base pour facturer une course (COURIER). Les zones et suppléments
-            ci-dessous s&apos;appliquent en complément.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label htmlFor="billing-base-price">Forfait de prise en charge (€)</Label>
-            <Input
-              id="billing-base-price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={courier.basePrice || ""}
-              onChange={(e) => updateCourier({ basePrice: parseNumber(e.target.value) })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="billing-price-per-km">Prix au km (€)</Label>
-            <Input
-              id="billing-price-per-km"
-              type="number"
-              min="0"
-              step="0.01"
-              value={courier.pricePerKm || ""}
-              onChange={(e) => updateCourier({ pricePerKm: parseNumber(e.target.value) })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="billing-minimum-price">Minimum facturable (€)</Label>
-            <Input
-              id="billing-minimum-price"
-              type="number"
-              min="0"
-              step="0.01"
-              value={courier.minimumPrice || ""}
-              onChange={(e) => updateCourier({ minimumPrice: parseNumber(e.target.value) })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="billing-included-km">Km inclus dans le forfait</Label>
-            <Input
-              id="billing-included-km"
-              type="number"
-              min="0"
-              step="0.1"
-              value={courier.freeKmIncluded || ""}
-              onChange={(e) => updateCourier({ freeKmIncluded: parseNumber(e.target.value) })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="billing-night-surcharge">Majoration nuit (%)</Label>
-            <Input
-              id="billing-night-surcharge"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              value={courier.nightSurchargePercent || ""}
-              onChange={(e) =>
-                updateCourier({ nightSurchargePercent: parseNumber(e.target.value) })
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="billing-weekend-surcharge">Majoration week-end (%)</Label>
-            <Input
-              id="billing-weekend-surcharge"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              value={courier.weekendSurchargePercent || ""}
-              onChange={(e) =>
-                updateCourier({ weekendSurchargePercent: parseNumber(e.target.value) })
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="flex flex-col gap-4 p-4 max-md:items-start sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium">Estimation de prix visible par le client</p>
-            <p className="text-xs text-muted-foreground">
-              Affiche un prix indicatif au client lorsqu&apos;il crée une course, calculé selon
-              ces tarifs. Le prix final reste fixé par votre entreprise.
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={courier.showClientEstimate}
-            aria-label="Activer l'estimation de prix client"
-            onClick={() => updateCourier({ showClientEstimate: !courier.showClientEstimate })}
-            className={cn(
-              "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors max-md:after:absolute max-md:after:-inset-3 max-md:after:content-['']",
-              courier.showClientEstimate ? "bg-brand" : "bg-muted-foreground/30"
-            )}
-          >
-            <span
-              className={cn(
-                "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform dark:bg-foreground",
-                courier.showClientEstimate ? "translate-x-5" : "translate-x-0.5"
-              )}
-            />
-          </button>
-        </CardContent>
-      </Card>
-
-      <Card className="border-dashed">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Aperçu indicatif</CardTitle>
-          <CardDescription>
-            Exemple pour une course d&apos;environ 5 km (hors zones et suppléments).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-2xl font-semibold">{previewEstimate.toFixed(2)} € HT</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            max({courier.minimumPrice.toFixed(2)} €, {courier.basePrice.toFixed(2)} € +{" "}
-            {courier.pricePerKm.toFixed(2)} €/km × distance)
-          </p>
-        </CardContent>
-      </Card>
-
-      <TariffSettingsForm embedded />
-    </div>
-  );
 }
 
 function InvoiceGeneralSection({
@@ -262,8 +102,7 @@ function InvoiceGeneralSection({
           <div>
             <p id="billing-auto-invoice-label" className="text-sm font-medium">Émettre la facture à la livraison</p>
             <p className="text-xs text-muted-foreground">
-              Dès qu&apos;une commande passe en « Livrée », la facture est émise avec la zone suggérée
-              et les achats validés, puis envoyée au client par e-mail. Désactivé : vous facturez à la main.
+              Dès qu&apos;une commande passe en « Livrée », la facture est émise avec les achats validés, puis envoyée au client par e-mail. Désactivé : vous facturez à la main.
             </p>
           </div>
           <button
@@ -328,7 +167,7 @@ export function BillingSettingsContent() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Facturation</h1>
         <p className="mt-1 text-muted-foreground max-md:hidden">
-          Paiements, tarification des courses, zones, suppléments et paramètres de facture
+          Paiements et paramètres de facture
         </p>
       </div>
 
@@ -356,8 +195,6 @@ export function BillingSettingsContent() {
 
       {tab === "payments" ? (
         <CompanyPaymentsPanel />
-      ) : tab === "courses" ? (
-        <CourierPricingSection local={local} setLocal={setLocal} />
       ) : (
         <InvoiceGeneralSection local={local} setLocal={setLocal} />
       )}

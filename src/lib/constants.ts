@@ -2,14 +2,13 @@ export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "Annona";
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 /**
  * Adresse de support publique, seulement si elle est configurée : aucune adresse par défaut, la boîte
- * `support@annona.fr` n'existant pas (domaine non acheté). Sans configuration, les liens mènent à /contact.
+ * `support@annona.fr` n'existant pas (domaine non acheté). Sans configuration, aucun lien de support n'est affiché.
  */
 export const SUPPORT_EMAIL: string | null = process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || null;
 
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
-  REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD: "/reset-password",
 
@@ -37,14 +36,12 @@ export const ROUTES = {
 export const PUBLIC_ROUTES = [
   ROUTES.HOME,
   ROUTES.LOGIN,
-  ROUTES.REGISTER,
   ROUTES.FORGOT_PASSWORD,
   ROUTES.RESET_PASSWORD,
 ] as const;
 
 export const AUTH_ROUTES = [
   ROUTES.LOGIN,
-  ROUTES.REGISTER,
   ROUTES.FORGOT_PASSWORD,
   ROUTES.RESET_PASSWORD,
   "/login/client",

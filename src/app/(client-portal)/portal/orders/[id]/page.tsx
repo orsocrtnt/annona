@@ -3,7 +3,6 @@
 import { deliverySlotRange, formatWeightKg } from "@/lib/format/delivery-slot";
 import Link from "next/link";
 import { OrderTracking } from "@/components/shared/order-tracking";
-import { OrderConversation } from "@/components/shared/order-conversation";
 import { OrderProgressTrack } from "@/components/shared/order-progress-track";
 import { orderProgress } from "@/lib/orders/progress";
 import { useParams } from "next/navigation";
@@ -263,7 +262,6 @@ export default function ClientOrderDetailPage() {
         </Card>
       )}
       <OrderTracking orderId={order.id} />
-      <OrderConversation orderId={order.id} />
     </div>
   );
 }

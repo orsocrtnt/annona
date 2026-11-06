@@ -1,6 +1,5 @@
 "use client";
 import { OrderTrackingTrigger } from "@/components/shared/order-tracking";
-import { OrderConversationTrigger } from "@/components/shared/order-conversation";
 
 import { useRef, useState } from "react";
 import Link from "next/link";
@@ -314,7 +313,6 @@ export function MissionCard({ mission, showActions = true }: MissionCardProps) {
           <MissionAcknowledgement {...mission} compact />
           <div className="flex flex-wrap gap-2">
             <OrderTrackingTrigger orderId={mission.orderId} />
-            <OrderConversationTrigger orderId={mission.orderId} />
           </div>
           {showActions && (
             <MissionStepper status={mission.status} category={mission.deliveryCategory} />

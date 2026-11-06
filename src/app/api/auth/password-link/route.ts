@@ -2,21 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resetPasswordSchema } from "@/lib/validations/auth";
 import { finishPasswordLink } from "@/domains/auth/password-link.service";
-import { setSignupResumeCookie } from "@/domains/signup/signup-cookie";
 import { zodIssueMessage } from "@/lib/config-messages";
 
 const tokenHash = z.string().min(20).max(512);
 const accessToken = z.string().min(20).max(8192);
 // Supabase émet des refresh tokens courts (12 caractères en préproduction).
 const refreshToken = z.string().min(8).max(1024);
-const tokenHashSchema = z.union([
-  resetPasswordSchema.and(z.object({ tokenHash, type: z.enum(["invite", "recovery"]) })),
-  z.object({ tokenHash, type: z.literal("signup") }),
-]);
-const sessionSchema = z.union([
-  resetPasswordSchema.and(z.object({ accessToken, refreshToken, type: z.enum(["invite", "recovery"]) })),
-  z.object({ accessToken, refreshToken, type: z.literal("signup") }),
-]);
+const tokenHashSchema = resetPasswordSchema.and(z.object({ tokenHash, type: z.enum(["invite", "recovery"]) }));
+const sessionSchema = resetPasswordSchema.and(z.object({ accessToken, refreshToken, type: z.enum(["invite", "recovery"]) }));
 const schema = z.union([tokenHashSchema, sessionSchema]);
 const LINK_INVALID = "Lien manquant ou invalide. Demandez un nouveau lien.";
 
@@ -33,13 +26,8 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: invalidRequestMessage(body) }, { status: 400, headers: { "Cache-Control": "no-store" } });
   try {
-    const result = await finishPasswordLink(parsed.data);
-    const response = NextResponse.json(
-      { success: true, redirectTo: result.signupResumeToken ? "/register" : null },
-      { headers: { "Cache-Control": "no-store" } }
-    );
-    if (result.signupResumeToken) setSignupResumeCookie(response, result.signupResumeToken);
-    return response;
+    await finishPasswordLink(parsed.data);
+    return NextResponse.json({ success: true, redirectTo: null }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
     if (code === "AUTH_PASSWORD_WEAK" || code === "AUTH_PASSWORD_SAME") {

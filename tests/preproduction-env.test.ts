@@ -18,7 +18,6 @@ function validEnvironment() {
     PREPROD_FORBIDDEN_SUPABASE_REFS: "oldref,productionref",
     AUTH_EMAIL_LINKS_ENABLED: "false",
     EMAIL_DELIVERY_MODE: "disabled",
-    DEMO_CLEANUP_ENABLED: "false",
   };
 }
 
@@ -40,15 +39,13 @@ test("refuse les connexions base qui ne ciblent pas le projet attendu", () => {
   assert.ok(validatePreproductionEnvironment(environment).includes("DATABASE_URL_TARGET_MISMATCH"));
 });
 
-test("refuse les e-mails réels et le nettoyage automatique", () => {
+test("refuse les e-mails réels", () => {
   const environment = validEnvironment();
   environment.AUTH_EMAIL_LINKS_ENABLED = "true";
   environment.EMAIL_DELIVERY_MODE = "live";
-  environment.DEMO_CLEANUP_ENABLED = "true";
 
   assert.deepEqual(validatePreproductionEnvironment(environment), [
     "AUTH_EMAIL_LINKS_MUST_BE_FALSE",
-    "DEMO_CLEANUP_MUST_BE_FALSE",
     "EMAIL_DELIVERY_MODE_UNSAFE",
   ]);
 });

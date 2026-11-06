@@ -146,7 +146,6 @@ export interface CompanyDeliveryDetail {
   podFailureCode?: string | null;
   podNote?: string | null;
   podSignatureUrl?: string | null;
-  podPdfUrl?: string | null;
   podRecipientName?: string | null;
   podSignatureRefusedReason?: string | null;
   trackingEvents: { id: string; label: string; description?: string | null; occurredAt: string }[];

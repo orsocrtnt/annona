@@ -6,7 +6,6 @@ import { updateSettingsWithClaim, settingsSection } from "../src/lib/database/cl
 import { resolveApiError } from "../src/lib/api/route-handler";
 import { updateCompanyDispatchSettings } from "../src/domains/company/dispatch-settings.service";
 import { updateCompanyLocationSettings } from "../src/domains/company/location-settings.service";
-import { updateCompanyTariffSettings } from "../src/domains/company/tariff-settings.service";
 import { updateCompanyDeliveryOptions } from "../src/domains/company/company-settings.service";
 import { resetDashboardLayout } from "../src/domains/back-office/dashboard-settings.service";
 import { resetPortalDashboardLayout } from "../src/domains/client-portal/portal-dashboard-settings.service";
@@ -64,19 +63,17 @@ test("section : deux enregistrements simultanés du même réglage — le second
   assert.deepEqual(row.settings, { billing: { a: 1 }, dispatchRules: { v: winner } }, "seul le premier enregistrement est écrit");
 });
 
-test("entreprise : dispatch, localisation, tarifs et catégories enregistrés en même temps — aucune clé perdue", async (t) => {
+test("entreprise : dispatch, localisation et catégories enregistrés en même temps — aucune clé perdue", async (t) => {
   const store = memoryStore(t, prisma.company, "findUnique", { billing: { invoice: { vatRate: 20 } }, einvoicing: { vatNumber: "FR00" } });
   const dispatch = { ...DEFAULT_DISPATCH_SETTINGS, maxActiveDeliveriesPerDriver: 4 };
   const location = { ...DEFAULT_DRIVER_LOCATION_SETTINGS, idleIntervalSeconds: 30 };
-  const tariffs = { tariffZones: [], tariffFees: [] };
   const categories = { deliveryCategories: { STANDARD: true, COURIER: false, SPECIAL_MISSION: true } };
   const results = await Promise.all([
     settle(updateCompanyDispatchSettings("company-a", dispatch)),
     settle(updateCompanyLocationSettings("company-a", location)),
-    settle(updateCompanyTariffSettings("company-a", tariffs)),
     settle(updateCompanyDeliveryOptions("company-a", categories)),
   ]);
-  // Quatre écrivains, dix tentatives espacées chacun : un conflit reste permis, jamais une perte silencieuse.
+  // Trois écrivains, dix tentatives espacées chacun : un conflit reste permis, jamais une perte silencieuse.
   const saved = results.filter((result) => result === "saved").length;
   assert.ok(results.every((result) => result === "saved" || result === "SETTINGS_CONFLICT"), results.join());
   assert.equal(store.writes, saved, "une écriture par enregistrement réussi");
@@ -84,12 +81,11 @@ test("entreprise : dispatch, localisation, tarifs et catégories enregistrés en
   assert.deepEqual(store.row.settings.einvoicing, { vatNumber: "FR00" });
   if (results[0] === "saved") assert.equal((store.row.settings.dispatchRules as { maxActiveDeliveriesPerDriver: number }).maxActiveDeliveriesPerDriver, 4);
   if (results[1] === "saved") assert.equal((store.row.settings.locationTracking as { idleIntervalSeconds: number }).idleIntervalSeconds, 30);
-  if (results[2] === "saved") assert.deepEqual(store.row.settings.tariffZones, []);
-  if (results[3] === "saved") assert.deepEqual(store.row.settings.deliveryCategories, categories.deliveryCategories);
+  if (results[2] === "saved") assert.deepEqual(store.row.settings.deliveryCategories, categories.deliveryCategories);
 });
 
 test("entreprise : deux enregistrements simultanés des règles de dispatch — 409 au second, le premier reste", async (t) => {
-  const store = memoryStore(t, prisma.company, "findUnique", { tariffZones: [] });
+  const store = memoryStore(t, prisma.company, "findUnique", { billing: {} });
   const results = await Promise.all([
     settle(updateCompanyDispatchSettings("company-a", { ...DEFAULT_DISPATCH_SETTINGS, maxActiveDeliveriesPerDriver: 5 })),
     settle(updateCompanyDispatchSettings("company-a", { ...DEFAULT_DISPATCH_SETTINGS, maxActiveDeliveriesPerDriver: 6 })),
@@ -148,7 +144,7 @@ function sourceFiles(dir: string): string[] {
 }
 
 /** Remplacement complet volontaire : (re)provisionnement d'une entreprise de démo ou d'un environnement d'offre de test. */
-const DELIBERATE_RESETS = new Set(["src/domains/demo/demo-provision.service.ts", "src/domains/saas/offer-environment.service.ts"]);
+const DELIBERATE_RESETS = new Set<string>([]);
 
 test("inventaire : aucune lecture-réécriture de settings sans réclamation dans src/", () => {
   const offenders: string[] = [];
@@ -180,6 +176,6 @@ test("inventaire (contrôle statique du texte SQL) : une écriture SQL brute de 
       }
     }
   }
-  assert.ok(found >= 2, "preuves de livraison et commande par message");
+  assert.ok(found >= 1, "preuves de livraison");
   assert.deepEqual(offenders, []);
 });

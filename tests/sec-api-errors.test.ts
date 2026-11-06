@@ -3,7 +3,7 @@ import test from "node:test";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { ApiRouteError, readJsonBody, withApiHandler } from "../src/lib/api/route-handler";
-import { ConversationError } from "../src/domains/order-conversation/order-conversation.service";
+import { OrderAccessError } from "../src/domains/order/order-access";
 import { InvalidSupportReferenceError } from "../src/domains/support/support.service";
 
 // SEC-3 : seules les erreurs métier connues sont renvoyées au client ;
@@ -56,8 +56,6 @@ test("ApiRouteError : message destiné à l'utilisateur et statut conservés", a
 
 test("codes connus : traduits en français avec le bon statut", async (t) => {
   for (const [code, expected] of [
-    ["SAAS_FEATURE_NOT_AVAILABLE", 403],
-    ["SAAS_ACCOUNT_READ_ONLY", 403],
     ["ACCOUNT_UNAVAILABLE", 403],
     ["COMPANY_NOT_FOUND", 404],
   ] as const) {
@@ -94,9 +92,9 @@ test("erreurs métier nommées : message français et statut conservés au lieu 
   const support = await run(t, new InvalidSupportReferenceError());
   assert.equal(support.status, 404);
   assert.equal(support.body.error, "Référence introuvable");
-  const conversation = await run(t, new ConversationError(403, "Accès aux échanges refusé."));
+  const conversation = await run(t, new OrderAccessError(403, "Accès refusé."));
   assert.equal(conversation.status, 403);
-  assert.equal(conversation.body.error, "Accès aux échanges refusé.");
+  assert.equal(conversation.body.error, "Accès refusé.");
   const recurring = await run(t, new Error("RECURRING_SPECIAL_MISSION_UNSUPPORTED"));
   assert.equal(recurring.status, 400);
   assert.match(recurring.body.error, /missions spéciales/);

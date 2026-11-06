@@ -10,33 +10,14 @@ import {
   getDashboardPathForRole,
   UserNotProvisionedError,
 } from "@/domains/auth/auth.service";
-import {
-  extractPermissionSlugs,
-  getUserByAuthId,
-  updateLastLogin,
-} from "@/domains/user/user.service";
-import { isDemoLoginEmail, DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
-import {
-  clearDemoPersonaCookie,
-  clearDemoSessionCookie,
-  setDemoPersonaCookie,
-} from "@/lib/demo/persona-cookie";
-import { resolveDemoActiveUser } from "@/domains/demo/demo-auth.service";
-import { ensureDemoSessionForLogin } from "@/domains/demo/demo-session.service";
-import {
-  DemoPoolUnavailableError,
-  maintainDemoPool,
-  recycleDemoPoolEnvironment,
-  requestDemoPoolRecycle,
-} from "@/domains/demo/demo-pool.service";
-import { getSessionSaasAccess } from "@/domains/saas/saas-session";
+import { extractPermissionSlugs } from "@/domains/user/user.service";
 import {
   LOGIN_BUSY_MESSAGE,
   loginBusyResponseInit,
   settleLoginAttempt,
   startLoginAttempt,
 } from "@/domains/auth/login-rate-limit.service";
-import { contactSourceFromHeaders } from "@/domains/growth/contact.service";
+import { requestSourceFromHeaders } from "@/lib/security/request-source";
 
 const SERVICE_UNAVAILABLE_MESSAGE =
   "Service de connexion momentanément indisponible. Réessayez dans quelques instants.";
@@ -57,16 +38,6 @@ function isDatabaseUnavailable(error: unknown): boolean {
   return candidate.code === "P1001" || candidate.code === "P1002" || candidate.code === "P2024";
 }
 
-async function clearFailedDemoLogin(
-  supabase: Awaited<ReturnType<typeof createClient>>
-): Promise<void> {
-  await Promise.allSettled([
-    supabase.auth.signOut({ scope: "local" }),
-    clearDemoPersonaCookie(),
-    clearDemoSessionCookie(),
-  ]);
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);
@@ -85,8 +56,8 @@ export async function POST(request: Request) {
     const [rateLimit, supabase] = await Promise.all([
       startLoginAttempt({
         email: normalizedEmail,
-        source: contactSourceFromHeaders(request.headers),
-        trackEmail: !isDemoLoginEmail(normalizedEmail),
+        source: requestSourceFromHeaders(request.headers),
+        trackEmail: true,
       }),
       createClient(),
     ]);
@@ -129,70 +100,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Confirmez votre adresse e-mail avant de vous connecter." }, { status: 403 });
     }
 
-    const isDemoAccount = isDemoLoginEmail(authUser.email!);
-    const requestKey = typeof (body as { demoRequestKey?: unknown }).demoRequestKey === "string"
-      ? (body as { demoRequestKey: string }).demoRequestKey
-      : undefined;
-    // Recette automatisée : location raccourcie à une heure (décision C10). Sans privilège :
-    // l'indicateur ne peut que raccourcir la session de celui qui l'envoie.
-    const demoTestSession = (body as { demoTestSession?: unknown }).demoTestSession === true;
-    let sessionCompanyId: string | undefined;
-    let user: Awaited<ReturnType<typeof syncUserFromSupabase>>;
-
-    if (isDemoAccount) {
-      // Après authentification Supabase, la lecture du compte permanent et la
-      // réservation atomique sont indépendantes : les exécuter ensemble retire
-      // une attente réseau du chemin critique.
-      try {
-        const [baseUser, leasedCompanyId] = await Promise.all([
-          getUserByAuthId(authUser.id),
-          ensureDemoSessionForLogin("authenticated-demo", requestKey, { testSession: demoTestSession }),
-        ]);
-        if (!baseUser) throw new UserNotProvisionedError();
-        user = baseUser;
-        sessionCompanyId = leasedCompanyId;
-      } catch (error) {
-        await clearFailedDemoLogin(supabase);
-        throw error;
-      }
-    } else {
-      user = await syncUserFromSupabase({
-        authId: authUser.id,
-        email: authUser.email!,
-      });
-    }
-
-    assertAccountActive(user);
-
-    if (isDemoAccount) {
-      // La connexion reprend la démo ; seule l'action explicite de l'utilisateur
-      // peut réinitialiser ses données. Aucun seed ni reconstruction au login.
-      if (!user.companyId || !user.company?.isDemo) {
-        if (sessionCompanyId && await requestDemoPoolRecycle(sessionCompanyId)) {
-          after(async () => { await recycleDemoPoolEnvironment(sessionCompanyId!); });
-        }
-        await clearFailedDemoLogin(supabase);
-        return NextResponse.json(
-          { error: "Environnement de démo incomplet. Contactez votre administrateur." },
-          { status: 503 }
-        );
-      }
-
-      after(async () => {
-        const results = await Promise.allSettled([
-          updateLastLogin(user.id),
-          maintainDemoPool(),
-        ]);
-        for (const result of results) {
-          if (result.status === "rejected") {
-            console.error("Demo post-login maintenance failed:", result.reason);
-          }
-        }
-      });
-      await setDemoPersonaCookie("admin");
-      const personaUser = await resolveDemoActiveUser(user, "admin", sessionCompanyId!);
-      if (personaUser) user = personaUser;
-    }
+    const user = await syncUserFromSupabase({
+      authId: authUser.id,
+      email: authUser.email!,
+    });
 
     assertAccountActive(user);
     const permissions = extractPermissionSlugs(user);
@@ -200,37 +111,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       user,
       permissions,
-      saas: await getSessionSaasAccess(user.companyId),
       redirectTo: await resolveOnboardingLoginPath(user, getDashboardPathForRole(user.role.systemRole, user.settings)),
-      demo: isDemoAccount
-        ? {
-            isDemo: true as const,
-            persona: "admin" as const,
-            loginEmail: DEMO_LOGIN_EMAIL,
-          }
-        : null,
     });
   } catch (error) {
-    if (error instanceof DemoPoolUnavailableError) {
-      after(async () => {
-        try {
-          await maintainDemoPool();
-        } catch (maintenanceError) {
-          console.error("Demo pool recovery failed:", maintenanceError);
-        }
-      });
-      return NextResponse.json(
-        {
-          error: "Tous les espaces de démonstration sont occupés ou en préparation. Réessayez dans quelques secondes.",
-          code: error.code,
-          retryAfterSeconds: error.retryAfterSeconds,
-        },
-        {
-          status: 503,
-          headers: { "Retry-After": String(error.retryAfterSeconds) },
-        }
-      );
-    }
     if (error instanceof AccountUnavailableError) {
       return NextResponse.json({ error: "Compte ou entreprise indisponible. Contactez votre administrateur." }, { status: 403 });
     }

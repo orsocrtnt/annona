@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/services/supabase/middleware";
 import { AUTH_ROUTES } from "@/lib/constants";
-import { DEMO_PERSONA_COOKIE, DEMO_SESSION_COOKIE } from "@/lib/demo/constants";
 import { isCrossOriginMutation, isOriginCheckExempt } from "@/lib/security/origin-check";
 import {
   evaluatePageAccess,
@@ -30,11 +29,7 @@ async function loadSubject(authId: string): Promise<PageAccessSubject | null> {
 }
 
 async function resolvePageSubject(request: NextRequest, authId: string): Promise<PageAccessSubject | null> {
-  const key = [
-    authId,
-    request.cookies.get(DEMO_PERSONA_COOKIE)?.value ?? "",
-    request.cookies.get(DEMO_SESSION_COOKIE)?.value ?? "",
-  ].join("\n");
+  const key = authId;
   const now = Date.now();
   const hit = subjectCache.get(key);
   if (hit && hit.until > now) return hit.subject;

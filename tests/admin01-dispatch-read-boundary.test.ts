@@ -12,7 +12,6 @@ const routes = [
   "src/app/api/dispatch/drivers-locations/route.ts",
   "src/app/api/dispatch/drivers-map/route.ts",
   "src/app/api/dispatch/map/route.ts",
-  "src/app/api/dispatch/eligible-drivers/route.ts",
 ];
 
 function load(file: string, dependencies: Record<string, unknown>) {
@@ -69,10 +68,7 @@ function deps(file: string, role: string, calls: string[]) {
     "@/domains/company/dispatch-settings.service",
     "@/domains/company/location-settings.service",
     "@/domains/driver/driver-location.service",
-    "@/domains/saas/saas.service",
     "@/domains/delivery/dispatch-map.service",
-    "@/domains/delivery/auto-dispatch.service",
-    "@/domains/demo/demo-live-positions.service",
   ]) base[id] = sink(calls);
   void file;
   return base;
@@ -87,15 +83,15 @@ test("ADMIN-1 dispatch : super-admin refusé avant entreprise, paramètres et m�
   }
   assert.equal(calls.includes("company"), false);
   assert.equal(calls.includes("down"), false);
-  assert.equal(calls.filter((call) => call === "staff").length, 6);
-  assert.equal(calls.filter((call) => call === "role").length, 6);
+  assert.equal(calls.filter((call) => call === "staff").length, 5);
+  assert.equal(calls.filter((call) => call === "role").length, 5);
 });
 
 test("ADMIN-1 dispatch : les trois rôles autorisés passent la lecture", async () => {
   const samples = [
     ["COMPANY_ADMIN", "src/app/api/dispatch/drivers-workload/route.ts"],
     ["MINI_ADMIN", "src/app/api/dispatch/drivers-map/route.ts"],
-    ["DISPATCHER", "src/app/api/dispatch/eligible-drivers/route.ts"],
+    ["DISPATCHER", "src/app/api/dispatch/map/route.ts"],
   ] as const;
   for (const [role, file] of samples) {
     const calls: string[] = [];

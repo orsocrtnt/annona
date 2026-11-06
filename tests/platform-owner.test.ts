@@ -29,7 +29,6 @@ test("le compte propriétaire est actif, sans entreprise, et unique", () => {
 
 test("la création serveur ne passe pas par l'inscription publique", () => {
   const script = readFileSync("scripts/platform/create-owner.ts", "utf8");
-  const signup = readFileSync("src/domains/signup/signup.service.ts", "utf8");
   assert.equal(script.includes("validatePreproductionEnvironment"), true);
   assert.equal(script.includes("planOwnerAccount"), true);
   assert.equal(script.includes('companyId: plan.companyId'), true);
@@ -39,6 +38,4 @@ test("la création serveur ne passe pas par l'inscription publique", () => {
   assert.equal(script.includes("signup"), false);
   assert.equal(script.includes("console.log(password"), false);
   assert.equal(script.includes("PLATFORM_OWNER_PASSWORD"), true);
-  assert.equal(signup.includes("super-admin"), false);
-  assert.equal(signup.includes('slug: "company-admin"'), true);
 });

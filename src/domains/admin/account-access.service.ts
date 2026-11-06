@@ -5,7 +5,7 @@ import { prisma } from "@/services/prisma/client";
  * Couper ou rétablir l'accès d'un compte ou d'une entreprise depuis l'espace super admin (5 novembre 2026,
  * demande du propriétaire). Statut SUSPENDED : la connexion et chaque page ou appel relisent le statut en base
  * (`isAccountActive`), l'accès tombe donc en quelques secondes. Rien n'est supprimé ; « Rétablir » rend
- * le statut d'avant. Jamais un super admin ni un espace de démonstration.
+ * le statut d'avant. Jamais un super admin.
  */
 export type AccessAction = "suspend" | "restore";
 export type AccessResult =
@@ -21,10 +21,10 @@ function settingsObject(value: Prisma.JsonValue | null | undefined): Record<stri
 export async function setPlatformUserAccess(id: string, action: AccessAction): Promise<AccessResult> {
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, status: true, role: { select: { systemRole: true } }, company: { select: { isDemo: true } } },
+    select: { id: true, status: true, role: { select: { systemRole: true } } },
   });
   if (!user) return { ok: false, code: "NOT_FOUND" };
-  if (user.role.systemRole === "SUPER_ADMIN" || user.company?.isDemo) return { ok: false, code: "PROTECTED" };
+  if (user.role.systemRole === "SUPER_ADMIN") return { ok: false, code: "PROTECTED" };
   const [from, to] = action === "suspend" ? (["ACTIVE", "SUSPENDED"] as const) : (["SUSPENDED", "ACTIVE"] as const);
   if (user.status !== from) return { ok: false, code: "INVALID_STATE" };
   // Condition sur le statut lu : deux clics simultanés n'écrivent qu'une fois.
@@ -35,10 +35,9 @@ export async function setPlatformUserAccess(id: string, action: AccessAction): P
 export async function setPlatformCompanyAccess(id: string, action: AccessAction): Promise<AccessResult> {
   const company = await prisma.company.findUnique({
     where: { id },
-    select: { id: true, status: true, isDemo: true, settings: true },
+    select: { id: true, status: true, settings: true },
   });
   if (!company) return { ok: false, code: "NOT_FOUND" };
-  if (company.isDemo) return { ok: false, code: "PROTECTED" };
   const settings = settingsObject(company.settings);
   // Réclamation : les réglages lus n'ont pas changé entre la lecture et l'écriture (sinon aucune écriture).
   const expected = company.settings === null ? Prisma.DbNull : (company.settings as Prisma.InputJsonValue);
@@ -64,7 +63,7 @@ export async function setPlatformCompanyAccess(id: string, action: AccessAction)
 
 export const ACCESS_ERROR_MESSAGES: Record<Exclude<AccessResult, { ok: true }>["code"], { status: number; message: string }> = {
   NOT_FOUND: { status: 404, message: "Compte introuvable." },
-  PROTECTED: { status: 403, message: "Ce compte ne peut pas être coupé (super admin ou démonstration)." },
+  PROTECTED: { status: 403, message: "Ce compte ne peut pas être coupé (super admin)." },
   INVALID_STATE: { status: 409, message: "Le statut a changé entre-temps : rechargez la page." },
 };
 

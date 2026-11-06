@@ -177,14 +177,6 @@ test("MAP-2 : carte historique reste importable sans window", async () => {
   assert.equal(typeof window, "undefined");
   assert.equal(typeof (await import("../src/components/maps/delivery-map")).DeliveryMap, "function");
 });
-test("MAP-2 : estimation tarifaire indisponible en cas de géocodage absent", async () => {
-  const m = moduleAt("src/domains/company/courier-estimate.service.ts", {
-    "./billing-settings.service": { getCompanyBillingSettings: async () => ({ courier: { showClientEstimate: true } }) },
-    "@/lib/geocoding": { geocodeAddress: async () => null },
-  });
-  const result = await m.estimateCourierPrice("test", { pickup: { address: "test" }, shipping: { address: "test" } });
-  assert.equal(result.enabled, true); assert.equal(result.amount, null); assert.equal(result.distanceKm, null);
-});
 test("MAP-2 : cible inconnue ne devient jamais proximité confirmée", async () => {
   const m = moduleAt("src/domains/delivery/driver-proximity.service.ts", {
     "@/services/prisma/client": { prisma: {} },

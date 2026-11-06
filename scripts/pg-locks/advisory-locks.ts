@@ -29,7 +29,6 @@ async function main() {
 
   const { prisma } = await import("../../src/services/prisma/client");
   const { remindInvoice, deliverInvoiceReminderJob } = await import("../../src/domains/invoice/invoice-reminder.service");
-  const { createOrderFromIntake } = await import("../../src/domains/order-intake/order-intake.service");
   const { beginLoginAttempt, loginAttemptKeys, LOGIN_PAIR_FAILURE_LIMIT } = await import("../../src/domains/auth/login-rate-limit.service");
   const { jobEmailReplayWindow, enqueueOperationJob } = await import("../../src/domains/operations/operation-job.service");
 
@@ -112,33 +111,6 @@ async function main() {
     assert.equal(new Set(keys).size, 1, "a3 : même clé d'idempotence");
     assert.equal(after2.result, "SENT");
     report.a3 = { afterUnknown: unknownState, clicksCreated: clicks2.filter((click) => click && !click.duplicate).length, parallelResumes: PARALLEL, resumes, distinctKeys: new Set(keys).size, final: after2.result };
-
-    // (b) Anti-doublon de commande par message : même clé, deux clients alternés, 10 requêtes.
-    // createClientOrder (géocodage externe) est remplacé par une création minimale dans une vraie
-    // transaction qui exécute le vrai `beforeCreate` (verrou consultatif + contrôle du gagnant).
-    const intakeKey = `e2e-pglocks-intake-${tag}`;
-    const createOrder = (async (customerId: string, cid: string, email: string, _input: unknown, request: { idempotencyKey?: string; beforeCreate?: (tx: never) => Promise<void> }) =>
-      prisma.$transaction(async (tx) => {
-        await request.beforeCreate?.(tx as never);
-        const existing = await tx.order.findFirst({ where: { companyId: cid, customerId, idempotencyKey: request.idempotencyKey } });
-        if (existing) return existing;
-        await sleep(150); // élargit la fenêtre de course
-        return tx.order.create({ data: { reference: `E2E-PGLOCKS-ORD-${randomUUID()}`, totalAmount: 10, companyId: cid, customerId, customerEmail: email, idempotencyKey: request.idempotencyKey, source: "ADMIN" } });
-      }, { maxWait: 20_000, timeout: 30_000 })) as never;
-    const intake = await Promise.all(Array.from({ length: PARALLEL }, (_, index) =>
-      createOrderFromIntake(
-        { companyId: company.id, customerId: index % 2 ? clientB.id : clientA.id, order: { deliveryCategory: "STANDARD" } as never, idempotencyKey: intakeKey },
-        { createOrder, assertCategory: async () => undefined }
-      )));
-    const orders = await prisma.order.findMany({ where: { companyId: company.id, idempotencyKey: intakeKey }, select: { id: true, customerId: true } });
-    assert.equal(orders.length, 1, "b : une seule commande");
-    const statuses = intake.map((result) => result.status);
-    const winner = orders[0]!.customerId;
-    intake.forEach((result, index) => {
-      const customer = index % 2 ? clientB.id : clientA.id;
-      assert.equal(result.status, customer === winner ? "created" : "conflict", `b : requête ${index}`);
-    });
-    report.b = { parallel: PARALLEL, ordersInDb: orders.length, created: statuses.filter((s) => s === "created").length, conflict: statuses.filter((s) => s === "conflict").length };
 
     // (c) Compteur d'échecs de connexion : 12 tentatives simultanées, limite 5 par couple.
     const attempts = await Promise.all(Array.from({ length: PARALLEL + 2 }, () => beginLoginAttempt(loginKeys, { db: prisma })));

@@ -44,7 +44,7 @@ function first(value: SearchValue): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export type LoginView = { kind: "form"; context: LoginContext; prefillDemo: boolean };
+export type LoginView = { kind: "form"; context: LoginContext };
 
 /**
  * Vue de `/login` d'après l'URL. Plus d'écran de choix (5 novembre 2026) : `/login` ouvre tout de suite le
@@ -53,9 +53,8 @@ export type LoginView = { kind: "form"; context: LoginContext; prefillDemo: bool
  */
 export function resolveLoginView(params: Record<string, SearchValue>): LoginView {
   const space = first(params.espace);
-  const prefillDemo = first(params.demo) === "1";
   const context = isLoginSpaceKey(space) ? LOGIN_SPACES[space].context : "company";
-  return { kind: "form", context, prefillDemo: prefillDemo && context === "company" };
+  return { kind: "form", context };
 }
 
 /** Espace réellement ouvert par le serveur (et non celui choisi) : c'est lui qu'on retient. */

@@ -10,7 +10,7 @@ const assign = readFileSync("src/domains/delivery/delivery.service.ts", "utf8");
 test("réglages enregistrés avant les tournées : valeurs par défaut, aucune affectation automatique", () => {
   const { rounds: _rounds, ...old } = DEFAULT_DISPATCH_SETTINGS;
   const parsed = companyDispatchSettingsSchema.parse(old);
-  assert.deepEqual(parsed.rounds, { autoAssign: false, stopMinutes: 5, dayMinutes: 480, maxDeliveries: 12 });
+  assert.deepEqual(parsed.rounds, { stopMinutes: 5, dayMinutes: 480, maxDeliveries: 12 });
 });
 
 test("tournées : aucune coordonnée dans ce qui part vers le dispatcher", () => {
@@ -18,10 +18,9 @@ test("tournées : aucune coordonnée dans ce qui part vers le dispatcher", () =>
   assert.doesNotMatch(present, /latitude|longitude/);
 });
 
-test("tournées : rôles, option payante et écriture contrôlés côté serveur", () => {
+test("tournées : rôles et écriture contrôlés côté serveur", () => {
   assert.match(route, /requireStaffRole\("deliveries:dispatch"\)/);
   assert.match(route, /\["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"\]/);
-  assert.match(route, /assertSaasMutationFeature\(companyId, "auto_dispatch"\)/);
 });
 
 test("une tournée ne prend que des livraisons encore à affecter, par la même affectation que le reste", () => {

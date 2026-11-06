@@ -10,7 +10,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 /** DEMO-3, tranche 7 : l'entreprise livre « au jour » ou propose ses créneaux au client (C13). */
-export function DeliverySlotsCard({ readOnly }: { readOnly: boolean }) {
+export function DeliverySlotsCard() {
   const { data } = useCompanyDeliverySlots();
   const update = useUpdateCompanyDeliverySlots();
   const [draft, setDraft] = useState<CompanyDeliverySlots | null>(null);
@@ -43,7 +43,7 @@ export function DeliverySlotsCard({ readOnly }: { readOnly: boolean }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <fieldset className="space-y-2" disabled={readOnly}>
+        <fieldset className="space-y-2">
           <legend className="sr-only">Mode de livraison</legend>
           {([
             ["DAY", "Au jour", "Le client choisit seulement une date."],
@@ -69,15 +69,14 @@ export function DeliverySlotsCard({ readOnly }: { readOnly: boolean }) {
           <div className="space-y-2">
             {draft.slots.map((slot, index) => (
               <div key={index} className="flex items-center gap-2">
-                <Input type="time" aria-label={`Début du créneau ${index + 1}`} value={slot.start} disabled={readOnly} onChange={(event) => setSlot(index, "start", event.target.value)} />
+                <Input type="time" aria-label={`Début du créneau ${index + 1}`} value={slot.start} onChange={(event) => setSlot(index, "start", event.target.value)} />
                 <span className="text-sm text-muted-foreground">à</span>
-                <Input type="time" aria-label={`Fin du créneau ${index + 1}`} value={slot.end} disabled={readOnly} onChange={(event) => setSlot(index, "end", event.target.value)} />
+                <Input type="time" aria-label={`Fin du créneau ${index + 1}`} value={slot.end} onChange={(event) => setSlot(index, "end", event.target.value)} />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   aria-label={`Supprimer le créneau ${index + 1}`}
-                  disabled={readOnly}
                   onClick={() => setDraft({ ...draft, slots: draft.slots.filter((_, i) => i !== index) })}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -88,7 +87,7 @@ export function DeliverySlotsCard({ readOnly }: { readOnly: boolean }) {
               type="button"
               variant="outline"
               size="sm"
-              disabled={readOnly || draft.slots.length >= 8}
+              disabled={draft.slots.length >= 8}
               onClick={() => setDraft({ ...draft, slots: [...draft.slots, { start: "09:00", end: "12:00" }] })}
             >
               <Plus className="h-4 w-4" />
@@ -97,11 +96,9 @@ export function DeliverySlotsCard({ readOnly }: { readOnly: boolean }) {
           </div>
         )}
 
-        {!readOnly && (
-          <Button type="button" onClick={save} disabled={update.isPending}>
-            {update.isPending ? "Enregistrement..." : "Enregistrer les créneaux"}
-          </Button>
-        )}
+        <Button type="button" onClick={save} disabled={update.isPending}>
+          {update.isPending ? "Enregistrement..." : "Enregistrer les créneaux"}
+        </Button>
       </CardContent>
     </Card>
   );
