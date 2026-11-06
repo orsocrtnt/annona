@@ -26,6 +26,7 @@ import {
 import { getPrimaryCourierPickupFields } from "@/lib/order/courier-pickups";
 import { demoInvoiceLineItems } from "@/domains/demo/demo-invoice-lines";
 import { DEMO_SIGNAL_LAG_SECONDS } from "@/lib/demo/demo-live-position";
+import { DEMO_SCENARIO_ANCHOR_KEY } from "@/domains/demo/demo-time-shift.service";
 
 interface DemoActors {
   companyId: string;
@@ -1016,7 +1017,11 @@ export async function resetDemoScenario(
 
   // Marque la version du scénario : la maintenance du pool recycle les espaces dépassés.
   await updateCompanySettingsWithClaim(companyId, {
-    apply: (settings) => ({ ...settings, demoScenarioVersion: DEMO_SCENARIO_VERSION }),
+    apply: (settings) => ({
+      ...settings,
+      demoScenarioVersion: DEMO_SCENARIO_VERSION,
+      [DEMO_SCENARIO_ANCHOR_KEY]: referenceDate.toISOString(),
+    }),
   });
 
   return { deliveries: scenarios.length };

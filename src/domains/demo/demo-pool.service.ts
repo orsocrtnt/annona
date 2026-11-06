@@ -1,3 +1,4 @@
+import { realignDemoScenarioClock } from "@/domains/demo/demo-time-shift.service";
 import { createHash } from "node:crypto";
 import { DemoPoolState, Prisma, type Company } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
@@ -333,6 +334,18 @@ export async function queueExpiredDemoPoolLeases(now = new Date(), poolKey = DEM
   return result.count;
 }
 
+/**
+ * L'espace a été rempli à sa préparation : ses dates avancent jusqu'à maintenant.
+ * Un échec laisse la démo ouverte avec des dates anciennes plutôt que de la refuser.
+ */
+async function realignLeasedDemo(companyId: string, now: Date): Promise<void> {
+  try {
+    await realignDemoScenarioClock(companyId, now);
+  } catch (error) {
+    console.error("[demo-pool] remise à l'heure impossible", error instanceof Error ? error.message : error);
+  }
+}
+
 export async function leaseDemoPoolEnvironment(
   sessionId: string,
   options: { now?: Date; poolKey?: string; leaseMs?: number } = {}
@@ -345,7 +358,7 @@ export async function leaseDemoPoolEnvironment(
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      return await prisma.$transaction(async (tx): Promise<Lease> => {
+      const lease = await prisma.$transaction(async (tx): Promise<Lease> => {
         const existing = await tx.demoPoolEnvironment.findUnique({
           where: { leaseKeyHash },
           include: { company: true },
@@ -391,6 +404,8 @@ export async function leaseDemoPoolEnvironment(
         maxWait: 5_000,
         timeout: 10_000,
       });
+      if (!lease.reused) await realignLeasedDemo(lease.companyId, now);
+      return lease;
     } catch (error) {
       if (error instanceof DemoPoolUnavailableError) throw error;
       const retryable = error instanceof DemoPoolLeaseRace ||
