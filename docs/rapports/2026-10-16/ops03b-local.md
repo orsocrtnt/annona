@@ -4,7 +4,7 @@ Date : 16 octobre 2026. Avancement local, sans déploiement ni canal externe.
 
 ## Résultat
 
-TutelLiv dispose désormais d'une sonde publique minimale et d'un diagnostic profond protégé qui contrôle la base, le stockage privé des preuves et les files opérationnelles. Le diagnostic ne publie aucun détail métier. Les workers de récurrence et d'opérations signalent leurs échecs avec un format stable, nettoient les valeurs sensibles et peuvent envoyer l'événement à un webhook HTTPS dédié. L'instrumentation serveur capte aussi les erreurs de requête non gérées avec le modèle de route, sans chemin réel, en-têtes ou message brut.
+Annona dispose désormais d'une sonde publique minimale et d'un diagnostic profond protégé qui contrôle la base, le stockage privé des preuves et les files opérationnelles. Le diagnostic ne publie aucun détail métier. Les workers de récurrence et d'opérations signalent leurs échecs avec un format stable, nettoient les valeurs sensibles et peuvent envoyer l'événement à un webhook HTTPS dédié. L'instrumentation serveur capte aussi les erreurs de requête non gérées avec le modèle de route, sans chemin réel, en-têtes ou message brut.
 
 Le cron des opérations renvoie maintenant `503` lorsqu'une tâche a épuisé ses tentatives, au lieu de répondre avec un succès trompeur. Le cron de récurrence conserve son `503` en cas d'échec ou de file non vidée et émet le signal correspondant.
 

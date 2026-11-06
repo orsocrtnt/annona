@@ -66,7 +66,7 @@ Le 21 octobre, la sauvegarde a pris 18,332 s, la restauration 10,529 s, la valid
 
 ## Restauration fournisseur sur un nouveau projet
 
-Le même jour, l'export officiel de la cible historique a été restauré sur le projet Free temporaire `tutelliv-restore-rehearsal`. La cible historique était déjà en pause et la préproduction n'a pas été utilisée.
+Le même jour, l'export officiel de la cible historique a été restauré sur le projet Free temporaire `annona-restore-rehearsal`. La cible historique était déjà en pause et la préproduction n'a pas été utilisée.
 
 1. Conserver `database.backup.gz`, `database.backup.sql` et `storage.zip` dans un dossier privé, puis vérifier `SHA256SUMS`.
 2. Créer un projet Supabase isolé sans intégration sortante, conserver son mot de passe dans un fichier `.env*.local` ignoré et tester la connexion.
@@ -87,7 +87,7 @@ Résultat observé : import SQL 2 min 12 s ; 58/58 tables attendues avec compteu
 
 Supabase recommande aux projets Free d'exporter régulièrement leurs données et de conserver une sauvegarde hors site. Les sauvegardes quotidiennes gérées concernent les plans payants et ne comprennent pas les fichiers Storage. La fonction « Restore to a new project » est elle aussi réservée aux plans payants et ne copie pas les objets Storage ni plusieurs réglages du projet : [Database Backups](https://supabase.com/docs/guides/platform/backups), [Restore to a new project](https://supabase.com/docs/guides/platform/clone-project).
 
-Les deux répétitions valident donc la reprise logique des données TutelLiv, d'Auth et des preuves sur une cible fournisseur distincte, sans dépense. Elles ne fournissent pas :
+Les deux répétitions valident donc la reprise logique des données Annona, d'Auth et des preuves sur une cible fournisseur distincte, sans dépense. Elles ne fournissent pas :
 
 - la conservation automatique d'un point de reprise chaque heure ;
 - une restauration automatique des réglages Auth, Realtime, extensions, clés et variables d'hébergement ;

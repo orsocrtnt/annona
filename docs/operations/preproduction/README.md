@@ -1,4 +1,4 @@
-# Préproduction TutelLiv
+# Préproduction Annona
 
 Cette procédure prépare une préproduction isolée sans modifier `main`, le projet Supabase existant ni ses 51 démonstrations. Elle ne contient aucune clé.
 
@@ -28,9 +28,9 @@ Le retrait du cron ne supprime pas sa route. `/api/cron/operations` reste appela
 ## Ordre de configuration distante
 
 1. Connexion aux tableaux de bord confirmée le 19 octobre 2026.
-2. Vercel vérifié : `main` est la branche Production et le projet est relié à `orsocrtnt/tutelliv-v2`.
+2. Vercel vérifié : `main` est la branche Production et le projet est relié à `orsocrtnt/annona`.
 3. Supabase vérifié : un projet actif et deux projets en pause ; un second emplacement actif Free est disponible. La cible actuelle et la future préproduction utilisent Paris (`eu-west-3`).
-4. Terminé le 19 octobre 2026 : `tutelliv-preproduction` créé à Paris sans copie de données, avec exposition automatique des nouvelles tables désactivée et RLS automatique activée.
+4. Terminé le 19 octobre 2026 : `annona-preproduction` créé à Paris sans copie de données, avec exposition automatique des nouvelles tables désactivée et RLS automatique activée.
 5. Les secrets propres à cette cible sont stockés dans `.env.preproduction.local`, ignoré par Git et en mode `0600`. Le mot de passe se retrouve dans la variable `SUPABASE_DB_PASSWORD` de ce fichier ; ne jamais le copier dans un rapport, un commit ou la conversation.
 6. Terminé : les identifiants vus pendant la préparation ont été remplacés et l'ancienne clé serveur révoquée. Les migrations initiale, RBAC et noyau SaaS sont appliquées : 29 tables métier, registre Prisma, RLS partout, aucun droit navigateur direct, bucket privé, six rôles et trente-trois permissions. Depuis le 20 octobre, un seul utilisateur Auth de démonstration et son entreprise modèle sont conservés au repos.
 7. Terminé : variables Vercel Preview limitées à `preproduction`, avec `AUTH_EMAIL_LINKS_ENABLED=false`, `EMAIL_DELIVERY_MODE=disabled` et `DEMO_CLEANUP_ENABLED=false`.
@@ -69,6 +69,6 @@ Ne pas pousser si la branche Production Vercel n'est pas confirmée, si la nouve
 
 Supabase Free permet deux projets actifs au total pour un propriétaire/administrateur ; les projets en pause ne comptent pas. Le compte vérifié le 19 octobre 2026 n'en utilise qu'un : développement + préproduction peuvent donc rester gratuits. Les projets gratuits peuvent être mis en pause pour inactivité et ne donnent pas les sauvegardes quotidiennes téléchargeables des offres payantes ; un export logique hors site est nécessaire.
 
-Vercel Hobby fournit les Preview Git, mais limite les crons à une exécution quotidienne et son usage aux projets personnels non commerciaux. Il convient pour préparer techniquement la Preview, pas pour exploiter les pilotes ou vendre TutelLiv. Une offre Vercel commerciale devra être validée avant cette étape.
+Vercel Hobby fournit les Preview Git, mais limite les crons à une exécution quotidienne et son usage aux projets personnels non commerciaux. Il convient pour préparer techniquement la Preview, pas pour exploiter les pilotes ou vendre Annona. Une offre Vercel commerciale devra être validée avant cette étape.
 
 Sources : [Vercel Git](https://vercel.com/docs/git), [Vercel Cron](https://vercel.com/docs/cron-jobs/usage-and-pricing), [Vercel Hobby](https://vercel.com/docs/plans/hobby), [Supabase facturation](https://supabase.com/docs/guides/platform/billing-on-supabase), [Supabase sauvegardes](https://supabase.com/docs/guides/platform/backups).

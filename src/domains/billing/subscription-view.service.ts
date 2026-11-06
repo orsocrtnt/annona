@@ -276,7 +276,7 @@ const MANAGED_FORMULAS = {
 
 /**
  * SAAS-03, décision du 27 octobre 2026 : sans compte de facturation en ligne, l'abonnement
- * est affiché en lecture seule et ses changements passent par l'équipe TutelLiv.
+ * est affiché en lecture seule et ses changements passent par l'équipe Annona.
  */
 export function buildManagedSubscriptionView(
   subscription: ManagedSubscription,
@@ -319,7 +319,7 @@ export function buildManagedSubscriptionView(
     status: stateStatus(subscription.status),
     alerts,
     history: [],
-    management: "TUTELLIV_TEAM",
+    management: "ANNONA_TEAM",
     cancelAtPeriodEnd,
     canCancel: false,
     canChange: false,

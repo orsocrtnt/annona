@@ -1,5 +1,5 @@
 /**
- * Test d'intégration opt-in : verrous consultatifs sur PostgreSQL RÉEL (tutelliv-dev uniquement).
+ * Test d'intégration opt-in : verrous consultatifs sur PostgreSQL RÉEL (annona-dev uniquement).
  * Hors `npm run check`. Lancement :
  *   npx dotenv -e <chemin>/.env.local -- npm run test:pg-locks
  * Requêtes concurrentes réelles (Promise.all, ≥ 10) avec un pool de 5 connexions :

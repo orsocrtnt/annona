@@ -82,7 +82,7 @@ async function sendIncidentEmail(
     const result = await send(
       {
         to,
-        subject: `Alerte TutelLiv : ${event.summary}`,
+        subject: `Alerte Annona : ${event.summary}`,
         text: [
           event.summary,
           "",
@@ -103,7 +103,7 @@ async function sendIncidentEmail(
     return result.status === "disabled" ? "disabled" : "sent";
   } catch (error) {
     logger.warn(JSON.stringify({
-      event: "tutelliv.alert_email_failed",
+      event: "annona.alert_email_failed",
       source: event.source,
       fingerprint: event.fingerprint,
       reason: sanitizeText(error instanceof Error ? error.message : "UNKNOWN", 100),
@@ -119,7 +119,7 @@ export async function reportOperationalIncident(
   const env = options.env ?? process.env;
   const logger = options.log ?? console;
   const event = {
-    event: "tutelliv.operational_incident",
+    event: "annona.operational_incident",
     occurredAt: (options.now ?? new Date()).toISOString(),
     severity: incident.severity ?? "error",
     source: sanitizeText(incident.source, 100),
@@ -150,7 +150,7 @@ export async function reportOperationalIncident(
     return { logged: true, email, webhook: "sent" as const };
   } catch (error) {
     logger.warn(JSON.stringify({
-      event: "tutelliv.alert_delivery_failed",
+      event: "annona.alert_delivery_failed",
       source: event.source,
       fingerprint: event.fingerprint,
       reason: sanitizeText(error instanceof Error ? error.message : "UNKNOWN", 100),

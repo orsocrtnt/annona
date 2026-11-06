@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const csv = await exportAccountingCsv(companyId, parsed.data);
     return new Response(csv, { headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="tutelliv-prestations-v1-${parsed.data.from}-${parsed.data.to}.csv"`,
+      "Content-Disposition": `attachment; filename="annona-prestations-v1-${parsed.data.from}-${parsed.data.to}.csv"`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",
     } });

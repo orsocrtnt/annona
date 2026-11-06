@@ -1,6 +1,6 @@
 # SAAS-01B — Facturation sandbox Stripe
 
-État de référence : 27 octobre 2026. Le journal, l’adaptateur et les routes existent. Un compte Stripe de test est branché sur le développement local (`tutelliv-dev`) ; la préproduction reste sur le paiement fictif.
+État de référence : 27 octobre 2026. Le journal, l’adaptateur et les routes existent. Un compte Stripe de test est branché sur le développement local (`annona-dev`) ; la préproduction reste sur le paiement fictif.
 
 ## Garde
 
@@ -17,11 +17,11 @@ npm run test:saas01b
 npm run test:saas01b:e2e
 ```
 
-`test:saas01b` démarre un PostgreSQL isolé sur `127.0.0.1:55439` (Docker `postgres:16-alpine` s’il est disponible, sinon PostgreSQL 15 Homebrew dans `/tmp/tutelliv-saas01b-pg`), pousse le schéma Prisma, charge C8/C9, active le RLS du journal, exécute le double de fournisseur, puis détruit l’instance. Les migrations OPS-03B (`http`, `pg_cron`, Vault) restent hors de ce harnais local. Ce n’est **pas** une recette Stripe sandbox.
+`test:saas01b` démarre un PostgreSQL isolé sur `127.0.0.1:55439` (Docker `postgres:16-alpine` s’il est disponible, sinon PostgreSQL 15 Homebrew dans `/tmp/annona-saas01b-pg`), pousse le schéma Prisma, charge C8/C9, active le RLS du journal, exécute le double de fournisseur, puis détruit l’instance. Les migrations OPS-03B (`http`, `pg_cron`, Vault) restent hors de ce harnais local. Ce n’est **pas** une recette Stripe sandbox.
 
 ## Activation sandbox (quand un compte test existe)
 
-1. Créer un compte Stripe test TutelLiv. Ne jamais coller une clé secrète dans le chat.
+1. Créer un compte Stripe test Annona. Ne jamais coller une clé secrète dans le chat.
 2. Déposer `STRIPE_SECRET_KEY` (`sk_test_…`) et `STRIPE_WEBHOOK_SECRET` (`whsec_…`) dans un fichier local ignoré, jamais dans Git.
 3. Appliquer C9 puis le journal `saas_billing_*` sur la cible de recette isolée, pas en Production.
 4. Passer `SIGNUP_PAYMENT_ADAPTER=stripe-sandbox` seulement sur cette cible.
@@ -68,10 +68,10 @@ Correctif de la consolidation `a44721a` : elle gardait le verrou après tout ref
 ## Remboursement opérateur
 
 ```bash
-npm run billing:refund -- --invoice in_… --amount 1000 --operator ops@tutelliv.fr --reason "Motif d'au moins dix caractères"
+npm run billing:refund -- --invoice in_… --amount 1000 --operator ops@annona.fr --reason "Motif d'au moins dix caractères"
 ```
 
-Sans `--apply`, le script affiche la facture, le montant remboursable et la clé, sans rien envoyer. Avec `--apply`, il exige `TUTELLIV_OPERATOR_ACCESS_TOKEN`, session Supabase personnelle et temporaire d'un `SUPER_ADMIN` actif ; l'adresse passée en argument n'est jamais une preuve d'identité. Il rapproche Stripe avant la décision, journalise motif, montant et acteur authentifié, applique le remboursement puis exige un nouveau rapprochement réussi. La clé dépend uniquement de la facture et du montant : modifier le motif ne permet pas de doubler une opération. Le script npm lit `.env.local` ; pour une autre cible, lancer `tsx scripts/saas01b/refund.ts` avec son propre fichier d'environnement.
+Sans `--apply`, le script affiche la facture, le montant remboursable et la clé, sans rien envoyer. Avec `--apply`, il exige `ANNONA_OPERATOR_ACCESS_TOKEN`, session Supabase personnelle et temporaire d'un `SUPER_ADMIN` actif ; l'adresse passée en argument n'est jamais une preuve d'identité. Il rapproche Stripe avant la décision, journalise motif, montant et acteur authentifié, applique le remboursement puis exige un nouveau rapprochement réussi. La clé dépend uniquement de la facture et du montant : modifier le motif ne permet pas de doubler une opération. Le script npm lit `.env.local` ; pour une autre cible, lancer `tsx scripts/saas01b/refund.ts` avec son propre fichier d'environnement.
 
 ## Limites
 

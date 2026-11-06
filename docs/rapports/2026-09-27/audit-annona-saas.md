@@ -1,10 +1,10 @@
-# TutelLiv — Audit de préparation à la vente SaaS
+# Annona — Audit de préparation à la vente SaaS
 
 Date : 27 septembre 2026. Objectif confirmé : abonnements à plusieurs entreprises de livraison.
 
 ## Verdict
 
-TutelLiv est une base métier substantielle, mais pas encore un SaaS prêt à ouvrir librement à plusieurs entreprises. Recommandation : conserver l’architecture, traiter les frontières de données et la fiabilité des opérations, puis organiser un pilote accompagné. Le code ne permet pas à lui seul de prouver une demande commerciale ni la volonté de payer.
+Annona est une base métier substantielle, mais pas encore un SaaS prêt à ouvrir librement à plusieurs entreprises. Recommandation : conserver l’architecture, traiter les frontières de données et la fiabilité des opérations, puis organiser un pilote accompagné. Le code ne permet pas à lui seul de prouver une demande commerciale ni la volonté de payer.
 
 ## Périmètre et niveau de preuve
 
@@ -44,7 +44,7 @@ linkPortalDataToClient rattache les commandes orphelines par e-mail sans company
 
 **Critère de sortie :** Fixtures de deux entreprises avec e-mail commun : aucune lecture, écriture ou association croisée, y compris PDF et photos.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/domains/client-portal/client-data.service.ts:7`; `src/domains/auth/auth.service.ts:43`; `src/domains/invoice/invoice.service.ts:227`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/domains/client-portal/client-data.service.ts:7`; `src/domains/auth/auth.service.ts:43`; `src/domains/invoice/invoice.service.ts:227`.
 
 ### SEC-02 · P0 — Références de support non contrôlées
 
@@ -58,7 +58,7 @@ createClientTicket accepte relatedOrderId et relatedDeliveryId sans vérifier le
 
 **Critère de sortie :** Un ticket lié à une commande/livraison étrangère est rejeté et ne révèle aucune référence.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/domains/support/support.service.ts:29`; `src/app/api/portal/support/route.ts:33`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/domains/support/support.service.ts:29`; `src/app/api/portal/support/route.ts:33`.
 
 ### SEC-03 · P0 — Délégation mini-admin trop large
 
@@ -72,7 +72,7 @@ Le module accounts donne users:update/create. L’API permet de modifier tout mi
 
 **Critère de sortie :** Un mini-admin limité ne peut ni augmenter ses droits ni créer un compte plus privilégié ; réglages absents n’accordent pas tous les droits.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/lib/permissions/mini-admin.ts:99`; `src/domains/user/user.service.ts:341`; `src/app/api/users/[id]/route.ts:10`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/lib/permissions/mini-admin.ts:99`; `src/domains/user/user.service.ts:341`; `src/app/api/users/[id]/route.ts:10`.
 
 ### SEC-04 · P1 — Suspension et retrait des droits incomplets
 
@@ -86,7 +86,7 @@ Le contexte auth ne rejette pas les statuts User/Company inactifs ou suspendus. 
 
 **Critère de sortie :** Compte et entreprise suspendus refusés sur chaque API protégée ; délai de révocation connu et testé.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/lib/api/server-auth.ts:106`; `src/lib/api/auth-cache.ts:11`; `src/domains/user/user.service.ts:341`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/lib/api/server-auth.ts:106`; `src/lib/api/auth-cache.ts:11`; `src/domains/user/user.service.ts:341`.
 
 ### SEC-05 · P1 — Identifiants et vérification e-mail à revoir
 
@@ -100,7 +100,7 @@ Les mots de passe temporaires sont générés avec Math.random et sauvegardés e
 
 **Critère de sortie :** Invitation expirée/invalide rejetée ; aucun mot de passe stocké dans localStorage ; inscription non vérifiée ne prend pas possession de données client.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/domains/user/user.service.ts:185`; `src/lib/storage/pending-credentials.ts:43`; `src/domains/auth/provision-company-admin.ts:46`; `src/app/api/auth/login/route.ts:52`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/domains/user/user.service.ts:185`; `src/lib/storage/pending-credentials.ts:43`; `src/domains/auth/provision-company-admin.ts:46`; `src/app/api/auth/login/route.ts:52`.
 
 ### OPS-01 · P1 — Occurrences récurrentes perdues en cas d’échec
 
@@ -114,7 +114,7 @@ Le worker avance nextRunAt avant createClientOrder ; en cas d’échec il ne rem
 
 **Critère de sortie :** Panne injectée après le claim : l’occurrence est rejouée une seule fois ; 100 échéances traitées sans perte ni duplication.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/domains/client-portal/recurring-order.service.ts:307`; `src/lib/query/list-limits.ts:20`; `vercel.json:5`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/domains/client-portal/recurring-order.service.ts:307`; `src/lib/query/list-limits.ts:20`; `vercel.json:5`.
 
 ### OPS-02 · P1 — Commande et livraison non atomiques
 
@@ -128,7 +128,7 @@ createClientOrder crée la commande, puis des articles et la livraison par opér
 
 **Critère de sortie :** Pannes injectées à chaque étape et requêtes répétées : une seule commande complète et effets rejouables.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/domains/order/order.service.ts:185`; `src/domains/order/order.service.ts:355`; `src/domains/order/order.service.ts:435`; `src/domains/client-portal/notify.service.ts:76`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/domains/order/order.service.ts:185`; `src/domains/order/order.service.ts:355`; `src/domains/order/order.service.ts:435`; `src/domains/client-portal/notify.service.ts:76`.
 
 ### DATA-01 · P1 — Historique tronqué sans pagination serveur
 
@@ -142,7 +142,7 @@ Les listes sont plafonnées (80 commandes entreprise, 50 factures client, etc.).
 
 **Critère de sortie :** Une entreprise avec 1 000 commandes retrouve la plus ancienne et exporte toutes les lignes autorisées.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/lib/query/list-limits.ts:2`; `src/components/ui/data-grid.tsx:51`; `src/domains/order/order.service.ts:442`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/lib/query/list-limits.ts:2`; `src/components/ui/data-grid.tsx:51`; `src/domains/order/order.service.ts:442`.
 
 ### BILL-01 · P1 — Factures de livraison insuffisantes pour une promesse comptable
 
@@ -156,7 +156,7 @@ Référence générée à partir de Date.now en base 36 ; une facture PENDING pe
 
 **Critère de sortie :** Émissions concurrentes uniques ; facture émise figée ; tests de montants et PDF long ; validation du périmètre réglementaire français par un spécialiste.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/domains/invoice/invoice.service.ts:13`; `src/domains/invoice/invoice.service.ts:132`; `src/lib/pdf/invoice-pdf.ts:40`; `src/app/api/portal/invoices/[id]/pdf/route.ts:23`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/domains/invoice/invoice.service.ts:13`; `src/domains/invoice/invoice.service.ts:132`; `src/lib/pdf/invoice-pdf.ts:40`; `src/app/api/portal/invoices/[id]/pdf/route.ts:23`.
 
 ### BILL-02 · P1 — État financier mélangé à la livraison
 
@@ -170,13 +170,13 @@ Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/do
 
 **Critère de sortie :** Facturer ne change pas une mission en cours et ne donne pas accès à un rôle non autorisé.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/domains/invoice/invoice.service.ts:168`; `src/app/api/orders/[id]/invoice/route.ts:10`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/domains/invoice/invoice.service.ts:168`; `src/app/api/orders/[id]/invoice/route.ts:10`.
 
 ### SAAS-01 · P1 — Abonnements et pilotage SaaS manquants
 
 **Preuve :** Manque identifié dans le dépôt ; outils externes éventuels non consultés.
 
-Aucun modèle d’abonnement, paiement SaaS ou webhook de facturation identifié. Le revenu du tableau plateforme additionne les factures de livraison des entreprises, pas les abonnements TutelLiv. La page entreprises est une liste.
+Aucun modèle d’abonnement, paiement SaaS ou webhook de facturation identifié. Le revenu du tableau plateforme additionne les factures de livraison des entreprises, pas les abonnements Annona. La page entreprises est une liste.
 
 **Conséquence :** Pas de cycle essai → paiement → renouvellement/impayé/résiliation ; indicateur de revenu trompeur pour l’éditeur.
 
@@ -184,7 +184,7 @@ Aucun modèle d’abonnement, paiement SaaS ou webhook de facturation identifié
 
 **Critère de sortie :** Paiement confirmé côté serveur ; événement reçu deux fois sans double effet ; impayé et résiliation testés sans perte de données.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `prisma/schema.prisma:193`; `src/domains/admin/platform.service.ts:58`; `src/app/(back-office)/companies/page.tsx:28`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `prisma/schema.prisma:193`; `src/domains/admin/platform.service.ts:58`; `src/app/(back-office)/companies/page.tsx:28`.
 
 ### MOB-01 · P1 — Fiabilité terrain et suivi GPS non démontrés
 
@@ -198,7 +198,7 @@ Le suivi repose sur navigator.geolocation ; les envois ne contrôlent pas res.ok
 
 **Critère de sortie :** Parcours livraison réel en réseau faible : aucune preuve perdue et état de synchronisation honnête ; arrêt explicite du suivi hors service.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/features/driver/driver-location-tracker.tsx:12`; `src/features/driver/driver-location-tracker.tsx:58`; `src/features/driver/use-driver-live-position.ts:63`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/features/driver/driver-location-tracker.tsx:12`; `src/features/driver/driver-location-tracker.tsx:58`; `src/features/driver/use-driver-live-position.ts:63`.
 
 ### OPS-03 · P1 — Exploitation et conformité à établir
 
@@ -212,7 +212,7 @@ Pas de CI, historique de migrations, instrumentation d’erreurs dédiée ou pro
 
 **Critère de sortie :** Restauration répétée sur cible isolée, déploiement contrôlé, alerte testée, export/suppression par entreprise et dossier contractuel adapté.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `prisma/schema.prisma:410`; `src/lib/storage/pod.ts:3`; `package.json:25`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `prisma/schema.prisma:410`; `src/lib/storage/pod.ts:3`; `package.json:25`.
 
 ### MAP-01 · P2 — Dépendances cartographiques sans stratégie de service
 
@@ -226,7 +226,7 @@ Routes OSRM publiques, BAN et tuiles externes sont codées dans le projet. Un é
 
 **Critère de sortie :** Panne du fournisseur simulée : état dégradé explicite, pas d’estimation présentée comme fiable.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/lib/maps/osrm-route.ts:61`; `src/lib/maps/osrm-route.ts:53`; `src/lib/geocoding.ts:51`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/lib/maps/osrm-route.ts:61`; `src/lib/maps/osrm-route.ts:53`; `src/lib/geocoding.ts:51`.
 
 ### PROD-01 · P2 — Acquisition, onboarding et support incomplets
 
@@ -240,7 +240,7 @@ La landing pousse surtout vers les connexions. Un portail de tickets existe, mai
 
 **Critère de sortie :** Un nouveau client configure son entreprise et réalise une livraison de test avec une aide mesurée ; chaque ticket obtient une réponse traçable.
 
-Sources locales (chemins relatifs à `/Users/orso/Developer/tutelliv`) : `src/features/landing/home-landing.tsx:94`; `src/domains/support/support.service.ts:63`; `src/app/api/auth/login/route.ts:127`.
+Sources locales (chemins relatifs à `/Users/orso/Developer/annona`) : `src/features/landing/home-landing.tsx:94`; `src/domains/support/support.service.ts:63`; `src/app/api/auth/login/route.ts:127`.
 
 ## Produit vendable : hypothèses à tester
 
@@ -262,9 +262,9 @@ Différer l’IA, les tableaux personnalisables supplémentaires, le SMS génér
 
 Tester une offre pilote unique plutôt que trois forfaits immédiatement : par exemple 199 € HT/mois, jusqu’à cinq chauffeurs actifs et un volume mensuel défini pendant les entretiens. Ce prix est une hypothèse de vente, pas un prix de marché établi ni une recommandation validée. SMS, stockage supplémentaire et onboarding intensif doivent être mesurés ou facturés séparément. Ne pas promettre l’illimité avant de connaître les coûts.
 
-Repères publics consultés : Onfleet Launch annonce un départ à 619 USD/mois pour 2 500 tâches ; OptimoRoute Lite annonce 35,10 USD/chauffeur/mois en facturation annuelle. Périmètres et maturité différents : ces prix ne prouvent ni l’équivalence de TutelLiv ni une disposition de ses clients à payer. Sources : [Onfleet](https://onfleet.com/pricing), [OptimoRoute](https://optimoroute.com/pricing/).
+Repères publics consultés : Onfleet Launch annonce un départ à 619 USD/mois pour 2 500 tâches ; OptimoRoute Lite annonce 35,10 USD/chauffeur/mois en facturation annuelle. Périmètres et maturité différents : ces prix ne prouvent ni l’équivalence de Annona ni une disposition de ses clients à payer. Sources : [Onfleet](https://onfleet.com/pricing), [OptimoRoute](https://optimoroute.com/pricing/).
 
-Calcul à instrumenter par entreprise : abonnement encaissé hors taxes − coûts variables infrastructure/cartes/messages/paiement − temps de support valorisé. Puis déduire les coûts fixes, développement et acquisition au niveau de l’activité. Le chiffre d’affaires des livraisons des entreprises ne constitue pas le revenu de TutelLiv.
+Calcul à instrumenter par entreprise : abonnement encaissé hors taxes − coûts variables infrastructure/cartes/messages/paiement − temps de support valorisé. Puis déduire les coûts fixes, développement et acquisition au niveau de l’activité. Le chiffre d’affaires des livraisons des entreprises ne constitue pas le revenu de Annona.
 
 ### H4 — Un pilote accompagné avant le libre-service
 
@@ -306,6 +306,6 @@ Automatiser abonnements et onboarding après validation des pilotes ; ajouter su
 
 ## Décisions restant au propriétaire du produit
 
-Confirmer le segment et le pays visés, identifier deux ou trois prospects pilotes, préciser si TutelLiv doit émettre des factures finales ou préparer les données pour un outil comptable, et définir la disponibilité/support que l’entreprise peut réellement assurer. Les autres choix techniques courants peuvent être pris à partir de ce plan sans questions répétées.
+Confirmer le segment et le pays visés, identifier deux ou trois prospects pilotes, préciser si Annona doit émettre des factures finales ou préparer les données pour un outil comptable, et définir la disponibilité/support que l’entreprise peut réellement assurer. Les autres choix techniques courants peuvent être pris à partir de ce plan sans questions répétées.
 
 Le premier chantier recommandé est SEC-01/02/03 avec tests multi-entreprises, avant les couleurs, nouvelles fonctions ou abonnement automatique. Cet audit propose un plan ; il n’a appliqué aucune correction au dépôt.

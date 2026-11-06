@@ -18,7 +18,7 @@ Le chauffeur affecté voit désormais la carte de preuve sur sa mission terminé
 - Accès : chauffeur affecté, client propriétaire et administration de l'entreprise récupèrent la même preuve par URL signée ; utilisateur anonyme et trois rôles d'une autre entreprise sont refusés ; l'URL publique ne fonctionne pas.
 - Nettoyage : zéro compte Auth, entreprise, commande, livraison, job ou objet Storage de recette restant. Comptes globaux et empreinte SHA-256 des entreprises, utilisateurs, commandes et livraisons préexistants identiques avant/après.
 
-Deux passages non finaux ont été nettoyés avant la preuve finale. Le premier a rencontré une saturation temporaire du pool pendant des connexions parallèles ; les connexions de recette ont été sérialisées avec reprise bornée. Le second utilisait un faux nom d'orphelin hors format TutelLiv, correctement ignoré par la protection de suppression ; la fixture a été corrigée pour reproduire un véritable upload abandonné.
+Deux passages non finaux ont été nettoyés avant la preuve finale. Le premier a rencontré une saturation temporaire du pool pendant des connexions parallèles ; les connexions de recette ont été sérialisées avec reprise bornée. Le second utilisait un faux nom d'orphelin hors format Annona, correctement ignoré par la protection de suppression ; la fixture a été corrigée pour reproduire un véritable upload abandonné.
 
 ## Limites
 

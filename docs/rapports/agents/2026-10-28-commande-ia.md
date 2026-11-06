@@ -67,7 +67,7 @@ Les requêtes SQL brutes (`jsonb_set`, `regexp_replace`) sont testées sur leur 
 
 ## Checklist de preuves
 
-**Skills invoqués** : `tutelliv-model-router`, `claude-api`, `superpowers:test-driven-development` (invoqué en cours de travail, pas avant le premier test ; les tests ont pourtant été écrits d'abord), `karpathy-guidelines`, `security-review`, `superpowers:verification-before-completion`.
+**Skills invoqués** : `annona-model-router`, `claude-api`, `superpowers:test-driven-development` (invoqué en cours de travail, pas avant le premier test ; les tests ont pourtant été écrits d'abord), `karpathy-guidelines`, `security-review`, `superpowers:verification-before-completion`.
 
 **Corrections de relecture.** Chaque test rouge a été lancé par `node --import tsx --test`, puis le même test est passé au vert après le correctif.
 

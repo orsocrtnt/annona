@@ -130,7 +130,7 @@ test("AUTH-ROLE : personas de démo admin → client → livreur → admin", asy
   const api = await newClient(baseURL);
   try {
     const login = await api.post("/api/auth/login", {
-      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true },
+      data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true },
     });
     expect(login.status()).toBe(200);
     for (const persona of ["admin", "client", "driver"] as const) {

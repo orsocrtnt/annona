@@ -8,7 +8,7 @@ Branche `agent/facturation`, base `integration/2026-10-28`. Périmètre validé 
 - **Onglet « Paiements »** : premier onglet, ouvert par défaut, de Facturation (`/settings/billing`). Il contient trois compteurs cliquables (Payées / En attente / En retard), un filtre (Toutes, En attente, En retard, Payées) et la liste des 100 factures les plus récentes. Chaque ligne affiche la référence, le statut (« En retard · 12 j », comme la démo), le client, la commande (lien), l'échéance ou la date de paiement, le montant, la dernière relance avec son résultat, et le bouton « Relancer ». L'écran gère les états chargement, vide (par filtre) et erreur (avec « Réessayer »). Les cibles tactiles font au moins 44 px. Les réglages existants restent dans les onglets Courses et Factures.
 - **Passage automatique en `OVERDUE`** (`src/domains/invoice/invoice-overdue.service.ts`). Il s'agit d'une seule mise à jour conditionnelle : `status = PENDING` et `dueDate` antérieure au minuit de Paris du jour. Une facture payée, annulée, en brouillon ou sans échéance n'est jamais touchée. Si un paiement est validé pendant le passage, PostgreSQL réévalue la condition sur la ligne verrouillée et le paiement gagne. Le passage est idempotent.
   - **Choix du mécanisme** : le passage est une tâche du filet cron existant `/api/cron/operations` (toutes les 5 min, même secret). Après relecture : le cron est **seul** à enregistrer le statut, en SQL paramétré **sans toucher `updated_at`** (état calculé, pas une édition). La liste calcule l'affichage « En retard · N j » à la lecture (PENDING échue, même calcul à l'heure de Paris) sans rien écrire. Le passage s'exécute même si le traitement des tâches plante.
-    - Raison : aucun nouveau planificateur, et la liste reste juste même si le cron est arrêté (cas de tutelliv-dev).
+    - Raison : aucun nouveau planificateur, et la liste reste juste même si le cron est arrêté (cas de annona-dev).
     - Un échec du passage est signalé (incident `invoice-overdue-sweep-failure`, réponse 503) sans bloquer les tâches durables.
     - Option écartée : un statut seulement calculé à la lecture. Le PDF, le Factur-X, l'export comptable et le portail lisent tous le statut stocké.
 - **Facture en retard toujours payable** : `markOrderInvoicePaid` accepte PENDING et OVERDUE, avec la même réclamation sur `updatedAt`. Une facture en retard réémise à la main est mise à jour au lieu d'être doublée. Ce doublon était un vrai défaut, révélé par le test rouge. La fiche commande affiche une facture en retard comme émise.
@@ -47,13 +47,13 @@ Branche `agent/facturation`, base `integration/2026-10-28`. Périmètre validé 
 
 `notify.service.ts`, le portail client, `status-badges.tsx`, le thème, `order-intake` et le dispatch n'ont **pas** été modifiés.
 
-## Migration (à relire et appliquer par l'orchestrateur sur tutelliv-dev)
+## Migration (à relire et appliquer par l'orchestrateur sur annona-dev)
 `prisma/migrations/20261028230000_invoice_reminders/migration.sql` est additive : `ALTER TYPE "OperationJobType" ADD VALUE 'DELIVERY_INVOICE'`, puis la table `invoice_reminders`. Elle est identique au `prisma migrate diff` depuis la base de la branche (4c0a6dd), plus la RLS et le REVOKE exigés par `tests/db1-migration-security.test.ts`. Note : `integration/2026-10-28` a avancé depuis (7e658e9, agent Dispatch GPS) ; la fusion peut demander un rebase sur `delivery.service.ts`.
 
 ## Checklist de preuves
 
 **Skills invoqués** :
-- `tutelliv-model-router` ;
+- `annona-model-router` ;
 - `superpowers:test-driven-development` ;
 - `karpathy-guidelines` ;
 - `web-design-guidelines` : revue de l'écran, avec deux corrections (nom accessible cohérent avec le libellé visible « Relancée », `touch-manipulation`) ;
@@ -149,7 +149,7 @@ Les fichiers de test, hors du périmètre lint de `check`, sont passés à part 
 
 **Proposition de texte pour l'entrée DEMO-3 de `TODO.md`** (à reporter par l'orchestrateur) :
 
-> Tranches 1 et 2 livrées sur `agent/facturation` (28/10/2026), en attente de recette navigateur et d'application de la migration `20261028230000_invoice_reminders` sur tutelliv-dev. (1) Facturation › Paiements : compteurs payées / en attente / en retard, filtres, jours de retard. Passage automatique en OVERDUE par le filet cron (SQL conditionnel, idempotent, sans toucher `updated_at`) ; la liste calcule le retard à la lecture. « Relancer » tracé (auteur, date, canal, résultat), anti-doublon de 24 h, e-mail par tâche durable seulement si l'envoi est configuré, sinon trace « non envoyée ». (2) Facture émise à la livraison : réglage par entreprise désactivé par défaut, tâche durable `DELIVERY_INVOICE` par passage en Livrée, une seule facture active par commande (contrôle sous verrou), facture annulée non bloquante, erreur permanente non relancée, e-mail « Nouvelle facture » réutilisé. `npm run check` 1011/1011 après 1e3068a. Reste : clic réel en navigateur, spec `tests/e2e/demo3-payments.spec.ts` à lancer, e-mails réels liés à EMAIL ; tranches 3 à 10 non commencées.
+> Tranches 1 et 2 livrées sur `agent/facturation` (28/10/2026), en attente de recette navigateur et d'application de la migration `20261028230000_invoice_reminders` sur annona-dev. (1) Facturation › Paiements : compteurs payées / en attente / en retard, filtres, jours de retard. Passage automatique en OVERDUE par le filet cron (SQL conditionnel, idempotent, sans toucher `updated_at`) ; la liste calcule le retard à la lecture. « Relancer » tracé (auteur, date, canal, résultat), anti-doublon de 24 h, e-mail par tâche durable seulement si l'envoi est configuré, sinon trace « non envoyée ». (2) Facture émise à la livraison : réglage par entreprise désactivé par défaut, tâche durable `DELIVERY_INVOICE` par passage en Livrée, une seule facture active par commande (contrôle sous verrou), facture annulée non bloquante, erreur permanente non relancée, e-mail « Nouvelle facture » réutilisé. `npm run check` 1011/1011 après 1e3068a. Reste : clic réel en navigateur, spec `tests/e2e/demo3-payments.spec.ts` à lancer, e-mails réels liés à EMAIL ; tranches 3 à 10 non commencées.
 
 
 ## Corrections après relecture de l'orchestrateur (9 points)

@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 test("UX-03 : fiche livraison canonique, référence de livraison en titre et commande en informations techniques", async ({ page }) => {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.status()).toBe(200);
   try {
@@ -50,7 +50,7 @@ test("UX-03 : fiche livraison canonique, référence de livraison en titre et co
 
 const login = async (page: import("@playwright/test").Page) => {
   const response = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(response.status()).toBe(200);
 };

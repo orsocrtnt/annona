@@ -1,4 +1,4 @@
-// EMAIL / SEC-05 — recette réelle sur `tutelliv-dev` (ENV-2), envoi Resend en mode test (boîte contrôlée).
+// EMAIL / SEC-05 — recette réelle sur `annona-dev` (ENV-2), envoi Resend en mode test (boîte contrôlée).
 // Rejoue : échec d'envoi visible puis reprise, rejeu sans doublon, préférences respectées.
 // Données E2E identifiables (facture `E2E-MAIL-…`), supprimées à la fin ; réglages du client restaurés.
 import type { Prisma } from "@prisma/client";

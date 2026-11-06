@@ -10,8 +10,8 @@ La Preview Vercel du commit validé a terminé avec le statut `success`. Elle re
 
 ## Preuves distantes
 
-- chaîne sans secret GitHub réussie en 3 min 10 s : [exécution 39468646066](https://github.com/orsocrtnt/tutelliv-v2/actions/runs/39468646066) ;
-- chaîne connectée GitHub réussie en 14 min 52 s : [exécution 39469149338](https://github.com/orsocrtnt/tutelliv-v2/actions/runs/39469149338) ;
+- chaîne sans secret GitHub réussie en 3 min 10 s : [exécution 39468646066](https://github.com/orsocrtnt/annona/actions/runs/39468646066) ;
+- chaîne connectée GitHub réussie en 14 min 52 s : [exécution 39469149338](https://github.com/orsocrtnt/annona/actions/runs/39469149338) ;
 - garde d'isolation, 279 tests, recette A/B, montage temporaire, trois parcours Chromium et contrôle des preuves réussis ;
 - nettoyage `always()` réussi : six sociétés temporaires supprimées, aucun objet Storage résiduel et artefact de preuve nettoyé publié pour sept jours ;
 - déploiement Vercel Preview du commit `f6e19cc` terminé avec succès.

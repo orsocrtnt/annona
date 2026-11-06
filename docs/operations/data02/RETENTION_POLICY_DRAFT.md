@@ -20,7 +20,7 @@ Date de référence : 18 octobre 2026. Cette proposition traduit les orientation
 
 ## Fondements à conserver dans le dossier juridique
 
-La CNIL indique une conservation de principe des données de géolocalisation de deux mois, avec une possibilité d'un an pour l'optimisation des tournées ou la preuve d'interventions lorsqu'aucun autre moyen ne convient, et cinq ans pour le suivi du temps de travail. TutelLiv ne retient pas par défaut ces exceptions : [CNIL — géolocalisation des véhicules](https://www.cnil.fr/fr/la-geolocalisation-des-vehicules-des-salaries).
+La CNIL indique une conservation de principe des données de géolocalisation de deux mois, avec une possibilité d'un an pour l'optimisation des tournées ou la preuve d'interventions lorsqu'aucun autre moyen ne convient, et cinq ans pour le suivi du temps de travail. Annona ne retient pas par défaut ces exceptions : [CNIL — géolocalisation des véhicules](https://www.cnil.fr/fr/la-geolocalisation-des-vehicules-des-salaries).
 
 Les données nécessaires à l'exécution du contrat restent actives pendant la relation contractuelle, puis seules celles justifiées par une obligation ou un contentieux passent en archivage intermédiaire. La prescription commerciale de droit commun est de cinq ans. Sources : [CNIL — durées de conservation](https://www.cnil.fr/fr/passer-laction/les-durees-de-conservation-des-donnees), [Code de commerce L110-4](https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000027725867/2023-08-16) et [Service Public — documents d'entreprise](https://entreprendre.service-public.fr/vosdroits/F10029).
 

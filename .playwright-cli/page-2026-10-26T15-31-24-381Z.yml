@@ -13,7 +13,7 @@
     - banner [ref=f5e5]:
       - generic [ref=f5e6]:
         - button "Ouvrir le menu" [active] [ref=f5e7]
-        - link "TutelLiv" [ref=f5e311] [cursor=pointer]:
+        - link "Annona" [ref=f5e311] [cursor=pointer]:
           - /url: /
         - button "Ouvrir le menu du compte" [ref=f5e9]:
           - generic [ref=f5e10]: AD

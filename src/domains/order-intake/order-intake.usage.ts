@@ -32,7 +32,7 @@ export async function reserveOrderIntakeCall(
   db: UsageDb = prisma
 ): Promise<ReserveResult> {
   return db.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`tutelliv:order-intake:${companyId}`}))`;
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`annona:order-intake:${companyId}`}))`;
     const [lastHour, lastDay] = await Promise.all([
       tx.orderIntakeUsage.count({ where: { companyId, createdAt: { gte: new Date(now.getTime() - HOUR_MS) } } }),
       tx.orderIntakeUsage.count({ where: { companyId, createdAt: { gte: new Date(now.getTime() - DAY_MS) } } }),

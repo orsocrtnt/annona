@@ -45,7 +45,7 @@ function canonical(value: unknown) {
 }
 
 function scopedDemoEmail(email: string, companyId: string) {
-  const [local, domain = "tutelliv.fr"] = email.toLowerCase().split("@");
+  const [local, domain = "annona.fr"] = email.toLowerCase().split("@");
   return `${local}+session-${companyId}@${domain}`;
 }
 

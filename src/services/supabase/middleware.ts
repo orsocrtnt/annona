@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
-import { TUTELLIV_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
+import { ANNONA_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
 
 /** Revalide Auth au plus toutes les ~45s par token (pas à chaque clic / API). */
 const GATE_MAX_MS = 45_000;
@@ -62,9 +62,9 @@ function writeGate(key: string, authId: string, jwtExpSec?: number) {
 
 function nextWithAuthHeader(request: NextRequest, authId: string | null) {
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.delete(TUTELLIV_AUTH_ID_HEADER);
+  requestHeaders.delete(ANNONA_AUTH_ID_HEADER);
   if (authId) {
-    requestHeaders.set(TUTELLIV_AUTH_ID_HEADER, authId);
+    requestHeaders.set(ANNONA_AUTH_ID_HEADER, authId);
   }
   return NextResponse.next({
     request: { headers: requestHeaders },

@@ -1,6 +1,6 @@
 # MAP-2 — Fournisseurs, zoom et indisponibilités
 
-15 octobre 2026. Corrections locales dans TutelLiv GPT ; worktree préexistant préservé. Aucun accès base, migration, seed/reset, push ou déploiement. Aucun abonnement ou coût fournisseur engagé.
+15 octobre 2026. Corrections locales dans Annona GPT ; worktree préexistant préservé. Aucun accès base, migration, seed/reset, push ou déploiement. Aucun abonnement ou coût fournisseur engagé.
 
 ## Défauts corrigés
 
@@ -24,7 +24,7 @@ Le secours de géocodage inventait Paris ou des positions calculées depuis le c
 
 Harnais archivé dans `outputs/map2/harnais/` avec suffixes `.txt`. Retirer ces suffixes, convertir `__` en `/`, lier `node_modules` du dépôt, adapter les chemins absolus, lancer depuis un dossier temporaire sur 127.0.0.1:4318. Le proxy de configuration ne substitue que l’URL des tuiles en scénario `?tileFailure` et la base OSRM vers la route locale ; le code fournisseur applicatif reste exécuté. Scénarios `/navigation`, `/navigation?routeFailure`, `/navigation?routeTimeout`, `/navigation?tileFailure`, `/admin`, `/portal`, `/portal?geocodeFailure`. Le serveur local est arrêté après recette ; aucun serveur durable livré.
 
-Le journal navigateur final ne contient pas d’erreur applicative (`final-browser-errors.json`). Les erreurs réseau volontairement injectées et les notifications Statsig/Cloudflare du runtime CUA sont distinguées de la console applicative ; elles ne sont pas une panne TutelLiv. Les premières captures prises pendant une transition de viewport avaient des dimensions incohérentes ; elles ont été reprises avant archivage final.
+Le journal navigateur final ne contient pas d’erreur applicative (`final-browser-errors.json`). Les erreurs réseau volontairement injectées et les notifications Statsig/Cloudflare du runtime CUA sont distinguées de la console applicative ; elles ne sont pas une panne Annona. Les premières captures prises pendant une transition de viewport avaient des dimensions incohérentes ; elles ont été reprises avant archivage final.
 
 Les coordonnées anciennes inventées depuis un code postal ne sont pas toutes identifiables a posteriori. Aucune correction massive ni lecture de base n’a été effectuée. Les points historiques déjà enregistrés restent à auditer séparément si nécessaire. Essais GPS physiques, appareils mobiles réels, qualité mondiale des itinéraires et accès des rôles restent les recettes dédiées.
 

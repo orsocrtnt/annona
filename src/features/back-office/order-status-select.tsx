@@ -124,7 +124,7 @@ export function OrderStatusSelect({
       </div>
       <p className="text-xs text-muted-foreground">
         {isSpecialQuote
-          ? "Passez à « En attente » uniquement après un accord obtenu hors TutelLiv. L’acceptation du devis n’est pas enregistrée dans la plateforme."
+          ? "Passez à « En attente » uniquement après un accord obtenu hors Annona. L’acceptation du devis n’est pas enregistrée dans la plateforme."
           : "L’administrateur peut modifier le statut à tout moment, y compris annuler la livraison."}
       </p>
     </div>

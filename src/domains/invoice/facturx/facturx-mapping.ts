@@ -1,5 +1,5 @@
 /**
- * Passage d'une facture TutelLiv (Invoice + Company + client) au modèle Factur-X.
+ * Passage d'une facture Annona (Invoice + Company + client) au modèle Factur-X.
  * Fonction pure : les données sont chargées par facturx.service.ts.
  * Chaque refus porte un message actionnable qui dit où compléter la donnée.
  */

@@ -12,7 +12,7 @@ Décision d'exploitation du 18 octobre 2026 : commencer par des alertes e-mail s
 - `ops_monitor.run(false)` contrôle la sonde publique puis le diagnostic profond. `ops_monitor.run(true)` est réservé à la répétition opérateur d'une panne fictive.
 - Les résultats agrégés sont conservés quatre-vingt-dix jours dans le schéma privé `ops_monitor`. Aucun identifiant client, e-mail, URL ou message fournisseur n'y est écrit.
 - Une alerte est envoyée au passage sain → panne, puis au retour panne → sain. Une panne persistante peut produire un rappel au plus tôt deux heures plus tard. Chaque signal porte une clé d'idempotence.
-- Le propriétaire de TutelLiv est le responsable initial du canal. Le webhook temporaire sert seulement à la recette ; EMAIL le remplacera par le destinataire opérationnel confirmé.
+- Le propriétaire de Annona est le responsable initial du canal. Le webhook temporaire sert seulement à la recette ; EMAIL le remplacera par le destinataire opérationnel confirmé.
 - Canal e-mail (OPS-FIAB, 4 novembre 2026, migration `20261104040000_ops_monitor_email_alerts`) : la base envoie elle-même l'e-mail par l'API Resend, sans passer par Vercel. Il est actif dès que trois secrets existent dans Vault : `ops03b_resend_api_key`, `ops03b_alert_email_from`, `ops03b_alert_email_to`. Il passe alors avant le webhook, qui ne sert plus. Copie depuis `.env.local` (clé Resend, `MAIL_FROM`, destinataire `OPS_ALERT_RECIPIENT`, sinon `EMAIL_TEST_RECIPIENT`) : `sh scripts/ops03b/copy-alert-email.sh`, qui n'affiche aucune valeur et refuse toute autre base que la préproduction. Essai : `select ops_monitor.run(true);` envoie un e-mail « [Essai] » ; le passage suivant de la sonde (sain) envoie l'e-mail de retour à la normale.
 
 La configuration et la répétition s'exécutent avec `npm run ops03b:rehearse-preproduction`. Le fichier `.env.ops03b.local`, ignoré par Git, doit contenir l'URL de la préproduction, le webhook de recette et le jeton Vercel limité à l'automatisation. Le script refuse une cible Supabase différente de la préproduction déclarée.
@@ -22,7 +22,7 @@ La configuration et la répétition s'exécutent avec `npm run ops03b:rehearse-p
 - `GET /api/health` est une sonde publique minimale. Elle confirme seulement que le processus HTTP répond et ne consulte ni la base, ni Storage, ni les files.
 - `GET /api/health?deep=1` exige `Authorization: Bearer <OPS_HEALTH_SECRET>`. Elle vérifie PostgreSQL, le bucket privé des preuves et les traitements opérationnels échoués ou bloqués. Elle ne renvoie aucun identifiant, e-mail, message d'erreur fournisseur ou secret.
 - Le diagnostic profond renvoie `200` uniquement si tous les contrôles sont sains. Une dépendance indisponible, une tâche définitivement échouée ou une tâche bloquée renvoie `503`.
-- Les workers de récurrence et d'opérations renvoient aussi `503` lorsqu'ils ne terminent pas correctement. Ils produisent un événement structuré `tutelliv.operational_incident`.
+- Les workers de récurrence et d'opérations renvoient aussi `503` lorsqu'ils ne terminent pas correctement. Ils produisent un événement structuré `annona.operational_incident`.
 - Les erreurs de requête non gérées sont captées par l'instrumentation serveur avec le modèle de route, jamais le chemin réel, les en-têtes ou le message brut.
 
 ## Configuration
@@ -46,7 +46,7 @@ Pour les preuves photo, vérifier le bucket privé et une URL signée de fixture
 
 ## Répétition du 23 octobre 2026
 
-La migration additive a été appliquée à `tutelliv-preproduction`. Le schéma et ses fonctions sont inaccessibles à `PUBLIC`, `anon` et `authenticated`. Deux répétitions persistées ont produit un événement critique reçu par le canal de test en 101 à 145 ms ; le corps ne contenait ni secret, ni e-mail, ni donnée métier. La version finale ajoute une clé d'idempotence et limite les rappels.
+La migration additive a été appliquée à `annona-preproduction`. Le schéma et ses fonctions sont inaccessibles à `PUBLIC`, `anon` et `authenticated`. Deux répétitions persistées ont produit un événement critique reçu par le canal de test en 101 à 145 ms ; le corps ne contenait ni secret, ni e-mail, ni donnée métier. La version finale ajoute une clé d'idempotence et limite les rappels.
 
 La répétition complète a ensuite confirmé une baseline réelle saine, une panne fictive alertée en 80 ms et une reprise réelle alertée en 1 369 ms. Les deux appels réels ont reçu HTTP 200 sur les sondes publique et profonde ; base, Storage et file étaient `ok`. L'état final est sain et un seul job `ops03b-preproduction-health` est actif toutes les trente minutes. Le jeton Vercel **Automation Bypass** dédié reste dans Vault et peut être révoqué.
 

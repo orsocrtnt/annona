@@ -3,11 +3,11 @@
 Mis à jour : 26 octobre 2026. Plan validé : `~/.claude/plans/sprightly-petting-beaver.md`.
 
 ## Git au démarrage
-- Dossier d'origine : `~/Desktop/03 — Projets/TutelLiv/TutelLiv GPT` (Bureau synchronisé iCloud), **non modifié**.
-- Copie de travail : `~/Developer/TutelLiv-GPT`, branche `preproduction` à `dc99755`.
+- Dossier d'origine : `~/Desktop/03 — Projets/Annona/Annona GPT` (Bureau synchronisé iCloud), **non modifié**.
+- Copie de travail : `~/Developer/Annona`, branche `preproduction` à `dc99755`.
 - 80 fichiers modifiés et 116 non suivis au démarrage, jamais commités (ADMIN-01, SaaS, Growth, migration `platform_access_events`…).
 - `origin/preproduction` a 8 commits de documentation en plus (conflit possible uniquement sur `docs/README.md`). Rien n'a été poussé.
-- Sauvegarde : `~/Developer/TutelLiv-backups/2026-10-26/` (`repo.bundle`, `worktree.patch`, `untracked.tgz`, `changed.sha256` avec 248 fichiers, `refonte-restore.patch`, `refonte-tests.tgz`).
+- Sauvegarde : `~/Developer/Annona-backups/2026-10-26/` (`repo.bundle`, `worktree.patch`, `untracked.tgz`, `changed.sha256` avec 248 fichiers, `refonte-restore.patch`, `refonte-tests.tgz`).
 
 ## Causes confirmées
 | ID | Cause | État |
@@ -66,7 +66,7 @@ Méthode : la version d'avant la refonte (`dc99755`) a tourné en parallèle sur
 - **Dashboard** : la V2 avait remplacé les widgets de pilotage (alertes cliquables, Aujourd'hui, planning Commandes/Courses/Total, tableau statut × catégorie avec détail). Le contenu fonctionnel de `dc99755` est restauré dans la coque V2 : `company-dashboard-content.tsx`, `dashboard-widget-renderer.tsx`, `dashboard-customize-drawer.tsx`, `dashboard-layout.ts`. La V2 est archivée dans `backups/…/dashboard-v2-content.tgz`.
 - **Palette** : cause commune, les jetons `@theme` de `globals.css` étaient restés sur le bleu `#0066ff`. Ils sont alignés sur DESIGN.md (primary encre `#0e1310`, ring `#00d46a`, brand/texte `#08783f`, fonds et bordures). 53 fichiers suivent sans modification.
 - **« Mon abonnement »** (503, table `saas_billing_accounts` absente) : avec accord, `prisma migrate deploy` en préproduction de 5 migrations (3 OPS-03B idempotentes déjà présentes, `saas_billing_sandbox`, `catalog_c9_business`). Statut : « Database schema is up to date ».
-- **Compte `orsocarotenuto@gmail.com`** : existait (admin « ouio uoi »), mot de passe refusé (401). Avec accord, mot de passe temporaire défini via l'API admin, enregistré dans `~/.config/tutelliv/orsocarotenuto-preprod.txt` (600). À changer dans Paramètres.
+- **Compte `orsocarotenuto@gmail.com`** : existait (admin « ouio uoi »), mot de passe refusé (401). Avec accord, mot de passe temporaire défini via l'API admin, enregistré dans `~/.config/annona/orsocarotenuto-preprod.txt` (600). À changer dans Paramètres.
 - Toutes les autres pages : structure identique à `dc99755`. Les 500 vus pendant la comparaison venaient de 2 serveurs qui saturaient les 15 connexions du mode session (`EMAXCONNSESSION`).
 - Reste P2 : décalage d'id Radix (hydratation) sur le menu compte de l'en-tête, déjà présent avant la refonte, sans effet visible ; site public en tons ardoise (palette propre à la landing).
 - Preuves : `npm run check` 492/492, `next build` OK, E2E 3 rôles et navbar 3/3, relevé de 14 pages admin avec le compte réel sans erreur API.

@@ -8,7 +8,7 @@ Le test devait prouver qu'un commit applicatif sain peut remplacer le commit cou
 
 ## Retour arrière essayé
 
-Le déploiement sain `f6e19cc` a été redéployé depuis Vercel. Le nouveau déploiement `31uFWXR7g3bpnUEmgqbYNPZoyhKs` est passé à `Ready` en 1 min 39 s et a reçu l'alias stable `tutelliv-v2-git-preproduction-tutelliv.vercel.app`.
+Le déploiement sain `f6e19cc` a été redéployé depuis Vercel. Le nouveau déploiement `31uFWXR7g3bpnUEmgqbYNPZoyhKs` est passé à `Ready` en 1 min 39 s et a reçu l'alias stable `annona-git-preproduction-annona.vercel.app`.
 
 Le commit courant `04a0a35` a ensuite été redéployé. Le nouveau déploiement `4w1uqn5qf37V4qqy2bzCM71dfp9a` est passé à `Ready` en 2 min 11 s et a repris l'alias stable de la branche. La Preview termine donc sur la version courante.
 

@@ -38,7 +38,7 @@ export function jobPayloadDb() {
 export function countingSender(now: Date) {
   const fetches: string[] = [];
   const bodies: string[] = [];
-  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "Annona <no-reply@example.test>" };
   const send = (input: TransactionalEmailInput) => sendTransactionalEmail(input, {
     env, now,
     fetcher: async (_url, init) => {

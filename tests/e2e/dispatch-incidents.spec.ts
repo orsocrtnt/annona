@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/services/prisma/client";
 
 /**
- * DISPATCH-5 : imprévus de la file et remplacement validé par le dispatcher, sur tutelliv-dev.
+ * DISPATCH-5 : imprévus de la file et remplacement validé par le dispatcher, sur annona-dev.
  * Données E2E sans client, supprimées en fin de test. Aucune position de livreur n'est créée.
  */
 test("DISPATCH-5 : un livreur désactivé est signalé et remplacé après validation, un client n'y a pas accès", async ({ page }) => {
@@ -14,7 +14,7 @@ test("DISPATCH-5 : un livreur désactivé est signalé et remplacé après valid
   const driverIds: string[] = [];
   try {
     const login = await page.request.post("/api/auth/login", {
-      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+      data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
     });
     expect(login.status()).toBe(200);
     expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);
@@ -52,7 +52,7 @@ test("DISPATCH-5 : un livreur désactivé est signalé et remplacé après valid
     const panel = page.getByTestId("dispatch-incidents");
     const row = panel.locator("div.rounded-xl", { hasText: delivery.reference });
     await expect(row).toContainText("Livreur indisponible");
-    await page.screenshot({ path: "/private/tmp/claude-501/-Users-orso-Developer-TutelLiv-GPT/0b96e538-7432-4425-8719-54fa38c29d80/scratchpad/incidents-clair.png" });
+    await page.screenshot({ path: "/private/tmp/claude-501/-Users-orso-Developer-Annona/0b96e538-7432-4425-8719-54fa38c29d80/scratchpad/incidents-clair.png" });
 
     const suggestions = await page.request.get(`/api/dispatch/suggestions?deliveryId=${delivery.id}&replacesDriverId=${absent.id}`);
     if (suggestions.status() === 403) {

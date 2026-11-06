@@ -22,7 +22,7 @@ Le premier diff contenait onze instructions : cinq suppressions puis cinq recré
 
 ## Construire la baseline sur une cible isolée
 
-1. Terminé : identifier la préproduction vide `tutelliv-preproduction`.
+1. Terminé : identifier la préproduction vide `annona-preproduction`.
 2. Terminé : régénérer et comparer le brouillon Prisma avec le schéma courant.
 3. Terminé : ajouter le complément sécurité après la création des tables.
 4. Terminé pour Storage : créer le bucket privé `delivery-pods`, limité à 5 Mio aux JPEG/PNG. Les réglages Auth dépendant de l'URL Vercel restent à faire.

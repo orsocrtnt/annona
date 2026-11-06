@@ -43,14 +43,14 @@ const base: InvoicePdfData = {
   customerEmail: "marie@example.test",
 };
 
-test("le relevé porte la marque TutelLiv en pied de page et des montants en euros", async () => {
+test("le relevé porte la marque Annona en pied de page et des montants en euros", async () => {
   const pdf = await generateInvoicePdf(base);
   const content = pdfText(pdf);
-  for (const expected of ["FAC-DEMO-15276458", "Relevé édité avec TutelLiv", "RELEVÉ DE PRESTATION", "Payée", "Colis documents", "59,90", "89,90", "CMD-72011242"]) {
+  for (const expected of ["FAC-DEMO-15276458", "Relevé édité avec Annona", "RELEVÉ DE PRESTATION", "Payée", "Colis documents", "59,90", "89,90", "CMD-72011242"]) {
     assert.ok(content.includes(expected), `absent : ${expected}`);
   }
   assert.doesNotMatch(content, /NaN/);
-  assert.equal(imageCount(pdf), 1, "sans logo d'entreprise : seul le logo TutelLiv");
+  assert.equal(imageCount(pdf), 1, "sans logo d'entreprise : seul le logo Annona");
 });
 
 test("avec un logo d'entreprise, il est intégré en tête ; illisible, le relevé se génère quand même", async () => {

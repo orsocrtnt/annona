@@ -1,4 +1,4 @@
-# Plan de démarchage TutelLiv — départ le lundi 2 novembre 2026
+# Plan de démarchage Annona — départ le lundi 2 novembre 2026
 
 Version du 1er novembre 2026. Plan de travail, pas un avis juridique : aucun juriste ne l'a relu.
 
@@ -9,7 +9,7 @@ Version du 1er novembre 2026. Plan de travail, pas un avis juridique : aucun jur
 | Possible dès lundi | Pas encore possible |
 |---|---|
 | Écrire et appeler des entreprises de coursiers pour comprendre leur travail | Encaisser un abonnement : le paiement du site est fictif |
-| Faire 10 entretiens sur leur façon de travailler | Mettre de vraies données dans TutelLiv : juriste et contrat pas faits |
+| Faire 10 entretiens sur leur façon de travailler | Mettre de vraies données dans Annona : juriste et contrat pas faits |
 | Montrer le logiciel si la personne le demande (données fictives) | Parler prix ou proposer un pilote avant le SIREN |
 | Noter les entreprises qui se disent intéressées | Promettre une date. Citer un client, un gain de temps ou un pourcentage : aucune mesure réelle |
 
@@ -28,9 +28,9 @@ Dans l'ordre. Les points 1 à 3 bloquent l'envoi.
 | # | Problème constaté le 1er novembre | Ce qu'il faut faire | Qui |
 |---|---|---|---|
 | 1 | **Pas encore de SIREN** (confirmé le 1er novembre). | Faire la demande sur le Guichet unique lundi, avant le premier message. Voir ci-dessous. | Toi |
-| 2 | **Les mails partent de `no-reply@tutelliv.fr`.** Une réponse de prospect serait perdue et Resend porte aussi les mails de connexion. | Créer une vraie boîte, par exemple `orso@tutelliv.fr` chez OVH, et envoyer à la main depuis elle. | Toi |
+| 2 | **Les mails partent de `no-reply@annona.fr`.** Une réponse de prospect serait perdue et Resend porte aussi les mails de connexion. | Créer une vraie boîte, par exemple `orso@annona.fr` chez OVH, et envoyer à la main depuis elle. | Toi |
 | 3 | **Les modèles de mail n'indiquent ni qui écrit, ni l'origine de l'adresse.** La CNIL demande l'identité de l'émetteur et un refus simple. | Utiliser les textes de la partie 7, qui contiennent ces mentions. | Fait dans ce plan |
-| 4 | **`tutelliv.fr` tourne avec un paiement fictif** (audit AUDIT-0111). | Boutons de `/tarifs` remplacés par « Demander un pilote » vers Contact. **Reste à faire :** l'accueil, le pied de page, Fonctionnalités et Démonstration mènent encore à l'inscription. Ne jamais envoyer ces liens à un prospect. | Fait pour `/tarifs` ; le reste avec S2 d'AUDIT-0111 |
+| 4 | **`annona.fr` tourne avec un paiement fictif** (audit AUDIT-0111). | Boutons de `/tarifs` remplacés par « Demander un pilote » vers Contact. **Reste à faire :** l'accueil, le pied de page, Fonctionnalités et Démonstration mènent encore à l'inscription. Ne jamais envoyer ces liens à un prospect. | Fait pour `/tarifs` ; le reste avec S2 d'AUDIT-0111 |
 | 5 | **Peu de démos disponibles.** Le 1er novembre : 6 places, dont 2 libres, 3 occupées, 1 bloquée. Une place reste prise 8 h sauf déconnexion. Si plus aucune n'est libre, la démo répond « occupé ». | Limiter à 10 nouveaux contacts par jour. **La place bloquée le reste :** son déblocage a été refusé par le contrôle de sécurité de l'outil. Les 5 autres suffisent pour démarrer. | À refaire avec ton accord |
 | 6 | **Aucune alerte quand quelqu'un remplissait le formulaire Contact.** | Un mail part maintenant vers ta boîte de recette à chaque message. Regarder quand même `/admin/contact` chaque matin. | Fait |
 | 7 | **La page Confidentialité ne parlait pas de prospection.** | Paragraphe ajouté : source, usage, durée, droit de refus. Texte provisoire, sans juriste. | Fait |
@@ -110,7 +110,7 @@ Ton agenda porte un bloc « MARIE » du 13 au 27 novembre. Je ne sais pas s'il t
 | Maturité | « On cherche nos premières entreprises, tu parles à celui qui construit le produit. » | « Nos clients », « des dizaines d'entreprises » |
 | Gain | « Tout est au même endroit : commande, livreur, messages, preuve. On veut mesurer le gain avec vous. » | « 11 actions contre 1 », « X % de temps gagné » |
 | GPS | « Position datée pendant la mission. Sur iPhone, elle s'envoie quand l'écran est allumé et l'application ouverte. » | « Suivi en continu », « marche écran verrouillé ». Android : pas encore testé |
-| Commandes | « Le client passe sa commande dans son espace. » | Que les mails entrants deviennent des commandes : fonction pas encore ouverte aux vrais clients. Les commandes récurrentes automatiques : en panne sur tutelliv.fr selon l'audit du 1er novembre |
+| Commandes | « Le client passe sa commande dans son espace. » | Que les mails entrants deviennent des commandes : fonction pas encore ouverte aux vrais clients. Les commandes récurrentes automatiques : en panne sur annona.fr selon l'audit du 1er novembre |
 | Factures | « Export comptable et factures Factur-X en cours de validation. » | « Conforme », « certifié », « plateforme agréée » |
 | Données | « Base hébergée à Paris. Aucune vraie donnée tant que le cadre juridique n'est pas signé. » | « 100 % conforme RGPD » |
 | Support | « Réponse visée sous un jour ouvré. » | Un délai garanti |
@@ -128,7 +128,7 @@ Objet : `Vos courses à [ville] : une question`
 ```text
 Bonjour,
 
-Je m'appelle Orso Carotenuto-Marchetti. Je construis TutelLiv, un logiciel pour les entreprises de coursiers et de livraison express.
+Je m'appelle Orso Carotenuto-Marchetti. Je construis Annona, un logiciel pour les entreprises de coursiers et de livraison express.
 
 [Détail vrai : « J'ai vu sur votre site que vous livrez à vélo dans Paris. »]
 
@@ -137,14 +137,14 @@ Une question : aujourd'hui, comment arrivent vos commandes, et comment vos livre
 Je cherche à comprendre comment travaillent une dizaine d'entreprises comme la vôtre. Je ne vends rien pour l'instant. Auriez-vous 20 minutes cette semaine ?
 
 Orso Carotenuto-Marchetti
-TutelLiv
+Annona
 
 --
 Orso Carotenuto-Marchetti, entrepreneur individuel (immatriculation en cours), 10 traverse de la Gaye, 13009 Marseille.
 Adresse trouvée sur [votre site / l'annuaire X]. Pour ne plus recevoir de message, répondez « stop » : je retire votre adresse aussitôt.
 ```
 
-**Après le SIREN :** remplacer « immatriculation en cours » par le numéro, ajouter `https://tutelliv.fr`, et finir par : « Si le sujet vous parle, je vous montre le logiciel. »
+**Après le SIREN :** remplacer « immatriculation en cours » par le numéro, ajouter `https://annona.fr`, et finir par : « Si le sujet vous parle, je vous montre le logiciel. »
 
 ### Mail 2 (J+5)
 
@@ -180,7 +180,7 @@ Orso
 ### Appel au standard
 
 ```text
-Bonjour, Orso Carotenuto-Marchetti, de TutelLiv. Je cherche à joindre la personne qui organise les courses : [nom du dirigeant] ou le responsable d'exploitation. C'est possible ?
+Bonjour, Orso Carotenuto-Marchetti, de Annona. Je cherche à joindre la personne qui organise les courses : [nom du dirigeant] ou le responsable d'exploitation. C'est possible ?
 ```
 
 Si on demande pourquoi :
@@ -192,7 +192,7 @@ Je construis un logiciel pour les entreprises de coursiers. J'ai une question su
 ### Appel à la bonne personne
 
 ```text
-Bonjour [nom], Orso Carotenuto-Marchetti, de TutelLiv. Je vous appelle sans rendez-vous : vous avez deux minutes, ou je rappelle à un meilleur moment ?
+Bonjour [nom], Orso Carotenuto-Marchetti, de Annona. Je vous appelle sans rendez-vous : vous avez deux minutes, ou je rappelle à un meilleur moment ?
 
 Je construis un logiciel pour les entreprises de coursiers. Je ne vends rien aujourd'hui : j'essaie de comprendre comment vous travaillez.
 
@@ -210,7 +210,7 @@ Si la personne refuse d'être rappelée : « Entendu, je ne vous rappellerai pas
 ### Messagerie
 
 ```text
-Bonjour, Orso Carotenuto-Marchetti, de TutelLiv, un logiciel pour les entreprises de coursiers. J'ai une question courte sur votre façon d'organiser les courses. Je vous envoie un mail à ce sujet. Bonne journée.
+Bonjour, Orso Carotenuto-Marchetti, de Annona, un logiciel pour les entreprises de coursiers. J'ai une question courte sur votre façon d'organiser les courses. Je vous envoie un mail à ce sujet. Bonne journée.
 ```
 
 ### Réponses types
@@ -241,18 +241,18 @@ Merci. Je prépare mes premiers pilotes : 4 semaines, accompagnés, sans obligat
 
 ### Mail « Il en est où ? » (version finale du 5 novembre 2026)
 
-Mail court aux couleurs de TutelLiv, validé en version finale par le propriétaire le 5 novembre 2026 : objet « Il en est où ? », aperçu « Bonjour, mon colis, il en est où ? Ça vous dit quelque chose ? » (clin d'œil assumé, jamais déguisé en message de client), « Vous en avez marre de ce genre de question ? », parcours de A à Z en cinq étapes (commande par e-mail, WhatsApp… au même endroit ; dispatch intelligent ; livreur sans appel ni message ; carte client en direct désactivable ; facture envoyée et relances automatiques), bouton « Je veux en être » vers le formulaire de liste d'attente, lien vers le site, signature « Carotenuto-Marchetti Orso », pied de mail CNIL (identité, origine de l'adresse, STOP). Modèle de référence : `docs/operations/email/prospection/teaser-il-en-est-ou.html` ; le mail réellement envoyé est produit par `src/domains/growth/prospect/prospect-email.ts`. Écart décidé par le propriétaire : le lien vers le site part avant le SIREN.
+Mail court aux couleurs de Annona, validé en version finale par le propriétaire le 5 novembre 2026 : objet « Il en est où ? », aperçu « Bonjour, mon colis, il en est où ? Ça vous dit quelque chose ? » (clin d'œil assumé, jamais déguisé en message de client), « Vous en avez marre de ce genre de question ? », parcours de A à Z en cinq étapes (commande par e-mail, WhatsApp… au même endroit ; dispatch intelligent ; livreur sans appel ni message ; carte client en direct désactivable ; facture envoyée et relances automatiques), bouton « Je veux en être » vers le formulaire de liste d'attente, lien vers le site, signature « Carotenuto-Marchetti Orso », pied de mail CNIL (identité, origine de l'adresse, STOP). Modèle de référence : `docs/operations/email/prospection/teaser-il-en-est-ou.html` ; le mail réellement envoyé est produit par `src/domains/growth/prospect/prospect-email.ts`. Écart décidé par le propriétaire : le lien vers le site part avant le SIREN.
 
-**Adresses mises de côté (5 novembre au soir, décision du propriétaire).** Essais réels : le mail mis en forme arrive chez Gmail et Columbia (Proofpoint), mais tombe en indésirables chez Microsoft 365 (Kedge, ENPC) et n'arrive pas chez Lalique (Altospam), alors qu'un mail simple de la même boîte arrive chez Kedge ; mail-tester 10/10 (SPF, DKIM, DMARC, aucune liste noire). Le mail garde sa mise en forme (sans les caractères invisibles de l'aperçu, retirés). Quand des adresses sont collées dans une campagne, celles de Microsoft (Outlook, Hotmail, Live, Microsoft 365) et celles protégées par Altospam ou Mailinblack sont reconnues par leurs serveurs de messagerie et « mises de côté » : ajoutées, jamais envoyées. Le bouton « Remettre … dans l'envoi » de la campagne les renvoie dans la file quand tutelliv.fr aura un historique d'envoi (quelques semaines d'échanges et de réponses).
+**Adresses mises de côté (5 novembre au soir, décision du propriétaire).** Essais réels : le mail mis en forme arrive chez Gmail et Columbia (Proofpoint), mais tombe en indésirables chez Microsoft 365 (Kedge, ENPC) et n'arrive pas chez Lalique (Altospam), alors qu'un mail simple de la même boîte arrive chez Kedge ; mail-tester 10/10 (SPF, DKIM, DMARC, aucune liste noire). Le mail garde sa mise en forme (sans les caractères invisibles de l'aperçu, retirés). Quand des adresses sont collées dans une campagne, celles de Microsoft (Outlook, Hotmail, Live, Microsoft 365) et celles protégées par Altospam ou Mailinblack sont reconnues par leurs serveurs de messagerie et « mises de côté » : ajoutées, jamais envoyées. Le bouton « Remettre … dans l'envoi » de la campagne les renvoie dans la file quand annona.fr aura un historique d'envoi (quelques semaines d'échanges et de réponses).
 
 ### Envoyer et suivre une campagne (`/admin/campaigns`)
 
-Avant la première campagne (une seule fois) : migration `20261106100000_prospect_campaigns` appliquée en préproduction, variable Vercel `PROSPECT_SMTP_PASSWORD` (mot de passe de `orso@tutelliv.fr`, environnement Preview, branche `preproduction`), puis déploiement. Sans mot de passe, la page affiche « Envoi pas encore configuré ». La réception WhatsApp annoncée dans le mail n'est pas encore ouverte (WHATSAPP-1) : le dire franchement à un prospect qui pose la question.
+Avant la première campagne (une seule fois) : migration `20261106100000_prospect_campaigns` appliquée en préproduction, variable Vercel `PROSPECT_SMTP_PASSWORD` (mot de passe de `orso@annona.fr`, environnement Preview, branche `preproduction`), puis déploiement. Sans mot de passe, la page affiche « Envoi pas encore configuré ». La réception WhatsApp annoncée dans le mail n'est pas encore ouverte (WHATSAPP-1) : le dire franchement à un prospect qui pose la question.
 
 1. Créer la campagne : nom, ville (le code des liens en découle, par exemple `il-en-est-ou-paris`) et origine des adresses.
 2. Coller les adresses : doublons et adresses STOP écartés.
 3. « M'envoyer un essai » : le mail arrive dans la boîte du super-administrateur, liens au code `test`.
-4. « Lancer l'envoi » : un mail toutes les 30 secondes depuis `orso@tutelliv.fr`, page ouverte ; « Pause » à tout moment.
+4. « Lancer l'envoi » : un mail toutes les 30 secondes depuis `orso@annona.fr`, page ouverte ; « Pause » à tout moment.
 5. Chaque STOP reçu : coller l'adresse dans « Adresses STOP ». Chaque réponse : bouton « + » de la colonne Réponses.
 
 Chiffres par campagne : envoyés, clics « Je veux en être », clics vers le site, visites du formulaire, candidatures, réponses. Pas de comptage des ouvertures (pixel bloqué par Outlook, faussé par l'iPhone, encadré par la CNIL). Les robots évidents ne sont pas comptés. Depuis le 6 novembre 2026, un clic ou une visite du formulaire n'est compté qu'après un geste réel du visiteur sur la page d'arrivée (appui, touche, molette ou mouvements de souris) : les antivirus des messageries (Microsoft, Proofpoint, Altospam, mail-tester), qui ouvraient chaque lien et gonflaient les clics lors des essais du 5 novembre, ne comptent plus. Un antivirus qui simulerait des gestes resterait compté. Supprimer une campagne efface aussi ses compteurs de clics et de visites, pas les candidatures.
@@ -299,7 +299,7 @@ Ne pas demander « Vous aimeriez une carte en direct ? » ni « Vous paieriez 17
 | « Et si vous disparaissez ? » | « Vous n'êtes engagé à rien. Le pilote prévoit l'export de vos données à la fin. » |
 | « C'est combien ? » (avant le SIREN) | « Je ne vends pas encore : combien cela vaudrait-il pour vous si cela réglait ce problème ? » Noter sans discuter. |
 | « C'est trop cher. » (après le SIREN) | « Par rapport à quoi ? À quel prix cela deviendrait-il évident ? » Noter sans discuter. |
-| « Et la facture électronique ? » | « Je produis déjà un fichier Factur-X, pas encore validé. TutelLiv n'est pas une plateforme agréée : le dépôt reste chez vous ou chez votre comptable. » |
+| « Et la facture électronique ? » | « Je produis déjà un fichier Factur-X, pas encore validé. Annona n'est pas une plateforme agréée : le dépôt reste chez vous ou chez votre comptable. » |
 
 ## 9. Le suivi
 
@@ -331,7 +331,7 @@ Les chiffres de ce fichier (étapes, rappels du jour, revue du vendredi) s'affic
 Le démarchage peut trouver les entreprises, mais le pilote reste bloqué tant que ces points ne sont pas fermés ([protocole complet](../pilot1/README.md)) :
 
 - SIREN et identité de l'éditeur ;
-- corrections de l'audit du 1er novembre et vraie production : aujourd'hui, tutelliv.fr tourne sur une préversion (AUDIT-0111) ;
+- corrections de l'audit du 1er novembre et vraie production : aujourd'hui, annona.fr tourne sur une préversion (AUDIT-0111) ;
 - juriste choisi, accord de pilote signé, RGPD, GPS, photos et durées de conservation validés (LEGAL-1, DATA-02) ;
 - essai sur un téléphone Android (MOB-01C) ;
 - passage de Supabase en Pro avant les vraies données ;
@@ -358,7 +358,7 @@ Lecture faite le 1er novembre 2026, à faire confirmer par le juriste.
 | Mails un par un depuis une vraie boîte | Envoi groupé par Resend depuis `no-reply@` | Réponses possibles ; ne met pas en danger les mails de connexion |
 | Premier contact en texte simple | Version visuelle | Le message doit lancer une conversation, pas ressembler à une publicité |
 | Entretiens de recherche jusqu'au SIREN | Prix et pilote dès lundi | Choix du propriétaire le 1er novembre ; risque lié à l'absence d'immatriculation |
-| Formules de `/tarifs` vers Contact | Laisser le bouton d'inscription | Paiement fictif sur `tutelliv.fr` ; choix du propriétaire le 1er novembre |
+| Formules de `/tarifs` vers Contact | Laisser le bouton d'inscription | Paiement fictif sur `annona.fr` ; choix du propriétaire le 1er novembre |
 | But : un entretien | But : une vente | Le paiement réel et le contrat n'existent pas encore |
 | 10 nouveaux contacts par jour | Plus large | Temps de personnalisation, boîte neuve, places de démo limitées |
 | Trois messages au maximum | Relances sans limite | Petit marché : mieux vaut ne pas se griller |

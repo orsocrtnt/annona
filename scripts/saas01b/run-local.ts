@@ -3,11 +3,11 @@ import { appendFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
 const port = "55439";
-const dataDir = "/tmp/tutelliv-saas01b-pg";
-const logFile = "/tmp/tutelliv-saas01b-pg.log";
+const dataDir = "/tmp/annona-saas01b-pg";
+const logFile = "/tmp/annona-saas01b-pg.log";
 const databaseUrl = `postgresql://postgres:saas01b@127.0.0.1:${port}/saas01b`;
 const output = resolve(process.argv[2] ?? "outputs/saas01b/local-connected.json");
-const dockerContainer = "tutelliv-saas01b-pg";
+const dockerContainer = "annona-saas01b-pg";
 
 function run(command: string, args: string[], env?: NodeJS.ProcessEnv) {
   const result = spawnSync(command, args, { encoding: "utf8", env: env ?? process.env, stdio: ["ignore", "pipe", "pipe"] });

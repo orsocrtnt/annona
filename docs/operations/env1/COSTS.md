@@ -24,7 +24,7 @@ Le plan Pro coûte 25 $/mois au niveau de l'organisation, comprend 10 $ de créd
 
 ### Vercel
 
-Le plan Hobby est réservé à l'usage personnel non commercial. TutelLiv doit donc utiliser Pro dès qu'une préproduction sert le projet commercial ou des pilotes. Pro coûte 20 $/mois, comprend un siège de déploiement et 20 $ de crédit d'usage. Sources : [Vercel Pro](https://vercel.com/docs/plans/pro-plan) et [Vercel Hobby](https://vercel.com/docs/plans/hobby).
+Le plan Hobby est réservé à l'usage personnel non commercial. Annona doit donc utiliser Pro dès qu'une préproduction sert le projet commercial ou des pilotes. Pro coûte 20 $/mois, comprend un siège de déploiement et 20 $ de crédit d'usage. Sources : [Vercel Pro](https://vercel.com/docs/plans/pro-plan) et [Vercel Hobby](https://vercel.com/docs/plans/hobby).
 
 ### Resend
 

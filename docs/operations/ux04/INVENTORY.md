@@ -1,6 +1,6 @@
 # UX-04 — Inventaire des actions des parcours prioritaires
 
-Relevé du 29 octobre 2026, sur le serveur local (base `tutelliv-dev`, compte de démonstration, personas administrateur, client et livreur), à 1 280 px et à 390 px. Le script compte, dans le contenu principal de chaque écran : les boutons et liens visibles, les contrôles sans nom accessible, les rangées de quatre boutons ou plus, les boutons accompagnés d'une phrase d'aide de plus de 25 caractères et les actions destructrices.
+Relevé du 29 octobre 2026, sur le serveur local (base `annona-dev`, compte de démonstration, personas administrateur, client et livreur), à 1 280 px et à 390 px. Le script compte, dans le contenu principal de chaque écran : les boutons et liens visibles, les contrôles sans nom accessible, les rangées de quatre boutons ou plus, les boutons accompagnés d'une phrase d'aide de plus de 25 caractères et les actions destructrices.
 
 La partie « explications permanentes » (alertes, bandeaux d'aide répétés) a été traitée avec UX-ALERTES et validée par le propriétaire le 29 octobre 2026.
 

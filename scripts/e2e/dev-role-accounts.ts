@@ -30,13 +30,13 @@ type Account = {
 };
 
 const ACCOUNTS: Account[] = [
-  { key: "dispatcher", email: "e2e-role-dispatcher@tutelliv.fr", roleSlug: "dispatcher", firstName: "Dispatch", company: "template" },
-  { key: "driver", email: "e2e-role-driver@tutelliv.fr", roleSlug: "driver", firstName: "Livreur", company: "template" },
-  { key: "miniAdminDispatch", email: "e2e-role-mini-dispatch@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniDispatch", modules: ["dispatch", "delivery-map"], company: "template" },
-  { key: "miniAdminSupport", email: "e2e-role-mini-support@tutelliv.fr", roleSlug: "mini-admin", firstName: "MiniSupport", modules: ["support"], company: "template" },
-  { key: "superAdmin", email: "e2e-role-super-admin@tutelliv.fr", roleSlug: "super-admin", firstName: "SuperAdmin", company: null },
-  { key: "billingAdminA", email: "e2e-role-billing-a@tutelliv.fr", roleSlug: "company-admin", firstName: "FacturationA", company: "billingA" },
-  { key: "billingAdminB", email: "e2e-role-billing-b@tutelliv.fr", roleSlug: "company-admin", firstName: "FacturationB", company: "billingB" },
+  { key: "dispatcher", email: "e2e-role-dispatcher@annona.fr", roleSlug: "dispatcher", firstName: "Dispatch", company: "template" },
+  { key: "driver", email: "e2e-role-driver@annona.fr", roleSlug: "driver", firstName: "Livreur", company: "template" },
+  { key: "miniAdminDispatch", email: "e2e-role-mini-dispatch@annona.fr", roleSlug: "mini-admin", firstName: "MiniDispatch", modules: ["dispatch", "delivery-map"], company: "template" },
+  { key: "miniAdminSupport", email: "e2e-role-mini-support@annona.fr", roleSlug: "mini-admin", firstName: "MiniSupport", modules: ["support"], company: "template" },
+  { key: "superAdmin", email: "e2e-role-super-admin@annona.fr", roleSlug: "super-admin", firstName: "SuperAdmin", company: null },
+  { key: "billingAdminA", email: "e2e-role-billing-a@annona.fr", roleSlug: "company-admin", firstName: "FacturationA", company: "billingA" },
+  { key: "billingAdminB", email: "e2e-role-billing-b@annona.fr", roleSlug: "company-admin", firstName: "FacturationB", company: "billingB" },
 ];
 
 const prisma = new PrismaClient();

@@ -52,7 +52,7 @@ const PERSONA_ICONS: Record<DemoPersona, typeof Building2> = {
   driver: Truck,
 };
 
-const COLLAPSED_STORAGE_KEY = "tutelliv-demo-bar-collapsed";
+const COLLAPSED_STORAGE_KEY = "annona-demo-bar-collapsed";
 
 function isDemoAppArea(pathname: string): boolean {
   return DEMO_BANNER_APP_PREFIXES.some(

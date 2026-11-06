@@ -58,7 +58,7 @@ function ActivationCard({ enabled, configured }: { enabled: boolean; configured:
       <CardContent className="space-y-4 text-sm">
         <p id={noticeId} className="text-muted-foreground">
           Le texte collé, qui peut contenir des noms, téléphones et adresses de tiers, est transmis pour analyse au
-          sous-traitant Anthropic (modèle d&apos;IA). TutelLiv ne conserve pas ce texte : seuls le nombre d&apos;analyses et
+          sous-traitant Anthropic (modèle d&apos;IA). Annona ne conserve pas ce texte : seuls le nombre d&apos;analyses et
           de jetons sont journalisés pour le quota. La qualification juridique de ce sous-traitant (contrat, durée de
           conservation chez le fournisseur, transferts hors Union européenne) n&apos;est pas encore validée.
         </p>
@@ -159,7 +159,7 @@ export function OrderIntakeContent({ backHref, backLabel, ordersHref }: OrderInt
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">Nouvelle commande depuis un message</h1>
         <p className="mt-1 text-muted-foreground max-md:hidden">
-          Collez un e-mail, un SMS ou un message WhatsApp : TutelLiv prépare un brouillon que vous relisez avant de créer la commande.
+          Collez un e-mail, un SMS ou un message WhatsApp : Annona prépare un brouillon que vous relisez avant de créer la commande.
         </p>
       </div>
 

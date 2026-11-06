@@ -1,5 +1,5 @@
 // =============================================================================
-// TUTELLIV — Schéma de base de données fondamental
+// ANNONA — Schéma de base de données fondamental
 // =============================================================================
 // Ce schéma définit les entités fondamentales du système.
 // Les modules métier futurs (Deliveries, Orders, Drivers, etc.) sont anticipés
@@ -1343,7 +1343,7 @@ enum PilotStage {
 }
 
 /// ADMIN-ESPACE lot 4 : pilote accompagné suivi par le super-administrateur (entreprise prospect).
-/// Donnée de la plateforme : l'entreprise TutelLiv liée est facultative et le lien tombe si elle est supprimée.
+/// Donnée de la plateforme : l'entreprise Annona liée est facultative et le lien tombe si elle est supprimée.
 model PlatformPilot {
   id                String              @id @default(cuid())
   name              String
@@ -1516,7 +1516,7 @@ model CompanyIntakeChannel {
   inboundEmailEnabled Boolean  @default(false) @map("inbound_email_enabled")
   /// MAIL-PONT : boîte de commandes de l'entreprise (ex. commandes@entreprise.fr), « répondre à » des confirmations.
   orderMailboxAddress String?  @map("order_mailbox_address")
-  /// WHATSAPP-1 (option A) : messages transférés au numéro WhatsApp de TutelLiv par un membre de l'équipe.
+  /// WHATSAPP-1 (option A) : messages transférés au numéro WhatsApp de Annona par un membre de l'équipe.
   whatsappEnabled     Boolean  @default(false) @map("whatsapp_enabled")
   updatedAt           DateTime @updatedAt @map("updated_at")
 

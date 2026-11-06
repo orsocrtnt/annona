@@ -87,7 +87,7 @@ test("SAAS-02 : la date d'encaissement Stripe est relue, et le script reste en l
   let invoices = [raw({ status_transitions: { paid_at: from + 60 } })];
   const provider = new stripe.StripeSandboxProvider((async (url: string | URL) => {
     const path = new URL(String(url)).pathname;
-    if (path.endsWith("sub_test")) return Response.json({ id: "sub_test", livemode: false, customer: "cus_test", metadata: { tutelliv_account: "account" }, status: "active", current_period_start: from, current_period_end: to, cancel_at_period_end: false, pending_update: null, items: { data: [] } });
+    if (path.endsWith("sub_test")) return Response.json({ id: "sub_test", livemode: false, customer: "cus_test", metadata: { annona_account: "account" }, status: "active", current_period_start: from, current_period_end: to, cancel_at_period_end: false, pending_update: null, items: { data: [] } });
     return Response.json({ data: invoices, has_more: false });
   }) as typeof fetch, env);
   assert.equal((await provider.snapshot("sub_test", "account")).invoices[0]?.paidAt, new Date((from + 60) * 1000).toISOString());

@@ -1,5 +1,5 @@
 /**
- * Test d'intégration opt-in : SQL de la commande par message sur PostgreSQL RÉEL (tutelliv-dev uniquement).
+ * Test d'intégration opt-in : SQL de la commande par message sur PostgreSQL RÉEL (annona-dev uniquement).
  * Hors `npm run check`. Lancement :
  *   npx dotenv -e <chemin>/.env.local -- npm run test:pg-intake
  * (a) rapprochement de l'expéditeur par téléphone (`regexp_replace` sur des formats variés, clients actifs

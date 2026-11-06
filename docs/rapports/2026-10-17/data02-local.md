@@ -4,7 +4,7 @@ Date : 17 octobre 2026.
 
 ## Résultat
 
-Un export JSON d'entreprise versionné couvre le graphe de données actuellement présent dans TutelLiv. Il est construit dans une lecture cohérente et liste séparément les preuves privées à copier depuis Storage. Les identifiants Auth, clés d'idempotence, empreintes de requête et détails internes des jobs en sont exclus.
+Un export JSON d'entreprise versionné couvre le graphe de données actuellement présent dans Annona. Il est construit dans une lecture cohérente et liste séparément les preuves privées à copier depuis Storage. Les identifiants Auth, clés d'idempotence, empreintes de requête et détails internes des jobs en sont exclus.
 
 La recette connectée a créé deux entreprises temporaires. L'export de A contient 3 utilisateurs, 1 adresse, 1 notification, 1 récurrence, 1 commande et son article, 1 livraison et son événement, 1 message et 1 marqueur de lecture, 1 facture, 1 ticket et son message, 1 job et 1 référence de preuve. Aucune donnée ou référence de B n'est présente.
 

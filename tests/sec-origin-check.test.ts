@@ -9,7 +9,7 @@ import * as pageAccess from "../src/lib/permissions/page-access";
 
 // SEC-6 : une mutation (POST, PUT, PATCH, DELETE) venue d'une autre origine est refusée
 // par le middleware, sauf webhook Stripe et crons authentifiés par secret.
-const APP = "https://app.tutelliv.test";
+const APP = "https://app.annona.test";
 const req = (method: string, path: string, headers: Record<string, string> = {}) =>
   new Request(`${APP}${path}`, { method, headers });
 
@@ -27,7 +27,7 @@ test("lectures (GET, HEAD, OPTIONS) jamais bloquées, même depuis une autre ori
 });
 
 test("origines voisines refusées : sous-domaine, schéma, port, null et valeur invalide", () => {
-  for (const origin of ["https://evil.app.tutelliv.test", "http://app.tutelliv.test", "https://app.tutelliv.test:8443", "null", "pas une url"]) {
+  for (const origin of ["https://evil.app.annona.test", "http://app.annona.test", "https://app.annona.test:8443", "null", "pas une url"]) {
     assert.equal(isCrossOriginMutation(req("POST", "/api/orders", { origin })), true, origin);
   }
 });
@@ -65,7 +65,7 @@ function loadMiddleware(calls: string[]) {
     "@/services/supabase/middleware": { updateSession: async () => { calls.push("session"); return { supabaseResponse: NextResponse.next(), user: null }; } },
     "@/lib/constants": { AUTH_ROUTES: ["/login"] },
     "@/lib/security/origin-check": { isCrossOriginMutation, isOriginCheckExempt },
-    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "tutelliv-demo-persona", DEMO_SESSION_COOKIE: "tutelliv-demo-session" },
+    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "annona-demo-persona", DEMO_SESSION_COOKIE: "annona-demo-session" },
     "@/lib/permissions/page-access": pageAccess,
     "@/lib/api/server-auth": { resolveServerAuthForAuthId: async () => { calls.push("auth"); return null; } },
   };

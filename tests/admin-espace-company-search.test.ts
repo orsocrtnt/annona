@@ -261,7 +261,7 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
     user: {
       findMany: async () => [
         { id: "u1", firstName: "Ada", lastName: "Lovelace", email: "ada@acme.fr", role: { systemRole: "DRIVER" as const }, company: { id: "c1", name: "Acme" } },
-        { id: "u2", firstName: "Root", lastName: "Dupré Ä", email: "root@tutelliv.fr", role: { systemRole: "SUPER_ADMIN" as const }, company: null },
+        { id: "u2", firstName: "Root", lastName: "Dupré Ä", email: "root@annona.fr", role: { systemRole: "SUPER_ADMIN" as const }, company: null },
       ],
     },
     order: { findMany: async () => { throw new Error("down"); } },

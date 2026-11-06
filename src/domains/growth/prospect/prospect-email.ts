@@ -7,8 +7,8 @@ import { PROSPECT_LOGO_CID, PROSPECT_LOGO_PNG_BASE64 } from "@/domains/growth/pr
  * Aucun pixel de suivi : seuls les deux liens passent par /go/<code>/… pour être comptés.
  */
 
-export const PROSPECT_SENDER_ADDRESS = "orso@tutelliv.fr";
-export const PROSPECT_SENDER_NAME = "Orso — TutelLiv";
+export const PROSPECT_SENDER_ADDRESS = "orso@annona.fr";
+export const PROSPECT_SENDER_NAME = "Orso — Annona";
 export const PROSPECT_SUBJECT = "Il en est où ?";
 export const PROSPECT_PREHEADER = "Bonjour, mon colis, il en est où ? Ça vous dit quelque chose ?";
 /** Identité de l'émetteur exigée par la CNIL ; à compléter par le SIREN dès qu'il est attribué. */
@@ -20,7 +20,7 @@ export type ProspectEmailInput = {
   /** Code compté par /go ; « test » pour un envoi d'essai (chiffres de la campagne inchangés). */
   linkCode: string;
   addressSource: string;
-  /** Origine des liens, sans barre finale (ex. https://tutelliv.fr). */
+  /** Origine des liens, sans barre finale (ex. https://annona.fr). */
   baseUrl: string;
 };
 
@@ -81,7 +81,7 @@ export function renderProspectEmail(input: ProspectEmailInput): ProspectEmail {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
 <tr><td style="background:#ffffff;border:1px solid #e4e8e5;border-radius:20px;overflow:hidden">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td align="center" bgcolor="#ffffff" style="padding:0;text-align:center;background-color:#ffffff;border-bottom:1px solid #e4e8e5;border-radius:20px 20px 0 0"><img src="cid:${PROSPECT_LOGO_CID}" width="558" height="99" alt="TutelLiv" style="display:block;width:100%;max-width:558px;height:auto;border:0;border-radius:20px 20px 0 0;color:#0e1310;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;text-align:center;line-height:99px"></td></tr>
+<tr><td align="center" bgcolor="#ffffff" style="padding:0;text-align:center;background-color:#ffffff;border-bottom:1px solid #e4e8e5;border-radius:20px 20px 0 0"><img src="cid:${PROSPECT_LOGO_CID}" width="558" height="99" alt="Annona" style="display:block;width:100%;max-width:558px;height:auto;border:0;border-radius:20px 20px 0 0;color:#0e1310;font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;text-align:center;line-height:99px"></td></tr>
 <tr><td class="email-padding" style="padding:32px;font-family:${FONT}">
 <h1 style="margin:0 0 14px;font-size:29px;line-height:1.2;letter-spacing:-0.8px;font-weight:600;color:#0e1310">${PROSPECT_SUBJECT}</h1>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#4f5953">Bonjour,</p>
@@ -93,8 +93,8 @@ ${STEPS.map(stepRow).join("\n")}
 </table>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.7;color:#4f5953">Envie d'être parmi les premiers informés ?</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px"><tr><td style="border-radius:999px;background:#0e1310"><a href="${escapeHtml(links.join)}" style="display:inline-block;padding:15px 26px;font-family:${FONT};font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px">Je veux en être</a></td></tr></table>
-<p style="margin:0 0 26px;font-size:13px;line-height:1.5;color:#68726b">Ou découvrez TutelLiv sur <a href="${escapeHtml(links.site)}" style="color:#08783f;text-decoration:underline">tutelliv.fr</a></p>
-<p style="margin:0;font-size:15px;line-height:1.6;color:#0e1310"><strong>Carotenuto-Marchetti Orso</strong><br><span style="color:#68726b;font-size:13px">Fondateur, TutelLiv · ${PROSPECT_SENDER_ADDRESS}</span></p>
+<p style="margin:0 0 26px;font-size:13px;line-height:1.5;color:#68726b">Ou découvrez Annona sur <a href="${escapeHtml(links.site)}" style="color:#08783f;text-decoration:underline">annona.fr</a></p>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#0e1310"><strong>Carotenuto-Marchetti Orso</strong><br><span style="color:#68726b;font-size:13px">Fondateur, Annona · ${PROSPECT_SENDER_ADDRESS}</span></p>
 </td></tr>
 </table>
 </td></tr>
@@ -119,10 +119,10 @@ ${STEPS.map(stepRow).join("\n")}
     ...STEPS.map((step) => `${step.icon} ${step.title} : ${step.detail}`),
     "",
     `Envie d'être parmi les premiers informés ? Je veux en être : ${links.join}`,
-    `Découvrir TutelLiv : ${links.site}`,
+    `Découvrir Annona : ${links.site}`,
     "",
     "Carotenuto-Marchetti Orso",
-    `Fondateur, TutelLiv · ${PROSPECT_SENDER_ADDRESS}`,
+    `Fondateur, Annona · ${PROSPECT_SENDER_ADDRESS}`,
     "",
     "--",
     PROSPECT_SENDER_IDENTITY,
@@ -137,7 +137,7 @@ ${STEPS.map(stepRow).join("\n")}
     headers: { "List-Unsubscribe": `<mailto:${PROSPECT_SENDER_ADDRESS}?subject=STOP>` },
     attachments: [
       {
-        filename: "logo-tutelliv.png",
+        filename: "logo-annona.png",
         content: Buffer.from(PROSPECT_LOGO_PNG_BASE64, "base64"),
         cid: PROSPECT_LOGO_CID,
         contentType: "image/png",

@@ -147,7 +147,7 @@ test("GROWTH-1 contact : des envois simultanés ne dépassent ni la limite par s
   const results = await Promise.all(Array.from({ length: 8 }, () => submitContactMessage(valid, "192.0.2.20", { now, secret, db: burst.db })));
   assert.equal(results.filter((result) => result.status === "accepted").length, CONTACT_SOURCE_LIMIT);
   assert.equal(burst.rows.length, CONTACT_SOURCE_LIMIT);
-  assert.match(burst.events[0]!, /^lock:SELECT 1 AS locked FROM pg_advisory_xact_lock\(hashtext\('tutelliv:contact-rate-limit'\)\)$/);
+  assert.match(burst.events[0]!, /^lock:SELECT 1 AS locked FROM pg_advisory_xact_lock\(hashtext\('annona:contact-rate-limit'\)\)$/);
   assert.ok(burst.events.every((event, index) => event !== "count" || burst.events.slice(0, index).some((earlier) => earlier.startsWith("lock:"))), "aucun comptage hors verrou");
 
   const global = memoryDb(Array.from({ length: CONTACT_GLOBAL_LIMIT - 2 }, (_, index) => ({ sourceHash: `other-${index}`, createdAt: now })));

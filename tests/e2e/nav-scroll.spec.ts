@@ -69,7 +69,7 @@ for (const size of widths) {
   test(`UX-NAV-SCROLL : portail client, /portal/settings vers /portal/orders démarre en haut (${size.width} px)`, async ({ page }) => {
     await page.setViewportSize(size);
     const login = await page.request.post("/api/auth/login", {
-      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+      data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
     });
     expect(login.status()).toBe(200);
     // Le compte de démonstration est administrateur : sans la vue Client, la protection par rôle renvoie vers /dashboard.

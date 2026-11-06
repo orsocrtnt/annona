@@ -32,7 +32,7 @@ export const LOGIN_SPACES: Record<
 export const LOGIN_SPACE_KEYS = Object.keys(LOGIN_SPACES) as LoginSpaceKey[];
 
 /** Repère « Dernier utilisé » : seulement la clé d'espace, jamais d'adresse ni d'identifiant. */
-export const LAST_SPACE_STORAGE_KEY = "tutelliv-last-space";
+export const LAST_SPACE_STORAGE_KEY = "annona-last-space";
 
 export function isLoginSpaceKey(value: unknown): value is LoginSpaceKey {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(LOGIN_SPACES, value);

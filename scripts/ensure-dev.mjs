@@ -30,11 +30,11 @@ if (schemaChanged) {
   // Ne pas enregistrer le hash si la génération échoue : réessayer au prochain lancement.
   execSync("npm run db:generate", { stdio: "inherit" });
   console.warn(
-    "[tutelliv] Client Prisma régénéré. La base n'a pas été modifiée ; vérifiez sa compatibilité séparément sur un environnement de développement."
+    "[annona] Client Prisma régénéré. La base n'a pas été modifiée ; vérifiez sa compatibilité séparément sur un environnement de développement."
   );
 
   if (previousPrismaHash && existsSync(nextDir)) {
-    console.log("[tutelliv] Schéma Prisma modifié — nettoyage du cache Next.js...");
+    console.log("[annona] Schéma Prisma modifié — nettoyage du cache Next.js...");
     rmSync(nextDir, { recursive: true, force: true });
   }
 
@@ -44,13 +44,13 @@ if (schemaChanged) {
 if (existsSync(nextDir)) {
   const hasProductionBuild = existsSync(`${nextDir}/BUILD_ID`);
   if (hasProductionBuild) {
-    console.log("[tutelliv] Cache production détecté — nettoyage avant dev...");
+    console.log("[annona] Cache production détecté — nettoyage avant dev...");
     rmSync(nextDir, { recursive: true, force: true });
   }
 }
 
 if (isPortInUse(3000)) {
   console.warn(
-    "[tutelliv] Attention : le port 3000 est déjà utilisé. Arrêtez l'autre serveur (Ctrl+C) avant de relancer."
+    "[annona] Attention : le port 3000 est déjà utilisé. Arrêtez l'autre serveur (Ctrl+C) avant de relancer."
   );
 }

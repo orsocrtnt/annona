@@ -38,7 +38,7 @@ function Unconfigured({ missing, headerRow }: { missing: string[]; headerRow: nu
       </div>
       <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-foreground marker:font-semibold marker:text-muted-foreground">
         <li>Créer un compte de service Google Cloud et activer l&apos;API Google Sheets.</li>
-        <li>Partager la Sheet TutelLiv_Suivi_Prospection_2026 en <strong>lecteur</strong> avec l&apos;e-mail du compte de service.</li>
+        <li>Partager la Sheet Annona_Suivi_Prospection_2026 en <strong>lecteur</strong> avec l&apos;e-mail du compte de service.</li>
         <li>
           Poser sur Vercel (Preview, branche preproduction) :{" "}
           {missing.map((name, index) => (
@@ -293,7 +293,7 @@ export function ProspectionSheetPanel() {
         Fichier de prospection
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        Google Sheet TutelLiv_Suivi_Prospection_2026, lue en direct et en lecture seule. Les commerciaux continuent de travailler dans la Sheet.
+        Google Sheet Annona_Suivi_Prospection_2026, lue en direct et en lecture seule. Les commerciaux continuent de travailler dans la Sheet.
       </p>
     </div>
   );

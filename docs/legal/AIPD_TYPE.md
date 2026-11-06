@@ -1,22 +1,22 @@
 # Analyse d'impact type (AIPD) et décision automatisée du Dispatch intelligent
 
-3 novembre 2026. Document de travail préparé par l'agent pour LEGAL-1. **Ce n'est ni un avis juridique ni une AIPD faite** : c'est une trame pré-remplie avec ce que fait réellement TutelLiv, que l'entreprise cliente (responsable du traitement, voir [R1 et R2](RESPONSABILITES_RGPD.md)) complète pour son propre usage. Les faits techniques renvoient au code ; les points marqués « à compléter par le client » ou « à qualifier » ne sont pas tranchés.
+3 novembre 2026. Document de travail préparé par l'agent pour LEGAL-1. **Ce n'est ni un avis juridique ni une AIPD faite** : c'est une trame pré-remplie avec ce que fait réellement Annona, que l'entreprise cliente (responsable du traitement, voir [R1 et R2](RESPONSABILITES_RGPD.md)) complète pour son propre usage. Les faits techniques renvoient au code ; les points marqués « à compléter par le client » ou « à qualifier » ne sont pas tranchés.
 
 ## 1. Faut-il une AIPD ?
 
-| Repère | Source | Application à TutelLiv |
+| Repère | Source | Application à Annona |
 | --- | --- | --- |
-| AIPD obligatoire si risque élevé pour les personnes (art. 35) | [RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj/fra) | Le client décide ; TutelLiv l'assiste (art. 28, point f) |
+| AIPD obligatoire si risque élevé pour les personnes (art. 35) | [RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj/fra) | Le client décide ; Annona l'assiste (art. 28, point f) |
 | Liste CNIL : surveillance constante de l'activité des employés ; localisation à large échelle | [Liste CNIL](https://www.cnil.fr/sites/cnil/files/atoms/files/liste-traitements-aipd-requise.pdf) | Le suivi GPS pendant le service touche la première rubrique dès que les livreurs sont salariés |
 | Neuf critères du CEPD ; deux remplis suffisent en général | [CNIL](https://www.cnil.fr/fr/ce-quil-faut-savoir-sur-lanalyse-dimpact-relative-la-protection-des-donnees-aipd) | Surveillance systématique (GPS) et personnes vulnérables au sens du CEPD (salariés face à l'employeur) : **deux critères**. Le Dispatch intelligent ajoute un traitement automatisé, sans notation des personnes (section 3) |
 
-**Recommandation** : chaque entreprise cliente qui active le suivi GPS de livreurs salariés fait une AIPD avant les données réelles. En cas de doute (indépendants, petit effectif), la CNIL recommande de la faire. TutelLiv fournit cette trame et répond aux questions techniques.
+**Recommandation** : chaque entreprise cliente qui active le suivi GPS de livreurs salariés fait une AIPD avant les données réelles. En cas de doute (indépendants, petit effectif), la CNIL recommande de la faire. Annona fournit cette trame et répond aux questions techniques.
 
 ## 2. Trame pré-remplie
 
 ### 2.1 Description du traitement
 
-| Rubrique | Ce que fait TutelLiv (vérifié dans le code le 3 novembre 2026) | À compléter par le client |
+| Rubrique | Ce que fait Annona (vérifié dans le code le 3 novembre 2026) | À compléter par le client |
 | --- | --- | --- |
 | Finalités | Organiser et suivre les livraisons ; prouver la remise ; estimer l'heure d'arrivée pour le client destinataire ; proposer ou faire l'affectation des livraisons | Finalités propres retenues ; interdiction écrite d'un usage disciplinaire du GPS hors cadre prévu |
 | Personnes | Livreurs (salariés ou indépendants), destinataires des colis, contacts des clients donneurs d'ordre | Statut réel des livreurs |
@@ -29,22 +29,22 @@
 
 ### 2.2 Nécessité et proportionnalité
 
-| Question | Éléments fournis par TutelLiv | À compléter par le client |
+| Question | Éléments fournis par Annona | À compléter par le client |
 | --- | --- | --- |
-| Base légale | Aucune décidée par TutelLiv pour le compte du client | Intérêt légitime ou exécution du contrat, motivé |
+| Base légale | Aucune décidée par Annona pour le compte du client | Intérêt légitime ou exécution du contrat, motivé |
 | Minimisation | Pas d'historique de trajet ; pas de suivi hors service ; minutes seulement côté destinataire ; métadonnées des photos retirées | Fréquence choisie et pourquoi |
 | Durées | Dernière position : jusqu'au service suivant ; file sur l'appareil : sept jours au plus | Durées des livraisons, preuves et événements |
-| Information des personnes | Page [Confidentialité](../../src/app/confidentialite/page.tsx) pour les traitements propres de TutelLiv | Notice aux livreurs (modèle J5 à compléter, [vérification](VERIFICATION_2026-11-02.md) section 6) ; information des destinataires |
+| Information des personnes | Page [Confidentialité](../../src/app/confidentialite/page.tsx) pour les traitements propres de Annona | Notice aux livreurs (modèle J5 à compléter, [vérification](VERIFICATION_2026-11-02.md) section 6) ; information des destinataires |
 | Droits | Export des données de l'entreprise ([company-export.service.ts](../../src/domains/data-lifecycle/company-export.service.ts)) | Procédure interne d'accès, d'opposition et d'effacement |
 | Fin de service | Le livreur arrête lui-même son service dans l'application ; plus aucun envoi de position ensuite | Règle sur les pauses |
 
 ### 2.3 Risques
 
-| Risque | Ce qui le réduit dans TutelLiv | Reste à traiter |
+| Risque | Ce qui le réduit dans Annona | Reste à traiter |
 | --- | --- | --- |
 | Surveillance excessive du livreur (vitesse, pauses, localisation hors travail) | Pas de suivi hors service ; pas d'historique de trajet ; aucune note ni classement de livreur | Le client s'interdit d'en faire un outil de contrôle disciplinaire non prévu |
 | Accès illégitime aux positions ou aux photos | Isolement par entreprise ; stockage privé des preuves ; rôles | Revue des comptes ; durcissement SEC-AUDIT |
-| Perte de preuve ou fuite depuis le téléphone | Aucun chiffrement propre à TutelLiv : la protection est celle du téléphone ; file effacée après sept jours au plus | Verrouillage du téléphone (consigne du client) |
+| Perte de preuve ou fuite depuis le téléphone | Aucun chiffrement propre à Annona : la protection est celle du téléphone ; file effacée après sept jours au plus | Verrouillage du téléphone (consigne du client) |
 | Conservation trop longue | Purges partielles | Durées DATA-02 à décider puis appliquer |
 | Affectation automatique perçue comme injuste | Voir section 3 | Voir section 3 |
 

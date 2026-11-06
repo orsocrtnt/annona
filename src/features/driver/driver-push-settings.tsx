@@ -12,8 +12,8 @@ import {
 } from "./driver-push";
 
 const HELP: Record<Exclude<DriverPushAvailability, "ready">, string> = {
-  "install-required": "Sur iPhone, ajoutez d’abord TutelLiv à l’écran d’accueil : bouton Partager de Safari, puis « Sur l’écran d’accueil ». Ouvrez ensuite TutelLiv depuis cette icône.",
-  denied: "Les notifications sont bloquées pour TutelLiv. Autorisez-les dans les réglages de votre téléphone, puis revenez ici.",
+  "install-required": "Sur iPhone, ajoutez d’abord Annona à l’écran d’accueil : bouton Partager de Safari, puis « Sur l’écran d’accueil ». Ouvrez ensuite Annona depuis cette icône.",
+  denied: "Les notifications sont bloquées pour Annona. Autorisez-les dans les réglages de votre téléphone, puis revenez ici.",
   unavailable: "Les notifications ne sont pas disponibles sur cet appareil.",
 };
 

@@ -191,7 +191,7 @@ export default function CompanySupportPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Support clients</h1>
           <p className="mt-1 text-muted-foreground max-md:hidden">
-            Canal suivi : cet espace TutelLiv · objectif de première réponse sous 1 jour ouvré
+            Canal suivi : cet espace Annona · objectif de première réponse sous 1 jour ouvré
           </p>
         </div>
         <div className="rounded-lg border bg-card px-4 py-2 text-sm">

@@ -124,7 +124,7 @@ export function demoRosterAuthIds(companyId: string): string[] {
 }
 
 function scopedDemoEmail(email: string, companyId: string): string {
-  const [localPart, domain = "tutelliv.fr"] = email.toLowerCase().split("@");
+  const [localPart, domain = "annona.fr"] = email.toLowerCase().split("@");
   return `${localPart}+session-${companyId}@${domain}`;
 }
 

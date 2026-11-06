@@ -24,7 +24,7 @@ function fakeStripe(options: { configurations?: unknown[]; sessionUrl?: string; 
     const headers = init?.headers as Record<string, string>;
     calls.push({ method: init?.method ?? "GET", path: parsed.pathname, body: init?.body ? new URLSearchParams(String(init.body)) : null, key: headers["Idempotency-Key"] });
     if (parsed.pathname === "/v1/subscriptions/sub_test") {
-      return Response.json({ id: "sub_test", livemode: false, customer: "cus_test", metadata: { tutelliv_account: options.account ?? "account" } });
+      return Response.json({ id: "sub_test", livemode: false, customer: "cus_test", metadata: { annona_account: options.account ?? "account" } });
     }
     if (parsed.pathname === "/v1/billing_portal/configurations" && init?.method === "GET") {
       return Response.json({ data: options.configurations ?? [], has_more: false });
@@ -44,13 +44,13 @@ test("SAAS-03 : le portail Stripe se limite au moyen de paiement et aux factures
   assert.deepEqual(plain(result), { url: "https://billing.stripe.com/p/session/test_unit" });
 
   const created = calls.find((call) => call.method === "POST" && call.path === "/v1/billing_portal/configurations")!;
-  assert.equal(created.key, `tutelliv:portal-configuration:${stripe.PAYMENT_PORTAL_CONFIGURATION}`);
+  assert.equal(created.key, `annona:portal-configuration:${stripe.PAYMENT_PORTAL_CONFIGURATION}`);
   assert.equal(created.body?.get("features[payment_method_update][enabled]"), "true");
   assert.equal(created.body?.get("features[invoice_history][enabled]"), "true");
   for (const feature of ["subscription_cancel", "subscription_update", "customer_update"]) {
-    assert.equal(created.body?.get(`features[${feature}][enabled]`), "false", `${feature} reste géré par TutelLiv`);
+    assert.equal(created.body?.get(`features[${feature}][enabled]`), "false", `${feature} reste géré par Annona`);
   }
-  assert.equal(created.body?.get("metadata[tutelliv_portal]"), stripe.PAYMENT_PORTAL_CONFIGURATION);
+  assert.equal(created.body?.get("metadata[annona_portal]"), stripe.PAYMENT_PORTAL_CONFIGURATION);
 
   const session = calls.find((call) => call.path === "/v1/billing_portal/sessions")!;
   assert.equal(session.key, "portal:key-1");
@@ -59,8 +59,8 @@ test("SAAS-03 : le portail Stripe se limite au moyen de paiement et aux factures
   assert.equal(session.body?.get("return_url"), "https://preprod.example.invalid/settings/subscription");
 
   const reused = fakeStripe({ configurations: [
-    { id: "bpc_other", metadata: { tutelliv_portal: "autre" } },
-    { id: "bpc_existing", metadata: { tutelliv_portal: stripe.PAYMENT_PORTAL_CONFIGURATION } },
+    { id: "bpc_other", metadata: { annona_portal: "autre" } },
+    { id: "bpc_existing", metadata: { annona_portal: stripe.PAYMENT_PORTAL_CONFIGURATION } },
   ] });
   await reused.provider.paymentPortal("sub_test", "account", "portal:key-2");
   assert.equal(reused.calls.some((call) => call.method === "POST" && call.path === "/v1/billing_portal/configurations"), false, "pas de doublon au-delà des 24 h d'idempotence");

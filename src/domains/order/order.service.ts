@@ -1201,7 +1201,7 @@ export async function updateCompanyOrderStatus(
           trackingEvents: {
             create: [
               {
-                label: "Accord confirmé hors TutelLiv",
+                label: "Accord confirmé hors Annona",
                 description:
                   "Mission spéciale convertie manuellement — en attente d'assignation",
               },

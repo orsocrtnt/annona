@@ -114,7 +114,7 @@ export interface FacturXInvoice {
 }
 
 export interface FacturXIssue {
-  /** Règle EN 16931 (BR-…) ou contrôle TutelLiv (TL-…) */
+  /** Règle EN 16931 (BR-…) ou contrôle Annona (TL-…) */
   rule: string;
   message: string;
 }

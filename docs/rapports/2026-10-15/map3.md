@@ -2,7 +2,7 @@
 
 ## Résultat
 
-La direction visuelle commune des cartes TutelLiv a été ramenée vers un rendu sobre de type Uber : fond cartographique monochrome, surfaces blanches, texte et actions noirs, ombres légères et couleur réservée aux alertes qui doivent réellement attirer l’attention.
+La direction visuelle commune des cartes Annona a été ramenée vers un rendu sobre de type Uber : fond cartographique monochrome, surfaces blanches, texte et actions noirs, ombres légères et couleur réservée aux alertes qui doivent réellement attirer l’attention.
 
 La même base est utilisée dans les espaces administrateur, client et livreur. Le thème est centralisé dans `src/lib/maps/map-visual-theme.ts` et la variante `uber` est appliquée par défaut à la carte Leaflet commune.
 

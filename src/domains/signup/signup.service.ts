@@ -19,7 +19,7 @@ import {
 import { sendTransactionalEmail, type EmailContentFreezer, type ReplayWindowStart } from "@/lib/email/transactional-email";
 import { attributeSignupSale, resolveActiveSalesCodeId } from "@/domains/sales/sales-code.service";
 
-export const SIGNUP_COOKIE = "tutelliv-signup-resume";
+export const SIGNUP_COOKIE = "annona-signup-resume";
 export const SIGNUP_TTL_SECONDS = 30 * 24 * 60 * 60;
 export const SIGNUP_EMAIL_RESEND_COOLDOWN_SECONDS = 30;
 
@@ -583,7 +583,7 @@ async function provisionAuthUserWithoutEmail(input: {
   return updated.data.user;
 }
 
-async function tutellivUserExists(input: { authUserId?: string | null; email: string }) {
+async function annonaUserExists(input: { authUserId?: string | null; email: string }) {
   const existing = await prisma.user.findFirst({
     where: {
       OR: [
@@ -711,7 +711,7 @@ async function deliverOrReuseSignupConfirmation(input: {
 
   if (found && !found.email_confirmed_at) {
     // Un compte invité non confirmé appartient à son invité : l'inscription n'y touche jamais (AUDIT-0111, S1).
-    if (await tutellivUserExists({ authUserId: found.id, email: input.email })) return "already_registered" as const;
+    if (await annonaUserExists({ authUserId: found.id, email: input.email })) return "already_registered" as const;
     await reuseUnconfirmedAuthUser({
       authUserId: found.id,
       password: input.password,
@@ -723,7 +723,7 @@ async function deliverOrReuseSignupConfirmation(input: {
     return "sent" as const;
   }
   if (found?.email_confirmed_at) {
-    if (await tutellivUserExists({ authUserId: found.id, email: input.email })) return "already_registered" as const;
+    if (await annonaUserExists({ authUserId: found.id, email: input.email })) return "already_registered" as const;
     if (!input.password) {
       await attachSignupAuthUser(input.journeyId, input.email, found.id);
       return "already_verified" as const;
@@ -751,7 +751,7 @@ async function deliverOrReuseSignupConfirmation(input: {
 
   const leftover = await findAuthUserByEmail(input.email);
   if (leftover && !leftover.email_confirmed_at) {
-    if (await tutellivUserExists({ authUserId: leftover.id, email: input.email })) return "already_registered" as const;
+    if (await annonaUserExists({ authUserId: leftover.id, email: input.email })) return "already_registered" as const;
     await reuseUnconfirmedAuthUser({
       authUserId: leftover.id,
       password: input.password,
@@ -763,7 +763,7 @@ async function deliverOrReuseSignupConfirmation(input: {
     return "sent" as const;
   }
   if (leftover?.email_confirmed_at) {
-    if (await tutellivUserExists({ authUserId: leftover.id, email: input.email })) return "already_registered" as const;
+    if (await annonaUserExists({ authUserId: leftover.id, email: input.email })) return "already_registered" as const;
     const deleted = await deleteOrphanAuthUser(leftover.id);
     if (!deleted) return "already_registered" as const;
     const retry = await createManagedAuthUser({
@@ -1097,16 +1097,16 @@ export async function deliverSignupWelcomeEmail(
   const interval = journey.billingInterval === "ANNUAL" ? "annuel" : "mensuel";
   const delivery = await sendTransactionalEmail({
     to: user.email,
-    subject: "Bienvenue sur TutelLiv",
-    fromTutelLiv: true,
+    subject: "Bienvenue sur Annona",
+    fromAnnona: true,
     text: [
       `Bonjour ${user.firstName},`,
       "",
-      `Votre espace ${journey.companyName ?? "TutelLiv"} est prêt avec l’offre ${journey.planCode} (${interval}).`,
+      `Votre espace ${journey.companyName ?? "Annona"} est prêt avec l’offre ${journey.planCode} (${interval}).`,
       "Connectez-vous puis suivez l’assistant pour ajouter vos livreurs, vos clients et créer votre première livraison.",
       "",
       ...(process.env.NEXT_PUBLIC_APP_URL ? [`Découvrir mon espace : ${process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "")}/onboarding`, ""] : []),
-      "L’équipe TutelLiv",
+      "L’équipe Annona",
     ].join("\n"),
     idempotencyKey: eventKey,
     replayWindowStart: replayWindow,

@@ -40,7 +40,7 @@ export default async function DemonstrationPage() {
               Explorer sans rien déranger
             </div>
             <h1 className="mt-6 text-balance text-4xl font-bold tracking-[-0.04em] text-foreground sm:text-5xl lg:text-6xl">
-              Faites le tour de TutelLiv, à votre rythme.
+              Faites le tour de Annona, à votre rythme.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
               La démonstration ouvre une entreprise déjà marquée comme démo. Les données y sont fictives et séparées d&apos;une entreprise cliente.

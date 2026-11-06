@@ -40,7 +40,7 @@ Branche `agent/preuve-livraison`, base `9234600` (preproduction). Le worktree av
 
 ## Checklist de preuves
 
-1. **Skills invoqués** (via l'outil Skill) : `tutelliv-model-router`, `superpowers:test-driven-development`, `karpathy-guidelines`, `security-review`, `superpowers:verification-before-completion`. Revue de sécurité exécutée par un sous-agent Sonnet en lecture seule sur le diff `src` et `prisma` : aucune vulnérabilité de confiance élevée.
+1. **Skills invoqués** (via l'outil Skill) : `annona-model-router`, `superpowers:test-driven-development`, `karpathy-guidelines`, `security-review`, `superpowers:verification-before-completion`. Revue de sécurité exécutée par un sous-agent Sonnet en lecture seule sur le diff `src` et `prisma` : aucune vulnérabilité de confiance élevée.
 
 2. **Test rouge puis vert, par point**
 

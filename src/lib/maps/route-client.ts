@@ -6,7 +6,7 @@ export type { NavigationRoute, NavigationRouteStep, RouteWaypoint } from "@/lib/
 let lastRequestAt = 0;
 
 /**
- * Itinéraire demandé au serveur TutelLiv (`/api/maps/route`), qui seul parle au fournisseur (LEGAL-1).
+ * Itinéraire demandé au serveur Annona (`/api/maps/route`), qui seul parle au fournisseur (LEGAL-1).
  * Aucune substitution en ligne droite : indisponible = null. Un appel par seconde au plus par page.
  */
 export async function fetchNavigationRoute(waypoints: RouteWaypoint[], signal?: AbortSignal): Promise<NavigationRoute | null> {

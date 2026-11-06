@@ -37,7 +37,7 @@ test("INTAKE : coller, analyser, relire, créer une seule commande malgré le do
 
   try {
     const login = await page.request.post("/api/auth/login", {
-      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+      data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
     });
     expect(login.status()).toBe(200);
     expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);
@@ -126,7 +126,7 @@ test("INTAKE : deux livraisons, quantité propre à chacune et absente signalée
   page.on("pageerror", (error) => pageErrors.push(error.message));
   try {
     const login = await page.request.post("/api/auth/login", {
-      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+      data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
     });
     expect(login.status()).toBe(200);
     expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);

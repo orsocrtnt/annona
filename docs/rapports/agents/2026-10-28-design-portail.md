@@ -3,7 +3,7 @@
 Branche `agent/design-portail`, worktree `agent-a0bddf0480f83815b`. Captures réelles (Chrome, Playwright) relues à l'écran, comparaison pixel à pixel avec preproduction.
 
 ## 1. Skills et références
-`tutelliv-model-router`, `impeccable` (contexte chargé ; `craft-floor.md`, `critique.md` et `polish.md` lus en entier, appliqués sur les captures), `design:accessibility-review`, `tutelliv-recette`. La critique s'est faite dans un seul contexte, sans les sous-agents A et B : un seul agent d'exécution, conformément à `AGENTS.md`.
+`annona-model-router`, `impeccable` (contexte chargé ; `craft-floor.md`, `critique.md` et `polish.md` lus en entier, appliqués sur les captures), `design:accessibility-review`, `annona-recette`. La critique s'est faite dans un seul contexte, sans les sous-agents A et B : un seul agent d'exécution, conformément à `AGENTS.md`.
 
 ## 2. Les 10 défauts
 | # | Statut | Commit | Preuve |
@@ -36,7 +36,7 @@ Défauts trouvés sur capture et corrigés en plus : focus clavier invisible dan
 - bannière d'erreur de la carte plus contrastée.
 
 ## 4. E2E
-`portal-theme.spec.ts` (9 tests) et `v1-roles.spec.ts` (1 test) : 10 réussis, 0 échec, sur le port 3110 avec la base `tutelliv-dev`.
+`portal-theme.spec.ts` (9 tests) et `v1-roles.spec.ts` (1 test) : 10 réussis, 0 échec, sur le port 3110 avec la base `annona-dev`.
 
 ## 5. `npm run check`
 Code de sortie 0 ; 748 tests, 748 réussis.
@@ -71,7 +71,7 @@ Branche `agent/design-portail`, partie de `preproduction` (9234600). Aucune règ
 - Jetons sémantiques Dark « Encre + Pastel » dans `src/app/globals.css`, sous `:root[data-theme="dark"]` et, pour le choix « Système », sous `@media (prefers-color-scheme: dark) { :root[data-theme="system"] }` (blocs identiques, vérifiés par test).
 - Variante Tailwind `dark:` redéfinie (`@custom-variant`) sur ces mêmes attributs : les composants partagés peuvent porter des classes `dark:` sans effet hors des espaces migrés.
 - Portée : `src/lib/theme.ts` (`THEME_SCOPED_PATH_PREFIXES = ["/portal"]`). Le script `THEME_INIT_SCRIPT` (dans `<head>` de `src/app/layout.tsx`, avant l'hydratation) pose `data-theme` seulement sur `/portal/**`. Ailleurs l'attribut est absent : le Light des autres espaces ne change pas, même si l'OS est sombre. Pour migrer un autre espace plus tard, ajouter son préfixe.
-- Préférence « Système / Clair / Sombre » mémorisée dans `localStorage` (`tutelliv-theme`), `ThemeSync` (dans `AppProviders`) garde l'attribut aligné lors des navigations client, `ThemeToggle` dans la barre du portail.
+- Préférence « Système / Clair / Sombre » mémorisée dans `localStorage` (`annona-theme`), `ThemeSync` (dans `AppProviders`) garde l'attribut aligné lors des navigations client, `ThemeToggle` dans la barre du portail.
 - `prefers-reduced-transparency` : `.glass` retombe sur une surface opaque. `prefers-reduced-motion` était déjà couvert.
 - Effet de bord assumé : les quelques classes `dark:` préexistantes (bannières ambre) ne réagissent plus à l'OS partout, seulement dans le portail.
 

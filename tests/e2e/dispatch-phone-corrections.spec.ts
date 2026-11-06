@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { prisma } from "../../src/services/prisma/client";
 
 const demo = async (page: Page) => {
-  expect((await page.request.post("/api/auth/login", { data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" } })).status()).toBe(200);
+  expect((await page.request.post("/api/auth/login", { data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" } })).status()).toBe(200);
   expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);
 };
 
@@ -11,7 +11,7 @@ test.describe("téléphone", () => {
 
   test("carte : le menu s'ouvre ; thème clair seul, sans bouton de thème", async ({ page }) => {
     test.setTimeout(120_000);
-    await page.addInitScript(() => window.localStorage.setItem("tutelliv-theme", "dark"));
+    await page.addInitScript(() => window.localStorage.setItem("annona-theme", "dark"));
     await demo(page);
     await page.goto("/dispatch/map");
     const menu = page.getByRole("button", { name: "Ouvrir le menu" });

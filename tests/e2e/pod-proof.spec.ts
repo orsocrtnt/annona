@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { MISSING_TEST_DATA, readTestData } from "./helpers/test-data";
 
-// POD-2 : les parcours authentifiés lisent le jeu de données `npm run e2e:test-data -- seed` (tutelliv-dev)
+// POD-2 : les parcours authentifiés lisent le jeu de données `npm run e2e:test-data -- seed` (annona-dev)
 // et les comptes `npm run e2e:role-accounts -- setup` ; absents, ils sautent avec un message explicite.
 type Account = { email: string; password: string };
 const accounts = (): Record<"dispatcher" | "driver" | "billingAdminB", Account> | null => {

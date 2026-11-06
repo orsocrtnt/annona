@@ -52,7 +52,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | ProspectOptOut | plateforme | adresse e-mail d'un prospect ayant répondu STOP, gardée pour ne plus lui écrire | non |
 | PlatformPilot | plateforme | companyId nullable (SET NULL), suivi des pilotes par le super-administrateur | non |
 | PlatformPilotNote | plateforme | pilotId (CASCADE), notes internes du super-administrateur | non |
-| SalesCode | plateforme | aucune, commercial de TutelLiv | non |
+| SalesCode | plateforme | aucune, commercial de Annona | non |
 | SalesAttribution | plateforme | companyId | non |
 | SalesCommissionEntry | plateforme | attributionId | non |
 | AuthLoginFailure | technique | aucune, empreinte HMAC transitoire (15 min) | non |

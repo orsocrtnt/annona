@@ -58,7 +58,7 @@ export function AccessToggleButton({ kind, id, name, status, className }: Access
       ? `${name} pourra de nouveau se connecter.`
       : `${name} et tous ses comptes pourront de nouveau se connecter.`
     : kind === "user"
-      ? `${name} ne pourra plus se connecter ni rien faire dans TutelLiv (effet en quelques secondes). Ses données sont gardées ; « Rétablir » rend l'accès.`
+      ? `${name} ne pourra plus se connecter ni rien faire dans Annona (effet en quelques secondes). Ses données sont gardées ; « Rétablir » rend l'accès.`
       : `Tous les comptes de ${name} (équipe, livreurs, clients) perdent l'accès en quelques secondes. Les données sont gardées ; « Rétablir » rend l'accès.`;
 
   return (

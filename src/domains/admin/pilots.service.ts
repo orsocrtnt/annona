@@ -22,7 +22,7 @@ import {
 
 /**
  * ADMIN-ESPACE, lot 4 : suivi des pilotes accompagnés (docs/operations/pilot1).
- * Un pilote = une entreprise prospect accompagnée, liée ou non à une entreprise TutelLiv.
+ * Un pilote = une entreprise prospect accompagnée, liée ou non à une entreprise Annona.
  * Étapes, transitions et règles de cohérence des dates sont ici, pures et testées ; la lecture regroupe
  * les livraisons par entreprise (`groupBy`, aucun N+1). Jours civils à l'heure de Paris.
  * Aucun chiffre inventé : une lecture impossible vaut `null` (« Indisponible »).

@@ -11,7 +11,7 @@ import {
 import type { InvoiceStatus } from "@prisma/client";
 import { INVOICE_STATUS_LABELS } from "@/lib/constants/invoice-status";
 import fontkit from "@pdf-lib/fontkit";
-import { TUTELLIV_LOGO_PNG_BASE64 } from "@/lib/pdf/tutelliv-logo";
+import { ANNONA_LOGO_PNG_BASE64 } from "@/lib/pdf/annona-logo";
 import { LIBERATION_SANS_BOLD_TTF_BASE64, LIBERATION_SANS_REGULAR_TTF_BASE64 } from "@/lib/pdf/fonts/liberation-sans";
 
 export interface InvoicePdfData {
@@ -47,7 +47,7 @@ export interface InvoicePdfLegalMentions {
   footer: string;
 }
 
-/* Couleurs TutelLiv (DA Menthe). */
+/* Couleurs Annona (DA Menthe). */
 const INK = rgb(0.055, 0.075, 0.063); // #0e1310
 const MINT = rgb(0, 0.831, 0.416); // #00d46a
 const BRAND = rgb(0.031, 0.471, 0.247); // #08783f
@@ -121,7 +121,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   const documentLabel = legal?.documentLabel ?? "Relevé de prestation";
   const doc = await PDFDocument.create();
   doc.setTitle(`${documentLabel} ${data.reference}`);
-  doc.setCreator("TutelLiv");
+  doc.setCreator("Annona");
   // Variante Factur-X (PDF/A-3b) : polices embarquées, exigées par la norme ; largeurs identiques à
   // Helvetica. Relevé classique : polices standard, octets inchangés.
   let font: PDFFont;
@@ -135,7 +135,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     bold = await doc.embedFont(StandardFonts.HelveticaBold);
   }
   const supported = new Set(font.getCharacterSet());
-  const tutelliv = await doc.embedPng(Buffer.from(TUTELLIV_LOGO_PNG_BASE64, "base64"));
+  const annona = await doc.embedPng(Buffer.from(ANNONA_LOGO_PNG_BASE64, "base64"));
   let companyLogo: PDFImage | null = null;
   if (data.companyLogoPng?.length) {
     // Un logo illisible ne doit jamais empêcher le relevé : on retombe sur le nom.
@@ -364,14 +364,14 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   if (data.footerNote) note("Message", data.footerNote, MUTED);
   if (legal?.mentions.length) note("Mentions légales", legal.mentions.join("\n"), MUTED);
 
-  // ── Pied de page : édité avec TutelLiv, mention légale, pagination ──
+  // ── Pied de page : édité avec Annona, mention légale, pagination ──
   const logoWidth = 50;
-  const logoHeight = (tutelliv.height / tutelliv.width) * logoWidth;
+  const logoHeight = (annona.height / annona.width) * logoWidth;
   for (const [index, current] of doc.getPages().entries()) {
     page = current;
     hairline(68);
-    page.drawImage(tutelliv, { x: MARGIN, y: 42, width: logoWidth, height: logoHeight });
-    text(legal ? "Facture éditée avec TutelLiv" : "Relevé édité avec TutelLiv", MARGIN + logoWidth + 10, 48, { size: 7.5, color: MUTED });
+    page.drawImage(annona, { x: MARGIN, y: 42, width: logoWidth, height: logoHeight });
+    text(legal ? "Facture éditée avec Annona" : "Relevé édité avec Annona", MARGIN + logoWidth + 10, 48, { size: 7.5, color: MUTED });
     textRight(`Page ${index + 1}/${doc.getPageCount()}`, RIGHT, 48, { size: 7.5, color: MUTED });
     text(legal?.footer ?? "Document de suivi opérationnel — ne constitue pas une facture électronique réglementaire.", MARGIN, 28, { size: 6.5, color: SOFT });
   }

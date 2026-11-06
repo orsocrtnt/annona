@@ -14,7 +14,7 @@ type Delivery = { id: string; companyId: string; orderId: string; podPhotoPath: 
 
 function replay(deliveries: Delivery | Delivery[], proofObjects: Array<{ deliveryId: string; objectKey: string; kind?: string }>) {
   return async (_companyId: string, visitor: CompanyExportVisitor) => {
-    const header = { schema: "tutelliv-company-export", version: 1, exportedAt: "2026-10-28T12:00:00.000Z" };
+    const header = { schema: "annona-company-export", version: 1, exportedAt: "2026-10-28T12:00:00.000Z" };
     await visitor.start(header as never, { id: "companyA" } as never);
     await visitor.page("users", []);
     await visitor.page("orders", [{ id: "orderA", companyId: "companyA", deliveries: Array.isArray(deliveries) ? deliveries : [deliveries] }] as never);

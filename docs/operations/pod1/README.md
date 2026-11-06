@@ -12,7 +12,7 @@
 
 Après une clôture réussie, le même statut terminal, la même note, le même motif et la même présence de photo forment un rejeu idempotent. Le serveur renvoie la mission déjà clôturée et sa preuve existante sans téléverser le fichier reçu une seconde fois. Un contenu métier différent renvoie `409 POD_REPLAY_CONFLICT`.
 
-Si l'écriture métier échoue après l'upload, le fichier qui vient d'être créé est supprimé. Après une réussite, les anciens objets au format TutelLiv du même couple entreprise/livraison sont supprimés, sauf le chemin attaché en base. Le nettoyage est borné à ce préfixe exact ; un nom inconnu ou un chemin étranger n'est jamais supprimé.
+Si l'écriture métier échoue après l'upload, le fichier qui vient d'être créé est supprimé. Après une réussite, les anciens objets au format Annona du même couple entreprise/livraison sont supprimés, sauf le chemin attaché en base. Le nettoyage est borné à ce préfixe exact ; un nom inconnu ou un chemin étranger n'est jamais supprimé.
 
 La reprise couverte ici traite le cas où le serveur a terminé mais le client n'a pas reçu ou consommé la réponse. Une file locale pendant une coupure au milieu de l'envoi et la reconnexion sur téléphone relèvent de MOB-01B.
 

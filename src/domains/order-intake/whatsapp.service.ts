@@ -4,7 +4,7 @@ import { normalizePhone } from "./order-intake.draft";
 import { queueInboundMessage, type InboundIngestResult, type InboundMessageData } from "./inbound-email.service";
 
 /**
- * WHATSAPP-1, option A : TutelLiv a un numéro WhatsApp (API officielle de Meta). Un membre de l'équipe
+ * WHATSAPP-1, option A : Annona a un numéro WhatsApp (API officielle de Meta). Un membre de l'équipe
  * y transfère le message d'un client ; l'entreprise est reconnue par le numéro de ce membre, inscrit
  * dans son profil. Le message rejoint la file des e-mails reçus : même tri, même brouillon, même validation.
  *
@@ -136,7 +136,7 @@ export async function findWhatsAppSender(phone: string, db: WhatsAppDb = prisma)
 }
 
 /**
- * Entreprise destinataire d'un message. Option A : le numéro de TutelLiv, l'entreprise du membre qui
+ * Entreprise destinataire d'un message. Option A : le numéro de Annona, l'entreprise du membre qui
  * transfère, si elle a activé WhatsApp. Option B (à venir) : un autre `phone_number_id`, celui d'une
  * entreprise reliée ; tant qu'aucune n'est reliée, il est ignoré.
  */

@@ -4,7 +4,7 @@ import { isWhatsAppConfigured, whatsappConfig } from "@/domains/order-intake/wha
 
 type ChannelDb = Pick<typeof prisma, "companyIntakeChannel">;
 
-/** Domaine de réception, ex. commandes.tutelliv.fr ; sans lui, aucune adresse n'est proposée. */
+/** Domaine de réception, ex. commandes.annona.fr ; sans lui, aucune adresse n'est proposée. */
 export function inboundEmailDomain(env: Record<string, string | undefined> = process.env) {
   return env.INBOUND_EMAIL_DOMAIN?.trim().toLowerCase() || null;
 }
@@ -35,7 +35,7 @@ export async function getIntakeChannels(companyId: string, db: ChannelDb = prism
       address: channel?.inboundEmailToken && domain ? `${channel.inboundEmailToken}@${domain}` : null,
       mailbox: channel?.orderMailboxAddress ?? null,
     },
-    /** WHATSAPP-1 : numéro de TutelLiv vers lequel l'équipe transfère les messages des clients. */
+    /** WHATSAPP-1 : numéro de Annona vers lequel l'équipe transfère les messages des clients. */
     whatsapp: {
       enabled: channel?.whatsappEnabled ?? false,
       configured: isWhatsAppConfigured(),

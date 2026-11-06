@@ -74,7 +74,7 @@ export function gmailApprovalLink(value: string | null | undefined): string | nu
 }
 
 /**
- * MAIL-PONT : e-mail que Gmail envoie à l'adresse TutelLiv quand l'entreprise ajoute un renvoi. Ancien
+ * MAIL-PONT : e-mail que Gmail envoie à l'adresse Annona quand l'entreprise ajoute un renvoi. Ancien
  * format : code à 9 chiffres (« (#123456789) Gmail Forwarding Confirmation »). Format relevé le
  * 4 novembre 2026 : « (Gmail) Confirmation de transfert – Recevez les messages de x@gmail.com », sans code,
  * avec un lien d'approbation. On n'en garde que le code ou le lien et l'adresse qui demande le renvoi ;
@@ -265,7 +265,7 @@ export async function queueInboundMessage(companyId: string, message: InboundMes
   const dayWindow = inboundDayWindow(companyId, now);
   const jobId = await prisma.$transaction(async (tx) => {
     // Recompte sous verrou par entreprise : des messages simultanés ne dépassent plus le plafond.
-    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`tutelliv:inbound-email:${companyId}`}))`;
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${`annona:inbound-email:${companyId}`}))`;
     if ((await tx.inboundOrderEmail.count({ where: dayWindow })) >= INBOUND_DAILY_LIMIT) return "over_limit" as const;
     const created = await tx.inboundOrderEmail.createMany({
       data: [{

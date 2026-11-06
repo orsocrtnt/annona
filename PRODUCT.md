@@ -8,15 +8,15 @@ web
 
 ## Users
 
-Les utilisateurs principaux sont les dirigeants, administrateurs et dispatchers d’entreprises françaises de coursiers et de livraison express B2B. Ils coordonnent quotidiennement les commandes, les chauffeurs, les incidents et l’avancement des missions. TutelLiv comporte aussi un portail client et un espace chauffeur distincts.
+Les utilisateurs principaux sont les dirigeants, administrateurs et dispatchers d’entreprises françaises de coursiers et de livraison express B2B. Ils coordonnent quotidiennement les commandes, les chauffeurs, les incidents et l’avancement des missions. Annona comporte aussi un portail client et un espace chauffeur distincts.
 
 ## Product Purpose
 
-TutelLiv centralise la demande de livraison, l’affectation, la prise en charge, le suivi daté, les échanges, les incidents, la preuve et l’historique. Le succès produit consiste à donner à chaque rôle une vue fiable et immédiatement exploitable de ce qui doit être fait, sans dépendre d’une chaîne d’e-mails dispersée.
+Annona centralise la demande de livraison, l’affectation, la prise en charge, le suivi daté, les échanges, les incidents, la preuve et l’historique. Le succès produit consiste à donner à chaque rôle une vue fiable et immédiatement exploitable de ce qui doit être fait, sans dépendre d’une chaîne d’e-mails dispersée.
 
 ## Positioning
 
-TutelLiv sert de dossier opérationnel partagé de chaque livraison : la demande initiale, le responsable, les étapes, les échanges, la position utile et datée, la preuve et l’historique restent reliés au même objet métier.
+Annona sert de dossier opérationnel partagé de chaque livraison : la demande initiale, le responsable, les étapes, les échanges, la position utile et datée, la preuve et l’historique restent reliés au même objet métier.
 
 ## Operating Context
 
@@ -33,7 +33,7 @@ L’espace administration et dispatch est utilisé sur ordinateur pendant l’ex
 
 ## Brand Commitments
 
-Nom : TutelLiv. Palette imposée : vert principal `#00D46A`, noir profond `#0E1310`, blanc cassé `#F8F9F7`, gris clair `#E4E8E5`. Typographie de référence : Sora. Direction demandée : Apple Glass Light, Bento Dashboard et Minimal SaaS, avec verre réservé au chrome et aux overlays. Aucun logo officiel exploitable n’est présent dans le dépôt courant ; ne pas fabriquer de symbole de remplacement.
+Nom : Annona. Palette imposée : vert principal `#00D46A`, noir profond `#0E1310`, blanc cassé `#F8F9F7`, gris clair `#E4E8E5`. Typographie de référence : Sora. Direction demandée : Apple Glass Light, Bento Dashboard et Minimal SaaS, avec verre réservé au chrome et aux overlays. Aucun logo officiel exploitable n’est présent dans le dépôt courant ; ne pas fabriquer de symbole de remplacement.
 
 ## Evidence on Hand
 

@@ -1,9 +1,9 @@
 ---
-name: tutelliv-carte
-description: Carte des connexions de TutelLiv — qui importe quoi, quelles pages appellent quelles routes /api, quelles routes lisent ou écrivent quelles tables Prisma, quels paquets npm sont utilisés où. À utiliser quand on demande « quoi dépend de quoi », « si je modifie X, qu'est-ce qui est touché », « qui utilise cette table / route / ce fichier », « pourquoi A dépend de B », avant une modification à impact large, ou pour ouvrir la carte visuelle des connexions.
+name: annona-carte
+description: Carte des connexions de Annona — qui importe quoi, quelles pages appellent quelles routes /api, quelles routes lisent ou écrivent quelles tables Prisma, quels paquets npm sont utilisés où. À utiliser quand on demande « quoi dépend de quoi », « si je modifie X, qu'est-ce qui est touché », « qui utilise cette table / route / ce fichier », « pourquoi A dépend de B », avant une modification à impact large, ou pour ouvrir la carte visuelle des connexions.
 ---
 
-# Carte des connexions TutelLiv
+# Carte des connexions Annona
 
 Un script lit le code (`src/` + `prisma/schema.prisma`) et construit le graphe :
 page → feature/composant → appel `/api/...` → route → domaine/service → table Prisma.
@@ -12,7 +12,7 @@ Le graphe est recalculé à chaque lancement (quelques secondes), donc jamais p�
 ## Ouvrir la carte visuelle (pour le propriétaire)
 
 ```bash
-node .claude/skills/tutelliv-carte/carte.mjs && open outputs/carte/carte.html
+node .claude/skills/annona-carte/carte.mjs && open outputs/carte/carte.html
 ```
 
 Onglet « Cartographie » : le schéma de toute l'app par module (pages → features → routes API → domaines → tables). Le survol montre les liens directs, le clic allume toute la chaîne du module. Chaque fiche d'élément a aussi sa carte locale (deux niveaux de chaque côté).
@@ -24,9 +24,9 @@ Dans la page : chercher un élément (touche `/`), puis voir ce qu'il utilise, c
 Lancer depuis la racine du dépôt, lire la sortie, répondre en langage simple :
 
 ```bash
-node .claude/skills/tutelliv-carte/carte.mjs utilise-par <cible>   # impact : tout ce qui dépend de la cible
-node .claude/skills/tutelliv-carte/carte.mjs depend-de <cible>     # tout ce que la cible utilise
-node .claude/skills/tutelliv-carte/carte.mjs chemin <de> <vers>    # pourquoi <de> dépend de <vers>
+node .claude/skills/annona-carte/carte.mjs utilise-par <cible>   # impact : tout ce qui dépend de la cible
+node .claude/skills/annona-carte/carte.mjs depend-de <cible>     # tout ce que la cible utilise
+node .claude/skills/annona-carte/carte.mjs chemin <de> <vers>    # pourquoi <de> dépend de <vers>
 ```
 
 - Cibles : chemin (`src/domains/billing/…`), table (`Delivery`), route (`/api/orders/[id]`), page (`/dispatch`), paquet (`paquet:stripe`) ou un morceau de nom. Si c'est ambigu, le script liste les candidats.

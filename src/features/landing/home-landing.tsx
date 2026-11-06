@@ -7,7 +7,7 @@ import { LandingDemo } from "@/features/landing/landing-demo";
 import { landingGhostButton, landingMintButton } from "@/features/landing/landing-styles";
 
 /**
- * Accueil public (LANDING-3) : copie de la maquette validée par le propriétaire (« TutelLiv — landing
+ * Accueil public (LANDING-3) : copie de la maquette validée par le propriétaire (« Annona — landing
  * assemblée ») — haut de page pour les sociétés de coursiers, la course « combien d'actions pour vous ? »,
  * puis la mini-démo ouverte d'office. Couleurs `--l-*` de la maquette (globals.css), Clair et Sombre.
  * Aucun logo client ni chiffre marketing ; aucun prix affiché (/tarifs est une liste d'attente provisoire).

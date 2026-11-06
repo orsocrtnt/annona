@@ -580,7 +580,7 @@ test("l'export local reste isolé, complet sur son contrat courant et reproducti
     externalAssets: { proofObjects: unknown[] };
     data: Record<string, unknown>;
   };
-  assert.equal(result.schema, "tutelliv-company-export");
+  assert.equal(result.schema, "annona-company-export");
   assert.equal(result.version, 1);
   assert.equal(result.exportedAt, fixedNow);
   assertJsonEqual(
@@ -734,7 +734,7 @@ test("l'écrivain JSON refuse une collection rouverte et l'export refuse une tai
   const repository = makeRepository();
   const service = loadService(repository.prisma);
   const writer = service.createCompanyExportJsonWriter(async () => undefined);
-  await writer.visitor.start({ schema: "tutelliv-company-export", version: 1, exportedAt: fixedNow }, { id: "company-a" });
+  await writer.visitor.start({ schema: "annona-company-export", version: 1, exportedAt: fixedNow }, { id: "company-a" });
   await writer.visitor.page("users", []);
   await writer.visitor.page("orders", []);
   await assert.rejects(writer.visitor.page("users", []), /EXPORT_COLLECTION_ORDER/);

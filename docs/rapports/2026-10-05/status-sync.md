@@ -1,4 +1,4 @@
-# Audit de synchronisation des statuts TutelLiv
+# Audit de synchronisation des statuts Annona
 
 Date : 5 octobre 2026
 
@@ -27,7 +27,7 @@ La TODO du dépôt et sa copie visible sont maintenant identiques. La recette V1
 ## Corrections de cohérence effectuées
 
 - Date générale de la TODO actualisée.
-- Copie `outputs/TODO-TutelLiv-vente.md` synchronisée.
+- Copie `outputs/TODO-Annona-vente.md` synchronisée.
 - Copie `outputs/v1/recette-v1.md` synchronisée.
 - Paragraphes qui présentaient encore SEC-06 et OPS-02A comme prochaines tâches corrigés.
 - Nombre actuel de tests et état de la fuite support actualisés dans les acquis.

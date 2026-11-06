@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Palette TutelLiv, direction Menthe : vert de la charte pour l'action (texte encre), surfaces blanches. */
+  /* Palette Annona, direction Menthe : vert de la charte pour l'action (texte encre), surfaces blanches. */
   --color-background: #f5f8f6;
   --color-foreground: #0e1310;
   --color-card: #ffffff;
@@ -275,7 +275,7 @@
   font-family: inherit;
 }
 
-/* Style TutelLiv inspiré d'Uber : la donnée métier reste nette sur un fond monochrome. */
+/* Style Annona inspiré d'Uber : la donnée métier reste nette sur un fond monochrome. */
 .leaflet-container {
   background: #ececea;
 }
@@ -588,7 +588,7 @@ input[type="radio"] {
 
 /*
  * Landing (LANDING-3) : couleurs exactes de la maquette validée par le propriétaire
- * (artifact « TutelLiv — landing assemblée »), en Clair et en Sombre « Encre + Pastel ».
+ * (artifact « Annona — landing assemblée »), en Clair et en Sombre « Encre + Pastel ».
  */
 .landing {
   --l-ink: #0e1310;

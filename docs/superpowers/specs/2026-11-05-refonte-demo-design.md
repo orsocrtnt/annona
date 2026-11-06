@@ -4,12 +4,12 @@ Date : 5 novembre 2026 · Statut : validé par le propriétaire le 5 novembre 20
 
 ## Objectif
 
-La démonstration publique (`/demonstration`, compte `demo@tutelliv.fr`) doit raconter une journée claire
+La démonstration publique (`/demonstration`, compte `demo@annona.fr`) doit raconter une journée claire
 d'une société de coursiers. Elle sert à deux usages : un commercial la montre pendant un appel, et un
 prospect l'ouvre seul depuis le site. On garde la base actuelle : trois vues (Administrateur, Client,
 Livreur), espaces isolés préparés à l'avance (pool), bouton « Réinitialiser la démo ».
 
-## Constat (recette Chrome sur tutelliv.fr, 5 novembre 2026)
+## Constat (recette Chrome sur annona.fr, 5 novembre 2026)
 
 - Une session neuve affiche 12 à 14 alertes, presque tout « En retard », 0 livrée aujourd'hui et sur 7 jours,
   des échéances entre 2 h et 6 h du matin.
@@ -101,7 +101,7 @@ statuts et références unifiés (tâche MOTS-UNIFIES).
 - Tests unitaires : forme du scénario (comptes par état, une seule alerte, heures arrondies), décalage
   complet (DMMF), cochage de la liste.
 - `npm run check`, build dans une copie isolée.
-- Recette navigateur sur `tutelliv-dev` : préparer un espace, avancer l'horloge d'ancrage de 20 h, le prêter,
+- Recette navigateur sur `annona-dev` : préparer un espace, avancer l'horloge d'ancrage de 20 h, le prêter,
   vérifier 1 alerte et 4 livrées ; parcourir les 4 étapes « À essayer » ; onglet expiré renvoyé vers
   `/demonstration`.
-- Après mise en ligne : contrôle sur tutelliv.fr.
+- Après mise en ligne : contrôle sur annona.fr.

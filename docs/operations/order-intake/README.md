@@ -31,7 +31,7 @@ Permissions : `orders:create` et rôles `COMPANY_ADMIN`, `MINI_ADMIN`, `DISPATCH
 
 ## Activation (propriétaire)
 
-1. Créer une clé API Anthropic sur le compte de l'entreprise TutelLiv et la poser en variable serveur `ANTHROPIC_API_KEY` (Vercel, environnement voulu). `.env.example` la liste vide.
+1. Créer une clé API Anthropic sur le compte de l'entreprise Annona et la poser en variable serveur `ANTHROPIC_API_KEY` (Vercel, environnement voulu). `.env.example` la liste vide.
 2. Appliquer la migration `prisma/migrations/20261028100000_order_intake_usage` (table interne, RLS, aucun droit public), après fusion et selon `docs/DATABASE.md`.
 3. Dans l'écran, un administrateur lit la mention sur le sous-traitant, coche la case et clique sur **Activer la fonction** (réglage `companies.settings.orderIntake.enabled`).
 4. Faire qualifier F10 (contrat, rétention chez le fournisseur, transferts) avant d'y faire passer des données réelles.
@@ -48,16 +48,16 @@ Chaque entreprise active une adresse `<jeton>@<INBOUND_EMAIL_DOMAIN>` vers laque
 
 Mise en service (propriétaire) :
 
-1. Dans Resend (Domains), ajouter `commandes.tutelliv.fr` en réception et poser le MX indiqué dans la zone OVH. Ne pas toucher au MX de `tutelliv.fr`, qui sert la boîte OVH.
-2. Dans Resend (Webhooks), créer un webhook `email.received` vers `https://tutelliv.fr/api/webhooks/inbound-email` et copier son secret.
-3. Dans Vercel (Preview, branche `preproduction`) : `INBOUND_EMAIL_DOMAIN=commandes.tutelliv.fr` et `RESEND_INBOUND_WEBHOOK_SECRET=<secret>`. `RESEND_API_KEY` doit avoir le droit de lire les e-mails reçus.
+1. Dans Resend (Domains), ajouter `commandes.annona.fr` en réception et poser le MX indiqué dans la zone OVH. Ne pas toucher au MX de `annona.fr`, qui sert la boîte OVH.
+2. Dans Resend (Webhooks), créer un webhook `email.received` vers `https://annona.fr/api/webhooks/inbound-email` et copier son secret.
+3. Dans Vercel (Preview, branche `preproduction`) : `INBOUND_EMAIL_DOMAIN=commandes.annona.fr` et `RESEND_INBOUND_WEBHOOK_SECRET=<secret>`. `RESEND_API_KEY` doit avoir le droit de lire les e-mails reçus.
 4. Poser `ANTHROPIC_API_KEY` (ci-dessus) et activer la fonction ; sans elle, l'e-mail reste lisible et « À lire », sans brouillon.
 
 Garde-fous : signature Svix vérifiée sur le corps brut (5 minutes de tolérance), expéditeur jamais considéré comme prouvé, 200 e-mails par jour et par entreprise, texte seul (HTML réduit, pièces jointes non lues), corps et brouillon effacés au traitement, ligne supprimée après 30 jours.
 
 ## Commandes WhatsApp (WHATSAPP-1, option A, 4 novembre 2026)
 
-Un membre de l'équipe transfère le message WhatsApp d'un client au numéro WhatsApp de TutelLiv. Le message rejoint la liste des messages reçus, avec la même analyse, le même tri et la même validation que l'e-mail. Spécification et option B (numéro de l'entreprise relié) : [WHATSAPP.md](WHATSAPP.md).
+Un membre de l'équipe transfère le message WhatsApp d'un client au numéro WhatsApp de Annona. Le message rejoint la liste des messages reçus, avec la même analyse, le même tri et la même validation que l'e-mail. Spécification et option B (numéro de l'entreprise relié) : [WHATSAPP.md](WHATSAPP.md).
 
 - Webhook `GET/POST /api/webhooks/whatsapp` : abonnement par `WHATSAPP_VERIFY_TOKEN`, signature `X-Hub-Signature-256` vérifiée avec `WHATSAPP_APP_SECRET` sur le corps brut.
 - Entreprise reconnue par le numéro du membre (profil, rôles administrateur, mini-admin ou dispatcher, compte actif) ; numéro inconnu ou présent dans deux entreprises : ignoré, rien n'est gardé. L'entreprise doit activer « WhatsApp » dans ses réglages.

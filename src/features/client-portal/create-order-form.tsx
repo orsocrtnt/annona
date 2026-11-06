@@ -317,7 +317,7 @@ export function OrderFormFields({
       {isSpecialMission ? (
         <>
           <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-            Fonction en essai. TutelLiv centralise la description et les
+            Fonction en essai. Annona centralise la description et les
             adresses ; le devis chiffré et son acceptation restent traités directement avec
             {audience === "staff" ? " le client." : " l'entreprise."}
           </p>

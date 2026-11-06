@@ -4,7 +4,7 @@ Version préparatoire du 18 octobre 2026. Ce document permet de lancer trois pil
 
 ## But
 
-Le pilote doit vérifier si TutelLiv remplace utilement la chaîne d'e-mails entre client, dispatch et livreur. Il mesure le fonctionnement réel, l'adoption et le coût d'accompagnement sans promettre un gain avant observation.
+Le pilote doit vérifier si Annona remplace utilement la chaîne d'e-mails entre client, dispatch et livreur. Il mesure le fonctionnement réel, l'adoption et le coût d'accompagnement sans promettre un gain avant observation.
 
 Hypothèse retenue :
 
@@ -45,7 +45,7 @@ Tous les points doivent être vrais :
 
 ### Porte C — exploitation
 
-- un responsable TutelLiv et un référent chez le pilote ;
+- un responsable Annona et un référent chez le pilote ;
 - canal de support suivi et objectif de réponse annoncé ;
 - calendrier de démarrage, points hebdomadaires et sortie réservé ;
 - liste des utilisateurs et volume attendu approuvés ;
@@ -64,7 +64,7 @@ Par défaut, activer uniquement :
 - support intégré ;
 - export comptable des prestations et export de sortie.
 
-Les missions spéciales, SMS, paiement TutelLiv, facturation électronique réglementaire, optimisation avancée et promesse de suivi permanent écran verrouillé restent exclus sauf décision écrite après qualification.
+Les missions spéciales, SMS, paiement Annona, facturation électronique réglementaire, optimisation avancée et promesse de suivi permanent écran verrouillé restent exclus sauf décision écrite après qualification.
 
 ## Déroulement
 
@@ -115,8 +115,8 @@ Les mesures sont définies de façon stable avant le démarrage :
 - **demande de suivi** : sollicitation externe pour connaître statut ou position ;
 - **récupération de preuve** : temps pour retrouver une preuve demandée ;
 - **incident** : événement bloquant ou résultat incorrect, avec sévérité et durée ;
-- **aide TutelLiv** : intervention humaine de l'équipe, en minutes ;
-- **adoption** : utilisateurs actifs et commandes traitées dans TutelLiv sur le périmètre convenu ;
+- **aide Annona** : intervention humaine de l'équipe, en minutes ;
+- **adoption** : utilisateurs actifs et commandes traitées dans Annona sur le périmètre convenu ;
 - **disposition à payer** : réponse et motif, jamais déduits de l'usage seul.
 
 Comparer des périodes et volumes comparables. Ne pas transformer les latences techniques de V1-MESURE en gains humains. Ne publier aucun pourcentage à partir de trois pilotes sans contexte.

@@ -1,12 +1,12 @@
 # Audit de bout en bout avant les pilotes — 4 novembre 2026
 
-Demande du propriétaire : utiliser TutelLiv comme un vrai utilisateur, tout regarder (fonctions et détails visuels) pour que les pilotes n'aient rien à redire sur l'existant. Audit seulement : aucun code modifié.
+Demande du propriétaire : utiliser Annona comme un vrai utilisateur, tout regarder (fonctions et détails visuels) pour que les pilotes n'aient rien à redire sur l'existant. Audit seulement : aucun code modifié.
 
 ## Comment
 
-- Code testé : `preproduction` au commit `31f4403`, construit en version production (`next build` puis `next start`) dans une copie isolée, sur la base de développement `tutelliv-dev` (`env2:verify-dev` vert). Aucune migration.
+- Code testé : `preproduction` au commit `31f4403`, construit en version production (`next build` puis `next start`) dans une copie isolée, sur la base de développement `annona-dev` (`env2:verify-dev` vert). Aucune migration.
 - 224 écrans relevés automatiquement : site public, administrateur, client, livreur (démo), dispatcher, mini-admin support, super-admin ; en ordinateur (1 280 px) et téléphone (390 px), clair et sombre. Relevés : erreurs, textes cassés, anglais, débordements, champs sans libellé.
-- Relecture visuelle des 224 captures, puis vérification à la main des constats graves (code, nouvel essai, tutelliv.fr).
+- Relecture visuelle des 224 captures, puis vérification à la main des constats graves (code, nouvel essai, annona.fr).
 - Parcours cliqués de bout en bout : commande client → affectation automatique → livreur sur téléphone (prise en charge, démarrage, achats, livraison, photo + signature) → suivi client et PDF de preuve → facture → annulation tentée → support client ↔ administrateur → commande créée par l'administrateur → réaffectation manuelle → lien de suivi public → connexion avec erreurs, mot de passe oublié, formulaire de contact.
 - Tests automatiques ciblés (9 fichiers) : 21 réussis, 4 échoués (expliqués plus bas), 5 ignorés.
 - Preuves locales, non versionnées : `outputs/audit-2026-11-04/` (`shots/`, `flow/`, `notes.md`, `e2e.log`, `results-all.json`).
@@ -20,8 +20,8 @@ Demande du propriétaire : utiliser TutelLiv comme un vrai utilisateur, tout reg
    - Une livraison faite à 22:47 n'apparaît pas dans « Livrées aujourd'hui : 0 », parce qu'elle était prévue le lendemain.
    - Relevé sur les captures : filtres de la carte « Sans livreur 0 · À démarrer 0 · En route 0 » alors que le tableau de bord indique 5 / 4 / 5 ; « Charge par livreur » à 0 avec 9 missions en cours ; alertes à 14, 13 ou 1 selon l'endroit.
    - Un patron le verra le premier jour. Correctif : une seule source de calcul et des libellés précis.
-4. **La page « introuvable » est la page brute de Next.js, en anglais** (« 404 This page could not be found »), sans logo ni lien de retour, y compris en ligne. Elle s'affiche aussi pour un lien de suivi ou de commande expiré, que verront les destinataires des pilotes. Correctif : une page TutelLiv en français, avec un message propre au suivi et à la commande.
-5. **Textes de développeur sur le site public**, vérifiés sur tutelliv.fr :
+4. **La page « introuvable » est la page brute de Next.js, en anglais** (« 404 This page could not be found »), sans logo ni lien de retour, y compris en ligne. Elle s'affiche aussi pour un lien de suivi ou de commande expiré, que verront les destinataires des pilotes. Correctif : une page Annona en français, avec un message propre au suivi et à la commande.
+5. **Textes de développeur sur le site public**, vérifiés sur annona.fr :
    - `/tarifs` : « Catalogue C11-… », « L'inscription utilise le parcours fictif déjà en place », « aucun encaissement fournisseur » ;
    - `/demonstration` : « Cette page lit seulement l'accès déjà préparé… ».
    - Correctif : réécrire en langage client.
@@ -31,7 +31,7 @@ Demande du propriétaire : utiliser TutelLiv comme un vrai utilisateur, tout reg
 ## Majeurs
 
 **Fonctions et parcours**
-- **« Annuler la mission » reste proposé sur une livraison déjà livrée**, avec le texte « son annulation reste possible ». Le serveur refuse bien (409, « Cette livraison est terminée »), mais l'écran ment. La confirmation est aussi une fenêtre native du navigateur, pas une fenêtre TutelLiv.
+- **« Annuler la mission » reste proposé sur une livraison déjà livrée**, avec le texte « son annulation reste possible ». Le serveur refuse bien (409, « Cette livraison est terminée »), mais l'écran ment. La confirmation est aussi une fenêtre native du navigateur, pas une fenêtre Annona.
 - **Un dispatcher ou un mini-admin qui ouvre une page interdite est renvoyé sans aucun message** : vers `/dispatch` ou `/support`. Il croira à une panne. Il faut un bandeau « Page réservée à l'administrateur ».
 - **Nouvelle commande, côté administrateur** :
   - le choix du client est une liste native sans recherche, qui affiche des e-mails techniques ;
@@ -132,7 +132,7 @@ Demande du propriétaire : utiliser TutelLiv comme un vrai utilisateur, tout reg
 - Lien de suivi public, sans compte.
 - Connexion : messages d'erreur clairs.
 - Formulaire de contact, avec son piège anti-robot invisible.
-- Mot de passe oublié sur tutelliv.fr (200).
+- Mot de passe oublié sur annona.fr (200).
 - Pages publiques en ligne en moins de 0,7 s.
 - Aucune erreur JavaScript sur 224 écrans.
 - Menus de chaque rôle sans entrée interdite.
@@ -141,7 +141,7 @@ Demande du propriétaire : utiliser TutelLiv comme un vrai utilisateur, tout reg
 
 - Pas de thème sombre sur téléphone : c'est la décision du 30 octobre (`PHONE_MEDIA_QUERY`, `src/lib/theme.ts:45`).
 - Carte d'itinéraire du livreur vide : la clé IGN `DRIVE_ROUTE_IGN_URL` est absente de l'environnement local. Elle a été contrôlée en ligne le 3 novembre.
-- Graphie « Tutelliv » : vient de l'environnement local. tutelliv.fr affiche bien « TutelLiv ». Seul « plateforme Tutelliv » est écrit en dur dans `src/app/(back-office)/admin/page.tsx:66` (console interne).
+- Graphie « Annona » : vient de l'environnement local. annona.fr affiche bien « Annona ». Seul « plateforme Annona » est écrit en dur dans `src/app/(back-office)/admin/page.tsx:66` (console interne).
 - Barre latérale blanche en sombre sur Facturation : non reproduite à froid.
 - Mot de passe oublié « indisponible » : seulement en local, il fonctionne en ligne.
 

@@ -55,7 +55,7 @@ function createGraphGuard(companyId: string, limits: Limits) {
   let started = false;
   return {
     start(header: CompanyExportHeader, company: { id: string }) {
-      if (header.schema !== "tutelliv-company-export" || header.version !== 1 || company.id !== companyId) {
+      if (header.schema !== "annona-company-export" || header.version !== 1 || company.id !== companyId) {
         throw new Error("ARCHIVE_COMPANY_MISMATCH");
       }
       started = true;
@@ -227,7 +227,7 @@ export async function exportCompanyArchive(
       }
     }
     const manifest = {
-      schema: "tutelliv-company-archive", version: 1, complete: true, companyId,
+      schema: "annona-company-archive", version: 1, complete: true, companyId,
       createdAt: new Date().toISOString(), algorithm: "sha256", totalProofBytes, proofCount: proofs.length,
       photoCount: proofs.filter((proof) => proof.kind !== "signature").length,
       signatureCount: proofs.filter((proof) => proof.kind === "signature").length, entries,

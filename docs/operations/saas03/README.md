@@ -47,12 +47,12 @@ Preuves : `npm run test:saas03`, `tests/admin01-company-billing-boundary.test.ts
 Pour un abonnement en ligne (`management: SELF_SERVICE`), « Mon abonnement » ajoute une carte « Moyen de paiement et factures » et un lien « Voir la facture » dans l'historique.
 
 - `POST /api/billing` avec `{ "action": "portal" }` est réservé à `COMPANY_ADMIN`, comme les autres actions. `BillingService.paymentPortal` ouvre une session du portail client Stripe et renvoie son adresse. Le navigateur y est redirigé, sans conserver le lien.
-- Le portail est limité au changement de carte et à l'historique des factures, qui permet aussi de régler une facture en attente. Changement de formule, résiliation et coordonnées y sont désactivés : ces actions restent journalisées par TutelLiv. La configuration Stripe porte la métadonnée `tutelliv_portal=payment-method-v1`. Elle est retrouvée par cette métadonnée et n'est jamais dupliquée, même après les 24 h de validité d'une clé d'idempotence.
-- Chaque ouverture est journalisée dans `SaasBillingOperation` (`kind: PAYMENT_PORTAL`, auteur, statut `DONE` ou `FAILED` avec un code). Elle apparaît dans l'historique sous « Accès au moyen de paiement ». Le lien du portail donne accès au compte : il n'est jamais enregistré. Aucun verrou d'abonnement n'est pris, car rien n'est modifié chez TutelLiv. Une carte changée ou une facture réglée revient par le webhook et le rapprochement habituels.
+- Le portail est limité au changement de carte et à l'historique des factures, qui permet aussi de régler une facture en attente. Changement de formule, résiliation et coordonnées y sont désactivés : ces actions restent journalisées par Annona. La configuration Stripe porte la métadonnée `annona_portal=payment-method-v1`. Elle est retrouvée par cette métadonnée et n'est jamais dupliquée, même après les 24 h de validité d'une clé d'idempotence.
+- Chaque ouverture est journalisée dans `SaasBillingOperation` (`kind: PAYMENT_PORTAL`, auteur, statut `DONE` ou `FAILED` avec un code). Elle apparaît dans l'historique sous « Accès au moyen de paiement ». Le lien du portail donne accès au compte : il n'est jamais enregistré. Aucun verrou d'abonnement n'est pris, car rien n'est modifié chez Annona. Une carte changée ou une facture réglée revient par le webhook et le rapprochement habituels.
 - Le portail est refusé si l'abonnement n'a pas de contrat actif, s'il est résilié (`CANCELLED`) ou s'il est géré par l'équipe. Il reste ouvert en cas d'impayé, pour permettre de changer de carte.
 - Un lien de facture n'est affiché que pour une adresse `https://invoice.stripe.com/…` sans identifiants ; toute autre valeur est ignorée.
 
-Preuves : `tests/saas03-payment-portal.test.ts` (configuration limitée et réutilisée, abonnement étranger et adresse hors Stripe refusés, journal sans lien, états refusés, liens de facture filtrés) et `tests/e2e/saas03.spec.ts` (lien de facture, erreur puis redirection vers un portail factice, 390 px sans débordement). Essai réel sur le compte Stripe de test, avec un abonnement de la recette SAAS-01B dans `tutelliv-dev` : session `billing.stripe.com` en HTTP 200, deux ouvertures donnant deux sessions, journal sans lien, 2 factures sur 2 avec un lien.
+Preuves : `tests/saas03-payment-portal.test.ts` (configuration limitée et réutilisée, abonnement étranger et adresse hors Stripe refusés, journal sans lien, états refusés, liens de facture filtrés) et `tests/e2e/saas03.spec.ts` (lien de facture, erreur puis redirection vers un portail factice, 390 px sans débordement). Essai réel sur le compte Stripe de test, avec un abonnement de la recette SAAS-01B dans `annona-dev` : session `billing.stripe.com` en HTTP 200, deux ouvertures donnant deux sessions, journal sans lien, 2 factures sur 2 avec un lien.
 
 ## Options en libre-service (2026-10-27)
 
@@ -64,7 +64,7 @@ Preuves : `tests/saas03-options.test.ts` (plafonds identiques au devis serveur, 
 
 ## Isolement A/B (2026-10-28)
 
-`tests/e2e/saas03-isolation.spec.ts` joue l'essai avec deux administrateurs temporaires de deux entreprises de recette, chacune avec un compte Stripe de test (`npm run e2e:role-accounts -- setup`, puis `cleanup`). Les comptes sont rattachés aux deux entreprises de recette les plus récentes ayant un abonnement commercial actif ; sur `tutelliv-dev`, A avait 2 factures et B 3.
+`tests/e2e/saas03-isolation.spec.ts` joue l'essai avec deux administrateurs temporaires de deux entreprises de recette, chacune avec un compte Stripe de test (`npm run e2e:role-accounts -- setup`, puis `cleanup`). Les comptes sont rattachés aux deux entreprises de recette les plus récentes ayant un abonnement commercial actif ; sur `annona-dev`, A avait 2 factures et B 3.
 
 - Une requête qui ajoute `accountId` ou `companyId` est refusée (400) : le compte de facturation vient toujours de l'entreprise de session.
 - L'ouverture du portail par A renvoie une session `billing.stripe.com` et s'inscrit dans le journal de A, pas dans celui de B.

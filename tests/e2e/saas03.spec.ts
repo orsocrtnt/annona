@@ -24,7 +24,7 @@ test("SAAS-03 : vue lecture seule, clic, retour, rechargement et mobile sans Str
   const requests: string[] = [];
   const login = await page.request.post("/api/auth/login", {
     data: {
-      email: "demo@tutelliv.fr",
+      email: "demo@annona.fr",
       password: "Demo2026!",
       demoTestSession: true,
       accountType: "company",
@@ -66,7 +66,7 @@ test("SAAS-03 : vue lecture seule, clic, retour, rechargement et mobile sans Str
 
 test("SAAS-03 : résiliation confirmée, même clé après une erreur, puis résiliation programmée", async ({ page }) => {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.status()).toBe(200);
   let cancelled = false;
@@ -108,7 +108,7 @@ test("SAAS-03 : résiliation confirmée, même clé après une erreur, puis rés
 
 test("SAAS-03 : changement de formule avec aperçu, comptes en excès bloquants, puis confirmation à la même clé", async ({ page }) => {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.status()).toBe(200);
   const plans = [
@@ -161,7 +161,7 @@ test("SAAS-03 : changement de formule avec aperçu, comptes en excès bloquants,
 
 test("SAAS-03 : facture ouverte chez Stripe et moyen de paiement géré par le portail, après une erreur", async ({ page }) => {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.status()).toBe(200);
   const invoiceUrl = "https://invoice.stripe.com/i/acct_fixture/test_browser";
@@ -218,7 +218,7 @@ test("SAAS-03 : facture ouverte chez Stripe et moyen de paiement géré par le p
 
 test("SAAS-03 : ajout d'une option et de comptes avec aperçu unique, plafond respecté, puis confirmation", async ({ page }) => {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.status()).toBe(200);
   const seats = { DRIVER_SEAT: { included: 5, max: 7 }, ADMIN_SEAT: { included: 1, max: 1 }, DISPATCHER_SEAT: { included: 0, max: 0 } };

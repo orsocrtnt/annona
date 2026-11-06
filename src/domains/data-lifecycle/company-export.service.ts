@@ -217,7 +217,7 @@ export interface CompanyExportRows {
 export type CompanyExportCollection = keyof CompanyExportRows;
 
 export interface CompanyExportHeader {
-  schema: "tutelliv-company-export";
+  schema: "annona-company-export";
   version: 1;
   exportedAt: string;
 }
@@ -282,7 +282,7 @@ export async function visitCompanyExport(
     throw new Error("EXPORT_INVALID_PAGE_SIZE");
   }
   const header: CompanyExportHeader = {
-    schema: "tutelliv-company-export",
+    schema: "annona-company-export",
     version: 1,
     exportedAt: new Date().toISOString(),
   };

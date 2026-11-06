@@ -522,7 +522,7 @@ function pendingSignupRow(resumeToken: string, authUserId: string | null) {
   };
 }
 
-test("SIGNUP-1 : renvoyer un e-mail déjà confirmé sans compte TutelLiv avance l’inscription", async () => {
+test("SIGNUP-1 : renvoyer un e-mail déjà confirmé sans compte Annona avance l’inscription", async () => {
   const resumeToken = "resume-token-for-confirmed-orphan-resend";
   const row = pendingSignupRow(resumeToken, null);
   let resends = 0;
@@ -729,7 +729,7 @@ test("SIGNUP-1 : une confirmation Auth déjà faite rattache le brouillon au raf
     emailLinkTokenHash: "stale-link",
     firstName: "Orso",
     lastName: "Carotenuto",
-    companyName: "TutelLiv Test",
+    companyName: "Annona Test",
     legalName: null,
     siren: null,
     siret: null,
@@ -1078,7 +1078,7 @@ test("SIGNUP-1 : un quota Auth 429 confirme l’e-mail via admin hors production
   assert.equal(row.status, "EMAIL_VERIFIED");
   assert.equal(row.authUserId, "auth-rate-limit");
 
-  // Sur tout site hébergé, préversion comprise : tutelliv.fr tourne en préversion (AUDIT-0111, S2).
+  // Sur tout site hébergé, préversion comprise : annona.fr tourne en préversion (AUDIT-0111, S2).
   for (const vercelEnv of ["production", "preview"]) {
     process.env.VERCEL_ENV = vercelEnv;
     row.status = "DRAFT";
@@ -1181,7 +1181,7 @@ test("AUDIT-0111 S1 : une inscription ne touche jamais un compte invité non con
         return { count: 1 };
       },
     },
-    // Le profil de l'invité existe déjà dans TutelLiv, en attente de vérification.
+    // Le profil de l'invité existe déjà dans Annona, en attente de vérification.
     user: { findUnique: async () => null, findFirst: async () => ({ id: "user-invite" }) },
   };
   const service = loadSignupService({

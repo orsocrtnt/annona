@@ -27,7 +27,7 @@ La mise en pause a été demandée depuis les réglages du projet Supabase. Le t
 
 Cette pause libère un emplacement actif du plan Free. Il pourra accueillir la cible temporaire nécessaire à l'exercice fournisseur d'OPS-03A.
 
-Suivi du même jour : l'emplacement a bien servi à créer `tutelliv-restore-rehearsal`. L'export base + Auth + Storage y a été restauré et contrôlé avec succès. Voir `docs/rapports/2026-10-21/ops03a-provider-restore.md`.
+Suivi du même jour : l'emplacement a bien servi à créer `annona-restore-rehearsal`. L'export base + Auth + Storage y a été restauré et contrôlé avec succès. Voir `docs/rapports/2026-10-21/ops03a-provider-restore.md`.
 
 ## Contrôle de la préproduction
 

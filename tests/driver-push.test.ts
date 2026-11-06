@@ -10,7 +10,7 @@ import {
 import { getDriverPushAvailability, vapidKeyToBytes } from "../src/features/driver/driver-push";
 import { driverPushSubscriptionSchema, isAllowedPushEndpoint } from "../src/lib/validations/driver-push";
 
-const CONFIG = { subject: "https://tutelliv.fr", publicKey: "pub", privateKey: "priv" };
+const CONFIG = { subject: "https://annona.fr", publicKey: "pub", privateKey: "priv" };
 const PAYLOAD = { kind: "NEW_MISSION", companyId: "c1", deliveryId: "d1", driverId: "u1" };
 const target = (id: string) => ({ id, endpoint: `https://web.push.apple.com/${id}`, p256dh: "k", auth: "a" });
 

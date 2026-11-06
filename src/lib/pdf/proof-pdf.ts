@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
-import { TUTELLIV_LOGO_PNG_BASE64 } from "@/lib/pdf/tutelliv-logo";
+import { ANNONA_LOGO_PNG_BASE64 } from "@/lib/pdf/annona-logo";
 
 export interface ProofPdfData {
   deliveryId: string;
@@ -91,13 +91,13 @@ async function embedImage(doc: PDFDocument, bytes: Uint8Array): Promise<PDFImage
 export async function buildProofPdf(data: ProofPdfData): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(pdfSafeText(`Preuve de livraison ${data.reference}`));
-  doc.setProducer("TutelLiv");
+  doc.setProducer("Annona");
   // Dates fixes : le même PDF est reproduit à l'identique à chaque téléchargement.
   doc.setCreationDate(data.generatedAt);
   doc.setModificationDate(data.generatedAt);
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const tutelliv = await doc.embedPng(Buffer.from(TUTELLIV_LOGO_PNG_BASE64, "base64"));
+  const annona = await doc.embedPng(Buffer.from(ANNONA_LOGO_PNG_BASE64, "base64"));
   const companyLogo = data.companyLogoPng ? await doc.embedPng(data.companyLogoPng).catch(() => null) : null;
 
   let page: PDFPage = doc.addPage(PAGE);
@@ -211,11 +211,11 @@ export async function buildProofPdf(data: ProofPdfData): Promise<Uint8Array> {
 
   // Pied de page sur chaque page.
   const logoWidth = 50;
-  const logoHeight = (tutelliv.height / tutelliv.width) * logoWidth;
+  const logoHeight = (annona.height / annona.width) * logoWidth;
   const pages = doc.getPages();
   pages.forEach((target, index) => {
     target.drawLine({ start: { x: MARGIN, y: 60 }, end: { x: RIGHT, y: 60 }, thickness: 0.5, color: HAIRLINE });
-    target.drawImage(tutelliv, { x: MARGIN, y: 30, width: logoWidth, height: logoHeight });
+    target.drawImage(annona, { x: MARGIN, y: 30, width: logoWidth, height: logoHeight });
     target.drawText(pdfSafeText(`Document généré le ${dateTime(data.generatedAt)} - livraison ${data.reference} - page ${index + 1}/${pages.length}`), {
       x: MARGIN + logoWidth + 10, y: 36, size: 7.5, font: regular, color: MUTED,
     });

@@ -1,4 +1,4 @@
-# TutelLiv — SEC-05 : invitations et récupération
+# Annona — SEC-05 : invitations et récupération
 
 28 septembre 2026 — implémentation locale, non déployée. SEC-05 reste ouverte pour la configuration et la recette réelles Supabase/SMTP.
 
@@ -17,7 +17,7 @@
 
 Tests du vrai code applicatif avec services externes simulés : configuration requise, invitation sans secret, activation conditionnelle, erreurs d’expiration/rejeu/limite retournées par le fournisseur, récupération, suspensions et concurrence, erreur de changement/révocation, refus HTTP, purge locale, absence d’auto-confirmation, succès/échec de déconnexion, inscription sans profil avant confirmation et confirmation unique.
 
-Les tests simulent les réponses Supabase : ils prouvent leur traitement par TutelLiv, pas le paramétrage ni les garanties effectives du projet hébergé.
+Les tests simulent les réponses Supabase : ils prouvent leur traitement par Annona, pas le paramétrage ni les garanties effectives du projet hébergé.
 
 Contrôles navigateur sur copie isolée localhost:3105, sans secrets ni base distante : lien absent refusé avec formulaire désactivé ; lien fictif activant le formulaire ; changement de lien dans le même onglet ; formulaire de confirmation d’inscription sans champ mot de passe ; envois désactivés donnant des erreurs explicites 503 pour activation et récupération. Une gestion incorrecte du changement de fragment a été corrigée puis retestée. Pas de scénario complet SMTP/connexion réelle ni build production pendant cette étape.
 

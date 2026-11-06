@@ -22,7 +22,7 @@ import { validatePreproductionEnvironment } from "../ci/verify-preproduction-env
 
 const BUCKET = "delivery-pods";
 const SESSION_SLUG_PATTERN = new RegExp(`^${DEMO_SESSION_COMPANY_PREFIX}[a-f0-9]{24}$`);
-const DEFAULT_MANIFEST = resolve(tmpdir(), "tutelliv-preproduction-browser-fixture.json");
+const DEFAULT_MANIFEST = resolve(tmpdir(), "annona-preproduction-browser-fixture.json");
 const PROOF_DIRECTORY = "outputs/test2";
 
 type Manifest = {
@@ -35,7 +35,7 @@ type Manifest = {
 };
 
 function manifestPath() {
-  return process.env.TUTELLIV_BROWSER_FIXTURE_MANIFEST ?? DEFAULT_MANIFEST;
+  return process.env.ANNONA_BROWSER_FIXTURE_MANIFEST ?? DEFAULT_MANIFEST;
 }
 
 function assertPreproduction() {
@@ -93,7 +93,7 @@ function ownedSlug(slug: string) {
 
 function expectedSessionUsers(companyId: string) {
   return demoPersonaSeedUsers(companyId).map((seed) => {
-    const [local, domain = "tutelliv.fr"] = seed.email.toLowerCase().split("@");
+    const [local, domain = "annona.fr"] = seed.email.toLowerCase().split("@");
     return {
       authId:
         seed.persona === "admin"

@@ -62,7 +62,7 @@ export async function runPreprodSaturationMeasure(rawBase: string) {
 async function main() {
   const saturation = process.argv.includes("--saturation");
   const output = resolve(process.argv[3] ?? "outputs/perf02/preprod-connected.json");
-  const target = process.argv[2] ?? "https://tutelliv.fr/";
+  const target = process.argv[2] ?? "https://annona.fr/";
   const result = saturation ? await runPreprodSaturationMeasure(target) : await runPreprodConnectedMeasure(target);
   const report = { measuredAt: new Date().toISOString(), node: process.version, client: "poste local (New York) vers Vercel cdg1, base Supabase Paris", ...result };
   mkdirSync(dirname(output), { recursive: true });

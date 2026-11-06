@@ -1,13 +1,13 @@
-# TutelLiv — vision produit, commerciale et de lancement
+# Annona — vision produit, commerciale et de lancement
 
 **Document de transmission pour stratégie marketing et commerciale**
 **Date de référence : 18 octobre 2026**
 
 ## 1. Objet du document
 
-Ce document décrit le produit final que TutelLiv cherche à devenir. Il ne doit pas être lu comme une annonce de disponibilité commerciale immédiate ni comme une liste de promesses déjà validées sur le marché.
+Ce document décrit le produit final que Annona cherche à devenir. Il ne doit pas être lu comme une annonce de disponibilité commerciale immédiate ni comme une liste de promesses déjà validées sur le marché.
 
-TutelLiv dispose déjà d'un produit logiciel conséquent et de parcours fonctionnels testés. Plusieurs éléments indispensables à une vente réelle restent toutefois à terminer ou à valider : essais terrain sur téléphone, capacité sous charge, environnement de préproduction, e-mails réels, sauvegarde/restauration, conditions contractuelles, rentabilité de la grille tarifaire, abonnement TutelLiv et validation auprès d'entreprises pilotes. Les corrections de navigation, le support intégré, la reprise des actions après coupure et la recette interne des trois rôles sont maintenant vérifiés localement.
+Annona dispose déjà d'un produit logiciel conséquent et de parcours fonctionnels testés. Plusieurs éléments indispensables à une vente réelle restent toutefois à terminer ou à valider : essais terrain sur téléphone, capacité sous charge, environnement de préproduction, e-mails réels, sauvegarde/restauration, conditions contractuelles, rentabilité de la grille tarifaire, abonnement Annona et validation auprès d'entreprises pilotes. Les corrections de navigation, le support intégré, la reprise des actions après coupure et la recette interne des trois rôles sont maintenant vérifiés localement.
 
 Les statuts utilisés dans le document sont les suivants :
 
@@ -24,9 +24,9 @@ La dernière validation locale compte 266 tests réussis. Le dernier build de pr
 
 ### 2.1 Définition
 
-TutelLiv a vocation à devenir une plateforme SaaS B2B de gestion des opérations de livraison. L'entreprise de livraison s'abonne à TutelLiv et met à disposition de ses propres clients, administrateurs, dispatchers et livreurs un espace commun.
+Annona a vocation à devenir une plateforme SaaS B2B de gestion des opérations de livraison. L'entreprise de livraison s'abonne à Annona et met à disposition de ses propres clients, administrateurs, dispatchers et livreurs un espace commun.
 
-La vision n'est pas celle d'un simple tableau de commandes. TutelLiv doit devenir le dossier opérationnel partagé de chaque livraison : demande initiale, informations utiles, affectation, prise en charge, échanges, incidents, étapes, position datée, preuve, historique et éléments de facturation.
+La vision n'est pas celle d'un simple tableau de commandes. Annona doit devenir le dossier opérationnel partagé de chaque livraison : demande initiale, informations utiles, affectation, prise en charge, échanges, incidents, étapes, position datée, preuve, historique et éléments de facturation.
 
 La promesse de travail peut être formulée ainsi :
 
@@ -48,7 +48,7 @@ Les difficultés déclarées sont le temps de coordination, le manque d'organisa
 
 ### 2.3 Produit final attendu
 
-À maturité, TutelLiv doit fournir :
+À maturité, Annona doit fournir :
 
 - un portail client en libre-service pour commander et suivre ;
 - un cockpit d'administration et de dispatch pour piloter l'activité ;
@@ -77,7 +77,7 @@ Le propriétaire a retenu les entreprises françaises de coursiers et de livrais
 
 Ce cadrage est une décision produit et commerciale, pas encore une preuve de marché. Les entretiens et pilotes doivent encore mesurer l'intensité du problème, les volumes, les outils concurrents et la volonté de payer. La V1 exclut le médical réglementé, les matières dangereuses, le froid contrôlé, l'international/douanes, le transport lourd et la logistique industrielle complexe.
 
-TutelLiv n'est pas encore positionné pour promettre la gestion complète d'un grand transporteur national, d'un entrepôt, d'une chaîne logistique internationale ou d'une flotte industrielle complexe.
+Annona n'est pas encore positionné pour promettre la gestion complète d'un grand transporteur national, d'un entrepôt, d'une chaîne logistique internationale ou d'une flotte industrielle complexe.
 
 ### 3.2 Rôles dans l'entreprise cliente
 
@@ -91,7 +91,7 @@ Son besoin principal est d'identifier les commandes à traiter, choisir le bon l
 
 #### Mini-administrateur
 
-TutelLiv prévoit un rôle intermédiaire avec des modules délégués. L'objectif est de permettre une gestion quotidienne sans donner tous les pouvoirs du compte entreprise.
+Annona prévoit un rôle intermédiaire avec des modules délégués. L'objectif est de permettre une gestion quotidienne sans donner tous les pouvoirs du compte entreprise.
 
 #### Livreur
 
@@ -101,7 +101,7 @@ Il a besoin d'une interface mobile directe : voir les missions, accepter ou refu
 
 Il crée une demande, suit l'affectation et les étapes, consulte une position utile et datée, échange dans le dossier, retrouve la preuve, l'historique et les documents disponibles. Il ne doit jamais accéder aux autres clients ou à toute la flotte.
 
-#### Super-administrateur TutelLiv
+#### Super-administrateur Annona
 
 À terme, l'opérateur de la plateforme doit gérer les entreprises clientes, leur statut, l'assistance, les droits liés à l'abonnement et la santé générale du service. L'administration technique existe, mais l'exploitation commerciale complète de la plateforme reste à construire.
 
@@ -133,7 +133,7 @@ Il crée une demande, suit l'affectation et les étapes, consulte une position u
 - historique versionné des migrations de base et procédure de retour arrière ;
 - sauvegarde et restauration complètes incluant base, photos et configuration ;
 - branchement opérationnel de la supervision et des alertes : les sondes et journaux sont développés, mais le canal réel, son responsable et la simulation d'incident sur préproduction restent à valider ;
-- gestion du cycle contractuel et des droits liés à l'abonnement TutelLiv.
+- gestion du cycle contractuel et des droits liés à l'abonnement Annona.
 
 ## 4.2 Portail client
 
@@ -157,7 +157,7 @@ Il crée une demande, suit l'affectation et les étapes, consulte une position u
 - Consultation de la preuve de livraison privée pour les rôles autorisés.
 - Consultation des relevés de prestation de livraison et téléchargement PDF opérationnel ; aucune émission réglementaire de facture électronique.
 - Nouvelle commande à partir d'une livraison ou commande précédente.
-- Support intégré : demande client, réponse de l'équipe, notification, historique, résolution et réouverture. Le canal affiché est l'espace TutelLiv avec un objectif de première réponse sous un jour ouvré ; l'équipe qui tiendra cet objectif doit être organisée avant usage réel.
+- Support intégré : demande client, réponse de l'équipe, notification, historique, résolution et réouverture. Le canal affiché est l'espace Annona avec un objectif de première réponse sous un jour ouvré ; l'équipe qui tiendra cet objectif doit être organisée avant usage réel.
 
 ### Développé mais à qualifier
 
@@ -286,8 +286,8 @@ Il crée une demande, suit l'affectation et les étapes, consulte une position u
 ### Décisions ouvertes
 
 - La V1 retient l'export comptable et les documents opérationnels. Le choix d'un outil comptable ou d'une plateforme agréée pour une future intégration reste ouvert ; contrat et limites historiques : [BILL-01B](operations/bill01b/README.md).
-- Si TutelLiv émet des factures finales, il faudra traiter numérotation, instantanés immuables, avoirs, arrondis, taxes, mentions, documents longs et validation réglementaire.
-- La facturation des livraisons réalisées par l'entreprise ne doit jamais être confondue avec la facturation de l'abonnement TutelLiv.
+- Si Annona émet des factures finales, il faudra traiter numérotation, instantanés immuables, avoirs, arrondis, taxes, mentions, documents longs et validation réglementaire.
+- La facturation des livraisons réalisées par l'entreprise ne doit jamais être confondue avec la facturation de l'abonnement Annona.
 
 ---
 
@@ -361,7 +361,7 @@ Le clic sur une commande en retard depuis une alerte permet déjà de retrouver 
 
 ## 6. Différenciation recherchée
 
-La différenciation de TutelLiv doit reposer sur la cohérence du parcours, pas sur une accumulation de fonctions.
+La différenciation de Annona doit reposer sur la cohérence du parcours, pas sur une accumulation de fonctions.
 
 ### 6.1 Remplacer la chaîne d'e-mails par un dossier opérationnel
 
@@ -369,7 +369,7 @@ Le produit relie la commande, l'affectation, le livreur, les messages, l'inciden
 
 ### 6.2 Relier les trois acteurs dans un même système
 
-De nombreux outils privilégient soit l'équipe interne, soit le chauffeur, soit le suivi client. TutelLiv cherche à offrir trois espaces cohérents utilisant le même état métier, avec des vues et des droits adaptés.
+De nombreux outils privilégient soit l'équipe interne, soit le chauffeur, soit le suivi client. Annona cherche à offrir trois espaces cohérents utilisant le même état métier, avec des vues et des droits adaptés.
 
 ### 6.3 Distinguer affectation, acceptation et exécution réelle
 
@@ -377,7 +377,7 @@ Une mission assignée n'est pas présentée comme acceptée. Une mission accept�
 
 ### 6.4 Afficher honnêtement les limites du suivi
 
-Une position est datée. Si elle est périmée, indisponible, masquée ou arrêtée, le produit le dit. TutelLiv ne doit pas vendre un « temps réel permanent » non prouvé, en particulier lorsque le téléphone est verrouillé ou hors réseau.
+Une position est datée. Si elle est périmée, indisponible, masquée ou arrêtée, le produit le dit. Annona ne doit pas vendre un « temps réel permanent » non prouvé, en particulier lorsque le téléphone est verrouillé ou hors réseau.
 
 ### 6.5 Transformer les retards et incidents en actions
 
@@ -385,7 +385,7 @@ L'objectif n'est pas seulement d'afficher une alerte rouge, mais d'identifier la
 
 ### 6.6 Adapter le dispatch à une petite structure
 
-Les règles de capacité, catégories, zones, priorité et disponibilité peuvent être configurées sans imposer d'emblée une optimisation de tournées complexe. TutelLiv vise une prise en main plus simple qu'un TMS lourd, tout en protégeant les cas de concurrence et d'historique.
+Les règles de capacité, catégories, zones, priorité et disponibilité peuvent être configurées sans imposer d'emblée une optimisation de tournées complexe. Annona vise une prise en main plus simple qu'un TMS lourd, tout en protégeant les cas de concurrence et d'historique.
 
 ### 6.7 Conserver sécurité et traçabilité au cœur du produit
 
@@ -433,7 +433,7 @@ La grille Starter/Pro/Business, ses prix, options et plafonds est confirmée com
 
 Business prévoit des livreurs illimités, mais cet affichage exige une politique d'usage raisonnable, des mesures et des alertes de coût. Le premier pilote gratuit peut être géré avec un contrat et des droits temporaires avant toute automatisation complexe.
 
-## 7.5 Abonnement et paiement TutelLiv
+## 7.5 Abonnement et paiement Annona
 
 - **Planifié en premier** : catalogue configurable, registre de pilote/contrat, période, droits, quotas et statut de l'entreprise, avec séparation entre abonnement et prestations de livraison.
 - **Planifié après validation des pilotes** : fournisseur de paiement, renouvellement, changement de formule/options, impayé, annulation, remboursement éventuel et webhooks idempotents.
@@ -442,15 +442,15 @@ Business prévoit des livreurs illimités, mais cet affichage exige une politiqu
 
 ## 7.6 Marque blanche
 
-Le modèle de données peut stocker un logo d'entreprise, mais une véritable offre en marque blanche n'est pas confirmée. Les domaines personnalisés, e-mails entièrement personnalisés, couleurs par tenant, applications dédiées et suppression de la marque TutelLiv ne sont ni terminés ni validés commercialement.
+Le modèle de données peut stocker un logo d'entreprise, mais une véritable offre en marque blanche n'est pas confirmée. Les domaines personnalisés, e-mails entièrement personnalisés, couleurs par tenant, applications dédiées et suppression de la marque Annona ne sont ni terminés ni validés commercialement.
 
 La marque blanche peut devenir une option future si elle influence réellement l'achat. Elle ne doit pas être présentée aujourd'hui comme une capacité disponible.
 
 ## 7.7 Deux facturations à ne pas confondre
 
-TutelLiv contient un module de facture lié aux prestations de livraison de l'entreprise. Pour la V1, il reste un document opérationnel accompagné d'un export comptable ; TutelLiv ne promet pas l'émission réglementaire. Une intégration future avec un outil comptable ou une plateforme agréée doit rester possible.
+Annona contient un module de facture lié aux prestations de livraison de l'entreprise. Pour la V1, il reste un document opérationnel accompagné d'un export comptable ; Annona ne promet pas l'émission réglementaire. Une intégration future avec un outil comptable ou une plateforme agréée doit rester possible.
 
-L'abonnement payé à TutelLiv par l'entreprise cliente est un flux distinct, encore à construire. Les revenus et statuts des deux systèmes doivent rester séparés.
+L'abonnement payé à Annona par l'entreprise cliente est un flux distinct, encore à construire. Les revenus et statuts des deux systèmes doivent rester séparés.
 
 ---
 
@@ -531,7 +531,7 @@ Avant utilisation réelle, il faudra définir et faire valider :
 - finalités et limites du GPS des livreurs ;
 - gestion des photos de preuve ;
 - responsabilités, support et notification d'incident ;
-- conformité des documents de facturation si TutelLiv les émet.
+- conformité des documents de facturation si Annona les émet.
 
 Le projet ne doit pas se présenter comme juridiquement ou fiscalement certifié avant cette validation professionnelle.
 
@@ -569,7 +569,7 @@ La V1 technique est une condition nécessaire, pas une preuve de marché.
 
 ### Formulation de travail raisonnable
 
-> TutelLiv réunit l'entreprise de livraison, ses clients et ses livreurs dans un même espace pour recevoir les commandes, organiser l'affectation, suivre l'exécution et conserver les échanges et preuves dans le bon dossier.
+> Annona réunit l'entreprise de livraison, ses clients et ses livreurs dans un même espace pour recevoir les commandes, organiser l'affectation, suivre l'exécution et conserver les échanges et preuves dans le bon dossier.
 
 Cette formulation décrit la vision et correspond au noyau déjà développé, sans inventer de gain quantifié.
 

@@ -5,7 +5,7 @@ Cette grille sert à la conversation de vérification du propriétaire. Elle lis
 ## Règles de vérification
 
 - Base de développement uniquement : `npm run -s env2:verify-dev` doit renvoyer `{"passed":true}`. Aucune écriture sur la préproduction (`zwwyalsslyydubtetagj`) ni sur la production.
-- Un seul serveur à la fois sur `tutelliv-dev`. Recette navigateur : skill `tutelliv-recette`.
+- Un seul serveur à la fois sur `annona-dev`. Recette navigateur : skill `annona-recette`.
 - Pour chaque branche :
   - `git log --oneline preproduction..<branche>` ;
   - `git diff --stat preproduction...<branche>` ;
@@ -27,7 +27,7 @@ Cette grille sert à la conversation de vérification du propriétaire. Elle lis
 | Le cron `/api/cron/operations` est appelé toutes les 5 min par GitHub Actions | `.github/workflows/cron-operations.yml` : secrets requis, aucune valeur en dur, pas de `--retry` sur erreur HTTP, `--max-time` ≥ durée d'un lot | Les exécutions planifiées partent de `main` : l'environnement GitHub ne doit pas restreindre les branches |
 | Alerte sur les tâches PENDING (et PROCESSING au bail expiré) en retard de plus de 15 min | `route.ts` : l'alerte de retard est émise même quand une tâche a échoué dans le même passage ; tests `operations-health`, `operation-jobs` | L'ordre des contrôles dans la route |
 | Node fixé à 22.18 | `.nvmrc`, `package.json` engines, README | Vercel doit aussi être réglé sur Node 22 (action du propriétaire) |
-| 12 index de clés étrangères | `prisma/schema.prisma`, migration `20261028090000_fk_indexes` (uniquement des `CREATE INDEX IF NOT EXISTS`) | Non appliquée hors tutelliv-dev. En production : `CONCURRENTLY` |
+| 12 index de clés étrangères | `prisma/schema.prisma`, migration `20261028090000_fk_indexes` (uniquement des `CREATE INDEX IF NOT EXISTS`) | Non appliquée hors annona-dev. En production : `CONCURRENTLY` |
 
 ## 2. `agent/securite` — inscription et API
 
@@ -55,7 +55,7 @@ Cette grille sert à la conversation de vérification du propriétaire. Elle lis
 
 | Promis | Comment vérifier | Piège connu |
 |---|---|---|
-| Signature à l'écran, nom du réceptionnaire, motif de refus | App livreur, livraison réussie et en échec ; mode hors ligne puis reprise | Migration de la colonne signature, appliquée seulement sur tutelliv-dev |
+| Signature à l'écran, nom du réceptionnaire, motif de refus | App livreur, livraison réussie et en échec ; mode hors ligne puis reprise | Migration de la colonne signature, appliquée seulement sur annona-dev |
 | Photos sans EXIF, URL signées d'environ 5 min | Envoyer un JPEG avec GPS → l'objet stocké n'a plus de métadonnées | L'orientation de la photo doit être conservée |
 | PDF de preuve horodaté | Téléchargement depuis le back-office et par le client propriétaire ; refus pour une autre entreprise ou un autre client | Inventaire des routes `admin01-*` mis à jour |
 | Envoi automatique au donneur d'ordre | Tâche durable idempotente, sans double envoi ; rien n'est envoyé si l'e-mail n'est pas configuré | E-mail réel non configuré : à vérifier dans le journal des tâches |
@@ -79,7 +79,7 @@ Cette grille sert à la conversation de vérification du propriétaire. Elle lis
 | Création côté back-office pour le compte d'un client (décision C11) | `docs/DECISIONS_PRODUIT_COMMERCIALES.md` C11, `PRODUCT.md` ; permission `orders:create`, `source = ADMIN` | Client choisi ACTIVE et de la même entreprise |
 | Champs incertains signalés, jamais inventés | Date passée sans heure → « À vérifier » ; échéance justifiée par un extrait du message | Fuseau Europe/Paris |
 | Protection contre l'injection de consignes | Expéditeur et message dans des cadres échappés, hors de la consigne | — |
-| Quota par entreprise, pas de texte stocké | Table `order_intake_usage` (jetons et issue seulement), RLS + REVOKE ; 429 avec `Retry-After` | Requêtes SQL brutes (`jsonb_set`, `regexp_replace`) jamais exécutées sur un vrai PostgreSQL par l'agent : à tester sur tutelliv-dev |
+| Quota par entreprise, pas de texte stocké | Table `order_intake_usage` (jetons et issue seulement), RLS + REVOKE ; 429 avec `Retry-After` | Requêtes SQL brutes (`jsonb_set`, `regexp_replace`) jamais exécutées sur un vrai PostgreSQL par l'agent : à tester sur annona-dev |
 | Désactivée sans clé ni activation | Sans `ANTHROPIC_API_KEY` → `INTAKE_NOT_CONFIGURED` ; activation atomique de la seule clé `orderIntake` | Sous-traitant F10 à qualifier juridiquement |
 
 ## 7. `agent/dispatch-gps` — DEMO-3 tranches 3 et 5

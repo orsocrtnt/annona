@@ -9,7 +9,7 @@ import {
 } from "@/domains/growth/prospect/prospect-campaign.service";
 
 const noStore = { "Cache-Control": "no-store" };
-const NOT_CONFIGURED = "Envoi pas encore configuré : le mot de passe de la boîte orso@tutelliv.fr manque dans Vercel.";
+const NOT_CONFIGURED = "Envoi pas encore configuré : le mot de passe de la boîte orso@annona.fr manque dans Vercel.";
 
 /**
  * ADMIN-ESPACE lot 5 : `next` envoie le mail suivant de la campagne (un seul par appel, espacés côté serveur),

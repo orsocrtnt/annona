@@ -5,7 +5,7 @@ import { LegalDocument, LegalSection } from "@/features/legal/legal-document";
 
 export const metadata: Metadata = {
   title: `Confidentialité — ${APP_NAME}`,
-  description: "Données collectées par le site TutelLiv et vos droits (version provisoire, en cours de validation).",
+  description: "Données collectées par le site Annona et vos droits (version provisoire, en cours de validation).",
 };
 
 export default function ConfidentialitePage() {
@@ -44,7 +44,7 @@ export default function ConfidentialitePage() {
 
       <LegalSection title="Prospection commerciale">
         <p>
-          TutelLiv peut contacter par e-mail ou par téléphone des entreprises de coursiers et de livraison, au sujet
+          Annona peut contacter par e-mail ou par téléphone des entreprises de coursiers et de livraison, au sujet
           de leur activité professionnelle. Les coordonnées proviennent de registres publics d&apos;entreprises, des
           sites de ces entreprises et d&apos;annuaires professionnels ; le premier message indique leur origine. Ce
           traitement repose sur notre intérêt légitime à faire connaître notre service à ces professionnels.

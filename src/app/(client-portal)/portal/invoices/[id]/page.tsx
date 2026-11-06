@@ -88,7 +88,7 @@ export default function InvoiceDetailPage() {
         )}
       </section>
 
-      <p className="text-sm text-muted-foreground">Facture de prestation de livraison. Document opérationnel, distinct de l&apos;abonnement TutelLiv ; il ne constitue pas une facture électronique réglementaire.</p>
+      <p className="text-sm text-muted-foreground">Facture de prestation de livraison. Document opérationnel, distinct de l&apos;abonnement Annona ; il ne constitue pas une facture électronique réglementaire.</p>
 
       {(invoice.lineItems?.length ?? 0) > 0 && (
         <Card>
@@ -177,7 +177,7 @@ export default function InvoiceDetailPage() {
 
       <p className="flex items-center gap-2 border-t border-border pt-4 text-xs text-muted-foreground">
         <Image src="/brand/logo-horizontal-fond-clair.png" alt="" width={64} height={19} className="h-auto w-16" />
-        Facture éditée avec TutelLiv
+        Facture éditée avec Annona
       </p>
     </div>
   );

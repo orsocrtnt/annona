@@ -21,7 +21,7 @@ test("TEST-2 : les trois r√¥les, le suivi, la facture, les refus et une panne r√
 
   const login = await page.request.post("/api/auth/login", {
     data: {
-      email: "demo@tutelliv.fr",
+      email: "demo@annona.fr",
       password: "Demo2026!",
       demoTestSession: true,
       accountType: "company",

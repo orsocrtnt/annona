@@ -2,7 +2,7 @@
 
 Une connexion avec le compte de démonstration prépare une entreprise fictive propre au navigateur. Le cookie de session est HTTP-only, valable huit heures et ne contient qu'un identifiant aléatoire. Son empreinte détermine un slug préfixé `logiexpress-demo-session-` ; aucun identifiant de base n'est exposé au navigateur.
 
-Le compte Supabase commun et l'entreprise modèle restent en permanence sur la préproduction. Ils servent uniquement à authentifier l'entrée et à fournir le scénario initial. Une fois connecté, TutelLiv résout les vues administrateur, client et chauffeur dans l'entreprise de session. Les comptes de ces trois vues ont des identifiants et e-mails techniques propres à cette entreprise.
+Le compte Supabase commun et l'entreprise modèle restent en permanence sur la préproduction. Ils servent uniquement à authentifier l'entrée et à fournir le scénario initial. Une fois connecté, Annona résout les vues administrateur, client et chauffeur dans l'entreprise de session. Les comptes de ces trois vues ont des identifiants et e-mails techniques propres à cette entreprise.
 
 ## Comportement attendu
 
@@ -26,7 +26,7 @@ Le test ne touche ni au compte de démonstration existant ni à une entreprise n
 
 ## Limites d'exploitation
 
-Fermer un onglet ou un navigateur n'est pas un signal fiable : rechargement, crash et changement de page peuvent produire le même événement. TutelLiv ne supprime donc jamais une session sur ce seul signal. La déconnexion explicite demande un nettoyage immédiat en arrière-plan ; l'expiration serveur à huit heures rend ensuite la session inaccessible même si le cookie est rejoué.
+Fermer un onglet ou un navigateur n'est pas un signal fiable : rechargement, crash et changement de page peuvent produire le même événement. Annona ne supprime donc jamais une session sur ce seul signal. La déconnexion explicite demande un nettoyage immédiat en arrière-plan ; l'expiration serveur à huit heures rend ensuite la session inaccessible même si le cookie est rejoué.
 
 Le lot de suppression des sessions expirées est préparé mais son horaire n'est pas encore activé sur la Preview. Les sessions qui ne passent ni par la déconnexion ni par un futur passage du lot peuvent donc rester physiquement présentes après leur expiration. Les sessions comportant des objets Storage ambigus restent volontairement bloquées. La planification, l'observation et le traitement de ces objets relèvent encore de DATA-02 et OPS-03B.
 

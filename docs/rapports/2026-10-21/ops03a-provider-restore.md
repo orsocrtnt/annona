@@ -2,14 +2,14 @@
 
 Date : 21 octobre 2026  
 Source : export officiel du projet Supabase historique mis en pause  
-Cible : projet Supabase Free temporaire `tutelliv-restore-rehearsal`  
+Cible : projet Supabase Free temporaire `annona-restore-rehearsal`  
 Résultat : réussi, sans modification de la préproduction ni de la production
 
 ## Périmètre
 
 L'exercice a utilisé le troisième emplacement Free libéré par la mise en pause du projet historique. Un nouveau projet, sans intégration sortante, a reçu l'export PostgreSQL officiel et l'archive Storage. Les données sont fictives. Aucun abonnement payant, déploiement Vercel, envoi d'e-mail ou modification de la préproduction n'a été déclenché.
 
-Les archives locales sont conservées avec des permissions limitées au propriétaire dans `Bureau/03 — Projets/TutelLiv/Sauvegardes Supabase/2026-10-21-ancien-projet`. Le manifeste `SHA256SUMS` couvre l'export compressé, sa version SQL, l'archive Storage, les journaux de restauration, les inventaires et les preuves finales. Sa vérification est entièrement verte.
+Les archives locales sont conservées avec des permissions limitées au propriétaire dans `Bureau/03 — Projets/Annona/Sauvegardes Supabase/2026-10-21-ancien-projet`. Le manifeste `SHA256SUMS` couvre l'export compressé, sa version SQL, l'archive Storage, les journaux de restauration, les inventaires et les preuves finales. Sa vérification est entièrement verte.
 
 ## Base restaurée
 

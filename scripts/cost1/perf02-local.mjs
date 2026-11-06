@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
-export const PERF02_SCHEMA = "tutelliv-perf02-local-v1";
-export const COST1_PERF02_SCHEMA = "tutelliv-cost1-perf02-local-v1";
+export const PERF02_SCHEMA = "annona-perf02-local-v1";
+export const COST1_PERF02_SCHEMA = "annona-cost1-perf02-local-v1";
 
 const expectedProfiles = {
   starter: { perfProfile: "STARTER", label: "Starter", drivers: 5, monthlyOrders: 1_000 },

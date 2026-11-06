@@ -82,7 +82,7 @@ function environment() {
       ...deps,
       react: { cache: (fn: unknown) => fn },
       "next/headers": { headers: async () => ({ get: () => headerId }) },
-      "@/lib/auth/auth-headers": { TUTELLIV_AUTH_ID_HEADER: "x-test-auth" },
+      "@/lib/auth/auth-headers": { ANNONA_AUTH_ID_HEADER: "x-test-auth" },
       "@/domains/auth/auth.service": { ...authService, syncUserFromSupabase: async () => { if (syncError) throw syncError; return current; } },
       "@/lib/permissions/rbac": rbac,
       "@/domains/demo/demo-auth.service": demo,

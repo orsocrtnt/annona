@@ -17,10 +17,10 @@ test("ONBOARD-1 : pilote manuel, choix persistant après retour, rechargement et
     try {
       return JSON.parse(execFileSync(process.execPath, ["--import", "tsx", "scripts/env2/verify-dev-env.ts"], { encoding: "utf8" })).passed === true;
     } catch {
-      return false; // Garde ENV-2 en échec : la cible n'est pas tutelliv-dev.
+      return false; // Garde ENV-2 en échec : la cible n'est pas annona-dev.
     }
   })();
-  test.skip(devTarget, "ONBOARD-1 vise la préproduction isolée, pas tutelliv-dev");
+  test.skip(devTarget, "ONBOARD-1 vise la préproduction isolée, pas annona-dev");
   test.setTimeout(240_000);
   const isolation = JSON.parse(execFileSync(process.execPath, ["--import", "tsx", "scripts/ci/verify-preproduction-env.ts"], { encoding: "utf8" }));
   assert.equal(isolation.passed, true, "PREPRODUCTION_ISOLATION_FAILED");

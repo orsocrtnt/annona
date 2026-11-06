@@ -1,5 +1,5 @@
 /**
- * DISPATCH-4 — test d'intégration opt-in sur PostgreSQL RÉEL (tutelliv-dev uniquement).
+ * DISPATCH-4 — test d'intégration opt-in sur PostgreSQL RÉEL (annona-dev uniquement).
  * Hors `npm run check`. Lancement :
  *   npx dotenv -e <chemin>/.env.local -- npm run test:dispatch-concurrency
  * Requêtes concurrentes réelles (Promise.all, 10) avec un pool de 5 connexions :

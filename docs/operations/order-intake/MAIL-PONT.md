@@ -4,7 +4,7 @@
 
 ## 1. Objectif
 
-Une entreprise de livraison crée une boîte réservée aux commandes (par exemple `commandes@entreprise.fr`) et la fait **renvoyer automatiquement** vers son adresse TutelLiv. TutelLiv :
+Une entreprise de livraison crée une boîte réservée aux commandes (par exemple `commandes@entreprise.fr`) et la fait **renvoyer automatiquement** vers son adresse Annona. Annona :
 
 1. reconnaît le vrai client (le renvoi garde l'expéditeur d'origine) ;
 2. trie seul : e-mail de commande → brouillon ; autre e-mail → « À trier » ;
@@ -29,11 +29,11 @@ Défauts repris de MAIL-ECARTS : client jamais retrouvé sur un e-mail transfér
 
 ## 3. Parcours de l'entreprise
 
-1. **Paramètres → Commandes par e-mail** : l'administrateur active la réception, voit son adresse TutelLiv et saisit l'adresse de sa boîte de commandes (`commandes@entreprise.fr`). Elle sert au « répondre à » et à reconnaître les e-mails renvoyés.
+1. **Paramètres → Commandes par e-mail** : l'administrateur active la réception, voit son adresse Annona et saisit l'adresse de sa boîte de commandes (`commandes@entreprise.fr`). Elle sert au « répondre à » et à reconnaître les e-mails renvoyés.
 2. **Guide de renvoi**, un onglet par fournisseur :
-   - **Gmail / Google Workspace** : Paramètres → Transfert et POP/IMAP → Ajouter une adresse de transfert → coller l'adresse TutelLiv. Gmail envoie un code de confirmation à cette adresse : **TutelLiv l'affiche dans la page** (section 4.2). Saisir le code dans Gmail, puis choisir « Transférer une copie ».
+   - **Gmail / Google Workspace** : Paramètres → Transfert et POP/IMAP → Ajouter une adresse de transfert → coller l'adresse Annona. Gmail envoie un code de confirmation à cette adresse : **Annona l'affiche dans la page** (section 4.2). Saisir le code dans Gmail, puis choisir « Transférer une copie ».
    - **Outlook / Microsoft 365** : Règles → nouvelle règle « pour tous les messages » → **« Rediriger vers »** (pas « Transférer à », qui remplace l'expéditeur par la boîte). En Microsoft 365 professionnel, le renvoi externe est **bloqué par défaut** : l'administrateur du client doit l'autoriser dans la stratégie anti-spam sortante. Le guide le dit dès la première ligne.
-   - **OVH et autres hébergeurs** : créer une redirection de `commandes@` vers l'adresse TutelLiv, en gardant une copie.
+   - **OVH et autres hébergeurs** : créer une redirection de `commandes@` vers l'adresse Annona, en gardant une copie.
 3. **Essai** : un bouton « Envoyer un e-mail d'essai » explique d'écrire depuis une autre adresse vers la boîte de commandes ; la page affiche « Renvoi reçu, expéditeur d'origine reconnu » ou l'écart constaté (section 4.3).
 
 ## 4. Réception et tri
@@ -58,9 +58,9 @@ Un e-mail de `forwarding-noreply@google.com` dont l'objet contient « Gmail Forw
 
 Le texte exact envoyé par Gmail sera relevé lors de l'essai réel avant de figer la détection ; repli : tout e-mail de `forwarding-noreply@google.com` est traité ainsi.
 
-**Essai réel du 4 novembre 2026** : renvoi approuvé depuis TutelLiv, filtre Gmail sur un alias, deux commandes fictives, fiche créée puis reconnue, confirmation « Entreprise via TutelLiv » avec `Reply-To` ; détail et constats dans `TODO.md` (MAIL-PONT).
+**Essai réel du 4 novembre 2026** : renvoi approuvé depuis Annona, filtre Gmail sur un alias, deux commandes fictives, fiche créée puis reconnue, confirmation « Entreprise via Annona » avec `Reply-To` ; détail et constats dans `TODO.md` (MAIL-PONT).
 
-**Relevé du 4 novembre 2026 (vrai compte Gmail)** : objet « (Gmail) Confirmation de transfert – Recevez les messages de x@gmail.com », **sans code** ; le corps contient seulement un lien d'approbation `https://mail-settings.google.com/mail/vf-…`, et l'écran Gmail n'a plus de champ de code. TutelLiv reconnaît désormais ce lien (https vers `mail-settings.google.com` ou `mail.google.com` uniquement) et affiche « Approuver le renvoi dans Gmail » ; l'ancien format à code reste lu.
+**Relevé du 4 novembre 2026 (vrai compte Gmail)** : objet « (Gmail) Confirmation de transfert – Recevez les messages de x@gmail.com », **sans code** ; le corps contient seulement un lien d'approbation `https://mail-settings.google.com/mail/vf-…`, et l'écran Gmail n'a plus de champ de code. Annona reconnaît désormais ce lien (https vers `mail-settings.google.com` ou `mail.google.com` uniquement) et affiche « Approuver le renvoi dans Gmail » ; l'ancien format à code reste lu.
 
 ### 4.3 Tri commande / autre
 
@@ -93,7 +93,7 @@ Contrainte trouvée dans le code : l'adresse e-mail d'un utilisateur est **uniqu
 | **A. Utilisateur sans connexion** | `User.authId` devient facultatif ; fiche = utilisateur CLIENT sans `authId` | Commandes, factures, adresses et listes existantes marchent telles quelles | Migration sur la table centrale ; une vingtaine de fichiers lisent `authId` (connexion, suppression, inscription) à revoir ; la collision d'adresse entre deux entreprises reste |
 | **B. Fiche client propre à l'entreprise** (conseillée) | Nouveau modèle `CompanyCustomer` (entreprise, nom, e-mail unique **par entreprise**, téléphone, adresses, lien facultatif vers un `User` quand l'accès est donné plus tard) ; `Order` et `Invoice` gagnent `companyCustomerId` facultatif | Pas de collision entre entreprises ; aucune connexion ni siège touché ; même logique que les commandes invitées déjà en ligne | Listes de clients, facturation et export à étendre à la fiche ; plus de travail au départ |
 
-Recommandation de l'agent : **B**, parce que la collision d'adresse rendrait A fragile dès qu'un client commande à deux transporteurs. Les clients ne sont pas comptés dans les sièges de l'abonnement (seuls livreurs, administrateurs et dispatchers le sont), donc aucune option ne change la facturation TutelLiv. **Décision du propriétaire le 3 novembre 2026 : B.**
+Recommandation de l'agent : **B**, parce que la collision d'adresse rendrait A fragile dès qu'un client commande à deux transporteurs. Les clients ne sont pas comptés dans les sièges de l'abonnement (seuls livreurs, administrateurs et dispatchers le sont), donc aucune option ne change la facturation Annona. **Décision du propriétaire le 3 novembre 2026 : B.**
 
 ### 5.3 Fiche client livrée (étape 4, 4 novembre 2026)
 
@@ -109,18 +109,18 @@ Recommandation de l'agent : **B**, parce que la collision d'adresse rendrait A f
 ## 6. Confirmation au client
 
 - Une seule, envoyée après la création de la commande, à l'expéditeur d'origine.
-- Expéditeur affiché : « Nom de l'entreprise via TutelLiv » depuis l'adresse d'envoi existante ; `Reply-To` : la boîte de commandes saisie en Paramètres. L'envoi actuel ne gère pas encore `Reply-To` ([transactional-email.ts](../../../src/lib/email/transactional-email.ts)) : à ajouter.
+- Expéditeur affiché : « Nom de l'entreprise via Annona » depuis l'adresse d'envoi existante ; `Reply-To` : la boîte de commandes saisie en Paramètres. L'envoi actuel ne gère pas encore `Reply-To` ([transactional-email.ts](../../../src/lib/email/transactional-email.ts)) : à ajouter.
 - Contenu : référence, date prévue, lien de suivi (`OrderTrackingLink`, mécanisme invité existant), phrase « Répondez à cet e-mail pour toute question ».
 - Une case « Envoyer la confirmation au client », cochée par défaut, permet de ne pas l'envoyer (client qui ne veut pas d'e-mail, commande saisie pour un tiers).
 - Tâche durable avec clé unique par commande : jamais deux confirmations, même après un double clic ou une reprise.
 
 ## 7. Sécurité et données
 
-- **Adresse TutelLiv** : jeton aléatoire déjà en place ; bouton « Changer d'adresse » qui l'invalide (à garder visible dans le guide, car il faut alors refaire le renvoi).
+- **Adresse Annona** : jeton aléatoire déjà en place ; bouton « Changer d'adresse » qui l'invalide (à garder visible dans le guide, car il faut alors refaire le renvoi).
 - **Expéditeur falsifié** : la présélection affiche « adresse non vérifiée » ; aucune commande ni confirmation sans clic ; la confirmation part à l'adresse d'origine, donc un faux expéditeur ne reçoit rien qu'il n'ait déjà.
 - **Injection dans l'e-mail** : garde-fous d'INTAKE-1 inchangés (essai d'injection du 3 novembre sans effet).
 - **Conservation** : corps et brouillon effacés à la clôture (existant) ; e-mails « À trier » effacés au bout de 7 jours (proposition) ; code Gmail au bout de 24 heures ; ligne supprimée après 30 jours (existant). Les durées suivent la décision DATA-02 du propriétaire.
-- **Juridique** : le client doit savoir que ses e-mails de commande passent par TutelLiv (mention à ajouter au modèle de notice et au DPA, [LEGAL-1](../../legal/VERIFICATION_2026-11-02.md)). Le modèle d'IA est déjà déclaré pour INTAKE-1 (fiche F10 non qualifiée : à suivre).
+- **Juridique** : le client doit savoir que ses e-mails de commande passent par Annona (mention à ajouter au modèle de notice et au DPA, [LEGAL-1](../../legal/VERIFICATION_2026-11-02.md)). Le modèle d'IA est déjà déclaré pour INTAKE-1 (fiche F10 non qualifiée : à suivre).
 
 ## 8. Découpage en étapes livrables
 
@@ -134,18 +134,18 @@ Chaque étape est testée et livrable seule (petites étapes, pas de refonte).
 | 4 (**fait le 4 novembre**, option B) | Fiche client à la validation (section 5.3) | Table `company_customers`, colonne `company_customer_id` | Tests d'isolement entre entreprises ; reprise après double clic ; export DATA-02 étendu |
 | 5 (**fait le 3 novembre**, essai réel à faire) | Confirmation au client avec `Reply-To` | Aucun | Test d'unicité ; essai réel : réception, « répondre » arrive dans la boîte de commandes |
 
-Chaque migration est d'abord appliquée sur `tutelliv-dev`, puis en préproduction avec l'accord demandé au début de l'étape.
+Chaque migration est d'abord appliquée sur `annona-dev`, puis en préproduction avec l'accord demandé au début de l'étape.
 
 ## 9. Décisions à prendre par le propriétaire
 
 1. **Fiche client** : option A ou B (section 5.2). Conseil : B. **Tranché le 3 novembre : B** (livré le 4 novembre, section 5.3).
 2. **E-mails « À trier »** : garder 7 jours avec le texte, pour permettre « C'est une commande » ? Ou ne garder que l'objet et l'expéditeur, sans possibilité de rattrapage ?
-3. **Nom affiché sur la confirmation** : « Entreprise via TutelLiv » (conseillé, honnête et sans réglage technique chez le client) ou seulement le nom de l'entreprise ?
+3. **Nom affiché sur la confirmation** : « Entreprise via Annona » (conseillé, honnête et sans réglage technique chez le client) ou seulement le nom de l'entreprise ?
 4. **Ordre** : commencer par l'étape 1 (tri, utile tout de suite et sans dépendance) ? Conseil : oui, puis 2 et 3, la fiche client ensuite.
 
 ## 10. Critères de fin (repris de `TODO.md`)
 
-Une boîte Gmail et une boîte Outlook renvoient vers TutelLiv ; le code de confirmation Gmail est visible dans TutelLiv ; le client d'origine est reconnu ; les commandes apparaissent en brouillon, les autres e-mails en « À trier » ou effacés ; la validation crée la commande et, si besoin, la fiche ; le client reçoit la confirmation avec « répondre à » vers la boîte ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
+Une boîte Gmail et une boîte Outlook renvoient vers Annona ; le code de confirmation Gmail est visible dans Annona ; le client d'origine est reconnu ; les commandes apparaissent en brouillon, les autres e-mails en « À trier » ou effacés ; la validation crée la commande et, si besoin, la fiche ; le client reçoit la confirmation avec « répondre à » vers la boîte ; tests, essai réel avec chaque fournisseur, `npm run check` et clic réel navigateur.
 
 ## 11. Non vérifié en écrivant cette spécification
 

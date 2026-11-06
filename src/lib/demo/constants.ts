@@ -1,29 +1,29 @@
 import type { SystemRole } from "@prisma/client";
 
 /** Identifiants de connexion démo — modifiables après le premier seed. */
-export const DEMO_LOGIN_EMAIL = "demo@tutelliv.fr";
+export const DEMO_LOGIN_EMAIL = "demo@annona.fr";
 export const DEMO_DEFAULT_PASSWORD = "Demo2026!";
 
-export const DEMO_CLIENT_EMAIL = "demo-client@tutelliv.fr";
-export const DEMO_DRIVER_EMAIL = "demo-driver@tutelliv.fr";
+export const DEMO_CLIENT_EMAIL = "demo-client@annona.fr";
+export const DEMO_DRIVER_EMAIL = "demo-driver@annona.fr";
 export const DEMO_COMPANY_SLUG = "logiexpress-demo";
 export const DEMO_COMPANY_NAME = "LogiExpress Démo";
 
 /** Comptes figés de la démo — restent après reset, non supprimables. */
 export const DEMO_FIXTURE_CLIENTS = [
   { email: DEMO_CLIENT_EMAIL, firstName: "Marie", lastName: "Client Démo" },
-  { email: "demo-client-2@tutelliv.fr", firstName: "Sophie", lastName: "Martin" },
-  { email: "demo-client-3@tutelliv.fr", firstName: "Louis", lastName: "Bernard" },
-  { email: "demo-client-4@tutelliv.fr", firstName: "Camille", lastName: "Petit" },
-  { email: "demo-client-5@tutelliv.fr", firstName: "Thomas", lastName: "Moreau" },
+  { email: "demo-client-2@annona.fr", firstName: "Sophie", lastName: "Martin" },
+  { email: "demo-client-3@annona.fr", firstName: "Louis", lastName: "Bernard" },
+  { email: "demo-client-4@annona.fr", firstName: "Camille", lastName: "Petit" },
+  { email: "demo-client-5@annona.fr", firstName: "Thomas", lastName: "Moreau" },
 ] as const;
 
 export const DEMO_FIXTURE_DRIVERS = [
   { email: DEMO_DRIVER_EMAIL, firstName: "Marc", lastName: "Livreur Démo" },
-  { email: "demo-driver-2@tutelliv.fr", firstName: "Jean", lastName: "Dupont" },
-  { email: "demo-driver-3@tutelliv.fr", firstName: "Karim", lastName: "Benali" },
-  { email: "demo-driver-4@tutelliv.fr", firstName: "Sophie", lastName: "Laurent" },
-  { email: "demo-driver-5@tutelliv.fr", firstName: "Lucas", lastName: "Garnier" },
+  { email: "demo-driver-2@annona.fr", firstName: "Jean", lastName: "Dupont" },
+  { email: "demo-driver-3@annona.fr", firstName: "Karim", lastName: "Benali" },
+  { email: "demo-driver-4@annona.fr", firstName: "Sophie", lastName: "Laurent" },
+  { email: "demo-driver-5@annona.fr", firstName: "Lucas", lastName: "Garnier" },
 ] as const;
 
 export function isDemoLockedAccountEmail(email: string): boolean {
@@ -35,8 +35,8 @@ export function isDemoLockedAccountEmail(email: string): boolean {
   );
 }
 
-export const DEMO_PERSONA_COOKIE = "tutelliv-demo-persona";
-export const DEMO_SESSION_COOKIE = "tutelliv-demo-session";
+export const DEMO_PERSONA_COOKIE = "annona-demo-persona";
+export const DEMO_SESSION_COOKIE = "annona-demo-session";
 export const DEMO_SESSION_COMPANY_PREFIX = `${DEMO_COMPANY_SLUG}-session-`;
 export const DEMO_POOL_COMPANY_PREFIX = `${DEMO_COMPANY_SLUG}-pool-`;
 export const DEMO_POOL_KEY = "public";

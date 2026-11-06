@@ -4,7 +4,7 @@ import { LegalDocument, LegalFacts, LegalSection } from "@/features/legal/legal-
 
 export const metadata: Metadata = {
   title: `Mentions légales — ${APP_NAME}`,
-  description: "Éditeur et hébergeurs du site TutelLiv (version provisoire, en cours de validation).",
+  description: "Éditeur et hébergeurs du site Annona (version provisoire, en cours de validation).",
 };
 
 const pending = <em>en cours</em>;

@@ -305,7 +305,7 @@ export function OrderInvoiceForm({ order }: OrderInvoiceFormProps) {
           Tarifs de la prestation
         </CardTitle>
         <CardDescription>
-          Choisissez les tarifs à appliquer. La facture sera visible côté client. Document opérationnel, distinct de l&apos;abonnement TutelLiv, sans émission réglementaire de facture électronique.
+          Choisissez les tarifs à appliquer. La facture sera visible côté client. Document opérationnel, distinct de l&apos;abonnement Annona, sans émission réglementaire de facture électronique.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">

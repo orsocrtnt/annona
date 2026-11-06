@@ -34,7 +34,7 @@ async function main() {
   });
 
   const startedAt = new Date();
-  const tempDirectory = await mkdtemp(join(tmpdir(), "tutelliv-ops03a-provider-storage-"));
+  const tempDirectory = await mkdtemp(join(tmpdir(), "annona-ops03a-provider-storage-"));
   const sourceRoot = join(tempDirectory, LEGACY_SOURCE_REF, BUCKET);
   const client = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },

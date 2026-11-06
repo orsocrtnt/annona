@@ -253,7 +253,7 @@ export function CampaignDetail({
       <div className="space-y-3 rounded-2xl border border-border bg-background p-4">
         <h3 className="font-semibold text-foreground">Envoyer</h3>
         <p className="text-sm text-muted-foreground">
-          Un mail toutes les {Math.round(paceMs / 1_000)} secondes depuis orso@tutelliv.fr, chaque adresse une seule fois.
+          Un mail toutes les {Math.round(paceMs / 1_000)} secondes depuis orso@annona.fr, chaque adresse une seule fois.
           Gardez cette page ouverte pendant l&apos;envoi ; « Pause » arrête après le mail en cours.
         </p>
         <div className="flex flex-wrap items-center gap-3">
@@ -287,7 +287,7 @@ export function CampaignDetail({
             <p className="text-sm text-muted-foreground">
               {numberFormat.format(campaign.stats.setAside)} adresse{campaign.stats.setAside > 1 ? "s" : ""} mise
               {campaign.stats.setAside > 1 ? "s" : ""} de côté (Microsoft ou filtre d&apos;entreprise strict) : le mail y
-              tombe en indésirables tant que tutelliv.fr n&apos;a pas d&apos;historique. Elles ne partent pas avec
+              tombe en indésirables tant que annona.fr n&apos;a pas d&apos;historique. Elles ne partent pas avec
               l&apos;envoi.
             </p>
             <Button

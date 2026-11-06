@@ -37,7 +37,7 @@ Créer `.env.local` seulement s'il n'existe pas. `npm ci` utilise le lockfile et
 
 - `AUTH_EMAIL_LINKS_ENABLED=true` seulement après configuration complète décrite dans `AUTH_EMAIL_SETUP.md` ;
 - `RESEND_API_KEY`, `MAIL_FROM` ou `EMAIL_FROM` pour les notifications e-mail ;
-- `PROSPECT_SMTP_PASSWORD` (mot de passe de la boîte OVH `orso@tutelliv.fr`) pour envoyer les campagnes de prospection depuis `/admin/campaigns` ; facultatifs : `PROSPECT_SMTP_HOST` (`smtp.mail.ovh.net`), `PROSPECT_SMTP_PORT` (465, SSL), `PROSPECT_SMTP_USER` (`orso@tutelliv.fr`), `PROSPECT_LINK_BASE_URL` (origine des liens comptés, sinon l'adresse du back-office). Sans mot de passe, la page prépare les campagnes mais n'envoie rien ;
+- `PROSPECT_SMTP_PASSWORD` (mot de passe de la boîte OVH `orso@annona.fr`) pour envoyer les campagnes de prospection depuis `/admin/campaigns` ; facultatifs : `PROSPECT_SMTP_HOST` (`smtp.mail.ovh.net`), `PROSPECT_SMTP_PORT` (465, SSL), `PROSPECT_SMTP_USER` (`orso@annona.fr`), `PROSPECT_LINK_BASE_URL` (origine des liens comptés, sinon l'adresse du back-office). Sans mot de passe, la page prépare les campagnes mais n'envoie rien ;
 - `OPS_ALERT_RECIPIENT` pour recevoir les alertes par e-mail, une fois par jour et par type de panne (vide : `EMAIL_TEST_RECIPIENT`, sinon aucun e-mail) ;
 - `OPS_ALERT_WEBHOOK_URL` et `OPS_ALERT_WEBHOOK_TOKEN` pour le canal d'incident générique ;
 - variables `NEXT_PUBLIC_MAP_*` et `GEOCODING_URL` pour remplacer les fournisseurs d'essai ; `DRIVE_ROUTE_IGN_URL` (recommandé : `https://data.geopf.fr/navigation/itineraire`) ou `DRIVE_ROUTE_OSRM_URL` (OSRM privé) pour les itinéraires, calculés par le serveur seulement ;
@@ -65,7 +65,7 @@ npm run test:v1
 
 ## Mise à jour de la TODO partagée
 
-`npm run todo:progress` recalcule la jauge depuis les cases principales de `TODO.md` et synchronise `outputs/TODO-TutelLiv-vente.md`. Ce calcul s'exécute aussi avant `npm run docs:verify`. Le pourcentage compte les tâches terminées sans pondérer leur taille ; il ne mesure pas la préparation commerciale du produit.
+`npm run todo:progress` recalcule la jauge depuis les cases principales de `TODO.md` et synchronise `outputs/TODO-Annona-vente.md`. Ce calcul s'exécute aussi avant `npm run docs:verify`. Le pourcentage compte les tâches terminées sans pondérer leur taille ; il ne mesure pas la préparation commerciale du produit.
 
 Les anciens chemins de partage externes sont obsolètes. La commande de progression et les contrôles de documentation ne lisent ni n'écrivent hors du dépôt.
 
@@ -88,7 +88,7 @@ Les routes cron attendent `Authorization: Bearer <CRON_SECRET>`. Vérifier que l
 
 ### Relais des tâches de fond (Supabase, depuis le 2 novembre 2026)
 
-GitHub espace ses lancements planifiés (4 à 7 heures constatées). Le rythme de 5 minutes est donc porté par la tâche pg_cron `tutelliv-operations-relay` de `tutelliv-preproduction` : elle appelle `/api/cron/operations` avec `pg_net` (fire-and-forget, 70 s au plus), l'URL `ops03b_app_url` et le secret `relay_cron_secret` du coffre Supabase, égal au `CRON_SECRET` du déploiement. Tant que ce secret manque, la tâche ne fait rien. Il est à remettre à jour si `CRON_SECRET` change. Réponses : `net._http_response` (conservées peu de temps). Le workflow GitHub ci-dessous reste un filet de secours.
+GitHub espace ses lancements planifiés (4 à 7 heures constatées). Le rythme de 5 minutes est donc porté par la tâche pg_cron `annona-operations-relay` de `annona-preproduction` : elle appelle `/api/cron/operations` avec `pg_net` (fire-and-forget, 70 s au plus), l'URL `ops03b_app_url` et le secret `relay_cron_secret` du coffre Supabase, égal au `CRON_SECRET` du déploiement. Tant que ce secret manque, la tâche ne fait rien. Il est à remettre à jour si `CRON_SECRET` change. Réponses : `net._http_response` (conservées peu de temps). Le workflow GitHub ci-dessous reste un filet de secours.
 
 Pour copier le secret sans l'afficher (depuis la racine du dépôt) :
 
@@ -189,6 +189,6 @@ La recette connectée n'est disponible que par lancement manuel dans l'environne
 
 Un build local réussi n'autorise aucun déploiement. Avant publication : ENV-1, DB-1, CI-1, OPS-03A/B et les décisions de V1-GO doivent être traitées selon leurs critères. Aucun push, migration ou déploiement n'est inclus dans ces instructions.
 
-### Tâches quotidiennes sur tutelliv.fr (GitHub Actions)
+### Tâches quotidiennes sur annona.fr (GitHub Actions)
 
-`tutelliv.fr` tourne en préversion Vercel : les crons de `vercel.json` ne s'y exécutent pas. Le workflow `.github/workflows/cron-daily.yml` appelle chaque jour à 6 h UTC `/api/cron/recurring-orders` et `/api/cron/billing`, avec les secrets de l'environnement GitHub `preproduction`, et peut se lancer à la main avec « Run workflow ». Une fois une vraie production en place (AUDIT-0111, E2), revoir ce workflow pour éviter les doublons de planification.
+`annona.fr` tourne en préversion Vercel : les crons de `vercel.json` ne s'y exécutent pas. Le workflow `.github/workflows/cron-daily.yml` appelle chaque jour à 6 h UTC `/api/cron/recurring-orders` et `/api/cron/billing`, avec les secrets de l'environnement GitHub `preproduction`, et peut se lancer à la main avec « Run workflow ». Une fois une vraie production en place (AUDIT-0111, E2), revoir ce workflow pour éviter les doublons de planification.

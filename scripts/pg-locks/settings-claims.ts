@@ -1,6 +1,6 @@
 /**
  * Test d'intégration opt-in : réclamation sur `updatedAt` des JSON `settings` sur PostgreSQL RÉEL
- * (tutelliv-dev uniquement), RECETTE-2810 point 16. Hors `npm run check`. Lancement :
+ * (annona-dev uniquement), RECETTE-2810 point 16. Hors `npm run check`. Lancement :
  *   npx dotenv -e <chemin>/.env.local -- npm run test:pg-settings
  * Écritures concurrentes réelles (Promise.all, 10) avec un pool de 5 connexions, par les vrais services :
  *  (a) entreprise : dix réglages différents enregistrés en même temps — aucune clé perdue ;

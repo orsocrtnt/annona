@@ -7,7 +7,7 @@ import { DEMO_LOGIN_EMAIL } from "@/lib/demo/constants";
 import { useAuthStore } from "@/stores/auth.store";
 import type { JsonResult } from "@/features/auth/request-timeout";
 
-const DEMO_REQUEST_KEY_STORAGE = "tutelliv-demo-request-key";
+const DEMO_REQUEST_KEY_STORAGE = "annona-demo-request-key";
 
 /**
  * Clé de réservation de la démo, stable pour l'onglet : un double envoi (double clic, montage React répété)

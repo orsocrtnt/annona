@@ -46,7 +46,7 @@ test("la route cron refuse un secret absent ou faux", async () => {
   }
 });
 
-test("les tâches quotidiennes tournent sur tutelliv.fr, pas seulement en production Vercel (AUDIT-0111, E1)", () => {
+test("les tâches quotidiennes tournent sur annona.fr, pas seulement en production Vercel (AUDIT-0111, E1)", () => {
   const daily = readFileSync(resolve(".github/workflows/cron-daily.yml"), "utf8");
   assert.match(daily, /cron: "0 6 \* \* \*"/);
   assert.match(daily, /workflow_dispatch:/);

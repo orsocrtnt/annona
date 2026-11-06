@@ -186,7 +186,7 @@ test("ancienne clé de stockage : supprimée, jamais lue ni réécrite", () => {
   const source = ts.transpileModule(readFileSync(resolve("src/lib/storage/pending-credentials.ts"), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   const exports: { clearPendingCredentials?: () => void } = {}; const removed: string[] = [];
   runInNewContext(source, { exports, window: {}, localStorage: { removeItem: (key: string) => removed.push(key), getItem: () => assert.fail("no secret read"), setItem: () => assert.fail("no secret write") } });
-  exports.clearPendingCredentials!(); assert.deepEqual(removed, ["tutelliv:pending-credentials"]);
+  exports.clearPendingCredentials!(); assert.deepEqual(removed, ["annona:pending-credentials"]);
 });
 
 test("connexion : e-mail non confirmé refusé sans appel administrateur", async () => {

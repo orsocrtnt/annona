@@ -34,7 +34,7 @@ Cette liste contient les inconnues qui empêchent encore des documents définiti
 
 ## Données opérationnelles
 
-- qualifier entreprise cliente, donneur d'ordre, destinataire et TutelLiv pour chaque traitement de la matrice ;
+- qualifier entreprise cliente, donneur d'ordre, destinataire et Annona pour chaque traitement de la matrice ;
 - choisir et documenter les bases légales, instructions et catégories de personnes ;
 - décider si le nom du livreur est réellement indispensable côté client lorsque sa position est affichée ;
 - fixer précision, fréquence, heures de service, pause, BYOD, arrêt et contrôle des désactivations GPS ;

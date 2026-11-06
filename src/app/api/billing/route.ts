@@ -54,7 +54,7 @@ export async function POST(request: Request) {
   try {
     const billing = sandboxBilling(), input = parsed.data;
     if (input.action === "portal") {
-      // Moyen de paiement et factures chez Stripe ; rien n'est modifié chez TutelLiv avant le webhook.
+      // Moyen de paiement et factures chez Stripe ; rien n'est modifié chez Annona avant le webhook.
       const portal = await billing.paymentPortal(auth.account.id, auth.actorId).catch(() => null);
       if (!portal) return NextResponse.json({ error: CONFIG_MESSAGES.PAYMENT_PROVIDER_UNAVAILABLE }, { status: 409 });
       return NextResponse.json(portal, { headers: { "Cache-Control": "no-store" } });

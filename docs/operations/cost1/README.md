@@ -1,6 +1,6 @@
 # COST-1 — modèle de coûts documentaire
 
-Ce modèle estime les coûts mensuels de TutelLiv sans appeler un fournisseur et sans créer de charge distante. Il sert à tester la cohérence des offres avant les mesures de `PERF-02`.
+Ce modèle estime les coûts mensuels de Annona sans appeler un fournisseur et sans créer de charge distante. Il sert à tester la cohérence des offres avant les mesures de `PERF-02`.
 
 ## Recalcul
 

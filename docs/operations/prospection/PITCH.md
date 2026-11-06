@@ -1,4 +1,4 @@
-# Pitch et démonstration TutelLiv
+# Pitch et démonstration Annona
 
 Version du 1er novembre 2026. À garder sous les yeux pendant les appels et les rendez-vous. Le plan complet est dans [le plan de démarchage](README.md).
 
@@ -8,17 +8,17 @@ Tant que le SIREN n'est pas arrivé : ni prix, ni offre de pilote. Les textes «
 
 **En 10 secondes** (standard, messagerie)
 
-> Orso Carotenuto-Marchetti, de TutelLiv. Je construis un logiciel pour les entreprises de coursiers et j'ai une question courte sur votre façon d'organiser les courses.
+> Orso Carotenuto-Marchetti, de Annona. Je construis un logiciel pour les entreprises de coursiers et j'ai une question courte sur votre façon d'organiser les courses.
 
 **En 30 secondes** (la bonne personne au téléphone)
 
-> Je construis TutelLiv, un logiciel qui réunit au même endroit les commandes, les livreurs et le suivi des clients. Je ne vends rien aujourd'hui : avant d'ouvrir, je veux comprendre comment travaillent une dizaine d'entreprises comme la vôtre. Votre dernière commande de ce matin, elle est arrivée comment, et comment le livreur l'a reçue ?
+> Je construis Annona, un logiciel qui réunit au même endroit les commandes, les livreurs et le suivi des clients. Je ne vends rien aujourd'hui : avant d'ouvrir, je veux comprendre comment travaillent une dizaine d'entreprises comme la vôtre. Votre dernière commande de ce matin, elle est arrivée comment, et comment le livreur l'a reçue ?
 
 **En 2 minutes** (quand on vous demande « c'est quoi exactement ? »)
 
 > Dans beaucoup d'entreprises de coursiers, une commande passe par des mails, des appels et des messages. Il faut prévenir le livreur, attendre sa réponse, répondre au client qui demande où ça en est, puis retrouver la preuve.
 >
-> TutelLiv met tout ça dans un seul dossier par livraison. Le client commande dans son espace. Le dispatcher voit la commande et affecte un livreur, à la main ou automatiquement. Le livreur reçoit la mission sur son téléphone, confirme, démarre et ajoute la preuve. Le client voit où en est sa livraison et retrouve ses preuves et ses factures.
+> Annona met tout ça dans un seul dossier par livraison. Le client commande dans son espace. Le dispatcher voit la commande et affecte un livreur, à la main ou automatiquement. Le livreur reçoit la mission sur son téléphone, confirme, démarre et ajoute la preuve. Le client voit où en est sa livraison et retrouve ses preuves et ses factures.
 >
 > Je préfère être franc : je n'ai pas encore de clients, et je n'accueillerai pas de vraies données tant que le cadre juridique n'est pas signé. C'est pour ça que je vous appelle : je veux construire avec le métier. Qu'est-ce qui vous prend le plus de temps aujourd'hui ?
 
@@ -30,7 +30,7 @@ Tant que le SIREN n'est pas arrivé : ni prix, ni offre de pilote. Les textes «
 
 | Support | Quand l'utiliser | Attention |
 |---|---|---|
-| Plaquette sans prix | Si la personne demande quelque chose à lire, après un échange. Jamais au premier mail. | Porte `orso@tutelliv.fr` : créer la boîte d'abord. |
+| Plaquette sans prix | Si la personne demande quelque chose à lire, après un échange. Jamais au premier mail. | Porte `orso@annona.fr` : créer la boîte d'abord. |
 | Plaquette après SIREN | Une fois le numéro reçu et ajouté à la plaquette. | Modèle : ne pas l'envoyer avant. |
 | Présentation (8 diapositives) | En rendez-vous, partagée à l'écran, si la démo n'est pas possible ou pour cadrer. | Le PDF ne contient pas tes notes : c'est lui qu'on peut envoyer. Le lien en ligne les montre : ne pas le partager. |
 | Démo | En rendez-vous, si la personne veut voir le logiciel. | Voir ci-dessous. |
@@ -39,7 +39,7 @@ Tant que le SIREN n'est pas arrivé : ni prix, ni offre de pilote. Les textes «
 
 **Avant le rendez-vous (2 minutes)**
 
-1. Aller sur `https://tutelliv.fr/demonstration`, cliquer sur « Ouvrir la démonstration », puis sur « Remplir avec le compte démo ».
+1. Aller sur `https://annona.fr/demonstration`, cliquer sur « Ouvrir la démonstration », puis sur « Remplir avec le compte démo ».
 2. Cliquer sur **« Réinitialiser la démo »** dans le bandeau du haut, puis confirmer. Sans ce geste, les données sont souvent périmées (par exemple 14 retards, aucune mission du jour). Testé le 1er novembre : la réinitialisation remet les données à la date du jour.
 3. Choisir « Administrateur » dans le bandeau.
 

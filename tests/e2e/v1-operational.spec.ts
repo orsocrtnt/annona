@@ -239,7 +239,7 @@ test("V1-GO : double clic, course complète et échec motivé concordant", async
   try {
     const login = await page.request.post("/api/auth/login", {
       data: {
-        email: "demo@tutelliv.fr",
+        email: "demo@annona.fr",
         password: "Demo2026!",
         demoTestSession: true,
         accountType: "company",

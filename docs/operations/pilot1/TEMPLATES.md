@@ -11,7 +11,7 @@ Dupliquer ces sections pour chaque entreprise. Ne pas placer de secret, de photo
 - Volume quotidien attendu :
 - Décideur :
 - Référent opérationnel :
-- Référent TutelLiv :
+- Référent Annona :
 - Services inclus :
 - Fonctions exclues :
 - Ancien fonctionnement observé :
@@ -48,7 +48,7 @@ Période observée :
 - preuves consultables :
 - retours aux e-mails/appels :
 - incidents critiques/majeurs/mineurs :
-- minutes d'aide TutelLiv :
+- minutes d'aide Annona :
 - fonction la plus utile selon chaque rôle :
 - blocage ou incompréhension répété :
 - demande nouvelle répétée ou isolée :
@@ -74,7 +74,7 @@ Période observée :
 ### Dirigeant ou responsable d'exploitation
 
 - Quel problème a réellement diminué ?
-- Quelle tâche reste encore hors de TutelLiv ?
+- Quelle tâche reste encore hors de Annona ?
 - Quel risque empêcherait la poursuite ?
 - Quelle formule semble adaptée : Starter, Pro, Business ou aucune ?
 - À quel prix la poursuite serait-elle refusée, et pourquoi ?
@@ -82,7 +82,7 @@ Période observée :
 ### Dispatcher
 
 - Où gagne-t-il ou perd-il du temps ?
-- Combien de fois a-t-il quitté TutelLiv pour coordonner une livraison ?
+- Combien de fois a-t-il quitté Annona pour coordonner une livraison ?
 - Quels statuts, alertes ou informations lui ont manqué ?
 - Quelle étape nécessite encore une formation ?
 

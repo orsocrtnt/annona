@@ -131,7 +131,7 @@ function FirstDeliveryValue({ pilot }: { pilot: PilotDetail }) {
       </span>
       {differs && (
         <span className="block text-xs text-muted-foreground">
-          Première livraison livrée dans TutelLiv : {formatDay(pilot.deducedFirstDelivery)}
+          Première livraison livrée dans Annona : {formatDay(pilot.deducedFirstDelivery)}
         </span>
       )}
     </>
@@ -203,7 +203,7 @@ function ActivityBlock({ pilot }: { pilot: PilotDetail }) {
   if (!pilot.company) {
     return (
       <Block id="pilot-activity" title="Activité">
-        <Empty>Liez une entreprise TutelLiv pour suivre ses livraisons et déduire sa première livraison.</Empty>
+        <Empty>Liez une entreprise Annona pour suivre ses livraisons et déduire sa première livraison.</Empty>
       </Block>
     );
   }
@@ -336,7 +336,7 @@ export function PilotDetailView({ pilot }: { pilot: PilotDetail }) {
               {pilot.company.isDemo && <span className="ml-1.5 text-xs text-muted-foreground">Démo</span>}
             </Link>
           ) : (
-            <span className="inline-flex min-h-11 items-center">Aucune entreprise TutelLiv liée</span>
+            <span className="inline-flex min-h-11 items-center">Aucune entreprise Annona liée</span>
           )}
           <span aria-hidden className="max-sm:hidden">·</span>
           <span className="max-sm:w-full">{elapsedLabel(pilot.daysSinceStart, pilot.startDate)}</span>

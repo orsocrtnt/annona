@@ -6,7 +6,7 @@ import { GrowthShell } from "@/features/landing/growth-shell";
 
 export const metadata: Metadata = {
   title: `Contact — ${APP_NAME}`,
-  description: "Écrire à l'équipe TutelLiv : question, démonstration accompagnée ou pilote.",
+  description: "Écrire à l'équipe Annona : question, démonstration accompagnée ou pilote.",
 };
 
 export default function ContactPage() {

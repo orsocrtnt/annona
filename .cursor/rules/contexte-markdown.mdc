@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Contexte technique uniquement dans le dépôt
 
-Lire le contexte et les statuts dans les fichiers Markdown présents dans `orsocrtnt/tutelliv-v2` sur `preproduction`. Ne jamais utiliser Google Drive, Docs, Sheets, Notion, un PDF ou un Word pour rechercher un contexte, relire une TODO ou publier une copie : le fondateur gère ces ressources séparément dans ChatGPT.
+Lire le contexte et les statuts dans les fichiers Markdown présents dans `orsocrtnt/annona` sur `preproduction`. Ne jamais utiliser Google Drive, Docs, Sheets, Notion, un PDF ou un Word pour rechercher un contexte, relire une TODO ou publier une copie : le fondateur gère ces ressources séparément dans ChatGPT.
 
 ## Sources canoniques
 

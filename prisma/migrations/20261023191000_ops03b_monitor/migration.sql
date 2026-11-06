@@ -110,7 +110,7 @@ BEGIN
         'GET'::extensions.http_method,
         app_url || '/api/health',
         ARRAY[
-          extensions.http_header('user-agent', 'TutelLiv-OPS-Monitor/1.0'),
+          extensions.http_header('user-agent', 'Annona-OPS-Monitor/1.0'),
           extensions.http_header('x-vercel-protection-bypass', COALESCE(bypass_secret, ''))
         ]::extensions.http_header[],
         NULL,
@@ -127,7 +127,7 @@ BEGIN
         'GET'::extensions.http_method,
         app_url || '/api/health?deep=1',
         ARRAY[
-          extensions.http_header('user-agent', 'TutelLiv-OPS-Monitor/1.0'),
+          extensions.http_header('user-agent', 'Annona-OPS-Monitor/1.0'),
           extensions.http_header('authorization', 'Bearer ' || health_secret),
           extensions.http_header('x-vercel-protection-bypass', COALESCE(bypass_secret, ''))
         ]::extensions.http_header[],
@@ -180,7 +180,7 @@ BEGIN
       alert_delivery := 'disabled';
     ELSE
       event_payload := jsonb_build_object(
-        'event', 'tutelliv.ops_monitor',
+        'event', 'annona.ops_monitor',
         'eventId', event_key,
         'environment', 'preproduction',
         'kind', event_kind,
@@ -204,7 +204,7 @@ BEGIN
           webhook_url,
           ARRAY[
             extensions.http_header('content-type', 'application/json'),
-            extensions.http_header('user-agent', 'TutelLiv-OPS-Monitor/1.0'),
+            extensions.http_header('user-agent', 'Annona-OPS-Monitor/1.0'),
             extensions.http_header('idempotency-key', event_key)
           ]::extensions.http_header[],
           'application/json',

@@ -174,7 +174,7 @@ test("AUTH-ROLE middleware : matcher couvrant tous les espaces, runtime Node, au
   for (const space of PROTECTED_PAGE_SPACES) {
     assert.ok(source.includes(`"${space}",`) && source.includes(`"${space}/:path*",`), space);
   }
-  assert.equal(source.includes("x-tutelliv-auth-id"), false);
+  assert.equal(source.includes("x-annona-auth-id"), false);
   assert.equal(source.includes("getServerAuth("), false);
   assert.equal(source.includes("user_metadata"), false);
 });
@@ -209,7 +209,7 @@ function loadMiddleware(session: { id: string } | null, auth: Auth | Error, refr
       },
     },
     "@/lib/constants": { AUTH_ROUTES: ["/login", "/register", "/forgot-password", "/reset-password", "/login/client", "/login/driver"] },
-    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "tutelliv-demo-persona", DEMO_SESSION_COOKIE: "tutelliv-demo-session" },
+    "@/lib/demo/constants": { DEMO_PERSONA_COOKIE: "annona-demo-persona", DEMO_SESSION_COOKIE: "annona-demo-session" },
     "@/lib/security/origin-check": { isCrossOriginMutation: () => false, isOriginCheckExempt: () => false },
     "@/lib/permissions/page-access": pageAccess,
     "@/lib/api/server-auth": {
@@ -261,7 +261,7 @@ test("AUTH-ROLE middleware : mauvais rôle redirigé côté serveur, y compris e
     assert.equal(rsc.location, "http://localhost:3110/driver?acces-refuse=1");
   }
   // En-tête interne usurpé : ignoré, la décision vient de l'authId validé et de la base.
-  const spoofed = await call({ id: "auth-client" }, asRole("CLIENT"), "/dispatch", { "x-tutelliv-auth-id": "auth-admin" });
+  const spoofed = await call({ id: "auth-client" }, asRole("CLIENT"), "/dispatch", { "x-annona-auth-id": "auth-admin" });
   assert.equal(spoofed.status, 307);
   assert.deepEqual(spoofed.resolved, ["auth-client"]);
 
@@ -309,7 +309,7 @@ test("AUTH-ROLE middleware : cookies rafraîchis conservés, no-store, base en p
   await Promise.all(["/dispatch", "/driver", "/users"].map((path) => middleware(new NextRequest(`http://localhost:3110${path}`))));
   assert.deepEqual(resolved, ["auth-client"]);
   // … mais un changement de persona de démo relit la base.
-  await middleware(new NextRequest("http://localhost:3110/portal", { headers: { cookie: "tutelliv-demo-persona=driver" } }));
+  await middleware(new NextRequest("http://localhost:3110/portal", { headers: { cookie: "annona-demo-persona=driver" } }));
   assert.deepEqual(resolved, ["auth-client", "auth-client"]);
 
   const down = loadMiddleware({ id: "auth-x" }, new Error("db down"), true);

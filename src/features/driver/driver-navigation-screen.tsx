@@ -142,7 +142,7 @@ export function DriverNavigationScreen({ missionId }: DriverNavigationScreenProp
           ) : (
             <>
               <p className="rounded-xl border border-black/10 dark:border-border bg-white/95 dark:bg-card/95 px-3 py-2 text-center text-[11px] text-muted-foreground shadow">
-                Gardez TutelLiv ouvert · durée indicative hors trafic
+                Gardez Annona ouvert · durée indicative hors trafic
               </p>
               <div className="rounded-2xl border border-black/10 dark:border-border bg-white/95 dark:bg-card/95 p-3 shadow-lg">
                 {/* L'étape (collecte, livraison) en repère, l'adresse en tête : c'est elle qu'on cherche. */}

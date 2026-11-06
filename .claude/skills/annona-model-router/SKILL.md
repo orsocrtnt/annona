@@ -1,9 +1,9 @@
 ---
-name: tutelliv-model-router
-description: Choisit, pour chaque sous-tâche TutelLiv, entre la traiter soi-même ou la déléguer à un agent sur un modèle moins coûteux (explorateur sur Haiku, verificateur sur Sonnet). À utiliser avant toute tâche de plusieurs étapes sur TutelLiv — audit, réparation, implémentation, recette — pour réduire la consommation sans perdre en qualité.
+name: annona-model-router
+description: Choisit, pour chaque sous-tâche Annona, entre la traiter soi-même ou la déléguer à un agent sur un modèle moins coûteux (explorateur sur Haiku, verificateur sur Sonnet). À utiliser avant toute tâche de plusieurs étapes sur Annona — audit, réparation, implémentation, recette — pour réduire la consommation sans perdre en qualité.
 ---
 
-# Routeur de modèles TutelLiv
+# Routeur de modèles Annona
 
 Le modèle de la conversation est fixe : il réfléchit, décide et écrit le code sensible. Seules les sous-tâches délimitées peuvent partir vers un modèle moins coûteux, par délégation à un agent du projet.
 
@@ -31,7 +31,7 @@ Avant chaque sous-tâche, poser trois questions :
 
 Chaque délégation précise : l'objectif en une phrase, les fichiers ou routes visés, la commande exacte à lancer (pour `verificateur`), ce qui est déjà établi, et le format de réponse attendu (court, chiffré, avec chemins `fichier:ligne`). Rappeler la règle graphify du `CLAUDE.md` du projet si l'agent explore du code.
 
-## Contraintes TutelLiv toujours valables
+## Contraintes Annona toujours valables
 
 - Un seul agent d'exécution actif à la fois ; pas de travail parallèle qui modifie des fichiers.
 - Aucune migration, seed, push, déploiement ou écriture en préproduction sans accord explicite du propriétaire.

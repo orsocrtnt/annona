@@ -380,7 +380,7 @@ async function main() {
   const companyId = `ops03a_company_${suffix}`;
   const deliveryId = `ops03a_delivery_${suffix}`;
   const objectPath = `${companyId}/${deliveryId}-1761062400000-00000000-0000-4000-8000-${suffix}.png`;
-  const archiveDirectory = await mkdtemp(join(tmpdir(), "tutelliv-ops03a-"));
+  const archiveDirectory = await mkdtemp(join(tmpdir(), "annona-ops03a-"));
   const adminDb = new PrismaClient({ datasources: { db: { url: directUrl } } });
   let source: PrismaClient | null = null;
   let restored: PrismaClient | null = null;
@@ -421,7 +421,7 @@ async function main() {
     const proofPath = join(archiveDirectory, "proof.png");
     const manifestPath = join(archiveDirectory, "manifest.json");
     const manifest = {
-      schema: "tutelliv-ops03a-restore-archive",
+      schema: "annona-ops03a-restore-archive",
       version: 1,
       createdAt: new Date().toISOString(),
       database: { file: "database.json", bytes: databaseBytes.length, sha256: hash(databaseBytes), tables: TABLES_IN_RESTORE_ORDER.length },

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-/** Manifeste écrit par `npm run e2e:test-data -- seed` (sur tutelliv-dev uniquement). Absent : les specs concernées sautent. */
+/** Manifeste écrit par `npm run e2e:test-data -- seed` (sur annona-dev uniquement). Absent : les specs concernées sautent. */
 export type E2eTestData = {
   companies: { a: string; b: string; template: string };
   invoices: {

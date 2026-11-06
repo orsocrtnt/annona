@@ -4,8 +4,8 @@ import { resolve } from "node:path";
 import { PERF02_PG_DATABASE, PERF02_PG_PORT } from "./local-database";
 
 // PostgreSQL Homebrew jetable partagé par les mesures PERF-02 : créé vide, supprimé après usage.
-const dataDir = "/tmp/tutelliv-perf02-pg";
-const logFile = "/tmp/tutelliv-perf02-pg.log";
+const dataDir = "/tmp/annona-perf02-pg";
+const logFile = "/tmp/annona-perf02-pg.log";
 
 export function pgBin(name: string) {
   const brew = spawnSync("brew", ["--prefix", "postgresql@15"], { encoding: "utf8" });

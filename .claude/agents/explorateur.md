@@ -1,12 +1,12 @@
 ---
 name: explorateur
-description: Recherche en lecture seule dans le dépôt TutelLiv sur Haiku — localiser du code, cartographier un module, résumer des logs ou des fichiers volumineux. Rend une conclusion courte avec des chemins fichier:ligne, jamais de modification.
+description: Recherche en lecture seule dans le dépôt Annona sur Haiku — localiser du code, cartographier un module, résumer des logs ou des fichiers volumineux. Rend une conclusion courte avec des chemins fichier:ligne, jamais de modification.
 tools: Read, Glob, Grep, Bash
 model: haiku
 effort: low
 maxTurns: 20
 ---
-# Explorateur TutelLiv
+# Explorateur Annona
 
 Tu cherches et tu résumes ; tu ne modifies rien.
 

@@ -11,7 +11,7 @@ import type { UserWithRole } from "@/types";
 import { resolveAuthUserWithDemoPersona } from "@/domains/demo/demo-auth.service";
 import { isAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
 import { isDemoLoginEmail } from "@/lib/demo/constants";
-import { TUTELLIV_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
+import { ANNONA_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
 
 export interface ServerAuthContext {
   authId: string;
@@ -68,7 +68,7 @@ export async function resolveServerAuthForAuthId(authId: string): Promise<Server
  */
 const loadAuthContext = cache(async (): Promise<ServerAuthContext | null> => {
   const headerList = await headers();
-  const authIdFromMiddleware = headerList.get(TUTELLIV_AUTH_ID_HEADER);
+  const authIdFromMiddleware = headerList.get(ANNONA_AUTH_ID_HEADER);
 
   if (authIdFromMiddleware) {
     return resolveUserFromAuthId(authIdFromMiddleware);

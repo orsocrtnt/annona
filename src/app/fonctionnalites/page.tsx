@@ -19,7 +19,7 @@ import { GrowthShell } from "@/features/landing/growth-shell";
 
 export const metadata: Metadata = {
   title: `Fonctionnalités — ${APP_NAME}`,
-  description: "Ce que le client, l'équipe de dispatch et le livreur peuvent faire aujourd'hui avec TutelLiv.",
+  description: "Ce que le client, l'équipe de dispatch et le livreur peuvent faire aujourd'hui avec Annona.",
 };
 
 const sectionVisuals = {

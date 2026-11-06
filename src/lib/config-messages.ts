@@ -4,7 +4,7 @@
  * ne peut pas régler le serveur, il sait seulement à qui s'adresser. Le détail technique reste dans les journaux.
  */
 
-export const PLATFORM_ADMIN_HINT = "Contactez l'administrateur de la plateforme TutelLiv.";
+export const PLATFORM_ADMIN_HINT = "Contactez l'administrateur de la plateforme Annona.";
 
 export const CONFIG_MESSAGES = {
   /** Paiement (Stripe) non configuré sur le serveur. */

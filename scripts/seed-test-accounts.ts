@@ -8,22 +8,22 @@ const prisma = new PrismaClient();
 const TEST_PASSWORD = "Test1234!";
 
 const DRIVERS = [
-  { firstName: "Jean", lastName: "Test", email: "livreur-test-1@tutelliv.fr" },
-  { firstName: "Pierre", lastName: "Test", email: "livreur-test-2@tutelliv.fr" },
-  { firstName: "Marc", lastName: "Test", email: "livreur-test-3@tutelliv.fr" },
+  { firstName: "Jean", lastName: "Test", email: "livreur-test-1@annona.fr" },
+  { firstName: "Pierre", lastName: "Test", email: "livreur-test-2@annona.fr" },
+  { firstName: "Marc", lastName: "Test", email: "livreur-test-3@annona.fr" },
 ] as const;
 
 const CLIENTS = [
-  { firstName: "Marie", lastName: "Test", email: "client-test-1@tutelliv.fr" },
-  { firstName: "Sophie", lastName: "Test", email: "client-test-2@tutelliv.fr" },
-  { firstName: "Lucas", lastName: "Test", email: "client-test-3@tutelliv.fr" },
-  { firstName: "Emma", lastName: "Test", email: "client-test-4@tutelliv.fr" },
-  { firstName: "Thomas", lastName: "Test", email: "client-test-5@tutelliv.fr" },
-  { firstName: "Julie", lastName: "Test", email: "client-test-6@tutelliv.fr" },
-  { firstName: "Antoine", lastName: "Test", email: "client-test-7@tutelliv.fr" },
-  { firstName: "Camille", lastName: "Test", email: "client-test-8@tutelliv.fr" },
-  { firstName: "Nicolas", lastName: "Test", email: "client-test-9@tutelliv.fr" },
-  { firstName: "Laura", lastName: "Test", email: "client-test-10@tutelliv.fr" },
+  { firstName: "Marie", lastName: "Test", email: "client-test-1@annona.fr" },
+  { firstName: "Sophie", lastName: "Test", email: "client-test-2@annona.fr" },
+  { firstName: "Lucas", lastName: "Test", email: "client-test-3@annona.fr" },
+  { firstName: "Emma", lastName: "Test", email: "client-test-4@annona.fr" },
+  { firstName: "Thomas", lastName: "Test", email: "client-test-5@annona.fr" },
+  { firstName: "Julie", lastName: "Test", email: "client-test-6@annona.fr" },
+  { firstName: "Antoine", lastName: "Test", email: "client-test-7@annona.fr" },
+  { firstName: "Camille", lastName: "Test", email: "client-test-8@annona.fr" },
+  { firstName: "Nicolas", lastName: "Test", email: "client-test-9@annona.fr" },
+  { firstName: "Laura", lastName: "Test", email: "client-test-10@annona.fr" },
 ] as const;
 
 function createSupabaseAdmin() {

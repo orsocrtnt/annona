@@ -233,7 +233,7 @@ const confirmationDate = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day
 
 /**
  * MAIL-PONT, étape 5 : une seule confirmation par e-mail reçu, après la validation humaine, à l'expéditeur
- * d'origine. Envoyée par TutelLiv au nom de l'entreprise ; « répondre à » vers sa boîte de commandes.
+ * d'origine. Envoyée par Annona au nom de l'entreprise ; « répondre à » vers sa boîte de commandes.
  */
 export async function deliverInboundOrderConfirmation(
   payload: unknown,
@@ -261,7 +261,7 @@ export async function deliverInboundOrderConfirmation(
   const delivery = await sendTransactionalEmail({
     to: recipient,
     replyTo,
-    // Décision C14 (3 novembre 2026) : « Entreprise via TutelLiv », sans réglage chez le client.
+    // Décision C14 (3 novembre 2026) : « Entreprise via Annona », sans réglage chez le client.
     senderName: company,
     subject: links.length > 1
       ? `${company} confirme vos ${links.length} commandes`

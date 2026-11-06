@@ -63,7 +63,7 @@ export interface SandboxBillingProvider {
   usage(accountId: string, subscriptionId: string, amountHtCents: number, vatRateBps: number, period: { start: string; end: string }, key: string): Promise<{ invoiceId: string }>;
   paymentPortal(subscriptionId: string, accountId: string, key: string): Promise<{ url: string }>;
 }
-/** Portail client limité au moyen de paiement et aux factures : formule et résiliation restent journalisées par TutelLiv. */
+/** Portail client limité au moyen de paiement et aux factures : formule et résiliation restent journalisées par Annona. */
 export const PAYMENT_PORTAL_CONFIGURATION = "payment-method-v1";
 /** Version pinned: snapshot webhooks are only wakeups; all monetary state is retrieved server-side. */
 export class StripeSandboxProvider implements SandboxBillingProvider {
@@ -94,12 +94,12 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
   }
   private async tax(rate: number) {
     if (!rate) return [];
-    const tax = await this.request("POST", "tax_rates", { display_name: "TVA simulée", inclusive: false, percentage: rate / 100, country: "FR", description: "Sandbox TutelLiv — taux simulé, non validation fiscale" }, `tutelliv:tax:${rate}:v1`);
+    const tax = await this.request("POST", "tax_rates", { display_name: "TVA simulée", inclusive: false, percentage: rate / 100, country: "FR", description: "Sandbox Annona — taux simulé, non validation fiscale" }, `annona:tax:${rate}:v1`);
     return [str(tax.id)];
   }
   private async price(contract: BillingContract) {
-    const product = await this.request("POST", "products", { name: `TutelLiv ${contract.quote.planName} — sandbox`, metadata: { contract_hash: contract.hash, catalog: contract.quote.catalogCode } }, `tutelliv:product:${contract.hash}`);
-    const price = await this.request("POST", "prices", { product: product.id, currency: "eur", unit_amount: contract.quote.totalHtCents, tax_behavior: "exclusive", recurring: { interval: contract.quote.billingInterval === "ANNUAL" ? "year" : "month" }, metadata: { contract_hash: contract.hash } }, `tutelliv:price:${contract.hash}`);
+    const product = await this.request("POST", "products", { name: `Annona ${contract.quote.planName} — sandbox`, metadata: { contract_hash: contract.hash, catalog: contract.quote.catalogCode } }, `annona:product:${contract.hash}`);
+    const price = await this.request("POST", "prices", { product: product.id, currency: "eur", unit_amount: contract.quote.totalHtCents, tax_behavior: "exclusive", recurring: { interval: contract.quote.billingInterval === "ANNUAL" ? "year" : "month" }, metadata: { contract_hash: contract.hash } }, `annona:price:${contract.hash}`);
     return str(price.id);
   }
   private origin() {
@@ -109,14 +109,14 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
   }
   async checkout(accountId: string, email: string, contract: BillingContract, key: string) {
     const origin = this.origin();
-    const customer = await this.request("POST", "customers", { email, metadata: { tutelliv_account: accountId } }, `${key}:customer`);
+    const customer = await this.request("POST", "customers", { email, metadata: { annona_account: accountId } }, `${key}:customer`);
     const price = await this.price(contract);
     const taxRates = await this.tax(contract.quote.vatRateBps);
     const checkout = await this.request("POST", "checkout/sessions", {
       mode: "subscription", customer: customer.id, client_reference_id: accountId,
       payment_method_types: ["card"], line_items: [{ price, quantity: 1, tax_rates: taxRates }],
-      subscription_data: { metadata: { tutelliv_account: accountId }, default_tax_rates: taxRates },
-      metadata: { tutelliv_account: accountId },
+      subscription_data: { metadata: { annona_account: accountId }, default_tax_rates: taxRates },
+      metadata: { annona_account: accountId },
       success_url: new URL("/register?payment=return", origin).href,
       cancel_url: new URL("/register?payment=cancelled", origin).href,
     }, key);
@@ -132,13 +132,13 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
   }
   async snapshot(subscriptionId: string, accountId: string): Promise<ProviderSnapshot> {
     const subscription = await this.request("GET", `subscriptions/${encodeURIComponent(subscriptionId)}`);
-    if (object(subscription.metadata).tutelliv_account !== accountId) throw new Error("BILLING_TENANT_MISMATCH");
+    if (object(subscription.metadata).annona_account !== accountId) throw new Error("BILLING_TENANT_MISMATCH");
     const customerId = id(subscription.customer);
     const rawInvoices = await this.list("invoices", { customer: customerId });
     const invoices: BillingInvoice[] = [];
     for (const invoice of rawInvoices) {
       const metadata = object(invoice.metadata ?? {});
-      if (invoice.subscription !== subscriptionId && metadata.tutelliv_account !== accountId) continue;
+      if (invoice.subscription !== subscriptionId && metadata.annona_account !== accountId) continue;
       if (invoice.livemode !== false || invoice.currency !== "eur") throw new Error("BILLING_SANDBOX_REQUIRED");
       let refundedCents = 0;
       if (invoice.charge) {
@@ -209,13 +209,13 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
   async refund(invoiceId: string, amountCents: number, key: string) {
     const invoice = await this.request("GET", `invoices/${encodeURIComponent(invoiceId)}`);
     if (invoice.status !== "paid" || !invoice.payment_intent) throw new Error("BILLING_REFUND_INVALID");
-    const refund = await this.request("POST", "refunds", { payment_intent: id(invoice.payment_intent), amount: cents(amountCents), metadata: { tutelliv_decision: key } }, key);
+    const refund = await this.request("POST", "refunds", { payment_intent: id(invoice.payment_intent), amount: cents(amountCents), metadata: { annona_decision: key } }, key);
     return { refundId: str(refund.id) };
   }
   async usage(accountId: string, subscriptionId: string, amountHtCents: number, vatRateBps: number, period: { start: string; end: string }, key: string) {
     const subscription = await this.request("GET", `subscriptions/${encodeURIComponent(subscriptionId)}`);
-    if (object(subscription.metadata).tutelliv_account !== accountId) throw new Error("BILLING_TENANT_MISMATCH");
-    const invoice = await this.request("POST", "invoices", { customer: id(subscription.customer), auto_advance: false, collection_method: "charge_automatically", pending_invoice_items_behavior: "exclude", default_tax_rates: await this.tax(vatRateBps), metadata: { tutelliv_account: accountId, usage_start: period.start, usage_end: period.end } }, `${key}:invoice`);
+    if (object(subscription.metadata).annona_account !== accountId) throw new Error("BILLING_TENANT_MISMATCH");
+    const invoice = await this.request("POST", "invoices", { customer: id(subscription.customer), auto_advance: false, collection_method: "charge_automatically", pending_invoice_items_behavior: "exclude", default_tax_rates: await this.tax(vatRateBps), metadata: { annona_account: accountId, usage_start: period.start, usage_end: period.end } }, `${key}:invoice`);
     await this.request("POST", "invoiceitems", { customer: id(subscription.customer), invoice: invoice.id, amount: cents(amountHtCents), currency: "eur", description: `Dépassements mensuels ${period.start} — ${period.end}`, period: { start: Date.parse(period.start) / 1000, end: Date.parse(period.end) / 1000 } }, `${key}:item`);
     await this.request("POST", `invoices/${encodeURIComponent(str(invoice.id))}/finalize`, { auto_advance: true }, `${key}:finalize`);
     return { invoiceId: str(invoice.id) };
@@ -223,10 +223,10 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
   // Une clé d'idempotence expire après 24 h : la configuration est retrouvée par sa métadonnée, jamais dupliquée.
   private async portalConfiguration() {
     const existing = (await this.list("billing_portal/configurations", { active: true }))
-      .find((configuration) => object(configuration.metadata ?? {}).tutelliv_portal === PAYMENT_PORTAL_CONFIGURATION);
+      .find((configuration) => object(configuration.metadata ?? {}).annona_portal === PAYMENT_PORTAL_CONFIGURATION);
     if (existing) return str(existing.id);
     const created = await this.request("POST", "billing_portal/configurations", {
-      business_profile: { headline: "TutelLiv — moyen de paiement et factures (sandbox)" },
+      business_profile: { headline: "Annona — moyen de paiement et factures (sandbox)" },
       features: {
         payment_method_update: { enabled: true },
         invoice_history: { enabled: true },
@@ -234,13 +234,13 @@ export class StripeSandboxProvider implements SandboxBillingProvider {
         subscription_cancel: { enabled: false },
         subscription_update: { enabled: false },
       },
-      metadata: { tutelliv_portal: PAYMENT_PORTAL_CONFIGURATION },
-    }, `tutelliv:portal-configuration:${PAYMENT_PORTAL_CONFIGURATION}`);
+      metadata: { annona_portal: PAYMENT_PORTAL_CONFIGURATION },
+    }, `annona:portal-configuration:${PAYMENT_PORTAL_CONFIGURATION}`);
     return str(created.id);
   }
   async paymentPortal(subscriptionId: string, accountId: string, key: string) {
     const subscription = await this.request("GET", `subscriptions/${encodeURIComponent(subscriptionId)}`);
-    if (object(subscription.metadata).tutelliv_account !== accountId) throw new Error("BILLING_TENANT_MISMATCH");
+    if (object(subscription.metadata).annona_account !== accountId) throw new Error("BILLING_TENANT_MISMATCH");
     const session = await this.request("POST", "billing_portal/sessions", {
       customer: id(subscription.customer),
       configuration: await this.portalConfiguration(),

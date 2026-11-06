@@ -64,7 +64,7 @@ test("MOB-01A : refus HTTP, réponse invalide et perte réseau restent des erreu
       { latitude: 48.8, longitude: 2.3 },
       (async () => { throw new TypeError("network down"); }) as typeof fetch
     ),
-    /Impossible de joindre TutelLiv/
+    /Impossible de joindre Annona/
   );
 });
 

@@ -588,7 +588,7 @@ test("liste d'attente : entrée du groupe Commercial, super-administrateur seule
   assert.match(list, /markWaitlistVisited\(\)/);
   assert.equal(list.includes("dangerouslySetInnerHTML"), false);
   const visits = readFileSync("src/features/admin/contact-last-visit.ts", "utf8");
-  assert.match(visits, /WAITLIST_LAST_VISIT_KEY = "tutelliv:admin:waitlist-last-visit"/);
+  assert.match(visits, /WAITLIST_LAST_VISIT_KEY = "annona:admin:waitlist-last-visit"/);
 });
 
 test("page Tarifs : visite et clic envoyés sans cookie ni stockage, campagne transmise avec l'inscription", () => {

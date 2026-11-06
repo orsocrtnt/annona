@@ -1,15 +1,15 @@
 ---
-description: Route les tâches TutelLiv vers le modèle le moins coûteux adapté et impose une exécution complète, séquentielle et vérifiée
+description: Route les tâches Annona vers le modèle le moins coûteux adapté et impose une exécution complète, séquentielle et vérifiée
 alwaysApply: true
 ---
 
-# Routeur autonome TutelLiv
+# Routeur autonome Annona
 
 - Appliquer cette règle seulement lorsqu'un travail de développement ou une tâche TODO a été autorisé.
 - Lire `AGENTS.md`, `TODO.md`, `docs/CONVENTIONS.md` et l'état Git avant toute délégation.
 - Sélectionner une seule tâche ouverte, autorisée et non bloquée selon les priorités et dépendances de la TODO.
 - Lire son champ `Modèle conseillé`. Utiliser ce modèle ; si indisponible, appliquer uniquement le repli défini dans la légende de la TODO.
-- Réutiliser l'agent courant si son modèle convient. Sinon, déléguer à `tutelliv-task-runner` en précisant modèle, identifiant, critères de sortie, preuves connues et limites.
+- Réutiliser l'agent courant si son modèle convient. Sinon, déléguer à `annona-task-runner` en précisant modèle, identifiant, critères de sortie, preuves connues et limites.
 - Un seul agent travaille à la fois. Ne pas lancer de travail parallèle, de revue indépendante, Max ou Ultra par défaut.
 - Le même exécutant réalise inspection → implémentation → tests → corrections → nouveaux tests → documentation. Le coordinateur vérifie les preuves avant de cocher la tâche et ne met à jour que `TODO.md` et la documentation du dépôt, jamais une copie Drive/Notion.
 - Escalader d'un niveau si un schéma, la sécurité, des données, une concurrence complexe, des domaines fortement couplés ou une décision produit ambiguë apparaissent. Consigner la raison de l'escalade.

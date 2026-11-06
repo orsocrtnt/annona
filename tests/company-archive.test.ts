@@ -30,7 +30,7 @@ function replay(s: CompanyArchiveSnapshot) {
 
 function snapshot(): CompanyArchiveSnapshot {
   return {
-    schema: "tutelliv-company-export", version: 1,
+    schema: "annona-company-export", version: 1,
     data: { company: { id: "companyA" }, orders: [{ id: "orderA", companyId: "companyA", deliveries: [
       { id: "deliveryA", companyId: "companyA", orderId: "orderA", podPhotoPath: "companyA/deliveryA-123.png" },
     ] }] }, externalAssets: { proofObjects: [{ deliveryId: "deliveryA", objectKey: "companyA/deliveryA-123.png" }] },
@@ -71,7 +71,7 @@ test("company archive preserves bytes and SHA256, private permissions and relati
     const companyJson = JSON.parse(await readFile(join(result.path, "company.json"), "utf8"));
     assert.deepEqual(companyJson.data, { ...c.data.data, users: [] });
     assert.deepEqual(companyJson.externalAssets, c.data.externalAssets);
-    assert.deepEqual([companyJson.schema, companyJson.version, companyJson.exportedAt], ["tutelliv-company-export", 1, exportedAt]);
+    assert.deepEqual([companyJson.schema, companyJson.version, companyJson.exportedAt], ["annona-company-export", 1, exportedAt]);
     const verify = () => spawnSync(process.execPath, ["scripts/data02/verify-archive.mjs", result.path, result.manifestSha256], { encoding: "utf8" });
     assert.equal(verify().status, 0);
     await writeFile(join(result.path, "proofs/000001.png"), "tampered");

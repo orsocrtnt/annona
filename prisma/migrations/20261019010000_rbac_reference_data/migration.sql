@@ -1,4 +1,4 @@
--- TutelLiv system roles and permissions are application reference data.
+-- Annona system roles and permissions are application reference data.
 -- This migration is additive and preserves existing row identifiers.
 
 INSERT INTO "permissions" ("id", "slug", "name", "resource", "action", "created_at")

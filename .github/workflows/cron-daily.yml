@@ -1,6 +1,6 @@
 name: Tâches quotidiennes (préproduction)
 
-# tutelliv.fr tourne en préversion Vercel : les crons de vercel.json ne s'y exécutent
+# annona.fr tourne en préversion Vercel : les crons de vercel.json ne s'y exécutent
 # pas (ils ne visent que la production Vercel). Ce workflow les porte, avec le même
 # secret que cron-operations.yml, à 6 h UTC comme dans vercel.json.
 on:

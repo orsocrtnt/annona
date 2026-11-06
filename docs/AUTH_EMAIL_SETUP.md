@@ -1,34 +1,34 @@
-# TutelLiv — configuration des liens d’authentification
+# Annona — configuration des liens d’authentification
 
 Préparation initiale du 28 septembre 2026. Configuration de préproduction vérifiée le 23 octobre 2026.
 
-État de la préproduction : la Site URL Supabase pointe vers l'alias stable Vercel de la branche `preproduction` et son chemin `/reset-password` est dans la liste des redirections autorisées. Le modèle e-mail Supabase par défaut est utilisé tant qu'aucun SMTP personnalisé n'est configuré. TutelLiv accepte ce modèle ainsi que les futurs modèles personnalisés fondés sur `TokenHash`.
+État de la préproduction : la Site URL Supabase pointe vers l'alias stable Vercel de la branche `preproduction` et son chemin `/reset-password` est dans la liste des redirections autorisées. Le modèle e-mail Supabase par défaut est utilisé tant qu'aucun SMTP personnalisé n'est configuré. Annona accepte ce modèle ainsi que les futurs modèles personnalisés fondés sur `TokenHash`.
 
 Décision du 18 octobre 2026 : Resend est retenu ; la boîte de réception de test est configurée uniquement dans `.env.local`, ignoré par Git.
 
-Mise à jour du 29 octobre 2026 : le propriétaire indique que le domaine `tutelliv.fr` est vérifié chez Resend et que `RESEND_API_KEY` est posée en local et dans Vercel. La clé locale est restreinte à l'envoi (lecture des domaines refusée en `401 restricted_api_key`, ce qui est voulu). L'expéditeur retenu est `TutelLiv <no-reply@tutelliv.fr>` (`MAIL_FROM`). Sur `tutelliv-preproduction`, le SMTP Resend est actif (journaux Auth, expéditeur `no-reply@tutelliv.fr`) et les trois modèles TutelLiv ont été collés le 29 octobre : les liens utilisent désormais `token_hash`. « Mot de passe oublié » vérifié en réel le même jour (e-mail TutelLiv reçu) ; invitation et confirmation pas encore reçues en réel. `tutelliv-dev` non vérifié.
+Mise à jour du 29 octobre 2026 : le propriétaire indique que le domaine `annona.fr` est vérifié chez Resend et que `RESEND_API_KEY` est posée en local et dans Vercel. La clé locale est restreinte à l'envoi (lecture des domaines refusée en `401 restricted_api_key`, ce qui est voulu). L'expéditeur retenu est `Annona <no-reply@annona.fr>` (`MAIL_FROM`). Sur `annona-preproduction`, le SMTP Resend est actif (journaux Auth, expéditeur `no-reply@annona.fr`) et les trois modèles Annona ont été collés le 29 octobre : les liens utilisent désormais `token_hash`. « Mot de passe oublié » vérifié en réel le même jour (e-mail Annona reçu) ; invitation et confirmation pas encore reçues en réel. `annona-dev` non vérifié.
 
 ## SMTP Resend pour Supabase Auth (obligatoire)
 
 Oui, Supabase Auth demande une configuration SMTP spécifique : `RESEND_API_KEY` dans l'application ne change rien aux e-mails d'inscription, d'invitation et de récupération, envoyés par Supabase lui-même. Sans SMTP personnalisé, Supabase n'envoie qu'aux membres de l'organisation Supabase, avec une limite de quelques e-mails par heure : inutilisable pour des pilotes.
 
-Dans le tableau de bord Supabase du projet visé (d'abord `tutelliv-dev`, jamais la production sans décision séparée), **Authentication → Emails → SMTP Settings** :
+Dans le tableau de bord Supabase du projet visé (d'abord `annona-dev`, jamais la production sans décision séparée), **Authentication → Emails → SMTP Settings** :
 
 | Champ | Valeur |
 | --- | --- |
 | Enable custom SMTP | activé |
-| Sender email | `no-reply@tutelliv.fr` |
-| Sender name | `TutelLiv` |
+| Sender email | `no-reply@annona.fr` |
+| Sender name | `Annona` |
 | Host | `smtp.resend.com` |
 | Port | `465` |
 | Username | `resend` |
-| Password | une clé Resend dédiée à Supabase, restreinte à l'envoi et au domaine `tutelliv.fr` (révocable sans couper l'application) |
+| Password | une clé Resend dédiée à Supabase, restreinte à l'envoi et au domaine `annona.fr` (révocable sans couper l'application) |
 
 Alternative équivalente : l'intégration Supabase du tableau de bord Resend, qui remplit les mêmes champs. Ensuite, dans Resend, désactiver le suivi des clics et des ouvertures du domaine (réécriture des liens à jeton). Dans **Authentication → Rate Limits**, relever « emails sent per hour » (30 par défaut avec SMTP personnalisé) selon le volume pilote.
 
-Les trois modèles à la DA TutelLiv sont générés par `npx tsx scripts/email/render-supabase-templates.ts` dans `docs/operations/email/supabase/` (`signup.html`, `invite.html`, `recovery.html`) ; coller chaque fichier dans **Authentication → Emails → Templates** (« Confirm signup », « Invite user », « Reset password ») avec le sujet affiché par le script. Ne jamais modifier ces fichiers à la main : changer `src/lib/email/email-template.ts` puis régénérer. Les versions générées le 30 octobre 2026 portent la direction « Menthe soignée » avec le logo officiel, les boutons encre et les mentions de sécurité conservées. Elles ne remplacent les versions hébergées qu’après installation dans Supabase ; aucune activation ou installation distante n’est effectuée par le générateur.
+Les trois modèles à la DA Annona sont générés par `npx tsx scripts/email/render-supabase-templates.ts` dans `docs/operations/email/supabase/` (`signup.html`, `invite.html`, `recovery.html`) ; coller chaque fichier dans **Authentication → Emails → Templates** (« Confirm signup », « Invite user », « Reset password ») avec le sujet affiché par le script. Ne jamais modifier ces fichiers à la main : changer `src/lib/email/email-template.ts` puis régénérer. Les versions générées le 30 octobre 2026 portent la direction « Menthe soignée » avec le logo officiel, les boutons encre et les mentions de sécurité conservées. Elles ne remplacent les versions hébergées qu’après installation dans Supabase ; aucune activation ou installation distante n’est effectuée par le générateur.
 
-Mise à jour du 4 novembre 2026 (MAIL-REPONSE) : Supabase ne permet pas de « répondre à » ; le pied des trois modèles affiche donc « Une question ? Écrivez à orso@tutelliv.fr » (constante `TUTELLIV_REPLY_TO`). Recoller les trois modèles régénérés dans chaque projet Supabase. L'e-mail de bienvenue, envoyé par l'application, porte un vrai « répondre à » vers la même adresse.
+Mise à jour du 4 novembre 2026 (MAIL-REPONSE) : Supabase ne permet pas de « répondre à » ; le pied des trois modèles affiche donc « Une question ? Écrivez à orso@annona.fr » (constante `ANNONA_REPLY_TO`). Recoller les trois modèles régénérés dans chaque projet Supabase. L'e-mail de bienvenue, envoyé par l'application, porte un vrai « répondre à » vers la même adresse.
 
 ## Avant activation
 
@@ -51,10 +51,10 @@ Ces modèles demandent un SMTP personnalisé. Ils ne sont pas requis pour tester
 
 ## Modèle « Invite user »
 
-Sujet : Votre invitation TutelLiv
+Sujet : Votre invitation Annona
 
 ```html
-<h2>Vous êtes invité sur TutelLiv</h2>
+<h2>Vous êtes invité sur Annona</h2>
 <p>Choisissez votre mot de passe pour accéder à votre espace.</p>
 <p><a href="{{ .SiteURL }}/reset-password#token_hash={{ .TokenHash }}&amp;type=invite">Choisir mon mot de passe</a></p>
 <p>Ce lien est personnel, temporaire et à usage unique. Si vous n’attendiez pas cette invitation, ignorez cet e-mail.</p>
@@ -62,7 +62,7 @@ Sujet : Votre invitation TutelLiv
 
 ## Modèle « Reset password »
 
-Sujet : Réinitialiser votre mot de passe TutelLiv
+Sujet : Réinitialiser votre mot de passe Annona
 
 ```html
 <h2>Réinitialiser votre mot de passe</h2>
@@ -72,7 +72,7 @@ Sujet : Réinitialiser votre mot de passe TutelLiv
 
 ## Modèle « Confirm signup »
 
-Sujet : Confirmer votre adresse e-mail TutelLiv
+Sujet : Confirmer votre adresse e-mail Annona
 
 ```html
 <h2>Confirmer votre adresse e-mail</h2>

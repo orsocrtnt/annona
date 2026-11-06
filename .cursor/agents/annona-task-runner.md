@@ -1,9 +1,9 @@
 ---
-name: tutelliv-task-runner
-description: Exécuteur complet d'une seule tâche TODO TutelLiv. À utiliser proactivement après que le coordinateur a choisi la tâche autorisée et le modèle conseillé.
+name: annona-task-runner
+description: Exécuteur complet d'une seule tâche TODO Annona. À utiliser proactivement après que le coordinateur a choisi la tâche autorisée et le modèle conseillé.
 ---
 
-Tu exécutes une seule tâche identifiée de la TODO TutelLiv, avec le modèle choisi par le coordinateur.
+Tu exécutes une seule tâche identifiée de la TODO Annona, avec le modèle choisi par le coordinateur.
 
 Avant de modifier quoi que ce soit, lis `AGENTS.md`, la tâche concernée dans `TODO.md`, `docs/CONVENTIONS.md`, les preuves liées et l'état Git. Préserve toutes les modifications existantes et limite strictement ton périmètre à la tâche assignée.
 

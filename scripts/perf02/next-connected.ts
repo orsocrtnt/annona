@@ -6,7 +6,7 @@ import { PERF02_PG_CONCURRENCY } from "./local-database";
 import { measureHttpLevel } from "./next-measure";
 import { assertLocalPerf02Target } from "./run-local";
 
-// PERF-02 — routes connectées sur un build de production local servi contre `tutelliv-dev` (ENV-2).
+// PERF-02 — routes connectées sur un build de production local servi contre `annona-dev` (ENV-2).
 // Lecture seule : connexion démo et comptes de recette, aucune création. Plafond conservateur pour
 // rester dans l'offre gratuite : 24 requêtes par niveau, concurrence 1 à 16.
 export const PERF02_CONNECTED_PORT = "55452";
@@ -25,7 +25,7 @@ export const PERF02_CONNECTED_ROUTES = [
   { name: "Page dispatch", path: "/dispatch" },
 ] as const;
 
-export const PERF02_DEMO_LOGIN = { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" };
+export const PERF02_DEMO_LOGIN = { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" };
 
 const output = resolve(process.argv[2] ?? "outputs/perf02/next-connected.json");
 
@@ -113,7 +113,7 @@ async function main() {
     const report = {
       measuredAt: new Date().toISOString(),
       node: process.version,
-      server: "next start (build de production), 127.0.0.1, base tutelliv-dev (Supabase, Paris) depuis le poste local",
+      server: "next start (build de production), 127.0.0.1, base annona-dev (Supabase, Paris) depuis le poste local",
       databaseConnectionLimit: process.env.DATABASE_CONNECTION_LIMIT ?? "défaut",
       ...result,
     };

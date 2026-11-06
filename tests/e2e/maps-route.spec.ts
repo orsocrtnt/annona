@@ -11,7 +11,7 @@ test("ITINÉRAIRE : refusé sans connexion, calculé par le serveur pour le livr
   expect((await request.post("/api/maps/route", { data: { waypoints: WAYPOINTS } })).status()).toBe(401);
 
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.status()).toBe(200);
   try {

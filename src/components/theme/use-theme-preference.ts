@@ -4,7 +4,7 @@ import { useCallback, useSyncExternalStore } from "react";
 
 import { THEME_STORAGE_KEY, isThemePreference, type ThemePreference } from "@/lib/theme";
 
-export const THEME_CHANGE_EVENT = "tutelliv-theme-change";
+export const THEME_CHANGE_EVENT = "annona-theme-change";
 
 /** Lecture directe de la préférence mémorisée (jamais le snapshot serveur). */
 export function readThemePreference(): ThemePreference {

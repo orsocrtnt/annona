@@ -40,7 +40,7 @@ export const waitlistEntrySchema = z.object({
 }).strict();
 
 /** Texte enregistré comme message : il distingue l'inscription dans le back-office et l'alerte. */
-export const WAITLIST_MESSAGE = "Liste d'attente : souhaite faire partie des premières entreprises à utiliser TutelLiv.";
+export const WAITLIST_MESSAGE = "Liste d'attente : souhaite faire partie des premières entreprises à utiliser Annona.";
 
 /**
  * Durée publiée sur la page Confidentialité : un message part trois ans après sa réception,
@@ -141,7 +141,7 @@ async function storeContactMessage(
   // Verrou consultatif de transaction : sans lui, des envois simultanés lisaient le même
   // compte et dépassaient les limites (PERF-02 : 56 acceptés pour 50).
   return db.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext('tutelliv:contact-rate-limit'))`;
+    await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext('annona:contact-rate-limit'))`;
     const [fromSource, total] = await Promise.all([
       tx.contactMessage.count({ where: { sourceHash, createdAt: { gte: since } } }),
       tx.contactMessage.count({ where: { createdAt: { gte: since } } }),

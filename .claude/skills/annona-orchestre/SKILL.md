@@ -1,11 +1,11 @@
 ---
-name: tutelliv-orchestre
-description: Lancer et piloter en autonomie un chantier multi-agents TutelLiv — orchestrateur décideur, agents de code par lot avec le modèle adapté au risque, recette navigateur, double vérification (code-review + Codex) puis push sur preproduction. À utiliser quand le propriétaire demande un chantier avec plusieurs agents.
+name: annona-orchestre
+description: Lancer et piloter en autonomie un chantier multi-agents Annona — orchestrateur décideur, agents de code par lot avec le modèle adapté au risque, recette navigateur, double vérification (code-review + Codex) puis push sur preproduction. À utiliser quand le propriétaire demande un chantier avec plusieurs agents.
 ---
 
-# Orchestre — chantier multi-agents TutelLiv
+# Orchestre — chantier multi-agents Annona
 
-Lancement : `/tutelliv-orchestre`, ou « lance le chantier multi-agents ». Les lots ci-dessous sont ceux du chantier n° 2 ; pour un chantier suivant, les recalculer depuis `TODO.md` selon la même méthode.
+Lancement : `/annona-orchestre`, ou « lance le chantier multi-agents ». Les lots ci-dessous sont ceux du chantier n° 2 ; pour un chantier suivant, les recalculer depuis `TODO.md` selon la même méthode.
 
 ## Mandat : autonomie totale
 
@@ -21,7 +21,7 @@ Le propriétaire n'est pas là pendant le chantier. **L'orchestrateur est le pat
 
 - **Orchestrateur (Claude Opus, conversation principale)** : prépare les branches, lance les agents, relit chaque branche, fusionne, tient `TODO.md`, parle au propriétaire en français simple et court. Il ne code pas lui-même, sauf micro-correctif.
 - **Agents de code** : un par lot, sur une branche `agent/<lot>` partie du dernier `preproduction`. **Dans le cloud par défaut** (voir « Où tourne chaque agent »), sinon dans un worktree local `.claude/worktrees/agent-<lot>`. Modèle selon le risque (voir tableau).
-- **Agent de recette (Sonnet)** : clique dans le navigateur, branche par branche, sur un worktree détaché au commit testé (skill `tutelliv-recette`). Il constate, ne corrige rien, et renvoie la liste des défauts à corriger.
+- **Agent de recette (Sonnet)** : clique dans le navigateur, branche par branche, sur un worktree détaché au commit testé (skill `annona-recette`). Il constate, ne corrige rien, et renvoie la liste des défauts à corriger.
 - **Vérificateur final (agent Opus neuf, lancé par l'orchestrateur)** : le dernier rempart, quand tout est fusionné. Il ne connaît que le code, les critères « Terminé quand » des tâches et ce journal d'erreurs, jamais les conclusions des agents. Il lance lui-même :
   - `npm run check` et `npm run build` sous Node 22 ;
   - les E2E ciblés du chantier et la non-régression minimale sur un serveur (3110) ;
@@ -31,7 +31,7 @@ Le propriétaire n'est pas là pendant le chantier. **L'orchestrateur est le pat
   Il rend une liste de défauts prouvés. Tant qu'il reste un défaut important, on corrige et il revérifie.
 - **Codex en complément** (autre fournisseur, autre regard) : lancé par l'orchestrateur lui-même, jamais par le propriétaire, en même temps que le vérificateur final, sur une liste fermée. **Le propriétaire n'a plus à faire intervenir ChatGPT ou Codex pour vérifier** : toute la vérification est dans le chantier.
 - **Commit et push** : un seul envoi groupé sur `preproduction`, puis contrôle du déploiement Vercel. Le propriétaire a demandé ce déroulé complet, push compris. Il n'a lieu que si tout est vert : check, build, recette, et Codex sans défaut important ouvert. Jamais `main` ni la production.
-- **Migrations** : les lots évitent tout changement de schéma. Si un lot en a vraiment besoin, la migration est additive, relue, appliquée sur tutelliv-dev seulement. Ce lot reste alors **hors du push** et il est signalé dans le rapport, car la préproduction exige l'accord du propriétaire.
+- **Migrations** : les lots évitent tout changement de schéma. Si un lot en a vraiment besoin, la migration est additive, relue, appliquée sur annona-dev seulement. Ce lot reste alors **hors du push** et il est signalé dans le rapport, car la préproduction exige l'accord du propriétaire.
 
 ## Où tourne chaque agent : Mac ou cloud
 
@@ -41,7 +41,7 @@ Depuis le 29 octobre 2026, le cloud de Claude Code est connecté : machines de 1
 |---|---|---|
 | Orchestration (cette conversation) | Mac | Pilote tout, a les outils Vercel et Supabase, Codex et Cursor |
 | Agents de code (écrire, tests unitaires, `npm run check`) | **Cloud** | Le plus lourd ; en parallèle sans faire la queue |
-| Données de test sur tutelliv-dev (lot F), tests PostgreSQL réels (`test:pg-locks`), E2E | **Mac** | Le cloud ne joint pas PostgreSQL : son proxy ne laisse passer que HTTP/HTTPS (vérifié le 28 octobre) |
+| Données de test sur annona-dev (lot F), tests PostgreSQL réels (`test:pg-locks`), E2E | **Mac** | Le cloud ne joint pas PostgreSQL : son proxy ne laisse passer que HTTP/HTTPS (vérifié le 28 octobre) |
 | Pré-vol adverse d'un agent de code | Avec l'agent (cloud) | Même session |
 | Recette navigateur, captures Light/Dark | Mac | Chrome et Playwright fiables en local ; le navigateur n'est pas garanti dans le cloud |
 | Relecture `code-review` de l'orchestrateur | Mac | Sur la branche récupérée |
@@ -105,7 +105,7 @@ Règles :
    - direction visuelle de LANDING-2.
 
    Aucun questionnaire au propriétaire. Le périmètre de DISPATCH-4 a été cadré par le propriétaire le 29 octobre ; les prix restent à sa décision.
-4. Vérifier que le cloud est prêt : environnement `tutelliv-dev` créé, accord pour les branches `agent/*`, réglage Vercel des prévisualisations. S'il manque quelque chose, lots en local (repli) et mention dans le rapport.
+4. Vérifier que le cloud est prêt : environnement `annona-dev` créé, accord pour les branches `agent/*`, réglage Vercel des prévisualisations. S'il manque quelque chose, lots en local (repli) et mention dans le rapport.
 5. Vérifier la RAM (`memory_pressure`), les ports 3110 et 3111, et que l'anti-veille tourne (`launchctl list | grep agents-eveilles`).
 
 ## Lots — vague 1 (lancés en même temps)
@@ -119,7 +119,7 @@ Tous les lots codent dans le cloud ; leurs recettes et captures se font sur le M
 | **C — Alertes** | UX-ALERTES (**alertes mieux placées**) + la partie « explications permanentes » d'UX-04 | Sonnet | blocs d'alerte, pages d'espace | partagé |
 | **D — Factur-X** | FACTURX-SAISIE + CONFIG-MSG (Factur-X d'abord, puis Stripe, e-mail, commande par message, dispatch, preuve) | Sonnet | `einvoicing-settings-card.tsx`, `src/lib/validations/einvoicing.ts` | partagé |
 | **E — Finitions** | UX-NAV-SCROLL + RECETTE-2810 (points restants et décisions prises à l'étape 0) | Sonnet | navigation, petits correctifs | partagé |
-| **F — Données de test** | Jeux E2E identifiables sur tutelliv-dev : factures A/B (dont une en retard), une livraison terminée avec preuve, une mission en livraison. Les tests aujourd'hui ignorés faute de données doivent tourner. | Sonnet | `scripts/e2e/`, `tests/e2e/` | partagé |
+| **F — Données de test** | Jeux E2E identifiables sur annona-dev : factures A/B (dont une en retard), une livraison terminée avec preuve, une mission en livraison. Les tests aujourd'hui ignorés faute de données doivent tourner. | Sonnet | `scripts/e2e/`, `tests/e2e/` | partagé |
 | **L1 — Landing, directions** | LANDING-2, phase 1 : 2 ou 3 directions visuelles de la landing et de la connexion (maquettes HTML et captures). L'orchestrateur choisit, et les directions écartées sont gardées pour le rapport. **Aucun code produit.** | Opus | maquettes dans `outputs/` | aucun |
 
 ## Vague 2
@@ -144,15 +144,15 @@ Bloqué par le propriétaire ou par l'extérieur :
 ## Règles données à chaque agent (à recopier dans leur prompt)
 
 - Branche imposée `agent/<lot>` ; ne jamais modifier `TODO.md` ; jamais de merge ; commits en français.
-- **Agent cloud** : l'environnement fournit les variables de tutelliv-dev. Commencer par `git fetch origin preproduction && git checkout -B agent/<lot> origin/preproduction && npm ci --no-audit --no-fund` (le clone part de `main`, sans `node_modules`), puis vérifier `npm run -s env2:verify-dev` → passed (preuve d'être sur le bon environnement), sinon s'arrêter. **La base PostgreSQL n'est pas joignable depuis le cloud** (proxy HTTP/HTTPS seulement) : dans le cloud, uniquement le code et `npm run check`, qui tourne sans services externes. Tout ce qui touche la base (seed, `test:pg-locks`, E2E, serveur connecté) est listé dans le rapport « à lancer sur le Mac » et fait par l'orchestrateur. Pousser seulement sa branche `agent/<lot>` (`git push -u origin agent/<lot>`), jamais `preproduction` ni `main`. Pas de `lourd.sh`. Node 22 est celui du `PATH` par défaut (`/opt/node22`).
+- **Agent cloud** : l'environnement fournit les variables de annona-dev. Commencer par `git fetch origin preproduction && git checkout -B agent/<lot> origin/preproduction && npm ci --no-audit --no-fund` (le clone part de `main`, sans `node_modules`), puis vérifier `npm run -s env2:verify-dev` → passed (preuve d'être sur le bon environnement), sinon s'arrêter. **La base PostgreSQL n'est pas joignable depuis le cloud** (proxy HTTP/HTTPS seulement) : dans le cloud, uniquement le code et `npm run check`, qui tourne sans services externes. Tout ce qui touche la base (seed, `test:pg-locks`, E2E, serveur connecté) est listé dans le rapport « à lancer sur le Mac » et fait par l'orchestrateur. Pousser seulement sa branche `agent/<lot>` (`git push -u origin agent/<lot>`), jamais `preproduction` ni `main`. Pas de `lourd.sh`. Node 22 est celui du `PATH` par défaut (`/opt/node22`).
 - **Agent cloud, personne ne regarde** : le propriétaire n'ouvre jamais la session cloud. L'agent ne pose aucune question et n'attend aucune réponse. Il tranche avec l'option la plus prudente et la note dans son rapport. Sur un vrai blocage, il écrit le blocage dans son rapport, commite, pousse sa branche et s'arrête. Pour tenir sur la durée :
   - **feuille de route dans la branche** : dès le départ, il crée son rapport `docs/rapports/agents/<date>-<lot>.md` avec les critères « Terminé quand » cochables, puis le met à jour à chaque étape ;
   - **commit et push à chaque étape franchie** : la machine du cloud peut être reprise après une pause, et seul ce qui est poussé survit ;
   - **après un compactage** (automatique dans le cloud) ou une reprise, il relit d'abord son rapport et `git log`, avant de continuer ;
   - **contexte léger** : sorties limitées (`| tail -40`, `grep -m`) ; gros fichiers et longs journaux délégués à un sous-agent `explorateur` ; `/compact` de lui-même entre deux grandes étapes (fin d'implémentation, avant le pré-vol) ;
   - **commandes longues** (`npm run check`, build) en arrière-plan avec attente, jamais coupées par le délai de 2 minutes.
-- **Agent local (repli)** : worktree imposé, pas de push ; environnement via `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local --` ; commandes lourdes via `outputs/suivi-agents/lourd.sh` ; Node 22.
-- Base tutelliv-dev uniquement ; ne jamais lire ni afficher de secret ; données préfixées `E2E`, nettoyées à la fin.
+- **Agent local (repli)** : worktree imposé, pas de push ; environnement via `npx dotenv -e /Users/orso/Developer/Annona/.env.local --` ; commandes lourdes via `outputs/suivi-agents/lourd.sh` ; Node 22.
+- Base annona-dev uniquement ; ne jamais lire ni afficher de secret ; données préfixées `E2E`, nettoyées à la fin.
 - **Pré-vol adverse obligatoire** avant le rapport : un sous-agent tente de casser le travail sur les classes de défauts que Codex a trouvées tard :
   - entrelacements concurrents ;
   - réponse réseau ambiguë et rejeu ;
@@ -203,7 +203,7 @@ Règles :
 ### Ce qui a marché
 - **Agents en parallèle dans des worktrees séparés**, fusionnés un par un sur une branche d'intégration : 9 chantiers livrés en une journée, sans casse.
 - **Pré-vol adverse par un sous-agent Opus** : il a trouvé 3 défauts importants sur les relances e-mail avant toute relecture externe.
-- **Tests sur PostgreSQL réel** (tutelliv-dev) : ils ont révélé un vrai défaut que les tests simulés laissaient passer (le limiteur de connexion autorisait 10 tentatives sur 12 au lieu de 5).
+- **Tests sur PostgreSQL réel** (annona-dev) : ils ont révélé un vrai défaut que les tests simulés laissaient passer (le limiteur de connexion autorisait 10 tentatives sur 12 au lieu de 5).
 - **Codex confronté aux sources officielles** : il a trouvé le vrai défaut C5 (codes 409 de Resend).
 - **Recette sur un worktree détaché au commit testé**, et liste de défauts fusionnée puis renvoyée une seule fois à l'agent.
 
@@ -216,7 +216,7 @@ Règles :
 | Contre-revue d'un agent arrivée après sa remise : verdict orphelin. | L'agent attend son pré-vol. |
 | Après une fusion : client Prisma périmé (erreurs de types) et dépendance manquante (`@anthropic-ai/sdk`). | Après chaque fusion : `npx prisma generate` ; `npm ci` si `package-lock.json` a changé, dans l'intégration **et** dans le dossier principal après l'avance rapide. |
 | `prisma format` a reformaté tout le schéma pendant la résolution d'un conflit. | Résoudre les conflits de schéma à la main ; jamais `prisma format` sur un fichier en conflit. |
-| `npm run build` a échoué sans environnement. | `npx dotenv -e /Users/orso/Developer/TutelLiv-GPT/.env.local -- npm run build`. |
+| `npm run build` a échoué sans environnement. | `npx dotenv -e /Users/orso/Developer/Annona/.env.local -- npm run build`. |
 | Fichiers non suivis identiques qui bloquaient l'avance rapide du dossier principal. | Les comparer (`cmp`), les retirer s'ils sont identiques, puis `git merge --ff-only`. |
 | Node 20 en local alors que le projet exige Node 22. | `node -v` à l'étape 0 ; sinon préfixe `PATH=/opt/homebrew/opt/node@22/bin:$PATH` pour tous les agents. |
 | Le sandbox Codex interdit l'écoute réseau et Chrome : le test PERF-02 échoue en EPERM, et la recette navigateur est impossible. | Codex en lecture et en API seulement ; l'échec EPERM n'est pas un défaut du code. |
@@ -225,7 +225,7 @@ Règles :
 | Pool limité à 15 connexions en mode session : des 503 sur la connexion pendant une minute au démarrage. | `DATABASE_CONNECTION_LIMIT=5` par serveur, deux serveurs au plus, et attendre le 200 sur `/login`. |
 | Des tâches proposées au propriétaire étaient déjà faites. | Vérifier le code et la case dans `TODO.md` avant de proposer quoi que ce soit. |
 | Salle de contrôle maison : du temps passé à corriger le classement des agents. | Pas de tableau de bord maison pendant un chantier. Un point court au propriétaire suffit. |
-| Explications techniques et messages longs : « je comprends pas », « c'est long ». | Mémoire `tutelliv-comment-me-parler` : verdict d'abord, mots du produit, listes courtes. |
+| Explications techniques et messages longs : « je comprends pas », « c'est long ». | Mémoire `annona-comment-me-parler` : verdict d'abord, mots du produit, listes courtes. |
 
 ### Ce qui ralentissait, et comment le paralléliser
 Avant, tout était séquentiel : attendre la fin de l'agent, relire, renvoyer les corrections, fusionner, puis préparer Codex. Désormais, en pipeline :
@@ -251,8 +251,8 @@ Ce skill s'améliore à chaque erreur. L'orchestrateur ne la laisse jamais se re
 3. **Une erreur qui revient deux fois** devient une règle obligatoire du pré-vol ou des « Règles données à chaque agent », pas une simple ligne du retour d'expérience.
 4. **En fin de chantier, avant le rapport** :
    - mettre à jour ce skill : ajouter les lignes au tableau, ajuster les durées observées, retirer une règle devenue inutile ;
-   - mettre à jour le skill `tutelliv-recette` si une erreur vient de la recette ;
-   - mettre à jour la mémoire, en particulier `tutelliv-comment-me-parler` pour tout ce qui concerne la façon de parler au propriétaire.
+   - mettre à jour le skill `annona-recette` si une erreur vient de la recette ;
+   - mettre à jour la mémoire, en particulier `annona-comment-me-parler` pour tout ce qui concerne la façon de parler au propriétaire.
 
    Le rapport final dit en une ligne ce qui a été appris.
 5. Les agents de code et de recette terminent leur rapport par une rubrique « **Erreurs et leçons** » : ce qui les a ralentis ou trompés. L'orchestrateur reprend ces leçons à l'étape 1.
@@ -312,7 +312,7 @@ Ce skill s'améliore à chaque erreur. L'orchestrateur ne la laisse jamais se re
 - **Un défaut qui ne peut pas se produire dans les conditions réelles actuelles** est consigné comme limite acceptée, avec sa justification. Exemple : un envoi hérité alors qu'aucun fournisseur d'e-mail n'a jamais été branché.
 - **Points d'avancement spontanés** au propriétaire toutes les 15 à 20 minutes : une ligne avec l'heure de fin prévue. Il ne doit jamais avoir à demander où on en est.
 - **Délais annoncés avec marge** : prendre la durée observée la plus longue, pas la plus courte. Si on dépasse, le dire tout de suite, avec la raison et la nouvelle heure.
-- **Toute plainte du propriétaire** devient une règle ici ou dans la mémoire (`tutelliv-plainte-ameliorer-process`).
+- **Toute plainte du propriétaire** devient une règle ici ou dans la mémoire (`annona-plainte-ameliorer-process`).
 - **File d'attente et plafond (demandes du propriétaire du 28 octobre : « ralentis, on va taper la limite » ; « sinon c'est ingérable »)** :
   - le propriétaire peut donner une liste de X tâches d'un coup. L'orchestrateur les range dans une **file d'attente**, inscrite dans `etat-chantier.md`, dans l'ordre des dépendances et des priorités ;
   - **4 à 5 lots au plus en même temps**, et jamais plus de 5 agents actifs, relectures et contre-relectures comprises. Le lot suivant de la file ne part que quand un lot se termine ;
@@ -336,9 +336,9 @@ Ces fichiers sont la mémoire du projet : le chat suivant ne sait que ce qui y e
 | `TODO.md`, puis `npm run todo:progress` | À chaque lot fusionné : état, résultat, commandes lancées, limites, prochaine étape. À chaque décision du propriétaire (dans la tâche concernée). Ajouter une tâche pour tout ce qui est reporté. |
 | `outputs/suivi-agents/etat-chantier.md` | À chaque étape du chantier. C'est le point de reprise en cas de coupure. |
 | `outputs/suivi-agents/erreurs-<date>.md` | À chaque erreur, sur le moment. |
-| Ce skill (`.claude/skills/tutelliv-orchestre/SKILL.md`) | Quand une règle manque, qu'une erreur revient, qu'une durée observée change ou que le propriétaire se plaint. |
-| Skill `tutelliv-recette` | Quand une erreur vient de la recette (ports, comptes, données, navigateur). |
-| Mémoire (`~/.claude/projects/-Users-orso-Developer-TutelLiv-GPT/memory/`) | Préférence ou correction du propriétaire, façon de lui parler, décision durable. Un fichier par sujet, et mettre à jour l'existant plutôt que dupliquer. |
+| Ce skill (`.claude/skills/annona-orchestre/SKILL.md`) | Quand une règle manque, qu'une erreur revient, qu'une durée observée change ou que le propriétaire se plaint. |
+| Skill `annona-recette` | Quand une erreur vient de la recette (ports, comptes, données, navigateur). |
+| Mémoire (`~/.claude/projects/-Users-orso-Developer-Annona/memory/`) | Préférence ou correction du propriétaire, façon de lui parler, décision durable. Un fichier par sujet, et mettre à jour l'existant plutôt que dupliquer. |
 | Documentation du dépôt (`docs/`, `DESIGN.md`, `docs/RBAC.md`, décisions produit) | Quand le comportement du produit change. Une décision commerciale est notée comme proposition, jamais comme engagement. |
 | `outputs/suivi-agents/prompt-nouveau-chat.md` | En fin de chantier : le prompt du chantier suivant, à jour, avec ce qui reste à faire. |
 
@@ -367,7 +367,7 @@ Constat chiffré : la suite de tests ne prend que **30 secondes**. Le temps part
 - la réflexion des agents entre deux commandes.
 
 Règles :
-1. **Pas de `npm ci` dans un worktree** si `package-lock.json` est identique à celui du dossier principal (`cmp`). Copier plutôt `node_modules` par clonage APFS, quasi instantané et sans espace disque en plus : `cp -c -R /Users/orso/Developer/TutelLiv-GPT/node_modules <worktree>/`, puis `npx prisma generate`. Même chose pour `.next/cache` avant un build.
+1. **Pas de `npm ci` dans un worktree** si `package-lock.json` est identique à celui du dossier principal (`cmp`). Copier plutôt `node_modules` par clonage APFS, quasi instantané et sans espace disque en plus : `cp -c -R /Users/orso/Developer/Annona/node_modules <worktree>/`, puis `npx prisma generate`. Même chose pour `.next/cache` avant un build.
 2. **Vérification finale allégée** : chaque lot a déjà été relu, recetté et testé. À la fin, on vérifie seulement :
    - ce que la fusion a pu casser : check et build du résultat ;
    - un E2E de fumée, avec la non-régression minimale et les refus par rôle ;
@@ -381,7 +381,7 @@ Règles :
 
 ## Agents dans le cloud (vérifié le 29 octobre 2026)
 
-- **Connexion faite** : sur claude.ai/customize/connectors, le compte GitHub `orsocrtnt` est connecté, l'application Claude est installée et l'état du dépôt `tutelliv-v2` est vert.
+- **Connexion faite** : sur claude.ai/customize/connectors, le compte GitHub `orsocrtnt` est connecté, l'application Claude est installée et l'état du dépôt `annona` est vert.
 - **⚠️ Ne jamais lancer un lot avec `claude --cloud`** : sa vérification préalable répond à tort `GitHub app is not installed` (journal `--debug-file`, 29 octobre, même après reconnexion de GitHub). La session part alors en copie locale (« bundle »), sans remote `origin`, et ne peut pas pousser. Le 28 octobre, quatre lots finis ont été perdus ainsi. L'option `isolation: "remote"` de l'Agent tool ne marche pas non plus : l'agent tourne en local, sans prévenir.
 - **Lancer un lot par une routine** (vérifié le 29 octobre : clone depuis GitHub et push réel de `agent/test-cloud-4` depuis `preproduction`). Une routine par lot, avec l'outil `RemoteTrigger` :
   1. `action: "create"`, avec `body` :
@@ -389,12 +389,12 @@ Règles :
      {"name":"lot-<x>","run_once_at":"2027-10-01T12:00:00Z","enabled":true,
       "job_config":{"ccr":{"environment_id":"env_01TspvfnXJQVRTy6pQ8UPQho",
         "session_context":{"model":"claude-sonnet-5-5",
-          "sources":[{"git_repository":{"url":"https://github.com/orsocrtnt/tutelliv-v2"}}],
+          "sources":[{"git_repository":{"url":"https://github.com/orsocrtnt/annona"}}],
           "allowed_tools":["Bash","Read","Write","Edit","Glob","Grep","Agent"]},
         "events":[{"data":{"uuid":"<uuidgen en minuscules>","session_id":"","type":"user",
           "parent_tool_use_id":null,"message":{"role":"user","content":"<prompt du lot>"}}}]}}}
      ```
-     `env_01TspvfnXJQVRTy6pQ8UPQho` est `tutelliv-dev` ; `env_01BHQ1eLakq8qFjGX1bZHNXN` est `Default`, sans accès à la base. Modèle : `claude-sonnet-5-5` ou `claude-opus-5-5`. Avec un `run_once_at` lointain, la routine ne part que sur demande.
+     `env_01TspvfnXJQVRTy6pQ8UPQho` est `annona-dev` ; `env_01BHQ1eLakq8qFjGX1bZHNXN` est `Default`, sans accès à la base. Modèle : `claude-sonnet-5-5` ou `claude-opus-5-5`. Avec un `run_once_at` lointain, la routine ne part que sur demande.
   2. Tout de suite après, `action: "update"` avec `{"clear_mcp_connections": true}`, car l'API attache sinon tous les connecteurs du compte (Gmail, Drive, Supabase…).
   3. `action: "run"`, **seulement après la réponse du `create`/`update`, jamais dans le même envoi** : sinon la routine part avec l'ancienne configuration (vu le 29 octobre). Le lancement fonctionne même si la routine est désactivée. La réponse donne le `session_id` (`cse_…`), à noter dans l'état du chantier. Le prompt va dans `events`, pas dans le corps de `run`, qui arriverait comme donnée non fiable. Limites : 30 lancements par heure et par routine, 100 par heure pour le compte.
   4. Le prompt du lot commence par `git fetch origin preproduction && git checkout -B agent/<lot> origin/preproduction && npm ci --no-audit --no-fund`, car le clone part de `main` (le champ `branch` de la source est ignoré) et sans `node_modules` (sinon un autre `dotenv` répond et `env2:verify-dev` échoue). Il demande aussi de **ne pas envoyer de notification mobile**.
@@ -406,7 +406,7 @@ Règles :
 - **Suivre l'avancement** sans lire les transcriptions : `git ls-remote origin 'refs/heads/agent/*'` montre les commits poussés. Un lot sans commit poussé après 45 minutes est contrôlé. Pour lui écrire, sans pseudo-terminal : `claude -p "<message>" --cloud cse_… --output-format json < /dev/null` → `{"ok":true,…}`.
 - **Récupérer le travail** : la session pousse une branche `agent/<lot>` sur GitHub. L'orchestrateur la récupère (`git fetch origin agent/<lot>`), puis relit et fusionne comme d'habitude. Le proxy du cloud refuse la suppression d'une branche distante (403) : le nettoyage se fait depuis le Mac, avec l'accord du propriétaire.
 - **Préparation faite le 28 octobre 2026 (heure de New York)** :
-  1. environnement cloud `tutelliv-dev` : 7 variables de la base de **développement** (recopiées par le propriétaire), accès réseau « Limité » (`*.supabase.co`, `*.pooler.supabase.com`, `binaries.prisma.sh` + gestionnaires de paquets), script `if [ -f package.json ]; then npm ci && npx prisma generate; fi`. Vérifié par routine : Node 22, et `env2:verify-dev` passed après `npm ci`. **PostgreSQL injoignable depuis le cloud** (proxy HTTP/HTTPS seulement) ;
+  1. environnement cloud `annona-dev` : 7 variables de la base de **développement** (recopiées par le propriétaire), accès réseau « Limité » (`*.supabase.co`, `*.pooler.supabase.com`, `binaries.prisma.sh` + gestionnaires de paquets), script `if [ -f package.json ]; then npm ci && npx prisma generate; fi`. Vérifié par routine : Node 22, et `env2:verify-dev` passed après `npm ci`. **PostgreSQL injoignable depuis le cloud** (proxy HTTP/HTTPS seulement) ;
   2. accord écrit du propriétaire pour les branches `agent/*` (jamais `preproduction` ni `main`) ;
   3. Vercel, Ignored Build Step du projet : `case "$VERCEL_GIT_COMMIT_REF" in preproduction|main) exit 1;; *) exit 0;; esac`. Seules `preproduction` et `main` sont construites, car les variables « Preview » génériques (base, clé de service) s'appliquent à toute autre branche.
 - **Usage** : lots de code et tests unitaires dans le cloud (16 Go, sans file `lourd.sh`). Recette navigateur, Codex et vérification finale restent sur le Mac. Le cloud consomme le quota Claude comme le local.

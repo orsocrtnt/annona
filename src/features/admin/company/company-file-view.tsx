@@ -213,7 +213,7 @@ function InvoicesBlock({ company }: { company: Company }) {
     <Block
       id="company-invoices"
       title="Factures de livraison"
-      hint="Factures de l'entreprise à ses clients, pas l'abonnement TutelLiv."
+      hint="Factures de l'entreprise à ses clients, pas l'abonnement Annona."
     >
       <div className="space-y-4">
         <div>

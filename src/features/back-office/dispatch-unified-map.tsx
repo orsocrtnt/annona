@@ -42,7 +42,7 @@ const DOUBLE_CLICK_MS = 500;
  */
 let lastDeliveryClick: { id: string; at: number } | null = null;
 
-const PANEL_COLLAPSED_KEY = "tutelliv-dispatch-map-panel-collapsed";
+const PANEL_COLLAPSED_KEY = "annona-dispatch-map-panel-collapsed";
 
 const PILL =
   "inline-flex min-h-9 max-md:min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-[0_8px_24px_rgba(14,40,25,0.10)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 dark:focus-visible:ring-ring";

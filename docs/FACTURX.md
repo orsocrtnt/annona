@@ -2,7 +2,7 @@
 
 État : 28 octobre 2026. Tranche préparatoire à l'obligation d'émission électronique des PME et microentreprises (1er septembre 2027). Décision produit : `docs/DECISIONS_PRODUIT_COMMERCIALES.md`, section « Facturation des prestations de livraison ».
 
-Cette tranche **ne rend pas TutelLiv conforme** et **n'en fait pas une plateforme agréée**. Elle produit un PDF Factur-X que la société de coursiers (ou son expert-comptable) peut déposer sur sa plateforme agréée, après validation par un outil officiel.
+Cette tranche **ne rend pas Annona conforme** et **n'en fait pas une plateforme agréée**. Elle produit un PDF Factur-X que la société de coursiers (ou son expert-comptable) peut déposer sur sa plateforme agréée, après validation par un outil officiel.
 
 ## 1. Cadrage
 
@@ -92,13 +92,13 @@ Un refus renvoie `422` en texte brut : liste des données manquantes côté back
 - **Profil ICC généré en code** (sRGB v2, primaires D50, courbe échantillonnée) : accepté par LittleCMS, non comparé au profil ICC officiel.
 - **`AFRelationship /Data`** retenu ; les sources consultées divergent entre `Data` et `Alternative` pour la France : à confirmer avec la spécification FNFE en vigueur.
 - **Mentions françaises PMD/PMT/AAB** en notes `IncludedNote` selon l'usage FNFE ; la règle exacte du profil français (CIUS) reste à confirmer.
-- **Un seul taux de TVA par facture** côté TutelLiv (le générateur en gère plusieurs). Une facture sans ligne de TVA est traitée comme exonérée et exige un motif ; si la TVA arrondie vaut 0 € pour un taux non nul, ce cas est mal classé (montant inférieur à 3 centimes).
+- **Un seul taux de TVA par facture** côté Annona (le générateur en gère plusieurs). Une facture sans ligne de TVA est traitée comme exonérée et exige un motif ; si la TVA arrondie vaut 0 € pour un taux non nul, ce cas est mal classé (montant inférieur à 3 centimes).
 - **Franchise en base (293 B) sans n° de TVA** : BR-E-02 est satisfaite par l'identifiant fiscal BT-32 (`SpecifiedTaxRegistration`, schéma `FC`), saisi dans les réglages ou, à défaut, repris du SIREN avec un avertissement. Ce traitement est une hypothèse à confirmer avec la FNFE et la plateforme agréée ; le représentant fiscal (BG-11) n'est pas géré. Une facture avec TVA exige toujours le n° de TVA.
 - **Partie visible** : la variante Factur-X affiche les mentions portées par le XML (vendeur SIREN/SIRET/TVA ou BT-32, acheteur du XML, forme/capital/RCS, exonération, conditions, pénalités, indemnité de 40 €, escompte) et s'intitule « Facture ». Le relevé classique reste identique (empreintes de rendu vérifiées par `tests/facturx-pdf.test.ts`).
 - **Facture payée** : `TotalPrepaidAmount` = TTC et `DuePayableAmount` = 0. Le modèle n'enregistre pas de paiement partiel ; le générateur le sait, aucun écran ne le produit.
 - **Écritures concurrentes de `settings`** : toutes les écritures de `Company.settings` et `User.settings` (Factur-X, identité client, facturation, dispatch, localisation, tarifs, catégories, portail, tableaux de bord, préférences client, mini-admin, démo) passent par une réclamation sur `updatedAt` (`src/lib/database/claimed-settings-update.ts`, `src/lib/database/settings-claims.ts`) : aucune clé n'est perdue ; deux enregistrements simultanés du même réglage, ou cinq tentatives perdues, donnent un 409 « Rechargez puis réessayez ». Inventaire vérifié par `tests/settings-claim-generalized.test.ts`, exercé sur PostgreSQL réel par `npm run test:pg-settings` (RECETTE-2810, point 16). Seule exception volontaire : le (re)provisionnement d'une entreprise de démo remplace tout le JSON.
 - **Réglages stockés invalides** : lus champ par champ ; un champ invalide est écarté, signalé dans l'écran et en avertissement Factur-X, les autres sont conservés. L'enregistrement est bloqué tant que les réglages n'ont pas été lus.
-- **Ni avoir ni remise** dans le modèle TutelLiv : le générateur sait produire un avoir 381, aucun écran n'en crée.
+- **Ni avoir ni remise** dans le modèle Annona : le générateur sait produire un avoir 381, aucun écran n'en crée.
 - **Acheteur** : sans identité de facturation, nom et adresse de livraison par défaut du client sont utilisés, pays supposé FR ; le SIREN client manquant n'est qu'un avertissement.
 - **Date d'émission = `createdAt`** de la facture ; un Factur-X régénéré porte une date de production nouvelle mais le même XML.
 - **Aucun clic navigateur** n'a été fait sur les nouveaux écrans ; spec Playwright `tests/e2e/facturx.spec.ts` écrite, non lancée.
@@ -115,7 +115,7 @@ Point d'extension prévu, à créer dans `src/domains/invoice/facturx/` lorsque 
 export interface ApprovedPlatformSender {
   /** Dépose un Factur-X ; renvoie l'identifiant de dépôt de la plateforme. */
   submit(input: { companyId: string; invoiceReference: string; pdf: Uint8Array; xml: string }): Promise<{ submissionId: string }>;
-  /** Statut de cycle de vie (déposée, rejetée, encaissée…) pour l'afficher dans TutelLiv. */
+  /** Statut de cycle de vie (déposée, rejetée, encaissée…) pour l'afficher dans Annona. */
   status(submissionId: string): Promise<{ state: string; detail?: string }>;
 }
 ```

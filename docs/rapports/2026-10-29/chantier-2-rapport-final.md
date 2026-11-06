@@ -49,6 +49,6 @@
   - Claude en local : 10 lots, les relectures et les corrections ;
   - Claude dans le cloud, par routine : Mobile ;
   - Codex : la vérification finale sur liste fermée, avec 2 contre-vérifications.
-- **Leçons** : relecture approfondie pour tout ; tests navigateur en script, sur un build de production, limités aux parcours critiques ; directions visuelles décidées par le propriétaire. Voir le skill `tutelliv-orchestre` et `outputs/suivi-agents/erreurs-2026-10-29.md`.
+- **Leçons** : relecture approfondie pour tout ; tests navigateur en script, sur un build de production, limités aux parcours critiques ; directions visuelles décidées par le propriétaire. Voir le skill `annona-orchestre` et `outputs/suivi-agents/erreurs-2026-10-29.md`.
 
 Galerie avant/après : `outputs/recette-agents/galerie/` (local).

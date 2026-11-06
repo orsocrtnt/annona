@@ -162,9 +162,9 @@ function managed(kind: "COMMERCIAL" | "PILOT" | "LEGACY", overrides: Record<stri
   };
 }
 
-test("SAAS-03 : abonnement géré par TutelLiv, formule et options lues sur l'abonnement, sans historique ni fournisseur", () => {
+test("SAAS-03 : abonnement géré par Annona, formule et options lues sur l'abonnement, sans historique ni fournisseur", () => {
   const view = buildManagedSubscriptionView(managed("COMMERCIAL") as never, at)!;
-  assert.equal(view.management, "TUTELLIV_TEAM");
+  assert.equal(view.management, "ANNONA_TEAM");
   assert.deepEqual(view.formula, { code: "STARTER", name: "Starter" });
   assert.equal(view.billingInterval, "ANNUAL");
   assert.deepEqual(view.options, [

@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="tutelliv-commandes-${date}.csv"`,
+      "Content-Disposition": `attachment; filename="annona-commandes-${date}.csv"`,
       "Cache-Control": "private, no-store",
     },
   });

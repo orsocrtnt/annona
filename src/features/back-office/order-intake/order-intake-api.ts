@@ -43,10 +43,10 @@ export interface CompanyCustomerItem {
 export interface IntakeChannels {
   orderLink: { enabled: boolean; url: string | null };
   inboundEmail: { enabled: boolean; configured: boolean; address: string | null; mailbox: string | null };
-  /** Codes de confirmation envoyés par Gmail à l'adresse TutelLiv (24 dernières heures). */
+  /** Codes de confirmation envoyés par Gmail à l'adresse Annona (24 dernières heures). */
   /** Selon le compte Gmail : un code à saisir dans Gmail, ou un lien d'approbation (format de novembre 2026). */
   gmailConfirmations?: { code: string | null; link?: string | null; requester: string | null; receivedAt: string }[];
-  /** WHATSAPP-1 : numéro de TutelLiv vers lequel l'équipe transfère les messages des clients. */
+  /** WHATSAPP-1 : numéro de Annona vers lequel l'équipe transfère les messages des clients. */
   whatsapp?: { enabled: boolean; configured: boolean; number: string | null };
   /** Membres qui peuvent transférer ; `phone` null quand leur profil n'a pas de numéro lisible. */
   whatsappTeam?: { name: string; phone: string | null }[];

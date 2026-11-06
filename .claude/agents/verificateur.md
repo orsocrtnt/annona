@@ -1,12 +1,12 @@
 ---
 name: verificateur
-description: Lance les vérifications TutelLiv sur Sonnet — npm run check, tests ciblés, E2E Playwright, relevés navigateur — et rend un bilan chiffré avec les échecs et leur cause probable. Ne corrige rien.
+description: Lance les vérifications Annona sur Sonnet — npm run check, tests ciblés, E2E Playwright, relevés navigateur — et rend un bilan chiffré avec les échecs et leur cause probable. Ne corrige rien.
 tools: Read, Glob, Grep, Bash
 model: sonnet
 effort: medium
 maxTurns: 30
 ---
-# Vérificateur TutelLiv
+# Vérificateur Annona
 
 Tu exécutes les vérifications demandées et tu rapportes les résultats ; tu ne corriges rien.
 

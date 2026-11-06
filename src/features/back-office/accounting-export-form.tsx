@@ -16,7 +16,7 @@ export function AccountingExportForm() {
   return <Card>
     <CardHeader><CardTitle className="text-base">Export comptable des prestations</CardTitle></CardHeader>
     <CardContent className="space-y-3">
-      <p className="text-sm text-muted-foreground">Documents de livraison enregistrés, distincts de votre abonnement TutelLiv. CSV à transmettre à votre outil comptable ; ce fichier ne constitue pas une facture électronique réglementaire.</p>
+      <p className="text-sm text-muted-foreground">Documents de livraison enregistrés, distincts de votre abonnement Annona. CSV à transmettre à votre outil comptable ; ce fichier ne constitue pas une facture électronique réglementaire.</p>
       <form className="flex flex-wrap items-end gap-3" onSubmit={async (event) => {
         event.preventDefault();
         if (busy) return;
@@ -33,7 +33,7 @@ export function AccountingExportForm() {
           const url = URL.createObjectURL(await response.blob());
           const link = document.createElement("a");
           link.href = url;
-          link.download = `tutelliv-prestations-v1-${query.get("from")}-${query.get("to")}.csv`;
+          link.download = `annona-prestations-v1-${query.get("from")}-${query.get("to")}.csv`;
           link.click();
           setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (caught) {

@@ -8,7 +8,7 @@ test.afterEach(async ({ page }) => {
 
 async function openAs(page: Page, persona: "admin" | "driver", path: string, width = 1280) {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.ok()).toBeTruthy();
   const switched = await page.request.post("/api/demo/persona", { data: { persona } });
@@ -52,7 +52,7 @@ test("back-office : suit le système, bascule en un clic, choix Système dans le
   await page.getByRole("button", { name: "Ouvrir le menu du compte" }).click();
   await page.getByRole("menuitemradio", { name: "Système" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  expect(await page.evaluate(() => localStorage.getItem("tutelliv-theme"))).toBe("system");
+  expect(await page.evaluate(() => localStorage.getItem("annona-theme"))).toBe("system");
 });
 
 test("back-office en Sombre : écrans principaux lisibles, tableau Livreurs sur une surface distincte", async ({ page }) => {

@@ -1,5 +1,5 @@
 ---
-name: "TutelLiv — Dashboard entreprise"
+name: "Annona — Dashboard entreprise"
 description: "Un centre de pilotage lumineux, précis et opérationnel, où le vert signale l’activité réelle."
 colors:
   mission-green: "#00D46A"
@@ -91,13 +91,13 @@ components:
     padding: "4px 10px"
 ---
 
-# Design System: TutelLiv — Dashboard entreprise
+# Design System: Annona — Dashboard entreprise
 
 ## Overview
 
 **Creative North Star: "La Ligne de Mission"**
 
-Le dashboard entreprise est un instrument de supervision calme dans un bureau lumineux : un canevas papier cassé, un rail noir flottant et des cartes blanches nettes organisent les données réelles sans bruit décoratif. Le vert TutelLiv ne remplit pas l’écran ; il suit l’activité, marque l’état actif et relie les étapes d’une mission.
+Le dashboard entreprise est un instrument de supervision calme dans un bureau lumineux : un canevas papier cassé, un rail noir flottant et des cartes blanches nettes organisent les données réelles sans bruit décoratif. Le vert Annona ne remplit pas l’écran ; il suit l’activité, marque l’état actif et relie les étapes d’une mission.
 
 La direction associe Apple Glass Light, Bento et Minimal SaaS avec une discipline d’interface d’exploitation. Le verre reste réservé au chrome et aux couches temporaires ; le contenu métier reste opaque, lisible et stable. Cette expression est strictement limitée à `/dashboard` : les écrans adjacents conservent leur monde visuel existant.
 

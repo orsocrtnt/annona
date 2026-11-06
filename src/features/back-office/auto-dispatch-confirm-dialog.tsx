@@ -7,7 +7,7 @@ import { formatDriverFromParts } from "@/lib/format/person-labels";
 import type { AutoDispatchPreview } from "@/domains/delivery/auto-dispatch.service";
 import { countLabel } from "@/lib/format/plural";
 
-const SKIP_KEY = "tutelliv-auto-dispatch-skip-confirm";
+const SKIP_KEY = "annona-auto-dispatch-skip-confirm";
 
 export function readAutoDispatchSkip() {
   try {

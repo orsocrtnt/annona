@@ -56,7 +56,7 @@ test("les parcours publics locaux se rejoignent sans route absente", () => {
   assert.equal(publicNav.includes('href: "/tarifs"'), true);
   assert.match(home, /href="\/tarifs"/);
   assert.match(tarifs, /<WaitlistForm \/>/);
-  assert.match(tarifs, /TutelLiv arrive bientôt/);
+  assert.match(tarifs, /Annona arrive bientôt/);
   assert.doesNotMatch(tarifs, /\/register\?plan=|€|getActiveSignupCatalog/);
   assert.doesNotMatch(read("src/domains/growth/public-pricing.ts"), /7900|17900|34900/);
   assert.deepEqual(signupEntryFromSearch("?plan=PRO&interval=ANNUAL"), { planCode: "PRO", billingInterval: "ANNUAL" });

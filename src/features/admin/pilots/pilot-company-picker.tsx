@@ -9,7 +9,7 @@ export type PickedCompany = { id: string; name: string } | null;
 
 const MAX_SHOWN = 8;
 
-/** Choix de l'entreprise TutelLiv liée : recherche par nom (liste plateforme), facultatif. */
+/** Choix de l'entreprise Annona liée : recherche par nom (liste plateforme), facultatif. */
 export function PilotCompanyPicker({ value, onChange }: { value: PickedCompany; onChange: (company: PickedCompany) => void }) {
   const inputId = useId();
   const [draft, setDraft] = useState("");
@@ -43,7 +43,7 @@ export function PilotCompanyPicker({ value, onChange }: { value: PickedCompany; 
   const rows = enabled ? (data?.rows ?? []).slice(0, MAX_SHOWN) : [];
   return (
     <div>
-      <label htmlFor={inputId} className="sr-only">Rechercher une entreprise TutelLiv</label>
+      <label htmlFor={inputId} className="sr-only">Rechercher une entreprise Annona</label>
       <Input
         id={inputId}
         type="search"

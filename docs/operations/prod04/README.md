@@ -17,12 +17,12 @@ Consigner les dates, jours ouvrés, volume, rôles présents, zone, types de liv
 | Mesure | Début | Fin | Restitution |
 |---|---|---|---|
 | Temps de dispatch | Demande exploitable reçue dans le canal utilisé | Livreur affecté et prise en charge confirmée | nombre observé, médiane et étendue ; distinguer manuel/automatique et abandons |
-| Appels de suivi | Appel entrant ou sortant visant le statut, la position, l'heure estimée ou la preuve d'une livraison | Fin de l'appel | nombre brut et nombre par livraison terminée ; exclure prospection, facturation et support TutelLiv |
+| Appels de suivi | Appel entrant ou sortant visant le statut, la position, l'heure estimée ou la preuve d'une livraison | Fin de l'appel | nombre brut et nombre par livraison terminée ; exclure prospection, facturation et support Annona |
 | Incident | Premier constat d'un événement bloquant ou d'un résultat incorrect | Résolution confirmée ou contournement accepté | nombre par sévérité, durée et livraisons affectées ; un même incident conserve un identifiant unique |
 | Récupération de preuve | Demande explicite de retrouver une preuve existante | Preuve correcte visible ou exportée par la personne autorisée | durée, succès/échec et aide nécessaire ; ne jamais copier la photo dans la fiche |
-| Première livraison | Démarrage opérationnel convenu avec les rôles autorisés | Première livraison du périmètre terminée avec statut et preuve consultables | durée calendaire, temps actif estimé et interventions TutelLiv séparées |
+| Première livraison | Démarrage opérationnel convenu avec les rôles autorisés | Première livraison du périmètre terminée avec statut et preuve consultables | durée calendaire, temps actif estimé et interventions Annona séparées |
 
-Mesures de contexte, sans les transformer en valeur : commandes reçues et terminées, utilisateurs actifs par rôle, preuves attendues/consultables, retours aux e-mails ou outils externes, minutes d'aide TutelLiv et fonctions réellement utilisées.
+Mesures de contexte, sans les transformer en valeur : commandes reçues et terminées, utilisateurs actifs par rôle, preuves attendues/consultables, retours aux e-mails ou outils externes, minutes d'aide Annona et fonctions réellement utilisées.
 
 ## Méthode de collecte minimale
 

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../../src/services/prisma/client";
 
 /**
- * DISPATCH-4 tranche 1 : suggestions de livreurs et affectation en un clic, sur tutelliv-dev.
+ * DISPATCH-4 tranche 1 : suggestions de livreurs et affectation en un clic, sur annona-dev.
  * Livraison E2E sans client
  * (aucune notification), supprimée en fin de test. Aucune position de livreur n'est créée :
  * le trajet est « inconnu » et aucun appel au service de trajet n'est fait.
@@ -16,7 +16,7 @@ test("DISPATCH-4 : 3 suggestions expliquées, double clic sur « Affecter » = u
   let driverId: string | null = null;
   try {
     const login = await page.request.post("/api/auth/login", {
-      data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+      data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
     });
     expect(login.status()).toBe(200);
     expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);

@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 const SIZES = { sm: { width: 104, height: 31 }, md: { width: 132, height: 39 } } as const;
 
 /**
- * Logo TutelLiv. Le nom est porté par un texte masqué (lecteurs d'écran, liens
- * nommés « TutelLiv ») ; l'image est décorative. `onDark` : version pour fond encre.
+ * Logo Annona. Le nom est porté par un texte masqué (lecteurs d'écran, liens
+ * nommés « Annona ») ; l'image est décorative. `onDark` : version pour fond encre.
  */
 export function BrandLogo({
   onDark = false,

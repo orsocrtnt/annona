@@ -2,7 +2,7 @@
 export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
 
-export const THEME_STORAGE_KEY = "tutelliv-theme";
+export const THEME_STORAGE_KEY = "annona-theme";
 
 /**
  * Espaces ayant migré vers les jetons Dark : portail client, back-office et dispatch, espace `/admin`, app livreur,

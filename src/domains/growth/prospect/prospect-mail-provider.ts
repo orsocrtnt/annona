@@ -2,7 +2,7 @@
  * ADMIN-ESPACE lot 5 : adresses « mises de côté » (décision du propriétaire du 5 novembre 2026).
  * Essais réels : le mail mis en forme arrive chez Gmail, Google Workspace et Columbia (Proofpoint), mais tombe
  * en indésirables chez Microsoft 365 (Kedge, ENPC) et n'arrive pas derrière Altospam (Lalique), tant que
- * tutelliv.fr n'a pas d'historique. Ces adresses sont ajoutées à la campagne sans être envoyées ; le propriétaire
+ * annona.fr n'a pas d'historique. Ces adresses sont ajoutées à la campagne sans être envoyées ; le propriétaire
  * les remet dans l'envoi d'un clic quand le domaine aura un historique.
  * Module sans dépendance serveur : partagé par le service (lecture DNS) et l'écran.
  */

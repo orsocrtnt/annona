@@ -58,12 +58,12 @@ export class DemoPoolUnavailableError extends Error {
 
 export function demoPoolLeaseKeyHash(sessionId: string): string {
   if (!SESSION_ID_PATTERN.test(sessionId)) throw new Error("DEMO_SESSION_INVALID");
-  return createHash("sha256").update(`tutelliv-demo-pool:${sessionId}`).digest("hex");
+  return createHash("sha256").update(`annona-demo-pool:${sessionId}`).digest("hex");
 }
 
 export function demoSessionIdFromRequestKey(requestKey: string): string {
   if (!REQUEST_KEY_PATTERN.test(requestKey)) throw new Error("DEMO_REQUEST_KEY_INVALID");
-  return createHash("sha256").update(`tutelliv-demo-request:${requestKey}`).digest("hex");
+  return createHash("sha256").update(`annona-demo-request:${requestKey}`).digest("hex");
 }
 
 function poolSlug(poolKey: string, slot: number): string {

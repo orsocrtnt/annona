@@ -137,7 +137,7 @@ function loadGuard(db: Db) {
       return {
         status: response.status,
         location: response.headers.get("location"),
-        forwardedAuthId: response.headers.get("x-middleware-request-x-tutelliv-auth-id"),
+        forwardedAuthId: response.headers.get("x-middleware-request-x-annona-auth-id"),
         overrides: response.headers.get("x-middleware-override-headers") ?? "",
       };
     },
@@ -196,10 +196,10 @@ test("AUTH-ROLE garde réelle : persona de démo active, puis session de démo e
   const live = new Date();
   const sessionCompany = (createdAt: Date) =>
     company("demo-session", { isDemo: true, slug, createdAt, settings: { demoSession: true, demoRetention: demoRetentionSettings(createdAt) } });
-  const base = user("demo", "COMPANY_ADMIN", { email: "demo@tutelliv.fr", company: template });
+  const base = user("demo", "COMPANY_ADMIN", { email: "demo@annona.fr", company: template });
   const sessionCompanyRow = sessionCompany(live);
   const clientPersona = user(demoPersonaAuthId("client", "demo-session"), "CLIENT", { company: sessionCompanyRow });
-  const cookies = { ...session("demo"), "tutelliv-demo-session": sessionId, "tutelliv-demo-persona": "client" };
+  const cookies = { ...session("demo"), "annona-demo-session": sessionId, "annona-demo-persona": "client" };
 
   const active = loadGuard({ usersByAuthId: { demo: base }, personaUsers: [clientPersona], companiesBySlug: { [slug]: sessionCompanyRow } });
   assert.equal((await active.call("/portal/orders", cookies)).status, 200);
@@ -219,14 +219,14 @@ test("AUTH-ROLE garde réelle : persona de démo active, puis session de démo e
 
 test("AUTH-ROLE garde réelle : l'en-tête interne usurpé est effacé et remplacé par l'identité vérifiée", async () => {
   const guard = loadGuard({ usersByAuthId: { admin: user("admin", "COMPANY_ADMIN"), client: user("client", "CLIENT") } });
-  const spoof = { "x-tutelliv-auth-id": "admin" };
+  const spoof = { "x-annona-auth-id": "admin" };
   // Anonyme : l'en-tête transmis aux API et pages est supprimé.
   // L'en-tête témoin prouve que la liste des en-têtes transmis est bien réécrite (et pas laissée intacte).
   const anonymousApi = await guard.call("/api/orders", {}, { ...spoof, "x-probe": "1" });
   assert.equal(anonymousApi.forwardedAuthId, null);
   const forwarded = anonymousApi.overrides.split(",");
   assert.ok(forwarded.includes("x-probe"), anonymousApi.overrides);
-  assert.equal(forwarded.includes("x-tutelliv-auth-id"), false);
+  assert.equal(forwarded.includes("x-annona-auth-id"), false);
   // Client connecté : l'en-tête transmis est son authId vérifié, jamais la valeur usurpée.
   const clientApi = await guard.call("/api/orders", session("client"), spoof);
   assert.equal(clientApi.forwardedAuthId, "client");

@@ -23,7 +23,7 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 30_000 },
   reporter: "line",
-  outputDir: resolve(tmpdir(), "tutelliv-test2-playwright"),
+  outputDir: resolve(tmpdir(), "annona-test2-playwright"),
   use: {
     baseURL,
     headless: true,

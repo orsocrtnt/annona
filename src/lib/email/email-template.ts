@@ -1,4 +1,4 @@
-/** Mails TutelLiv : direction « Menthe soignée », logo officiel et texte brut de secours. */
+/** Mails Annona : direction « Menthe soignée », logo officiel et texte brut de secours. */
 import { emailPresentation, type EmailPresentation } from "./email-presentation";
 
 const COLORS = {
@@ -18,20 +18,20 @@ const FONT = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica
 
 export type EmailAction = { label: string; url: string };
 
-/** Boîte de TutelLiv (OVH, créée le 4 novembre 2026) : réponses aux e-mails envoyés au nom de TutelLiv. */
-export const TUTELLIV_REPLY_TO = "orso@tutelliv.fr";
+/** Boîte de Annona (OVH, créée le 4 novembre 2026) : réponses aux e-mails envoyés au nom de Annona. */
+export const ANNONA_REPLY_TO = "orso@annona.fr";
 
 /**
  * Pied de l'e-mail : `none` = ne pas répondre ; `company` = « répondre à » l'entreprise (MAIL-PONT) ;
- * `tutelliv` = « répondre à » TutelLiv ; `tutelliv-address` = adresse écrite (Supabase Auth, sans « répondre à »).
+ * `annona` = « répondre à » Annona ; `annona-address` = adresse écrite (Supabase Auth, sans « répondre à »).
  */
-export type EmailReplyMode = "none" | "company" | "tutelliv" | "tutelliv-address";
+export type EmailReplyMode = "none" | "company" | "annona" | "annona-address";
 
 const FOOTERS: Record<EmailReplyMode, string> = {
-  none: "E-mail automatique envoyé par TutelLiv, plateforme de suivi des livraisons. Merci de ne pas répondre à ce message.",
-  company: "E-mail envoyé par TutelLiv, plateforme de suivi des livraisons, pour le compte de l&#39;entreprise. Votre réponse lui parvient directement.",
-  tutelliv: "E-mail envoyé par TutelLiv, plateforme de suivi des livraisons. Une question ? Répondez simplement à cet e-mail.",
-  "tutelliv-address": `E-mail automatique envoyé par TutelLiv, plateforme de suivi des livraisons. Une question ? Écrivez à <a href="mailto:${TUTELLIV_REPLY_TO}" style="color:inherit">${TUTELLIV_REPLY_TO}</a>.`,
+  none: "E-mail automatique envoyé par Annona, plateforme de suivi des livraisons. Merci de ne pas répondre à ce message.",
+  company: "E-mail envoyé par Annona, plateforme de suivi des livraisons, pour le compte de l&#39;entreprise. Votre réponse lui parvient directement.",
+  annona: "E-mail envoyé par Annona, plateforme de suivi des livraisons. Une question ? Répondez simplement à cet e-mail.",
+  "annona-address": `E-mail automatique envoyé par Annona, plateforme de suivi des livraisons. Une question ? Écrivez à <a href="mailto:${ANNONA_REPLY_TO}" style="color:inherit">${ANNONA_REPLY_TO}</a>.`,
 };
 
 export type EmailLayoutInput = {
@@ -86,7 +86,7 @@ function button(action: EmailAction) {
 
 export function renderEmailLayout(input: EmailLayoutInput) {
   const banner = input.testRecipient
-    ? `<tr><td style="padding:12px 16px;background:${COLORS.warningSubtle};border-bottom:1px solid ${COLORS.border};font-size:13px;line-height:1.5;color:${COLORS.warning}">Message de recette TutelLiv destiné à ${escapeHtml(input.testRecipient)}.</td></tr>`
+    ? `<tr><td style="padding:12px 16px;background:${COLORS.warningSubtle};border-bottom:1px solid ${COLORS.border};font-size:13px;line-height:1.5;color:${COLORS.warning}">Message de recette Annona destiné à ${escapeHtml(input.testRecipient)}.</td></tr>`
     : "";
   const badgeColor = input.tone === "danger" ? "#a12c2c" : input.tone === "warning" ? "#775716" : COLORS.link;
   const badgeBackground = input.tone === "danger" ? "#fceeee" : input.tone === "warning" ? "#fff5df" : "#e9f9ef";
@@ -117,7 +117,7 @@ export function renderEmailLayout(input: EmailLayoutInput) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px">
 <tr><td style="background:${COLORS.card};border:1px solid ${COLORS.border};border-radius:20px;overflow:hidden">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-${banner}<tr><td class="email-logo-header" align="center" bgcolor="#ffffff" style="padding:0;text-align:center;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-bottom:1px solid ${COLORS.border};border-radius:20px 20px 0 0"><img src="https://tutelliv.fr/brand/email-bandeau-logo.png" width="558" height="99" alt="TutelLiv" style="display:block;width:100%;max-width:558px;height:auto;border:0;border-radius:20px 20px 0 0;color:${COLORS.ink};font-size:20px;font-weight:700"></td></tr>
+${banner}<tr><td class="email-logo-header" align="center" bgcolor="#ffffff" style="padding:0;text-align:center;background-color:#ffffff;background-image:linear-gradient(#ffffff,#ffffff);border-bottom:1px solid ${COLORS.border};border-radius:20px 20px 0 0"><img src="https://annona.fr/brand/email-bandeau-logo.png" width="558" height="99" alt="Annona" style="display:block;width:100%;max-width:558px;height:auto;border:0;border-radius:20px 20px 0 0;color:${COLORS.ink};font-size:20px;font-weight:700"></td></tr>
 <tr><td class="email-padding" style="padding:32px;font-family:${FONT}">${body}</td></tr>
 </table>
 </td></tr>
@@ -162,23 +162,23 @@ export type SupabaseAuthEmailType = "signup" | "invite" | "recovery";
 
 const AUTH_EMAILS: Record<SupabaseAuthEmailType, { subject: string; heading: string; paragraphs: string[]; label: string; note: string }> = {
   signup: {
-    subject: "Confirmez votre adresse e-mail TutelLiv",
+    subject: "Confirmez votre adresse e-mail Annona",
     heading: "Un premier pas. Votre espace vous attend.",
     paragraphs: ["Merci pour votre inscription. Confirmez votre adresse pour créer votre espace entreprise ; vous vous connecterez ensuite avec le mot de passe choisi lors de l’inscription."],
     label: "Confirmer mon adresse",
     note: "Ce lien est personnel, temporaire et à usage unique. Si vous n’êtes pas à l’origine de cette inscription, ignorez cet e-mail.",
   },
   invite: {
-    subject: "Votre invitation TutelLiv",
+    subject: "Votre invitation Annona",
     heading: "Bienvenue dans votre équipe.",
-    paragraphs: ["Un accès à votre espace TutelLiv vient d’être créé. Choisissez votre mot de passe pour l’activer."],
+    paragraphs: ["Un accès à votre espace Annona vient d’être créé. Choisissez votre mot de passe pour l’activer."],
     label: "Choisir mon mot de passe",
     note: "Ce lien est personnel, temporaire et à usage unique. Si vous n’attendiez pas cette invitation, ignorez cet e-mail.",
   },
   recovery: {
-    subject: "Réinitialisez votre mot de passe TutelLiv",
+    subject: "Réinitialisez votre mot de passe Annona",
     heading: "Un nouveau mot de passe.",
-    paragraphs: ["Une demande de nouveau mot de passe a été faite pour votre compte TutelLiv."],
+    paragraphs: ["Une demande de nouveau mot de passe a été faite pour votre compte Annona."],
     label: "Choisir un nouveau mot de passe",
     note: "Ce lien est personnel, temporaire et à usage unique. Si vous n’avez rien demandé, ignorez cet e-mail : votre mot de passe actuel reste valable.",
   },
@@ -194,11 +194,11 @@ export function renderSupabaseAuthTemplate(type: SupabaseAuthEmailType) {
     subject: copy.subject,
     html: renderEmailLayout({
       heading: copy.heading,
-      badge: type === "signup" ? "CONFIRMATION" : type === "invite" ? "VOTRE ESPACE TUTELLIV" : "SÉCURITÉ DU COMPTE",
+      badge: type === "signup" ? "CONFIRMATION" : type === "invite" ? "VOTRE ESPACE ANNONA" : "SÉCURITÉ DU COMPTE",
       paragraphs: copy.paragraphs,
       action: { label: copy.label, url: `{{ .SiteURL }}/reset-password#token_hash={{ .TokenHash }}&type=${type}` },
       note: copy.note,
-      reply: "tutelliv-address",
+      reply: "annona-address",
     }),
   };
 }

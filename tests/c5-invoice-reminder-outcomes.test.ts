@@ -21,7 +21,7 @@ const HOUR = 60 * MIN;
 // 28 octobre 2026, 23 h 50 à Paris (UTC+1) : le changement de jour arrive 10 minutes plus tard.
 const T0 = new Date("2026-10-28T22:50:00.000Z");
 const KEY = "client-notification:invoice-reminder:r1";
-const ENV = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+const ENV = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "Annona <no-reply@example.test>" };
 const SETTINGS = async () => ({ emailNotifications: true, smsNotifications: false, deliveryAlerts: true, invoiceAlerts: true });
 
 type Scripted = { status: number; name?: string; accepted: boolean } | { timeout: true; accepted: boolean };

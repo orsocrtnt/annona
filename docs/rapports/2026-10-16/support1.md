@@ -15,7 +15,7 @@ Le portail permettait déjà au client de créer un ticket, mais l'équipe ne di
 - Les validations bornent et nettoient sujets, messages et statuts. Toutes les lectures et écritures combinent entreprise, propriétaire et ressources liées.
 - Une concurrence découverte pendant la recette pouvait laisser une réponse tardive ramener un ticket déjà résolu à `En cours`. La transition automatique utilise maintenant une mise à jour conditionnelle `Ouvert → En cours` : une résolution concurrente gagne et ne peut plus être rétrogradée.
 
-Le canal annoncé dans le produit est cet espace TutelLiv, avec un objectif de première réponse sous un jour ouvré. Les e-mails restent une tâche séparée et aucun délai contractuel n'est revendiqué.
+Le canal annoncé dans le produit est cet espace Annona, avec un objectif de première réponse sous un jour ouvré. Les e-mails restent une tâche séparée et aucun délai contractuel n'est revendiqué.
 
 ## Résultats
 
@@ -33,4 +33,4 @@ Les preuves sont dans `outputs/support1/`. La procédure d'exploitation et de re
 
 ## Limites restantes
 
-La notification certaine est aujourd'hui interne à TutelLiv. La délivrabilité e-mail, l'expéditeur et la gestion d'échec relèvent de la tâche EMAIL. Le délai affiché est un objectif d'exploitation à confirmer avant d'être inclus dans une offre ou un contrat. La supervision et les alertes externes de panne restent dans OPS-03B.
+La notification certaine est aujourd'hui interne à Annona. La délivrabilité e-mail, l'expéditeur et la gestion d'échec relèvent de la tâche EMAIL. Le délai affiché est un objectif d'exploitation à confirmer avant d'être inclus dans une offre ou un contrat. La supervision et les alertes externes de panne restent dans OPS-03B.

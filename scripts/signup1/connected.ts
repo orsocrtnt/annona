@@ -30,7 +30,7 @@ async function prepare(planCode: "STARTER" | "PRO" | "BUSINESS", billingInterval
   const email = `${run}-${suffix}@example.test`;
   await prisma.signupJourney.update({ where: { id: row.id }, data: {
     status: "EMAIL_VERIFIED", email, authUserId: `auth-${run}-${suffix}`,
-    firstName: "Test", lastName: "TutelLiv", companyName: `Entreprise ${run} ${suffix}`,
+    firstName: "Test", lastName: "Annona", companyName: `Entreprise ${run} ${suffix}`,
     siren: siren ?? null, billingAddress: "1 rue du Test", billingPostalCode: "75001",
     billingCity: "Paris", billingCountry: "FR", emailVerifiedAt: new Date(),
   } });

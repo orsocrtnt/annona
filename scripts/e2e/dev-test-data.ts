@@ -21,10 +21,10 @@ export const TEST_DATA_MANIFEST = resolve("outputs/e2e-test-data.json");
 
 const POD_BUCKET = "delivery-pods";
 const ACCOUNT_EMAILS = {
-  billingA: "e2e-role-billing-a@tutelliv.fr",
-  billingB: "e2e-role-billing-b@tutelliv.fr",
-  dispatcher: "e2e-role-dispatcher@tutelliv.fr",
-  driver: "e2e-role-driver@tutelliv.fr",
+  billingA: "e2e-role-billing-a@annona.fr",
+  billingB: "e2e-role-billing-b@annona.fr",
+  dispatcher: "e2e-role-dispatcher@annona.fr",
+  driver: "e2e-role-driver@annona.fr",
 } as const;
 
 const ID = {

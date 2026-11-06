@@ -203,7 +203,7 @@ export function ProductTour() {
                 transition={{ duration: 0.3, ease: EASE_OUT }}
                 className="truncate"
               >
-                TutelLiv · <span className="text-foreground">{started ? SPACE_LABELS[step] : "Tableau de bord"}</span>
+                Annona · <span className="text-foreground">{started ? SPACE_LABELS[step] : "Tableau de bord"}</span>
               </motion.span>
             </AnimatePresence>
           </div>

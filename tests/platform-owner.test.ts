@@ -5,13 +5,13 @@ import { OwnerProvisionError, planOwnerAccount } from "../src/domains/admin/plat
 
 test("le compte propriétaire est actif, sans entreprise, et unique", () => {
   const plan = planOwnerAccount({
-    email: " Proprietaire@TutelLiv.fr ",
+    email: " Proprietaire@Annona.fr ",
     password: "mot-de-passe-solide",
     existingSuperAdminCount: 0,
   });
   assert.deepEqual(
     { email: plan.email, companyId: plan.companyId, status: plan.status, roleSlug: plan.roleSlug },
-    { email: "proprietaire@tutelliv.fr", companyId: null, status: "ACTIVE", roleSlug: "super-admin" },
+    { email: "proprietaire@annona.fr", companyId: null, status: "ACTIVE", roleSlug: "super-admin" },
   );
   assert.throws(
     () => planOwnerAccount({ email: "a@b.c", password: "court", existingSuperAdminCount: 0 }),

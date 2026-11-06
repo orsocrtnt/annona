@@ -7,7 +7,7 @@ test.afterEach(async ({ page }) => {
 
 async function openPortal(page: Page, path = "/portal") {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.ok()).toBeTruthy();
   const persona = await page.request.post("/api/demo/persona", { data: { persona: "client" } });
@@ -53,7 +53,7 @@ test("le choix sombre est mémorisé, appliqué avant l'hydratation et survit au
   const first = await page.evaluate(() => (window as unknown as { __firstFrame: { theme: string; bg: string | null } }).__firstFrame);
   expect(first.theme).toBe("dark");
   if (first.bg) expect(first.bg).toBe("rgb(20, 23, 22)");
-  expect(await page.evaluate(() => localStorage.getItem("tutelliv-theme"))).toBe("dark");
+  expect(await page.evaluate(() => localStorage.getItem("annona-theme"))).toBe("dark");
   await page.screenshot({ path: test.info().outputPath("portail-sombre.png"), fullPage: true });
 
   await page.getByTestId("theme-toggle").click();

@@ -24,7 +24,7 @@ Ce document ne valide pas juridiquement les textes. Il indique ce qui correspond
 
 ## 2. Conclusion de la comparaison
 
-Les documents sont prudents et, dans l'ensemble, évitent de présenter les fonctions futures comme déjà disponibles. Ils correspondent bien à la séparation Client responsable / TutelLiv sous-traitant envisagée, aux trois espaces, aux limites du GPS navigateur, à l'absence de SLA et à l'interdiction de conversion automatique des pilotes.
+Les documents sont prudents et, dans l'ensemble, évitent de présenter les fonctions futures comme déjà disponibles. Ils correspondent bien à la séparation Client responsable / Annona sous-traitant envisagée, aux trois espaces, aux limites du GPS navigateur, à l'absence de SLA et à l'interdiction de conversion automatique des pilotes.
 
 Ils ne sont cependant pas prêts à signer ou publier :
 
@@ -44,7 +44,7 @@ La décision reste donc : **NO-GO pour un pilote avec données réelles**. Une d
 
 | Clause | Comportement réel vérifié | Conformité / écart | Correction documentaire ou technique |
 |---|---|---|---|
-| Art. 1 — TutelLiv est un logiciel B2B et non un transporteur/employeur. | Le code organise commandes, affectations, suivi et preuves ; il n'exécute pas le transport. | **Conforme au produit.** Qualification juridique finale à confirmer. | Conserver. Décrire clairement les responsabilités du Client dans le bon de commande et la convention. |
+| Art. 1 — Annona est un logiciel B2B et non un transporteur/employeur. | Le code organise commandes, affectations, suivi et preuves ; il n'exécute pas le transport. | **Conforme au produit.** Qualification juridique finale à confirmer. | Conserver. Décrire clairement les responsabilités du Client dans le bon de commande et la convention. |
 | Art. 2 — Administrateur, dispatcher, livreur et espace client. | Trois espaces existent. Un rôle `DISPATCHER` technique existe ; `MINI_ADMIN` est un autre rôle configurable. | **Écart documentaire de vocabulaire.** « Dispatcher (mini-administrateur) » les confond. | Remplacer par « dispatcher dédié » ; expliquer séparément qu'un mini-admin peut recevoir une délégation, sans bénéficier automatiquement du profil dispatcher limité. |
 | Art. 2 — Fonctions futures non garanties, pas de GPS permanent/native app/facturation certifiée. | Aucun suivi navigateur continu garanti, aucune app native, aucune facturation SaaS complète. | **Conforme et nécessaire.** | Conserver tant que les fonctions ne sont pas qualifiées. |
 | Art. 3 — Prix et quotas Starter/Pro/Business. | Migration SaaS : 79/790 €, 179/1 790 €, 349/3 490 € ; chauffeurs 5/10/illimités ; commandes 1 000/3 000/6 000 ; admins 1/1/2 ; dispatchers 0/1/1 ; overages 0,10/0,08/0,06 €. | **Implémenté/testé dans SAAS-01A**, pas encore vendu. | Ajouter l'identifiant/version du catalogue au récapitulatif contractuel. Ne publier qu'avec le parcours commercial prêt. |
@@ -78,14 +78,14 @@ La décision reste donc : **NO-GO pour un pilote avec données réelles**. Une d
 
 | Clause | Comportement réel vérifié | Conformité / écart | Correction documentaire ou technique |
 |---|---|---|---|
-| §1 — TutelLiv responsable pour prospection, abonnement, support et sécurité ; sous-traitant des opérations Client. | Répartition cohérente avec l'architecture. | **Compatible, qualification à confirmer.** | Compléter identité/contacts et le registre par traitement. |
-| §3 — Données propres à TutelLiv. | Comptes, sécurité, support et catalogue existent ; prospection/CRM/paiement futur ne sont pas des modules actifs. | **Partiel.** | Distinguer clairement « collecté aujourd'hui » et « collecté après activation commerciale ». |
+| §1 — Annona responsable pour prospection, abonnement, support et sécurité ; sous-traitant des opérations Client. | Répartition cohérente avec l'architecture. | **Compatible, qualification à confirmer.** | Compléter identité/contacts et le registre par traitement. |
+| §3 — Données propres à Annona. | Comptes, sécurité, support et catalogue existent ; prospection/CRM/paiement futur ne sont pas des modules actifs. | **Partiel.** | Distinguer clairement « collecté aujourd'hui » et « collecté après activation commerciale ». |
 | §4 — Inventaire opérationnel. | Commandes, adresses, contacts, statuts, GPS, incidents, messages, POD et factures opérationnelles existent. | **Globalement conforme mais incomplet.** | Ajouter notifications, adresses récurrentes, file IndexedDB, données Auth, logs, jobs et données SaaS. |
 | §5–6 — Fournisseurs et transferts. | Supabase/Vercel/GitHub/OSM/OSRM/IGN/BAN actifs ; Resend/Stripe futurs ; accès et sous-traitants mondiaux possibles. | **Annexe incomplète.** | Remplacer `[À CONFIRMER DEV]` par l'inventaire de ce document et dater les listes de sous-traitants. |
 | §7 — Durées. | Aucune durée générale appliquée ; seulement nettoyage démo ciblé non planifié. | **Écart P0.** | Conserver toutes les durées en « proposée » jusqu'à décision et mécanismes testés. |
 | §8 — Pas de surveillance permanente et photos restreintes. | GPS borné ; photo privée mais EXIF conservé. | **Partiel.** | Ajouter limites mobiles, EXIF et stockage hors ligne. |
 | §9 — Sécurité. | RBAC/A-B/Storage privé/restauration ponctuelle présents ; MFA, alertes et sauvegarde continue incomplets. | **Formulation prudente compatible.** | Annexe technique datée avec preuve par contrôle, sans « conformité garantie ». |
-| §10 — Droits. | Aucun workflow DSR complet ; export opérateur seulement. | **Partiel.** | Décrire canal et délais après mise en place ; prévoir routage Client/TutelLiv. |
+| §10 — Droits. | Aucun workflow DSR complet ; export opérateur seulement. | **Partiel.** | Décrire canal et délais après mise en place ; prévoir routage Client/Annona. |
 | §11 — Décisions automatisées. | Dispatch automatique attribue une mission selon disponibilité/charge ; aucun effet juridique significatif démontré, mais analyse métier/juridique non faite. | **Non vérifié juridiquement.** | Décrire logique, intervention/override humain et conséquences réelles avant conclure. |
 | §12 — Traceurs. | Auth, cookies démo, préférence localStorage et IndexedDB ; aucun analytics/publicité tiers. | **Inventaire partiel.** | Publier les clés/familles et durées ; ne pas déployer de CMP marketing sans traceur concerné. |
 
@@ -170,7 +170,7 @@ Prix consultés le 22 octobre 2026. Ils sont indicatifs, hors taxes et peuvent c
 | Critère | Vercel Pro | Alternative étudiée : Scaleway Serverless Containers Paris |
 |---|---|---|
 | Prix de base | [Tarif officiel](https://vercel.com/pricing) : **20 USD/mois** pour le plan Pro affiché, avec **20 USD de crédit d'usage** ; sièges développeur supplémentaires et dépassements facturés. TVA en plus selon facturation. | [Tarif officiel](https://www.scaleway.com/en/pricing/serverless/) : 0,000002 €/GB-s et 0,00001 €/vCPU-s après free tiers de 400 000 GB-s et 200 000 vCPU-s. Paiement à l'usage. |
-| Ordre de grandeur TutelLiv | Minimum d'environ 20 USD/mois pour un propriétaire/développeur, tant que l'usage reste dans le crédit ; surveiller builds, compute, transfert et logs. | Conteneur 0,5 vCPU/1 Go toujours actif sur 30 jours : environ **15,34 € HT/mois** après free tier. À 1 vCPU/1 Go : environ **28,30 € HT/mois**. Registry, logs, réplicas et autres services peuvent s'ajouter. Avec scale-to-zero, coût inférieur mais cold starts. |
+| Ordre de grandeur Annona | Minimum d'environ 20 USD/mois pour un propriétaire/développeur, tant que l'usage reste dans le crédit ; surveiller builds, compute, transfert et logs. | Conteneur 0,5 vCPU/1 Go toujours actif sur 30 jours : environ **15,34 € HT/mois** après free tier. À 1 vCPU/1 Go : environ **28,30 € HT/mois**. Registry, logs, réplicas et autres services peuvent s'ajouter. Avec scale-to-zero, coût inférieur mais cold starts. |
 | Next.js | Intégration native, Preview automatique, CDN, rollback, variables et cron déjà utilisés. | Next.js officiellement documenté via Docker/Container Registry et `next start`. Dockerfile, image, CI/CD, secrets, cron, previews et rollback doivent être construits/configurés. |
 | Charge de migration | Faible : changement de plan et durcissement de la configuration, sans refonte de déploiement. | Moyenne à élevée : conteneurisation, pipeline, environnements, observabilité, rollback, URL/cron et tests de parité. |
 | Préproduction | Déjà opérationnelle par branche/Preview. | Il faut créer un conteneur préproduction distinct et une stratégie d'URL/versions ; pas de Preview par branche équivalente prête à l'emploi. |

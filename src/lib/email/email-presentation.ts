@@ -24,7 +24,7 @@ export function emailPresentation(subject: string, text: string): EmailPresentat
     return { heading: copy.heading, badge: subject.toLocaleUpperCase("fr-FR"), tone: copy.tone,
       details: [...(reference ? [{ label: "Référence", value: reference }] : []), { label: "Statut", value: copy.status }] };
   }
-  if (subject === "Bienvenue sur TutelLiv") {
+  if (subject === "Bienvenue sur Annona") {
     const account = /Votre espace (.+) est prêt avec l’offre (\S+) \((mensuel|annuel)\)\./.exec(text);
     return { heading: "Tout est prêt. À vous de jouer.", badge: "BIENVENUE", details: account ? [
       { label: "Entreprise", value: account[1]! },

@@ -50,7 +50,7 @@ async function run() {
     }));
     assert.equal(login.response.status, 200, await login.response.text());
     const cookies = cookieHeader(login.response);
-    assert.ok(cookies.includes("tutelliv-demo-session="));
+    assert.ok(cookies.includes("annona-demo-session="));
     const authenticatedCookies = [accessCookie, cookies].filter(Boolean).join("; ");
     const dashboard = await timed(() => fetch(new URL("/dashboard", baseUrl), {
       headers: { cookie: authenticatedCookies },

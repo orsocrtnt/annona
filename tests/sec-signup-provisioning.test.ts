@@ -133,7 +133,7 @@ test("garde serveur : session confirmée sans profil et métadonnées falsifiée
   const server = load<typeof import("../src/lib/api/server-auth")>("src/lib/api/server-auth.ts", {
     react: { cache: (fn: unknown) => fn },
     "next/headers": { headers: async () => ({ get: () => null }) },
-    "@/lib/auth/auth-headers": { TUTELLIV_AUTH_ID_HEADER: "x-test-auth" },
+    "@/lib/auth/auth-headers": { ANNONA_AUTH_ID_HEADER: "x-test-auth" },
     "@/services/supabase/server": { createClient: async () => ({ auth: { getUser: async () => ({ data: { user: { id: "auth", email: "pirate@example.test", email_confirmed_at: "2026-10-28", user_metadata: FORGED_METADATA } } }) } }) },
     "@/domains/user/user.service": { getUserByAuthId: async () => null },
     "@/domains/auth/auth.service": f.service,

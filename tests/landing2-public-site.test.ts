@@ -43,7 +43,7 @@ test("Connexion directe : une valeur ?espace= invalide ouvre le formulaire commu
 });
 
 test("LANDING-2 : les liens existants (?email= démo, ?redirect= middleware et inscription) ouvrent le formulaire entreprise", () => {
-  assert.equal(resolveLoginView({ email: "demo@tutelliv.fr" }).kind, "form");
+  assert.equal(resolveLoginView({ email: "demo@annona.fr" }).kind, "form");
   assert.deepEqual(resolveLoginView({ redirect: "/dashboard" }), { kind: "form", context: "company", prefillDemo: false });
   assert.deepEqual(resolveLoginView({ email: "a@b.fr", redirect: "/onboarding" }), { kind: "form", context: "company", prefillDemo: false });
 });
@@ -138,7 +138,7 @@ test("LANDING-2 : le formulaire passe par la garde et la relâche au retour depu
 
 test("LANDING-2 : aucune adresse de support inventée", () => {
   const constants = read("src/lib/constants.ts");
-  assert.doesNotMatch(constants, /support@tutelliv\.fr"/);
+  assert.doesNotMatch(constants, /support@annona\.fr"/);
   assert.match(constants, /NEXT_PUBLIC_SUPPORT_EMAIL\?\.trim\(\) \|\| null/);
   for (const file of [
     "src/features/landing/home-landing.tsx",
@@ -147,7 +147,7 @@ test("LANDING-2 : aucune adresse de support inventée", () => {
     "src/features/auth/auth-form.tsx",
     "src/features/support/public-support-link.tsx",
   ]) {
-    assert.doesNotMatch(read(file), /support@tutelliv/, file);
+    assert.doesNotMatch(read(file), /support@annona/, file);
   }
   assert.match(read("src/features/support/public-support-link.tsx"), /href="\/contact"/);
 });

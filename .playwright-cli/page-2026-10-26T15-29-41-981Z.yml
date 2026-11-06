@@ -4,7 +4,7 @@
   - generic [ref=f4e3]:
     - complementary [ref=f4e4]:
       - generic [ref=f4e5]:
-        - link "TutelLiv" [ref=f4e6] [cursor=pointer]:
+        - link "Annona" [ref=f4e6] [cursor=pointer]:
           - /url: /
         - button "Replier le menu" [ref=f4e8]
       - navigation "Navigation principale" [ref=f4e14]:

@@ -16,7 +16,7 @@ const HOUR = 3_600_000;
 const USERS = [{ id: "client_a", companyId: "company_a", email: "client.a@example.test", firstName: "Studio", lastName: "Oberkampf" }];
 const KEY = "client-notification:invoice-reminder:r1";
 
-const EMAIL_ENV = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+const EMAIL_ENV = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "test-key", MAIL_FROM: "Annona <no-reply@example.test>" };
 /** Envoi par le vrai helper, le fournisseur répondant `status` + `name` (corps d'erreur Resend). */
 const providerSend = (status: number, name: string) =>
   (input: { to: string; subject: string; text: string; idempotencyKey: string; replayWindowStart: Date | null }) =>

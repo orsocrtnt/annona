@@ -60,7 +60,7 @@ test("DEMO-3 : Facturation › Paiements liste, filtre et relance une facture à
       // Anti-doublon : la même facture n'est plus relançable pendant 24 h.
       await expect(sent).toBeDisabled();
     } else {
-      // Aucun e-mail n'est parti (service non configuré sur tutelliv-dev) : la relance est tracée mais ne bloque pas
+      // Aucun e-mail n'est parti (service non configuré sur annona-dev) : la relance est tracée mais ne bloque pas
       // une nouvelle tentative (BLOCKING_RESULTS = QUEUED, SENT, SEND_UNCONFIRMED), le bouton reste donc actif.
       await expect(remind).toBeEnabled();
       await expect(panel.getByText(/Relance non envoyée/).first()).toBeVisible();

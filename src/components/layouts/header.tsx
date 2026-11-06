@@ -91,8 +91,8 @@ export function Header({ breadcrumbs, className, premium = false, actions }: Hea
             href="/"
             className="inline-flex min-h-11 items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
           >
-            <Image src="/brand/logo-horizontal-fond-clair.png" alt="TutelLiv" width={94} height={28} priority className="dark:hidden" style={{ width: 94, height: 28 }} />
-            <Image src="/brand/logo-horizontal-fond-sombre.png" alt="TutelLiv" width={94} height={28} priority className="hidden dark:block" style={{ width: 94, height: 28 }} />
+            <Image src="/brand/logo-horizontal-fond-clair.png" alt="Annona" width={94} height={28} priority className="dark:hidden" style={{ width: 94, height: 28 }} />
+            <Image src="/brand/logo-horizontal-fond-sombre.png" alt="Annona" width={94} height={28} priority className="hidden dark:block" style={{ width: 94, height: 28 }} />
           </Link>
           <p className="hidden text-sm font-medium text-[#667069] lg:block dark:text-muted-foreground">
             Centre de pilotage

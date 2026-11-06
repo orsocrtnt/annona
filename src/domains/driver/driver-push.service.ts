@@ -9,7 +9,7 @@ const PUSH_TIMEOUT_MS = 10_000;
 /** Texte générique : le service de notification du fabricant ne reçoit aucune donnée de mission. */
 export const NEW_MISSION_PUSH = {
   title: "Nouvelle mission",
-  body: "Une mission vous a été confiée. Ouvrez TutelLiv pour la voir.",
+  body: "Une mission vous a été confiée. Ouvrez Annona pour la voir.",
   url: "/driver/missions",
   tag: "nouvelle-mission",
 } as const;
@@ -22,7 +22,7 @@ export function getDriverPushConfig(env: NodeJS.ProcessEnv = process.env): PushC
   const publicKey = env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
   const privateKey = env.VAPID_PRIVATE_KEY?.trim();
   if (!publicKey || !privateKey) return null;
-  return { publicKey, privateKey, subject: env.VAPID_SUBJECT?.trim() || "https://tutelliv.fr" };
+  return { publicKey, privateKey, subject: env.VAPID_SUBJECT?.trim() || "https://annona.fr" };
 }
 
 const sendWebPush: PushSender = async (target, payload, config) => {

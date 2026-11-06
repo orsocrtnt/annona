@@ -24,13 +24,13 @@ if (!recipient || (recipient !== configured && !/^[a-z0-9+._-]+@resend\.dev$/.te
 
 const env = { ...process.env, EMAIL_DELIVERY_MODE: "test", EMAIL_TEST_RECIPIENT: recipient };
 const runId = new Date().toISOString();
-const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ?? "https://tutelliv.fr";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ?? "https://annona.fr";
 const samples = [
   {
     kind: "bienvenue",
     to: "admin.e2e@exemple.test",
-    subject: "Bienvenue sur TutelLiv",
-    text: "Bonjour Camille,\n\nVotre espace Transports E2E est prêt avec l’offre STARTER (mensuel).\nConnectez-vous puis suivez l’assistant pour ajouter vos livreurs, vos clients et créer votre première livraison.\n\nL’équipe TutelLiv",
+    subject: "Bienvenue sur Annona",
+    text: "Bonjour Camille,\n\nVotre espace Transports E2E est prêt avec l’offre STARTER (mensuel).\nConnectez-vous puis suivez l’assistant pour ajouter vos livreurs, vos clients et créer votre première livraison.\n\nL’équipe Annona",
   },
   {
     kind: "livraison",
@@ -42,7 +42,7 @@ const samples = [
     kind: "relance",
     to: "client.e2e@exemple.test",
     subject: "Rappel : facture F-E2E-0001",
-    text: `Bonjour,\n\nLa facture F-E2E-0001 de Transports E2E (120,00 €) est échue depuis 5 jours.\nVoir la facture : ${appUrl}/portal/invoices/e2e\n\nL’équipe TutelLiv`,
+    text: `Bonjour,\n\nLa facture F-E2E-0001 de Transports E2E (120,00 €) est échue depuis 5 jours.\nVoir la facture : ${appUrl}/portal/invoices/e2e\n\nL’équipe Annona`,
   },
 ];
 

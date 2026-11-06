@@ -4,7 +4,7 @@ Date : 16 octobre 2026. Qualification interne sur l'environnement de test autori
 
 ## Décision de périmètre
 
-Le socle opérationnel est conservé, mais la mission spéciale est explicitement exclue de l'offre pilote. TutelLiv sait centraliser la demande multi-adresses et exécuter la livraison après conversion manuelle. Il ne sait pas produire un devis chiffré versionné ni enregistrer une acceptation du client. Présenter ce flux comme un devis complet serait donc trompeur.
+Le socle opérationnel est conservé, mais la mission spéciale est explicitement exclue de l'offre pilote. Annona sait centraliser la demande multi-adresses et exécuter la livraison après conversion manuelle. Il ne sait pas produire un devis chiffré versionné ni enregistrer une acceptation du client. Présenter ce flux comme un devis complet serait donc trompeur.
 
 La catégorie reste désactivée par défaut. Les écrans de création, de détail client, de traitement administrateur et de paramètres indiquent son caractère expérimental et le traitement externe du devis. Une demande de devis ne peut plus être passée directement à livré ou en échec : seuls le maintien, la conversion manuelle après accord externe et l'annulation sont proposés et acceptés.
 

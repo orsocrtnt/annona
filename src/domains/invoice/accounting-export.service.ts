@@ -3,7 +3,7 @@ import { Prisma, type Invoice } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import type { AccountingExportQuery } from "@/lib/validations/accounting-export";
 
-export const ACCOUNTING_EXPORT_VERSION = "tutelliv-delivery-v1";
+export const ACCOUNTING_EXPORT_VERSION = "annona-delivery-v1";
 export const ACCOUNTING_EXPORT_BATCH_SIZE = 250;
 export const ACCOUNTING_EXPORT_MAX_DOCUMENTS = 10_000;
 export const ACCOUNTING_EXPORT_MAX_ROWS = 50_000;

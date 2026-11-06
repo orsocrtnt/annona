@@ -251,7 +251,7 @@ test("facture payée : TotalPrepaidAmount = TTC et DuePayableAmount = 0 (BR-CO-1
   assert.ok(summary.indexOf("<ram:GrandTotalAmount>") < summary.indexOf("<ram:TotalPrepaidAmount>"));
   assert.ok(summary.indexOf("<ram:TotalPrepaidAmount>") < summary.indexOf("<ram:DuePayableAmount>"));
   assert.deepEqual(checkFacturXInvoice({ ...inv, dueDate: null, paymentTerms: undefined }), [], "BR-CO-25 ne s'applique pas à un montant dû nul");
-  // Acompte partiel (le générateur le gère ; le modèle TutelLiv n'enregistre pas de paiement partiel).
+  // Acompte partiel (le générateur le gère ; le modèle Annona n'enregistre pas de paiement partiel).
   const partial = generateFacturXXml(invoice({ prepaidAmount: 10 }));
   assert.deepEqual(amount(partial, "DuePayableAmount"), ["20.00"]);
   assert.ok(checkFacturXInvoice(invoice({ prepaidAmount: 31 })).some((issue) => issue.rule === "TL-ACOMPTE"));

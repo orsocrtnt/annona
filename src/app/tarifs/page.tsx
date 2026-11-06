@@ -8,7 +8,7 @@ import { MailLinkBeacon } from "@/features/landing/mail-link-beacon";
 
 export const metadata: Metadata = {
   title: `Tarifs — ${APP_NAME}`,
-  description: "TutelLiv arrive bientôt : inscrivez-vous sur la liste d'attente pour faire partie des premières entreprises.",
+  description: "Annona arrive bientôt : inscrivez-vous sur la liste d'attente pour faire partie des premières entreprises.",
 };
 
 /**
@@ -33,7 +33,7 @@ export default function TarifsPage() {
               Bientôt disponible
             </div>
             <h1 className="mt-6 text-balance text-4xl font-bold tracking-[-0.04em] text-foreground sm:text-5xl lg:text-6xl">
-              TutelLiv arrive bientôt.
+              Annona arrive bientôt.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
               Nos formules seront publiées à l’ouverture. Vous voulez faire partie des premières entreprises à l’utiliser ? Inscrivez-vous sur la liste d’attente.

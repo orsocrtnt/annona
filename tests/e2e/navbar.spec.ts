@@ -33,7 +33,7 @@ test("la barre Apple reste identique dans le portail client, du bureau au mobile
 }) => {
   const login = await page.request.post("/api/auth/login", {
     data: {
-      email: "demo@tutelliv.fr",
+      email: "demo@annona.fr",
       password: "Demo2026!",
       demoTestSession: true,
       accountType: "company",
@@ -59,7 +59,7 @@ test("la barre Apple reste identique dans le portail client, du bureau au mobile
     "aria-current",
     "page"
   );
-  await expect(header.locator("a", { hasText: "TutelLiv" })).toBeVisible();
+  await expect(header.locator("a", { hasText: "Annona" })).toBeVisible();
 
   const frame = header.locator("div").first();
   await expect(frame).toHaveCSS("border-radius", "18px");

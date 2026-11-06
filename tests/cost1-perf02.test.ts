@@ -14,7 +14,7 @@ function perfFixture() {
     ["BUSINESS", "business", 25, 6_000],
   ] as const;
   return {
-    schema: "tutelliv-perf02-local-v1",
+    schema: "annona-perf02-local-v1",
     target: { url: "http://127.0.0.1/perf02-local", locality: "loopback-only", networkRequests: 0, databaseWrites: 0, migrationsOrSeeds: 0 },
     guard: { rejectsNonLocalTargets: true, poolCapacity: 5, conservativeLocalCeiling: { concurrentOperations: 4, reason: "fixture" } },
     degradationAndRecovery: { attemptedConcurrentOperations: 12, acceptedBeforeSaturation: 5, saturationErrors: 7, highWaterMark: 5, recoveryOperations: 5, recoverySucceeded: true },

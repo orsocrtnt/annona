@@ -4,7 +4,7 @@
 
 Un protocole reproductible mesure désormais cinq scénarios standard identiques sur une entreprise fictive isolée. Chaque scénario crée une commande et sa livraison, l’affecte manuellement, enregistre une question client et une réponse dispatch, relit le fil, puis lit le même statut et la même position fictive fraîche côté client et administration.
 
-Environnement : Mac Apple M1, 8 Go, Node 22.18.0, services TutelLiv exécutés localement et PostgreSQL Supabase distant de test, connexion courante non bridée, aucun téléphone physique. Le harnais automatise les actions ; il ne mesure donc pas l’autonomie d’un utilisateur novice.
+Environnement : Mac Apple M1, 8 Go, Node 22.18.0, services Annona exécutés localement et PostgreSQL Supabase distant de test, connexion courante non bridée, aucun téléphone physique. Le harnais automatise les actions ; il ne mesure donc pas l’autonomie d’un utilisateur novice.
 
 ## Valeurs internes
 

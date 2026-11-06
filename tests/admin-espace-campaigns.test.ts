@@ -68,12 +68,12 @@ test("lot 5 : mail fidèle au modèle validé, liens comptés, logo joint, pas d
     city: "Paris",
     linkCode: "il-en-est-ou-paris",
     addressSource: "Google Maps <script>",
-    baseUrl: "https://tutelliv.fr/",
+    baseUrl: "https://annona.fr/",
   });
   assert.equal(email.subject, "Il en est où ?");
   assert.ok(email.html.includes(PROSPECT_PREHEADER));
-  assert.ok(email.html.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
-  assert.ok(email.html.includes("https://tutelliv.fr/go/il-en-est-ou-paris/site"));
+  assert.ok(email.html.includes("https://annona.fr/go/il-en-est-ou-paris/rejoindre"));
+  assert.ok(email.html.includes("https://annona.fr/go/il-en-est-ou-paris/site"));
   assert.ok(email.html.includes(`src="cid:${PROSPECT_LOGO_CID}"`));
   assert.ok(email.html.includes("BIENTÔT À PARIS"));
   assert.ok(email.html.includes("Carotenuto-Marchetti Orso"));
@@ -83,19 +83,19 @@ test("lot 5 : mail fidèle au modèle validé, liens comptés, logo joint, pas d
   assert.equal(/\[[A-Za-z]+\]/.test(email.html), false, "aucun crochet à remplir");
   // Seule image : le logo joint ; aucune image distante (donc aucun pixel de suivi).
   assert.deepEqual(email.html.match(/<img\b[^>]*src="([^"]+)"/g)?.map((tag) => tag.match(/src="([^"]+)"/)![1]), [`cid:${PROSPECT_LOGO_CID}`]);
-  assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
+  assert.ok(email.text.includes("https://annona.fr/go/il-en-est-ou-paris/rejoindre"));
   assert.ok(email.text.startsWith(PROSPECT_PREHEADER), "aperçu aussi dans la version texte");
   // Le texte caché en masse envoyait le mail en indésirables chez Microsoft 365 (5 novembre 2026).
   assert.equal(/[\u034f\u200c\u2007\ufeff\u00ad]/.test(email.text), false, "aucun caractère invisible dans la version texte");
   assert.equal(/&#847;|&zwnj;|&#8199;|&#65279;|&shy;/.test(email.html), false, "aucun caractère invisible dans la version HTML");
-  assert.equal(email.headers["List-Unsubscribe"], "<mailto:orso@tutelliv.fr?subject=STOP>");
+  assert.equal(email.headers["List-Unsubscribe"], "<mailto:orso@annona.fr?subject=STOP>");
   assert.equal(email.attachments.length, 1);
   assert.equal(email.attachments[0]!.cid, PROSPECT_LOGO_CID);
   assert.deepEqual(email.attachments[0]!.content, readFileSync("public/brand/email-bandeau-logo.png"));
   assert.equal(Buffer.from(PROSPECT_LOGO_PNG_BASE64, "base64").subarray(1, 4).toString(), "PNG");
-  assert.deepEqual(prospectLinks("https://tutelliv.fr", "a-b"), {
-    join: "https://tutelliv.fr/go/a-b/rejoindre",
-    site: "https://tutelliv.fr/go/a-b/site",
+  assert.deepEqual(prospectLinks("https://annona.fr", "a-b"), {
+    join: "https://annona.fr/go/a-b/rejoindre",
+    site: "https://annona.fr/go/a-b/site",
   });
 });
 
@@ -105,7 +105,7 @@ test("lot 5 : réglages OVH lus sans jamais exposer le mot de passe", () => {
   assert.deepEqual(readProspectMailerConfig({ PROSPECT_SMTP_PASSWORD: "secret-pass" }), {
     host: "smtp.mail.ovh.net",
     port: 465,
-    user: "orso@tutelliv.fr",
+    user: "orso@annona.fr",
     password: "secret-pass",
   });
   const auth = describeMailerError(Object.assign(new Error("535 auth failed for secret-pass"), { code: "EAUTH" }));
@@ -116,10 +116,10 @@ test("lot 5 : réglages OVH lus sans jamais exposer le mot de passe", () => {
 });
 
 test("lot 5 : origine des liens, variable prioritaire si elle est une origine propre", () => {
-  assert.equal(prospectLinkBaseUrl("https://tutelliv.fr/api/admin/campaigns/x/send", {}), "https://tutelliv.fr");
-  assert.equal(prospectLinkBaseUrl("http://localhost:3000/api", { PROSPECT_LINK_BASE_URL: "https://tutelliv.fr/" }), "https://tutelliv.fr");
+  assert.equal(prospectLinkBaseUrl("https://annona.fr/api/admin/campaigns/x/send", {}), "https://annona.fr");
+  assert.equal(prospectLinkBaseUrl("http://localhost:3000/api", { PROSPECT_LINK_BASE_URL: "https://annona.fr/" }), "https://annona.fr");
   assert.equal(prospectLinkBaseUrl("http://localhost:3000/api", { PROSPECT_LINK_BASE_URL: "javascript:alert(1)" }), "http://localhost:3000");
-  assert.equal(prospectLinkBaseUrl("http://localhost:3000/api", { PROSPECT_LINK_BASE_URL: "https://tutelliv.fr/x" }), "http://localhost:3000");
+  assert.equal(prospectLinkBaseUrl("http://localhost:3000/api", { PROSPECT_LINK_BASE_URL: "https://annona.fr/x" }), "http://localhost:3000");
 });
 
 type FakeState = {
@@ -161,43 +161,43 @@ test("lot 5 : envoi un par un — envoyé, STOP, échec, attente, fin, non confi
   const sent: Array<{ to: string; subject: string; html: string }> = [];
   const deps = { repository: fakeRepository(state), mailer: fakeMailer(sent) };
 
-  assert.deepEqual(await sendNextProspectEmail("absent", "https://tutelliv.fr", deps), { status: "not_found" });
+  assert.deepEqual(await sendNextProspectEmail("absent", "https://annona.fr", deps), { status: "not_found" });
   assert.deepEqual(
-    await sendNextProspectEmail("c1", "https://tutelliv.fr", { repository: fakeRepository(state), mailer: null }),
+    await sendNextProspectEmail("c1", "https://annona.fr", { repository: fakeRepository(state), mailer: null }),
     { status: "not_configured" }
   );
 
-  const first = await sendNextProspectEmail("c1", "https://tutelliv.fr", deps);
+  const first = await sendNextProspectEmail("c1", "https://annona.fr", deps);
   assert.deepEqual(first, { status: "sent", email: "a@exemple.fr", remaining: 2, waitMs: PROSPECT_SEND_PACE_MS });
   assert.equal(sent[0]!.to, "a@exemple.fr");
   assert.ok(sent[0]!.html.includes("/go/il-en-est-ou-paris/rejoindre"));
 
-  const second = await sendNextProspectEmail("c1", "https://tutelliv.fr", deps);
+  const second = await sendNextProspectEmail("c1", "https://annona.fr", deps);
   assert.equal(second.status, "skipped");
   assert.equal(sent.length, 1, "aucun mail à une adresse STOP");
 
   const failing = { repository: fakeRepository(state), mailer: fakeMailer(sent, Object.assign(new Error("pw"), { code: "EAUTH" })) };
-  const third = await sendNextProspectEmail("c1", "https://tutelliv.fr", failing);
+  const third = await sendNextProspectEmail("c1", "https://annona.fr", failing);
   assert.equal(third.status, "failed");
   assert.deepEqual(state.finished.map((entry) => entry.status), ["SENT", "SKIPPED", "FAILED"]);
   assert.match(state.finished[2]!.detail!, /mot de passe/);
 
-  assert.deepEqual(await sendNextProspectEmail("c1", "https://tutelliv.fr", deps), { status: "done", remaining: 0 });
+  assert.deepEqual(await sendNextProspectEmail("c1", "https://annona.fr", deps), { status: "done", remaining: 0 });
 
   state.queue.push({ id: "r4", email: "d@exemple.fr" });
   state.wait = 12_000;
-  assert.deepEqual(await sendNextProspectEmail("c1", "https://tutelliv.fr", deps), { status: "wait", waitMs: 12_000, remaining: 1 });
+  assert.deepEqual(await sendNextProspectEmail("c1", "https://annona.fr", deps), { status: "wait", waitMs: 12_000, remaining: 1 });
   assert.ok(PROSPECT_MIN_INTERVAL_MS < PROSPECT_SEND_PACE_MS, "le serveur laisse passer le rythme du navigateur");
 });
 
 test("lot 5 : essai envoyé à l'admin, liens au code « test », campagne inchangée", async () => {
   const state: FakeState = { queue: [{ id: "r1", email: "a@exemple.fr" }], optOuts: new Set(), finished: [] };
   const sent: Array<{ to: string; subject: string; html: string }> = [];
-  const result = await sendProspectTestEmail("c1", "orso@tutelliv.fr", "https://tutelliv.fr", {
+  const result = await sendProspectTestEmail("c1", "orso@annona.fr", "https://annona.fr", {
     repository: fakeRepository(state),
     mailer: fakeMailer(sent),
   });
-  assert.deepEqual(result, { status: "sent", to: "orso@tutelliv.fr" });
+  assert.deepEqual(result, { status: "sent", to: "orso@annona.fr" });
   assert.equal(sent[0]!.subject, "[Essai] Il en est où ?");
   assert.ok(sent[0]!.html.includes(`/go/${PROSPECT_TEST_CODE}/rejoindre`));
   assert.equal(sent[0]!.html.includes("il-en-est-ou-paris"), false);
@@ -325,7 +325,7 @@ test("lot 5 : Microsoft et filtres stricts reconnus d'après le domaine et les s
   // Envoyables : Gmail, Google Workspace, OVH, Proofpoint (Columbia a reçu le mail).
   assert.equal(strictProviderFromMx("gmail.com", ["gmail-smtp-in.l.google.com"]), null);
   assert.equal(strictProviderFromMx("coursier.fr", ["aspmx.l.google.com"]), null);
-  assert.equal(strictProviderFromMx("tutelliv.fr", ["mx1.mail.ovh.net"]), null);
+  assert.equal(strictProviderFromMx("annona.fr", ["mx1.mail.ovh.net"]), null);
   assert.equal(strictProviderFromMx("columbia.edu", ["mxa-00364e01.gslb.pphosted.com"]), null);
   assert.equal(strictProviderFromMx("liveurs.fr", []), null, "un domaine qui commence par live n'est pas Microsoft");
 

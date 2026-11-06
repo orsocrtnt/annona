@@ -9,7 +9,7 @@ THESIS
 Le tableau de bord doit permettre à un responsable de livraison de comprendre l’activité en quelques secondes, puis d’ouvrir directement le dispatch ou le détail d’un indicateur sans traverser une page décorative.
 
 OWN-WORLD
-Dans un bureau lumineux, l’écran est l’instrument de supervision principal : fond papier cassé, rail noir flottant, cartes blanches précises et vert TutelLiv réservé à l’activité réelle. Le contenu métier reste net; le verre appartient au chrome et aux couches temporaires.
+Dans un bureau lumineux, l’écran est l’instrument de supervision principal : fond papier cassé, rail noir flottant, cartes blanches précises et vert Annona réservé à l’activité réelle. Le contenu métier reste net; le verre appartient au chrome et aux couches temporaires.
 
 STORY
 L’utilisateur entre par un accueil calme, lit les alertes du jour, suit la distribution réelle des missions, repère les livreurs actifs et retrouve les missions de la période. Les états vides, verrouillés et en erreur restent explicites. Aucune donnée, courbe temporelle ou capacité de création n’est inventée.

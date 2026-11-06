@@ -52,7 +52,7 @@ export async function publishDriverLocation(
       body: JSON.stringify(coordinates),
     });
   } catch {
-    throw new DriverLocationPublishError("Impossible de joindre TutelLiv.");
+    throw new DriverLocationPublishError("Impossible de joindre Annona.");
   }
 
   const text = await response.text();
@@ -88,7 +88,7 @@ export function driverLocationStatusMessage(input: {
   switch (input.status) {
     case "stopped": return "Partage GPS arrêté.";
     case "requesting": return "Recherche du signal GPS et synchronisation…";
-    case "synced": return `Position synchronisée avec TutelLiv.${suffix}`;
+    case "synced": return `Position synchronisée avec Annona.${suffix}`;
     case "stale": return `Position périmée : aucun signal récent n’a été synchronisé.${suffix}`;
     case "denied": return "Localisation refusée. Autorisez-la dans les réglages du navigateur puis réessayez.";
     case "unavailable": return "Signal GPS indisponible. Vérifiez la localisation de l’appareil puis réessayez.";

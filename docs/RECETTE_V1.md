@@ -1,10 +1,10 @@
-# Recette V1 TutelLiv — parcours et écarts
+# Recette V1 Annona — parcours et écarts
 
 ## Périmètre arrêté pour la préparation
 
 Réduire le temps de coordination et améliorer l’organisation et la visibilité en remplaçant la chaîne d’e-mails par le parcours : commande dans l’espace client → affectation admin → prise en charge livreur → échanges et exécution → statut et GPS daté → preuve et historique. Conserver les trois espaces et les parcours standard/coursier déjà présents.
 
-Hors promesse du noyau : missions spéciales et facturation comptable avancée. Les récurrences ont été qualifiées en interne par OPS-01, mais leur cron déployé et leurs alertes restent à valider avant vente. Les missions spéciales restent expérimentales, désactivées par défaut et sans devis accepté dans TutelLiv. Prospection, tarification et abonnements automatiques différés. Aucun import automatique d’e-mails ni nouvelle app native décidé.
+Hors promesse du noyau : missions spéciales et facturation comptable avancée. Les récurrences ont été qualifiées en interne par OPS-01, mais leur cron déployé et leurs alertes restent à valider avant vente. Les missions spéciales restent expérimentales, désactivées par défaut et sans devis accepté dans Annona. Prospection, tarification et abonnements automatiques différés. Aucun import automatique d’e-mails ni nouvelle app native décidé.
 
 ## État de cette recette
 

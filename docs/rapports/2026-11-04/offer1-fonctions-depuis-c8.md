@@ -23,9 +23,9 @@ Tout le reste est ouvert à toutes les offres.
 | Réception des commandes | Lien de commande public et suivi sans connexion | MAIL-COMMANDE | Aucun | Nul | Socle, toutes offres |
 | | Formulaire « Nouvelle commande » côté back-office | ADMIN-COMMANDE | Aucun | Nul | Socle |
 | | Créneau et poids à la commande | DEMO-3 | Aucun | Nul | Socle |
-| | E-mails de commande renvoyés vers TutelLiv, tri, brouillons, confirmation au client, fiche client sans accès | MAIL-PONT | Activation par entreprise | Faible (réception e-mail, analyse IA) | **Nouvelle option « Réception automatique des commandes »** |
+| | E-mails de commande renvoyés vers Annona, tri, brouillons, confirmation au client, fiche client sans accès | MAIL-PONT | Activation par entreprise | Faible (réception e-mail, analyse IA) | **Nouvelle option « Réception automatique des commandes »** |
 | | Commande par message collé, lue par l'IA | INTAKE-1 | Clé serveur + activation par entreprise, 60 analyses/h et 300/jour | Faible (Haiku, moins d'un centime par analyse) | Même option |
-| | Commandes WhatsApp transférées au numéro TutelLiv | WHATSAPP-1 | Activation par entreprise | Quasi nul (messages reçus gratuits chez Meta) + analyse IA | Même option |
+| | Commandes WhatsApp transférées au numéro Annona | WHATSAPP-1 | Activation par entreprise | Quasi nul (messages reçus gratuits chez Meta) + analyse IA | Même option |
 | Dispatch | Suggestions des 3 meilleurs livreurs, score expliqué | DISPATCH-4 | `auto_dispatch` | Calcul d'itinéraire | Déjà dans Dispatch intelligent |
 | | Tournées proposées puis validées | DISPATCH-4 | `auto_dispatch` | Calcul d'itinéraire | Déjà dans Dispatch intelligent |
 | | Proximité GPS au point de retrait | DISPATCH | `auto_dispatch` (réglages) | Nul | Déjà dans Dispatch intelligent |
@@ -39,7 +39,7 @@ Tout le reste est ouvert à toutes les offres.
 | Côté client final | Arrivée estimée, prénom du livreur, téléphone selon réglage, avis de prise en charge | DEMO-3, portail | Aucun (la carte reste `client_gps`) | Nul | Socle |
 | Confort | Mode sombre, écrans téléphone, accessibilité, carte unifiée | DESIGN, MOBILE-2 | Aucun | Nul | Socle |
 
-Hors offre : les réponses aux e-mails de TutelLiv vers `orso@tutelliv.fr` (MAIL-REPONSE) concernent le support de TutelLiv, pas une fonction vendue.
+Hors offre : les réponses aux e-mails de Annona vers `orso@annona.fr` (MAIL-REPONSE) concernent le support de Annona, pas une fonction vendue.
 
 ## Raisonnement
 

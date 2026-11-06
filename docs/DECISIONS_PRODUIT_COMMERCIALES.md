@@ -1,4 +1,4 @@
-# Décisions produit et commerciales TutelLiv
+# Décisions produit et commerciales Annona
 
 Date de référence : 21 octobre 2026.
 
@@ -6,7 +6,7 @@ Ce document distingue les décisions confirmées par le propriétaire, les valid
 
 ## Positionnement confirmé
 
-TutelLiv est destiné en priorité aux entreprises françaises de coursiers et de livraison express B2B ayant des clients professionnels récurrents.
+Annona est destiné en priorité aux entreprises françaises de coursiers et de livraison express B2B ayant des clients professionnels récurrents.
 
 - marché initial : France entière ; priorité commerciale à Paris/Île-de-France et Marseille/Bouches-du-Rhône ;
 - cœur de cible : 5 à 20 livreurs ;
@@ -22,7 +22,7 @@ La promesse produit reste la centralisation d'une chaîne aujourd'hui dispersée
 
 La V1 ne promet pas les garanties particulières nécessaires au transport médical réglementé, aux matières dangereuses, au transport frigorifique avec contrôle de température, au transport international avec formalités douanières, au transport lourd ou à la logistique industrielle complexe.
 
-Ces exclusions portent sur le service spécialisé. Elles n'interdisent pas à une entreprise de livraison classique d'utiliser TutelLiv pour ses missions ordinaires.
+Ces exclusions portent sur le service spécialisé. Elles n'interdisent pas à une entreprise de livraison classique d'utiliser Annona pour ses missions ordinaires.
 
 ## Facturation des prestations de livraison
 
@@ -32,10 +32,10 @@ L'architecture devra permettre une future intégration avec un logiciel comptabl
 
 Décision du 28 octobre 2026 : le propriétaire lance Factur-X. Portée de la première tranche (détail et limites : [`FACTURX.md`](FACTURX.md)) :
 
-- TutelLiv produit, à la demande, un PDF Factur-X profil EN 16931 (relevé intitulé « Facture » avec les mentions légales du XML + XML CII embarqué) pour une facture de livraison émise, depuis le back-office et le portail client ; le relevé PDF classique reste inchangé ;
+- Annona produit, à la demande, un PDF Factur-X profil EN 16931 (relevé intitulé « Facture » avec les mentions légales du XML + XML CII embarqué) pour une facture de livraison émise, depuis le back-office et le portail client ; le relevé PDF classique reste inchangé ;
 - décision du 2 novembre 2026 : à l'écran, le document s'appelle « Facture », mention « ne constitue pas une facture électronique réglementaire » conservée ; le PDF classique reste « Relevé de prestation », à faire confirmer par un comptable avant le premier pilote ;
 - la société de coursiers saisit ses mentions légales et l'identité de facturation de ses clients professionnels ; sans les données obligatoires, le Factur-X est refusé avec un message clair et le PDF classique reste disponible ;
-- **TutelLiv n'est pas une plateforme agréée** et ne dépose rien : le dépôt reste fait par l'entreprise ou son expert-comptable sur sa plateforme ;
+- **Annona n'est pas une plateforme agréée** et ne dépose rien : le dépôt reste fait par l'entreprise ou son expert-comptable sur sa plateforme ;
 - le fichier n'a pas encore été validé par un outil officiel (Mustang, validateur FNFE) et n'est pas PDF/A-3b strict (polices non embarquées) : il ne doit pas être présenté comme conforme ou certifié avant ces validations.
 
 ## Grille commerciale cible
@@ -67,7 +67,7 @@ Options mensuelles HT (catalogue C9 du 24 octobre 2026) :
 | Carte GPS administrateur | 39 € |
 | Analytics avancés | 29 € |
 | Assistance prioritaire | 29 € |
-| Réception automatique des commandes (catalogue C11 du 4 novembre 2026, C15) : e-mails renvoyés vers TutelLiv, WhatsApp transféré, message collé lu par l'IA | 29 € en Starter ; incluse en Pro et Business |
+| Réception automatique des commandes (catalogue C11 du 4 novembre 2026, C15) : e-mails renvoyés vers Annona, WhatsApp transféré, message collé lu par l'IA | 29 € en Starter ; incluse en Pro et Business |
 | Livreur supplémentaire Starter | 12 € |
 | Livreur supplémentaire Pro | 10 € |
 | Livreur supplémentaire Business (21 à 50) | 9 € |
@@ -153,7 +153,7 @@ Réponses données au questionnaire de l'agent ; elles débloquent SAAS-02/03/04
 | Formulaire Contact | Les messages sont stockés et lus dans le back-office plateforme (super-administrateur), sans dépendre du domaine e-mail. | GROWTH-1 |
 | Alertes de consommation plateforme | 80 %, 100 % et 120 % des commandes incluses ; pour Business, alerte dès deux fois les commandes incluses ou 40 livreurs actifs. | SAAS-02 |
 | Pool de démonstration | Garder 6 espaces, mais libérer automatiquement les sessions de test après une heure au lieu de huit. | DEMO-2 (suivi ENV-2) |
-| Abonnement sans compte de facturation en ligne (complément du même jour) | Pilote, accès historique ou paiement manuel : « Mon abonnement » affiche formule, options, période et consommation en lecture seule, et renvoie vers l'équipe TutelLiv (page Contact) pour tout changement ou résiliation. Aucune action en ligne. | SAAS-03 |
+| Abonnement sans compte de facturation en ligne (complément du même jour) | Pilote, accès historique ou paiement manuel : « Mon abonnement » affiche formule, options, période et consommation en lecture seule, et renvoie vers l'équipe Annona (page Contact) pour tout changement ou résiliation. Aucune action en ligne. | SAAS-03 |
 | Export DATA-02 depuis « Mon abonnement » (complément du même jour) | Reporté : le canal de remise chiffré n'est pas choisi ; il suit la politique de conservation LEGAL-1. | SAAS-03, DATA-02 |
 | Mesure de performance « Next » (complément du même jour) | Autorisée en local sur les routes publiques (build de production, PostgreSQL jetable) ; les routes connectées attendent ENV-2. | PERF-02 |
 
@@ -172,7 +172,7 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 | Sujet | Décision | Suite |
 | --- | --- | --- |
 | Option de dispatch | Une seule option « Dispatch intelligent » remplace le « Dispatch automatique » : 39 € HT par mois en Starter au lieu de 29 €, toujours incluse en Pro et Business. | Mise à jour du catalogue et des pages Tarifs à faire dans DISPATCH-4 ; acceptation par le marché à confronter dans OFFER-1. |
-| Création des tournées | TutelLiv regroupe les livraisons et propose la tournée ; le dispatcher valide ou modifie, ou l'affectation est automatique si l'entreprise a choisi ce mode. | DISPATCH-4, piste 3. |
+| Création des tournées | Annona regroupe les livraisons et propose la tournée ; le dispatcher valide ou modifie, ou l'affectation est automatique si l'entreprise a choisi ce mode. | DISPATCH-4, piste 3. |
 | Limites d'une tournée | Créneaux promis aux clients, capacité du véhicule, zone géographique et durée de la journée du livreur. | DISPATCH-4, piste 3. |
 | Départ et fin | Une tournée part de la position du livreur et finit au dernier arrêt. | DISPATCH-4, piste 3. |
 
@@ -190,11 +190,11 @@ Le choix d'un Contact stocké implique sa propre table : additive, préproductio
 
 | Sujet | Décision | Suite |
 | --- | --- | --- |
-| Pont avec la messagerie | **Révisé le 3 novembre 2026 :** parcours principal = une boîte dédiée aux commandes (par exemple commandes@entreprise.fr), renvoyée automatiquement vers l'adresse TutelLiv de l'entreprise. Le renvoi automatique garde l'expéditeur d'origine, donc le vrai client. La connexion directe à Gmail et Outlook (décidée le 2 novembre) passe en option, plus tard, pour les entreprises qui refusent une boîte dédiée. | MAIL-PONT. Évite la vérification Google et l'audit CASA (lecture des e-mails, renouvelé chaque année, 100 utilisateurs au plus avant), et la lecture de toute la boîte. À prévoir : afficher le code de confirmation que Gmail envoie à l'activation d'un renvoi ; Outlook professionnel peut bloquer les renvois externes (accord de l'administrateur du client). |
-| Tri | TutelLiv distingue seul un e-mail ordinaire d'un e-mail de commande ; seuls les e-mails de commande deviennent des brouillons. | MAIL-PONT. |
+| Pont avec la messagerie | **Révisé le 3 novembre 2026 :** parcours principal = une boîte dédiée aux commandes (par exemple commandes@entreprise.fr), renvoyée automatiquement vers l'adresse Annona de l'entreprise. Le renvoi automatique garde l'expéditeur d'origine, donc le vrai client. La connexion directe à Gmail et Outlook (décidée le 2 novembre) passe en option, plus tard, pour les entreprises qui refusent une boîte dédiée. | MAIL-PONT. Évite la vérification Google et l'audit CASA (lecture des e-mails, renouvelé chaque année, 100 utilisateurs au plus avant), et la lecture de toute la boîte. À prévoir : afficher le code de confirmation que Gmail envoie à l'activation d'un renvoi ; Outlook professionnel peut bloquer les renvois externes (accord de l'administrateur du client). |
+| Tri | Annona distingue seul un e-mail ordinaire d'un e-mail de commande ; seuls les e-mails de commande deviennent des brouillons. | MAIL-PONT. |
 | Validation | Toujours humaine : aucune commande n'est créée sans le clic du dispatcher (confirme MAIL-COMMANDE du 30 octobre). | — |
 | Client inconnu | Créé à la validation, sous forme de fiche client sans accès à l'espace client ; le dispatcher complète à ce moment les informations manquantes. | MAIL-PONT. |
-| Réponse au client | Une seule réponse automatique, après la validation : commande confirmée, date et lien de suivi. Avec la boîte dédiée, elle part de TutelLiv au nom de l'entreprise, « répondre à » vers la boîte de commandes. | MAIL-PONT. |
+| Réponse au client | Une seule réponse automatique, après la validation : commande confirmée, date et lien de suivi. Avec la boîte dédiée, elle part de Annona au nom de l'entreprise, « répondre à » vers la boîte de commandes. | MAIL-PONT. |
 
 ## C15 — Décisions du propriétaire du 4 novembre 2026 (fonctions ajoutées depuis le catalogue du 23 octobre)
 
@@ -202,7 +202,7 @@ Inventaire et raisonnement : `docs/rapports/2026-11-04/offer1-fonctions-depuis-c
 
 | Sujet | Décision | Suite |
 | --- | --- | --- |
-| Réception automatique des commandes | Nouvelle option `order_automation` : e-mails renvoyés vers l'adresse TutelLiv (MAIL-PONT), WhatsApp transféré (WHATSAPP-1), message collé lu par l'IA (INTAKE-1). 29 € HT par mois en Starter (douze mensualités en annuel, sans remise), incluse en Pro et Business. | Catalogue `C11-2026-11-04`. Contrôle serveur sur l'analyse et sur l'activation ; désactiver reste possible ; les e-mails déjà reçus restent lisibles et validables. |
+| Réception automatique des commandes | Nouvelle option `order_automation` : e-mails renvoyés vers l'adresse Annona (MAIL-PONT), WhatsApp transféré (WHATSAPP-1), message collé lu par l'IA (INTAKE-1). 29 € HT par mois en Starter (douze mensualités en annuel, sans remise), incluse en Pro et Business. | Catalogue `C11-2026-11-04`. Contrôle serveur sur l'analyse et sur l'activation ; désactiver reste possible ; les e-mails déjà reçus restent lisibles et validables. |
 | Socle de toutes les offres | Preuve de livraison (signature, PDF horodaté envoyé au donneur d'ordre, relevés par coursier), factures créées à la livraison avec paiements et relances, Factur-X, lien de commande public, formulaire « Nouvelle commande », créneau et poids, imprévus, avis au client (arrivée estimée, prénom du livreur). | Aucune option. |
 | Découverte premium (choix de l'agent, conforme à la règle des 60 jours) | La nouvelle option fait partie des fonctions ouvertes pendant les 60 jours de découverte Starter/Pro. | SAAS-04. |
 | Pilotes et accès historiques | Un pilote qui avait les cinq fonctions reçoit la sixième (démonstrations comprises) ; un pilote restreint garde ses limites ; les accès historiques (`LEGACY`) ont tout. Les contrats commerciaux déjà instantanés gardent leur offre (nouveaux contrats seulement, comme C10). | Migration `20261104030000_catalog_c11_order_automation`. |

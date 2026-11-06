@@ -10,7 +10,7 @@ import { buildProofPdf, pdfSafeText, type ProofPdfData } from "../src/lib/pdf/pr
 import * as proofPdfModule from "../src/lib/pdf/proof-pdf";
 import * as codes from "../src/lib/pod/codes";
 import * as pdfLib from "pdf-lib";
-import * as logo from "../src/lib/pdf/tutelliv-logo";
+import * as logo from "../src/lib/pdf/annona-logo";
 
 /** Texte lisible d'un PDF : décompresse les flux de contenu et lit les chaînes hexadécimales des Tj. */
 async function pdfText(bytes: Uint8Array) {
@@ -48,7 +48,7 @@ test("PDF livré : référence, donneur d'ordre, adresses, horodatages, position
   assert.ok(doc.getPageCount() >= 1);
 });
 
-test("PDF avec signature, photo et logo : trois images intégrées en plus du logo TutelLiv", async () => {
+test("PDF avec signature, photo et logo : trois images intégrées en plus du logo Annona", async () => {
   const png = await sharp({ create: { width: 200, height: 80, channels: 3, background: "#ffffff" } }).png().toBuffer();
   const jpg = await sharp({ create: { width: 320, height: 240, channels: 3, background: "#336699" } }).jpeg().toBuffer();
   const { doc, text } = await pdfText(await buildProofPdf({ ...base, signaturePng: png, photo: jpg, companyLogoPng: png }));
@@ -107,7 +107,7 @@ function serviceFixture(row: Record<string, unknown> | null) {
     "@/lib/pod/codes": codes,
     "@/lib/storage/pod": { downloadPodPhoto: async () => null, getPodPhotoSignedUrl: async (path: string) => (path ? "https://storage.invalid/photo?token=1" : null) },
     "@/lib/storage/pod-signature": { downloadPodSignature: async () => null, getPodSignatureSignedUrl: async (path: string) => (path ? "https://storage.invalid/sig?token=1" : null) },
-    "pdf-lib": pdfLib, "@/lib/pdf/tutelliv-logo": logo,
+    "pdf-lib": pdfLib, "@/lib/pdf/annona-logo": logo,
   });
   return { service, wheres };
 }

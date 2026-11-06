@@ -1,6 +1,6 @@
 # Sources officielles du dossier LEGAL-1
 
-Consultation : 18 octobre 2026, complétée le 2 novembre 2026 (section ci-dessous). Cette liste sert à orienter la revue professionnelle. Une page officielle ne dispense pas d'examiner son champ d'application, la version du texte et les faits propres à TutelLiv ou à chaque entreprise cliente.
+Consultation : 18 octobre 2026, complétée le 2 novembre 2026 (section ci-dessous). Cette liste sert à orienter la revue professionnelle. Une page officielle ne dispense pas d'examiner son champ d'application, la version du texte et les faits propres à Annona ou à chaque entreprise cliente.
 
 ## Protection des données
 
@@ -18,7 +18,7 @@ Consultation : 18 octobre 2026, complétée le 2 novembre 2026 (section ci-desso
 - [CNIL — géolocalisation des véhicules des salariés](https://www.cnil.fr/fr/la-geolocalisation-des-vehicules-des-salaries) : finalités interdites, arrêt hors temps de travail, personnes habilitées, information, consultation des représentants et repères de conservation.
 - [CNIL — contrôle de l'activité des personnes employées](https://www.cnil.fr/fr/controle-de-lactivite-des-personnes-employees) : justification, proportionnalité, information et consultation applicables aux outils de contrôle.
 
-La CNIL indique une conservation de principe des données de géolocalisation de deux mois. Les exceptions d'un an ou cinq ans dépendent de finalités précises ; elles ne sont pas activées par défaut dans TutelLiv. Le nom du conducteur ne devrait pas être transmis au donneur d'ordre sans intérêt particulier et indispensable. La nécessité d'une AIPD doit être instruite avant usage réel, en particulier si le dispositif devient une surveillance systématique ou présente plusieurs critères de risque élevé.
+La CNIL indique une conservation de principe des données de géolocalisation de deux mois. Les exceptions d'un an ou cinq ans dépendent de finalités précises ; elles ne sont pas activées par défaut dans Annona. Le nom du conducteur ne devrait pas être transmis au donneur d'ordre sans intérêt particulier et indispensable. La nécessité d'une AIPD doit être instruite avant usage réel, en particulier si le dispositif devient une surveillance systématique ou présente plusieurs critères de risque élevé.
 
 ## Contrats, commerce et facturation
 
@@ -30,7 +30,7 @@ La CNIL indique une conservation de principe des données de géolocalisation de
 - [Impots.gouv.fr — calendrier de facturation électronique](https://www.impots.gouv.fr/professionnel/questions/partir-de-quand-suis-je-concerne-par-la-reforme-de-la-facturation) : réception pour toutes les entreprises et émission GE/ETI au 1er septembre 2026, émission PME/microentreprises au 1er septembre 2027.
 - [Impots.gouv.fr — plateformes agréées](https://www.impots.gouv.fr/facturation-electronique-et-plateformes-agreees) : rôle des plateformes dans l'émission, la réception et le e-reporting.
 
-La décision produit consiste à fournir un export comptable, pas à présenter TutelLiv comme plateforme agréée ou logiciel comptable complet. Le juriste et le comptable devront vérifier les documents effectivement produits et les obligations de l'entité éditrice lorsqu'elle sera connue.
+La décision produit consiste à fournir un export comptable, pas à présenter Annona comme plateforme agréée ou logiciel comptable complet. Le juriste et le comptable devront vérifier les documents effectivement produits et les obligations de l'entité éditrice lorsqu'elle sera connue.
 
 ## Sources fournisseurs à recueillir
 

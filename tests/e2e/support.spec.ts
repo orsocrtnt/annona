@@ -17,7 +17,7 @@ test("SUPPORT-1 : ticket client, réponse staff, notification et résolution vis
   try {
     const login = await page.request.post("/api/auth/login", {
       data: {
-        email: "demo@tutelliv.fr",
+        email: "demo@annona.fr",
         password: "Demo2026!",
         demoTestSession: true,
         accountType: "company",

@@ -310,7 +310,7 @@ async function run() {
     environment: {
       machine: "Mac Apple M1, 8 Go, arm64",
       runtime: `Node ${process.version}`,
-      application: "Services TutelLiv locaux, PostgreSQL Supabase distant de test",
+      application: "Services Annona locaux, PostgreSQL Supabase distant de test",
       network: "Connexion courante non bridée ; aucun réseau mobile ni mode hors ligne",
       device: "Harnais automatisé Node ; aucun téléphone physique",
       volume: `${SAMPLE_COUNT} scénarios identiques, 1 commande/livraison et 2 messages par scénario`,

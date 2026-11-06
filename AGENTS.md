@@ -1,4 +1,4 @@
-# Travailler sur TutelLiv
+# Travailler sur Annona
 
 ## OBLIGATION : mettre `TODO.md` à jour
 - **Mettre `TODO.md` à jour est obligatoire, pas optionnel.** Après chaque changement de code, de comportement ou de visuel, même petit et même demandé en passant (retouche, correction rapide), consigner dans la tâche concernée ce qui a changé, les vérifications lancées avec leur résultat, ce qui reste non vérifié et la suite. S'il n'existe aucune tâche concernée, en créer une.
@@ -27,16 +27,16 @@
 - Si une tâche bloque, noter la cause et poursuivre une tâche indépendante. Ne solliciter l'utilisateur que pour un accès indispensable, une action destructive, une décision produit/architecture majeure ou une ambiguïté réellement bloquante.
 
 ## Contexte local obligatoire — aucune dépendance à Drive
-- Avant toute tâche : consulter `AGENTS.md`, `TODO.md`, `docs/README.md`, `docs/CONVENTIONS.md` et la documentation concernée dans `docs/`. La source de vérité technique est le dépôt `orsocrtnt/tutelliv-v2` sur `preproduction`, pas les copies Drive ni la TODO personnelle Notion.
+- Avant toute tâche : consulter `AGENTS.md`, `TODO.md`, `docs/README.md`, `docs/CONVENTIONS.md` et la documentation concernée dans `docs/`. La source de vérité technique est le dépôt `orsocrtnt/annona` sur `preproduction`, pas les copies Drive ni la TODO personnelle Notion.
 - Ne jamais invoquer une recherche ou une écriture dans Drive/Docs/Sheets/Notion pour « se remettre en contexte », mettre à jour une TODO, produire une preuve ou republier du Markdown. Aucun fichier hors dépôt ne doit être modifié par les agents. Les `outputs/` générés pour les tests locaux restent locaux et ne doivent pas être diffusés.
 - Si une donnée de décision ou un contrat n'est disponible qu'en dehors du dépôt : ne pas y accéder, ne pas inventer de contenu ni inférer une validation ; consigner précisément la pièce manquante et demander au fondateur de la traiter dans ChatGPT puis, si nécessaire, de fournir une version exploitable dans le dépôt. Poursuivre les travaux indépendants autorisés.
 - Pour une modification de comportement, consulter la documentation métier existante (`docs/DECISIONS_PRODUIT_COMMERCIALES.md`, `docs/SAAS_OFFERS_ARCHITECTURE.md`, `docs/legal/`, `docs/operations/`) sans transformer une hypothèse ou une version de travail en engagement commercial ou juridique.
 - Ne pas synchroniser les 45 actions personnelles Notion avec les 78 tâches techniques : périmètres différents. L'agent ne modifie que `TODO.md` pour le suivi technique.
 
 ## Routage autonome des modèles et maîtrise du quota
-- Suivre `.cursor/rules/tutelliv-model-router.mdc` pour toute tâche de la TODO.
+- Suivre `.cursor/rules/annona-model-router.mdc` pour toute tâche de la TODO.
 - L'étiquette `Modèle conseillé` de `TODO.md` choisit le modèle initial ; sa légende définit les replis lorsque ce modèle est indisponible.
-- Réutiliser l'agent courant lorsqu'il a déjà le modèle adapté. Sinon, déléguer à `tutelliv-task-runner` avec le modèle exact indiqué. Une délégation autorisée peut sélectionner explicitement ce modèle sans redemander au propriétaire.
+- Réutiliser l'agent courant lorsqu'il a déjà le modèle adapté. Sinon, déléguer à `annona-task-runner` avec le modèle exact indiqué. Une délégation autorisée peut sélectionner explicitement ce modèle sans redemander au propriétaire.
 - Garder un seul agent d'exécution actif et une seule tâche TODO en cours. Ne pas utiliser Ultra, plusieurs sous-agents ou une revue séparée par défaut : leur coût doit être justifié par un travail réellement divisible ou un risque critique.
 - Mener la tâche choisie jusqu'à ses critères, tests, corrections, rapport et case mise à jour. Après une tâche terminée, s'arrêter sauf si le propriétaire a explicitement demandé d'enchaîner plusieurs tâches.
 - Monter d'un niveau seulement si l'inspection révèle un changement de schéma, un risque de sécurité ou de données, une concurrence complexe, plusieurs domaines fortement couplés ou une décision produit ambiguë. Ne jamais baisser le modèle d'une tâche à risque pour économiser du quota.
@@ -46,7 +46,7 @@
 - `npm run build` : validation du build ; ne pas lancer en parallèle du serveur dev (cache `.next` partagé).
 - Le serveur n'est lancé que lorsque la demande inclut un lancement ou une validation locale. Ne pas arrêter un processus utilisateur.
 - Tester les parcours authentifiés uniquement avec un environnement et des comptes de développement identifiés.
-- Ne jamais valider une étape, cocher une case ou demander un push tant que la série n'est pas passée : cas demandés + états voisins (reprise, compte déjà confirmé, retour arrière), tests ciblés, `npm run check`, et clic réel navigateur si l'UI change. Allonger le travail plutôt que faire revenir le propriétaire. Détail : `.cursor/rules/tutelliv-quality-gate.mdc`.
+- Ne jamais valider une étape, cocher une case ou demander un push tant que la série n'est pas passée : cas demandés + états voisins (reprise, compte déjà confirmé, retour arrière), tests ciblés, `npm run check`, et clic réel navigateur si l'UI change. Allonger le travail plutôt que faire revenir le propriétaire. Détail : `.cursor/rules/annona-quality-gate.mdc`.
 
 ## Données et publication
 - Ne pas afficher, versionner ou copier les secrets de `.env.local` dans les rapports/tests.

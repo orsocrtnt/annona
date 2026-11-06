@@ -137,7 +137,7 @@ async function main() {
     monitor: {
       scheduler: "Supabase Cron",
       intervalMinutes: 30,
-      owner: "TutelLiv product owner",
+      owner: "Annona product owner",
       retentionDays: 90,
     },
     baseline,

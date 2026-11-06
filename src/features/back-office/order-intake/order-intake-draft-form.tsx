@@ -434,7 +434,7 @@ export function OrderIntakeDraftForm({ draft, idempotencyKeys, ordersHref, onAll
               {createOrder.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
               {createdHere ? "Commande créée" : "Créer la commande"}
             </Button>
-            <p className="text-xs text-muted-foreground">Le géocodage des adresses est fait par TutelLiv à la création.</p>
+            <p className="text-xs text-muted-foreground">Le géocodage des adresses est fait par Annona à la création.</p>
           </div>
         </form>
       </CardContent>

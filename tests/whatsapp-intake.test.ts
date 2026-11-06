@@ -124,7 +124,7 @@ test("WHATSAPP-1 : rangé dans l'entreprise du membre qui transfère, si elle a 
     },
   }]);
 
-  // Option B pas encore branchée : un autre numéro Meta que celui de TutelLiv est ignoré.
+  // Option B pas encore branchée : un autre numéro Meta que celui de Annona est ignoré.
   const other = await ingestWhatsAppWebhook(event([text("m5", "33612345678", "x")], "222"), { env: ENV, now: NOW, db: db as never, queue: queue as never });
   assert.equal(other.ignored, 1);
   // Sans configuration, rien n'est rangé.

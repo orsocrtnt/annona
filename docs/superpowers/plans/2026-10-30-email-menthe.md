@@ -7,7 +7,7 @@ Direction approuvée par le propriétaire le 30 octobre après revue des 13 maqu
 3. Régénérer les trois modèles Supabase et les aperçus des 13 mails. Le dépôt ne configure pas les modèles hébergés : leur installation distante restera à faire après publication autorisée.
 4. Exécuter tests ciblés, `npm run check`, vérifier les rendus générés dans Safari et les liens de démonstration. Documenter les limites Gmail/Outlook/réception ; mettre à jour TODO et lancer `npm run todo:progress`.
 
-Exécution séquentielle dans le dossier courant : préserver tous les changements en cours sur les commandes et ne modifier que les fichiers de mail et le suivi. Aucun push de code ni déploiement dans cette demande. Le logo utilise son URL publique fixe sur tutelliv.fr avec `alt="TutelLiv"` ; il reste facultatif à la lecture lorsque les images sont bloquées, sans pixel de suivi.
+Exécution séquentielle dans le dossier courant : préserver tous les changements en cours sur les commandes et ne modifier que les fichiers de mail et le suivi. Aucun push de code ni déploiement dans cette demande. Le logo utilise son URL publique fixe sur annona.fr avec `alt="Annona"` ; il reste facultatif à la lecture lorsque les images sont bloquées, sans pixel de suivi.
 
 ## Résultat
 

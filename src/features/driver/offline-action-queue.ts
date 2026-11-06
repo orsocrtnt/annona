@@ -54,7 +54,7 @@ export type DriverActionQueueRun = {
   failed: string[];
 };
 
-const DB_NAME = "tutelliv-driver-actions";
+const DB_NAME = "annona-driver-actions";
 const DB_VERSION = 1;
 const STORE_NAME = "mission-status";
 const RETRY_DELAYS_MS = [0, 5_000, 30_000, 120_000, 300_000] as const;

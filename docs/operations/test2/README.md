@@ -24,6 +24,6 @@ Le point d'entrée à utiliser en intégration continue est `npm run test:v1`. L
 
 La recette connectée fabrique seulement des entités préfixées `test2-` avec des identifiants aléatoires. Son bloc `finally` supprime les tâches opérationnelles, factures, commandes, utilisateurs et entreprises créés. La suite échoue si le contrôle final ne trouve pas exactement zéro résidu.
 
-Les fichiers `outputs/test2/connected.json`, `outputs/test2/browser.json` et `outputs/test2/summary.json` ne contiennent ni identifiants internes, ni e-mails, ni cookies, ni chaîne de connexion. Les traces Playwright et les vidéos sont désactivées ; seules des captures temporaires d'échec peuvent être écrites sous `/private/tmp/tutelliv-test2-playwright`.
+Les fichiers `outputs/test2/connected.json`, `outputs/test2/browser.json` et `outputs/test2/summary.json` ne contiennent ni identifiants internes, ni e-mails, ni cookies, ni chaîne de connexion. Les traces Playwright et les vidéos sont désactivées ; seules des captures temporaires d'échec peuvent être écrites sous `/private/tmp/annona-test2-playwright`.
 
 En cas d'échec connecté, conserver le résultat généré, vérifier le bloc `fixtureResidue`, puis relancer le nettoyage ciblé du scénario. Ne jamais réinitialiser toute la base. En cas d'échec navigateur, corriger l'écran ou l'attente concernée et relancer `npm run test:e2e`, puis toute la commande `npm run test:v1`.

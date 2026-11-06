@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-26T20:26:38Z",
-  "title": "Design System: TutelLiv — Dashboard entreprise",
+  "title": "Design System: Annona — Dashboard entreprise",
   "extensions": {
     "colorMeta": {
       "mission-green": {
@@ -139,7 +139,7 @@
   ],
   "narrative": {
     "northStar": "La Ligne de Mission",
-    "overview": "Le dashboard entreprise est un instrument de supervision calme dans un bureau lumineux : un canevas papier cassé, un rail noir flottant et des cartes blanches nettes organisent les données réelles sans bruit décoratif. Le vert TutelLiv ne remplit pas l’écran ; il suit l’activité, marque l’état actif et relie les étapes d’une mission.\n\nLa direction associe Apple Glass Light, Bento et Minimal SaaS avec une discipline d’interface d’exploitation. Le verre reste réservé au chrome et aux couches temporaires ; le contenu métier reste opaque, lisible et stable. Cette expression est strictement limitée à `/dashboard` : les écrans adjacents conservent leur monde visuel existant.",
+    "overview": "Le dashboard entreprise est un instrument de supervision calme dans un bureau lumineux : un canevas papier cassé, un rail noir flottant et des cartes blanches nettes organisent les données réelles sans bruit décoratif. Le vert Annona ne remplit pas l’écran ; il suit l’activité, marque l’état actif et relie les étapes d’une mission.\n\nLa direction associe Apple Glass Light, Bento et Minimal SaaS avec une discipline d’interface d’exploitation. Le verre reste réservé au chrome et aux couches temporaires ; le contenu métier reste opaque, lisible et stable. Cette expression est strictement limitée à `/dashboard` : les écrans adjacents conservent leur monde visuel existant.",
     "keyCharacteristics": [
       "Fond papier lumineux et surfaces de données blanches.",
       "Rail noir flottant et topbar claire translucide.",

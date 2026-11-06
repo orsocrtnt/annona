@@ -75,7 +75,7 @@ async function audit(page: Page, path: string, width: number) {
   await page.goto(path, { waitUntil: "domcontentloaded" });
   await expect(page.locator("body")).toBeVisible();
   await page.waitForLoadState("networkidle").catch(() => undefined);
-  const theme = await page.evaluate(() => localStorage.getItem("tutelliv-theme"));
+  const theme = await page.evaluate(() => localStorage.getItem("annona-theme"));
   // Toutes les pages auditées suivent le choix Clair / Sombre (THEME_SCOPED_PATH_PREFIXES).
   if (theme) expect.soft(await page.evaluate(() => document.documentElement.dataset.theme), `${path} : thème ${theme} appliqué`).toBe(theme);
   const { scrollWidth, innerWidth } = await overflowX(page);
@@ -87,7 +87,7 @@ for (const theme of THEMES) for (const size of SIZES) {
   test.describe(`MOBILE-WEB ${size.width} px ${theme === "dark" ? "Sombre" : "Clair"}`, () => {
     test.use({ viewport: size, colorScheme: theme });
     test.beforeEach(async ({ page }) => {
-      await page.addInitScript((value) => localStorage.setItem("tutelliv-theme", value), theme);
+      await page.addInitScript((value) => localStorage.setItem("annona-theme", value), theme);
     });
 
     test("site public et authentification", async ({ page }) => {
@@ -97,7 +97,7 @@ for (const theme of THEMES) for (const size of SIZES) {
     test("démonstration : back-office, portail, livreur", async ({ page }) => {
       test.setTimeout(600_000);
       const login = await page.request.post("/api/auth/login", {
-        data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+        data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
       });
       expect(login.status()).toBe(200);
       try {

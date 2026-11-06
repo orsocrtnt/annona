@@ -137,7 +137,7 @@ async function scenario() {
     companyA.admin.id,
     companyA.id,
     ticketA.id,
-    "Votre demande est prise en charge dans TutelLiv."
+    "Votre demande est prise en charge dans Annona."
   );
   assert.equal(replied?.ticket.status, "IN_PROGRESS");
   const resolved = await updateStaffTicketStatus(companyA.id, ticketA.id, "RESOLVED");

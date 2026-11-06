@@ -127,7 +127,7 @@ export default function ClientOrderDetailPage() {
             {order.status === "QUOTE_REQUESTED" && (
               <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
                 Votre demande a bien été reçue. Le devis chiffré et son acceptation sont traités
-                hors TutelLiv ; l&apos;entreprise vous recontactera directement.
+                hors Annona ; l&apos;entreprise vous recontactera directement.
               </p>
             )}
             {order.missionDescription && (

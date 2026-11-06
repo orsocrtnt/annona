@@ -47,7 +47,7 @@ function load(role: string, calls: string[], saas: () => Promise<void>) {
 test("ADMIN-1 affectation : super-admin refusé avant entreprise, droit et traitement", async () => {
   const calls: string[] = [];
   const route = load("SUPER_ADMIN", calls, async () => undefined);
-  const response = await route.POST!(new Request("https://tutelliv.test/api/dispatch/auto-assign", { method: "POST" }));
+  const response = await route.POST!(new Request("https://annona.test/api/dispatch/auto-assign", { method: "POST" }));
   assert.equal(response.status, 403);
   assert.deepEqual(calls, ["staff", "role"]);
 });
@@ -55,7 +55,7 @@ test("ADMIN-1 affectation : super-admin refusé avant entreprise, droit et trait
 test("ADMIN-1 affectation : ordre conservé et refus SaaS inchangés", async () => {
   for (const role of ["COMPANY_ADMIN", "MINI_ADMIN", "DISPATCHER"]) {
     const calls: string[] = [];
-    const ok = await load(role, calls, async () => undefined).POST!(new Request("https://tutelliv.test/api/dispatch/auto-assign", { method: "POST" }));
+    const ok = await load(role, calls, async () => undefined).POST!(new Request("https://annona.test/api/dispatch/auto-assign", { method: "POST" }));
     assert.equal(ok.status, 200);
     assert.deepEqual(calls, ["staff", "role", "company", "saas", "queue"]);
   }
@@ -64,7 +64,7 @@ test("ADMIN-1 affectation : ordre conservé et refus SaaS inchangés", async () 
     ["SAAS_ACCOUNT_READ_ONLY", "Le compte est en lecture seule."],
   ] as const) {
     const calls: string[] = [];
-    const response = await load("COMPANY_ADMIN", calls, async () => { throw new Error(code); }).POST!(new Request("https://tutelliv.test/api/dispatch/auto-assign", { method: "POST" }));
+    const response = await load("COMPANY_ADMIN", calls, async () => { throw new Error(code); }).POST!(new Request("https://annona.test/api/dispatch/auto-assign", { method: "POST" }));
     assert.equal(response.status, 403);
     assert.equal((await response.json()).error, message);
     assert.equal(calls.includes("queue"), false);

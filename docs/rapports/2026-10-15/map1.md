@@ -1,6 +1,6 @@
 # MAP-1 — Chargement Leaflet et rendu responsive
 
-15 octobre 2026. Travail local sur TutelLiv GPT ; modifications préexistantes préservées. Aucune base consultée ou modifiée.
+15 octobre 2026. Travail local sur Annona GPT ; modifications préexistantes préservées. Aucune base consultée ou modifiée.
 
 ## Défauts observés et corrections
 

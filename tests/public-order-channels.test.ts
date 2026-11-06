@@ -44,9 +44,9 @@ test("webhook : seule une signature exacte et récente est acceptée", () => {
 
 test("réception : le jeton vient de l'adresse du bon domaine, sans confusion", () => {
   const token = "0123456789abcdef0123456789abcdef";
-  const domain = "commandes.tutelliv.fr";
+  const domain = "commandes.annona.fr";
   assert.equal(inboundTokenFromRecipients([`${token}@${domain}`], domain), token);
-  assert.equal(inboundTokenFromRecipients([`Commandes <${token.toUpperCase()}@COMMANDES.tutelliv.fr>`], domain), token);
+  assert.equal(inboundTokenFromRecipients([`Commandes <${token.toUpperCase()}@COMMANDES.annona.fr>`], domain), token);
   assert.equal(inboundTokenFromRecipients([`${token}@ailleurs.fr`], domain), null, "autre domaine");
   assert.equal(inboundTokenFromRecipients([`court@${domain}`], domain), null, "jeton mal formé");
   assert.equal(inboundTokenFromRecipients([42, null], domain), null);
@@ -79,9 +79,9 @@ test("réception : non configurée tant qu'il manque domaine, secret ou clé", (
 });
 
 test("le webhook échappe seul au contrôle d'origine", () => {
-  const post = (path: string) => new Request(`https://tutelliv.fr${path}`, { method: "POST", headers: { origin: "https://pirate.example" } });
-  assert.equal(isCrossOriginMutation(post("/api/webhooks/inbound-email"), { appUrl: "https://tutelliv.fr" }), false);
-  assert.equal(isCrossOriginMutation(post("/api/public/orders/abc"), { appUrl: "https://tutelliv.fr" }), true);
+  const post = (path: string) => new Request(`https://annona.fr${path}`, { method: "POST", headers: { origin: "https://pirate.example" } });
+  assert.equal(isCrossOriginMutation(post("/api/webhooks/inbound-email"), { appUrl: "https://annona.fr" }), false);
+  assert.equal(isCrossOriginMutation(post("/api/public/orders/abc"), { appUrl: "https://annona.fr" }), true);
 });
 
 const VALID = {
@@ -178,7 +178,7 @@ test("MAIL-PONT : format Gmail de novembre 2026, lien d'approbation sans code, s
   const body = [
     "commandes.transport@gmail.com a demandé à transférer automatiquement ses",
     "messages vers votre adresse e-mail",
-    "(0123456789abcdef0123456789abcdef@commandes.tutelliv.fr).",
+    "(0123456789abcdef0123456789abcdef@commandes.annona.fr).",
     "",
     "Pour autoriser commandes.transport@gmail.com à transférer ses messages vers",
     "votre adresse e-mail, veuillez cliquer sur le lien ci-dessous pour",
@@ -203,7 +203,7 @@ test("MAIL-PONT : format Gmail de novembre 2026, lien d'approbation sans code, s
 });
 
 test("MAIL-PONT : la confirmation porte « répondre à » vers la boîte de commandes, jamais une valeur invalide", async () => {
-  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "cle-de-test", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "cle-de-test", MAIL_FROM: "Annona <no-reply@example.test>" };
   const bodies: Array<Record<string, unknown>> = [];
   const fetcher = (async (_url: string, init: { body: string }) => {
     bodies.push(JSON.parse(init.body));
@@ -220,32 +220,32 @@ test("MAIL-PONT : la confirmation porte « répondre à » vers la boîte de com
   assert.match(String(bodies[0]!.html), /Votre réponse lui parvient directement/);
   assert.doesNotMatch(String(bodies[0]!.html), /Merci de ne pas répondre/);
   assert.match(String(bodies[2]!.html), /Merci de ne pas répondre/);
-  assert.equal(bodies[0]!.from, "TutelLiv <no-reply@example.test>", "sans nom d'entreprise : MAIL_FROM inchangé");
+  assert.equal(bodies[0]!.from, "Annona <no-reply@example.test>", "sans nom d'entreprise : MAIL_FROM inchangé");
   await sendTransactionalEmail({ ...base, idempotencyKey: "k4", senderName: "LogiExpress Démo" }, { env, fetcher, now: NOW });
-  assert.equal(bodies[3]!.from, '"LogiExpress Démo via TutelLiv" <no-reply@example.test>');
+  assert.equal(bodies[3]!.from, '"LogiExpress Démo via Annona" <no-reply@example.test>');
 });
 
-test("e-mails au nom de TutelLiv : « répondre à » orso@tutelliv.fr, jamais à la place de l'entreprise", async () => {
-  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "cle-de-test", MAIL_FROM: "TutelLiv <no-reply@example.test>" };
+test("e-mails au nom de Annona : « répondre à » orso@annona.fr, jamais à la place de l'entreprise", async () => {
+  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "cle-de-test", MAIL_FROM: "Annona <no-reply@example.test>" };
   const bodies: Array<Record<string, unknown>> = [];
   const fetcher = (async (_url: string, init: { body: string }) => {
     bodies.push(JSON.parse(init.body));
     return { ok: true, status: 200, json: async () => ({ id: "email_1" }), text: async () => "{}" };
   }) as unknown as typeof fetch;
-  const base = { to: "gerant@exemple.test", subject: "Bienvenue sur TutelLiv", text: "Bonjour", replayWindowStart: null };
-  await sendTransactionalEmail({ ...base, idempotencyKey: "t1", fromTutelLiv: true }, { env, fetcher, now: NOW });
-  await sendTransactionalEmail({ ...base, idempotencyKey: "t2", fromTutelLiv: true, replyTo: "commandes@transport.test" }, { env, fetcher, now: NOW });
-  assert.deepEqual(bodies[0]!.reply_to, ["orso@tutelliv.fr"]);
+  const base = { to: "gerant@exemple.test", subject: "Bienvenue sur Annona", text: "Bonjour", replayWindowStart: null };
+  await sendTransactionalEmail({ ...base, idempotencyKey: "t1", fromAnnona: true }, { env, fetcher, now: NOW });
+  await sendTransactionalEmail({ ...base, idempotencyKey: "t2", fromAnnona: true, replyTo: "commandes@transport.test" }, { env, fetcher, now: NOW });
+  assert.deepEqual(bodies[0]!.reply_to, ["orso@annona.fr"]);
   assert.match(String(bodies[0]!.html), /Une question \? Répondez simplement à cet e-mail/);
   assert.doesNotMatch(String(bodies[0]!.html), /Merci de ne pas répondre|pour le compte de l&#39;entreprise/);
   assert.deepEqual(bodies[1]!.reply_to, ["commandes@transport.test"], "une adresse explicite reste prioritaire");
 });
 
-test("MAIL-PONT : nom d'expéditeur « Entreprise via TutelLiv » nettoyé, jamais une autre adresse", () => {
-  assert.equal(senderHeader("TutelLiv <no-reply@tutelliv.fr>", "Transports \"Rapides\" <pirate@x.test>\r\nBcc: y@x.test"), '"Transports Rapides pirate@x.test Bcc y@x.test via TutelLiv" <no-reply@tutelliv.fr>');
-  assert.equal(senderHeader("no-reply@tutelliv.fr", "Durand & Fils"), '"Durand & Fils via TutelLiv" <no-reply@tutelliv.fr>');
-  assert.equal(senderHeader("TutelLiv <no-reply@tutelliv.fr>", "  "), "TutelLiv <no-reply@tutelliv.fr>");
-  assert.equal(senderHeader("TutelLiv <no-reply@tutelliv.fr>", null), "TutelLiv <no-reply@tutelliv.fr>");
+test("MAIL-PONT : nom d'expéditeur « Entreprise via Annona » nettoyé, jamais une autre adresse", () => {
+  assert.equal(senderHeader("Annona <no-reply@annona.fr>", "Transports \"Rapides\" <pirate@x.test>\r\nBcc: y@x.test"), '"Transports Rapides pirate@x.test Bcc y@x.test via Annona" <no-reply@annona.fr>');
+  assert.equal(senderHeader("no-reply@annona.fr", "Durand & Fils"), '"Durand & Fils via Annona" <no-reply@annona.fr>');
+  assert.equal(senderHeader("Annona <no-reply@annona.fr>", "  "), "Annona <no-reply@annona.fr>");
+  assert.equal(senderHeader("Annona <no-reply@annona.fr>", null), "Annona <no-reply@annona.fr>");
 });
 
 test("MAIL-PONT : la demande Gmail n'est plus affichée dès qu'un e-mail ordinaire arrive après elle", async () => {

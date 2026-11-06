@@ -18,7 +18,7 @@ import {
 } from "@/services/google/sheets-reader";
 
 /**
- * ADMIN-ESPACE, lot 5 : chiffres du fichier de prospection `TutelLiv_Suivi_Prospection_2026` (Google Sheet),
+ * ADMIN-ESPACE, lot 5 : chiffres du fichier de prospection `Annona_Suivi_Prospection_2026` (Google Sheet),
  * lu en direct et en lecture seule par un compte de service. Les commerciaux continuent de travailler dans la Sheet.
  *
  * - Les colonnes sont repérées par le nom de leur en-tête (ligne 5 par défaut, réglable), sans tenir compte

@@ -4,7 +4,7 @@ Date : 19 octobre 2026.
 
 ## Cible et isolation
 
-Le projet Supabase gratuit `tutelliv-preproduction` a été créé à Paris. Il est distinct de la cible historique et ne contient aucune copie des 51 démonstrations. La garde d'environnement refuse explicitement la référence historique, les connexions incohérentes, les secrets partagés, les e-mails réels et le nettoyage automatique.
+Le projet Supabase gratuit `annona-preproduction` a été créé à Paris. Il est distinct de la cible historique et ne contient aucune copie des 51 démonstrations. La garde d'environnement refuse explicitement la référence historique, les connexions incohérentes, les secrets partagés, les e-mails réels et le nettoyage automatique.
 
 Les identifiants sont conservés uniquement dans `.env.preproduction.local`, ignoré par Git et limité au compte local. Aucune valeur sensible ne figure dans ce rapport ou dans la preuve JSON.
 

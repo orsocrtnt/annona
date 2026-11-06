@@ -2,7 +2,7 @@
 
 Date : 23 octobre 2026.
 Auteur : second agent (hors TODO, demande propriétaire).
-Commit poussé : `4f973c7` sur `preproduction` (`origin/orsocrtnt/tutelliv-v2`).
+Commit poussé : `4f973c7` sur `preproduction` (`origin/orsocrtnt/annona`).
 Tâche TODO officielle suivante : **OPS-03B** (inchangée). Ne pas relancer ce chantier.
 
 ## Consigne pour l’agent DEV principal
@@ -31,7 +31,7 @@ Le catalogue actif est **C8-2026-10-23**. C7 est retiré et historisé. Les sous
 
 ## Catalogue C8 (Drive du 23/10/2026)
 
-Source : `TutelLiv — Catalogue des offres et tarifs` (`TutelLiv_Catalogue_Offres_Tarifs_2026-10-23.docx`, id Drive `1z_iSH5edy-Q5Ex-RHJFuoMi_6wD0Lt6s`). Relu le 23/10 après modification propriétaire.
+Source : `Annona — Catalogue des offres et tarifs` (`Annona_Catalogue_Offres_Tarifs_2026-10-23.docx`, id Drive `1z_iSH5edy-Q5Ex-RHJFuoMi_6wD0Lt6s`). Relu le 23/10 après modification propriétaire.
 
 | | Starter | Pro | Business |
 |---|---:|---:|---:|
@@ -68,10 +68,10 @@ Mot de passe commun : `Test1234!`.
 
 | Compte | Offre | Particularité |
 |---|---|---|
-| `offre-starter@tutelliv.fr` | Starter nu | 0 dispatcher, aucune option logicielle |
-| `offre-starter-dispatcher@tutelliv.fr` | Starter + `DISPATCHER_ALL` | siège dispatcher, options logicielles toujours verrouillées |
-| `offre-pro@tutelliv.fr` | Pro | auto-dispatch + GPS admin inclus |
-| `offre-business@tutelliv.fr` | Business | toutes les features, livreurs sans plafond chiffré |
+| `offre-starter@annona.fr` | Starter nu | 0 dispatcher, aucune option logicielle |
+| `offre-starter-dispatcher@annona.fr` | Starter + `DISPATCHER_ALL` | siège dispatcher, options logicielles toujours verrouillées |
+| `offre-pro@annona.fr` | Pro | auto-dispatch + GPS admin inclus |
+| `offre-business@annona.fr` | Business | toutes les features, livreurs sans plafond chiffré |
 
 Ne pas détruire le pool DEMO-2 LogiExpress. Le seed recette cible uniquement les slugs `offre-*`.
 
@@ -81,8 +81,8 @@ Ne pas détruire le pool DEMO-2 LogiExpress. Le seed recette cible uniquement le
 - **Gating UI.** Nav grisée via `applyOfferNavLocks` ; pages via `OfferFeatureGate` (`auto_dispatch`, `admin_gps`, `client_gps`, `advanced_analytics`). Les routes serveur SAAS-01A restaient déjà fermées.
 - **Sièges invitation.** Compteurs session `saas.seats` (used / limit / remaining / extraMonthlyPriceCents / canAddExtra). Dispatcher **et Mini-admin** partagent le quota dispatcher (8 €). Le Client n’est pas compté. À restant 0 + `canAddExtra`, libellé du prix ; l’option reste désactivée (le serveur refuserait). À plafond dur : « Plafond atteint ». Business livreurs : « Sans plafond chiffré ».
 - **Paiement fictif.** `SIGNUP_PAYMENT_ADAPTER=fake` dans `.env.example`. Autorisé local + Preview. **Refusé si `VERCEL_ENV=production`.** Après clic Payer, session ouverte sur `/dashboard` de la société activée.
-- **Support public.** Lien `Support` (mailto) sur accueil, login, inscription. `NEXT_PUBLIC_SUPPORT_EMAIL` ou défaut `support@tutelliv.fr`. La boîte n’est pas encore configurée.
-- **Inscription recette.** Cookie `tutelliv-signup-resume` périmé : GET le purge, POST `create` relance un brouillon. Quota e-mail Supabase 429 : en non-prod / adaptateur fake, bypass admin `email_confirm: true` puis réconciliation `EMAIL_VERIFIED`. Ne pas porter ce bypass en production.
+- **Support public.** Lien `Support` (mailto) sur accueil, login, inscription. `NEXT_PUBLIC_SUPPORT_EMAIL` ou défaut `support@annona.fr`. La boîte n’est pas encore configurée.
+- **Inscription recette.** Cookie `annona-signup-resume` périmé : GET le purge, POST `create` relance un brouillon. Quota e-mail Supabase 429 : en non-prod / adaptateur fake, bypass admin `email_confirm: true` puis réconciliation `EMAIL_VERIFIED`. Ne pas porter ce bypass en production.
 
 ## Fichiers d’entrée
 

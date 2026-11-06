@@ -1,8 +1,8 @@
-// SEC-05 — recette réelle sur `tutelliv-dev` (ENV-2) avec le vrai Supabase Auth, sans envoi d'e-mail :
+// SEC-05 — recette réelle sur `annona-dev` (ENV-2) avec le vrai Supabase Auth, sans envoi d'e-mail :
 // les liens sont produits par `admin.generateLink` (même jeton que l'e-mail) puis consommés par le service
 // de l'application. Vérifie : invitation acceptée une fois puis refusée au rejeu, récupération idem,
 // connexion avec le nouveau mot de passe, déconnexion qui révoque le jeton de rafraîchissement.
-// Compte E2E identifiable `e2e-sec05-…@tutelliv.test`, supprimé à la fin.
+// Compte E2E identifiable `e2e-sec05-…@annona.test`, supprimé à la fin.
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import ws from "ws";
@@ -11,7 +11,7 @@ import { finishPasswordLink } from "@/domains/auth/password-link.service";
 import { validateDevEnvironment } from "../env2/verify-dev-env";
 
 const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
-const email = `e2e-sec05-${stamp}@tutelliv.test`;
+const email = `e2e-sec05-${stamp}@annona.test`;
 const password = () => `E2e${randomBytes(9).toString("base64url")}9a`;
 
 const outcome = async (run: () => Promise<unknown>) => {

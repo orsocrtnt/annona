@@ -30,7 +30,7 @@ Report sans perte d'essai. Limiteur (défaut trouvé sur PostgreSQL : 10 autoris
 
 17 cas d'issue ; rendu figé (montant, adresse, preuve modifiés → même corps) ; fournisseur simulé (200, 400, 409×2, 422, 429, 500, expiration, double clic, reprises 6 min/+20 h/> 23 h) ; transition QUEUED héritée ; notify/bienvenue ; liste, clic, route 503.
 
-## PostgreSQL réel : `npm run test:pg-locks` (tutelliv-dev, pool 5)
+## PostgreSQL réel : `npm run test:pg-locks` (annona-dev, pool 5)
 
 ```
 a  10 clics → 1 relance ; 10 tâches → 1 envoi

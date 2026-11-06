@@ -94,7 +94,7 @@ Accord du propriétaire pour une charge mesurée, sans dépense. Lecture seule, 
 
 ```bash
 npm run test:perf02:preprod-connected
-npx tsx scripts/perf02/preprod-connected.ts https://tutelliv.fr/ outputs/perf02/preprod-saturation.json --saturation
+npx tsx scripts/perf02/preprod-connected.ts https://annona.fr/ outputs/perf02/preprod-saturation.json --saturation
 ```
 
 | Mesure | Résultat |

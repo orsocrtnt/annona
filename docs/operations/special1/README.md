@@ -1,17 +1,17 @@
 # SPECIAL-1 — Missions spéciales expérimentales
 
-La mission spéciale reste désactivée par défaut. Une entreprise peut l'activer dans ses paramètres pour un essai interne, mais elle ne fait pas partie de l'offre pilote tant que TutelLiv ne gère pas un devis chiffré, ses versions et l'acceptation explicite du client.
+La mission spéciale reste désactivée par défaut. Une entreprise peut l'activer dans ses paramètres pour un essai interne, mais elle ne fait pas partie de l'offre pilote tant que Annona ne gère pas un devis chiffré, ses versions et l'acceptation explicite du client.
 
 ## Parcours actuellement qualifié
 
 1. Le client décrit sa mission et renseigne une ou plusieurs adresses ordonnées.
-2. TutelLiv crée une demande `QUOTE_REQUESTED`, sans livraison et sans montant.
-3. L'entreprise prépare, transmet et fait accepter le devis hors TutelLiv.
-4. Après cet accord externe, un administrateur passe manuellement la demande à `PENDING`. Cette action crée une livraison de la première adresse vers la dernière et enregistre « Accord confirmé hors TutelLiv ».
+2. Annona crée une demande `QUOTE_REQUESTED`, sans livraison et sans montant.
+3. L'entreprise prépare, transmet et fait accepter le devis hors Annona.
+4. Après cet accord externe, un administrateur passe manuellement la demande à `PENDING`. Cette action crée une livraison de la première adresse vers la dernière et enregistre « Accord confirmé hors Annona ».
 5. Le dispatch affecte un livreur autorisé pour la catégorie. Le livreur confirme, démarre et clôt la mission avec une preuve comme pour le parcours principal.
 6. Une facture peut être créée après la livraison avec une ligne personnalisée correspondant au montant convenu. Cette facture ne constitue ni le devis initial ni une preuve d'acceptation.
 
-Depuis `QUOTE_REQUESTED`, seules la conservation du statut, la conversion en `PENDING` et l'annulation sont possibles. TutelLiv refuse notamment un passage direct à livré ou en échec.
+Depuis `QUOTE_REQUESTED`, seules la conservation du statut, la conversion en `PENDING` et l'annulation sont possibles. Annona refuse notamment un passage direct à livré ou en échec.
 
 ## Vérification
 

@@ -1,4 +1,4 @@
-# TutelLiv — cadrage client et périmètre de la V1
+# Annona — cadrage client et périmètre de la V1
 
 Statut : orientation produit établie avec le propriétaire ; validation commerciale indépendante différée à sa demande. Ce document ne constitue pas une étude de marché.
 
@@ -14,7 +14,7 @@ Vendre un SaaS par abonnement à plusieurs entreprises de livraison pour gérer 
 
 Promesse de travail : recevoir les commandes, organiser les livreurs et suivre chaque livraison dans un seul espace partagé.
 
-L’entreprise de livraison est le client de TutelLiv ; le donneur d’ordre utilise l’espace client de cette entreprise. Le pays de lancement est la France, avec une priorité commerciale à Paris/Île-de-France et Marseille/Bouches-du-Rhône. Le cœur de cible réunit les entreprises de coursiers et de livraison express B2B de 5 à 20 livreurs ; 3 à 5 livreurs est une cible secondaire. Le dirigeant ou responsable d'exploitation est l'acheteur principal et le dispatcher un prescripteur quotidien. La grille commerciale cible est décidée, mais sa volonté de payer reste à vérifier. Voir `DECISIONS_PRODUIT_COMMERCIALES.md`.
+L’entreprise de livraison est le client de Annona ; le donneur d’ordre utilise l’espace client de cette entreprise. Le pays de lancement est la France, avec une priorité commerciale à Paris/Île-de-France et Marseille/Bouches-du-Rhône. Le cœur de cible réunit les entreprises de coursiers et de livraison express B2B de 5 à 20 livreurs ; 3 à 5 livreurs est une cible secondaire. Le dirigeant ou responsable d'exploitation est l'acheteur principal et le dispatcher un prescripteur quotidien. La grille commerciale cible est décidée, mais sa volonté de payer reste à vérifier. Voir `DECISIONS_PRODUIT_COMMERCIALES.md`.
 
 ## Parcours prioritaire
 

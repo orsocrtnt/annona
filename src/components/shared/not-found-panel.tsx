@@ -4,7 +4,7 @@ import { BrandLogo } from "@/components/brand/brand-logo";
 import { Button } from "@/components/ui/button";
 
 /**
- * Page « introuvable » aux couleurs de TutelLiv (AUDIT-0411). Remplace la page brute de Next.js,
+ * Page « introuvable » aux couleurs de Annona (AUDIT-0411). Remplace la page brute de Next.js,
  * en anglais, que voyaient aussi les destinataires d'un lien de suivi ou de commande expiré.
  */
 export function NotFoundPanel({

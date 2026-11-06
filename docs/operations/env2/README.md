@@ -1,6 +1,6 @@
 # ENV-2 — Projet Supabase de développement
 
-Le développement local vise un projet Supabase dédié, `tutelliv-dev` (`mhzdmoytxmzudhkivixh`, Paris), distinct de la préproduction. Les anciens projets (`wlomrzil…`, `tutelliv-restore-rehearsal`) sont en pause et refusés par le garde-fou.
+Le développement local vise un projet Supabase dédié, `annona-dev` (`mhzdmoytxmzudhkivixh`, Paris), distinct de la préproduction. Les anciens projets (`wlomrzil…`, `annona-restore-rehearsal`) sont en pause et refusés par le garde-fou.
 
 ## Garde-fou
 

@@ -73,7 +73,7 @@ Le propriétaire dispose d'un iPhone et réalise l'essai seul, à pied. L'Androi
 
 Pour chaque ligne : appareil, OS, navigateur, réseau, heure, résultat attendu/observé, durée de reprise, capture sans donnée sensible et identifiant de fixture. Noter séparément le comportement écran actif, navigateur en arrière-plan et téléphone verrouillé.
 
-Le rapport final doit dire explicitement ce que TutelLiv garantit et ce que l'OS peut suspendre. Une PWA ou une application native ne sera décidée que si une limite observée bloque la promesse retenue.
+Le rapport final doit dire explicitement ce que Annona garantit et ce que l'OS peut suspendre. Une PWA ou une application native ne sera décidée que si une limite observée bloque la promesse retenue.
 
 ## Nettoyage
 

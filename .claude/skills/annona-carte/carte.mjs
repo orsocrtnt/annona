@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Carte des connexions TutelLiv : imports, appels /api et tables Prisma.
+// Carte des connexions Annona : imports, appels /api et tables Prisma.
 // À lancer depuis la racine du dépôt :
-//   node .claude/skills/tutelliv-carte/carte.mjs                      → génère outputs/carte/carte.html
-//   node .claude/skills/tutelliv-carte/carte.mjs utilise-par <cible>  → tout ce qui dépend de la cible
-//   node .claude/skills/tutelliv-carte/carte.mjs depend-de <cible>    → tout ce que la cible utilise
-//   node .claude/skills/tutelliv-carte/carte.mjs chemin <de> <vers>   → pourquoi <de> dépend de <vers>
+//   node .claude/skills/annona-carte/carte.mjs                      → génère outputs/carte/carte.html
+//   node .claude/skills/annona-carte/carte.mjs utilise-par <cible>  → tout ce qui dépend de la cible
+//   node .claude/skills/annona-carte/carte.mjs depend-de <cible>    → tout ce que la cible utilise
+//   node .claude/skills/annona-carte/carte.mjs chemin <de> <vers>   → pourquoi <de> dépend de <vers>
 // Options : --avec-types (compte aussi les `import type`, ignorés par défaut), --max N (éléments affichés par couche, 40 par défaut).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = process.cwd();
 if (!fs.existsSync(path.join(ROOT, 'src/app')) || !fs.existsSync(path.join(ROOT, 'prisma/schema.prisma'))) {
-  console.error('Lancer depuis la racine du dépôt TutelLiv (src/app et prisma/schema.prisma introuvables).');
+  console.error('Lancer depuis la racine du dépôt Annona (src/app et prisma/schema.prisma introuvables).');
   process.exit(1);
 }
 const ts = createRequire(path.join(ROOT, 'package.json'))('typescript');

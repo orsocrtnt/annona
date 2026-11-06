@@ -41,7 +41,7 @@ test("le dashboard garde ses widgets de pilotage et leurs détails", () => {
   assert.doesNotMatch(widgets, /Math\.random|faker|mockData|fakeData/);
 });
 
-test("les jetons du thème suivent la palette TutelLiv, sans le bleu historique", () => {
+test("les jetons du thème suivent la palette Annona, sans le bleu historique", () => {
   const styles = read("src/app/globals.css");
 
   // Bouton principal vert de la charte avec texte encre (contraste suffisant, contrairement au blanc sur vert).

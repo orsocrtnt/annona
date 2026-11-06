@@ -333,7 +333,7 @@ test("micro-coursier en franchise (293 B) sans n° de TVA : export possible avec
   assert.ok(explicit.ok);
   assert.equal(explicit.invoice.seller.taxRegistrationId, "1234567890123");
   assert.ok(!explicit.warnings.some((w) => w.rule === "TL-W-BT32-SIREN"));
-  // Facture avec TVA : le n° de TVA reste exigé (BT-32 non substituable côté TutelLiv).
+  // Facture avec TVA : le n° de TVA reste exigé (BT-32 non substituable côté Annona).
   const vat = mapInvoiceToFacturX(source({ einvoicing: { vatNumber: undefined, taxRegistrationId: "1234567890123" } }));
   assert.ok(!vat.ok && vat.errors.some((e) => e.rule === "BR-S-02"));
 });

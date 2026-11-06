@@ -5,7 +5,7 @@ import { landingMintButton } from "@/features/landing/landing-styles";
 import { cn } from "@/lib/utils";
 
 /**
- * « Une livraison, combien d'actions pour vous ? » (LANDING-3) : la même course à la main puis avec TutelLiv.
+ * « Une livraison, combien d'actions pour vous ? » (LANDING-3) : la même course à la main puis avec Annona.
  * On compte des actions d'une livraison type, jamais des minutes ni un gain chiffré.
  */
 
@@ -26,7 +26,7 @@ export const MANUAL_ACTIONS = [
 
 export type RaceActionKind = "you" | "auto" | "free";
 
-export const TUTELLIV_ACTIONS: readonly { label: string; kind: RaceActionKind }[] = [
+export const ANNONA_ACTIONS: readonly { label: string; kind: RaceActionKind }[] = [
   { label: "Valider la tournée", kind: "you" },
   { label: "Suivi envoyé au client", kind: "auto" },
   { label: "Preuve photo reçue", kind: "auto" },
@@ -36,18 +36,18 @@ export const TUTELLIV_ACTIONS: readonly { label: string; kind: RaceActionKind }[
 ];
 
 const MANUAL_STEP_MS = 520;
-const TUTELLIV_STEP_MS = 500;
+const ANNONA_STEP_MS = 500;
 const RACE_END_MS = MANUAL_ACTIONS.length * MANUAL_STEP_MS + 100;
 
 /** Moment d'apparition de chaque action, en millisecondes depuis le départ. */
 export const manualAt = (index: number) => (index + 1) * MANUAL_STEP_MS;
-export const tutellivAt = (index: number) => 300 + index * TUTELLIV_STEP_MS;
+export const annonaAt = (index: number) => 300 + index * ANNONA_STEP_MS;
 
 /** Actions demandées à l'utilisateur, visibles à l'instant donné. */
 export function countYourActions(elapsedMs: number) {
   return {
     manual: MANUAL_ACTIONS.filter((_, index) => manualAt(index) <= elapsedMs).length,
-    tutelliv: TUTELLIV_ACTIONS.filter((action, index) => action.kind === "you" && tutellivAt(index) <= elapsedMs).length,
+    annona: ANNONA_ACTIONS.filter((action, index) => action.kind === "you" && annonaAt(index) <= elapsedMs).length,
   };
 }
 
@@ -123,12 +123,12 @@ export function ActionsRace() {
         </div>
         <div className="mt-[22px]">
           <div className={laneHeader}>
-            <span className={laneLabel}>Avec TutelLiv</span>
-            <span className={laneCount} aria-live="polite">{plural(counts.tutelliv)}</span>
+            <span className={laneLabel}>Avec Annona</span>
+            <span className={laneCount} aria-live="polite">{plural(counts.annona)}</span>
           </div>
-          <ul className={road} aria-label="Actions avec TutelLiv">
-            {TUTELLIV_ACTIONS.map((action, index) =>
-              tutellivAt(index) <= elapsed ? (
+          <ul className={road} aria-label="Actions avec Annona">
+            {ANNONA_ACTIONS.map((action, index) =>
+              annonaAt(index) <= elapsed ? (
                 <li key={action.label} className={cn(chip, chipByKind[action.kind])}>{action.label}</li>
               ) : null
             )}

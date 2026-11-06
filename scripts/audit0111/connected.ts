@@ -1,5 +1,5 @@
 /**
- * Corrections de l'audit du 1er novembre 2026 sur PostgreSQL RÉEL (tutelliv-dev uniquement), hors `npm run check` :
+ * Corrections de l'audit du 1er novembre 2026 sur PostgreSQL RÉEL (annona-dev uniquement), hors `npm run check` :
  *   npx dotenv -e .env.local -- npx tsx scripts/audit0111/connected.ts
  * Numéros de facture concurrents (C2), double envoi du lien public (C3), états de commande (C1), prix de
  * course (FACT-KM), facture automatique non émise (FACT-AUTO-VIDE). Entreprises `e2e-audit-*`, supprimées à la fin.

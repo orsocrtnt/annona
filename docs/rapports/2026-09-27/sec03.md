@@ -1,4 +1,4 @@
-# TutelLiv — SEC-03 : droits mini-admin
+# Annona — SEC-03 : droits mini-admin
 
 27 septembre 2026 — correction locale, non déployée.
 

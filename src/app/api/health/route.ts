@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const deep = new URL(request.url).searchParams.get("deep") === "1";
 
   if (!deep) {
-    return NextResponse.json({ status: "ok", service: "tutelliv" });
+    return NextResponse.json({ status: "ok", service: "annona" });
   }
   if (!healthSecret || authorization !== `Bearer ${healthSecret}`) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

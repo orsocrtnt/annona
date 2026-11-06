@@ -27,7 +27,7 @@ const EXTRACTION: OrderIntakeExtraction = {
 
 async function loginAdmin(page: Page) {
   const login = await page.request.post("/api/auth/login", {
-    data: { email: "demo@tutelliv.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
+    data: { email: "demo@annona.fr", password: "Demo2026!", demoTestSession: true, accountType: "company" },
   });
   expect(login.status()).toBe(200);
   expect((await page.request.post("/api/demo/persona", { data: { persona: "admin" } })).status()).toBe(200);
@@ -57,7 +57,7 @@ const tomorrow = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOStrin
 const BODY = (key: string, overrides: Record<string, unknown> = {}) => ({
   idempotencyKey: key,
   name: "E2E Demandeur",
-  email: "e2e-public-order@tutelliv.fr",
+  email: "e2e-public-order@annona.fr",
   phone: "0612345678",
   pickup: { address: "12 rue de Rivoli", city: "Paris", postalCode: "75001" },
   delivery: { address: "5 place de la Défense", city: "Courbevoie", postalCode: "92400" },
@@ -96,7 +96,7 @@ test("LIEN : commander sans compte, suivre, plafond, lien coupé", async ({ page
     await expect(visitor.getByText("Commande non envoyée")).toBeVisible();
 
     await visitor.getByLabel(/Nom ou société/).fill("E2E Demandeur");
-    await visitor.getByLabel(/E-mail/).fill("e2e-public-order@tutelliv.fr");
+    await visitor.getByLabel(/E-mail/).fill("e2e-public-order@annona.fr");
     await visitor.getByLabel(/Téléphone/).fill("0612345678");
     await visitor.getByLabel(/Adresse/).nth(0).fill("12 rue de Rivoli");
     await visitor.getByLabel(/Code postal/).nth(0).fill("75001");
@@ -110,7 +110,7 @@ test("LIEN : commander sans compte, suivre, plafond, lien coupé", async ({ page
     await visitor.getByRole("button", { name: "Envoyer la commande" }).dblclick();
     await expect(visitor.getByText(/Commande envoyée/)).toBeVisible({ timeout: 60_000 });
 
-    const links = await prisma.orderTrackingLink.findMany({ where: { companyId, guestEmail: "e2e-public-order@tutelliv.fr" }, select: { orderId: true, token: true } });
+    const links = await prisma.orderTrackingLink.findMany({ where: { companyId, guestEmail: "e2e-public-order@annona.fr" }, select: { orderId: true, token: true } });
     expect(links, "double clic : une seule commande").toHaveLength(1);
     orderIds.push(links[0]!.orderId);
     const order = await prisma.order.findUniqueOrThrow({ where: { id: links[0]!.orderId }, include: { deliveries: true } });
@@ -200,7 +200,7 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     const emailId = `e2e-inbound-${Date.now()}`;
     const event = { type: "email.received", data: { email_id: emailId, to: [`${token}@commandes.e2e.test`] } };
     const fetcher = (async () => new Response(JSON.stringify({
-      from: "E2E Client <e2e-client@tutelliv.fr>", subject: "E2E commande urgente", html: "<p>2 plis de Rivoli à la Défense</p>", attachments: [{ id: "a" }],
+      from: "E2E Client <e2e-client@annona.fr>", subject: "E2E commande urgente", html: "<p>2 plis de Rivoli à la Défense</p>", attachments: [{ id: "a" }],
     }), { status: 200 })) as typeof fetch;
 
     expect(await ingestInboundEmail({ type: "autre" }, { env, fetcher })).toBe("ignored");
@@ -212,7 +212,7 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     expect(stored.companyId).toBe(companyId);
     expect(stored.bodyText).toContain("2 plis de Rivoli");
     expect(stored.bodyText).not.toContain("<p>");
-    expect(stored.fromAddress).toBe("e2e-client@tutelliv.fr");
+    expect(stored.fromAddress).toBe("e2e-client@annona.fr");
     expect(stored.attachmentCount).toBe(1);
     expect(await prisma.order.count({ where: { companyId, notes: { contains: "E2E commande urgente" } } }), "jamais de commande créée seule").toBe(0);
 
@@ -224,7 +224,7 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     await analyzeInboundEmailJob({ inboundEmailId: stored.id }, { analyze: async () => ({ status: "ok", draft }) });
     expect((await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: stored.id } })).status).toBe("ANALYZED");
 
-    const second = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-b`, fromAddress: "e2e-spam@tutelliv.fr", subject: "E2E à classer", bodyText: "texte", status: "ANALYSIS_FAILED", analysisError: "not_configured" } });
+    const second = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-b`, fromAddress: "e2e-spam@annona.fr", subject: "E2E à classer", bodyText: "texte", status: "ANALYSIS_FAILED", analysisError: "not_configured" } });
     emailIds.push(second.id);
 
     // MAIL-PONT, étape 2 : un membre de l'équipe transfère à la main l'e-mail d'un client existant.
@@ -249,14 +249,14 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     expect(stored.originalSender).toBeNull();
 
     // MAIL-PONT, étape 1 : un e-mail ordinaire et un e-mail fait de pièces jointes partent dans « À trier ».
-    const thanks = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-c`, fromAddress: "e2e-merci@tutelliv.fr", subject: "E2E merci pour hier", bodyText: "Merci pour la livraison d'hier, tout est parfait.", status: "RECEIVED" } });
+    const thanks = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-c`, fromAddress: "e2e-merci@annona.fr", subject: "E2E merci pour hier", bodyText: "Merci pour la livraison d'hier, tout est parfait.", status: "RECEIVED" } });
     emailIds.push(thanks.id);
     const thanksDraft = buildOrderIntakeDraft({ ...EXTRACTION, kind: { value: "other", reason: "Remerciement, aucune course demandée." } }, thanks.bodyText, new Date());
     await analyzeInboundEmailJob({ inboundEmailId: thanks.id }, { analyze: async () => ({ status: "ok", draft: thanksDraft }) });
     const sorted = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: thanks.id } });
     expect(sorted.status).toBe("NOT_ORDER");
     expect(sorted.analysisError).toBe("not_order");
-    const attached = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-d`, fromAddress: "e2e-pdf@tutelliv.fr", subject: "E2E bon de commande", bodyText: "", attachmentCount: 1, status: "RECEIVED" } });
+    const attached = await prisma.inboundOrderEmail.create({ data: { companyId, providerEmailId: `${emailId}-d`, fromAddress: "e2e-pdf@annona.fr", subject: "E2E bon de commande", bodyText: "", attachmentCount: 1, status: "RECEIVED" } });
     emailIds.push(attached.id);
     await analyzeInboundEmailJob({ inboundEmailId: attached.id }, { analyze: async () => { throw new Error("le modèle ne doit pas être appelé"); } });
     const attachedRow = await prisma.inboundOrderEmail.findUniqueOrThrow({ where: { id: attached.id } });
@@ -303,7 +303,7 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
 
     // MAIL-PONT, étape 5 : confirmation au client cochée par défaut, adressée à l'expéditeur d'origine.
     await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", mailbox: "commandes@e2e-transport.test" } });
-    const confirmBox = page.getByLabel(/Envoyer la confirmation au client \(e2e-client@tutelliv\.fr\)/);
+    const confirmBox = page.getByLabel(/Envoyer la confirmation au client \(e2e-client@annona\.fr\)/);
     await expect(confirmBox).toBeChecked();
 
     // Vrai clic : le double clic ne crée qu'une commande et l'e-mail se classe seul.
@@ -325,8 +325,8 @@ test("E-MAIL : réception signée, doublon, brouillon validé en une commande, c
     expect(confirmationJob, "une confirmation programmée").not.toBeNull();
     expect((confirmationJob!.payload as { replyTo?: string }).replyTo).toBe("commandes@e2e-transport.test");
     const confirmationLink = await prisma.orderTrackingLink.findUniqueOrThrow({ where: { orderId } });
-    expect(confirmationLink.guestEmail, "expéditeur d'origine").toBe("e2e-client@tutelliv.fr");
-    await expect(page.getByText("Confirmation envoyée à e2e-client@tutelliv.fr.")).toBeVisible();
+    expect(confirmationLink.guestEmail, "expéditeur d'origine").toBe("e2e-client@annona.fr");
+    await expect(page.getByText("Confirmation envoyée à e2e-client@annona.fr.")).toBeVisible();
     expect(await prisma.operationJob.count({ where: { jobKey: `inbound-confirmation:${forwarded.id}` } }), "e-mail classé sans commande : aucune confirmation").toBe(0);
     const list = (await (await page.request.get("/api/orders/intake/inbox")).json()).data as { id: string }[];
     expect(list.some(({ id }) => emailIds.includes(id)), "traités : hors de la liste").toBe(false);
@@ -348,7 +348,7 @@ test("E-MAIL fiche client : client inconnu créé au clic, reconnu au second e-m
   const emailIds: string[] = [];
   const orderIds: string[] = [];
   let companyId = "";
-  const sender = `e2e-fiche-${Date.now()}@tutelliv.fr`;
+  const sender = `e2e-fiche-${Date.now()}@annona.fr`;
   try {
     await loginAdmin(page);
     expect((await page.request.patch("/api/company/intake-channels", { data: { channel: "inboundEmail", enabled: true } })).status()).toBe(200);

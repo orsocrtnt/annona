@@ -7,8 +7,8 @@ import { useSyncExternalStore } from "react";
  * gardées dans ce navigateur (aucune colonne en base). Servent aux pastilles du menu et au bloc
  * « À traiter » de l'accueil.
  */
-export const CONTACT_LAST_VISIT_KEY = "tutelliv:admin:contact-last-visit";
-export const WAITLIST_LAST_VISIT_KEY = "tutelliv:admin:waitlist-last-visit";
+export const CONTACT_LAST_VISIT_KEY = "annona:admin:contact-last-visit";
+export const WAITLIST_LAST_VISIT_KEY = "annona:admin:waitlist-last-visit";
 
 function createLastVisitStore(key: string) {
   const changeEvent = `${key}-change`;

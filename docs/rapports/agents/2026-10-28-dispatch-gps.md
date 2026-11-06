@@ -77,7 +77,7 @@ Il n'y a pas de tolérance d'égalité sur la distance : elle n'intervient qu'en
 
 ## Checklist de preuves
 
-**Skills invoqués** : `tutelliv-model-router`, `superpowers:test-driven-development`, `karpathy-guidelines`, `superpowers:verification-before-completion`. Sous-agents : `verificateur` (Sonnet) pour `npm run check`, revue de sécurité Sonnet en lecture seule. `explorateur` n'a pas servi : les cibles étaient connues et les lectures directes plus courtes.
+**Skills invoqués** : `annona-model-router`, `superpowers:test-driven-development`, `karpathy-guidelines`, `superpowers:verification-before-completion`. Sous-agents : `verificateur` (Sonnet) pour `npm run check`, revue de sécurité Sonnet en lecture seule. `explorateur` n'a pas servi : les cibles étaient connues et les lectures directes plus courtes.
 
 **Rouge puis vert, par point** (`node --import tsx --test <fichier>`) :
 

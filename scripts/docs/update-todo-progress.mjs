@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 
 const root = process.cwd();
 const todoPath = resolve(root, "TODO.md");
-const sharePath = resolve(root, "outputs/TODO-TutelLiv-vente.md");
+const sharePath = resolve(root, "outputs/TODO-Annona-vente.md");
 const archivePath = resolve(root, "docs/TODO-ARCHIVE.md");
 const startMarker = "<!-- TODO_PROGRESS_START -->";
 const endMarker = "<!-- TODO_PROGRESS_END -->";

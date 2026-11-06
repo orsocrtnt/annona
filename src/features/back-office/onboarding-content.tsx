@@ -64,7 +64,7 @@ export function OnboardingContent() {
         <p className="text-sm font-medium text-muted-foreground">{data.companyName}</p>
         <h1 className="text-2xl font-semibold tracking-tight">Première livraison</h1>
         <p className="mt-1 max-w-3xl text-muted-foreground">
-          Suivez ces étapes avec des données fictives. TutelLiv calcule l’avancement depuis les
+          Suivez ces étapes avec des données fictives. Annona calcule l’avancement depuis les
           comptes actifs, réglages, commandes et livraisons réellement présents dans votre entreprise.
           Les données confirmées et les choix facultatifs sont conservés après déconnexion.
           Une invitation en attente ne valide pas un compte actif.

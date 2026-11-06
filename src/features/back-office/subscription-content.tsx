@@ -45,7 +45,7 @@ export function SubscriptionContent() {
   if (isLoading) return <PageLoader />;
   if (error) {
     return <section role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-5 text-sm">
-      Impossible de charger l’abonnement. Réessayez plus tard ou contactez l’équipe TutelLiv.
+      Impossible de charger l’abonnement. Réessayez plus tard ou contactez l’équipe Annona.
     </section>;
   }
   if (!data) {
@@ -61,9 +61,9 @@ export function SubscriptionContent() {
       <p className="mt-1 text-muted-foreground">Formule, consommation et historique de votre abonnement.</p>
     </header>
 
-    {data.management === "TUTELLIV_TEAM" && <Card data-subscription-management="tutelliv-team">
+    {data.management === "ANNONA_TEAM" && <Card data-subscription-management="annona-team">
       <CardHeader>
-        <CardTitle>Abonnement géré par l’équipe TutelLiv</CardTitle>
+        <CardTitle>Abonnement géré par l’équipe Annona</CardTitle>
         <CardDescription>Pour changer de formule, ajouter une option ou résilier, écrivez-nous : nous appliquons la modification avec vous.</CardDescription>
       </CardHeader>
       <CardContent>

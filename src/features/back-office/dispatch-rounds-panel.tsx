@@ -171,7 +171,7 @@ function RoundCard({ initial, drivers }: { initial: PresentedRound; drivers: Rou
   );
 }
 
-/** DISPATCH-4, piste 3 : TutelLiv propose, le dispatcher modifie puis valide (C12). */
+/** DISPATCH-4, piste 3 : Annona propose, le dispatcher modifie puis valide (C12). */
 export function DispatchRoundsPanel() {
   const { can, role } = usePermissions();
   const allowed = can("deliveries:dispatch") && Boolean(role && DISPATCH_ROLES.has(role));

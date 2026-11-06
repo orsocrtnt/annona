@@ -8,11 +8,11 @@ Dans **Commandes → Export comptable des prestations**, choisir les dates UTC i
 
 L'export lit les documents `Invoice` de prestations déjà enregistrés, et non toutes les commandes ni les futures souscriptions SaaS. Le CSV d'historique `/api/orders/export` reste un autre fichier : il ne doit pas être traité comme cet export comptable. Les futurs contrats/revenus d'abonnement doivent rester dans un domaine séparé, selon [l'architecture des offres](../../SAAS_OFFERS_ARCHITECTURE.md).
 
-Le fichier permet de rapprocher documents, clients et commandes et de transmettre les montants enregistrés à un outil comptable. Il ne constitue ni FEC, ni journal comptable automatiquement imputé, ni facture électronique réglementaire, ni avoir. Le comptable configure l'imputation et les comptes tiers ; TutelLiv n'invente ni numéros de comptes, ni identité légale, ni taux de TVA absent, ni conformité. Les documents PDF portent la qualification de relevé opérationnel.
+Le fichier permet de rapprocher documents, clients et commandes et de transmettre les montants enregistrés à un outil comptable. Il ne constitue ni FEC, ni journal comptable automatiquement imputé, ni facture électronique réglementaire, ni avoir. Le comptable configure l'imputation et les comptes tiers ; Annona n'invente ni numéros de comptes, ni identité légale, ni taux de TVA absent, ni conformité. Les documents PDF portent la qualification de relevé opérationnel.
 
 ## Contrat CSV version 1
 
-Version `tutelliv-delivery-v1`, délimiteur virgule, tous les champs de données entre guillemets, guillemet doublé, séparateur de lignes CRLF, encodage UTF-8 avec BOM. Les cellules textuelles susceptibles de devenir une formule sont préfixées d'une apostrophe, y compris après espaces/contrôles initiaux. L'apostrophe appartient alors à la valeur exportée ; un importeur programmatique doit appliquer cette convention, sans activer de formules. Les champs numériques sont construits exclusivement depuis des valeurs validées/Decimal, jamais depuis du texte utilisateur.
+Version `annona-delivery-v1`, délimiteur virgule, tous les champs de données entre guillemets, guillemet doublé, séparateur de lignes CRLF, encodage UTF-8 avec BOM. Les cellules textuelles susceptibles de devenir une formule sont préfixées d'une apostrophe, y compris après espaces/contrôles initiaux. L'apostrophe appartient alors à la valeur exportée ; un importeur programmatique doit appliquer cette convention, sans activer de formules. Les champs numériques sont construits exclusivement depuis des valeurs validées/Decimal, jamais depuis du texte utilisateur.
 
 Ordre exact des 29 colonnes :
 
@@ -58,7 +58,7 @@ Le statut est obligatoire : `ALL`, `DRAFT`, `PENDING`, `PAID`, `OVERDUE`, `CANCE
 
 Les tarifs actuels, le nom actuel de l'entreprise et les coordonnées actuelles du compte client ne recalculent jamais les anciens montants/libellés. Les données sources restent toutefois celles du modèle actuel : un document `PENDING` peut être révisé par le service existant, son statut et sa date de paiement évoluent, et le modèle ne contient pas de véritable instantané immuable de l'identité/adresse/mentions de l'émetteur et du client. Ces éléments absents ne sont pas inventés. La référence/e-mail de commande, lorsqu'ils existent, sont inclus dans l'empreinte afin qu'une modification soit détectable. Le PDF utilise encore des coordonnées et un pied de page courants ; aucune immutabilité complète de facture finale n'est revendiquée.
 
-La clé de déduplication côté importeur est `company_id + document_id + document_version_sha256`, et non la date du téléchargement. Un nouvel export sans mutation est strictement identique ; il ne produit aucune écriture en base, aucun e-mail ni job. Une version différente du même document demande rapprochement/remplacement explicite, jamais addition automatique. Conserver les CSV remis hors de TutelLiv selon la politique validée par l'entreprise ; le serveur ne stocke pas d'archive d'export.
+La clé de déduplication côté importeur est `company_id + document_id + document_version_sha256`, et non la date du téléchargement. Un nouvel export sans mutation est strictement identique ; il ne produit aucune écriture en base, aucun e-mail ni job. Une version différente du même document demande rapprochement/remplacement explicite, jamais addition automatique. Conserver les CSV remis hors de Annona selon la politique validée par l'entreprise ; le serveur ne stocke pas d'archive d'export.
 
 ## Droits, cohérence et volumes
 

@@ -3,14 +3,14 @@ Objet : Un seul logiciel pour gérer vos livraisons
 Bonjour,
 
 Vous gérez une entreprise de coursiers ou de livraison express ?
-TutelLiv est un logiciel qui réunit vos commandes, vos livreurs et votre suivi client dans un seul espace.
+Annona est un logiciel qui réunit vos commandes, vos livreurs et votre suivi client dans un seul espace.
 
 Gérez vos commandes : retrouvez toutes les demandes au même endroit.
 Organisez les missions : affectez les livraisons et suivez leur avancement.
 Informez vos clients : ils consultent le suivi et les preuves de livraison.
 
-Découvrez concrètement le fonctionnement de TutelLiv sur notre site.
+Découvrez concrètement le fonctionnement de Annona sur notre site.
 
-Découvrir TutelLiv : https://tutelliv.fr
+Découvrir Annona : https://annona.fr
 
-Vous ne souhaitez plus être contacté ? https://tutelliv.fr/contact
+Vous ne souhaitez plus être contacté ? https://annona.fr/contact

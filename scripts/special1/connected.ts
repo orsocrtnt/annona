@@ -232,7 +232,7 @@ async function run() {
   assert.equal(delivery.pickupAddress, "1 place de la Concorde");
   assert.equal(delivery.address, "5 avenue Anatole France");
   assert.ok(
-    delivery.trackingEvents.some((event) => event.label === "Accord confirmé hors TutelLiv")
+    delivery.trackingEvents.some((event) => event.label === "Accord confirmé hors Annona")
   );
 
   await assignDeliveryToDriver(companyA.id, delivery.id, driverA.id, {
@@ -257,7 +257,7 @@ async function run() {
     feeIds: [],
     includePurchases: false,
     customLines: [
-      { label: "Mission spéciale — montant convenu hors TutelLiv", amount: 320 },
+      { label: "Mission spéciale — montant convenu hors Annona", amount: 320 },
     ],
     notes: "Facturation fictive après livraison SPECIAL-1",
   });
@@ -283,8 +283,8 @@ async function run() {
       directCompletionRejected: true,
     },
     quoteBoundary: {
-      pricedQuoteInTutelLiv: false,
-      clientAcceptanceInTutelLiv: false,
+      pricedQuoteInAnnona: false,
+      clientAcceptanceInAnnona: false,
       agreementRecordedAsExternal: true,
       pilotPromise: "excluded",
     },

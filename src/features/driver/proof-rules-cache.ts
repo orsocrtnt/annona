@@ -4,7 +4,7 @@
  */
 export type DriverProofRules = { signatureRequired: boolean };
 
-export const DRIVER_PROOF_RULES_KEY = "tutelliv-driver-proof-rules";
+export const DRIVER_PROOF_RULES_KEY = "annona-driver-proof-rules";
 
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 

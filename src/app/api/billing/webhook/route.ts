@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   try {
     const data = event.object;
     const metadata = data.metadata && typeof data.metadata === "object" ? data.metadata as Record<string, unknown> : {};
-    const accountId = typeof metadata.tutelliv_account === "string" ? metadata.tutelliv_account : null;
+    const accountId = typeof metadata.annona_account === "string" ? metadata.annona_account : null;
     const customer = typeof data.customer === "string" ? data.customer : null;
     const subscription = data.object === "subscription" && typeof data.id === "string" ? data.id : typeof data.subscription === "string" ? data.subscription : null;
     const conditions = [accountId ? { id: accountId } : null, customer ? { providerCustomerId: customer } : null, subscription ? { providerSubscriptionId: subscription } : null].filter((item): item is NonNullable<typeof item> => item !== null);

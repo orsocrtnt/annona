@@ -222,7 +222,7 @@ export function CampaignsBoard() {
           <p className="flex items-start gap-2 text-sm text-foreground">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
             <span>
-              <strong>Envoi pas encore configuré.</strong> Le mot de passe de la boîte orso@tutelliv.fr doit être ajouté
+              <strong>Envoi pas encore configuré.</strong> Le mot de passe de la boîte orso@annona.fr doit être ajouté
               dans Vercel (variable <code>PROSPECT_SMTP_PASSWORD</code>). Vous pouvez déjà préparer les campagnes et les adresses.
             </span>
           </p>

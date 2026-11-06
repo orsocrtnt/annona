@@ -285,7 +285,7 @@ export async function runPerf02(target = assertLocalPerf02Target()) {
   if (!scenarios.every((scenario) => scenario.isolation.crossTenantReadDenied)) throw new Error("PERF02_ISOLATION_FAILED");
   if (!degradationAndRecovery.recoverySucceeded || degradationAndRecovery.saturationErrors === 0) throw new Error("PERF02_RECOVERY_FAILED");
   return {
-    schema: "tutelliv-perf02-local-v1",
+    schema: "annona-perf02-local-v1",
     executedAt: new Date().toISOString(),
     target: {
       url: target,

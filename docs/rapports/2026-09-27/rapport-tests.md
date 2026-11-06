@@ -1,4 +1,4 @@
-# TutelLiv — tests du 27 septembre 2026
+# Annona — tests du 27 septembre 2026
 
 La base distante a été explicitement autorisée par l’utilisateur pour les tests : elle n’est pas une base dédiée, mais ne contient pas de données réelles. Deux entreprises fictives isolées ont été créées ; aucun compte préexistant n’a été modifié et aucun reset démo n’a été exécuté.
 

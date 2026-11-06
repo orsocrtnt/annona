@@ -1,4 +1,4 @@
-name: TutelLiv CI
+name: Annona CI
 
 on:
   push:
@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: tutelliv-ci-${{ github.workflow }}-${{ github.ref }}
+  group: annona-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -163,7 +163,7 @@ jobs:
 
       # La préproduction contient les places de démo et des entreprises de recette : le montage refuse
       # alors de s'exécuter, à juste titre. Le passage de nuit s'arrête donc à la recette connectée ;
-      # les parcours navigateur se rejouent sur tutelliv-dev (skill tutelliv-recette).
+      # les parcours navigateur se rejouent sur annona-dev (skill annona-recette).
       - name: Monter la démonstration navigateur temporaire
         if: ${{ inputs.run_browser == true }}
         run: npm run test:v1:browser-fixture:setup
@@ -184,7 +184,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: tutelliv-preproduction-proof
+          name: annona-preproduction-proof
           path: |
             outputs/test2/connected.json
             outputs/test2/browser.json

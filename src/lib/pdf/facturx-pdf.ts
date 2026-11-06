@@ -12,7 +12,7 @@ import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFString } from
 import { buildSrgbIccProfile } from "@/lib/pdf/srgb-icc";
 
 export const FACTURX_FILENAME = "factur-x.xml";
-const PRODUCER = "TutelLiv (pdf-lib)";
+const PRODUCER = "Annona (pdf-lib)";
 const FX_NAMESPACE = "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#";
 
 export interface FacturXPdfOptions {
@@ -96,7 +96,7 @@ export async function embedFacturXInPdf(pdfBytes: Uint8Array, options: FacturXPd
   const xmlBytes = new TextEncoder().encode(options.xml);
   const date = options.documentDate;
   const title = doc.getTitle() ?? FACTURX_FILENAME;
-  const creator = doc.getCreator() ?? "TutelLiv";
+  const creator = doc.getCreator() ?? "Annona";
 
   // Dictionnaire Info aligné sur le XMP.
   doc.setTitle(title);

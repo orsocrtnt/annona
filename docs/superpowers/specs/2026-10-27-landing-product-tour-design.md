@@ -4,7 +4,7 @@ Date : 27 octobre 2026 · Statut : à relire par le propriétaire
 
 ## Objectif
 
-Qu'un visiteur comprenne ce que fait TutelLiv sans quitter la landing, en « jouant » le parcours
+Qu'un visiteur comprenne ce que fait Annona sans quitter la landing, en « jouant » le parcours
 complet d'une livraison à travers les trois espaces. La démo remplace la capture du tableau de bord
 à droite du titre du hero ; elle ne prend pas tout l'écran.
 
@@ -98,7 +98,7 @@ saisie qui donne l'impression que l'utilisateur écrit, transitions très fluide
 
 - **Dépendance** : ajout de `motion` (Motion, ex-Framer Motion), chargé uniquement par la démo ; remplace
   la décision « aucune dépendance » de la version 1.
-- **Barre d'adresse** : « TutelLiv · Espace client / Espace entreprise / App livreur » (aucun domaine
+- **Barre d'adresse** : « Annona · Espace client / Espace entreprise / App livreur » (aucun domaine
   inventé) ; l'indicateur d'étapes passe sous la scène.
 - **Cartons de transition** à chaque changement d'espace provoqué par un geste (~1,4 s, flou puis fondu) :
   « Pendant ce temps, côté entreprise… La commande arrive au dispatch » ; « Côté livreur… Karim reçoit la

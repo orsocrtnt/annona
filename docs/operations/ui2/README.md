@@ -1,6 +1,6 @@
 # UI-2 — Recette mobile, clavier et lisibilité
 
-Date de référence : 16 octobre 2026. Utiliser le serveur local sur `http://127.0.0.1:3106` avec la démo TutelLiv. Cette recette ne crée aucune commande : le formulaire est seulement soumis vide afin de vérifier ses erreurs.
+Date de référence : 16 octobre 2026. Utiliser le serveur local sur `http://127.0.0.1:3106` avec la démo Annona. Cette recette ne crée aucune commande : le formulaire est seulement soumis vide afin de vérifier ses erreurs.
 
 ## Écrans essentiels sur petit écran
 

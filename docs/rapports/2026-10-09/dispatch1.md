@@ -37,7 +37,7 @@ Après démarrage, réaffectation et retrait sont refusés. Une annulation dédi
 
 ## Limites conservées
 
-ACK-1 reste ouvert : TutelLiv doit encore décider si « prise en charge » et « début réel » sont un seul geste ou deux états, puis montrer le même horodatage dans les trois espaces. R04 n’est donc que partiellement avancé. La recette a utilisé le client HTTP Node 22 contre le site local et la base de test autorisée ; elle ne constitue ni un test visuel navigateur, ni un test de charge, ni un essai terrain. Aucun changement de schéma, migration ou déploiement n’a été effectué.
+ACK-1 reste ouvert : Annona doit encore décider si « prise en charge » et « début réel » sont un seul geste ou deux états, puis montrer le même horodatage dans les trois espaces. R04 n’est donc que partiellement avancé. La recette a utilisé le client HTTP Node 22 contre le site local et la base de test autorisée ; elle ne constitue ni un test visuel navigateur, ni un test de charge, ni un essai terrain. Aucun changement de schéma, migration ou déploiement n’a été effectué.
 
 ## Preuves
 

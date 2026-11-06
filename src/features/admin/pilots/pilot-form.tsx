@@ -87,7 +87,7 @@ export function PilotForm({ pilot, onDone, onCancel }: PilotFormProps) {
           <Input id={id("name")} name="name" required minLength={2} maxLength={120} defaultValue={pilot?.name ?? ""} className="min-h-11" />
         </Field>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground" id={id("company-label")}>Entreprise TutelLiv liée</p>
+          <p className="text-sm font-semibold text-foreground" id={id("company-label")}>Entreprise Annona liée</p>
           <p className="text-xs text-muted-foreground">Facultatif au début : à lier quand son espace est créé.</p>
           <div className="mt-1.5" role="group" aria-labelledby={id("company-label")}>
             <PilotCompanyPicker value={company} onChange={setCompany} />

@@ -47,7 +47,7 @@ const SPECIAL_MISSION_QUOTE_STATUSES: OrderStatus[] = [
 
 /**
  * Une demande de mission spéciale n'est pas encore une livraison. Tant que
- * l'accord a lieu hors TutelLiv, l'administration peut seulement la conserver,
+ * l'accord a lieu hors Annona, l'administration peut seulement la conserver,
  * la convertir manuellement après accord ou l'annuler.
  */
 export function getAdminEditableOrderStatuses(

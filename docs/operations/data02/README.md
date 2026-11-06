@@ -4,7 +4,7 @@ Date de référence : 18 octobre 2026.
 
 ## Export d'entreprise
 
-`exportCompanyData(companyId)` produit un document JSON versionné `tutelliv-company-export` v1 dans une transaction en lecture répétable. Il conserve les identifiants relationnels utiles à une reprise et inclut :
+`exportCompanyData(companyId)` produit un document JSON versionné `annona-company-export` v1 dans une transaction en lecture répétable. Il conserve les identifiants relationnels utiles à une reprise et inclut :
 
 - entreprise et configuration ;
 - utilisateurs, rôles fonctionnels, adresses et dernière position chauffeur ;

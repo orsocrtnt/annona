@@ -1,4 +1,4 @@
-import { renderTextEmailHtml, TUTELLIV_REPLY_TO } from "./email-template";
+import { renderTextEmailHtml, ANNONA_REPLY_TO } from "./email-template";
 
 const EMAIL_TIMEOUT_MS = 10_000;
 const EMAIL_IDEMPOTENCY_KEY_MAX = 256;
@@ -53,11 +53,11 @@ export type TransactionalEmailInput = {
   /** MAIL-PONT : « répondre à » (boîte de commandes de l'entreprise) ; ignoré s'il n'est pas une adresse. */
   replyTo?: string | null;
   /**
-   * E-mail envoyé au nom de TutelLiv (bienvenue…) : « répondre à » la boîte TutelLiv, sauf `replyTo`
+   * E-mail envoyé au nom de Annona (bienvenue…) : « répondre à » la boîte Annona, sauf `replyTo`
    * explicite. Jamais pour un e-mail envoyé pour une entreprise : son client doit lui répondre à elle.
    */
-  fromTutelLiv?: boolean;
-  /** MAIL-PONT : nom de l'entreprise, affiché « Entreprise via TutelLiv » devant l'adresse d'envoi. */
+  fromAnnona?: boolean;
+  /** MAIL-PONT : nom de l'entreprise, affiché « Entreprise via Annona » devant l'adresse d'envoi. */
   senderName?: string | null;
   idempotencyKey: string;
   /**
@@ -112,14 +112,14 @@ function safeHeader(value: string, max: number) {
 }
 
 /**
- * Expéditeur affiché « Entreprise via TutelLiv » avec l'adresse de MAIL_FROM (jamais une autre) :
+ * Expéditeur affiché « Entreprise via Annona » avec l'adresse de MAIL_FROM (jamais une autre) :
  * nom nettoyé des caractères d'en-tête, entre guillemets ; sans nom utilisable, MAIL_FROM tel quel.
  */
 export function senderHeader(mailFrom: string, senderName: string | null | undefined) {
   const address = /<([^<>]+)>\s*$/.exec(mailFrom)?.[1]?.trim() ?? mailFrom.trim();
   const name = (senderName ?? "").replace(/["<>\\\r\n,;:]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60).trim();
   if (!name || !hasAddress(address)) return mailFrom;
-  return `"${name} via TutelLiv" <${address}>`;
+  return `"${name} via Annona" <${address}>`;
 }
 
 /**
@@ -201,7 +201,7 @@ export async function sendTransactionalEmail(
   }
 
   const from = senderHeader((env.MAIL_FROM || env.EMAIL_FROM)!.trim(), input.senderName);
-  const requestedReplyTo = input.replyTo ?? (input.fromTutelLiv ? TUTELLIV_REPLY_TO : null);
+  const requestedReplyTo = input.replyTo ?? (input.fromAnnona ? ANNONA_REPLY_TO : null);
   const replyTo = requestedReplyTo && hasAddress(requestedReplyTo.trim()) ? requestedReplyTo.trim().toLowerCase() : null;
   // Rendu figé à la première tentative émise : une reprise envoie exactement le même corps.
   const frozen = input.freezeContent
@@ -225,14 +225,14 @@ export async function sendTransactionalEmail(
     180
   );
   const text = testMode
-    ? `Message de recette TutelLiv destiné à ${intendedRecipient}.\n\n${content.text}`
+    ? `Message de recette Annona destiné à ${intendedRecipient}.\n\n${content.text}`
     : content.text;
   // Dérivé du rendu figé par une fonction pure : une reprise sous la même clé envoie le même HTML.
   const html = renderTextEmailHtml({
     subject: safeHeader(content.subject, 180),
     text: content.text,
     testRecipient: testMode ? intendedRecipient : undefined,
-    reply: replyTo ? (input.fromTutelLiv ? "tutelliv" : "company") : "none",
+    reply: replyTo ? (input.fromAnnona ? "annona" : "company") : "none",
   });
   const idempotencyKey = safeHeader(
     input.idempotencyKey,

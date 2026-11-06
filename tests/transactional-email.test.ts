@@ -12,7 +12,7 @@ const baseEnv = {
   EMAIL_DELIVERY_MODE: "test",
   EMAIL_TEST_RECIPIENT: "owner@example.test",
   RESEND_API_KEY: "test-key",
-  MAIL_FROM: "TutelLiv <no-reply@example.test>",
+  MAIL_FROM: "Annona <no-reply@example.test>",
   EMAIL_FROM: undefined,
 };
 

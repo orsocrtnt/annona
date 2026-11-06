@@ -76,7 +76,7 @@ function WhatsAppTeam({ team }: { team: NonNullable<IntakeChannels["whatsappTeam
 const formatCode = (code: string) => code.replace(/(\d{3})(?=\d)/g, "$1 ");
 
 /**
- * MAIL-PONT : boîte de commandes de l'entreprise, renvoyée automatiquement vers l'adresse TutelLiv.
+ * MAIL-PONT : boîte de commandes de l'entreprise, renvoyée automatiquement vers l'adresse Annona.
  * Le renvoi garde le vrai client en expéditeur ; Gmail envoie d'abord un code, affiché ici.
  */
 function OrderMailboxSetup({ data, pending, onSave }: {
@@ -86,7 +86,7 @@ function OrderMailboxSetup({ data, pending, onSave }: {
 }) {
   const [mailbox, setMailbox] = React.useState(data.inboundEmail.mailbox ?? "");
   React.useEffect(() => setMailbox(data.inboundEmail.mailbox ?? ""), [data.inboundEmail.mailbox]);
-  const address = data.inboundEmail.address ?? "l'adresse TutelLiv ci-dessus";
+  const address = data.inboundEmail.address ?? "l'adresse Annona ci-dessus";
   const confirmations = data.gmailConfirmations ?? [];
   return (
     <div data-testid="order-mailbox" className="space-y-3 rounded-lg border border-border p-3">
@@ -105,7 +105,7 @@ function OrderMailboxSetup({ data, pending, onSave }: {
           {confirmations.map((item) => item.link ? (
             <div key={item.receivedAt} className="space-y-2">
               <p>
-                Gmail demande votre accord pour renvoyer les e-mails{item.requester ? <> de {item.requester}</> : null} vers TutelLiv
+                Gmail demande votre accord pour renvoyer les e-mails{item.requester ? <> de {item.requester}</> : null} vers Annona
                 (reçu le {dateTime.format(new Date(item.receivedAt))}).
               </p>
               <Button asChild className="min-h-11">

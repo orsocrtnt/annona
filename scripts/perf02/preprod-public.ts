@@ -6,7 +6,7 @@ import { measureHttpLevel, PERF02_NEXT_PAGES } from "./next-measure";
 // PERF-02 — charge mesurée sur la préproduction (accord du propriétaire du 30 octobre 2026).
 // Lecture seule et sans session : pages publiques, catalogue d'inscription et session anonyme.
 // Plafond conservateur pour rester dans l'offre gratuite : 24 requêtes par niveau, concurrence 1 à 16.
-export const PERF02_PREPROD_HOSTS = ["tutelliv.fr", "tutelliv-v2-git-preproduction-tutelliv.vercel.app"] as const;
+export const PERF02_PREPROD_HOSTS = ["annona.fr", "annona-git-preproduction-annona.vercel.app"] as const;
 export const PERF02_PREPROD_REQUESTS_PER_LEVEL = 24;
 
 export const PERF02_PREPROD_ROUTES = [
@@ -31,7 +31,7 @@ export function assertPreprodPerf02Target(raw: string): string {
 
 export async function runPreprodMeasure(rawBase: string, requestsPerLevel = PERF02_PREPROD_REQUESTS_PER_LEVEL) {
   const base = assertPreprodPerf02Target(rawBase);
-  const get = (path: string) => fetch(`${base}${path}`, { redirect: "manual", headers: { "User-Agent": "TutelLiv-PERF02/1.0" } });
+  const get = (path: string) => fetch(`${base}${path}`, { redirect: "manual", headers: { "User-Agent": "Annona-PERF02/1.0" } });
   const routes = [];
   for (const route of PERF02_PREPROD_ROUTES) {
     for (let warm = 0; warm < 2; warm += 1) await (await get(route.path)).arrayBuffer();
@@ -46,7 +46,7 @@ export async function runPreprodMeasure(rawBase: string, requestsPerLevel = PERF
 
 async function main() {
   const output = resolve(process.argv[3] ?? "outputs/perf02/preprod-public.json");
-  const result = await runPreprodMeasure(process.argv[2] ?? "https://tutelliv.fr/");
+  const result = await runPreprodMeasure(process.argv[2] ?? "https://annona.fr/");
   const report = { measuredAt: new Date().toISOString(), node: process.version, client: "poste local (New York) vers Vercel cdg1", ...result };
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`);

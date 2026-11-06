@@ -7,10 +7,10 @@ self.addEventListener("push", (event) => {
     data = {};
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "TutelLiv", {
+    self.registration.showNotification(data.title || "Annona", {
       body: data.body || "",
       icon: "/icon.png",
-      tag: data.tag || "tutelliv",
+      tag: data.tag || "annona",
       renotify: true,
       data: { url: data.url },
     })

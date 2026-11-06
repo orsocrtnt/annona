@@ -245,19 +245,19 @@ test("deux transitions légitimes vers le même statut ont deux tâches, un reje
 
 test("preuve de livraison : livrée ou en échec, l'e-mail porte le lien du portail et la clé d'idempotence de l'événement", async () => {
   for (const status of ["DELIVERED", "FAILED"] as const) {
-    const f = fixture(undefined, { appUrl: "https://app.tutelliv.test" });
+    const f = fixture(undefined, { appUrl: "https://app.annona.test" });
     const eventKey = `client-notification:delivery:delivery-a:${status}`;
     await f.service.deliverClientNotificationJob({ ...payload, status }, eventKey);
     assert.equal(f.emails.length, 1);
     assert.equal(f.emails[0]?.idempotencyKey, eventKey);
-    assert.match(f.emails[0]!.body, /https:\/\/app\.tutelliv\.test\/portal\/deliveries\/delivery-a/);
+    assert.match(f.emails[0]!.body, /https:\/\/app\.annona\.test\/portal\/deliveries\/delivery-a/);
     assert.equal(f.notifications.size, 1);
   }
 });
 
 test("preuve de livraison : l'entreprise coupe seulement le lien de preuve ; l'e-mail de statut part toujours", async () => {
   for (const status of ["DELIVERED", "FAILED"] as const) {
-    const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } }, appUrl: "https://app.tutelliv.test" });
+    const f = fixture(undefined, { companySettings: { proofRules: { emailToClient: false } }, appUrl: "https://app.annona.test" });
     await f.service.deliverClientNotificationJob({ ...payload, status }, `client-notification:delivery:delivery-a:off-${status}`);
     assert.equal(f.emails.length, 1, "l'information de livraison n'est pas supprimée");
     assert.doesNotMatch(f.emails[0]!.body, /https?:/);

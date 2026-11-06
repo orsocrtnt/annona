@@ -16,7 +16,7 @@ export async function refuseIfReadOnly(companyId: string, resolve = resolveCompa
   return NextResponse.json({ error: "Ce compte est actuellement en lecture seule." }, { status: 403 });
 }
 
-/** Le mot de passe de démo est public : personne ne doit pouvoir écrire à une adresse depuis TutelLiv (AUDIT-0111, S3). */
+/** Le mot de passe de démo est public : personne ne doit pouvoir écrire à une adresse depuis Annona (AUDIT-0111, S3). */
 export async function refuseDemoInvitation(companyId: string | null | undefined) {
   if (!companyId) return null;
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { isDemo: true } });

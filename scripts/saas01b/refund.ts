@@ -8,7 +8,7 @@ import ws from "ws";
  * La demande est journalisée dans saas_billing_operations (opérateur, motif, montant) et sa clé
  * dérive de son contenu : relancer la même commande ne rembourse jamais deux fois.
  *
- * L'opérateur est authentifié par TUTELLIV_OPERATOR_ACCESS_TOKEN, jamais par un e-mail CLI.
+ * L'opérateur est authentifié par ANNONA_OPERATOR_ACCESS_TOKEN, jamais par un e-mail CLI.
  *   npm run billing:refund -- --invoice in_… --amount 1000 --reason "Erreur de facturation constatée"
  */
 export type RefundRequest = { invoiceId: string; amountCents: number; reason: string; apply: boolean };
@@ -38,7 +38,7 @@ async function main() {
     const { prisma } = await import("../../src/services/prisma/client");
     const { sandboxBilling } = await import("../../src/domains/billing/billing.service");
   try {
-    const token = process.env.TUTELLIV_OPERATOR_ACCESS_TOKEN;
+    const token = process.env.ANNONA_OPERATOR_ACCESS_TOKEN;
     if (!token) throw new Error("REFUND_OPERATOR_SESSION_REQUIRED");
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       auth: { autoRefreshToken: false, persistSession: false }, realtime: { transport: ws as never },

@@ -274,7 +274,7 @@ export function AuthForm({ mode, loginContext = "company", prefillDemo = false }
         <div className="w-full max-w-[420px] animate-slide-up motion-reduce:animate-none">
           {mode === "login" && (
             <div className="mb-4 flex justify-center" aria-hidden>
-              {/* Icône TutelLiv (version claire ou sombre selon le thème). */}
+              {/* Icône Annona (version claire ou sombre selon le thème). */}
               <Image src="/brand/icone-app-fond-clair.png" alt="" width={56} height={56} priority className="h-14 w-14 rounded-[18px] shadow-sm ring-1 ring-border dark:hidden" />
               <Image src="/brand/icone-app-fond-sombre.png" alt="" width={56} height={56} className="hidden h-14 w-14 rounded-[18px] ring-1 ring-border dark:block" />
             </div>
