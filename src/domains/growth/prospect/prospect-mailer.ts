@@ -57,7 +57,6 @@ export function createProspectMailer(config: ProspectMailerConfig): ProspectMail
         html: email.html,
         text: email.text,
         headers: email.headers,
-        attachments: email.attachments,
       });
     },
   };

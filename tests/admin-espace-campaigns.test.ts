@@ -25,9 +25,8 @@ import {
   sendProspectTestEmail,
   type ProspectSendRepository,
 } from "../src/domains/growth/prospect/prospect-campaign.service";
-import { PROSPECT_PREHEADER, prospectLinks, renderProspectEmail } from "../src/domains/growth/prospect/prospect-email";
+import { prospectLinks, renderProspectEmail } from "../src/domains/growth/prospect/prospect-email";
 import { describeMailerError, readProspectMailerConfig, type ProspectMailer } from "../src/domains/growth/prospect/prospect-mailer";
-import { PROSPECT_LOGO_CID, PROSPECT_LOGO_PNG_BASE64 } from "../src/domains/growth/prospect/prospect-logo";
 import { isProtectedPagePath } from "../src/lib/permissions/page-access";
 import { adminNavItems } from "../src/features/navigation/nav-config";
 
@@ -62,7 +61,7 @@ test("lot 5 : corps stricts (champ inconnu refusé)", () => {
   assert.equal(prospectSendSchema.safeParse({ mode: "all" }).success, false);
 });
 
-test("lot 5 : mail fidèle au modèle validé, liens comptés, logo joint, pas de pixel", () => {
+test("lot 5 : mail personnel simple, liens comptés, ni image ni texte caché", () => {
   const email = renderProspectEmail({
     city: "Paris",
     linkCode: "il-en-est-ou-paris",
@@ -70,28 +69,23 @@ test("lot 5 : mail fidèle au modèle validé, liens comptés, logo joint, pas d
     baseUrl: "https://tutelliv.fr/",
   });
   assert.equal(email.subject, "Il en est où ?");
-  assert.ok(email.html.includes(PROSPECT_PREHEADER));
   assert.ok(email.html.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
   assert.ok(email.html.includes("https://tutelliv.fr/go/il-en-est-ou-paris/site"));
-  assert.ok(email.html.includes(`src="cid:${PROSPECT_LOGO_CID}"`));
-  assert.ok(email.html.includes("BIENTÔT À PARIS"));
+  assert.ok(email.html.includes("coursiers de Paris"));
   assert.ok(email.html.includes("Carotenuto-Marchetti Orso"));
   assert.ok(email.html.includes("répondez STOP"));
   assert.ok(email.html.includes("Google Maps &lt;script&gt;"), "origine échappée");
   assert.equal(email.html.includes("«"), false, "aucun guillemet français demandé par le propriétaire");
   assert.equal(/\[[A-Za-z]+\]/.test(email.html), false, "aucun crochet à remplir");
-  // Seule image : le logo joint ; aucune image distante (donc aucun pixel de suivi).
-  assert.deepEqual(email.html.match(/<img\b[^>]*src="([^"]+)"/g)?.map((tag) => tag.match(/src="([^"]+)"/)![1]), [`cid:${PROSPECT_LOGO_CID}`]);
-  assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
-  assert.ok(email.text.startsWith(PROSPECT_PREHEADER), "aperçu aussi dans la version texte");
-  // Le texte caché en masse envoyait le mail en indésirables chez Microsoft 365 (5 novembre 2026).
+  // Microsoft 365 classait la version mise en forme en indésirables (5 novembre 2026) : mail d'apparence personnelle.
+  assert.equal(/<img\b|<table\b|display:\s*none|cid:/i.test(email.html), false, "ni image, ni tableau de mise en page, ni texte caché");
   assert.equal(/[\u034f\u200c\u2007\ufeff\u00ad]/.test(email.text), false, "aucun caractère invisible dans la version texte");
   assert.equal(/&#847;|&zwnj;|&#8199;|&#65279;|&shy;/.test(email.html), false, "aucun caractère invisible dans la version HTML");
+  assert.ok(email.text.startsWith("Bonjour,"));
+  assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
+  assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/site"));
   assert.equal(email.headers["List-Unsubscribe"], "<mailto:orso@tutelliv.fr?subject=STOP>");
-  assert.equal(email.attachments.length, 1);
-  assert.equal(email.attachments[0]!.cid, PROSPECT_LOGO_CID);
-  assert.deepEqual(email.attachments[0]!.content, readFileSync("public/brand/email-bandeau-logo.png"));
-  assert.equal(Buffer.from(PROSPECT_LOGO_PNG_BASE64, "base64").subarray(1, 4).toString(), "PNG");
+  assert.equal("attachments" in email, false, "aucune pièce jointe");
   assert.deepEqual(prospectLinks("https://tutelliv.fr", "a-b"), {
     join: "https://tutelliv.fr/go/a-b/rejoindre",
     site: "https://tutelliv.fr/go/a-b/site",
