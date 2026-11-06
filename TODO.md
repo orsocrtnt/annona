@@ -4,13 +4,12 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**0 tâches terminées sur 13 — 0 %**
+**1 tâches terminées sur 13 — 8 %**
 
-`░░░░░░░░░░░░░░░░░░░░` · 13 tâches restantes
+`██░░░░░░░░░░░░░░░░░░` · 12 tâches restantes
 
 **À faire par Claude**
 
-- NET-1 — Nettoyer la base de l'ancien produit
 - SCHEMA-1 — Nouveau schéma de données et base de démonstration
 - CAT-1 — Catalogue et prix
 - CMD-1 — Commande côté commerçant
@@ -25,7 +24,7 @@
 
 **À faire par toi**
 
-- ACCES-1 — Accès et réponses du propriétaire
+- ACCES-1 — Accès et réponses du propriétaire (les quatre réponses du cahier des charges)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -35,12 +34,10 @@ _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi**
-- Coller dans `.env.local` le mot de passe de la base `annona-dev` et la clé `service_role` (détail dans ACCES-1). Sans eux, l'application ne peut pas tourner en local ; le code avance quand même.
 - Répondre aux questions ouvertes du cahier des charges quand tu les as (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
 
 **2. Claude (en autonomie, dans l'ordre)**
-- NET-1 : retirer de la base tout ce qui relève de l'ancien produit (coursiers, vente du SaaS, prospection).
-- SCHEMA-1, puis CAT-1, CMD-1, LOCK-1, BOU-1, TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
+- NET-1 fait le 6 novembre (ancien produit retiré, `npm run check` vert). En cours : SCHEMA-1, puis CAT-1, CMD-1, LOCK-1, BOU-1, TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
 
 **3. Attente extérieure**
 - Comptes Apple Developer et Google Play pour publier les applications (MOBILE-1, plus tard).
@@ -59,22 +56,12 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
-  **Qui : Toi.**
+  **Qui : Toi — les quatre réponses du cahier des charges.**
 
-  - `.env.local` : Supabase → projet `annona-dev` → Database → « Reset database password », puis remplir `DATABASE_URL` et `DIRECT_URL` ; Project Settings → API → copier la clé `service_role` dans `SUPABASE_SERVICE_ROLE_KEY`. Les valeurs publiques sont déjà en place.
+  - `.env.local` : fait le 6 novembre 2026 (mot de passe de la base remis à zéro et clé `service_role` collés par le propriétaire avec `remplir-env.sh`, sans passer par l'agent). Vérifié par Claude : client Prisma par le pooler `aws-1-eu-west-3` port 6543 → `select` réussi ; connexion directe (`prisma db execute`) réussie ; API d'administration Supabase avec la clé `service_role` → 200.
   - Questions ouvertes du cahier des charges (section 9) : liste des créneaux du premier client ; délai du rappel avant 17h ; volumes à deux ans ; service de cartographie (les services gratuits OSRM et IGN suffisent pour les essais, pas pour 200 arrêts par jour). En attendant, valeurs par défaut réglables : créneaux 5h-6h, 6h-7h, 7h-8h ; rappel à 15h.
 
-  Terminé quand : `.env.local` complet (vérifié par Claude avec une connexion Prisma) et les quatre réponses notées ici.
-
-- [ ] **NET-1 — Nettoyer la base de l'ancien produit.**
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : Claude Opus · effort élevé (suppression large).**
-
-  Supprimer tout ce que liste `TRI-BASE.md` §2 : abonnements SaaS, prospection et vente, site public commercial et démo, inscription autonome, commandes par message (e-mail, WhatsApp, IA) en gardant les fonctions d'heure de Paris, lien de commande et suivi publics, messagerie de commande, affectation automatique mission par mission, signature et PDF de preuve, zones tarifaires, atelier de design, journal des accès plateforme, fichiers de l'ancien produit. Remettre `AGENTS.md`, `README.md`, `PRODUCT.md` et `docs/README.md` au nouveau produit (sans Drive, Notion ni `preproduction`).
-
-  Terminé quand : plus aucun écran, route, domaine ni test de ces éléments ; `npm run check` vert ; `npm run build` vert.
+  Terminé quand : les quatre réponses sont notées ici (`.env.local` déjà fait).
 
 - [ ] **SCHEMA-1 — Nouveau schéma de données et base de démonstration.**
 
