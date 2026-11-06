@@ -381,8 +381,9 @@ export async function adjustProspectReplies(campaignId: string, delta: 1 | -1): 
 }
 
 /**
- * Supprime une campagne et ses adresses (suppression en cascade). Les adresses STOP, communes à toutes les
- * campagnes, ne sont jamais touchées. Refusé pendant qu'un mail de la campagne est en cours d'envoi.
+ * Supprime une campagne, ses adresses (suppression en cascade) et ses compteurs de clics et de visites (liés à
+ * son code, qu'une nouvelle campagne de la même ville reprendrait sinon). Les adresses STOP, communes à toutes
+ * les campagnes, et les candidatures reçues ne sont jamais touchées. Refusé pendant un envoi.
  */
 export async function deleteProspectCampaign(
   campaignId: string,
@@ -392,7 +393,12 @@ export async function deleteProspectCampaign(
     where: { campaignId, status: "SENDING", claimedAt: { gt: new Date(now().getTime() - PROSPECT_STALE_CLAIM_MS) } },
   });
   if (sending > 0) return "sending";
-  const deleted = await prisma.prospectCampaign.deleteMany({ where: { id: campaignId } });
+  const campaign = await prisma.prospectCampaign.findUnique({ where: { id: campaignId }, select: { code: true } });
+  if (!campaign) return "not_found";
+  const [, deleted] = await prisma.$transaction([
+    prisma.waitlistFunnelDaily.deleteMany({ where: { campaignCode: campaign.code } }),
+    prisma.prospectCampaign.deleteMany({ where: { id: campaignId } }),
+  ]);
   return deleted.count > 0 ? "deleted" : "not_found";
 }
 

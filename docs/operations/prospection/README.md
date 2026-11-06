@@ -255,7 +255,7 @@ Avant la première campagne (une seule fois) : migration `20261106100000_prospec
 4. « Lancer l'envoi » : un mail toutes les 30 secondes depuis `orso@tutelliv.fr`, page ouverte ; « Pause » à tout moment.
 5. Chaque STOP reçu : coller l'adresse dans « Adresses STOP ». Chaque réponse : bouton « + » de la colonne Réponses.
 
-Chiffres par campagne : envoyés, clics « Je veux en être », clics vers le site, visites du formulaire, candidatures, réponses. Pas de comptage des ouvertures (pixel bloqué par Outlook, faussé par l'iPhone, encadré par la CNIL). Les robots évidents et les vérifications de liens des messageries ne sont pas comptés ; certains antivirus d'entreprise peuvent tout de même gonfler un peu les clics.
+Chiffres par campagne : envoyés, clics « Je veux en être », clics vers le site, visites du formulaire, candidatures, réponses. Pas de comptage des ouvertures (pixel bloqué par Outlook, faussé par l'iPhone, encadré par la CNIL). Les robots évidents ne sont pas comptés. Depuis le 6 novembre 2026, un clic ou une visite du formulaire n'est compté qu'après un geste réel du visiteur sur la page d'arrivée (appui, touche, molette ou mouvements de souris) : les antivirus des messageries (Microsoft, Proofpoint, Altospam, mail-tester), qui ouvraient chaque lien et gonflaient les clics lors des essais du 5 novembre, ne comptent plus. Un antivirus qui simulerait des gestes resterait compté. Supprimer une campagne efface aussi ses compteurs de clics et de visites, pas les candidatures.
 
 ## 8. Le rendez-vous de 20 à 30 minutes
 

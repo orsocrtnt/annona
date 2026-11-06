@@ -4,6 +4,7 @@ import { BellRing, Check, Clock } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { GrowthShell } from "@/features/landing/growth-shell";
 import { WaitlistForm } from "@/features/landing/waitlist-form";
+import { MailLinkBeacon } from "@/features/landing/mail-link-beacon";
 
 export const metadata: Metadata = {
   title: `Tarifs — ${APP_NAME}`,
@@ -23,6 +24,7 @@ const promises = [
 export default function TarifsPage() {
   return (
     <GrowthShell active="tarifs">
+      <MailLinkBeacon />
       <main id="main-content" tabIndex={-1} className="pb-20">
         <section className="mx-auto grid max-w-6xl gap-10 px-5 pb-14 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-[0.9fr_1.1fr] lg:items-start lg:gap-14">
           <div>

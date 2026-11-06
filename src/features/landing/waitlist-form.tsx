@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { sendFunnelEvent } from "@/features/landing/funnel-beacon";
+import { onHumanPresence } from "@/features/landing/human-presence";
 
 type FormState =
   | { kind: "idle" }
@@ -22,26 +24,6 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[#d5ddd8] dark:border-input bg-card px-4 py-3 text-sm max-md:text-base text-foreground shadow-sm outline-none transition focus:border-[#08783f] dark:focus:border-ring focus:ring-2 focus:ring-[#08783f]/20";
 const labelClass = "text-sm font-semibold text-foreground";
 
-const FUNNEL_URL = "/api/waitlist/funnel";
-
-/**
- * ADMIN-ESPACE lot 2 : visite ou clic compté de façon anonyme (compteur par jour et par campagne).
- * `credentials: "omit"` : aucun cookie n'accompagne l'envoi ; `keepalive` : l'envoi survit à un départ de la page.
- */
-function sendFunnelEvent(event: "visit" | "click", campaign: string | undefined) {
-  try {
-    void fetch(FUNNEL_URL, {
-      method: "POST",
-      body: JSON.stringify(campaign ? { event, campaign } : { event }),
-      headers: { "Content-Type": "text/plain;charset=UTF-8" },
-      credentials: "omit",
-      keepalive: true,
-    }).catch(() => {});
-  } catch {
-    // Comptage facultatif : jamais d'erreur visible pour le visiteur.
-  }
-}
-
 /** Code de campagne du lien (`/tarifs?c=code`), vérifié par le serveur (sinon « direct »). */
 function readCampaign(): string | undefined {
   const code = new URLSearchParams(window.location.search).get("c");
@@ -56,10 +38,14 @@ export function WaitlistForm() {
 
   useEffect(() => {
     campaign.current = readCampaign();
-    // Une visite par affichage de la page (le double appel du mode strict de React est ignoré).
+    // Une visite par affichage de la page (le double appel du mode strict de React est ignoré), comptée
+    // seulement après un geste réel : les antivirus des messageries ouvrent la page sans rien faire.
     if (visitCounted.current) return;
-    visitCounted.current = true;
-    sendFunnelEvent("visit", campaign.current);
+    return onHumanPresence(() => {
+      if (visitCounted.current) return;
+      visitCounted.current = true;
+      sendFunnelEvent("visit", campaign.current);
+    });
   }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {

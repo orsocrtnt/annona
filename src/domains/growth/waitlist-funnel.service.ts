@@ -28,10 +28,13 @@ export function normalizeCampaignCode(raw: unknown): string {
   return typeof raw === "string" && FUNNEL_CAMPAIGN_PATTERN.test(raw) ? raw : FUNNEL_DIRECT;
 }
 
-/** Corps de la route publique : deux étapes seulement, rien d'autre (l'inscription est comptée par le serveur). */
+/**
+ * Corps de la route publique : visite et clic de /tarifs, et clic d'un lien de mail de campagne (envoyé par la
+ * page d'arrivée après un geste réel du visiteur) ; l'inscription est comptée par le serveur.
+ */
 export const funnelBeaconSchema = z
   .object({
-    event: z.enum(["visit", "click"]),
+    event: z.enum(["visit", "click", "mail_join", "mail_site"]),
     campaign: z.string().max(100).optional(),
   })
   .strict();
@@ -118,6 +121,8 @@ export async function incrementFunnelCounter(
 
 export type FunnelBeaconResult = "recorded" | "ignored" | "invalid" | "limited";
 
+const BEACON_EVENTS = { visit: "VISIT", click: "CLICK", mail_join: "MAIL_JOIN", mail_site: "MAIL_SITE" } as const;
+
 /** Visite ou clic envoyé par le navigateur : validation stricte, robots ignorés, plafond par source. */
 export async function recordFunnelBeacon(
   raw: unknown,
@@ -127,15 +132,14 @@ export async function recordFunnelBeacon(
   const parsed = funnelBeaconSchema.safeParse(raw);
   if (!parsed.success) return "invalid";
   if (isLikelyBot(request.userAgent)) return "ignored";
+  const campaign = normalizeCampaignCode(parsed.data.campaign);
+  const event = BEACON_EVENTS[parsed.data.event];
+  // Un clic de mail n'a de sens qu'avec le code de sa campagne.
+  if ((event === "MAIL_JOIN" || event === "MAIL_SITE") && campaign === FUNNEL_DIRECT) return "ignored";
   const now = deps.now ?? new Date();
   const fingerprint = abuseFingerprint("funnel-source", request.source, deps.secret ?? getAbuseHmacSecret());
   if (!(deps.limiter ?? defaultLimiter).allow(fingerprint, now.getTime())) return "limited";
-  await incrementFunnelCounter(
-    parsed.data.event === "visit" ? "VISIT" : "CLICK",
-    normalizeCampaignCode(parsed.data.campaign),
-    now,
-    deps.db
-  );
+  await incrementFunnelCounter(event, campaign, now, deps.db);
   return "recorded";
 }
 
@@ -148,29 +152,14 @@ export function isMailLinkTarget(value: string): value is MailLinkTarget {
   return Object.prototype.hasOwnProperty.call(MAIL_LINK_TARGETS, value);
 }
 
-/** Page ouverte après le clic : le formulaire de candidature, ou l'accueil ; le code suit pour l'inscription. */
-export function mailLinkDestination(code: string, target: MailLinkTarget): string {
-  const query = `?c=${encodeURIComponent(code)}`;
-  return target === "rejoindre" ? `/tarifs${query}` : `/${query}`;
-}
-
 /**
- * Clic sur un lien de mail : compté seulement pour un code valide, hors robots évidents et sous le plafond
- * par source. Aucun cookie, aucune adresse IP, aucun identifiant du destinataire.
+ * Page ouverte après le clic ; `c` suit pour l'inscription, `m` dit quel lien a été suivi. Le clic n'est plus
+ * compté par la redirection (les antivirus des messageries ouvrent tous les liens) mais par la page d'arrivée,
+ * après un geste réel du visiteur (`MailLinkBeacon`).
  */
-export async function recordMailLinkClick(
-  code: string,
-  target: MailLinkTarget,
-  request: { userAgent: string | null; source: string },
-  deps: { now?: Date; secret?: string; limiter?: FunnelSourceLimiter; db?: FunnelWriteDatabase } = {}
-): Promise<"recorded" | "ignored" | "limited"> {
-  if (!FUNNEL_CAMPAIGN_PATTERN.test(code) || code === FUNNEL_DIRECT) return "ignored";
-  if (isLikelyBot(request.userAgent)) return "ignored";
-  const now = deps.now ?? new Date();
-  const fingerprint = abuseFingerprint("funnel-source", request.source, deps.secret ?? getAbuseHmacSecret());
-  if (!(deps.limiter ?? defaultLimiter).allow(fingerprint, now.getTime())) return "limited";
-  await incrementFunnelCounter(MAIL_LINK_TARGETS[target], code, now, deps.db);
-  return "recorded";
+export function mailLinkDestination(code: string, target: MailLinkTarget): string {
+  const query = `?c=${encodeURIComponent(code)}&m=${target}`;
+  return target === "rejoindre" ? `/tarifs${query}` : `/${query}`;
 }
 
 /* ---------- Lecture (super-administrateur) ---------- */

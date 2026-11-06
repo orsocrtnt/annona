@@ -593,7 +593,7 @@ test("liste d'attente : entrée du groupe Commercial, super-administrateur seule
 
 test("page Tarifs : visite et clic envoyés sans cookie ni stockage, campagne transmise avec l'inscription", () => {
   const form = readFileSync("src/features/landing/waitlist-form.tsx", "utf8");
-  assert.match(form, /fetch\(FUNNEL_URL, \{[\s\S]*?credentials: "omit",[\s\S]*?keepalive: true/);
+  assert.match(readFileSync("src/features/landing/funnel-beacon.ts", "utf8"), /fetch\(FUNNEL_URL, \{[\s\S]*?credentials: "omit",[\s\S]*?keepalive: true/);
   assert.match(form, /sendFunnelEvent\("visit", campaign\.current\)/);
   assert.match(form, /onClick=\{\(\) => sendFunnelEvent\("click", campaign\.current\)\}/);
   assert.match(form, /campaign: campaign\.current/);

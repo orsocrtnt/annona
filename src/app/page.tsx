@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { HomeLanding } from "@/features/landing/home-landing";
+import { MailLinkBeacon } from "@/features/landing/mail-link-beacon";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -10,5 +11,10 @@ export const metadata: Metadata = {
 
 /** Accueil statique (LANDING-3) : plus de prix sur la page, ils sont sur /tarifs, lus dans le catalogue. */
 export default function HomePage() {
-  return <HomeLanding />;
+  return (
+    <>
+      <MailLinkBeacon />
+      <HomeLanding />
+    </>
+  );
 }

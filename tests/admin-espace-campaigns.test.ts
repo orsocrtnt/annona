@@ -6,7 +6,7 @@ import {
   createFunnelSourceLimiter,
   isMailLinkTarget,
   mailLinkDestination,
-  recordMailLinkClick,
+  recordFunnelBeacon,
   summarizeFunnel,
 } from "../src/domains/growth/waitlist-funnel.service";
 import {
@@ -205,26 +205,63 @@ test("lot 5 : essai envoyé à l'admin, liens au code « test », campagne incha
   assert.deepEqual(state.finished, []);
 });
 
-test("lot 5 : clics des mails comptés hors robots, codes invalides et plafond", async () => {
+test("lot 5 : clics des mails comptés par la page d'arrivée, hors robots, sans code ou au-delà du plafond", async () => {
   const writes: unknown[][] = [];
   const db = { $executeRaw: async (...args: unknown[]) => { writes.push(args); return 1; } } as never;
   const now = new Date("2026-11-05T15:00:00.000Z");
   const limiter = createFunnelSourceLimiter({ limit: 1 });
   const request = { userAgent: UA, source: "203.0.113.1" };
 
-  assert.equal(await recordMailLinkClick("il-en-est-ou-paris", "rejoindre", request, { now, db, limiter, secret: "s" }), "recorded");
-  assert.equal(await recordMailLinkClick("il-en-est-ou-paris", "site", request, { now, db, limiter, secret: "s" }), "limited");
-  assert.equal(await recordMailLinkClick("Bad Code", "site", request, { now, db, secret: "s" }), "ignored");
-  assert.equal(await recordMailLinkClick("direct", "site", request, { now, db, secret: "s" }), "ignored");
-  assert.equal(await recordMailLinkClick("il-en-est-ou-paris", "site", { userAgent: "Microsoft Office/16.0 (Windows; preview)", source: "x" }, { now, db, secret: "s" }), "ignored");
+  assert.equal(await recordFunnelBeacon({ event: "mail_join", campaign: "il-en-est-ou-paris" }, request, { now, db, limiter, secret: "s" }), "recorded");
+  assert.equal(await recordFunnelBeacon({ event: "mail_site", campaign: "il-en-est-ou-paris" }, request, { now, db, limiter, secret: "s" }), "limited");
+  assert.equal(await recordFunnelBeacon({ event: "mail_site", campaign: "Bad Code" }, request, { now, db, secret: "s" }), "ignored");
+  assert.equal(await recordFunnelBeacon({ event: "mail_site" }, request, { now, db, secret: "s" }), "ignored");
+  assert.equal(await recordFunnelBeacon({ event: "mail_site", campaign: "il-en-est-ou-paris" }, { userAgent: "Microsoft Office/16.0 (Windows; preview)", source: "x" }, { now, db, secret: "s" }), "ignored");
+  assert.equal(await recordFunnelBeacon({ event: "mail_click", campaign: "il-en-est-ou-paris" }, request, { now, db, secret: "s" }), "invalid");
   assert.equal(writes.length, 1);
   assert.ok(writes[0]!.includes("MAIL_JOIN"));
   assert.ok(writes[0]!.includes("il-en-est-ou-paris"));
 
   assert.equal(isMailLinkTarget("rejoindre"), true);
   assert.equal(isMailLinkTarget("toString"), false);
-  assert.equal(mailLinkDestination("il-en-est-ou-paris", "rejoindre"), "/tarifs?c=il-en-est-ou-paris");
-  assert.equal(mailLinkDestination("il-en-est-ou-paris", "site"), "/?c=il-en-est-ou-paris");
+  assert.equal(mailLinkDestination("il-en-est-ou-paris", "rejoindre"), "/tarifs?c=il-en-est-ou-paris&m=rejoindre");
+  assert.equal(mailLinkDestination("il-en-est-ou-paris", "site"), "/?c=il-en-est-ou-paris&m=site");
+});
+
+test("lot 5 : un compteur n'est envoyé qu'après un geste réel (les antivirus des messageries n'en font pas)", async () => {
+  const { onHumanPresence } = await import("../src/features/landing/human-presence");
+  const listeners = new Map<string, (event: unknown) => void>();
+  const target = {
+    addEventListener: (name: string, handler: (event: unknown) => void) => listeners.set(name, handler),
+    removeEventListener: (name: string) => listeners.delete(name),
+  } as unknown as Window;
+  let fired = 0;
+  onHumanPresence(() => (fired += 1), target);
+  listeners.get("pointerdown")!({ isTrusted: false });
+  listeners.get("pointermove")!({ isTrusted: true, pointerType: "mouse" });
+  listeners.get("pointermove")!({ isTrusted: true, pointerType: "touch" });
+  listeners.get("pointermove")!({ isTrusted: true, pointerType: "mouse" });
+  assert.equal(fired, 0, "simple ouverture, événement simulé ou deux mouvements : rien n'est compté");
+  listeners.get("pointermove")!({ isTrusted: true, pointerType: "mouse" });
+  assert.equal(fired, 1);
+  assert.equal(listeners.size, 0, "écoute retirée après le premier geste");
+
+  let tapped = 0;
+  const stop = onHumanPresence(() => (tapped += 1), target);
+  listeners.get("touchstart")!({ isTrusted: true });
+  listeners.get("keydown")?.({ isTrusted: true });
+  assert.equal(tapped, 1, "un seul envoi");
+  stop();
+
+  const beacon = readFileSync("src/features/landing/mail-link-beacon.tsx", "utf8");
+  assert.match(beacon, /onHumanPresence\(/);
+  assert.match(beacon, /searchParams\.delete\("m"\)/, "pas de nouveau comptage au rechargement");
+  for (const forbidden of ["document.cookie", "localStorage", "sessionStorage"]) assert.equal(beacon.includes(forbidden), false, forbidden);
+  for (const page of ["src/app/page.tsx", "src/app/tarifs/page.tsx"]) {
+    assert.match(readFileSync(page, "utf8"), /<MailLinkBeacon \/>/, page);
+  }
+  const form = readFileSync("src/features/landing/waitlist-form.tsx", "utf8");
+  assert.match(form, /return onHumanPresence\(\(\) => \{[\s\S]*sendFunnelEvent\("visit"/);
 });
 
 test("lot 5 : l'entonnoir de /tarifs ignore les clics des mails", () => {
@@ -242,12 +279,10 @@ test("lot 5 : l'entonnoir de /tarifs ignore les clics des mails", () => {
   assert.deepEqual(funnel.totals, { visits: 3, clicks: 0, signups: 0 });
 });
 
-test("lot 5 : route /go publique, GET compté et redirigé, HEAD jamais compté", () => {
+test("lot 5 : route /go publique, redirige sans rien compter (GET comme HEAD)", () => {
   assert.equal(isProtectedPagePath("/go/il-en-est-ou-paris/rejoindre"), false);
   const source = readFileSync("src/app/go/[code]/[target]/route.ts", "utf8");
-  const head = source.slice(source.indexOf("export async function HEAD"));
-  assert.ok(source.includes("recordMailLinkClick"));
-  assert.equal(head.includes("recordMailLinkClick"), false);
+  assert.equal(/record|increment|prisma/i.test(source.slice(source.indexOf("import"))), false);
   assert.ok(source.includes("status: 302"));
   assert.equal(/cookies|set-cookie/i.test(source), false);
 });
@@ -334,6 +369,8 @@ test("lot 5 : suppression d'une campagne par le super-admin, STOP conservés, re
   const remove = service.slice(service.indexOf("export async function deleteProspectCampaign"), service.indexOf("/* ---------- Envoi ---------- */"));
   assert.match(remove, /status: "SENDING", claimedAt: \{ gt: new Date\(now\(\)\.getTime\(\) - PROSPECT_STALE_CLAIM_MS\) \}/);
   assert.match(remove, /prisma\.prospectCampaign\.deleteMany\(\{ where: \{ id: campaignId \} \}\)/);
+  assert.match(remove, /prisma\.waitlistFunnelDaily\.deleteMany\(\{ where: \{ campaignCode: campaign\.code \} \}\)/, "compteurs du code supprimés");
+  assert.doesNotMatch(remove, /contactMessage/, "candidatures conservées");
   assert.doesNotMatch(remove, /prospectOptOut/, "les adresses STOP ne sont jamais supprimées");
   const schema = readFileSync("prisma/schema.prisma", "utf8");
   assert.match(schema, /campaign\s+ProspectCampaign\s+@relation\(fields: \[campaignId\], references: \[id\], onDelete: Cascade\)/);
