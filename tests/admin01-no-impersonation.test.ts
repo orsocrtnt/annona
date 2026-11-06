@@ -57,7 +57,7 @@ const PLATFORM_WRITES: Record<string, string[]> = {
   "src/app/api/admin/pilots/[id]/notes/route.ts": ["POST"],
   // ADMIN-ESPACE lot 5 : campagnes de prospection du propriétaire (données de la plateforme).
   "src/app/api/admin/campaigns/route.ts": ["GET", "POST"],
-  "src/app/api/admin/campaigns/[id]/route.ts": ["GET", "PATCH"],
+  "src/app/api/admin/campaigns/[id]/route.ts": ["GET", "PATCH", "DELETE"],
   "src/app/api/admin/campaigns/[id]/recipients/route.ts": ["POST", "PATCH"],
   "src/app/api/admin/campaigns/[id]/send/route.ts": ["POST"],
   "src/app/api/admin/campaigns/opt-outs/route.ts": ["POST"],

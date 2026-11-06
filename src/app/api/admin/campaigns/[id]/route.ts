@@ -3,6 +3,7 @@ import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { gatePlatformRead, gatePlatformWrite } from "@/lib/api/platform-access";
 import {
   adjustProspectReplies,
+  deleteProspectCampaign,
   prospectRepliesSchema,
   readProspectCampaign,
 } from "@/domains/growth/prospect/prospect-campaign.service";
@@ -41,4 +42,25 @@ export async function PATCH(request: Request, context: Params) {
   const replies = await adjustProspectReplies(id, parsed.data.delta);
   if (replies === null) return NextResponse.json({ error: "Campagne introuvable" }, { status: 404, headers: noStore });
   return NextResponse.json({ data: { replies }, success: true }, { headers: noStore });
+}
+
+/** Supprime la campagne et ses adresses ; les adresses STOP restent bloquées pour toutes les campagnes. */
+export async function DELETE(_request: Request, context: Params) {
+  const auth = await requireStaffRole("dashboard:admin");
+  if ("error" in auth) return auth.error;
+  const denied = requireRole(auth.context, ["SUPER_ADMIN"]);
+  const blocked = await gatePlatformWrite(auth.context, denied, "PROSPECT_CAMPAIGNS", "DELETE");
+  if (blocked) return blocked;
+
+  const { id } = await context.params;
+  if (!id || id.length > 64) return NextResponse.json({ error: "Campagne introuvable" }, { status: 404, headers: noStore });
+  const outcome = await deleteProspectCampaign(id);
+  if (outcome === "not_found") return NextResponse.json({ error: "Campagne introuvable" }, { status: 404, headers: noStore });
+  if (outcome === "sending") {
+    return NextResponse.json(
+      { error: "Un mail de cette campagne est en cours d'envoi : mettez l'envoi en pause, puis réessayez." },
+      { status: 409, headers: noStore }
+    );
+  }
+  return NextResponse.json({ data: { deleted: true }, success: true }, { headers: noStore });
 }

@@ -380,6 +380,22 @@ export async function adjustProspectReplies(campaignId: string, delta: 1 | -1): 
   return rows[0]?.replies_count ?? null;
 }
 
+/**
+ * Supprime une campagne et ses adresses (suppression en cascade). Les adresses STOP, communes à toutes les
+ * campagnes, ne sont jamais touchées. Refusé pendant qu'un mail de la campagne est en cours d'envoi.
+ */
+export async function deleteProspectCampaign(
+  campaignId: string,
+  now: () => Date = () => new Date()
+): Promise<"deleted" | "not_found" | "sending"> {
+  const sending = await prisma.prospectCampaignRecipient.count({
+    where: { campaignId, status: "SENDING", claimedAt: { gt: new Date(now().getTime() - PROSPECT_STALE_CLAIM_MS) } },
+  });
+  if (sending > 0) return "sending";
+  const deleted = await prisma.prospectCampaign.deleteMany({ where: { id: campaignId } });
+  return deleted.count > 0 ? "deleted" : "not_found";
+}
+
 /* ---------- Envoi ---------- */
 
 export type ClaimedRecipient = { id: string; email: string };

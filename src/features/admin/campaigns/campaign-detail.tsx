@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Pause, Play, Send, Undo2 } from "lucide-react";
+import { AlertTriangle, Pause, Play, Send, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { addAdminCampaignAddresses, releaseAdminCampaignSetAside, sendAdminCampaignNext, sendAdminCampaignTest } from "@/features/admin/api";
+import { addAdminCampaignAddresses, deleteAdminCampaign, releaseAdminCampaignSetAside, sendAdminCampaignNext, sendAdminCampaignTest } from "@/features/admin/api";
 import { useAdminCampaign } from "@/features/admin/hooks";
 import { HomeCard } from "@/features/admin/home/home-card";
 import { RECIPIENT_STATUS_LABELS, formatCampaignRate } from "@/features/admin/campaigns/campaign-labels";
@@ -165,7 +165,55 @@ function Countdown({ at }: { at: number | null }) {
   return <span className="tabular-nums"> Prochain mail dans {seconds} s.</span>;
 }
 
-export function CampaignDetail({ id, mailerReady, paceMs }: { id: string; mailerReady: boolean; paceMs: number }) {
+/** Suppression en deux temps (pas de fenêtre du navigateur) ; impossible pendant un envoi. */
+function DeleteCampaign({ campaign, disabled, onDeleted }: { campaign: ProspectCampaignDetail; disabled: boolean; onDeleted: () => void }) {
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
+  const mutation = useMutation({
+    mutationFn: () => deleteAdminCampaign(campaign.id),
+    onSuccess: async () => {
+      onDeleted();
+      await queryClient.invalidateQueries({ queryKey: ["admin", "campaigns"] });
+    },
+  });
+  if (!confirming) {
+    return (
+      <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => setConfirming(true)}>
+        <Trash2 /> Supprimer la campagne
+      </Button>
+    );
+  }
+  const count = campaign.stats.recipients;
+  return (
+    <div className="max-w-sm space-y-2 rounded-2xl border border-destructive/40 bg-destructive/5 p-3" role="group" aria-label="Confirmer la suppression">
+      <p className="text-sm text-foreground">
+        Supprimer « {campaign.name} · {campaign.city} » et {count > 0 ? `ses ${numberFormat.format(count)} adresse${count > 1 ? "s" : ""}` : "la campagne vide"} ?
+        Ses chiffres disparaissent ; les adresses STOP restent bloquées.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="destructive" size="sm" disabled={mutation.isPending || disabled} aria-busy={mutation.isPending} onClick={() => mutation.mutate()}>
+          Oui, supprimer
+        </Button>
+        <Button type="button" variant="outline" size="sm" disabled={mutation.isPending} onClick={() => setConfirming(false)}>
+          Annuler
+        </Button>
+      </div>
+      {mutation.isError && <p role="alert" className="text-sm text-destructive">{mutation.error.message}</p>}
+    </div>
+  );
+}
+
+export function CampaignDetail({
+  id,
+  mailerReady,
+  paceMs,
+  onDeleted,
+}: {
+  id: string;
+  mailerReady: boolean;
+  paceMs: number;
+  onDeleted: () => void;
+}) {
   const { data: campaign, error } = useAdminCampaign(id);
   const loop = useSendLoop(id, paceMs);
   const test = useMutation({ mutationFn: () => sendAdminCampaignTest(id) });
@@ -197,6 +245,7 @@ export function CampaignDetail({ id, mailerReady, paceMs }: { id: string; mailer
             {campaign.lastSentAt && ` · dernier envoi le ${timeFormat.format(new Date(campaign.lastSentAt))}`}
           </p>
         </div>
+        <DeleteCampaign campaign={campaign} disabled={loop.running} onDeleted={onDeleted} />
       </div>
 
       <Stats campaign={campaign} />

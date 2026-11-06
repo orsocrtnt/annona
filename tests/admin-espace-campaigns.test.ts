@@ -328,3 +328,19 @@ test("lot 5 : adresses mises de côté à l'ajout, jamais envoyées, remises dan
   assert.equal(prospectReleaseSchema.safeParse({ action: "release_set_aside" }).success, true);
   assert.equal(prospectReleaseSchema.safeParse({ action: "release_set_aside", all: true }).success, false);
 });
+
+test("lot 5 : suppression d'une campagne par le super-admin, STOP conservés, refusée pendant un envoi", () => {
+  const service = readFileSync("src/domains/growth/prospect/prospect-campaign.service.ts", "utf8");
+  const remove = service.slice(service.indexOf("export async function deleteProspectCampaign"), service.indexOf("/* ---------- Envoi ---------- */"));
+  assert.match(remove, /status: "SENDING", claimedAt: \{ gt: new Date\(now\(\)\.getTime\(\) - PROSPECT_STALE_CLAIM_MS\) \}/);
+  assert.match(remove, /prisma\.prospectCampaign\.deleteMany\(\{ where: \{ id: campaignId \} \}\)/);
+  assert.doesNotMatch(remove, /prospectOptOut/, "les adresses STOP ne sont jamais supprimées");
+  const schema = readFileSync("prisma/schema.prisma", "utf8");
+  assert.match(schema, /campaign\s+ProspectCampaign\s+@relation\(fields: \[campaignId\], references: \[id\], onDelete: Cascade\)/);
+  const route = readFileSync("src/app/api/admin/campaigns/[id]/route.ts", "utf8");
+  assert.match(route, /export async function DELETE[\s\S]*requireRole\(auth\.context, \["SUPER_ADMIN"\]\)[\s\S]*gatePlatformWrite\(auth\.context, denied, "PROSPECT_CAMPAIGNS", "DELETE"\)/);
+  assert.match(route, /status: 409/);
+  const screen = readFileSync("src/features/admin/campaigns/campaign-detail.tsx", "utf8");
+  assert.match(screen, /Oui, supprimer/);
+  assert.doesNotMatch(screen, /window\.confirm|confirm\(/, "confirmation dans la page, pas de fenêtre du navigateur");
+});

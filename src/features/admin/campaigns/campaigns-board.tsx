@@ -244,7 +244,7 @@ export function CampaignsBoard() {
         </div>
       </HomeCard>
 
-      {current && <CampaignDetail key={current} id={current} mailerReady={data.mailerReady} paceMs={data.paceMs} />}
+      {current && <CampaignDetail key={current} id={current} mailerReady={data.mailerReady} paceMs={data.paceMs} onDeleted={() => setSelected(null)} />}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <HomeCard aria-labelledby="campaign-create-title">

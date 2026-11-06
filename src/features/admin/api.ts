@@ -410,6 +410,11 @@ export function releaseAdminCampaignSetAside(id: string) {
   return sendJson<{ released: number }>(`/api/admin/campaigns/${encodeURIComponent(id)}/recipients`, "PATCH", { action: "release_set_aside" });
 }
 
+export async function deleteAdminCampaign(id: string): Promise<{ deleted: true }> {
+  const res = await fetch(`/api/admin/campaigns/${encodeURIComponent(id)}`, { method: "DELETE", cache: "no-store" });
+  return readJson<{ deleted: true }>(res);
+}
+
 export function adjustAdminCampaignReplies(id: string, delta: 1 | -1) {
   return sendJson<{ replies: number }>(`/api/admin/campaigns/${encodeURIComponent(id)}`, "PATCH", { delta });
 }

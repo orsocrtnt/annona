@@ -22,7 +22,7 @@ export type PlatformAccessResource = (typeof PLATFORM_ACCESS_RESOURCES)[number];
 export type PlatformAccessRole = "SUPER_ADMIN" | "COMPANY_ADMIN" | "MINI_ADMIN" | "DISPATCHER" | "DRIVER" | "CLIENT";
 export type PlatformAccessDecision = "ALLOWED" | "DENIED";
 /** Écritures plateforme : codes commerciaux (SALES-1), liste d'attente et campagnes (ADMIN-ESPACE). */
-export type PlatformAccessMethod = "GET" | "POST" | "PATCH";
+export type PlatformAccessMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 export type PlatformAccessEvent = {
   id: string;
