@@ -20,12 +20,14 @@ import {
   prospectCampaignCode,
   prospectLinkBaseUrl,
   prospectRepliesSchema,
+  prospectReleaseSchema,
   prospectSendSchema,
   sendNextProspectEmail,
   sendProspectTestEmail,
   type ProspectSendRepository,
 } from "../src/domains/growth/prospect/prospect-campaign.service";
-import { prospectLinks, renderProspectEmail } from "../src/domains/growth/prospect/prospect-email";
+import { PROSPECT_PREHEADER, prospectLinks, renderProspectEmail } from "../src/domains/growth/prospect/prospect-email";
+import { PROSPECT_LOGO_CID, PROSPECT_LOGO_PNG_BASE64 } from "../src/domains/growth/prospect/prospect-logo";
 import { describeMailerError, readProspectMailerConfig, type ProspectMailer } from "../src/domains/growth/prospect/prospect-mailer";
 import { isProtectedPagePath } from "../src/lib/permissions/page-access";
 import { adminNavItems } from "../src/features/navigation/nav-config";
@@ -61,7 +63,7 @@ test("lot 5 : corps stricts (champ inconnu refusé)", () => {
   assert.equal(prospectSendSchema.safeParse({ mode: "all" }).success, false);
 });
 
-test("lot 5 : mail personnel simple, liens comptés, ni image ni texte caché", () => {
+test("lot 5 : mail fidèle au modèle validé, liens comptés, logo joint, pas de pixel", () => {
   const email = renderProspectEmail({
     city: "Paris",
     linkCode: "il-en-est-ou-paris",
@@ -69,23 +71,28 @@ test("lot 5 : mail personnel simple, liens comptés, ni image ni texte caché", 
     baseUrl: "https://tutelliv.fr/",
   });
   assert.equal(email.subject, "Il en est où ?");
+  assert.ok(email.html.includes(PROSPECT_PREHEADER));
   assert.ok(email.html.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
   assert.ok(email.html.includes("https://tutelliv.fr/go/il-en-est-ou-paris/site"));
-  assert.ok(email.html.includes("coursiers de Paris"));
+  assert.ok(email.html.includes(`src="cid:${PROSPECT_LOGO_CID}"`));
+  assert.ok(email.html.includes("BIENTÔT À PARIS"));
   assert.ok(email.html.includes("Carotenuto-Marchetti Orso"));
   assert.ok(email.html.includes("répondez STOP"));
   assert.ok(email.html.includes("Google Maps &lt;script&gt;"), "origine échappée");
   assert.equal(email.html.includes("«"), false, "aucun guillemet français demandé par le propriétaire");
   assert.equal(/\[[A-Za-z]+\]/.test(email.html), false, "aucun crochet à remplir");
-  // Microsoft 365 classait la version mise en forme en indésirables (5 novembre 2026) : mail d'apparence personnelle.
-  assert.equal(/<img\b|<table\b|display:\s*none|cid:/i.test(email.html), false, "ni image, ni tableau de mise en page, ni texte caché");
+  // Seule image : le logo joint ; aucune image distante (donc aucun pixel de suivi).
+  assert.deepEqual(email.html.match(/<img\b[^>]*src="([^"]+)"/g)?.map((tag) => tag.match(/src="([^"]+)"/)![1]), [`cid:${PROSPECT_LOGO_CID}`]);
+  assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
+  assert.ok(email.text.startsWith(PROSPECT_PREHEADER), "aperçu aussi dans la version texte");
+  // Le texte caché en masse envoyait le mail en indésirables chez Microsoft 365 (5 novembre 2026).
   assert.equal(/[\u034f\u200c\u2007\ufeff\u00ad]/.test(email.text), false, "aucun caractère invisible dans la version texte");
   assert.equal(/&#847;|&zwnj;|&#8199;|&#65279;|&shy;/.test(email.html), false, "aucun caractère invisible dans la version HTML");
-  assert.ok(email.text.startsWith("Bonjour,"));
-  assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/rejoindre"));
-  assert.ok(email.text.includes("https://tutelliv.fr/go/il-en-est-ou-paris/site"));
   assert.equal(email.headers["List-Unsubscribe"], "<mailto:orso@tutelliv.fr?subject=STOP>");
-  assert.equal("attachments" in email, false, "aucune pièce jointe");
+  assert.equal(email.attachments.length, 1);
+  assert.equal(email.attachments[0]!.cid, PROSPECT_LOGO_CID);
+  assert.deepEqual(email.attachments[0]!.content, readFileSync("public/brand/email-bandeau-logo.png"));
+  assert.equal(Buffer.from(PROSPECT_LOGO_PNG_BASE64, "base64").subarray(1, 4).toString(), "PNG");
   assert.deepEqual(prospectLinks("https://tutelliv.fr", "a-b"), {
     join: "https://tutelliv.fr/go/a-b/rejoindre",
     site: "https://tutelliv.fr/go/a-b/site",
@@ -266,4 +273,58 @@ test("lot 5 : routes admin protégées et entrée Campagnes du menu Commercial",
   assert.equal(entry?.group, "Commercial");
   const send = readFileSync("src/domains/growth/prospect/prospect-mailer.ts", "utf8");
   assert.equal(/resend/i.test(send.replace(/Jamais par Resend[^\n]*/, "")), false, "jamais par Resend");
+});
+
+test("lot 5 : Microsoft et filtres stricts reconnus d'après le domaine et les serveurs de messagerie", async () => {
+  const { strictProviderFromMx, findStrictProviders, isSetAsideDetail, setAsideDetail } = await import(
+    "../src/domains/growth/prospect/prospect-mail-provider"
+  );
+  // Relevés DNS réels du 5 novembre 2026 (essais du propriétaire).
+  assert.equal(strictProviderFromMx("kedgebs.com", ["kedgebs-com.mail.protection.outlook.com."]), "Microsoft");
+  assert.equal(strictProviderFromMx("enpc.fr", ["enpc-fr.mail.protection.outlook.com"]), "Microsoft");
+  assert.equal(strictProviderFromMx("lalique.com", ["lalique.com.1.arsmtp.com."]), "Altospam");
+  assert.equal(strictProviderFromMx("exemple.fr", ["mx1.mailinblack.com"]), "Mailinblack");
+  assert.equal(strictProviderFromMx("hotmail.fr", []), "Microsoft");
+  assert.equal(strictProviderFromMx("outlook.com", []), "Microsoft");
+  assert.equal(strictProviderFromMx("live.fr", []), "Microsoft");
+  // Envoyables : Gmail, Google Workspace, OVH, Proofpoint (Columbia a reçu le mail).
+  assert.equal(strictProviderFromMx("gmail.com", ["gmail-smtp-in.l.google.com"]), null);
+  assert.equal(strictProviderFromMx("coursier.fr", ["aspmx.l.google.com"]), null);
+  assert.equal(strictProviderFromMx("tutelliv.fr", ["mx1.mail.ovh.net"]), null);
+  assert.equal(strictProviderFromMx("columbia.edu", ["mxa-00364e01.gslb.pphosted.com"]), null);
+  assert.equal(strictProviderFromMx("liveurs.fr", []), null, "un domaine qui commence par live n'est pas Microsoft");
+
+  const lookups: string[] = [];
+  const mx: Record<string, string[]> = {
+    "kedgebs.com": ["kedgebs-com.mail.protection.outlook.com"],
+    "coursier.fr": ["aspmx.l.google.com"],
+  };
+  const found = await findStrictProviders(
+    ["a@kedgebs.com", "b@kedgebs.com", "c@coursier.fr", "d@panne.fr", "e@lent.fr", "f@hotmail.fr"],
+    async (domain) => {
+      lookups.push(domain);
+      if (domain === "panne.fr") throw new Error("ENOTFOUND");
+      if (domain === "lent.fr") return new Promise<string[]>(() => {});
+      return mx[domain] ?? [];
+    },
+    50
+  );
+  assert.deepEqual(Object.fromEntries(found), { "a@kedgebs.com": "Microsoft", "b@kedgebs.com": "Microsoft", "f@hotmail.fr": "Microsoft" });
+  assert.equal(lookups.filter((domain) => domain === "kedgebs.com").length, 1, "un appel DNS par domaine");
+  assert.equal(isSetAsideDetail(setAsideDetail("Altospam")), true);
+  assert.equal(isSetAsideDetail("STOP"), false);
+});
+
+test("lot 5 : adresses mises de côté à l'ajout, jamais envoyées, remises dans l'envoi par le super-admin", () => {
+  const service = readFileSync("src/domains/growth/prospect/prospect-campaign.service.ts", "utf8");
+  assert.match(service, /findStrictProviders\(fresh, lookup\)/);
+  assert.match(service, /status: "SKIPPED" as const, detail: setAsideDetail\(provider\)/);
+  // L'envoi ne prend que les adresses « À envoyer » : une adresse mise de côté ne part pas.
+  assert.match(service, /where: \{ campaignId, status: "PENDING" \}/);
+  assert.match(service, /status: "SKIPPED", detail: \{ startsWith: PROSPECT_SET_ASIDE_PREFIX \} \},\n\s+data: \{ status: "PENDING", detail: null \}/);
+  const route = readFileSync("src/app/api/admin/campaigns/[id]/recipients/route.ts", "utf8");
+  assert.match(route, /export async function PATCH/);
+  assert.match(route, /requireRole\(auth\.context, \["SUPER_ADMIN"\]\)[\s\S]*gatePlatformWrite\(auth\.context, denied, "PROSPECT_CAMPAIGNS", "PATCH"\)/);
+  assert.equal(prospectReleaseSchema.safeParse({ action: "release_set_aside" }).success, true);
+  assert.equal(prospectReleaseSchema.safeParse({ action: "release_set_aside", all: true }).success, false);
 });

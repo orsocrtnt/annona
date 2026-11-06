@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Pause, Play, Send } from "lucide-react";
+import { AlertTriangle, Pause, Play, Send, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { addAdminCampaignAddresses, sendAdminCampaignNext, sendAdminCampaignTest } from "@/features/admin/api";
+import { addAdminCampaignAddresses, releaseAdminCampaignSetAside, sendAdminCampaignNext, sendAdminCampaignTest } from "@/features/admin/api";
 import { useAdminCampaign } from "@/features/admin/hooks";
 import { HomeCard } from "@/features/admin/home/home-card";
 import { RECIPIENT_STATUS_LABELS, formatCampaignRate } from "@/features/admin/campaigns/campaign-labels";
 import { cn } from "@/lib/utils";
+import { PROSPECT_SET_ASIDE_PREFIX, isSetAsideDetail } from "@/domains/growth/prospect/prospect-mail-provider";
 import type { ProspectCampaignDetail, ProspectRecipientStatus } from "@/domains/growth/prospect/prospect-campaign.service";
 
 const numberFormat = new Intl.NumberFormat("fr-FR");
@@ -34,12 +35,20 @@ function Tile({ label, value, hint }: { label: string; value: number; hint?: str
   );
 }
 
+function pendingHint(failed: number, setAside: number): string | undefined {
+  const parts = [
+    failed > 0 ? `${failed} échec${failed > 1 ? "s" : ""}` : null,
+    setAside > 0 ? `${numberFormat.format(setAside)} mise${setAside > 1 ? "s" : ""} de côté` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
 function Stats({ campaign }: { campaign: ProspectCampaignDetail }) {
   const { stats } = campaign;
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <Tile label="Envoyés" value={stats.sent} hint={`sur ${numberFormat.format(stats.recipients)} adresses`} />
-      <Tile label="À envoyer" value={stats.pending} hint={stats.failed > 0 ? `${stats.failed} échec${stats.failed > 1 ? "s" : ""}` : undefined} />
+      <Tile label="À envoyer" value={stats.pending} hint={pendingHint(stats.failed, stats.setAside)} />
       <Tile label="Clics « Je veux en être »" value={stats.joinClicks} hint={`${formatCampaignRate(stats.rates.joinPerSent)} des envois`} />
       <Tile label="Clics vers le site" value={stats.siteClicks} />
       <Tile label="Visites du formulaire" value={stats.pageVisits} />
@@ -78,6 +87,8 @@ function AddAddresses({ id }: { id: string }) {
         {mutation.isSuccess && (
           <p className="text-sm text-muted-foreground" aria-live="polite">
             {mutation.data.added} ajoutée{mutation.data.added > 1 ? "s" : ""}
+            {mutation.data.setAside > 0 &&
+              ` (dont ${mutation.data.setAside} mise${mutation.data.setAside > 1 ? "s" : ""} de côté : Microsoft ou filtre d'entreprise strict)`}
             {mutation.data.alreadyInCampaign > 0 && `, ${mutation.data.alreadyInCampaign} déjà dans la campagne`}
             {mutation.data.optedOut > 0 && `, ${mutation.data.optedOut} écartée${mutation.data.optedOut > 1 ? "s" : ""} (STOP)`}
             {mutation.data.invalid.length > 0 && `. Non reconnues : ${mutation.data.invalid.join(", ")}`}.
@@ -158,6 +169,11 @@ export function CampaignDetail({ id, mailerReady, paceMs }: { id: string; mailer
   const { data: campaign, error } = useAdminCampaign(id);
   const loop = useSendLoop(id, paceMs);
   const test = useMutation({ mutationFn: () => sendAdminCampaignTest(id) });
+  const queryClient = useQueryClient();
+  const release = useMutation({
+    mutationFn: () => releaseAdminCampaignSetAside(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "campaigns"] }),
+  });
 
   if (error) {
     return (
@@ -217,6 +233,26 @@ export function CampaignDetail({ id, mailerReady, paceMs }: { id: string; mailer
           {loop.running && <Countdown at={loop.nextAt} />}
         </p>
         {test.isError && <p role="alert" className="text-sm text-destructive">{test.error.message}</p>}
+        {campaign.stats.setAside > 0 && (
+          <div className="space-y-2 border-t border-border pt-3">
+            <p className="text-sm text-muted-foreground">
+              {numberFormat.format(campaign.stats.setAside)} adresse{campaign.stats.setAside > 1 ? "s" : ""} mise
+              {campaign.stats.setAside > 1 ? "s" : ""} de côté (Microsoft ou filtre d&apos;entreprise strict) : le mail y
+              tombe en indésirables tant que tutelliv.fr n&apos;a pas d&apos;historique. Elles ne partent pas avec
+              l&apos;envoi.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={release.isPending || loop.running}
+              aria-busy={release.isPending}
+              onClick={() => release.mutate()}
+            >
+              <Undo2 /> Remettre {campaign.stats.setAside > 1 ? `les ${numberFormat.format(campaign.stats.setAside)} adresses` : "l'adresse"} dans l&apos;envoi
+            </Button>
+            {release.isError && <p role="alert" className="text-sm text-destructive">{release.error.message}</p>}
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -233,13 +269,25 @@ export function CampaignDetail({ id, mailerReady, paceMs }: { id: string; mailer
                 </tr>
               </thead>
               <tbody>
-                {campaign.recipients.map((recipient) => (
+                {campaign.recipients.map((recipient) => {
+                  const setAside = recipient.status === "SKIPPED" && isSetAsideDetail(recipient.detail);
+                  return (
                   <tr key={recipient.id} className="border-t border-border">
                     <td className="break-all px-3 py-2">{recipient.email}</td>
                     <td className="px-3 py-2">
-                      <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-semibold", STATUS_TONE[recipient.status])}>
-                        {RECIPIENT_STATUS_LABELS[recipient.status]}
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full px-2 py-0.5 text-xs font-semibold",
+                          setAside ? "bg-muted text-muted-foreground" : STATUS_TONE[recipient.status]
+                        )}
+                      >
+                        {setAside ? PROSPECT_SET_ASIDE_PREFIX : RECIPIENT_STATUS_LABELS[recipient.status]}
                       </span>
+                      {setAside && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {recipient.detail!.slice(PROSPECT_SET_ASIDE_PREFIX.length).replace(/^\s*:\s*/, "")}, envoi plus tard
+                        </p>
+                      )}
                       {recipient.detail && recipient.status !== "SKIPPED" && (
                         <p className="mt-1 text-xs text-muted-foreground">{recipient.detail}</p>
                       )}
@@ -248,7 +296,8 @@ export function CampaignDetail({ id, mailerReady, paceMs }: { id: string; mailer
                       {recipient.sentAt ? timeFormat.format(new Date(recipient.sentAt)) : "—"}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

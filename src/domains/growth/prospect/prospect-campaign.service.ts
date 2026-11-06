@@ -1,7 +1,14 @@
+import { resolveMx } from "node:dns/promises";
 import { z } from "zod";
 import { prisma } from "@/services/prisma/client";
 import { FUNNEL_CAMPAIGN_PATTERN, funnelRate } from "@/domains/growth/waitlist-funnel.service";
 import { renderProspectEmail } from "@/domains/growth/prospect/prospect-email";
+import {
+  PROSPECT_SET_ASIDE_PREFIX,
+  findStrictProviders,
+  setAsideDetail,
+  type MxLookup,
+} from "@/domains/growth/prospect/prospect-mail-provider";
 import {
   createProspectMailer,
   describeMailerError,
@@ -39,6 +46,7 @@ export const createProspectCampaignSchema = z
 export const prospectAddressesSchema = z.object({ addresses: z.string().max(60_000) }).strict();
 export const prospectRepliesSchema = z.object({ delta: z.union([z.literal(1), z.literal(-1)]) }).strict();
 export const prospectSendSchema = z.object({ mode: z.enum(["next", "test"]) }).strict();
+export const prospectReleaseSchema = z.object({ action: z.literal("release_set_aside") }).strict();
 
 /* ---------- Fonctions pures ---------- */
 
@@ -79,7 +87,10 @@ export type ProspectCampaignStats = {
   pending: number;
   sent: number;
   failed: number;
+  /** Annulés après un STOP. */
   skipped: number;
+  /** Mis de côté (Microsoft, filtres d'entreprise stricts) : ajoutés mais pas envoyés. */
+  setAside: number;
   joinClicks: number;
   siteClicks: number;
   pageVisits: number;
@@ -137,7 +148,7 @@ const campaignSelect = {
 } as const;
 
 function emptyStats(replies: number): Omit<ProspectCampaignStats, "rates"> {
-  return { recipients: 0, pending: 0, sent: 0, failed: 0, skipped: 0, joinClicks: 0, siteClicks: 0, pageVisits: 0, signups: 0, replies };
+  return { recipients: 0, pending: 0, sent: 0, failed: 0, skipped: 0, setAside: 0, joinClicks: 0, siteClicks: 0, pageVisits: 0, signups: 0, replies };
 }
 
 function withRates(stats: Omit<ProspectCampaignStats, "rates">): ProspectCampaignStats {
@@ -155,10 +166,15 @@ async function summarize(campaigns: CampaignRow[]): Promise<ProspectCampaignSumm
   if (campaigns.length === 0) return [];
   const ids = campaigns.map((campaign) => campaign.id);
   const codes = campaigns.map((campaign) => campaign.code);
-  const [statusRows, lastSent, clickRows, signupRows] = await Promise.all([
+  const [statusRows, setAsideRows, lastSent, clickRows, signupRows] = await Promise.all([
     prisma.prospectCampaignRecipient.groupBy({
       by: ["campaignId", "status"],
       where: { campaignId: { in: ids } },
+      _count: { _all: true },
+    }),
+    prisma.prospectCampaignRecipient.groupBy({
+      by: ["campaignId"],
+      where: { campaignId: { in: ids }, status: "SKIPPED", detail: { startsWith: PROSPECT_SET_ASIDE_PREFIX } },
       _count: { _all: true },
     }),
     prisma.prospectCampaignRecipient.groupBy({
@@ -188,6 +204,12 @@ async function summarize(campaigns: CampaignRow[]): Promise<ProspectCampaignSumm
     if (row.status === "SENT") entry.sent += count;
     if (row.status === "FAILED") entry.failed += count;
     if (row.status === "SKIPPED") entry.skipped += count;
+  }
+  for (const row of setAsideRows) {
+    const entry = stats.get(row.campaignId);
+    if (!entry) continue;
+    entry.setAside += row._count._all;
+    entry.skipped -= row._count._all;
   }
   for (const row of clickRows) {
     const entry = byCode.get(row.campaignCode);
@@ -265,11 +287,21 @@ export async function createProspectCampaign(
   return created;
 }
 
-export type AddAddressesResult = { added: number; alreadyInCampaign: number; optedOut: number; invalid: string[] };
+export type AddAddressesResult = {
+  added: number;
+  /** Parmi les ajoutées, adresses mises de côté (Microsoft, filtres stricts) : pas envoyées. */
+  setAside: number;
+  alreadyInCampaign: number;
+  optedOut: number;
+  invalid: string[];
+};
+
+const dnsMxLookup: MxLookup = async (domain) => (await resolveMx(domain)).map((record) => record.exchange);
 
 export async function addProspectRecipients(
   campaignId: string,
-  text: string
+  text: string,
+  lookup: MxLookup = dnsMxLookup
 ): Promise<{ status: "ok"; result: AddAddressesResult } | { status: "not_found" } | { status: "too_many" }> {
   const campaign = await prisma.prospectCampaign.findUnique({ where: { id: campaignId }, select: { id: true } });
   if (!campaign) return { status: "not_found" };
@@ -279,19 +311,44 @@ export async function addProspectRecipients(
     (await prisma.prospectOptOut.findMany({ where: { email: { in: valid } }, select: { email: true } })).map((row) => row.email)
   );
   const allowed = valid.filter((email) => !optedOut.has(email));
+  const existing = new Set(
+    (
+      await prisma.prospectCampaignRecipient.findMany({
+        where: { campaignId, email: { in: allowed } },
+        select: { email: true },
+      })
+    ).map((row) => row.email)
+  );
+  const fresh = allowed.filter((email) => !existing.has(email));
+  const strict = await findStrictProviders(fresh, lookup);
   const created = await prisma.prospectCampaignRecipient.createMany({
-    data: allowed.map((email) => ({ campaignId, email })),
+    data: fresh.map((email) => {
+      const provider = strict.get(email);
+      return provider ? { campaignId, email, status: "SKIPPED" as const, detail: setAsideDetail(provider) } : { campaignId, email };
+    }),
     skipDuplicates: true,
   });
   return {
     status: "ok",
     result: {
       added: created.count,
+      setAside: Math.min(strict.size, created.count),
       alreadyInCampaign: allowed.length - created.count,
       optedOut: optedOut.size,
       invalid: invalid.slice(0, 20),
     },
   };
+}
+
+/** Remet dans l'envoi les adresses mises de côté de la campagne (les STOP restent bloqués à l'envoi). */
+export async function releaseSetAsideRecipients(campaignId: string): Promise<{ status: "ok"; released: number } | { status: "not_found" }> {
+  const campaign = await prisma.prospectCampaign.findUnique({ where: { id: campaignId }, select: { id: true } });
+  if (!campaign) return { status: "not_found" };
+  const released = await prisma.prospectCampaignRecipient.updateMany({
+    where: { campaignId, status: "SKIPPED", detail: { startsWith: PROSPECT_SET_ASIDE_PREFIX } },
+    data: { status: "PENDING", detail: null },
+  });
+  return { status: "ok", released: released.count };
 }
 
 /** Adresses STOP : enregistrées pour toujours ; leurs envois encore en attente sont annulés. */

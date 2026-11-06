@@ -406,6 +406,10 @@ export function addAdminCampaignAddresses(id: string, addresses: string) {
   return sendJson<AddAddressesResult>(`/api/admin/campaigns/${encodeURIComponent(id)}/recipients`, "POST", { addresses });
 }
 
+export function releaseAdminCampaignSetAside(id: string) {
+  return sendJson<{ released: number }>(`/api/admin/campaigns/${encodeURIComponent(id)}/recipients`, "PATCH", { action: "release_set_aside" });
+}
+
 export function adjustAdminCampaignReplies(id: string, delta: 1 | -1) {
   return sendJson<{ replies: number }>(`/api/admin/campaigns/${encodeURIComponent(id)}`, "PATCH", { delta });
 }
