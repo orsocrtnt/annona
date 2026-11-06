@@ -280,8 +280,8 @@ export function DemoModeBar() {
             <DialogTitle>Réinitialiser la démonstration ?</DialogTitle>
             <DialogDescription>
               Seules les commandes, livraisons, factures et tickets de votre session seront
-              supprimés. Les autres démonstrations ne seront pas modifiées. Le scénario de base
-              (8 livraisons, récurrence, support) sera recréé à l&apos;identique.
+              supprimés. Les autres démonstrations ne seront pas modifiées. La journée type est
+              recréée à l&apos;heure actuelle.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
