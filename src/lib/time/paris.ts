@@ -19,10 +19,10 @@ const WEEKDAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi",
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
-/** Composantes de date et d'heure d'un instant, lues à Paris. */
-export function parisParts(instant: Date) {
+/** Composantes de date et d'heure d'un instant, lues dans un fuseau (Paris par défaut). */
+export function zonedParts(instant: Date, timeZone: string = PARIS_TIME_ZONE) {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: PARIS_TIME_ZONE,
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -32,6 +32,22 @@ export function parisParts(instant: Date) {
   }).formatToParts(instant);
   const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
   return { year: get("year"), month: get("month"), day: get("day"), hour: get("hour"), minute: get("minute") };
+}
+
+/** Composantes de date et d'heure d'un instant, lues à Paris. */
+export function parisParts(instant: Date) {
+  return zonedParts(instant, PARIS_TIME_ZONE);
+}
+
+/** Date du jour (AAAA-MM-JJ) dans un fuseau donné. */
+export function zonedTodayDate(now: Date, timeZone: string = PARIS_TIME_ZONE): CalendarDate {
+  const { year, month, day } = zonedParts(now, timeZone);
+  return { year, month, day };
+}
+
+/** Date calendaire au format AAAA-MM-JJ. */
+export function formatCalendarDate(date: CalendarDate): string {
+  return `${date.year}-${pad(date.month)}-${pad(date.day)}`;
 }
 
 /** Date du jour à Paris (AAAA-MM-JJ) et jour de la semaine en français. */
@@ -67,16 +83,21 @@ export function addCalendarDays(date: CalendarDate, days: number): CalendarDate 
   return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1, day: shifted.getUTCDate() };
 }
 
-/** Convertit une heure murale de Paris en instant UTC, changements d'heure compris. */
-export function parisWallTimeToUtc(date: CalendarDate, time: WallClockTime) {
+/** Convertit une heure murale d'un fuseau en instant UTC, changements d'heure compris. */
+export function zonedWallTimeToUtc(date: CalendarDate, time: WallClockTime, timeZone: string = PARIS_TIME_ZONE) {
   const wall = Date.UTC(date.year, date.month - 1, date.day, time.hour, time.minute);
   let guess = wall;
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const seen = parisParts(new Date(guess));
+    const seen = zonedParts(new Date(guess), timeZone);
     const seenWall = Date.UTC(seen.year, seen.month - 1, seen.day, seen.hour, seen.minute);
     guess += wall - seenWall;
   }
   return new Date(guess);
+}
+
+/** Convertit une heure murale de Paris en instant UTC, changements d'heure compris. */
+export function parisWallTimeToUtc(date: CalendarDate, time: WallClockTime) {
+  return zonedWallTimeToUtc(date, time, PARIS_TIME_ZONE);
 }
 
 /** Date AAAA-MM-JJ et heure HH:MM de Paris en instant UTC ; `null` si l'une est invalide. */

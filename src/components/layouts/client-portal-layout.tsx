@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   FileText,
   HeadphonesIcon,
+  ListOrdered,
+  Repeat,
   LogOut,
   Menu,
   Settings,
@@ -36,6 +38,8 @@ import { cn, getInitials } from "@/lib/utils";
 
 const navItems = [
   { title: "Commander", href: "/portal", icon: ShoppingBag },
+  { title: "Mes commandes", href: "/portal/orders", icon: ListOrdered },
+  { title: "Récurrente", href: "/portal/recurring", icon: Repeat },
   { title: "Factures", href: "/portal/invoices", icon: FileText },
   { title: "Réclamations", href: "/portal/support", icon: HeadphonesIcon },
   { title: "Paramètres", href: "/portal/settings", icon: Settings },

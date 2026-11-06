@@ -1,11 +1,11 @@
-import { ComingSoon } from "@/components/shared/coming-soon";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { OrderCatalog } from "@/features/ordering/order-catalog";
 
-export default function ClientDashboardPage() {
+export default function ClientOrderPage() {
   return (
-    <ComingSoon
-      title="Mes commandes"
-      description="Catalogue, panier, choix de la date et du créneau, commande récurrente et historique."
-      task="CMD-1"
-    />
+    <Suspense fallback={<PageSkeleton />}>
+      <OrderCatalog />
+    </Suspense>
   );
 }

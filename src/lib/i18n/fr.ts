@@ -96,6 +96,7 @@ export const fr = {
 
   order: {
     title: "Commander",
+    nextDelivery: (date: string, deadline: string) => `Livraison possible dès ${date}, en commandant avant ${deadline}.`,
     myOrders: "Mes commandes",
     upcoming: "À venir",
     history: "Historique",
@@ -193,6 +194,7 @@ export const fr = {
     deleted: "Commande récurrente supprimée",
     deleteConfirm: "Supprimer cette commande récurrente ?",
     addProduct: "Ajouter un produit",
+    products: "Produits",
     generationNote: "Générée à l'heure limite la veille, seulement si vous n'avez passé aucune commande pour ce jour et ce créneau.",
     errors: {
       notFound: "Commande récurrente introuvable.",
