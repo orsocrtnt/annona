@@ -71,7 +71,8 @@ La lecture courante se fait exclusivement dans ce Markdown du dépôt. Après mo
 
 ## Tâches planifiées
 
-- `/api/cron/recurring-orders` génère les occurrences récurrentes ; plan actuel à 06:00 chaque jour.
+- `/api/cron/lock-orders` (LOCK-1) verrouille chaque date dont l'heure limite est passée et pas encore traitée (aujourd'hui et demain, fuseau de l'entreprise) : commandes récurrentes générées (RG-04), commandes validées verrouillées, prix figés (RG-05), tournées brouillon par créneau (RG-09). Idempotente. Appelée toutes les 10 minutes par `.github/workflows/cron-lock-orders.yml` et une fois par jour à 16 h 05 UTC par `vercel.json` (filet). Les écrans boulanger (`/bakery`) et commandes (`/dashboard/orders`) verrouillent aussi la date à l'ouverture si l'heure limite est passée : un cron en retard ne bloque pas la production. Hors production, `?now=<ISO>` simule l'heure pour la recette locale.
+- `/api/cron/recurring-orders` et `/api/cron/billing` n'existent plus depuis NET-1 (la génération des récurrentes est faite par `/api/cron/lock-orders`) ; `cron-daily.yml` les appelle encore, à retirer.
 - `/api/cron/operations` reprend les notifications et factures différées ; appelée toutes les 5 minutes par GitHub Actions (voir ci-dessous), non déclarée dans `vercel.json` car l'offre Vercel Hobby n'autorise qu'un cron par jour.
 
 Les effets différés (notifications, factures) sont lancés après la réponse HTTP par `after()` de Next.js (`src/lib/operations/after-response.ts`) pour que Vercel ne gèle pas la fonction avant la fin ; hors requête (tests, scripts) la tâche est lancée directement. Le filet cron reprend ce qui resterait en `PENDING`.

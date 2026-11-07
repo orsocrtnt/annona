@@ -108,3 +108,35 @@ export function computeTotals(lines: readonly PricedLine[]): OrderTotals {
   for (const [rate, base] of byRate) vatCents += Math.round((base * rate) / 10_000);
   return { subtotalCents, vatCents, totalCents: subtotalCents + vatCents, itemCount };
 }
+
+/**
+ * Prix appliqués de plusieurs commerçants en un aller-retour (verrouillage LOCK-1, listes du
+ * back-office) : même règle `resolveUnitPrice`, bornée à l'entreprise (PLA-01).
+ * Renvoie, par commerçant, la table produit → prix appliqué.
+ */
+export async function loadAppliedPricesByMerchant(
+  db: PricingDb,
+  companyId: string,
+  merchantIds: readonly string[],
+  productIds: readonly string[]
+): Promise<Map<string, Map<string, AppliedPrice>>> {
+  const result = new Map<string, Map<string, AppliedPrice>>();
+  if (merchantIds.length === 0 || productIds.length === 0) {
+    for (const merchantId of merchantIds) result.set(merchantId, new Map());
+    return result;
+  }
+  const [products, specificPrices] = await Promise.all([
+    db.product.findMany({
+      where: { companyId, id: { in: [...productIds] } },
+      select: { id: true, basePriceCents: true, vatRateBasisPoints: true },
+    }),
+    db.merchantPrice.findMany({
+      where: { companyId, merchantId: { in: [...merchantIds] }, productId: { in: [...productIds] } },
+      select: { merchantId: true, productId: true, priceCents: true },
+    }),
+  ]);
+  for (const merchantId of merchantIds) {
+    result.set(merchantId, applyPrices(products, specificPrices.filter((row) => row.merchantId === merchantId)));
+  }
+  return result;
+}

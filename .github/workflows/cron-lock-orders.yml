@@ -1,0 +1,65 @@
+name: Verrouillage à l'heure limite (préproduction)
+
+# LOCK-1 (RG-01, RG-04, RG-09) : appelle /api/cron/lock-orders toutes les 10 minutes. La route
+# verrouille chaque date dont l'heure limite est passée et qui n'a pas encore été traitée
+# (récurrentes, prix figés, tournées), puis ne fait plus rien : appel idempotent.
+# L'offre Vercel Hobby n'autorise qu'un cron par jour (vercel.json : 16 h 05 UTC, filet de
+# sécurité) ; les écrans boulanger et administrateur verrouillent aussi la date à l'ouverture.
+# Un workflow planifié ne s'exécute que depuis la branche par défaut du dépôt.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cron-lock-orders-preproduction
+  cancel-in-progress: false
+
+jobs:
+  verrouillage:
+    name: Appeler /api/cron/lock-orders
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: preproduction
+    env:
+      PREPROD_BASE_URL: ${{ secrets.PREPROD_BASE_URL }}
+      PREPROD_CRON_SECRET: ${{ secrets.PREPROD_CRON_SECRET }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Vérifier les secrets
+        run: |
+          missing=0
+          for name in PREPROD_BASE_URL PREPROD_CRON_SECRET; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret GitHub manquant : $name (environnement « preproduction »). Voir docs/OPERATIONS.md."
+              missing=1
+            fi
+          done
+          case "$PREPROD_BASE_URL" in
+            https://*) ;;
+            *) echo "::error::PREPROD_BASE_URL doit commencer par https://"; missing=1 ;;
+          esac
+          exit "$missing"
+
+      - name: Verrouiller les dates dues
+        run: |
+          url="${PREPROD_BASE_URL%/}/api/cron/lock-orders"
+          # --max-time (70 s) dépasse maxDuration de la route (60 s). Aucun --retry : le prochain
+          # passage a lieu 10 minutes plus tard et la route est idempotente.
+          args=(--silent --show-error --max-time 70
+            --output response.json --write-out '%{http_code}'
+            -H "Authorization: Bearer ${PREPROD_CRON_SECRET}")
+          if [ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+          fi
+          status=$(curl "${args[@]}" "$url") || { echo "::error::Appel impossible"; exit 1; }
+          echo "HTTP $status"
+          # Corps de réponse : compteurs uniquement.
+          head -c 800 response.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::/api/cron/lock-orders a répondu HTTP $status (401 = secret faux ; 503 = une date n'a pas pu être verrouillée)."
+            exit 1
+          fi

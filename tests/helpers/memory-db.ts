@@ -1,5 +1,5 @@
 /**
- * Base Prisma en mémoire pour les tests CAT-1 et CMD-1. Reproduit seulement ce dont les services
+ * Base Prisma en mémoire pour les tests CAT-1, CMD-1, LOCK-1 et BOU-1. Reproduit seulement ce dont les services
  * testés ont besoin : égalité, `in`, `gte`/`gt`/`lte`/`lt`, `not`, clés uniques composées
  * (`merchantId_productId: {…}`), `OR`. Un filtre inconnu fait échouer le test plutôt que d'être ignoré.
  * `select` et `include` sont ignorés : la ligne complète est renvoyée, enrichie par `decorate`.
@@ -131,12 +131,14 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
   }
 
   const db: Record<string, unknown> = {
+    // Verrou consultatif (LOCK-1) : sans effet en mémoire, les appels y sont déjà séquentiels.
+    $queryRaw: async () => [{ locked: 1 }],
     $transaction: async (arg: unknown) => {
       if (typeof arg === "function") return (arg as (tx: unknown) => Promise<unknown>)(db);
       return Promise.all(arg as Promise<unknown>[]);
     },
   };
-  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine"]) {
+  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user"]) {
     db[model] = delegate(model);
   }
   return db;

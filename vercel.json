@@ -2,8 +2,8 @@
   "regions": ["cdg1"],
   "crons": [
     {
-      "path": "/api/cron/recurring-orders",
-      "schedule": "0 6 * * *"
+      "path": "/api/cron/lock-orders",
+      "schedule": "5 16 * * *"
     },
     {
       "path": "/api/cron/billing",

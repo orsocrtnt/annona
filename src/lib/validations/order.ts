@@ -47,3 +47,19 @@ export type SaveOrderInput = z.infer<typeof saveOrderSchema>;
 export type ReorderInput = z.infer<typeof reorderSchema>;
 export type RecurringOrderInput = z.infer<typeof recurringOrderSchema>;
 export type UpdateRecurringOrderInput = z.infer<typeof updateRecurringOrderSchema>;
+
+/** LOCK-1 — correction d'une commande par l'administrateur (ADM-05) : lignes complètes après correction. */
+export const adminCorrectOrderSchema = z
+  .object({
+    lines: z.array(orderLineSchema).min(1, "Ajoutez au moins un produit.").max(MAX_ORDER_LINES),
+    note: z.string().trim().max(300).nullable().optional(),
+  })
+  .strict();
+
+export const adminCancelOrderSchema = z.object({ note: z.string().trim().max(300).nullable().optional() }).strict();
+
+/** LOCK-1 / BOU-1 — jour consulté (ADM-04, BOU-01) et filtres de la liste du jour. */
+export const dayQuerySchema = z.object({ date });
+export const adminOrdersQuerySchema = z.object({ date, merchantId: id.optional(), roundId: id.optional() });
+
+export type AdminCorrectOrderInput = z.infer<typeof adminCorrectOrderSchema>;

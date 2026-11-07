@@ -106,7 +106,7 @@ function toPortalSlot(slot: { id: string; label: string | null; startTime: strin
   return { id: slot.id, label: slotLabel(slot), startTime: slot.startTime, endTime: slot.endTime };
 }
 
-function newReference(deliveryDate: string): string {
+export function newReference(deliveryDate: string): string {
   return `C${deliveryDate.slice(2).replace(/-/g, "")}-${randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
