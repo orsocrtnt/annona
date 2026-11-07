@@ -509,6 +509,7 @@ test("service worker : seuls l'écran livreur, la lecture de la tournée et les 
   assert.equal(kind(at("/api/driver/rounds"), get()), "data");
   assert.equal(kind(at("/api/driver/rounds"), { ...get(), method: "POST" }), null, "envois : jamais copiés");
   assert.equal(kind(at("/api/driver/stops/s1/delivered"), get()), null);
+  assert.equal(kind(at("/api/auth/session"), get()), "session", "session : copiée pour le rechargement hors réseau (livreur seulement)");
   assert.equal(kind(at("/api/portal/orders"), get()), null);
   assert.equal(kind(at("/_next/static/chunks/app.js"), get()), "static");
   assert.equal(kind(at("/driver?_rsc=abc"), get()), null, "navigation interne (RSC) : réseau seul");
@@ -521,9 +522,20 @@ test("service worker : seuls l'écran livreur, la lecture de la tournée et les 
       pathname: "/driver",
       resources: ["https://app.annona.fr/_next/static/chunks/a.js", "https://tile.openstreetmap.org/x.png", "https://app.annona.fr/api/driver/rounds", "::"],
     }),
-    ["/driver", "/api/driver/rounds", "/_next/static/chunks/a.js"]
+    ["/driver", "/api/driver/rounds", "/api/auth/session", "/_next/static/chunks/a.js"]
   );
-  assert.deepEqual(driverOfflineUrls({ origin: "https://a.fr", pathname: "/portal", resources: [] }), ["/api/driver/rounds"]);
+  assert.deepEqual(driverOfflineUrls({ origin: "https://a.fr", pathname: "/portal", resources: [] }), ["/api/driver/rounds", "/api/auth/session"]);
+});
+
+test("service worker : la session n'est copiée que pour un livreur (déconnecté ou autre rôle : non)", async () => {
+  const self: Record<string, unknown> = { location: { origin: "https://app.annona.fr" }, addEventListener: () => undefined };
+  vm.runInNewContext(readFileSync("public/sw.js", "utf8"), { self, URL, caches: {}, fetch, setTimeout, Request });
+  const isDriver = self.annonaIsDriverSession as (response: Response) => Promise<boolean>;
+  const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
+  assert.equal(await isDriver(json({ user: { role: { systemRole: "DRIVER" } }, permissions: [] })), true);
+  assert.equal(await isDriver(json({ user: { role: { systemRole: "ADMIN" } }, permissions: [] })), false);
+  assert.equal(await isDriver(json({ user: null, permissions: [] })), false);
+  assert.equal(await isDriver(new Response("pas du json")), false);
 });
 
 // --- Projets natifs (contrôle statique des fichiers, pas un essai sur téléphone) -------------------

@@ -4,11 +4,14 @@
  * contrôlée par le service worker au moment de son chargement).
  */
 export const DRIVER_ROUNDS_API = "/api/driver/rounds";
+/** Session du livreur : le service worker ne la garde que pour un compte livreur (rechargement hors réseau). */
+export const SESSION_API = "/api/auth/session";
 
 export function driverOfflineUrls(input: { origin: string; pathname: string; resources: readonly string[] }): string[] {
   const urls = new Set<string>();
   if (input.pathname === "/driver" || input.pathname.startsWith("/driver/")) urls.add(input.pathname);
   urls.add(DRIVER_ROUNDS_API);
+  urls.add(SESSION_API);
   for (const value of input.resources) {
     try {
       const url = new URL(value, input.origin);

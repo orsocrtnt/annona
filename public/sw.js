@@ -4,7 +4,8 @@
 // (rechargement de la tournée sans réseau, LIV-06). Seuls les écrans /driver, la lecture de la tournée
 // (/api/driver/rounds) et les fichiers de l'application (/_next/static) sont copiés ; jamais les envois
 // (POST), le portail, le back-office ni une redirection (session expirée). Copie effacée à la déconnexion
-// (`releaseDeviceOnLogout`, même nom de cache).
+// (`releaseDeviceOnLogout`, même nom de cache). La session (/api/auth/session) n'est copiée que si c'est
+// celle d'un livreur : sans elle, l'écran rechargé hors réseau renverrait vers la connexion (RECETTE-V1).
 const CACHE_NAME = "annona-driver-v1";
 const NAVIGATION_TIMEOUT_MS = 4000;
 const MAX_STATIC_ENTRIES = 300;
@@ -14,6 +15,7 @@ function cacheKind(url, request) {
   if (request.headers.get("RSC") || url.searchParams.has("_rsc")) return null;
   if (request.mode === "navigate") return url.pathname === "/driver" || url.pathname.startsWith("/driver/") ? "page" : null;
   if (url.pathname === "/api/driver/rounds") return "data";
+  if (url.pathname === "/api/auth/session") return "session";
   if (url.pathname.startsWith("/_next/static/")) return "static";
   return null;
 }
@@ -21,6 +23,27 @@ self.annonaCacheKind = cacheKind;
 
 function cacheable(response) {
   return Boolean(response) && response.ok && response.status === 200 && response.type === "basic" && !response.redirected;
+}
+
+/** Session : copiée seulement pour un livreur ; toute autre réponse (déconnecté, autre rôle) efface la copie. */
+async function isDriverSession(response) {
+  try {
+    const body = await response.clone().json();
+    return Boolean(body && body.user && body.user.role && body.user.role.systemRole === "DRIVER");
+  } catch {
+    return false;
+  }
+}
+self.annonaIsDriverSession = isDriverSession;
+
+async function store(cache, request, response, kind) {
+  if (kind === "session" && response && response.ok && !(await isDriverSession(response))) {
+    await cache.delete(request);
+    return;
+  }
+  if (!cacheable(response)) return;
+  await cache.put(request, response.clone());
+  if (kind === "static") await trimStatic(cache);
 }
 
 async function trimStatic(cache) {
@@ -31,10 +54,7 @@ async function trimStatic(cache) {
 async function networkFirst(request, kind) {
   const cache = await caches.open(CACHE_NAME);
   const network = fetch(request).then(async (response) => {
-    if (cacheable(response)) {
-      await cache.put(request, response.clone());
-      if (kind === "static") await trimStatic(cache);
-    }
+    await store(cache, request, response, kind);
     return response;
   });
   network.catch(() => undefined); // échec déjà traité plus bas (copie) : pas d'erreur « non gérée »
@@ -93,8 +113,7 @@ self.addEventListener("message", (event) => {
             const request = new Request(url.href, { credentials: "same-origin" });
             const kind = url.pathname.startsWith("/driver") ? "page" : cacheKind(url, request);
             if (!kind) return;
-            const response = await fetch(request);
-            if (cacheable(response)) await cache.put(request, response);
+            await store(cache, request, await fetch(request), kind);
           } catch {
             // Hors réseau ou adresse refusée : copiée plus tard, au prochain passage.
           }
