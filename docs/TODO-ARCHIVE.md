@@ -4,6 +4,18 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **FACT-1 — Factures par période.**
+
+  **Modèle conseillé : Claude Opus · effort élevé (montants, numérotation).**
+
+  CLI-10, ADM-10, RG-06, RG-07, ENF-05 : une facture par commerçant et par période (jour, semaine, mois, année) sur les quantités livrées, numérotation continue, PDF et Factur-X conservés, envoi, règlements saisis (virement, prélèvement, espèces), téléchargement côté commerçant.
+
+  Terminé quand : critère 9 testé ; PDF relu ; `npm run check` vert.
+
+  7 novembre 2026, fait (commit `95984de`, sans push, sans migration). Une facture par client et par période (jour, semaine ISO, mois, année ; date lue à Paris) sur les commandes livrées non facturées, au prix figé et à la quantité livrée, TVA par taux, centimes ; numérotation continue réservée dans la transaction ; idempotent, une commande sur une seule facture. Cron `/api/cron/billing` (périodes terminées, retards compris) ; `cron-daily.yml` n'appelle plus que lui ; bouton « Générer les factures » (périodicité, client facultatif). Mentions légales lues dans les paramètres de l'entreprise, jamais inventées : celles qui manquent sont listées à l'admin avec un lien vers le champ ; échéance 30 jours et indemnité de 40 € produites par l'application. PDF de facture, relevé PDF côté client, Factur-X conservé (règlements partiels pris en compte), export CSV comptable. Envoi par e-mail avec PDF par la file existante ; sans clé Resend : « Non envoyée », bouton « Renvoyer ». Règlements (montant, date, mode, référence rangée dans `Payment.note`), statut calculé, trop-perçu refusé, suppression journalisée. Portail : factures filtrées par jour, semaine, mois, année, PDF et relevé (390 px). Choix : commande facturée non corrigeable (409, renvoi vers un avoir, pas d'écran d'avoir) ; livraison tardive → facture complémentaire ; TVA lue sur le produit au moment de la facture (non figée sur la ligne de commande).
+  Vérifications : `tests/fact1-invoices.test.ts` (17 tests : critère 9, bornes et changements d'heure, numérotation concurrente, idempotence, règlements, droits, isolation, Factur-X) ; Playwright `tests/e2e/fact1-recette.spec.ts` cliqué 6/6 : critère 9 (61,00 € HT → 55,90 € HT, 58,97 € TTC après 6 croissants manquants), deux générations simultanées → une facture ; PDF `outputs/recette-fact1/` relus (signe « − » et mentions en page 2 corrigés ; facture réglée relue par l'orchestrateur : calculs justes) ; données E2E-FACT1 supprimées, compteur de factures remis à zéro (aucune facture avant l'essai : la prochaine portera le n° 1) ; `npm run check` relancé par l'orchestrateur : 705/705 ; `npm run build` vert.
+  Reste : envoi réel non testé (clé Resend) ; pas d'écran d'avoir ; TVA non figée sur la ligne ; cron de facturation testé en unitaire seulement (pas lancé sur la démo pour ne pas facturer ses 117 commandes livrées) ; sections anciennes de `docs/FACTURX.md` à reprendre.
+
 - [x] **TOUR-1 — Tournées : administrateur et livreur.**
 
   **Modèle conseillé : Claude Opus · effort élevé (hors réseau, ordre des arrêts).**
@@ -98,3 +110,4 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 - 7 novembre 2026 : CAT-1 (`7352aba`) et CMD-1 (`8f8ad1e`) closes.
 - 7 novembre 2026 : LOCK-1 (`c68f6fd`) et BOU-1 (`f652f6a`) closes.
 - 7 novembre 2026 : TOUR-1 close (`9854b6c`).
+- 7 novembre 2026 : FACT-1 close (`95984de`).
