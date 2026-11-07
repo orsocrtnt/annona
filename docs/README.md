@@ -19,6 +19,7 @@ Cet index distingue la documentation courante des preuves datées. En cas de con
 - [`CONVENTIONS.md`](CONVENTIONS.md) — conventions de code ;
 - [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md) — direction visuelle et composants ;
 - [`AUTH_EMAIL_SETUP.md`](AUTH_EMAIL_SETUP.md) — activation des invitations et récupérations ;
+- [`MOBILE.md`](MOBILE.md) — applications iOS et Android (Capacitor) : architecture, ponts natifs, variables, commandes et étapes de publication ;
 - [`FACTURX.md`](FACTURX.md) — factures de livraison au format Factur-X : profil, contrôles, limites et point d'extension plateforme agréée ;
 - [`legal/README.md`](legal/README.md) — dossier préparatoire France pour la revue juridique, responsabilités, fournisseurs, inconnues et porte avant données réelles ;
 - [`operations/map-providers.md`](operations/map-providers.md) — fournisseurs cartographiques ;

@@ -153,9 +153,10 @@ test("la clé publique base64url est décodée en 65 octets", () => {
   assert.equal(vapidKeyToBytes(key).length, 65);
 });
 
-test("le service worker ne garde que les pages livreur et n'intercepte pas le réseau", () => {
+test("le service worker ne garde que les pages livreur ; copie hors réseau limitée à l'espace livreur (MOBILE-1)", () => {
   const source = readFileSync("public/sw.js", "utf8");
-  assert.ok(!source.includes('"fetch"'));
+  // MOBILE-1 : réseau d'abord, copie de /driver seulement (détail : tests/mobile1-native.test.ts).
+  assert.match(source, /url\.pathname === "\/driver" \|\| url\.pathname\.startsWith\("\/driver\/"\)/);
   assert.match(source, /startsWith\("\/driver"\)/);
   const manifest = JSON.parse(readFileSync("public/driver.webmanifest", "utf8"));
   assert.equal(manifest.display, "standalone");

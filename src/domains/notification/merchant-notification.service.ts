@@ -43,6 +43,8 @@ import {
   type NotificationMessage,
   type NotificationRecipient,
 } from "@/domains/notification/notification-channels";
+// MOBILE-1 : ajoute le canal des notifications natives (APNs / FCM), inactif sans clés.
+import "@/domains/notification/native-push-channel";
 import type { EmailContentFreezer, ReplayWindowStart } from "@/lib/email/transactional-email";
 import { addDaysToDateKey, deadlineLabel, longDeliveryDateLabel } from "@/lib/format/delivery-date";
 import { formatCents } from "@/lib/format/money";

@@ -23,6 +23,7 @@ import { useDriverLivePosition } from "@/features/driver/use-driver-live-positio
 import { useAuth } from "@/hooks/use-auth";
 import { longDeliveryDateLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
+import { driverLocationAllowed } from "@/lib/native/location-policy";
 import { cn } from "@/lib/utils";
 
 const t = fr.driverRound;
@@ -64,7 +65,7 @@ export function DriverRoundContent() {
 
   // ENF-04 : position partagée seulement pendant une tournée démarrée (le serveur le vérifie aussi).
   // Statut confirmé par le serveur (pas l'affichage anticipé) : sinon la position partirait avant le démarrage.
-  const tracking = (query.data?.rounds ?? []).some((candidate) => candidate.status === "IN_PROGRESS");
+  const tracking = driverLocationAllowed(query.data?.rounds ?? []);
   const live = useDriverLivePosition(tracking);
 
   if (query.isLoading && !query.data) return <PageSkeleton />;

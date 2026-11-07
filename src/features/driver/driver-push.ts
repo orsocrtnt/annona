@@ -1,7 +1,9 @@
+import { isNativeApp } from "@/lib/native/platform";
+
 const API_PATH = "/api/driver/push-subscription";
 const SERVICE_WORKER_PATH = "/sw.js";
 
-export type DriverPushAvailability = "unavailable" | "install-required" | "denied" | "ready";
+export type DriverPushAvailability = "unavailable" | "install-required" | "denied" | "ready" | "native";
 
 export function getDriverPushAvailability(input: {
   publicKey: string | undefined;
@@ -9,7 +11,10 @@ export function getDriverPushAvailability(input: {
   ios: boolean;
   standalone: boolean;
   permission: string | null;
+  /** MOBILE-1 : dans l'application native, les notifications passent par APNs / FCM, pas par le navigateur. */
+  native?: boolean;
 }): DriverPushAvailability {
+  if (input.native) return "native";
   // Sur iPhone, les notifications n'existent qu'une fois le site ajouté à l'écran d'accueil.
   if (input.ios && !input.standalone) return "install-required";
   if (!input.publicKey || !input.supported) return "unavailable";
@@ -21,6 +26,7 @@ export function readDriverPushAvailability(): DriverPushAvailability {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent)
     || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   return getDriverPushAvailability({
+    native: isNativeApp(),
     publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     supported: "serviceWorker" in navigator && "PushManager" in window && "Notification" in window,
     ios,

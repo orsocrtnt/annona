@@ -358,11 +358,14 @@ test("NOTIF-1 canaux : e-mail non configuré → notification dans l'application
     if (saved === undefined) delete process.env.EMAIL_DELIVERY_MODE;
     else process.env.EMAIL_DELIVERY_MODE = saved;
   }
-  // MOBILE-1 : un canal natif s'ajoute sans toucher aux déclencheurs.
+  // MOBILE-1 : le canal natif est ajouté par `native-push-channel.ts` sans toucher aux déclencheurs ;
+  // un second enregistrement du même canal est ignoré.
   const pushed: string[] = [];
-  registerNotificationChannel({ id: "native_push", deliver: async (message) => { pushed.push(message.title); return "sent"; } });
+  const fakeNative = { id: "native_push" as const, deliver: async (message: { title: string }) => { pushed.push(message.title); return "sent" as const; } };
+  registerNotificationChannel(fakeNative);
   assert.deepEqual(notificationChannels().map((channel) => channel.id), ["in_app", "email", "native_push"]);
-  await dispatchNotification(sent[0]!.message, { userId: "u2", companyId: "A", email: null, emailCopy: false }, { eventKey: "e3", replayWindow: null }, notificationChannels().filter((channel) => channel.id !== "in_app"));
+  assert.notEqual(notificationChannels()[2], fakeNative, "le canal natif de MOBILE-1 reste en place");
+  await dispatchNotification(sent[0]!.message, { userId: "u2", companyId: "A", email: null, emailCopy: false }, { eventKey: "e3", replayWindow: null }, [fakeNative]);
   assert.deepEqual(pushed, ["Commande validée"]);
 });
 

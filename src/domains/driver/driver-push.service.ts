@@ -1,4 +1,16 @@
 import type { Prisma } from "@prisma/client";
+import {
+  canSendTo,
+  getNativePushConfig,
+  isGoneNativeToken,
+  isNativeEndpoint,
+  nativePushConfigured,
+  parseNativeEndpoint,
+  sendNativePush,
+  type NativePushConfig,
+  type NativePushSender,
+  type NativePushTarget,
+} from "@/domains/notification/native-push.service";
 import { permanentJobError, skippedJobError } from "@/domains/operations/operation-job.service";
 import { prisma } from "@/services/prisma/client";
 
@@ -88,14 +100,19 @@ export async function deliverDriverMissionPush(
     db?: Pick<typeof prisma, "round" | "driverPushSubscription">;
     send?: PushSender;
     config?: PushConfig | null;
+    /** MOBILE-1 : clés APNs / FCM des applications natives (lues dans l'environnement par défaut). */
+    nativeConfig?: NativePushConfig;
+    sendNative?: NativePushSender;
   } = {}
 ) {
   const input = readPayload(payload);
   if (!input) throw permanentJobError("DRIVER_PUSH_PAYLOAD_INVALID");
   const config = deps.config === undefined ? getDriverPushConfig() : deps.config;
-  if (!config) throw skippedJobError("DRIVER_PUSH_NOT_CONFIGURED");
+  const nativeConfig = deps.nativeConfig ?? getNativePushConfig();
+  if (!config && !nativePushConfigured(nativeConfig)) throw skippedJobError("DRIVER_PUSH_NOT_CONFIGURED");
   const db = deps.db ?? prisma;
   const send = deps.send ?? sendWebPush;
+  const sendNative = deps.sendNative ?? sendNativePush;
 
   // Relu à l'envoi : une tournée retirée ou réattribuée entre-temps ne sonne plus chez ce livreur.
   const round = await db.round.findFirst({
@@ -110,20 +127,34 @@ export async function deliverDriverMissionPush(
   });
   if (!round) throw skippedJobError("DRIVER_PUSH_MISSION_OBSOLETE");
 
-  const targets = await db.driverPushSubscription.findMany({
+  const subscriptions = await db.driverPushSubscription.findMany({
     where: { userId: input.driverId, companyId: input.companyId },
     select: { id: true, endpoint: true, p256dh: true, auth: true },
+  });
+  // Navigateur (web push, clés VAPID) ou application native (APNs / FCM) : chacun seulement si configuré.
+  type Target = { subscription: (typeof subscriptions)[number]; native: NativePushTarget | null };
+  const targets = subscriptions.flatMap((subscription): Target[] => {
+    if (!isNativeEndpoint(subscription.endpoint)) return config ? [{ subscription, native: null }] : [];
+    const native = parseNativeEndpoint(subscription.endpoint);
+    return native && canSendTo(native, nativeConfig) ? [{ subscription, native }] : [];
   });
   if (targets.length === 0) throw skippedJobError("DRIVER_PUSH_NO_SUBSCRIPTION");
 
   const body = JSON.stringify(NEW_MISSION_PUSH);
-  const results = await Promise.allSettled(targets.map((target) => send(target, body, config)));
-  const gone = targets.filter((_, index) => {
+  const results = await Promise.allSettled(
+    targets.map(({ subscription, native }) =>
+      native
+        ? sendNative(native, { title: NEW_MISSION_PUSH.title, body: NEW_MISSION_PUSH.body, url: NEW_MISSION_PUSH.url }, nativeConfig)
+        : send(subscription, body, config!)
+    )
+  );
+  const gone = targets.filter(({ native }, index) => {
     const result = results[index]!;
-    return result.status === "rejected" && isGoneSubscription(result.reason);
+    if (result.status !== "rejected") return false;
+    return native ? isGoneNativeToken(result.reason) : isGoneSubscription(result.reason);
   });
   if (gone.length > 0) {
-    await db.driverPushSubscription.deleteMany({ where: { id: { in: gone.map((target) => target.id) } } });
+    await db.driverPushSubscription.deleteMany({ where: { id: { in: gone.map(({ subscription }) => subscription.id) } } });
   }
   const delivered = results.some((result) => result.status === "fulfilled");
   if (!delivered && gone.length < targets.length) throw new Error("DRIVER_PUSH_SEND_FAILED");

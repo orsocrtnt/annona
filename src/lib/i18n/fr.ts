@@ -680,6 +680,7 @@ export const fr = {
     problemSend: "Envoyer",
     problemSent: "Problème signalé à l'administrateur",
     photoTooLarge: "Photo trop lourde (5 Mo au plus).",
+    photoCameraUnavailable: "Appareil photo inaccessible. Autorisez-le dans les réglages du téléphone (Annona › Appareil photo).",
     pending: (count: number) => `${count} action${count > 1 ? "s" : ""} en attente de synchronisation`,
     pendingOffline: "Hors réseau : vos actions sont gardées sur le téléphone et seront envoyées au retour du réseau.",
     pendingBadge: "En attente de synchronisation",

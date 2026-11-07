@@ -200,10 +200,12 @@ test("déconnexion : nettoyer l'état local après succès, signaler un échec f
       "next/navigation": { useRouter: () => ({ push: (url: string) => { assert.equal(url, "/login"); events.push("redirect"); } }) },
       "@tanstack/react-query": { useQueryClient: () => ({ clear: () => events.push("cache") }) },
       "@/lib/storage/pending-credentials": { clearPendingCredentials: () => events.push("legacy") },
+      // MOBILE-1 : jeton natif et copie hors réseau retirés avant la fin de session (route authentifiée).
+      "@/lib/native/device-logout": { releaseDeviceOnLogout: async () => { events.push("device"); } },
       sonner: { toast: { error: () => events.push("error") } },
     });
     await useAuth().logout();
-    assert.deepEqual(events, failed ? ["signout", "error"] : ["signout", "store", "legacy", "cache", "redirect"]);
+    assert.deepEqual(events, failed ? ["device", "signout", "error"] : ["device", "signout", "store", "legacy", "cache", "redirect"]);
   }
 });
 

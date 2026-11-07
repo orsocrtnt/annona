@@ -11,6 +11,7 @@ import {
   type QueuedDriverAction,
   type QueuedDriverActionPayload,
 } from "@/features/driver/offline-action-queue";
+import { watchConnectivity } from "@/lib/native/network";
 
 const RETRY_INTERVAL_MS = 15_000;
 
@@ -103,17 +104,21 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
       .finally(() => {
         void refresh().then(() => process());
       });
-    const handleOnline = () => {
-      setOnline(true);
-      void process();
-    };
-    const handleOffline = () => setOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    // MOBILE-1 : réseau natif et retour au premier plan dans l'application ; `online`/`offline` sinon.
+    const stopConnectivity = watchConnectivity({
+      onOnline: () => {
+        setOnline(true);
+        void process();
+      },
+      onOffline: () => setOnline(false),
+      onResume: () => {
+        setOnline(isOnline());
+        void process();
+      },
+    });
     const timer = window.setInterval(() => void process(), RETRY_INTERVAL_MS);
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      stopConnectivity();
       window.clearInterval(timer);
     };
   }, [ownerId, process, refresh]);

@@ -15,6 +15,7 @@ const HELP: Record<Exclude<DriverPushAvailability, "ready">, string> = {
   "install-required": "Sur iPhone, ajoutez d’abord Annona à l’écran d’accueil : bouton Partager de Safari, puis « Sur l’écran d’accueil ». Ouvrez ensuite Annona depuis cette icône.",
   denied: "Les notifications sont bloquées pour Annona. Autorisez-les dans les réglages de votre téléphone, puis revenez ici.",
   unavailable: "Les notifications ne sont pas disponibles sur cet appareil.",
+  native: "Dans l’application, les notifications se règlent dans les réglages du téléphone (Réglages › Annona › Notifications).",
 };
 
 export function DriverPushSettings() {

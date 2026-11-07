@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { releaseDeviceOnLogout } from "@/lib/native/device-logout";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 
 export function useAuth() {
@@ -15,6 +16,8 @@ export function useAuth() {
   const queryClient = useQueryClient();
 
   const logout = useCallback(async () => {
+    // MOBILE-1 : avant la fin de session (le retrait du jeton natif est authentifié).
+    await releaseDeviceOnLogout();
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error("Déconnexion impossible. Vérifiez votre connexion et réessayez.");

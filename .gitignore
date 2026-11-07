@@ -54,3 +54,16 @@ next-env.d.ts
 # Réglages personnels de Claude Code
 .claude/settings.local.json
 .claude/worktrees/
+
+# MOBILE-1 : applications Capacitor (artefacts de compilation, fichiers générés, configuration Firebase)
+/mobile/www/app-config.js
+/ios/App/Pods
+/ios/App/build
+/ios/DerivedData
+DerivedData/
+/android/.gradle
+/android/build
+/android/app/build
+/android/local.properties
+/android/app/google-services.json
+/ios/App/App/GoogleService-Info.plist

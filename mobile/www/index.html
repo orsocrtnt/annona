@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Annona — hors connexion</title>
+  <!-- MOBILE-1 : page de repli de l'application mobile, affichée quand le site Annona ne répond pas
+       (pas de réseau, serveur indisponible). Aucune donnée ici : réessayer recharge le site. -->
+  <style>
+    :root { color-scheme: light dark; --bg: #f5f8f6; --fg: #0e1310; --muted: #68726b; --primary: #00d46a; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0e1310; --fg: #f5f8f6; --muted: #a3ada6; } }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    main { min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px; padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)); text-align: center; }
+    img { width: 72px; height: auto; }
+    h1 { font-size: 1.375rem; margin: 0; }
+    p { margin: 0; max-width: 22rem; color: var(--muted); line-height: 1.5; }
+    button { margin-top: 8px; min-height: 52px; min-width: 220px; border: 0; border-radius: 14px; font-size: 1rem;
+      font-weight: 600; background: var(--primary); color: #0e1310; }
+    button:disabled { opacity: .6; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="annona.png" alt="" />
+    <h1>Pas de connexion</h1>
+    <p id="message">Annona n’arrive pas à joindre le serveur. Vérifiez le réseau (Wi-Fi ou données mobiles), puis réessayez.</p>
+    <p>Ce qui a déjà été enregistré sur ce téléphone partira au retour du réseau.</p>
+    <button id="retry" type="button">Réessayer</button>
+  </main>
+  <script src="app-config.js"></script>
+  <script>
+    (function () {
+      var button = document.getElementById("retry");
+      var target = window.ANNONA_SERVER_URL;
+      function retry() {
+        button.disabled = true;
+        button.textContent = "Connexion…";
+        if (target) window.location.replace(target);
+        else window.location.reload();
+      }
+      button.addEventListener("click", retry);
+      window.addEventListener("online", retry);
+    })();
+  </script>
+</body>
+</html>

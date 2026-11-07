@@ -9,6 +9,8 @@ import {
 } from "@/lib/tracking/driver-location-client";
 
 import { rememberDriverPosition, clearRememberedDriverPosition } from "@/lib/maps/driver-proximity";
+import { watchDriverPosition, type DriverPosition } from "@/lib/native/geolocation";
+import { watchConnectivity } from "@/lib/native/network";
 
 export type LivePositionStatus = DriverLocationClientStatus;
 
@@ -31,7 +33,7 @@ export function useDriverLivePosition(
   const [syncError, setSyncError] = useState<string | null>(null);
   const [retryToken, setRetryToken] = useState(0);
   const lastSentAt = useRef(0);
-  const latestPosition = useRef<GeolocationPosition | null>(null);
+  const latestPosition = useRef<DriverPosition | null>(null);
   const minSendIntervalMs = options.minSendIntervalMs ?? 4_000;
   const staleAfterMs = options.staleAfterMs ?? 45_000;
 
@@ -47,7 +49,7 @@ export function useDriverLivePosition(
       lastSentAt.current = 0;
       return;
     }
-    if (typeof window === "undefined" || !navigator.geolocation) {
+    if (typeof window === "undefined") {
       setStatus("unsupported");
       return;
     }
@@ -55,7 +57,7 @@ export function useDriverLivePosition(
     let cancelled = false;
     let publishInFlight = false;
 
-    const publish = async (geo: GeolocationPosition, force = false) => {
+    const publish = async (geo: DriverPosition, force = false) => {
       if (cancelled) return;
       rememberDriverPosition(geo);
       latestPosition.current = geo;
@@ -97,14 +99,17 @@ export function useDriverLivePosition(
     };
 
     setStatus("requesting");
-    const watchId = navigator.geolocation.watchPosition(
-      (geo) => {
-        void publish(geo);
-      },
-      (error) => {
-        if (cancelled) return;
-        setSyncError(error.message || null);
-        setStatus(geolocationErrorStatus(error.code));
+    // MOBILE-1 : module natif dans l'application, `navigator.geolocation` dans un navigateur.
+    const stopWatch = watchDriverPosition(
+      {
+        onPosition: (geo) => {
+          void publish(geo);
+        },
+        onError: (code, message) => {
+          if (cancelled) return;
+          setSyncError(message || null);
+          setStatus(code === 2 && !("geolocation" in navigator) ? "unsupported" : geolocationErrorStatus(code));
+        },
       },
       {
         enableHighAccuracy: true,
@@ -113,28 +118,27 @@ export function useDriverLivePosition(
       }
     );
 
-    const handleOffline = () => {
-      setSyncError("Connexion réseau perdue.");
-      setStatus("offline");
-    };
-    const handleOnline = () => {
-      const current = latestPosition.current;
-      if (!current) {
-        setStatus("requesting");
-        return;
-      }
-      lastSentAt.current = 0;
-      void publish(current, true);
-    };
-    window.addEventListener("offline", handleOffline);
-    window.addEventListener("online", handleOnline);
+    const stopConnectivity = watchConnectivity({
+      onOffline: () => {
+        setSyncError("Connexion réseau perdue.");
+        setStatus("offline");
+      },
+      onOnline: () => {
+        const current = latestPosition.current;
+        if (!current) {
+          setStatus("requesting");
+          return;
+        }
+        lastSentAt.current = 0;
+        void publish(current, true);
+      },
+    });
 
     return () => {
       cancelled = true;
       clearRememberedDriverPosition();
-      navigator.geolocation.clearWatch(watchId);
-      window.removeEventListener("offline", handleOffline);
-      window.removeEventListener("online", handleOnline);
+      stopWatch();
+      stopConnectivity();
     };
   }, [enabled, minSendIntervalMs, retryToken]);
 

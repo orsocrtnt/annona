@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect } from "react";
 
+import { NativeAppBridge } from "@/components/native/native-app-bridge";
 import { ClientPortalLayout } from "@/components/layouts/client-portal-layout";
 import { PortalGuard } from "@/features/client-portal/portal-guard";
 import { sora } from "./portal-font";
@@ -30,6 +31,7 @@ export default function ClientPortalRootLayout({ children }: { children: React.R
     <div className={sora.variable} data-portal-root>
       <ClientPortalLayout>
         <PortalGuard>{children}</PortalGuard>
+        <NativeAppBridge />
       </ClientPortalLayout>
     </div>
   );

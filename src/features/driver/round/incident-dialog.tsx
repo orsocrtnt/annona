@@ -9,6 +9,7 @@ import { STOP_INCIDENT_CODES, type StopIncidentCode } from "@/domains/round/roun
 import { preparePhoto } from "@/features/driver/round/driver-round-api";
 import type { EffectiveStop } from "@/features/driver/round/effective-rounds";
 import { fr } from "@/lib/i18n/fr";
+import { nativeCameraAvailable, takeNativePhoto } from "@/lib/native/camera";
 import { cn } from "@/lib/utils";
 
 const t = fr.driverRound;
@@ -59,6 +60,20 @@ export function IncidentDialog({ stop, onClose, onSubmit }: IncidentDialogProps)
     }
     setError(null);
     setPhoto(prepared);
+  }
+
+  /** MOBILE-1 : appareil photo natif dans l'application ; champ fichier (`capture`) dans un navigateur. */
+  async function pickPhoto() {
+    if (!nativeCameraAvailable()) {
+      fileRef.current?.click();
+      return;
+    }
+    try {
+      const file = await takeNativePhoto();
+      if (file) await choose(file);
+    } catch {
+      setError(t.photoCameraUnavailable);
+    }
   }
 
   async function submit() {
@@ -128,7 +143,7 @@ export function IncidentDialog({ stop, onClose, onSubmit }: IncidentDialogProps)
               </Button>
             </div>
           ) : null}
-          <Button type="button" variant="outline" size="touch" className="w-full" onClick={() => fileRef.current?.click()}>
+          <Button type="button" variant="outline" size="touch" className="w-full" onClick={() => void pickPhoto()}>
             <Camera aria-hidden />
             {preview ? t.problemPhotoReplace : t.problemPhotoAdd}
           </Button>

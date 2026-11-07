@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Annona</string>
+    <string name="title_activity_main">Annona</string>
+    <string name="package_name">fr.annona.app</string>
+    <string name="custom_url_scheme">fr.annona.app</string>
+</resources>

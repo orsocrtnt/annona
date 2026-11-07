@@ -25,7 +25,7 @@ let recentPosition: { point: DriverPosition; timestamp: number } | null = null;
 let positionRequest: Promise<DriverPosition | null> | null = null;
 
 /** Share the active watch's fresh signal with mission actions, without starting another watch. */
-export function rememberDriverPosition(position: GeolocationPosition) {
+export function rememberDriverPosition(position: { coords: { latitude: number; longitude: number; accuracy: number }; timestamp: number }) {
   const point = {
     latitude: position.coords.latitude,
     longitude: position.coords.longitude,
