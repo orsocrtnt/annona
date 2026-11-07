@@ -14,7 +14,10 @@ import {
 import { prisma } from "@/services/prisma/client";
 import { getClientSettings } from "./settings.service";
 
-export type ClientNotificationType = "DELIVERY" | "INVOICE" | "SUPPORT";
+/** ORDER (NOT-02), REMINDER (NOT-01), APPROACH (NOT-03) : NOTIF-1. */
+export type ClientNotificationType = "DELIVERY" | "INVOICE" | "SUPPORT" | "ORDER" | "REMINDER" | "APPROACH";
+
+const KNOWN_TYPES: readonly ClientNotificationType[] = ["DELIVERY", "INVOICE", "SUPPORT", "ORDER", "REMINDER", "APPROACH"];
 
 export interface ClientNotificationItem {
   id: string;
@@ -101,6 +104,44 @@ async function sendClientEmail(
   });
 }
 
+type InAppDatabase = Pick<Prisma.TransactionClient, "clientNotification">;
+
+/**
+ * Notification dans l'application (cloche), idempotente : même `eventKey` → même ligne. Au-delà de
+ * CLIENT_NOTIFICATIONS_TAKE notifications, les plus anciennes du compte sont effacées.
+ */
+export async function upsertInAppNotification(
+  eventKey: string,
+  input: { userId: string; companyId: string; type: ClientNotificationType; title: string; body: string; href: string | null },
+  db: InAppDatabase = prisma
+) {
+  await db.clientNotification.upsert({
+    where: { id: stableNotificationId(eventKey) },
+    update: {},
+    create: {
+      id: stableNotificationId(eventKey),
+      companyId: input.companyId,
+      userId: input.userId,
+      type: input.type,
+      title: input.title,
+      body: input.body,
+      href: input.href,
+    },
+  });
+
+  const extra = (await db.clientNotification.findMany({
+    where: { userId: input.userId },
+    select: { id: true, createdAt: true },
+  }))
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(CLIENT_NOTIFICATIONS_TAKE);
+  if (extra.length > 0) {
+    await db.clientNotification.deleteMany({
+      where: { id: { in: extra.map((row) => row.id) } },
+    });
+  }
+}
+
 async function insertNotification(
   eventKey: string,
   input: {
@@ -115,31 +156,7 @@ async function insertNotification(
   replayWindowStart: ReplayWindowStart,
   freezeContent?: EmailContentFreezer
 ) {
-  await prisma.clientNotification.upsert({
-    where: { id: stableNotificationId(eventKey) },
-    update: {},
-    create: {
-      id: stableNotificationId(eventKey),
-      companyId: input.companyId,
-      userId: input.userId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      href: input.href,
-    },
-  });
-
-  const extra = await prisma.clientNotification.findMany({
-    where: { userId: input.userId, type: { not: "ORDER_MESSAGE" } },
-    orderBy: { createdAt: "desc" },
-    skip: CLIENT_NOTIFICATIONS_TAKE,
-    select: { id: true },
-  });
-  if (extra.length > 0) {
-    await prisma.clientNotification.deleteMany({
-      where: { id: { in: extra.map((row) => row.id) } },
-    });
-  }
+  await upsertInAppNotification(eventKey, input);
 
   if (input.email) {
     await sendClientEmail(
@@ -343,7 +360,7 @@ export async function listClientNotifications(userId: string) {
   return rows.map(
     (row): ClientNotificationItem => ({
       id: row.id,
-      type: row.type === "INVOICE" ? "INVOICE" : row.type === "SUPPORT" ? "SUPPORT" : "DELIVERY",
+      type: (KNOWN_TYPES as readonly string[]).includes(row.type) ? (row.type as ClientNotificationType) : "DELIVERY",
       title: row.title,
       body: row.body,
       href: row.href,

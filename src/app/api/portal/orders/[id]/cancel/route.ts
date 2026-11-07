@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { confirmOrderChange } from "@/domains/notification/merchant-notification.service";
 import { cancelMerchantOrder } from "@/domains/order/merchant-order.service";
 import { merchantRef } from "@/lib/api/merchant-ref";
 import { withApiHandler } from "@/lib/api/route-handler";
@@ -10,6 +11,9 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     const guard = await requireMerchantActor();
     if ("error" in guard) return guard.error;
     const { id } = await params;
-    return NextResponse.json({ data: await cancelMerchantOrder(merchantRef(guard.actor), id), success: true });
+    const data = await cancelMerchantOrder(merchantRef(guard.actor), id);
+    // NOT-02 : l'annulation est confirmée comme une modification.
+    await confirmOrderChange({ companyId: guard.actor.companyId, merchantId: guard.actor.merchantId, orderId: data.id, source: "MERCHANT" });
+    return NextResponse.json({ data, success: true });
   });
 }

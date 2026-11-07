@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { confirmOrderChange } from "@/domains/notification/merchant-notification.service";
 import { reorderMerchantOrder } from "@/domains/order/merchant-order.service";
 import { merchantRef } from "@/lib/api/merchant-ref";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
@@ -13,6 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { id } = await params;
     const target = reorderSchema.parse(await readJsonBody(request));
     const { order, droppedCount } = await reorderMerchantOrder(merchantRef(guard.actor), id, target);
+    await confirmOrderChange({ companyId: guard.actor.companyId, merchantId: guard.actor.merchantId, orderId: order.id, source: "MERCHANT" });
     return NextResponse.json({ data: order, droppedCount, success: true }, { status: 201 });
   });
 }

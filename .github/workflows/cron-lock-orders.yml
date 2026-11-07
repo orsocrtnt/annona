@@ -1,4 +1,4 @@
-name: Verrouillage à l'heure limite (préproduction)
+name: Verrouillage à l'heure limite et rappels (préproduction)
 
 # LOCK-1 (RG-01, RG-04, RG-09) : appelle /api/cron/lock-orders toutes les 10 minutes. La route
 # verrouille chaque date dont l'heure limite est passée et qui n'a pas encore été traitée
@@ -30,6 +30,7 @@ jobs:
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - name: Vérifier les secrets
+        id: secrets
         run: |
           missing=0
           for name in PREPROD_BASE_URL PREPROD_CRON_SECRET; do
@@ -61,5 +62,26 @@ jobs:
           head -c 800 response.json; echo
           if [ "$status" != "200" ]; then
             echo "::error::/api/cron/lock-orders a répondu HTTP $status (401 = secret faux ; 503 = une date n'a pas pu être verrouillée)."
+            exit 1
+          fi
+
+      - name: Rappels avant l'heure limite (NOT-01)
+        # NOTIF-1 : même cadence que le verrouillage. La route ne crée qu'une tâche par compte, client et
+        # date : un passage de plus ne renvoie rien.
+        # Lancé même si le verrouillage a échoué, jamais sans secrets.
+        if: always() && steps.secrets.outcome == 'success'
+        run: |
+          url="${PREPROD_BASE_URL%/}/api/cron/order-reminders"
+          args=(--silent --show-error --max-time 70
+            --output reminders.json --write-out '%{http_code}'
+            -H "Authorization: Bearer ${PREPROD_CRON_SECRET}")
+          if [ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
+          fi
+          status=$(curl "${args[@]}" "$url") || { echo "::error::Appel impossible"; exit 1; }
+          echo "HTTP $status"
+          head -c 800 reminders.json; echo
+          if [ "$status" != "200" ]; then
+            echo "::error::/api/cron/order-reminders a répondu HTTP $status (401 = secret faux)."
             exit 1
           fi

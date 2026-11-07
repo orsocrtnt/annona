@@ -28,13 +28,14 @@ export interface PortalSettings {
   smsNotifications: boolean;
   deliveryAlerts: boolean;
   invoiceAlerts: boolean;
+  orderReminders: boolean;
   emailConfigured?: boolean;
   emailMode?: "disabled" | "test" | "live";
 }
 
 export interface PortalClientNotification {
   id: string;
-  type: "DELIVERY" | "INVOICE" | "SUPPORT";
+  type: "DELIVERY" | "INVOICE" | "SUPPORT" | "ORDER" | "REMINDER" | "APPROACH";
   title: string;
   body: string;
   href: string | null;

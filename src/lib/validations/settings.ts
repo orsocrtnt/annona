@@ -5,6 +5,8 @@ export const clientSettingsSchema = z.object({
   smsNotifications: z.boolean().optional(),
   deliveryAlerts: z.boolean().optional(),
   invoiceAlerts: z.boolean().optional(),
+  /** NOT-01 : rappel avant l'heure limite. */
+  orderReminders: z.boolean().optional(),
 });
 
 export type ClientSettingsInput = z.infer<typeof clientSettingsSchema>;

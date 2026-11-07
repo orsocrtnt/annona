@@ -15,11 +15,15 @@ import {
 import { clientSettingsSchema, type ClientSettingsInput } from "@/lib/validations/settings";
 import { toast } from "sonner";
 import { Bell } from "lucide-react";
+import { fr } from "@/lib/i18n/fr";
+
+const t = fr.notifications.settings;
 
 const DEFAULT_SETTINGS: ClientSettingsInput = {
   emailNotifications: true,
   deliveryAlerts: true,
   invoiceAlerts: true,
+  orderReminders: true,
 };
 
 export default function ClientSettingsPage() {
@@ -39,6 +43,7 @@ export default function ClientSettingsPage() {
       emailNotifications: settings?.emailNotifications ?? DEFAULT_SETTINGS.emailNotifications,
       deliveryAlerts: settings?.deliveryAlerts ?? DEFAULT_SETTINGS.deliveryAlerts,
       invoiceAlerts: settings?.invoiceAlerts ?? DEFAULT_SETTINGS.invoiceAlerts,
+      orderReminders: settings?.orderReminders ?? DEFAULT_SETTINGS.orderReminders,
     },
   });
 
@@ -70,12 +75,9 @@ export default function ClientSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Bell className="h-4 w-4" />
-            Alertes
+            {t.title}
           </CardTitle>
-          <CardDescription>
-            Les alertes apparaissent dans la cloche du portail. Vous pouvez aussi en recevoir une copie
-            par e-mail.
-          </CardDescription>
+          <CardDescription>{t.hint}</CardDescription>
         </CardHeader>
         <CardContent>
           {settingsError ? (
@@ -95,9 +97,9 @@ export default function ClientSettingsPage() {
             <form onSubmit={settingsForm.handleSubmit(onSaveSettings)} className="space-y-4">
               {(
                 [
-                  ["deliveryAlerts", "Alertes de livraison"],
-                  ["invoiceAlerts", "Alertes de facturation"],
-                  ["emailNotifications", "Copie par e-mail"],
+                  ["orderReminders", t.reminder],
+                  ["invoiceAlerts", t.invoices],
+                  ["emailNotifications", t.emailCopy],
                 ] as const
               ).map(([key, label]) => (
                 <label key={key} className="flex items-center justify-between gap-4 max-md:min-h-11 max-md:cursor-pointer">
@@ -110,6 +112,7 @@ export default function ClientSettingsPage() {
                   />
                 </label>
               ))}
+              <p className="text-xs text-muted-foreground">{t.always}</p>
               <p className="text-xs text-muted-foreground">
                 {settings?.emailMode === "test"
                   ? "Mode recette actif : les copies sont redirigées vers la boîte de test, jamais vers les clients."

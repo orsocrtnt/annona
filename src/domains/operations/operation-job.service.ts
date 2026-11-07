@@ -146,6 +146,8 @@ export async function enqueueOperationJob(
     payload: Prisma.InputJsonValue;
     companyId?: string | null;
     maxAttempts?: number;
+    /** Échéance différée (NOT-02 : regroupement des modifications rapprochées). */
+    nextAttemptAt?: Date;
   }
 ) {
   return db.operationJob.upsert({
@@ -157,6 +159,7 @@ export async function enqueueOperationJob(
       payload: input.payload,
       companyId: input.companyId ?? null,
       maxAttempts: input.maxAttempts ?? 3,
+      ...(input.nextAttemptAt ? { nextAttemptAt: input.nextAttemptAt } : {}),
     },
     select: { id: true, jobKey: true, status: true },
   });
@@ -196,6 +199,13 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
     if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
       const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");
       await deliverInvoiceReminderJob(job.payload, job.jobKey, { previouslyAttempted: context.previouslyAttempted, freezeContent });
+      return;
+    }
+    // NOTIF-1 : rappel (NOT-01), confirmation (NOT-02), livreur en approche (NOT-03).
+    const merchantKind = readString(job.payload, "kind");
+    if (merchantKind === "ORDER_REMINDER" || merchantKind === "ORDER_CONFIRMATION" || merchantKind === "STOP_APPROACH") {
+      const { deliverMerchantNotificationJob } = await import("@/domains/notification/merchant-notification.service");
+      await deliverMerchantNotificationJob(job.payload, job.jobKey, { replayWindow: emailWindow(), freezeContent });
       return;
     }
     const { deliverClientNotificationJob } = await import(
@@ -344,6 +354,18 @@ export async function processOperationJobWithRetry(
       await sleep(delays[attempt]!);
     }
   }
+}
+
+/** Plusieurs tâches lancées l'une après l'autre dans un seul traitement différé (rappels NOT-01, NOT-03). */
+export function kickOperationJobs(jobIds: readonly string[]) {
+  if (jobIds.length === 0) return;
+  if (jobIds.length === 1) return kickOperationJob(jobIds[0]!);
+  runAfterResponse(async () => {
+    // Une tâche en échec n'arrête pas les suivantes : le filet /api/cron/operations la reprendra.
+    for (const id of jobIds) await processOperationJobWithRetry(id).catch(() => undefined);
+  }, {
+    log: (...args) => console.error("[operation-job] lancement groupé", args.map((a) => String(a).replace(/[\r\n]+/g, " ").slice(0, 500)).join(" ")),
+  });
 }
 
 export function kickOperationJob(jobId: string) {

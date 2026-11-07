@@ -698,4 +698,45 @@ export const fr = {
       photoUnavailable: "La photo n'a pas pu être enregistrée. Réessayez.",
     },
   },
+
+  /** NOTIF-1 : notifications du client (NOT-01 à NOT-03), dans l'application et par e-mail. */
+  notifications: {
+    signature: (company: string) => `${company}, via Annona`,
+    portalLink: (url: string) => `Ouvrir mon espace : ${url}`,
+    reminder: {
+      title: "Pensez à commander pour demain",
+      body: (date: string, deadline: string) =>
+        `Aucune commande pour le ${date}. Vous pouvez commander jusqu'au ${deadline}.`,
+      subject: (date: string) => `Rappel : aucune commande pour le ${date}`,
+      optOut: "Vous pouvez couper ce rappel dans Paramètres › Alertes.",
+    },
+    confirmation: {
+      validated: "Commande validée",
+      modified: "Commande modifiée",
+      cancelled: "Commande annulée",
+      corrected: "Commande corrigée par la boulangerie",
+      body: (reference: string, date: string, slot: string, items: number, total: string) =>
+        `${reference} · ${date}, ${slot} : ${items} article${items > 1 ? "s" : ""}, ${total} TTC.`,
+      cancelledBody: (reference: string, date: string, slot: string) => `${reference} · ${date}, ${slot} : commande annulée.`,
+      subject: (title: string, reference: string) => `${title} : ${reference}`,
+      recap: "Récapitulatif",
+      delivery: (date: string, slot: string) => `Livraison : ${date}, créneau ${slot}`,
+      line: (quantity: number, name: string, unit: string, total: string) => `- ${quantity} × ${name}${unit ? ` (${unit})` : ""} : ${total} HT`,
+      totals: (subtotal: string, vat: string, total: string) => `Total : ${subtotal} HT, TVA ${vat}, ${total} TTC`,
+      editableUntil: (deadline: string) => `Modifiable jusqu'au ${deadline}.`,
+    },
+    approach: {
+      title: "Livreur en approche",
+      body: (reference: string) => `Votre livraison ${reference} est la prochaine de la tournée : le livreur arrive.`,
+      subject: "Votre livreur arrive",
+    },
+    settings: {
+      title: "Alertes",
+      hint: "Les alertes apparaissent dans la cloche de votre espace. Vous pouvez aussi en recevoir une copie par e-mail.",
+      reminder: "Rappel avant l'heure limite si je n'ai pas commandé pour le lendemain",
+      invoices: "Alertes de facturation",
+      emailCopy: "Copie par e-mail",
+      always: "La confirmation de chaque commande et l'avis « livreur en approche » sont toujours envoyés.",
+    },
+  },
 } as const;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { confirmOrderChange } from "@/domains/notification/merchant-notification.service";
 import { listMerchantOrders, saveMerchantOrder } from "@/domains/order/merchant-order.service";
 import { merchantRef } from "@/lib/api/merchant-ref";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
@@ -27,6 +28,8 @@ export async function PUT(request: Request) {
     if ("error" in guard) return guard.error;
     const input = saveOrderSchema.parse(await readJsonBody(request));
     const { order, created } = await saveMerchantOrder(merchantRef(guard.actor), input);
+    // NOT-02 : confirmation (validée ou modifiée), regroupée si les modifications se suivent.
+    await confirmOrderChange({ companyId: guard.actor.companyId, merchantId: guard.actor.merchantId, orderId: order.id, source: "MERCHANT" });
     return NextResponse.json({ data: order, created, success: true }, { status: created ? 201 : 200 });
   });
 }

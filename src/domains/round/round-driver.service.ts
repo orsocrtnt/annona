@@ -25,14 +25,35 @@ import {
   type StopIncidentCode,
 } from "@/domains/round/round-rules";
 import type { DriverRoundsData, DriverRoundView, DriverStopView } from "@/domains/round/round.types";
+import { queueStopApproach } from "@/domains/notification/merchant-notification.service";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { longDeliveryDateLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
 
 export type DriverRoundDb = Pick<
   PrismaClient,
-  "company" | "slot" | "round" | "stop" | "order" | "orderLine" | "merchant" | "product" | "driverLocation" | "$transaction"
+  "company" | "slot" | "round" | "stop" | "order" | "orderLine" | "merchant" | "product" | "driverLocation" | "user" | "operationJob" | "$transaction"
 >;
+
+/** Lancement des tâches de notification (NOT-03) ; remplacé par un témoin dans les tests. */
+export type JobKicker = (jobIds: string[]) => void;
+
+const defaultKick: JobKicker = (jobIds) => {
+  if (jobIds.length === 0) return;
+  void import("@/domains/operations/operation-job.service").then(({ kickOperationJobs }) => kickOperationJobs(jobIds));
+};
+
+/**
+ * NOT-03 : prévient le client du prochain arrêt de la tournée. Après l'enregistrement, hors transaction :
+ * une notification ratée n'annule jamais une livraison (clé de tâche unique par arrêt : aucun doublon).
+ */
+async function notifyNextStop(db: DriverRoundDb, input: { companyId: string; roundId: string; afterSequence?: number | null }, kick: JobKicker) {
+  try {
+    kick(await queueStopApproach(db, input));
+  } catch (error) {
+    console.error("[NOTIF-1] avis « livreur en approche » non mis en file", { roundId: input.roundId, error: error instanceof Error ? error.name : "unknown" });
+  }
+}
 
 export interface DriverActor {
   companyId: string;
@@ -174,7 +195,7 @@ async function ownStop(db: Pick<DriverRoundDb, "round" | "stop">, actor: DriverA
 }
 
 /** « Démarrer la tournée » : le jour même seulement. Idempotent. */
-export async function startRound(actor: DriverActor, roundId: string, options: { at?: string | null; now?: Date; db?: DriverRoundDb } = {}) {
+export async function startRound(actor: DriverActor, roundId: string, options: { at?: string | null; now?: Date; db?: DriverRoundDb; kick?: JobKicker } = {}) {
   const db = options.db ?? db0();
   const now = options.now ?? new Date();
   const company = await companyOf(db, actor.companyId);
@@ -185,6 +206,8 @@ export async function startRound(actor: DriverActor, roundId: string, options: {
   }
   const startedAt = deliveryInstant(options.at, now);
   const { count } = await db.round.updateMany({ where: { id: round.id, status: "ASSIGNED" }, data: { status: "IN_PROGRESS", startedAt } });
+  // NOT-03 : au départ, le premier arrêt de la tournée est prévenu.
+  if (count > 0) await notifyNextStop(db, { companyId: actor.companyId, roundId: round.id }, options.kick ?? defaultKick);
   const current = count > 0 ? { status: "IN_PROGRESS" as RoundStatus, startedAt } : await ownRound(db, actor, roundId);
   return { id: round.id, status: current.status, startedAt: current.startedAt?.toISOString() ?? null };
 }
@@ -209,7 +232,7 @@ async function settleRound(tx: RoundTx, actor: DriverActor, round: { id: string;
 }
 
 /** LIV-03 : « Livré » en un appui, horodaté automatiquement. Idempotent (LIV-06). */
-export async function markStopDelivered(actor: DriverActor, stopId: string, options: { at?: string | null; now?: Date; db?: DriverRoundDb } = {}) {
+export async function markStopDelivered(actor: DriverActor, stopId: string, options: { at?: string | null; now?: Date; db?: DriverRoundDb; kick?: JobKicker } = {}) {
   const db = options.db ?? db0();
   const now = options.now ?? new Date();
   const { stop, round } = await ownStop(db, actor, stopId);
@@ -217,7 +240,7 @@ export async function markStopDelivered(actor: DriverActor, stopId: string, opti
     return { stopId, status: stop.status, deliveredAt: stop.deliveredAt?.toISOString() ?? null, roundStatus: round.status, replayed: true };
   }
   const at = deliveryInstant(options.at, now);
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const { count } = await tx.stop.updateMany({
       where: { id: stopId, companyId: actor.companyId, status: { not: "DELIVERED" } },
       data: { status: "DELIVERED", deliveredAt: at },
@@ -237,6 +260,9 @@ export async function markStopDelivered(actor: DriverActor, stopId: string, opti
     const roundStatus = await settleRound(tx, actor, round, at, now);
     return { stopId, status: "DELIVERED" as const, deliveredAt: at.toISOString(), roundStatus, replayed: false };
   });
+  // NOT-03 : l'arrêt suivant devient le prochain de la tournée (aussi au rejeu hors réseau, une seule fois).
+  if (!result.replayed) await notifyNextStop(db, { companyId: actor.companyId, roundId: round.id, afterSequence: stop.sequence }, options.kick ?? defaultKick);
+  return result;
 }
 
 /**
@@ -248,7 +274,7 @@ export async function reportStopIncident(
   actor: DriverActor,
   stopId: string,
   input: { code: StopIncidentCode; comment?: string | null; at?: string | null; photo?: { bytes: Buffer; contentType: string } | null },
-  options: { now?: Date; db?: DriverRoundDb; photos?: PhotoStore } = {}
+  options: { now?: Date; db?: DriverRoundDb; photos?: PhotoStore; kick?: JobKicker } = {}
 ) {
   const db = options.db ?? db0();
   const now = options.now ?? new Date();
@@ -274,6 +300,10 @@ export async function reportStopIncident(
     const roundStatus = await settleRound(tx, actor, round, at, now);
     return { previousPhoto: current.incidentPhotoPath, status, roundStatus };
   });
+  // NOT-03 : le livreur repart vers l'arrêt suivant.
+  if (stop.status === "PENDING" && result.status === "INCIDENT") {
+    await notifyNextStop(db, { companyId: actor.companyId, roundId: round.id, afterSequence: stop.sequence }, options.kick ?? defaultKick);
+  }
   if (result.previousPhoto && result.previousPhoto !== photoPath && options.photos) {
     await options.photos.remove({ companyId: actor.companyId, stopId, path: result.previousPhoto }).catch(() => undefined);
   }

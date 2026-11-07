@@ -8,6 +8,8 @@ export interface ClientSettings {
   smsNotifications: boolean;
   deliveryAlerts: boolean;
   invoiceAlerts: boolean;
+  /** NOT-01 : rappel avant l'heure limite (seule notification de commande que le client peut couper). */
+  orderReminders: boolean;
 }
 
 const DEFAULT_SETTINGS: ClientSettings = {
@@ -15,6 +17,7 @@ const DEFAULT_SETTINGS: ClientSettings = {
   smsNotifications: false,
   deliveryAlerts: true,
   invoiceAlerts: true,
+  orderReminders: true,
 };
 
 function asBoolean(value: unknown, fallback: boolean) {
@@ -33,16 +36,17 @@ export async function getClientSettings(userId: string): Promise<ClientSettings>
   return readClientSettings(stored);
 }
 
-function readClientSettings(stored: Record<string, unknown>): ClientSettings {
+export function readClientSettings(stored: Record<string, unknown>): ClientSettings {
   return {
     emailNotifications: asBoolean(stored.emailNotifications, DEFAULT_SETTINGS.emailNotifications),
     smsNotifications: false,
     deliveryAlerts: asBoolean(stored.deliveryAlerts, DEFAULT_SETTINGS.deliveryAlerts),
     invoiceAlerts: asBoolean(stored.invoiceAlerts, DEFAULT_SETTINGS.invoiceAlerts),
+    orderReminders: asBoolean(stored.orderReminders, DEFAULT_SETTINGS.orderReminders),
   };
 }
 
-const CLIENT_PREFERENCE_KEYS = ["emailNotifications", "smsNotifications", "deliveryAlerts", "invoiceAlerts"] as const;
+const CLIENT_PREFERENCE_KEYS = ["emailNotifications", "smsNotifications", "deliveryAlerts", "invoiceAlerts", "orderReminders"] as const;
 
 export async function updateClientSettings(userId: string, input: ClientSettingsInput) {
   let nextPrefs: ClientSettings | null = null;
