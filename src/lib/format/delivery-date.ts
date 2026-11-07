@@ -30,3 +30,9 @@ export function addDaysToDateKey(date: string, days: number): string {
   value.setUTCDate(value.getUTCDate() + days);
   return value.toISOString().slice(0, 10);
 }
+
+/** « 06:12 » : heure d'un instant dans le fuseau donné (livraison, incident). */
+export function timeLabel(instant: string | Date, timeZone = "Europe/Paris"): string {
+  const value = typeof instant === "string" ? new Date(instant) : instant;
+  return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone }).format(value);
+}

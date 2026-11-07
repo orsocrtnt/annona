@@ -16,7 +16,7 @@ function memoryStore(): DriverActionQueueStore & { rows: Map<string, QueuedDrive
   return {
     rows,
     async add(action) {
-      if ([...rows.values()].some((row) => row.ownerId === action.ownerId && row.missionId === action.missionId)) {
+      if ([...rows.values()].some((row) => row.ownerId === action.ownerId && row.actionKey === action.actionKey)) {
         throw new Error("duplicate");
       }
       rows.set(action.id, action);
@@ -32,15 +32,15 @@ function memoryStore(): DriverActionQueueStore & { rows: Map<string, QueuedDrive
   };
 }
 
-test("MOB-01B : une preuve reste entière après coupure puis disparaît après reprise", async () => {
+test("LIV-06 : un problème avec photo reste entier après coupure puis disparaît après reprise", async () => {
   const store = memoryStore();
   const photo = new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" });
   const action = createQueuedDriverAction({
     id: "action-1",
     ownerId: "driver-a",
-    missionId: "mission-a",
+    actionKey: "stop:stop-a:incident",
     now: 1_000,
-    payload: { status: "DELIVERED", pod: { outcome: "SUCCESS", photo, note: "remis" } },
+    payload: { kind: "INCIDENT", stopId: "stop-a", at: "2026-11-10T05:12:00.000Z", code: "ABSENT", comment: "rideau fermé", photo },
   });
   await enqueueDriverAction(store, action);
 
@@ -56,8 +56,10 @@ test("MOB-01B : une preuve reste entière après coupure puis disparaît après 
   assert.ok(kept);
   assert.equal(kept.state, "pending");
   assert.equal(kept.attempts, 1);
-  assert.equal(kept.payload.pod?.photo, photo);
-  assert.deepEqual([...new Uint8Array(await kept.payload.pod!.photo!.arrayBuffer())], [137, 80, 78, 71]);
+  assert.equal(kept.payload.kind, "INCIDENT");
+  const keptPhoto = kept.payload.kind === "INCIDENT" ? kept.payload.photo : null;
+  assert.equal(keptPhoto, photo);
+  assert.deepEqual([...new Uint8Array(await keptPhoto!.arrayBuffer())], [137, 80, 78, 71]);
 
   let sends = 0;
   const recovered = await processQueuedDriverActions({
@@ -68,7 +70,7 @@ test("MOB-01B : une preuve reste entière après coupure puis disparaît après 
     send: async (queued) => {
       sends++;
       assert.equal(queued.id, "action-1");
-      assert.equal(queued.payload.pod?.note, "remis");
+      assert.equal(queued.payload.kind === "INCIDENT" ? queued.payload.comment : null, "rideau fermé");
     },
   });
   assert.deepEqual(recovered.sent, ["action-1"]);
@@ -76,28 +78,28 @@ test("MOB-01B : une preuve reste entière après coupure puis disparaît après 
   assert.deepEqual(await store.list("driver-a"), []);
 });
 
-test("MOB-01B : une action refusée reste visible et aucun double envoi par mission n'est admis", async () => {
+test("LIV-06 : une action refusée reste visible et le même geste n'est jamais mis deux fois en file", async () => {
   const store = memoryStore();
   const action = createQueuedDriverAction({
     id: "action-failed",
     ownerId: "driver-a",
-    missionId: "mission-a",
+    actionKey: "stop:stop-a:delivered",
     now: 10,
-    payload: { status: "IN_DELIVERY" },
+    payload: { kind: "DELIVERED", stopId: "stop-a", at: "2026-11-10T05:12:00.000Z" },
   });
   await enqueueDriverAction(store, action);
   await assert.rejects(
     enqueueDriverAction(store, createQueuedDriverAction({
       id: "action-double",
       ownerId: "driver-a",
-      missionId: "mission-a",
+      actionKey: "stop:stop-a:delivered",
       now: 11,
-      payload: { status: "IN_DELIVERY" },
+      payload: { kind: "DELIVERED", stopId: "stop-a", at: "2026-11-10T05:12:30.000Z" },
     })),
-    /MISSION_ACTION_ALREADY_QUEUED/
+    /DRIVER_ACTION_ALREADY_QUEUED/
   );
 
-  const refused = new DriverApiError("mission modifiée", { retryable: false });
+  const refused = new DriverApiError("arrêt déplacé", { retryable: false });
   const result = await processQueuedDriverActions({
     store,
     ownerId: "driver-a",
@@ -107,7 +109,7 @@ test("MOB-01B : une action refusée reste visible et aucun double envoi par miss
   const [kept] = await store.list("driver-a");
   assert.ok(kept);
   assert.equal(kept.state, "failed");
-  assert.equal(kept.lastError, "mission modifiée");
+  assert.equal(kept.lastError, "arrêt déplacé");
 });
 
 test("LEGAL-1 : la file hors ligne efface les actions de plus de sept jours, tous comptes confondus", async () => {
@@ -119,9 +121,9 @@ test("LEGAL-1 : la file hors ligne efface les actions de plus de sept jours, tou
     createQueuedDriverAction({
       id,
       ownerId,
-      missionId: `mission-${id}`,
+      actionKey: `stop:${id}:incident`,
       now: now - ageMs,
-      payload: { status: "DELIVERED", pod: { outcome: "SUCCESS", photo, recipientName: "Mme Martin" } },
+      payload: { kind: "INCIDENT", stopId: id, at: new Date(now - ageMs).toISOString(), code: "DAMAGED", comment: "", photo },
     });
   await enqueueDriverAction(store, make("recent", "driver-a", 6 * day));
   await enqueueDriverAction(store, make("limite", "driver-a", DRIVER_ACTION_MAX_AGE_MS));

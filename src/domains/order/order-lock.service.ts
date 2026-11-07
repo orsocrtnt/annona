@@ -543,3 +543,24 @@ export async function lockDueDeliveryDates(options: LockOptions = {}): Promise<D
   }
   return results;
 }
+
+/**
+ * Recette locale (TOUR-1) : verrouille une date précise pour chaque entreprise active, même si la date
+ * a déjà été traitée (le témoin du journal est ignoré ; `lockDeliveryDate` reste idempotent et n'agit
+ * qu'après l'heure limite). Appelé seulement par `/api/cron/lock-orders?date=…`, refusé en production.
+ */
+export async function lockDeliveryDateForAll(date: string, options: LockOptions = {}): Promise<DueLockResult[]> {
+  const now = options.now ?? new Date();
+  const db = options.db ?? (prisma as unknown as LockDb);
+  const companies = await db.company.findMany({ where: { status: { in: ["ACTIVE", "TRIAL"] } }, select: { id: true } });
+  const results: DueLockResult[] = [];
+  for (const company of companies) {
+    try {
+      results.push({ companyId: company.id, date, ok: true, summary: await lockDeliveryDate(company.id, date, { ...options, now, db }) });
+    } catch (error) {
+      console.error("[LOCK-1] verrouillage forcé impossible", { companyId: company.id, date, error: error instanceof Error ? error.name : "unknown" });
+      results.push({ companyId: company.id, date, ok: false });
+    }
+  }
+  return results;
+}

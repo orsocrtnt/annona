@@ -1,11 +1,6 @@
-import { ComingSoon } from "@/components/shared/coming-soon";
+import { DriverRoundContent } from "@/features/driver/round/driver-round-content";
 
+/** TOUR-1 — tournée du jour du livreur (LIV-01 à LIV-06). */
 export default function DriverDashboardPage() {
-  return (
-    <ComingSoon
-      title="Ma tournée"
-      description="Arrêts dans l'ordre, liste de chargement, « Livré » en un appui et navigation vers l'arrêt suivant."
-      task="TOUR-1"
-    />
-  );
+  return <DriverRoundContent />;
 }

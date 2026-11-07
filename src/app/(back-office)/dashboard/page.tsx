@@ -1,11 +1,6 @@
-import { ComingSoon } from "@/components/shared/coming-soon";
+import { LiveDashboardContent } from "@/features/rounds/live-dashboard-content";
 
+/** TOUR-1 — tableau de bord : commandes du jour et suivi en direct des tournées (ADM-04, ADM-08). */
 export default function CompanyDashboardPage() {
-  return (
-    <ComingSoon
-      title="Tableau de bord"
-      description="Commandes du jour, tournées livrées, restantes et incidents."
-      task="TOUR-1"
-    />
-  );
+  return <LiveDashboardContent />;
 }

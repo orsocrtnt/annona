@@ -1,31 +1,20 @@
-import type { PodFailureCode } from "@/lib/pod/codes";
-
-export type QueuedDriverStatus = "PURCHASING" | "IN_DELIVERY" | "DELIVERED" | "FAILED";
-
-export type DriverPodPayload = {
-  outcome: "SUCCESS" | "FAILED";
-  photo: Blob | null;
-  failureCode?: PodFailureCode;
-  note?: string;
-  /** Signature PNG (null si absente) : conservée dans IndexedDB avec la photo quand le livreur est hors ligne. */
-  signature?: Blob | null;
-  recipientName?: string;
-  signatureRefusedReason?: string;
-};
-
-export type QueuedDriverActionPayload = {
-  status: QueuedDriverStatus;
-  purchaseItems?: { id: string; unitPrice: number }[];
-  confirmOutOfRange?: boolean;
-  latitude?: number;
-  longitude?: number;
-  pod?: DriverPodPayload;
-};
+/**
+ * File d'actions hors réseau de l'application livreur (LIV-06, critère de recette 8).
+ *
+ * Chaque geste (« Démarrer », « Livré », « Problème ») est d'abord écrit dans IndexedDB, puis envoyé ;
+ * sans réseau il reste sur le téléphone, photo comprise, et part au retour de la connexion. Le serveur
+ * est idempotent : un envoi rejoué ne crée pas de doublon. `actionKey` (ex. `stop:<id>:delivered`)
+ * interdit deux actions identiques en attente pour le même compte.
+ */
+export type QueuedDriverActionPayload =
+  | { kind: "START"; roundId: string; at: string }
+  | { kind: "DELIVERED"; stopId: string; at: string }
+  | { kind: "INCIDENT"; stopId: string; at: string; code: string; comment: string; photo: Blob | null };
 
 export type QueuedDriverAction = {
   id: string;
   ownerId: string;
-  missionId: string;
+  actionKey: string;
   payload: QueuedDriverActionPayload;
   state: "pending" | "sending" | "failed";
   attempts: number;
@@ -54,13 +43,13 @@ export type DriverActionQueueRun = {
   failed: string[];
 };
 
-const DB_NAME = "annona-driver-actions";
+const DB_NAME = "annona-driver-stop-actions";
 const DB_VERSION = 1;
-const STORE_NAME = "mission-status";
+const STORE_NAME = "stop-actions";
 const RETRY_DELAYS_MS = [0, 5_000, 30_000, 120_000, 300_000] as const;
 /**
- * Durée maximale de conservation d'une action sur l'appareil (LEGAL-1, minimisation) : photo, signature,
- * nom du destinataire et position ne restent pas indéfiniment dans le navigateur. Au-delà, l'action est
+ * Durée maximale de conservation d'une action sur l'appareil (LEGAL-1, minimisation) : une photo
+ * d'incident ne reste pas indéfiniment dans le navigateur. Au-delà, l'action est
  * supprimée, quel que soit le compte qui l'a créée. Valeur provisoire tant que le propriétaire n'a pas
  * arrêté les durées de conservation (docs/legal/VERIFICATION_2026-11-02.md, section 4).
  */
@@ -89,7 +78,7 @@ async function openQueueDatabase(): Promise<IDBDatabase> {
     if (database.objectStoreNames.contains(STORE_NAME)) return;
     const store = database.createObjectStore(STORE_NAME, { keyPath: "id" });
     store.createIndex("ownerId", "ownerId", { unique: false });
-    store.createIndex("ownerMission", ["ownerId", "missionId"], { unique: true });
+    store.createIndex("ownerAction", ["ownerId", "actionKey"], { unique: true });
   };
   return requestResult(request);
 }
@@ -170,7 +159,7 @@ export async function purgeExpiredDriverActions(
 export function createQueuedDriverAction(input: {
   id?: string;
   ownerId: string;
-  missionId: string;
+  actionKey: string;
   payload: QueuedDriverActionPayload;
   now?: number;
 }): QueuedDriverAction {
@@ -178,7 +167,7 @@ export function createQueuedDriverAction(input: {
   return {
     id: input.id ?? crypto.randomUUID(),
     ownerId: input.ownerId,
-    missionId: input.missionId,
+    actionKey: input.actionKey,
     payload: input.payload,
     state: "pending",
     attempts: 0,
@@ -194,14 +183,14 @@ export async function enqueueDriverAction(
   action: QueuedDriverAction
 ): Promise<void> {
   const existing = (await store.list(action.ownerId)).find(
-    (candidate) => candidate.missionId === action.missionId
+    (candidate) => candidate.actionKey === action.actionKey
   );
-  if (existing) throw new Error("MISSION_ACTION_ALREADY_QUEUED");
+  if (existing) throw new Error("DRIVER_ACTION_ALREADY_QUEUED");
   try {
     await store.add(action);
   } catch (error) {
     if (error instanceof DOMException && error.name === "ConstraintError") {
-      throw new Error("MISSION_ACTION_ALREADY_QUEUED");
+      throw new Error("DRIVER_ACTION_ALREADY_QUEUED");
     }
     throw error;
   }

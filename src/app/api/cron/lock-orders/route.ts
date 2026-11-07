@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { lockDueDeliveryDates } from "@/domains/order/order-lock.service";
+import { lockDeliveryDateForAll, lockDueDeliveryDates } from "@/domains/order/order-lock.service";
 import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
 
 /**
@@ -12,7 +12,8 @@ import { reportOperationalIncident } from "@/lib/operations/incident-reporter";
  * administrateur verrouillent la date à l'ouverture (`ensureDateLocked`) : un cron en retard ne
  * bloque jamais la production. Même secret que /api/cron/operations.
  *
- * Recette locale seulement : `?now=AAAA-MM-JJTHH:MM:SSZ` simule l'heure (refusé en production).
+ * Recette locale seulement : `?now=AAAA-MM-JJTHH:MM:SSZ` simule l'heure, `?date=AAAA-MM-JJ` force le
+ * verrouillage de cette date même si elle a déjà été traitée (TOUR-1) ; les deux sont refusés en production.
  */
 export const maxDuration = 60;
 
@@ -23,7 +24,15 @@ export async function GET(request: Request) {
   }
 
   let now = new Date();
-  const simulated = new URL(request.url).searchParams.get("now");
+  const url = new URL(request.url);
+  const simulated = url.searchParams.get("now");
+  const forcedDate = url.searchParams.get("date");
+  if (forcedDate) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "Paramètre « date » refusé en production." }, { status: 400 });
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(forcedDate)) return NextResponse.json({ error: "Paramètre « date » invalide." }, { status: 400 });
+  }
   if (simulated) {
     if (process.env.NODE_ENV === "production") {
       return NextResponse.json({ error: "Paramètre « now » refusé en production." }, { status: 400 });
@@ -33,7 +42,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = await lockDueDeliveryDates({ now });
+    const results = forcedDate ? await lockDeliveryDateForAll(forcedDate, { now }) : await lockDueDeliveryDates({ now });
     const failed = results.filter((result) => !result.ok).length;
     const data = {
       processed: results.length,

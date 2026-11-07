@@ -124,3 +124,37 @@ export function planSlotRounds(input: SlotRoundInput): PlannedRound[] {
     .filter((round) => round.orderIds.length > 0)
     .sort((a, b) => (a.arrivals[0] ?? Number.POSITIVE_INFINITY) - (b.arrivals[0] ?? Number.POSITIVE_INFINITY));
 }
+
+export interface RoundStopPoint {
+  id: string;
+  point: GeoPoint | null;
+  label: string;
+}
+
+/**
+ * TOUR-1 (ADM-06) : « Recalculer l'ordre » d'une seule tournée avec le même calcul (insertion au
+ * moindre coût), au départ de `start` (laboratoire, ou dernier arrêt déjà livré). Sans contrainte de
+ * créneau ni de durée : l'administrateur a choisi les arrêts, on ne fait que les ordonner. Les commerces
+ * sans coordonnées restent en fin, par nom.
+ */
+export function orderRoundStops(input: {
+  start: GeoPoint | null;
+  stops: RoundStopPoint[];
+  travelSeconds: (from: GeoPoint, to: GeoPoint) => number;
+}): string[] {
+  const located = input.stops.filter((stop): stop is RoundStopPoint & { point: GeoPoint } => stop.point !== null);
+  const unlocated = input.stops
+    .filter((stop) => stop.point === null)
+    .sort((a, b) => a.label.localeCompare(b.label, "fr") || a.id.localeCompare(b.id));
+  if (located.length === 0) return unlocated.map((stop) => stop.id);
+  const ids = new Set(located.map((stop) => stop.id));
+  const plan = planRounds(
+    located.map((stop) => ({ id: stop.id, destination: stop.point, pickup: null, weightKg: null, windowStart: null, windowEnd: null, urgent: false })),
+    [{ id: "r01", start: input.start, readyAt: 0, capacityKg: null, eligibleDeliveryIds: ids }],
+    { now: 0, stopSeconds: ROUND_STOP_SECONDS, maxDaySeconds: Number.MAX_SAFE_INTEGER, maxDeliveries: Number.MAX_SAFE_INTEGER, travelSeconds: input.travelSeconds }
+  );
+  const ordered = plan.rounds[0]?.evaluation.stops.map((stop) => stop.deliveryId) ?? [];
+  const placed = new Set(ordered);
+  const left = located.filter((stop) => !placed.has(stop.id)).map((stop) => stop.id);
+  return [...ordered, ...left, ...unlocated.map((stop) => stop.id)];
+}
