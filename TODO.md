@@ -4,20 +4,19 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**8 tâches terminées sur 13 — 62 %**
+**9 tâches terminées sur 13 — 69 %**
 
-`████████████░░░░░░░░` · 5 tâches restantes
+`██████████████░░░░░░` · 4 tâches restantes
 
 **À faire par Claude**
 
-- NOTIF-1 — Notifications
-- ADM-1 — Comptes, paramètres et plateforme
 - MOBILE-1 — Applications iOS et Android (Capacitor)
 - RECETTE-V1 — Recette des dix critères (en dernier)
 
 **À faire par toi**
 
 - ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
+- NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -31,7 +30,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fournir les mentions légales des factures (SIREN, TVA, forme juridique et capital, RCS, pénalités, escompte) et une clé Resend pour les vrais envois (ACCES-1).
 
 **2. Claude (en autonomie, dans l'ordre)**
-- Faits les 6 et 7 novembre : NET-1 (ancien produit retiré), SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix), CMD-1 (commande du client, recopie chronométrée à 33 s), LOCK-1 (verrouillage à 17h, récurrentes, tournées brouillon, corrections tracées), BOU-1 (espace boulanger), TOUR-1 (tournées, application livreur, hors réseau) et FACT-1 (factures par période, PDF, règlements). En cours : NOTIF-1 et ADM-1, puis MOBILE-1 et RECETTE-V1.
+- Faits les 6 et 7 novembre : NET-1 (ancien produit retiré), SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix), CMD-1 (commande du client, recopie chronométrée à 33 s), LOCK-1 (verrouillage à 17h, récurrentes, tournées brouillon, corrections tracées), BOU-1 (espace boulanger), TOUR-1 (tournées, application livreur, hors réseau) FACT-1 (factures par période, PDF, règlements) et ADM-1 (clients, comptes, paramètres, super-admin, isolation). NOTIF-1 codée, attend la clé Resend pour un envoi réel. En cours : MOBILE-1, puis RECETTE-V1.
 
 **3. Attente extérieure**
 - Comptes Apple Developer et Google Play pour publier les applications (MOBILE-1, plus tard).
@@ -62,7 +61,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **NOTIF-1 — Notifications.**
 
-  **Qui : Claude.**
+  **Qui : Toi — clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -70,15 +69,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   Terminé quand : tests des déclencheurs ; un envoi réel reçu sur une adresse de test.
 
-- [ ] **ADM-1 — Comptes, paramètres et plateforme.**
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : Claude Opus · effort moyen.**
-
-  ADM-01, ADM-09, PLA-01 à PLA-04, ENF-07 : comptes commerçants, boulangers, livreurs, administrateurs ; heure limite, créneaux, catégories, délai du rappel ; super-administrateur (créer, configurer, suspendre une entreprise) ; nom et logo de l'entreprise ; textes centralisés en français (« client », « livreur », « tournée », « arrêt »).
-
-  Terminé quand : critère 10 testé (aucune donnée d'une entreprise B visible depuis A, routes comprises) ; écrans cliqués.
+  7 novembre 2026, code fait (commit `228a85a`, sans push, sans migration). NOT-01 : route `/api/cron/order-reminders` appelée par `cron-lock-orders.yml` toutes les 10 min ; client actif sans commande ni récurrente active ce jour-là, `reminderLeadMinutes` avant l'heure limite, une seule fois par compte, client et date, jamais après l'heure limite ; commande annulée ou brouillon = pas de commande ; délai 0 = rappel désactivé ; le client peut le couper (Paramètres › Alertes). NOT-02 : après chaque commande validée, modifiée ou annulée par le client et après correction admin ; au plus une confirmation toutes les 5 min par commande (la première tout de suite, les suivantes regroupées, état final relu à l'envoi). NOT-03 : au démarrage de la tournée le premier arrêt est prévenu, puis après « Livré » ou un problème le premier arrêt restant ; une seule fois par arrêt, rejeu hors ligne compris. Canaux : cloche du portail et e-mail par la file ; sans clé Resend, tâche e-mail close « ignorée » (`SKIPPED:EMAIL_DISABLED`) ; `registerNotificationChannel` prêt pour les notifications natives (MOBILE-1).
+  Vérifications : 12 tests (dont changements d'heure du 25 octobre et du 29 mars, rejeu sans doublon, isolation) ; Playwright `tests/e2e/notif1-recette.spec.ts` cliqué 3/3 (confirmation dans la cloche, rappel par la route cron avec `?now=`, « livreur en approche » après un « Livré ») ; captures `outputs/recette-notif1-adm1/` ; `npm run check` 717/717 puis 731/731 ; `npm run build` vert.
+  Reste : envoi réel reçu sur une adresse de test (critère de la tâche) ; confirmation différée et tâches en échec envoyées seulement au passage de `/api/cron/operations` (toutes les 5 min).
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 

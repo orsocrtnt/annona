@@ -4,6 +4,18 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **ADM-1 — Comptes, paramètres et plateforme.**
+
+  **Modèle conseillé : Claude Opus · effort moyen.**
+
+  ADM-01, ADM-09, PLA-01 à PLA-04, ENF-07 : comptes commerçants, boulangers, livreurs, administrateurs ; heure limite, créneaux, catégories, délai du rappel ; super-administrateur (créer, configurer, suspendre une entreprise) ; nom et logo de l'entreprise ; textes centralisés en français (« client », « livreur », « tournée », « arrêt »).
+
+  Terminé quand : critère 10 testé (aucune donnée d'une entreprise B visible depuis A, routes comprises) ; écrans cliqués.
+
+  7 novembre 2026, fait (commit `828730f`, sans push, sans migration). Clients (`/dashboard/merchants`) : liste, création, modification et désactivation journalisées, adresse géocodée par l'IGN et position corrigeable sur la carte, consignes, contact, facturation et périodicité, prix spécifiques et comptes du client. Comptes (ADM-01) : compte client obligatoirement rattaché à un client de l'entreprise ; modifier, désactiver, réactiver ; compte désactivé refusé à la connexion et par l'API dès la requête suivante ; pas de désactivation de soi-même ; toujours un admin actif. Paramètres (ADM-09, PLA-03, PLA-04) : nom, heure limite, fuseau, délai du rappel, unités ; créneaux (créer, modifier, désactiver, ordonner ; créneau utilisé non supprimable, 409) ; liens vers catégories et mentions légales ; nom et logo affichés dans le portail, l'application livreur et le back-office. Super-admin (PLA-02) : création d'entreprise avec son premier admin (`/api/admin/companies/create`), configuration (`/api/admin/companies/[id]/config`), suspension et réactivation ; plus aucune commande visible sans motif (recherche retirée) ; « Commandes » au lieu de « Livraisons ». ENF-07 : « chauffeur », « mission », « dispatch », « coursier » retirés de l'écran ; textes dans `src/lib/i18n/fr.ts`.
+  Vérifications : `tests/adm1-admin.test.ts` (9 tests) ; `tests/adm1-criterion10-isolation.test.ts` (critère 10 : 97 fichiers de route, 130 méthodes classées — 101 d'entreprise, 14 de plateforme, 4 du compte connecté, 4 de cron, 7 publiques justifiées ; aucune route ne lit l'entreprise dans la requête ; identifiants de B → 404 depuis A pour commandes, clients, produits, prix, créneaux, tournées, arrêts, factures, comptes) ; 8 anciens tests adaptés ; Playwright `tests/e2e/adm1-recette.spec.ts` cliqué 4/4 sans erreur de console (l'admin de B obtient 404 sur le client de A et des listes vides ; compte désactivé refusé) ; défaut corrigé : une saisie faite avant la fin du chargement était écrasée ; données E2E et entreprise B supprimées, réglages de démo restaurés ; `npm run check` relancé par l'orchestrateur : 731/731 ; `npm run build` vert.
+  Reste : invitations par e-mail non configurées en développement (`AUTH_EMAIL_LINKS_ENABLED` désactivé : un compte créé reste « en attente ») ; nom de l'entreprise mis à jour dans l'en-tête seulement à la reconnexion ; la liste des réclamations côté plateforme montre encore le statut et la référence de commande sans motif ; mode sombre non relu.
+
 - [x] **FACT-1 — Factures par période.**
 
   **Modèle conseillé : Claude Opus · effort élevé (montants, numérotation).**
@@ -111,3 +123,4 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 - 7 novembre 2026 : LOCK-1 (`c68f6fd`) et BOU-1 (`f652f6a`) closes.
 - 7 novembre 2026 : TOUR-1 close (`9854b6c`).
 - 7 novembre 2026 : FACT-1 close (`95984de`).
+- 7 novembre 2026 : ADM-1 close (`828730f`) ; NOTIF-1 faite (`228a85a`), en attente d'un envoi réel (clé Resend).
