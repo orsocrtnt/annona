@@ -37,6 +37,7 @@ import {
   createQueuedDriverAction,
   enqueueDriverAction,
   processQueuedDriverActions,
+  settleSentDriverActions,
   type DriverActionQueueStore,
   type QueuedDriverAction,
 } from "../src/features/driver/offline-action-queue";
@@ -406,6 +407,9 @@ test("LIV-06, critère 8 : « Livré » hors réseau rejoué au retour du résea
   };
   await processQueuedDriverActions({ store, ownerId: "driver1", force: true, now: () => 20, send: flaky });
   await processQueuedDriverActions({ store, ownerId: "driver1", force: true, now: () => 30, send: flaky });
+  // RECETTE-V1 N1 : reçues par le serveur, gardées à l'écran jusqu'à une lecture fraîche de la tournée.
+  assert.deepEqual([...rows.values()].map((row) => row.state), ["sent", "sent"]);
+  await settleSentDriverActions(store, "driver1", 30);
   assert.equal(rows.size, 0);
   const st1 = tables.stop!.find((row) => row.id === "st1")!;
   assert.equal(st1.status, "DELIVERED");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, ChevronDown, Play, Route } from "lucide-react";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { nextPendingStop, type StopIncidentCode } from "@/domains/round/round-rules";
 import { DriverLocationStatus } from "@/features/driver/driver-location-status";
-import { driverRoundApi } from "@/features/driver/round/driver-round-api";
+import { driverRoundApi, type DriverRoundsResult } from "@/features/driver/round/driver-round-api";
 import { DriverStopCard } from "@/features/driver/round/driver-stop-card";
 import { applyPendingActions, type EffectiveStop } from "@/features/driver/round/effective-rounds";
 import { actionNeedsAttention } from "@/features/driver/offline-action-queue";
@@ -39,12 +39,23 @@ export function DriverRoundContent() {
   const client = useQueryClient();
   const query = useQuery({
     queryKey: DRIVER_ROUNDS_KEY,
-    queryFn: driverRoundApi.rounds,
+    queryFn: async () => {
+      const next = await driverRoundApi.rounds();
+      // RECETTE-V1 N1 : la copie hors réseau ne remplace pas une tournée déjà affichée (elle peut être plus ancienne).
+      if (next.freshAt === null) return client.getQueryData<DriverRoundsResult>(DRIVER_ROUNDS_KEY) ?? next;
+      return next;
+    },
     refetchInterval: 30_000,
     refetchOnWindowFocus: true,
   });
   const onSynced = useCallback(() => client.invalidateQueries({ queryKey: DRIVER_ROUNDS_KEY }), [client]);
   const queue = useDriverActionQueue(user?.id ?? null, onSynced);
+  // RECETTE-V1 N1 : seule une lecture fraîche du serveur retire de l'écran les gestes déjà reçus.
+  const freshAt = query.data?.freshAt ?? null;
+  const settle = queue.settle;
+  useEffect(() => {
+    if (freshAt !== null) void settle(freshAt);
+  }, [freshAt, settle]);
 
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);

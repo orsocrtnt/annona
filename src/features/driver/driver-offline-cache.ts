@@ -6,6 +6,11 @@
 export const DRIVER_ROUNDS_API = "/api/driver/rounds";
 /** Session du livreur : le service worker ne la garde que pour un compte livreur (rechargement hors réseau). */
 export const SESSION_API = "/api/auth/session";
+/**
+ * En-tête ajouté par le service worker à une réponse servie depuis sa copie hors réseau (RECETTE-V1 N1) :
+ * l'écran ne la prend pas pour une lecture fraîche du serveur. Même nom dans `public/sw.js`.
+ */
+export const OFFLINE_COPY_HEADER = "x-annona-offline-copy";
 
 export function driverOfflineUrls(input: { origin: string; pathname: string; resources: readonly string[] }): string[] {
   const urls = new Set<string>();

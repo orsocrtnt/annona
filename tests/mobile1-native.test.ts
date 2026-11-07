@@ -25,7 +25,7 @@ import {
 } from "../src/domains/notification/native-push.service";
 import { notificationChannels, type NotificationMessage } from "../src/domains/notification/notification-channels";
 import { getDriverPushAvailability } from "../src/features/driver/driver-push";
-import { driverOfflineUrls } from "../src/features/driver/driver-offline-cache";
+import { driverOfflineUrls, OFFLINE_COPY_HEADER } from "../src/features/driver/driver-offline-cache";
 import { appleMapsUrl, wazeUrl } from "../src/lib/maps/navigation-links";
 import { MOBILE_APP_ID, MOBILE_START_PATH, resolveMobileServer } from "../src/lib/native/app-config";
 import { base64ToBlob, nativeCameraAvailable, takeNativePhoto } from "../src/lib/native/camera";
@@ -536,6 +536,38 @@ test("service worker : la session n'est copiée que pour un livreur (déconnect�
   assert.equal(await isDriver(json({ user: { role: { systemRole: "ADMIN" } }, permissions: [] })), false);
   assert.equal(await isDriver(json({ user: null, permissions: [] })), false);
   assert.equal(await isDriver(new Response("pas du json")), false);
+});
+
+test("RECETTE-V1 N1 : la tournée servie depuis la copie hors réseau est signalée ; la réponse du serveur ne l'est pas", async () => {
+  const listeners: Record<string, (event: unknown) => void> = {};
+  let online = true;
+  const stored = new Map<string, Response>();
+  const cache = {
+    match: async (request: Request) => stored.get(request.url)?.clone(),
+    put: async (request: Request, response: Response) => { stored.set(request.url, response); },
+    delete: async () => true,
+    keys: async () => [],
+  };
+  const self: Record<string, unknown> = {
+    location: { origin: "https://app.annona.fr" },
+    addEventListener: (name: string, fn: (event: unknown) => void) => { listeners[name] = fn; },
+  };
+  const fetchStub = async () => {
+    if (!online) throw new TypeError("Failed to fetch");
+    return Object.defineProperty(new Response(JSON.stringify({ data: { rounds: [] } }), { status: 200 }), "type", { value: "basic" });
+  };
+  vm.runInNewContext(readFileSync("public/sw.js", "utf8"), { self, URL, caches: { open: async () => cache }, fetch: fetchStub, setTimeout, Request, Response, Headers });
+  const serve = async () => {
+    let answer: Promise<Response> | null = null;
+    listeners.fetch!({ request: new Request("https://app.annona.fr/api/driver/rounds"), respondWith: (value: Promise<Response>) => { answer = value; } });
+    return answer!;
+  };
+  const fresh = await serve();
+  assert.equal(fresh.headers.get(OFFLINE_COPY_HEADER), null, "réponse du serveur : non signalée");
+  online = false;
+  const copy = await serve();
+  assert.equal(copy.headers.get(OFFLINE_COPY_HEADER), "1", "copie : signalée");
+  assert.deepEqual(await copy.json(), { data: { rounds: [] } });
 });
 
 // --- Projets natifs (contrôle statique des fichiers, pas un essai sur téléphone) -------------------

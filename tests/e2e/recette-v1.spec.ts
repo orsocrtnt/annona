@@ -766,6 +766,16 @@ test("Jour J — critère 8 : « Livré » hors réseau, rechargement hors rése
   const driver = pages.driver!;
   const current = driver.locator('[data-testid="driver-stop"][aria-current="step"]');
   const name = (await current.getByTestId("driver-stop-name").textContent())!;
+  const firstDelivered = (report.critere7 as { delivered: string }).delivered;
+  const summary = driver.getByTestId("driver-round-summary");
+  /** RECETTE-V1 N1 : l'arrêt livré en ligne au critère 7 reste livré à l'écran une fois le réseau coupé. */
+  const expectFirstStillDelivered = async () => {
+    const states = await stopStates(driver);
+    expect(states.find((row) => row.startsWith(`${firstDelivered}:`))).toBe(`${firstDelivered}:DELIVERED::`);
+    expect(states.find((row) => row.startsWith(`${name}:`))).toBe(`${name}:DELIVERED::en attente`);
+    await expect(summary).toContainText("2 / 3 livrés");
+    return states;
+  };
   const statusOf = async () =>
     withPrisma(async (prisma) => (await prisma.stop.findFirst({ where: { companyId: ids.company, order: { merchant: { name } } }, select: { status: true } }))?.status);
 
@@ -776,7 +786,7 @@ test("Jour J — critère 8 : « Livré » hors réseau, rechargement hors rése
   await driver.getByTestId("driver-next-dialog").getByRole("button", { name: "Fermer" }).first().click();
   await expect(driver.getByTestId("driver-pending-count")).toHaveText("1 action en attente de synchronisation");
   await shot(driver, "v1-19-livreur-hors-reseau-mobile", true);
-  report.beforeOfflineReload = await stopStates(driver);
+  report.beforeOfflineReload = await expectFirstStillDelivered();
   expect(await statusOf()).toBe("PENDING");
 
   // Reprise : rechargement sans réseau (copie du service worker du build de production).
@@ -786,7 +796,7 @@ test("Jour J — critère 8 : « Livré » hors réseau, rechargement hors rése
     await expect(driver.getByTestId("driver-round-summary")).toBeVisible({ timeout: 20_000 });
     await expect(driver.getByTestId("driver-pending-count")).toHaveText("1 action en attente de synchronisation", { timeout: 20_000 });
     await shot(driver, "v1-20-livreur-recharge-hors-reseau-mobile", true);
-    report.afterOfflineReload = await stopStates(driver);
+    report.afterOfflineReload = await expectFirstStillDelivered();
   } catch (error) {
     offlineReload = `échec : ${(error as Error).message.split("\n")[0]}`;
     await shot(driver, "v1-20-livreur-recharge-hors-reseau-echec-mobile");

@@ -1,8 +1,16 @@
 import type { DriverRoundsData } from "@/domains/round/round.types";
 import { DriverApiError } from "@/features/driver/driver-api-error";
+import { OFFLINE_COPY_HEADER } from "@/features/driver/driver-offline-cache";
 import type { QueuedDriverAction } from "@/features/driver/offline-action-queue";
 
 /** TOUR-1 — appels de l'application livreur (LIV-01 à LIV-06). */
+
+/**
+ * Tournée lue, avec sa fraîcheur (RECETTE-V1 N1) : `freshAt` est l'heure du début de la lecture quand le
+ * serveur a répondu, `null` quand c'est la copie hors réseau du service worker (peut-être plus ancienne
+ * qu'un envoi déjà fait).
+ */
+export type DriverRoundsResult = DriverRoundsData & { freshAt: number | null };
 
 /** Refus définitif (droits, arrêt déplacé, données invalides) : l'action ne sera pas rejouée seule. */
 function retryableStatus(status: number) {
@@ -10,6 +18,10 @@ function retryableStatus(status: number) {
 }
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
+  return (await request<T>(url, init)).data;
+}
+
+async function request<T>(url: string, init?: RequestInit): Promise<{ data: T; headers: Headers }> {
   let response: Response;
   try {
     response = await fetch(url, { ...init, cache: "no-store" });
@@ -30,7 +42,7 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
       retryable: retryableStatus(response.status),
     });
   }
-  return json.data as T;
+  return { data: json.data as T, headers: response.headers };
 }
 
 const jsonInit = (body: unknown): RequestInit => ({
@@ -40,7 +52,11 @@ const jsonInit = (body: unknown): RequestInit => ({
 });
 
 export const driverRoundApi = {
-  rounds: () => call<DriverRoundsData>("/api/driver/rounds"),
+  async rounds(): Promise<DriverRoundsResult> {
+    const startedAt = Date.now();
+    const { data, headers } = await request<DriverRoundsData>("/api/driver/rounds");
+    return { ...data, freshAt: headers.get(OFFLINE_COPY_HEADER) ? null : startedAt };
+  },
 
   /** Envoi d'une action de la file hors réseau (idempotent côté serveur). */
   send(action: QueuedDriverAction): Promise<unknown> {

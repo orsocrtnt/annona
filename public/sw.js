@@ -9,6 +9,9 @@
 const CACHE_NAME = "annona-driver-v1";
 const NAVIGATION_TIMEOUT_MS = 4000;
 const MAX_STATIC_ENTRIES = 300;
+// Réponse servie depuis la copie : signalée à l'écran, qui ne la prend pas pour une lecture fraîche du
+// serveur (RECETTE-V1 N1). Même nom que `OFFLINE_COPY_HEADER` (src/features/driver/driver-offline-cache.ts).
+const OFFLINE_COPY_HEADER = "x-annona-offline-copy";
 
 function cacheKind(url, request) {
   if (url.origin !== self.location.origin || request.method !== "GET") return null;
@@ -46,6 +49,13 @@ async function store(cache, request, response, kind) {
   if (kind === "static") await trimStatic(cache);
 }
 
+function markCopy(copy) {
+  const headers = new Headers(copy.headers);
+  headers.set(OFFLINE_COPY_HEADER, "1");
+  return new Response(copy.body, { status: copy.status, statusText: copy.statusText, headers });
+}
+self.annonaMarkCopy = markCopy;
+
 async function trimStatic(cache) {
   const keys = (await cache.keys()).filter((request) => new URL(request.url).pathname.startsWith("/_next/static/"));
   for (const request of keys.slice(0, Math.max(0, keys.length - MAX_STATIC_ENTRIES))) await cache.delete(request);
@@ -63,7 +73,7 @@ async function networkFirst(request, kind) {
       return await network;
     } catch (error) {
       const copy = await cache.match(request);
-      if (copy) return copy;
+      if (copy) return markCopy(copy);
       throw error;
     }
   }

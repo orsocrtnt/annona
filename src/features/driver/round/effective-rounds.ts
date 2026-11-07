@@ -16,7 +16,8 @@ export interface EffectiveRound extends Omit<DriverRoundView, "stops"> {
 /**
  * LIV-06 : l'écran reflète tout de suite « Démarrer », « Livré » et « Problème », même hors réseau, en
  * appliquant les actions en attente sur la dernière tournée reçue. Une action refusée par le serveur
- * (« failed ») n'est pas appliquée : elle est montrée à part. Fonction pure, testée.
+ * (« failed ») n'est pas appliquée : elle est montrée à part. Une action « sent » (déjà reçue, en attente
+ * d'une lecture fraîche) reste appliquée sans badge. Fonction pure, testée.
  */
 export function applyPendingActions(
   rounds: readonly DriverRoundView[],
@@ -25,6 +26,8 @@ export function applyPendingActions(
   showsPending: (action: QueuedDriverAction) => boolean = () => true
 ): EffectiveRound[] {
   const live = actions.filter((action) => action.state !== "failed");
+  // RECETTE-V1 N1 : une action « sent » (reçue par le serveur) reste appliquée, sans badge « en attente ».
+  const pending = (action: QueuedDriverAction) => action.state !== "sent" && showsPending(action);
   return rounds.map((round) => {
     const started = live.some((action) => action.payload.kind === "START" && action.payload.roundId === round.id);
     const stops: EffectiveStop[] = round.stops.map((stop) => {
@@ -33,13 +36,13 @@ export function applyPendingActions(
         const payload = action.payload;
         if (payload.kind === "START" || payload.stopId !== stop.id) continue;
         if (payload.kind === "DELIVERED" && next.status !== "DELIVERED") {
-          next = { ...next, status: "DELIVERED", deliveredAt: payload.at, pendingSync: next.pendingSync || showsPending(action) };
+          next = { ...next, status: "DELIVERED", deliveredAt: payload.at, pendingSync: next.pendingSync || pending(action) };
         } else if (payload.kind === "INCIDENT") {
           next = {
             ...next,
             status: next.status === "DELIVERED" ? "DELIVERED" : "INCIDENT",
             incident: { code: payload.code, comment: payload.comment || null, at: payload.at, hasPhoto: Boolean(payload.photo) },
-            pendingSync: next.pendingSync || showsPending(action),
+            pendingSync: next.pendingSync || pending(action),
           };
         }
       }

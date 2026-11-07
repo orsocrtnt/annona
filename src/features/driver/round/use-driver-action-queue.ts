@@ -8,6 +8,7 @@ import {
   enqueueDriverAction,
   processQueuedDriverActions,
   purgeExpiredDriverActions,
+  settleSentDriverActions,
   type QueuedDriverAction,
   type QueuedDriverActionPayload,
 } from "@/features/driver/offline-action-queue";
@@ -22,8 +23,9 @@ function isOnline() {
 /**
  * LIV-06 — file hors réseau branchée sur l'application livreur. Chaque geste est écrit dans IndexedDB
  * puis envoyé ; hors réseau il attend, et part au retour de la connexion (événement `online`, puis toutes
- * les 15 s). `onSynced` (relecture de la tournée) est attendu quand au moins une action est arrivée au
- * serveur, avant de retirer les actions envoyées de l'affichage.
+ * les 15 s). Quand au moins une action est arrivée au serveur, `onSynced` relance la lecture de la tournée.
+ * Les actions reçues restent appliquées à l'écran (état « sent ») jusqu'à ce que l'écran appelle `settle`
+ * avec l'heure d'une lecture fraîche (RECETTE-V1 N1) : une copie hors réseau ne les efface jamais.
  */
 export function useDriverActionQueue(ownerId: string | null, onSynced: () => Promise<unknown>) {
   const [actions, setActions] = useState<QueuedDriverAction[]>([]);
@@ -58,8 +60,9 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
         do {
           again.current = false;
           const result = await processQueuedDriverActions({ store: browserDriverActionQueueStore, ownerId, send: driverRoundApi.send, force });
-          // L'état du serveur est relu avant de retirer les gestes de l'écran : pas de retour en arrière visible.
-          if (result.sent.length > 0) await syncedRef.current().catch(() => undefined);
+          // Les gestes reçus restent affichés (« sent ») ; la relecture fraîche les retirera (`settle`). Elle
+          // n'est pas attendue : une relecture qui traîne (RECETTE-V1 N1) ne bloque plus la file.
+          if (result.sent.length > 0) void syncedRef.current().catch(() => undefined);
           await refresh();
         } while (again.current && isOnline());
       } catch {
@@ -87,6 +90,20 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
       void process();
     },
     [ownerId, process, refresh]
+  );
+
+  /** Lecture fraîche de la tournée commencée à `freshAt` : les actions reçues avant sont retirées. */
+  const settle = useCallback(
+    async (freshAt: number) => {
+      if (!ownerId) return;
+      try {
+        const settled = await settleSentDriverActions(browserDriverActionQueueStore, ownerId, freshAt);
+        if (settled.length > 0) await refresh();
+      } catch {
+        setStorageError(true);
+      }
+    },
+    [ownerId, refresh]
   );
 
   const discard = useCallback(
@@ -129,6 +146,7 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
     storageError,
     enqueue,
     discard,
+    settle,
     retry: () => process(true),
   };
 }

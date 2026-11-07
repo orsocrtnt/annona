@@ -5,6 +5,11 @@
  * sans réseau il reste sur le téléphone, photo comprise, et part au retour de la connexion. Le serveur
  * est idempotent : un envoi rejoué ne crée pas de doublon. `actionKey` (ex. `stop:<id>:delivered`)
  * interdit deux actions identiques en attente pour le même compte.
+ *
+ * RECETTE-V1 N1 : une action reçue par le serveur n'est pas effacée tout de suite. Elle passe à l'état
+ * « sent » et reste appliquée à l'écran jusqu'à une lecture fraîche de la tournée (réponse du serveur, pas
+ * la copie du service worker) commencée après l'envoi. Sans cela, une coupure juste après l'envoi faisait
+ * réapparaître l'arrêt « en cours » à partir d'une copie plus ancienne.
  */
 export type QueuedDriverActionPayload =
   | { kind: "START"; roundId: string; at: string }
@@ -16,12 +21,15 @@ export type QueuedDriverAction = {
   ownerId: string;
   actionKey: string;
   payload: QueuedDriverActionPayload;
-  state: "pending" | "sending" | "failed";
+  /** « sent » : reçue par le serveur, gardée à l'écran jusqu'à une lecture fraîche (RECETTE-V1 N1). */
+  state: "pending" | "sending" | "failed" | "sent";
   attempts: number;
   createdAt: number;
   updatedAt: number;
   nextAttemptAt: number;
   lastError: string | null;
+  /** Heure de la réponse du serveur à l'envoi (état « sent »). */
+  sentAt?: number;
 };
 
 export type DriverActionQueueStore = {
@@ -196,6 +204,37 @@ export async function enqueueDriverAction(
   }
 }
 
+/**
+ * Action reçue par le serveur : gardée à l'écran (état « sent ») jusqu'à une lecture fraîche. La photo
+ * d'un problème n'est plus gardée sur le téléphone (LEGAL-1) ; un marqueur vide garde « photo jointe »
+ * à l'écran en attendant.
+ */
+function markSent(action: QueuedDriverAction, at: number): QueuedDriverAction {
+  const payload =
+    action.payload.kind === "INCIDENT" && action.payload.photo
+      ? { ...action.payload, photo: new Blob([], { type: action.payload.photo.type }) }
+      : action.payload;
+  return { ...action, payload, state: "sent", sentAt: at, updatedAt: at, lastError: null };
+}
+
+/**
+ * RECETTE-V1 N1 : retire les actions « sent » qu'une lecture fraîche de la tournée reflète déjà, c'est-à-dire
+ * une lecture du serveur (pas une copie du service worker) commencée à `freshSince` ou après l'envoi. À
+ * partir de là, l'écran suit le serveur, même si celui-ci dit autre chose (arrêt remis en attente par
+ * l'administrateur). Renvoie les identifiants retirés.
+ */
+export async function settleSentDriverActions(
+  store: DriverActionQueueStore,
+  ownerId: string,
+  freshSince: number
+): Promise<string[]> {
+  const settled = (await store.list(ownerId)).filter(
+    (action) => action.state === "sent" && (action.sentAt ?? action.updatedAt) <= freshSince
+  );
+  for (const action of settled) await store.delete(action.id);
+  return settled.map((action) => action.id);
+}
+
 function retryDelay(attempts: number): number {
   return RETRY_DELAYS_MS[Math.min(attempts, RETRY_DELAYS_MS.length - 1)]!;
 }
@@ -212,6 +251,7 @@ export async function processQueuedDriverActions(options: {
   const actions = await options.store.list(options.ownerId);
 
   for (const action of actions) {
+    if (action.state === "sent") continue;
     if (action.state === "failed" && !options.force) {
       result.failed.push(action.id);
       continue;
@@ -230,7 +270,7 @@ export async function processQueuedDriverActions(options: {
 
     try {
       await options.send(sending);
-      await options.store.delete(sending.id);
+      await options.store.put(markSent(sending, now()));
       result.sent.push(sending.id);
     } catch (error) {
       const typed = error as DriverActionSendError;
@@ -258,6 +298,7 @@ export async function processQueuedDriverActions(options: {
  * la requête réussit. Seules les actions refusées, déjà tentées ou hors ligne méritent la bannière.
  */
 export function actionNeedsAttention(action: QueuedDriverAction, online: boolean): boolean {
+  if (action.state === "sent") return false;
   if (action.state === "failed" || action.attempts > 0 || action.lastError) return true;
   return !online;
 }
