@@ -9,6 +9,7 @@ import { getInitials } from "@/lib/utils";
 import { Home, User } from "lucide-react";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { AppleNavbar, AppleNavbarBrand } from "@/components/navigation/apple-navbar";
+import { CompanyBrand } from "@/components/brand/company-brand";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const bottomNav = [
@@ -58,7 +59,7 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
   return (
     <div className="relative min-h-screen bg-background pb-24">
       <AppleNavbar tone="light" maxWidthClassName="max-w-lg" innerClassName="justify-between">
-        <AppleNavbarBrand href="/driver" tone="light" />
+        {user?.company?.name ? <CompanyBrand href="/driver" compact className="max-w-[45vw]" /> : <AppleNavbarBrand href="/driver" tone="light" />}
         <div className="flex min-w-0 items-center gap-2.5">
           <ThemeToggle className="-mr-1" />
           <div className="min-w-0 text-right">

@@ -4,27 +4,28 @@
 
 ## Rôles système
 
+Mise à jour ADM-1 (7 novembre 2026) : les cinq rôles du cahier des charges (section 3).
+
 | Rôle | Espace principal | Périmètre |
 |---|---|---|
-| `SUPER_ADMIN` | `/admin` | plateforme ; peut être sans entreprise |
-| `COMPANY_ADMIN` | `/dashboard` | administration complète de son entreprise |
-| `MINI_ADMIN` | `/dashboard` | modules explicitement délégués dans son entreprise |
-| `DISPATCHER` | `/dispatch` | exploitation et affectation dans son entreprise |
-| `DRIVER` | `/driver` | missions auxquelles il est actuellement autorisé |
-| `CLIENT` | `/portal` | ses commandes, livraisons, factures et tickets |
+| `SUPER_ADMIN` | `/admin`, `/companies` | plateforme : créer, configurer, suspendre une entreprise (PLA-02) ; sans entreprise ; ne voit ni commandes ni clients |
+| `ADMIN` | `/dashboard`, `/users`, `/settings` | administration complète de son entreprise (clients, comptes, catalogue, commandes, tournées, factures, paramètres) |
+| `BAKER` | `/bakery` | production de son entreprise |
+| `DRIVER` | `/driver` | ses tournées validées |
+| `MERCHANT` (« client ») | `/portal` | les commandes, factures et réclamations du client auquel le compte est rattaché (`User.merchantId`) |
 
-La hiérarchie facilite certains affichages, mais une valeur plus élevée n'accorde pas automatiquement toutes les permissions. Les gardes utilisent les rôles admis et les permissions requises.
+Un compte désactivé (`INACTIVE`) ou une entreprise suspendue (`SUSPENDED`) n'a plus de session : connexion refusée, chaque page et chaque appel d'API refusés dès la requête suivante (`isAccountActive`, relu en base). Un compte client est toujours rattaché à un client de la même entreprise. L'entreprise garde au moins un administrateur actif. Le critère de recette 10 (aucune donnée de B visible depuis A) est vérifié pour toutes les routes API par `tests/adm1-criterion10-isolation.test.ts`.
 
 ## Permissions
 
 Le format est `{ressource}:{action}`. Les ressources déclarées sont : `users`, `companies`, `deliveries`, `orders`, `drivers`, `vehicles`, `analytics`, `settings`, `dashboard`, `invoices` et `support`.
 
-Les permissions exactes et leurs affectations initiales se trouvent dans `prisma/seed.ts`. Un mini-administrateur reçoit seulement les modules choisis par l'administrateur principal ; l'absence de réglage n'accorde rien.
+Les permissions exactes et leurs affectations se trouvent dans `prisma/reference-data.ts` (`ROLE_PERMISSIONS`).
 
 ## Défenses appliquées
 
-1. `src/middleware.ts` (runtime Node) maintient la session Supabase et, avant tout rendu de page (RSC et préchargements compris), relit en base rôle, permissions, modules mini-admin, compte et entreprise : mauvais espace → 307 vers l'accueil du rôle, aucun écran ouvert → 403, compte indisponible → connexion (AUTH-ROLE).
-2. `src/lib/permissions/page-access.ts` est la table unique des pages protégées (segments → rôles, permissions, modules mini-admin) et des accueils par rôle.
+1. `src/middleware.ts` (runtime Node) maintient la session Supabase et, avant tout rendu de page (RSC et préchargements compris), relit en base rôle, permissions, compte et entreprise : mauvais espace → 307 vers l'accueil du rôle, aucun écran ouvert → 403, compte indisponible → connexion (AUTH-ROLE).
+2. `src/lib/permissions/page-access.ts` est la table unique des pages protégées (segments → rôles, permissions) et des accueils par rôle.
 3. Les gardes API résolvent l'utilisateur courant et refusent compte/entreprise suspendus.
 4. Chaque service ajoute les frontières d'entreprise et de ressource.
 5. Les composants masquent les actions indisponibles pour éviter une fausse affordance.
@@ -34,11 +35,11 @@ Le niveau 5 améliore l'expérience ; seuls les niveaux serveur protègent les d
 ## Règles particulières
 
 - Le super-administrateur est le seul rôle de plateforme.
-- Seul un administrateur principal ou super-administrateur gère la délégation mini-admin ; un mini-admin ne peut pas augmenter ses propres droits.
-- Le support interne accepte `COMPANY_ADMIN`, `DISPATCHER` et `MINI_ADMIN`; ce dernier doit avoir `support:read`.
+- Un administrateur ne change pas son propre rôle et ne désactive pas son propre compte.
+- Le support interne (réclamations) accepte `ADMIN` avec `support:read`.
 - Les factures utilisent `invoices:read/create/update`, séparées des permissions de commande.
 - Un client doit appartenir à la commande et à l'entreprise ; une correspondance d'e-mail seule n'autorise rien.
-- Un chauffeur est réévalué après réaffectation. Une ancienne affectation ne conserve pas l'accès aux messages, au suivi ou à la preuve.
+- Un livreur est réévalué après réattribution : une tournée retirée n'est plus visible, ses arrêts renvoient 404.
 - Les fichiers de preuve restent privés ; une URL signée n'est créée qu'après autorisation.
 
 ## Ajouter ou modifier un accès
@@ -50,4 +51,4 @@ Le niveau 5 améliore l'expérience ; seuls les niveaux serveur protègent les d
 5. Tester autorisation légitime, rôle voisin, entreprise B, ressource réaffectée et compte suspendu.
 6. Si la base change, suivre `DATABASE.md` et vérifier RLS/droits publics.
 
-Les recettes de référence sont les tests `account-access`, `mini-admin`, `permissions`, `tenant-boundaries` et la suite connectée TEST-2.
+Les recettes de référence sont les tests `account-access`, `permissions`, `adm1-admin`, `adm1-criterion10-isolation` et la recette navigateur `tests/e2e/adm1-recette.spec.ts`.

@@ -5,10 +5,11 @@ import { AlertTriangle, Building2 } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { CompanyFileView } from "@/features/admin/company/company-file-view";
+import { CompanyConfigCard } from "@/features/admin/company/company-config-card";
 import { useAdminCompany } from "@/features/admin/hooks";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
-/** Fiche entreprise du super-administrateur (ADMIN-ESPACE lot 3), en lecture seule. */
+/** Fiche entreprise du super-administrateur (ADMIN-ESPACE lot 3), en lecture seule, et sa configuration (PLA-02). */
 export default function CompanyDetailPage() {
   const params = useParams<{ id: string }>();
   const id = typeof params.id === "string" ? params.id : "";
@@ -24,5 +25,11 @@ export default function CompanyDetailPage() {
     return <EmptyState icon={AlertTriangle} title="Entreprise indisponible" description="Impossible de charger cette entreprise." />;
   }
 
-  return <CompanyFileView company={company} />;
+  return (
+    <div className="space-y-5">
+      <CompanyFileView company={company} />
+      {/* PLA-02 : configuration de départ (nom, heure limite, fuseau, rappel), hors fiche en lecture seule. */}
+      <CompanyConfigCard companyId={company.id} />
+    </div>
+  );
 }

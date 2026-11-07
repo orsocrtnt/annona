@@ -108,11 +108,19 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
       "@/lib/api/auth-guard": auth(role),
       "@/lib/validations/user": validation,
       "@/domains/user/user.service": service,
+      // ADM-1 : modification et désactivation (PATCH), garde d'entreprise avant tout.
+      "@/domains/user/account-admin.service": { updateCompanyAccount: async () => { calls.push("update"); } },
+      "@/lib/api/route-handler": { withApiHandler: (handler: () => Promise<Response>) => handler(), readJsonBody: async () => { calls.push("body"); return {}; } },
+      "@/lib/api/tenant-auth": {
+        requireCompanyAdmin: async () => (role === "ADMIN" ? { actor: { companyId: "company-1", user: { id: "admin" } } } : { error: NextResponse.json({ error: "Accès refusé" }, { status: 403 }) }),
+      },
+      "@/lib/validations/company-admin": { updateAccountSchema: { parse: () => { calls.push("parse"); return {}; } } },
     });
     for (const response of [
       await users.GET!(),
       await users.POST!(tracked("http://local/api/users", "POST")),
       await item.DELETE!(new Request("http://local/api/users/user-1", { method: "DELETE" }), { params: pendingParams() }),
+      await item.PATCH!(new Request("http://local/api/users/user-1", { method: "PATCH", body: "{}" }), { params: pendingParams() }),
     ]) {
       assert.equal(response.status, 403);
     }

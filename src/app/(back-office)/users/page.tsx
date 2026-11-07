@@ -10,6 +10,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { CreateUserDialog } from "@/features/users/create-user-dialog";
 import { DeleteUserButton } from "@/features/users/delete-user-button";
+import { AccountStatusButton, EditUserDialog } from "@/features/users/edit-user-dialog";
 import {
   TableUserEmail,
   TableUserName,
@@ -29,8 +30,11 @@ interface UserRow {
   lastName: string;
   email: string;
   status: string;
+  phone?: string | null;
   role: { name: string; systemRole: SystemRole };
   company?: { name: string } | null;
+  /** ADM-1 : client représenté par un compte client. */
+  merchant?: { id: string; name: string } | null;
 }
 
 type RoleFilter = "all" | Exclude<SystemRole, "SUPER_ADMIN">;
@@ -75,7 +79,12 @@ export default function UsersPage() {
       header: "Nom",
       sortable: true,
       className: USER_TABLE_COL.name,
-      cell: (row) => <TableUserName name={row.name} />,
+      cell: (row) => (
+        <div className="min-w-0">
+          <TableUserName name={row.name} />
+          {row.merchant ? <p className="truncate text-xs text-muted-foreground" data-testid="user-merchant">{row.merchant.name}</p> : null}
+        </div>
+      ),
     },
     {
       key: "email",
@@ -105,6 +114,12 @@ export default function UsersPage() {
       className: USER_TABLE_COL.actions,
       cell: (row) => (
         <div className="flex items-center justify-end gap-0.5">
+          {platformReadOnly || row.role.systemRole === "SUPER_ADMIN" ? null : (
+            <>
+              <EditUserDialog account={row} name={row.name} />
+              <AccountStatusButton account={row} name={row.name} />
+            </>
+          )}
           {platformReadOnly ? null : (
             <DeleteUserButton
               userId={row.id}

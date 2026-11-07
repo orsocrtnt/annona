@@ -1,6 +1,5 @@
 import type { SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
-import { ORDER_STATUS_LABELS } from "@/lib/constants/order-status";
 import { ROLE_LABELS } from "@/lib/permissions/rbac";
 import { createMemoryRateLimiter, type MemoryRateLimiter } from "@/lib/security/memory-rate-limit";
 
@@ -19,12 +18,15 @@ const MAX_TOKENS = 5;
 /** Débit : 60 recherches par minute et par compte, en mémoire de l'instance (la saisie est temporisée). */
 export const ADMIN_SEARCH_RATE = { limit: 60, windowMs: 60_000 } as const;
 
-export type AdminSearchType = "companies" | "users" | "orders";
+/**
+ * ADM-1 (PLA-02) : le super-administrateur ne cherche plus les commandes ; il ne voit pas les opérations
+ * courantes des entreprises (commandes, clients).
+ */
+export type AdminSearchType = "companies" | "users";
 
 export const ADMIN_SEARCH_GROUPS: ReadonlyArray<{ type: AdminSearchType; label: string }> = [
   { type: "companies", label: "Entreprises" },
   { type: "users", label: "Utilisateurs" },
-  { type: "orders", label: "Commandes" },
 ];
 
 export type AdminSearchItem = {
@@ -102,12 +104,6 @@ export function adminSearchQueries(q: string) {
         company: { select: { id: true, name: true } },
       },
     },
-    orders: {
-      where: { AND: everyToken(tokens, ["reference"]) },
-      orderBy: [{ createdAt: "desc" as const }, { id: "asc" as const }],
-      take,
-      select: { id: true, reference: true, status: true, company: { select: { id: true, name: true } } },
-    },
   };
 }
 
@@ -122,7 +118,6 @@ type UserRow = {
   role: { systemRole: SystemRole };
   company: { id: string; name: string } | null;
 };
-type OrderRow = { id: string; reference: string; status: string; company: { id: string; name: string } };
 
 const COMPANY_STATUS: Record<string, string> = { ACTIVE: "Active", INACTIVE: "Inactive", SUSPENDED: "Suspendue", TRIAL: "Essai" };
 
@@ -156,24 +151,11 @@ export function toUserItem(row: UserRow): AdminSearchItem {
   };
 }
 
-/** Commande : aucune page plateforme ne montre une commande, on ouvre la fiche de son entreprise. */
-export function toOrderItem(row: OrderRow): AdminSearchItem {
-  return {
-    id: row.id,
-    type: "orders",
-    title: row.reference,
-    detail: row.company.name,
-    badge: ORDER_STATUS_LABELS[row.status as keyof typeof ORDER_STATUS_LABELS] ?? null,
-    href: `/companies/${encodeURIComponent(row.company.id)}`,
-  };
-}
-
 type Args = Record<string, unknown>;
 
 export type AdminSearchDatabase = {
   company: { findMany: (args: Args) => Promise<CompanyRow[]> };
   user: { findMany: (args: Args) => Promise<UserRow[]> };
-  order: { findMany: (args: Args) => Promise<OrderRow[]> };
 };
 
 async function readGroup<T>(
@@ -198,7 +180,6 @@ export async function searchPlatform(
   const groups = await Promise.all([
     readGroup("companies", () => db.company.findMany(queries.companies), toCompanyItem),
     readGroup("users", () => db.user.findMany(queries.users), toUserItem),
-    readGroup("orders", () => db.order.findMany(queries.orders), toOrderItem),
   ]);
   return { q: query.q, groups };
 }

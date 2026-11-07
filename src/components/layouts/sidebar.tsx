@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUIStore } from "@/stores/ui.store";
 import { APP_NAME } from "@/lib/constants";
+import { CompanyBrand } from "@/components/brand/company-brand";
 import { isNavItemActive } from "@/lib/navigation/is-nav-item-active";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { groupNavItems } from "@/lib/navigation/group-nav-items";
@@ -206,6 +207,9 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
           />
         </button>
       </div>
+
+      {/* PLA-03 : entreprise de l'administrateur (nom et logo). */}
+      {!sidebarCollapsed ? <CompanyBrand href="/dashboard" compact className="mx-3 mt-3" /> : null}
 
       <ScrollArea className={cn("flex-1 px-3", premium ? "py-3" : "py-4")}>
         <nav aria-label="Navigation principale" className={cn("space-y-1", premium && "space-y-0.5")}>

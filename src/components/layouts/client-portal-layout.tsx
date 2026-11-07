@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeMenuItem, ThemeToggle } from "@/components/theme/theme-toggle";
+import { CompanyBrand } from "@/components/brand/company-brand";
 import { PortalNotificationsBell } from "@/features/client-portal/portal-notifications-bell";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
@@ -132,7 +133,8 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       innerClassName="py-1.5"
       className={overlay ? "pointer-events-auto" : undefined}
     >
-      <AppleNavbarBrand href="/portal" tone="light" />
+      {/* PLA-03 : logo et nom de la boulangerie du client (Annona en repli). */}
+      {user?.company?.name ? <CompanyBrand href="/portal" className="max-w-[55vw]" /> : <AppleNavbarBrand href="/portal" tone="light" />}
 
       <AppleNavbarLinks
         ariaLabel="Navigation de l’espace client"

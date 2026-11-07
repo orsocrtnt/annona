@@ -1,6 +1,25 @@
 import { NextResponse } from "next/server";
 import { getCompanyId, requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { deleteUserByAdmin } from "@/domains/user/user.service";
+import { updateCompanyAccount } from "@/domains/user/account-admin.service";
+import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
+import { requireCompanyAdmin } from "@/lib/api/tenant-auth";
+import { updateAccountSchema } from "@/lib/validations/company-admin";
+
+/**
+ * ADM-01 : modifier un compte de l'entreprise (nom, téléphone, rôle, client rattaché), le désactiver
+ * (`active: false` : connexion et API refusées) ou le réactiver. Compte d'une autre entreprise : 404.
+ */
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  return withApiHandler(async () => {
+    const guard = await requireCompanyAdmin("users:update");
+    if ("error" in guard) return guard.error;
+    const { id } = await params;
+    const input = updateAccountSchema.parse(await readJsonBody(request));
+    const data = await updateCompanyAccount({ companyId: guard.actor.companyId, userId: guard.actor.user.id }, id, input);
+    return NextResponse.json({ data, success: true });
+  });
+}
 
 export async function DELETE(
   _request: Request,
@@ -45,7 +64,7 @@ export async function DELETE(
       CANNOT_DELETE_SELF: "Vous ne pouvez pas supprimer votre propre compte.",
       ROLE_NOT_DELETABLE: "Ce rôle ne peut pas être supprimé depuis cette page.",
       DRIVER_HAS_ACTIVE_DELIVERIES:
-        "Ce livreur a encore une mission active. Réaffectez ou terminez ses missions avant de le supprimer.",
+        "Ce livreur a encore une tournée en cours. Réattribuez ou terminez ses tournées avant de le supprimer.",
     };
 
     return NextResponse.json(

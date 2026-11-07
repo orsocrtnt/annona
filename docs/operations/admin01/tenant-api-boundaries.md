@@ -21,8 +21,11 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 | src/app/api/invoices/[id]/pdf/route.ts | GET | invoices:read | ADMIN |
 | src/app/api/operations/jobs/route.ts | GET | settings:read | ADMIN |
 | src/app/api/operations/jobs/route.ts | POST | settings:read | ADMIN |
+| src/app/api/users/[id]/route.ts | PATCH | aucun | aucun |
 | src/app/api/users/[id]/route.ts | DELETE | users:delete | ADMIN |
 <!-- TENANT_API_BOUNDARIES_END -->
+
+Comptes (ADM-1, 7 novembre 2026) : `PATCH /api/users/[id]` (modifier, désactiver, réactiver un compte) passe par `requireCompanyAdmin("users:update")` (garde d'entreprise de `tenant-auth.ts`, rôle `ADMIN`, entreprise de la session) ; un compte d'une autre entreprise est introuvable (404). Le critère 10 est vérifié pour toutes les routes par `tests/adm1-criterion10-isolation.test.ts`.
 
 Logo d'entreprise (2026-10-27) : `GET /api/company/logo` n'exige qu'une session (`requireAuth`), car l'équipe et les clients affichent le logo de leur propre entreprise sur les factures. L'entreprise vient toujours de la session (`getCompanyId`), jamais d'un paramètre ; la réponse ne contient que l'image ou `{ hasLogo }`. L'envoi et le retrait restent réservés à `settings:update` et au rôle `ADMIN`.
 

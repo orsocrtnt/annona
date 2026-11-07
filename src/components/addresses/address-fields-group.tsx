@@ -19,6 +19,10 @@ interface AddressFieldsGroupProps {
   postalCodeError?: string;
   required?: boolean;
   instructions?: React.ReactNode;
+  /** ADM-1 : position trouvée par le géocodage (`precise` : adresse choisie dans la liste). */
+  onCoordinates?: (coords: { latitude: number; longitude: number }, precise: boolean) => void;
+  /** Le parent affiche sa propre carte (position modifiable) : pas d'aperçu ici. */
+  hidePreview?: boolean;
 }
 
 export function AddressFieldsGroup({
@@ -31,6 +35,8 @@ export function AddressFieldsGroup({
   postalCodeError,
   required,
   instructions,
+  onCoordinates,
+  hidePreview = false,
 }: AddressFieldsGroupProps) {
   const listId = useId();
   const addressInputId = useId();
@@ -43,6 +49,11 @@ export function AddressFieldsGroup({
   const [numberUnverified, setNumberUnverified] = useState(false);
 
   const { suggestions, loading } = useAddressSearch(values.address, open);
+  // Dernier rappel du parent, lu par l'effet de géocodage sans le relancer.
+  const onCoordinatesRef = useRef(onCoordinates);
+  useEffect(() => {
+    onCoordinatesRef.current = onCoordinates;
+  }, [onCoordinates]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -85,6 +96,7 @@ export function AddressFieldsGroup({
         const first = json.data?.[0];
         if (first) {
           setPreviewCoords({ lat: first.latitude, lng: first.longitude });
+          onCoordinatesRef.current?.({ latitude: first.latitude, longitude: first.longitude }, false);
         }
       } catch {
         if (!cancelled) setPreviewCoords(null);
@@ -105,6 +117,7 @@ export function AddressFieldsGroup({
       postalCode: suggestion.postalCode,
     });
     setPreviewCoords({ lat: suggestion.latitude, lng: suggestion.longitude });
+    onCoordinates?.({ latitude: suggestion.latitude, longitude: suggestion.longitude }, true);
     setConfirmedSelection(true);
     setNumberUnverified(Boolean(suggestion.numberUnverified));
     setOpen(false);
@@ -220,7 +233,7 @@ export function AddressFieldsGroup({
 
       {instructions}
 
-      {previewCoords && (
+      {previewCoords && !hidePreview && (
         <AddressPreviewMap
           latitude={previewCoords.lat}
           longitude={previewCoords.lng}

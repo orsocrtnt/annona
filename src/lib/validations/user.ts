@@ -15,6 +15,12 @@ export const createUserSchema = z.object({
   lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   email: z.string().email("Format d'email invalide"),
   roleSlug: z.enum(CREATABLE_ROLE_SLUGS, { message: "Rôle invalide" }),
+  /** ADM-1 : client représenté, obligatoire pour un compte client (MERCHANT), interdit sinon. */
+  merchantId: z.string().trim().min(1).max(64).nullable().optional(),
+  phone: z.string().trim().max(40).optional(),
+}).refine((value) => value.roleSlug !== "merchant" || Boolean(value.merchantId), {
+  message: "Choisissez le client que ce compte représente.",
+  path: ["merchantId"],
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

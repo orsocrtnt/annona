@@ -44,13 +44,18 @@ const PLATFORM_WRITES: Record<string, string[]> = {
   // Couper / rétablir l'accès d'un compte ou d'une entreprise (demande du propriétaire, 5 novembre 2026).
   "src/app/api/admin/users/[id]/access/route.ts": ["POST"],
   "src/app/api/admin/companies/[id]/access/route.ts": ["POST"],
+  // ADM-1 (PLA-02) : créer une entreprise avec son premier administrateur, puis la configurer.
+  "src/app/api/admin/companies/create/route.ts": ["POST"],
+  "src/app/api/admin/companies/[id]/config/route.ts": ["GET", "PATCH"],
 };
 
 test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors coupure d'accès", () => {
   const routes = filesUnder("src/app/api/admin").filter((file) => file.endsWith("route.ts"));
   assert.deepEqual(routes, [
     "src/app/api/admin/companies/[id]/access/route.ts",
+    "src/app/api/admin/companies/[id]/config/route.ts",
     "src/app/api/admin/companies/[id]/route.ts",
+    "src/app/api/admin/companies/create/route.ts",
     "src/app/api/admin/companies/route.ts",
     "src/app/api/admin/home/route.ts",
     "src/app/api/admin/operation-jobs/route.ts",

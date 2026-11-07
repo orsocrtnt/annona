@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/features/client-portal/utils";
 import { AlertTriangle } from "lucide-react";
 import type { TableColumn } from "@/types";
+import { fr } from "@/lib/i18n/fr";
 
 const companyColumns: TableColumn<Record<string, unknown>>[] = [
   { key: "name", header: "Entreprise", sortable: true },
@@ -23,7 +24,8 @@ const companyColumns: TableColumn<Record<string, unknown>>[] = [
     ),
   },
   { key: "users", header: "Utilisateurs", sortable: true, hideOnMobile: true },
-  { key: "deliveries", header: "Livraisons", sortable: true, hideOnMobile: true },
+  // ADM-1 : la colonne compte les commandes de l'entreprise (tous statuts), pas des livraisons.
+  { key: "deliveries", header: fr.platform.orders, sortable: true, hideOnMobile: true },
 ];
 
 /** Entreprises récentes et compteurs généraux de la vue d'ensemble (lecture `/api/admin/overview`). */

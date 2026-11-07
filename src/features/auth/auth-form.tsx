@@ -209,7 +209,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
       subtitle: isClient
         ? "Suivez vos commandes et livraisons en temps réel"
         : isDriver
-          ? "Accédez à vos missions du jour et à la navigation"
+          ? "Accédez à votre tournée du jour et à la navigation"
           : "Entreprise, client, livreur ou administrateur : votre espace s’ouvre tout seul.",
     },
     "forgot-password": {

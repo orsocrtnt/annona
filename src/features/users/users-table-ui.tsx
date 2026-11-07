@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
 import type { SystemRole } from "@prisma/client";
 
 export const USER_TABLE_COL = {
-  name: "w-[7.5rem] max-w-[7.5rem]",
+  name: "w-[10rem] max-w-[10rem]",
   email: "w-[9.5rem] max-w-[9.5rem]",
   role: "w-[7.5rem] max-w-[7.5rem]",
-  status: "w-[4.5rem]",
-  actions: "w-16 px-1",
+  status: "w-[5.5rem]",
+  actions: "w-32 px-1",
 } as const;
 
 export function TableUserName({ name }: { name: string }) {
@@ -49,7 +49,7 @@ export function TableUserStatus({ status }: { status: string }) {
       variant={isActive ? "success" : "secondary"}
       className="whitespace-nowrap px-1.5 py-0 text-[10px]"
     >
-      {isActive ? "Actif" : status === "PENDING_VERIFICATION" ? "Invité" : status}
+      {isActive ? "Actif" : status === "PENDING_VERIFICATION" ? "Invité" : status === "INACTIVE" ? "Désactivé" : status === "SUSPENDED" ? "Suspendu" : status}
     </Badge>
   );
 }

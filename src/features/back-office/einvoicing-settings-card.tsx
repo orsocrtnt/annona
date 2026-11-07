@@ -15,7 +15,7 @@ import { toast } from "sonner";
 type Field = { key: string; group: "identity" | "einvoicing"; label: string; placeholder?: string; wide?: boolean };
 
 const FIELDS: Field[] = [
-  { key: "legalName", group: "identity", label: "Raison sociale", placeholder: "Coursiers Express SAS", wide: true },
+  { key: "legalName", group: "identity", label: "Raison sociale", placeholder: "Boulangerie Exemple SAS", wide: true },
   { key: "siren", group: "identity", label: "SIREN (obligatoire)", placeholder: "9 chiffres" },
   { key: "siret", group: "identity", label: "SIRET (siège)", placeholder: "14 chiffres" },
   { key: "billingAddress", group: "identity", label: "Adresse de facturation (obligatoire)", wide: true },

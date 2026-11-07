@@ -54,7 +54,7 @@ export function DriverPushSettings() {
       {availability === "ready" ? (
         <>
           <p className="pt-1 text-sm text-muted-foreground">
-            {enabled ? "Vous êtes prévenu sur ce téléphone quand une mission vous est confiée." : "Soyez prévenu sur ce téléphone quand une mission vous est confiée."}
+            {enabled ? "Vous êtes prévenu sur ce téléphone quand une tournée vous est attribuée." : "Soyez prévenu sur ce téléphone quand une tournée vous est attribuée."}
           </p>
           <Button type="button" variant="outline" className="mt-3 min-h-11 w-full" disabled={busy} onClick={toggle}>
             {enabled ? <BellOff className="mr-2 h-4 w-4" aria-hidden="true" /> : <Bell className="mr-2 h-4 w-4" aria-hidden="true" />}

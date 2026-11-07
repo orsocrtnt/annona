@@ -13,7 +13,7 @@ export const LOGIN_SPACES: Record<
     context: "company",
     href: "/login?espace=entreprise",
     title: "Entreprise",
-    description: "Commandes, dispatch, flotte et facturation.",
+    description: "Commandes, tournées, clients et facturation.",
   },
   client: {
     context: "client",
@@ -25,7 +25,7 @@ export const LOGIN_SPACES: Record<
     context: "driver",
     href: "/login/driver",
     title: "Livreur",
-    description: "Missions du jour et navigation.",
+    description: "Tournée du jour et navigation.",
   },
 };
 

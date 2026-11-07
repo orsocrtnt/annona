@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Loader2, Package, Search, User } from "lucide-react";
+import { Building2, Loader2, Search, User } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useAdminSearch } from "@/features/admin/hooks";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ const DEBOUNCE_MS = 250;
 const ICONS: Record<AdminSearchType, React.ComponentType<{ className?: string }>> = {
   companies: Building2,
   users: User,
-  orders: Package,
 };
 
 /** Même normalisation que le serveur : espaces regroupés, bords retirés. */

@@ -15,7 +15,8 @@ async function fetchLogoMeta(): Promise<{ hasLogo: boolean }> {
  * Logo de l'entreprise de l'utilisateur connecté (équipe ou client). On ne demande l'image
  * que si elle existe.
  */
-export function useCompanyLogo() {
-  const meta = useQuery({ queryKey: COMPANY_LOGO_QUERY_KEY, queryFn: fetchLogoMeta, staleTime: 60_000 });
+export function useCompanyLogo(enabled = true) {
+  // Sans entreprise (super-administrateur), aucun appel : l'API répondrait 400.
+  const meta = useQuery({ queryKey: COMPANY_LOGO_QUERY_KEY, queryFn: fetchLogoMeta, staleTime: 60_000, enabled });
   return { hasLogo: meta.data?.hasLogo === true, src: "/api/company/logo" };
 }

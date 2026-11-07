@@ -11,6 +11,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAdminCompanies } from "@/features/admin/hooks";
+import { CreateCompanyDialog } from "@/features/admin/company/create-company-dialog";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 
 const STATUSES = [
@@ -39,9 +40,12 @@ export default function CompaniesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Entreprises</h1>
-        <p className="mt-1 text-sm text-muted-foreground max-md:hidden">Liste en lecture seule des entreprises de la plateforme.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Entreprises</h1>
+          <p className="mt-1 text-sm text-muted-foreground max-md:hidden">Entreprises clientes de la plateforme : création, configuration, suspension.</p>
+        </div>
+        <CreateCompanyDialog />
       </div>
       <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); setQ(draftQuery.trim()); setPage(1); }}>
         <label className="grid gap-1 text-sm">

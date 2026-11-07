@@ -123,12 +123,21 @@ export async function listUsersForCompany(companyId: string) {
     where: { companyId },
     orderBy: { createdAt: "desc" },
     take: COMPANY_USERS_TAKE,
+    include: { merchant: { select: { id: true, name: true, tradeName: true } } },
   });
   const roles = await fetchRolesByIds(users.map((user) => user.roleId));
   return users.map((user) => {
     const role = roles.get(user.roleId);
     if (!role) throw new Error("ROLE_NOT_FOUND");
-    return { ...user, role };
+    // Ni réglages ni identifiant d'authentification dans la liste renvoyée au navigateur.
+    const rest = { ...user } as Partial<typeof user>;
+    delete rest.settings;
+    delete rest.authId;
+    return {
+      ...rest,
+      merchant: user.merchant ? { id: user.merchant.id, name: user.merchant.tradeName || user.merchant.name } : null,
+      role,
+    };
   });
 }
 
@@ -150,7 +159,7 @@ export async function listCompanyDrivers(companyId: string) {
   });
 }
 
-/** Comptes qu'un administrateur ouvre dans son entreprise (le lien client ↔ commerçant viendra avec ADM-1). */
+/** Comptes qu'un administrateur ouvre dans son entreprise ; un compte client est rattaché à un client (ADM-1). */
 const CREATABLE_SYSTEM_ROLES = ["ADMIN", "BAKER", "DRIVER", "MERCHANT"] as const;
 
 async function findCreatableRoleBySlug(slug: string) {
@@ -174,6 +183,36 @@ async function findCreatableRoleBySlug(slug: string) {
   };
 }
 
+/**
+ * Compte d'authentification d'un nouvel utilisateur (ADM-01, PLA-02) : invitation Supabase par e-mail
+ * quand les liens sont configurés (`AUTH_EMAIL_LINKS_ENABLED`) ; sinon compte créé en attente, sans mot
+ * de passe ni e-mail : la personne choisira son mot de passe par « Mot de passe oublié » une fois l'envoi
+ * activé. Erreurs : EMAIL_EXISTS, AUTH_RATE_LIMITED, INVITATION_FAILED.
+ */
+export async function inviteAuthUser(email: string, metadata: { first_name: string; last_name: string }) {
+  const supabase = createAdminClient();
+  let redirectTo: string | null = null;
+  try {
+    redirectTo = getPasswordLinkRedirect();
+  } catch (error) {
+    if (!(error instanceof Error && error.message === "AUTH_EMAIL_NOT_CONFIGURED")) throw error;
+  }
+  const { data, error } = redirectTo
+    ? await supabase.auth.admin.inviteUserByEmail(email, { redirectTo, data: metadata })
+    : await supabase.auth.admin.createUser({ email, email_confirm: false, user_metadata: metadata });
+  if (error || !data.user) {
+    const message = error?.message?.toLowerCase() ?? "";
+    if (message.includes("already") || message.includes("exists") || message.includes("registered")) throw new Error("EMAIL_EXISTS");
+    throw new Error(error?.status === 429 ? "AUTH_RATE_LIMITED" : "INVITATION_FAILED");
+  }
+  return { authId: data.user.id, invited: Boolean(redirectTo) };
+}
+
+/** Retire un compte d'authentification créé pour rien (création interrompue). */
+export async function removeAuthUser(authId: string) {
+  await createAdminClient().auth.admin.deleteUser(authId);
+}
+
 export async function resolveCompanyIdForUserCreation(
   adminCompanyId: string | null | undefined
 ): Promise<string> {
@@ -194,39 +233,37 @@ export async function createUserByAdmin(
     throw new Error("INVALID_ROLE");
   }
 
+  // ADM-1 : un compte client représente un client de la même entreprise ; aucun autre rôle n'en a.
+  let merchantId: string | null = null;
+  if (role.systemRole === "MERCHANT") {
+    const merchant = input.merchantId
+      ? await prisma.merchant.findFirst({ where: { id: input.merchantId, companyId }, select: { id: true } })
+      : null;
+    if (!merchant) throw new Error("MERCHANT_REQUIRED");
+    merchantId = merchant.id;
+  } else if (input.merchantId) {
+    throw new Error("MERCHANT_NOT_ALLOWED");
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new Error("EMAIL_EXISTS");
 
-  const redirectTo = getPasswordLinkRedirect();
-  const supabase = createAdminClient();
-
-  const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(input.email, {
-    redirectTo,
-    data: {
-      first_name: input.firstName,
-      last_name: input.lastName,
-    },
-  });
-
-  if (authError || !authData.user) {
-    const msg = authError?.message?.toLowerCase() ?? "";
-    if (msg.includes("already") || msg.includes("exists") || msg.includes("registered")) {
-      throw new Error("EMAIL_EXISTS");
-    }
-    throw new Error(authError?.status === 429 ? "AUTH_RATE_LIMITED" : "INVITATION_FAILED");
-  }
+  // Invitation par e-mail (Supabase Auth) quand les liens sont configurés ; sinon compte créé en attente.
+  const account = await inviteAuthUser(input.email, { first_name: input.firstName, last_name: input.lastName });
 
   let user;
   try {
     user = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
-          authId: authData.user.id,
+          authId: account.authId,
           email: input.email,
           firstName: input.firstName,
           lastName: input.lastName,
           roleId: role.id,
           companyId,
+          merchantId,
+          phone: input.phone?.trim() || null,
           status: "PENDING_VERIFICATION",
         },
         include: { company: true },
@@ -249,7 +286,7 @@ export async function createUserByAdmin(
         systemRole: role.systemRole,
       },
     },
-    invitationSent: true,
+    invitationSent: account.invited,
   };
 }
 

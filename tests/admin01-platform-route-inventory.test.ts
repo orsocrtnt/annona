@@ -5,7 +5,9 @@ import test from "node:test";
 
 const expected = [
   "companies/[id]/access/route.ts",
+  "companies/[id]/config/route.ts",
   "companies/[id]/route.ts",
+  "companies/create/route.ts",
   "companies/route.ts",
   "home/route.ts",
   "operation-jobs/route.ts",

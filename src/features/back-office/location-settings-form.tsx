@@ -49,7 +49,7 @@ export function LocationSettingsForm() {
           <div>
             <CardTitle className="text-base">Suivi GPS livreurs</CardTitle>
             <CardDescription>
-              Fréquence adaptative type Uber : plus rapide en mission, plus espacée au repos.
+              Fréquence adaptative : plus rapide pendant une tournée, plus espacée au repos.
               Le livreur doit garder l&apos;app ouverte dans Safari pour que le suivi fonctionne.
             </CardDescription>
           </div>
@@ -58,7 +58,7 @@ export function LocationSettingsForm() {
       <CardContent className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="loc-active">Mission active (secondes)</Label>
+            <Label htmlFor="loc-active">Tournée en cours (secondes)</Label>
             <Input
               id="loc-active"
               type="number"
@@ -73,7 +73,7 @@ export function LocationSettingsForm() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Quand une livraison est assignée, en cours d&apos;achat ou en route (~4–5 s chez Uber).
+              Pendant une tournée démarrée (4 à 5 s conseillées).
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export function LocationSettingsForm() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Livreur en ligne sans mission active (~10–30 s chez Uber).
+              Livreur connecté sans tournée en cours (10 à 30 s conseillées).
             </p>
           </div>
 
@@ -113,7 +113,7 @@ export function LocationSettingsForm() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Fréquence d&apos;actualisation de la carte dispatch livreurs.
+              Fréquence d&apos;actualisation de la carte de suivi des tournées.
             </p>
           </div>
 

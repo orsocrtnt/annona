@@ -237,7 +237,8 @@ test("ADMIN-ESPACE recherche : requêtes bornées à 6 lignes, sans champ sensib
   });
   assert.deepEqual(Object.keys(queries.users.select).sort(), ["company", "email", "firstName", "id", "lastName", "role"]);
   assert.deepEqual(Object.keys(queries.companies.select).sort(), ["id", "name", "status"]);
-  assert.deepEqual(Object.keys(queries.orders.select).sort(), ["company", "id", "reference", "status"]);
+  // ADM-1 (PLA-02) : plus aucune recherche de commande côté plateforme.
+  assert.equal(Object.hasOwn(queries, "orders"), false);
 });
 
 test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et groupe illisible", async () => {
@@ -255,12 +256,11 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
         { id: "u2", firstName: "Root", lastName: "Dupré Ä", email: "root@annona.fr", role: { systemRole: "SUPER_ADMIN" as const }, company: null },
       ],
     },
-    order: { findMany: async () => { throw new Error("down"); } },
   };
   const result = await searchPlatform({ q: "acme" }, db);
   assert.equal(result.q, "acme");
-  assert.deepEqual(result.groups.map((group) => group.type), ["companies", "users", "orders"]);
-  const [companies, users, orders] = result.groups;
+  assert.deepEqual(result.groups.map((group) => group.type), ["companies", "users"]);
+  const [companies, users] = result.groups;
   assert.equal(companies!.items?.length, 5);
   assert.equal(companies!.hasMore, true);
   assert.equal(companies!.items?.[0]?.badge, null);
@@ -270,7 +270,6 @@ test("ADMIN-ESPACE recherche : groupes de 5, « plus de résultats », liens et 
   assert.equal(users!.items?.[0]?.href, "/companies/c1");
   assert.equal(users!.items?.[0]?.detail, "ada@acme.fr · Acme");
   assert.equal(users!.items?.[1]?.href, "/admin/users?q=Dupr%C3%A9%20%C3%84");
-  assert.deepEqual(orders, { type: "orders", label: "Commandes", items: null, hasMore: false });
   for (const group of result.groups) {
     for (const item of group.items ?? []) {
       assert.deepEqual(Object.keys(item).sort(), ["badge", "detail", "href", "id", "title", "type"]);

@@ -4,6 +4,11 @@ import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createUserSchema } from "@/lib/validations/user";
 import { createUserByAdmin, listUsersForCompany } from "@/domains/user/user.service";
 
+function missingMerchant(body: unknown) {
+  const value = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  return value.roleSlug === "merchant" && !value.merchantId;
+}
+
 export async function GET() {
   const auth = await requireStaffRole("users:read");
   if ("error" in auth) return auth.error;
@@ -44,7 +49,8 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Données invalides" },
+      // Message fixe ; seul le client manquant d'un compte client est précisé (ADM-1).
+      { error: missingMerchant(body) ? "Choisissez le client que ce compte représente." : "Données invalides" },
       { status: 400 }
     );
   }
@@ -61,7 +67,9 @@ export async function POST(request: Request) {
         data: result.user,
         invitationSent: result.invitationSent,
         success: true,
-        message: "Invitation envoyée. Le destinataire choisira son mot de passe.",
+        message: result.invitationSent
+          ? "Invitation envoyée. Le destinataire choisira son mot de passe."
+          : "Compte créé, en attente : l'e-mail d'invitation n'est pas configuré. La personne pourra choisir son mot de passe avec « Mot de passe oublié » une fois l'envoi activé.",
       },
       { status: 201 }
     );
@@ -75,6 +83,8 @@ export async function POST(request: Request) {
       EMAIL_EXISTS: 409,
       INVALID_ROLE: 400,
       COMPANY_REQUIRED: 400,
+      MERCHANT_REQUIRED: 400,
+      MERCHANT_NOT_ALLOWED: 400,
     };
     const labels: Record<string, string> = {
       AUTH_EMAIL_NOT_CONFIGURED: CONFIG_MESSAGES.INVITATION_EMAIL_NOT_CONFIGURED,
@@ -84,6 +94,8 @@ export async function POST(request: Request) {
       EMAIL_EXISTS: "Cet email est déjà utilisé.",
       INVALID_ROLE: "Rôle non autorisé.",
       COMPANY_REQUIRED: "Aucune entreprise associée. Créez d'abord une entreprise ou reconnectez-vous.",
+      MERCHANT_REQUIRED: "Choisissez le client que ce compte représente.",
+      MERCHANT_NOT_ALLOWED: "Seul un compte client se rattache à un client.",
     };
 
 

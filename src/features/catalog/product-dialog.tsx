@@ -15,6 +15,7 @@ import type { CategoryRow, ProductRow } from "@/features/catalog/api";
 import { useProductPhoto, useSaveProduct } from "@/features/catalog/hooks";
 import { MerchantPricesSection } from "@/features/catalog/merchant-prices-section";
 import { ProductThumb } from "@/features/catalog/product-thumb";
+import { useCompanySettings } from "@/features/settings/hooks";
 import { fr } from "@/lib/i18n/fr";
 import { basisPointsToInput, centsToInput } from "@/lib/format/money";
 import { parseEurosToCents, parsePercentToBasisPoints } from "@/lib/validations/catalog";
@@ -56,6 +57,7 @@ function initialState(product: ProductRow | null, defaultCategoryId: string | nu
 
 /** ADM-02 : fiche produit (nom, photo, unité libre, prix de base, TVA, actif, catégorie) et ADM-03. */
 export function ProductDialog({ open, onOpenChange, product, categories, defaultCategoryId, onCreated }: ProductDialogProps) {
+  const companySettings = useCompanySettings(true);
   const [form, setForm] = useState<FormState>(() => initialState(product, defaultCategoryId));
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const save = useSaveProduct();
@@ -147,8 +149,12 @@ export function ProductDialog({ open, onOpenChange, product, categories, default
               </Select>
             </FormField>
             <FormField label={t.unit} hint={t.unitHint} error={errors.unit} required>
-              <Input value={form.unit} onChange={(event) => set("unit", event.target.value)} maxLength={40} />
+              <Input value={form.unit} onChange={(event) => set("unit", event.target.value)} maxLength={40} list="company-units" />
             </FormField>
+            {/* PLA-04 : unités proposées dans les paramètres de l'entreprise ; la saisie reste libre. */}
+            <datalist id="company-units">
+              {(companySettings.data?.units ?? []).map((unit) => <option key={unit} value={unit} />)}
+            </datalist>
             <FormField label={t.basePrice} error={errors.basePrice} required>
               <Input inputMode="decimal" value={form.basePrice} onChange={(event) => set("basePrice", event.target.value)} placeholder="1,10" />
             </FormField>
