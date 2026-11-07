@@ -21,16 +21,18 @@
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 6 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 7 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge)._
 
 **1. Toi**
 - Répondre aux questions ouvertes du cahier des charges quand tu les as (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
 - Fournir les mentions légales des factures (SIREN, TVA, forme juridique et capital, RCS, pénalités, escompte) et une clé Resend pour les vrais envois (ACCES-1).
+- Mettre à jour le garde-fou `npm run env2:verify-dev`, qui attend encore l'identifiant de `tutelliv-dev` (RECETTE-V1, N4).
+- Décider si l'outre-mer est en V1 (fuseau de l'entreprise sur les écrans boulanger et admin, RECETTE-V1, N3).
 
 **2. Claude (en autonomie, dans l'ordre)**
-- Faits les 6 et 7 novembre : NET-1 (ancien produit retiré), SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix), CMD-1 (commande du client, recopie chronométrée à 33 s), LOCK-1 (verrouillage à 17h, récurrentes, tournées brouillon, corrections tracées), BOU-1 (espace boulanger), TOUR-1 (tournées, application livreur, hors réseau) FACT-1 (factures par période, PDF, règlements) et ADM-1 (clients, comptes, paramètres, super-admin, isolation). NOTIF-1 codée, attend la clé Resend pour un envoi réel. MOBILE-1 : partie sans comptes faite, la suite dépend de toi. En cours : première recette des dix critères dans le navigateur (RECETTE-V1).
+- Faits les 6 et 7 novembre : NET-1 (ancien produit retiré), SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix), CMD-1 (commande du client, recopie chronométrée à 33 s), LOCK-1 (verrouillage à 17h, récurrentes, tournées brouillon, corrections tracées), BOU-1 (espace boulanger), TOUR-1 (tournées, application livreur, hors réseau) FACT-1 (factures par période, PDF, règlements) et ADM-1 (clients, comptes, paramètres, super-admin, isolation). NOTIF-1 codée, attend la clé Resend pour un envoi réel. MOBILE-1 : partie sans comptes faite, la suite dépend de toi. RECETTE-V1 : les dix critères passent dans le navigateur (7 novembre), deux défauts corrigés ; en cours : correction de N1 (écran livreur hors réseau). Reste sur téléphones après MOBILE-1.
 
 **3. Attente extérieure**
 - Applications mobiles (MOBILE-1) : hébergement UE, comptes Apple Developer et Google Play, Firebase, composant iOS de Xcode ou vrais téléphones (liste ordonnée dans la tâche).
@@ -97,3 +99,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   Rejouer les dix critères de la section 10 du cahier des charges sur `annona-dev`, dans le navigateur, avec un rapport et des captures.
 
   Terminé quand : les dix critères passent et le rapport est dans `docs/rapports/`.
+
+  7 novembre 2026, passage navigateur fait (commits `b7369b6`, `d6bca8e`, `eb570bf`, sans push ni migration). Une journée de bout en bout sur build de production local, entreprise d'essai « E2E-V1 Boulangerie » créée puis supprimée (démo intacte), heure limite réglée par l'admin dans Paramètres au lieu de `?now=`. Les dix critères passent : recopie 10,9 à 13,6 s (1) ; modification refusée 1,7 s après l'heure limite, 409 aussi par l'API et pour l'annulation (2) ; prix client 1,05 € contre 1,20 € (3) ; récurrentes générées, remplacées par la commande manuelle (4) ; totaux boulanger égaux à la base (5) ; ordre modifié par l'admin vu par le livreur (6) ; Plans en 2 appuis, Waze (7) ; « Livré » hors réseau puis synchro (8) ; facture 36,20 → 32,00 € HT après manquant (9) ; 404 entre entreprises (10). Aussi : NOT-01/02/03 dans la cloche, sombre tablette sans débordement. Rapport : `docs/rapports/2026-11-07-recette-v1-navigateur.md`, spec `tests/e2e/recette-v1.spec.ts` (12/12, 6,7 min), captures `outputs/recette-v1/` (non versionnées).
+  Défauts corrigés : Paramètres enregistrables avant chargement, qui écrasaient l'heure limite (`b7369b6`) ; écran livreur blanc après rechargement hors réseau (`d6bca8e`, test dans `tests/mobile1-native.test.ts`).
+  Défauts ouverts : N1 (majeur) l'écran livreur revient à « en cours » si le réseau tombe juste après un « Livré » envoyé (serveur juste) : correction lancée ; N2 (mineur) retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone ; N3 (décision) boulanger et admin calculent « Aujourd'hui » à l'heure de Paris, faux pour l'outre-mer ; N4 (outillage) `npm run env2:verify-dev` attend encore l'identifiant `tutelliv-dev` : modification d'un garde-fou, au propriétaire.
+  Vérifications de l'orchestrateur : `npm run check` relancé, sortie 0, 755/755 ; rapport et une capture relus.
+  Reste : N1 ; critères 1, 7, 8 et notifications natives sur vrais téléphones (après MOBILE-1) ; e-mails réels (clé Resend) ; mentions légales des factures.
