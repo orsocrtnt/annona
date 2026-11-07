@@ -37,6 +37,9 @@ export function CompanySettingsCard() {
 
   const save = (section: "identity" | "ordering" | "units") => (event: React.FormEvent) => {
     event.preventDefault();
+    // Avant le chargement, les champs portent des valeurs par défaut (17:00, Europe/Paris) : les enregistrer
+    // écraserait le fuseau et le délai réels de l'entreprise (RECETTE-V1).
+    if (!settings.data) return;
     const input =
       section === "identity"
         ? { name }
@@ -60,7 +63,7 @@ export function CompanySettingsCard() {
             <FormField label={t.name} className="flex-1">
               <Input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} data-testid="company-name" />
             </FormField>
-            <Button type="submit" variant="outline" loading={update.isPending && update.variables && "name" in update.variables}>{fr.common.save}</Button>
+            <Button type="submit" variant="outline" disabled={!settings.data} loading={update.isPending && update.variables && "name" in update.variables}>{fr.common.save}</Button>
           </form>
         </CardContent>
       </Card>
@@ -91,7 +94,7 @@ export function CompanySettingsCard() {
               <Input type="number" min={0} max={1440} step={5} value={lead} onChange={(event) => setLead(event.target.value)} data-testid="reminder-lead" />
             </FormField>
             <div className="sm:col-span-3">
-              <Button type="submit" variant="brand" loading={update.isPending && update.variables && "cutoffTime" in update.variables} data-testid="ordering-save">
+              <Button type="submit" variant="brand" disabled={!settings.data} loading={update.isPending && update.variables && "cutoffTime" in update.variables} data-testid="ordering-save">
                 {fr.common.save}
               </Button>
             </div>
@@ -109,7 +112,7 @@ export function CompanySettingsCard() {
             <FormField label={t.units} className="flex-1">
               <Input value={units} onChange={(event) => setUnits(event.target.value)} placeholder="pièce, kg, plaque" />
             </FormField>
-            <Button type="submit" variant="outline" loading={update.isPending && update.variables && "units" in update.variables}>{fr.common.save}</Button>
+            <Button type="submit" variant="outline" disabled={!settings.data} loading={update.isPending && update.variables && "units" in update.variables}>{fr.common.save}</Button>
           </form>
         </CardContent>
       </Card>
