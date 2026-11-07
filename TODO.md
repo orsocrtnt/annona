@@ -31,7 +31,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fournir les mentions légales des factures (SIREN, TVA, forme juridique et capital, RCS, pénalités, escompte) et une clé Resend pour les vrais envois (ACCES-1).
 
 **2. Claude (en autonomie, dans l'ordre)**
-- Faits le 6 novembre : NET-1 (ancien produit retiré) SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix) CMD-1 (commande du client, recopie chronométrée à 33 s), LOCK-1 (verrouillage à 17h, récurrentes, tournées brouillon, corrections tracées) BOU-1 (espace boulanger) TOUR-1 (tournées, application livreur, hors réseau) et FACT-1 (factures par période, PDF, règlements). En cours : NOTIF-1 et ADM-1, puis MOBILE-1, RECETTE-V1.
+- Faits les 6 et 7 novembre : NET-1 (ancien produit retiré), SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix), CMD-1 (commande du client, recopie chronométrée à 33 s), LOCK-1 (verrouillage à 17h, récurrentes, tournées brouillon, corrections tracées), BOU-1 (espace boulanger), TOUR-1 (tournées, application livreur, hors réseau) et FACT-1 (factures par période, PDF, règlements). En cours : NOTIF-1 et ADM-1, puis MOBILE-1 et RECETTE-V1.
 
 **3. Attente extérieure**
 - Comptes Apple Developer et Google Play pour publier les applications (MOBILE-1, plus tard).
