@@ -1,8 +1,9 @@
 name: Tâches quotidiennes (préproduction)
 
 # annona.fr tourne en préversion Vercel : les crons de vercel.json ne s'y exécutent
-# pas (ils ne visent que la production Vercel). Ce workflow les porte, avec le même
-# secret que cron-operations.yml, à 6 h UTC comme dans vercel.json.
+# pas (ils ne visent que la production Vercel). Ce workflow porte la facturation des
+# périodes terminées (FACT-1, /api/cron/billing), avec le même secret que
+# cron-operations.yml, à 6 h UTC (7 h ou 8 h à Paris : la veille est terminée).
 on:
   schedule:
     - cron: "0 6 * * *"
@@ -17,7 +18,7 @@ concurrency:
 
 jobs:
   quotidien:
-    name: Récurrences et rapprochement d'abonnements
+    name: Factures des périodes terminées
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: preproduction
@@ -41,28 +42,8 @@ jobs:
           esac
           exit "$missing"
 
-      - name: Générer les commandes récurrentes
-        run: |
-          url="${PREPROD_BASE_URL%/}/api/cron/recurring-orders"
-          args=(--silent --show-error --max-time 70 --output response.json --write-out '%{http_code}'
-            -H "Authorization: Bearer ${PREPROD_CRON_SECRET}")
-          if [ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
-            args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
-          fi
-          # 503 avec hasMore : le lot n'a pas vidé la file, on reprend. Les récurrences sont
-          # idempotentes : un nouvel appel ne regénère pas une échéance déjà traitée.
-          for attempt in 1 2 3 4 5; do
-            status=$(curl "${args[@]}" "$url") || { echo "::error::Appel impossible"; exit 1; }
-            echo "Essai $attempt : HTTP $status"
-            head -c 500 response.json; echo
-            [ "$status" = "200" ] && exit 0
-            grep -q '"hasMore":true' response.json && grep -q '"failed":0' response.json || break
-          done
-          echo "::error::/api/cron/recurring-orders a répondu HTTP $status (401 = secret faux ; 503 = échec ou file non vidée)."
-          exit 1
-
-      - name: Rapprocher les abonnements
-        if: ${{ always() }}
+      # Les commandes récurrentes sont générées au verrouillage (LOCK-1, cron-lock-orders.yml) : plus d'appel ici.
+      - name: Facturer les périodes terminées
         run: |
           url="${PREPROD_BASE_URL%/}/api/cron/billing"
           args=(--silent --show-error --max-time 70 --output response.json --write-out '%{http_code}'
@@ -70,10 +51,14 @@ jobs:
           if [ -n "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
             args+=(-H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}")
           fi
-          status=$(curl "${args[@]}" "$url") || { echo "::error::Appel impossible"; exit 1; }
-          echo "HTTP $status"
-          head -c 500 response.json; echo
-          if [ "$status" != "200" ]; then
-            echo "::error::/api/cron/billing a répondu HTTP $status."
-            exit 1
-          fi
+          # FACT-1 (ADM-10) : 503 avec hasMore = lot non vidé, on reprend. La génération est idempotente :
+          # un nouvel appel ne refacture aucune commande et ne consomme aucun numéro.
+          for attempt in 1 2 3 4 5; do
+            status=$(curl "${args[@]}" "$url") || { echo "::error::Appel impossible"; exit 1; }
+            echo "Essai $attempt : HTTP $status"
+            head -c 500 response.json; echo
+            [ "$status" = "200" ] && exit 0
+            grep -q '"hasMore":true' response.json && grep -q '"failed":0' response.json || break
+          done
+          echo "::error::/api/cron/billing a répondu HTTP $status (401 = secret faux ; 503 = échec ou lot non vidé)."
+          exit 1

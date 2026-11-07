@@ -186,6 +186,12 @@ async function executeJob(job: OperationJob, context: { previouslyAttempted: boo
   const emailWindow = () => jobEmailReplayWindow({ id: job.id, createdAt: job.createdAt, previouslyAttempted: context.previouslyAttempted });
   const freezeContent = jobEmailContentFreezer(job.id);
   if (job.type === "CLIENT_NOTIFICATION") {
+    // FACT-1 : envoi de la facture PDF au commerçant (ADM-10).
+    if (readString(job.payload, "kind") === "INVOICE_EMAIL") {
+      const { deliverInvoiceEmailJob } = await import("@/domains/invoice/invoice-email.service");
+      await deliverInvoiceEmailJob(job.payload, job.jobKey, { replayWindowStart: emailWindow(), freezeContent });
+      return;
+    }
     // DEMO-3 : relance de facture (e-mail au client).
     if (readString(job.payload, "kind") === "INVOICE_REMINDER") {
       const { deliverInvoiceReminderJob } = await import("@/domains/invoice/invoice-reminder.service");

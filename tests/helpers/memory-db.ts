@@ -7,7 +7,7 @@
 type Row = Record<string, unknown>;
 type Where = Record<string, unknown>;
 
-const OPERATORS = new Set(["in", "notIn", "gte", "gt", "lte", "lt", "not", "equals"]);
+const OPERATORS = new Set(["in", "notIn", "gte", "gt", "lte", "lt", "not", "equals", "startsWith"]);
 
 function comparable(value: unknown) {
   return value instanceof Date ? value.getTime() : (value as number | string);
@@ -25,6 +25,7 @@ function matchField(actual: unknown, condition: unknown): boolean {
     if (operator === "in" && !(expected as unknown[]).map(comparable).includes(a)) return false;
     if (operator === "notIn" && (expected as unknown[]).map(comparable).includes(a)) return false;
     if (operator === "equals" && a !== comparable(expected)) return false;
+    if (operator === "startsWith" && !(typeof actual === "string" && actual.startsWith(expected as string))) return false;
     if (operator === "not" && a === comparable(expected)) return false;
     if (operator === "gte" && !(a >= comparable(expected))) return false;
     if (operator === "gt" && !(a > comparable(expected))) return false;
@@ -138,7 +139,7 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
       return Promise.all(arg as Promise<unknown>[]);
     },
   };
-  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation"]) {
+  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob"]) {
     db[model] = delegate(model);
   }
   return db;

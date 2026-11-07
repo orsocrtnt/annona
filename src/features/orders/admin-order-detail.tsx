@@ -112,7 +112,16 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
       {order.editable && order.afterCutoff ? (
         <Alert><AlertDescription>{t.afterCutoffHint}</AlertDescription></Alert>
       ) : null}
-      {!order.editable ? (
+      {order.invoice ? (
+        <Alert>
+          <AlertDescription>
+            {fr.invoices.errors.orderInvoiced(order.invoice.reference)}{" "}
+            <Link href={`/dashboard/invoices/${order.invoice.id}`} className="font-medium text-brand underline-offset-4 hover:underline">
+              {order.invoice.reference}
+            </Link>
+          </AlertDescription>
+        </Alert>
+      ) : !order.editable ? (
         <Alert><AlertDescription>{t.notEditable}</AlertDescription></Alert>
       ) : null}
 

@@ -68,6 +68,8 @@ export type TransactionalEmailInput = {
   replayWindowStart: ReplayWindowStart;
   /** Tâches durables : instantané du rendu dans le payload (C5, contenu stable par clé). */
   freezeContent?: EmailContentFreezer;
+  /** FACT-1 : pièces jointes (facture PDF), contenu en base64. */
+  attachments?: Array<{ filename: string; content: string }>;
 };
 
 type SendOptions = {
@@ -265,6 +267,7 @@ export async function sendTransactionalEmail(
         text,
         html,
         ...(replyTo ? { reply_to: [replyTo] } : {}),
+        ...(input.attachments?.length ? { attachments: input.attachments } : {}),
       }),
       signal: options.signal ?? AbortSignal.timeout(EMAIL_TIMEOUT_MS),
     }

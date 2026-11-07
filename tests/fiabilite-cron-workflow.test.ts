@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const workflow = readFileSync(resolve(".github/workflows/cron-operations.yml"), "utf8");
@@ -51,8 +51,13 @@ test("les tâches quotidiennes tournent sur annona.fr, pas seulement en producti
   assert.match(daily, /cron: "0 6 \* \* \*"/);
   assert.match(daily, /workflow_dispatch:/);
   assert.match(daily, /environment: preproduction/);
-  assert.match(daily, /\/api\/cron\/recurring-orders/);
+  // FACT-1 : les récurrences sont générées par le verrouillage (cron-lock-orders.yml) ; seules les
+  // routes existantes sont appelées.
+  assert.doesNotMatch(daily, /\/api\/cron\/recurring-orders/);
   assert.match(daily, /\/api\/cron\/billing/);
+  for (const [, route] of daily.matchAll(/\/api\/cron\/([a-z-]+)/g)) {
+    assert.ok(existsSync(resolve(`src/app/api/cron/${route}/route.ts`)), `route appelée absente : ${route}`);
+  }
   assert.match(daily, /Authorization: Bearer \$\{PREPROD_CRON_SECRET\}/);
   assert.doesNotMatch(daily, /https?:\/\/(?!\*)[a-z0-9.-]+\.[a-z]{2,}/i);
 });

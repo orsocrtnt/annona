@@ -31,6 +31,8 @@ export interface FacturXSourceInvoice {
   subtotalCents: number;
   vatCents: number;
   totalCents: number;
+  /** FACT-1 (RG-07) : total des règlements enregistrés (BT-113) ; absent = rien de connu. */
+  paidCents?: number;
   notes: string | null;
   orderReference: string | null;
   /** Dernier jour livré de la période (BT-72), si connu. */
@@ -107,6 +109,11 @@ function parseLines(raw: unknown): FacturXSourceLine[] | null {
 }
 
 const present = (value: string | null | undefined): value is string => Boolean(value && value.trim());
+
+function prepaidCents(invoice: FacturXSourceInvoice): number {
+  if (invoice.status === "PAID") return invoice.totalCents;
+  return Math.max(0, Math.min(invoice.totalCents, invoice.paidCents ?? 0));
+}
 
 const PARIS_DAY = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -220,8 +227,8 @@ export function mapInvoiceToFacturX(source: FacturXSource): FacturXMappingResult
         : {},
     payment: einvoicing.iban ? { typeCode: "58", iban: einvoicing.iban, bic: einvoicing.bic } : undefined,
     paymentReference: invoice.reference,
-    // Facture réglée : le Factur-X porte le montant payé et un solde nul (BT-113, BT-115).
-    prepaidAmount: invoice.status === "PAID" ? invoice.totalCents / 100 : undefined,
+    // Montant déjà réglé (BT-113) et solde (BT-115) : règlements enregistrés, ou total si la facture est payée.
+    prepaidAmount: prepaidCents(invoice) > 0 ? prepaidCents(invoice) / 100 : undefined,
   };
 
   const totals = computeFacturXTotals(facturx);

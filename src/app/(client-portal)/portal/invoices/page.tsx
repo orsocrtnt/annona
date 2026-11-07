@@ -1,11 +1,12 @@
-import { ComingSoon } from "@/components/shared/coming-soon";
+import { Suspense } from "react";
+import { PageSkeleton } from "@/components/ui/page-skeleton";
+import { PortalInvoicesContent } from "@/features/invoices/portal-invoices-content";
 
+/** FACT-1 (CLI-10) — factures et relevés du commerçant, par jour, semaine, mois ou année. */
 export default function ClientInvoicesPage() {
   return (
-    <ComingSoon
-      title="Mes factures"
-      description="Relevés de factures par période, téléchargeables en PDF."
-      task="FACT-1"
-    />
+    <Suspense fallback={<PageSkeleton />}>
+      <PortalInvoicesContent />
+    </Suspense>
   );
 }

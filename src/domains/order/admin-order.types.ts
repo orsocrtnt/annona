@@ -62,6 +62,8 @@ export interface AdminOrderDetail {
   origin: OrderOrigin;
   notes: string | null;
   editable: boolean;
+  /** FACT-1 : facture de période qui regroupe la commande (elle ne se corrige plus). */
+  invoice: { id: string; reference: string } | null;
   merchant: { id: string; name: string; address: string; city: string | null };
   slot: { id: string; label: string };
   round: { id: string; name: string; status: RoundStatus; driverName: string | null } | null;

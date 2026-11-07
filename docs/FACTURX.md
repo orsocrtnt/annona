@@ -4,6 +4,31 @@
 
 Cette tranche **ne rend pas Annona conforme** et **n'en fait pas une plateforme agréée**. Elle produit un PDF Factur-X que la société de coursiers (ou son expert-comptable) peut déposer sur sa plateforme agréée, après validation par un outil officiel.
 
+## 0. Factures par période (FACT-1, novembre 2026)
+
+Depuis SCHEMA-1, une facture regroupe les commandes LIVRÉES d'un commerçant sur une période (CLI-10, ADM-10). Ce qui suit remplace, pour le modèle, le tableau « Modèle de facture existant » plus bas (écrit pour l'ancien produit : une facture par commande, lignes en JSON).
+
+| Élément | Source | Règle |
+|---|---|---|
+| Période | `Invoice.periodType/periodStart/periodEnd` | jour, semaine ISO (lundi → dimanche), mois, année, selon `Merchant.billingPeriod` ; bornes en jours civils, « aujourd'hui » lu à Paris (`src/domains/invoice/billing-period.ts`) |
+| Lignes | `InvoiceLine` | regroupées par produit, prix figé et taux ; quantité = **livrée** (RG-06), prix = `unitPriceFrozenCents` (RG-05) ; manquant total = pas de ligne (`invoice-builder.ts`) |
+| TVA | `InvoiceLine.vatRateBasisPoints` | arrondie au centime par taux sur le cumul HT du taux, comme le Factur-X ; taux du produit au moment de la facture (la ligne de commande ne fige pas la TVA) |
+| Numéro (BT-1) | `Invoice.number` + `reference` (`FAC-000001`) | `invoice_counters` dans la transaction de création : continu, sans trou, par entreprise |
+| Émission (BT-2) | `Invoice.issuedAt` | |
+| Échéance (BT-9) | `Invoice.dueDate` | jour d'émission (Paris) + `settings.billing.invoice.defaultDueDays` (30 par défaut), à midi |
+| Règlements | `Payment` (montant, date, mode, `note` = référence) | statut calculé : à régler, partiellement réglée, réglée ; facture `PAID` au solde ; BT-113/BT-115 du Factur-X = total des règlements |
+| Commandes incluses | `Order.invoiceId` | une seule facture par commande (rattachement conditionné `invoice_id IS NULL`) |
+
+Génération (`invoice-generation.service.ts`) : bouton « Générer les factures » du back-office (périodicité + un jour de la période, un client facultatif) et cron `/api/cron/billing` (Vercel 6 h 10 UTC, GitHub Actions `cron-daily.yml` 6 h UTC) qui facture toutes les périodes terminées, retards compris. La transaction verrouille la ligne du commerçant (`FOR UPDATE`) avant de relire ses commandes : deux générations simultanées sont sérialisées, la seconde ne trouve plus rien et ne consomme aucun numéro (idempotence). Une livraison tardive d'une période déjà facturée donne une facture complémentaire.
+
+Commande facturée : correction et annulation refusées (409, « Commande déjà facturée… une rectification passe par un avoir »). Choix le plus sûr : une facture émise n'est jamais modifiée ; aucun écran d'avoir à ce stade (le générateur sait produire un avoir 381).
+
+Mentions légales (ENF-05, `invoice-legal.ts`) : le PDF de facture porte vendeur (raison sociale, adresse, SIREN, SIRET, TVA), acheteur, date, numéro, période, échéance, conditions de paiement, pénalités de retard, indemnité forfaitaire de 40 €, escompte, forme/capital/RCS. Rien n'est inventé : une mention absente des paramètres est omise et signalée à l'administrateur (liste et fiche facture, lien vers le champ dans Réglages › Facturation). Seules l'indemnité de 40 € (montant légal fixe) et l'échéance calculée sont produites par l'application.
+
+Envoi (`invoice-email.service.ts`) : tâche durable `CLIENT_NOTIFICATION` de nature `INVOICE_EMAIL`, une par tentative (`client-notification:invoice-email:<facture>:<n>`), PDF en pièce jointe Resend, adresse de facturation du commerçant. Sans service d'e-mail configuré ou sans destinataire, la tâche se termine « ignorée » avec la cause : la fiche l'affiche et « Renvoyer » crée une nouvelle tentative. Relance des factures à régler : service existant (`invoice-reminder.service.ts`), bouton « Relancer ».
+
+Portail (CLI-10) : factures dont la période commence dans le jour, la semaine, le mois ou l'année choisis, PDF de chaque facture et relevé PDF de la période (`statement-pdf.ts`). Export comptable CSV du back-office : une ligne par facture, HT et TVA par taux.
+
 ## 1. Cadrage
 
 ### Modèle de facture existant

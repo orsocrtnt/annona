@@ -8,6 +8,11 @@ import type { FacturXSource } from "@/domains/invoice/facturx/facturx-mapping";
 import { facturXInvoiceWhere, type FacturXInvoiceScope } from "@/domains/invoice/facturx/facturx-scope";
 import { parseBillingSettings } from "@/domains/company/billing-settings.service";
 import { readCompanyLogo } from "@/domains/company/company-logo.service";
+import { dbDateKey, periodRangeLabel, periodShortLabel } from "@/domains/invoice/billing-period";
+import { vatOf } from "@/domains/invoice/invoice-builder";
+import { invoiceLegalMentions } from "@/domains/invoice/invoice-legal";
+import { settlementStatus } from "@/domains/invoice/invoice-settlement";
+import { SETTLEMENT_LABELS } from "@/lib/constants/invoice-status";
 import { generateInvoicePdf, type InvoicePdfData, type InvoicePdfLegalMentions } from "@/lib/pdf/invoice-pdf";
 import {
   clientInvoiceIdentitySchema,
@@ -26,7 +31,15 @@ export interface LoadedFacturXInvoice {
   /** Toujours présent : une facture de période a toujours un commerçant (relation obligatoire). */
   source: FacturXSource | null;
   pdf: Omit<InvoicePdfData, "companyLogoPng" | "legal">;
+  /**
+   * FACT-1 (ENF-05) : mentions légales visibles du PDF de facture, construites depuis les paramètres de
+   * l'entreprise sans rien inventer ; les manques sont signalés à l'administrateur (invoice-legal.ts).
+   */
+  legal?: InvoicePdfLegalMentions;
 }
+
+const vatLabel = (basisPoints: number) => `${(basisPoints / 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %`;
+const shortDate = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
 
 export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<LoadedFacturXInvoice | null> {
   const invoice = await prisma.invoice.findFirst({
@@ -37,6 +50,7 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
       issuedAt: true,
       dueDate: true,
       paidAt: true,
+      periodType: true,
       periodStart: true,
       periodEnd: true,
       subtotalCents: true,
@@ -46,15 +60,19 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
       companyId: true,
       lines: {
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-        select: { label: true, quantity: true, unitPriceCents: true, vatRateBasisPoints: true, totalCents: true },
+        select: { label: true, unit: true, quantity: true, unitPriceCents: true, vatRateBasisPoints: true, totalCents: true },
       },
-      // Dernière commande livrée de la période : date de livraison (BT-72).
+      // Livraisons regroupées (RG-06) : date, référence et montant HT livré.
       orders: {
         where: { status: "DELIVERED" },
-        orderBy: { deliveryDate: "desc" },
-        take: 1,
-        select: { deliveryDate: true },
+        orderBy: [{ deliveryDate: "asc" }, { reference: "asc" }],
+        select: {
+          reference: true,
+          deliveryDate: true,
+          lines: { select: { quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true } },
+        },
       },
+      payments: { select: { amountCents: true } },
       company: {
         select: {
           name: true,
@@ -74,6 +92,7 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
       merchant: {
         select: {
           name: true,
+          tradeName: true,
           siren: true,
           vatNumber: true,
           address: true,
@@ -103,11 +122,27 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
     city: merchant.billingCity ?? merchant.city ?? "",
     countryCode: "FR",
   });
-  // Montant affiché du relevé : HT par ligne, puis TVA par taux (même calcul que le Factur-X).
+  // TVA par taux, sur le cumul HT du taux (même calcul que la génération et le Factur-X).
   const vatByRate = new Map<number, number>();
   for (const line of invoice.lines) {
     vatByRate.set(line.vatRateBasisPoints, (vatByRate.get(line.vatRateBasisPoints) ?? 0) + line.totalCents);
   }
+  const paidCents = Math.min(invoice.totalCents, invoice.payments.reduce((sum, payment) => sum + payment.amountCents, 0));
+  const period = { type: invoice.periodType, start: dbDateKey(invoice.periodStart), end: dbDateKey(invoice.periodEnd) };
+  const settlement = invoice.status === "CANCELLED" ? null : settlementStatus(invoice.totalCents, paidCents);
+  const lastDelivery = invoice.orders.at(-1)?.deliveryDate ?? null;
+  const hasExempt = invoice.lines.some((line) => line.vatRateBasisPoints === 0);
+  const seller = {
+    name: company.name,
+    legalName: company.legalName,
+    siren: company.siren,
+    siret: company.siret,
+    email: company.email,
+    billingAddress: company.billingAddress,
+    billingPostalCode: company.billingPostalCode,
+    billingCity: company.billingCity,
+    country: company.country,
+  };
 
   return {
     companyId: invoice.companyId,
@@ -122,21 +157,12 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
         subtotalCents: invoice.subtotalCents,
         vatCents: invoice.vatCents,
         totalCents: invoice.totalCents,
+        paidCents,
         notes: invoice.notes,
         orderReference: null,
-        deliveryDate: invoice.orders[0]?.deliveryDate ?? invoice.periodEnd,
+        deliveryDate: lastDelivery ?? invoice.periodEnd,
       },
-      seller: {
-        name: company.name,
-        legalName: company.legalName,
-        siren: company.siren,
-        siret: company.siret,
-        email: company.email,
-        billingAddress: company.billingAddress,
-        billingPostalCode: company.billingPostalCode,
-        billingCity: company.billingCity,
-        country: company.country,
-      },
+      seller,
       einvoicing: storedEinvoicing.settings,
       einvoicingInvalidFields: storedEinvoicing.invalidFields,
       buyer: {
@@ -147,43 +173,73 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
         defaultAddress: { address: merchant.address, postalCode: merchant.postalCode, city: merchant.city },
       },
     },
-    // Relevé PDF : lignes HT puis une ligne de TVA par taux, en euros (format du générateur PDF).
+    // Facture PDF : lignes HT (unité et taux en détail), puis HT, TVA par taux, TTC et déjà réglé.
     pdf: {
       reference: invoice.reference,
       status: invoice.status,
+      statusLabel: settlement ? SETTLEMENT_LABELS[settlement] : null,
       createdAt: invoice.issuedAt,
       dueDate: invoice.dueDate,
       paidAt: invoice.paidAt,
       amount: invoice.totalCents / 100,
-      lineItems: [
-        ...invoice.lines.map((line) => ({ label: line.label, amount: line.unitPriceCents / 100, quantity: line.quantity })),
-        ...[...vatByRate.entries()]
-          .filter(([rate]) => rate > 0)
-          .map(([rate, basis]) => ({
-            label: `TVA (${(rate / 100).toLocaleString("fr-FR")} %)`,
-            amount: Math.round((basis * rate) / 10_000) / 100,
-            quantity: 1,
-          })),
-      ],
+      period: periodShortLabel(period),
+      lineItems: invoice.lines.map((line) => ({
+        label: line.label,
+        amount: line.unitPriceCents / 100,
+        quantity: line.quantity,
+        detail: [line.unit, `TVA ${vatLabel(line.vatRateBasisPoints)}`].filter(Boolean).join(" · "),
+      })),
+      totals: {
+        subtotal: invoice.subtotalCents / 100,
+        vat: [...vatByRate.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([rate, basis]) => ({ label: `TVA ${vatLabel(rate)} sur ${euros.format(basis / 100)}`, amount: vatOf(basis, rate) / 100 })),
+        total: invoice.totalCents / 100,
+        paid: paidCents / 100,
+      },
+      orders: invoice.orders.map((order) => ({
+        reference: order.reference,
+        date: shortDate.format(order.deliveryDate),
+        amount: order.lines.reduce((sum, line) => sum + (line.quantityDelivered ?? line.quantityOrdered) * (line.unitPriceFrozenCents ?? 0), 0) / 100,
+        shortage: order.lines.some((line) => line.quantityDelivered !== null && line.quantityDelivered < line.quantityOrdered),
+      })),
       notes: invoice.notes,
       orderReference: null,
-      company: { name: company.name, email: company.email, address: company.address, city: company.city },
-      customerName: merchant.name,
+      company: { name: company.legalName || company.name, email: company.email, address: company.address, city: company.city },
+      customerName: merchant.tradeName || merchant.name,
       customerEmail: buyerEmail,
       // Pied de page lu dans les réglages déjà chargés : pas de seconde lecture de Company.settings.
-      footerNote: parseBillingSettings(asRecord(company.settings).billing).invoice.footerNote ?? null,
+      footerNote: parseBillingSettings(asRecord(company.settings).billing).invoice.footerNote || null,
     },
+    legal: invoiceLegalMentions({
+      seller,
+      einvoicing: storedEinvoicing.settings,
+      buyer: {
+        name: merchant.name,
+        siren: merchant.siren,
+        vatNumber: merchant.vatNumber,
+        address: merchant.billingAddress ?? merchant.address,
+        postalCode: merchant.billingPostalCode ?? merchant.postalCode,
+        city: merchant.billingCity ?? merchant.city,
+      },
+      dueDate: invoice.dueDate,
+      periodSentence: periodRangeLabel(period),
+      hasExempt,
+    }),
   };
 }
 
+const euros = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
+
 /**
- * Relevé PDF, avec le même logo et le même pied de page que la route du portail.
- * `legal` (variante Factur-X uniquement) ajoute les mentions légales visibles ; absent, rendu classique inchangé.
+ * PDF de la facture, avec le même logo et le même pied de page partout (back-office, portail, e-mail).
+ * `legal` (variante Factur-X) remplace les mentions visibles par celles portées par le XML ; sans
+ * paramètre, les mentions légales de la facture (`loaded.legal`) sont utilisées.
  */
 export async function renderClassicInvoicePdf(loaded: LoadedFacturXInvoice, legal?: InvoicePdfLegalMentions): Promise<Uint8Array> {
   // Un logo absent ou illisible ne bloque jamais le relevé.
   const companyLogoPng = await readCompanyLogo(loaded.companyId).catch(() => null);
-  return generateInvoicePdf({ ...loaded.pdf, companyLogoPng, legal });
+  return generateInvoicePdf({ ...loaded.pdf, companyLogoPng, legal: legal ?? loaded.legal });
 }
 
 // ---------------------------------------------------------------------------

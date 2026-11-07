@@ -47,6 +47,7 @@ export type AdminOrderDb = Pick<
   | "stop"
   | "auditLog"
   | "user"
+  | "invoice"
   | "$transaction"
 >;
 
@@ -182,6 +183,16 @@ async function findOrder(db: Pick<AdminOrderDb, "order">, companyId: string, ord
   return order;
 }
 
+/**
+ * FACT-1 : une commande facturée ne se corrige plus et ne s'annule plus (la facture émise ne change
+ * jamais). Refus explicite ; la rectification passe par un avoir, hors application à ce stade.
+ */
+async function assertNotInvoiced(db: Pick<AdminOrderDb, "invoice">, companyId: string, order: { invoiceId: string | null }) {
+  if (!order.invoiceId) return;
+  const invoice = await db.invoice.findFirst({ where: { id: order.invoiceId, companyId }, select: { reference: true } });
+  throw new DomainRuleError(409, fr.invoices.errors.orderInvoiced(invoice?.reference ?? ""), "ORDER_INVOICED");
+}
+
 async function loadHistory(db: AdminOrderDb, companyId: string, orderId: string): Promise<AdminOrderHistoryEntry[]> {
   const rows = await db.auditLog.findMany({
     where: { companyId, entityType: ORDER_AUDIT_ENTITY, entityId: orderId },
@@ -208,6 +219,7 @@ export async function getAdminOrder(companyId: string, orderId: string, now = ne
   const order = await findOrder(db, companyId, orderId);
   const company = await db.company.findUnique({ where: { id: companyId }, select: { cutoffTime: true, timezone: true } });
   if (!company) throw new DomainRuleError(404, t.notFound, "ORDER_NOT_FOUND");
+  const invoice = order.invoiceId ? await db.invoice.findFirst({ where: { id: order.invoiceId, companyId }, select: { id: true, reference: true } }) : null;
   const [lineRows, merchant, slot, stop] = await Promise.all([
     db.orderLine.findMany({ where: { companyId, orderId } }),
     db.merchant.findFirst({ where: { id: order.merchantId, companyId }, select: { id: true, name: true, tradeName: true, address: true, city: true } }),
@@ -255,7 +267,8 @@ export async function getAdminOrder(companyId: string, orderId: string, now = ne
     status: order.status,
     origin: order.origin,
     notes: order.notes,
-    editable: !FINAL_STATUSES.includes(order.status),
+    editable: !FINAL_STATUSES.includes(order.status) && !invoice,
+    invoice,
     merchant: { id: order.merchantId, name: merchant ? merchant.tradeName || merchant.name : "", address: merchant?.address ?? "", city: merchant?.city ?? null },
     slot: { id: order.slotId, label: slot ? slotLabel(slot) : "" },
     round: round ? { id: round.id, name: round.name ?? "", status: round.status, driverName: personName(driver ?? undefined) } : null,
@@ -302,6 +315,7 @@ export async function correctAdminOrder(
 
   await db.$transaction(async (tx) => {
     const order = await findOrder(tx, actor.companyId, orderId);
+    await assertNotInvoiced(tx, actor.companyId, order);
     if (FINAL_STATUSES.includes(order.status)) throw new DomainRuleError(409, t.notEditable, "ORDER_NOT_EDITABLE");
     const existing = await tx.orderLine.findMany({ where: { companyId: actor.companyId, orderId } });
     const byProduct = new Map(existing.map((line) => [line.productId, line]));
@@ -389,6 +403,7 @@ export async function cancelAdminOrder(
   if (!company) throw new DomainRuleError(404, t.notFound, "ORDER_NOT_FOUND");
   await db.$transaction(async (tx) => {
     const order = await findOrder(tx, actor.companyId, orderId);
+    await assertNotInvoiced(tx, actor.companyId, order);
     if (FINAL_STATUSES.includes(order.status)) throw new DomainRuleError(409, t.notEditable, "ORDER_NOT_EDITABLE");
     const lines = await tx.orderLine.findMany({ where: { companyId: actor.companyId, orderId } });
     const products = await tx.product.findMany({ where: { companyId: actor.companyId, id: { in: lines.map((line) => line.productId) } }, select: { id: true, name: true } });

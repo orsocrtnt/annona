@@ -1,33 +1,34 @@
 import { z } from "zod";
 
-const monetaryAmount = z.number().finite().min(0).max(99_999_999.99).multipleOf(0.01);
+/** FACT-1 — saisies des factures (ADM-10, RG-07) et du portail commerçant (CLI-10). */
+const id = z.string().trim().min(1).max(64);
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date invalide.");
+const optionalId = id.nullish().transform((value) => value || null);
+const optionalDate = date.nullish().or(z.literal("")).transform((value) => value || null);
 
-export const invoiceLineItemSchema = z.object({
-  label: z.string().min(1),
-  amount: monetaryAmount,
-  quantity: z.number().int().min(1).default(1),
-  sourceType: z.enum(["ZONE", "FEE", "PURCHASE", "CUSTOM", "VAT"]),
-  sourceId: z.string().optional(),
+export const billingPeriodSchema = z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]);
+export const paymentMethodSchema = z.enum(["VIREMENT", "PRELEVEMENT", "ESPECES"]);
+
+export const generateInvoicesSchema = z.object({ periodType: billingPeriodSchema, date, merchantId: optionalId }).strict();
+
+export const adminInvoiceListQuerySchema = z.object({
+  from: optionalDate,
+  to: optionalDate,
+  merchantId: optionalId,
+  status: z.enum(["TO_PAY", "PARTIAL", "PAID", "OVERDUE"]).nullish().or(z.literal("")).transform((value) => value || null),
 });
 
-export const createOrderInvoiceSchema = z.object({
-  includePurchases: z.boolean().default(false),
-  customLines: z
-    .array(
-      z.object({
-        label: z.string().min(1),
-        amount: monetaryAmount,
-      })
-    )
-    .default([]),
-  notes: z.string().optional(),
-  dueDate: z.string().datetime().optional(),
-});
+export const recordPaymentSchema = z
+  .object({
+    /** Centimes : jamais de virgule flottante sur un montant. */
+    amountCents: z.number().int().min(1).max(99_999_999),
+    method: paymentMethodSchema,
+    paidAt: date,
+    reference: z.string().trim().max(120).nullish(),
+  })
+  .strict();
 
-export type InvoiceLineItem = z.infer<typeof invoiceLineItemSchema>;
-export type CreateOrderInvoiceInput = z.infer<typeof createOrderInvoiceSchema>;
+export const portalInvoiceQuerySchema = z.object({ periodType: billingPeriodSchema, date });
 
-export const markOrderInvoicePaidSchema = z.object({
-  invoiceId: z.string().min(1),
-  expectedUpdatedAt: z.string().datetime(),
-});
+export type GenerateInvoicesInput = z.infer<typeof generateInvoicesSchema>;
+export type RecordPaymentBody = z.infer<typeof recordPaymentSchema>;

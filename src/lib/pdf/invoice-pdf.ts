@@ -21,7 +21,16 @@ export interface InvoicePdfData {
   dueDate?: Date | string | null;
   paidAt?: Date | string | null;
   amount: number;
-  lineItems: { label: string; amount: number; quantity: number }[];
+  /** `detail` (facture de période) : unité et taux de TVA, en petit sous le libellé. */
+  lineItems: { label: string; amount: number; quantity: number; detail?: string | null }[];
+  /** FACT-1 : période facturée, forme courte (« Novembre 2026 »). */
+  period?: string | null;
+  /** FACT-1 : libellé du statut de règlement (« Partiellement réglée »…), à la place du statut enregistré. */
+  statusLabel?: string | null;
+  /** FACT-1 : totaux HT, TVA par taux, TTC et déjà réglé (euros). Absent : un seul total, comme avant. */
+  totals?: { subtotal: number; vat: { label: string; amount: number }[]; total: number; paid: number } | null;
+  /** FACT-1 : livraisons regroupées par la facture. */
+  orders?: { reference: string; date: string; amount: number; shortage?: boolean }[] | null;
   notes?: string | null;
   orderReference?: string | null;
   company: { name?: string | null; email?: string | null; address?: string | null; city?: string | null };
@@ -96,6 +105,10 @@ function money(value: number): string {
 
 /** Phrase sous le montant : ce que le client doit savoir du paiement. */
 function paymentSentence(data: InvoicePdfData): string | null {
+  const remaining = data.totals ? data.totals.total - data.totals.paid : 0;
+  if (data.totals && data.totals.paid > 0 && remaining > 0.004 && toDate(data.dueDate)) {
+    return `Reste ${money(remaining)} à régler avant le ${formatLongDate(data.dueDate)}`;
+  }
   if (data.paidAt) return `Paiement reçu le ${formatLongDate(data.paidAt)}, merci`;
   if (data.status === "CANCELLED") return "Relevé annulé, aucun paiement attendu";
   if (!toDate(data.dueDate)) return null;
@@ -204,7 +217,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   const accent = () => page.drawRectangle({ x: 0, y: PAGE[1] - 4, width: PAGE[0], height: 4, color: MINT });
 
   const companyName = legal?.seller.name.trim() || data.company.name?.trim() || "Entreprise";
-  const statusLabel = INVOICE_STATUS_LABELS[data.status as InvoiceStatus] ?? data.status;
+  const statusLabel = data.statusLabel || (INVOICE_STATUS_LABELS[data.status as InvoiceStatus] ?? data.status);
   const tone = STATUS_TONE[data.status] ?? NEUTRAL_TONE;
 
   // ── En-tête : identité de l'entreprise à gauche, nature et référence du document à droite ──
@@ -281,6 +294,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   let detailY = colTop - 18;
   const details: [string, string][] = [
     ["Référence", data.reference],
+    ...(data.period ? [["Période", data.period] as [string, string]] : []),
     ["Émis le", formatDate(data.createdAt)],
     ...(data.orderReference ? [["Commande", data.orderReference] as [string, string]] : []),
     [data.paidAt ? "Payée le" : "Échéance", formatDate(data.paidAt ?? data.dueDate)],
@@ -323,7 +337,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   }
   for (const [index, line] of data.lineItems.entries()) {
     const parts = wrap(line.label, LABEL_WIDTH, { size: 9.5 });
-    ensureRoom(Math.min(parts.length, 3) * 14 + 10, true);
+    ensureRoom(Math.min(parts.length, 3) * 14 + 10 + (line.detail ? 12 : 0), true);
     for (const [partIndex, part] of parts.entries()) {
       ensureRoom(14, true);
       text(part, MARGIN, y, { size: 9.5 });
@@ -334,35 +348,87 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
       }
       y -= 14;
     }
+    if (line.detail) {
+      text(line.detail, MARGIN, y + 2, { size: 7.5, color: MUTED });
+      y -= 11;
+    }
     y -= 6;
     if (index < data.lineItems.length - 1) hairline(y + 8);
     y -= 8;
   }
 
   // ── Total ──
-  ensureRoom(64);
-  y -= 6;
-  hairline(y + 8, MARGIN, RIGHT, RULE, 0.6);
   const totalLeft = COL_QTY - 40;
-  roundedRect(page, totalLeft, y - 40, RIGHT - totalLeft, 40, 8, PALE);
-  text(data.paidAt ? "Total réglé" : "Total à régler", totalLeft + 14, y - 24, { size: 10, bold: true });
-  textRight(money(data.amount), RIGHT - 14, y - 25.5, { size: 15, bold: true });
-  y -= 40;
+  if (data.totals) {
+    // Facture de période : HT, TVA par taux, TTC, déjà réglé, puis le reste à régler en encadré.
+    const totals = data.totals;
+    const remaining = Math.max(0, totals.total - totals.paid);
+    const rows: Array<[string, string, boolean]> = [
+      ["Total HT", money(totals.subtotal), false],
+      ...totals.vat.map((row) => [row.label, money(row.amount), false] as [string, string, boolean]),
+      ["Total TTC", money(totals.total), true],
+      ...(totals.paid > 0 ? [["Déjà réglé", `– ${money(totals.paid)}`, false] as [string, string, boolean]] : []),
+    ];
+    ensureRoom(rows.length * 15 + 64);
+    y -= 6;
+    hairline(y + 8, MARGIN, RIGHT, RULE, 0.6);
+    y -= 8;
+    for (const [name, value, strong] of rows) {
+      text(name, totalLeft + 14, y, { size: 9.5, bold: strong, color: strong ? INK : MUTED });
+      textRight(value, RIGHT - 14, y, { size: 9.5, bold: strong });
+      y -= 15;
+    }
+    y -= 2;
+    roundedRect(page, totalLeft, y - 40, RIGHT - totalLeft, 40, 8, PALE);
+    text(remaining <= 0.004 ? "Total réglé" : "Reste à régler", totalLeft + 14, y - 24, { size: 10, bold: true });
+    textRight(money(remaining <= 0.004 ? totals.total : remaining), RIGHT - 14, y - 25.5, { size: 15, bold: true });
+    y -= 40;
+  } else {
+    ensureRoom(64);
+    y -= 6;
+    hairline(y + 8, MARGIN, RIGHT, RULE, 0.6);
+    roundedRect(page, totalLeft, y - 40, RIGHT - totalLeft, 40, 8, PALE);
+    text(data.paidAt ? "Total réglé" : "Total à régler", totalLeft + 14, y - 24, { size: 10, bold: true });
+    textRight(money(data.amount), RIGHT - 14, y - 25.5, { size: 15, bold: true });
+    y -= 40;
+  }
 
   // ── Notes ──
   const note = (title: string, value: string, color: Color) => {
     const parts = wrap(value, RIGHT - MARGIN - 14, { size: 9 });
-    ensureRoom(40);
-    y -= 34;
+    // Facture de période : blocs plus serrés pour que les mentions tiennent sur la première page.
+    const gap = data.totals ? 26 : 34;
+    ensureRoom(data.totals ? gap + 6 + Math.min(parts.length, 6) * 13 : 40);
+    y -= gap;
     label(title, MARGIN, y);
     y -= 16;
     const start = y + 10;
     for (const part of parts) { ensureRoom(14); text(part, MARGIN + 14, y, { size: 9, color }); y -= 13; }
     page.drawRectangle({ x: MARGIN, y: y + 9, width: 2, height: Math.max(start - y - 9, 10), color: MINT });
   };
+  // Facture de période : mentions légales juste sous les totaux (première page), puis les livraisons.
+  if (data.totals && legal?.mentions.length) note("Mentions légales", legal.mentions.join("\n"), MUTED);
+
+  // ── Livraisons regroupées (facture de période) ──
+  if (data.orders?.length) {
+    ensureRoom(52);
+    y -= 26;
+    label("Livraisons incluses", MARGIN, y);
+    labelRight("Montant HT", RIGHT, y);
+    y -= 16;
+    for (const order of data.orders) {
+      ensureRoom(14);
+      text(order.date, MARGIN, y, { size: 9, color: MUTED });
+      text(order.reference, MARGIN + 90, y, { size: 9 });
+      if (order.shortage) text("manquant signalé", MARGIN + 230, y, { size: 8, color: MUTED });
+      textRight(money(order.amount), RIGHT, y, { size: 9 });
+      y -= 13;
+    }
+  }
+
   if (data.notes) note("Note", data.notes, INK);
   if (data.footerNote) note("Message", data.footerNote, MUTED);
-  if (legal?.mentions.length) note("Mentions légales", legal.mentions.join("\n"), MUTED);
+  if (!data.totals && legal?.mentions.length) note("Mentions légales", legal.mentions.join("\n"), MUTED);
 
   // ── Pied de page : édité avec Annona, mention légale, pagination ──
   const logoWidth = 50;
