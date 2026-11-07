@@ -4,6 +4,18 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **TOUR-1 — Tournées : administrateur et livreur.**
+
+  **Modèle conseillé : Claude Opus · effort élevé (hors réseau, ordre des arrêts).**
+
+  ADM-04, ADM-06 à ADM-08, LIV-01 à LIV-06 : tournée par créneau calculée avec le calcul existant, réordonner, déplacer un arrêt, changer de livreur, attribution ; suivi en direct ; côté livreur : arrêts dans l'ordre (colis, consignes), liste de chargement, « Livré » en un appui, arrêt suivant puis « Ouvrir dans Plans », « Ouvrir dans Waze », « Y aller seul » ; problème avec commentaire et photo ; hors réseau avec la file existante.
+
+  Terminé quand : critères 6, 7 et 8 vérifiés (dont un « livré » hors réseau resynchronisé, cliqué dans le navigateur).
+
+  7 novembre 2026, fait (commit `9854b6c`, sans push, sans migration). Admin : `/dashboard/rounds` (tournées par créneau, carte avec une couleur par tournée, glisser-déposer avec repli haut/bas, déplacement d'un arrêt vers une tournée du même créneau, tournée vide créée après l'heure limite ou supprimée, « Recalculer l'ordre », attribution d'un livreur, « Valider les tournées » qui les rend visibles au livreur et lui envoie un push par la file DRIVER_NOTIFICATION, journal « RoundDay » affiché) ; `/dashboard` (commandes du jour, livrés, restants, incidents avec photo, carte, rafraîchi toutes les 15 s ; position du livreur seulement pendant une tournée démarrée, effacée à la fin). Livreur `/driver` : tournées validées seulement, arrêts dans l'ordre (un colis par ligne de commande, articles à part), consignes, liste de chargement dans l'ordre inverse de la livraison, « Démarrer » le jour même seulement, « Livré » en un appui (heure du téléphone, ramenée à celle du serveur si incohérente ; quantités livrées figées), arrêt suivant puis Plans / Waze / « Y aller seul », problème avec motif, commentaire et photo JPEG ; démarrer, livré et problème passent par la file hors réseau, rejeu sans doublon côté serveur, bannière et badge « en attente ». `/api/cron/lock-orders?date=` force un reverrouillage (recette locale, refusé en production). `src/lib/pod/codes.ts` supprimé.
+  Vérifications : `tests/tour1-rounds.test.ts` (16 tests : numérotation sans trou, attribution, droits, isolation, « Livré » idempotent, rejeu avec réponse perdue, incident, journal, liens Plans/Waze, position) ; Playwright `tests/e2e/tour1-recette.spec.ts` cliqué 5/5 sans erreur de console : critère 6 (le livreur voit le nouvel ordre au rechargement), critère 7 (2 appuis depuis « Livré » jusqu'à Plans), critère 8 (hors réseau : « 1 action en attente », puis l'admin voit « 2 / 3 livrés » et l'incident avec photo) ; données E2E-TOUR1 supprimées et vérifiées, stockage compris ; captures `outputs/recette-tour1/` (menu de navigation relu par l'orchestrateur) ; `npm run check` relancé par l'orchestrateur : 688/688 ; `npm run build` vert.
+  Reste : environ 520 ms par requête depuis New York vers la base à Paris (écrans en 1 à 7 s en local ; à mesurer une fois hébergé en Europe) ; le service worker ne met rien en cache (recharger la page hors réseau échoue, la file tient) : MOBILE-1 ; push non vérifié sur un vrai téléphone ; mode sombre et glisser-déposer au doigt non relus.
+
 - [x] **BOU-1 — Espace boulanger.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
@@ -85,3 +97,4 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 - 6 novembre 2026 : SCHEMA-1 close (`c550335`) ; base annona-dev migrée et chargée.
 - 7 novembre 2026 : CAT-1 (`7352aba`) et CMD-1 (`8f8ad1e`) closes.
 - 7 novembre 2026 : LOCK-1 (`c68f6fd`) et BOU-1 (`f652f6a`) closes.
+- 7 novembre 2026 : TOUR-1 close (`9854b6c`).
