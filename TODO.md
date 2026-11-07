@@ -4,14 +4,12 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**4 tâches terminées sur 13 — 31 %**
+**6 tâches terminées sur 13 — 46 %**
 
-`██████░░░░░░░░░░░░░░` · 9 tâches restantes
+`█████████░░░░░░░░░░░` · 7 tâches restantes
 
 **À faire par Claude**
 
-- LOCK-1 — Heure limite, verrouillage et consolidation
-- BOU-1 — Espace boulanger
 - TOUR-1 — Tournées : administrateur et livreur
 - FACT-1 — Factures par période
 - NOTIF-1 — Notifications
@@ -34,7 +32,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Répondre aux questions ouvertes du cahier des charges quand tu les as (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
 
 **2. Claude (en autonomie, dans l'ordre)**
-- Faits le 6 novembre : NET-1 (ancien produit retiré) SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix) et CMD-1 (commande du client, recopie chronométrée à 33 s). En cours : LOCK-1 et BOU-1, puis TOUR-1, FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
+- Faits le 6 novembre : NET-1 (ancien produit retiré) SCHEMA-1 (nouveau modèle, base de démo), CAT-1 (catalogue et prix) CMD-1 (commande du client, recopie chronométrée à 33 s), LOCK-1 (verrouillage à 17h, récurrentes, tournées brouillon, corrections tracées) et BOU-1 (espace boulanger). En cours : TOUR-1, puis FACT-1, NOTIF-1, ADM-1, MOBILE-1, RECETTE-V1.
 
 **3. Attente extérieure**
 - Comptes Apple Developer et Google Play pour publier les applications (MOBILE-1, plus tard).
@@ -59,26 +57,6 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Questions ouvertes du cahier des charges (section 9) : liste des créneaux du premier client ; délai du rappel avant 17h ; volumes à deux ans ; service de cartographie (les services gratuits OSRM et IGN suffisent pour les essais, pas pour 200 arrêts par jour). En attendant, valeurs par défaut réglables : créneaux 5h-6h, 6h-7h, 7h-8h ; rappel à 15h.
 
   Terminé quand : les quatre réponses sont notées ici (`.env.local` déjà fait).
-
-- [ ] **LOCK-1 — Heure limite, verrouillage et consolidation.**
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : Claude Opus · effort élevé (heures de Paris, tâche planifiée).**
-
-  RG-01, RG-04, RG-09, RG-10, ADM-05 : refus côté serveur à partir de 17h00:00 heure de Paris (paramétrable) ; tâche planifiée qui verrouille, fige les prix, génère les récurrentes seulement sans commande manuelle, calcule les totaux et les tournées du lendemain ; correction administrateur après l'heure limite journalisée (qui, quand, avant, après).
-
-  Terminé quand : tests des critères 2 (16h59 modifiable, 17h00 verrouillée, changements d'heure compris) et 4 ; tâche idempotente testée.
-
-- [ ] **BOU-1 — Espace boulanger.**
-
-  **Qui : Claude.**
-
-  **Modèle conseillé : Claude Opus · effort moyen.**
-
-  BOU-01 à BOU-06 : total à produire par produit, détail par commerçant, groupement par tournée dans l'ordre de chargement, impression des bons et étiquettes, case « préparée », manquant ou quantité réduite reporté sur la quantité livrée.
-
-  Terminé quand : critère 5 testé ; impression vérifiée dans le navigateur (format tablette).
 
 - [ ] **TOUR-1 — Tournées : administrateur et livreur.**
 

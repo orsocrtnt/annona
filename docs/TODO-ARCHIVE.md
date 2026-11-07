@@ -4,6 +4,30 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **BOU-1 — Espace boulanger.**
+
+  **Modèle conseillé : Claude Opus · effort moyen.**
+
+  BOU-01 à BOU-06 : total à produire par produit, détail par commerçant, groupement par tournée dans l'ordre de chargement, impression des bons et étiquettes, case « préparée », manquant ou quantité réduite reporté sur la quantité livrée.
+
+  Terminé quand : critère 5 testé ; impression vérifiée dans le navigateur (format tablette).
+
+  7 novembre 2026, fait (commit `f652f6a`, sans push). `/bakery` (tablette, demain par défaut) : total à produire par produit et catégorie (commandes verrouillées ; total provisoire marqué avant l'heure limite), bons par client, vue par tournée dans l'ordre de chargement (inverse de la livraison, expliqué à l'écran), impression A4 des bons et des étiquettes (nombre de colis saisi à l'impression, non enregistré), « préparée » annulable, manquant qui réduit la quantité livrée sans jamais dépasser la commande, journalisé et visible par l'admin. Routes `/api/production` réservées au boulanger.
+  Vérifications : 8 tests (critère 5, manquant, droits, isolation) ; Playwright cliqué : total à 10, « préparée », 8 livrés sur 10, impression, manquant vu par l'admin ; aucune erreur de console ; captures tablette 1024 px et PDF A4 dans `outputs/recette-lock1-bou1/` (capture des totaux relue par l'orchestrateur) ; `npm run check` 672/672 ; `npm run build` vert. Code de « préparée » relu par l'orchestrateur : état voulu envoyé (pas une bascule), sans effet si déjà dans cet état.
+  Reste : au premier passage du test, une commande « préparée » est restée « verrouillée » côté admin (lecture trop tôt du test probablement ; deux passages suivants verts) ; mode sombre et impression papier réelle non relus.
+
+- [x] **LOCK-1 — Heure limite, verrouillage et consolidation.**
+
+  **Modèle conseillé : Claude Opus · effort élevé (heures de Paris, tâche planifiée).**
+
+  RG-01, RG-04, RG-09, RG-10, ADM-05 : refus côté serveur à partir de 17h00:00 heure de Paris (paramétrable) ; tâche planifiée qui verrouille, fige les prix, génère les récurrentes seulement sans commande manuelle, calcule les totaux et les tournées du lendemain ; correction administrateur après l'heure limite journalisée (qui, quand, avant, après).
+
+  Terminé quand : tests des critères 2 (16h59 modifiable, 17h00 verrouillée, changements d'heure compris) et 4 ; tâche idempotente testée.
+
+  7 novembre 2026, fait (commit `c68f6fd`, sans push, sans migration). `lockDeliveryDate` (`src/domains/order/order-lock.service.ts`) : rien avant J−1 à l'heure limite ; ensuite génère les récurrentes, passe les commandes validées en verrouillées, fige les prix (`resolveUnitPrice`), crée les tournées brouillon par créneau sans livreur depuis le laboratoire (`round-generation.ts`). Idempotent : verrou PostgreSQL par entreprise et par date, ligne de journal « date traitée ». Déclenchement : `/api/cron/lock-orders` (secret des crons ; aujourd'hui et demain pour chaque entreprise ; `?now=` pour la recette, refusé en production), `.github/workflows/cron-lock-orders.yml` toutes les 10 min, cron Vercel quotidien 16 h 05 UTC, et appel paresseux `ensureDateLocked` à l'ouverture des écrans commandes et boulanger. `/dashboard/orders` : commandes par jour, filtres client et tournée, correction (quantités, lignes, annulation) journalisée avec motif, historique affiché. Choix : toute commande manuelle du jour (tout créneau, annulée ou brouillon comprise) bloque la récurrente, pour éviter une double livraison ; une tournée existante n'est jamais recalculée (commande verrouillée tardive ajoutée en fin de tournée brouillon sans livreur, sinon tournée « complément ») ; corrections avant l'heure limite journalisées aussi.
+  Vérifications : 19 tests (critère 2 dont le 25 octobre, critère 4, idempotence, prix figés, tournées par créneau, journal, droits, isolation) ; Playwright `tests/e2e/lock1-bou1-recette.spec.ts` cliqué : commande pour demain → cron avec heure simulée → « Verrouillée » → correction admin 12 → 10 avec journal ; données E2E-LOCK1 supprimées et vérifiées ; `npm run check` relancé par l'orchestrateur : 672/672 ; `npm run build` vert. Garde `?now=` relue par l'orchestrateur.
+  À savoir : les commandes de démo du 7 novembre ont été réellement verrouillées sur annona-dev, avec leurs tournées brouillon. `cron-daily.yml` appelle encore deux routes supprimées par NET-1 (repris dans FACT-1).
+
 - [x] **CMD-1 — Commande côté commerçant.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
@@ -60,3 +84,4 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 - 6 novembre 2026 : NET-1 close (`f2b5cce`) ; `.env.local` rempli par le propriétaire (connexion directe et clé `service_role` vérifiées).
 - 6 novembre 2026 : SCHEMA-1 close (`c550335`) ; base annona-dev migrée et chargée.
 - 7 novembre 2026 : CAT-1 (`7352aba`) et CMD-1 (`8f8ad1e`) closes.
+- 7 novembre 2026 : LOCK-1 (`c68f6fd`) et BOU-1 (`f652f6a`) closes.
