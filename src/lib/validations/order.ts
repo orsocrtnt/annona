@@ -62,4 +62,10 @@ export const adminCancelOrderSchema = z.object({ note: z.string().trim().max(300
 export const dayQuerySchema = z.object({ date });
 export const adminOrdersQuerySchema = z.object({ date, merchantId: id.optional(), roundId: id.optional() });
 
+/** BOU-05 et BOU-06. */
+export const preparedSchema = z.object({ prepared: z.boolean() }).strict();
+export const shortageSchema = z
+  .object({ quantityDelivered: z.number().int("Quantité entière.").min(0, "Quantité minimale : 0.").max(MAX_LINE_QUANTITY) })
+  .strict();
+
 export type AdminCorrectOrderInput = z.infer<typeof adminCorrectOrderSchema>;

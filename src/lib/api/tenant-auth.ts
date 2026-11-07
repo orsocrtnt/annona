@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { requireAuth, requireMerchantRole } from "@/lib/api/auth-guard";
 import type { PermissionSlug } from "@/lib/permissions/rbac";
+import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 
 /**
@@ -28,6 +29,16 @@ export async function requireCompanyAdmin(permission: PermissionSlug): Promise<G
   if ("error" in auth) return auth;
   const { user, permissions } = auth.context;
   if (user.role.systemRole !== "ADMIN") return { error: json("Accès refusé", 403) };
+  if (!user.companyId) return { error: json("Entreprise non associée", 403) };
+  return { actor: { user, permissions, companyId: user.companyId } };
+}
+
+/** Rôle précis de l'entreprise ayant la permission (ex. BAKER pour l'espace boulanger, BOU-1). */
+export async function requireCompanyRole(roles: readonly SystemRole[], permission: PermissionSlug): Promise<Guarded<CompanyActor>> {
+  const auth = await requireAuth(permission);
+  if ("error" in auth) return auth;
+  const { user, permissions } = auth.context;
+  if (!roles.includes(user.role.systemRole)) return { error: json("Accès refusé", 403) };
   if (!user.companyId) return { error: json("Entreprise non associée", 403) };
   return { actor: { user, permissions, companyId: user.companyId } };
 }

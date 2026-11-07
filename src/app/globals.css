@@ -840,3 +840,69 @@ input[type="radio"] {
 :root[data-theme="dark"] .tour-adapt li.text-white {
   color: #1c1f1e;
 }
+
+/* BOU-04 : impression des bons de préparation et des étiquettes (A4). La zone `.print-root` est
+   rendue à part dans <body> par l'espace boulanger ; à l'impression, elle seule est imprimée. */
+.print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  body:has(> .print-root) > *:not(.print-root) {
+    display: none !important;
+  }
+
+  body:has(> .print-root) {
+    background: #fff !important;
+  }
+
+  .print-root {
+    display: block;
+    color: #000;
+    background: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.35;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-sheet {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding: 4mm 0 5mm;
+    border-bottom: 1px dashed #888;
+  }
+
+  .print-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .print-sheet th,
+  .print-sheet td {
+    border-bottom: 1px solid #ccc;
+    padding: 1.2mm 1.5mm;
+    text-align: left;
+  }
+
+  .print-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .print-label {
+    height: 67mm;
+    box-sizing: border-box;
+    padding: 5mm;
+    border: 1px dashed #888;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
