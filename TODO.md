@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**9 tâches terminées sur 13 — 69 %**
+**9 tâches terminées sur 14 — 64 %**
 
-`██████████████░░░░░░` · 4 tâches restantes
+`█████████████░░░░░░░` · 5 tâches restantes
 
 **À faire par Claude**
 
@@ -14,6 +14,7 @@
 
 **À faire par toi**
 
+- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (dire quoi faire des branches `main` et `preproduction` du dépôt annona)
 - ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
 - NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (hébergement UE, comptes Apple et Google, Firebase, Xcode et Android Studio (liste ci-dessous) ; ensuite Claude)
@@ -29,6 +30,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Répondre aux questions ouvertes du cahier des charges quand tu les as (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
 - Fournir les mentions légales des factures (SIREN, TVA, forme juridique et capital, RCS, pénalités, escompte) et une clé Resend pour les vrais envois (ACCES-1).
 - Mettre à jour le garde-fou `npm run env2:verify-dev`, qui attend encore l'identifiant de `tutelliv-dev` (RECETTE-V1, N4).
+- Dire quoi faire des branches `main` et `preproduction` du dépôt annona, qui portent encore TutelLiv (SEP-1).
 - Décider si l'outre-mer est en V1 (fuseau de l'entreprise sur les écrans boulanger et admin, RECETTE-V1, N3).
 
 **2. Claude (en autonomie, dans l'ordre)**
@@ -48,6 +50,15 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 ## Tâches ouvertes
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
+
+- [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
+
+  **Qui : Toi — dire quoi faire des branches `main` et `preproduction` du dépôt annona.**
+
+  - Demande du propriétaire (8 novembre 2026) : TutelLiv et Annona sont deux projets distincts, sans lien entre eux.
+  - Fait le 8 novembre 2026 : branche par défaut du dépôt GitHub `orsocrtnt/annona` passée de `preproduction` à `base` (`gh api -X PATCH … default_branch=base` → `base`). La page du dépôt affiche désormais le README Annona. La description du dépôt (« Annona — plateforme SaaS de livraison ») ne citait déjà plus TutelLiv.
+  - Liens restants constatés (non modifiés) : `main` du dépôt annona est le même commit que `main` de `orsocrtnt/tutelliv` (`af61494`) ; `preproduction` du dépôt annona porte l'ancien produit (README « # Tutelliv », 367 fichiers citant TutelLiv) ; annona.fr est servi par `tutelliv-preproduction` (Supabase). Les tâches planifiées GitHub échouent toutes les 5 min faute de secrets (aucun secret dans le dépôt annona) ; elles tournent maintenant depuis `base`, toujours sans secrets, donc sans effet.
+  - Suite : décision du propriétaire sur `main` et `preproduction` (les remplacer par `base` demande un push et peut redéployer annona.fr), puis rattacher annona.fr à un projet Annona propre.
 
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
