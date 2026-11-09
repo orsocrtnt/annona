@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CompanyLogoCard } from "@/features/back-office/company-logo-card";
-import { LocationSettingsForm } from "@/features/back-office/location-settings-form";
 import { CompanySettingsCard } from "@/features/settings/company-settings-card";
 import { SlotsCard } from "@/features/settings/slots-card";
 import { fr } from "@/lib/i18n/fr";
@@ -12,7 +11,8 @@ const t = fr.companySettings;
 /**
  * Paramètres de l'entreprise (ADM-1 : ADM-09, PLA-03, PLA-04) : nom et logo affichés dans les
  * applications, heure limite, fuseau, délai du rappel, créneaux, catégories (catalogue), unités
- * proposées, mentions légales des factures (Réglages › Facturation), suivi des livreurs.
+ * proposées, mentions légales des factures (Réglages › Facturation). Les fréquences du suivi GPS
+ * des livreurs sont un réglage technique : jamais affichées à l'utilisateur, valeurs par défaut du serveur.
  */
 export default function SettingsPage() {
   return (
@@ -49,8 +49,6 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
-
-      <LocationSettingsForm />
     </div>
   );
 }

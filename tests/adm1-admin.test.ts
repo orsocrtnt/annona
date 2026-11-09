@@ -138,6 +138,11 @@ test("ADM-1 clients : création avec position géocodée, modification, désacti
 // Créneaux et paramètres (ADM-09, PLA-04)
 // ---------------------------------------------------------------------------
 
+test("ADM-09 : les fréquences du suivi GPS des livreurs ne sont pas proposées dans les paramètres", () => {
+  const page = readFileSync("src/app/(back-office)/settings/page.tsx", "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.doesNotMatch(page, /LocationSettings|location-settings|GPS/);
+});
+
 test("ADM-09 créneaux : créer, refuser un doublon, modifier, désactiver, ordonner ; un créneau utilisé ne se supprime pas", async () => {
   const { db } = fixture();
   const slots = db as unknown as SlotAdminDb;
@@ -245,7 +250,6 @@ test("ENF-07 : vocabulaire « client », « livreur », « tournée », « arrê
     "src/features/auth/login-space.ts",
     "src/features/auth/auth-form.tsx",
     "src/features/driver/driver-push-settings.tsx",
-    "src/features/back-office/location-settings-form.tsx",
     "src/features/back-office/einvoicing-settings-card.tsx",
     "src/features/users/create-user-dialog.tsx",
     "src/app/api/users/[id]/route.ts",
