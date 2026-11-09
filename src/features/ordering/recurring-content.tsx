@@ -228,6 +228,7 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
         </fieldset>
         <fieldset className="min-w-0">
           <legend className="mb-2 text-sm font-semibold">{fr.order.slot}</legend>
+          {catalog.slots.length === 0 ? <p className="text-sm text-muted-foreground" data-testid="recurring-no-slot">{fr.order.noSlot}</p> : null}
           <div className="flex flex-wrap gap-2" role="radiogroup">
             {catalog.slots.map((slot) => (
               <button
@@ -299,6 +300,7 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
           <Switch id="recurring-active" checked={value.active} onCheckedChange={(active) => setValue({ ...value, active })} />
           <Label htmlFor="recurring-active">{value.active ? t.active : t.suspended}</Label>
         </div>
+        {!valid && catalog.slots.length > 0 ? <p className="text-sm text-muted-foreground" data-testid="recurring-incomplete">{t.incomplete}</p> : null}
         <DialogFooter className="gap-2">
           <Button variant="outline" size="touch" onClick={onClose}>{fr.common.cancel}</Button>
           <Button variant="brand" size="touch" loading={saving} disabled={!valid} onClick={() => onSave(value)}>{fr.common.save}</Button>

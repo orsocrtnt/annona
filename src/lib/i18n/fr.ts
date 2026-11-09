@@ -196,6 +196,7 @@ export const fr = {
     addProduct: "Ajouter un produit",
     products: "Produits",
     generationNote: "Générée à l'heure limite la veille, seulement si vous n'avez passé aucune commande pour ce jour et ce créneau.",
+    incomplete: "Pour enregistrer, choisissez au moins un jour, un créneau et un produit.",
     errors: {
       notFound: "Commande récurrente introuvable.",
       noWeekday: "Choisissez au moins un jour.",

@@ -288,3 +288,9 @@ test("CMD-1 routes : toutes les API du portail commande passent par requireMerch
     }
   }
 });
+
+test("CLI-09 : sans créneau ouvert, la fenêtre récurrente le dit au lieu de garder « Enregistrer » grisé sans explication", () => {
+  const source = readFileSync("src/features/ordering/recurring-content.tsx", "utf8");
+  assert.match(source, /catalog\.slots\.length === 0 \? <p[^>]*>\{fr\.order\.noSlot\}/);
+  assert.match(source, /!valid && catalog\.slots\.length > 0 \? <p[^>]*>\{t\.incomplete\}/);
+});
