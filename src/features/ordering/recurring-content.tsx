@@ -28,7 +28,8 @@ const t = fr.recurring;
 type Draft = {
   id: string | null;
   label: string;
-  slotId: string | null;
+  /** Lot 1, demande 1 : matin, soir, ou les deux. */
+  slotIds: string[];
   weekdays: number[];
   quantities: Record<string, number>;
   active: boolean;
@@ -49,14 +50,11 @@ export function RecurringContent() {
   const remove = useDeleteRecurring();
   const [draft, setDraft] = useState<Draft | null>(null);
 
-  const emptyDraft = (quantities: Record<string, number> = {}, slotId?: string | null): Draft => ({
-    id: null,
-    label: "",
-    slotId: slotId ?? catalog.data?.slots[0]?.id ?? null,
-    weekdays: [1, 2, 3, 4, 5, 6, 7],
-    quantities,
-    active: true,
-  });
+  const emptyDraft = (quantities: Record<string, number> = {}, slotId?: string | null): Draft => {
+    const slots = catalog.data?.slots ?? [];
+    const initial = slotId && slots.some((slot) => slot.id === slotId) ? slotId : slots[0]?.id;
+    return { id: null, label: "", slotIds: initial ? [initial] : [], weekdays: [1, 2, 3, 4, 5, 6, 7], quantities, active: true };
+  };
 
   // Création depuis le panier (`?from=cart`) ou depuis une commande (`?from=<id>`).
   const from = params.get("from");
@@ -128,7 +126,7 @@ export function RecurringContent() {
                   onClick={() => setDraft({
                     id: row.id,
                     label: row.label ?? "",
-                    slotId: row.slot.id,
+                    slotIds: [row.slot.id],
                     weekdays: row.weekdays,
                     quantities: Object.fromEntries(row.lines.filter((line) => line.available).map((line) => [line.productId, line.quantity])),
                     active: row.active,
@@ -159,7 +157,7 @@ export function RecurringContent() {
           onSave={(value) => {
             const lines = Object.entries(value.quantities).filter(([, quantity]) => quantity > 0).map(([productId, quantity]) => ({ productId, quantity }));
             save.mutate(
-              { id: value.id, input: { label: value.label.trim() || null, slotId: value.slotId!, weekdays: value.weekdays, lines, active: value.active } },
+              { id: value.id, input: { label: value.label.trim() || null, slotIds: value.slotIds, weekdays: value.weekdays, lines, active: value.active } },
               { onSuccess: () => { toast.success(t.saved); setDraft(null); }, onError: (error) => toast.error(error.message) }
             );
           }}
@@ -187,7 +185,7 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
 
   const lines = Object.entries(value.quantities).filter(([id]) => products.has(id));
   const subtotal = lines.reduce((sum, [id, quantity]) => sum + quantity * products.get(id)!.unitPriceCents, 0);
-  const valid = Boolean(value.slotId) && value.weekdays.length > 0 && lines.some(([, quantity]) => quantity > 0);
+  const valid = value.slotIds.length > 0 && value.weekdays.length > 0 && lines.some(([, quantity]) => quantity > 0);
 
   const toggleDay = (day: number) =>
     setValue({ ...value, weekdays: value.weekdays.includes(day) ? value.weekdays.filter((item) => item !== day) : [...value.weekdays, day].sort() });
@@ -229,23 +227,27 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
         <fieldset className="min-w-0">
           <legend className="mb-2 text-sm font-semibold">{fr.order.slot}</legend>
           {catalog.slots.length === 0 ? <p className="text-sm text-muted-foreground" data-testid="recurring-no-slot">{fr.order.noSlot}</p> : null}
-          <div className="flex flex-wrap gap-2" role="radiogroup">
-            {catalog.slots.map((slot) => (
-              <button
-                key={slot.id}
-                type="button"
-                role="radio"
-                aria-checked={value.slotId === slot.id}
-                onClick={() => setValue({ ...value, slotId: slot.id })}
-                className={cn(
-                  "min-h-11 rounded-full border px-4 text-sm font-medium",
-                  value.slotId === slot.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"
-                )}
-              >
-                {slot.label}
-              </button>
-            ))}
+          {/* Lot 1, demande 1 : matin, soir, ou les deux (deux commandes types, une par moment). */}
+          <div className="flex flex-wrap gap-2" role="group" aria-label={fr.order.slot}>
+            {catalog.slots.map((slot) => {
+              const on = value.slotIds.includes(slot.id);
+              return (
+                <button
+                  key={slot.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setValue({ ...value, slotIds: on ? value.slotIds.filter((id) => id !== slot.id) : [...value.slotIds, slot.id] })}
+                  className={cn(
+                    "min-h-11 rounded-full border px-4 text-sm font-medium",
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"
+                  )}
+                >
+                  {slot.label}
+                </button>
+              );
+            })}
           </div>
+          {catalog.slots.length > 1 ? <p className="mt-1 text-xs text-muted-foreground">{t.bothHint}</p> : null}
         </fieldset>
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">{t.products}</h3>

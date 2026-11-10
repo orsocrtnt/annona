@@ -198,83 +198,97 @@ function Sheets({
 }) {
   const setPrepared = useSetPrepared(day.date);
   if (day.sheets.length === 0) return <div className="rounded-2xl border border-dashed p-10 text-center text-lg text-muted-foreground">{t.empty}</div>;
+  // Lot 1, demande 1 : bons séparés par tournée et par moment (« Sud matin », « Sud soir »…), dans l'ordre des créneaux.
+  const groups: { label: string; sheets: PreparationSheet[] }[] = [];
+  for (const sheet of day.sheets) {
+    const group = groups.find((item) => item.label === sheet.slotLabel);
+    if (group) group.sheets.push(sheet);
+    else groups.push({ label: sheet.slotLabel, sheets: [sheet] });
+  }
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      {day.sheets.map((sheet) => (
-        <Card key={sheet.orderId} className={cn(sheet.prepared && "border-success/50 bg-success-subtle/30")} data-testid={`sheet-${sheet.merchant.name}`}>
-          <CardHeader className="space-y-1 pb-3">
-            <div className="flex items-start justify-between gap-3">
-              <CardTitle className="text-lg">{sheet.merchant.name}</CardTitle>
-              {sheet.shortage ? <Badge variant="error">{t.shortage}</Badge> : null}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {sheet.slotLabel} · {where(sheet)} · {sheet.reference}
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="divide-y">
-              {sheet.lines.map((line) => {
-                const short = line.quantityDelivered !== null && line.quantityDelivered < line.quantityOrdered;
-                return (
-                  <li key={line.lineId} className="flex items-center gap-3 py-2" data-testid={`sheet-line-${line.name}`}>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-base font-medium">{line.name}</p>
-                      <p className="text-xs text-muted-foreground">{line.categoryName} · {line.unit}</p>
-                    </div>
-                    <span className={cn("text-xl font-semibold tabular-nums", short && "text-error")}>
-                      {short ? t.deliveredOf(line.quantityDelivered!, line.quantityOrdered) : line.quantityOrdered}
-                    </span>
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <section key={group.label || "-"} className="space-y-3" data-testid={`sheet-group-${group.label}`} aria-label={group.label || t.noRound}>
+          {group.label ? <h3 className="text-lg font-semibold">{group.label} <span className="text-sm font-normal text-muted-foreground">· {t.groupOrders(group.sheets.length)}</span></h3> : null}
+          <div className="grid gap-4 xl:grid-cols-2">
+            {group.sheets.map((sheet) => (
+              <Card key={sheet.orderId} className={cn(sheet.prepared && "border-success/50 bg-success-subtle/30")} data-testid={`sheet-${sheet.merchant.name}`}>
+                <CardHeader className="space-y-1 pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle className="text-lg">{sheet.merchant.name}</CardTitle>
+                    {sheet.shortage ? <Badge variant="error">{t.shortage}</Badge> : null}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {sheet.slotLabel} · {where(sheet)} · {sheet.reference}
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="divide-y">
+                    {sheet.lines.map((line) => {
+                      const short = line.quantityDelivered !== null && line.quantityDelivered < line.quantityOrdered;
+                      return (
+                        <li key={line.lineId} className="flex items-center gap-3 py-2" data-testid={`sheet-line-${line.name}`}>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-base font-medium">{line.name}</p>
+                            <p className="text-xs text-muted-foreground">{line.categoryName} · {line.unit}</p>
+                          </div>
+                          <span className={cn("text-xl font-semibold tabular-nums", short && "text-error")}>
+                            {short ? t.deliveredOf(line.quantityDelivered!, line.quantityOrdered) : line.quantityOrdered}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-touch"
+                            aria-label={t.reportShortage(line.name)}
+                            disabled={sheet.status === "DELIVERED"}
+                            onClick={() => onShortage(line)}
+                          >
+                            <AlertTriangle />
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      {t.packages}
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={50}
+                        value={packages[sheet.orderId] ?? 1}
+                        onChange={(event) => onPackages(sheet.orderId, Math.min(50, Math.max(1, Number(event.target.value) || 1)))}
+                        aria-label={t.packagesOf(sheet.merchant.name)}
+                        className="h-11 w-20 text-center text-base tabular-nums"
+                      />
+                    </label>
                     <Button
                       type="button"
-                      variant="outline"
-                      size="icon-touch"
-                      aria-label={t.reportShortage(line.name)}
+                      size="lg"
+                      variant={sheet.prepared ? "outline" : "brand"}
+                      className="ml-auto min-w-48"
+                      aria-pressed={sheet.prepared}
                       disabled={sheet.status === "DELIVERED"}
-                      onClick={() => onShortage(line)}
+                      loading={setPrepared.isPending && setPrepared.variables?.orderId === sheet.orderId}
+                      onClick={() =>
+                        setPrepared.mutate(
+                          { orderId: sheet.orderId, prepared: !sheet.prepared },
+                          {
+                            onSuccess: () => toast.success(sheet.prepared ? t.unpreparedDone : t.preparedDone),
+                            onError: (error) => toast.error(error.message),
+                          }
+                        )
+                      }
                     >
-                      <AlertTriangle />
+                      {sheet.prepared ? <><Check /> {t.prepared}</> : t.markPrepared}
                     </Button>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                {t.packages}
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={50}
-                  value={packages[sheet.orderId] ?? 1}
-                  onChange={(event) => onPackages(sheet.orderId, Math.min(50, Math.max(1, Number(event.target.value) || 1)))}
-                  aria-label={t.packagesOf(sheet.merchant.name)}
-                  className="h-11 w-20 text-center text-base tabular-nums"
-                />
-              </label>
-              <Button
-                type="button"
-                size="lg"
-                variant={sheet.prepared ? "outline" : "brand"}
-                className="ml-auto min-w-48"
-                aria-pressed={sheet.prepared}
-                disabled={sheet.status === "DELIVERED"}
-                loading={setPrepared.isPending && setPrepared.variables?.orderId === sheet.orderId}
-                onClick={() =>
-                  setPrepared.mutate(
-                    { orderId: sheet.orderId, prepared: !sheet.prepared },
-                    {
-                      onSuccess: () => toast.success(sheet.prepared ? t.unpreparedDone : t.preparedDone),
-                      onError: (error) => toast.error(error.message),
-                    }
-                  )
-                }
-              >
-                {sheet.prepared ? <><Check /> {t.prepared}</> : t.markPrepared}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
       ))}
     </div>
   );

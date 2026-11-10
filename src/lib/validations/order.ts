@@ -30,17 +30,27 @@ export const reorderSchema = z.object({ deliveryDate: date, slotId: id }).strict
 
 export const orderLookupSchema = z.object({ date, slotId: id });
 
-export const recurringOrderSchema = z
-  .object({
-    label: z.string().trim().max(80).nullable().optional(),
-    slotId: id,
-    weekdays: z.array(z.number().int().min(1).max(7)).min(1, "Choisissez au moins un jour.").max(7),
-    lines: z.array(orderLineSchema).min(1, "Ajoutez au moins un produit.").max(MAX_ORDER_LINES),
-    active: z.boolean().optional(),
-  })
-  .strict();
+const recurringFields = {
+  label: z.string().trim().max(80).nullable().optional(),
+  slotId: id.optional(),
+  /** Lot 1, demande 1 : matin, soir, ou les deux (une commande type par moment). */
+  slotIds: z
+    .array(id)
+    .min(1, "Choisissez matin, soir, ou les deux.")
+    .max(2)
+    .refine((ids) => new Set(ids).size === ids.length, "Moment en double.")
+    .optional(),
+  weekdays: z.array(z.number().int().min(1).max(7)).min(1, "Choisissez au moins un jour.").max(7),
+  lines: z.array(orderLineSchema).min(1, "Ajoutez au moins un produit.").max(MAX_ORDER_LINES),
+  active: z.boolean().optional(),
+};
 
-export const updateRecurringOrderSchema = recurringOrderSchema.partial().strict();
+export const recurringOrderSchema = z
+  .object(recurringFields)
+  .strict()
+  .refine((value) => Boolean(value.slotId || value.slotIds?.length), { message: "Choisissez matin, soir, ou les deux.", path: ["slotIds"] });
+
+export const updateRecurringOrderSchema = z.object(recurringFields).partial().strict();
 
 export type OrderLineInput = z.infer<typeof orderLineSchema>;
 export type SaveOrderInput = z.infer<typeof saveOrderSchema>;

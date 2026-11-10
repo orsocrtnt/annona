@@ -4,9 +4,11 @@ import type { OrderOrigin, OrderStatus } from "@prisma/client";
 
 export interface PortalSlot {
   id: string;
+  /** « Matin » ou « Soir » pour une tournée (lot 1, demande 1) ; jamais d'heure montrée au client. */
   label: string;
   startTime: string;
   endTime: string;
+  period?: "MORNING" | "EVENING" | null;
 }
 
 export interface PortalProduct {

@@ -15,7 +15,7 @@
  * par le calcul unique `loadAppliedPrices`.
  */
 import { randomBytes } from "node:crypto";
-import { Prisma, type OrderStatus, type PrismaClient } from "@prisma/client";
+import { Prisma, type DeliveryPeriod, type OrderStatus, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { computeTotals, loadAppliedPrices } from "@/domains/catalog/pricing";
 import { photoVersion } from "@/domains/catalog/catalog.service";
@@ -35,6 +35,7 @@ import type {
   PortalOrderSummary,
   PortalSlot,
 } from "@/domains/order/merchant-order.types";
+import { periodLabel } from "@/domains/company/delivery-period";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { fr } from "@/lib/i18n/fr";
 import { isProductPhotoPath } from "@/lib/storage/product-photo";
@@ -102,8 +103,23 @@ export function slotLabel(slot: { label: string | null; startTime: string; endTi
   return `${short(slot.startTime)} – ${short(slot.endTime)}`;
 }
 
-function toPortalSlot(slot: { id: string; label: string | null; startTime: string; endTime: string }): PortalSlot {
-  return { id: slot.id, label: slotLabel(slot), startTime: slot.startTime, endTime: slot.endTime };
+type SlotLike = { label: string | null; startTime: string; endTime: string; period?: DeliveryPeriod | null };
+
+/** Lot 1, demande 1 : le client voit seulement « Matin » ou « Soir » (sans heure) pour une tournée. */
+export function clientSlotLabel(slot: SlotLike): string {
+  return slot.period ? periodLabel(slot.period) : slotLabel(slot);
+}
+
+/**
+ * Créneaux commandables par un client : le matin et le soir actifs de sa tournée. Les créneaux d'une
+ * tournée désactivée sont désactivés avec elle (`delivery-zone.service.ts`).
+ */
+export function merchantSlotWhere(companyId: string, zoneId: string) {
+  return { companyId, zoneId, active: true } satisfies Prisma.SlotWhereInput;
+}
+
+function toPortalSlot(slot: { id: string } & SlotLike): PortalSlot {
+  return { id: slot.id, label: clientSlotLabel(slot), startTime: slot.startTime, endTime: slot.endTime, period: slot.period ?? null };
 }
 
 export function newReference(deliveryDate: string): string {
@@ -128,12 +144,18 @@ async function loadCompanyRules(db: OrderDb, companyId: string): Promise<Company
 }
 
 async function assertMerchantActive(db: OrderDb, actor: MerchantRef) {
-  const merchant = await db.merchant.findFirst({ where: { id: actor.merchantId, companyId: actor.companyId }, select: { active: true } });
+  const merchant = await db.merchant.findFirst({ where: { id: actor.merchantId, companyId: actor.companyId }, select: { active: true, zoneId: true } });
   if (!merchant?.active) throw new DomainRuleError(403, t.merchantInactive, "MERCHANT_INACTIVE");
+  return { zoneId: merchant.zoneId ?? null };
 }
 
-async function findActiveSlot(db: OrderDb, companyId: string, slotId: string) {
-  const slot = await db.slot.findFirst({ where: { id: slotId, companyId, active: true } });
+/**
+ * RG-08 et lot 1, demande 1 : le créneau est le matin ou le soir de la tournée du client, actifs.
+ * Un client sans tournée ne peut pas commander.
+ */
+export async function findMerchantSlot(db: Pick<OrderDb, "slot" | "merchant">, actor: Pick<MerchantRef, "companyId" | "merchantId">, slotId: string) {
+  const merchant = await db.merchant.findFirst({ where: { id: actor.merchantId, companyId: actor.companyId }, select: { zoneId: true } });
+  const slot = merchant?.zoneId ? await db.slot.findFirst({ where: { id: slotId, ...merchantSlotWhere(actor.companyId, merchant.zoneId) } }) : null;
   if (!slot) throw new DomainRuleError(400, t.slotUnavailable, "SLOT_UNAVAILABLE");
   return slot;
 }
@@ -272,7 +294,7 @@ export async function listMerchantOrders(
       deliveryDate: true,
       status: true,
       origin: true,
-      slot: { select: { id: true, label: true, startTime: true, endTime: true } },
+      slot: { select: { id: true, label: true, startTime: true, endTime: true, period: true } },
       lines: { select: { productId: true, quantityOrdered: true, unitPriceFrozenCents: true } },
     },
   });
@@ -330,7 +352,7 @@ export async function saveMerchantOrder(
   const rules = await loadCompanyRules(db, actor.companyId);
   assertDeliveryWritable(input.deliveryDate, now, rules);
   await assertMerchantActive(db, actor);
-  await findActiveSlot(db, actor.companyId, input.slotId);
+  await findMerchantSlot(db, actor, input.slotId);
   await assertProductsOrderable(db, actor.companyId, input.lines);
 
   const deliveryDate = deliveryDateToDb(input.deliveryDate);

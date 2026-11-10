@@ -196,7 +196,10 @@ test("LOCK-1 critère 2 : rien à 16:59, verrouillage à 17:00:00 (heure de Pari
 });
 
 test("LOCK-1 critère 2 : le client ne peut plus modifier à 17:00:00, il le pouvait à 16:59", async () => {
-  const { db } = fixture();
+  const { db, tables } = fixture();
+  // Lot 1, demande 1 : le client commande sur un moment de sa tournée.
+  rows(tables, "merchant", { id: "A2" })[0]!.zoneId = "zA";
+  rows(tables, "slot", { id: "s7" })[0]!.zoneId = "zA";
   const merchant = { companyId: "A", merchantId: "A2", userId: "uA2" };
   const input = { deliveryDate: J, slotId: "s7", lines: [{ productId: "baguette", quantity: 3 }] };
   const saved = await saveMerchantOrder(merchant, input, BEFORE, db as unknown as OrderDb);
@@ -239,6 +242,51 @@ test("LOCK-1 critère 4 : récurrente générée sans commande ; la manuelle res
   assert.equal(rows(tables, "order", { merchantId: "A5" }).length, 1);
   const reasons = Object.fromEntries(summary.recurringSkipped.map((skip) => [skip.recurringOrderId, skip.reason]));
   assert.deepEqual(reasons, { rA1: "MANUAL_ORDER_EXISTS", rA3: "MANUAL_ORDER_EXISTS" });
+});
+
+test("lot 1, demande 1 : une commande manuelle du matin ne bloque pas la récurrente du soir ; tournées par zone et par moment", async () => {
+  const { db, tables } = fixture();
+  // Tournée Sud : matin (sM) et soir (sS). A2 est rattaché à Sud, avec une récurrente matin et une soir.
+  tables.slot!.push(
+    { id: "sM", companyId: "A", zoneId: "zSud", period: "MORNING", label: "Sud matin", startTime: "05:30", endTime: "11:00", active: true, sortOrder: 10 },
+    { id: "sS", companyId: "A", zoneId: "zSud", period: "EVENING", label: "Sud soir", startTime: "16:00", endTime: "19:00", active: true, sortOrder: 11 },
+  );
+  rows(tables, "merchant", { id: "A2" })[0]!.zoneId = "zSud";
+  tables.recurringOrder = tables.recurringOrder!.filter((row) => row.merchantId !== "A2");
+  tables.recurringOrder.push(
+    { id: "rM", companyId: "A", merchantId: "A2", slotId: "sM", weekdays: [2], active: true, createdAt: new Date(7) },
+    { id: "rS", companyId: "A", merchantId: "A2", slotId: "sS", weekdays: [2], active: true, createdAt: new Date(8) },
+  );
+  tables.recurringOrderLine!.push(
+    { id: "rlM", companyId: "A", recurringOrderId: "rM", productId: "baguette", quantity: 10 },
+    { id: "rlS", companyId: "A", recurringOrderId: "rS", productId: "croissant", quantity: 6 },
+  );
+  // A2 a commandé à la main pour le matin.
+  tables.order!.push({ id: "oM", companyId: "A", merchantId: "A2", reference: "C-M", deliveryDate: day(J), slotId: "sM", status: "VALIDATED", origin: "MANUAL", notes: null, lockedAt: null, preparedAt: null });
+  tables.orderLine!.push({ id: "lM", companyId: "A", orderId: "oM", productId: "baguette", quantityOrdered: 3, quantityDelivered: null, unitPriceFrozenCents: null, createdAt: new Date(9) });
+
+  const summary = await lockDeliveryDate("A", J, { now: CUTOFF, db: lockDb(db), travelMatrix });
+  const reasons = Object.fromEntries(summary.recurringSkipped.map((skip) => [skip.recurringOrderId, skip.reason]));
+  assert.equal(reasons.rM, "MANUAL_ORDER_EXISTS", "matin : la commande manuelle remplace la récurrente");
+  assert.equal(reasons.rS, undefined, "soir : la récurrente est générée");
+  const a2 = rows(tables, "order", { merchantId: "A2" });
+  assert.deepEqual(a2.map((order) => [order.slotId, order.origin]).sort(), [["sM", "MANUAL"], ["sS", "RECURRING"]]);
+  // Tournées calculées par zone et par moment : « Tournée Sud matin » et « Tournée Sud soir ».
+  const names = rows(tables, "round").filter((round) => ["sM", "sS"].includes(String(round.slotId))).map((round) => round.name).sort();
+  assert.deepEqual(names, ["Tournée Sud matin", "Tournée Sud soir"]);
+});
+
+test("lot 1, demande 1 : client passé dans une autre tournée, sa récurrente part au même moment de sa nouvelle tournée", async () => {
+  const { db, tables } = fixture();
+  tables.slot!.push(
+    { id: "sudM", companyId: "A", zoneId: "zSud", period: "MORNING", label: "Sud matin", startTime: "05:30", endTime: "11:00", active: true, sortOrder: 10 },
+    { id: "nordM", companyId: "A", zoneId: "zNord", period: "MORNING", label: "Nord matin", startTime: "06:00", endTime: "10:00", active: true, sortOrder: 12 },
+  );
+  rows(tables, "merchant", { id: "A2" })[0]!.zoneId = "zNord";
+  rows(tables, "recurringOrder", { id: "rA2" })[0]!.slotId = "sudM";
+  await lockDeliveryDate("A", J, { now: CUTOFF, db: lockDb(db), travelMatrix });
+  const generated = rows(tables, "order", { merchantId: "A2", origin: "RECURRING" });
+  assert.deepEqual(generated.map((order) => order.slotId), ["nordM"]);
 });
 
 test("LOCK-1 RG-05 : prix figés au verrouillage (prix spécifique, sinon prix de base), insensibles aux changements suivants", async () => {

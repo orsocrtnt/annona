@@ -16,7 +16,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { getMerchantForAdmin, listMerchantsForAdmin, updateMerchantForAdmin, type MerchantAdminDb } from "../src/domains/merchant/merchant-admin.service";
 import { updateCompanyAccount, type AccountAdminDb } from "../src/domains/user/account-admin.service";
-import { deleteSlotForAdmin, listSlotsForAdmin, reorderSlotsForAdmin, updateSlotForAdmin, type SlotAdminDb } from "../src/domains/company/slot-admin.service";
+import { deleteZoneForAdmin, listZonesForAdmin, updateZoneForAdmin, type ZoneAdminDb } from "../src/domains/company/delivery-zone.service";
 import { getCompanySettings, updateCompanySettings, type CompanySettingsDb } from "../src/domains/company/company-settings.service";
 import { deleteMerchantPrice, listMerchantPrices, listProducts, updateProduct, upsertMerchantPrice, type CatalogDb } from "../src/domains/catalog/catalog.service";
 import { cancelAdminOrder, correctAdminOrder, getAdminOrder, type AdminOrderDb } from "../src/domains/order/admin-order.service";
@@ -173,9 +173,13 @@ function fixture() {
       { id: "mpA", companyId: "A", merchantId: "mA", productId: "pA", priceCents: 90 },
       { id: "mpB", companyId: "B", merchantId: "mB", productId: "pB", priceCents: 95 },
     ],
+    deliveryZone: [
+      { id: "zoneA", companyId: "A", name: "Sud", morningStart: "06:00", morningEnd: "07:00", eveningStart: "16:00", eveningEnd: "19:00", active: true, sortOrder: 0 },
+      { id: "zoneB", companyId: "B", name: "Sud", morningStart: "06:00", morningEnd: "07:00", eveningStart: "16:00", eveningEnd: "19:00", active: true, sortOrder: 0 },
+    ],
     slot: [
-      { id: "slotA", companyId: "A", label: null, startTime: "06:00", endTime: "07:00", active: true, sortOrder: 0 },
-      { id: "slotB", companyId: "B", label: null, startTime: "06:00", endTime: "07:00", active: true, sortOrder: 0 },
+      { id: "slotA", companyId: "A", zoneId: "zoneA", period: "MORNING", label: "Sud matin", startTime: "06:00", endTime: "07:00", active: true, sortOrder: 0 },
+      { id: "slotB", companyId: "B", zoneId: "zoneB", period: "MORNING", label: "Sud matin", startTime: "06:00", endTime: "07:00", active: true, sortOrder: 0 },
     ],
     order: [order("oA", "A", "mA"), order("oB", "B", "mB"), order("oA2", "A", "mA", "LOCKED"), order("oB2", "B", "mB", "LOCKED")],
     orderLine: [
@@ -238,11 +242,11 @@ test("Critère 10 : clients, comptes, créneaux et paramètres de B introuvables
   // Rattacher un compte de A à un client de B : refusé.
   await assert.rejects(updateCompanyAccount(ADMIN_A, "clientA", { merchantId: "mB" }, accounts), { code: "MERCHANT_REQUIRED" });
 
-  const slots = db as unknown as SlotAdminDb;
-  assert.deepEqual((await listSlotsForAdmin("A", slots)).map((slot) => slot.id), ["slotA"]);
-  await assert.rejects(updateSlotForAdmin("A", "slotB", { active: false }, slots), notFound);
-  await assert.rejects(deleteSlotForAdmin("A", "slotB", slots), notFound);
-  await assert.rejects(reorderSlotsForAdmin("A", ["slotB"], slots), { code: "SLOT_ORDER_INVALID" });
+  // Lot 1, demande 1 : la tournée d'une autre entreprise est introuvable.
+  const zones = db as unknown as ZoneAdminDb;
+  assert.deepEqual((await listZonesForAdmin("A", zones)).map((zone) => zone.id), ["zoneA"]);
+  await assert.rejects(updateZoneForAdmin("A", "zoneB", { active: false }, zones), { status: 404, code: "ZONE_NOT_FOUND" });
+  await assert.rejects(deleteZoneForAdmin("A", "zoneB", zones), { status: 404, code: "ZONE_NOT_FOUND" });
 
   const settings = db as unknown as CompanySettingsDb;
   await updateCompanySettings({ companyId: "A", userId: "adminA" }, { cutoffTime: "16:00", name: "A renommée" }, settings);

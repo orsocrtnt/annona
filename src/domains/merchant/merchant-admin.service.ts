@@ -12,7 +12,7 @@ import { prisma } from "@/services/prisma/client";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import type { CreateMerchantInput, UpdateMerchantInput } from "@/lib/validations/company-admin";
 
-export type MerchantAdminDb = Pick<PrismaClient, "merchant" | "user" | "order" | "auditLog">;
+export type MerchantAdminDb = Pick<PrismaClient, "merchant" | "user" | "order" | "auditLog" | "deliveryZone">;
 const defaultDb = () => prisma as unknown as MerchantAdminDb;
 
 export const MERCHANT_AUDIT_ENTITY = "Merchant";
@@ -30,6 +30,8 @@ export interface MerchantListRow {
   contactName: string | null;
   contactPhone: string | null;
   userCount: number;
+  /** Lot 1, demande 1 : tournée du client (null : non rattaché, ne peut pas commander). */
+  zoneName: string | null;
 }
 
 export interface MerchantUserRow {
@@ -61,6 +63,7 @@ export interface MerchantDetail {
   billingCity: string | null;
   billingPeriod: BillingPeriod;
   paymentMethod: PaymentMethod | null;
+  zoneId: string | null;
   active: boolean;
   createdAt: string;
   users: MerchantUserRow[];
@@ -68,10 +71,17 @@ export interface MerchantDetail {
 
 const notFound = () => new DomainRuleError(404, "Client introuvable.", "MERCHANT_NOT_FOUND");
 
+/** La tournée choisie appartient à l'entreprise (PLA-01) ; sinon 400. */
+async function assertZone(db: MerchantAdminDb, companyId: string, zoneId: string | null | undefined) {
+  if (!zoneId) return;
+  const zone = await db.deliveryZone.findFirst({ where: { id: zoneId, companyId } });
+  if (!zone) throw new DomainRuleError(400, "Tournée introuvable.", "ZONE_NOT_FOUND");
+}
+
 const DETAIL_FIELDS = [
   "name", "tradeName", "siren", "vatNumber", "address", "postalCode", "city", "latitude", "longitude",
   "accessInstructions", "contactName", "contactPhone", "contactEmail", "billingEmail", "billingAddress",
-  "billingPostalCode", "billingCity", "billingPeriod", "paymentMethod", "active",
+  "billingPostalCode", "billingCity", "billingPeriod", "paymentMethod", "active", "zoneId",
 ] as const;
 
 function snapshot(row: Record<string, unknown>) {
@@ -87,7 +97,11 @@ export async function listMerchantsForAdmin(
   const rows = await db.merchant.findMany({
     where: { companyId, ...(status === "all" ? {} : { active: status === "active" }) },
   });
-  const users = await db.user.findMany({ where: { companyId, merchantId: { in: rows.map((row) => row.id) } }, select: { merchantId: true } });
+  const [users, zones] = await Promise.all([
+    db.user.findMany({ where: { companyId, merchantId: { in: rows.map((row) => row.id) } }, select: { merchantId: true } }),
+    db.deliveryZone.findMany({ where: { companyId }, select: { id: true, name: true } }),
+  ]);
+  const zoneName = new Map(zones.map((zone) => [zone.id, zone.name]));
   const counts = new Map<string, number>();
   for (const user of users) if (user.merchantId) counts.set(user.merchantId, (counts.get(user.merchantId) ?? 0) + 1);
   const q = options.q?.trim().toLocaleLowerCase("fr");
@@ -107,6 +121,7 @@ export async function listMerchantsForAdmin(
       contactName: row.contactName,
       contactPhone: row.contactPhone,
       userCount: counts.get(row.id) ?? 0,
+      zoneName: row.zoneId ? zoneName.get(row.zoneId) ?? null : null,
     }));
 }
 
@@ -138,6 +153,7 @@ export async function getMerchantForAdmin(companyId: string, merchantId: string,
     billingCity: row.billingCity,
     billingPeriod: row.billingPeriod,
     paymentMethod: row.paymentMethod,
+    zoneId: row.zoneId ?? null,
     active: row.active,
     createdAt: row.createdAt.toISOString(),
     users: users
@@ -151,6 +167,7 @@ export async function createMerchantForAdmin(
   input: CreateMerchantInput,
   db: MerchantAdminDb = defaultDb()
 ): Promise<MerchantDetail> {
+  await assertZone(db, actor.companyId, input.zoneId);
   const created = await db.merchant.create({
     data: {
       companyId: actor.companyId,
@@ -173,6 +190,7 @@ export async function createMerchantForAdmin(
       billingCity: input.billingCity ?? null,
       billingPeriod: input.billingPeriod,
       paymentMethod: input.paymentMethod ?? null,
+      zoneId: input.zoneId ?? null,
       active: true,
     },
   });
@@ -190,6 +208,7 @@ export async function updateMerchantForAdmin(
 ): Promise<MerchantDetail> {
   const before = await db.merchant.findFirst({ where: { id: merchantId, companyId: actor.companyId } });
   if (!before) throw notFound();
+  await assertZone(db, actor.companyId, input.zoneId);
   const data: Record<string, unknown> = {};
   for (const key of DETAIL_FIELDS) {
     if (input[key] !== undefined) data[key] = input[key];

@@ -33,7 +33,7 @@ class FixedDate extends Date {
 }
 
 const COLLECTIONS = [
-  "user", "merchant", "category", "product", "slot", "recurringOrder", "order", "round", "invoice", "supportTicket", "auditLog", "operationJob",
+  "user", "merchant", "category", "product", "deliveryZone", "slot", "recurringOrder", "order", "round", "invoice", "supportTicket", "auditLog", "operationJob",
 ] as const;
 
 /** Les objets venant du contexte vm n'ont pas les mêmes prototypes : comparaison par valeur JSON. */
@@ -131,7 +131,7 @@ test("l'export v2 reste isolé à l'entreprise, complet, trié et sans champ int
   assert.equal(result.version, 2);
   assert.equal(JSON.stringify(result).includes("FOREIGN_B_SENTINEL"), false, "aucune donnée de l'entreprise B");
   same(Object.keys(result.data), [
-    "company", "users", "merchants", "categories", "products", "slots", "recurringOrders", "orders", "rounds", "invoices", "supportTickets", "auditLogs", "operationJobs",
+    "company", "users", "merchants", "categories", "products", "deliveryZones", "slots", "recurringOrders", "orders", "rounds", "invoices", "supportTickets", "auditLogs", "operationJobs",
   ]);
   for (const call of calls.slice(1)) {
     same(call.args.where, { companyId: "company-a" }, `${call.model} borné à l'entreprise`);

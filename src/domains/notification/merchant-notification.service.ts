@@ -28,7 +28,7 @@ import { prisma } from "@/services/prisma/client";
 import { readClientSettings } from "@/domains/client-portal/settings.service";
 import { computeTotals, loadAppliedPrices } from "@/domains/catalog/pricing";
 import { enqueueOperationJob, skippedJobError } from "@/domains/operations/operation-job.service";
-import { slotLabel } from "@/domains/order/merchant-order.service";
+import { clientSlotLabel } from "@/domains/order/merchant-order.service";
 import {
   companyToday,
   deliveryDateKey,
@@ -330,7 +330,7 @@ async function renderConfirmation(db: NotificationDb, payload: ConfirmationPaylo
   const totals = computeTotals(priced);
   const dateKey = deliveryDateKey(order.deliveryDate);
   const date = longDeliveryDateLabel(dateKey);
-  const slotText = slot ? slotLabel(slot) : "";
+  const slotText = slot ? clientSlotLabel(slot) : "";
   const cancelled = order.status === "CANCELLED";
   const title = cancelled
     ? t.confirmation.cancelled

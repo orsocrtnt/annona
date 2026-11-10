@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * ADM-1 — saisies de l'administrateur de l'entreprise (clients, comptes, paramètres, créneaux) et du
+ * ADM-1 — saisies de l'administrateur de l'entreprise (clients, comptes, paramètres, tournées) et du
  * super-administrateur (entreprises). L'entreprise ne vient jamais de ces saisies : toujours de la session.
  */
 const text = (label: string, max: number) => z.string().trim().max(max, `${label} : ${max} caractères au plus.`);
@@ -36,7 +36,8 @@ const merchantFields = {
   city: optionalText("Ville", 120),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
-  accessInstructions: optionalText("Consignes d'accès", 600),
+  /** Lot 1, demande 8 : 500 caractères au plus, comme dans les Paramètres du client. */
+  accessInstructions: optionalText("Consignes d'accès", 500),
   contactName: optionalText("Contact", 120),
   contactPhone: optionalText("Téléphone", 40),
   contactEmail: email("E-mail du contact"),
@@ -46,6 +47,8 @@ const merchantFields = {
   billingCity: optionalText("Ville de facturation", 120),
   billingPeriod: z.enum(BILLING_PERIODS),
   paymentMethod: z.enum(PAYMENT_METHODS).nullable().optional(),
+  /** Lot 1, demande 1 : tournée à laquelle le client est rattaché (vide : il ne peut pas commander). */
+  zoneId: z.string().trim().min(1).max(64).nullable().optional().or(z.literal("").transform(() => null)),
 };
 
 export const createMerchantSchema = z
@@ -111,27 +114,29 @@ export const companySettingsSchema = z
 
 export type CompanySettingsInput = z.infer<typeof companySettingsSchema>;
 
-const slotFields = {
-  label: optionalText("Nom du créneau", 60),
-  startTime: hhmm("Début"),
-  endTime: hhmm("Fin"),
+/** Lot 1, demande 1 : tournée = nom de zone + plage du matin + plage du soir. */
+const zoneFields = {
+  name: required("Nom de la tournée", 60),
+  morningStart: hhmm("Début du matin"),
+  morningEnd: hhmm("Fin du matin"),
+  eveningStart: hhmm("Début du soir"),
+  eveningEnd: hhmm("Fin du soir"),
 };
 
-export const createSlotSchema = z
-  .object(slotFields)
+export const createZoneSchema = z
+  .object(zoneFields)
   .strict()
-  .refine((value) => value.startTime < value.endTime, { message: "La fin du créneau doit suivre son début.", path: ["endTime"] });
+  .refine((value) => value.morningStart < value.morningEnd, { message: "La fin du matin doit suivre son début.", path: ["morningEnd"] })
+  .refine((value) => value.eveningStart < value.eveningEnd, { message: "La fin du soir doit suivre son début.", path: ["eveningEnd"] });
 
-export const updateSlotSchema = z
-  .object({ ...slotFields, active: z.boolean() })
+export const updateZoneSchema = z
+  .object({ ...zoneFields, active: z.boolean() })
   .partial()
   .strict()
   .refine((value) => Object.keys(value).length > 0, "Rien à modifier.");
 
-export const reorderSlotsSchema = z.object({ ids: z.array(z.string().trim().min(1).max(64)).min(1).max(50) }).strict();
-
-export type CreateSlotInput = z.infer<typeof createSlotSchema>;
-export type UpdateSlotInput = z.infer<typeof updateSlotSchema>;
+export type CreateZoneInput = z.infer<typeof createZoneSchema>;
+export type UpdateZoneInput = z.infer<typeof updateZoneSchema>;
 
 // ---------------------------------------------------------------------------
 // Super-administrateur (PLA-02)

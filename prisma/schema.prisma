@@ -70,6 +70,12 @@ enum OrderOrigin {
   RECURRING
 }
 
+/// Moment de livraison d'une tournée : le client choisit seulement « Matin » ou « Soir » (lot 1, demande 1).
+enum DeliveryPeriod {
+  MORNING
+  EVENING
+}
+
 /// Périodicité de facturation d'un commerçant et type de période d'une facture.
 enum BillingPeriod {
   DAILY
@@ -181,6 +187,7 @@ model Company {
   categories              Category[]
   products                Product[]
   merchantPrices          MerchantPrice[]
+  deliveryZones           DeliveryZone[]
   slots                   Slot[]
   orders                  Order[]
   orderLines              OrderLine[]
@@ -326,6 +333,9 @@ model Merchant {
   billingPeriod      BillingPeriod  @default(MONTHLY) @map("billing_period")
   paymentMethod      PaymentMethod? @map("payment_method")
   active             Boolean        @default(true)
+  /// Tournée (zone) à laquelle l'administrateur rattache le client ; vide : il ne peut pas commander.
+  zoneId             String?        @map("zone_id")
+  zone               DeliveryZone?  @relation(fields: [zoneId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -338,6 +348,7 @@ model Merchant {
 
   @@index([companyId, active])
   @@index([companyId, name])
+  @@index([zoneId])
   @@map("merchants")
 }
 
@@ -410,17 +421,49 @@ model MerchantPrice {
   @@map("merchant_prices")
 }
 
-/// Créneau de livraison (RG-08) : une tournée correspond à un créneau.
+/// Tournée de livraison (zone) avec sa plage du matin et sa plage du soir (lot 1, demande 1).
+/// Chaque zone porte exactement deux créneaux (`Slot`) : matin et soir, tenus à jour par
+/// `delivery-zone.service.ts`. Le client est rattaché à une zone par l'administrateur.
+model DeliveryZone {
+  id           String  @id @default(cuid())
+  companyId    String  @map("company_id")
+  company      Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name         String
+  /// « HH:MM », heure locale de l'entreprise.
+  morningStart String  @map("morning_start")
+  morningEnd   String  @map("morning_end")
+  eveningStart String  @map("evening_start")
+  eveningEnd   String  @map("evening_end")
+  active       Boolean @default(true)
+  sortOrder    Int     @default(0) @map("sort_order")
+
+  slots     Slot[]
+  merchants Merchant[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, name])
+  @@index([companyId, sortOrder])
+  @@map("delivery_zones")
+}
+
+/// Créneau de livraison (RG-08) : le matin ou le soir d'une tournée (zone). Les tournées du jour
+/// (`Round`) sont calculées par créneau, donc par zone et par moment de la journée.
+/// Un créneau sans zone est un ancien créneau horaire : gardé pour l'historique, plus proposé.
 model Slot {
-  id        String  @id @default(cuid())
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id        String          @id @default(cuid())
+  companyId String          @map("company_id")
+  company   Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  zoneId    String?         @map("zone_id")
+  zone      DeliveryZone?   @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+  period    DeliveryPeriod?
   label     String?
   /// « HH:MM », heure locale de l'entreprise.
-  startTime String  @map("start_time")
-  endTime   String  @map("end_time")
-  active    Boolean @default(true)
-  sortOrder Int     @default(0) @map("sort_order")
+  startTime String          @map("start_time")
+  endTime   String          @map("end_time")
+  active    Boolean         @default(true)
+  sortOrder Int             @default(0) @map("sort_order")
 
   orders          Order[]
   recurringOrders RecurringOrder[]
@@ -429,7 +472,7 @@ model Slot {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([companyId, startTime, endTime])
+  @@unique([zoneId, period])
   @@index([companyId, sortOrder])
   @@map("slots")
 }

@@ -52,7 +52,8 @@ export function matches(row: Row, where: Where | undefined): boolean {
       if (!matches(row, condition)) return false;
       continue;
     }
-    if (!(key in row) && isPlainObject(condition)) throw new Error(`memory-db : filtre de relation non simulé « ${key} »`);
+    // Champ absent d'une ligne de test (colonne ajoutée depuis) : vaut null pour un opérateur ({ in }, { not }…).
+    if (!(key in row) && isPlainObject(condition) && !Object.keys(condition).some((k) => OPERATORS.has(k))) throw new Error(`memory-db : filtre de relation non simulé « ${key} »`);
     if (!matchField(row[key], condition)) return false;
   }
   return true;
@@ -139,7 +140,7 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
       return Promise.all(arg as Promise<unknown>[]);
     },
   };
-  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob"]) {
+  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone"]) {
     db[model] = delegate(model);
   }
   return db;

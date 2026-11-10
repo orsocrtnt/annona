@@ -26,7 +26,7 @@
  * Une ligne de journal « DeliveryDay / LOCK » marque la date comme traitée : le cron et l'appel
  * paresseux `ensureDateLocked` ne relancent pas une date déjà traitée.
  */
-import type { OrderStatus, PrismaClient } from "@prisma/client";
+import type { DeliveryPeriod, OrderStatus, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { loadAppliedPricesByMerchant } from "@/domains/catalog/pricing";
 import { newReference, slotLabel } from "@/domains/order/merchant-order.service";
@@ -107,15 +107,23 @@ type ExistingOrder = { merchantId: string; slotId: string; origin: "MANUAL" | "R
 
 /**
  * RG-04 (critère de recette 4) : faut-il générer la commande récurrente de ce commerçant pour J ?
- * Non s'il a une commande manuelle pour J (tout créneau, tout statut, annulée comprise), ni si une
- * commande existe déjà sur ce créneau (récurrente déjà générée : idempotence).
+ * Non s'il a une commande manuelle pour J au même moment de la journée (tout statut, annulée comprise),
+ * ni si une commande existe déjà sur ce créneau (récurrente déjà générée : idempotence).
+ * Lot 1, demande 1 : matin et soir sont deux livraisons distinctes ; une commande manuelle du matin ne
+ * bloque pas la récurrente du soir. Créneaux anciens (sans moment) : toute commande manuelle du jour bloque.
  */
 export function recurringDecision(
   recurring: { merchantId: string; slotId: string },
-  existing: readonly ExistingOrder[]
+  existing: readonly ExistingOrder[],
+  periodOf: (slotId: string) => DeliveryPeriod | null = () => null
 ): "GENERATE" | "MANUAL_ORDER_EXISTS" | "ORDER_EXISTS_ON_SLOT" {
   const own = existing.filter((order) => order.merchantId === recurring.merchantId);
-  if (own.some((order) => order.origin === "MANUAL")) return "MANUAL_ORDER_EXISTS";
+  const period = periodOf(recurring.slotId);
+  const samePeriod = (order: ExistingOrder) => {
+    const other = periodOf(order.slotId);
+    return period === null || other === null || other === period;
+  };
+  if (own.some((order) => order.origin === "MANUAL" && samePeriod(order))) return "MANUAL_ORDER_EXISTS";
   if (own.some((order) => order.slotId === recurring.slotId)) return "ORDER_EXISTS_ON_SLOT";
   return "GENERATE";
 }
@@ -145,8 +153,8 @@ async function generateRecurringOrders(tx: LockTx, companyId: string, date: stri
 
   const merchantIds = [...new Set(recurrings.map((row) => row.merchantId))];
   const [merchants, slots, existingRows, templateLines] = await Promise.all([
-    tx.merchant.findMany({ where: { companyId, id: { in: merchantIds } }, select: { id: true, active: true } }),
-    tx.slot.findMany({ where: { companyId, id: { in: [...new Set(recurrings.map((row) => row.slotId))] } }, select: { id: true, active: true } }),
+    tx.merchant.findMany({ where: { companyId, id: { in: merchantIds } }, select: { id: true, active: true, zoneId: true } }),
+    tx.slot.findMany({ where: { companyId }, select: { id: true, active: true, zoneId: true, period: true } }),
     tx.order.findMany({
       where: { companyId, deliveryDate: dbDate, merchantId: { in: merchantIds } },
       select: { merchantId: true, slotId: true, origin: true, status: true },
@@ -162,6 +170,19 @@ async function generateRecurringOrders(tx: LockTx, companyId: string, date: stri
   });
   const activeMerchants = new Set(merchants.filter((row) => row.active).map((row) => row.id));
   const activeSlots = new Set(slots.filter((row) => row.active).map((row) => row.id));
+  const slotById = new Map(slots.map((row) => [row.id, row]));
+  const periodOf = (slotId: string) => slotById.get(slotId)?.period ?? null;
+  const zoneOf = new Map(merchants.map((row) => [row.id, row.zoneId ?? null]));
+  /**
+   * Lot 1, demande 1 : client passé dans une autre tournée depuis la création de sa commande type :
+   * la commande est générée au même moment (matin ou soir) de sa tournée actuelle.
+   */
+  const targetSlot = (recurring: { merchantId: string; slotId: string }) => {
+    const slot = slotById.get(recurring.slotId);
+    const zoneId = zoneOf.get(recurring.merchantId);
+    if (!slot?.period || !zoneId || slot.zoneId === zoneId) return recurring.slotId;
+    return slots.find((row) => row.zoneId === zoneId && row.period === slot.period)?.id ?? recurring.slotId;
+  };
   const available = new Set(products.filter((row) => row.active && row.category.active).map((row) => row.id));
   const existing: ExistingOrder[] = [...existingRows];
 
@@ -169,8 +190,9 @@ async function generateRecurringOrders(tx: LockTx, companyId: string, date: stri
   for (const recurring of recurrings) {
     const skip = (reason: RecurringSkipReason) => skipped.push({ recurringOrderId: recurring.id, reason });
     if (!activeMerchants.has(recurring.merchantId)) { skip("MERCHANT_INACTIVE"); continue; }
-    if (!activeSlots.has(recurring.slotId)) { skip("SLOT_INACTIVE"); continue; }
-    const decision = recurringDecision(recurring, existing);
+    const slotId = targetSlot(recurring);
+    if (!activeSlots.has(slotId)) { skip("SLOT_INACTIVE"); continue; }
+    const decision = recurringDecision({ merchantId: recurring.merchantId, slotId }, existing, periodOf);
     if (decision !== "GENERATE") { skip(decision); continue; }
     // Produit retiré du catalogue depuis la création de la commande type : ligne écartée.
     const lines = templateLines.filter((line) => line.recurringOrderId === recurring.id && available.has(line.productId) && line.quantity > 0);
@@ -182,7 +204,7 @@ async function generateRecurringOrders(tx: LockTx, companyId: string, date: stri
         merchantId: recurring.merchantId,
         reference: newReference(date),
         deliveryDate: dbDate,
-        slotId: recurring.slotId,
+        slotId,
         status: "VALIDATED",
         origin: "RECURRING",
         recurringOrderId: recurring.id,
@@ -193,7 +215,7 @@ async function generateRecurringOrders(tx: LockTx, companyId: string, date: stri
     await tx.orderLine.createMany({
       data: lines.map((line) => ({ companyId, orderId: order.id, productId: line.productId, quantityOrdered: line.quantity })),
     });
-    existing.push({ merchantId: recurring.merchantId, slotId: recurring.slotId, origin: "RECURRING", status: "VALIDATED" });
+    existing.push({ merchantId: recurring.merchantId, slotId, origin: "RECURRING", status: "VALIDATED" });
     generated += 1;
   }
   return { generated, skipped };

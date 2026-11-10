@@ -98,15 +98,24 @@ function fixture() {
       { id: "B", cutoffTime: "17:00", timezone: PARIS },
     ],
     merchant: [
-      { id: "A1", companyId: "A", name: "Café A1", active: true },
-      { id: "A2", companyId: "A", name: "Épicerie A2", active: true },
-      { id: "A3", companyId: "A", name: "Ancien client", active: false },
-      { id: "B1", companyId: "B", name: "Hôtel B1", active: true },
+      { id: "A1", companyId: "A", name: "Café A1", active: true, zoneId: "zSud" },
+      { id: "A2", companyId: "A", name: "Épicerie A2", active: true, zoneId: "zSud" },
+      { id: "A3", companyId: "A", name: "Ancien client", active: false, zoneId: "zSud" },
+      { id: "A4", companyId: "A", name: "Sans tournée", active: true, zoneId: null },
+      { id: "B1", companyId: "B", name: "Hôtel B1", active: true, zoneId: "zB" },
+    ],
+    // Lot 1, demande 1 : tournée Sud (matin s6, soir sSoir), tournée Nord (autre zone), tournée de B.
+    deliveryZone: [
+      { id: "zSud", companyId: "A", name: "Sud", active: true },
+      { id: "zNord", companyId: "A", name: "Nord", active: true },
+      { id: "zB", companyId: "B", name: "Sud", active: true },
     ],
     slot: [
-      { id: "s6", companyId: "A", label: null, startTime: "06:00", endTime: "07:00", active: true },
-      { id: "sOff", companyId: "A", label: null, startTime: "09:00", endTime: "10:00", active: false },
-      { id: "sB", companyId: "B", label: null, startTime: "06:00", endTime: "07:00", active: true },
+      { id: "s6", companyId: "A", zoneId: "zSud", period: "MORNING", label: "Sud matin", startTime: "05:30", endTime: "11:00", active: true },
+      { id: "sSoir", companyId: "A", zoneId: "zSud", period: "EVENING", label: "Sud soir", startTime: "16:00", endTime: "19:00", active: true },
+      { id: "sNord", companyId: "A", zoneId: "zNord", period: "MORNING", label: "Nord matin", startTime: "05:30", endTime: "11:00", active: true },
+      { id: "sOff", companyId: "A", zoneId: null, period: null, label: null, startTime: "09:00", endTime: "10:00", active: false },
+      { id: "sB", companyId: "B", zoneId: "zB", period: "MORNING", label: "Sud matin", startTime: "06:00", endTime: "07:00", active: true },
     ],
     category: [
       { id: "catA", companyId: "A", active: true },
@@ -266,6 +275,50 @@ test("CMD-1 CLI-09 : commande récurrente (jours, créneau, suspension) bornée 
   await assert.rejects(updateRecurringOrder(A2, created.id, { active: true }, recurringDb), { status: 404 });
   await assert.rejects(createRecurringOrder(A1, { slotId: "sB", weekdays: [1], lines: [{ productId: "baguette", quantity: 1 }] }, recurringDb), { status: 400 });
   await assert.rejects(createRecurringOrder(A1, { slotId: "s6", weekdays: [1], lines: [{ productId: "painB", quantity: 1 }] }, recurringDb), { status: 400 });
+});
+
+test("lot 1, demande 1 : matin et soir du même jour = deux commandes ; seulement les moments de sa tournée ; sans tournée, pas de commande", async () => {
+  const { db, tables } = fixture();
+  // Vérification 3 : une commande du matin et une du soir pour le même jour, enregistrées séparément.
+  const morning = await saveMerchantOrder(A1, { deliveryDate: "2026-11-10", slotId: "s6", lines: [{ productId: "baguette", quantity: 30 }] }, BEFORE, db);
+  const evening = await saveMerchantOrder(A1, { deliveryDate: "2026-11-10", slotId: "sSoir", lines: [{ productId: "croissant", quantity: 12 }] }, BEFORE, db);
+  assert.equal(morning.created && evening.created, true);
+  assert.notEqual(morning.order.id, evening.order.id);
+  assert.deepEqual([morning.order.slot.label, evening.order.slot.label], ["Matin", "Soir"], "le client ne voit que Matin et Soir, sans heure");
+  assert.equal(orderFor(tables, "A1", "2026-11-10").length, 2);
+  // Vérification 4 : la veille à 16h59 les deux sont modifiables ; à 17h00 plus aucune.
+  for (const slotId of ["s6", "sSoir"]) {
+    await saveMerchantOrder(A1, { deliveryDate: "2026-11-10", slotId, lines: [{ productId: "baguette", quantity: 2 }] }, at("2026-11-09T15:59:59.000Z"), db);
+    await assert.rejects(
+      saveMerchantOrder(A1, { deliveryDate: "2026-11-10", slotId, lines: [{ productId: "baguette", quantity: 3 }] }, at("2026-11-09T16:00:00.000Z"), db),
+      { status: 409, code: "DEADLINE_PASSED" },
+      slotId
+    );
+  }
+  // Un moment d'une autre tournée, ou un client sans tournée : refusé.
+  await assert.rejects(saveMerchantOrder(A1, { deliveryDate: "2026-11-11", slotId: "sNord", lines: [{ productId: "baguette", quantity: 1 }] }, BEFORE, db), { status: 400, code: "SLOT_UNAVAILABLE" });
+  await assert.rejects(saveMerchantOrder({ ...A1, merchantId: "A4" }, { deliveryDate: "2026-11-11", slotId: "s6", lines: [{ productId: "baguette", quantity: 1 }] }, BEFORE, db), { status: 400, code: "SLOT_UNAVAILABLE" });
+});
+
+test("lot 1, demande 1 : la commande récurrente se règle sur matin, soir ou les deux", async () => {
+  const { db, tables } = fixture();
+  const recurringDb = db as unknown as RecurringDb;
+  const both = await createRecurringOrder(A1, { slotIds: ["s6", "sSoir"], weekdays: [1, 2], lines: [{ productId: "baguette", quantity: 20 }] }, recurringDb);
+  assert.equal(both.ids.length, 2);
+  const rows = (tables.recurringOrder ?? []).filter((row) => both.ids.includes(String(row.id)));
+  assert.deepEqual(rows.map((row) => row.slotId).sort(), ["s6", "sSoir"]);
+  for (const row of rows) {
+    assert.deepEqual((tables.recurringOrderLine ?? []).filter((line) => line.recurringOrderId === row.id).map((line) => [line.productId, line.quantity]), [["baguette", 20]]);
+  }
+  // Passer une commande type du matin à « les deux » : elle garde le matin, une copie prend le soir.
+  const single = await createRecurringOrder(A1, { slotIds: ["s6"], weekdays: [3], lines: [{ productId: "croissant", quantity: 4 }] }, recurringDb);
+  const updated = await updateRecurringOrder(A1, single.id, { slotIds: ["sSoir", "s6"] }, recurringDb);
+  assert.equal(updated.ids.length, 2);
+  assert.equal((tables.recurringOrder ?? []).find((row) => row.id === single.id)!.slotId, "s6");
+  const twin = (tables.recurringOrder ?? []).find((row) => row.id === updated.ids[1])!;
+  assert.deepEqual([twin.slotId, twin.weekdays], ["sSoir", [3]]);
+  assert.deepEqual((tables.recurringOrderLine ?? []).filter((line) => line.recurringOrderId === twin.id).map((line) => [line.productId, line.quantity]), [["croissant", 4]]);
+  await assert.rejects(createRecurringOrder(A1, { slotIds: ["sNord"], weekdays: [1], lines: [{ productId: "baguette", quantity: 1 }] }, recurringDb), { status: 400, code: "SLOT_UNAVAILABLE" });
 });
 
 test("CMD-1 : libellé de créneau sans heure libre", () => {

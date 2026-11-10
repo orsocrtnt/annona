@@ -6,13 +6,14 @@ import { prisma } from "@/services/prisma/client";
 import { applyPrices } from "@/domains/catalog/pricing";
 import { photoVersion } from "@/domains/catalog/catalog.service";
 import type { MerchantRef } from "@/domains/order/merchant-order.service";
-import { slotLabel } from "@/domains/order/merchant-order.service";
+import { clientSlotLabel, merchantSlotWhere } from "@/domains/order/merchant-order.service";
 import type { PortalCatalog, PortalMerchantProfile } from "@/domains/order/merchant-order.types";
 import { companyToday, firstOpenDeliveryDate } from "@/domains/order/order-deadline";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { isProductPhotoPath } from "@/lib/storage/product-photo";
 
 export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): Promise<PortalCatalog> {
+  const merchant = await prisma.merchant.findFirst({ where: { id: actor.merchantId, companyId: actor.companyId }, select: { zoneId: true } });
   const [company, categories, slots, specificPrices] = await Promise.all([
     prisma.company.findUnique({ where: { id: actor.companyId }, select: { cutoffTime: true, timezone: true } }),
     prisma.category.findMany({
@@ -28,11 +29,14 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
         },
       },
     }),
-    prisma.slot.findMany({
-      where: { companyId: actor.companyId, active: true },
-      orderBy: [{ sortOrder: "asc" }, { startTime: "asc" }],
-      select: { id: true, label: true, startTime: true, endTime: true },
-    }),
+    // Lot 1, demande 1 : seulement le matin et le soir de la tournée du client (aucun sans tournée).
+    merchant?.zoneId
+      ? prisma.slot.findMany({
+          where: merchantSlotWhere(actor.companyId, merchant.zoneId),
+          orderBy: [{ sortOrder: "asc" }, { startTime: "asc" }],
+          select: { id: true, label: true, startTime: true, endTime: true, period: true },
+        })
+      : Promise.resolve([]),
     prisma.merchantPrice.findMany({
       where: { companyId: actor.companyId, merchantId: actor.merchantId },
       select: { productId: true, priceCents: true },
@@ -61,7 +65,7 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
           };
         }),
       })),
-    slots: slots.map((slot) => ({ id: slot.id, label: slotLabel(slot), startTime: slot.startTime, endTime: slot.endTime })),
+    slots: slots.map((slot) => ({ id: slot.id, label: clientSlotLabel(slot), startTime: slot.startTime, endTime: slot.endTime, period: slot.period })),
     rules: {
       today: companyToday(now, company.timezone),
       firstOpenDate: firstOpenDeliveryDate(now, company.cutoffTime, company.timezone),

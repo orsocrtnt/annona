@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createCompanyWithAdmin, slugify, type AuthInviter, type CompanyAdminDb } from "../src/domains/admin/company-admin.service";
 import { getCompanySettings, updateCompanySettings, type CompanySettingsDb } from "../src/domains/company/company-settings.service";
-import { createSlotForAdmin, deleteSlotForAdmin, listSlotsForAdmin, reorderSlotsForAdmin, updateSlotForAdmin, type SlotAdminDb } from "../src/domains/company/slot-admin.service";
+import { createZoneForAdmin, deleteZoneForAdmin, listZonesForAdmin, updateZoneForAdmin, type ZoneAdminDb } from "../src/domains/company/delivery-zone.service";
 import { createMerchantForAdmin, updateMerchantForAdmin, type MerchantAdminDb } from "../src/domains/merchant/merchant-admin.service";
 import { merchantsToRemind } from "../src/domains/notification/merchant-notification.service";
 import { updateCompanyAccount, type AccountAdminDb } from "../src/domains/user/account-admin.service";
@@ -143,22 +143,36 @@ test("ADM-09 : les fréquences du suivi GPS des livreurs ne sont pas proposées 
   assert.doesNotMatch(page, /LocationSettings|location-settings|GPS/);
 });
 
-test("ADM-09 créneaux : créer, refuser un doublon, modifier, désactiver, ordonner ; un créneau utilisé ne se supprime pas", async () => {
-  const { db } = fixture();
-  const slots = db as unknown as SlotAdminDb;
-  const afterCreate = await createSlotForAdmin("A", { label: null, startTime: "07:00", endTime: "08:00" }, slots);
-  assert.deepEqual(afterCreate.map((slot) => slot.displayLabel), ["5h – 6h", "6h – 7h", "7h – 8h"]);
-  await assert.rejects(createSlotForAdmin("A", { label: null, startTime: "07:00", endTime: "08:00" }, slots), { status: 409, code: "SLOT_DUPLICATE" });
-  const s7 = afterCreate[2]!.id;
-  await assert.rejects(updateSlotForAdmin("A", s7, { startTime: "09:00" }, slots), { code: "SLOT_INVALID" });
-  assert.equal((await updateSlotForAdmin("A", s7, { label: "Tôt le matin" }, slots))[2]!.displayLabel, "Tôt le matin");
-  // Utilisé par une commande : 409 à la suppression, désactivation possible.
-  assert.equal((await listSlotsForAdmin("A", slots)).find((slot) => slot.id === "s6")!.used, true);
-  await assert.rejects(deleteSlotForAdmin("A", "s6", slots), { status: 409, code: "SLOT_IN_USE" });
-  assert.equal((await updateSlotForAdmin("A", "s6", { active: false }, slots)).find((slot) => slot.id === "s6")!.active, false);
-  assert.deepEqual((await reorderSlotsForAdmin("A", [s7, "s6", "s5"], slots)).map((slot) => slot.id), [s7, "s6", "s5"]);
-  await assert.rejects(reorderSlotsForAdmin("A", [s7, "s6"], slots), { code: "SLOT_ORDER_INVALID" });
-  assert.deepEqual((await deleteSlotForAdmin("A", "s5", slots)).map((slot) => slot.id), [s7, "s6"]);
+test("lot 1, demande 1 : une tournée = zone + plage du matin + plage du soir ; ses deux créneaux suivent ; une tournée utilisée se désactive", async () => {
+  const { tables, db } = fixture();
+  const zones = db as unknown as ZoneAdminDb;
+  const sud = { name: "Sud", morningStart: "05:30", morningEnd: "11:00", eveningStart: "16:00", eveningEnd: "19:00" };
+  // Vérification 1 : la tournée Sud est créée et retrouvée dans les Paramètres.
+  const afterCreate = await createZoneForAdmin("A", sud, zones);
+  const created = afterCreate.find((zone) => zone.name === "Sud")!;
+  assert.deepEqual({ ...created, id: undefined }, { ...sud, id: undefined, active: true, sortOrder: 0, merchantCount: 0, used: false });
+  const slots = () => tables.slot!.filter((slot) => slot.zoneId === created.id).sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)));
+  assert.deepEqual(slots().map((slot) => [slot.period, slot.label, slot.startTime, slot.endTime, slot.active]), [
+    ["MORNING", "Sud matin", "05:30", "11:00", true],
+    ["EVENING", "Sud soir", "16:00", "19:00", true],
+  ]);
+  // Deux tournées ne portent pas le même nom ; deux tournées peuvent avoir les mêmes plages.
+  await assert.rejects(createZoneForAdmin("A", { ...sud, name: "sud" }, zones), { status: 409, code: "ZONE_DUPLICATE" });
+  await createZoneForAdmin("A", { ...sud, name: "Nord" }, zones);
+  await assert.rejects(createZoneForAdmin("A", { ...sud, name: "Est", eveningStart: "10:00" }, zones), { code: "ZONE_INVALID" });
+  // Modifier le nom et une plage : les créneaux suivent (libellés « Centre matin », heures).
+  await updateZoneForAdmin("A", created.id, { name: "Centre", morningStart: "06:00" }, zones);
+  assert.deepEqual(slots().map((slot) => [slot.label, slot.startTime]), [["Centre matin", "06:00"], ["Centre soir", "16:00"]]);
+  // Client rattaché : tournée utilisée, suppression refusée, désactivation possible (créneaux désactivés).
+  tables.merchant!.push({ id: "mz", companyId: "A", name: "Client Z", address: "1 rue", active: true, zoneId: created.id });
+  assert.equal((await listZonesForAdmin("A", zones)).find((zone) => zone.id === created.id)!.merchantCount, 1);
+  await assert.rejects(deleteZoneForAdmin("A", created.id, zones), { status: 409, code: "ZONE_IN_USE" });
+  await updateZoneForAdmin("A", created.id, { active: false }, zones);
+  assert.deepEqual(slots().map((slot) => slot.active), [false, false]);
+  // Tournée jamais utilisée : supprimée avec ses deux créneaux.
+  const nord = (await listZonesForAdmin("A", zones)).find((zone) => zone.name === "Nord")!;
+  await deleteZoneForAdmin("A", nord.id, zones);
+  assert.equal(tables.slot!.filter((slot) => slot.zoneId === nord.id).length, 0);
 });
 
 test("ADM-09, PLA-04 : heure limite, fuseau, délai du rappel, nom et unités ; autres réglages gardés ; écriture concurrente refusée", async () => {

@@ -14,6 +14,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | Category | directe | companyId | oui |
 | Product | directe | companyId | oui |
 | MerchantPrice | directe | companyId | oui |
+| DeliveryZone | directe | companyId | oui |
 | Slot | directe | companyId | oui |
 | Order | directe | companyId | oui |
 | OrderLine | directe | companyId | oui |

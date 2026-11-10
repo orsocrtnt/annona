@@ -80,6 +80,7 @@ export function MerchantsContent() {
                 <TableRow>
                   <TableHead>{t.columns.name}</TableHead>
                   <TableHead className="max-md:hidden">{t.columns.city}</TableHead>
+                  <TableHead>{t.zoneColumn}</TableHead>
                   <TableHead className="max-md:hidden">{t.columns.billing}</TableHead>
                   <TableHead className="max-md:hidden">{t.columns.accounts}</TableHead>
                   <TableHead>{t.columns.status}</TableHead>
@@ -102,6 +103,9 @@ export function MerchantsContent() {
                       ) : null}
                     </TableCell>
                     <TableCell className="max-md:hidden">{[row.postalCode, row.city].filter(Boolean).join(" ")}</TableCell>
+                    <TableCell data-testid="merchant-zone-cell">
+                      {row.zoneName ?? <span className="text-xs text-warning">{t.noZone}</span>}
+                    </TableCell>
                     <TableCell className="max-md:hidden">{t.periods[row.billingPeriod]}</TableCell>
                     <TableCell className="max-md:hidden">{t.accounts(row.userCount)}</TableCell>
                     <TableCell>

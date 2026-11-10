@@ -6,7 +6,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { computeTotals, loadAppliedPrices } from "@/domains/catalog/pricing";
-import { assertLines, slotLabel, type MerchantRef } from "@/domains/order/merchant-order.service";
+import { assertLines, clientSlotLabel, findMerchantSlot, type MerchantRef } from "@/domains/order/merchant-order.service";
 import type { PortalRecurringOrder } from "@/domains/order/merchant-order.types";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { fr } from "@/lib/i18n/fr";
@@ -25,11 +25,15 @@ function normalizeWeekdays(weekdays: readonly number[]): number[] {
   return unique;
 }
 
-async function assertRefs(db: RecurringDb, actor: MerchantRef, input: { slotId?: string; lines?: RecurringOrderInput["lines"] }) {
-  if (input.slotId) {
-    const slot = await db.slot.findFirst({ where: { id: input.slotId, companyId: actor.companyId, active: true } });
-    if (!slot) throw new DomainRuleError(400, fr.order.errors.slotUnavailable, "SLOT_UNAVAILABLE");
-  }
+/** Moments demandés : `slotIds` (matin, soir ou les deux) ou, pour compatibilité, `slotId`. */
+function requestedSlots(input: { slotId?: string; slotIds?: string[] }): string[] | undefined {
+  if (input.slotIds?.length) return [...new Set(input.slotIds)];
+  return input.slotId ? [input.slotId] : undefined;
+}
+
+async function assertRefs(db: RecurringDb, actor: MerchantRef, input: { slotIds?: string[]; lines?: RecurringOrderInput["lines"] }) {
+  // Lot 1, demande 1 : chaque moment est le matin ou le soir de la tournée du client.
+  for (const slotId of input.slotIds ?? []) await findMerchantSlot(db, actor, slotId);
   if (input.lines) {
     assertLines(input.lines);
     const products = await db.product.findMany({
@@ -58,7 +62,7 @@ export async function listRecurringOrders(actor: MerchantRef, db: RecurringDb = 
       label: true,
       weekdays: true,
       active: true,
-      slot: { select: { id: true, label: true, startTime: true, endTime: true } },
+      slot: { select: { id: true, label: true, startTime: true, endTime: true, period: true } },
       lines: {
         select: {
           productId: true,
@@ -83,7 +87,7 @@ export async function listRecurringOrders(actor: MerchantRef, db: RecurringDb = 
     return {
       id: row.id,
       label: row.label,
-      slot: { id: row.slot.id, label: slotLabel(row.slot), startTime: row.slot.startTime, endTime: row.slot.endTime },
+      slot: { id: row.slot.id, label: clientSlotLabel(row.slot), startTime: row.slot.startTime, endTime: row.slot.endTime, period: row.slot.period ?? null },
       weekdays: row.weekdays,
       active: row.active,
       lines,
@@ -92,38 +96,52 @@ export async function listRecurringOrders(actor: MerchantRef, db: RecurringDb = 
   });
 }
 
+/** CLI-09 : une commande type par moment choisi (matin, soir, ou les deux : deux commandes types). */
 export async function createRecurringOrder(actor: MerchantRef, input: RecurringOrderInput, db: RecurringDb = prisma) {
   const weekdays = normalizeWeekdays(input.weekdays);
-  await assertRefs(db, actor, input);
+  const slotIds = requestedSlots(input);
+  if (!slotIds) throw new DomainRuleError(400, fr.order.errors.slotUnavailable, "SLOT_UNAVAILABLE");
+  await assertRefs(db, actor, { slotIds, lines: input.lines });
   return db.$transaction(async (tx) => {
-    const row = await tx.recurringOrder.create({
-      data: {
-        companyId: actor.companyId,
-        merchantId: actor.merchantId,
-        slotId: input.slotId,
-        label: input.label ?? null,
-        weekdays,
-        active: input.active ?? true,
-      },
-    });
-    await tx.recurringOrderLine.createMany({
-      data: input.lines.map((line) => ({ companyId: actor.companyId, recurringOrderId: row.id, productId: line.productId, quantity: line.quantity })),
-    });
-    return { id: row.id };
+    const ids: string[] = [];
+    for (const slotId of slotIds) {
+      const row = await tx.recurringOrder.create({
+        data: {
+          companyId: actor.companyId,
+          merchantId: actor.merchantId,
+          slotId,
+          label: input.label ?? null,
+          weekdays,
+          active: input.active ?? true,
+        },
+      });
+      await tx.recurringOrderLine.createMany({
+        data: input.lines.map((line) => ({ companyId: actor.companyId, recurringOrderId: row.id, productId: line.productId, quantity: line.quantity })),
+      });
+      ids.push(row.id);
+    }
+    return { id: ids[0]!, ids };
   });
 }
 
-/** Modifier, suspendre (`active: false`) ou réactiver. Les lignes fournies remplacent les anciennes. */
+/**
+ * Modifier, suspendre (`active: false`) ou réactiver. Les lignes fournies remplacent les anciennes.
+ * Deux moments demandés (matin et soir) : cette commande type garde le sien (ou prend le premier) et
+ * une copie est créée pour l'autre, avec les mêmes jours et les mêmes lignes.
+ */
 export async function updateRecurringOrder(actor: MerchantRef, id: string, input: UpdateRecurringOrderInput, db: RecurringDb = prisma) {
   const existing = await findOwn(db, actor, id);
   const weekdays = input.weekdays ? normalizeWeekdays(input.weekdays) : undefined;
-  await assertRefs(db, actor, input);
+  const slotIds = requestedSlots(input);
+  await assertRefs(db, actor, { slotIds, lines: input.lines });
+  const ownSlot = slotIds ? (slotIds.includes(existing.slotId) ? existing.slotId : slotIds[0]!) : undefined;
+  const twinSlots = slotIds ? slotIds.filter((slotId) => slotId !== ownSlot) : [];
   return db.$transaction(async (tx) => {
     await tx.recurringOrder.update({
       where: { id: existing.id },
       data: {
         ...(input.label !== undefined ? { label: input.label } : {}),
-        ...(input.slotId !== undefined ? { slotId: input.slotId } : {}),
+        ...(ownSlot !== undefined ? { slotId: ownSlot } : {}),
         ...(weekdays ? { weekdays } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
       },
@@ -134,7 +152,27 @@ export async function updateRecurringOrder(actor: MerchantRef, id: string, input
         data: input.lines.map((line) => ({ companyId: actor.companyId, recurringOrderId: existing.id, productId: line.productId, quantity: line.quantity })),
       });
     }
-    return { id: existing.id };
+    const ids = [existing.id];
+    if (twinSlots.length > 0) {
+      const lines = input.lines ?? (await tx.recurringOrderLine.findMany({ where: { recurringOrderId: existing.id, companyId: actor.companyId } }));
+      for (const slotId of twinSlots) {
+        const twin = await tx.recurringOrder.create({
+          data: {
+            companyId: actor.companyId,
+            merchantId: actor.merchantId,
+            slotId,
+            label: input.label !== undefined ? input.label : existing.label,
+            weekdays: weekdays ?? existing.weekdays,
+            active: input.active ?? existing.active,
+          },
+        });
+        await tx.recurringOrderLine.createMany({
+          data: lines.map((line) => ({ companyId: actor.companyId, recurringOrderId: twin.id, productId: line.productId, quantity: line.quantity })),
+        });
+        ids.push(twin.id);
+      }
+    }
+    return { id: existing.id, ids };
   });
 }
 
