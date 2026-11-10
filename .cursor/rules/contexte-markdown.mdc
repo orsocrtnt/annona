@@ -1,5 +1,5 @@
 ---
-description: Lire et mettre à jour la TODO et le contexte exclusivement dans le dépôt (branche base, aucun push sans demande)
+description: Lire et mettre à jour la TODO et le contexte exclusivement dans le dépôt (branche personnelle depuis base, PR vers base, aucun push sans demande)
 alwaysApply: true
 ---
 
@@ -20,6 +20,6 @@ Lire le contexte et les statuts dans les fichiers Markdown du dépôt, sur la br
 
 1. Modifier le code, les tests, les documents pertinents et la case de `TODO.md` seulement si les critères sont réellement vérifiés.
 2. Exécuter `npm run todo:progress` si `TODO.md` a changé.
-3. Committer sur `base` seulement. Aucun push (ni `base`, ni `preproduction`, ni `main`) sans demande explicite du propriétaire : `preproduction` et le site en ligne portent encore l'ancien produit.
+3. Committer sur sa branche `<prénom>/<sujet>` créée depuis `base` (protégée : modifications par pull request uniquement, voir « Travail à deux » dans `AGENTS.md`). Pousser sa branche et ouvrir la PR seulement à la demande du développeur. Jamais de push sur `preproduction` ni `main` sans demande explicite d'Orso : ils portent encore l'ancien produit.
 
 Si une pièce ou une décision absente du dépôt est indispensable, noter le blocage dans `TODO.md` et le signaler au propriétaire.

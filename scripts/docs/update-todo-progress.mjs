@@ -34,9 +34,10 @@ const gaugeWidth = 20;
 const filled = total === 0 ? 0 : Math.round((completed / total) * gaugeWidth);
 const gauge = `${"█".repeat(filled)}${"░".repeat(gaugeWidth - filled)}`;
 // Liste en simples tirets : seules les cases des tâches comptent dans la jauge.
-// Chaque tâche ouverte porte « **Qui : Claude.** » ou « **Qui : Toi — condition.** » : celui qui agit ensuite.
+// Chaque tâche ouverte porte « **Qui : Claude.** », « **Qui : Orso — condition.** » ou « **Qui : Théo.** » : celui qui agit ensuite.
+const owners = ["Claude", "Orso", "Théo"];
 const openTasks = [...todo.matchAll(/^- \[ \] \*\*(.+?)\.?\*\*[\s\S]*?(?=^- \[[ xX]\] |^## |(?![\s\S]))/gm)].map((match) => {
-  const owner = match[0].match(/^\s*\*\*Qui : (Claude|Toi)(?: — (.+?))?\.\*\*/m);
+  const owner = match[0].match(new RegExp(`^\\s*\\*\\*Qui : (${owners.join("|")})(?: — (.+?))?\\.\\*\\*`, "m"));
   return { title: match[1], owner: owner?.[1] ?? null, when: owner?.[2] ?? null };
 });
 function taskList(owner) {
@@ -53,14 +54,7 @@ const block = `${startMarker}
 
 \`${gauge}\` · ${remaining} tâches restantes
 
-**À faire par Claude**
-
-${taskList("Claude")}
-
-**À faire par toi**
-
-${taskList("Toi")}
-${unclassified ? `\n**À classer**\n\n${unclassified}\n` : ""}
+${owners.map((owner) => `**À faire par ${owner}**\n\n${taskList(owner) || "- Rien pour l'instant"}\n`).join("\n")}${unclassified ? `\n**À classer**\n\n${unclassified}\n` : ""}
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : \`npm run todo:progress\`, automatiquement avant \`npm run docs:verify\`._
 ${endMarker}`;
 
