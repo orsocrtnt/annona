@@ -23,7 +23,7 @@ Date : 10 novembre 2026. Branche `orso/lot1-retouches`. Base `annona-dev` (`fqzl
 ## Ce qui ralentissait
 
 1. **L'identification à chaque requête.** Chaque appel d'API et chaque page relisent le compte (utilisateur, entreprise, rôle, permissions) pour que la suspension d'un compte ou le retrait d'un droit s'appliquent tout de suite. Cette lecture coûtait en moyenne deux allers-retours et demi vers la base (environ quatre requêtes Prisma `include` successives), soit environ 1,3 s ici contre 0,5 s après.
-2. **La cascade session puis données, au chargement du portail client et de l'application livreur.** `RoleGuard` attend `/api/auth/session` avant d'afficher la page et de lancer ses propres requêtes, alors que le middleware a déjà vérifié le rôle côté serveur. Cela ajoute un aller-retour complet à chaque ouverture. **Pas corrigé** : voir « Décision ».
+2. **La cascade session puis données, au chargement du portail client et de l'application livreur.** `RoleGuard` attend `/api/auth/session` avant d'afficher la page et de lancer ses propres requêtes, alors que le middleware a déjà vérifié le rôle côté serveur. Cela ajoute un aller-retour complet à chaque ouverture. **Corrigé ensuite** sur décision d'Orso : voir « Décision et deuxième mesure ».
 3. **Des lectures en base faites l'une après l'autre** alors qu'elles sont indépendantes : contrôle du verrouillage du jour (entreprise, puis marqueur de verrouillage) appelé par les écrans Commandes, Tournées et Production ; livreurs puis prix dans la liste des commandes de l'administrateur.
 
 ## Corrections faites
@@ -75,16 +75,30 @@ Une mesure isolée peut varier de quelques centaines de millisecondes d'une exé
 - **Cibles tactiles de moins de 44 px** : deux vrais cas, corrigés (voir ci-dessus). Les autres signalements étaient faux : les interrupteurs ont déjà une zone tactile de 44 px (pseudo-élément), et les cases à cocher des paramètres du client sont dans une ligne cliquable de 44 px. Le contrôle en tient compte désormais.
 - **Éléments coupés, textes illisibles** : pas contrôlés à l'œil dans cette mesure (aucune capture d'écran examinée). À faire pendant la recette navigateur du lot (LOT1-RECETTE), en largeur téléphone, et sur de vrais téléphones (ci-dessous).
 
-## Décision demandée au propriétaire
+## Décision et deuxième mesure (10 novembre, soir)
 
-**Cascade session puis données (portail client, livreur).** Deux possibilités pour retirer cet aller-retour à l'ouverture :
-1. afficher la page et lancer ses requêtes sans attendre la session côté navigateur (le middleware refuse déjà côté serveur toute page d'un autre rôle, et chaque API vérifie ses droits) ;
-2. faire fournir la session par le serveur avec la page (plus lourd : les pages deviennent dynamiques).
+**Décision d'Orso** : le portail client et l'application livreur s'affichent et lancent leurs requêtes sans attendre la session du navigateur ; une fois la session connue, un autre rôle ou une session absente redirige comme avant (`src/components/auth/role-guard.tsx`, commit `cb442e1`).
 
-La première modification a été refusée par le garde-fou automatique de la session de travail, parce qu'elle touche une garde d'accès. Elle demande donc ton accord explicite.
+**Deuxième mesure**, base migrée, même protocole (téléphone 360 px, 4G simulée, processeur ×4), version de production sur `da2b732` + retouches, avec les écrans du lot 1 (`E2E_PERF_SCREENS=lot1`, résultat brut `outputs/perf/apres-lot1.json`) :
+
+| Espace | Écran | Ouverture (1ʳᵉ mesure après → 2ᵉ) | Navigation (1ʳᵉ → 2ᵉ) |
+|---|---|---|---|
+| Administrateur | Tableau de bord | 5,8 s → **3,3 s** | — |
+| Administrateur | Commandes | 4,5 → 2,4 s | 3,7 → 1,8 s |
+| Administrateur | Commandes : détail | 6,2 → 2,5 s | 5,8 → 1,6 s |
+| Administrateur | Tournées | 5,6 → 2,8 s | 3,7 → 1,5 s |
+| Administrateur | Promotions (lot 1) | 2,3 s | 1,3 s |
+| Administrateur | Suivi livreurs (lot 1) | 1,7 s | 0,8 s |
+| Boulanger | Production | 4,6 → 2,5 s | — |
+| Client | Commander | 3,2 → 2,5 s | — |
+| Client | Mes commandes | 3,9 → 2,4 s | 2,7 → 1,5 s |
+| Livreur | Ma tournée | 3,7 → 2,2 s | — |
+
+Sur les 26 écrans : médianes 2,1 s à l'ouverture et 1,0 s en navigation ; 25 sur 26 sous 3 s à l'ouverture (seul le tableau de bord de l'administrateur reste à 3,3 s), 22 sur 22 en navigation ; aucun débordement horizontal, aucune cible tactile trop petite.
+
+**Prudence sur la comparaison** : les écrans de l'administrateur, que la décision ne touche pas, gagnent aussi beaucoup. Une partie de l'écart vient donc de la base, plus rapide au moment de la deuxième mesure ; les deux mesures n'ont pas été faites en même temps. Le gain propre à la décision n'est pas isolé. En production (serveur et base à Paris), les temps devraient être plus bas encore, sans que ce soit mesuré.
 
 ## Reste à faire
 
 - **Mesure en conditions de production** : refaire la mesure contre un déploiement Vercel (`cdg1`) branché sur `annona-dev` ou une base de recette, pour confirmer l'objectif des 3 s sans la latence de ce poste.
 - **Vrais téléphones** (vérification 3 du document) : commander, recopier une commande, livrer un arrêt, consulter les tournées sur un iPhone et un Android. Non fait : aucun appareil disponible pour l'agent ; les parcours ont été rejoués en émulation tactile 360 px.
-- **Écrans du lot 1** (Promotions, Suivi livreurs, fenêtres des mini admins) : à mesurer après les migrations.

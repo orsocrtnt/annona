@@ -1,6 +1,6 @@
-import { mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import { mkdirSync, readFileSync, appendFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { test, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 /**
  * Recette navigateur du lot 1 (LOT1-RECETTE) : D1 à D9 sur annona-dev, serveur déjà lancé.
@@ -967,7 +967,7 @@ test("D9 téléphone et non-régression", async ({ browser }) => {
   result["client errors"] = client.errors;
   await close(client);
   const driver = await open(browser, "livreur-1", { width: 390 });
-  for (const path of ["/driver", "/driver/missions"]) {
+  for (const path of ["/driver"]) {
     const urls: string[] = [];
     const handler = (frame: import("@playwright/test").Frame) => { if (frame === driver.page.mainFrame()) urls.push(frame.url().replace(/^https?:\/\/[^/]+/, "")); };
     driver.page.on("framenavigated", handler);

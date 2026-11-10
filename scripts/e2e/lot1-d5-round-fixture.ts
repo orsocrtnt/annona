@@ -1,6 +1,6 @@
 /**
  * Recette LOT1-D5 (suivi des livreurs) : remet une tournée de démonstration du jour en état « assignée »
- * pour qu'un livreur la démarre dans le navigateur. Les deux premiers arrêts restent livrés, les autres
+ * pour qu'un livreur la démarre dans le navigateur. Tous les arrêts (sauf `KEEP_DELIVERED` premiers)
  * repassent « à livrer » (commandes préparées, quantités livrées effacées). Données de démonstration
  * uniquement (`demo_`), annona-dev uniquement ; `npm run db:seed` remet l'historique d'origine.
  *
@@ -12,7 +12,8 @@ import { companyToday, deliveryDateToDb } from "../../src/domains/order/order-de
 
 const COMPANY_ID = "demo_company_boulangerie";
 const ROUND_NAME = "Tournée Sud matin · A";
-const KEEP_DELIVERED = 2;
+/** Arrêts laissés livrés en tête de tournée (`KEEP_DELIVERED=1 …` pour en garder). */
+const KEEP_DELIVERED = Number(process.env.KEEP_DELIVERED ?? 0);
 
 async function main() {
   const errors = validateDevEnvironment(process.env);

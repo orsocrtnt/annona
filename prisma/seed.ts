@@ -5,7 +5,7 @@
  *
  * Idempotent : référentiel en `upsert` sur des identifiants préfixés `demo_` ; commandes, tournées et
  * commandes récurrentes de l'entreprise de démonstration supprimées puis recréées par rapport à
- * aujourd'hui. Aucune autre donnée n'est touchée.
+ * aujourd'hui ; promotions de l'entreprise de démonstration supprimées. Aucune autre donnée n'est touchée.
  *
  * Comptes connectables créés dans Supabase Auth (clé service_role). Les mots de passe sont écrits
  * dans `outputs/comptes-demo.md` (dossier ignoré par git), jamais dans la console ni le dépôt.
@@ -593,6 +593,9 @@ async function seedOrders(productIds: string[], merchantIds: string[], userIds: 
   await prisma.round.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
   await prisma.order.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
   await prisma.recurringOrder.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
+  // Lot 1, D2 : les unités promo vendues sont comptées sur les commandes ; une promotion gardée alors que ses
+  // commandes sont supprimées redeviendrait « en cours ». Elles repartent donc avec les commandes.
+  await prisma.promotion.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
 
   const parisNow = parisParts(now);
   const today: CalendarDate = { year: parisNow.year, month: parisNow.month, day: parisNow.day };

@@ -95,7 +95,7 @@ function PromotionTable({ title, rows, empty, testId }: { title: string; rows: P
                   <TableCell className="font-medium">
                     {row.productName}
                     {/* Téléphone : l'état passe sous le nom, pour que « Arrêter » reste visible sans défiler. */}
-                    <Badge variant={STATE_VARIANT[row.state]} className="mt-1 md:hidden">{t.states[row.state]}</Badge>
+                    <Badge variant={STATE_VARIANT[row.state]} className="mt-1 flex w-fit md:hidden">{t.states[row.state]}</Badge>
                   </TableCell>
                   <TableCell className="tabular-nums md:whitespace-nowrap">
                     <span className="font-medium">{formatCents(row.promoUnitPriceCents)}</span>
