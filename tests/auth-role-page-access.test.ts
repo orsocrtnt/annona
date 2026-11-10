@@ -50,6 +50,7 @@ const SPACES: Record<string, SystemRole[]> = {
   "/dashboard/merchants": ["ADMIN"],
   "/dashboard/catalog": ["ADMIN"],
   "/dashboard/promotions": ["ADMIN"],
+  "/dashboard/tracking": ["ADMIN"],
   "/dashboard/invoices": ["ADMIN"],
   "/support": ["ADMIN"],
   "/users": ["ADMIN"],

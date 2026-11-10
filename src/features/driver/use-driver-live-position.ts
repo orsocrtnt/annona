@@ -14,6 +14,10 @@ import { watchConnectivity } from "@/lib/native/network";
 
 export type LivePositionStatus = DriverLocationClientStatus;
 
+/** Lot 1, demande 5 : renvoi de la dernière position après 20 s sans envoi (objectif : 30 s au plus). */
+export const HEARTBEAT_MS = 20_000;
+const HEARTBEAT_CHECK_MS = 5_000;
+
 export type LivePosition = {
   latitude: number;
   longitude: number;
@@ -134,8 +138,16 @@ export function useDriverLivePosition(
       },
     });
 
+    // Lot 1, demande 5 : position renvoyée au moins toutes les 30 s pendant la tournée, même à l'arrêt
+    // (le GPS ne signale rien quand le téléphone ne bouge pas) : l'administrateur voit un livreur à jour.
+    const heartbeat = window.setInterval(() => {
+      const current = latestPosition.current;
+      if (current && Date.now() - lastSentAt.current >= HEARTBEAT_MS) void publish(current, true);
+    }, HEARTBEAT_CHECK_MS);
+
     return () => {
       cancelled = true;
+      window.clearInterval(heartbeat);
       clearRememberedDriverPosition();
       stopWatch();
       stopConnectivity();

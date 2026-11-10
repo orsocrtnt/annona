@@ -708,6 +708,32 @@ export const fr = {
     noPosition: "Position indisponible",
     manageRounds: "Gérer les tournées",
   },
+  /** Lot 1, demande 5 : suivi des livreurs. */
+  tracking: {
+    title: "Suivi livreurs",
+    subtitle: "Position des livreurs en tournée et trajet jusqu'à leurs prochains arrêts.",
+    refreshed: (time: string) => `Mis à jour à ${time} · actualisation toutes les 15 s`,
+    empty: "Aucun livreur en tournée pour le moment.",
+    emptyHint: "La position d'un livreur n'est suivie que pendant une tournée démarrée.",
+    map: "Carte",
+    list: "Livreurs",
+    privacy: "Position suivie seulement pendant une tournée en cours, jamais en dehors.",
+    positionAt: (time: string) => `Position à ${time}`,
+    lastKnown: (time: string) => `Dernière position connue à ${time} (réseau perdu ?)`,
+    noPosition: "Position pas encore reçue",
+    nextStops: "Prochains arrêts",
+    remaining: (count: number) => (count === 0 ? "Plus aucun client à livrer" : `${count} client${count > 1 ? "s" : ""} à livrer`),
+    delivered: "Livrés",
+    deliveredAt: (time: string) => `livré à ${time}`,
+    incidents: "Problèmes signalés",
+    noDelivered: "Aucun arrêt livré pour l'instant.",
+    eta: (time: string) => `vers ${time}`,
+    routeApproximate: "Trajet approximatif (itinéraire indisponible)",
+    routeFromDepot: "Trajet depuis le laboratoire (position pas encore reçue)",
+    show: (name: string) => `Montrer ${name} sur la carte`,
+    selected: "Livreur sélectionné",
+    more: (count: number) => `+ ${count} autre${count > 1 ? "s" : ""}`,
+  },
 
   /** TOUR-1 : application livreur (LIV-01 à LIV-06). */
   driverRound: {

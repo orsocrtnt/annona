@@ -41,7 +41,7 @@ const menu = (subject: ReturnType<typeof subjectFor>) => companyNavItems.filter(
 test("LOT1-D4 vérifications 1 et 2 : « Commandes » et « Suivi des livreurs » seulement → menu réduit", () => {
   const subject = subjectFor(withMiniAdminModules({}, ["orders", "tracking"]));
   assert.deepEqual(subject.modules, ["orders", "tracking"]);
-  assert.deepEqual(menu(subject), ["Commandes"], "le menu « Suivi des livreurs » arrivera avec la demande 5");
+  assert.deepEqual(menu(subject), ["Commandes", "Suivi livreurs"]);
   assert.equal(canOpenPage("/dashboard/orders", subject), true);
   assert.equal(canOpenPage("/dashboard/orders/abc", subject), true, "détail d'une commande");
   assert.equal(canOpenPage("/dashboard/tracking", subject), true);
@@ -82,7 +82,7 @@ test("LOT1-D4 vérification 5 : « Commandes » retirée → la page des command
   assert.equal(canOpenPage("/dashboard/orders", after), false);
   assert.equal(after.permissions.includes("orders:read"), false, "API des commandes refusées");
   assert.deepEqual(evaluatePageAccess("/dashboard/orders", after), { kind: "redirect", location: "/dashboard/tracking" });
-  assert.deepEqual(menu(after), ["Tournées"]);
+  assert.deepEqual(menu(after), ["Suivi livreurs", "Tournées"]);
   // Aucune fonctionnalité : aucun écran.
   const none = subjectFor(withMiniAdminModules({}, []));
   assert.deepEqual(evaluatePageAccess("/dashboard", none), { kind: "forbidden" });
