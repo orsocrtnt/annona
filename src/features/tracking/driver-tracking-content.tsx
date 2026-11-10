@@ -155,7 +155,7 @@ function DriverCard({
           </span>
           <span className="mt-1 block text-sm font-medium" data-testid="tracking-remaining">{t.remaining(driver.remainingCount)}</span>
         </span>
-        <Badge variant="secondary" className="shrink-0 tabular-nums">{driver.delivered.length} {t.delivered.toLowerCase()}</Badge>
+        <Badge variant="secondary" className="shrink-0 tabular-nums">{t.deliveredCount(driver.delivered.length)}</Badge>
       </button>
 
       {selected ? (

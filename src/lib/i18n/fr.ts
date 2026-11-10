@@ -724,10 +724,11 @@ export const fr = {
     nextStops: "Prochains arrêts",
     remaining: (count: number) => (count === 0 ? "Plus aucun client à livrer" : `${count} client${count > 1 ? "s" : ""} à livrer`),
     delivered: "Livrés",
+    deliveredCount: (count: number) => `${count} livré${count > 1 ? "s" : ""}`,
     deliveredAt: (time: string) => `livré à ${time}`,
     incidents: "Problèmes signalés",
     noDelivered: "Aucun arrêt livré pour l'instant.",
-    eta: (time: string) => `vers ${time}`,
+    eta: (time: string) => `prévu à ${time}`,
     routeApproximate: "Trajet approximatif (itinéraire indisponible)",
     routeFromDepot: "Trajet depuis le laboratoire (position pas encore reçue)",
     show: (name: string) => `Montrer ${name} sur la carte`,
@@ -916,7 +917,7 @@ export const fr = {
   /** ADM-1 (ADM-09, PLA-03, PLA-04) : paramètres de l'entreprise. */
   companySettings: {
     title: "Paramètres",
-    subtitle: "Identité, heure limite, créneaux, catégories, unités et facturation",
+    subtitle: "Identité, heure limite, tournées, catégories, unités et facturation",
     identity: "Entreprise",
     identityHint: "Nom et logo affichés dans les applications des clients, des livreurs et du boulanger.",
     name: "Nom de l'entreprise",

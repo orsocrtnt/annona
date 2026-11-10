@@ -13,6 +13,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { ProductThumb } from "@/features/catalog/product-thumb";
 import { CartSheet } from "@/features/ordering/cart-sheet";
 import { catalogSections } from "@/features/ordering/catalog-sections";
+import { cartSyncAction } from "@/features/ordering/cart-sync";
 import { useCartStore } from "@/features/ordering/cart-store";
 import { DateSlotPicker } from "@/features/ordering/date-slot-picker";
 import { useOrderLookup, usePortalCatalog } from "@/features/ordering/hooks";
@@ -70,7 +71,9 @@ export function OrderCatalog() {
     else if (date !== state.deliveryDate) state.setDeliveryDate(date);
     const slot = wantedSlot && slots.some((item) => item.id === wantedSlot) ? wantedSlot : state.slotId;
     if (!slot || !slots.some((item) => item.id === slot)) {
+      // Lot 1, D1 : client sans tournée → aucun créneau ; l'ancien créneau mémorisé ne doit plus servir.
       if (slots[0]) state.setSlot(slots[0].id);
+      else if (state.slotId) useCartStore.setState({ slotId: null });
     } else if (slot !== state.slotId) state.setSlot(slot);
     if (wantedDate || wantedSlot) router.replace("/portal", { scroll: false });
   }, [rules, slots, hydrated, searchParams, router]);
@@ -78,25 +81,18 @@ export function OrderCatalog() {
   const lookup = useOrderLookup(hydrated ? cart.deliveryDate : null, hydrated ? cart.slotId : null);
   const existing = lookup.data && lookup.data.status !== "CANCELLED" ? lookup.data : null;
   const locked = Boolean(existing && !existing.editable);
+  // Lot 1, D1 : sans tournée (aucun créneau), le catalogue reste consultable mais rien ne se commande.
+  const noSlot = Boolean(slots && slots.length === 0);
 
   // CLI-05 : commande existante pour (date, créneau) → son contenu est chargé dans un panier vide.
   const [conflictWith, setConflictWith] = useState<string | null>(null);
   useEffect(() => {
     if (!hydrated || lookup.isFetching) return;
     const state = useCartStore.getState();
-    if (existing && state.loadedOrderId !== existing.id) {
-      if (Object.keys(state.quantities).length === 0 || !existing.editable) {
-        state.load(existing.lines.filter((line) => line.available), { orderId: existing.id });
-        setConflictWith(null);
-      } else {
-        setConflictWith(existing.id);
-      }
-    } else if (!existing && state.loadedOrderId) {
-      useCartStore.setState({ loadedOrderId: null });
-      setConflictWith(null);
-    } else if (existing && state.loadedOrderId === existing.id) {
-      setConflictWith(null);
-    }
+    const action = cartSyncAction({ existing, loadedOrderId: state.loadedOrderId, hasQuantities: Object.keys(state.quantities).length > 0 });
+    if (action === "load" && existing) state.load(existing.lines.filter((line) => line.available), { orderId: existing.id });
+    if (action === "clear") state.clear();
+    setConflictWith(action === "conflict" && existing ? existing.id : null);
   }, [existing, hydrated, lookup.isFetching]);
 
   // Lot 1, demande 2 : les produits en promotion pour ce client passent en tête, dans une section « Promotions ».
@@ -114,7 +110,7 @@ export function OrderCatalog() {
   }
 
   const { categories } = catalog.data;
-  const showBar = totals.itemCount > 0 || Boolean(existing);
+  const showBar = !noSlot && (totals.itemCount > 0 || Boolean(existing));
 
   return (
     <div className="space-y-5 pb-28">
@@ -144,7 +140,7 @@ export function OrderCatalog() {
           onDate={cart.setDeliveryDate}
           onSlot={cart.setSlot}
         />
-        {existing ? (
+        {existing && !noSlot ? (
           <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted px-3 py-2.5 text-sm" role="status" data-testid="existing-order-banner">
             {locked ? <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> : null}
             <div className="min-w-0">
@@ -221,7 +217,7 @@ export function OrderCatalog() {
                       productName={product.name}
                       value={cart.quantities[product.id] ?? 0}
                       onChange={(value) => cart.setQuantity(product.id, value)}
-                      disabled={locked}
+                      disabled={locked || noSlot}
                     />
                   </li>
                 ))}

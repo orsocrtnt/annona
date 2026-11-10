@@ -103,12 +103,12 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium leading-snug">{line.product.name}</p>
                     <p className="text-xs text-muted-foreground tabular-nums">
-                      {formatCents(line.promoQuantity > 0 && line.product.promo ? line.product.promo.unitPriceCents : line.product.unitPriceCents)} × {line.quantity} = <span className="font-semibold text-foreground">{formatCents(line.lineTotalCents)}</span>
+                      {cartLinePriceLabel(line)} = <span className="font-semibold text-foreground">{formatCents(line.lineTotalCents)}</span>
                     </p>
                     {line.promoQuantity > 0 ? (
                       <p className="text-xs text-warning" data-testid="cart-line-promo">
                         {fr.promotions.badge}
-                        {line.promoQuantity < line.quantity ? ` · ${fr.promotions.promoUnits(line.promoQuantity)}, ${formatCents(line.product.unitPriceCents)} au-delà` : ""}
+                        {line.promoQuantity < line.quantity ? ` · ${fr.promotions.promoUnits(line.promoQuantity)}` : ""}
                       </p>
                     ) : null}
                   </div>
@@ -163,4 +163,12 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
       </DrawerContent>
     </Drawer>
   );
+}
+
+/** Lot 1, D2 : « 3 × 0,80 € + 1 × 1,20 € » quand seule une partie de la ligne est au prix promo. */
+function cartLinePriceLabel(line: { quantity: number; promoQuantity: number; product: { unitPriceCents: number; promo: { unitPriceCents: number } | null } }) {
+  const promo = line.product.promo;
+  if (line.promoQuantity <= 0 || !promo) return `${formatCents(line.product.unitPriceCents)} × ${line.quantity}`;
+  if (line.promoQuantity >= line.quantity) return `${formatCents(promo.unitPriceCents)} × ${line.quantity}`;
+  return `${line.promoQuantity} × ${formatCents(promo.unitPriceCents)} + ${line.quantity - line.promoQuantity} × ${formatCents(line.product.unitPriceCents)}`;
 }

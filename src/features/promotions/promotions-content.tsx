@@ -85,25 +85,29 @@ function PromotionTable({ title, rows, empty, testId }: { title: string; rows: P
                 <TableHead className="max-md:hidden">{t.columns.end}</TableHead>
                 <TableHead className="max-lg:hidden">{t.columns.quantity}</TableHead>
                 <TableHead className="max-lg:hidden">{t.columns.audience}</TableHead>
-                <TableHead>{t.columns.state}</TableHead>
+                <TableHead className="max-md:hidden">{t.columns.state}</TableHead>
                 <TableHead className="w-0"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.id} data-testid={`promotion-row-${row.productName}`}>
-                  <TableCell className="font-medium">{row.productName}</TableCell>
-                  <TableCell className="whitespace-nowrap tabular-nums">
+                  <TableCell className="font-medium">
+                    {row.productName}
+                    {/* Téléphone : l'état passe sous le nom, pour que « Arrêter » reste visible sans défiler. */}
+                    <Badge variant={STATE_VARIANT[row.state]} className="mt-1 md:hidden">{t.states[row.state]}</Badge>
+                  </TableCell>
+                  <TableCell className="tabular-nums md:whitespace-nowrap">
                     <span className="font-medium">{formatCents(row.promoUnitPriceCents)}</span>
-                    {row.discountPercent ? <span className="ml-1 text-muted-foreground">({t.percentOff(row.discountPercent)})</span> : null}
-                    <s className="ml-1 text-muted-foreground">{formatCents(row.basePriceCents)}</s>
+                    {row.discountPercent ? <span className="ml-1 whitespace-nowrap text-muted-foreground">({t.percentOff(row.discountPercent)})</span> : null}
+                    <s className="ml-1 whitespace-nowrap text-muted-foreground">{formatCents(row.basePriceCents)}</s>
                   </TableCell>
                   <TableCell className="whitespace-nowrap max-md:hidden">{shortDeliveryDateLabel(row.endsOn)}</TableCell>
                   <TableCell className="whitespace-nowrap tabular-nums max-lg:hidden">{t.used(row.usedQuantity, row.quantityLimit)}</TableCell>
                   <TableCell className="max-lg:hidden">
                     {row.allMerchants ? t.allMerchants : <span title={row.merchants.map((merchant) => merchant.name).join(", ")}>{row.merchants.map((merchant) => merchant.name).join(", ")}</span>}
                   </TableCell>
-                  <TableCell><Badge variant={STATE_VARIANT[row.state]}>{t.states[row.state]}</Badge></TableCell>
+                  <TableCell className="max-md:hidden"><Badge variant={STATE_VARIANT[row.state]}>{t.states[row.state]}</Badge></TableCell>
                   <TableCell className="text-right">{row.state === "ACTIVE" ? <StopButton row={row} /> : null}</TableCell>
                 </TableRow>
               ))}
