@@ -30,17 +30,27 @@ export const reorderSchema = z.object({ deliveryDate: date, slotId: id }).strict
 
 export const orderLookupSchema = z.object({ date, slotId: id });
 
-export const recurringOrderSchema = z
-  .object({
-    label: z.string().trim().max(80).nullable().optional(),
-    slotId: id,
-    weekdays: z.array(z.number().int().min(1).max(7)).min(1, "Choisissez au moins un jour.").max(7),
-    lines: z.array(orderLineSchema).min(1, "Ajoutez au moins un produit.").max(MAX_ORDER_LINES),
-    active: z.boolean().optional(),
-  })
-  .strict();
+const recurringFields = {
+  label: z.string().trim().max(80).nullable().optional(),
+  slotId: id.optional(),
+  /** Lot 1, demande 1 : matin, soir, ou les deux (une commande type par moment). */
+  slotIds: z
+    .array(id)
+    .min(1, "Choisissez matin, soir, ou les deux.")
+    .max(2)
+    .refine((ids) => new Set(ids).size === ids.length, "Moment en double.")
+    .optional(),
+  weekdays: z.array(z.number().int().min(1).max(7)).min(1, "Choisissez au moins un jour.").max(7),
+  lines: z.array(orderLineSchema).min(1, "Ajoutez au moins un produit.").max(MAX_ORDER_LINES),
+  active: z.boolean().optional(),
+};
 
-export const updateRecurringOrderSchema = recurringOrderSchema.partial().strict();
+export const recurringOrderSchema = z
+  .object(recurringFields)
+  .strict()
+  .refine((value) => Boolean(value.slotId || value.slotIds?.length), { message: "Choisissez matin, soir, ou les deux.", path: ["slotIds"] });
+
+export const updateRecurringOrderSchema = z.object(recurringFields).partial().strict();
 
 export type OrderLineInput = z.infer<typeof orderLineSchema>;
 export type SaveOrderInput = z.infer<typeof saveOrderSchema>;
@@ -60,7 +70,13 @@ export const adminCancelOrderSchema = z.object({ note: z.string().trim().max(300
 
 /** LOCK-1 / BOU-1 — jour consulté (ADM-04, BOU-01) et filtres de la liste du jour. */
 export const dayQuerySchema = z.object({ date });
-export const adminOrdersQuerySchema = z.object({ date, merchantId: id.optional(), roundId: id.optional() });
+export const adminOrdersQuerySchema = z.object({
+  date,
+  merchantId: id.optional(),
+  roundId: id.optional(),
+  /** Lot 1, demande 6 : vue ouverte depuis un chiffre du tableau de bord. */
+  view: z.enum(["active", "delivered", "remaining", "incidents"]).optional(),
+});
 
 /** BOU-05 et BOU-06. */
 export const preparedSchema = z.object({ prepared: z.boolean() }).strict();
@@ -69,3 +85,8 @@ export const shortageSchema = z
   .strict();
 
 export type AdminCorrectOrderInput = z.infer<typeof adminCorrectOrderSchema>;
+
+/** Lot 1, demande 8 : consignes d'accès saisies par le client (texte libre, 500 caractères au plus). */
+export const merchantAccessSchema = z
+  .object({ accessInstructions: z.string().max(500, "Consignes d'accès : 500 caractères au plus.").nullable() })
+  .strict();

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,6 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import type { PortalCatalog, PortalRecurringOrder } from "@/domains/order/merchant-order.types";
 import { orderingApi } from "@/features/ordering/api";
@@ -20,6 +19,7 @@ import { useCartStore } from "@/features/ordering/cart-store";
 import { useDeleteRecurring, usePortalCatalog, useRecurringOrders, useSaveRecurring } from "@/features/ordering/hooks";
 import { QuantityStepper } from "@/features/ordering/quantity-stepper";
 import { formatCents } from "@/lib/format/money";
+import { nameMatches } from "@/lib/format/search";
 import { fr } from "@/lib/i18n/fr";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,8 @@ const t = fr.recurring;
 type Draft = {
   id: string | null;
   label: string;
-  slotId: string | null;
+  /** Lot 1, demande 1 : matin, soir, ou les deux. */
+  slotIds: string[];
   weekdays: number[];
   quantities: Record<string, number>;
   active: boolean;
@@ -49,14 +50,11 @@ export function RecurringContent() {
   const remove = useDeleteRecurring();
   const [draft, setDraft] = useState<Draft | null>(null);
 
-  const emptyDraft = (quantities: Record<string, number> = {}, slotId?: string | null): Draft => ({
-    id: null,
-    label: "",
-    slotId: slotId ?? catalog.data?.slots[0]?.id ?? null,
-    weekdays: [1, 2, 3, 4, 5, 6, 7],
-    quantities,
-    active: true,
-  });
+  const emptyDraft = (quantities: Record<string, number> = {}, slotId?: string | null): Draft => {
+    const slots = catalog.data?.slots ?? [];
+    const initial = slotId && slots.some((slot) => slot.id === slotId) ? slotId : slots[0]?.id;
+    return { id: null, label: "", slotIds: initial ? [initial] : [], weekdays: [1, 2, 3, 4, 5, 6, 7], quantities, active: true };
+  };
 
   // Création depuis le panier (`?from=cart`) ou depuis une commande (`?from=<id>`).
   const from = params.get("from");
@@ -128,7 +126,7 @@ export function RecurringContent() {
                   onClick={() => setDraft({
                     id: row.id,
                     label: row.label ?? "",
-                    slotId: row.slot.id,
+                    slotIds: [row.slot.id],
                     weekdays: row.weekdays,
                     quantities: Object.fromEntries(row.lines.filter((line) => line.available).map((line) => [line.productId, line.quantity])),
                     active: row.active,
@@ -159,7 +157,7 @@ export function RecurringContent() {
           onSave={(value) => {
             const lines = Object.entries(value.quantities).filter(([, quantity]) => quantity > 0).map(([productId, quantity]) => ({ productId, quantity }));
             save.mutate(
-              { id: value.id, input: { label: value.label.trim() || null, slotId: value.slotId!, weekdays: value.weekdays, lines, active: value.active } },
+              { id: value.id, input: { label: value.label.trim() || null, slotIds: value.slotIds, weekdays: value.weekdays, lines, active: value.active } },
               { onSuccess: () => { toast.success(t.saved); setDraft(null); }, onError: (error) => toast.error(error.message) }
             );
           }}
@@ -179,15 +177,25 @@ interface RecurringEditorProps {
 
 function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringEditorProps) {
   const [value, setValue] = useState<Draft | null>(draft);
-  const [picker, setPicker] = useState("");
-  useEffect(() => setValue(draft), [draft]);
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    setValue(draft);
+    setSearch("");
+  }, [draft]);
 
   const products = useMemo(() => new Map(catalog.categories.flatMap((category) => category.products.map((product) => [product.id, product] as const))), [catalog]);
+  const found = useMemo(
+    () =>
+      catalog.categories
+        .map((category) => ({ ...category, products: category.products.filter((product) => nameMatches(product.name, search)) }))
+        .filter((category) => category.products.length > 0),
+    [catalog, search]
+  );
   if (!value) return <Dialog open={false} />;
 
   const lines = Object.entries(value.quantities).filter(([id]) => products.has(id));
   const subtotal = lines.reduce((sum, [id, quantity]) => sum + quantity * products.get(id)!.unitPriceCents, 0);
-  const valid = Boolean(value.slotId) && value.weekdays.length > 0 && lines.some(([, quantity]) => quantity > 0);
+  const valid = value.slotIds.length > 0 && value.weekdays.length > 0 && lines.some(([, quantity]) => quantity > 0);
 
   const toggleDay = (day: number) =>
     setValue({ ...value, weekdays: value.weekdays.includes(day) ? value.weekdays.filter((item) => item !== day) : [...value.weekdays, day].sort() });
@@ -228,23 +236,28 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
         </fieldset>
         <fieldset className="min-w-0">
           <legend className="mb-2 text-sm font-semibold">{fr.order.slot}</legend>
-          <div className="flex flex-wrap gap-2" role="radiogroup">
-            {catalog.slots.map((slot) => (
-              <button
-                key={slot.id}
-                type="button"
-                role="radio"
-                aria-checked={value.slotId === slot.id}
-                onClick={() => setValue({ ...value, slotId: slot.id })}
-                className={cn(
-                  "min-h-11 rounded-full border px-4 text-sm font-medium",
-                  value.slotId === slot.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"
-                )}
-              >
-                {slot.label}
-              </button>
-            ))}
+          {catalog.slots.length === 0 ? <p className="text-sm text-muted-foreground" data-testid="recurring-no-slot">{fr.order.noSlot}</p> : null}
+          {/* Lot 1, demande 1 : matin, soir, ou les deux (deux commandes types, une par moment). */}
+          <div className="flex flex-wrap gap-2" role="group" aria-label={fr.order.slot}>
+            {catalog.slots.map((slot) => {
+              const on = value.slotIds.includes(slot.id);
+              return (
+                <button
+                  key={slot.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setValue({ ...value, slotIds: on ? value.slotIds.filter((id) => id !== slot.id) : [...value.slotIds, slot.id] })}
+                  className={cn(
+                    "min-h-11 rounded-full border px-4 text-sm font-medium",
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"
+                  )}
+                >
+                  {slot.label}
+                </button>
+              );
+            })}
           </div>
+          {catalog.slots.length > 1 ? <p className="mt-1 text-xs text-muted-foreground">{t.bothHint}</p> : null}
         </fieldset>
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">{t.products}</h3>
@@ -272,33 +285,56 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
               );
             })}
           </ul>
-          <Select
-            value={picker}
-            onValueChange={(id) => {
-              setPicker("");
-              if (!value.quantities[id]) setValue({ ...value, quantities: { ...value.quantities, [id]: 1 } });
-            }}
-          >
-            <SelectTrigger aria-label={t.addProduct}>
-              <SelectValue placeholder={t.addProduct} />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {catalog.categories.map((category) => (
-                <SelectGroup key={category.id}>
-                  <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">{category.name}</p>
-                  {category.products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                  ))}
-                </SelectGroup>
+          {/* Lot 1, demande 7 : recherche par nom (sans majuscules ni accents), la liste se réduit pendant la frappe. */}
+          <div className="space-y-2 rounded-xl border p-3">
+            <p className="text-sm font-medium">{t.addProduct}</p>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <Input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t.searchPlaceholder}
+                aria-label={t.searchLabel}
+                className="h-11 pl-9 text-base md:text-sm"
+                data-testid="recurring-search"
+              />
+            </div>
+            <ul className="max-h-64 overflow-y-auto" aria-label={t.addProduct} data-testid="recurring-catalog">
+              {found.length === 0 ? <li className="py-3 text-sm text-muted-foreground">{t.noMatch}</li> : null}
+              {found.map((category) => (
+                <li key={category.id}>
+                  <p className="sticky top-0 bg-background py-1 text-xs font-semibold text-muted-foreground">{category.name}</p>
+                  <ul>
+                    {category.products.map((product) => {
+                      const added = Boolean(value.quantities[product.id]);
+                      return (
+                        <li key={product.id}>
+                          <button
+                            type="button"
+                            data-testid="recurring-catalog-item"
+                            disabled={added}
+                            onClick={() => setValue({ ...value, quantities: { ...value.quantities, [product.id]: 1 } })}
+                            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm hover:bg-muted disabled:opacity-60"
+                          >
+                            <span className="min-w-0 flex-1 truncate">{product.name}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{added ? t.added : <Plus className="size-4" aria-label={t.addOne(product.name)} />}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
               ))}
-            </SelectContent>
-          </Select>
+            </ul>
+          </div>
           <p className="text-right text-sm tabular-nums">{fr.order.subtotal} : {formatCents(subtotal)}</p>
         </section>
         <div className="flex items-center gap-3">
           <Switch id="recurring-active" checked={value.active} onCheckedChange={(active) => setValue({ ...value, active })} />
           <Label htmlFor="recurring-active">{value.active ? t.active : t.suspended}</Label>
         </div>
+        {!valid && catalog.slots.length > 0 ? <p className="text-sm text-muted-foreground" data-testid="recurring-incomplete">{t.incomplete}</p> : null}
         <DialogFooter className="gap-2">
           <Button variant="outline" size="touch" onClick={onClose}>{fr.common.cancel}</Button>
           <Button variant="brand" size="touch" loading={saving} disabled={!valid} onClick={() => onSave(value)}>{fr.common.save}</Button>

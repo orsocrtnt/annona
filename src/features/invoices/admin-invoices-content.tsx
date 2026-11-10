@@ -35,7 +35,8 @@ export function LegalGapsAlert({ gaps }: { gaps: InvoiceLegalGap[] }) {
         <ul className="list-disc pl-5">
           {gaps.map((gap) => (
             <li key={gap.field}>
-              <Link href={gap.href} className="underline-offset-4 hover:underline">{gap.label}</Link>
+              {/* Lot 1, demande 9 : cible tactile de 44 px sur téléphone. */}
+              <Link href={gap.href} className="underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">{gap.label}</Link>
             </li>
           ))}
         </ul>

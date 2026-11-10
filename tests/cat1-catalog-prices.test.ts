@@ -143,7 +143,8 @@ test("CAT-1 ADM-02 : ordre des catégories et désactivation", async () => {
 
 test("CAT-1 routes : toute écriture du catalogue est réservée à l'administrateur (catalog:manage)", () => {
   const root = "src/app/api/catalog";
-  const files = readdirSync(root, { recursive: true }).map(String).filter((file) => file.endsWith("route.ts"));
+  // Lot 1, demandes 2 et 4 : les promotions ont leurs propres permissions (promotions:read / promotions:manage).
+  const files = readdirSync(root, { recursive: true }).map(String).filter((file) => file.endsWith("route.ts") && !file.startsWith("promotions"));
   assert.ok(files.length >= 7);
   for (const file of files) {
     const source = readFileSync(join(root, file), "utf8");
@@ -153,7 +154,8 @@ test("CAT-1 routes : toute écriture du catalogue est réservée à l'administra
       const method = methods[index]!;
       const body = methods[index + 1]!;
       if (method === "GET") {
-        assert.match(body, /requireCompany(Admin|Member)\("catalog:(read|manage)"\)/, `${file} ${method}`);
+        // Lot 1, demande 4 : lecture partagée (correction de commande, promotion, compte client) par plusieurs permissions.
+        assert.match(body, /requireCompany(Admin|Member)\("catalog:(read|manage)"\)|requireCompanyAdminAny\(\["catalog:(read|manage)"/, `${file} ${method}`);
       } else {
         assert.match(body, /requireCompanyAdmin\("catalog:manage"\)/, `${file} ${method}`);
       }

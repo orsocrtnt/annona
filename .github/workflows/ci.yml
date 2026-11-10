@@ -4,9 +4,8 @@ on:
   push:
     branches: [main, preproduction]
   pull_request:
-  # Parcours complets sur une vraie base chaque nuit (AUDIT-0111, C6), à 3 h UTC.
-  schedule:
-    - cron: "0 3 * * *"
+  # Plus de déclenchement nocturne (10 novembre 2026, décision d'Orso) : la préproduction porte encore
+  # l'ancien produit ; sa recette connectée (AUDIT-0111, C6) ne part plus qu'à la main (run_connected).
   workflow_dispatch:
     inputs:
       run_connected:

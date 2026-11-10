@@ -18,6 +18,7 @@ import { useAdminOrder, useCancelOrder, useCorrectOrder } from "@/features/order
 import type { AdminOrderDetail } from "@/domains/order/admin-order.types";
 import { ORDER_ORIGIN_LABELS, ROUND_STATUS_LABELS } from "@/lib/constants/order-status";
 import { deadlineLabel, longDeliveryDateLabel } from "@/lib/format/delivery-date";
+import { lineAmountCents } from "@/domains/catalog/pricing";
 import { formatCents } from "@/lib/format/money";
 import { fr } from "@/lib/i18n/fr";
 import { MAX_LINE_QUANTITY } from "@/lib/validations/order";
@@ -175,7 +176,22 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
                     <TableCell className="text-right tabular-nums max-md:hidden">
                       {saved ? `${formatCents(saved.unitPriceCents)}${saved.frozen ? ` (${t.frozen})` : ""}` : "—"}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{saved ? formatCents(saved.unitPriceCents * line.quantity) : "—"}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {saved
+                        ? formatCents(lineAmountCents({
+                            quantity: line.quantity,
+                            unitPriceCents: saved.unitPriceCents,
+                            vatRateBasisPoints: saved.vatRateBasisPoints,
+                            promoQuantity: saved.promoQuantity,
+                            promoUnitPriceCents: saved.promoUnitPriceCents,
+                          }))
+                        : "—"}
+                      {saved && saved.promoQuantity > 0 && saved.promoUnitPriceCents !== null ? (
+                        <span className="block text-xs text-warning">
+                          {fr.promotions.badge} · {Math.min(saved.promoQuantity, line.quantity)} × {formatCents(saved.promoUnitPriceCents)}
+                        </span>
+                      ) : null}
+                    </TableCell>
                     {order.editable ? (
                       <TableCell>
                         <Button

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireRole, requireStaffRole } from "@/lib/api/auth-guard";
 import { createUserSchema } from "@/lib/validations/user";
 import { createUserByAdmin, listUsersForCompany } from "@/domains/user/user.service";
+import { miniAdminModules } from "@/lib/permissions/mini-admin";
 
 function missingMerchant(body: unknown) {
   const value = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
@@ -59,7 +60,9 @@ export async function POST(request: Request) {
     const result = await createUserByAdmin(
       parsed.data,
       auth.context.user.companyId,
-      auth.context.user.role.systemRole
+      auth.context.user.role.systemRole,
+      // Lot 1, demande 4 : un mini admin ne crée ni administrateur ni mini admin.
+      miniAdminModules(auth.context.user) === null
     );
 
     return NextResponse.json(
@@ -85,6 +88,7 @@ export async function POST(request: Request) {
       COMPANY_REQUIRED: 400,
       MERCHANT_REQUIRED: 400,
       MERCHANT_NOT_ALLOWED: 400,
+      ADMIN_ONLY: 403,
     };
     const labels: Record<string, string> = {
       AUTH_EMAIL_NOT_CONFIGURED: CONFIG_MESSAGES.INVITATION_EMAIL_NOT_CONFIGURED,
@@ -96,6 +100,7 @@ export async function POST(request: Request) {
       COMPANY_REQUIRED: "Aucune entreprise associée. Créez d'abord une entreprise ou reconnectez-vous.",
       MERCHANT_REQUIRED: "Choisissez le client que ce compte représente.",
       MERCHANT_NOT_ALLOWED: "Seul un compte client se rattache à un client.",
+      ADMIN_ONLY: "Seul un administrateur peut créer un compte administrateur ou mini admin.",
     };
 
 

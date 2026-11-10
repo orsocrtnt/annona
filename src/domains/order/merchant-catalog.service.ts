@@ -1,18 +1,24 @@
 /**
  * Catalogue vu par le client (CLI-03) et son profil (CLI-02). Catégories et produits actifs de son
  * entreprise, dans l'ordre du back-office, au prix appliqué pour son commerce (RG-05, critère 3).
+ * Lot 1, demande 2 : chaque produit porte l'offre promo en cours pour ce client (`promo`), que
+ * l'écran « Commander » affiche en tête du catalogue.
  */
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
+import { productAllergens } from "@/domains/catalog/allergens";
 import { applyPrices } from "@/domains/catalog/pricing";
+import { loadPromotionOffers } from "@/domains/catalog/promotion.service";
 import { photoVersion } from "@/domains/catalog/catalog.service";
 import type { MerchantRef } from "@/domains/order/merchant-order.service";
-import { slotLabel } from "@/domains/order/merchant-order.service";
+import { clientSlotLabel, merchantSlotWhere } from "@/domains/order/merchant-order.service";
 import type { PortalCatalog, PortalMerchantProfile } from "@/domains/order/merchant-order.types";
 import { companyToday, firstOpenDeliveryDate } from "@/domains/order/order-deadline";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { isProductPhotoPath } from "@/lib/storage/product-photo";
 
 export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): Promise<PortalCatalog> {
+  const merchant = await prisma.merchant.findFirst({ where: { id: actor.merchantId, companyId: actor.companyId }, select: { zoneId: true } });
   const [company, categories, slots, specificPrices] = await Promise.all([
     prisma.company.findUnique({ where: { id: actor.companyId }, select: { cutoffTime: true, timezone: true } }),
     prisma.category.findMany({
@@ -24,15 +30,18 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
         products: {
           where: { companyId: actor.companyId, active: true },
           orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-          select: { id: true, name: true, description: true, unit: true, photoUrl: true, basePriceCents: true, vatRateBasisPoints: true },
+          select: { id: true, name: true, description: true, unit: true, photoUrl: true, basePriceCents: true, vatRateBasisPoints: true, allergens: true, allergensDeclared: true },
         },
       },
     }),
-    prisma.slot.findMany({
-      where: { companyId: actor.companyId, active: true },
-      orderBy: [{ sortOrder: "asc" }, { startTime: "asc" }],
-      select: { id: true, label: true, startTime: true, endTime: true },
-    }),
+    // Lot 1, demande 1 : seulement le matin et le soir de la tournée du client (aucun sans tournée).
+    merchant?.zoneId
+      ? prisma.slot.findMany({
+          where: merchantSlotWhere(actor.companyId, merchant.zoneId),
+          orderBy: [{ sortOrder: "asc" }, { startTime: "asc" }],
+          select: { id: true, label: true, startTime: true, endTime: true, period: true },
+        })
+      : Promise.resolve([]),
     prisma.merchantPrice.findMany({
       where: { companyId: actor.companyId, merchantId: actor.merchantId },
       select: { productId: true, priceCents: true },
@@ -40,7 +49,10 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
   ]);
   if (!company) throw new DomainRuleError(404, "Entreprise introuvable.", "COMPANY_NOT_FOUND");
 
-  const prices = applyPrices(categories.flatMap((category) => category.products), specificPrices);
+  const allProducts = categories.flatMap((category) => category.products);
+  const prices = applyPrices(allProducts, specificPrices);
+  // Lot 1, demande 2 : promotions en cours qui concernent ce client et lui font payer moins cher.
+  const offers = await loadPromotionOffers(prisma, actor.companyId, actor.merchantId, companyToday(now, company.timezone), allProducts, prices);
   return {
     categories: categories
       .filter((category) => category.products.length > 0)
@@ -58,10 +70,15 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
             unitPriceCents: price.unitPriceCents,
             vatRateBasisPoints: price.vatRateBasisPoints,
             isSpecific: price.isSpecific,
+            allergens: productAllergens(product),
+            promo: (() => {
+              const offer = offers.get(product.id);
+              return offer ? { unitPriceCents: offer.promoUnitPriceCents, remaining: offer.remaining, endsOn: offer.endsOn } : null;
+            })(),
           };
         }),
       })),
-    slots: slots.map((slot) => ({ id: slot.id, label: slotLabel(slot), startTime: slot.startTime, endTime: slot.endTime })),
+    slots: slots.map((slot) => ({ id: slot.id, label: clientSlotLabel(slot), startTime: slot.startTime, endTime: slot.endTime, period: slot.period })),
     rules: {
       today: companyToday(now, company.timezone),
       firstOpenDate: firstOpenDeliveryDate(now, company.cutoffTime, company.timezone),
@@ -97,4 +114,34 @@ export async function getMerchantProfile(actor: MerchantRef): Promise<PortalMerc
   });
   if (!merchant) throw new DomainRuleError(404, "Commerce introuvable.", "MERCHANT_NOT_FOUND");
   return merchant;
+}
+
+/**
+ * Lot 1, demande 8 : le client écrit lui-même ses consignes d'accès (code du portail, entrée, endroit où
+ * déposer, horaires…), 500 caractères au plus ; vide = effacées. Le livreur les lit sur l'arrêt (lecture
+ * en base à chaque chargement de sa tournée) ; l'administrateur les lit et les modifie dans la fiche client.
+ * Modification journalisée comme celles de l'administrateur (entité « Merchant »).
+ */
+export async function updateMerchantAccessInstructions(
+  actor: MerchantRef,
+  accessInstructions: string | null,
+  db: Pick<PrismaClient, "merchant" | "auditLog"> = prisma
+): Promise<{ accessInstructions: string | null }> {
+  const before = await db.merchant.findFirst({ where: { id: actor.merchantId, companyId: actor.companyId } });
+  if (!before) throw new DomainRuleError(404, "Commerce introuvable.", "MERCHANT_NOT_FOUND");
+  const value = accessInstructions?.trim() ? accessInstructions.trim() : null;
+  if (value && value.length > 500) throw new DomainRuleError(400, "Consignes d'accès : 500 caractères au plus.", "ACCESS_TOO_LONG");
+  await db.merchant.updateMany({ where: { id: actor.merchantId, companyId: actor.companyId }, data: { accessInstructions: value } });
+  await db.auditLog.create({
+    data: {
+      companyId: actor.companyId,
+      actorId: actor.userId,
+      entityType: "Merchant",
+      entityId: actor.merchantId,
+      action: "UPDATE",
+      before: { accessInstructions: before.accessInstructions ?? null },
+      after: { accessInstructions: value },
+    },
+  });
+  return { accessInstructions: value };
 }

@@ -1,6 +1,6 @@
 # ENV-2 — Projet Supabase de développement
 
-Le développement local vise un projet Supabase dédié, `annona-dev` (`mhzdmoytxmzudhkivixh`, Paris), distinct de la préproduction. Les anciens projets (`wlomrzil…`, `annona-restore-rehearsal`) sont en pause et refusés par le garde-fou.
+Le développement local vise un projet Supabase dédié, `annona-dev` (`fqzlfszgyeyfeshllqtj`, Paris, créé le 6 novembre 2026), distinct de la préproduction. Les anciens projets (`mhzdmoyt…` ex-`tutelliv-dev`, `wlomrzil…`, `annona-restore-rehearsal`) sont en pause et refusés par le garde-fou.
 
 ## Garde-fou
 

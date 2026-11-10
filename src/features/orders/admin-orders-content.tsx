@@ -17,6 +17,7 @@ import { ORDER_ORIGIN_LABELS } from "@/lib/constants/order-status";
 import { deadlineLabel } from "@/lib/format/delivery-date";
 import { formatCents } from "@/lib/format/money";
 import { fr } from "@/lib/i18n/fr";
+import { ADMIN_ORDER_VIEWS, type AdminOrderView } from "@/domains/order/admin-order.types";
 
 const t = fr.adminOrders;
 const ALL = "all";
@@ -29,7 +30,9 @@ export function AdminOrdersContent() {
   const date = params.get("date") ?? parisDateKey(1);
   const merchantId = params.get("merchantId");
   const roundId = params.get("roundId");
-  const day = useAdminOrderDay(date, merchantId, roundId);
+  const rawView = params.get("view");
+  const view = (ADMIN_ORDER_VIEWS as readonly string[]).includes(rawView ?? "") ? (rawView as AdminOrderView) : null;
+  const day = useAdminOrderDay(date, merchantId, roundId, view);
 
   const update = useCallback(
     (changes: Record<string, string | null>) => {
@@ -60,7 +63,7 @@ export function AdminOrdersContent() {
             <DeliveryDayPicker
               value={date}
               label={t.date}
-              onChange={(value) => update({ date: value, merchantId: null, roundId: null })}
+              onChange={(value) => update({ date: value, merchantId: null, roundId: null, view: null })}
               shortcuts={[
                 { days: 0, label: t.today },
                 { days: 1, label: t.tomorrow },
@@ -92,6 +95,19 @@ export function AdminOrdersContent() {
                   </SelectItem>
                 ))}
                 <SelectItem value="none">{t.noRound}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {/* Lot 1, demande 6 : vue ouverte depuis un chiffre du tableau de bord. */}
+          <div className="w-full space-y-1.5 sm:w-60">
+            <p className="text-sm font-medium" id="filter-view">{t.view}</p>
+            <Select value={view ?? ALL} onValueChange={(value) => update({ view: value === ALL ? null : value })}>
+              <SelectTrigger aria-labelledby="filter-view" data-testid="filter-view"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t.views.all}</SelectItem>
+                {ADMIN_ORDER_VIEWS.map((item) => (
+                  <SelectItem key={item} value={item}>{t.views[item]}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -147,6 +163,7 @@ export function AdminOrdersContent() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         <OrderStatusBadge status={order.status} />
+                        {order.incident ? <Badge variant="error">{t.incident}</Badge> : null}
                         {order.shortage ? <Badge variant="error">{t.shortage}</Badge> : null}
                         {order.corrected ? <Badge variant="outline">{t.corrected}</Badge> : null}
                       </div>

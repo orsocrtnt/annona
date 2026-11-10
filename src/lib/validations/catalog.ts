@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ALLERGEN_CODES } from "@/domains/catalog/allergens";
 
 /**
  * Saisies du back-office catalogue (CAT-1 : ADM-02, ADM-03, PLA-04). Montants en centimes HT,
@@ -34,6 +35,11 @@ const productFields = {
     .min(0, "Taux de TVA invalide.")
     .max(10_000, "Taux de TVA invalide."),
   active: z.boolean(),
+  /**
+   * Lot 1, demande 3 : allergènes présents ; `[]` = « Aucun allergène » (déclaré), `null` = non renseignés.
+   * Absent : inchangé.
+   */
+  allergens: z.array(z.enum(ALLERGEN_CODES)).max(ALLERGEN_CODES.length).nullable().optional(),
 };
 
 export const createProductSchema = z.object(productFields).strict();
@@ -43,6 +49,41 @@ export const upsertMerchantPriceSchema = z
   .object({ merchantId: id, productId: id, priceCents: cents })
   .strict();
 
+/**
+ * Lot 1, demande 2 : promotion sur un produit. Prix promo (centimes HT) OU réduction en % entier ;
+ * date de fin incluse ; quantité limitée facultative (tous clients) ; tous les clients ou certains.
+ */
+export const createPromotionSchema = z
+  .object({
+    productId: id,
+    promoPriceCents: cents.nullable().optional(),
+    discountPercent: z
+      .number({ error: "Saisissez une réduction." })
+      .int("Réduction en pourcentage entier.")
+      .min(1, "Réduction : entre 1 et 99 %.")
+      .max(99, "Réduction : entre 1 et 99 %.")
+      .nullable()
+      .optional(),
+    endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date de fin invalide."),
+    quantityLimit: z
+      .number({ error: "Saisissez une quantité." })
+      .int("Quantité entière.")
+      .min(1, "Quantité limitée : au moins 1.")
+      .max(1_000_000, "Quantité trop élevée.")
+      .nullable()
+      .optional(),
+    allMerchants: z.boolean(),
+    merchantIds: z.array(id).max(1000).optional(),
+  })
+  .strict()
+  .refine((value) => (typeof value.promoPriceCents === "number") !== (typeof value.discountPercent === "number"), {
+    message: "Indiquez un prix promo ou une réduction en pourcentage.",
+  })
+  .refine((value) => value.allMerchants || (value.merchantIds?.length ?? 0) > 0, {
+    message: "Choisissez au moins un client.",
+  });
+
+export type CreatePromotionInput = z.infer<typeof createPromotionSchema>;
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;

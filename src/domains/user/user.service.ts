@@ -5,6 +5,7 @@ import type { UserWithRole } from "@/types";
 import { COMPANY_USERS_TAKE } from "@/lib/query/list-limits";
 import type { CreateUserInput, UpdateProfileInput } from "@/lib/validations/user";
 import { getPasswordLinkRedirect } from "@/lib/auth/email-links";
+import { effectivePermissions, miniAdminModules, withMiniAdminModules } from "@/lib/permissions/mini-admin";
 
 type RoleRecord = {
   id: string;
@@ -84,26 +85,73 @@ export async function attachRolesById<T extends { roleId: string }>(
   });
 }
 
-export async function getUserByAuthId(authId: string): Promise<UserWithRole | null> {
-  // Lecture relationnelle fraîche sans la stratégie relationJoins expérimentale :
-  // Prisma 5.22 panique sous des lectures auth concurrentes avec cette stratégie.
-  // Aucune mémorisation inter-requêtes (suspension/révocation immédiates).
-  const user = await prisma.user.findUnique({
-    where: { authId },
-    include: {
-      company: true,
-      role: { include: { permissions: { include: { permission: true } } } },
-    },
-  });
-  if (!user) return null;
-  return {
-    ...user,
-    role: { ...user.role, permissions: user.role.permissions.map((rp) => rp.permission) },
-  };
+type ScalarField = { name: string; column: string; type: string };
+const scalarFieldsCache = new Map<string, ScalarField[]>();
+
+/** Champs scalaires d'un modèle Prisma (nom TypeScript, colonne, type), lus dans la description du schéma. */
+function scalarFields(model: string): ScalarField[] {
+  let fields = scalarFieldsCache.get(model);
+  if (!fields) {
+    const found = Prisma.dmmf.datamodel.models.find((candidate) => candidate.name === model);
+    if (!found) throw new Error(`MODEL_NOT_FOUND:${model}`);
+    fields = found.fields
+      .filter((field) => field.kind === "scalar" || field.kind === "enum")
+      .map((field) => ({ name: field.name, column: field.dbName ?? field.name, type: field.type }));
+    scalarFieldsCache.set(model, fields);
+  }
+  return fields;
 }
 
+/**
+ * Ligne `to_jsonb(table.*)` → objet du modèle Prisma : noms de colonnes en noms de champs, dates (colonnes
+ * `timestamp(3)` sans fuseau, en UTC comme Prisma) en `Date`. Accepte aussi une ligne déjà en noms de champs.
+ */
+export function rowToModel<T>(model: string, row: Record<string, unknown>): T {
+  const result: Record<string, unknown> = {};
+  for (const field of scalarFields(model)) {
+    let value = row[field.column] !== undefined ? row[field.column] : row[field.name];
+    if (value === undefined) value = null;
+    if (field.type === "DateTime" && typeof value === "string") {
+      value = new Date(/(?:[zZ]|[+-]\d\d:?\d\d)$/.test(value) ? value : `${value}Z`);
+    }
+    result[field.name] = value;
+  }
+  return result as T;
+}
+
+type AuthRow = { u: Record<string, unknown>; c: Record<string, unknown> | null; r: Record<string, unknown>; p: Array<Record<string, unknown>> | null };
+
+/**
+ * Utilisateur, entreprise, rôle et permissions en **une** requête (lot 1, demande 9) : relue à chaque requête
+ * d'API et à chaque page, cette lecture coûtait quatre allers-retours successifs vers la base avec `include`.
+ * La stratégie Prisma `relationJoins` reste écartée (Prisma 5.22 panique sous des lectures auth concurrentes).
+ * Aucune mémorisation inter-requêtes (suspension/révocation immédiates).
+ */
+export async function getUserByAuthId(authId: string): Promise<UserWithRole | null> {
+  const rows = await prisma.$queryRaw<AuthRow[]>`
+    SELECT to_jsonb(u.*) AS u, to_jsonb(c.*) AS c, to_jsonb(r.*) AS r,
+      (SELECT COALESCE(jsonb_agg(to_jsonb(p.*) ORDER BY p.slug), '[]'::jsonb)
+         FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
+        WHERE rp.role_id = r.id) AS p
+    FROM users u
+    JOIN roles r ON r.id = u.role_id
+    LEFT JOIN companies c ON c.id = u.company_id
+    WHERE u.auth_id = ${authId}
+    LIMIT 1`;
+  const row = rows[0];
+  if (!row) return null;
+  const user = rowToModel<Omit<UserWithRole, "role" | "company">>("User", row.u);
+  const role = rowToModel<Omit<UserWithRole["role"], "permissions">>("Role", row.r);
+  return {
+    ...user,
+    company: row.c ? rowToModel<NonNullable<UserWithRole["company"]>>("Company", row.c) : null,
+    role: { ...role, permissions: (row.p ?? []).map((permission) => rowToModel<UserWithRole["role"]["permissions"][number]>("Permission", permission)) },
+  } as UserWithRole;
+}
+
+/** Permissions effectives : celles du rôle, limitées aux fonctionnalités d'un mini admin (lot 1, demande 4). */
 export function extractPermissionSlugs(user: UserWithRole): string[] {
-  return user.role.permissions.map((p) => p.slug);
+  return effectivePermissions(user.role.permissions.map((p) => p.slug), miniAdminModules(user));
 }
 
 export async function getUserPermissions(authId: string): Promise<string[]> {
@@ -137,6 +185,8 @@ export async function listUsersForCompany(companyId: string) {
       ...rest,
       merchant: user.merchant ? { id: user.merchant.id, name: user.merchant.tradeName || user.merchant.name } : null,
       role,
+      // Lot 1, demande 4 : seules les fonctionnalités d'un mini admin sortent des réglages.
+      miniAdminModules: miniAdminModules({ settings: user.settings, role }),
     };
   });
 }
@@ -223,7 +273,9 @@ export async function resolveCompanyIdForUserCreation(
 export async function createUserByAdmin(
   input: CreateUserInput,
   adminCompanyId: string | null | undefined,
-  actorRole: SystemRole
+  actorRole: SystemRole,
+  /** Lot 1, demande 4 : faux pour un mini admin, qui ne crée ni administrateur ni mini admin. */
+  actorIsFullAdmin = true
 ) {
   if (actorRole === "SUPER_ADMIN") throw new Error("PLATFORM_USER_MUTATION_FORBIDDEN");
   const companyId = await resolveCompanyIdForUserCreation(adminCompanyId);
@@ -232,6 +284,8 @@ export async function createUserByAdmin(
   if (!role) {
     throw new Error("INVALID_ROLE");
   }
+  if (role.systemRole === "ADMIN" && !actorIsFullAdmin) throw new Error("ADMIN_ONLY");
+  if (role.systemRole !== "ADMIN" && input.miniAdminModules) throw new Error("INVALID_ROLE");
 
   // ADM-1 : un compte client représente un client de la même entreprise ; aucun autre rôle n'en a.
   let merchantId: string | null = null;
@@ -265,6 +319,10 @@ export async function createUserByAdmin(
           merchantId,
           phone: input.phone?.trim() || null,
           status: "PENDING_VERIFICATION",
+          // Lot 1, demande 4 : compte « mini admin » = administrateur limité à ses fonctionnalités.
+          ...(role.systemRole === "ADMIN" && input.miniAdminModules
+            ? { settings: withMiniAdminModules({}, input.miniAdminModules) as Prisma.InputJsonValue }
+            : {}),
         },
         include: { company: true },
       });
@@ -296,7 +354,9 @@ export async function deleteUserByAdmin(
   targetUserId: string,
   adminUserId: string,
   companyId: string | null,
-  actorRole: SystemRole
+  actorRole: SystemRole,
+  /** Lot 1, demande 4 : un mini admin ne supprime pas un compte administrateur. */
+  actorIsFullAdmin = true
 ) {
   if (actorRole === "SUPER_ADMIN") throw new Error("PLATFORM_USER_MUTATION_FORBIDDEN");
   if (targetUserId === adminUserId) {
@@ -315,6 +375,7 @@ export async function deleteUserByAdmin(
   if (!DELETABLE_ROLES.includes(role.systemRole as (typeof DELETABLE_ROLES)[number])) {
     throw new Error("ROLE_NOT_DELETABLE");
   }
+  if (role.systemRole === "ADMIN" && !actorIsFullAdmin) throw new Error("ROLE_NOT_DELETABLE");
 
   const supabase = createAdminClient();
 

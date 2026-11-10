@@ -14,6 +14,9 @@ export const RESOURCES = [
   "settings",
   "support",
   "dashboard",
+  // Lot 1, demandes 2 et 4 : promotions et suivi des livreurs, fonctionnalités séparées.
+  "promotions",
+  "tracking",
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];

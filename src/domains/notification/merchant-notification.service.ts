@@ -26,9 +26,9 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { readClientSettings } from "@/domains/client-portal/settings.service";
-import { computeTotals, loadAppliedPrices } from "@/domains/catalog/pricing";
+import { computeTotals, lineAmountCents, loadAppliedPrices } from "@/domains/catalog/pricing";
 import { enqueueOperationJob, skippedJobError } from "@/domains/operations/operation-job.service";
-import { slotLabel } from "@/domains/order/merchant-order.service";
+import { clientSlotLabel } from "@/domains/order/merchant-order.service";
 import {
   companyToday,
   deliveryDateKey,
@@ -324,13 +324,16 @@ async function renderConfirmation(db: NotificationDb, payload: ConfirmationPaylo
         quantity: line.quantityOrdered,
         unitPriceCents: line.unitPriceFrozenCents ?? price?.unitPriceCents ?? 0,
         vatRateBasisPoints: price?.vatRateBasisPoints ?? 0,
+        // Lot 1, demande 2 : part au prix promo retenue à la validation.
+        promoQuantity: line.promoQuantity,
+        promoUnitPriceCents: line.promoUnitPriceCents,
       };
     })
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "fr"));
   const totals = computeTotals(priced);
   const dateKey = deliveryDateKey(order.deliveryDate);
   const date = longDeliveryDateLabel(dateKey);
-  const slotText = slot ? slotLabel(slot) : "";
+  const slotText = slot ? clientSlotLabel(slot) : "";
   const cancelled = order.status === "CANCELLED";
   const title = cancelled
     ? t.confirmation.cancelled
@@ -348,7 +351,7 @@ async function renderConfirmation(db: NotificationDb, payload: ConfirmationPaylo
         "",
         t.confirmation.recap,
         t.confirmation.delivery(date, slotText),
-        ...priced.map((line) => t.confirmation.line(line.quantity, line.name, line.unit, formatCents(line.quantity * line.unitPriceCents))),
+        ...priced.map((line) => t.confirmation.line(line.quantity, line.name, line.unit, formatCents(lineAmountCents(line)))),
         t.confirmation.totals(formatCents(totals.subtotalCents), formatCents(totals.vatCents), formatCents(totals.totalCents)),
         editable ? t.confirmation.editableUntil(deadlineLabel(orderCutoffInstant(dateKey, company.cutoffTime, company.timezone), company.timezone)) : null,
       ];

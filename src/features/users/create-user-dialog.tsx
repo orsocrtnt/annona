@@ -13,17 +13,23 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMerchantChoices } from "@/features/catalog/hooks";
+import { MiniAdminModulesField } from "@/features/users/mini-admin-modules-field";
+import { usePermissions } from "@/hooks/use-permissions";
+import type { MiniAdminModuleId } from "@/lib/permissions/mini-admin";
 import { fr } from "@/lib/i18n/fr";
 import { createUserSchema, type CreateUserInput } from "@/lib/validations/user";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 const t = fr.accounts;
-const ROLE_OPTIONS: { value: CreateUserInput["roleSlug"]; label: string }[] = [
+/** Lot 1, demande 4 : « Mini admin » = rôle administrateur limité à des fonctionnalités cochées. */
+type AccountKind = CreateUserInput["roleSlug"] | "mini-admin";
+const ROLE_OPTIONS: { value: AccountKind; label: string; fullAdminOnly?: boolean }[] = [
   { value: "merchant", label: t.roleOptions.merchant },
   { value: "driver", label: t.roleOptions.driver },
   { value: "baker", label: t.roleOptions.baker },
-  { value: "admin", label: t.roleOptions.admin },
+  { value: "admin", label: t.fullAdmin, fullAdminOnly: true },
+  { value: "mini-admin", label: t.miniAdmin, fullAdminOnly: true },
 ];
 
 interface CreateUserDialogProps {
@@ -37,6 +43,10 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const merchants = useMerchantChoices(open && !merchant);
+  const { isFullAdmin } = usePermissions();
+  const [kind, setKind] = useState<AccountKind>("merchant");
+  const [modules, setModules] = useState<MiniAdminModuleId[]>([]);
+  const [modulesError, setModulesError] = useState<string | null>(null);
 
   const form = useForm<CreateUserInput>({
     resolver: zodResolver(createUserSchema),
@@ -55,7 +65,11 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
       const res = await fetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, merchantId: data.roleSlug === "merchant" ? data.merchantId : null }),
+        body: JSON.stringify({
+          ...data,
+          merchantId: data.roleSlug === "merchant" ? data.merchantId : null,
+          miniAdminModules: kind === "mini-admin" ? modules : null,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -72,6 +86,8 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
       }
       setOpen(false);
       form.reset();
+      setKind("merchant");
+      setModules([]);
     },
     onError: (error: Error) => {
       toast.error("Erreur", { description: error.message });
@@ -94,7 +110,14 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+        <form
+          onSubmit={form.handleSubmit((d) => {
+            if (kind === "mini-admin" && modules.length === 0) return setModulesError(t.modulesRequired);
+            setModulesError(null);
+            mutation.mutate(d);
+          })}
+          className="space-y-4"
+        >
           <div className="grid grid-cols-2 gap-4">
             <FormField label={t.firstName} error={form.formState.errors.firstName?.message} required>
               <Input placeholder="Jean" {...form.register("firstName")} />
@@ -108,26 +131,28 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
           </FormField>
           {merchant ? null : (
             <FormField label={t.role} error={form.formState.errors.roleSlug?.message} required>
-              <Controller
-                name="roleSlug"
-                control={form.control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger aria-label={t.role}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ROLE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <Select
+                value={kind}
+                onValueChange={(value) => {
+                  const next = value as AccountKind;
+                  setKind(next);
+                  form.setValue("roleSlug", next === "mini-admin" ? "admin" : next);
+                }}
+              >
+                <SelectTrigger aria-label={t.role} data-testid="create-user-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.filter((option) => isFullAdmin || !option.fullAdminOnly).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </FormField>
           )}
+          {kind === "mini-admin" ? <MiniAdminModulesField value={modules} onChange={setModules} error={modulesError} /> : null}
           {!merchant && role === "merchant" ? (
             <FormField label={t.merchant} error={form.formState.errors.merchantId?.message} required>
               <Controller

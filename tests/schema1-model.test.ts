@@ -87,10 +87,14 @@ test("contraintes métier en base (CHECK) : quantités, prix, heures, jours et t
   assert.match(sql, /"quantity_delivered" >= 0 AND "quantity_delivered" <= "quantity_ordered"/);
 });
 
-test("rôles et permissions de la migration identiques à prisma/reference-data.ts", () => {
-  for (const permission of PERMISSIONS) assert.ok(sql.includes(`'${permission.slug}'`), permission.slug);
+test("rôles et permissions des migrations identiques à prisma/reference-data.ts", () => {
+  // Lot 1 : la migration 20261110130000_module_permissions ajoute des permissions au rôle administrateur.
+  const moduleSql = readFileSync("prisma/migrations/20261110130000_module_permissions/migration.sql", "utf8");
+  const all = `${sql}\n${moduleSql}`;
+  for (const permission of PERMISSIONS) assert.ok(all.includes(`'${permission.slug}'`), permission.slug);
   for (const role of ROLES) assert.ok(sql.includes(`'rbac_role_${role.slug.replace(/-/g, "_")}'`), role.slug);
-  const pairs = [...sql.matchAll(/\('rbac_role_(\w+)', 'rbac_permission_(\w+)'\)/g)].map((match) => `${match[1]}:${match[2]}`).sort();
+  const added = [...moduleSql.matchAll(/\('rbac_permission_(\w+)', '[a-z]+:[a-z]+'/g)].map((match) => `admin:${match[1]}`);
+  const pairs = [...[...sql.matchAll(/\('rbac_role_(\w+)', 'rbac_permission_(\w+)'\)/g)].map((match) => `${match[1]}:${match[2]}`), ...added].sort();
   const expected = ROLES.flatMap((role) =>
     ROLE_PERMISSIONS[role.systemRole].map((slug) => `${role.slug.replace(/-/g, "_")}:${slug.replace(":", "_")}`)
   ).sort();

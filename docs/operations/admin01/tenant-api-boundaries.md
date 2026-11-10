@@ -9,10 +9,10 @@ Limite : une entreprise résolue sans `getCompanyId` dans la route n'est pas lis
 <!-- TENANT_API_BOUNDARIES_START -->
 | Chemin | Méthode | Permission | Rôles |
 | --- | --- | --- | --- |
-| src/app/api/company/billing-settings/route.ts | GET | settings:read | ADMIN |
-| src/app/api/company/billing-settings/route.ts | PATCH | settings:update | ADMIN |
-| src/app/api/company/einvoicing/route.ts | GET | settings:read | ADMIN |
-| src/app/api/company/einvoicing/route.ts | PATCH | settings:update | ADMIN |
+| src/app/api/company/billing-settings/route.ts | GET | invoices:read | ADMIN |
+| src/app/api/company/billing-settings/route.ts | PATCH | invoices:update | ADMIN |
+| src/app/api/company/einvoicing/route.ts | GET | invoices:read | ADMIN |
+| src/app/api/company/einvoicing/route.ts | PATCH | invoices:update | ADMIN |
 | src/app/api/company/location-settings/route.ts | GET | settings:read | ADMIN |
 | src/app/api/company/location-settings/route.ts | PATCH | settings:update | ADMIN |
 | src/app/api/company/logo/route.ts | GET | aucun | aucun |

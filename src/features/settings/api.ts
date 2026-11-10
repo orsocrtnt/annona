@@ -1,7 +1,15 @@
 import type { CompanySettingsView } from "@/domains/company/company-settings.service";
-import type { SlotRow } from "@/domains/company/slot-admin.service";
+import type { ZoneRow } from "@/domains/company/delivery-zone.service";
 
-export type { CompanySettingsView, SlotRow };
+export type { CompanySettingsView, ZoneRow };
+
+export interface ZoneInput {
+  name: string;
+  morningStart: string;
+  morningEnd: string;
+  eveningStart: string;
+  eveningEnd: string;
+}
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -17,14 +25,13 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
 
 const jsonInit = (method: string, body: unknown): RequestInit => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
-/** ADM-1 : paramètres et créneaux de l'entreprise. */
+/** ADM-1 : paramètres et tournées (lot 1, demande 1) de l'entreprise. */
 export const settingsApi = {
   get: () => call<CompanySettingsView>("/api/company/settings"),
   update: (input: Partial<CompanySettingsView>) => call<CompanySettingsView>("/api/company/settings", jsonInit("PATCH", input)),
-  slots: () => call<SlotRow[]>("/api/company/slots"),
-  createSlot: (input: { label: string | null; startTime: string; endTime: string }) => call<SlotRow[]>("/api/company/slots", jsonInit("POST", input)),
-  updateSlot: (id: string, input: { label?: string | null; startTime?: string; endTime?: string; active?: boolean }) =>
-    call<SlotRow[]>(`/api/company/slots/${encodeURIComponent(id)}`, jsonInit("PATCH", input)),
-  deleteSlot: (id: string) => call<SlotRow[]>(`/api/company/slots/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  reorderSlots: (ids: string[]) => call<SlotRow[]>("/api/company/slots/order", jsonInit("PUT", { ids })),
+  zones: () => call<ZoneRow[]>("/api/company/zones"),
+  createZone: (input: ZoneInput) => call<ZoneRow[]>("/api/company/zones", jsonInit("POST", input)),
+  updateZone: (id: string, input: Partial<ZoneInput> & { active?: boolean }) =>
+    call<ZoneRow[]>(`/api/company/zones/${encodeURIComponent(id)}`, jsonInit("PATCH", input)),
+  deleteZone: (id: string) => call<ZoneRow[]>(`/api/company/zones/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

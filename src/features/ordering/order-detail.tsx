@@ -71,10 +71,15 @@ export function OrderDetail({ orderId }: { orderId: string }) {
                 {formatCents(line.unitPriceCents)} {fr.common.exclVat} · {line.unit}
                 {line.available ? "" : " · plus proposé"}
               </p>
+              {line.promoQuantity > 0 && line.promoUnitPriceCents !== null ? (
+                <p className="text-xs text-warning tabular-nums" data-testid="order-line-promo">
+                  {fr.promotions.badge} · {line.promoQuantity < line.quantity ? fr.promotions.promoUnits(line.promoQuantity) : `× ${line.quantity}`} à {formatCents(line.promoUnitPriceCents)}
+                </p>
+              ) : null}
             </div>
             <div className="text-right text-sm tabular-nums">
               <p className="font-semibold">× {line.quantity}</p>
-              <p className="text-muted-foreground">{formatCents(line.quantity * line.unitPriceCents)}</p>
+              <p className="text-muted-foreground">{formatCents(line.lineTotalCents)}</p>
             </div>
           </li>
         ))}

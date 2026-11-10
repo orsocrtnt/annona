@@ -11,6 +11,9 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMerchantChoices } from "@/features/catalog/hooks";
+import { MiniAdminModulesField } from "@/features/users/mini-admin-modules-field";
+import { usePermissions } from "@/hooks/use-permissions";
+import type { MiniAdminModuleId } from "@/lib/permissions/mini-admin";
 import { fr } from "@/lib/i18n/fr";
 import type { UpdateAccountRequest as UpdateAccountInput } from "@/lib/validations/company-admin";
 
@@ -30,7 +33,11 @@ export interface EditableAccount {
   status: string;
   role: { systemRole: SystemRole };
   merchant?: { id: string; name: string } | null;
+  /** Lot 1, demande 4 : fonctionnalités d'un mini admin ; `null` = accès complet. */
+  miniAdminModules?: MiniAdminModuleId[] | null;
 }
+
+type AccountKind = NonNullable<UpdateAccountInput["roleSlug"]> | "mini-admin";
 
 async function patchAccount(id: string, input: UpdateAccountInput) {
   const res = await fetch(`/api/users/${encodeURIComponent(id)}`, {
@@ -88,13 +95,28 @@ export function EditUserDialog({ account, name }: { account: EditableAccount; na
   const [firstName, setFirstName] = useState(account.firstName);
   const [lastName, setLastName] = useState(account.lastName);
   const [phone, setPhone] = useState(account.phone ?? "");
-  const [roleSlug, setRoleSlug] = useState(initialRole);
+  const { isFullAdmin } = usePermissions();
+  const [kind, setKind] = useState<AccountKind>(initialRole === "admin" && account.miniAdminModules ? "mini-admin" : initialRole ?? "merchant");
+  const [modules, setModules] = useState<MiniAdminModuleId[]>(account.miniAdminModules ?? []);
+  const [modulesError, setModulesError] = useState<string | null>(null);
   const [merchantId, setMerchantId] = useState(account.merchant?.id ?? "");
+  const roleSlug = kind === "mini-admin" ? "admin" : kind;
+  const kinds: AccountKind[] = isFullAdmin ? ["merchant", "driver", "baker", "admin", "mini-admin"] : ["merchant", "driver", "baker"];
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (kind === "mini-admin" && modules.length === 0) return setModulesError(t.modulesRequired);
+    setModulesError(null);
     mutation.mutate(
-      { firstName, lastName, phone: phone.trim() || null, roleSlug, merchantId: roleSlug === "merchant" ? merchantId || null : null },
+      {
+        firstName,
+        lastName,
+        phone: phone.trim() || null,
+        roleSlug,
+        merchantId: roleSlug === "merchant" ? merchantId || null : null,
+        // Lot 1, demande 4 : fonctionnalités envoyées seulement par un administrateur complet.
+        ...(isFullAdmin && roleSlug === "admin" ? { miniAdminModules: kind === "mini-admin" ? modules : null } : {}),
+      },
       {
         onSuccess: () => {
           toast.success(t.saved);
@@ -129,17 +151,18 @@ export function EditUserDialog({ account, name }: { account: EditableAccount; na
               <Input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
             </FormField>
             <FormField label={t.role}>
-              <Select value={roleSlug} onValueChange={(value) => setRoleSlug(value as typeof roleSlug)}>
-                <SelectTrigger aria-label={t.role}>
+              <Select value={kind} onValueChange={(value) => setKind(value as AccountKind)}>
+                <SelectTrigger aria-label={t.role} data-testid="edit-user-role">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(["merchant", "driver", "baker", "admin"] as const).map((slug) => (
-                    <SelectItem key={slug} value={slug}>{t.roleOptions[slug]}</SelectItem>
+                  {kinds.map((slug) => (
+                    <SelectItem key={slug} value={slug}>{slug === "mini-admin" ? t.miniAdmin : slug === "admin" ? t.fullAdmin : t.roleOptions[slug]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </FormField>
+            {kind === "mini-admin" ? <MiniAdminModulesField value={modules} onChange={setModules} error={modulesError} /> : null}
             {roleSlug === "merchant" ? (
               <FormField label={t.merchant} required>
                 <Select value={merchantId} onValueChange={setMerchantId}>

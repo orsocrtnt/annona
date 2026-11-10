@@ -14,7 +14,7 @@ import type { UserWithRole } from "../src/types";
 
 function load<T>(file: string, dependencies: Record<string, unknown>): T {
   const module = { exports: {} };
-  const deps = { "next/server": { NextResponse }, "@/lib/config-messages": require("../src/lib/config-messages"), ...dependencies };
+  const deps = { "next/server": { NextResponse }, "@/lib/config-messages": require("../src/lib/config-messages"), "@/lib/permissions/mini-admin": require("../src/lib/permissions/mini-admin"), ...dependencies };
   const source = ts.transpileModule(readFileSync(resolve(file), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   runInNewContext(source, { Error, console, exports: module.exports, module, require: (id: string) => {
     assert.ok(id in deps, `Unexpected dependency ${id}`); return deps[id as keyof typeof deps];

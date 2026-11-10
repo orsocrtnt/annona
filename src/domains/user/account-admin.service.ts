@@ -10,11 +10,16 @@
  * - désactivé = statut INACTIVE : connexion refusée et chaque page ou appel d'API refusé dès la requête
  *   suivante (le statut est relu en base : `isAccountActive`). Réactivé : statut d'avant (un compte jamais
  *   activé reste en attente). Rien n'est supprimé ; chaque changement est journalisé (entité « User »).
+ * - lot 1, demande 4 : seul un administrateur complet crée, modifie, désactive un compte administrateur ou
+ *   mini admin et choisit ses fonctionnalités (`settings.miniAdmin.modules`) ; un mini admin qui a la
+ *   fonctionnalité « comptes » ne gère que les comptes clients, boulangers et livreurs. On ne change pas
+ *   ses propres fonctionnalités ; l'entreprise garde toujours au moins un administrateur complet actif.
  */
 import type { Prisma, PrismaClient, SystemRole, UserStatus } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import type { UpdateAccountInput } from "@/lib/validations/company-admin";
+import { miniAdminModules, withMiniAdminModules, type MiniAdminModuleId } from "@/lib/permissions/mini-admin";
 
 export type AccountAdminDb = Pick<PrismaClient, "user" | "role" | "merchant" | "auditLog">;
 const defaultDb = () => prisma as unknown as AccountAdminDb;
@@ -34,8 +39,10 @@ async function roleOf(db: AccountAdminDb, roleId: string) {
   return role;
 }
 
-async function activeAdminCount(db: AccountAdminDb, companyId: string, adminRoleId: string) {
-  return db.user.count({ where: { companyId, roleId: adminRoleId, status: "ACTIVE" } });
+/** Administrateurs complets actifs (les mini admins ne comptent pas : ils ne gèrent pas les administrateurs). */
+async function activeFullAdminCount(db: AccountAdminDb, companyId: string, adminRoleId: string) {
+  const admins = await db.user.findMany({ where: { companyId, roleId: adminRoleId, status: "ACTIVE" }, select: { id: true, settings: true } });
+  return admins.filter((admin) => miniAdminModules({ settings: admin.settings, role: { systemRole: "ADMIN" } }) === null).length;
 }
 
 export interface AccountView {
@@ -47,10 +54,12 @@ export interface AccountView {
   status: UserStatus;
   role: { slug: string; systemRole: SystemRole; name: string };
   merchantId: string | null;
+  /** Lot 1, demande 4 : fonctionnalités d'un mini admin ; `null` = accès complet du rôle. */
+  miniAdminModules: MiniAdminModuleId[] | null;
 }
 
 export async function updateCompanyAccount(
-  actor: { companyId: string; userId: string },
+  actor: { companyId: string; userId: string; /** Administrateur complet (pas mini admin) ; vrai par défaut. */ fullAdmin?: boolean },
   targetId: string,
   input: UpdateAccountInput,
   db: AccountAdminDb = defaultDb()
@@ -66,6 +75,19 @@ export async function updateCompanyAccount(
   if (self && nextRole.id !== currentRole.id) throw new DomainRuleError(400, "Vous ne pouvez pas changer votre propre rôle.", "CANNOT_CHANGE_OWN_ROLE");
   if (self && input.active === false) throw new DomainRuleError(400, "Vous ne pouvez pas désactiver votre propre compte.", "CANNOT_DEACTIVATE_SELF");
 
+  // Lot 1, demande 4 : comptes administrateur et mini admin réservés à un administrateur complet.
+  const touchesAdmin = currentRole.systemRole === "ADMIN" || nextRole.systemRole === "ADMIN" || input.miniAdminModules !== undefined;
+  if (touchesAdmin && actor.fullAdmin === false) {
+    throw new DomainRuleError(403, "Seul un administrateur peut créer, modifier ou désactiver un compte administrateur ou mini admin.", "ADMIN_ONLY");
+  }
+  if (input.miniAdminModules !== undefined && nextRole.systemRole !== "ADMIN" && input.miniAdminModules !== null) {
+    throw new DomainRuleError(400, "Seul un compte administrateur peut être un mini admin.", "MINI_ADMIN_ROLE");
+  }
+  const beforeModules = miniAdminModules({ settings: target.settings, role: currentRole });
+  if (self && input.miniAdminModules !== undefined && JSON.stringify(input.miniAdminModules) !== JSON.stringify(beforeModules)) {
+    throw new DomainRuleError(400, "Vous ne pouvez pas changer vos propres fonctionnalités.", "CANNOT_CHANGE_OWN_MODULES");
+  }
+
   // Rattachement au client (compte client seulement).
   let merchantId: string | null = target.merchantId;
   if (nextRole.systemRole === "MERCHANT") {
@@ -78,8 +100,9 @@ export async function updateCompanyAccount(
     merchantId = null;
   }
 
-  // Statut : désactivation ou réactivation.
-  const settings = settingsObject(target.settings);
+  // Statut : désactivation ou réactivation. Fonctionnalités : seulement pour un administrateur.
+  const nextModules = nextRole.systemRole !== "ADMIN" ? null : input.miniAdminModules !== undefined ? input.miniAdminModules : beforeModules;
+  const settings = settingsObject(withMiniAdminModules(target.settings, nextModules) as Prisma.JsonValue);
   let status: UserStatus = target.status;
   if (input.active === false && target.status !== "INACTIVE") {
     settings[DEACTIVATED_FROM_KEY] = target.status;
@@ -90,9 +113,10 @@ export async function updateCompanyAccount(
     delete settings[DEACTIVATED_FROM_KEY];
   }
 
-  // Toujours un administrateur actif dans l'entreprise.
-  const losesAdmin = currentRole.systemRole === "ADMIN" && target.status === "ACTIVE" && (nextRole.systemRole !== "ADMIN" || status !== "ACTIVE");
-  if (losesAdmin && (await activeAdminCount(db, actor.companyId, currentRole.id)) <= 1) {
+  // Toujours un administrateur complet actif dans l'entreprise (lot 1, demande 4 : un mini admin ne compte pas).
+  const wasFullAdmin = currentRole.systemRole === "ADMIN" && beforeModules === null && target.status === "ACTIVE";
+  const staysFullAdmin = nextRole.systemRole === "ADMIN" && nextModules === null && status === "ACTIVE";
+  if (wasFullAdmin && !staysFullAdmin && (await activeFullAdminCount(db, actor.companyId, currentRole.id)) <= 1) {
     throw new DomainRuleError(409, "L'entreprise doit garder au moins un administrateur actif.", "LAST_ADMIN");
   }
 
@@ -114,6 +138,7 @@ export async function updateCompanyAccount(
   const action = status === "INACTIVE" && target.status !== "INACTIVE" ? "DEACTIVATE" : target.status === "INACTIVE" && status !== "INACTIVE" ? "REACTIVATE" : "UPDATE";
   const view = (row: typeof target, role: typeof currentRole) => ({
     firstName: row.firstName, lastName: row.lastName, phone: row.phone, status: row.status, role: role.slug, merchantId: row.merchantId,
+    miniAdminModules: miniAdminModules({ settings: row.settings, role }),
   });
   await db.auditLog.create({
     data: {
@@ -136,5 +161,6 @@ export async function updateCompanyAccount(
     status: after.status,
     role: { slug: nextRole.slug, systemRole: nextRole.systemRole, name: nextRole.name },
     merchantId: after.merchantId,
+    miniAdminModules: miniAdminModules({ settings: after.settings, role: nextRole }),
   };
 }

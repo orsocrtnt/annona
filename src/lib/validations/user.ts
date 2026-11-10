@@ -1,4 +1,11 @@
 import { z } from "zod";
+import { MINI_ADMIN_MODULE_IDS } from "@/lib/permissions/mini-admin";
+
+/**
+ * Lot 1, demande 4 : fonctionnalités d'un mini admin (compte administrateur limité). `null` ou absent :
+ * administrateur complet. Seulement avec le rôle administrateur.
+ */
+export const miniAdminModulesSchema = z.array(z.enum(MINI_ADMIN_MODULE_IDS)).max(MINI_ADMIN_MODULE_IDS.length).nullable().optional();
 
 export const updateProfileSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -18,9 +25,13 @@ export const createUserSchema = z.object({
   /** ADM-1 : client représenté, obligatoire pour un compte client (MERCHANT), interdit sinon. */
   merchantId: z.string().trim().min(1).max(64).nullable().optional(),
   phone: z.string().trim().max(40).optional(),
+  miniAdminModules: miniAdminModulesSchema,
 }).refine((value) => value.roleSlug !== "merchant" || Boolean(value.merchantId), {
   message: "Choisissez le client que ce compte représente.",
   path: ["merchantId"],
+}).refine((value) => value.roleSlug === "admin" || !value.miniAdminModules, {
+  message: "Seul un compte administrateur peut être un mini admin.",
+  path: ["miniAdminModules"],
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

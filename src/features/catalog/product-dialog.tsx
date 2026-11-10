@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { normalizeAllergens, type AllergenCode } from "@/domains/catalog/allergens";
+import { AllergensField } from "@/features/catalog/allergens-field";
 import type { CategoryRow, ProductRow } from "@/features/catalog/api";
 import { useProductPhoto, useSaveProduct } from "@/features/catalog/hooks";
 import { MerchantPricesSection } from "@/features/catalog/merchant-prices-section";
@@ -41,6 +43,8 @@ interface FormState {
   basePrice: string;
   vatRate: string;
   active: boolean;
+  /** Lot 1, demande 3 : null = non renseignés ; [] = aucun allergène. */
+  allergens: AllergenCode[] | null;
 }
 
 function initialState(product: ProductRow | null, defaultCategoryId: string | null): FormState {
@@ -52,6 +56,7 @@ function initialState(product: ProductRow | null, defaultCategoryId: string | nu
     basePrice: product ? centsToInput(product.basePriceCents) : "",
     vatRate: basisPointsToInput(product?.vatRateBasisPoints ?? 550),
     active: product?.active ?? true,
+    allergens: product?.allergens ? normalizeAllergens(product.allergens) : null,
   };
 }
 
@@ -98,6 +103,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, default
           basePriceCents: basePriceCents!,
           vatRateBasisPoints: vatRateBasisPoints!,
           active: form.active,
+          allergens: form.allergens,
         },
       },
       {
@@ -165,6 +171,7 @@ export function ProductDialog({ open, onOpenChange, product, categories, default
           <FormField label={t.productDescription}>
             <Input value={form.description} onChange={(event) => set("description", event.target.value)} maxLength={500} />
           </FormField>
+          <AllergensField value={form.allergens} onChange={(value) => set("allergens", value)} />
           <div className="flex items-center gap-3">
             <Switch id="product-active" checked={form.active} onCheckedChange={(value) => set("active", value)} />
             <Label htmlFor="product-active">{t.productActive}</Label>

@@ -9,7 +9,7 @@ import { facturXInvoiceWhere, type FacturXInvoiceScope } from "@/domains/invoice
 import { parseBillingSettings } from "@/domains/company/billing-settings.service";
 import { readCompanyLogo } from "@/domains/company/company-logo.service";
 import { dbDateKey, periodRangeLabel, periodShortLabel } from "@/domains/invoice/billing-period";
-import { vatOf } from "@/domains/invoice/invoice-builder";
+import { deliveredAmountCents, vatOf } from "@/domains/invoice/invoice-builder";
 import { invoiceLegalMentions } from "@/domains/invoice/invoice-legal";
 import { settlementStatus } from "@/domains/invoice/invoice-settlement";
 import { SETTLEMENT_LABELS } from "@/lib/constants/invoice-status";
@@ -69,7 +69,7 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
         select: {
           reference: true,
           deliveryDate: true,
-          lines: { select: { quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true } },
+          lines: { select: { quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true } },
         },
       },
       payments: { select: { amountCents: true } },
@@ -200,7 +200,7 @@ export async function loadFacturXInvoice(scope: FacturXInvoiceScope): Promise<Lo
       orders: invoice.orders.map((order) => ({
         reference: order.reference,
         date: shortDate.format(order.deliveryDate),
-        amount: order.lines.reduce((sum, line) => sum + (line.quantityDelivered ?? line.quantityOrdered) * (line.unitPriceFrozenCents ?? 0), 0) / 100,
+        amount: order.lines.reduce((sum, line) => sum + deliveredAmountCents(line), 0) / 100,
         shortage: order.lines.some((line) => line.quantityDelivered !== null && line.quantityDelivered < line.quantityOrdered),
       })),
       notes: invoice.notes,

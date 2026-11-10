@@ -80,6 +80,7 @@ export function MerchantsContent() {
                 <TableRow>
                   <TableHead>{t.columns.name}</TableHead>
                   <TableHead className="max-md:hidden">{t.columns.city}</TableHead>
+                  <TableHead>{t.zoneColumn}</TableHead>
                   <TableHead className="max-md:hidden">{t.columns.billing}</TableHead>
                   <TableHead className="max-md:hidden">{t.columns.accounts}</TableHead>
                   <TableHead>{t.columns.status}</TableHead>
@@ -89,7 +90,8 @@ export function MerchantsContent() {
                 {rows.map((row) => (
                   <TableRow key={row.id} data-testid="merchant-row" data-merchant={row.name}>
                     <TableCell>
-                      <Link href={`/dashboard/merchants/${row.id}`} className="font-medium hover:underline">
+                      {/* Lot 1, demande 9 : cible tactile de 44 px sur téléphone. */}
+                      <Link href={`/dashboard/merchants/${row.id}`} className="font-medium hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
                         {row.tradeName || row.name}
                       </Link>
                       <p className="text-xs text-muted-foreground">
@@ -102,6 +104,9 @@ export function MerchantsContent() {
                       ) : null}
                     </TableCell>
                     <TableCell className="max-md:hidden">{[row.postalCode, row.city].filter(Boolean).join(" ")}</TableCell>
+                    <TableCell data-testid="merchant-zone-cell">
+                      {row.zoneName ?? <span className="text-xs text-warning">{t.noZone}</span>}
+                    </TableCell>
                     <TableCell className="max-md:hidden">{t.periods[row.billingPeriod]}</TableCell>
                     <TableCell className="max-md:hidden">{t.accounts(row.userCount)}</TableCell>
                     <TableCell>

@@ -3,9 +3,9 @@ import { pathToFileURL } from "node:url";
 type Environment = Record<string, string | undefined>;
 
 /** ENV-2 : seul projet Supabase autorisé pour le développement local. */
-export const DEV_SUPABASE_REF = "mhzdmoytxmzudhkivixh";
-/** Préproduction, ancien projet de développement et copie de répétition de restauration. */
-export const FORBIDDEN_SUPABASE_REFS = ["zwwyalsslyydubtetagj", "wlomrzilflbouzyhzwxm", "tyfpfepmqibafjykldbk"] as const;
+export const DEV_SUPABASE_REF = "fqzlfszgyeyfeshllqtj";
+/** Préproduction, anciens projets de développement (dont `tutelliv-dev`, en pause depuis le 6 novembre 2026) et copie de répétition de restauration. */
+export const FORBIDDEN_SUPABASE_REFS = ["zwwyalsslyydubtetagj", "wlomrzilflbouzyhzwxm", "tyfpfepmqibafjykldbk", "mhzdmoytxmzudhkivixh"] as const;
 
 const REQUIRED = [
   "NEXT_PUBLIC_APP_URL",

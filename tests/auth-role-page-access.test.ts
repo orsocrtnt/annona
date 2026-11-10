@@ -9,6 +9,7 @@ import { ROLE_PERMISSIONS } from "../prisma/reference-data";
 import { getNavItemsForRole } from "../src/features/navigation/get-nav-items";
 import { driverNavItems } from "../src/features/navigation/nav-config";
 import * as pageAccess from "../src/lib/permissions/page-access";
+import * as miniAdminModule from "../src/lib/permissions/mini-admin";
 
 const { PROTECTED_PAGE_SPACES, evaluatePageAccess, getPageAccessRule, getRoleHomePath, isProtectedPagePath } =
   pageAccess;
@@ -48,6 +49,8 @@ const SPACES: Record<string, SystemRole[]> = {
   "/dashboard/rounds": ["ADMIN"],
   "/dashboard/merchants": ["ADMIN"],
   "/dashboard/catalog": ["ADMIN"],
+  "/dashboard/promotions": ["ADMIN"],
+  "/dashboard/tracking": ["ADMIN"],
   "/dashboard/invoices": ["ADMIN"],
   "/support": ["ADMIN"],
   "/users": ["ADMIN"],
@@ -187,6 +190,8 @@ function loadMiddleware(session: { id: string } | null, auth: Auth | Error, refr
     Date,
     Map,
     require: (id: string) => {
+      // Lot 1, demande 4 : règles des mini admins, module pur réel.
+      if (id === "@/lib/permissions/mini-admin") return miniAdminModule;
       assert.ok(id in dependencies, `Unexpected dependency ${id}`);
       return dependencies[id];
     },

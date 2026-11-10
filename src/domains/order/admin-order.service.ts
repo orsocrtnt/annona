@@ -20,6 +20,7 @@ import type {
   AdminOrderHistoryEntry,
   AdminOrderLine,
   AdminOrderRow,
+  AdminOrderView,
 } from "@/domains/order/admin-order.types";
 import {
   describeOrderAudit,
@@ -77,10 +78,26 @@ const personName = (user: { firstName: string; lastName: string } | undefined) =
 // Liste du jour (ADM-04)
 // ---------------------------------------------------------------------------
 
+/** Lot 1, demande 6 : mêmes définitions que les chiffres du tableau de bord (`round-live.service.ts`). */
+export function matchesView(row: Pick<AdminOrderRow, "status" | "stopStatus" | "incident">, view: AdminOrderView | null): boolean {
+  switch (view) {
+    case "active":
+      return row.status !== "DRAFT" && row.status !== "CANCELLED";
+    case "delivered":
+      return row.stopStatus === "DELIVERED";
+    case "remaining":
+      return row.stopStatus === "PENDING";
+    case "incidents":
+      return row.incident;
+    default:
+      return true;
+  }
+}
+
 export async function listAdminOrders(
   companyId: string,
   day: DayLockState,
-  filters: { merchantId?: string | null; roundId?: string | null },
+  filters: { merchantId?: string | null; roundId?: string | null; view?: AdminOrderView | null },
   db: AdminOrderDb = prisma
 ): Promise<AdminOrderDay> {
   const deliveryDate = deliveryDateToDb(day.date);
@@ -92,24 +109,27 @@ export async function listAdminOrders(
   const [lines, merchants, slots, stops, rounds, audits] = await Promise.all([
     db.orderLine.findMany({
       where: { companyId, orderId: { in: orderIds } },
-      select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true },
+      select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true },
     }),
     db.merchant.findMany({ where: { companyId, id: { in: [...new Set(orders.map((order) => order.merchantId))] } }, select: { id: true, name: true, tradeName: true } }),
     db.slot.findMany({ where: { companyId }, select: { id: true, label: true, startTime: true, endTime: true } }),
-    db.stop.findMany({ where: { companyId, orderId: { in: orderIds } }, select: { orderId: true, roundId: true, sequence: true } }),
+    db.stop.findMany({ where: { companyId, orderId: { in: orderIds } }, select: { orderId: true, roundId: true, sequence: true, status: true, incidentAt: true } }),
     db.round.findMany({ where: { companyId, date: deliveryDate }, select: { id: true, name: true, slotId: true, status: true, driverId: true } }),
     db.auditLog.findMany({ where: { companyId, entityType: ORDER_AUDIT_ENTITY, entityId: { in: orderIds } }, select: { entityId: true, action: true } }),
   ]);
-  const drivers = await db.user.findMany({
-    where: { companyId, id: { in: rounds.map((round) => round.driverId).filter((id): id is string => Boolean(id)) } },
-    select: { id: true, firstName: true, lastName: true },
-  });
-  const prices = await loadAppliedPricesByMerchant(
-    db,
-    companyId,
-    [...new Set(orders.map((order) => order.merchantId))],
-    [...new Set(lines.map((line) => line.productId))]
-  );
+  // Lot 1, demande 9 : livreurs et prix ne dépendent pas l'un de l'autre, lus en parallèle.
+  const [drivers, prices] = await Promise.all([
+    db.user.findMany({
+      where: { companyId, id: { in: rounds.map((round) => round.driverId).filter((id): id is string => Boolean(id)) } },
+      select: { id: true, firstName: true, lastName: true },
+    }),
+    loadAppliedPricesByMerchant(
+      db,
+      companyId,
+      [...new Set(orders.map((order) => order.merchantId))],
+      [...new Set(lines.map((line) => line.productId))]
+    ),
+  ]);
   const merchantName = new Map(merchants.map((merchant) => [merchant.id, merchant.tradeName || merchant.name]));
   const slotById = new Map(slots.map((slot) => [slot.id, slot]));
   const stopByOrder = new Map(stops.map((stop) => [stop.orderId, stop]));
@@ -125,6 +145,8 @@ export async function listAdminOrders(
         quantity: line.quantityOrdered,
         unitPriceCents: line.unitPriceFrozenCents ?? merchantPrices?.get(line.productId)?.unitPriceCents ?? 0,
         vatRateBasisPoints: merchantPrices?.get(line.productId)?.vatRateBasisPoints ?? 0,
+        promoQuantity: line.promoQuantity,
+        promoUnitPriceCents: line.promoUnitPriceCents,
       }))
     );
     const slot = slotById.get(order.slotId);
@@ -144,6 +166,8 @@ export async function listAdminOrders(
       subtotalCents: totals.subtotalCents,
       shortage: own.some((line) => line.quantityDelivered !== null && line.quantityDelivered < line.quantityOrdered),
       corrected: corrected.has(order.id),
+      stopStatus: stop && round && round.status !== "CANCELLED" ? stop.status : null,
+      incident: Boolean(stop && round && round.status !== "CANCELLED" && stop.incidentAt),
     };
   });
   all.sort(
@@ -157,7 +181,8 @@ export async function listAdminOrders(
   const filtered = all.filter(
     (row) =>
       (!filters.merchantId || row.merchant.id === filters.merchantId) &&
-      (!filters.roundId || (filters.roundId === "none" ? row.round === null : row.round?.id === filters.roundId))
+      (!filters.roundId || (filters.roundId === "none" ? row.round === null : row.round?.id === filters.roundId)) &&
+      matchesView(row, filters.view ?? null)
   );
   return {
     date: day.date,
@@ -250,12 +275,15 @@ export async function getAdminOrder(companyId: string, orderId: string, now = ne
         unitPriceCents: line.unitPriceFrozenCents ?? price?.unitPriceCents ?? 0,
         frozen: line.unitPriceFrozenCents !== null,
         vatRateBasisPoints: price?.vatRateBasisPoints ?? 0,
+        promoQuantity: line.promoQuantity,
+        promoUnitPriceCents: line.promoUnitPriceCents,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  const ordered = computeTotals(lines.map((line) => ({ quantity: line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints })));
+  const promo = (line: AdminOrderLine) => ({ promoQuantity: line.promoQuantity, promoUnitPriceCents: line.promoUnitPriceCents });
+  const ordered = computeTotals(lines.map((line) => ({ quantity: line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints, ...promo(line) })));
   const delivered = computeTotals(
-    lines.map((line) => ({ quantity: line.quantityDelivered ?? line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints }))
+    lines.map((line) => ({ quantity: line.quantityDelivered ?? line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints, ...promo(line) }))
   );
   const cutoffAt = orderCutoffInstant(order.deliveryDate, company.cutoffTime, company.timezone);
   return {
@@ -352,7 +380,12 @@ export async function correctAdminOrder(
       if (previous) {
         const quantityDelivered = correctedDelivered(previous, line.quantity);
         if (previous.quantityOrdered !== line.quantity || previous.quantityDelivered !== quantityDelivered) {
-          await tx.orderLine.update({ where: { id: previous.id }, data: { quantityOrdered: line.quantity, quantityDelivered } });
+          // Lot 1, demande 2 : la part promo retenue à la validation ne grandit jamais après coup.
+          const promoQuantity = Math.min(previous.promoQuantity, line.quantity);
+          await tx.orderLine.update({
+            where: { id: previous.id },
+            data: { quantityOrdered: line.quantity, quantityDelivered, ...(promoQuantity !== previous.promoQuantity ? { promoQuantity } : {}) },
+          });
         }
         afterLines.push({ productId: line.productId, quantityOrdered: line.quantity, quantityDelivered });
       } else {

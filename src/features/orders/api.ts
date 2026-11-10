@@ -21,10 +21,11 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
 
 /** Back-office des commandes (LOCK-1 : ADM-04, ADM-05). */
 export const adminOrdersApi = {
-  day: (date: string, filters: { merchantId?: string | null; roundId?: string | null }) => {
+  day: (date: string, filters: { merchantId?: string | null; roundId?: string | null; view?: string | null }) => {
     const params = new URLSearchParams({ date });
     if (filters.merchantId) params.set("merchantId", filters.merchantId);
     if (filters.roundId) params.set("roundId", filters.roundId);
+    if (filters.view) params.set("view", filters.view);
     return call<AdminOrderDay>(`/api/orders?${params.toString()}`);
   },
   order: (id: string) => call<AdminOrderDetail>(`/api/orders/${encodeURIComponent(id)}`),

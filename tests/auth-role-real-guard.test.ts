@@ -42,8 +42,20 @@ function user(authId: string, systemRole: keyof typeof ROLE_PERMISSIONS, extra: 
   };
 }
 
+/** Lot 1, demande 9 : `getUserByAuthId` relit compte, entreprise, rôle et permissions en une requête SQL. */
+function authRow(source: Row) {
+  const { role, company, ...user } = source as Row & { role: Row & { permissions: Array<{ permission: Row }> }; company?: Row };
+  const { permissions, ...roleRow } = role;
+  return { u: user, c: company ?? null, r: roleRow, p: permissions.map((link) => link.permission) };
+}
+
 function fakePrisma(db: Db) {
   return {
+    $queryRaw: async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      if (!strings.join("").includes("to_jsonb(u.*)")) return [];
+      const found = db.usersByAuthId[String(values[0] ?? "")];
+      return found ? [authRow(structuredClone(found))] : [];
+    },
     user: {
       findUnique: async ({ where }: { where: { authId?: string } }) => structuredClone(db.usersByAuthId[where.authId ?? ""] ?? null),
       findFirst: async ({ where }: { where: { companyId: string; authId?: string } }) =>

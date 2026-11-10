@@ -4,11 +4,12 @@ import { AUTH_ROUTES } from "@/lib/constants";
 import { isCrossOriginMutation, isOriginCheckExempt } from "@/lib/security/origin-check";
 import {
   evaluatePageAccess,
-  getRoleHomePath,
+  getHomePath,
   isProtectedPagePath,
   type PageAccessSubject,
 } from "@/lib/permissions/page-access";
 import { resolveServerAuthForAuthId } from "@/lib/api/server-auth";
+import { miniAdminModules } from "@/lib/permissions/mini-admin";
 
 const NO_STORE = "no-store";
 
@@ -25,7 +26,8 @@ const subjectInflight = new Map<string, Promise<PageAccessSubject | null>>();
 async function loadSubject(authId: string): Promise<PageAccessSubject | null> {
   const auth = await resolveServerAuthForAuthId(authId);
   if (!auth) return null;
-  return { role: auth.user.role.systemRole, permissions: auth.permissions };
+  // Lot 1, demande 4 : fonctionnalités d'un mini admin, relues en base comme le rôle.
+  return { role: auth.user.role.systemRole, permissions: auth.permissions, modules: miniAdminModules(auth.user) };
 }
 
 async function resolvePageSubject(request: NextRequest, authId: string): Promise<PageAccessSubject | null> {
@@ -145,7 +147,7 @@ export async function middleware(request: NextRequest) {
     // connexion reste affichée (sinon boucle connexion ↔ espace protégé). Base indisponible : idem.
     const subject = await resolvePageSubject(request, user.id).catch(() => null);
     if (subject) {
-      const home = getRoleHomePath(subject.role);
+      const home = getHomePath(subject);
       if (evaluatePageAccess(home, subject).kind === "allow") {
         return withSessionCookies(redirectTo(request, home), supabaseResponse);
       }

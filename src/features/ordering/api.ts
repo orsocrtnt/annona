@@ -37,6 +37,8 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
 export const orderingApi = {
   catalog: () => call<PortalCatalog>("/api/portal/catalog"),
   profile: () => call<PortalMerchantProfile>("/api/portal/merchant"),
+  updateAccess: (accessInstructions: string | null) =>
+    call<{ accessInstructions: string | null }>("/api/portal/merchant", jsonInit("PATCH", { accessInstructions })),
   orders: (scope: "upcoming" | "history", before?: string | null) =>
     call<PortalOrderList>(`/api/portal/orders?scope=${scope}${before ? `&before=${before}` : ""}`),
   order: (id: string) => call<PortalOrderDetail>(`/api/portal/orders/${encodeURIComponent(id)}`),

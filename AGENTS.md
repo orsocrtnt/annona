@@ -5,8 +5,8 @@ Annona devient une application de commande et de livraison B2B pour boulangerie 
 ## OBLIGATOIRE : mettre `TODO.md` à jour
 - Après chaque changement de code, de comportement ou de visuel, même petit, consigner dans la tâche concernée ce qui a changé, les vérifications lancées avec leur résultat, ce qui reste non vérifié et la suite. S'il n'existe aucune tâche concernée, en créer une.
 - Ne jamais terminer un tour ni annoncer un travail fini sans avoir mis `TODO.md` à jour puis lancé `npm run todo:progress`. Le propriétaire ne doit jamais avoir à le demander.
-- Tenir à jour le bloc « Ce qu'il reste vraiment à faire » en tête de `TODO.md` (trois listes courtes : propriétaire, agent, attente extérieure ; simples tirets, pas de cases).
-- Sous le titre de chaque tâche ouverte, écrire qui doit agir ensuite : `**Qui : Claude.**` ou `**Qui : Toi.**`, avec une condition éventuelle (`**Qui : Claude — après SCHEMA-1.**`). `npm run todo:progress` en tire les listes sous la jauge ; une tâche sans cette ligne apparaît dans « À classer ».
+- Tenir à jour le bloc « Ce qu'il reste vraiment à faire » en tête de `TODO.md` (listes courtes : Orso, Théo, agent, attente extérieure ; simples tirets, pas de cases).
+- Sous le titre de chaque tâche ouverte, écrire qui doit agir ensuite : `**Qui : Claude.**`, `**Qui : Orso.**` ou `**Qui : Théo.**`, avec une condition éventuelle (`**Qui : Claude — après SCHEMA-1.**`). `npm run todo:progress` en tire les listes sous la jauge ; une tâche sans cette ligne apparaît dans « À classer ».
 - Quand une case est cochée, déplacer la tâche et ses preuves dans `docs/TODO-ARCHIVE.md`. `TODO.md` reste une page de pilotage et la source unique des priorités ; vérifier le code avant de croire un ancien statut.
 
 ## Sources et périmètre
@@ -24,9 +24,18 @@ Annona devient une application de commande et de livraison B2B pour boulangerie 
 - Ne cocher une tâche que lorsque ses critères sont vérifiés ; ne jamais présenter un contrôle statique comme un test fonctionnel.
 - Si une tâche bloque, noter la cause et poursuivre une tâche indépendante. Ne solliciter le propriétaire que pour un accès indispensable, une action destructive, une décision produit ou d'architecture majeure ou une ambiguïté réellement bloquante.
 
+## Travail à deux (Orso et Théo)
+- Deux développeurs codent en parallèle, chacun avec son agent : Orso (propriétaire du dépôt et des décisions produit) et Théo (Claude sans offre Max, et Cursor). « Le développeur » désigne celui qui pilote la session en cours.
+- Avant de commencer une tâche, vérifier dans `TODO.md` qu'elle n'est pas déjà prise : une tâche en cours porte « **En cours : Orso.** » ou « **En cours : Théo.** ». Ne jamais travailler sur une tâche prise par l'autre.
+- Schéma Prisma, migrations, `db:push`, `db:sync-schema`, `db:migrate` et seeds : un seul développeur à la fois sur `annona-dev`, annoncé dans la tâche avant de commencer. En cas de doute, demander au développeur.
+- Données de test préfixées par le prénom (`test-orso-…`, `test-theo-…`) ; ne jamais modifier ni supprimer celles de l'autre.
+
 ## Branche et publication
-- Branche de travail : `base`. Committer sur `base` uniquement.
-- Aucun push sans demande explicite du propriétaire : ni `base`, ni `preproduction`, ni `main`. `preproduction` et le site en ligne portent encore l'ancien produit.
+- `base` est protégée sur GitHub : on n'y pousse jamais directement. Toute modification arrive par une pull request vers `base`, avec la CI verte et la branche à jour.
+- Travailler sur une branche `<prénom>/<sujet>` créée depuis un `base` à jour (`git switch base && git pull`, puis `git switch -c orso/sujet`). Committer sur cette branche.
+- Pousser sa branche et ouvrir la PR (`gh pr create --base base`) seulement quand le développeur le demande. Avant la PR, récupérer `base` (`git pull --rebase origin base`) et relancer `npm run check`.
+- `TODO.md` change dans presque chaque PR : en cas de conflit, garder les deux versions des tâches, puis relancer `npm run todo:progress`.
+- Jamais de push sur `preproduction` ni sur `main` sans demande explicite d'Orso : ils portent encore l'ancien produit.
 - Pas de déploiement, de suppression de données ni de réinitialisation Git sans demande explicite.
 
 ## Routage des modèles

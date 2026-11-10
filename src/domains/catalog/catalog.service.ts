@@ -25,6 +25,7 @@ import type {
   UpsertMerchantPriceInput,
 } from "@/lib/validations/catalog";
 import type { CategoryRow, MerchantPriceRow, ProductRow } from "./catalog.types";
+import { allergenColumns, productAllergens } from "@/domains/catalog/allergens";
 
 export type { CategoryRow, MerchantPriceRow, ProductRow };
 
@@ -106,6 +107,8 @@ const productSelect = {
   sortOrder: true,
   active: true,
   photoUrl: true,
+  allergens: true,
+  allergensDeclared: true,
   category: { select: { name: true, active: true } },
   _count: { select: { merchantPrices: true } },
 } satisfies Prisma.ProductSelect;
@@ -129,6 +132,7 @@ function toProductRow(companyId: string, row: ProductRecord): ProductRow {
     hasPhoto,
     photoVersion: hasPhoto ? photoVersion(row.photoUrl!) : null,
     specificPriceCount: row._count.merchantPrices,
+    allergens: productAllergens(row),
   };
 }
 
@@ -170,6 +174,7 @@ export async function createProduct(companyId: string, input: CreateProductInput
         vatRateBasisPoints: input.vatRateBasisPoints,
         active: input.active,
         sortOrder: (last?.sortOrder ?? -1) + 1,
+        ...(input.allergens !== undefined ? allergenColumns(input.allergens) : {}),
       },
       select: productSelect,
     });
@@ -205,6 +210,7 @@ export async function updateProduct(
         ...(input.basePriceCents !== undefined ? { basePriceCents: input.basePriceCents } : {}),
         ...(input.vatRateBasisPoints !== undefined ? { vatRateBasisPoints: input.vatRateBasisPoints } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
+        ...(input.allergens !== undefined ? allergenColumns(input.allergens) : {}),
       },
       select: productSelect,
     });

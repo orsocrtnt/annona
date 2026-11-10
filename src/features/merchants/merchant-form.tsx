@@ -9,6 +9,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MerchantDetail } from "@/features/merchants/api";
+import { useZones } from "@/features/settings/hooks";
 import { fr } from "@/lib/i18n/fr";
 import { BILLING_PERIODS, PAYMENT_METHODS, type CreateMerchantInput } from "@/lib/validations/company-admin";
 
@@ -34,6 +35,7 @@ type Values = {
   billingCity: string;
   billingPeriod: (typeof BILLING_PERIODS)[number];
   paymentMethod: (typeof PAYMENT_METHODS)[number] | "";
+  zoneId: string;
 };
 
 function initialValues(merchant: MerchantDetail | null): Values {
@@ -57,6 +59,7 @@ function initialValues(merchant: MerchantDetail | null): Values {
     billingCity: merchant?.billingCity ?? "",
     billingPeriod: merchant?.billingPeriod ?? "MONTHLY",
     paymentMethod: merchant?.paymentMethod ?? "",
+    zoneId: merchant?.zoneId ?? "",
   };
 }
 
@@ -83,6 +86,7 @@ export function toMerchantInput(values: Values): CreateMerchantInput {
     billingCity: orNull(values.billingCity),
     billingPeriod: values.billingPeriod,
     paymentMethod: values.paymentMethod || null,
+    zoneId: values.zoneId || null,
   };
 }
 
@@ -96,6 +100,7 @@ interface MerchantFormProps {
 /** ADM-1 : fiche client (création et modification), adresse géocodée et position modifiable. */
 export function MerchantForm({ merchant, submitLabel, pending, onSubmit }: MerchantFormProps) {
   const [values, setValues] = useState<Values>(() => initialValues(merchant));
+  const zones = useZones();
   const [addressTouched, setAddressTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const set = <K extends keyof Values>(key: K, value: Values[K]) => setValues((current) => ({ ...current, [key]: value }));
@@ -159,11 +164,25 @@ export function MerchantForm({ merchant, submitLabel, pending, onSubmit }: Merch
           ) : (
             <p className="rounded-xl border border-dashed px-3 py-4 text-sm text-muted-foreground" data-testid="position-missing">{t.positionMissing}</p>
           )}
+          {/* Lot 1, demande 1 : tournée du client ; il choisit ensuite seulement « Matin » ou « Soir ». */}
+          <FormField label={t.zone} hint={t.zoneHint}>
+            <Select value={values.zoneId || "NONE"} onValueChange={(value) => set("zoneId", value === "NONE" ? "" : value)}>
+              <SelectTrigger aria-label={t.zone} data-testid="merchant-zone">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">{t.noZone}</SelectItem>
+                {(zones.data ?? []).map((zone) => (
+                  <SelectItem key={zone.id} value={zone.id}>{zone.active ? zone.name : `${zone.name} (${fr.companySettings.zoneInactive.toLowerCase()})`}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
           <FormField label={t.accessInstructions} hint={t.accessHint}>
             <textarea
               className="min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={values.accessInstructions}
-              maxLength={600}
+              maxLength={500}
               onChange={(event) => set("accessInstructions", event.target.value)}
             />
           </FormField>

@@ -131,7 +131,14 @@ for (const byEmail of [false, true]) {
     replace(t, prisma.user, "findUnique", async () => byEmail ? null : { ...u, role: { ...u.role, permissions: u.role.permissions.map((permission) => ({ permission })) } });
     replace(t, prisma.user, "findFirst", async () => u);
     replace(t, prisma.user, "update", async () => assert.fail("no update allowed"));
-    t.mock.method(prisma, "$queryRaw", async () => [{ id: "r", system_role: "BAKER" }]);
+    // Lot 1, demande 9 : le compte est relu en une requête SQL (`getUserByAuthId`) ; les autres lectures brutes inchangées.
+    t.mock.method(prisma, "$queryRaw", async (strings: TemplateStringsArray) => {
+      if (!strings.join("").includes("to_jsonb(u.*)")) return [{ id: "r", system_role: "BAKER" }];
+      if (byEmail) return [];
+      const { role, company, ...rest } = u as typeof u & { company?: unknown };
+      const { permissions, ...roleRow } = role;
+      return [{ u: rest, c: company ?? null, r: roleRow, p: permissions }];
+    });
     replace(t, prisma.rolePermission, "findMany", async () => []);
     t.mock.method(prisma, "$transaction", async () => assert.fail("no linking allowed"));
     await assert.rejects(authService.syncUserFromSupabase({ authId: "auth", email: u.email }), access.AccountUnavailableError);

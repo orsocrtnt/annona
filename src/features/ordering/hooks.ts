@@ -22,6 +22,15 @@ export function useMerchantProfile() {
   return useQuery({ queryKey: ORDERING_KEYS.profile, queryFn: orderingApi.profile, staleTime: 60_000 });
 }
 
+/** Lot 1, demande 8 : consignes d'accès du client. */
+export function useUpdateMerchantAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: orderingApi.updateAccess,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ORDERING_KEYS.profile }),
+  });
+}
+
 export function useUpcomingOrders() {
   return useQuery({ queryKey: ORDERING_KEYS.list("upcoming"), queryFn: () => orderingApi.orders("upcoming") });
 }

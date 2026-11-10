@@ -37,6 +37,10 @@ export const PERMISSIONS = [
   { slug: "dashboard:baker", name: "Espace boulanger", resource: "dashboard", action: "baker" },
   { slug: "dashboard:driver", name: "Application livreur", resource: "dashboard", action: "driver" },
   { slug: "dashboard:merchant", name: "Portail client", resource: "dashboard", action: "merchant" },
+  // Lot 1 (migration 20261110130000_module_permissions) : fonctionnalités séparées pour les mini admins.
+  { slug: "promotions:read", name: "Lire les promotions", resource: "promotions", action: "read" },
+  { slug: "promotions:manage", name: "Gérer les promotions", resource: "promotions", action: "manage" },
+  { slug: "tracking:read", name: "Suivre les livreurs", resource: "tracking", action: "read" },
 ] as const;
 
 export const ROLE_PERMISSIONS: Record<SystemRole, readonly string[]> = {
@@ -52,8 +56,10 @@ export const ROLE_PERMISSIONS: Record<SystemRole, readonly string[]> = {
     "companies:read", "companies:update",
     "merchants:read", "merchants:manage",
     "catalog:read", "catalog:manage",
+    "promotions:read", "promotions:manage",
     "orders:read", "orders:create", "orders:update",
     "production:read",
+    "tracking:read",
     "rounds:read", "rounds:manage", "stops:update",
     "invoices:read", "invoices:create", "invoices:update",
     "settings:read", "settings:update",

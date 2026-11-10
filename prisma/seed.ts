@@ -5,7 +5,7 @@
  *
  * Idempotent : référentiel en `upsert` sur des identifiants préfixés `demo_` ; commandes, tournées et
  * commandes récurrentes de l'entreprise de démonstration supprimées puis recréées par rapport à
- * aujourd'hui. Aucune autre donnée n'est touchée.
+ * aujourd'hui ; promotions de l'entreprise de démonstration supprimées. Aucune autre donnée n'est touchée.
  *
  * Comptes connectables créés dans Supabase Auth (clé service_role). Les mots de passe sont écrits
  * dans `outputs/comptes-demo.md` (dossier ignoré par git), jamais dans la console ni le dépôt.
@@ -33,11 +33,24 @@ const ACCOUNTS_MD = resolve("outputs/comptes-demo.md");
 // Référentiel
 // ---------------------------------------------------------------------------
 
-const SLOTS = [
-  { id: "demo_slot_0500", label: "5h – 6h", startTime: "05:00", endTime: "06:00" },
-  { id: "demo_slot_0600", label: "6h – 7h", startTime: "06:00", endTime: "07:00" },
-  { id: "demo_slot_0700", label: "7h – 8h", startTime: "07:00", endTime: "08:00" },
+/**
+ * Lot 1, demande 1 : deux tournées (zones), chacune avec une plage du matin et une plage du soir.
+ * Les commerçants livrés le soir (`slot: 2`) sont rattachés à la tournée Nord.
+ */
+const ZONES = [
+  { id: "demo_zone_nord", name: "Nord", morningStart: "05:30", morningEnd: "11:00", eveningStart: "16:00", eveningEnd: "19:00" },
+  { id: "demo_zone_sud", name: "Sud", morningStart: "05:30", morningEnd: "11:00", eveningStart: "16:00", eveningEnd: "19:00" },
 ] as const;
+
+const SLOTS = [
+  { id: "demo_slot_nord_matin", zoneId: "demo_zone_nord", period: "MORNING", label: "Nord matin", startTime: "05:30", endTime: "11:00", sortOrder: 0 },
+  { id: "demo_slot_sud_matin", zoneId: "demo_zone_sud", period: "MORNING", label: "Sud matin", startTime: "05:30", endTime: "11:00", sortOrder: 2 },
+  { id: "demo_slot_nord_soir", zoneId: "demo_zone_nord", period: "EVENING", label: "Nord soir", startTime: "16:00", endTime: "19:00", sortOrder: 1 },
+  { id: "demo_slot_sud_soir", zoneId: "demo_zone_sud", period: "EVENING", label: "Sud soir", startTime: "16:00", endTime: "19:00", sortOrder: 3 },
+] as const;
+
+/** Anciens créneaux horaires de la démo (avant le lot 1) : supprimés une fois leurs commandes recréées. */
+const LEGACY_SLOT_IDS = ["demo_slot_0500", "demo_slot_0600", "demo_slot_0700"];
 
 type ProductRow = readonly [name: string, unit: string, priceCents: number];
 
@@ -248,11 +261,15 @@ type AccountSeed = {
   role: SystemRole;
   phone?: string;
   merchantIndex?: number;
+  /** Lot 1, demande 4 : compte « mini admin » (administrateur limité à ces fonctionnalités). */
+  miniAdminModules?: readonly string[];
 };
 
 const ACCOUNTS: readonly AccountSeed[] = [
   { key: "super-admin", email: "demo-super-admin@annona.fr", firstName: "Sacha", lastName: "Plateforme", role: "SUPER_ADMIN" },
   { key: "admin", email: "demo-admin@annona.fr", firstName: "Camille", lastName: "Durand", role: "ADMIN", phone: "0601020304" },
+  // Lot 1, demande 4 (vérification 1) : mini admin avec seulement « Commandes » et « Suivi des livreurs ».
+  { key: "mini-admin", email: "demo-mini-admin@annona.fr", firstName: "Maël", lastName: "Mini", role: "ADMIN", miniAdminModules: ["orders", "tracking"] },
   { key: "boulanger", email: "demo-boulanger@annona.fr", firstName: "Bastien", lastName: "Fournier", role: "BAKER", phone: "0601020305" },
   ...[1, 2, 3, 4, 5].map((n): AccountSeed => ({
     key: `livreur-${n}`,
@@ -417,10 +434,20 @@ async function seedCatalog() {
 }
 
 async function seedSlots() {
-  for (const [index, slot] of SLOTS.entries()) {
-    const data = { label: slot.label, startTime: slot.startTime, endTime: slot.endTime, active: true, sortOrder: index };
-    await prisma.slot.upsert({ where: { id: slot.id }, update: data, create: { id: slot.id, companyId: DEMO_COMPANY_ID, ...data } });
+  for (const [index, zone] of ZONES.entries()) {
+    const { id, ...fields } = zone;
+    const data = { ...fields, active: true, sortOrder: index };
+    await prisma.deliveryZone.upsert({ where: { id }, update: data, create: { id, companyId: DEMO_COMPANY_ID, ...data } });
   }
+  for (const slot of SLOTS) {
+    const { id, ...data } = slot;
+    await prisma.slot.upsert({ where: { id }, update: { ...data, active: true }, create: { id, companyId: DEMO_COMPANY_ID, ...data, active: true } });
+  }
+}
+
+/** Les anciens créneaux de la démo ne servent plus après la recréation des commandes. */
+async function removeLegacySlots() {
+  await prisma.slot.deleteMany({ where: { companyId: DEMO_COMPANY_ID, id: { in: LEGACY_SLOT_IDS } } });
 }
 
 async function seedMerchants(productIds: string[]) {
@@ -443,6 +470,7 @@ async function seedMerchants(productIds: string[]) {
       billingPeriod: merchant.billing,
       paymentMethod: merchant.payment,
       active: true,
+      zoneId: SLOTS[merchant.slot].zoneId,
     };
     await prisma.merchant.upsert({ where: { id }, update: data, create: { id, companyId: DEMO_COMPANY_ID, ...data } });
     merchantIds.push(id);
@@ -513,6 +541,7 @@ async function seedAccounts(merchantIds: string[]) {
       roleId,
       companyId: account.role === "SUPER_ADMIN" ? null : DEMO_COMPANY_ID,
       merchantId: account.merchantIndex === undefined ? null : merchantIds[account.merchantIndex]!,
+      ...(account.miniAdminModules ? { settings: { miniAdmin: { modules: [...account.miniAdminModules] } } } : {}),
     };
     const user = await prisma.user.upsert({
       where: { email: account.email },
@@ -564,6 +593,9 @@ async function seedOrders(productIds: string[], merchantIds: string[], userIds: 
   await prisma.round.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
   await prisma.order.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
   await prisma.recurringOrder.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
+  // Lot 1, D2 : les unités promo vendues sont comptées sur les commandes ; une promotion gardée alors que ses
+  // commandes sont supprimées redeviendrait « en cours ». Elles repartent donc avec les commandes.
+  await prisma.promotion.deleteMany({ where: { companyId: DEMO_COMPANY_ID } });
 
   const parisNow = parisParts(now);
   const today: CalendarDate = { year: parisNow.year, month: parisNow.month, day: parisNow.day };
@@ -576,7 +608,7 @@ async function seedOrders(productIds: string[], merchantIds: string[], userIds: 
   const admin = userIds.get("admin")!;
   const depot = { latitude: 48.8547, longitude: 2.3725 };
 
-  // Commande récurrente active : Bistrot Valmy, du lundi au samedi, créneau 6h-7h.
+  // Commande récurrente active : Bistrot Valmy (tournée Sud), du lundi au samedi, le matin.
   await prisma.recurringOrder.create({
     data: {
       id: "demo_recurring_bistrot_valmy",
@@ -717,6 +749,7 @@ async function main() {
   const merchantIds = await seedMerchants(productIds);
   const userIds = await seedAccounts(merchantIds);
   const orders = await seedOrders(productIds, merchantIds, userIds, now);
+  await removeLegacySlots();
 
   console.log(
     JSON.stringify({
