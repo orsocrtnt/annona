@@ -27,7 +27,6 @@ npm run lint            # ESLint sur le code applicatif, zéro avertissement adm
 npm test                # règles locales sans service externe
 npm run check           # typecheck + lint + tests locaux
 npm run audit:prod      # vulnérabilités des dépendances livrées
-npm run test:ops01      # récurrences connectées sur fixtures isolées
 npm run build           # build de production, serveur dev arrêté
 ```
 

@@ -17,13 +17,15 @@ Conventions : toute table porte `company_id` indexé sauf `companies`, les donn�
 ### Commerçants, catalogue, créneaux
 
 - `Merchant` : raison sociale, adresse et coordonnées GPS, consignes d'accès, contact, facturation (périodicité DAILY/WEEKLY/MONTHLY/YEARLY, mode de règlement) ;
-- `Category`, `Product` (unité libre, prix de base, TVA, actif), `MerchantPrice` (unique commerçant × produit) ;
-- `Slot` : créneaux de livraison.
+- `Category`, `Product` (unité libre, prix de base, TVA, actif, allergènes et `allergensDeclared`, lot 1 D3), `MerchantPrice` (unique commerçant × produit) ;
+- `DeliveryZone` (lot 1 D1) : tournée nommée avec une plage du matin et une plage du soir ; `Merchant.zoneId` ;
+- `Slot` : créneaux de livraison, deux par tournée (MORNING, EVENING), tenus à jour depuis `DeliveryZone` ;
+- `Promotion`, `PromotionMerchant` (lot 1 D2) : prix promo ou réduction en %, dernier jour, quantité limitée facultative, tous les clients ou certains ; arrêt par `stoppedAt`, jamais supprimée.
 
 ### Commandes et tournées
 
 - `Order` : une par commerçant, date de livraison et créneau ; statut DRAFT → VALIDATED → LOCKED → PREPARED → DELIVERED (ou CANCELLED), origine MANUAL/RECURRING ;
-- `OrderLine` : quantité commandée, quantité livrée (manquant), prix unitaire figé au verrouillage ;
+- `OrderLine` : quantité commandée, quantité livrée (manquant), prix unitaire figé au verrouillage ; part promo retenue à la validation (`promotionId`, `promoQuantity`, `promoUnitPriceCents`) ;
 - `RecurringOrder`, `RecurringOrderLine` : commande type par jours de la semaine (1 = lundi … 7 = dimanche) ;
 - `Round`, `Stop` : tournée d'un livreur pour un jour et un créneau, arrêts ordonnés (un par commande), incident et photo.
 
@@ -38,7 +40,7 @@ Conventions : toute table porte `company_id` indexé sauf `companies`, les donn�
 - `SupportTicket`, `SupportTicketMessage` : réclamations ;
 - `ClientNotification`, `DriverLocation`, `DriverPushSubscription`, `OperationJob`, `AuthLoginFailure`.
 
-Le schéma comprend 29 modèles Prisma. Données de démonstration : `npm run db:seed` (identifiants `demo_`, comptes dans `outputs/comptes-demo.md`, non versionné).
+Le schéma comprend 32 modèles Prisma. Données de démonstration : `npm run db:seed` (identifiants `demo_`, comptes dans `outputs/comptes-demo.md`, non versionné).
 
 ## Relations essentielles
 
