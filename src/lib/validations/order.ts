@@ -70,7 +70,13 @@ export const adminCancelOrderSchema = z.object({ note: z.string().trim().max(300
 
 /** LOCK-1 / BOU-1 — jour consulté (ADM-04, BOU-01) et filtres de la liste du jour. */
 export const dayQuerySchema = z.object({ date });
-export const adminOrdersQuerySchema = z.object({ date, merchantId: id.optional(), roundId: id.optional() });
+export const adminOrdersQuerySchema = z.object({
+  date,
+  merchantId: id.optional(),
+  roundId: id.optional(),
+  /** Lot 1, demande 6 : vue ouverte depuis un chiffre du tableau de bord. */
+  view: z.enum(["active", "delivered", "remaining", "incidents"]).optional(),
+});
 
 /** BOU-05 et BOU-06. */
 export const preparedSchema = z.object({ prepared: z.boolean() }).strict();

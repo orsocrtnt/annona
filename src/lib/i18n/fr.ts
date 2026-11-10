@@ -374,6 +374,15 @@ export const fr = {
 
   /** LOCK-1 : commandes du jour et corrections de l'administrateur (ADM-04, ADM-05). */
   adminOrders: {
+    view: "Afficher",
+    views: {
+      all: "Toutes les commandes",
+      active: "Commandes du jour",
+      delivered: "Livrées",
+      remaining: "Restant à livrer",
+      incidents: "Problèmes signalés",
+    },
+    incident: "Problème signalé",
     title: "Commandes",
     subtitle: "Commandes par jour, par client et par tournée ; correction après l'heure limite, journalisée.",
     date: "Jour de livraison",

@@ -1,6 +1,13 @@
 import type { OrderOrigin, OrderStatus, RoundStatus } from "@prisma/client";
 
 /** LOCK-1 — vues du back-office commandes (ADM-04, ADM-05). Montants en centimes HT. */
+/**
+ * Lot 1, demande 6 : vues ouvertes depuis les chiffres du tableau de bord. `active` : commandes du jour
+ * (hors brouillons et annulées) ; `delivered`, `remaining`, `incidents` : selon l'arrêt de la tournée.
+ */
+export const ADMIN_ORDER_VIEWS = ["active", "delivered", "remaining", "incidents"] as const;
+export type AdminOrderView = (typeof ADMIN_ORDER_VIEWS)[number];
+
 export interface AdminOrderRow {
   id: string;
   reference: string;
@@ -17,6 +24,10 @@ export interface AdminOrderRow {
   shortage: boolean;
   /** Corrigée par un administrateur (RG-10). */
   corrected: boolean;
+  /** État de l'arrêt (tournée non annulée), ou null sans tournée. */
+  stopStatus: "PENDING" | "DELIVERED" | "INCIDENT" | null;
+  /** Problème signalé par le livreur sur cet arrêt (même livré ensuite). */
+  incident: boolean;
 }
 
 export interface AdminOrderDay {

@@ -6,14 +6,14 @@ import type { AdminCorrectOrderInput } from "@/lib/validations/order";
 
 export const ADMIN_ORDER_KEYS = {
   all: ["admin-orders"] as const,
-  day: (date: string, merchantId: string | null, roundId: string | null) => ["admin-orders", "day", date, merchantId, roundId] as const,
+  day: (date: string, merchantId: string | null, roundId: string | null, view: string | null = null) => ["admin-orders", "day", date, merchantId, roundId, view] as const,
   order: (id: string) => ["admin-orders", "detail", id] as const,
 };
 
-export function useAdminOrderDay(date: string, merchantId: string | null, roundId: string | null) {
+export function useAdminOrderDay(date: string, merchantId: string | null, roundId: string | null, view: string | null = null) {
   return useQuery({
-    queryKey: ADMIN_ORDER_KEYS.day(date, merchantId, roundId),
-    queryFn: () => adminOrdersApi.day(date, { merchantId, roundId }),
+    queryKey: ADMIN_ORDER_KEYS.day(date, merchantId, roundId, view),
+    queryFn: () => adminOrdersApi.day(date, { merchantId, roundId, view }),
     placeholderData: (previous) => previous,
   });
 }

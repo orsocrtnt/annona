@@ -16,6 +16,11 @@ import { fr } from "@/lib/i18n/fr";
 
 const t = fr.live;
 
+/** Lot 1, demande 6 : liste des commandes du jour filtrée comme le chiffre cliqué. */
+function ordersHref(date: string, view: "active" | "delivered" | "remaining" | "incidents") {
+  return `/dashboard/orders?date=${date}&view=${view}`;
+}
+
 /** TOUR-1 — tableau de bord : commandes du jour et suivi en direct des tournées (ADM-04, ADM-08, ENF-04). */
 export function LiveDashboardContent() {
   const live = useLiveDashboard();
@@ -48,11 +53,12 @@ export function LiveDashboardContent() {
       {data ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" data-testid="live-kpis">
-            <StatCard label={t.orders} value={data.orders.total} icon={ClipboardList} quiet />
-            <StatCard label={t.rounds} value={data.totals.rounds} icon={Route} changeLabel={t.roundsInProgress(data.totals.inProgress)} quiet />
-            <StatCard label={t.delivered} value={data.totals.delivered} icon={CheckCircle2} tone="success" quiet />
-            <StatCard label={t.remaining} value={data.totals.remaining} icon={Clock} quiet />
-            <StatCard label={t.incidents} value={data.incidents.length} icon={TriangleAlert} tone={data.incidents.length > 0 ? "critical" : undefined} quiet />
+            {/* Lot 1, demande 6 : chaque chiffre ouvre la liste détaillée correspondante. */}
+            <StatCard label={t.orders} value={data.orders.total} icon={ClipboardList} quiet href={ordersHref(data.date, "active")} />
+            <StatCard label={t.rounds} value={data.totals.rounds} icon={Route} changeLabel={t.roundsInProgress(data.totals.inProgress)} quiet href={`/dashboard/rounds?date=${data.date}`} />
+            <StatCard label={t.delivered} value={data.totals.delivered} icon={CheckCircle2} tone="success" quiet href={ordersHref(data.date, "delivered")} />
+            <StatCard label={t.remaining} value={data.totals.remaining} icon={Clock} quiet href={ordersHref(data.date, "remaining")} />
+            <StatCard label={t.incidents} value={data.incidents.length} icon={TriangleAlert} tone={data.incidents.length > 0 ? "critical" : undefined} quiet href={ordersHref(data.date, "incidents")} />
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
@@ -102,8 +108,21 @@ export function LiveDashboardContent() {
                                 ) : null}
                               </TableCell>
                               <TableCell>
-                                <span className="text-sm tabular-nums" data-testid="live-round-progress">{t.progressLabel(round.progress.delivered, round.progress.total)}</span>
-                                {round.progress.incidents > 0 ? <span className="block text-xs text-error">{t.incidents} : {round.progress.incidents}</span> : null}
+                                <Link
+                                  href={`/dashboard/orders?date=${data.date}&roundId=${encodeURIComponent(round.id)}`}
+                                  className="text-sm tabular-nums underline-offset-4 hover:underline"
+                                  data-testid="live-round-progress"
+                                >
+                                  {t.progressLabel(round.progress.delivered, round.progress.total)}
+                                </Link>
+                                {round.progress.incidents > 0 ? (
+                                  <Link
+                                    href={`/dashboard/orders?date=${data.date}&roundId=${encodeURIComponent(round.id)}&view=incidents`}
+                                    className="block text-xs text-error underline-offset-4 hover:underline"
+                                  >
+                                    {t.incidents} : {round.progress.incidents}
+                                  </Link>
+                                ) : null}
                                 <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
                                   <div className="h-full rounded-full bg-success" style={{ width: `${round.progress.total ? (done / round.progress.total) * 100 : 0}%` }} />
                                 </div>

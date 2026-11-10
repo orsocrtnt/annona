@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "./card";
 import { TrendingUp, TrendingDown } from "lucide-react";
@@ -34,6 +35,11 @@ export function DeltaBadge({ delta }: { delta: StatDelta }) {
 interface StatCardProps extends DashboardStat {
   className?: string;
   onClick?: () => void;
+  /**
+   * Lot 1, demande 6 : liste détaillée ouverte par le chiffre. Toujours cliquable, même à zéro
+   * (une liste vide reste une réponse).
+   */
+  href?: string;
   /** Teinte d'état (direction Menthe). Une alerte critique à zéro reste neutre. */
   tone?: Tone;
   delta?: StatDelta;
@@ -52,6 +58,7 @@ export function StatCard({
   icon: Icon,
   className,
   onClick,
+  href,
   tone,
   delta,
   quiet,
@@ -138,6 +145,23 @@ export function StatCard({
       </div>
     </CardContent>
   );
+
+  if (href) {
+    return (
+      <Card
+        className={cn(
+          "overflow-hidden transition-colors focus-within:ring-2 focus-within:ring-ring",
+          quiet ? "h-full hover:border-foreground/20" : "hover:border-brand/40 hover:shadow-md",
+          toneClasses?.surface,
+          className
+        )}
+      >
+        <Link href={href} className={cn("block w-full text-left focus-visible:outline-none", quiet && "h-full")} aria-label={`${label} : ${value}`}>
+          {content}
+        </Link>
+      </Card>
+    );
+  }
 
   if (!isClickable) {
     return (

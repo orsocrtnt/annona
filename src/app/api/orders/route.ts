@@ -7,7 +7,7 @@ import { adminOrdersQuerySchema } from "@/lib/validations/order";
 
 /**
  * ADM-04 : commandes d'un jour, filtrables par client (`merchantId`) et par tournée (`roundId`,
- * `none` = sans tournée). Si l'heure limite du jour est passée, la date est verrouillée d'abord
+ * `none` = sans tournée) et par vue (`view`, lot 1 demande 6 : chiffres du tableau de bord). Si l'heure limite du jour est passée, la date est verrouillée d'abord
  * (LOCK-1, appel paresseux) : l'écran ne dépend jamais d'un cron en retard.
  */
 export async function GET(request: Request) {
@@ -19,9 +19,10 @@ export async function GET(request: Request) {
       date: params.get("date"),
       merchantId: params.get("merchantId") || undefined,
       roundId: params.get("roundId") || undefined,
+      view: params.get("view") || undefined,
     });
     const day = await ensureDateLocked(guard.actor.companyId, query.date);
-    const data = await listAdminOrders(guard.actor.companyId, day, { merchantId: query.merchantId, roundId: query.roundId });
+    const data = await listAdminOrders(guard.actor.companyId, day, { merchantId: query.merchantId, roundId: query.roundId, view: query.view });
     return NextResponse.json({ data, success: true });
   });
 }
