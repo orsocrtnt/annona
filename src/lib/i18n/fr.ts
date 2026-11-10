@@ -875,6 +875,16 @@ export const fr = {
     reactivated: "Compte réactivé",
     saved: "Compte enregistré",
     createdPending: "Compte créé, en attente d'invitation",
+    /** Lot 1, demande 4 : comptes « mini admin ». */
+    miniAdmin: "Mini admin",
+    fullAdmin: "Administrateur (accès complet)",
+    modules: "Fonctionnalités accessibles",
+    modulesHint: "Le mini admin ne voit que les fonctionnalités cochées. Un changement s'applique dès sa prochaine action, sans reconnexion.",
+    modulesAll: "Tout cocher",
+    modulesNone: "Tout décocher",
+    modulesRequired: "Cochez au moins une fonctionnalité.",
+    modulesCount: (count: number, total: number) => (count === total ? "Toutes les fonctionnalités" : `${count} fonctionnalité${count > 1 ? "s" : ""} sur ${total}`),
+    adminOnly: "Seul un administrateur gère les comptes administrateur et mini admin.",
   },
 
   /** ADM-1 (ADM-09, PLA-03, PLA-04) : paramètres de l'entreprise. */

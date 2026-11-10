@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { createProduct, listProducts } from "@/domains/catalog/catalog.service";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
-import { requireCompanyAdmin } from "@/lib/api/tenant-auth";
+import { requireCompanyAdmin, requireCompanyAdminAny } from "@/lib/api/tenant-auth";
 import { createProductSchema } from "@/lib/validations/catalog";
 
 /** ADM-02 : produits de l'entreprise (actifs et inactifs) pour le back-office. */
 export async function GET() {
   return withApiHandler(async () => {
-    const guard = await requireCompanyAdmin("catalog:read");
+    // Lot 1, demande 4 : produits aussi pour corriger une commande ou créer une promotion.
+    const guard = await requireCompanyAdminAny(["catalog:read", "orders:update", "promotions:read"]);
     if ("error" in guard) return guard.error;
     return NextResponse.json({ data: await listProducts(guard.actor.companyId), success: true });
   });

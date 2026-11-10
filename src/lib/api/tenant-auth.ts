@@ -33,6 +33,20 @@ export async function requireCompanyAdmin(permission: PermissionSlug): Promise<G
   return { actor: { user, permissions, companyId: user.companyId } };
 }
 
+/**
+ * Lot 1, demande 4 : lecture partagée par plusieurs fonctionnalités (ex. liste des produits pour une
+ * correction de commande ou une promotion). Administrateur de l'entreprise ayant au moins une permission.
+ */
+export async function requireCompanyAdminAny(permissions: readonly PermissionSlug[]): Promise<Guarded<CompanyActor>> {
+  const auth = await requireAuth();
+  if ("error" in auth) return auth;
+  const { user, permissions: granted } = auth.context;
+  if (!permissions.some((permission) => granted.includes(permission))) return { error: json("Accès refusé", 403) };
+  if (user.role.systemRole !== "ADMIN") return { error: json("Accès refusé", 403) };
+  if (!user.companyId) return { error: json("Entreprise non associée", 403) };
+  return { actor: { user, permissions: granted, companyId: user.companyId } };
+}
+
 /** Rôle précis de l'entreprise ayant la permission (ex. BAKER pour l'espace boulanger, BOU-1). */
 export async function requireCompanyRole(roles: readonly SystemRole[], permission: PermissionSlug): Promise<Guarded<CompanyActor>> {
   const auth = await requireAuth(permission);

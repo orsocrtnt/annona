@@ -1,5 +1,6 @@
 import type { SystemRole } from "@prisma/client";
 import type { PermissionSlug } from "./rbac";
+import { miniAdminHomePath, type MiniAdminModuleId } from "./mini-admin";
 
 /**
  * Source unique des accès aux pages protégées (AUTH-ROLE).
@@ -15,6 +16,8 @@ export interface PageAccessRule {
   roles: readonly SystemRole[];
   /** Au moins une de ces permissions. */
   anyPermission?: readonly PermissionSlug[];
+  /** Lot 1, demande 4 : fonctionnalité qu'un mini admin doit avoir reçue pour ouvrir la page. */
+  module?: MiniAdminModuleId;
 }
 
 const COMPANY_ADMINS: readonly SystemRole[] = ["ADMIN"];
@@ -24,18 +27,19 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/admin", roles: ["SUPER_ADMIN"], anyPermission: ["dashboard:admin"] },
   { path: "/companies", roles: ["SUPER_ADMIN"], anyPermission: ["companies:read"] },
   // Entreprise (administrateur)
-  { path: "/dashboard", roles: COMPANY_ADMINS, anyPermission: ["dashboard:company"] },
-  { path: "/dashboard/orders", roles: COMPANY_ADMINS, anyPermission: ["orders:read"] },
-  { path: "/dashboard/rounds", roles: COMPANY_ADMINS, anyPermission: ["rounds:read"] },
-  { path: "/dashboard/merchants", roles: COMPANY_ADMINS, anyPermission: ["merchants:read"] },
-  { path: "/dashboard/catalog", roles: COMPANY_ADMINS, anyPermission: ["catalog:read"] },
-  // Lot 1, demande 2 : promotions (module distinct du catalogue pour les mini admins, demande 4).
-  { path: "/dashboard/promotions", roles: COMPANY_ADMINS, anyPermission: ["catalog:read"] },
-  { path: "/dashboard/invoices", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"] },
-  { path: "/support", roles: COMPANY_ADMINS, anyPermission: ["support:read"] },
-  { path: "/users", roles: COMPANY_ADMINS, anyPermission: ["users:read"] },
-  { path: "/settings", roles: COMPANY_ADMINS, anyPermission: ["settings:read"] },
-  { path: "/settings/billing", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"] },
+  // Entreprise : chaque page appartient à une fonctionnalité accordable à un mini admin (lot 1, demande 4).
+  { path: "/dashboard", roles: COMPANY_ADMINS, anyPermission: ["dashboard:company"], module: "dashboard" },
+  { path: "/dashboard/orders", roles: COMPANY_ADMINS, anyPermission: ["orders:read"], module: "orders" },
+  { path: "/dashboard/tracking", roles: COMPANY_ADMINS, anyPermission: ["tracking:read"], module: "tracking" },
+  { path: "/dashboard/rounds", roles: COMPANY_ADMINS, anyPermission: ["rounds:read"], module: "rounds" },
+  { path: "/dashboard/merchants", roles: COMPANY_ADMINS, anyPermission: ["merchants:read"], module: "accounts" },
+  { path: "/dashboard/catalog", roles: COMPANY_ADMINS, anyPermission: ["catalog:read"], module: "catalog" },
+  { path: "/dashboard/promotions", roles: COMPANY_ADMINS, anyPermission: ["promotions:read"], module: "promotions" },
+  { path: "/dashboard/invoices", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"], module: "billing" },
+  { path: "/support", roles: COMPANY_ADMINS, anyPermission: ["support:read"], module: "support" },
+  { path: "/users", roles: COMPANY_ADMINS, anyPermission: ["users:read"], module: "accounts" },
+  { path: "/settings", roles: COMPANY_ADMINS, anyPermission: ["settings:read"], module: "settings" },
+  { path: "/settings/billing", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"], module: "billing" },
   // Boulanger, portail client et application livreur
   { path: "/bakery", roles: ["BAKER"], anyPermission: ["dashboard:baker"] },
   { path: "/portal", roles: ["MERCHANT"], anyPermission: ["dashboard:merchant"] },
@@ -92,13 +96,24 @@ export interface PageAccessSubject {
   role: SystemRole;
   /** Permissions effectives, relues en base. */
   permissions: readonly string[];
+  /** Lot 1, demande 4 : fonctionnalités d'un mini admin ; absent ou `null` = accès complet du rôle. */
+  modules?: readonly MiniAdminModuleId[] | null;
 }
 
 /** Une page protégée est-elle ouverte à ce sujet ? Hors espace protégé : oui. */
 export function canOpenPage(pathname: string, subject: PageAccessSubject): boolean {
   if (!isProtectedPagePath(pathname)) return true;
   const rule = getPageAccessRule(pathname);
-  return Boolean(rule && ruleAllowsRoleAndPermissions(rule, subject.role, subject.permissions));
+  if (!rule || !ruleAllowsRoleAndPermissions(rule, subject.role, subject.permissions)) return false;
+  // Mini admin : la page doit appartenir à une fonctionnalité accordée.
+  if (subject.modules && !(rule.module && subject.modules.includes(rule.module))) return false;
+  return true;
+}
+
+/** Accueil du sujet : celui du rôle, ou pour un mini admin la première page de ses fonctionnalités. */
+export function getHomePath(subject: PageAccessSubject): string {
+  if (subject.role === "ADMIN" && subject.modules) return miniAdminHomePath(subject.modules) ?? getRoleHomePath(subject.role);
+  return getRoleHomePath(subject.role);
 }
 
 export type PageAccessDecision =
@@ -114,7 +129,7 @@ export type PageAccessDecision =
  */
 export function evaluatePageAccess(pathname: string, subject: PageAccessSubject): PageAccessDecision {
   if (canOpenPage(pathname, subject)) return { kind: "allow" };
-  const home = getRoleHomePath(subject.role);
+  const home = getHomePath(subject);
   if (home !== pathname && canOpenPage(home, subject)) return { kind: "redirect", location: home };
   return { kind: "forbidden" };
 }

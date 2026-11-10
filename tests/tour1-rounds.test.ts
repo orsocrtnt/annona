@@ -509,7 +509,8 @@ test("Droits : routes administrateur réservées à ADMIN, routes livreur à DRI
     const source = readFileSync(file, "utf8");
     const handlers = source.split(/export async function (?:GET|POST|PUT|PATCH|DELETE)/).slice(1);
     assert.ok(handlers.length > 0, file);
-    for (const body of handlers) assert.match(body, /requireCompanyAdmin\("rounds:(read|manage)"\)/, file);
+    // Lot 1, demande 4 : lectures partagées avec le tableau de bord (fonctionnalités séparées des mini admins).
+    for (const body of handlers) assert.match(body, /requireCompanyAdmin\("rounds:(read|manage)"\)|requireCompanyAdminAny\(\[(?:"(?:rounds:read|dashboard:company)"(?:, )?)+\]\)/, file);
   }
   const driver = routeFiles("src/app/api/driver").filter((file) => /rounds|stops/.test(file));
   assert.equal(driver.length, 4);

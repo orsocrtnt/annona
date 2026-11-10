@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useCanOpenPage } from "@/hooks/use-can-open-page";
 import { CheckCircle2, ClipboardList, Clock, ImageIcon, Route, TriangleAlert } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,9 @@ function ordersHref(date: string, view: "active" | "delivered" | "remaining" | "
 /** TOUR-1 — tableau de bord : commandes du jour et suivi en direct des tournées (ADM-04, ADM-08, ENF-04). */
 export function LiveDashboardContent() {
   const live = useLiveDashboard();
+  // Lot 1, demande 4 : un mini admin sans « Commandes » ou « Tournées » ne voit pas de lien vers ces pages.
+  const canOrders = useCanOpenPage("/dashboard/orders");
+  const canRounds = useCanOpenPage("/dashboard/rounds");
   if (live.isLoading && !live.data) return <PageSkeleton />;
   const data = live.data;
 
@@ -54,20 +58,26 @@ export function LiveDashboardContent() {
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5" data-testid="live-kpis">
             {/* Lot 1, demande 6 : chaque chiffre ouvre la liste détaillée correspondante. */}
-            <StatCard label={t.orders} value={data.orders.total} icon={ClipboardList} quiet href={ordersHref(data.date, "active")} />
-            <StatCard label={t.rounds} value={data.totals.rounds} icon={Route} changeLabel={t.roundsInProgress(data.totals.inProgress)} quiet href={`/dashboard/rounds?date=${data.date}`} />
-            <StatCard label={t.delivered} value={data.totals.delivered} icon={CheckCircle2} tone="success" quiet href={ordersHref(data.date, "delivered")} />
-            <StatCard label={t.remaining} value={data.totals.remaining} icon={Clock} quiet href={ordersHref(data.date, "remaining")} />
-            <StatCard label={t.incidents} value={data.incidents.length} icon={TriangleAlert} tone={data.incidents.length > 0 ? "critical" : undefined} quiet href={ordersHref(data.date, "incidents")} />
+            <StatCard label={t.orders} value={data.orders.total} icon={ClipboardList} quiet href={canOrders ? ordersHref(data.date, "active") : undefined} />
+            <StatCard label={t.rounds} value={data.totals.rounds} icon={Route} changeLabel={t.roundsInProgress(data.totals.inProgress)} quiet href={canRounds ? `/dashboard/rounds?date=${data.date}` : undefined} />
+            <StatCard label={t.delivered} value={data.totals.delivered} icon={CheckCircle2} tone="success" quiet href={canOrders ? ordersHref(data.date, "delivered") : undefined} />
+            <StatCard label={t.remaining} value={data.totals.remaining} icon={Clock} quiet href={canOrders ? ordersHref(data.date, "remaining") : undefined} />
+            <StatCard label={t.incidents} value={data.incidents.length} icon={TriangleAlert} tone={data.incidents.length > 0 ? "critical" : undefined} quiet href={canOrders ? ordersHref(data.date, "incidents") : undefined} />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/dashboard/orders?date=${data.date}`}>{t.ordersLink}</Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/dashboard/rounds?date=${data.date}`}>{t.manageRounds}</Link>
-            </Button>
-          </div>
+          {canOrders || canRounds ? (
+            <div className="flex flex-wrap gap-2">
+              {canOrders ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/dashboard/orders?date=${data.date}`}>{t.ordersLink}</Link>
+                </Button>
+              ) : null}
+              {canRounds ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/dashboard/rounds?date=${data.date}`}>{t.manageRounds}</Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <div className="space-y-6">
@@ -108,14 +118,18 @@ export function LiveDashboardContent() {
                                 ) : null}
                               </TableCell>
                               <TableCell>
-                                <Link
-                                  href={`/dashboard/orders?date=${data.date}&roundId=${encodeURIComponent(round.id)}`}
-                                  className="text-sm tabular-nums underline-offset-4 hover:underline"
-                                  data-testid="live-round-progress"
-                                >
-                                  {t.progressLabel(round.progress.delivered, round.progress.total)}
-                                </Link>
-                                {round.progress.incidents > 0 ? (
+                                {canOrders ? (
+                                  <Link
+                                    href={`/dashboard/orders?date=${data.date}&roundId=${encodeURIComponent(round.id)}`}
+                                    className="text-sm tabular-nums underline-offset-4 hover:underline"
+                                    data-testid="live-round-progress"
+                                  >
+                                    {t.progressLabel(round.progress.delivered, round.progress.total)}
+                                  </Link>
+                                ) : (
+                                  <span className="text-sm tabular-nums" data-testid="live-round-progress">{t.progressLabel(round.progress.delivered, round.progress.total)}</span>
+                                )}
+                                {canOrders && round.progress.incidents > 0 ? (
                                   <Link
                                     href={`/dashboard/orders?date=${data.date}&roundId=${encodeURIComponent(round.id)}&view=incidents`}
                                     className="block text-xs text-error underline-offset-4 hover:underline"

@@ -13,9 +13,10 @@ import { readinessFieldErrors } from "@/lib/validations/einvoicing";
 
 const BILLING_FIELD_LABELS = { invoice: "Facturation", vatRate: "Taux de TVA", defaultDueDays: "Délai de paiement", referencePrefix: "Préfixe des références" };
 
+/** Lot 1, demande 4 : réglages de la page « Facturation », fonctionnalité « facturation et paiements ». */
 export async function GET() {
   return withApiHandler(async () => {
-    const auth = await requireStaffRole("settings:read");
+    const auth = await requireStaffRole("invoices:read");
     if ("error" in auth) return auth.error;
     const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;
@@ -32,7 +33,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   return withApiHandler(async () => {
-    const auth = await requireStaffRole("settings:update");
+    const auth = await requireStaffRole("invoices:update");
     if ("error" in auth) return auth.error;
     const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import * as miniAdminModule from "../src/lib/permissions/mini-admin";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
@@ -26,6 +27,8 @@ function load(file: string, dependencies: Record<string, unknown>) {
   runInNewContext(source, {
     Error, exports: module.exports, module,
     require: (id: string) => {
+      // Lot 1, demande 4 : règles des mini admins, module pur réel.
+      if (id === "@/lib/permissions/mini-admin") return miniAdminModule;
       assert.ok(id in dependencies, `Unexpected dependency ${id}`);
       return dependencies[id];
     },
@@ -142,6 +145,7 @@ test("ADMIN-1 comptes : routes refusées avant entreprise, paramètres, corps et
 
   const screen = readFileSync("src/app/(back-office)/users/page.tsx", "utf8");
   assert.equal(screen.includes("platformReadOnly ? null : <CreateUserDialog"), true);
-  assert.equal(screen.includes("platformReadOnly ? null : ("), true);
+  // Lot 1, demande 4 : en plus, un mini admin ne voit pas les actions sur les comptes administrateur.
+  assert.equal(screen.includes("platformReadOnly || lockedRow(row) ? null : ("), true);
   assert.equal(readFileSync("src/app/api/users/route.ts", "utf8").includes("listAllUsers"), false);
 });

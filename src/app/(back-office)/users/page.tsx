@@ -23,6 +23,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { cn } from "@/lib/utils";
 import type { TableColumn } from "@/types";
 import type { SystemRole } from "@prisma/client";
+import type { MiniAdminModuleId } from "@/lib/permissions/mini-admin";
 
 interface UserRow {
   id: string;
@@ -35,6 +36,8 @@ interface UserRow {
   company?: { name: string } | null;
   /** ADM-1 : client représenté par un compte client. */
   merchant?: { id: string; name: string } | null;
+  /** Lot 1, demande 4 : fonctionnalités d'un mini admin. */
+  miniAdminModules?: MiniAdminModuleId[] | null;
 }
 
 type RoleFilter = "all" | Exclude<SystemRole, "SUPER_ADMIN">;
@@ -63,8 +66,10 @@ async function fetchUsers() {
 }
 
 export default function UsersPage() {
-  const { role } = usePermissions();
+  const { role, isFullAdmin } = usePermissions();
   const platformReadOnly = role === "SUPER_ADMIN";
+  // Lot 1, demande 4 : un mini admin ne gère pas les comptes administrateur et mini admin.
+
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
@@ -73,7 +78,9 @@ export default function UsersPage() {
     refetchOnMount: "always",
   });
 
-  const columns = useMemo((): TableColumn<UserRow & { name: string }>[] => [
+  const columns = useMemo((): TableColumn<UserRow & { name: string }>[] => {
+    const lockedRow = (row: UserRow) => row.role.systemRole === "SUPER_ADMIN" || (row.role.systemRole === "ADMIN" && !isFullAdmin);
+    return [
     {
       key: "name",
       header: "Nom",
@@ -99,7 +106,7 @@ export default function UsersPage() {
       header: "Rôle",
       className: USER_TABLE_COL.role,
       cell: (row) => (
-<TableUserRole role={row.role.systemRole} />
+<TableUserRole role={row.role.systemRole} miniAdmin={Boolean(row.miniAdminModules)} />
       ),
     },
     {
@@ -114,13 +121,13 @@ export default function UsersPage() {
       className: USER_TABLE_COL.actions,
       cell: (row) => (
         <div className="flex items-center justify-end gap-0.5">
-          {platformReadOnly || row.role.systemRole === "SUPER_ADMIN" ? null : (
+          {platformReadOnly || lockedRow(row) ? null : (
             <>
               <EditUserDialog account={row} name={row.name} />
               <AccountStatusButton account={row} name={row.name} />
             </>
           )}
-          {platformReadOnly ? null : (
+          {platformReadOnly || lockedRow(row) ? null : (
             <DeleteUserButton
               userId={row.id}
               userName={formatPersonNameByRole(row.firstName, row.lastName, row.role.systemRole)}
@@ -130,7 +137,8 @@ export default function UsersPage() {
         </div>
       ),
     },
-  ], [platformReadOnly]);
+  ];
+  }, [platformReadOnly, isFullAdmin]);
 
   const rows = useMemo(() => {
     const mapped = (users ?? []).map((u) => ({

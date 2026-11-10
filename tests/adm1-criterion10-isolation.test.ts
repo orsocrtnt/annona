@@ -41,7 +41,7 @@ const PUBLIC_ROUTES: Record<string, string> = {
   "addresses/search/route.ts": "géocodage d'une adresse saisie (base nationale), sans donnée d'entreprise",
 };
 
-const COMPANY_GUARD = /\brequire(CompanyAdmin|CompanyRole|CompanyMember|MerchantActor|MerchantRole|DriverRole|SupportStaff)\(/;
+const COMPANY_GUARD = /\brequire(CompanyAdmin|CompanyAdminAny|CompanyRole|CompanyMember|MerchantActor|MerchantRole|DriverRole|SupportStaff)\(/;
 const COMPANY_FROM_REQUEST = /searchParams\.get\(\s*["']companyId["']\)|(?:body|input|payload|parsed\.data)\.companyId|companyId:\s*(?:body|input|params)\b/;
 
 type Kind = "entreprise" | "plateforme" | "compte" | "cron" | "public";

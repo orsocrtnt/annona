@@ -8,9 +8,10 @@ import { withApiHandler } from "@/lib/api/route-handler";
 import { companyEinvoicingUpdateSchema, readinessFieldErrors, zodFieldErrors } from "@/lib/validations/einvoicing";
 
 /** Mentions légales et paramètres Factur-X : administrateur de l'entreprise uniquement (SIREN, IBAN…). */
+/** Lot 1, demande 4 : réglages de la page « Facturation », fonctionnalité « facturation et paiements ». */
 export async function GET() {
   return withApiHandler(async () => {
-    const auth = await requireStaffRole("settings:read");
+    const auth = await requireStaffRole("invoices:read");
     if ("error" in auth) return auth.error;
     const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;
@@ -29,7 +30,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   return withApiHandler(async () => {
-    const auth = await requireStaffRole("settings:update");
+    const auth = await requireStaffRole("invoices:update");
     if ("error" in auth) return auth.error;
     const denied = requireRole(auth.context, ["ADMIN"]);
     if (denied) return denied;

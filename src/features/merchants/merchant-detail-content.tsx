@@ -11,6 +11,7 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { Switch } from "@/components/ui/switch";
 import { MerchantForm } from "@/features/merchants/merchant-form";
 import { MerchantPricesPanel } from "@/features/merchants/merchant-prices-panel";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useCreateMerchant, useMerchant, useUpdateMerchant } from "@/features/merchants/hooks";
 import { TableUserStatus } from "@/features/users/users-table-ui";
 import { CreateUserDialog } from "@/features/users/create-user-dialog";
@@ -58,6 +59,7 @@ export function MerchantCreateContent() {
 export function MerchantDetailContent({ id }: { id: string }) {
   const merchant = useMerchant(id);
   const update = useUpdateMerchant(id);
+  const canManagePrices = usePermissions().can("catalog:manage");
 
   if (isInitialQueryLoading(merchant.isLoading, merchant.data)) return <PageSkeleton />;
   if (merchant.error || !merchant.data) {
@@ -110,7 +112,8 @@ export function MerchantDetailContent({ id }: { id: string }) {
         onSubmit={(input) => update.mutate(input, { onSuccess: () => toast.success(t.saved), onError: (error) => toast.error(error.message) })}
       />
 
-      <MerchantPricesPanel merchantId={data.id} />
+      {/* Lot 1, demande 4 : prix spécifiques = fonctionnalité « catalogue et prix ». */}
+      {canManagePrices ? <MerchantPricesPanel merchantId={data.id} /> : null}
 
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { miniAdminModulesSchema } from "@/lib/validations/user";
 
 /**
  * ADM-1 — saisies de l'administrateur de l'entreprise (clients, comptes, paramètres, tournées) et du
@@ -81,6 +82,8 @@ export const updateAccountSchema = z
     merchantId: z.string().trim().min(1).max(64).nullable().optional(),
     /** Désactiver (false) ou réactiver (true) le compte. */
     active: z.boolean().optional(),
+    /** Lot 1, demande 4 : fonctionnalités d'un mini admin ; `null` = administrateur complet. */
+    miniAdminModules: miniAdminModulesSchema,
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, "Rien à modifier.");

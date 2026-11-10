@@ -28,9 +28,9 @@ export function TableUserEmail({ email }: { email: string }) {
   );
 }
 
-export function TableUserRole({ role }: { role: SystemRole }) {
-  const label =
-    ROLE_LABELS[role] ?? role;
+export function TableUserRole({ role, miniAdmin = false }: { role: SystemRole; miniAdmin?: boolean }) {
+  // Lot 1, demande 4 : un administrateur limité s'affiche « Mini admin ».
+  const label = miniAdmin ? "Mini admin" : ROLE_LABELS[role] ?? role;
   return (
     <Badge
       variant="outline"

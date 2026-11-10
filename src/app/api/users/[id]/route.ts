@@ -5,6 +5,7 @@ import { updateCompanyAccount } from "@/domains/user/account-admin.service";
 import { readJsonBody, withApiHandler } from "@/lib/api/route-handler";
 import { requireCompanyAdmin } from "@/lib/api/tenant-auth";
 import { updateAccountSchema } from "@/lib/validations/company-admin";
+import { miniAdminModules } from "@/lib/permissions/mini-admin";
 
 /**
  * ADM-01 : modifier un compte de l'entreprise (nom, téléphone, rôle, client rattaché), le désactiver
@@ -16,7 +17,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if ("error" in guard) return guard.error;
     const { id } = await params;
     const input = updateAccountSchema.parse(await readJsonBody(request));
-    const data = await updateCompanyAccount({ companyId: guard.actor.companyId, userId: guard.actor.user.id }, id, input);
+    const data = await updateCompanyAccount(
+      { companyId: guard.actor.companyId, userId: guard.actor.user.id, fullAdmin: miniAdminModules(guard.actor.user) === null },
+      id,
+      input
+    );
     return NextResponse.json({ data, success: true });
   });
 }
@@ -48,7 +53,8 @@ export async function DELETE(
       id,
       auth.context.user.id,
       companyId,
-      auth.context.user.role.systemRole
+      auth.context.user.role.systemRole,
+      miniAdminModules(auth.context.user) === null
     );
     return NextResponse.json({ success: true });
   } catch (error) {

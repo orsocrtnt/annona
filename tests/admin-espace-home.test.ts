@@ -205,7 +205,7 @@ test("ADMIN-ESPACE menu : barre latérale et menu mobile rendent les groupes et 
   }
   const layout = readFileSync("src/app/(back-office)/layout.tsx", "utf8");
   assert.match(layout, /useAdminNavBadges\(isSuperAdmin\)/);
-  assert.match(layout, /isSuperAdmin \? applyAdminNavBadges/);
+  assert.match(layout, /isSuperAdmin(?: \?|\)) (?:return )?applyAdminNavBadges/);
 });
 
 /* ---------- Route ---------- */

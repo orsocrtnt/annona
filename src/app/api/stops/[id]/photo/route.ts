@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { readStopIncidentPhoto } from "@/domains/round/round-live.service";
 import { withApiHandler } from "@/lib/api/route-handler";
-import { requireCompanyAdmin } from "@/lib/api/tenant-auth";
+import { requireCompanyAdminAny } from "@/lib/api/tenant-auth";
 import { readPodObject } from "@/lib/storage/pod";
 
 export const runtime = "nodejs";
@@ -9,7 +9,8 @@ export const runtime = "nodejs";
 /** LIV-05 : photo d'un problème signalé, servie en privé à l'administrateur de l'entreprise. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   return withApiHandler(async () => {
-    const guard = await requireCompanyAdmin("rounds:read");
+    // Lot 1, demande 4 : la photo d'un incident s'ouvre aussi depuis le tableau de bord.
+    const guard = await requireCompanyAdminAny(["rounds:read", "dashboard:company"]);
     if ("error" in guard) return guard.error;
     const { id } = await params;
     const photo = await readStopIncidentPhoto(guard.actor.companyId, id, (path, companyId, stopId) => readPodObject("photo", path, companyId, stopId));

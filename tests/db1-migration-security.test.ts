@@ -27,7 +27,7 @@ const tables = [...created.keys()].filter((table) => !dropped.has(table)).sort()
 // SCHEMA-1 (6 novembre 2026) : une migration initiale, puis seulement des migrations additives listées ici.
 // CAT-1 : `categories.active` (ADM-02).
 test("DB-1 migrations : migration initiale puis ajouts listés, tables identiques aux @@map du schéma", () => {
-  assert.deepEqual(migrations.map(({ name }) => name), ["20261106200000_init", "20261107090000_category_active", "20261110100000_delivery_zones", "20261110110000_product_allergens", "20261110120000_promotions"]);
+  assert.deepEqual(migrations.map(({ name }) => name), ["20261106200000_init", "20261107090000_category_active", "20261110100000_delivery_zones", "20261110110000_product_allergens", "20261110120000_promotions", "20261110130000_module_permissions"]);
   const schema = readFileSync("prisma/schema.prisma", "utf8");
   const mapped = [...schema.matchAll(/@@map\("([a-z_]+)"\)/g)].map((match) => match[1]!).sort();
   assert.ok(mapped.length >= 25, "schéma lu");
