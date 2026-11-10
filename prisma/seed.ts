@@ -261,11 +261,15 @@ type AccountSeed = {
   role: SystemRole;
   phone?: string;
   merchantIndex?: number;
+  /** Lot 1, demande 4 : compte « mini admin » (administrateur limité à ces fonctionnalités). */
+  miniAdminModules?: readonly string[];
 };
 
 const ACCOUNTS: readonly AccountSeed[] = [
   { key: "super-admin", email: "demo-super-admin@annona.fr", firstName: "Sacha", lastName: "Plateforme", role: "SUPER_ADMIN" },
   { key: "admin", email: "demo-admin@annona.fr", firstName: "Camille", lastName: "Durand", role: "ADMIN", phone: "0601020304" },
+  // Lot 1, demande 4 (vérification 1) : mini admin avec seulement « Commandes » et « Suivi des livreurs ».
+  { key: "mini-admin", email: "demo-mini-admin@annona.fr", firstName: "Maël", lastName: "Mini", role: "ADMIN", miniAdminModules: ["orders", "tracking"] },
   { key: "boulanger", email: "demo-boulanger@annona.fr", firstName: "Bastien", lastName: "Fournier", role: "BAKER", phone: "0601020305" },
   ...[1, 2, 3, 4, 5].map((n): AccountSeed => ({
     key: `livreur-${n}`,
@@ -537,6 +541,7 @@ async function seedAccounts(merchantIds: string[]) {
       roleId,
       companyId: account.role === "SUPER_ADMIN" ? null : DEMO_COMPANY_ID,
       merchantId: account.merchantIndex === undefined ? null : merchantIds[account.merchantIndex]!,
+      ...(account.miniAdminModules ? { settings: { miniAdmin: { modules: [...account.miniAdminModules] } } } : {}),
     };
     const user = await prisma.user.upsert({
       where: { email: account.email },
