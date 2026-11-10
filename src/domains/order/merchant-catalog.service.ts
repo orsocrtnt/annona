@@ -2,6 +2,7 @@
  * Catalogue vu par le client (CLI-03) et son profil (CLI-02). Catégories et produits actifs de son
  * entreprise, dans l'ordre du back-office, au prix appliqué pour son commerce (RG-05, critère 3).
  */
+import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { applyPrices } from "@/domains/catalog/pricing";
 import { photoVersion } from "@/domains/catalog/catalog.service";
@@ -101,4 +102,34 @@ export async function getMerchantProfile(actor: MerchantRef): Promise<PortalMerc
   });
   if (!merchant) throw new DomainRuleError(404, "Commerce introuvable.", "MERCHANT_NOT_FOUND");
   return merchant;
+}
+
+/**
+ * Lot 1, demande 8 : le client écrit lui-même ses consignes d'accès (code du portail, entrée, endroit où
+ * déposer, horaires…), 500 caractères au plus ; vide = effacées. Le livreur les lit sur l'arrêt (lecture
+ * en base à chaque chargement de sa tournée) ; l'administrateur les lit et les modifie dans la fiche client.
+ * Modification journalisée comme celles de l'administrateur (entité « Merchant »).
+ */
+export async function updateMerchantAccessInstructions(
+  actor: MerchantRef,
+  accessInstructions: string | null,
+  db: Pick<PrismaClient, "merchant" | "auditLog"> = prisma
+): Promise<{ accessInstructions: string | null }> {
+  const before = await db.merchant.findFirst({ where: { id: actor.merchantId, companyId: actor.companyId } });
+  if (!before) throw new DomainRuleError(404, "Commerce introuvable.", "MERCHANT_NOT_FOUND");
+  const value = accessInstructions?.trim() ? accessInstructions.trim() : null;
+  if (value && value.length > 500) throw new DomainRuleError(400, "Consignes d'accès : 500 caractères au plus.", "ACCESS_TOO_LONG");
+  await db.merchant.updateMany({ where: { id: actor.merchantId, companyId: actor.companyId }, data: { accessInstructions: value } });
+  await db.auditLog.create({
+    data: {
+      companyId: actor.companyId,
+      actorId: actor.userId,
+      entityType: "Merchant",
+      entityId: actor.merchantId,
+      action: "UPDATE",
+      before: { accessInstructions: before.accessInstructions ?? null },
+      after: { accessInstructions: value },
+    },
+  });
+  return { accessInstructions: value };
 }

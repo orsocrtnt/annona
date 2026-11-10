@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageLoader } from "@/components/ui/loader";
 import { ProfileForm } from "@/components/shared/profile-form";
 import { ChangePasswordForm } from "@/components/shared/change-password-form";
+import { AccessInstructionsCard } from "@/features/ordering/access-instructions-card";
 import {
   usePortalSettings,
   useUpdatePortalSettings,
@@ -64,10 +65,12 @@ export default function ClientSettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Paramètres</h1>
-        <p className="mt-1 text-muted-foreground max-md:hidden">Gérez votre profil et vos alertes</p>
+        <p className="mt-1 text-muted-foreground max-md:hidden">Gérez votre profil, vos consignes d’accès et vos alertes</p>
       </div>
 
       <ProfileForm title="Informations personnelles" description="Modifiez votre nom et téléphone" />
+
+      <AccessInstructionsCard />
 
       <ChangePasswordForm />
 

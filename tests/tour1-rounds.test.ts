@@ -21,6 +21,8 @@ import {
   validateRounds,
   type RoundDb,
 } from "../src/domains/round/round-admin.service";
+import { updateMerchantAccessInstructions } from "../src/domains/order/merchant-catalog.service";
+import { merchantAccessSchema } from "../src/lib/validations/order";
 import { getDriverRounds, markStopDelivered, reportStopIncident, startRound, type DriverRoundDb, type PhotoStore } from "../src/domains/round/round-driver.service";
 import { getLiveDashboard, type LiveDb } from "../src/domains/round/round-live.service";
 import {
@@ -332,6 +334,23 @@ test("LIV-01 : le livreur voit seulement ses tournées validées ; un autre livr
   assert.equal(eve.date, J);
   assert.equal(eve.rounds[0]!.canStart, false);
   await assert.rejects(startRound(DRIVER_1, "rA", { db, now: EVE }), /jour de la livraison/);
+});
+
+test("lot 1, demande 8 : le client écrit ses consignes d'accès ; le livreur les voit sur l'arrêt ; 500 caractères au plus", async () => {
+  const { db, tables } = await assignedFixture();
+  const client = { companyId: "A", merchantId: "M1", userId: "clientM1" };
+  // Vérification 1 : le client écrit « Code portail 1234, déposer à l'arrière » et enregistre.
+  const saved = await updateMerchantAccessInstructions(client, "  Code portail 1234, déposer à l'arrière  ", db as never);
+  assert.equal(saved.accessInstructions, "Code portail 1234, déposer à l'arrière");
+  // Vérification 2 : le livreur voit ce texte sur l'arrêt de ce client (tournée pas encore commencée).
+  const stop = (await getDriverRounds(DRIVER_1, { db, now: NOW })).rounds[0]!.stops.find((row) => row.merchantName === "Café Un")!;
+  assert.equal(stop.accessInstructions, "Code portail 1234, déposer à l'arrière");
+  // Modification journalisée ; vide = effacé ; un autre commerce ou une autre entreprise : introuvable.
+  assert.ok((tables.auditLog ?? []).some((row) => row.entityType === "Merchant" && row.entityId === "M1" && row.actorId === "clientM1"));
+  assert.equal((await updateMerchantAccessInstructions(client, "   ", db as never)).accessInstructions, null);
+  await assert.rejects(updateMerchantAccessInstructions({ ...client, companyId: "B" }, "x", db as never), { status: 404 });
+  assert.equal(merchantAccessSchema.safeParse({ accessInstructions: "a".repeat(500) }).success, true);
+  assert.equal(merchantAccessSchema.safeParse({ accessInstructions: "a".repeat(501) }).success, false);
 });
 
 test("LIV-03, LIV-06 : « Livré » idempotent, commande livrée, quantités figées, tournée terminée et position effacée", async () => {

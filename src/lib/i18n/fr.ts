@@ -438,6 +438,15 @@ export const fr = {
   },
 
   /** BOU-1 : espace boulanger (BOU-01 à BOU-06). */
+  /** Lot 1, demande 8 : consignes d'accès saisies par le client. */
+  portalAccess: {
+    title: "Consignes d'accès",
+    hint: "Lues par le livreur à votre arrêt : code du portail, entrée de livraison, endroit où déposer, horaires d'ouverture… La boulangerie peut aussi les modifier.",
+    placeholder: "Ex. : Code portail 1234, déposer à l'arrière.",
+    count: (length: number, max: number) => `${length} / ${max} caractères`,
+    save: "Enregistrer les consignes",
+    saved: "Consignes d'accès enregistrées",
+  },
   production: {
     title: "Production",
     subtitle: "Total à produire, bons de préparation et chargement par tournée.",

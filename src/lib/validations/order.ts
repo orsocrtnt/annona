@@ -79,3 +79,8 @@ export const shortageSchema = z
   .strict();
 
 export type AdminCorrectOrderInput = z.infer<typeof adminCorrectOrderSchema>;
+
+/** Lot 1, demande 8 : consignes d'accès saisies par le client (texte libre, 500 caractères au plus). */
+export const merchantAccessSchema = z
+  .object({ accessInstructions: z.string().max(500, "Consignes d'accès : 500 caractères au plus.").nullable() })
+  .strict();
