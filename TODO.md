@@ -50,7 +50,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Décider si l'outre-mer est en V1 (fuseau de l'entreprise sur les écrans boulanger et admin, RECETTE-V1, N3).
 
 
-- Lot 1 : relire `docs/rapports/2026-11-10-lot1-recette.md` ; dire si la recette Playwright dans Chrome suffit ou te connecter dans un onglet pour un passage avec l'extension Claude in Chrome ; puis demander le push de `orso/lot1-retouches` et la PR vers `base`.
+- Lot 1 : PR ouverte (https://github.com/orsocrtnt/annona/pull/1, branche `orso/lot1-retouches` poussée le 10 novembre). Bloquée : les vérifications exigées par `base` ne tournent pas, car les 4 automatisations GitHub Actions du dépôt sont « désactivées manuellement » (dont « Annona CI »). Décidé le 10 novembre : « Annona CI » réactivée sans déclenchement nocturne (la recette de préproduction ne part plus qu'à la main) ; les 3 tâches planifiées de préproduction restent désactivées. Fusionner quand les vérifications sont vertes. Relire aussi `docs/rapports/2026-11-10-lot1-recette.md` et dire si la recette Playwright dans Chrome suffit.
 
 **2. Théo**
 - Accepter l'invitation GitHub au dépôt `orsocrtnt/annona`, cloner, `npm install`, remplir `.env.local` (COLLAB-1).
