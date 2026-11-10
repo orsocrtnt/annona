@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,6 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import type { PortalCatalog, PortalRecurringOrder } from "@/domains/order/merchant-order.types";
 import { orderingApi } from "@/features/ordering/api";
@@ -20,6 +19,7 @@ import { useCartStore } from "@/features/ordering/cart-store";
 import { useDeleteRecurring, usePortalCatalog, useRecurringOrders, useSaveRecurring } from "@/features/ordering/hooks";
 import { QuantityStepper } from "@/features/ordering/quantity-stepper";
 import { formatCents } from "@/lib/format/money";
+import { nameMatches } from "@/lib/format/search";
 import { fr } from "@/lib/i18n/fr";
 import { cn } from "@/lib/utils";
 
@@ -177,10 +177,20 @@ interface RecurringEditorProps {
 
 function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringEditorProps) {
   const [value, setValue] = useState<Draft | null>(draft);
-  const [picker, setPicker] = useState("");
-  useEffect(() => setValue(draft), [draft]);
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    setValue(draft);
+    setSearch("");
+  }, [draft]);
 
   const products = useMemo(() => new Map(catalog.categories.flatMap((category) => category.products.map((product) => [product.id, product] as const))), [catalog]);
+  const found = useMemo(
+    () =>
+      catalog.categories
+        .map((category) => ({ ...category, products: category.products.filter((product) => nameMatches(product.name, search)) }))
+        .filter((category) => category.products.length > 0),
+    [catalog, search]
+  );
   if (!value) return <Dialog open={false} />;
 
   const lines = Object.entries(value.quantities).filter(([id]) => products.has(id));
@@ -275,27 +285,49 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
               );
             })}
           </ul>
-          <Select
-            value={picker}
-            onValueChange={(id) => {
-              setPicker("");
-              if (!value.quantities[id]) setValue({ ...value, quantities: { ...value.quantities, [id]: 1 } });
-            }}
-          >
-            <SelectTrigger aria-label={t.addProduct}>
-              <SelectValue placeholder={t.addProduct} />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {catalog.categories.map((category) => (
-                <SelectGroup key={category.id}>
-                  <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">{category.name}</p>
-                  {category.products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                  ))}
-                </SelectGroup>
+          {/* Lot 1, demande 7 : recherche par nom (sans majuscules ni accents), la liste se réduit pendant la frappe. */}
+          <div className="space-y-2 rounded-xl border p-3">
+            <p className="text-sm font-medium">{t.addProduct}</p>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <Input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t.searchPlaceholder}
+                aria-label={t.searchLabel}
+                className="h-11 pl-9 text-base md:text-sm"
+                data-testid="recurring-search"
+              />
+            </div>
+            <ul className="max-h-64 overflow-y-auto" aria-label={t.addProduct} data-testid="recurring-catalog">
+              {found.length === 0 ? <li className="py-3 text-sm text-muted-foreground">{t.noMatch}</li> : null}
+              {found.map((category) => (
+                <li key={category.id}>
+                  <p className="sticky top-0 bg-background py-1 text-xs font-semibold text-muted-foreground">{category.name}</p>
+                  <ul>
+                    {category.products.map((product) => {
+                      const added = Boolean(value.quantities[product.id]);
+                      return (
+                        <li key={product.id}>
+                          <button
+                            type="button"
+                            data-testid="recurring-catalog-item"
+                            disabled={added}
+                            onClick={() => setValue({ ...value, quantities: { ...value.quantities, [product.id]: 1 } })}
+                            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-2 text-left text-sm hover:bg-muted disabled:opacity-60"
+                          >
+                            <span className="min-w-0 flex-1 truncate">{product.name}</span>
+                            <span className="shrink-0 text-xs text-muted-foreground">{added ? t.added : <Plus className="size-4" aria-label={t.addOne(product.name)} />}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
               ))}
-            </SelectContent>
-          </Select>
+            </ul>
+          </div>
           <p className="text-right text-sm tabular-nums">{fr.order.subtotal} : {formatCents(subtotal)}</p>
         </section>
         <div className="flex items-center gap-3">

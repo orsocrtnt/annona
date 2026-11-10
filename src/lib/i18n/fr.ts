@@ -196,6 +196,11 @@ export const fr = {
     addProduct: "Ajouter un produit",
     products: "Produits",
     generationNote: "Générée à l'heure limite la veille, seulement si vous n’avez passé aucune commande pour ce jour et ce moment (matin ou soir).",
+    searchLabel: "Rechercher un article par son nom",
+    searchPlaceholder: "Rechercher un article (ex. : baguette)",
+    noMatch: "Aucun article ne correspond à cette recherche.",
+    added: "Ajouté",
+    addOne: (name: string) => `Ajouter ${name}`,
     bothHint: "Choisissez le matin, le soir, ou les deux : une commande type est alors créée pour chaque moment.",
     incomplete: "Pour enregistrer, choisissez au moins un jour, le matin ou le soir, et un produit.",
     errors: {
