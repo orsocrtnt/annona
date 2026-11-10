@@ -21,6 +21,8 @@ export interface PortalProduct {
   unitPriceCents: number;
   vatRateBasisPoints: number;
   isSpecific: boolean;
+  /** Lot 1, demande 3 : null = « Allergènes non renseignés » ; [] = « Aucun allergène ». */
+  allergens: string[] | null;
 }
 
 export interface PortalCategory {

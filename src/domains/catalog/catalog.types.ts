@@ -23,6 +23,8 @@ export interface ProductRow {
   /** Version de la photo (cache du navigateur) ; vide sans photo. */
   photoVersion: string | null;
   specificPriceCount: number;
+  /** Lot 1, demande 3 : null = non renseignés ; [] = aucun allergène. */
+  allergens: string[] | null;
 }
 
 export interface MerchantPriceRow {

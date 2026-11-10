@@ -15,9 +15,11 @@ import { CartSheet } from "@/features/ordering/cart-sheet";
 import { useCartStore } from "@/features/ordering/cart-store";
 import { DateSlotPicker } from "@/features/ordering/date-slot-picker";
 import { useOrderLookup, usePortalCatalog } from "@/features/ordering/hooks";
+import { ProductInfoDialog } from "@/features/ordering/product-info-dialog";
 import { QuantityStepper } from "@/features/ordering/quantity-stepper";
 import { useCartLines } from "@/features/ordering/use-cart-lines";
 import { orderCutoffInstant } from "@/domains/order/order-deadline";
+import type { PortalProduct } from "@/domains/order/merchant-order.types";
 import { deadlineLabel, shortDeliveryDateLabel } from "@/lib/format/delivery-date";
 import { formatCents } from "@/lib/format/money";
 import { fr } from "@/lib/i18n/fr";
@@ -38,6 +40,7 @@ export function OrderCatalog() {
   const catalog = usePortalCatalog();
   const cart = useCartStore();
   const [query, setQuery] = useState("");
+  const [info, setInfo] = useState<PortalProduct | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const { lines, totals, unavailable } = useCartLines(catalog.data);
@@ -201,15 +204,24 @@ export function OrderCatalog() {
               <ul className="divide-y rounded-2xl border bg-card px-3">
                 {category.products.map((product) => (
                   <li key={product.id} className="flex items-center gap-3 py-3" data-testid={`portal-product-${product.name}`}>
-                    <ProductThumb productId={product.id} photoVersion={product.photoVersion} className="h-14 w-14 rounded-xl" />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-medium leading-snug">{product.name}</p>
-                      <p className="mt-0.5 text-sm text-muted-foreground">
-                        <span className="font-semibold text-foreground tabular-nums" data-testid="portal-product-price">{formatCents(product.unitPriceCents)}</span>
-                        {" "}{fr.common.exclVat} · {product.unit}
-                      </p>
-                      {product.isSpecific ? <Badge variant="brand" className="mt-1">{t.priceSpecific}</Badge> : null}
-                    </div>
+                    {/* Lot 1, demande 3 : toucher le produit affiche ses allergènes. */}
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => setInfo(product)}
+                      aria-label={t.productInfo(product.name)}
+                      data-testid="portal-product-open"
+                    >
+                      <ProductThumb productId={product.id} photoVersion={product.photoVersion} className="h-14 w-14 shrink-0 rounded-xl" />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-medium leading-snug">{product.name}</p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          <span className="font-semibold text-foreground tabular-nums" data-testid="portal-product-price">{formatCents(product.unitPriceCents)}</span>
+                          {" "}{fr.common.exclVat} · {product.unit}
+                        </p>
+                        {product.isSpecific ? <Badge variant="brand" className="mt-1">{t.priceSpecific}</Badge> : null}
+                      </div>
+                    </button>
                     <QuantityStepper
                       productName={product.name}
                       value={cart.quantities[product.id] ?? 0}
@@ -240,6 +252,8 @@ export function OrderCatalog() {
         </div>,
         document.body
       ) : null}
+
+      <ProductInfoDialog product={info} onClose={() => setInfo(null)} />
 
       <CartSheet
         open={cartOpen}

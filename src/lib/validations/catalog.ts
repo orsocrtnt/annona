@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ALLERGEN_CODES } from "@/domains/catalog/allergens";
 
 /**
  * Saisies du back-office catalogue (CAT-1 : ADM-02, ADM-03, PLA-04). Montants en centimes HT,
@@ -34,6 +35,11 @@ const productFields = {
     .min(0, "Taux de TVA invalide.")
     .max(10_000, "Taux de TVA invalide."),
   active: z.boolean(),
+  /**
+   * Lot 1, demande 3 : allergènes présents ; `[]` = « Aucun allergène » (déclaré), `null` = non renseignés.
+   * Absent : inchangé.
+   */
+  allergens: z.array(z.enum(ALLERGEN_CODES)).max(ALLERGEN_CODES.length).nullable().optional(),
 };
 
 export const createProductSchema = z.object(productFields).strict();

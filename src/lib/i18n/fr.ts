@@ -22,6 +22,9 @@ export const fr = {
   },
 
   catalog: {
+    allergens: "Allergènes",
+    noAllergen: "Aucun allergène",
+    allergensReset: "Remettre à « non renseignés »",
     title: "Catalogue",
     subtitle: "Catégories, produits, prix de base et prix spécifiques par client",
     categories: "Catégories",
@@ -109,6 +112,8 @@ export const fr = {
     today: "Aujourd'hui",
     tomorrow: "Demain",
     chooseSlot: "Choisissez matin ou soir",
+    allergens: "Allergènes",
+    productInfo: (name: string) => `${name} : voir les allergènes`,
     noSlot: "Vous n'êtes rattaché à aucune tournée de livraison ouverte. Contactez la boulangerie.",
     catalogEmpty: "Le catalogue est vide pour le moment.",
     search: "Rechercher un produit",

@@ -4,6 +4,7 @@
  */
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
+import { productAllergens } from "@/domains/catalog/allergens";
 import { applyPrices } from "@/domains/catalog/pricing";
 import { photoVersion } from "@/domains/catalog/catalog.service";
 import type { MerchantRef } from "@/domains/order/merchant-order.service";
@@ -26,7 +27,7 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
         products: {
           where: { companyId: actor.companyId, active: true },
           orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-          select: { id: true, name: true, description: true, unit: true, photoUrl: true, basePriceCents: true, vatRateBasisPoints: true },
+          select: { id: true, name: true, description: true, unit: true, photoUrl: true, basePriceCents: true, vatRateBasisPoints: true, allergens: true, allergensDeclared: true },
         },
       },
     }),
@@ -63,6 +64,7 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
             unitPriceCents: price.unitPriceCents,
             vatRateBasisPoints: price.vatRateBasisPoints,
             isSpecific: price.isSpecific,
+            allergens: productAllergens(product),
           };
         }),
       })),

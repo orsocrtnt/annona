@@ -386,6 +386,10 @@ model Product {
   vatRateBasisPoints Int      @default(550) @map("vat_rate_basis_points")
   sortOrder          Int      @default(0) @map("sort_order")
   active             Boolean  @default(true)
+  /// Lot 1, demande 3 : allergènes réglementaires présents (codes de `src/domains/catalog/allergens.ts`).
+  allergens          String[] @default([])
+  /// Faux : « Allergènes non renseignés » ; vrai et liste vide : « Aucun allergène ».
+  allergensDeclared  Boolean  @default(false) @map("allergens_declared")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
