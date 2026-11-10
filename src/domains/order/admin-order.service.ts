@@ -117,16 +117,19 @@ export async function listAdminOrders(
     db.round.findMany({ where: { companyId, date: deliveryDate }, select: { id: true, name: true, slotId: true, status: true, driverId: true } }),
     db.auditLog.findMany({ where: { companyId, entityType: ORDER_AUDIT_ENTITY, entityId: { in: orderIds } }, select: { entityId: true, action: true } }),
   ]);
-  const drivers = await db.user.findMany({
-    where: { companyId, id: { in: rounds.map((round) => round.driverId).filter((id): id is string => Boolean(id)) } },
-    select: { id: true, firstName: true, lastName: true },
-  });
-  const prices = await loadAppliedPricesByMerchant(
-    db,
-    companyId,
-    [...new Set(orders.map((order) => order.merchantId))],
-    [...new Set(lines.map((line) => line.productId))]
-  );
+  // Lot 1, demande 9 : livreurs et prix ne dépendent pas l'un de l'autre, lus en parallèle.
+  const [drivers, prices] = await Promise.all([
+    db.user.findMany({
+      where: { companyId, id: { in: rounds.map((round) => round.driverId).filter((id): id is string => Boolean(id)) } },
+      select: { id: true, firstName: true, lastName: true },
+    }),
+    loadAppliedPricesByMerchant(
+      db,
+      companyId,
+      [...new Set(orders.map((order) => order.merchantId))],
+      [...new Set(lines.map((line) => line.productId))]
+    ),
+  ]);
   const merchantName = new Map(merchants.map((merchant) => [merchant.id, merchant.tradeName || merchant.name]));
   const slotById = new Map(slots.map((slot) => [slot.id, slot]));
   const stopByOrder = new Map(stops.map((stop) => [stop.orderId, stop]));

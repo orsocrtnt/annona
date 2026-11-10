@@ -532,9 +532,10 @@ export interface DayLockState {
 export async function ensureDateLocked(companyId: string, date: string, options: LockOptions = {}): Promise<DayLockState> {
   const now = options.now ?? new Date();
   const db = options.db ?? (prisma as unknown as LockDb);
-  const company = await loadCompany(db, companyId);
+  // Lot 1, demande 9 : deux lectures indépendantes, en parallèle (appelé par chaque écran du jour).
+  const [company, marker] = await Promise.all([loadCompany(db, companyId), deliveryDateLockedAt(companyId, date, db)]);
   const cutoffAt = orderCutoffInstant(date, company.cutoffTime, company.timezone);
-  let lockedAt = await deliveryDateLockedAt(companyId, date, db);
+  let lockedAt = marker;
   const due = !isOrderEditable(date, now, company.cutoffTime, company.timezone);
   if (due && !lockedAt) {
     try {

@@ -85,22 +85,68 @@ export async function attachRolesById<T extends { roleId: string }>(
   });
 }
 
+type ScalarField = { name: string; column: string; type: string };
+const scalarFieldsCache = new Map<string, ScalarField[]>();
+
+/** Champs scalaires d'un modèle Prisma (nom TypeScript, colonne, type), lus dans la description du schéma. */
+function scalarFields(model: string): ScalarField[] {
+  let fields = scalarFieldsCache.get(model);
+  if (!fields) {
+    const found = Prisma.dmmf.datamodel.models.find((candidate) => candidate.name === model);
+    if (!found) throw new Error(`MODEL_NOT_FOUND:${model}`);
+    fields = found.fields
+      .filter((field) => field.kind === "scalar" || field.kind === "enum")
+      .map((field) => ({ name: field.name, column: field.dbName ?? field.name, type: field.type }));
+    scalarFieldsCache.set(model, fields);
+  }
+  return fields;
+}
+
+/**
+ * Ligne `to_jsonb(table.*)` → objet du modèle Prisma : noms de colonnes en noms de champs, dates (colonnes
+ * `timestamp(3)` sans fuseau, en UTC comme Prisma) en `Date`. Accepte aussi une ligne déjà en noms de champs.
+ */
+export function rowToModel<T>(model: string, row: Record<string, unknown>): T {
+  const result: Record<string, unknown> = {};
+  for (const field of scalarFields(model)) {
+    let value = row[field.column] !== undefined ? row[field.column] : row[field.name];
+    if (value === undefined) value = null;
+    if (field.type === "DateTime" && typeof value === "string") {
+      value = new Date(/(?:[zZ]|[+-]\d\d:?\d\d)$/.test(value) ? value : `${value}Z`);
+    }
+    result[field.name] = value;
+  }
+  return result as T;
+}
+
+type AuthRow = { u: Record<string, unknown>; c: Record<string, unknown> | null; r: Record<string, unknown>; p: Array<Record<string, unknown>> | null };
+
+/**
+ * Utilisateur, entreprise, rôle et permissions en **une** requête (lot 1, demande 9) : relue à chaque requête
+ * d'API et à chaque page, cette lecture coûtait quatre allers-retours successifs vers la base avec `include`.
+ * La stratégie Prisma `relationJoins` reste écartée (Prisma 5.22 panique sous des lectures auth concurrentes).
+ * Aucune mémorisation inter-requêtes (suspension/révocation immédiates).
+ */
 export async function getUserByAuthId(authId: string): Promise<UserWithRole | null> {
-  // Lecture relationnelle fraîche sans la stratégie relationJoins expérimentale :
-  // Prisma 5.22 panique sous des lectures auth concurrentes avec cette stratégie.
-  // Aucune mémorisation inter-requêtes (suspension/révocation immédiates).
-  const user = await prisma.user.findUnique({
-    where: { authId },
-    include: {
-      company: true,
-      role: { include: { permissions: { include: { permission: true } } } },
-    },
-  });
-  if (!user) return null;
+  const rows = await prisma.$queryRaw<AuthRow[]>`
+    SELECT to_jsonb(u.*) AS u, to_jsonb(c.*) AS c, to_jsonb(r.*) AS r,
+      (SELECT COALESCE(jsonb_agg(to_jsonb(p.*) ORDER BY p.slug), '[]'::jsonb)
+         FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
+        WHERE rp.role_id = r.id) AS p
+    FROM users u
+    JOIN roles r ON r.id = u.role_id
+    LEFT JOIN companies c ON c.id = u.company_id
+    WHERE u.auth_id = ${authId}
+    LIMIT 1`;
+  const row = rows[0];
+  if (!row) return null;
+  const user = rowToModel<Omit<UserWithRole, "role" | "company">>("User", row.u);
+  const role = rowToModel<Omit<UserWithRole["role"], "permissions">>("Role", row.r);
   return {
     ...user,
-    role: { ...user.role, permissions: user.role.permissions.map((rp) => rp.permission) },
-  };
+    company: row.c ? rowToModel<NonNullable<UserWithRole["company"]>>("Company", row.c) : null,
+    role: { ...role, permissions: (row.p ?? []).map((permission) => rowToModel<UserWithRole["role"]["permissions"][number]>("Permission", permission)) },
+  } as UserWithRole;
 }
 
 /** Permissions effectives : celles du rôle, limitées aux fonctionnalités d'un mini admin (lot 1, demande 4). */
