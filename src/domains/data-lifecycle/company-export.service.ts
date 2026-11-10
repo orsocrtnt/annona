@@ -67,6 +67,11 @@ const MERCHANT_INCLUDE = {
   prices: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
 } satisfies Prisma.MerchantInclude;
 
+/** Lot 1, demande 2 : promotions et clients choisis. */
+const PROMOTION_INCLUDE = {
+  merchants: { orderBy: { merchantId: "asc" } },
+} satisfies Prisma.PromotionInclude;
+
 const RECURRING_ORDER_INCLUDE = {
   lines: { orderBy: { id: "asc" } },
 } satisfies Prisma.RecurringOrderInclude;
@@ -111,6 +116,8 @@ export interface CompanyExportRows {
   merchants: Prisma.MerchantGetPayload<{ include: typeof MERCHANT_INCLUDE }>[];
   categories: Category[];
   products: Product[];
+  /** Lot 1, demande 2 : promotions (les lignes de commande portent leur part promo). */
+  promotions: Prisma.PromotionGetPayload<{ include: typeof PROMOTION_INCLUDE }>[];
   /** Lot 1, demande 1 : tournées (zone, plage du matin, plage du soir). */
   deliveryZones: DeliveryZone[];
   slots: Slot[];
@@ -140,7 +147,7 @@ export interface CompanyExportProofObject {
 
 export interface CompanyExportSummary extends CompanyExportHeader {
   counts: Record<
-    | "users" | "notifications" | "merchants" | "merchantPrices" | "categories" | "products" | "deliveryZones" | "slots"
+    | "users" | "notifications" | "merchants" | "merchantPrices" | "categories" | "products" | "promotions" | "deliveryZones" | "slots"
     | "recurringOrders" | "orders" | "orderLines" | "rounds" | "stops" | "invoices" | "invoiceLines" | "payments"
     | "supportTickets" | "supportMessages" | "auditLogs" | "operationJobs" | "proofObjects",
     number
@@ -194,7 +201,7 @@ export async function visitCompanyExport(
     exportedAt: new Date().toISOString(),
   };
   const counts: CompanyExportSummary["counts"] = {
-    users: 0, notifications: 0, merchants: 0, merchantPrices: 0, categories: 0, products: 0, deliveryZones: 0, slots: 0,
+    users: 0, notifications: 0, merchants: 0, merchantPrices: 0, categories: 0, products: 0, promotions: 0, deliveryZones: 0, slots: 0,
     recurringOrders: 0, orders: 0, orderLines: 0, rounds: 0, stops: 0, invoices: 0, invoiceLines: 0, payments: 0,
     supportTickets: 0, supportMessages: 0, auditLogs: 0, operationJobs: 0, proofObjects: 0,
   };
@@ -222,6 +229,8 @@ export async function visitCompanyExport(
       async (rows) => { counts.categories += rows.length; await visitor.page("categories", rows); });
     await forEachPage(pageSize, (after) => tx.product.findMany({ where: pageWhere(companyId, after), ...page }),
       async (rows) => { counts.products += rows.length; await visitor.page("products", rows); });
+    await forEachPage(pageSize, (after) => tx.promotion.findMany({ where: pageWhere(companyId, after), ...page, include: PROMOTION_INCLUDE }),
+      async (rows) => { counts.promotions += rows.length; await visitor.page("promotions", rows); });
     await forEachPage(pageSize, (after) => tx.deliveryZone.findMany({ where: pageWhere(companyId, after), ...page }),
       async (rows) => { counts.deliveryZones += rows.length; await visitor.page("deliveryZones", rows); });
     await forEachPage(pageSize, (after) => tx.slot.findMany({ where: pageWhere(companyId, after), ...page }),
@@ -291,6 +300,7 @@ export async function exportCompanyData(companyId: string, options: { pageSize?:
     merchants: [],
     categories: [],
     products: [],
+    promotions: [],
     deliveryZones: [],
     slots: [],
     recurringOrders: [],

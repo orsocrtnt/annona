@@ -187,6 +187,8 @@ model Company {
   categories              Category[]
   products                Product[]
   merchantPrices          MerchantPrice[]
+  promotions              Promotion[]
+  promotionMerchants      PromotionMerchant[]
   deliveryZones           DeliveryZone[]
   slots                   Slot[]
   orders                  Order[]
@@ -247,6 +249,7 @@ model User {
   driverPushSubscriptions DriverPushSubscription[]
   notifications           ClientNotification[]
   invoiceRemindersSent    InvoiceReminder[]
+  promotionsCreated       Promotion[]              @relation("PromotionCreatedBy")
 
   @@index([companyId])
   @@index([roleId])
@@ -342,6 +345,7 @@ model Merchant {
 
   users           User[]
   prices          MerchantPrice[]
+  promotions      PromotionMerchant[]
   orders          Order[]
   recurringOrders RecurringOrder[]
   invoices        Invoice[]
@@ -395,6 +399,7 @@ model Product {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   merchantPrices      MerchantPrice[]
+  promotions          Promotion[]
   orderLines          OrderLine[]
   recurringOrderLines RecurringOrderLine[]
   invoiceLines        InvoiceLine[]
@@ -423,6 +428,55 @@ model MerchantPrice {
   @@index([companyId])
   @@index([productId])
   @@map("merchant_prices")
+}
+
+/// Lot 1, demande 2 : promotion sur un produit (fin de série…). Prix promo OU réduction en %,
+/// jusqu'à `endsOn` inclus (fuseau de l'entreprise), quantité limitée facultative comptée tous
+/// clients confondus, pour tous les clients ou seulement ceux de `merchants`. Une seule promotion
+/// en cours par produit ; jamais supprimée (arrêt = `stoppedAt`), pour l'historique des commandes.
+model Promotion {
+  id              String    @id @default(cuid())
+  companyId       String    @map("company_id")
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId       String    @map("product_id")
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /// Prix promo HT en centimes (exclusif avec `discountPercent`).
+  promoPriceCents Int?      @map("promo_price_cents")
+  /// Réduction en pourcentage entier, de 1 à 99, sur le prix de base (exclusif avec `promoPriceCents`).
+  discountPercent Int?      @map("discount_percent")
+  /// Dernier jour de la promotion, inclus.
+  endsOn          DateTime  @map("ends_on") @db.Date
+  quantityLimit   Int?      @map("quantity_limit")
+  allMerchants    Boolean   @default(true) @map("all_merchants")
+  stoppedAt       DateTime? @map("stopped_at")
+  createdById     String?   @map("created_by_id")
+  createdBy       User?     @relation("PromotionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  merchants  PromotionMerchant[]
+  orderLines OrderLine[]
+
+  @@index([companyId, endsOn])
+  @@index([productId])
+  @@index([createdById])
+  @@map("promotions")
+}
+
+/// Clients choisis d'une promotion réservée (`allMerchants` faux).
+model PromotionMerchant {
+  promotionId String    @map("promotion_id")
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  merchantId  String    @map("merchant_id")
+  merchant    Merchant  @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  companyId   String    @map("company_id")
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([promotionId, merchantId])
+  @@index([merchantId])
+  @@index([companyId])
+  @@map("promotion_merchants")
 }
 
 /// Tournée de livraison (zone) avec sa plage du matin et sa plage du soir (lot 1, demande 1).
@@ -533,18 +587,25 @@ model Order {
 }
 
 model OrderLine {
-  id                   String  @id @default(cuid())
-  companyId            String  @map("company_id")
-  company              Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  orderId              String  @map("order_id")
-  order                Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId            String  @map("product_id")
-  product              Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantityOrdered      Int     @map("quantity_ordered")
+  id                   String     @id @default(cuid())
+  companyId            String     @map("company_id")
+  company              Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderId              String     @map("order_id")
+  order                Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId            String     @map("product_id")
+  product              Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantityOrdered      Int        @map("quantity_ordered")
   /// Quantité réellement livrée (après manquant signalé) ; vide tant que non préparée.
-  quantityDelivered    Int?    @map("quantity_delivered")
+  quantityDelivered    Int?       @map("quantity_delivered")
   /// Prix unitaire HT figé au verrouillage (RG-05) ; vide avant.
-  unitPriceFrozenCents Int?    @map("unit_price_frozen_cents")
+  unitPriceFrozenCents Int?       @map("unit_price_frozen_cents")
+  /// Lot 1, demande 2 : promotion retenue à la validation de la commande (`promotion.service.ts`).
+  promotionId          String?    @map("promotion_id")
+  promotion            Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  /// Unités facturées au prix promo (les suivantes, au-delà de la quantité limitée, au prix normal).
+  promoQuantity        Int        @default(0) @map("promo_quantity")
+  /// Prix promo HT figé à la validation : une promotion qui se termine ne change pas cette commande.
+  promoUnitPriceCents  Int?       @map("promo_unit_price_cents")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -552,6 +613,7 @@ model OrderLine {
   @@unique([orderId, productId])
   @@index([companyId])
   @@index([productId])
+  @@index([promotionId])
   @@map("order_lines")
 }
 

@@ -123,7 +123,7 @@ async function loadBillableOrders(tx: Tx, companyId: string, merchantId: string,
   if (orders.length === 0) return [];
   const lines = await tx.orderLine.findMany({
     where: { companyId, orderId: { in: orders.map((order) => order.id) } },
-    select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true },
+    select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true },
   });
   const products = await tx.product.findMany({
     where: { companyId, id: { in: [...new Set(lines.map((line) => line.productId))] } },
@@ -145,6 +145,8 @@ async function loadBillableOrders(tx: Tx, companyId: string, merchantId: string,
           quantityOrdered: line.quantityOrdered,
           quantityDelivered: line.quantityDelivered,
           unitPriceFrozenCents: line.unitPriceFrozenCents,
+          promoQuantity: line.promoQuantity,
+          promoUnitPriceCents: line.promoUnitPriceCents,
           vatRateBasisPoints: product?.vatRateBasisPoints ?? 0,
         };
       }),

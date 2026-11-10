@@ -12,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { ProductThumb } from "@/features/catalog/product-thumb";
 import { CartSheet } from "@/features/ordering/cart-sheet";
+import { catalogSections } from "@/features/ordering/catalog-sections";
 import { useCartStore } from "@/features/ordering/cart-store";
 import { DateSlotPicker } from "@/features/ordering/date-slot-picker";
 import { useOrderLookup, usePortalCatalog } from "@/features/ordering/hooks";
 import { ProductInfoDialog } from "@/features/ordering/product-info-dialog";
+import { ProductPrice } from "@/features/ordering/promo-price";
 import { QuantityStepper } from "@/features/ordering/quantity-stepper";
 import { useCartLines } from "@/features/ordering/use-cart-lines";
 import { orderCutoffInstant } from "@/domains/order/order-deadline";
@@ -97,15 +99,8 @@ export function OrderCatalog() {
     }
   }, [existing, hydrated, lookup.isFetching]);
 
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase("fr");
-    return (catalog.data?.categories ?? [])
-      .map((category) => ({
-        ...category,
-        products: needle ? category.products.filter((product) => product.name.toLocaleLowerCase("fr").includes(needle)) : category.products,
-      }))
-      .filter((category) => category.products.length > 0);
-  }, [catalog.data, query]);
+  // Lot 1, demande 2 : les produits en promotion pour ce client passent en tête, dans une section « Promotions ».
+  const filtered = useMemo(() => catalogSections(catalog.data?.categories ?? [], query), [catalog.data, query]);
 
   const sectionRefs = useRef(new Map<string, HTMLElement>());
 
@@ -216,10 +211,10 @@ export function OrderCatalog() {
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-medium leading-snug">{product.name}</p>
                         <p className="mt-0.5 text-sm text-muted-foreground">
-                          <span className="font-semibold text-foreground tabular-nums" data-testid="portal-product-price">{formatCents(product.unitPriceCents)}</span>
+                          <ProductPrice product={product} />
                           {" "}{fr.common.exclVat} · {product.unit}
                         </p>
-                        {product.isSpecific ? <Badge variant="brand" className="mt-1">{t.priceSpecific}</Badge> : null}
+                        {product.isSpecific && !product.promo ? <Badge variant="brand" className="mt-1">{t.priceSpecific}</Badge> : null}
                       </div>
                     </button>
                     <QuantityStepper

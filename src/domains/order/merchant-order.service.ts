@@ -12,12 +12,14 @@
  * ou d'une autre entreprise est introuvable (404).
  *
  * Les prix ne sont pas figés ici (RG-05 : figés au verrouillage, LOCK-1) ; les totaux affichés passent
- * par le calcul unique `loadAppliedPrices`.
+ * par le calcul unique `loadAppliedPrices`. Lot 1, demande 2 : la part « promo » de chaque ligne est,
+ * elle, retenue à la validation (`allocatePromotions`) et ne change plus ensuite.
  */
 import { randomBytes } from "node:crypto";
 import { Prisma, type DeliveryPeriod, type OrderStatus, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
-import { computeTotals, loadAppliedPrices } from "@/domains/catalog/pricing";
+import { computeTotals, lineAmountCents, loadAppliedPrices } from "@/domains/catalog/pricing";
+import { allocatePromotions, linePromoData, type LinePromo } from "@/domains/catalog/promotion.service";
 import { photoVersion } from "@/domains/catalog/catalog.service";
 import {
   companyToday,
@@ -43,7 +45,8 @@ import type { OrderLineInput, SaveOrderInput } from "@/lib/validations/order";
 
 export type OrderDb = Pick<
   PrismaClient,
-  "company" | "merchant" | "slot" | "product" | "merchantPrice" | "order" | "orderLine" | "$transaction"
+  | "company" | "merchant" | "slot" | "product" | "merchantPrice" | "order" | "orderLine" | "promotion" | "promotionMerchant"
+  | "$transaction" | "$queryRaw"
 >;
 
 /** Client connecté : entreprise et commerce viennent de la session. */
@@ -207,6 +210,13 @@ async function buildDetail(db: OrderDb, actor: MerchantRef, order: OrderRow, rul
     const product = products.get(line.productId);
     const price = prices.get(line.productId);
     const current = price?.unitPriceCents ?? 0;
+    const priced = {
+      quantity: line.quantityOrdered,
+      unitPriceCents: line.unitPriceFrozenCents ?? current,
+      vatRateBasisPoints: price?.vatRateBasisPoints ?? 0,
+      promoQuantity: line.promoQuantity,
+      promoUnitPriceCents: line.promoUnitPriceCents,
+    };
     return {
       productId: line.productId,
       name: product?.name ?? "Produit retiré",
@@ -214,13 +224,22 @@ async function buildDetail(db: OrderDb, actor: MerchantRef, order: OrderRow, rul
       photoVersion: product && isProductPhotoPath(product.photoUrl, actor.companyId) ? photoVersion(product.photoUrl!) : null,
       quantity: line.quantityOrdered,
       quantityDelivered: line.quantityDelivered,
-      unitPriceCents: line.unitPriceFrozenCents ?? current,
+      unitPriceCents: priced.unitPriceCents,
       currentUnitPriceCents: current,
-      vatRateBasisPoints: price?.vatRateBasisPoints ?? 0,
+      vatRateBasisPoints: priced.vatRateBasisPoints,
+      promoQuantity: line.promoQuantity,
+      promoUnitPriceCents: line.promoUnitPriceCents,
+      lineTotalCents: lineAmountCents(priced),
       available: product?.available ?? false,
     };
   });
-  const totals = computeTotals(lines.map((line) => ({ quantity: line.quantity, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints })));
+  const totals = computeTotals(lines.map((line) => ({
+    quantity: line.quantity,
+    unitPriceCents: line.unitPriceCents,
+    vatRateBasisPoints: line.vatRateBasisPoints,
+    promoQuantity: line.promoQuantity,
+    promoUnitPriceCents: line.promoUnitPriceCents,
+  })));
   return {
     id: order.id,
     reference: order.reference,
@@ -295,7 +314,7 @@ export async function listMerchantOrders(
       status: true,
       origin: true,
       slot: { select: { id: true, label: true, startTime: true, endTime: true, period: true } },
-      lines: { select: { productId: true, quantityOrdered: true, unitPriceFrozenCents: true } },
+      lines: { select: { productId: true, quantityOrdered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true } },
     },
   });
   const page = upcoming ? rows : rows.slice(0, HISTORY_PAGE);
@@ -309,6 +328,8 @@ export async function listMerchantOrders(
           quantity: line.quantityOrdered,
           unitPriceCents: line.unitPriceFrozenCents ?? price?.unitPriceCents ?? 0,
           vatRateBasisPoints: price?.vatRateBasisPoints ?? 0,
+          promoQuantity: line.promoQuantity,
+          promoUnitPriceCents: line.promoUnitPriceCents,
         };
       })
     );
@@ -390,6 +411,23 @@ export async function saveMerchantOrder(
               notes: input.notes ?? null,
             },
           });
+      // Lot 1, demande 2 : une commande déjà validée garde ses unités promo si la promotion s'est terminée.
+      const previous = new Map<string, LinePromo>();
+      if (existing?.status === "VALIDATED") {
+        const rows = await tx.orderLine.findMany({
+          where: { orderId: existing.id, companyId: actor.companyId },
+          select: { productId: true, promotionId: true, promoQuantity: true, promoUnitPriceCents: true },
+        });
+        for (const row of rows) previous.set(row.productId, row);
+      }
+      const promos = await allocatePromotions(tx, {
+        companyId: actor.companyId,
+        merchantId: actor.merchantId,
+        today: companyToday(now, rules.timezone),
+        orderId: order.id,
+        lines: input.lines,
+        previous,
+      });
       if (existing) await tx.orderLine.deleteMany({ where: { orderId: order.id, companyId: actor.companyId } });
       await tx.orderLine.createMany({
         data: input.lines.map((line) => ({
@@ -397,6 +435,7 @@ export async function saveMerchantOrder(
           orderId: order.id,
           productId: line.productId,
           quantityOrdered: line.quantity,
+          ...linePromoData(promos.get(line.productId)),
         })),
       });
       return { order, created: !existing };

@@ -52,6 +52,9 @@ export interface AdminOrderLine {
   unitPriceCents: number;
   frozen: boolean;
   vatRateBasisPoints: number;
+  /** Lot 1, demande 2 : unités au prix promo, retenues à la validation. */
+  promoQuantity: number;
+  promoUnitPriceCents: number | null;
 }
 
 export interface AdminOrderHistoryEntry {

@@ -7,8 +7,10 @@
  *   la période donne deux lignes) ; une quantité livrée nulle (manquant total) ne donne aucune ligne.
  * - TVA arrondie au centime par taux (HALF_UP sur le cumul HT du taux), comme le Factur-X.
  * - Une commande dont une ligne n'a pas de prix figé n'est pas facturée : elle est signalée.
+ * - Lot 1, demande 2 : les unités au prix promo (retenues à la validation) donnent une ligne « (promo) »
+ *   à leur prix ; les unités manquantes sont d'abord retirées de la part au prix normal.
  */
-import { computeTotals } from "@/domains/catalog/pricing";
+import { computeTotals, lineAmountCents, promoUnits } from "@/domains/catalog/pricing";
 
 export interface BillableOrderLine {
   productId: string;
@@ -19,6 +21,9 @@ export interface BillableOrderLine {
   quantityDelivered: number | null;
   unitPriceFrozenCents: number | null;
   vatRateBasisPoints: number;
+  /** Lot 1, demande 2 : unités au prix promo et leur prix (absents : aucune). */
+  promoQuantity?: number;
+  promoUnitPriceCents?: number | null;
 }
 
 export interface BillableOrder {
@@ -70,6 +75,19 @@ export function billedQuantity(line: Pick<BillableOrderLine, "quantityOrdered" |
   return line.quantityDelivered ?? line.quantityOrdered;
 }
 
+/** Montant HT livré d'une ligne au prix figé, part promo comprise (lot 1, demande 2). */
+export function deliveredAmountCents(
+  line: Pick<BillableOrderLine, "quantityOrdered" | "quantityDelivered" | "unitPriceFrozenCents" | "promoQuantity" | "promoUnitPriceCents">
+): number {
+  return lineAmountCents({
+    quantity: billedQuantity(line),
+    unitPriceCents: line.unitPriceFrozenCents ?? 0,
+    vatRateBasisPoints: 0,
+    promoQuantity: line.promoQuantity,
+    promoUnitPriceCents: line.promoUnitPriceCents,
+  });
+}
+
 /** TVA d'un cumul HT à un taux donné (points de base), arrondie au centime. */
 export function vatOf(baseCents: number, vatRateBasisPoints: number): number {
   return Math.round((baseCents * vatRateBasisPoints) / 10_000);
@@ -90,12 +108,26 @@ export function buildInvoice(orders: readonly BillableOrder[]): BuiltInvoice {
     for (const line of order.lines) {
       const quantity = billedQuantity(line);
       if (quantity <= 0) continue;
-      const unitPriceCents = line.unitPriceFrozenCents!;
-      orderSubtotal += quantity * unitPriceCents;
-      const key = `${line.productId}|${unitPriceCents}|${line.vatRateBasisPoints}`;
-      const existing = grouped.get(key);
-      if (existing) existing.quantity += quantity;
-      else grouped.set(key, { productId: line.productId, label: line.name, unit: line.unit, quantity, unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints });
+      const regularPriceCents = line.unitPriceFrozenCents!;
+      const promo = promoUnits({
+        quantity,
+        unitPriceCents: regularPriceCents,
+        vatRateBasisPoints: line.vatRateBasisPoints,
+        promoQuantity: line.promoQuantity,
+        promoUnitPriceCents: line.promoUnitPriceCents,
+      });
+      const parts = [
+        { quantity: promo, unitPriceCents: line.promoUnitPriceCents ?? 0, label: `${line.name} (promo)`, kind: "promo" },
+        { quantity: quantity - promo, unitPriceCents: regularPriceCents, label: line.name, kind: "regular" },
+      ];
+      for (const part of parts) {
+        if (part.quantity <= 0) continue;
+        orderSubtotal += part.quantity * part.unitPriceCents;
+        const key = `${line.productId}|${part.kind}|${part.unitPriceCents}|${line.vatRateBasisPoints}`;
+        const existing = grouped.get(key);
+        if (existing) existing.quantity += part.quantity;
+        else grouped.set(key, { productId: line.productId, label: part.label, unit: line.unit, quantity: part.quantity, unitPriceCents: part.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints });
+      }
     }
     builtOrders.push({ id: order.id, reference: order.reference, deliveryDate: order.deliveryDate, subtotalCents: orderSubtotal });
   }

@@ -1,11 +1,14 @@
 /**
  * Catalogue vu par le client (CLI-03) et son profil (CLI-02). Catégories et produits actifs de son
  * entreprise, dans l'ordre du back-office, au prix appliqué pour son commerce (RG-05, critère 3).
+ * Lot 1, demande 2 : chaque produit porte l'offre promo en cours pour ce client (`promo`), que
+ * l'écran « Commander » affiche en tête du catalogue.
  */
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { productAllergens } from "@/domains/catalog/allergens";
 import { applyPrices } from "@/domains/catalog/pricing";
+import { loadPromotionOffers } from "@/domains/catalog/promotion.service";
 import { photoVersion } from "@/domains/catalog/catalog.service";
 import type { MerchantRef } from "@/domains/order/merchant-order.service";
 import { clientSlotLabel, merchantSlotWhere } from "@/domains/order/merchant-order.service";
@@ -46,7 +49,10 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
   ]);
   if (!company) throw new DomainRuleError(404, "Entreprise introuvable.", "COMPANY_NOT_FOUND");
 
-  const prices = applyPrices(categories.flatMap((category) => category.products), specificPrices);
+  const allProducts = categories.flatMap((category) => category.products);
+  const prices = applyPrices(allProducts, specificPrices);
+  // Lot 1, demande 2 : promotions en cours qui concernent ce client et lui font payer moins cher.
+  const offers = await loadPromotionOffers(prisma, actor.companyId, actor.merchantId, companyToday(now, company.timezone), allProducts, prices);
   return {
     categories: categories
       .filter((category) => category.products.length > 0)
@@ -65,6 +71,10 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
             vatRateBasisPoints: price.vatRateBasisPoints,
             isSpecific: price.isSpecific,
             allergens: productAllergens(product),
+            promo: (() => {
+              const offer = offers.get(product.id);
+              return offer ? { unitPriceCents: offer.promoUnitPriceCents, remaining: offer.remaining, endsOn: offer.endsOn } : null;
+            })(),
           };
         }),
       })),

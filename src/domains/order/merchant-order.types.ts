@@ -23,6 +23,11 @@ export interface PortalProduct {
   isSpecific: boolean;
   /** Lot 1, demande 3 : null = « Allergènes non renseignés » ; [] = « Aucun allergène ». */
   allergens: string[] | null;
+  /**
+   * Lot 1, demande 2 : promotion en cours pour ce client (prix plus bas que `unitPriceCents`, qui reste
+   * le prix normal barré). `remaining` : unités encore au prix promo, tous clients ; `null` sans limite.
+   */
+  promo: { unitPriceCents: number; remaining: number | null; endsOn: string } | null;
 }
 
 export interface PortalCategory {
@@ -58,6 +63,11 @@ export interface PortalOrderLine {
   /** Prix appliqué aujourd'hui (recopie, CLI-08). */
   currentUnitPriceCents: number;
   vatRateBasisPoints: number;
+  /** Lot 1, demande 2 : unités au prix promo, retenues à la validation (les autres au prix normal). */
+  promoQuantity: number;
+  promoUnitPriceCents: number | null;
+  /** Montant HT de la ligne (part promo comprise). */
+  lineTotalCents: number;
   /** Produit encore proposé (actif, catégorie active). */
   available: boolean;
 }

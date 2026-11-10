@@ -5,7 +5,7 @@
  */
 import type { BillingPeriod, Prisma } from "@prisma/client";
 import { dbDateKey, periodContaining, periodDateToDb, periodLabel } from "@/domains/invoice/billing-period";
-import { vatOf } from "@/domains/invoice/invoice-builder";
+import { deliveredAmountCents, vatOf } from "@/domains/invoice/invoice-builder";
 import { effectiveInvoiceStatus, isInvoiceOutstanding } from "@/domains/invoice/invoice-due";
 import { invoiceEmailAttempt, invoiceEmailJobPrefix } from "@/domains/invoice/invoice-email-keys";
 import { invoiceLegalGaps, type InvoiceLegalGap } from "@/domains/invoice/invoice-legal";
@@ -226,7 +226,7 @@ export async function getAdminInvoice(
   const orderLines = orders.length
     ? await db.orderLine.findMany({
         where: { companyId, orderId: { in: orders.map((order) => order.id) } },
-        select: { orderId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true },
+        select: { orderId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true },
       })
     : [];
   const recorders = payments.some((payment) => payment.recordedById)
@@ -272,7 +272,7 @@ export async function getAdminInvoice(
           id: order.id,
           reference: order.reference,
           deliveryDate: dbDateKey(order.deliveryDate),
-          subtotalCents: own.reduce((sum, line) => sum + (line.quantityDelivered ?? line.quantityOrdered) * (line.unitPriceFrozenCents ?? 0), 0),
+          subtotalCents: own.reduce((sum, line) => sum + deliveredAmountCents(line), 0),
           shortage: own.some((line) => line.quantityDelivered !== null && line.quantityDelivered < line.quantityOrdered),
         };
       })

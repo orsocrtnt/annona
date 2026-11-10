@@ -8,7 +8,8 @@
  *    manuelle compte quel que soit son créneau et son statut, ANNULÉE ou BROUILLON compris (le client
  *    qui annule sa commande du jour ne veut pas recevoir la récurrente à la place ; une commande sur un
  *    autre créneau du même jour ne doit pas être doublée). Une commande déjà présente sur le créneau de
- *    la récurrente (récurrente déjà générée) n'est jamais recréée.
+ *    la récurrente (récurrente déjà générée) n'est jamais recréée. Lot 1, demande 2 : une commande générée
+ *    est une nouvelle commande validée ; elle reçoit les promotions en cours ce jour-là (comme le client).
  * 2. Passe les commandes VALIDÉES de J en VERROUILLÉES (`lockedAt`). Les BROUILLONS (DRAFT) sont
  *    ignorés : jamais validés par le client, ils ne sont ni produits ni livrés et restent en brouillon.
  * 3. RG-05 : fige `unitPriceFrozenCents` de chaque ligne par `resolveUnitPrice` (prix spécifique du
@@ -29,6 +30,7 @@
 import type { DeliveryPeriod, OrderStatus, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { loadAppliedPricesByMerchant } from "@/domains/catalog/pricing";
+import { allocatePromotions, linePromoData } from "@/domains/catalog/promotion.service";
 import { newReference, slotLabel } from "@/domains/order/merchant-order.service";
 import { DELIVERY_DAY_AUDIT_ENTITY } from "@/domains/order/order-audit";
 import {
@@ -54,6 +56,8 @@ export type LockDb = Pick<
   | "merchantPrice"
   | "order"
   | "orderLine"
+  | "promotion"
+  | "promotionMerchant"
   | "recurringOrder"
   | "recurringOrderLine"
   | "round"
@@ -142,7 +146,7 @@ async function acquireDayLock(tx: LockTx, companyId: string, date: string) {
   await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtext(${key}))`;
 }
 
-async function generateRecurringOrders(tx: LockTx, companyId: string, date: string, now: Date) {
+async function generateRecurringOrders(tx: LockTx, companyId: string, date: string, now: Date, timeZone: string) {
   const dbDate = deliveryDateToDb(date);
   const weekday = isoWeekday(date);
   const recurrings = (await tx.recurringOrder.findMany({ where: { companyId, active: true } }))
@@ -212,8 +216,21 @@ async function generateRecurringOrders(tx: LockTx, companyId: string, date: stri
         createdById: null,
       },
     });
+    const promos = await allocatePromotions(tx, {
+      companyId,
+      merchantId: recurring.merchantId,
+      today: formatCalendarDate(zonedTodayDate(now, timeZone)),
+      orderId: order.id,
+      lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+    });
     await tx.orderLine.createMany({
-      data: lines.map((line) => ({ companyId, orderId: order.id, productId: line.productId, quantityOrdered: line.quantity })),
+      data: lines.map((line) => ({
+        companyId,
+        orderId: order.id,
+        productId: line.productId,
+        quantityOrdered: line.quantity,
+        ...linePromoData(promos.get(line.productId)),
+      })),
     });
     existing.push({ merchantId: recurring.merchantId, slotId, origin: "RECURRING", status: "VALIDATED" });
     generated += 1;
@@ -459,7 +476,7 @@ export async function lockDeliveryDate(companyId: string, deliveryDate: string |
 
   const first = await db.$transaction(async (tx) => {
     await acquireDayLock(tx, companyId, date);
-    const recurring = await generateRecurringOrders(tx, companyId, date, now);
+    const recurring = await generateRecurringOrders(tx, companyId, date, now, company.timezone);
     const locked = await lockAndFreeze(tx, companyId, date, now);
     return { recurring, locked };
   }, TX_OPTIONS);

@@ -29,6 +29,8 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/dashboard/rounds", roles: COMPANY_ADMINS, anyPermission: ["rounds:read"] },
   { path: "/dashboard/merchants", roles: COMPANY_ADMINS, anyPermission: ["merchants:read"] },
   { path: "/dashboard/catalog", roles: COMPANY_ADMINS, anyPermission: ["catalog:read"] },
+  // Lot 1, demande 2 : promotions (module distinct du catalogue pour les mini admins, demande 4).
+  { path: "/dashboard/promotions", roles: COMPANY_ADMINS, anyPermission: ["catalog:read"] },
   { path: "/dashboard/invoices", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"] },
   { path: "/support", roles: COMPANY_ADMINS, anyPermission: ["support:read"] },
   { path: "/users", roles: COMPANY_ADMINS, anyPermission: ["users:read"] },

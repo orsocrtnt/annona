@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { allergenLabel, allergenSummary } from "@/domains/catalog/allergens";
 import type { PortalProduct } from "@/domains/order/merchant-order.types";
 import { ProductThumb } from "@/features/catalog/product-thumb";
-import { formatCents } from "@/lib/format/money";
+import { ProductPrice } from "@/features/ordering/promo-price";
 import { fr } from "@/lib/i18n/fr";
 
 /** Lot 1, demande 3 : le client touche un produit du catalogue et voit la liste de ses allergènes. */
@@ -16,7 +16,7 @@ export function ProductInfoDialog({ product, onClose }: { product: PortalProduct
           <DialogHeader>
             <DialogTitle className="pr-8">{product.name}</DialogTitle>
             <DialogDescription>
-              {formatCents(product.unitPriceCents)} {fr.common.exclVat} · {product.unit}
+              <ProductPrice product={product} /> {fr.common.exclVat} · {product.unit}
             </DialogDescription>
           </DialogHeader>
           <ProductThumb productId={product.id} photoVersion={product.photoVersion} className="h-40 w-full rounded-xl" />

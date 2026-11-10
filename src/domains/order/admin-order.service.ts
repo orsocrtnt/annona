@@ -109,7 +109,7 @@ export async function listAdminOrders(
   const [lines, merchants, slots, stops, rounds, audits] = await Promise.all([
     db.orderLine.findMany({
       where: { companyId, orderId: { in: orderIds } },
-      select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true },
+      select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true },
     }),
     db.merchant.findMany({ where: { companyId, id: { in: [...new Set(orders.map((order) => order.merchantId))] } }, select: { id: true, name: true, tradeName: true } }),
     db.slot.findMany({ where: { companyId }, select: { id: true, label: true, startTime: true, endTime: true } }),
@@ -142,6 +142,8 @@ export async function listAdminOrders(
         quantity: line.quantityOrdered,
         unitPriceCents: line.unitPriceFrozenCents ?? merchantPrices?.get(line.productId)?.unitPriceCents ?? 0,
         vatRateBasisPoints: merchantPrices?.get(line.productId)?.vatRateBasisPoints ?? 0,
+        promoQuantity: line.promoQuantity,
+        promoUnitPriceCents: line.promoUnitPriceCents,
       }))
     );
     const slot = slotById.get(order.slotId);
@@ -270,12 +272,15 @@ export async function getAdminOrder(companyId: string, orderId: string, now = ne
         unitPriceCents: line.unitPriceFrozenCents ?? price?.unitPriceCents ?? 0,
         frozen: line.unitPriceFrozenCents !== null,
         vatRateBasisPoints: price?.vatRateBasisPoints ?? 0,
+        promoQuantity: line.promoQuantity,
+        promoUnitPriceCents: line.promoUnitPriceCents,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  const ordered = computeTotals(lines.map((line) => ({ quantity: line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints })));
+  const promo = (line: AdminOrderLine) => ({ promoQuantity: line.promoQuantity, promoUnitPriceCents: line.promoUnitPriceCents });
+  const ordered = computeTotals(lines.map((line) => ({ quantity: line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints, ...promo(line) })));
   const delivered = computeTotals(
-    lines.map((line) => ({ quantity: line.quantityDelivered ?? line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints }))
+    lines.map((line) => ({ quantity: line.quantityDelivered ?? line.quantityOrdered, unitPriceCents: line.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints, ...promo(line) }))
   );
   const cutoffAt = orderCutoffInstant(order.deliveryDate, company.cutoffTime, company.timezone);
   return {
@@ -372,7 +377,12 @@ export async function correctAdminOrder(
       if (previous) {
         const quantityDelivered = correctedDelivered(previous, line.quantity);
         if (previous.quantityOrdered !== line.quantity || previous.quantityDelivered !== quantityDelivered) {
-          await tx.orderLine.update({ where: { id: previous.id }, data: { quantityOrdered: line.quantity, quantityDelivered } });
+          // Lot 1, demande 2 : la part promo retenue à la validation ne grandit jamais après coup.
+          const promoQuantity = Math.min(previous.promoQuantity, line.quantity);
+          await tx.orderLine.update({
+            where: { id: previous.id },
+            data: { quantityOrdered: line.quantity, quantityDelivered, ...(promoQuantity !== previous.promoQuantity ? { promoQuantity } : {}) },
+          });
         }
         afterLines.push({ productId: line.productId, quantityOrdered: line.quantity, quantityDelivered });
       } else {

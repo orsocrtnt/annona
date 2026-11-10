@@ -103,8 +103,14 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium leading-snug">{line.product.name}</p>
                     <p className="text-xs text-muted-foreground tabular-nums">
-                      {formatCents(line.product.unitPriceCents)} × {line.quantity} = <span className="font-semibold text-foreground">{formatCents(line.lineTotalCents)}</span>
+                      {formatCents(line.promoQuantity > 0 && line.product.promo ? line.product.promo.unitPriceCents : line.product.unitPriceCents)} × {line.quantity} = <span className="font-semibold text-foreground">{formatCents(line.lineTotalCents)}</span>
                     </p>
+                    {line.promoQuantity > 0 ? (
+                      <p className="text-xs text-warning" data-testid="cart-line-promo">
+                        {fr.promotions.badge}
+                        {line.promoQuantity < line.quantity ? ` · ${fr.promotions.promoUnits(line.promoQuantity)}, ${formatCents(line.product.unitPriceCents)} au-delà` : ""}
+                      </p>
+                    ) : null}
                   </div>
                   <QuantityStepper
                     productName={line.product.name}

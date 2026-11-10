@@ -140,7 +140,7 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
       return Promise.all(arg as Promise<unknown>[]);
     },
   };
-  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone"]) {
+  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "promotion", "promotionMerchant", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone"]) {
     db[model] = delegate(model);
   }
   return db;

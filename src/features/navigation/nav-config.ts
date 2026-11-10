@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, Users, Settings, Activity, Truck, Package, Shield, UserCircle, Receipt,
-  HeadphonesIcon, BookOpen, ChefHat, Route,
+  HeadphonesIcon, BookOpen, ChefHat, Route, Tag,
 } from "lucide-react";
 import type { NavItem } from "@/types";
 
@@ -22,6 +22,7 @@ export const companyNavItems: NavItem[] = [
   { title: "Tournées", href: "/dashboard/rounds", icon: Route },
   { title: "Clients", href: "/dashboard/merchants", icon: UserCircle },
   { title: "Catalogue", href: "/dashboard/catalog", icon: BookOpen },
+  { title: "Promotions", href: "/dashboard/promotions", icon: Tag },
   { title: "Factures", href: "/dashboard/invoices", icon: Receipt },
   { title: "Support", href: "/support", icon: HeadphonesIcon },
   { title: "Gestion des comptes", href: "/users", icon: Users },
