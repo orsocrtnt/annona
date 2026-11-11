@@ -98,7 +98,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
     3. Archive d'entreprise (DATA-02) : le service exige un dossier parent privé au sens POSIX (droits 0700, même propriétaire). Ces droits n'existent pas sous Windows, l'export y est donc toujours refusé (`ARCHIVE_PARENT_NOT_PRIVATE`) : comportement sûr, gardé tel quel (aucun contrôle de sécurité affaibli). Les 7 tests de l'archive sont sautés sous Windows seulement, et un test propre à Windows vérifie le refus (aucune lecture Storage, aucun fichier laissé).
   - Vérifié sous Windows : les 6 fichiers de test concernés, 41 réussis, 7 sautés, 0 échec ; `npm run check` sortie 0 (810 tests, 803 réussis, 7 sautés, 0 échec).
   - À noter : `package.json` exige Node `>=22.18 <23` et Théo a Node 24.22.1 (npm ne bloque pas, il prévient seulement). Les tests passent maintenant sous les deux ; pour coller à la CI, installer Node 22.18 chez Théo (par exemple avec `nvm-windows`) reste conseillé.
-  - Non vérifié : la CI de la PR (Linux, Node 22) au moment de l'écriture ; voir la PR.
+  - CI de la PR #3 (Linux, Node 22) : verte (contrôles sans secrets, migrations sur PostgreSQL neuf).
+  - Ajout du 11 novembre 2026 (nuit) : `npm run docs:verify` échouait aussi sous Windows (2 liens « cassés » dans `docs/rapports/`). Cause : `scripts/docs/verify-docs.mjs` excluait les rapports avec un séparateur `/` écrit en dur. Correction : séparateur du système (`sep`). Vérifié sous Windows : `docs:verify` sortie 0, 63 fichiers contrôlés, 0 lien cassé.
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 

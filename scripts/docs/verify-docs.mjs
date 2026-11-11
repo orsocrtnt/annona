@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { dirname, extname, join, normalize, relative, resolve } from "node:path";
+import { dirname, extname, join, normalize, relative, resolve, sep } from "node:path";
 
 const root = process.cwd();
 const outputPath = process.argv[2] ?? "outputs/doc1/verification.json";
@@ -13,7 +13,8 @@ function walk(directory) {
 }
 
 const markdownFiles = [resolve(root, "README.md"), ...walk(resolve(root, "docs"))]
-  .filter((path) => !path.includes(`${join("docs", "rapports")}/`));
+  // Séparateur du système (« \ » sous Windows) : les rapports datés ne sont pas contrôlés.
+  .filter((path) => !path.includes(`${join("docs", "rapports")}${sep}`));
 const brokenLinks = [];
 
 for (const file of markdownFiles) {
