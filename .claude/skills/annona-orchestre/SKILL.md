@@ -293,7 +293,7 @@ Ce skill s'améliore à chaque erreur. L'orchestrateur ne la laisse jamais se re
 ## Nettoyage de fin de chantier
 
 - Arrêter les serveurs lancés (leur PID seulement) et vérifier que 3110 et 3111 sont libres.
-- `scripts/e2e/dev-role-accounts.ts cleanup` ; supprimer les données `E2E` créées.
+- Supprimer les données `E2E` et `test-<prénom>-` créées (jamais les comptes du seed de démo ; voir `annona-recette`).
 - Libérer les espaces de démo laissés en session par les recettes, en développement uniquement. La préproduction n'est touchée que si le propriétaire l'a autorisé.
 - Retirer les worktrees des branches fusionnées (`git worktree remove`), sans supprimer les branches.
 - Lister dans le rapport les branches `agent/*` poussées sur GitHub et les sessions cloud du chantier. On ne les supprime pas sans l'accord du propriétaire.
