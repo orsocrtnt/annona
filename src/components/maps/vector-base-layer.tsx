@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import L from "leaflet";
 import { useMap } from "react-leaflet";
 import { maplibreGL } from "@maplibre/maplibre-gl-leaflet";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { configureMaplibreWorker } from "@/lib/maps/maplibre-worker";
+import { guardMaplibreTransitionEnd, type MaplibreLayerInternals } from "@/lib/maps/maplibre-layer-guard";
 import { MAP_VECTOR, PROVIDER_TIMEOUT_MS } from "@/lib/maps/provider-config";
 import { toMentheStyle, type MapTheme } from "@/lib/maps/menthe-style";
 import { ProviderTileLayer } from "@/components/maps/provider-tile-layer";
@@ -52,6 +54,10 @@ export function BaseMapLayer({ onModeChange }: { onModeChange?: (mode: "vector" 
         if (cancelled) return;
         configureMaplibreWorker();
         layer = maplibreGL({ style, attributionControl: false });
+        guardMaplibreTransitionEnd(layer as unknown as MaplibreLayerInternals, {
+          requestFrame: (callback) => L.Util.requestAnimFrame(callback),
+          setTransform: (element, offset, scale) => L.DomUtil.setTransform(element, offset as L.Point, scale),
+        });
         layer.addTo(map);
         setMode("vector");
       })
