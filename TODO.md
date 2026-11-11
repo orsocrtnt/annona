@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**9 tâches terminées sur 25 — 36 %**
+**9 tâches terminées sur 26 — 35 %**
 
-`███████░░░░░░░░░░░░░` · 16 tâches restantes
+`███████░░░░░░░░░░░░░` · 17 tâches restantes
 
 **À faire par Claude**
 
@@ -15,6 +15,7 @@
 **À faire par Orso**
 
 - COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (invitation Supabase de Théo depuis le tableau ; demander le commit de ces règles sur une branche, son push et la PR vers `base`)
+- COLLAB-2 — Garde-fou avant chaque push : l'autre ne travaille-t-il pas déjà dessus ? (relire et fusionner la PR de `theo/garde-collab`, puis lancer une fois `npm run collab:install-hook`)
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (dire quoi faire des branches `main` et `preproduction` du dépôt annona)
 - ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
 - NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
@@ -53,7 +54,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Lot 1 : PR ouverte (https://github.com/orsocrtnt/annona/pull/1, branche `orso/lot1-retouches` poussée le 10 novembre). Bloquée : les vérifications exigées par `base` ne tournent pas, car les 4 automatisations GitHub Actions du dépôt sont « désactivées manuellement » (dont « Annona CI »). Décidé le 10 novembre : « Annona CI » réactivée sans déclenchement nocturne (la recette de préproduction ne part plus qu'à la main) ; les 3 tâches planifiées de préproduction restent désactivées. Fusionner quand les vérifications sont vertes. Relire aussi `docs/rapports/2026-11-10-lot1-recette.md` et dire si la recette Playwright dans Chrome suffit.
 
 **2. Théo**
-- Accepter l'invitation GitHub au dépôt `orsocrtnt/annona`, cloner, `npm install`, remplir `.env.local` (COLLAB-1).
+- Fait le 11 novembre : dépôt cloné, `.env.local` rempli et vérifié (Supabase et `DATABASE_URL` OK ; `DIRECT_URL` à passer par le pooler, port 5432, car l'adresse directe n'est joignable qu'en IPv6).
+- Garde-fou de push (COLLAB-2) : commité, branche `theo/garde-collab` poussée et PR ouverte vers `base` (nuit du 11 novembre). Reste : fusion par Orso, puis `npm run collab:install-hook` chez lui.
 
 **3. Claude (en autonomie, dans l'ordre)**
 - Lot 1 de demandes de modification (branche `orso/lot1-retouches`, sans push) : D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre ; 7 défauts trouvés et corrigés, rejeu complet vert. Rapport `docs/rapports/2026-11-10-lot1-recette.md`.
@@ -85,6 +87,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Invitations hors GitHub (10 novembre 2026, e-mail de Théo reçu, volontairement non écrit ici car le dépôt est public) : Supabase n'a ni commande CLI ni outil d'invitation, à faire par Orso dans le tableau. Vercel : sans objet pour l'instant, la seule équipe du compte est « TutelLiv » en offre Hobby (pas de membres possibles) et Annona n'y est pas rattaché (pas de `.vercel/`).
   - Non vérifié : invitation Supabase ; CI de la première PR sous protection.
   - Suite : Orso invite Théo sur Supabase ; une fois l'autre session terminée, commit des fichiers COLLAB-1 sur `orso/collab-deux-devs`, push et PR sur demande d'Orso ; Théo accepte l'invitation et installe le projet.
+
+- [ ] **COLLAB-2 — Garde-fou avant chaque push : l'autre ne travaille-t-il pas déjà dessus ?**
+
+  **Qui : Orso — relire et fusionner la PR de `theo/garde-collab`, puis lancer une fois `npm run collab:install-hook`.** **En cours : Théo.**
+
+  - Fait le 11 novembre 2026 (branche `theo/garde-collab`, non commitée) : `scripts/collab/check-collab.mjs` (récupère `origin`, compare les fichiers changés par rapport à `base` avec ceux de chaque branche non fusionnée de l'autre, lit les « En cours » de `TODO.md` sur `base` et sur ses branches), règles pures dans `scripts/collab/collab-overlap.mjs`, hook `.githooks/pre-push`, scripts `npm run collab:check` et `npm run collab:install-hook`, règle ajoutée dans `AGENTS.md` (« Travail à deux »).
+  - Bloque : même fichier de code modifié des deux côtés ; les deux dans `prisma/` ; tâche déjà « En cours » chez l'autre ; push direct sur `base`, `main` ou `preproduction`. Signale sans bloquer : `TODO.md`, `docs/TODO-ARCHIVE.md`, `package-lock.json` en commun, et les tâches en cours de l'autre. Contournement voulu : `ANNONA_COLLAB_OK=1 git push`.
+  - Vérifié : `tests/collab-guard.test.ts` 8/8 ; contrôle réel sur le dépôt → « rien en commun » (seule `orso/lot1-retouches`, déjà fusionnée, existe) ; simulation d'un push vers `base` → refusé (code 1) ; simulation d'une branche `origin/orso/test-collab` touchant le même fichier → refusé (code 1), référence temporaire supprimée. Faux positif corrigé : une note de section « En cours : Orso » placée après RECETTE-V1 était attribuée à cette tâche.
+  - `npm run check` (Windows, machine de Théo) : types et lint verts ; tests 817, 805 réussis, 12 échecs, identiques sans les changements de COLLAB-2 (809 tests, mêmes 12 échecs) : archive d'entreprise (`ARCHIVE_PARENT_NOT_PRIVATE`, droits de dossier), ADMIN-1, ADMIN-ESPACE, AUTH-ROLE et droits factures (chemins). Défaut existant propre à Windows, à confirmer ; non traité ici.
+  - Hook installé chez Théo (`core.hooksPath=.githooks`, réglage local). Non vérifié : un vrai `git push` (aucun push demandé) ; le hook sous Cursor et sur la machine d'Orso ; Orso doit lancer `npm run collab:install-hook` une fois après la fusion. Limite : le travail non poussé de l'autre est invisible, d'où l'annonce « En cours » dans `TODO.md` avant de commencer.
+  - Contre-vérification du 11 novembre 2026 (session Claude de Théo, code relu) : `tests/collab-guard.test.ts` 8/8 ; `npm run collab:check` → code 0, « rien en commun », avertissement fondé (LOT1-D1 porte bien « En cours : Orso » sur `base`) ; push simulé vers `base` → refusé (code 1) ; commit temporaire (`git stash create`) placé sur une fausse `origin/orso/test-collab` → refusé (code 1) pour `AGENTS.md` et `package.json`, simple avertissement pour `TODO.md` et `package-lock.json` ; même cas avec `ANNONA_COLLAB_OK=1` → accepté (code 0) ; fausse référence supprimée. `npm run check` : types et lint verts, 817 tests, 805 réussis, mêmes 12 échecs Windows qu'avant. Critères de la tâche remplis ; reste la relecture de Théo et la PR.
+  - 11 novembre 2026 (nuit, demande de Théo : enregistrer sur le projet chaque tâche faite) : `package-lock.json` restauré (deux `"dev": true` sur `fsevents` retirés par `npm install` sous Windows, sans rapport) ; commit sur `theo/garde-collab`, push de la branche (premier vrai passage du hook) et PR vers `base`. Fusion laissée à Orso.
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 

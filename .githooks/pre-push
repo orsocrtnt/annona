@@ -1,0 +1,4 @@
+#!/bin/sh
+# COLLAB-2 — refuse le push si l'autre développeur travaille déjà sur les mêmes fichiers ou la même tâche.
+# Installation (une fois par clone) : npm run collab:install-hook
+exec node scripts/collab/check-collab.mjs --hook "$@"
