@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { settingsApi, type ZoneInput, type ZoneRow } from "@/features/settings/api";
 import { useZoneMutation, useZones } from "@/features/settings/hooks";
+import { zoneDeactivationWarnings } from "@/features/settings/zone-deactivation";
 import { fr } from "@/lib/i18n/fr";
 
 const t = fr.companySettings;
@@ -36,8 +38,16 @@ function RangeFields({
   );
 }
 
-function ZoneLine({ zone }: { zone: ZoneRow }) {
+function ZoneLine({ zone, zones }: { zone: ZoneRow; zones: ZoneRow[] }) {
   const update = useZoneMutation((input: Partial<ZoneInput> & { active?: boolean }) => settingsApi.updateZone(zone.id, input));
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const setActive = (active: boolean) =>
+    update.mutate({ active }, { onSuccess: () => toast.success(t.zoneSaved), onError: (error) => toast.error(error.message) });
+  const toggle = (active: boolean) => {
+    const pending = active ? [] : zoneDeactivationWarnings(zone, zones);
+    if (pending.length > 0) setWarnings(pending);
+    else setActive(active);
+  };
   const remove = useZoneMutation(() => settingsApi.deleteZone(zone.id));
   const saved: ZoneInput = { name: zone.name, morningStart: zone.morningStart, morningEnd: zone.morningEnd, eveningStart: zone.eveningStart, eveningEnd: zone.eveningEnd };
   const [value, setValue] = useState<ZoneInput>(saved);
@@ -55,7 +65,7 @@ function ZoneLine({ zone }: { zone: ZoneRow }) {
             checked={zone.active}
             aria-label={zone.active ? t.deactivate(zone.name) : t.activate(zone.name)}
             disabled={update.isPending}
-            onCheckedChange={(active) => update.mutate({ active }, { onSuccess: () => toast.success(t.zoneSaved), onError: (error) => toast.error(error.message) })}
+            onCheckedChange={toggle}
           />
           {zone.used ? null : (
             <Button
@@ -79,6 +89,22 @@ function ZoneLine({ zone }: { zone: ZoneRow }) {
           </Button>
         ) : null}
       </div>
+      <Dialog open={warnings.length > 0} onOpenChange={(open) => { if (!open) setWarnings([]); }}>
+        <DialogContent data-testid="zone-deactivate-dialog">
+          <DialogHeader>
+            <DialogTitle>{t.deactivateTitle(zone.name)}</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2">
+                {warnings.map((warning) => <p key={warning}>{warning}</p>)}
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setWarnings([])}>{fr.common.cancel}</Button>
+            <Button type="button" variant="destructive" onClick={() => { setWarnings([]); setActive(false); }}>{t.deactivateConfirm}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 }
@@ -114,7 +140,7 @@ export function ZonesCard() {
         {rows.length > 0 ? (
           <ul className="divide-y rounded-lg border" data-testid="zone-list">
             {rows.map((zone) => (
-              <ZoneLine key={`${zone.id}:${zone.name}:${zone.morningStart}:${zone.morningEnd}:${zone.eveningStart}:${zone.eveningEnd}`} zone={zone} />
+              <ZoneLine key={`${zone.id}:${zone.name}:${zone.morningStart}:${zone.morningEnd}:${zone.eveningStart}:${zone.eveningEnd}`} zone={zone} zones={rows} />
             ))}
           </ul>
         ) : null}
