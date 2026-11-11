@@ -16,6 +16,7 @@
 
 - COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (invitation Supabase de Théo depuis le tableau ; demander le commit de ces règles sur une branche, son push et la PR vers `base`)
 - COLLAB-2 — Garde-fou avant chaque push : l'autre ne travaille-t-il pas déjà dessus ? (relire et fusionner la PR de `theo/garde-collab`, puis lancer une fois `npm run collab:install-hook`)
+- WIN-1 — `npm run check` vert sous Windows (machine de Théo) (relire et fusionner la PR de `theo/tests-windows`)
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (dire quoi faire des branches `main` et `preproduction` du dépôt annona)
 - ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
 - NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
@@ -56,6 +57,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Théo**
 - Fait le 11 novembre : dépôt cloné, `.env.local` rempli et vérifié (Supabase et `DATABASE_URL` OK ; `DIRECT_URL` à passer par le pooler, port 5432, car l'adresse directe n'est joignable qu'en IPv6).
 - Garde-fou de push (COLLAB-2) : commité, branche `theo/garde-collab` poussée et PR ouverte vers `base` (nuit du 11 novembre). Reste : fusion par Orso, puis `npm run collab:install-hook` chez lui.
+- Fait le 11 novembre : dépôt cloné, `.env.local` rempli et vérifié (COLLAB-1).
+- `npm run check` vert sous Windows (WIN-1) : branche `theo/tests-windows` poussée et PR ouverte (nuit du 11 novembre). Conseillé : passer à Node 22.18 comme la CI (Node 24 installé).
 
 **3. Claude (en autonomie, dans l'ordre)**
 - Lot 1 de demandes de modification (branche `orso/lot1-retouches`, sans push) : D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre ; 7 défauts trouvés et corrigés, rejeu complet vert. Rapport `docs/rapports/2026-11-10-lot1-recette.md`.
@@ -99,6 +102,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Hook installé chez Théo (`core.hooksPath=.githooks`, réglage local). Non vérifié : un vrai `git push` (aucun push demandé) ; le hook sous Cursor et sur la machine d'Orso ; Orso doit lancer `npm run collab:install-hook` une fois après la fusion. Limite : le travail non poussé de l'autre est invisible, d'où l'annonce « En cours » dans `TODO.md` avant de commencer.
   - Contre-vérification du 11 novembre 2026 (session Claude de Théo, code relu) : `tests/collab-guard.test.ts` 8/8 ; `npm run collab:check` → code 0, « rien en commun », avertissement fondé (LOT1-D1 porte bien « En cours : Orso » sur `base`) ; push simulé vers `base` → refusé (code 1) ; commit temporaire (`git stash create`) placé sur une fausse `origin/orso/test-collab` → refusé (code 1) pour `AGENTS.md` et `package.json`, simple avertissement pour `TODO.md` et `package-lock.json` ; même cas avec `ANNONA_COLLAB_OK=1` → accepté (code 0) ; fausse référence supprimée. `npm run check` : types et lint verts, 817 tests, 805 réussis, mêmes 12 échecs Windows qu'avant. Critères de la tâche remplis ; reste la relecture de Théo et la PR.
   - 11 novembre 2026 (nuit, demande de Théo : enregistrer sur le projet chaque tâche faite) : `package-lock.json` restauré (deux `"dev": true` sur `fsevents` retirés par `npm install` sous Windows, sans rapport) ; commit sur `theo/garde-collab`, push de la branche (premier vrai passage du hook) et PR vers `base`. Fusion laissée à Orso.
+- [ ] **WIN-1 — `npm run check` vert sous Windows (machine de Théo).**
+
+  **Qui : Orso — relire et fusionner la PR de `theo/tests-windows`.** **En cours : Théo.**
+
+  - Constat (11 novembre 2026, Windows 11, Node 24.22.1) : 12 tests sur 817 échouaient sur la machine de Théo, à l'identique sans aucun changement ; tous verts en CI (Linux, Node 22.18). Trois causes, toutes dans les tests, aucune dans l'application :
+    1. Chemins construits avec `\` sous Windows, comparés à des chemins en `/` : `admin01-no-impersonation` (ADMIN-1), `auth-role-real-guard` (AUTH-ROLE), `fact1-invoices` « Droits » (le filtre `/pdf/` ne marchait plus). Correction : séparateur ramené à `/`.
+    2. Proxy autour d'une `Request` qui passait le Proxy comme `this` : sous Node 24, `Request` range son état dans un champ privé `#state`, illisible ainsi (`admin01-platform-api-role`, `admin-espace-company-search`). Correction : lecture sur la vraie requête, fonctions liées à elle ; fonctionne sous Node 22 et 24.
+    3. Archive d'entreprise (DATA-02) : le service exige un dossier parent privé au sens POSIX (droits 0700, même propriétaire). Ces droits n'existent pas sous Windows, l'export y est donc toujours refusé (`ARCHIVE_PARENT_NOT_PRIVATE`) : comportement sûr, gardé tel quel (aucun contrôle de sécurité affaibli). Les 7 tests de l'archive sont sautés sous Windows seulement, et un test propre à Windows vérifie le refus (aucune lecture Storage, aucun fichier laissé).
+  - Vérifié sous Windows : les 6 fichiers de test concernés, 41 réussis, 7 sautés, 0 échec ; `npm run check` sortie 0 (810 tests, 803 réussis, 7 sautés, 0 échec).
+  - À noter : `package.json` exige Node `>=22.18 <23` et Théo a Node 24.22.1 (npm ne bloque pas, il prévient seulement). Les tests passent maintenant sous les deux ; pour coller à la CI, installer Node 22.18 chez Théo (par exemple avec `nvm-windows`) reste conseillé.
+  - CI de la PR #3 (Linux, Node 22) : verte (contrôles sans secrets, migrations sur PostgreSQL neuf).
+  - Ajout du 11 novembre 2026 (nuit) : `npm run docs:verify` échouait aussi sous Windows (2 liens « cassés » dans `docs/rapports/`). Cause : `scripts/docs/verify-docs.mjs` excluait les rapports avec un séparateur `/` écrit en dur. Correction : séparateur du système (`sep`). Vérifié sous Windows : `docs:verify` sortie 0, 63 fichiers contrôlés, 0 lien cassé.
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 

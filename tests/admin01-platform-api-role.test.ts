@@ -56,9 +56,12 @@ function load(file: string, service: string, role: string, calls: string[]) {
 function watched(calls: string[]) {
   const request = new Request("http://local/api/admin/list");
   return new Proxy(request, {
-    get(target, prop, receiver) {
+    // Lecture sur la vraie requête : sous Node 24, `Request` garde son état dans un champ privé (#state)
+    // qu'un Proxy passé comme `this` ne peut pas lire.
+    get(target, prop) {
       if (prop === "url") calls.push("url");
-      return Reflect.get(target, prop, receiver);
+      const value = Reflect.get(target, prop);
+      return typeof value === "function" ? value.bind(target) : value;
     },
   });
 }
