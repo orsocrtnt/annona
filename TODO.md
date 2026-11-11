@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**9 tâches terminées sur 25 — 36 %**
+**9 tâches terminées sur 26 — 35 %**
 
-`███████░░░░░░░░░░░░░` · 16 tâches restantes
+`███████░░░░░░░░░░░░░` · 17 tâches restantes
 
 **À faire par Claude**
 
@@ -15,6 +15,7 @@
 **À faire par Orso**
 
 - COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (invitation Supabase de Théo depuis le tableau ; demander le commit de ces règles sur une branche, son push et la PR vers `base`)
+- WIN-1 — `npm run check` vert sous Windows (machine de Théo) (relire et fusionner la PR de `theo/tests-windows`)
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (dire quoi faire des branches `main` et `preproduction` du dépôt annona)
 - ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
 - NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
@@ -53,7 +54,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Lot 1 : PR ouverte (https://github.com/orsocrtnt/annona/pull/1, branche `orso/lot1-retouches` poussée le 10 novembre). Bloquée : les vérifications exigées par `base` ne tournent pas, car les 4 automatisations GitHub Actions du dépôt sont « désactivées manuellement » (dont « Annona CI »). Décidé le 10 novembre : « Annona CI » réactivée sans déclenchement nocturne (la recette de préproduction ne part plus qu'à la main) ; les 3 tâches planifiées de préproduction restent désactivées. Fusionner quand les vérifications sont vertes. Relire aussi `docs/rapports/2026-11-10-lot1-recette.md` et dire si la recette Playwright dans Chrome suffit.
 
 **2. Théo**
-- Accepter l'invitation GitHub au dépôt `orsocrtnt/annona`, cloner, `npm install`, remplir `.env.local` (COLLAB-1).
+- Fait le 11 novembre : dépôt cloné, `.env.local` rempli et vérifié (COLLAB-1).
+- `npm run check` vert sous Windows (WIN-1) : branche `theo/tests-windows` poussée et PR ouverte (nuit du 11 novembre). Conseillé : passer à Node 22.18 comme la CI (Node 24 installé).
 
 **3. Claude (en autonomie, dans l'ordre)**
 - Lot 1 de demandes de modification (branche `orso/lot1-retouches`, sans push) : D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre ; 7 défauts trouvés et corrigés, rejeu complet vert. Rapport `docs/rapports/2026-11-10-lot1-recette.md`.
@@ -85,6 +87,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Invitations hors GitHub (10 novembre 2026, e-mail de Théo reçu, volontairement non écrit ici car le dépôt est public) : Supabase n'a ni commande CLI ni outil d'invitation, à faire par Orso dans le tableau. Vercel : sans objet pour l'instant, la seule équipe du compte est « TutelLiv » en offre Hobby (pas de membres possibles) et Annona n'y est pas rattaché (pas de `.vercel/`).
   - Non vérifié : invitation Supabase ; CI de la première PR sous protection.
   - Suite : Orso invite Théo sur Supabase ; une fois l'autre session terminée, commit des fichiers COLLAB-1 sur `orso/collab-deux-devs`, push et PR sur demande d'Orso ; Théo accepte l'invitation et installe le projet.
+
+- [ ] **WIN-1 — `npm run check` vert sous Windows (machine de Théo).**
+
+  **Qui : Orso — relire et fusionner la PR de `theo/tests-windows`.** **En cours : Théo.**
+
+  - Constat (11 novembre 2026, Windows 11, Node 24.22.1) : 12 tests sur 817 échouaient sur la machine de Théo, à l'identique sans aucun changement ; tous verts en CI (Linux, Node 22.18). Trois causes, toutes dans les tests, aucune dans l'application :
+    1. Chemins construits avec `\` sous Windows, comparés à des chemins en `/` : `admin01-no-impersonation` (ADMIN-1), `auth-role-real-guard` (AUTH-ROLE), `fact1-invoices` « Droits » (le filtre `/pdf/` ne marchait plus). Correction : séparateur ramené à `/`.
+    2. Proxy autour d'une `Request` qui passait le Proxy comme `this` : sous Node 24, `Request` range son état dans un champ privé `#state`, illisible ainsi (`admin01-platform-api-role`, `admin-espace-company-search`). Correction : lecture sur la vraie requête, fonctions liées à elle ; fonctionne sous Node 22 et 24.
+    3. Archive d'entreprise (DATA-02) : le service exige un dossier parent privé au sens POSIX (droits 0700, même propriétaire). Ces droits n'existent pas sous Windows, l'export y est donc toujours refusé (`ARCHIVE_PARENT_NOT_PRIVATE`) : comportement sûr, gardé tel quel (aucun contrôle de sécurité affaibli). Les 7 tests de l'archive sont sautés sous Windows seulement, et un test propre à Windows vérifie le refus (aucune lecture Storage, aucun fichier laissé).
+  - Vérifié sous Windows : les 6 fichiers de test concernés, 41 réussis, 7 sautés, 0 échec ; `npm run check` sortie 0 (810 tests, 803 réussis, 7 sautés, 0 échec).
+  - À noter : `package.json` exige Node `>=22.18 <23` et Théo a Node 24.22.1 (npm ne bloque pas, il prévient seulement). Les tests passent maintenant sous les deux ; pour coller à la CI, installer Node 22.18 chez Théo (par exemple avec `nvm-windows`) reste conseillé.
+  - Non vérifié : la CI de la PR (Linux, Node 22) au moment de l'écriture ; voir la PR.
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 

@@ -36,6 +36,9 @@ function snapshot(): CompanyArchiveSnapshot {
     ] }] }, externalAssets: { proofObjects: [{ stopId: "stopA", orderId: "orderA", objectKey: "companyA/stopA-123.png" }] },
   };
 }
+// Les droits POSIX (dossier 0700, propriétaire) n'existent pas sous Windows : le service y refuse toujours
+// l'export (ARCHIVE_PARENT_NOT_PRIVATE), vérifié par le test « Windows » en fin de fichier.
+const POSIX_ONLY = { skip: process.platform === "win32" ? "droits de fichiers POSIX absents sous Windows" : false };
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 async function context() {
   const parent = await mkdtemp(join(tmpdir(), "data02-unit-"));
@@ -49,7 +52,7 @@ async function context() {
   return { parent, data, reads, dependencies, cleanup: () => rm(parent, { recursive: true, force: true }) };
 }
 
-test("company archive preserves bytes and SHA256, private permissions and relational JSON", async () => {
+test("company archive preserves bytes and SHA256, private permissions and relational JSON", POSIX_ONLY, async () => {
   const c = await context();
   try {
     const result = await exportCompanyArchive("companyA", c.parent, { dependencies: c.dependencies });
@@ -115,7 +118,7 @@ function addSecond(s: CompanyArchiveSnapshot) {
   s.externalAssets.proofObjects.push({ stopId: "second", orderId: "orderB", objectKey: "companyA/second-123.jpg" });
 }
 
-test("company archive removes every partial file if a later object is missing or Storage fails", async () => {
+test("company archive removes every partial file if a later object is missing or Storage fails", POSIX_ONLY, async () => {
   for (const failure of [404, 500, "network", "stream"] as const) {
     const c = await context();
     addSecond(c.data);
@@ -132,7 +135,7 @@ test("company archive removes every partial file if a later object is missing or
   }
 });
 
-test("company archive enforces streamed/declared per-file sizes, total size, empty/truncated files", async () => {
+test("company archive enforces streamed/declared per-file sizes, total size, empty/truncated files", POSIX_ONLY, async () => {
   for (const scenario of ["declared", "streamed", "total", "empty", "truncated"] as const) {
     const c = await context();
     if (scenario === "total") addSecond(c.data);
@@ -148,7 +151,7 @@ test("company archive enforces streamed/declared per-file sizes, total size, emp
   }
 });
 
-test("company archive cancels timeout during body download and leaves no archive", async () => {
+test("company archive cancels timeout during body download and leaves no archive", POSIX_ONLY, async () => {
   const c = await context();
   let aborted = false;
   c.dependencies.download = async (_key, signal) => new Response(new ReadableStream({ start(controller) {
@@ -161,7 +164,7 @@ test("company archive cancels timeout during body download and leaves no archive
   } finally { await c.cleanup(); }
 });
 
-test("company archive rejects non-private folder, unsafe limits, oversized JSON/count and public bucket", async () => {
+test("company archive rejects non-private folder, unsafe limits, oversized JSON/count and public bucket", POSIX_ONLY, async () => {
   const c = await context();
   try {
     await chmod(c.parent, 0o755);
@@ -178,7 +181,7 @@ test("company archive rejects non-private folder, unsafe limits, oversized JSON/
   } finally { await c.cleanup(); }
 });
 
-test("company archive allows empty proof set without Storage and refuses missing company", async () => {
+test("company archive allows empty proof set without Storage and refuses missing company", POSIX_ONLY, async () => {
   const c = await context();
   c.data.data.rounds[0]!.stops[0]!.incidentPhotoPath = null;
   c.data.externalAssets.proofObjects = [];
@@ -191,7 +194,7 @@ test("company archive allows empty proof set without Storage and refuses missing
 });
 
 
-test("company archive succeeds exactly at binary limits and preserves an earlier archive on failure", async () => {
+test("company archive succeeds exactly at binary limits and preserves an earlier archive on failure", POSIX_ONLY, async () => {
   const c = await context();
   addSecond(c.data);
   try {
@@ -202,5 +205,14 @@ test("company archive succeeds exactly at binary limits and preserves an earlier
     await assert.rejects(exportCompanyArchive("companyA", c.parent, { dependencies: c.dependencies }), /ARCHIVE_PROOF_MISSING/);
     assert.equal((await readdir(c.parent)).length, 1);
     assert.deepEqual(await readFile(join(result.path, "manifest.json")), previous);
+  } finally { await c.cleanup(); }
+});
+
+test("company archive refuses to export on Windows, where private POSIX permissions cannot be checked", { skip: process.platform !== "win32" ? "Windows seulement" : false }, async () => {
+  const c = await context();
+  try {
+    await assert.rejects(exportCompanyArchive("companyA", c.parent, { dependencies: c.dependencies }), /ARCHIVE_PARENT_NOT_PRIVATE/);
+    assert.deepEqual(c.reads, []);
+    assert.deepEqual(await readdir(c.parent), []);
   } finally { await c.cleanup(); }
 });
