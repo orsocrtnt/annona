@@ -35,7 +35,7 @@ function filesUnder(root: string) {
   return readdirSync(root, { recursive: true })
     .map((entry) => entry.toString().split("\\").join("/"))
     .filter((entry) => entry.endsWith(".ts") || entry.endsWith(".tsx"))
-    .map((entry) => join(root, entry))
+    .map((entry) => join(root, entry).split("\\").join("/"))
     .sort();
 }
 

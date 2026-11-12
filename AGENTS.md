@@ -27,6 +27,7 @@ Annona devient une application de commande et de livraison B2B pour boulangerie 
 ## Travail à deux (Orso et Théo)
 - Deux développeurs codent en parallèle, chacun avec son agent : Orso (propriétaire du dépôt et des décisions produit) et Théo (Claude sans offre Max, et Cursor). « Le développeur » désigne celui qui pilote la session en cours.
 - Avant de commencer une tâche, vérifier dans `TODO.md` qu'elle n'est pas déjà prise : une tâche en cours porte « **En cours : Orso.** » ou « **En cours : Théo.** ». Ne jamais travailler sur une tâche prise par l'autre.
+- Garde-fou avant chaque push (COLLAB-2) : installer une fois par clone `npm run collab:install-hook`. Le hook `.githooks/pre-push` refuse le push si une branche non fusionnée de l'autre touche les mêmes fichiers (hors `TODO.md`, archive et `package-lock.json`, seulement signalés), travaille aussi dans `prisma/`, ou si la tâche annoncée est « En cours » chez l'autre ; il refuse aussi tout push direct sur `base`, `main` ou `preproduction`. Vérification à la main avant de commencer : `npm run collab:check`. En cas de blocage, en parler à l'autre ; contournement voulu seulement : `ANNONA_COLLAB_OK=1 git push`.
 - Schéma Prisma, migrations, `db:push`, `db:sync-schema`, `db:migrate` et seeds : un seul développeur à la fois sur `annona-dev`, annoncé dans la tâche avant de commencer. En cas de doute, demander au développeur.
 - Données de test préfixées par le prénom (`test-orso-…`, `test-theo-…`) ; ne jamais modifier ni supprimer celles de l'autre.
 

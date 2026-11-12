@@ -119,7 +119,8 @@ function loadGuard(db: Db) {
       if (hit) return hit.exports;
       const module = { exports: {} as Record<string, unknown> };
       cache.set(file, module);
-      loaded.push(file.slice(resolve("src").length + 1));
+      // Séparateur « / » sous Windows aussi, pour comparer aux chemins attendus.
+      loaded.push(file.slice(resolve("src").length + 1).split("\\").join("/"));
       const source = ts.transpileModule(readFileSync(file, "utf8"), {
         compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX },
       }).outputText;

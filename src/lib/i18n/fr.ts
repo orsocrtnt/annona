@@ -950,6 +950,13 @@ export const fr = {
     zoneClients: (count: number) => `${count} client${count > 1 ? "s" : ""}`,
     activate: (label: string) => `Activer ${label}`,
     deactivate: (label: string) => `Désactiver ${label}`,
+    deactivateTitle: (label: string) => `Désactiver la tournée « ${label} » ?`,
+    deactivateClientsWarning: (count: number) =>
+      count > 1
+        ? `${count} clients sont rattachés à cette tournée : ils ne pourront plus commander tant qu'ils ne sont pas rattachés à une autre tournée active.`
+        : "1 client est rattaché à cette tournée : il ne pourra plus commander tant qu'il n'est pas rattaché à une autre tournée active.",
+    deactivateLastWarning: "C'est la dernière tournée active : plus aucun client ne pourra commander.",
+    deactivateConfirm: "Désactiver quand même",
     remove: (label: string) => `Supprimer ${label}`,
     editZone: (label: string) => `Enregistrer ${label}`,
     categories: "Catégories",

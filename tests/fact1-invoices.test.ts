@@ -525,7 +525,10 @@ test("FACT-1 : une commande facturée ne se corrige plus (refus explicite, avoir
 });
 
 function routeFiles(dir: string): string[] {
-  return readdirSync(dir, { recursive: true }).map((entry) => join(dir, entry.toString())).filter((file) => file.endsWith("route.ts"));
+  // Séparateur « / » sous Windows aussi : le filtre « /pdf/ » en dépend.
+  return readdirSync(dir, { recursive: true })
+    .map((entry) => join(dir, entry.toString()).split("\\").join("/"))
+    .filter((file) => file.endsWith("route.ts"));
 }
 
 test("Droits : factures réservées à l'ADMIN (back-office) et au MERCHANT propriétaire (portail) ; BAKER et DRIVER refusés", () => {
