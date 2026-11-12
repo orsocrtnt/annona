@@ -10,7 +10,7 @@
 
 **À faire par Claude**
 
-- RECETTE-V1 — Recette des dix critères (en dernier)
+- Rien pour l'instant
 
 **À faire par Orso**
 
@@ -18,7 +18,6 @@
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (dire quoi faire des branches `main` et `preproduction` du dépôt annona)
 - ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
 - NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
-- MOBILE-1 — Applications iOS et Android (Capacitor) (hébergement UE, comptes Apple et Google, Firebase, Xcode et Android Studio (liste ci-dessous) ; ensuite Claude)
 - LOT1-D1 — Tournées avec livraison du matin et du soir (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
 - LOT1-D8 — Consignes d'accès modifiables par le client (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
 - LOT1-D7 — Recherche d'article dans la commande récurrente (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
@@ -27,37 +26,46 @@
 - LOT1-D2 — Promotions (fins de série et autres) (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
 - LOT1-D4 — Comptes « mini admin » (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
 - LOT1-D5 — Onglet de suivi des livreurs (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D9 — Vérification sur téléphone et lenteur (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et dire si elle suffit ; vrais téléphones si disponibles)
+- LOT1-D9 — Vérification sur téléphone et lenteur (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), puis accélérer le tableau de bord admin (3,3 s). Théo — mesure sur un vrai Android avec l'APK de MOBILE-1)
 - LOT1-RECETTE — Tests directs dans Chrome de tout le lot 1 (relire le rapport ; pour le passage avec l'extension Claude in Chrome, te connecter toi-même dans l'onglet (le garde-fou refuse que Claude lise les mots de passe de démo) ou dire si Playwright dans Chrome suffit)
 
 **À faire par Théo**
 
-- Rien pour l'instant
+- MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
+- RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Orso — N1 (tournée) ; Claude — recette finale en dernier)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 11 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 12 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
+**Répartition du 12 novembre 2026 (pour se toucher le moins possible)** : chacun a sa zone de fichiers, et un agent ne modifie pas la zone de l'autre sans le prévenir.
+- Zone d'Orso : écrans et routes du back-office et du portail (`src/app/(back-office)/`, `src/app/api/dashboard/`, `src/features/` hors natif), domaines commande et tournée (`src/domains/`), `src/components/auth/`, `src/components/layouts/`, `src/app/globals.css`, `ios/` (seul Mac), `prisma/` (aucun changement de schéma prévu ; sinon annonce dans la tâche).
+- Zone de Théo : mobile Android et natif (`android/`, `mobile/`, `src/lib/native/`, `public/sw.js`, `capacitor.config.ts`, `docs/MOBILE.md`), outillage du travail à deux (`scripts/collab/`), specs E2E hors lot 1 (`tests/e2e/` sauf `lot1-*`).
+- Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
+
 **1. Orso**
-- Relire et fusionner la PR de `theo/todo-nuit` : elle regroupe les PR #2 à #6 de la nuit du 11 novembre (garde-fou de push, tests sous Windows, erreur `getZoom` de la carte, skill de recette, avertissement avant de désactiver une tournée) ; les fusionner une par une marche aussi. Puis lancer une fois `npm run collab:install-hook` (COLLAB-2).
-- Envoyer à Théo `outputs/comptes-demo.md` par un canal sûr : il n'a que le compte admin, donc pas de recette connectée client, boulanger ni livreur.
-- Inviter Théo dans l'organisation Supabase qui contient `annona-dev` (COLLAB-1).
-- Relire la recette du lot 1 (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher LOT1-D1 à D9 et LOT1-RECETTE si elle suffit.
-- Répondre aux questions ouvertes du cahier des charges (ACCES-1) : créneaux du premier client, délai du rappel avant 17h, volumes à deux ans, service de cartographie.
-- Fournir les mentions légales des factures (SIREN, TVA, forme juridique et capital, RCS, pénalités, escompte) et une clé Resend pour les vrais envois (ACCES-1, NOTIF-1).
-- Dire quoi faire des branches `main` et `preproduction` du dépôt annona, qui portent encore TutelLiv (SEP-1).
+- Lancer une fois `npm run collab:install-hook` (COLLAB-2) : les PR #2 à #7 de Théo sont relues et fusionnées depuis le 12 novembre.
+- Envoyer à Théo `outputs/comptes-demo.md` par un canal sûr (débloque ses recettes connectées et `v1-roles.spec.ts`), et l'inviter dans l'organisation Supabase qui contient `annona-dev` (COLLAB-1).
+- Valider ou corriger les deux décisions produit prises par Théo le 11 novembre (RECETTE-V1) : l'outre-mer n'est pas en V1 (N3, « Aujourd'hui » à l'heure de Paris) ; avertir sans bloquer avant de désactiver une tournée qui coupe des clients.
+- Lot 1 : relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), faire ou faire faire le passage dans Chrome (LOT1-RECETTE), corriger ce qu'il trouve, puis cocher LOT1-D1 à D8 et LOT1-RECETTE.
+- LOT1-D9 (code) : tableau de bord admin à 3,3 s, seul écran au-dessus de 3 s : mesurer puis réduire (`src/app/(back-office)/dashboard`, `src/app/api/dashboard`).
+- RECETTE-V1 N1 : arrêt remis en attente par l'admin pendant l'état « sent », à vérifier en vrai (domaine tournée).
+- Accès : réponses du cahier des charges, mentions légales des factures, clé Resend (ACCES-1) ; puis envoi réel d'un e-mail de test (NOTIF-1). Dire quoi faire de `main` et `preproduction` (SEP-1).
+- Plus tard, après la PR Android de Théo : compilation et essai iOS sur son Mac (MOBILE-1).
 
 **2. Théo**
+- MOBILE-1, Android sur sa machine : `npx cap sync android`, APK de test, essai sur émulateur ou téléphone (outils déjà installés).
+- RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
+- LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
+- COLLAB-2, petit défaut : hors d'une branche `<prénom>/…`, `collab:check` déduit le prénom de `git config user.name` (« orsocrtnt » chez Orso) ; faire correspondre ce nom à « orso » (détail dans l'archive, COLLAB-2).
+- RECETTE-V1, dès réception des comptes de démo : réécrire `tests/e2e/v1-roles.spec.ts` sur les comptes du seed (il appelle `POST /api/demo/persona`, retirée) ou le supprimer, puis recettes connectées client, boulanger et livreur.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
-**3. Claude (en autonomie, dans l'ordre)**
-- MOBILE-1, Android sur la machine de Théo : outils installés ; reste `npx cap sync android`, compilation de l'APK de test, essai sur émulateur ou téléphone.
-- RECETTE-V1 : réécrire ou supprimer `tests/e2e/v1-roles.spec.ts` (appelle `POST /api/demo/persona`, retirée).
-- LOT1-D9 : tableau de bord admin à 3,3 s, seul écran au-dessus de 3 s : mesurer puis réduire.
-- Recettes connectées client, boulanger et livreur dès que les comptes de démo sont chez Théo.
+**3. Claude**
+- Chaque agent travaille pour son développeur, dans sa zone ci-dessus. Recette finale des dix critères (RECETTE-V1) en dernier, après MOBILE-1, NOTIF-1 et ACCES-1.
 
 **4. Attente extérieure**
 - Applications mobiles (MOBILE-1) : hébergement UE, comptes Apple Developer et Google Play, Firebase, composant iOS de Xcode ou vrais téléphones (liste ordonnée dans la tâche).
@@ -119,7 +127,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Orso — hébergement UE, comptes Apple et Google, Firebase, Xcode et Android Studio (liste ci-dessous) ; ensuite Claude.**
+  **Qui : Théo — Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -135,7 +143,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  **Qui : Claude — en dernier.**
+  **Qui : Théo — réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Orso — N1 (tournée) ; Claude — recette finale en dernier.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -152,13 +160,13 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
 
-_D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre au soir et fusionnées dans `base` (PR #1). Reste : la relecture d'Orso de chaque demande. Notes pour la suite : D4 — TutelLiv rangeait les modules du mini admin dans `User.settings.miniAdmin.modules` et filtrait les permissions à la lecture (`filterMiniAdminPermissions`, `git show 0475b8d:src/lib/permissions/mini-admin.ts`) ; la liste des tournées (`GET /api/company/zones`) exige `settings:read`, à ouvrir aussi à `merchants:read` pour un mini admin « comptes » sans « paramètres ». D5 — `DriverLocation` (dernière position, `updatedAt`) et `/api/maps/route` existent déjà ; TutelLiv avait `deliveries-live-map.tsx` (`git show 0475b8d:src/components/maps/deliveries-live-map.tsx`). D9 — mesurer « avant » avant toute correction de lenteur. Appliquer les migrations : passer par le pooler en mode session (port 5432 de `DATABASE_URL`), la connexion directe `db.…supabase.co` est injoignable d'ici._
+_D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre au soir et fusionnées dans `base` (PR #1). Reste : la relecture d'Orso de chaque demande. Notes pour la suite : D4 — TutelLiv rangeait les modules du mini admin dans `User.settings.miniAdmin.modules` et filtrait les permissions à la lecture (`filterMiniAdminPermissions`, `git show 0475b8d:src/lib/permissions/mini-admin.ts`) ; la liste des tournées (`GET /api/company/zones`) exige `settings:read`, à ouvrir aussi à `merchants:read` pour un mini admin « comptes » sans « paramètres ». D5 — `DriverLocation` (dernière position, `updatedAt`) et `/api/maps/route` existent déjà ; TutelLiv avait `deliveries-live-map.tsx` (`git show 0475b8d:src/components/maps/deliveries-live-map.tsx`). D9 — mesurer « avant » avant toute correction de lenteur. Appliquer les migrations : passer par le pooler en mode session (port 5432 de `DATABASE_URL`), la connexion directe `db.…supabase.co` est injoignable d'ici. Rejouer la recette : serveur de production sur le port 3110 (`next build`, puis `next start`), `npx dotenv -e .env.local -- npx tsx scripts/e2e/lot1-d5-round-fixture.ts` (avant minuit heure de Paris), puis `E2E_BASE_URL=http://localhost:3110 E2E_SKIP_WEB_SERVER=1 PLAYWRIGHT_CHANNEL=chrome npx dotenv -e .env.local -- npx playwright test tests/e2e/lot1-recette.spec.ts --workers=1` (`CLEAN_DELETE=1 … -g CLEAN` supprime les comptes `e2e-`), et finir par `npm run db:seed`._
 
 _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, ordre imposé : 1, puis 8, 7, 6, 3, puis 2, 4, puis 5, puis 9). Branche `orso/lot1-retouches`, un commit par demande, fusionnée dans `base` (PR #1). Migrations du lot appliquées sur `annona-dev` le 10 novembre ; toute nouvelle migration ou seed s'annonce d'abord dans sa tâche (`AGENTS.md`)._
 
 - [ ] **LOT1-D1 — Tournées avec livraison du matin et du soir.**
 
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.** **En cours : Orso.**
+  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
 
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : tournée créée puis supprimée, Matin et Soir seuls, deux commandes le même jour, groupes « Sud matin » chez le boulanger. Défaut majeur trouvé puis corrigé (commande du soir qui reprenait les articles du matin, `cart-sync.ts`) et client sans tournée rendu inactif. Vérification 4 (16h59/17h00) : tests en mémoire seulement.
 
@@ -237,7 +245,7 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 
 - [ ] **LOT1-D9 — Vérification sur téléphone et lenteur.**
 
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et dire si elle suffit ; vrais téléphones si disponibles.**
+  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), puis accélérer le tableau de bord admin (3,3 s). Théo — mesure sur un vrai Android avec l'APK de MOBILE-1.**
 
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : Décision d'Orso appliquée (`cb442e1`). Deuxième mesure avec les écrans du lot 1 : médianes 2,1 s à l'ouverture, 1,0 s en navigation, 25/26 écrans sous 3 s (tableau de bord admin 3,3 s), aucun débordement ; gain propre à la décision non isolé (base plus rapide ce soir-là). Reste : vrais iPhone et Android.
 
