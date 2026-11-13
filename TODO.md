@@ -14,7 +14,6 @@
 
 **À faire par Orso**
 
-- COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (inviter Théo dans l'organisation Supabase qui contient `annona-dev`)
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (dire quoi faire des branches `main` et `preproduction` du dépôt annona)
 - ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
 - NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
@@ -30,6 +29,7 @@
 
 **À faire par Théo**
 
+- COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (accepter l'invitation Supabase reçue par e-mail le 12 novembre)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
@@ -48,13 +48,14 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Orso**
 - Lancer une fois `npm run collab:install-hook` (COLLAB-2) : les PR #2 à #7 de Théo sont relues et fusionnées depuis le 12 novembre.
-- Envoyer à Théo `outputs/comptes-demo.md` par un canal sûr (débloque ses recettes connectées et `v1-roles.spec.ts`), et l'inviter dans l'organisation Supabase qui contient `annona-dev` (COLLAB-1).
+- Envoyer à Théo `outputs/comptes-demo.md` par un canal sûr (débloque ses recettes connectées et `v1-roles.spec.ts`). Invitation Supabase envoyée le 12 novembre (COLLAB-1).
 - Valider ou corriger les deux décisions produit prises par Théo le 11 novembre (RECETTE-V1) : l'outre-mer n'est pas en V1 (N3, « Aujourd'hui » à l'heure de Paris) ; avertir sans bloquer avant de désactiver une tournée qui coupe des clients.
 - Lot 1 : relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), faire ou faire faire le passage dans Chrome (LOT1-RECETTE), corriger ce qu'il trouve, puis cocher LOT1-D1 à D8 et LOT1-RECETTE.
 - Accès : réponses du cahier des charges, mentions légales des factures, clé Resend (ACCES-1) ; puis envoi réel d'un e-mail de test (NOTIF-1). Dire quoi faire de `main` et `preproduction` (SEP-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur son Mac (MOBILE-1).
 
 **2. Théo**
+- Accepter l'invitation Supabase reçue par e-mail (organisation qui contient `annona-dev`, rôle Developer, COLLAB-1).
 - MOBILE-1, Android sur sa machine : `npx cap sync android`, APK de test, essai sur émulateur ou téléphone (outils déjà installés).
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
@@ -82,10 +83,10 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo).**
 
-  **Qui : Orso — inviter Théo dans l'organisation Supabase qui contient `annona-dev`.**
+  **Qui : Théo — accepter l'invitation Supabase reçue par e-mail le 12 novembre.**
 
   - Fait : Théo (`theoner13`) collaborateur du dépôt en écriture (10 novembre) ; `base` protégée (PR obligatoire, contrôles « Contrôles sans secrets » et « Migrations sur PostgreSQL neuf », branche à jour, sans force-push) ; règles « Travail à deux » et « Branche et publication » dans `AGENTS.md` et `.cursor/rules/contexte-markdown.mdc`, listes par personne dans `npm run todo:progress`, le tout fusionné avec la PR #1, première PR sous protection, CI verte ; Théo a cloné le dépôt, rempli et vérifié `.env.local` (11 novembre) ; garde-fou de push : COLLAB-2 (archivée).
-  - Reste : l'invitation Supabase de Théo, seulement depuis le tableau (Organization › Team › Invite, rôle Developer : ni CLI ni API d'invitation). Vercel sans objet pour l'instant (seule équipe du compte : « TutelLiv », offre Hobby).
+  - 12 novembre 2026 (session Claude d'Orso, Chrome) : invitation envoyée depuis le tableau Supabase (organisation « orsocrtnt's Org » › Team › Invite members, rôle Developer, adresse confirmée par Orso et volontairement non écrite ici car le dépôt est public). Tableau : « Successfully sent invitation », Théo listé « Invited » en Developer. Reste : Théo accepte l'invitation ; la tâche se coche quand il voit `annona-dev` dans son tableau Supabase. Vercel sans objet pour l'instant (seule équipe du compte : « TutelLiv », offre Hobby).
   - Note pour Théo : `DIRECT_URL` passe par le pooler, port 5432 (l'adresse directe n'est joignable qu'en IPv6).
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
