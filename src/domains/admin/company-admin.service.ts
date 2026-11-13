@@ -64,18 +64,70 @@ async function uniqueSlug(db: CompanyAdminDb, name: string) {
   throw new DomainRuleError(409, "Nom d'entreprise déjà utilisé.", "COMPANY_SLUG_TAKEN");
 }
 
+/** Contrôles communs avant de créer une entreprise : adresse libre, rôle admin présent, identifiant unique. */
+export async function prepareCompanyCreation(db: CompanyAdminDb, name: string, adminEmail: string) {
+  if (await db.user.findFirst({ where: { email: adminEmail }, select: { id: true } })) {
+    throw new DomainRuleError(409, "Cet e-mail est déjà utilisé par un compte.", "EMAIL_EXISTS");
+  }
+  const role = await db.role.findFirst({ where: { slug: "admin" } });
+  if (!role) throw new Error("ROLE_NOT_FOUND");
+  const slug = await uniqueSlug(db, name);
+  return { roleId: role.id, slug };
+}
+
+export interface NewCompanyRecords {
+  name: string;
+  slug: string;
+  roleId: string;
+  /** ACTIVE par le super admin (PLA-02) ; TRIAL pour une inscription autonome (AUTH-GOOGLE). */
+  companyStatus: "ACTIVE" | "TRIAL";
+  cutoffTime: string;
+  timezone: string;
+  reminderLeadMinutes: number;
+  admin: { firstName: string; lastName: string; email: string };
+  authId: string;
+  userStatus: "ACTIVE" | "PENDING_VERIFICATION";
+}
+
+/** Entreprise, créneaux par défaut et premier administrateur, en une seule transaction. */
+export async function insertCompanyWithAdmin(db: CompanyAdminDb, input: NewCompanyRecords) {
+  return db.$transaction(async (tx) => {
+    const company = await tx.company.create({
+      data: {
+        name: input.name,
+        slug: input.slug,
+        status: input.companyStatus,
+        cutoffTime: input.cutoffTime,
+        timezone: input.timezone,
+        reminderLeadMinutes: input.reminderLeadMinutes,
+        settings: {},
+      },
+    });
+    await tx.slot.createMany({
+      data: DEFAULT_SLOTS.map((slot, index) => ({ companyId: company.id, startTime: slot.startTime, endTime: slot.endTime, active: true, sortOrder: index })),
+    });
+    const user = await tx.user.create({
+      data: {
+        authId: input.authId,
+        email: input.admin.email,
+        firstName: input.admin.firstName,
+        lastName: input.admin.lastName,
+        roleId: input.roleId,
+        companyId: company.id,
+        status: input.userStatus,
+      },
+    });
+    return { companyId: company.id, adminUserId: user.id };
+  });
+}
+
 export async function createCompanyWithAdmin(
   input: CreateCompanyInput,
   deps: { db?: CompanyAdminDb; inviter?: AuthInviter } = {}
 ): Promise<{ companyId: string; adminUserId: string; invited: boolean }> {
   const db = deps.db ?? defaultDb();
   const inviter = deps.inviter ?? supabaseInviter;
-  if (await db.user.findFirst({ where: { email: input.admin.email }, select: { id: true } })) {
-    throw new DomainRuleError(409, "Cet e-mail est déjà utilisé par un compte.", "EMAIL_EXISTS");
-  }
-  const role = await db.role.findFirst({ where: { slug: "admin" } });
-  if (!role) throw new Error("ROLE_NOT_FOUND");
-  const slug = await uniqueSlug(db, input.name);
+  const { roleId, slug } = await prepareCompanyCreation(db, input.name, input.admin.email);
 
   let account: InvitedAccount;
   try {
@@ -88,34 +140,19 @@ export async function createCompanyWithAdmin(
   }
 
   try {
-    return await db.$transaction(async (tx) => {
-      const company = await tx.company.create({
-        data: {
-          name: input.name,
-          slug,
-          status: "ACTIVE",
-          cutoffTime: input.cutoffTime,
-          timezone: input.timezone,
-          reminderLeadMinutes: input.reminderLeadMinutes,
-          settings: {},
-        },
-      });
-      await tx.slot.createMany({
-        data: DEFAULT_SLOTS.map((slot, index) => ({ companyId: company.id, startTime: slot.startTime, endTime: slot.endTime, active: true, sortOrder: index })),
-      });
-      const user = await tx.user.create({
-        data: {
-          authId: account.authId,
-          email: input.admin.email,
-          firstName: input.admin.firstName,
-          lastName: input.admin.lastName,
-          roleId: role.id,
-          companyId: company.id,
-          status: "PENDING_VERIFICATION",
-        },
-      });
-      return { companyId: company.id, adminUserId: user.id, invited: account.invited };
+    const created = await insertCompanyWithAdmin(db, {
+      name: input.name,
+      slug,
+      roleId,
+      companyStatus: "ACTIVE",
+      cutoffTime: input.cutoffTime,
+      timezone: input.timezone,
+      reminderLeadMinutes: input.reminderLeadMinutes,
+      admin: input.admin,
+      authId: account.authId,
+      userStatus: "PENDING_VERIFICATION",
     });
+    return { ...created, invited: account.invited };
   } catch (error) {
     // Aucune entreprise à moitié créée : le compte d'authentification est retiré.
     await inviter.remove(account.authId).catch(() => undefined);

@@ -37,6 +37,8 @@ const PUBLIC_ROUTES: Record<string, string> = {
   "auth/password-recovery/route.ts": "demande de réinitialisation (réponse identique, compte existant ou non)",
   "auth/sync/route.ts": "synchronisation du compte de la session Supabase vérifiée",
   "auth/session/route.ts": "contexte de la session courante seulement (getServerAuth)",
+  "auth/signup/route.ts": "AUTH-GOOGLE : inscription d'une boulangerie par e-mail (nouvelle entreprise « Essai », réponse identique, compte existant ou non)",
+  "auth/signup/google/route.ts": "AUTH-GOOGLE : fin d'inscription avec Google (adresse et identifiant relus dans la session Supabase, nouvelle entreprise seulement)",
   "health/route.ts": "état du service, sans donnée",
   "addresses/search/route.ts": "géocodage d'une adresse saisie (base nationale), sans donnée d'entreprise",
 };

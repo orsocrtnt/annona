@@ -29,6 +29,8 @@ import type { LoginContext } from "@/features/auth/login-space";
 import { useApplyLoginSession } from "@/features/auth/login-session";
 import { AUTH_TIMEOUT_MESSAGE, RequestTimeoutError, requestJsonWithTimeout } from "@/features/auth/request-timeout";
 import { createSubmitGuard } from "@/features/auth/submit-guard";
+import { GoogleButton, GoogleDivider } from "@/features/auth/google-button";
+import { loginNotice } from "@/features/auth/login-notice";
 
 type AuthMode = "login" | "forgot-password" | "reset-password";
 type PasswordLink =
@@ -44,6 +46,28 @@ function LoginEmailPrefill({ form }: { form: UseFormReturn<LoginInput> }) {
   }, [searchParams, form]);
 
   return null;
+}
+
+/** AUTH-GOOGLE : message au retour de Google ou d'un lien de confirmation (`?google=`, `?confirmation=`). */
+function LoginNoticeAlert() {
+  const searchParams = useSearchParams();
+  const notice = loginNotice(searchParams);
+  if (!notice) return null;
+  return (
+    <Alert variant={notice.variant} className="mt-6">
+      <AlertDescription>
+        {notice.message}
+        {notice.signupLink && (
+          <>
+            {" "}
+            <Link href="/inscription" className="font-medium underline underline-offset-2">
+              Vous êtes une boulangerie ? Créez votre compte.
+            </Link>
+          </>
+        )}
+      </AlertDescription>
+    </Alert>
+  );
 }
 
 interface AuthFormProps {
@@ -242,9 +266,15 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           {isInvitedUser && mode === "login" && (
             <Alert variant="info" className="mt-5">
               <AlertDescription>
-                La création de compte est réservée à votre administrateur. Utilisez votre e-mail et le mot de passe choisi lors de votre invitation.
+                La création de compte est réservée à votre administrateur. Utilisez votre e-mail et le mot de passe choisi lors de votre invitation, ou Google avec la même adresse.
               </AlertDescription>
             </Alert>
+          )}
+
+          {mode === "login" && (
+            <Suspense fallback={null}>
+              <LoginNoticeAlert />
+            </Suspense>
           )}
 
           {error && (
@@ -264,7 +294,12 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
 
           {mode === "login" && (
             // method="post" : un envoi avant l'hydratation ne met jamais le mot de passe dans l'URL.
-            <form method="post" onSubmit={loginForm.handleSubmit(onLogin)} className="mt-7 space-y-5" noValidate>
+            <>
+            <div className="mt-7 space-y-5">
+              <GoogleButton intent="login" onError={setError} />
+              <GoogleDivider />
+            </div>
+            <form method="post" onSubmit={loginForm.handleSubmit(onLogin)} className="mt-5 space-y-5" noValidate>
               <Suspense fallback={null}>
                 <LoginEmailPrefill form={loginForm} />
               </Suspense>
@@ -298,6 +333,15 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 Se connecter
               </Button>
             </form>
+            {loginContext === "company" && (
+              <p className="mt-6 text-center text-sm text-text-secondary">
+                Vous êtes une boulangerie ?{" "}
+                <Link href="/inscription" className="inline-flex min-h-11 items-center font-medium text-brand hover:underline">
+                  Créer votre compte
+                </Link>
+              </p>
+            )}
+            </>
           )}
 
           {mode === "forgot-password" && (

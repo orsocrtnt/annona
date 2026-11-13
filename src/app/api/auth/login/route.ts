@@ -99,10 +99,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Confirmez votre adresse e-mail avant de vous connecter." }, { status: 403 });
     }
 
-    const user = await syncUserFromSupabase({
-      authId: authUser.id,
-      email: authUser.email!,
-    });
+    // Adresse confirmée (vérifié ci-dessus) : une boulangerie inscrite par e-mail devient active ici
+    // si son lien de confirmation a été ouvert dans un autre navigateur (AUTH-GOOGLE).
+    const user = await syncUserFromSupabase(
+      { authId: authUser.id, email: authUser.email! },
+      { activatePending: true }
+    );
 
     assertAccountActive(user);
     const permissions = extractPermissionSlugs(user);
