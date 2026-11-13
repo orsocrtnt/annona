@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**20 tâches terminées sur 28 — 71 %**
+**21 tâches terminées sur 28 — 75 %**
 
-`██████████████░░░░░░` · 8 tâches restantes
+`███████████████░░░░░` · 7 tâches restantes
 
 **À faire par Claude**
 
@@ -18,7 +18,6 @@
 
 **À faire par Théo**
 
-- COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (accepter l'invitation Supabase reçue par e-mail le 12 novembre)
 - ACCES-1 — Accès et réponses du propriétaire (créneaux du premier client et volumes à deux ans (questions métier). Orso — mentions légales des factures, plus tard)
 - NOTIF-1 — Notifications (mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
@@ -48,7 +47,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
 - Questions métier (décision d'Orso du 12 novembre : le métier se voit avec Théo) : créneaux du premier client et volumes à deux ans (ACCES-1).
 - Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
-- Accepter l'invitation Supabase reçue par e-mail (organisation qui contient `annona-dev`, rôle Developer, COLLAB-1).
 - MOBILE-1, Android sur sa machine : `npx cap sync android`, APK de test, essai sur émulateur ou téléphone (outils déjà installés).
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
@@ -73,14 +71,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 ## Tâches ouvertes
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
-
-- [ ] **COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo).**
-
-  **Qui : Théo — accepter l'invitation Supabase reçue par e-mail le 12 novembre.**
-
-  - Fait : Théo (`theoner13`) collaborateur du dépôt en écriture (10 novembre) ; `base` protégée (PR obligatoire, contrôles « Contrôles sans secrets » et « Migrations sur PostgreSQL neuf », branche à jour, sans force-push) ; règles « Travail à deux » et « Branche et publication » dans `AGENTS.md` et `.cursor/rules/contexte-markdown.mdc`, listes par personne dans `npm run todo:progress`, le tout fusionné avec la PR #1, première PR sous protection, CI verte ; Théo a cloné le dépôt, rempli et vérifié `.env.local` (11 novembre) ; garde-fou de push : COLLAB-2 (archivée).
-  - 12 novembre 2026 (session Claude d'Orso, Chrome) : invitation envoyée depuis le tableau Supabase (organisation « orsocrtnt's Org » › Team › Invite members, rôle Developer, adresse confirmée par Orso et volontairement non écrite ici car le dépôt est public). Tableau : « Successfully sent invitation », Théo listé « Invited » en Developer. Reste : Théo accepte l'invitation ; la tâche se coche quand il voit `annona-dev` dans son tableau Supabase. Vercel sans objet pour l'instant (seule équipe du compte : « TutelLiv », offre Hobby).
-  - Note pour Théo : `DIRECT_URL` passe par le pooler, port 5432 (l'adresse directe n'est joignable qu'en IPv6).
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
