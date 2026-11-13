@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **19** : COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **3** : COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **2** : DEMO-1, SEP-1 | **7** : ACCES-1, NOTIF-1, MOBILE-1, RECETTE-V1, HEB-1, AUTH-GOOGLE, LOT1-D9 |
+| À faire | **3** : DEMO-1, SEP-1, ACCES-1 | **6** : NOTIF-1, MOBILE-1, RECETTE-V1, HEB-1, AUTH-GOOGLE, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -23,11 +23,11 @@
 
 - DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
+- ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 
 **À faire par Théo**
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
-- ACCES-1 — Accès et réponses du propriétaire (volume total à deux ans (nombre de livreurs ou de clients, arrêts par jour en tout). Orso — mentions légales des factures, plus tard)
 - NOTIF-1 — Notifications (mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
@@ -49,7 +49,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **1. Orso**
 - AUTH-GOOGLE : inscription avec Google essayée en vrai et réussie le 13 novembre (boulangerie « TEST 1 » sur `annona-dev`). Pour l'essayer en local : `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, port 3000.
 - Version de démo d'Annona comme celle de TutelLiv (DEMO-1).
-- Tournées : relever `ROUND_MAX_STOPS` (30, `src/domains/order/round-generation.ts`) vers 70 ou le rendre réglable, car un livreur fait 60 à 70 arrêts (réponse métier de Théo, ACCES-1).
+- Tournées : relever `ROUND_MAX_STOPS` (30, `src/domains/order/round-generation.ts`) à 110 au minimum, un livreur = une tournée (réponses métier de Théo du 13 novembre, ACCES-1). Vérifier aussi que 110 arrêts tiennent dans la durée de la plage (110 × 3 min ≈ 5h30 plus les trajets, plage du matin de 7h).
 - Plus tard : mentions légales des factures (ACCES-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
@@ -57,7 +57,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **2. Théo**
 - Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
 - AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
-- Questions métier (ACCES-1) : plages (matin 5h30-12h30, après-midi 15h-19h) et volumes par livreur (60-70 arrêts, 15-20 produits par livraison) répondus le 13 novembre. Reste le volume total à deux ans (nombre de livreurs ou de clients).
+- Questions métier (ACCES-1) : répondues le 13 novembre (plages matin 5h30-12h30 et après-midi 15h-19h ; 60-70 arrêts par livreur, 15-20 produits par livraison ; 200 points par jour au plus ; un livreur = une tournée, au moins 110 points).
 - Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
 - MOBILE-1, Android sur sa machine : `npx cap sync android` fait le 13 novembre (8 modules natifs). Bloqué pour l'APK : ni Java (JDK 21) ni émulateur installés (seul le SDK Android est là). Installer Android Studio complet (Java inclus) ou un JDK 21 et un émulateur, puis APK de test.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
@@ -104,11 +104,11 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
-  **Qui : Théo — volume total à deux ans (nombre de livreurs ou de clients, arrêts par jour en tout). Orso — mentions légales des factures, plus tard.**
+  **Qui : Orso — mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre).**
 
   - Réponses de Théo du 13 novembre 2026 (questions métier) : livraison par plage horaire, en deux tournées : **matin de 5h30 à 12h30**, **après-midi de 15h à 19h**. Par livreur : **60 à 70 points de livraison** en moyenne par tournée, **15 à 20 produits** par livraison.
   - Contrôle du code par Claude (13 novembre) : les deux plages sont acceptées par les tournées du lot 1 (`delivery-zone.service.ts`, le soir commence après le matin) ; 15 à 20 produits restent loin de `MAX_ORDER_LINES` (300). **Écart** : `ROUND_MAX_STOPS = 30` (`src/domains/order/round-generation.ts`) coupe en deux ou trois tournées un livreur à 60-70 arrêts ; à relever vers 70 (ou rendre réglable) par Orso, zone `src/domains/`. Durée : 65 arrêts × 3 min (`ROUND_STOP_SECONDS`) ≈ 3h15 plus les trajets, compatible avec la plage du matin. Les zones de démo du seed (5h30-11h, 16h-19h) diffèrent de ces plages : sans effet sur le code, à aligner si Orso le souhaite.
-  - Non répondu : volume total à deux ans (combien de livreurs ou de clients, donc d'arrêts par jour en tout), utile pour chiffrer la cartographie (seuil de 200 arrêts par jour noté par Orso).
+  - Complément de Théo (13 novembre) : **jamais plus de 200 points de livraison par jour** en tout (sous le seuil noté par Orso pour la cartographie) ; **un livreur = une tournée**, et une tournée doit pouvoir compter **au moins 110 points**. Donc `ROUND_MAX_STOPS` (30) doit passer à 110 au minimum, et la génération ne doit pas couper la charge d'un livreur en plusieurs tournées.
 
   - Réponses d'Orso du 12 novembre 2026 (questionnaire) : cartographie : services gratuits (OSRM et IGN publics) pour l'instant, une solution pour 200 arrêts par jour sera chiffrée plus tard ; rappel avant l'heure limite : 15h, la valeur par défaut actuelle ; créneaux du premier client et volumes à deux ans : questions métier, à voir avec Théo ; mentions légales : plus tard ; Resend : le compte de Théo (NOTIF-1).
 
