@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **4** : NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **3** : DEMO-1, SEP-1, ACCES-1 | **5** : MOBILE-1, RECETTE-V1, HEB-1, AUTH-GOOGLE, LOT1-D9 |
+| À faire | **4** : DEMO-1, SEP-1, ACCES-1, AUTH-GOOGLE | **4** : MOBILE-1, RECETTE-V1, HEB-1, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -24,13 +24,13 @@
 - DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 
 **À faire par Théo**
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
-- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
@@ -55,7 +55,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **2. Théo**
 - Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
-- AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
+- AUTH-GOOGLE : fait le 13 novembre (adresse inconnue refusée, compte créé par l'admin connecté avec Google, passé « Actif »). Plus rien pour toi ; reste le SMTP côté Orso.
 - Questions métier (ACCES-1) : répondues le 13 novembre (plages matin 5h30-12h30 et après-midi 15h-19h ; 60-70 arrêts par livreur, 15-20 produits par livraison ; 200 points par jour au plus ; un livreur = une tournée, au moins 110 points).
 - MOBILE-1, Android sur sa machine : `npx cap sync android` fait le 13 novembre (8 modules natifs). Bloqué pour l'APK : ni Java (JDK 21) ni émulateur installés (seul le SDK Android est là). Installer Android Studio complet (Java inclus) ou un JDK 21 et un émulateur, puis APK de test.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
@@ -183,7 +183,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Théo — se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation.**
+  **Qui : Orso — brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -219,6 +219,12 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   4. Supabase › `annona-dev` › Authentication › Sign In / Providers › Google : activer, coller l'ID client et le code secret, « Save ».
   5. Dire à Claude « Google est réglé » : Claude met `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, fait l'essai réel dans ton Chrome (inscription d'une boulangerie de test, connexion d'un compte créé par l'admin, adresse inconnue refusée) et note le résultat ici.
   Plus tard : branchement SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation (`docs/AUTH_EMAIL_SETUP.md`) ; Théo s'ajoute comme testeur (Audience › Utilisateurs de test, ou accès au projet Google Cloud donné par Orso) ; hébergement définitif : ajouter son adresse dans les Redirect URLs Supabase, les origines Google et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur l'hébergeur ; paiement Stripe avant activation (PLA-05).
+
+  13 novembre 2026 (nuit), essai de Théo (son Chrome, `next dev` relancé par Claude sur le port 3000 avec `NEXT_PUBLIC_GOOGLE_AUTH=on` ajouté à son `.env.local`), dans l'ordre :
+  1. Adresse Google de Théo (testeur) sans compte Annona : `/login/driver` › « Continuer avec Google » → refus affiché « Aucun compte Annona pour cette adresse Google… l'administrateur doit d'abord créer votre compte avec cette adresse. » **OK.**
+  2. Admin de démo (`demo-admin`), vrais clics Playwright dans `/users` › « Inviter un utilisateur » : « Test-theo Google », rôle Livreur, adresse Google de Théo → `POST /api/users` 201, statut « Invité » (`PENDING_VERIFICATION`), aucun e-mail (`AUTH_EMAIL_LINKS_ENABLED=false`), 0 erreur JavaScript ; capture `outputs/theo-recette/auth-google-creation.png`.
+  3. Théo se reconnecte avec Google → espace livreur (« Ma tournée » vide, « Profil » à compléter). **OK.** Base relue : un seul compte à cette adresse, `ACTIVE`, `DRIVER`, entreprise `demo_company_boulangerie`, compte de connexion Google rattaché.
+  Compte de test gardé pour les prochains essais Google (adresse de Théo, prénom « Test-theo »). Reste pour clore : inscription par e-mail (bloquée tant que le SMTP de `annona-dev` n'est pas branché, refus propre 502 constaté par Orso), vérification d'isolation PLA-01 sur l'entreprise inscrite, tests du parcours.
 
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
