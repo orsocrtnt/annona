@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**21 tâches terminées sur 29 — 72 %**
+**21 tâches terminées sur 30 — 70 %**
 
-`██████████████░░░░░░` · 8 tâches restantes
+`██████████████░░░░░░` · 9 tâches restantes
 
 **À faire par Claude**
 
@@ -14,6 +14,7 @@
 
 **À faire par Orso**
 
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
 
 **À faire par Théo**
@@ -40,6 +41,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Orso**
 - AUTH-GOOGLE : inscription avec Google essayée en vrai et réussie le 13 novembre (boulangerie « TEST 1 » sur `annona-dev`). Pour l'essayer en local : `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, port 3000.
+- Version de démo d'Annona comme celle de TutelLiv (DEMO-1).
 - Plus tard : mentions légales des factures (ACCES-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
@@ -73,6 +75,14 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 ## Tâches ouvertes
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
+
+- [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
+
+  **Qui : Orso.**
+
+  - Demande d'Orso (13 novembre 2026) : refaire pour Annona la démo qu'avait TutelLiv.
+  - Ce qu'avait TutelLiv (ancienne TODO, `git show 0475b8d:TODO.md`) : bouton « Voir la démo » qui ouvre un espace de démo sans identifiants (`/demo`) ; démo remise à l'heure à l'ouverture et racontant une journée lisible (DEMO-REFONTE) ; suivi des démos par le super admin sur `/admin/demos` avec « Remettre à neuf » et « Tout remettre à neuf » (DEMO-LIVE).
+  - À préciser avec Orso avant de coder : quels espaces montrer (client, boulanger, livreur), quelle journée type de boulangerie (voir Théo pour le métier), et sur quelle base (pas `annona-dev`, partagée avec Théo).
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
