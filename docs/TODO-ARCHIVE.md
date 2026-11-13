@@ -4,6 +4,14 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo).**
+
+
+  - Fait : Théo (`theoner13`) collaborateur du dépôt en écriture (10 novembre) ; `base` protégée (PR obligatoire, contrôles « Contrôles sans secrets » et « Migrations sur PostgreSQL neuf », branche à jour, sans force-push) ; règles « Travail à deux » et « Branche et publication » dans `AGENTS.md` et `.cursor/rules/contexte-markdown.mdc`, listes par personne dans `npm run todo:progress`, le tout fusionné avec la PR #1, première PR sous protection, CI verte ; Théo a cloné le dépôt, rempli et vérifié `.env.local` (11 novembre) ; garde-fou de push : COLLAB-2 (archivée).
+  - 12 novembre 2026 (session Claude d'Orso, Chrome) : invitation envoyée depuis le tableau Supabase (organisation « orsocrtnt's Org » › Team › Invite members, rôle Developer, adresse confirmée par Orso et volontairement non écrite ici car le dépôt est public). Tableau : « Successfully sent invitation », Théo listé « Invited » en Developer. Reste : Théo accepte l'invitation ; la tâche se coche quand il voit `annona-dev` dans son tableau Supabase. Vercel sans objet pour l'instant (seule équipe du compte : « TutelLiv », offre Hobby).
+  - Note pour Théo : `DIRECT_URL` passe par le pooler, port 5432 (l'adresse directe n'est joignable qu'en IPv6).
+  - Close le 13 novembre 2026 : décision d'Orso, Théo n'a pas besoin d'accès au tableau Supabase (son `.env.local` suffit pour coder, lancer l'appli et migrer ; journaux et réglages restent chez Orso). Invitation non acceptée (introuvable chez Théo), à annuler par Orso dans Supabase › Team.
+
 - [x] **LOT1-D1 — Tournées avec livraison du matin et du soir.**
 
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : tournée créée puis supprimée, Matin et Soir seuls, deux commandes le même jour, groupes « Sud matin » chez le boulanger. Défaut majeur trouvé puis corrigé (commande du soir qui reprenait les articles du matin, `cart-sync.ts`) et client sans tournée rendu inactif. Vérification 4 (16h59/17h00) : tests en mémoire seulement.
