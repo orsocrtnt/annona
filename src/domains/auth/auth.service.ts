@@ -1,4 +1,4 @@
-import { AccountUnavailableError, assertAccountActive } from "@/lib/auth/account-access";
+import { AccountUnavailableError, assertAccountActive, isAccountActive } from "@/lib/auth/account-access";
 import { prisma } from "@/services/prisma/client";
 import { hydrateUserWithRole, getUserByAuthId } from "@/domains/user/user.service";
 import { normalizeEmail } from "@/lib/auth/normalize-email";
@@ -19,17 +19,30 @@ export class UserNotProvisionedError extends Error {
   }
 }
 
+/**
+ * Compte « en attente » dont l'adresse vient d'être prouvée (connexion Google de même adresse, lien de
+ * confirmation d'une inscription, AUTH-GOOGLE) : il devient actif, sauf si l'entreprise est indisponible.
+ */
+export function shouldActivatePending(user: UserWithRole, activatePending: boolean): boolean {
+  return activatePending && user.status === "PENDING_VERIFICATION" && isAccountActive({ ...user, status: "ACTIVE" });
+}
+
 export async function syncUserFromSupabase(
-  input: SyncUserInput
+  input: SyncUserInput,
+  options: { activatePending?: boolean } = {}
 ): Promise<UserWithRole> {
   const email = normalizeEmail(input.email);
 
   const existing = await getUserByAuthId(input.authId);
 
   if (existing) {
-    const hydrated = existing;
+    const activate = shouldActivatePending(existing, options.activatePending === true);
+    const hydrated = activate ? { ...existing, status: "ACTIVE" as const } : existing;
     assertAccountActive(hydrated);
-    await prisma.user.update({ where: { id: existing.id }, data: { lastLoginAt: new Date() } });
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { lastLoginAt: new Date(), ...(activate ? { status: "ACTIVE" as const } : {}) },
+    });
     return hydrated;
   }
 
@@ -61,6 +74,21 @@ export async function syncUserFromSupabase(
   // l'utilisateur : une entreprise et ses comptes ne naissent que du back-office
   // (éditeur de la plateforme, puis administrateur de l'entreprise).
   throw new UserNotProvisionedError();
+}
+
+/**
+ * Connexion Google d'un compte créé par l'admin et jamais activé, quand Supabase a ouvert un compte de
+ * connexion distinct pour la même adresse (AUTH-GOOGLE) : le profil « en attente » est rattaché au compte
+ * Google, qui prouve l'adresse. Un profil actif n'est jamais repris (AUDIT-0111, S5).
+ */
+export async function adoptPendingProfile(input: SyncUserInput): Promise<{ previousAuthId: string | null } | null> {
+  const profile = await prisma.user.findFirst({
+    where: { email: { equals: normalizeEmail(input.email), mode: "insensitive" } },
+    select: { id: true, authId: true, status: true },
+  });
+  if (!profile || profile.status !== "PENDING_VERIFICATION" || profile.authId === input.authId) return null;
+  await prisma.user.update({ where: { id: profile.id }, data: { authId: input.authId } });
+  return { previousAuthId: profile.authId };
 }
 
 export function getDashboardPathForRole(role: SystemRole): string {

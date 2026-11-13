@@ -46,4 +46,6 @@ export const AUTH_ROUTES = [
   ROUTES.RESET_PASSWORD,
   "/login/client",
   "/login/driver",
+  // AUTH-GOOGLE : un compte déjà ouvert est renvoyé vers son espace ; une session Google sans profil reste ici.
+  "/inscription",
 ] as const;

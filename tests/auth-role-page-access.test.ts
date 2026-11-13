@@ -37,6 +37,8 @@ function discoverAllPages(): string[] {
 const PUBLIC_PAGES = [
   "/", "/mentions-legales", "/confidentialite",
   "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password",
+  // AUTH-GOOGLE : inscription des boulangeries (décision d'Orso du 13 novembre 2026).
+  "/inscription",
 ];
 
 // Matrice attendue rôle × espace (SCHEMA-1 : cinq rôles, un espace chacun).
