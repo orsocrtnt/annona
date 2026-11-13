@@ -36,7 +36,7 @@ Une recette prouve qu'un parcours marche **dans le navigateur**. Lire le JSX ou 
    Captures : `outputs/recette-agents/<branche>/<parcours>-<état>.png`.
 5. **E2E ciblés** de la branche (jamais toute la suite par défaut) :
    `E2E_BASE_URL=http://localhost:3110 E2E_SKIP_WEB_SERVER=1 PLAYWRIGHT_CHANNEL=chrome npx dotenv -e $MAIN/.env.local -- npx playwright test tests/e2e/<spec>.spec.ts`
-   Les specs se déconnectent à la fin. `tests/e2e/v1-roles.spec.ts` appelle encore `POST /api/demo/persona`, retirée : ne pas la prendre pour modèle.
+   Les specs se déconnectent à la fin. `tests/e2e/v1-roles.spec.ts` (réécrite le 13 novembre) contrôle vite les quatre rôles avec les comptes du seed, sans rien écrire en base.
 6. **Non-régression minimale**, à chaque recette : connexion et déconnexion, `/dashboard` avec la carte des tournées qui s'affiche, puis changement de page aussitôt (console sans erreur), `/dashboard/tracking`, `/portal/orders`, `/driver` (la tournée du livreur), sans erreur console.
 7. **Nettoyer** : supprimer les données `E2E` et `test-<prénom>-` créées pendant la passe (jamais les comptes du seed), puis arrêter le serveur lancé (son PID uniquement). Vérifier que le port est libre.
 

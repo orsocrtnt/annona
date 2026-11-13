@@ -58,10 +58,10 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
 - Questions métier (décision d'Orso du 12 novembre : le métier se voit avec Théo) : créneaux du premier client et volumes à deux ans (ACCES-1).
 - Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
-- MOBILE-1, Android sur sa machine : `npx cap sync android`, APK de test, essai sur émulateur ou téléphone (outils déjà installés).
+- MOBILE-1, Android sur sa machine : `npx cap sync android` fait le 13 novembre (8 modules natifs). Bloqué pour l'APK : ni Java (JDK 21) ni émulateur installés (seul le SDK Android est là). Installer Android Studio complet (Java inclus) ou un JDK 21 et un émulateur, puis APK de test.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
-- RECETTE-V1 (comptes de démo envoyés par Orso le 12 novembre, à ranger dans `outputs/comptes-demo.json` et `.md`) : réécrire `tests/e2e/v1-roles.spec.ts` sur les comptes du seed (il appelle `POST /api/demo/persona`, retirée) ou le supprimer, puis recettes connectées client, boulanger et livreur.
+- RECETTE-V1 : `tests/e2e/v1-roles.spec.ts` réécrite le 13 novembre (branche `theo/collab-nom-git`), admin vérifié. Reste : ranger dans `outputs/comptes-demo.json` (et `.md`) les comptes envoyés par Orso, aujourd'hui seul `admin` y est (manquent `boulanger`, `client-1`, `livreur-1`…), relancer la spec, puis recettes connectées client, boulanger et livreur. Ne pas lancer `db:seed` pour les obtenir : il changerait les mots de passe absents du fichier.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
@@ -134,6 +134,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Théo — Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
+- 13 novembre 2026 (poste Windows de Théo) : `CAPACITOR_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` réussi (8 modules natifs, aucun fichier suivi modifié). APK non compilé : aucun Java (JDK 21 requis par Capacitor 8) ni émulateur Android sur le poste ; SDK présent (`platforms/android-36`, `build-tools/36.0.0`). Suite : installer Android Studio (Java inclus) et un émulateur, puis `cd android && ./gradlew assembleDebug`.
 
   ENF-01 : emballer les espaces commerçant et livreur avec Capacitor ; notifications natives ; ouverture de Plans et Waze. Publication : comptes Apple Developer et Google Play à ouvrir par le propriétaire.
 
@@ -163,7 +164,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - N1, reste « arrêt remis en attente par l'admin pendant l'état « sent » » : constaté le 12 novembre 2026 (session Claude d'Orso) que l'application n'offre aucune action qui remette un arrêt en attente (écritures de `stop` côté admin : ordre et tournée seulement, `round-admin.service.ts`, `admin-order.service.ts` ; statut changé seulement par le livreur, `round-driver.service.ts`). Le cas n'arrive que par une modification directe en base : rien à recetter dans le navigateur ; la règle reste couverte par `settleSentDriverActions` et son test (`tests/tour1-rounds.test.ts`). À rouvrir si une action « annuler la livraison » est ajoutée.
   - Décision N3 (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : l'outre-mer n'est pas en V1 ; « Aujourd'hui » reste calculé à l'heure de Paris côté boulanger et admin. À rouvrir si une boulangerie d'outre-mer arrive.
   - Décision tournées (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : avant de désactiver une tournée qui coupe des clients de la commande, avertir sans bloquer (« Désactiver quand même », `src/features/settings/zone-deactivation.ts`, PR #6).
-  - À faire : `tests/e2e/v1-roles.spec.ts` appelle encore `POST /api/demo/persona`, retirée : le réécrire sur les comptes du seed ou le supprimer.
+  - 13 novembre 2026 (session Claude de Théo, branche `theo/collab-nom-git`) : `tests/e2e/v1-roles.spec.ts` réécrite. Un test par rôle (admin, boulanger, client-1, livreur-1) : connexion par l'écran du rôle, espace sans erreur JavaScript, API du rôle en 200, API des trois autres rôles en 403 ; plus un test sans session (401 partout). Rien n'est écrit en base : `/api/orders` et `/api/production` sont lus à J+30 (avant l'heure limite, pas de verrouillage LOCK-1, vérifié dans `ensureDateLocked`). Comptes lus dans `outputs/comptes-demo.json`, rôle sauté si absent.
+  - Vérifié (serveur dev de Théo, port 3000, `annona-dev`) : admin et sans session réussis (2/2), boulanger, client et livreur sautés car `outputs/comptes-demo.json` ne contient que `admin` (connexion de ce compte OK par Supabase Auth). `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec). Chromium de Playwright installé sur le poste de Théo. Note du skill `annona-recette` mise à jour.
+  - Reste : ajouter les comptes manquants (envoyés par Orso le 12 novembre) puis relancer `npx playwright test tests/e2e/v1-roles.spec.ts` (avec `E2E_BASE_URL` et `E2E_SKIP_WEB_SERVER=1` si un serveur tourne déjà).
   - À refaire à la prochaine recette : admin › tableau de bord, changer de page aussitôt, console sans erreur (correction `getZoom`, prouvée sur banc d'essai mais non reproduite dans l'admin).
 
 - [ ] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
