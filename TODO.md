@@ -134,7 +134,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Théo — Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
-- 13 novembre 2026 (poste Windows de Théo) : `CAPACITOR_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` réussi (8 modules natifs, aucun fichier suivi modifié). APK non compilé : aucun Java (JDK 21 requis par Capacitor 8) ni émulateur Android sur le poste ; SDK présent (`platforms/android-36`, `build-tools/36.0.0`). Suite : installer Android Studio (Java inclus) et un émulateur, puis `cd android && ./gradlew assembleDebug`.
+
+  - 13 novembre 2026 (poste Windows de Théo) : `CAPACITOR_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` réussi (8 modules natifs, aucun fichier suivi modifié). APK non compilé : aucun Java (JDK 21 requis par Capacitor 8) ni émulateur Android sur le poste ; SDK présent (`platforms/android-36`, `build-tools/36.0.0`). Suite : installer Android Studio (Java inclus) et un émulateur, puis `cd android && ./gradlew assembleDebug`.
 
   ENF-01 : emballer les espaces commerçant et livreur avec Capacitor ; notifications natives ; ouverture de Plans et Waze. Publication : comptes Apple Developer et Google Play à ouvrir par le propriétaire.
 
