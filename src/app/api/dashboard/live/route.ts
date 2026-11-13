@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLiveDashboard } from "@/domains/round/round-live.service";
+import { getLiveDashboard, liveCompanyFrom } from "@/domains/round/round-live.service";
 import { withApiHandler } from "@/lib/api/route-handler";
 import { requireCompanyAdminAny } from "@/lib/api/tenant-auth";
 
@@ -9,6 +9,7 @@ export async function GET() {
     // Lot 1, demande 4 : tableau de bord et écran des tournées (fonctionnalités séparées).
     const guard = await requireCompanyAdminAny(["dashboard:company", "rounds:read"]);
     if ("error" in guard) return guard.error;
-    return NextResponse.json({ data: await getLiveDashboard(guard.actor.companyId), success: true });
+    // LOT1-D9 : l'entreprise est déjà lue avec le compte, inutile de la relire.
+    return NextResponse.json({ data: await getLiveDashboard(guard.actor.companyId, { company: liveCompanyFrom(guard.actor.user.company) }), success: true });
   });
 }
