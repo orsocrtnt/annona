@@ -30,7 +30,7 @@
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
-- RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
+- RECETTE-V1 — Recette des dix critères (N2 et critères 1, 7, 8 sur Android (après MOBILE-1) ; Claude — recette finale en dernier)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
@@ -60,7 +60,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - MOBILE-1, Android sur sa machine : `npx cap sync android` fait le 13 novembre (8 modules natifs). Bloqué pour l'APK : ni Java (JDK 21) ni émulateur installés (seul le SDK Android est là). Installer Android Studio complet (Java inclus) ou un JDK 21 et un émulateur, puis APK de test.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
-- RECETTE-V1 : `tests/e2e/v1-roles.spec.ts` réécrite et verte sur les quatre rôles le 13 novembre (branche `theo/collab-nom-git`) ; les 12 comptes de démo sont rangés dans `outputs/comptes-demo.json` et `.md`. Reste : recettes connectées client, boulanger et livreur (parcours cliqués), puis N2 sur Android.
+- RECETTE-V1 : `v1-roles.spec.ts` verte (4 rôles) et recette cliquée des quatre espaces 33/33 le 14 novembre (rapport `docs/rapports/2026-11-14-recette-roles-theo.md`). Reste N2 et les critères téléphone après l'APK (MOBILE-1).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
@@ -140,7 +140,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  **Qui : Théo — réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier.**
+  **Qui : Théo — N2 et critères 1, 7, 8 sur Android (après MOBILE-1) ; Claude — recette finale en dernier.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -157,8 +157,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - 13 novembre 2026 (session Claude de Théo, branche `theo/collab-nom-git`) : `tests/e2e/v1-roles.spec.ts` réécrite. Un test par rôle (admin, boulanger, client-1, livreur-1) : connexion par l'écran du rôle, espace sans erreur JavaScript, API du rôle en 200, API des trois autres rôles en 403 ; plus un test sans session (401 partout). Rien n'est écrit en base : `/api/orders` et `/api/production` sont lus à J+30 (avant l'heure limite, pas de verrouillage LOCK-1, vérifié dans `ensureDateLocked`). Comptes lus dans `outputs/comptes-demo.json`, rôle sauté si absent.
   - Vérifié (serveur dev de Théo, port 3000, `annona-dev`) : admin et sans session réussis (2/2), boulanger, client et livreur sautés car `outputs/comptes-demo.json` ne contient que `admin` (connexion de ce compte OK par Supabase Auth). `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec). Chromium de Playwright installé sur le poste de Théo. Note du skill `annona-recette` mise à jour.
   - 13 novembre 2026, suite : les 12 comptes envoyés par Orso le 12 novembre rangés dans `outputs/comptes-demo.json` (format du seed : e-mail, mot de passe, rôle, espace) et `outputs/comptes-demo.md`, ignorés par git ; mot de passe `admin` identique à l'ancien fichier. Connexion Supabase Auth des 12 comptes : 12/12. `v1-roles.spec.ts` relancée (serveur dev de Théo, port 3000) : **5/5 réussis** (admin, boulanger, client-1, livreur-1 : espace, API du rôle 200, API des trois autres 403 ; sans session 401), en 1 min.
-  - Reste : recettes connectées par parcours cliqués (client, boulanger, livreur), puis N2 sur Android (après MOBILE-1).
-  - À refaire à la prochaine recette : admin › tableau de bord, changer de page aussitôt, console sans erreur (correction `getZoom`, prouvée sur banc d'essai mais non reproduite dans l'admin).
+  - 14 novembre 2026 (session Claude de Théo, commit `54b9a80`, `annona-dev`, serveur dev port 3000) : recette cliquée des quatre espaces, **33/33 étapes, zéro erreur console**, rapport `docs/rapports/2026-11-14-recette-roles-theo.md`, captures `outputs/recette-agents/theo-roles/`. Admin (menu complet, carte en direct), client (six pages, détail de commande, retour arrière, rechargement), boulanger (production à J+30, refus du back-office), livreur (tournée, profil, refus du portail) ; sombre vérifié sur ordinateur et tablette (sur téléphone le clair est la règle, `src/lib/theme.ts:37`). Rien écrit en base. Aucun défaut.
+  - Reste : N2 et critères 1, 7, 8 sur vrai téléphone Android (après MOBILE-1), puis recette finale.
+  - Fait le 14 novembre 2026 : admin › tableau de bord puis « Commandes » aussitôt, console sans erreur (correction `getZoom` vérifiée dans l'admin, rapport du 14 novembre).
 
 - [ ] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
 
