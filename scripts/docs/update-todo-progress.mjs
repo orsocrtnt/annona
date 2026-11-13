@@ -47,6 +47,25 @@ function taskList(owner) {
     .join("\n");
 }
 const unclassified = taskList(null);
+// Tableau Orso / Théo : tâches closes (« **Fait par : Orso et Théo.** » sous le titre) et tâches ouvertes.
+const people = ["Orso", "Théo"];
+const taskPattern = (box) => new RegExp(`^- \\[[${box}]\\] \\*\\*(.+?)\\.?\\*\\*[\\s\\S]*?(?=^- \\[[ xX]\\] |^## |(?![\\s\\S]))`, "gm");
+const doneTasks = [...todo.matchAll(taskPattern("xX")), ...archive.matchAll(taskPattern("xX"))].map((match) => {
+  const doneBy = match[0].match(/^\s*\*\*Fait par : (.+?)\.\*\*/m)?.[1] ?? "";
+  return { title: match[1], by: people.filter((person) => doneBy.includes(person)) };
+});
+const shortTitle = (title) => title.split(" — ")[0];
+const cell = (titles) => (titles.length ? titles.map(shortTitle).join(", ") : "—");
+const doneBy = (person) => doneTasks.filter((task) => task.by.includes(person)).map((task) => task.title);
+const openFor = (person) => openTasks.filter((task) => task.owner === person).map((task) => task.title);
+const unassignedDone = doneTasks.filter((task) => task.by.length === 0).map((task) => task.title);
+const whoTable = `**Qui a fait quoi**
+
+| | ${people.join(" | ")} |
+|---|${people.map(() => "---").join("|")}|
+| Fait | ${people.map((person) => `**${doneBy(person).length}** : ${cell(doneBy(person))}`).join(" | ")} |
+| À faire | ${people.map((person) => `**${openFor(person).length}** : ${cell(openFor(person))}`).join(" | ")} |
+${unassignedDone.length ? `\n_Tâches closes sans « Fait par » : ${cell(unassignedDone)}._\n` : ""}`;
 const block = `${startMarker}
 ## Progression globale
 
@@ -54,8 +73,9 @@ const block = `${startMarker}
 
 \`${gauge}\` · ${remaining} tâches restantes
 
+${whoTable}
 ${owners.map((owner) => `**À faire par ${owner}**\n\n${taskList(owner) || "- Rien pour l'instant"}\n`).join("\n")}${unclassified ? `\n**À classer**\n\n${unclassified}\n` : ""}
-_Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : \`npm run todo:progress\`, automatiquement avant \`npm run docs:verify\`._
+_Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : \`npm run todo:progress\`, automatiquement avant \`npm run docs:verify\`._
 ${endMarker}`;
 
 const blockPattern = new RegExp(`${startMarker}[\\s\\S]*?${endMarker}`);

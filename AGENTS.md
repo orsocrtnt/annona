@@ -7,6 +7,7 @@ Annona devient une application de commande et de livraison B2B pour boulangerie 
 - Ne jamais terminer un tour ni annoncer un travail fini sans avoir mis `TODO.md` à jour puis lancé `npm run todo:progress`. Le propriétaire ne doit jamais avoir à le demander.
 - Tenir à jour le bloc « Ce qu'il reste vraiment à faire » en tête de `TODO.md` (listes courtes : Orso, Théo, agent, attente extérieure ; simples tirets, pas de cases).
 - Sous le titre de chaque tâche ouverte, écrire qui doit agir ensuite : `**Qui : Claude.**`, `**Qui : Orso.**` ou `**Qui : Théo.**`, avec une condition éventuelle (`**Qui : Claude — après SCHEMA-1.**`). `npm run todo:progress` en tire les listes sous la jauge ; une tâche sans cette ligne apparaît dans « À classer ».
+- Quand une case est cochée, remplacer la ligne « Qui » par qui a fait la tâche : `**Fait par : Orso.**`, `**Fait par : Théo.**` ou `**Fait par : Orso et Théo.**` (le tableau « Qui a fait quoi » de `TODO.md` en est tiré par `npm run todo:progress`).
 - Quand une case est cochée, déplacer la tâche et ses preuves dans `docs/TODO-ARCHIVE.md`. `TODO.md` reste une page de pilotage et la source unique des priorités ; vérifier le code avant de croire un ancien statut.
 
 ## Sources et périmètre

@@ -8,6 +8,13 @@
 
 `██████████████░░░░░░` · 9 tâches restantes
 
+**Qui a fait quoi**
+
+| | Orso | Théo |
+|---|---|---|
+| Fait | **19** : COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **3** : COLLAB-1, COLLAB-2, WIN-1 |
+| À faire | **2** : DEMO-1, SEP-1 | **7** : ACCES-1, NOTIF-1, MOBILE-1, RECETTE-V1, HEB-1, AUTH-GOOGLE, LOT1-D9 |
+
 **À faire par Claude**
 
 - Rien pour l'instant
@@ -27,7 +34,7 @@
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
-_Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
+_Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
 ## Ce qu'il reste vraiment à faire (vue simple, à jour au 13 novembre 2026)
