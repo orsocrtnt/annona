@@ -49,7 +49,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **1. Orso**
 - Lancer une fois `npm run collab:install-hook` (COLLAB-2) : les PR #2 à #7 de Théo sont relues et fusionnées depuis le 12 novembre.
 - Envoyer à Théo `outputs/comptes-demo.md` par un canal sûr (débloque ses recettes connectées et `v1-roles.spec.ts`). Invitation Supabase envoyée le 12 novembre (COLLAB-1).
-- Valider ou corriger les deux décisions produit prises par Théo le 11 novembre (RECETTE-V1) : l'outre-mer n'est pas en V1 (N3, « Aujourd'hui » à l'heure de Paris) ; avertir sans bloquer avant de désactiver une tournée qui coupe des clients.
 - Lot 1 : relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), faire ou faire faire le passage dans Chrome (LOT1-RECETTE), corriger ce qu'il trouve, puis cocher LOT1-D1 à D8 et LOT1-RECETTE.
 - Accès : réponses du cahier des charges, mentions légales des factures, clé Resend (ACCES-1) ; puis envoi réel d'un e-mail de test (NOTIF-1). Dire quoi faire de `main` et `preproduction` (SEP-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur son Mac (MOBILE-1).
@@ -154,7 +153,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Reste : critères 1, 7, 8 et notifications natives sur vrais téléphones (après MOBILE-1) ; e-mails réels (clé Resend, NOTIF-1) ; mentions légales des factures (ACCES-1).
   - Défauts encore ouverts : N2 (mineur) retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone.
   - N1, reste « arrêt remis en attente par l'admin pendant l'état « sent » » : constaté le 12 novembre 2026 (session Claude d'Orso) que l'application n'offre aucune action qui remette un arrêt en attente (écritures de `stop` côté admin : ordre et tournée seulement, `round-admin.service.ts`, `admin-order.service.ts` ; statut changé seulement par le livreur, `round-driver.service.ts`). Le cas n'arrive que par une modification directe en base : rien à recetter dans le navigateur ; la règle reste couverte par `settleSentDriverActions` et son test (`tests/tour1-rounds.test.ts`). À rouvrir si une action « annuler la livraison » est ajoutée.
-  - Décision N3 (Théo, 11 novembre 2026) : l'outre-mer n'est pas en V1 ; « Aujourd'hui » reste calculé à l'heure de Paris côté boulanger et admin. À rouvrir si une boulangerie d'outre-mer arrive.
+  - Décision N3 (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : l'outre-mer n'est pas en V1 ; « Aujourd'hui » reste calculé à l'heure de Paris côté boulanger et admin. À rouvrir si une boulangerie d'outre-mer arrive.
+  - Décision tournées (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : avant de désactiver une tournée qui coupe des clients de la commande, avertir sans bloquer (« Désactiver quand même », `src/features/settings/zone-deactivation.ts`, PR #6).
   - À faire : `tests/e2e/v1-roles.spec.ts` appelle encore `POST /api/demo/persona`, retirée : le réécrire sur les comptes du seed ou le supprimer.
   - À refaire à la prochaine recette : admin › tableau de bord, changer de page aussitôt, console sans erreur (correction `getZoom`, prouvée sur banc d'essai mais non reproduite dans l'admin).
 
