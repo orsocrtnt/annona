@@ -55,7 +55,7 @@ Règle ENF-04 : `driverLocationAllowed` (`location-policy.ts`) n'autorise la pos
 
 | Variable | Où | Rôle |
 |---|---|---|
-| `CAPACITOR_SERVER_URL` | poste qui lance `cap sync` | Origine chargée par l'application. Défaut `http://localhost:3000` (simulateur iOS). Émulateur Android : `http://10.0.2.2:3000` ; vrai téléphone : `http://<IP du Mac>:3000`. Production : l'URL HTTPS hébergée dans l'UE. HTTP refusé hors réseau local. |
+| `CAPACITOR_SERVER_URL` | poste qui lance `cap sync` | Origine chargée par l'application. Défaut `http://localhost:3000` (simulateur iOS). Émulateur Android : garder `http://localhost:3000` et lancer `adb reverse tcp:3000 tcp:3000` (avec `http://10.0.2.2:3000`, la connexion est refusée : « Origine de la requête refusée », contrôle SEC-6 de `src/lib/security/origin-check.ts`) ; vrai téléphone : `http://<IP du poste>:3000` avec la même valeur dans `NEXT_PUBLIC_APP_URL`, ou `adb reverse` par câble USB. Production : l'URL HTTPS hébergée dans l'UE. HTTP refusé hors réseau local. |
 | `NEXT_PUBLIC_NATIVE_PUSH` | site (build) | `on` pour demander l'autorisation et enregistrer le jeton dans l'application. À activer seulement quand Firebase et APNs sont configurés. |
 | `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY` | serveur | Clé `.p8` d'Apple (Certificates, Identifiers & Profiles › Keys). `APNS_PRIVATE_KEY` : contenu PEM, `\n` échappés acceptés. |
 | `APNS_TOPIC`, `APNS_ENVIRONMENT` | serveur | Défauts : `fr.annona.app`, `production` (TestFlight, App Store) ; `development` pour une application installée depuis Xcode. |
@@ -74,6 +74,20 @@ CAPACITOR_SERVER_URL=https://app.exemple.eu npm run mobile:sync   # cible de pro
 
 Essai local : `npm run dev`, puis lancer l'application depuis Xcode ou Android Studio (l'application charge `http://localhost:3000/login`).
 
+Essai Android sans Android Studio (poste Windows de Théo, 14 novembre 2026), JDK 21 dans `JAVA_HOME` :
+
+```bash
+npx cap sync android                                   # CAPACITOR_SERVER_URL vide : http://localhost:3000
+cd android && ./gradlew assembleDebug                   # android/app/build/outputs/apk/debug/app-debug.apk
+sdkmanager "emulator" "system-images;android-36;google_apis;x86_64"
+avdmanager create avd -n annona-pixel -k "system-images;android-36;google_apis;x86_64" -d pixel_7
+emulator -avd annona-pixel                             # accélération WHPX sous Windows
+adb reverse tcp:3000 tcp:3000                          # le localhost du téléphone mène au poste
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+La vue web d'une application de debug se pilote depuis le poste : `adb forward tcp:9333 localabstract:webview_devtools_remote_<pid>`, puis le protocole Chrome DevTools (Playwright `connectOverCDP` n'est pas pris en charge par la vue web Android).
+
 ## Modifications faites à la main dans les projets natifs
 
 - iOS `Info.plist` : langue `fr`, textes d'usage en français (appareil photo, photothèque, position « seulement pendant votre tournée »), `remote-notification`, `NSAllowsLocalNetworking` (essais sur le réseau local), portrait seulement sur téléphone.
@@ -85,7 +99,7 @@ Essai local : `npm run dev`, puis lancer l'application depuis Xcode ou Android S
 - `npx cap sync` : réussi (8 modules natifs iOS et Android).
 - iOS : **non compilé de bout en bout**. Xcode 26.6 refuse toute destination iOS (« iOS 26.5 is not installed », composant à télécharger dans Xcode › Settings › Components) ; en compilation par cible (`-target App -sdk iphonesimulator` ou `iphoneos`), les dépendances Swift sont résolues et les premiers modules Capacitor compilent, puis le catalogue d'images du module appareil photo échoue (« No available simulator runtimes »). Contrôle partiel : `AppDelegate.swift` et `SceneDelegate.swift` passent `swiftc -typecheck` contre `Capacitor.xcframework` 8.6.0.
 - Téléchargement des dépendances Swift : sur ce poste, `xcodebuild` restait bloqué en téléchargeant `Capacitor.xcframework.zip` et `Cordova.xcframework.zip`. Contournement : les télécharger avec `curl` (sommes de contrôle vérifiées, identiques à `Package.swift` de `capacitor-swift-pm`) et les déposer dans `~/Library/Caches/org.swift.swiftpm/artifacts/` sous le nom de l'URL où chaque caractère non alphanumérique devient `_`.
-- Android : non compilé, aucun SDK Android ni Java sur le poste.
+- Android (14 novembre 2026, poste Windows de Théo) : APK de debug compilé (`assembleDebug`, 10,6 Mo), installé sur un émulateur Pixel 7 sous Android 16 ; connexion livreur (`/driver`, profil) et client (`/portal`, « Commander ») réussies dans l'application, 0 erreur JavaScript ; bouton Google masqué comme prévu. Captures `outputs/mobile1-android/`. Non vérifié : vrai téléphone, notifications (Firebase absent), position, appareil photo, hors réseau.
 
 ## Reste à faire avant publication (propriétaire, dans l'ordre)
 

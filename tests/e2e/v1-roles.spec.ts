@@ -56,10 +56,6 @@ async function login(page: Page, account: Account, loginPath: string, home: stri
 
 test.describe.configure({ timeout: 120_000 });
 
-test.afterEach(async ({ page }) => {
-  await page.request.post("/api/auth/logout").catch(() => undefined);
-});
-
 for (const role of ROLES) {
   test(`RECETTE-V1 : ${role.label} — son espace, son API, et les API des autres rôles refusées`, async ({ page }) => {
     const account = accounts[role.key];

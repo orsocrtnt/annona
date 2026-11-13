@@ -29,7 +29,7 @@
 **À faire par Théo**
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
-- MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
+- MOBILE-1 — Applications iOS et Android (Capacitor) (APK sur un vrai téléphone Android (critères 1, 7, 8, N2, LOT1-D9). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (N2 et critères 1, 7, 8 sur Android (après MOBILE-1) ; Claude — recette finale en dernier)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
@@ -57,7 +57,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
 - AUTH-GOOGLE : fait le 13 novembre (adresse inconnue refusée, compte créé par l'admin connecté avec Google, passé « Actif »). Plus rien pour toi ; reste le SMTP côté Orso.
 - Questions métier (ACCES-1) : répondues le 13 novembre (plages matin 5h30-12h30 et après-midi 15h-19h ; 60-70 arrêts par livreur, 15-20 produits par livraison ; 200 points par jour au plus ; un livreur = une tournée, au moins 110 points).
-- MOBILE-1, Android sur sa machine : `npx cap sync android` fait le 13 novembre (8 modules natifs). Bloqué pour l'APK : ni Java (JDK 21) ni émulateur installés (seul le SDK Android est là). Installer Android Studio complet (Java inclus) ou un JDK 21 et un émulateur, puis APK de test.
+- MOBILE-1, Android : APK de test compilé et essayé sur émulateur le 14 novembre (connexion livreur et client OK dans l'application). Reste : l'installer sur un vrai téléphone Android (câble USB et `adb reverse`, ou même Wi-Fi), puis critères 1, 7, 8 et LOT1-D9 sur ce téléphone.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
 - RECETTE-V1 : `v1-roles.spec.ts` verte (4 rôles) et recette cliquée des quatre espaces 33/33 le 14 novembre (rapport `docs/rapports/2026-11-14-recette-roles-theo.md`). Reste N2 et les critères téléphone après l'APK (MOBILE-1).
@@ -120,11 +120,15 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Théo — Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
+  **Qui : Théo — APK sur un vrai téléphone Android (critères 1, 7, 8, N2, LOT1-D9). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
-  - 13 novembre 2026 (poste Windows de Théo) : `CAPACITOR_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` réussi (8 modules natifs, aucun fichier suivi modifié). APK non compilé : aucun Java (JDK 21 requis par Capacitor 8) ni émulateur Android sur le poste ; SDK présent (`platforms/android-36`, `build-tools/36.0.0`). Suite : installer Android Studio (Java inclus) et un émulateur, puis `cd android && ./gradlew assembleDebug`.
+  - 13 novembre 2026 (poste Windows de Théo) : `CAPACITOR_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` réussi (8 modules natifs, aucun fichier suivi modifié). Erreur de constat corrigée le 14 novembre : Java était bien installé (JDK Temurin 21 dans `%LOCALAPPDATA%/AnnonaTools/jdk-21`, voir la note du 11 novembre), seul l'émulateur manquait.
+  - 14 novembre 2026 : `JAVA_HOME=%LOCALAPPDATA%/AnnonaTools/jdk-21 ./gradlew assembleDebug --no-daemon` → **BUILD SUCCESSFUL** en 7 min (338 tâches), `android/app/build/outputs/apk/debug/app-debug.apk` (10,6 Mo, dossier ignoré par git), adresse chargée `http://10.0.2.2:3000` (émulateur). Poste : virtualisation activée, hyperviseur présent, 15 Go de RAM. Émulateur et image `system-images;android-36;google_apis;x86_64` installés (`sdkmanager`, un premier téléchargement coupé puis repris), téléphone virtuel `annona-pixel` (Pixel 7, Android 16), accélération WHPX utilisable, démarrage en ~65 s, `adb install` → Success.
+  - Essai dans l'application (vue web pilotée par le protocole Chrome DevTools) : première tentative refusée « Origine de la requête refusée » (SEC-6, `src/lib/security/origin-check.ts`) car l'émulateur appelait `http://10.0.2.2:3000` alors que l'origine admise est `http://localhost:3000`. Sans toucher à la sécurité : `adb reverse tcp:3000 tcp:3000`, `cap sync` avec l'adresse par défaut `http://localhost:3000`, APK recompilé. Ensuite : livreur-1 connecté → « Ma tournée » puis « Profil » ; client-1 connecté → « Commander » (prix spécifique affiché) ; **0 erreur JavaScript** ; bouton Google masqué dans l'application (voulu). Captures `outputs/mobile1-android/`. Procédure ajoutée dans `docs/MOBILE.md` (« Essai Android sans Android Studio », et `10.0.2.2` retiré des conseils). En production l'application charge l'adresse officielle : pas de refus.
+  - Au passage : `tests/e2e/v1-roles.spec.ts` appelait `POST /api/auth/logout`, route inexistante (404 ignoré) ; appel retiré (chaque test a déjà son navigateur vierge). Relancée 5/5 ; `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec) ; `npm run docs:verify` vert.
+  - Non vérifié : vrai téléphone, notifications natives (Firebase absent), position, appareil photo, hors réseau (N2) dans l'application.
 
   ENF-01 : emballer les espaces commerçant et livreur avec Capacitor ; notifications natives ; ouverture de Plans et Waze. Publication : comptes Apple Developer et Google Play à ouvrir par le propriétaire.
 
