@@ -14,8 +14,8 @@
 
 **À faire par Orso**
 
-- AUTH-GOOGLE — Connexion avec Google
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (trancher les deux points ouverts ci-dessous, puis réglages Google Cloud et Supabase)
 
 **À faire par Théo**
 
@@ -39,7 +39,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- Connexion avec Google (AUTH-GOOGLE) : décider les espaces concernés et la création de compte, puis réglages Google Cloud et Supabase.
+- Inscription des entreprises et connexion Google (AUTH-GOOGLE, décision du 13 novembre, écart avec PLA-02 accepté) : dire si une entreprise inscrite attend la validation du super admin et s'il y a un paiement, puis réglages Google Cloud et Supabase.
 - Plus tard : mentions légales des factures (ACCES-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
@@ -155,17 +155,26 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - À faire : `tests/e2e/v1-roles.spec.ts` appelle encore `POST /api/demo/persona`, retirée : le réécrire sur les comptes du seed ou le supprimer.
   - À refaire à la prochaine recette : admin › tableau de bord, changer de page aussitôt, console sans erreur (correction `getZoom`, prouvée sur banc d'essai mais non reproduite dans l'admin).
 
-- [ ] **AUTH-GOOGLE — Connexion avec Google.**
+- [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Orso.**
+  **Qui : Orso — trancher les deux points ouverts ci-dessous, puis réglages Google Cloud et Supabase.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
   Demande d'Orso du 13 novembre 2026 : ajouter la connexion avec un compte Google. Constat du même jour : aucune connexion Google dans le code (`src/`), seules les notifications natives parlent à Google. Zone d'Orso (`src/components/auth/`).
 
-  À décider par Orso avant de coder : quels espaces y ont droit (client, boulanger, livreur, admin) ; un compte Google peut-il créer un compte ou seulement se rattacher à un compte existant de même adresse. Réglages : identifiants OAuth dans Google Cloud, fournisseur Google activé dans Supabase (`annona-dev`), adresses de retour (local, hébergement définitif, applications mobiles de MOBILE-1).
+  Création de compte aujourd'hui (constat du 13 novembre) : aucune inscription libre. L'admin d'une entreprise crée les comptes de ses clients et employés (`createUserByAdmin`, `src/domains/user/user.service.ts`), le super admin crée l'admin d'une nouvelle entreprise (`src/domains/admin/company-admin.service.ts`). Invitation Supabase par e-mail (ou compte en attente sans mot de passe si `AUTH_EMAIL_LINKS_ENABLED` n'est pas à `true`), puis la personne choisit son mot de passe. Un compte Supabase sans profil Annona est refusé à la connexion (`UserNotProvisionedError`).
 
-  Terminé quand : connexion Google réussie dans le navigateur sur `annona-dev` pour les espaces retenus, un compte Google sans accès refusé, tests du parcours.
+  Décision d'Orso du 13 novembre 2026 :
+  - Inscription ouverte seulement aux entreprises : une entreprise crée elle-même son compte et son compte admin, par e-mail ou avec Google.
+  - Les comptes des clients et des employés (boulanger, livreur, mini admin) restent créés par l'admin de l'entreprise, comme aujourd'hui ; aucune inscription libre pour eux.
+  - Ces comptes peuvent se connecter avec Google, sur le compte créé par l'admin (même adresse e-mail). Une adresse Google sans compte créé par un admin n'ouvre aucun accès.
+
+  Écart avec le cahier des charges : PLA-02 dit que le super admin crée, configure et suspend les entreprises ; `TRI-BASE.md` a retiré l'inscription autonome de l'ancien produit (« c'est l'éditeur qui ouvre les comptes »). L'ancien parcours TutelLiv reste lisible dans l'historique (`git show 0475b8d:src/domains/signup/signup.service.ts`, `src/app/(auth)/register/page.tsx`, `src/app/api/auth/register/route.ts`), avec paiement. **Écart accepté par Orso le 13 novembre 2026** (après lecture de PLA-02, ADM-01, CLI-01 et PLA-05) : « on ne va pas gérer les inscriptions de tout le monde ». Seules les entreprises s'inscrivent seules ; les commerçants restent créés par l'admin de leur entreprise (ADM-01). La connexion Google s'ajoute à l'e-mail et au mot de passe (CLI-01), sans les remplacer.
+
+  Points ouverts, à trancher par Orso avant de coder : (1) une entreprise inscrite est-elle active tout de suite ou après validation par le super admin ; (2) paiement à l'inscription ou non. Réglages : identifiants OAuth dans Google Cloud, fournisseur Google activé dans Supabase (`annona-dev`), adresses de retour (local, hébergement définitif, applications mobiles de MOBILE-1).
+
+  Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
 
