@@ -30,6 +30,7 @@ Annona devient une application de commande et de livraison B2B pour boulangerie 
 - Garde-fou avant chaque push (COLLAB-2) : installer une fois par clone `npm run collab:install-hook`. Le hook `.githooks/pre-push` refuse le push si une branche non fusionnée de l'autre touche les mêmes fichiers (hors `TODO.md`, archive et `package-lock.json`, seulement signalés), travaille aussi dans `prisma/`, ou si la tâche annoncée est « En cours » chez l'autre ; il refuse aussi tout push direct sur `base`, `main` ou `preproduction`. Vérification à la main avant de commencer : `npm run collab:check`. En cas de blocage, en parler à l'autre ; contournement voulu seulement : `ANNONA_COLLAB_OK=1 git push`.
 - Schéma Prisma, migrations, `db:push`, `db:sync-schema`, `db:migrate` et seeds : un seul développeur à la fois sur `annona-dev`, annoncé dans la tâche avant de commencer. En cas de doute, demander au développeur.
 - Données de test préfixées par le prénom (`test-orso-…`, `test-theo-…`) ; ne jamais modifier ni supprimer celles de l'autre.
+- Questions métier (fonctionnement des boulangeries et de leurs clients : créneaux, volumes, règles de commande et de livraison) : les traiter avec Théo (décision d'Orso du 12 novembre 2026).
 
 ## Branche et publication
 - `base` est protégée sur GitHub : on n'y pousse jamais directement. Toute modification arrive par une pull request vers `base`, avec la CI verte et la branche à jour.
