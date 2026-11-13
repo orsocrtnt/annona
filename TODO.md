@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**11 tâches terminées sur 27 — 41 %**
+**20 tâches terminées sur 27 — 74 %**
 
-`████████░░░░░░░░░░░░` · 16 tâches restantes
+`███████████████░░░░░` · 7 tâches restantes
 
 **À faire par Claude**
 
@@ -14,22 +14,13 @@
 
 **À faire par Orso**
 
-- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (dire quoi faire des branches `main` et `preproduction` du dépôt annona)
-- ACCES-1 — Accès et réponses du propriétaire (réponses du cahier des charges, mentions légales, clé Resend)
-- NOTIF-1 — Notifications (clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel)
-- LOT1-D1 — Tournées avec livraison du matin et du soir (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D8 — Consignes d'accès modifiables par le client (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D7 — Recherche d'article dans la commande récurrente (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D6 — Tableau de bord cliquable (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D3 — Allergènes sur chaque produit (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D2 — Promotions (fins de série et autres) (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D4 — Comptes « mini admin » (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D5 — Onglet de suivi des livreurs (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-RECETTE — Tests directs dans Chrome de tout le lot 1 (relire le rapport ; pour le passage avec l'extension Claude in Chrome, te connecter toi-même dans l'onglet (le garde-fou refuse que Claude lise les mots de passe de démo) ou dire si Playwright dans Chrome suffit)
+- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
 
 **À faire par Théo**
 
 - COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (accepter l'invitation Supabase reçue par e-mail le 12 novembre)
+- ACCES-1 — Accès et réponses du propriétaire (créneaux du premier client et volumes à deux ans (questions métier). Orso — mentions légales des factures, plus tard)
+- NOTIF-1 — Notifications (mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
@@ -47,11 +38,13 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- Lot 1 : relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), faire ou faire faire le passage dans Chrome (LOT1-RECETTE), corriger ce qu'il trouve, puis cocher LOT1-D1 à D8 et LOT1-RECETTE.
-- Accès : réponses du cahier des charges, mentions légales des factures, clé Resend (ACCES-1) ; puis envoi réel d'un e-mail de test (NOTIF-1). Dire quoi faire de `main` et `preproduction` (SEP-1).
-- Plus tard, après la PR Android de Théo : compilation et essai iOS sur son Mac (MOBILE-1).
+- Plus tard : mentions légales des factures (ACCES-1).
+- Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
+- Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
 
 **2. Théo**
+- Questions métier (décision d'Orso du 12 novembre : le métier se voit avec Théo) : créneaux du premier client et volumes à deux ans (ACCES-1).
+- Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
 - Accepter l'invitation Supabase reçue par e-mail (organisation qui contient `annona-dev`, rôle Developer, COLLAB-1).
 - MOBILE-1, Android sur sa machine : `npx cap sync android`, APK de test, essai sur émulateur ou téléphone (outils déjà installés).
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
@@ -88,7 +81,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
-  **Qui : Orso — dire quoi faire des branches `main` et `preproduction` du dépôt annona.**
+  **Qui : Orso — après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`.**
+
+  - Décision d'Orso du 12 novembre 2026 (questionnaire) : ne rien toucher à `main` ni à `preproduction` tant qu'annona.fr n'est pas rattaché à un hébergement Annona propre.
 
   - Demande du propriétaire (8 novembre 2026) : TutelLiv et Annona sont deux projets distincts, sans lien entre eux.
   - Fait le 8 novembre 2026 : branche par défaut du dépôt GitHub `orsocrtnt/annona` passée de `preproduction` à `base` (`gh api -X PATCH … default_branch=base` → `base`). La page du dépôt affiche désormais le README Annona. La description du dépôt (« Annona — plateforme SaaS de livraison ») ne citait déjà plus TutelLiv.
@@ -97,7 +92,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
-  **Qui : Orso — réponses du cahier des charges, mentions légales, clé Resend.**
+  **Qui : Théo — créneaux du premier client et volumes à deux ans (questions métier). Orso — mentions légales des factures, plus tard.**
+
+  - Réponses d'Orso du 12 novembre 2026 (questionnaire) : cartographie : services gratuits (OSRM et IGN publics) pour l'instant, une solution pour 200 arrêts par jour sera chiffrée plus tard ; rappel avant l'heure limite : 15h, la valeur par défaut actuelle ; créneaux du premier client et volumes à deux ans : questions métier, à voir avec Théo ; mentions légales : plus tard ; Resend : le compte de Théo (NOTIF-1).
 
   - `.env.local` : fait le 6 novembre 2026 (mot de passe de la base remis à zéro et clé `service_role` collés par le propriétaire avec `remplir-env.sh`, sans passer par l'agent). Vérifié par Claude : client Prisma par le pooler `aws-1-eu-west-3` port 6543 → `select` réussi ; connexion directe (`prisma db execute`) réussie ; API d'administration Supabase avec la clé `service_role` → 200.
   - Questions ouvertes du cahier des charges (section 9) : liste des créneaux du premier client ; délai du rappel avant 17h ; volumes à deux ans ; service de cartographie (les services gratuits OSRM et IGN suffisent pour les essais, pas pour 200 arrêts par jour). En attendant, valeurs par défaut réglables : créneaux 5h-6h, 6h-7h, 7h-8h ; rappel à 15h.
@@ -109,7 +106,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **NOTIF-1 — Notifications.**
 
-  **Qui : Orso — clé Resend dans `.env.local` (ACCES-1) ; ensuite Claude fait l'envoi réel.**
+  **Qui : Théo — mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -158,88 +155,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
 
-_D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre au soir et fusionnées dans `base` (PR #1). Reste : la relecture d'Orso de chaque demande. Notes pour la suite : D4 — TutelLiv rangeait les modules du mini admin dans `User.settings.miniAdmin.modules` et filtrait les permissions à la lecture (`filterMiniAdminPermissions`, `git show 0475b8d:src/lib/permissions/mini-admin.ts`) ; la liste des tournées (`GET /api/company/zones`) exige `settings:read`, à ouvrir aussi à `merchants:read` pour un mini admin « comptes » sans « paramètres ». D5 — `DriverLocation` (dernière position, `updatedAt`) et `/api/maps/route` existent déjà ; TutelLiv avait `deliveries-live-map.tsx` (`git show 0475b8d:src/components/maps/deliveries-live-map.tsx`). D9 — mesurer « avant » avant toute correction de lenteur. Appliquer les migrations : passer par le pooler en mode session (port 5432 de `DATABASE_URL`), la connexion directe `db.…supabase.co` est injoignable d'ici. Rejouer la recette : serveur de production sur le port 3110 (`next build`, puis `next start`), `npx dotenv -e .env.local -- npx tsx scripts/e2e/lot1-d5-round-fixture.ts` (avant minuit heure de Paris), puis `E2E_BASE_URL=http://localhost:3110 E2E_SKIP_WEB_SERVER=1 PLAYWRIGHT_CHANNEL=chrome npx dotenv -e .env.local -- npx playwright test tests/e2e/lot1-recette.spec.ts --workers=1` (`CLEAN_DELETE=1 … -g CLEAN` supprime les comptes `e2e-`), et finir par `npm run db:seed`._
+_D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre au soir et fusionnées dans `base` (PR #1). D1 à D8 et la recette validées par Orso le 12 novembre 2026, puis archivées ; reste D9 (vrais téléphones). Notes pour la suite : D4 — TutelLiv rangeait les modules du mini admin dans `User.settings.miniAdmin.modules` et filtrait les permissions à la lecture (`filterMiniAdminPermissions`, `git show 0475b8d:src/lib/permissions/mini-admin.ts`) ; la liste des tournées (`GET /api/company/zones`) exige `settings:read`, à ouvrir aussi à `merchants:read` pour un mini admin « comptes » sans « paramètres ». D5 — `DriverLocation` (dernière position, `updatedAt`) et `/api/maps/route` existent déjà ; TutelLiv avait `deliveries-live-map.tsx` (`git show 0475b8d:src/components/maps/deliveries-live-map.tsx`). D9 — mesurer « avant » avant toute correction de lenteur. Appliquer les migrations : passer par le pooler en mode session (port 5432 de `DATABASE_URL`), la connexion directe `db.…supabase.co` est injoignable d'ici. Rejouer la recette : serveur de production sur le port 3110 (`next build`, puis `next start`), `npx dotenv -e .env.local -- npx tsx scripts/e2e/lot1-d5-round-fixture.ts` (avant minuit heure de Paris), puis `E2E_BASE_URL=http://localhost:3110 E2E_SKIP_WEB_SERVER=1 PLAYWRIGHT_CHANNEL=chrome npx dotenv -e .env.local -- npx playwright test tests/e2e/lot1-recette.spec.ts --workers=1` (`CLEAN_DELETE=1 … -g CLEAN` supprime les comptes `e2e-`), et finir par `npm run db:seed`._
 
 _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, ordre imposé : 1, puis 8, 7, 6, 3, puis 2, 4, puis 5, puis 9). Branche `orso/lot1-retouches`, un commit par demande, fusionnée dans `base` (PR #1). Migrations du lot appliquées sur `annona-dev` le 10 novembre ; toute nouvelle migration ou seed s'annonce d'abord dans sa tâche (`AGENTS.md`)._
-
-- [ ] **LOT1-D1 — Tournées avec livraison du matin et du soir.**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : tournée créée puis supprimée, Matin et Soir seuls, deux commandes le même jour, groupes « Sud matin » chez le boulanger. Défaut majeur trouvé puis corrigé (commande du soir qui reprenait les articles du matin, `cart-sync.ts`) et client sans tournée rendu inactif. Vérification 4 (16h59/17h00) : tests en mémoire seulement.
-
-  - 10 novembre 2026, code fait (commit `6fb6887` sur `orso/lot1-retouches`, sans push). Modèle `DeliveryZone` (nom, plage du matin, plage du soir) ; chaque tournée porte deux créneaux `Slot` (MORNING, EVENING) tenus à jour par `src/domains/company/delivery-zone.service.ts` ; `Merchant.zoneId`. Paramètres : carte « Tournées » à la place des créneaux horaires (créer, modifier, désactiver ; supprimer seulement si jamais utilisée). Fiche client : choix de la tournée ; liste des clients : colonne « Tournée ». Client : seulement « Matin » et « Soir » de sa tournée (refus 400 sinon, et sans tournée), matin et soir du même jour = deux commandes ; libellés « Matin »/« Soir » aussi dans l'historique et les e-mails. Récurrente : matin, soir ou les deux (deux commandes types). Verrouillage : une commande manuelle du matin ne bloque plus la récurrente du soir ; client passé dans une autre tournée → même moment de la nouvelle tournée ; tournées du jour nommées « Tournée Sud matin ». Boulanger : bons groupés par « Sud matin », « Sud soir ». Export entreprise et inventaire DATA-02 : table `delivery_zones` ajoutée. Seed : tournées Nord et Sud (5h30–11h, 16h–19h), anciens créneaux de démo supprimés après recréation des commandes.
-  - Choix : l'heure limite reste celle de l'entreprise (17h la veille) pour le matin comme pour le soir ; la plage du soir doit commencer après celle du matin ; anciens créneaux horaires gardés en base pour l'historique, plus proposés ; consignes d'accès bornées à 500 caractères aussi côté admin (demande 8).
-  - Vérifications : `npm run check` sortie 0, 764/764 (tests ajoutés dans `tests/adm1-admin.test.ts`, `tests/cmd1-merchant-orders.test.ts`, `tests/lock1-order-lock.test.ts`, `tests/adm1-criterion10-isolation.test.ts`, couvrant les vérifications 1, 3, 4 et 5 du document en mémoire).
-
-- [ ] **LOT1-D8 — Consignes d'accès modifiables par le client.**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : le client enregistre « Code portail 1234, déposer à l'arrière », le livreur le voit sur l'arrêt.
-
-  - 10 novembre 2026, code fait (commit `99ccfa4`). Paramètres du client : carte « Consignes d'accès » (texte libre, 500 caractères au plus, compteur), `PATCH /api/portal/merchant` (`requireMerchantActor`), modification journalisée (entité Merchant, acteur = le client). Le livreur lit les consignes en base à chaque chargement de sa tournée (déjà le cas), l'admin les lit et les modifie dans la fiche client (borne passée de 600 à 500). Choix : la modification est visible tout de suite, même pendant une tournée commencée (au moins aussi tôt que demandé).
-  - Vérifications : test `tests/tour1-rounds.test.ts` (vérifications 1 et 2 du document en mémoire, isolation, 500/501 caractères) ; `npm run check` vert.
-
-- [ ] **LOT1-D7 — Recherche d'article dans la commande récurrente.**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : « bag », « eclair », effacement, à 1 280 et 390 px.
-
-  - 10 novembre 2026, code fait (commit `0c65ad7`). Fenêtre de la commande récurrente : la liste déroulante « Ajouter un produit » est remplacée par une barre de recherche en haut d'une liste filtrée en direct (nom seulement, sans majuscules ni accents, `src/lib/format/search.ts`) ; vide = tout le catalogue ; produit déjà ajouté marqué « Ajouté ». La recherche du catalogue principal n'a pas changé.
-  - Vérifications : `tests/lot1-d7-recurring-search.test.ts` (« bag », « eclair » → « Éclair au chocolat », vide) ; `npm run check` vert.
-
-- [ ] **LOT1-D6 — Tableau de bord cliquable.**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : chaque chiffre et la progression d'une tournée ouvrent la bonne liste.
-
-  - 10 novembre 2026, code fait (commit `b1f3614`). Les cinq chiffres ouvrent leur liste, même à zéro : commandes du jour → `/dashboard/orders?date=…&view=active`, tournées → `/dashboard/rounds?date=…`, livrés → `view=delivered`, restants → `view=remaining`, problèmes signalés → `view=incidents`. Dans le tableau des tournées, la progression et le nombre de problèmes ouvrent les commandes de la tournée. Liste des commandes : filtre « Afficher » (mêmes définitions que les chiffres) et badge « Problème signalé ». `StatCard` accepte `href`.
-  - Vérifications : `tests/lot1-d6-dashboard-links.test.ts` ; `npm run check` vert.
-  - Non vérifié : chaque chiffre comparé un à un à sa liste sur un jour chargé (la recette a vérifié que chaque chiffre ouvre la bonne liste).
-
-- [ ] **LOT1-D3 — Allergènes sur chaque produit.**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : gluten + lait visibles chez le client, « Allergènes non renseignés », « Aucun allergène ».
-
-  - 10 novembre 2026, code fait (commit `989fdef`). `Product.allergens` (codes des 14 allergènes, `src/domains/catalog/allergens.ts`) et `Product.allergensDeclared` (faux = « Allergènes non renseignés », vrai et vide = « Aucun allergène ») ; contraintes CHECK (codes connus, rien sans déclaration). Fiche produit admin : 14 cases, bouton « Aucun allergène », lien « Remettre à non renseignés » (tout décocher revient à non renseignés). Client : toucher la photo ou le nom d'un produit ouvre sa fiche avec ses allergènes.
-  - Vérifications : `tests/lot1-d3-allergens.test.ts` (vérifications 1, 2, 3 en mémoire, isolation, codes inconnus refusés) ; `npm run check` sortie 0, 772/772.
-  - Reste : produits de démo laissés « Allergènes non renseignés » dans le seed.
-
-- [ ] **LOT1-D2 — Promotions (fins de série et autres).**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : −30 % pour 2 clients (absente chez le 3ᵉ), section en tête, ancien prix barré, limite atteinte puis prix normal, état « Épuisée ». Corrigés : libellé du panier pour une promo partielle, bouton « Arrêter » à 390 px, seed qui gardait les promotions. Vérifications 3 et 5 : tests en mémoire seulement.
-
-  - 10 novembre 2026, code fait (commit `cb60190` sur `orso/lot1-retouches`, sans push). Modèles `Promotion` (prix promo OU réduction en % entier, dernier jour inclus, quantité limitée facultative, tous les clients ou `PromotionMerchant`, arrêt = `stoppedAt`, jamais supprimée) ; `OrderLine.promotionId`, `promoQuantity`, `promoUnitPriceCents` : la part promo de chaque ligne est retenue à la validation (`src/domains/catalog/promotion.service.ts`, `allocatePromotions`, verrou consultatif par promotion) et ne change plus ensuite. Calcul unique : `computeTotals` / `lineAmountCents` (`pricing.ts`) comptent la part promo partout (commande client, liste admin, détail admin, e-mail de confirmation, factures avec une ligne « (promo) », relevés, Factur-X). Admin : page « Promotions » (`/dashboard/promotions`, menu), en cours et terminées (terminée, arrêtée, épuisée), création (produit, % ou prix, dernier jour, quantité, clients choisis avec recherche), arrêt en deux clics. Client : section « Promotions » en tête du catalogue, étiquette « Promo », ancien prix barré, nouveau prix ; panier et détail de commande montrent la part promo. Commande récurrente générée à 17h : reçoit la promotion en cours (et la limite). Export entreprise et inventaire DATA-02 : tables `promotions`, `promotion_merchants`.
-  - Choix : la date de fin se juge au moment où la commande est validée (fuseau de l'entreprise), pas à la date de livraison ; le pourcentage s'applique au prix de base, puis le client paie le moins cher de son prix normal (négocié ou de base) et du prix promo ; un client dont le prix négocié est plus bas ne voit pas l'étiquette et ne consomme pas d'unités ; une seule promotion en cours par produit (409 sinon) ; une commande annulée rend ses unités ; une commande validée puis modifiée après la fin garde ses unités promo (jamais plus) ; une correction admin ne fait jamais grandir la part promo ; les unités manquantes à la livraison sont d'abord retirées de la part au prix normal (part promo facturée = min(part promo, quantité livrée)). Permission : `promotions:read` / `promotions:manage` depuis la demande 4 (fonctionnalité séparée du catalogue).
-  - Vérifications : `tests/lot1-d2-promotions.test.ts` (11 tests : vérifications 1 à 5 du document en mémoire, arrêt, une seule promotion par produit, facture sur deux lignes, récurrente générée avec la limite, isolation entre entreprises) ; `npm run check` sortie 0, 783/783 ; `next build` sortie 0 (lancé sans le garde-fou `ensure-build`, qui voyait le port 3000 pris par le serveur d'un autre projet, Atelia, laissé tel quel).
-
-- [ ] **LOT1-D4 — Comptes « mini admin ».**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : création, menu limité, adresses interdites renvoyées et API en 403, droits ajoutés ou retirés pris en compte en 25 s sans reconnexion. E-mail d'invitation non envoyé (pas de clé Resend).
-
-  - 10 novembre 2026, code fait (commit `82a13a2` sur `orso/lot1-retouches`, sans push). Un mini admin est un compte administrateur dont les fonctionnalités accordées sont dans `User.settings.miniAdmin.modules` (aucune colonne nouvelle) ; sans cette clé, administrateur complet. Dix fonctionnalités (`src/lib/permissions/mini-admin.ts`) : tableau de bord, commandes, suivi des livreurs, tournées, catalogue et prix, promotions, comptes clients/boulangers/livreurs, paramètres, facturation et paiements, support. Permissions effectives = celles du rôle limitées aux fonctionnalités (`extractPermissionSlugs`), relues en base à chaque requête : API refusées sans reconnexion. Chaque page de l'administrateur porte sa fonctionnalité (`page-access.ts`) : une adresse tapée à la main est renvoyée vers l'accueil du mini admin (sa première fonctionnalité). Menu filtré ; droits relus à chaque changement de page, au retour sur l'onglet et toutes les 30 s pour un mini admin (`use-access-refresh.ts`), une page retirée est quittée. Comptes : choix « Administrateur (accès complet) » ou « Mini admin » avec cases (une par une ou « Tout cocher »), à la création et à la modification ; étiquette « Mini admin » dans la liste ; modifications journalisées.
-  - Règles : seul un administrateur complet crée, modifie, désactive ou supprime un compte administrateur ou mini admin et choisit ses fonctionnalités (403 sinon) ; un mini admin « comptes » gère seulement clients, boulangers et livreurs ; on ne change pas ses propres fonctionnalités ; l'entreprise garde toujours un administrateur complet actif.
-  - Choix techniques : nouvelles permissions `promotions:read`, `promotions:manage` (les promotions quittent `catalog:*`) et `tracking:read` (pour la demande 5), données au rôle administrateur par la migration de données `20261110130000_module_permissions` et `prisma/reference-data.ts`. Lectures partagées ouvertes à plusieurs permissions (`requireCompanyAdminAny`) : produits (catalogue, correction de commande, promotions), clients à choisir (prix, promotions, comptes), tournées de la fiche client (paramètres ou clients), suivi du jour et photo d'incident (tableau de bord ou tournées). Réglages de la page « Facturation » : `invoices:*` au lieu de `settings:*` (inventaire `docs/operations/admin01/tenant-api-boundaries.md` à jour). Tableau de bord : les liens vers commandes et tournées sont masqués sans ces fonctionnalités ; fiche client : prix spécifiques masqués sans « catalogue et prix ». Une liste de fonctionnalités vide = aucun écran (refus explicite).
-  - Vérifications : `tests/lot1-d4-mini-admin.test.ts` (11 tests : vérifications 1 à 5 du document sur les règles de pages et les permissions effectives, règles des comptes en mémoire, réglages illisibles, chaque page rattachée à une fonctionnalité) ; tests existants mis à jour (gardes reconnues, inventaire, dépendances simulées) ; `npm run check` sortie 0, 794/794 ; `next build` sortie 0.
-
-- [ ] **LOT1-D5 — Onglet de suivi des livreurs.**
-
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit.**
-
-  - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK avec un livreur simulé (géolocalisation émulée) : déplacement, trajet vers les 3 prochains arrêts, « Livré » recalcule le trajet, tournée terminée retirée, carte ↔ fiche. Corrigés : « 1 livré », « prévu à » au lieu de « vers ». Itinéraire réel non vu (pas de fournisseur sur `annona-dev`, tracé « approximatif »).
-
-  - 10 novembre 2026, code fait (commit `3478f45` sur `orso/lot1-retouches`, sans push). Onglet « Suivi livreurs » (`/dashboard/tracking`, fonctionnalité « Suivi des livreurs » des mini admins, permission `tracking:read`). Service `src/domains/round/driver-tracking.service.ts` et `GET /api/tracking` : livreurs dont la tournée du jour est démarrée ; position seulement si reçue depuis le démarrage (au-delà de 90 s sans nouvelle position : « Dernière position connue à … ») ; prochains arrêts dans l'ordre, clients restants, livrés avec l'heure, problèmes signalés ; trajet de la position (ou du laboratoire si pas encore de position) jusqu'aux 3 prochains arrêts, itinéraire calculé côté serveur (fournisseur configuré, LEGAL-1) mémorisé 5 min par position arrondie à ~100 m, sinon segments droits en pointillés marqués « approximatif ». Écran : carte et liste reliées (toucher un livreur sur la carte ouvre sa fiche dans la liste ; toucher la fiche le cadre sur la carte), rafraîchi toutes les 15 s. Téléphone du livreur : dernière position renvoyée toutes les 20 s même à l'arrêt (`HEARTBEAT_MS`), toujours seulement pendant une tournée démarrée. Rien de nouveau n'est conservé : la position reste effacée en fin de tournée (déjà le cas, ENF-04).
-  - Vérifications : `tests/lot1-d5-tracking.test.ts` (7 tests : vérifications 1 à 4 du document en mémoire, réseau perdu, tournées non démarrées, terminées ou d'une autre entreprise exclues, accès par fonctionnalité) ; `npm run check` sortie 0, 801/801 ; `next build` sortie 0.
-  - Non vérifié : vrai déplacement d'un livreur sur téléphone ; itinéraire réel du fournisseur (aucun sur `annona-dev`, tracé « approximatif »).
 
 - [ ] **LOT1-D9 — Vérification sur téléphone et lenteur.**
 
@@ -255,12 +173,3 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
   - Non fait : mesure contre un déploiement Vercel ; vrais iPhone et Android (aucun appareil). Écrans du lot 1 mesurés à la recette du soir.
   - Vérifications : `tests/lot1-d9-auth-query.test.ts` (conversion des colonnes et des dates, une seule requête) ; tests existants adaptés (`account-access`, `auth-role-real-guard`) ; `npm run check` sortie 0, 803/803 ; `next build` sortie 0.
 
-- [ ] **LOT1-RECETTE — Tests directs dans Chrome de tout le lot 1.**
-
-  **Qui : Orso — relire le rapport ; pour le passage avec l'extension Claude in Chrome, te connecter toi-même dans l'onglet (le garde-fou refuse que Claude lise les mots de passe de démo) ou dire si Playwright dans Chrome suffit.**
-
-  - 10 novembre 2026 (soir) : migrations appliquées et démo rechargée (autorisation d'Orso) ; `env2:verify-dev` corrigé (`2e646fd`) ; recette par un agent sur `cb442e1` (Playwright dans Chrome, spec `tests/e2e/lot1-recette.spec.ts`, mise en place `scripts/e2e/lot1-d5-round-fixture.ts`) : 1 défaut majeur et 6 mineurs ; corrigés (`da2b732` et suivant), rejeu complet : 12 parcours sur 12. Rapport `docs/rapports/2026-11-10-lot1-recette.md`. Vérifications : `tests/lot1-recette-fixes.test.ts` ; `npm run check` sortie 0, 809/809 ; `next build` sortie 0. Nettoyage : 0 compte `e2e-`, démo rechargée (0 promotion), serveur de recette arrêté. Non fait : passage avec l'extension Claude in Chrome (mots de passe de démo inaccessibles à Claude), vrais téléphones.
-
-  - Demande d'Orso (10 novembre 2026) : une fois tout fini, tester chaque demande directement dans Chrome (extension Claude in Chrome, vrais clics, pas seulement Playwright), avec les comptes de démo (`outputs/comptes-demo.md`) : admin, mini admin, boulanger, client, livreur.
-  - Parcours à rejouer : les vérifications listées dans le document pour chaque demande (D1 1 à 5, D2 1 à 5, D3 1 à 3, D4 1 à 5, D5 1 à 4, D6 1 à 3, D7 1 à 3, D8 1 et 2, D9 1 à 3), plus les états voisins (client sans tournée, promotion épuisée, mini admin qui tape une adresse interdite), en clair et en sombre, sur ordinateur et en largeur téléphone.
-  - Terminé quand : chaque vérification est passée dans Chrome, avec captures et rapport dans `docs/rapports/`, défauts trouvés corrigés et rejoués.
