@@ -18,6 +18,7 @@ import { test, type Browser, type CDPSession, type Page } from "@playwright/test
  *   E2E_BASE_URL=http://localhost:3270 E2E_SKIP_WEB_SERVER=1 E2E_PERF_OUT=outputs/perf/avant.json \
  *     npx playwright test tests/e2e/lot1-d9-perf.spec.ts
  * `E2E_PERF_SCREENS=lot1` ajoute les écrans du lot 1 (promotions, suivi livreurs) : base migrée seulement.
+ * `E2E_PERF_ACCOUNTS=admin` limite la mesure à un ou plusieurs espaces (clés des comptes de démo).
  */
 
 type Account = { email: string; password: string };
@@ -34,6 +35,8 @@ type Measure = {
 
 const OUT = process.env.E2E_PERF_OUT ?? "outputs/perf/mesures.json";
 const WITH_LOT1 = process.env.E2E_PERF_SCREENS === "lot1";
+/** `E2E_PERF_ACCOUNTS=admin` (clés de `comptes-demo.json`, séparées par des virgules) : mesurer seulement ces espaces. */
+const ONLY_ACCOUNTS = (process.env.E2E_PERF_ACCOUNTS ?? "").split(",").map((key) => key.trim()).filter(Boolean);
 const READY_TIMEOUT_MS = 30_000;
 const VIEWPORT = { width: 360, height: 740 };
 const NETWORK = { offline: false, latency: 150, downloadThroughput: (9_000_000 / 8), uploadThroughput: (1_500_000 / 8) };
@@ -232,6 +235,7 @@ test("LOT1-D9 : temps d'affichage et débordements de chaque écran sur téléph
   test.skip(!demo, "outputs/comptes-demo.json absent : lancer npm run db:seed sur annona-dev");
   const results: Measure[] = [];
   for (const space of SPACES) {
+    if (ONLY_ACCOUNTS.length && !ONLY_ACCOUNTS.includes(space.account)) continue;
     const account = demo![space.account];
     if (!account) continue;
     await measureSpace(browser, space, account, results);

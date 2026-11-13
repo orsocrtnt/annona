@@ -8,20 +8,46 @@ import type { OrderStatus, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { slotLabel } from "@/domains/order/merchant-order.service";
 import { companyToday, deliveryDateToDb } from "@/domains/order/order-deadline";
-import { loadStopDetails } from "@/domains/round/round-admin.service";
+import { loadStopDetails, readStopSources } from "@/domains/round/round-admin.service";
 import { nextPendingStop, roundProgress } from "@/domains/round/round-rules";
 import type { LiveDashboard, LiveIncident, LiveRound } from "@/domains/round/round.types";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 
 export type LiveDb = Pick<PrismaClient, "company" | "slot" | "round" | "stop" | "order" | "orderLine" | "merchant" | "user" | "driverLocation">;
 
-export async function getLiveDashboard(companyId: string, options: { now?: Date; db?: LiveDb } = {}): Promise<LiveDashboard> {
+type LiveCompany = { id: string; timezone: string; depotLatitude: number | null; depotLongitude: number | null };
+
+const nullableNumber = (value: unknown): value is number | null => value === null || (typeof value === "number" && Number.isFinite(value));
+
+/**
+ * Entreprise du compte connecté (lue par le garde avec tous ses champs) réduite à ce dont le tableau de bord a
+ * besoin, ou `null` si un champ manque ou est mal typé : le service relit alors l'entreprise.
+ */
+export function liveCompanyFrom(value: unknown): LiveCompany | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.id !== "string" || typeof row.timezone !== "string" || !row.timezone) return null;
+  if (!nullableNumber(row.depotLatitude) || !nullableNumber(row.depotLongitude)) return null;
+  return { id: row.id, timezone: row.timezone, depotLatitude: row.depotLatitude, depotLongitude: row.depotLongitude };
+}
+
+/**
+ * LOT1-D9 : deux vagues de lectures en parallèle au lieu de quatre à la suite. L'entreprise vient du compte
+ * connecté (`company`, déjà lu par le garde) ; lignes et commerces des commandes du jour sont lus avec les arrêts.
+ */
+export async function getLiveDashboard(
+  companyId: string,
+  options: { now?: Date; db?: LiveDb; company?: LiveCompany | null } = {}
+): Promise<LiveDashboard> {
   const db = options.db ?? (prisma as unknown as LiveDb);
   const now = options.now ?? new Date();
-  const company = await db.company.findUnique({
-    where: { id: companyId },
-    select: { timezone: true, depotLatitude: true, depotLongitude: true },
-  });
+  const company =
+    options.company?.id === companyId
+      ? options.company
+      : await db.company.findUnique({
+          where: { id: companyId },
+          select: { id: true, timezone: true, depotLatitude: true, depotLongitude: true },
+        });
   if (!company) throw new DomainRuleError(404, "Entreprise introuvable.", "COMPANY_NOT_FOUND");
   const date = companyToday(now, company.timezone);
   const dbDate = deliveryDateToDb(date);
@@ -40,7 +66,8 @@ export async function getLiveDashboard(companyId: string, options: { now?: Date;
   const total = orders.filter((order) => order.status !== "DRAFT" && order.status !== "CANCELLED").length;
 
   const driverIds = [...new Set(rounds.map((round) => round.driverId).filter((id): id is string => Boolean(id)))];
-  const [stops, drivers, locations] = await Promise.all([
+  // Les arrêts du jour portent des commandes du jour : lignes et commerces de ces commandes couvrent tous les arrêts.
+  const [stops, drivers, locations, sources] = await Promise.all([
     rounds.length
       ? db.stop.findMany({
           where: { companyId, roundId: { in: rounds.map((round) => round.id) } },
@@ -65,8 +92,11 @@ export async function getLiveDashboard(companyId: string, options: { now?: Date;
     driverIds.length
       ? db.driverLocation.findMany({ where: { companyId, driverId: { in: driverIds } }, select: { driverId: true, latitude: true, longitude: true, updatedAt: true } })
       : Promise.resolve([]),
+    rounds.length
+      ? readStopSources(db, companyId, orders.map((order) => order.id), [...new Set(orders.map((order) => order.merchantId))])
+      : Promise.resolve({ lines: [], merchants: [] }),
   ]);
-  const { views } = await loadStopDetails(db, companyId, stops, orders);
+  const { views } = await loadStopDetails(db, companyId, stops, orders, sources);
   const driverName = new Map(drivers.map((driver) => [driver.id, `${driver.firstName} ${driver.lastName}`.trim()]));
   const locationOf = new Map(locations.map((location) => [location.driverId, location]));
   const slotById = new Map(slots.map((slot) => [slot.id, slot]));

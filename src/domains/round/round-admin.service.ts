@@ -206,24 +206,15 @@ const MERCHANT_SELECT = {
 } as const;
 
 /**
- * Arrêts enrichis (commande, commerce, colis), communs aux vues administrateur, livreur et suivi.
- * `preloadedOrders` (commandes du jour déjà lues) évite un aller-retour : lignes et commerces sont
- * alors lus en parallèle.
+ * Lignes et commerces des commandes données, lus en parallèle. Exportée pour qu'un écran qui connaît déjà
+ * les commandes du jour les lise en même temps que ses arrêts (LOT1-D9 : un aller-retour de moins).
  */
-export async function loadStopDetails(
-  db: Pick<RoundDb, "order" | "orderLine" | "merchant">,
+export async function readStopSources(
+  db: Pick<RoundDb, "orderLine" | "merchant">,
   companyId: string,
-  stops: StopRow[],
-  preloadedOrders?: OrderRow[]
+  orderIds: string[],
+  merchantIds: string[]
 ) {
-  const orderIds = [...new Set(stops.map((stop) => stop.orderId))];
-  const wanted = new Set(orderIds);
-  const orders: OrderRow[] = preloadedOrders
-    ? preloadedOrders.filter((order) => wanted.has(order.id))
-    : orderIds.length
-      ? await db.order.findMany({ where: { companyId, id: { in: orderIds } }, select: { id: true, reference: true, status: true, merchantId: true } })
-      : [];
-  const merchantIds = [...new Set(orders.map((order) => order.merchantId))];
   const [lines, merchants] = await Promise.all([
     orderIds.length
       ? db.orderLine.findMany({
@@ -233,6 +224,35 @@ export async function loadStopDetails(
       : Promise.resolve([]),
     merchantIds.length ? db.merchant.findMany({ where: { companyId, id: { in: merchantIds } }, select: MERCHANT_SELECT }) : Promise.resolve([]),
   ]);
+  return { lines, merchants };
+}
+
+export type StopSources = Awaited<ReturnType<typeof readStopSources>>;
+
+/**
+ * Arrêts enrichis (commande, commerce, colis), communs aux vues administrateur, livreur et suivi.
+ * `preloadedOrders` (commandes du jour déjà lues) évite un aller-retour : lignes et commerces sont
+ * alors lus en parallèle. `preloadedSources` (lignes et commerces d'un ensemble de commandes qui couvre
+ * celles des arrêts, lus par `readStopSources`) supprime toute lecture.
+ */
+export async function loadStopDetails(
+  db: Pick<RoundDb, "order" | "orderLine" | "merchant">,
+  companyId: string,
+  stops: StopRow[],
+  preloadedOrders?: OrderRow[],
+  preloadedSources?: StopSources
+) {
+  const orderIds = [...new Set(stops.map((stop) => stop.orderId))];
+  const wanted = new Set(orderIds);
+  const orders: OrderRow[] = preloadedOrders
+    ? preloadedOrders.filter((order) => wanted.has(order.id))
+    : orderIds.length
+      ? await db.order.findMany({ where: { companyId, id: { in: orderIds } }, select: { id: true, reference: true, status: true, merchantId: true } })
+      : [];
+  const merchantIds = [...new Set(orders.map((order) => order.merchantId))];
+  const { lines, merchants } = preloadedSources
+    ? { lines: preloadedSources.lines.filter((line) => wanted.has(line.orderId)), merchants: preloadedSources.merchants }
+    : await readStopSources(db, companyId, orderIds, merchantIds);
   const orderById = new Map(orders.map((order) => [order.id, order]));
   const merchantById = new Map(merchants.map((merchant) => [merchant.id, merchant]));
   const linesByOrder = new Map<string, typeof lines>();
