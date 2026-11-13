@@ -6,6 +6,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo).**
 
+  **Fait par : Orso et Théo.**
+
 
   - Fait : Théo (`theoner13`) collaborateur du dépôt en écriture (10 novembre) ; `base` protégée (PR obligatoire, contrôles « Contrôles sans secrets » et « Migrations sur PostgreSQL neuf », branche à jour, sans force-push) ; règles « Travail à deux » et « Branche et publication » dans `AGENTS.md` et `.cursor/rules/contexte-markdown.mdc`, listes par personne dans `npm run todo:progress`, le tout fusionné avec la PR #1, première PR sous protection, CI verte ; Théo a cloné le dépôt, rempli et vérifié `.env.local` (11 novembre) ; garde-fou de push : COLLAB-2 (archivée).
   - 12 novembre 2026 (session Claude d'Orso, Chrome) : invitation envoyée depuis le tableau Supabase (organisation « orsocrtnt's Org » › Team › Invite members, rôle Developer, adresse confirmée par Orso et volontairement non écrite ici car le dépôt est public). Tableau : « Successfully sent invitation », Théo listé « Invited » en Developer. Reste : Théo accepte l'invitation ; la tâche se coche quand il voit `annona-dev` dans son tableau Supabase. Vercel sans objet pour l'instant (seule équipe du compte : « TutelLiv », offre Hobby).
@@ -13,6 +15,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   - Close le 13 novembre 2026 : décision d'Orso, Théo n'a pas besoin d'accès au tableau Supabase (son `.env.local` suffit pour coder, lancer l'appli et migrer ; journaux et réglages restent chez Orso). Invitation non acceptée (introuvable chez Théo), à annuler par Orso dans Supabase › Team.
 
 - [x] **LOT1-D1 — Tournées avec livraison du matin et du soir.**
+
+  **Fait par : Orso.**
 
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : tournée créée puis supprimée, Matin et Soir seuls, deux commandes le même jour, groupes « Sud matin » chez le boulanger. Défaut majeur trouvé puis corrigé (commande du soir qui reprenait les articles du matin, `cart-sync.ts`) et client sans tournée rendu inactif. Vérification 4 (16h59/17h00) : tests en mémoire seulement.
 
@@ -23,6 +27,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **LOT1-D8 — Consignes d'accès modifiables par le client.**
 
+  **Fait par : Orso.**
+
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : le client enregistre « Code portail 1234, déposer à l'arrière », le livreur le voit sur l'arrêt.
 
   - 10 novembre 2026, code fait (commit `99ccfa4`). Paramètres du client : carte « Consignes d'accès » (texte libre, 500 caractères au plus, compteur), `PATCH /api/portal/merchant` (`requireMerchantActor`), modification journalisée (entité Merchant, acteur = le client). Le livreur lit les consignes en base à chaque chargement de sa tournée (déjà le cas), l'admin les lit et les modifie dans la fiche client (borne passée de 600 à 500). Choix : la modification est visible tout de suite, même pendant une tournée commencée (au moins aussi tôt que demandé).
@@ -31,6 +37,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **LOT1-D7 — Recherche d'article dans la commande récurrente.**
 
+  **Fait par : Orso.**
+
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : « bag », « eclair », effacement, à 1 280 et 390 px.
 
   - 10 novembre 2026, code fait (commit `0c65ad7`). Fenêtre de la commande récurrente : la liste déroulante « Ajouter un produit » est remplacée par une barre de recherche en haut d'une liste filtrée en direct (nom seulement, sans majuscules ni accents, `src/lib/format/search.ts`) ; vide = tout le catalogue ; produit déjà ajouté marqué « Ajouté ». La recherche du catalogue principal n'a pas changé.
@@ -38,6 +46,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   - Close le 12 novembre 2026 : Orso valide la recette faite avec Playwright dans Chrome (vrais clics, comptes de démo, `docs/rapports/2026-11-10-lot1-recette.md`) ; le passage avec l'extension Claude in Chrome n'est plus demandé.
 
 - [x] **LOT1-D6 — Tableau de bord cliquable.**
+
+  **Fait par : Orso.**
 
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : chaque chiffre et la progression d'une tournée ouvrent la bonne liste.
 
@@ -48,6 +58,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **LOT1-D3 — Allergènes sur chaque produit.**
 
+  **Fait par : Orso.**
+
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : gluten + lait visibles chez le client, « Allergènes non renseignés », « Aucun allergène ».
 
   - 10 novembre 2026, code fait (commit `989fdef`). `Product.allergens` (codes des 14 allergènes, `src/domains/catalog/allergens.ts`) et `Product.allergensDeclared` (faux = « Allergènes non renseignés », vrai et vide = « Aucun allergène ») ; contraintes CHECK (codes connus, rien sans déclaration). Fiche produit admin : 14 cases, bouton « Aucun allergène », lien « Remettre à non renseignés » (tout décocher revient à non renseignés). Client : toucher la photo ou le nom d'un produit ouvre sa fiche avec ses allergènes.
@@ -57,6 +69,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **LOT1-D2 — Promotions (fins de série et autres).**
 
+  **Fait par : Orso.**
+
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : −30 % pour 2 clients (absente chez le 3ᵉ), section en tête, ancien prix barré, limite atteinte puis prix normal, état « Épuisée ». Corrigés : libellé du panier pour une promo partielle, bouton « Arrêter » à 390 px, seed qui gardait les promotions. Vérifications 3 et 5 : tests en mémoire seulement.
 
   - 10 novembre 2026, code fait (commit `cb60190` sur `orso/lot1-retouches`, sans push). Modèles `Promotion` (prix promo OU réduction en % entier, dernier jour inclus, quantité limitée facultative, tous les clients ou `PromotionMerchant`, arrêt = `stoppedAt`, jamais supprimée) ; `OrderLine.promotionId`, `promoQuantity`, `promoUnitPriceCents` : la part promo de chaque ligne est retenue à la validation (`src/domains/catalog/promotion.service.ts`, `allocatePromotions`, verrou consultatif par promotion) et ne change plus ensuite. Calcul unique : `computeTotals` / `lineAmountCents` (`pricing.ts`) comptent la part promo partout (commande client, liste admin, détail admin, e-mail de confirmation, factures avec une ligne « (promo) », relevés, Factur-X). Admin : page « Promotions » (`/dashboard/promotions`, menu), en cours et terminées (terminée, arrêtée, épuisée), création (produit, % ou prix, dernier jour, quantité, clients choisis avec recherche), arrêt en deux clics. Client : section « Promotions » en tête du catalogue, étiquette « Promo », ancien prix barré, nouveau prix ; panier et détail de commande montrent la part promo. Commande récurrente générée à 17h : reçoit la promotion en cours (et la limite). Export entreprise et inventaire DATA-02 : tables `promotions`, `promotion_merchants`.
@@ -65,6 +79,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   - Close le 12 novembre 2026 : Orso valide la recette faite avec Playwright dans Chrome (vrais clics, comptes de démo, `docs/rapports/2026-11-10-lot1-recette.md`) ; le passage avec l'extension Claude in Chrome n'est plus demandé.
 
 - [x] **LOT1-D4 — Comptes « mini admin ».**
+
+  **Fait par : Orso.**
 
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK : création, menu limité, adresses interdites renvoyées et API en 403, droits ajoutés ou retirés pris en compte en 25 s sans reconnexion. E-mail d'invitation non envoyé (pas de clé Resend).
 
@@ -76,6 +92,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **LOT1-D5 — Onglet de suivi des livreurs.**
 
+  **Fait par : Orso.**
+
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : OK avec un livreur simulé (géolocalisation émulée) : déplacement, trajet vers les 3 prochains arrêts, « Livré » recalcule le trajet, tournée terminée retirée, carte ↔ fiche. Corrigés : « 1 livré », « prévu à » au lieu de « vers ». Itinéraire réel non vu (pas de fournisseur sur `annona-dev`, tracé « approximatif »).
 
   - 10 novembre 2026, code fait (commit `3478f45` sur `orso/lot1-retouches`, sans push). Onglet « Suivi livreurs » (`/dashboard/tracking`, fonctionnalité « Suivi des livreurs » des mini admins, permission `tracking:read`). Service `src/domains/round/driver-tracking.service.ts` et `GET /api/tracking` : livreurs dont la tournée du jour est démarrée ; position seulement si reçue depuis le démarrage (au-delà de 90 s sans nouvelle position : « Dernière position connue à … ») ; prochains arrêts dans l'ordre, clients restants, livrés avec l'heure, problèmes signalés ; trajet de la position (ou du laboratoire si pas encore de position) jusqu'aux 3 prochains arrêts, itinéraire calculé côté serveur (fournisseur configuré, LEGAL-1) mémorisé 5 min par position arrondie à ~100 m, sinon segments droits en pointillés marqués « approximatif ». Écran : carte et liste reliées (toucher un livreur sur la carte ouvre sa fiche dans la liste ; toucher la fiche le cadre sur la carte), rafraîchi toutes les 15 s. Téléphone du livreur : dernière position renvoyée toutes les 20 s même à l'arrêt (`HEARTBEAT_MS`), toujours seulement pendant une tournée démarrée. Rien de nouveau n'est conservé : la position reste effacée en fin de tournée (déjà le cas, ENF-04).
@@ -85,6 +103,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **LOT1-RECETTE — Tests directs dans Chrome de tout le lot 1.**
 
+  **Fait par : Orso.**
+
   - 10 novembre 2026 (soir) : migrations appliquées et démo rechargée (autorisation d'Orso) ; `env2:verify-dev` corrigé (`2e646fd`) ; recette par un agent sur `cb442e1` (Playwright dans Chrome, spec `tests/e2e/lot1-recette.spec.ts`, mise en place `scripts/e2e/lot1-d5-round-fixture.ts`) : 1 défaut majeur et 6 mineurs ; corrigés (`da2b732` et suivant), rejeu complet : 12 parcours sur 12. Rapport `docs/rapports/2026-11-10-lot1-recette.md`. Vérifications : `tests/lot1-recette-fixes.test.ts` ; `npm run check` sortie 0, 809/809 ; `next build` sortie 0. Nettoyage : 0 compte `e2e-`, démo rechargée (0 promotion), serveur de recette arrêté. Non fait : passage avec l'extension Claude in Chrome (mots de passe de démo inaccessibles à Claude), vrais téléphones.
 
   - Demande d'Orso (10 novembre 2026) : une fois tout fini, tester chaque demande directement dans Chrome (extension Claude in Chrome, vrais clics, pas seulement Playwright), avec les comptes de démo (`outputs/comptes-demo.md`) : admin, mini admin, boulanger, client, livreur.
@@ -93,6 +113,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   - Close le 12 novembre 2026 : Orso valide la recette faite avec Playwright dans Chrome (vrais clics, comptes de démo, `docs/rapports/2026-11-10-lot1-recette.md`) ; le passage avec l'extension Claude in Chrome n'est plus demandé.
 
 - [x] **COLLAB-2 — Garde-fou avant chaque push : l'autre ne travaille-t-il pas déjà dessus ?**
+
+  **Fait par : Théo.**
 
 
   - Fait le 11 novembre 2026 (branche `theo/garde-collab`, non commitée) : `scripts/collab/check-collab.mjs` (récupère `origin`, compare les fichiers changés par rapport à `base` avec ceux de chaque branche non fusionnée de l'autre, lit les « En cours » de `TODO.md` sur `base` et sur ses branches), règles pures dans `scripts/collab/collab-overlap.mjs`, hook `.githooks/pre-push`, scripts `npm run collab:check` et `npm run collab:install-hook`, règle ajoutée dans `AGENTS.md` (« Travail à deux »).
@@ -107,6 +129,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **WIN-1 — `npm run check` vert sous Windows (machine de Théo).**
 
+  **Fait par : Théo.**
+
 
   - Constat (11 novembre 2026, Windows 11, Node 24.22.1) : 12 tests sur 817 échouaient sur la machine de Théo, à l'identique sans aucun changement ; tous verts en CI (Linux, Node 22.18). Trois causes, toutes dans les tests, aucune dans l'application :
     1. Chemins construits avec `\` sous Windows, comparés à des chemins en `/` : `admin01-no-impersonation` (ADMIN-1), `auth-role-real-guard` (AUTH-ROLE), `fact1-invoices` « Droits » (le filtre `/pdf/` ne marchait plus). Correction : séparateur ramené à `/`.
@@ -120,6 +144,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **ADM-1 — Comptes, paramètres et plateforme.**
 
+  **Fait par : Orso.**
+
   **Modèle conseillé : Claude Opus · effort moyen.**
 
   ADM-01, ADM-09, PLA-01 à PLA-04, ENF-07 : comptes commerçants, boulangers, livreurs, administrateurs ; heure limite, créneaux, catégories, délai du rappel ; super-administrateur (créer, configurer, suspendre une entreprise) ; nom et logo de l'entreprise ; textes centralisés en français (« client », « livreur », « tournée », « arrêt »).
@@ -131,6 +157,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   Reste : invitations par e-mail non configurées en développement (`AUTH_EMAIL_LINKS_ENABLED` désactivé : un compte créé reste « en attente ») ; nom de l'entreprise mis à jour dans l'en-tête seulement à la reconnexion ; la liste des réclamations côté plateforme montre encore le statut et la référence de commande sans motif ; mode sombre non relu.
 
 - [x] **FACT-1 — Factures par période.**
+
+  **Fait par : Orso.**
 
   **Modèle conseillé : Claude Opus · effort élevé (montants, numérotation).**
 
@@ -144,6 +172,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **TOUR-1 — Tournées : administrateur et livreur.**
 
+  **Fait par : Orso.**
+
   **Modèle conseillé : Claude Opus · effort élevé (hors réseau, ordre des arrêts).**
 
   ADM-04, ADM-06 à ADM-08, LIV-01 à LIV-06 : tournée par créneau calculée avec le calcul existant, réordonner, déplacer un arrêt, changer de livreur, attribution ; suivi en direct ; côté livreur : arrêts dans l'ordre (colis, consignes), liste de chargement, « Livré » en un appui, arrêt suivant puis « Ouvrir dans Plans », « Ouvrir dans Waze », « Y aller seul » ; problème avec commentaire et photo ; hors réseau avec la file existante.
@@ -155,6 +185,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   Reste : environ 520 ms par requête depuis New York vers la base à Paris (écrans en 1 à 7 s en local ; à mesurer une fois hébergé en Europe) ; le service worker ne met rien en cache (recharger la page hors réseau échoue, la file tient) : MOBILE-1 ; push non vérifié sur un vrai téléphone ; mode sombre et glisser-déposer au doigt non relus.
 
 - [x] **BOU-1 — Espace boulanger.**
+
+  **Fait par : Orso.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -168,6 +200,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **LOCK-1 — Heure limite, verrouillage et consolidation.**
 
+  **Fait par : Orso.**
+
   **Modèle conseillé : Claude Opus · effort élevé (heures de Paris, tâche planifiée).**
 
   RG-01, RG-04, RG-09, RG-10, ADM-05 : refus côté serveur à partir de 17h00:00 heure de Paris (paramétrable) ; tâche planifiée qui verrouille, fige les prix, génère les récurrentes seulement sans commande manuelle, calcule les totaux et les tournées du lendemain ; correction administrateur après l'heure limite journalisée (qui, quand, avant, après).
@@ -179,6 +213,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   À savoir : les commandes de démo du 7 novembre ont été réellement verrouillées sur annona-dev, avec leurs tournées brouillon. `cron-daily.yml` appelle encore deux routes supprimées par NET-1 (repris dans FACT-1).
 
 - [x] **CMD-1 — Commande côté commerçant.**
+
+  **Fait par : Orso.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -192,6 +228,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 - [x] **CAT-1 — Catalogue et prix.**
 
+  **Fait par : Orso.**
+
   **Modèle conseillé : Claude Opus · effort moyen.**
 
   ADM-02, ADM-03, RG-05, PLA-04 : catégories ordonnées, produits (nom, photo, unité, prix de base, actif), prix spécifique par commerçant ; un seul calcul du prix appliqué, utilisé partout.
@@ -203,6 +241,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   Reste : prix spécifiques depuis la fiche client (ADM-1).
 
 - [x] **SCHEMA-1 — Nouveau schéma de données et base de démonstration.**
+
+  **Fait par : Orso.**
 
   **Modèle conseillé : Claude Opus · effort élevé (schéma, isolation).**
 
@@ -216,6 +256,8 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 
 - [x] **NET-1 — Nettoyer la base de l'ancien produit.**
+
+  **Fait par : Orso.**
 
   **Modèle conseillé : Claude Opus · effort élevé (suppression large).**
 
