@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**21 tâches terminées sur 30 — 70 %**
+**22 tâches terminées sur 30 — 73 %**
 
-`██████████████░░░░░░` · 9 tâches restantes
+`███████████████░░░░░` · 8 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
-| Fait | **19** : COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **3** : COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **3** : DEMO-1, SEP-1, ACCES-1 | **6** : NOTIF-1, MOBILE-1, RECETTE-V1, HEB-1, AUTH-GOOGLE, LOT1-D9 |
+| Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **4** : NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
+| À faire | **3** : DEMO-1, SEP-1, ACCES-1 | **5** : MOBILE-1, RECETTE-V1, HEB-1, AUTH-GOOGLE, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -28,7 +28,6 @@
 **À faire par Théo**
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
-- NOTIF-1 — Notifications (mettre l'adresse de son compte Resend dans `EMAIL_TEST_RECIPIENT` (`.env.local`), puis Claude envoie le vrai e-mail de test)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation)
@@ -58,7 +57,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
 - AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
 - Questions métier (ACCES-1) : répondues le 13 novembre (plages matin 5h30-12h30 et après-midi 15h-19h ; 60-70 arrêts par livreur, 15-20 produits par livraison ; 200 points par jour au plus ; un livreur = une tournée, au moins 110 points).
-- NOTIF-1 : clé Resend en place et valide (3 e-mails acceptés par Resend le 13 novembre). Reste : ton adresse du compte Resend dans `EMAIL_TEST_RECIPIENT`, puis réception du vrai e-mail de test.
 - MOBILE-1, Android sur sa machine : `npx cap sync android` fait le 13 novembre (8 modules natifs). Bloqué pour l'APK : ni Java (JDK 21) ni émulateur installés (seul le SDK Android est là). Installer Android Studio complet (Java inclus) ou un JDK 21 et un émulateur, puis APK de test.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
@@ -120,22 +118,6 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   Terminé quand : les quatre réponses, les mentions légales et la clé Resend sont fournies (`.env.local` de base déjà fait).
 
-- [ ] **NOTIF-1 — Notifications.**
-
-  **Qui : Théo — mettre l'adresse de son compte Resend dans `EMAIL_TEST_RECIPIENT` (`.env.local`), puis Claude envoie le vrai e-mail de test.**
-
-  **Modèle conseillé : Claude Opus · effort moyen.**
-
-  - 13 novembre 2026 (poste de Théo) : clé Resend de Théo dans `.env.local` (`re_…`, non affichée) ; `MAIL_FROM=onboarding@resend.dev` (expéditeur de test Resend, sans domaine vérifié) et `EMAIL_DELIVERY_MODE=test`. `npx tsx scripts/email/send-test.ts --confirm --to delivered@resend.dev` → bienvenue, livraison, relance : **sent** (3/3, adresse simulée Resend : clé valide, aucune vraie boîte). Reste : `EMAIL_TEST_RECIPIENT` = adresse du compte Resend (seule adresse autorisée sans domaine vérifié), puis envoi réel et réception constatée par Théo. Les vrais envois aux clients demandent un domaine vérifié chez Resend (Orso).
-
-  NOT-01 (rappel avant l'heure limite sans commande pour le lendemain, délai paramétrable), NOT-02 (confirmation à chaque commande validée ou modifiée), NOT-03 (« livreur en approche » quand l'arrêt précédent est livré).
-
-  Terminé quand : tests des déclencheurs ; un envoi réel reçu sur une adresse de test.
-
-  7 novembre 2026, code fait (commit `228a85a`, sans push, sans migration). NOT-01 : route `/api/cron/order-reminders` appelée par `cron-lock-orders.yml` toutes les 10 min ; client actif sans commande ni récurrente active ce jour-là, `reminderLeadMinutes` avant l'heure limite, une seule fois par compte, client et date, jamais après l'heure limite ; commande annulée ou brouillon = pas de commande ; délai 0 = rappel désactivé ; le client peut le couper (Paramètres › Alertes). NOT-02 : après chaque commande validée, modifiée ou annulée par le client et après correction admin ; au plus une confirmation toutes les 5 min par commande (la première tout de suite, les suivantes regroupées, état final relu à l'envoi). NOT-03 : au démarrage de la tournée le premier arrêt est prévenu, puis après « Livré » ou un problème le premier arrêt restant ; une seule fois par arrêt, rejeu hors ligne compris. Canaux : cloche du portail et e-mail par la file ; sans clé Resend, tâche e-mail close « ignorée » (`SKIPPED:EMAIL_DISABLED`) ; `registerNotificationChannel` prêt pour les notifications natives (MOBILE-1).
-  Vérifications : 12 tests (dont changements d'heure du 25 octobre et du 29 mars, rejeu sans doublon, isolation) ; Playwright `tests/e2e/notif1-recette.spec.ts` cliqué 3/3 (confirmation dans la cloche, rappel par la route cron avec `?now=`, « livreur en approche » après un « Livré ») ; captures `outputs/recette-notif1-adm1/` ; `npm run check` 717/717 puis 731/731 ; `npm run build` vert.
-  Reste : envoi réel reçu sur une adresse de test (critère de la tâche) ; confirmation différée et tâches en échec envoyées seulement au passage de `/api/cron/operations` (toutes les 5 min).
-
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
   **Qui : Théo — Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
@@ -167,7 +149,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   Terminé quand : les dix critères passent et le rapport est dans `docs/rapports/`.
 
   - 7 novembre 2026 : les dix critères passent dans le navigateur, sur un build de production local (rapport `docs/rapports/2026-11-07-recette-v1-navigateur.md`, spec `tests/e2e/recette-v1.spec.ts` 12/12). Défauts trouvés et retours du propriétaire des 10 et 11 novembre : corrigés, détail dans `docs/TODO-ARCHIVE.md` (journal du 11 novembre).
-  - Reste : critères 1, 7, 8 et notifications natives sur vrais téléphones (après MOBILE-1) ; e-mails réels (clé Resend, NOTIF-1) ; mentions légales des factures (ACCES-1).
+  - Reste : critères 1, 7, 8 et notifications natives sur vrais téléphones (après MOBILE-1) ; e-mails réels faits (NOTIF-1 close le 13 novembre) ; mentions légales des factures (ACCES-1).
   - Défauts encore ouverts : N2 (mineur) retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone.
   - N1, reste « arrêt remis en attente par l'admin pendant l'état « sent » » : constaté le 12 novembre 2026 (session Claude d'Orso) que l'application n'offre aucune action qui remette un arrêt en attente (écritures de `stop` côté admin : ordre et tournée seulement, `round-admin.service.ts`, `admin-order.service.ts` ; statut changé seulement par le livreur, `round-driver.service.ts`). Le cas n'arrive que par une modification directe en base : rien à recetter dans le navigateur ; la règle reste couverte par `settleSentDriverActions` et son test (`tests/tour1-rounds.test.ts`). À rouvrir si une action « annuler la livraison » est ajoutée.
   - Décision N3 (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : l'outre-mer n'est pas en V1 ; « Aujourd'hui » reste calculé à l'heure de Paris côté boulanger et admin. À rouvrir si une boulangerie d'outre-mer arrive.

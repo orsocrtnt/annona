@@ -4,6 +4,22 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **NOTIF-1 — Notifications.**
+
+  **Fait par : Orso et Théo.**
+
+
+  - 13 novembre 2026 (poste de Théo) : clé Resend de Théo dans `.env.local` (`re_…`, non affichée) ; `MAIL_FROM=onboarding@resend.dev` (expéditeur de test Resend, sans domaine vérifié) et `EMAIL_DELIVERY_MODE=test`. `npx tsx scripts/email/send-test.ts --confirm --to delivered@resend.dev` → bienvenue, livraison, relance : **sent** (3/3, adresse simulée Resend : clé valide, aucune vraie boîte). Reste : `EMAIL_TEST_RECIPIENT` = adresse du compte Resend (seule adresse autorisée sans domaine vérifié), puis envoi réel et réception constatée par Théo. Les vrais envois aux clients demandent un domaine vérifié chez Resend (Orso).
+
+  NOT-01 (rappel avant l'heure limite sans commande pour le lendemain, délai paramétrable), NOT-02 (confirmation à chaque commande validée ou modifiée), NOT-03 (« livreur en approche » quand l'arrêt précédent est livré).
+
+  Terminé quand : tests des déclencheurs ; un envoi réel reçu sur une adresse de test.
+
+  7 novembre 2026, code fait (commit `228a85a`, sans push, sans migration). NOT-01 : route `/api/cron/order-reminders` appelée par `cron-lock-orders.yml` toutes les 10 min ; client actif sans commande ni récurrente active ce jour-là, `reminderLeadMinutes` avant l'heure limite, une seule fois par compte, client et date, jamais après l'heure limite ; commande annulée ou brouillon = pas de commande ; délai 0 = rappel désactivé ; le client peut le couper (Paramètres › Alertes). NOT-02 : après chaque commande validée, modifiée ou annulée par le client et après correction admin ; au plus une confirmation toutes les 5 min par commande (la première tout de suite, les suivantes regroupées, état final relu à l'envoi). NOT-03 : au démarrage de la tournée le premier arrêt est prévenu, puis après « Livré » ou un problème le premier arrêt restant ; une seule fois par arrêt, rejeu hors ligne compris. Canaux : cloche du portail et e-mail par la file ; sans clé Resend, tâche e-mail close « ignorée » (`SKIPPED:EMAIL_DISABLED`) ; `registerNotificationChannel` prêt pour les notifications natives (MOBILE-1).
+  Vérifications : 12 tests (dont changements d'heure du 25 octobre et du 29 mars, rejeu sans doublon, isolation) ; Playwright `tests/e2e/notif1-recette.spec.ts` cliqué 3/3 (confirmation dans la cloche, rappel par la route cron avec `?now=`, « livreur en approche » après un « Livré ») ; captures `outputs/recette-notif1-adm1/` ; `npm run check` 717/717 puis 731/731 ; `npm run build` vert.
+  Reste : envoi réel reçu sur une adresse de test (critère de la tâche) ; confirmation différée et tâches en échec envoyées seulement au passage de `/api/cron/operations` (toutes les 5 min).
+  - Close le 13 novembre 2026 : envoi réel reçu par Théo sur l'adresse de son compte Resend (`send-test.ts --confirm`, mode test, expéditeur `onboarding@resend.dev`) : bienvenue, livraison, relance acceptés par Resend puis « delivered » selon le journal Resend (22h28 UTC), réception confirmée par Théo. Les deux critères sont remplis (déclencheurs testés le 7 novembre, envoi réel reçu). Hors tâche : les envois aux vrais clients demandent un domaine vérifié chez Resend (`MAIL_FROM` d'Annona) avant `EMAIL_DELIVERY_MODE=live` ; avec iCloud, l'expéditeur de test peut être filtré.
+
 - [x] **COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo).**
 
   **Fait par : Orso et Théo.**
