@@ -10,11 +10,12 @@
 
 **À faire par Claude**
 
-- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (code en cours (branche `orso/auth-google`))
+- Rien pour l'instant
 
 **À faire par Orso**
 
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (réglages Google Cloud et Supabase (liste « Reste à Orso » ci-dessous), puis Claude fait l'essai réel)
 
 **À faire par Théo**
 
@@ -38,7 +39,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- Inscription des entreprises et connexion Google (AUTH-GOOGLE, décision du 13 novembre, écart avec PLA-02 accepté) : dire si une entreprise inscrite attend la validation du super admin et s'il y a un paiement, puis réglages Google Cloud et Supabase.
+- Connexion Google (AUTH-GOOGLE, code fait le 13 novembre) : 5 minutes de réglages dans Google Cloud et Supabase (liste « Reste à Orso » dans la tâche : cocher le règlement Google, créer le client OAuth, coller l'ID et le code secret dans Supabase), puis dire à Claude « Google est réglé » pour l'essai réel.
 - Plus tard : mentions légales des factures (ACCES-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
@@ -132,6 +133,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   7 novembre 2026, partie sans comptes ni téléphone faite (commit `789de93`, sans push, sans migration). Une seule application « Annona » (`fr.annona.app`) plutôt que deux : la connexion envoie déjà chaque compte dans son espace (client → `/portal`, livreur → `/driver`) ; une fiche par store, une revue, une clé APNs, un projet Firebase ; caméra et position demandées seulement à l'usage (deux applications restent possibles avec une seconde configuration). Mode « site hébergé » : `server.url` = `CAPACITOR_SERVER_URL`, page de repli « Pas de connexion / Réessayer » dans `mobile/www`. Projets `ios/` (Swift Package Manager) et `android/` ; textes d'autorisation en français (position « seulement pendant votre tournée », jamais « toujours »), portrait ; icônes et écrans de lancement générés depuis `public/brand`. Ponts `src/lib/native/` (comportement navigateur inchangé) : notifications natives (jeton vers `/api/native/push-token`, rangé dans `driver_push_subscriptions` avec `endpoint = native:<ios|android>:<jeton>`, canal `native_push` via `registerNotificationChannel` ; envoi APNs et FCM écrit mais inactif sans clés), caméra, position seulement pendant une tournée démarrée, Plans et Waze, réseau et retour au premier plan pour relancer la file hors ligne, nettoyage à la déconnexion. `sw.js` garde une copie de `/driver`, des données de tournée et des fichiers statiques (réseau d'abord, build de production seulement, effacée à la déconnexion). Documentation : `docs/MOBILE.md`.
   Vérifications : `tests/mobile1-native.test.ts` ; `npm run check` relancé par l'orchestrateur : 754/754 ; `npm run build` vert ; `npx cap sync` (8 extensions iOS et Android) ; Playwright `tour1-recette` et `cat1-cmd1-recette` 8/8 (recopie 32,3 s) ; aucun dossier lourd versionné (vérifié). Compilation iOS en échec sur ce Mac : Xcode 26.6 refuse toute destination iOS (« iOS 26.5 is not installed ») et le catalogue d'images de l'extension caméra exige un simulateur ; `AppDelegate.swift` et `SceneDelegate.swift` passent `swiftc -typecheck`. Android non compilé sur ce Mac (ni SDK ni Java). Caches créés hors du dépôt, supprimables : frameworks Capacitor et Cordova téléchargés avec curl depuis leur source officielle (empreintes vérifiées) dans `~/Library/Caches/org.swift.swiftpm/artifacts/`, et `~/Library/Developer/Xcode/DerivedData/App-*`.
   Reste au propriétaire, dans l'ordre : (1) hébergement UE et adresse HTTPS définitive, puis `CAPACITOR_SERVER_URL=<adresse> npm run mobile:sync` ; (2) compte Apple Developer (équipe de signature, capacité « Push Notifications », clé APNs `.p8` dans `APNS_*`) ; (3) compte Google Play Console ; (4) projet Firebase (`android/app/google-services.json` hors git, compte de service dans `FCM_*`, puis `NEXT_PUBLIC_NATIVE_PUSH=on`) ; (5) composant iOS dans Xcode (Réglages › Composants) et Android Studio, ou un vrai iPhone et un vrai Android ; puis Claude relance `npm run mobile:build:ios` et teste les critères 1, 7 et 8 sur téléphone ; (6) `WKAppBoundDomains` avec le domaine de production pour la copie hors réseau dans l'application iPhone.
+
+  AUTH-GOOGLE (13 novembre 2026, pour Théo, sa zone) : le bouton « Continuer avec Google » est masqué dans les applications (`isNativeApp()`, `src/features/auth/google-button.tsx`) car Google refuse sa page de connexion dans la vue web de Capacitor. Version appli à faire : ouvrir Google dans le navigateur du système (`@capacitor/browser`), revenir dans l'application par un lien profond vers `/auth/callback`, ajouter ce lien aux Redirect URLs Supabase.
   Douteux : Apple peut refuser une application qui charge un site (règle 4.2 ; les fonctions natives sont l'argument) ; `getPhoto` déprécié dans l'extension caméra 8 ; sur Android, « Plans » ouvre la carte web d'Apple ; la table `driver_push_subscriptions` porte aussi les jetons des clients ; copie hors réseau non essayée sur un build de production.
   11 novembre 2026, machine Windows de Théo : JDK Temurin 21 et SDK Android en ligne de commande (plateforme 36, build-tools 36, platform-tools) installés dans `%LOCALAPPDATA%` (`AnnonaTools/jdk-21`, `Android/Sdk`), licences du SDK acceptées ; `android/local.properties` pointe sur ce SDK (fichier ignoré par git). Premier `gradlew assembleDebug` en échec attendu : `capacitor-cordova-android-plugins/cordova.variables.gradle` absent, il faut d'abord `npx cap sync android`. Reste (Claude, sur la machine de Théo) : `cap sync`, APK de test, essai sur émulateur ou téléphone ; notifications natives inactives sans Firebase.
 
@@ -156,9 +159,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Claude — code en cours (branche `orso/auth-google`).**
-
-  **En cours : Orso.**
+  **Qui : Orso — réglages Google Cloud et Supabase (liste « Reste à Orso » ci-dessous), puis Claude fait l'essai réel.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -176,6 +177,22 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   Questionnaire d'Orso du 13 novembre 2026 (réponses) : entreprise inscrite au statut « Essai » (même accès qu'active ; plus tard, active après paiement Stripe, PLA-05) ; formulaire minimal (nom de la boulangerie, prénom, nom, e-mail, mot de passe ou Google ; le reste dans Paramètres) ; arrivée sur le tableau de bord ; phrase et lien vers `/confidentialite` (pas de CGU) ; pas d'alerte, liste des entreprises du super admin ; compte « en attente » créé par l'admin activé à la première connexion Google de même adresse ; Google sur le web seulement (bouton masqué dans les applications, version appli pour Théo dans MOBILE-1) ; Google Cloud en mode Test, testeur : l'adresse Google d'Orso (Théo s'ajoutera) ; e-mail de confirmation réel plus tard (SMTP Resend de `annona-dev`) ; essai réel autorisé dans le Chrome d'Orso. Projet Google Cloud créé : `annona-514617`.
 
   Anciens points ouverts, tranchés ci-dessus : (1) une entreprise inscrite est-elle active tout de suite ou après validation par le super admin ; (2) paiement à l'inscription ou non. Réglages : identifiants OAuth dans Google Cloud, fournisseur Google activé dans Supabase (`annona-dev`), adresses de retour (local, hébergement définitif, applications mobiles de MOBILE-1).
+
+  13 novembre 2026 (session Claude d'Orso, branche `orso/auth-google`), code fait :
+  - `/inscription` : Google, ou e-mail + mot de passe (nom de la boulangerie, prénom, nom). Entreprise « Essai » (TRIAL), trois créneaux de départ, 17h, heure de Paris ; admin « en attente » jusqu'au lien de confirmation (e-mail) ou actif tout de suite (Google). Réponse identique que l'adresse soit libre ou non. Services `src/domains/auth/company-signup.service.ts` (+ `supabase-signup.ts`), création commune avec le super admin (`insertCompanyWithAdmin`, `src/domains/admin/company-admin.service.ts`), routes `POST /api/auth/signup` et `/api/auth/signup/google` (adresse relue dans la session Supabase, jamais dans la requête).
+  - `/auth/callback` : retour de Google et du lien de confirmation ; profil relu en base ; compte « en attente » activé si l'adresse est prouvée (`syncUserFromSupabase(…, { activatePending })`, aussi à la connexion par mot de passe une fois l'adresse confirmée) ; profil « en attente » resté sur un autre compte de connexion rattaché au compte Google (`adoptPendingProfile`) ; adresse inconnue : déconnexion, compte de connexion né de Google retiré (sinon il bloquerait la création du compte par un admin), message sur `/login` avec lien vers l'inscription.
+  - Bouton « Continuer avec Google » sur `/login`, `/login/client`, `/login/driver` et `/inscription`, affiché seulement avec `NEXT_PUBLIC_GOOGLE_AUTH=on` et hors applications natives ; lien « Vous êtes une boulangerie ? Créer votre compte » sur `/login`.
+  - Vérifications : `tests/auth-google-signup.test.ts` (8 tests) ; listes fermées mises à jour (`tests/adm1-criterion10-isolation.test.ts`, `tests/auth-role-page-access.test.ts`) ; `npm run check` sortie 0 (840 tests, 839 réussis, 1 sauté) ; `next build` sortie 0. Captures Playwright à 360 px et 1280 px de `/inscription`, des erreurs du formulaire, de `/login?google=inconnu` et de `/login/client` : aucun débordement. Inscription par e-mail réelle sur `annona-dev` : refus propre « L'e-mail de confirmation n'a pas pu être envoyé… » (502, SMTP Supabase non branché), rien créé (vérifié en base : ni entreprise, ni profil, ni compte de connexion).
+  - Supabase `annona-dev` (Chrome) : Redirect URLs `http://localhost:3000/**` et `http://localhost:3110/**` ajoutées (Site URL inchangée, `http://localhost:3000`). Inscriptions et confirmation d'e-mail déjà actives.
+  - Google Cloud (Chrome, compte Google d'Orso) : projet `annona-514617` créé ; écran de connexion rempli (nom « Annona », e-mail d'assistance du compte, type Externe, contact) mais **pas créé** : la case d'acceptation du règlement Google sur les données utilisateur a été refusée à Claude par le garde-fou de sécurité, à cocher par Orso. Claude ne saisit pas non plus le code secret du client OAuth dans Supabase.
+
+  Reste à Orso (environ 5 minutes, dans Chrome) :
+  1. Google Cloud › projet `annona-514617` › Google Auth Platform › Présentation › « Premiers pas » : nom « Annona », e-mail d'assistance = ton adresse, Cible « Externe », coordonnées = ton adresse, cocher le règlement, « Créer ».
+  2. Google Auth Platform › Audience › Utilisateurs de test › ajouter ton adresse Google (mode Test).
+  3. Google Auth Platform › Clients › « Créer un client » : type « Application Web », nom « Annona dev » ; Origines JavaScript autorisées : `http://localhost:3000` ; URI de redirection autorisés : `https://fqzlfszgyeyfeshllqtj.supabase.co/auth/v1/callback`. Garder l'ID client et le code secret affichés.
+  4. Supabase › `annona-dev` › Authentication › Sign In / Providers › Google : activer, coller l'ID client et le code secret, « Save ».
+  5. Dire à Claude « Google est réglé » : Claude met `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, fait l'essai réel dans ton Chrome (inscription d'une boulangerie de test, connexion d'un compte créé par l'admin, adresse inconnue refusée) et note le résultat ici.
+  Plus tard : branchement SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation (`docs/AUTH_EMAIL_SETUP.md`) ; Théo s'ajoute comme testeur (Audience › Utilisateurs de test, ou accès au projet Google Cloud donné par Orso) ; hébergement définitif : ajouter son adresse dans les Redirect URLs Supabase, les origines Google et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur l'hébergeur ; paiement Stripe avant activation (PLA-05).
 
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
