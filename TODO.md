@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**20 tâches terminées sur 28 — 71 %**
+**20 tâches terminées sur 29 — 69 %**
 
-`██████████████░░░░░░` · 8 tâches restantes
+`██████████████░░░░░░` · 9 tâches restantes
 
 **À faire par Claude**
 
@@ -18,6 +18,7 @@
 
 **À faire par Théo**
 
+- HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
 - COLLAB-1 — Travailler à deux sur le dépôt (Orso et Théo) (accepter l'invitation Supabase reçue par e-mail le 12 novembre)
 - ACCES-1 — Accès et réponses du propriétaire (créneaux du premier client et volumes à deux ans (questions métier). Orso — mentions légales des factures, plus tard)
 - NOTIF-1 — Notifications (mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test)
@@ -45,6 +46,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
 
 **2. Théo**
+- Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
 - AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
 - Questions métier (décision d'Orso du 12 novembre : le métier se voit avec Théo) : créneaux du premier client et volumes à deux ans (ACCES-1).
 - Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
@@ -133,7 +135,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   7 novembre 2026, partie sans comptes ni téléphone faite (commit `789de93`, sans push, sans migration). Une seule application « Annona » (`fr.annona.app`) plutôt que deux : la connexion envoie déjà chaque compte dans son espace (client → `/portal`, livreur → `/driver`) ; une fiche par store, une revue, une clé APNs, un projet Firebase ; caméra et position demandées seulement à l'usage (deux applications restent possibles avec une seconde configuration). Mode « site hébergé » : `server.url` = `CAPACITOR_SERVER_URL`, page de repli « Pas de connexion / Réessayer » dans `mobile/www`. Projets `ios/` (Swift Package Manager) et `android/` ; textes d'autorisation en français (position « seulement pendant votre tournée », jamais « toujours »), portrait ; icônes et écrans de lancement générés depuis `public/brand`. Ponts `src/lib/native/` (comportement navigateur inchangé) : notifications natives (jeton vers `/api/native/push-token`, rangé dans `driver_push_subscriptions` avec `endpoint = native:<ios|android>:<jeton>`, canal `native_push` via `registerNotificationChannel` ; envoi APNs et FCM écrit mais inactif sans clés), caméra, position seulement pendant une tournée démarrée, Plans et Waze, réseau et retour au premier plan pour relancer la file hors ligne, nettoyage à la déconnexion. `sw.js` garde une copie de `/driver`, des données de tournée et des fichiers statiques (réseau d'abord, build de production seulement, effacée à la déconnexion). Documentation : `docs/MOBILE.md`.
   Vérifications : `tests/mobile1-native.test.ts` ; `npm run check` relancé par l'orchestrateur : 754/754 ; `npm run build` vert ; `npx cap sync` (8 extensions iOS et Android) ; Playwright `tour1-recette` et `cat1-cmd1-recette` 8/8 (recopie 32,3 s) ; aucun dossier lourd versionné (vérifié). Compilation iOS en échec sur ce Mac : Xcode 26.6 refuse toute destination iOS (« iOS 26.5 is not installed ») et le catalogue d'images de l'extension caméra exige un simulateur ; `AppDelegate.swift` et `SceneDelegate.swift` passent `swiftc -typecheck`. Android non compilé sur ce Mac (ni SDK ni Java). Caches créés hors du dépôt, supprimables : frameworks Capacitor et Cordova téléchargés avec curl depuis leur source officielle (empreintes vérifiées) dans `~/Library/Caches/org.swift.swiftpm/artifacts/`, et `~/Library/Developer/Xcode/DerivedData/App-*`.
-  Reste au propriétaire, dans l'ordre : (1) hébergement UE et adresse HTTPS définitive, puis `CAPACITOR_SERVER_URL=<adresse> npm run mobile:sync` ; (2) compte Apple Developer (équipe de signature, capacité « Push Notifications », clé APNs `.p8` dans `APNS_*`) ; (3) compte Google Play Console ; (4) projet Firebase (`android/app/google-services.json` hors git, compte de service dans `FCM_*`, puis `NEXT_PUBLIC_NATIVE_PUSH=on`) ; (5) composant iOS dans Xcode (Réglages › Composants) et Android Studio, ou un vrai iPhone et un vrai Android ; puis Claude relance `npm run mobile:build:ios` et teste les critères 1, 7 et 8 sur téléphone ; (6) `WKAppBoundDomains` avec le domaine de production pour la copie hors réseau dans l'application iPhone.
+  Reste au propriétaire, dans l'ordre : (1) hébergement UE et adresse HTTPS définitive (Vercel sur le compte de Théo, HEB-1), puis `CAPACITOR_SERVER_URL=<adresse> npm run mobile:sync` ; (2) compte Apple Developer (équipe de signature, capacité « Push Notifications », clé APNs `.p8` dans `APNS_*`) ; (3) compte Google Play Console ; (4) projet Firebase (`android/app/google-services.json` hors git, compte de service dans `FCM_*`, puis `NEXT_PUBLIC_NATIVE_PUSH=on`) ; (5) composant iOS dans Xcode (Réglages › Composants) et Android Studio, ou un vrai iPhone et un vrai Android ; puis Claude relance `npm run mobile:build:ios` et teste les critères 1, 7 et 8 sur téléphone ; (6) `WKAppBoundDomains` avec le domaine de production pour la copie hors réseau dans l'application iPhone.
 
   AUTH-GOOGLE (13 novembre 2026, pour Théo, sa zone) : le bouton « Continuer avec Google » est masqué dans les applications (`isNativeApp()`, `src/features/auth/google-button.tsx`) car Google refuse sa page de connexion dans la vue web de Capacitor. Version appli à faire : ouvrir Google dans le navigateur du système (`@capacitor/browser`), revenir dans l'application par un lien profond vers `/auth/callback`, ajouter ce lien aux Redirect URLs Supabase.
   Douteux : Apple peut refuser une application qui charge un site (règle 4.2 ; les fonctions natives sont l'argument) ; `getPhoto` déprécié dans l'extension caméra 8 ; sur Android, « Plans » ouvre la carte web d'Apple ; la table `driver_push_subscriptions` porte aussi les jetons des clients ; copie hors réseau non essayée sur un build de production.
@@ -157,6 +159,27 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Décision tournées (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : avant de désactiver une tournée qui coupe des clients de la commande, avertir sans bloquer (« Désactiver quand même », `src/features/settings/zone-deactivation.ts`, PR #6).
   - À faire : `tests/e2e/v1-roles.spec.ts` appelle encore `POST /api/demo/persona`, retirée : le réécrire sur les comptes du seed ou le supprimer.
   - À refaire à la prochaine recette : admin › tableau de bord, changer de page aussitôt, console sans erreur (correction `getZoom`, prouvée sur banc d'essai mais non reproduite dans l'admin).
+
+- [ ] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
+
+  **Qui : Théo.**
+
+  **Modèle conseillé : Claude Opus · effort moyen.**
+
+  Demande d'Orso du 13 novembre 2026 : Théo héberge Annona sur Vercel, sur son propre compte Vercel. C'est l'« hébergement Annona propre » attendu par MOBILE-1 (adresse HTTPS définitive), AUTH-GOOGLE (adresse de retour Google) et SEP-1 (sort de `main` et `preproduction`).
+
+  Déjà dans le dépôt : `vercel.json` (région `cdg1`, Paris : données traitées dans l'UE ; tâches planifiées `lock-orders` et `billing`, une fois par jour) ; variables à renseigner listées dans `.env.example`.
+
+  Étapes :
+  1. Sur le compte Vercel de Théo : nouveau projet importé depuis le dépôt GitHub `orsocrtnt/annona`, branche de production `base` (jamais `main` ni `preproduction`, qui portent l'ancien produit).
+  2. Variables d'environnement du projet : celles de `.env.example` (Supabase, `DATABASE_URL` et `DIRECT_URL`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` = l'adresse Vercel, etc.). Base à utiliser (`annona-dev` ou une base de production séparée) : à décider avec Orso avant le premier déploiement.
+  3. Premier déploiement, puis vérifier la connexion et un écran par rôle sur l'adresse Vercel.
+  4. Brancher l'adresse obtenue : Supabase › URL Configuration (Site URL et Redirect URLs `https://<adresse>/**`) ; Google Cloud `annona-514617` › client « Annona dev » (origine `https://<adresse>`) et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur Vercel (AUTH-GOOGLE) ; `CAPACITOR_SERVER_URL=<adresse> npm run mobile:sync` (MOBILE-1).
+  5. Plus tard : rattacher annona.fr (aujourd'hui servi par l'ancien projet TutelLiv, voir SEP-1), avec l'accord d'Orso.
+
+  À vérifier avant de choisir l'offre Vercel : l'offre gratuite (Hobby) est réservée à un usage non commercial selon les conditions de Vercel ; l'offre Pro est payante.
+
+  Terminé quand : Annona tourne sur l'adresse Vercel du compte de Théo, depuis `base`, avec connexion et écrans vérifiés, et l'adresse est notée ici et dans MOBILE-1.
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
