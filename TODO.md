@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**20 tâches terminées sur 27 — 74 %**
+**20 tâches terminées sur 28 — 71 %**
 
-`███████████████░░░░░` · 7 tâches restantes
+`██████████████░░░░░░` · 8 tâches restantes
 
 **À faire par Claude**
 
@@ -14,6 +14,7 @@
 
 **À faire par Orso**
 
+- AUTH-GOOGLE — Connexion avec Google
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
 
 **À faire par Théo**
@@ -28,7 +29,7 @@
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 12 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 13 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
@@ -38,6 +39,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
+- Connexion avec Google (AUTH-GOOGLE) : décider les espaces concernés et la création de compte, puis réglages Google Cloud et Supabase.
 - Plus tard : mentions légales des factures (ACCES-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
@@ -152,6 +154,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Décision tournées (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : avant de désactiver une tournée qui coupe des clients de la commande, avertir sans bloquer (« Désactiver quand même », `src/features/settings/zone-deactivation.ts`, PR #6).
   - À faire : `tests/e2e/v1-roles.spec.ts` appelle encore `POST /api/demo/persona`, retirée : le réécrire sur les comptes du seed ou le supprimer.
   - À refaire à la prochaine recette : admin › tableau de bord, changer de page aussitôt, console sans erreur (correction `getZoom`, prouvée sur banc d'essai mais non reproduite dans l'admin).
+
+- [ ] **AUTH-GOOGLE — Connexion avec Google.**
+
+  **Qui : Orso.**
+
+  **Modèle conseillé : Claude Opus · effort moyen.**
+
+  Demande d'Orso du 13 novembre 2026 : ajouter la connexion avec un compte Google. Constat du même jour : aucune connexion Google dans le code (`src/`), seules les notifications natives parlent à Google. Zone d'Orso (`src/components/auth/`).
+
+  À décider par Orso avant de coder : quels espaces y ont droit (client, boulanger, livreur, admin) ; un compte Google peut-il créer un compte ou seulement se rattacher à un compte existant de même adresse. Réglages : identifiants OAuth dans Google Cloud, fournisseur Google activé dans Supabase (`annona-dev`), adresses de retour (local, hébergement définitif, applications mobiles de MOBILE-1).
+
+  Terminé quand : connexion Google réussie dans le navigateur sur `annona-dev` pour les espaces retenus, un compte Google sans accès refusé, tests du parcours.
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
 
