@@ -28,7 +28,7 @@
 **À faire par Théo**
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
-- NOTIF-1 — Notifications (mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test)
+- NOTIF-1 — Notifications (mettre l'adresse de son compte Resend dans `EMAIL_TEST_RECIPIENT` (`.env.local`), puis Claude envoie le vrai e-mail de test)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation)
@@ -58,7 +58,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
 - AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
 - Questions métier (ACCES-1) : répondues le 13 novembre (plages matin 5h30-12h30 et après-midi 15h-19h ; 60-70 arrêts par livreur, 15-20 produits par livraison ; 200 points par jour au plus ; un livreur = une tournée, au moins 110 points).
-- Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
+- NOTIF-1 : clé Resend en place et valide (3 e-mails acceptés par Resend le 13 novembre). Reste : ton adresse du compte Resend dans `EMAIL_TEST_RECIPIENT`, puis réception du vrai e-mail de test.
 - MOBILE-1, Android sur sa machine : `npx cap sync android` fait le 13 novembre (8 modules natifs). Bloqué pour l'APK : ni Java (JDK 21) ni émulateur installés (seul le SDK Android est là). Installer Android Studio complet (Java inclus) ou un JDK 21 et un émulateur, puis APK de test.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
@@ -122,9 +122,11 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **NOTIF-1 — Notifications.**
 
-  **Qui : Théo — mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test.**
+  **Qui : Théo — mettre l'adresse de son compte Resend dans `EMAIL_TEST_RECIPIENT` (`.env.local`), puis Claude envoie le vrai e-mail de test.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
+
+  - 13 novembre 2026 (poste de Théo) : clé Resend de Théo dans `.env.local` (`re_…`, non affichée) ; `MAIL_FROM=onboarding@resend.dev` (expéditeur de test Resend, sans domaine vérifié) et `EMAIL_DELIVERY_MODE=test`. `npx tsx scripts/email/send-test.ts --confirm --to delivered@resend.dev` → bienvenue, livraison, relance : **sent** (3/3, adresse simulée Resend : clé valide, aucune vraie boîte). Reste : `EMAIL_TEST_RECIPIENT` = adresse du compte Resend (seule adresse autorisée sans domaine vérifié), puis envoi réel et réception constatée par Théo. Les vrais envois aux clients demandent un domaine vérifié chez Resend (Orso).
 
   NOT-01 (rappel avant l'heure limite sans commande pour le lendemain, délai paramétrable), NOT-02 (confirmation à chaque commande validée ou modifiée), NOT-03 (« livreur en approche » quand l'arrêt précédent est livré).
 
