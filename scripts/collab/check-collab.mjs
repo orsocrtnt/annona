@@ -9,7 +9,7 @@ import {
   FORBIDDEN_TARGETS,
   branchOwner,
   findConflicts,
-  normalizePerson,
+  personFromGitName,
   tasksInProgress,
 } from "./collab-overlap.mjs";
 
@@ -56,7 +56,7 @@ const currentBranch = tryGit("rev-parse", "--abbrev-ref", "HEAD") ?? "";
 const me =
   branchOwner(pushed.find((ref) => ref.remoteBranch)?.remoteBranch ?? "") ??
   branchOwner(currentBranch) ??
-  normalizePerson((tryGit("config", "user.name") ?? "").split(/\s+/)[0]);
+  personFromGitName(tryGit("config", "user.name") ?? "");
 
 if (!process.argv.includes("--no-fetch") && tryGit("fetch", "origin", "--prune", "--quiet") === null) {
   console.warn("⚠ Impossible de récupérer origin : comparaison avec l'état connu localement.");

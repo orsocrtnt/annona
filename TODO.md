@@ -61,7 +61,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - MOBILE-1, Android sur sa machine : `npx cap sync android`, APK de test, essai sur émulateur ou téléphone (outils déjà installés).
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
-- COLLAB-2, petit défaut : hors d'une branche `<prénom>/…`, `collab:check` déduit le prénom de `git config user.name` (« orsocrtnt » chez Orso) ; faire correspondre ce nom à « orso » (détail dans l'archive, COLLAB-2).
 - RECETTE-V1 (comptes de démo envoyés par Orso le 12 novembre, à ranger dans `outputs/comptes-demo.json` et `.md`) : réécrire `tests/e2e/v1-roles.spec.ts` sur les comptes du seed (il appelle `POST /api/demo/persona`, retirée) ou le supprimer, puis recettes connectées client, boulanger et livreur.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 

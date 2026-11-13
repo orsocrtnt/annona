@@ -1,7 +1,16 @@
 // COLLAB-2 — garde-fou du travail à deux (Orso et Théo) avant chaque push.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { branchOwner, findConflicts, tasksInProgress } from "../scripts/collab/collab-overlap.mjs";
+import { branchOwner, findConflicts, personFromGitName, tasksInProgress } from "../scripts/collab/collab-overlap.mjs";
+
+test("COLLAB-2 : personFromGitName reconnaît les noms Git d'Orso et de Théo", () => {
+  assert.equal(personFromGitName("orsocrtnt"), "orso");
+  assert.equal(personFromGitName("OrsoCrtnt"), "orso");
+  assert.equal(personFromGitName("Theo Nerisson"), "theo");
+  assert.equal(personFromGitName("Théo"), "theo");
+  assert.equal(personFromGitName("theoner13"), "theo");
+  assert.equal(personFromGitName(""), "");
+});
 
 const todo = `## Tâches ouvertes
 
