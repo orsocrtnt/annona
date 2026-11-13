@@ -15,7 +15,6 @@
 **À faire par Orso**
 
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
-- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (réglages Google Cloud et Supabase (liste « Reste à Orso » ci-dessous), puis Claude fait l'essai réel)
 
 **À faire par Théo**
 
@@ -24,6 +23,7 @@
 - NOTIF-1 — Notifications (mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test)
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
@@ -39,12 +39,13 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- Connexion Google (AUTH-GOOGLE, code fait le 13 novembre) : 5 minutes de réglages dans Google Cloud et Supabase (liste « Reste à Orso » dans la tâche : cocher le règlement Google, créer le client OAuth, coller l'ID et le code secret dans Supabase), puis dire à Claude « Google est réglé » pour l'essai réel.
+- AUTH-GOOGLE : inscription avec Google essayée en vrai et réussie le 13 novembre (boulangerie « TEST 1 » sur `annona-dev`). Pour l'essayer en local : `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, port 3000.
 - Plus tard : mentions légales des factures (ACCES-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
 
 **2. Théo**
+- AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
 - Questions métier (décision d'Orso du 12 novembre : le métier se voit avec Théo) : créneaux du premier client et volumes à deux ans (ACCES-1).
 - Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
 - Accepter l'invitation Supabase reçue par e-mail (organisation qui contient `annona-dev`, rôle Developer, COLLAB-1).
@@ -159,7 +160,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Orso — réglages Google Cloud et Supabase (liste « Reste à Orso » ci-dessous), puis Claude fait l'essai réel.**
+  **Qui : Théo — se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -186,7 +187,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Supabase `annona-dev` (Chrome) : Redirect URLs `http://localhost:3000/**` et `http://localhost:3110/**` ajoutées (Site URL inchangée, `http://localhost:3000`). Inscriptions et confirmation d'e-mail déjà actives.
   - Google Cloud (Chrome, compte Google d'Orso) : projet `annona-514617` créé ; écran de connexion rempli (nom « Annona », e-mail d'assistance du compte, type Externe, contact) mais **pas créé** : la case d'acceptation du règlement Google sur les données utilisateur a été refusée à Claude par le garde-fou de sécurité, à cocher par Orso. Claude ne saisit pas non plus le code secret du client OAuth dans Supabase.
 
-  Reste à Orso (environ 5 minutes, dans Chrome) :
+  13 novembre 2026 (soir), réglages faits et essai réel réussi (Chrome d'Orso, `next dev` sur le port 3000, `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`) : Orso a coché le règlement Google et créé le client OAuth « Annona dev » (origine `http://localhost:3000`, retour `https://fqzlfszgyeyfeshllqtj.supabase.co/auth/v1/callback`), puis activé Google dans Supabase `annona-dev` avec l'ID et le code secret. Testeurs Google (mode Test) : Orso et Théo (adresses non écrites ici, dépôt public). Parcours : `/inscription` › « Continuer avec Google » › choix du compte chez Google › `/inscription?etape=entreprise` (prénom et nom pré-remplis par Google) › « TEST 1 » › « Créer mon espace » › `/dashboard` admin. Vérifié en base : entreprise « TEST 1 » (`test-1`) au statut TRIAL, 3 créneaux, admin ACTIVE relié à un compte de connexion d'identité `google`. L'entreprise « TEST 1 » reste sur `annona-dev` pour les essais suivants. Pas encore essayé en vrai : connexion Google d'un compte créé par l'admin, refus d'une adresse inconnue (couverts par les tests), inscription par e-mail avec vrai e-mail (SMTP).
+
+  Étapes faites le 13 novembre (gardées pour l'hébergement définitif) :
   1. Google Cloud › projet `annona-514617` › Google Auth Platform › Présentation › « Premiers pas » : nom « Annona », e-mail d'assistance = ton adresse, Cible « Externe », coordonnées = ton adresse, cocher le règlement, « Créer ».
   2. Google Auth Platform › Audience › Utilisateurs de test › ajouter ton adresse Google (mode Test).
   3. Google Auth Platform › Clients › « Créer un client » : type « Application Web », nom « Annona dev » ; Origines JavaScript autorisées : `http://localhost:3000` ; URI de redirection autorisés : `https://fqzlfszgyeyfeshllqtj.supabase.co/auth/v1/callback`. Garder l'ID client et le code secret affichés.
