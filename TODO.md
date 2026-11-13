@@ -26,13 +26,13 @@
 - LOT1-D2 — Promotions (fins de série et autres) (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
 - LOT1-D4 — Comptes « mini admin » (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
 - LOT1-D5 — Onglet de suivi des livreurs (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`) et cocher si elle suffit)
-- LOT1-D9 — Vérification sur téléphone et lenteur (relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), puis accélérer le tableau de bord admin (3,3 s). Théo — mesure sur un vrai Android avec l'APK de MOBILE-1)
 - LOT1-RECETTE — Tests directs dans Chrome de tout le lot 1 (relire le rapport ; pour le passage avec l'extension Claude in Chrome, te connecter toi-même dans l'onglet (le garde-fou refuse que Claude lise les mots de passe de démo) ou dire si Playwright dans Chrome suffit)
 
 **À faire par Théo**
 
 - MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
 - RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Orso — N1 (tournée) ; Claude — recette finale en dernier)
+- LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
 _Chaque tâche est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -51,7 +51,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Envoyer à Théo `outputs/comptes-demo.md` par un canal sûr (débloque ses recettes connectées et `v1-roles.spec.ts`), et l'inviter dans l'organisation Supabase qui contient `annona-dev` (COLLAB-1).
 - Valider ou corriger les deux décisions produit prises par Théo le 11 novembre (RECETTE-V1) : l'outre-mer n'est pas en V1 (N3, « Aujourd'hui » à l'heure de Paris) ; avertir sans bloquer avant de désactiver une tournée qui coupe des clients.
 - Lot 1 : relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), faire ou faire faire le passage dans Chrome (LOT1-RECETTE), corriger ce qu'il trouve, puis cocher LOT1-D1 à D8 et LOT1-RECETTE.
-- LOT1-D9 (code) : tableau de bord admin à 3,3 s, seul écran au-dessus de 3 s : mesurer puis réduire (`src/app/(back-office)/dashboard`, `src/app/api/dashboard`).
 - RECETTE-V1 N1 : arrêt remis en attente par l'admin pendant l'état « sent », à vérifier en vrai (domaine tournée).
 - Accès : réponses du cahier des charges, mentions légales des factures, clé Resend (ACCES-1) ; puis envoi réel d'un e-mail de test (NOTIF-1). Dire quoi faire de `main` et `preproduction` (SEP-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur son Mac (MOBILE-1).
@@ -245,8 +244,9 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 
 - [ ] **LOT1-D9 — Vérification sur téléphone et lenteur.**
 
-  **Qui : Orso — relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), puis accélérer le tableau de bord admin (3,3 s). Théo — mesure sur un vrai Android avec l'APK de MOBILE-1.**
+  **Qui : Théo — mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible.**
 
+  - 12 novembre 2026 (session Claude d'Orso, branche `orso/d9-tableau-de-bord`) : tableau de bord admin (ADM-04, ADM-08) ramené de quatre vagues de lectures successives à deux. L'entreprise (fuseau, dépôt) vient du compte déjà lu par le garde (`liveCompanyFrom`, relecture si un champ manque ou si l'entreprise n'est pas la bonne) ; lignes et commerces des commandes du jour sont lus en même temps que les arrêts (`readStopSources`, `loadStopDetails(…, preloadedSources)`), contenu inchangé. Tests `tests/lot1-d9-live-dashboard.test.ts` (5 : deux vagues, même contenu qu'avant, entreprise étrangère ignorée, jour sans tournée, garde de type) ; `tests/tour1-rounds.test.ts` inchangé et vert ; `npm run check` sortie 0, 832 tests, 831 réussis, 1 sauté ; `next build` sortie 0. Mesure réelle (version de production sur `annona-dev`, profil téléphone 4G de la spec, `E2E_PERF_ACCOUNTS=admin`, nouveau filtre de la spec) : tableau de bord 3,0 / 2,5 / 2,5 s, **médiane 2,5 s** (3,3 s le 10 novembre) ; écrans témoins non touchés du même ordre qu'alors (Commandes 2,8 / 2,5 / 2,1 s ; Tournées 2,6 / 2,1 / 2,0 s), donc base pas plus rapide ce jour-là. Les 13 écrans de l'administrateur sont sous 3 s, sans débordement. Résultats bruts `outputs/perf/d9-admin-apres-{1,2,3}.json`. Reste : vrais téléphones.
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : Décision d'Orso appliquée (`cb442e1`). Deuxième mesure avec les écrans du lot 1 : médianes 2,1 s à l'ouverture, 1,0 s en navigation, 25/26 écrans sous 3 s (tableau de bord admin 3,3 s), aucun débordement ; gain propre à la décision non isolé (base plus rapide ce soir-là). Reste : vrais iPhone et Android.
 
   - 10 novembre 2026 (commit `80133da` sur `orso/lot1-retouches`, sans push). Compte rendu : `docs/rapports/2026-11-10-lot1-d9-telephone-lenteur.md`. Mesure rejouable `tests/e2e/lot1-d9-perf.spec.ts` (téléphone 360 px, 4G simulée, processeur ×4 ; « ouverture » à cache vide et « navigation » dans l'application), avant/après sur la version d'avant le lot (`65aadfa`, seule compatible avec la base non migrée) construite en production. Médianes : ouverture 5,8 s → 3,2 s, navigation 3,2 s → 1,8 s ; écrans sous 3 s : 2/24 → 11/24 à l'ouverture, 10/20 → 17/20 en navigation ; aucun débordement horizontal à 360 px.
