@@ -10,12 +10,11 @@
 
 **À faire par Claude**
 
-- Rien pour l'instant
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (code en cours (branche `orso/auth-google`))
 
 **À faire par Orso**
 
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
-- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (trancher les deux points ouverts ci-dessous, puis réglages Google Cloud et Supabase)
 
 **À faire par Théo**
 
@@ -157,7 +156,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Orso — trancher les deux points ouverts ci-dessous, puis réglages Google Cloud et Supabase.**
+  **Qui : Claude — code en cours (branche `orso/auth-google`).**
+
+  **En cours : Orso.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -172,7 +173,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   Écart avec le cahier des charges : PLA-02 dit que le super admin crée, configure et suspend les entreprises ; `TRI-BASE.md` a retiré l'inscription autonome de l'ancien produit (« c'est l'éditeur qui ouvre les comptes »). L'ancien parcours TutelLiv reste lisible dans l'historique (`git show 0475b8d:src/domains/signup/signup.service.ts`, `src/app/(auth)/register/page.tsx`, `src/app/api/auth/register/route.ts`), avec paiement. **Écart accepté par Orso le 13 novembre 2026** (après lecture de PLA-02, ADM-01, CLI-01 et PLA-05) : « on ne va pas gérer les inscriptions de tout le monde ». Seules les entreprises s'inscrivent seules ; les commerçants restent créés par l'admin de leur entreprise (ADM-01). La connexion Google s'ajoute à l'e-mail et au mot de passe (CLI-01), sans les remplacer.
 
-  Points ouverts, à trancher par Orso avant de coder : (1) une entreprise inscrite est-elle active tout de suite ou après validation par le super admin ; (2) paiement à l'inscription ou non. Réglages : identifiants OAuth dans Google Cloud, fournisseur Google activé dans Supabase (`annona-dev`), adresses de retour (local, hébergement définitif, applications mobiles de MOBILE-1).
+  Questionnaire d'Orso du 13 novembre 2026 (réponses) : entreprise inscrite au statut « Essai » (même accès qu'active ; plus tard, active après paiement Stripe, PLA-05) ; formulaire minimal (nom de la boulangerie, prénom, nom, e-mail, mot de passe ou Google ; le reste dans Paramètres) ; arrivée sur le tableau de bord ; phrase et lien vers `/confidentialite` (pas de CGU) ; pas d'alerte, liste des entreprises du super admin ; compte « en attente » créé par l'admin activé à la première connexion Google de même adresse ; Google sur le web seulement (bouton masqué dans les applications, version appli pour Théo dans MOBILE-1) ; Google Cloud en mode Test, testeur : l'adresse Google d'Orso (Théo s'ajoutera) ; e-mail de confirmation réel plus tard (SMTP Resend de `annona-dev`) ; essai réel autorisé dans le Chrome d'Orso. Projet Google Cloud créé : `annona-514617`.
+
+  Anciens points ouverts, tranchés ci-dessus : (1) une entreprise inscrite est-elle active tout de suite ou après validation par le super admin ; (2) paiement à l'inscription ou non. Réglages : identifiants OAuth dans Google Cloud, fournisseur Google activé dans Supabase (`annona-dev`), adresses de retour (local, hébergement définitif, applications mobiles de MOBILE-1).
 
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
