@@ -48,7 +48,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Orso**
 - Lancer une fois `npm run collab:install-hook` (COLLAB-2) : les PR #2 à #7 de Théo sont relues et fusionnées depuis le 12 novembre.
-- Envoyer à Théo `outputs/comptes-demo.md` par un canal sûr (débloque ses recettes connectées et `v1-roles.spec.ts`). Invitation Supabase envoyée le 12 novembre (COLLAB-1).
 - Lot 1 : relire la recette (`docs/rapports/2026-11-10-lot1-recette.md`), faire ou faire faire le passage dans Chrome (LOT1-RECETTE), corriger ce qu'il trouve, puis cocher LOT1-D1 à D8 et LOT1-RECETTE.
 - Accès : réponses du cahier des charges, mentions légales des factures, clé Resend (ACCES-1) ; puis envoi réel d'un e-mail de test (NOTIF-1). Dire quoi faire de `main` et `preproduction` (SEP-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur son Mac (MOBILE-1).
@@ -59,7 +58,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
 - COLLAB-2, petit défaut : hors d'une branche `<prénom>/…`, `collab:check` déduit le prénom de `git config user.name` (« orsocrtnt » chez Orso) ; faire correspondre ce nom à « orso » (détail dans l'archive, COLLAB-2).
-- RECETTE-V1, dès réception des comptes de démo : réécrire `tests/e2e/v1-roles.spec.ts` sur les comptes du seed (il appelle `POST /api/demo/persona`, retirée) ou le supprimer, puis recettes connectées client, boulanger et livreur.
+- RECETTE-V1 (comptes de démo envoyés par Orso le 12 novembre, à ranger dans `outputs/comptes-demo.json` et `.md`) : réécrire `tests/e2e/v1-roles.spec.ts` sur les comptes du seed (il appelle `POST /api/demo/persona`, retirée) ou le supprimer, puis recettes connectées client, boulanger et livreur.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
