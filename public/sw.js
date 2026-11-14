@@ -1,7 +1,10 @@
 // Espace livreur : notifications (push web) et copie hors réseau des écrans déjà chargés (MOBILE-1).
 //
-// Copie hors réseau : réseau d'abord, toujours. La copie ne sert que si le réseau ne répond pas
-// (rechargement de la tournée sans réseau, LIV-06). Seuls les écrans /driver, la lecture de la tournée
+// Copie hors réseau : réseau d'abord pour les écrans, la tournée et la session. La copie ne sert que si le
+// réseau ne répond pas (rechargement de la tournée sans réseau, LIV-06). Exception, LOT1-D9 : les fichiers
+// /_next/static portent un nom unique par version (contenu immuable) ; copie d'abord, rangement en
+// arrière-plan (avant : chaque fichier attendait réseau, rangement et tri de la copie, 0,7 à 1,1 s par
+// changement d'écran, portail et back-office compris). Seuls les écrans /driver, la lecture de la tournée
 // (/api/driver/rounds) et les fichiers de l'application (/_next/static) sont copiés ; jamais les envois
 // (POST), le portail, le back-office ni une redirection (session expirée). Copie effacée à la déconnexion
 // (`releaseDeviceOnLogout`, même nom de cache). La session (/api/auth/session) n'est copiée que si c'est
@@ -46,7 +49,7 @@ async function store(cache, request, response, kind) {
   }
   if (!cacheable(response)) return;
   await cache.put(request, response.clone());
-  if (kind === "static") await trimStatic(cache);
+  if (kind === "static") await trimStaticSoon(cache);
 }
 
 function markCopy(copy) {
@@ -60,6 +63,30 @@ async function trimStatic(cache) {
   const keys = (await cache.keys()).filter((request) => new URL(request.url).pathname.startsWith("/_next/static/"));
   for (const request of keys.slice(0, Math.max(0, keys.length - MAX_STATIC_ENTRIES))) await cache.delete(request);
 }
+
+// Tri de la copie au plus toutes les 30 s : relire jusqu'à 300 entrées à chaque fichier coûtait cher.
+const TRIM_INTERVAL_MS = 30000;
+let lastTrimAt = 0;
+function trimStaticSoon(cache) {
+  const now = Date.now();
+  if (now - lastTrimAt < TRIM_INTERVAL_MS) return undefined;
+  lastTrimAt = now;
+  return trimStatic(cache);
+}
+
+/** Fichier /_next/static : copie d'abord ; sinon réseau, réponse rendue tout de suite, rangement après. */
+async function cacheFirstStatic(request, event) {
+  const cache = await caches.open(CACHE_NAME);
+  const copy = await cache.match(request);
+  if (copy) return copy;
+  const response = await fetch(request);
+  if (cacheable(response)) {
+    const saving = cache.put(request, response.clone()).then(() => trimStaticSoon(cache)).catch(() => undefined);
+    if (event && typeof event.waitUntil === "function") event.waitUntil(saving);
+  }
+  return response;
+}
+self.annonaCacheFirstStatic = cacheFirstStatic;
 
 async function networkFirst(request, kind) {
   const cache = await caches.open(CACHE_NAME);
@@ -107,7 +134,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const kind = cacheKind(url, event.request);
   if (!kind) return;
-  event.respondWith(networkFirst(event.request, kind));
+  event.respondWith(kind === "static" ? cacheFirstStatic(event.request, event) : networkFirst(event.request, kind));
 });
 
 // Première visite : la page n'était pas encore contrôlée ; elle envoie les adresses déjà chargées.
@@ -123,6 +150,8 @@ self.addEventListener("message", (event) => {
             const request = new Request(url.href, { credentials: "same-origin" });
             const kind = url.pathname.startsWith("/driver") ? "page" : cacheKind(url, request);
             if (!kind) return;
+            // Fichier immuable déjà copié : rien à retélécharger (LOT1-D9, la liste arrive à chaque connexion).
+            if (kind === "static" && (await cache.match(request))) return;
             await store(cache, request, await fetch(request), kind);
           } catch {
             // Hors réseau ou adresse refusée : copiée plus tard, au prochain passage.
