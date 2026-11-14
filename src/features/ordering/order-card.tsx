@@ -24,7 +24,7 @@ interface OrderCardProps {
 export function OrderCard({ order, timeZone, onReorder, onToCart, onEdit }: OrderCardProps) {
   return (
     <li className="rounded-2xl border bg-card p-4 shadow-sm" data-testid={`order-card-${order.reference}`}>
-      <Link href={`/portal/orders/${order.id}`} className="group flex items-start gap-3">
+      <Link href={`/portal/orders/${order.id}`} prefetch={false} className="group flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className="font-semibold">{capitalize(longDeliveryDateLabel(order.deliveryDate))}</p>
           <p className="text-sm text-muted-foreground">
