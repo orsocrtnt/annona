@@ -30,7 +30,7 @@
 
 **À faire par Théo**
 
-- HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
+- HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo) (en ligne sur https://annona-gray.vercel.app depuis le 15 novembre ; reste l'étape 4 (adresses dans Supabase et Google) et la décision d'Orso sur le déploiement automatique et la base)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
@@ -50,6 +50,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
   - PR #27 (https://github.com/orsocrtnt/annona/pull/27), zone de Théo : **position du livreur réparée dans l'application** (jamais envoyée avant).
   - PR #28 (https://github.com/orsocrtnt/annona/pull/28), **en partie ta zone** (`src/features/driver/`) : N2, « Livré » hors réseau synchronisé 3 s après le retour du réseau (10 à 15 s avant).
   - PR #29 (https://github.com/orsocrtnt/annona/pull/29), zone de Théo : recette Android rejouable (`npm run mobile:recette`) et rapport `docs/rapports/2026-11-14-recette-android.md`.
+- **Hébergement (HEB-1), 15 novembre** : Annona est en ligne sur https://annona-gray.vercel.app (compte Vercel de Théo, fonctions à Paris, base `annona-dev`). **À décider par Orso** : brancher le dépôt GitHub sur Vercel (application Vercel à autoriser sur `orsocrtnt/annona`) pour un redéploiement automatique à chaque fusion, et garder `annona-dev` ou créer une base de production.
 - **Décision attendue d'Orso** : sur Android, « Plans » ouvre la carte web d'Apple dans Chrome (critère 7) ; ouvrir plutôt Google Maps ou Waze ?
 
 **Répartition du 12 novembre 2026 (pour se toucher le moins possible)** : chacun a sa zone de fichiers, et un agent ne modifie pas la zone de l'autre sans le prévenir.
@@ -65,7 +66,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plus tard : mentions légales des factures (ACCES-1) ; iOS sur ton Mac après fusion de #27 (MOBILE-1) ; sort de `main` et `preproduction` après l'hébergement (SEP-1).
 
 **2. Théo**
-- Héberger Annona sur Vercel, sur ton compte (HEB-1) : projet depuis `orsocrtnt/annona`, branche `base`, **région Paris (`cdg1`), à côté de la base** (LOT1-D9 : c'est le principal gain de vitesse restant) ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
+- HEB-1 : Annona est **en ligne sur https://annona-gray.vercel.app** (15 novembre, Paris, base `annona-dev`, état de `base` sans les PR #24 à #29). Reste à ajouter cette adresse dans Supabase (URL Configuration) et Google Cloud, puis la brancher dans MOBILE-1 ; redéployer après chaque fusion tant qu'Orso n'a pas branché le dépôt sur Vercel.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (emprunt, ou Samsung Remote Test Lab avec l'APK) ; tout le reste est mesuré sur émulateur.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
@@ -178,7 +179,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
 
-  **Qui : Théo.**
+  **Qui : Théo — en ligne sur https://annona-gray.vercel.app depuis le 15 novembre ; reste l'étape 4 (adresses dans Supabase et Google) et la décision d'Orso sur le déploiement automatique et la base.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -192,6 +193,10 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   3. Premier déploiement, puis vérifier la connexion et un écran par rôle sur l'adresse Vercel.
   4. Brancher l'adresse obtenue : Supabase › URL Configuration (Site URL et Redirect URLs `https://<adresse>/**`) ; Google Cloud `annona-514617` › client « Annona dev » (origine `https://<adresse>`) et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur Vercel (AUTH-GOOGLE) ; `CAPACITOR_SERVER_URL=<adresse> npm run mobile:sync` (MOBILE-1).
   5. Plus tard : rattacher annona.fr (aujourd'hui servi par l'ancien projet TutelLiv, voir SEP-1), avec l'accord d'Orso.
+
+  **Fait le 15 novembre 2026 (session Claude de Théo), étapes 1 à 3** : projet Vercel `annona` dans l'équipe Hobby de Théo (`track-app2`), adresse **https://annona-gray.vercel.app**, Next.js, Node 22.x, fonctions à Paris (en-tête `X-Vercel-Id: cdg1::cdg1`). Déployé par la ligne de commande (`vercel deploy --prod`) depuis une copie propre de `origin/base` (`095bb2a`, **sans les PR #24 à #29**) : le dépôt appartient à Orso, Vercel ne peut pas s'y brancher sans lui. Base : **`annona-dev`** (celle du développement, faute de base de production ; à confirmer par Orso). Variables : les 17 valeurs non vides de `.env.local` de Théo, copiées par script sans affichage (production et preview), avec `NEXT_PUBLIC_APP_URL` = l'adresse Vercel ; laissées de côté : valeurs vides, `SIGNUP_PAYMENT_ADAPTER` (refusé en production), `SEED_*`, `DEMO_CLEANUP_ENABLED`. Vérifié : `/login` 200, `/api/health` 200, connexion et écrans de quatre comptes de démo (livreur, client, admin, boulanger), tous 200. Temps à chaud (navigateur sans tête depuis le PC de Théo) : connexion 1,5 à 2,2 s ; écrans livreur 1,0 s, client 0,9 à 1,0 s, admin 0,9 à 1,6 s ; au même moment, le serveur local sur la même base : connexion 2,4 à 2,9 s, écrans 0,9 à 1,3 s. Premier passage après déploiement (démarrage à froid) : connexion livreur 4,4 s.
+
+  **Reste** : (a) **Orso** : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (ou ajouter Théo comme propriétaire du dépôt) pour que chaque fusion dans `base` redéploie seule ; sinon Théo redéploie à la main après chaque fusion (`git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`) ; (b) **Théo** : étape 4 (Supabase › Authentication › URL Configuration : ajouter `https://annona-gray.vercel.app/**` ; Google Cloud : origine `https://annona-gray.vercel.app`) ; (c) Orso et Théo : base de production séparée ou `annona-dev` ; la formule Hobby de Vercel est réservée à un usage non commercial, donc passer en Pro avant les vrais clients.
 
   À vérifier avant de choisir l'offre Vercel : l'offre gratuite (Hobby) est réservée à un usage non commercial selon les conditions de Vercel ; l'offre Pro est payante.
 
