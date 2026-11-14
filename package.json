@@ -28,6 +28,7 @@
     "mobile:sync": "cap sync",
     "mobile:ios": "cap sync ios && cap open ios",
     "mobile:android": "cap sync android && cap open android",
+    "mobile:recette": "dotenv -e .env.local -- tsx scripts/mobile/android-recette.mts",
     "mobile:build:ios": "cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build",
     "mobile:assets": "capacitor-assets generate --assetPath mobile/assets --iconBackgroundColor '#2B211B' --iconBackgroundColorDark '#2B211B' --splashBackgroundColor '#F5F8F6' --splashBackgroundColorDark '#0E1310' --ios --android",
     "check": "npm run typecheck && npm run lint && npm test",
