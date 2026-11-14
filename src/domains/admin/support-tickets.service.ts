@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 
 const STATUSES = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;
@@ -24,7 +25,6 @@ export type PlatformSupportTicketRow = {
   priority: Priority;
   contactType: "ADMIN" | "DRIVER" | null;
   relatedOrderReference: string | null;
-  relatedDeliveryReference: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -42,7 +42,6 @@ type RawRow = {
   priority: Priority;
   contactType: "ADMIN" | "DRIVER" | null;
   relatedOrder: { reference: string } | null;
-  relatedDelivery: { reference: string } | null;
   createdAt: Date;
   updatedAt: Date;
   company: { name: string };
@@ -121,8 +120,9 @@ export function platformSupportTicketSelect() {
     updatedAt: true,
     company: { select: { name: true } },
     relatedOrder: { select: { reference: true } },
-    relatedDelivery: { select: { reference: true } },
-  };
+    // Un ticket ne se rattache qu'à une commande (l'ancien lien « livraison » du produit coursier n'existe plus) :
+    // `satisfies` fait échouer la vérification des types si un champ disparaît du schéma.
+  } satisfies Prisma.SupportTicketSelect;
 }
 
 export function toPlatformSupportTicketRow(row: RawRow): PlatformSupportTicketRow {
@@ -133,7 +133,6 @@ export function toPlatformSupportTicketRow(row: RawRow): PlatformSupportTicketRo
     priority: row.priority,
     contactType: row.contactType,
     relatedOrderReference: row.relatedOrder?.reference ?? null,
-    relatedDeliveryReference: row.relatedDelivery?.reference ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

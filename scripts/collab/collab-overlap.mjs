@@ -24,6 +24,18 @@ export function normalizePerson(name) {
     .toLowerCase();
 }
 
+// Identifiants Git ou GitHub connus → prénom utilisé dans les branches et TODO.md.
+export const PERSON_ALIASES = { orsocrtnt: "orso", theoner13: "theo" };
+
+// Prénom tiré de `git config user.name` (hors branche <prénom>/…) :
+// « orsocrtnt » → « orso », « Theo Nerisson » → « theo ».
+export function personFromGitName(gitName) {
+  const full = normalizePerson(gitName);
+  if (!full) return "";
+  const first = full.split(/\s+/)[0] ?? "";
+  return PERSON_ALIASES[full] ?? PERSON_ALIASES[first] ?? first;
+}
+
 // « theo/garde-collab » → « theo » ; « base » → null.
 export function branchOwner(branch) {
   const match = /^([^/]+)\/.+/.exec(branch);

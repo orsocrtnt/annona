@@ -115,7 +115,6 @@ function AdminSupportContent() {
               <TableHead>Priorité</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Commande</TableHead>
-              <TableHead>Livraison</TableHead>
               <TableHead>Créé</TableHead>
               <TableHead>Mis à jour</TableHead>
             </TableRow>
@@ -128,7 +127,6 @@ function AdminSupportContent() {
                 <TableCell>{priorityLabel[row.priority]}</TableCell>
                 <TableCell>{row.contactType === "DRIVER" ? "Livreur" : row.contactType === "ADMIN" ? "Admin" : "—"}</TableCell>
                 <TableCell>{row.relatedOrderReference ?? "—"}</TableCell>
-                <TableCell>{row.relatedDeliveryReference ?? "—"}</TableCell>
                 <TableCell>{dateFormat.format(new Date(row.createdAt))}</TableCell>
                 <TableCell>{dateFormat.format(new Date(row.updatedAt))}</TableCell>
               </TableRow>

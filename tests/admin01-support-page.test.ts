@@ -34,7 +34,6 @@ test("ADMIN-1 support plateforme : l'affichage reste limité aux métadonnées",
     "createdAt",
     "id",
     "priority",
-    "relatedDeliveryReference",
     "relatedOrderReference",
     "status",
     "updatedAt",
@@ -45,7 +44,7 @@ test("ADMIN-1 support plateforme : l'affichage reste limité aux métadonnées",
   assert.equal(page.includes("<TableHead>Priorité</TableHead>"), true);
   assert.equal(page.includes("<TableHead>Type</TableHead>"), true);
   assert.equal(page.includes("<TableHead>Commande</TableHead>"), true);
-  assert.equal(page.includes("<TableHead>Livraison</TableHead>"), true);
+  assert.equal(page.includes("<TableHead>Livraison</TableHead>"), false, "LOT1-D9 : plus de lien livraison sur un ticket");
   assert.equal(page.includes("row.contactType"), true);
   for (const absent of [
     "row.subject",

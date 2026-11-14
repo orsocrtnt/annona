@@ -570,6 +570,61 @@ test("RECETTE-V1 N1 : la tournée servie depuis la copie hors réseau est signal
   assert.deepEqual(await copy.json(), { data: { rounds: [] } });
 });
 
+test("LOT1-D9 : fichier /_next/static servi depuis la copie sans réseau ; sinon rendu avant la fin du rangement", async () => {
+  const listeners: Record<string, (event: unknown) => void> = {};
+  const stored = new Map<string, Response>();
+  let releasePut: () => void = () => undefined;
+  const cache = {
+    match: async (request: Request) => stored.get(request.url)?.clone(),
+    // Rangement volontairement bloqué : la réponse ne doit pas l'attendre.
+    put: (request: Request, response: Response) => new Promise<void>((resolve) => { releasePut = () => { stored.set(request.url, response); resolve(); }; }),
+    delete: async () => true,
+    keys: async () => [],
+  };
+  let networkCalls = 0;
+  let online = true;
+  const fetchStub = async () => {
+    networkCalls++;
+    if (!online) throw new TypeError("hors réseau");
+    return Object.defineProperty(new Response("console.log(1)", { status: 200, headers: { "Content-Type": "text/javascript" } }), "type", { value: "basic" });
+  };
+  const self: Record<string, unknown> = {
+    location: { origin: "https://app.annona.fr" },
+    addEventListener: (name: string, listener: (event: unknown) => void) => { listeners[name] = listener; },
+  };
+  vm.runInNewContext(readFileSync("public/sw.js", "utf8"), { self, URL, caches: { open: async () => cache }, fetch: fetchStub, setTimeout, Request, Response, Headers, Date });
+  const pending: Promise<unknown>[] = [];
+  const serve = async () => {
+    let answer: Promise<Response> | null = null;
+    listeners.fetch!({
+      request: new Request("https://app.annona.fr/_next/static/chunks/page-abc.js"),
+      respondWith: (value: Promise<Response>) => { answer = value; },
+      waitUntil: (value: Promise<unknown>) => { pending.push(value); },
+    });
+    return answer!;
+  };
+
+  const first = await serve();
+  assert.equal(await first.text(), "console.log(1)", "premier passage : réponse du réseau, sans attendre le rangement");
+  assert.equal(networkCalls, 1);
+  assert.equal(pending.length, 1, "rangement confié à waitUntil");
+  releasePut();
+  await Promise.all(pending);
+
+  online = false;
+  const second = await serve();
+  assert.equal(await second.text(), "console.log(1)", "copie servie, réseau absent");
+  assert.equal(networkCalls, 1, "copie d'abord : aucun appel réseau");
+  assert.equal(second.headers.get(OFFLINE_COPY_HEADER), null, "fichier immuable : pas signalé comme copie hors réseau");
+
+  // Liste envoyée par l'écran livreur à chaque connexion : un fichier déjà copié n'est pas retéléchargé.
+  online = true;
+  const work: Promise<unknown>[] = [];
+  listeners.message!({ data: { type: "annona:cache-urls", urls: ["/_next/static/chunks/page-abc.js"] }, waitUntil: (value: Promise<unknown>) => { work.push(value); } });
+  await Promise.all(work);
+  assert.equal(networkCalls, 1, "fichier déjà copié : aucun nouveau téléchargement");
+});
+
 // --- Projets natifs (contrôle statique des fichiers, pas un essai sur téléphone) -------------------
 
 test("projets natifs : textes d'usage en français, position au premier plan seulement (ENF-04)", () => {
