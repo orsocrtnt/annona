@@ -150,7 +150,7 @@ test("LOCK-1 RG-04 : décision de génération de la récurrente", () => {
   assert.equal(recurringDecision(recurring, [{ merchantId: "M", slotId: "s7", origin: "RECURRING", status: "LOCKED" }]), "GENERATE", "autre récurrente, autre créneau");
 });
 
-test("LOCK-1 RG-09 : tournées d'un créneau — une seule si possible, découpée au-delà de 30 arrêts, sans GPS en fin", () => {
+test("LOCK-1 RG-09 : tournées d'un créneau — une seule si possible, découpée au-delà de ROUND_MAX_STOPS arrêts, sans GPS en fin", () => {
   const start = Date.UTC(2026, 10, 10, 5, 0);
   const depot = { latitude: 48.8547, longitude: 2.3725 };
   const near = (index: number) => ({ id: `o${index}`, point: { latitude: 48.855 + index * 0.0004, longitude: 2.372 }, label: `M${index}` });
@@ -161,7 +161,7 @@ test("LOCK-1 RG-09 : tournées d'un créneau — une seule si possible, découp�
 
   const many = Array.from({ length: ROUND_MAX_STOPS + 5 }, (_, index) => near(index));
   const split = planSlotRounds({ orders: many, depot, windowStart: start, windowEnd: start + 4 * 3_600_000, travelSeconds: straightLineSeconds });
-  assert.ok(split.length >= 2, "plus de 30 arrêts : plusieurs tournées");
+  assert.ok(split.length >= 2, "plus de ROUND_MAX_STOPS arrêts : plusieurs tournées");
   assert.ok(split.every((round) => round.orderIds.length <= ROUND_MAX_STOPS));
   assert.equal(new Set(split.flatMap((round) => round.orderIds)).size, many.length, "chaque commande une seule fois");
 
@@ -532,4 +532,25 @@ test("LOCK-1 route cron : secret absent ou faux → 401", async () => {
     if (previous === undefined) delete process.env.CRON_SECRET;
     else process.env.CRON_SECRET = previous;
   }
+});
+
+test("ACCES-1 RG-09 : un livreur = une tournée ; jusqu'à 110 arrêts proches dans la plage du matin, découpée au 111e", () => {
+  assert.equal(ROUND_MAX_STOPS >= 110, true, "réponse métier de Théo (13 novembre 2026) : au moins 110 arrêts par tournée");
+  const start = Date.UTC(2026, 10, 16, 4, 30); // 5 h 30 à Paris, plage du matin jusqu'à 12 h 30
+  const depot = { latitude: 48.8547, longitude: 2.3725 };
+  // Quartier dense : grille de 11 × 11 points à environ 60 m d'écart.
+  const grid = (count: number) => Array.from({ length: count }, (_, index) => ({
+    id: `q${index}`,
+    point: { latitude: 48.855 + Math.floor(index / 11) * 0.0005, longitude: 2.372 + (index % 11) * 0.0008 },
+    label: `Q${index}`,
+  }));
+  const window = { depot, windowStart: start, windowEnd: start + 7 * 3_600_000, travelSeconds: straightLineSeconds };
+  const full = planSlotRounds({ orders: grid(110), ...window });
+  assert.equal(full.length, 1, "110 arrêts proches : une seule tournée");
+  assert.equal(full[0]!.orderIds.length, 110);
+  assert.ok(full[0]!.arrivals.every((arrival) => typeof arrival === "number" && arrival <= start + 7 * 3_600_000), "tous dans la plage");
+  const over = planSlotRounds({ orders: grid(111), ...window });
+  assert.ok(over.length >= 2, "111 arrêts : au-delà de la limite");
+  assert.ok(over.every((round) => round.orderIds.length <= ROUND_MAX_STOPS));
+  assert.equal(new Set(over.flatMap((round) => round.orderIds)).size, 111, "chaque commande une seule fois");
 });
