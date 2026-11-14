@@ -209,3 +209,26 @@ test("RECETTE-V1 N1 : la lecture fraîche ne retire que les actions reçues, jam
   assert.deepEqual(await settleSentDriverActions(store, "driver-a", 50), ["recue"]);
   assert.deepEqual([...store.rows.keys()].sort(), ["autre-compte", "en-attente", "refusee"]);
 });
+
+test("RECETTE-V1 N2 : au retour du réseau, l'action temporisée part tout de suite ; une action refusée reste refusée", async () => {
+  const store = memoryStore();
+  const delivered = createQueuedDriverAction({ id: "livre", ownerId: "driver-a", actionKey: "stop:s1:delivered", now: 1_000, payload: { kind: "DELIVERED", stopId: "s1", at: "2026-11-14T05:00:00.000Z" } });
+  const refused = createQueuedDriverAction({ id: "refuse", ownerId: "driver-a", actionKey: "stop:s2:delivered", now: 1_000, payload: { kind: "DELIVERED", stopId: "s2", at: "2026-11-14T05:01:00.000Z" } });
+  await enqueueDriverAction(store, delivered);
+  await enqueueDriverAction(store, refused);
+  // Hors réseau : deux échecs, la prochaine tentative est repoussée (5 s puis 30 s) ; la seconde est refusée.
+  const offline = new DriverApiError("réseau coupé", { retryable: true });
+  const sendOffline = async (action: QueuedDriverAction) => { throw action.id === "refuse" ? new DriverApiError("refusé", { retryable: false }) : offline; };
+  await processQueuedDriverActions({ store, ownerId: "driver-a", now: () => 1_000, send: sendOffline });
+  await processQueuedDriverActions({ store, ownerId: "driver-a", now: () => 7_000, send: sendOffline });
+  assert.ok((await store.list("driver-a")).find((row) => row.id === "livre")!.nextAttemptAt > 20_000, "tentative repoussée");
+
+  const sent: string[] = [];
+  const sendOnline = async (action: QueuedDriverAction) => { sent.push(action.id); };
+  const waiting = await processQueuedDriverActions({ store, ownerId: "driver-a", now: () => 9_000, send: sendOnline });
+  assert.deepEqual(waiting.waiting, ["livre"], "passage ordinaire : le délai est respecté (avant la correction, attente jusqu'à 15 s)");
+  const back = await processQueuedDriverActions({ store, ownerId: "driver-a", now: () => 9_000, send: sendOnline, ignoreBackoff: true });
+  assert.deepEqual(back.sent, ["livre"], "réseau revenu : envoi immédiat");
+  assert.deepEqual(back.failed, ["refuse"], "refusée par le serveur : pas renvoyée sans « Réessayer maintenant »");
+  assert.deepEqual(sent, ["livre"]);
+});

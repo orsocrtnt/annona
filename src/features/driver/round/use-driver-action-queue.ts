@@ -15,6 +15,12 @@ import {
 import { watchConnectivity } from "@/lib/native/network";
 
 const RETRY_INTERVAL_MS = 15_000;
+/**
+ * RECETTE-V1 N2 : envois rapprochés après le retour du réseau, le premier une fois la connexion posée (un envoi
+ * immédiat partait pendant la transition et restait suspendu). Mesure sur l'émulateur : réseau utilisable 0,8 à
+ * 1,7 s après le signal.
+ */
+const NETWORK_BACK_RETRIES_MS = [1_500, 4_000, 8_000] as const;
 
 function isOnline() {
   return typeof navigator === "undefined" ? true : navigator.onLine;
@@ -48,9 +54,11 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
   }, [ownerId]);
 
   const process = useCallback(
-    async (force = false) => {
+    async (force = false, ignoreBackoff = false) => {
       if (!ownerId) return;
-      if (!isOnline() && !force) return;
+      // RECETTE-V1 N2 : signal de retour du réseau (`ignoreBackoff`) : le module natif le donne avant que la vue
+      // web ne repasse `navigator.onLine` à vrai ; attendre ce dernier faisait perdre jusqu'à 15 s.
+      if (!isOnline() && !force && !ignoreBackoff) return;
       if (running.current) {
         again.current = true;
         return;
@@ -59,7 +67,7 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
       try {
         do {
           again.current = false;
-          const result = await processQueuedDriverActions({ store: browserDriverActionQueueStore, ownerId, send: driverRoundApi.send, force });
+          const result = await processQueuedDriverActions({ store: browserDriverActionQueueStore, ownerId, send: driverRoundApi.send, force, ignoreBackoff });
           // Les gestes reçus restent affichés (« sent ») ; la relecture fraîche les retirera (`settle`). Elle
           // n'est pas attendue : une relecture qui traîne (RECETTE-V1 N1) ne bloque plus la file.
           if (result.sent.length > 0) void syncedRef.current().catch(() => undefined);
@@ -121,22 +129,26 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
       .finally(() => {
         void refresh().then(() => process());
       });
+    const backTimers: number[] = [];
     // MOBILE-1 : réseau natif et retour au premier plan dans l'application ; `online`/`offline` sinon.
     const stopConnectivity = watchConnectivity({
+      // RECETTE-V1 N2 : au retour du réseau, envoi en moins de 2 s (avant : 12 à 15 s, au prochain passage).
       onOnline: () => {
         setOnline(true);
-        void process();
+        // Le réseau annoncé précède de peu la route réelle : envois rapprochés au lieu d'attendre 15 s.
+        for (const delay of NETWORK_BACK_RETRIES_MS) backTimers.push(window.setTimeout(() => void process(false, true), delay));
       },
       onOffline: () => setOnline(false),
       onResume: () => {
         setOnline(isOnline());
-        void process();
+        void process(false, true);
       },
     });
     const timer = window.setInterval(() => void process(), RETRY_INTERVAL_MS);
     return () => {
       stopConnectivity();
       window.clearInterval(timer);
+      for (const backTimer of backTimers) window.clearTimeout(backTimer);
     };
   }, [ownerId, process, refresh]);
 

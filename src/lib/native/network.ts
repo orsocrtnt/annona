@@ -40,19 +40,20 @@ async function loadNativeConnectivity(): Promise<NativeConnectivityPlugins> {
 export function watchConnectivity(handlers: ConnectivityHandlers, deps: ConnectivityDeps = {}): () => void {
   const platform = deps.runtime === undefined ? appPlatform() : appPlatform(deps.runtime);
 
-  if (platform === "web") {
-    const target = deps.target === undefined ? (typeof window === "undefined" ? null : window) : deps.target;
-    if (!target) return () => undefined;
-    const online = () => handlers.onOnline();
-    const offline = () => handlers.onOffline();
-    target.addEventListener("online", online);
-    target.addEventListener("offline", offline);
-    return () => {
-      target.removeEventListener("online", online);
-      target.removeEventListener("offline", offline);
-    };
-  }
+  const target = deps.target === undefined ? (typeof window === "undefined" ? null : window) : deps.target;
+  const online = () => handlers.onOnline();
+  const offline = () => handlers.onOffline();
+  target?.addEventListener("online", online);
+  target?.addEventListener("offline", offline);
+  const stopWeb = () => {
+    target?.removeEventListener("online", online);
+    target?.removeEventListener("offline", offline);
+  };
+  if (platform === "web") return stopWeb;
 
+  // Application : les événements de la vue web restent écoutés aussi (RECETTE-V1 N2). Après un rechargement
+  // hors réseau, le module natif chargé à la demande n'est pas dans la copie du service worker : son import
+  // échouait en silence et le retour du réseau n'était vu qu'au passage suivant (jusqu'à 15 s).
   let stopped = false;
   const handles: ListenerHandle[] = [];
   const keep = (handle: ListenerHandle) => {
@@ -72,11 +73,12 @@ export function watchConnectivity(handlers: ConnectivityHandlers, deps: Connecti
         if (!stopped && state.isActive) handlers.onResume?.();
       }));
     } catch {
-      // Module natif absent (ancienne version de l'application) : la relance toutes les 15 s reste active.
+      // Module natif absent ou non chargeable hors réseau : les événements de la vue web prennent le relais.
     }
   })();
   return () => {
     stopped = true;
+    stopWeb();
     for (const handle of handles.splice(0)) void Promise.resolve(handle.remove()).catch(() => undefined);
   };
 }
