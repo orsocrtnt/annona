@@ -9,6 +9,7 @@
  * Désactivé tant que `NEXT_PUBLIC_NATIVE_PUSH` ne vaut pas « on » : sans fichier Firebase
  * (`google-services.json`), l'enregistrement ferait échouer l'application Android.
  */
+import { pluginFacade } from "@/lib/native/plugin-facade";
 import { appPlatform, type CapacitorRuntime } from "@/lib/native/platform";
 
 export const NATIVE_PUSH_API = "/api/native/push-token";
@@ -58,7 +59,8 @@ export function safeNotificationPath(value: unknown): string | null {
 
 async function loadPlugin(): Promise<NativePushPlugin> {
   const { PushNotifications } = await import("@capacitor/push-notifications");
-  return PushNotifications as unknown as NativePushPlugin;
+  // Jamais le module lui-même depuis une fonction async : voir `pluginFacade`.
+  return pluginFacade(PushNotifications as unknown as NativePushPlugin, ["checkPermissions", "requestPermissions", "register", "addListener"]);
 }
 
 function defaultStorage() {

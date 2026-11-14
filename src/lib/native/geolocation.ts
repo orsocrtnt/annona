@@ -3,6 +3,7 @@
  * L'appelant (`useDriverLivePosition`) ne l'active que pendant une tournée démarrée
  * (`driverLocationAllowed`) et l'arrête dès qu'elle ne l'est plus : aucun suivi en arrière-plan.
  */
+import { pluginFacade } from "@/lib/native/plugin-facade";
 import { appPlatform, type CapacitorRuntime } from "@/lib/native/platform";
 
 /** Forme commune (sous-ensemble de `GeolocationPosition`). */
@@ -48,7 +49,8 @@ export interface PositionWatchDeps {
 
 async function loadNativeGeolocation(): Promise<NativeGeolocation> {
   const { Geolocation } = await import("@capacitor/geolocation");
-  return Geolocation as unknown as NativeGeolocation;
+  // Jamais le module lui-même depuis une fonction async : voir `pluginFacade`.
+  return pluginFacade(Geolocation as unknown as NativeGeolocation, ["checkPermissions", "requestPermissions", "watchPosition", "clearWatch"]);
 }
 
 function nativeErrorCode(error: { message?: string; code?: string } | undefined): number {
