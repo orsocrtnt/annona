@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **4** : NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **4** : DEMO-1, SEP-1, ACCES-1, AUTH-GOOGLE | **4** : MOBILE-1, RECETTE-V1, HEB-1, LOT1-D9 |
+| À faire | **6** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, RECETTE-V1, AUTH-GOOGLE | **2** : HEB-1, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -24,21 +24,33 @@
 - DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
+- MOBILE-1 — Applications iOS et Android (Capacitor) (fusionner la PR #27 (position réparée) puis hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
+- RECETTE-V1 — Recette des dix critères (fusionner les PR #27, #28 et #29 et décider de l'application de navigation sur Android ; Claude — recette finale en dernier)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 
 **À faire par Théo**
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
-- MOBILE-1 — Applications iOS et Android (Capacitor) (APK sur un vrai téléphone Android (critères 1, 7, 8, N2, LOT1-D9). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
-- RECETTE-V1 — Recette des dix critères (N2 et critères 1, 7, 8 sur Android (après MOBILE-1) ; Claude — recette finale en dernier)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 13 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 14 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
+
+**Point du 14 novembre 2026 (Orso : à lire en premier)**
+
+- **Fait par Théo (avec Claude) les 13 et 14 novembre** : NOTIF-1 close (vrai e-mail reçu) ; AUTH-GOOGLE vérifiée côté Théo (adresse inconnue refusée, compte créé par l'admin connecté avec Google) ; réponses métier (ACCES-1) ; 12 comptes de démo rangés ; `v1-roles.spec.ts` réécrite ; recette cliquée des quatre espaces 33/33 ; APK Android compilé et essayé (émulateur et vrai Galaxy) ; recette Android des critères 1, 7, 8 réussie ; deux défauts de l'application trouvés et corrigés (position du livreur jamais envoyée, N2) ; application plus rapide (service worker, listes) ; support du super-admin réparé ; tournées de 110 arrêts.
+- **À relire et fusionner par Orso** (CI verte sur les six, fusion « Create a merge commit », de préférence dans cet ordre) :
+  - PR #24 (https://github.com/orsocrtnt/annona/pull/24) : travail des 13 et 14 novembre et ce `TODO.md` ; contient le **support du super-admin réparé, dans ta zone**.
+  - PR #25 (https://github.com/orsocrtnt/annona/pull/25), **ta zone** : tournées jusqu'à 110 arrêts et 8 h, un livreur = une tournée (ACCES-1).
+  - PR #26 (https://github.com/orsocrtnt/annona/pull/26), **ta zone** : listes sans préchargement de chaque fiche (clients 3,8 → 2,8 s).
+  - PR #27 (https://github.com/orsocrtnt/annona/pull/27), zone de Théo : **position du livreur réparée dans l'application** (jamais envoyée avant).
+  - PR #28 (https://github.com/orsocrtnt/annona/pull/28), **en partie ta zone** (`src/features/driver/`) : N2, « Livré » hors réseau synchronisé 3 s après le retour du réseau (10 à 15 s avant).
+  - PR #29 (https://github.com/orsocrtnt/annona/pull/29), zone de Théo : recette Android rejouable (`npm run mobile:recette`) et rapport `docs/rapports/2026-11-14-recette-android.md`.
+- **Décision attendue d'Orso** : sur Android, « Plans » ouvre la carte web d'Apple dans Chrome (critère 7) ; ouvrir plutôt Google Maps ou Waze ?
 
 **Répartition du 12 novembre 2026 (pour se toucher le moins possible)** : chacun a sa zone de fichiers, et un agent ne modifie pas la zone de l'autre sans le prévenir.
 - Zone d'Orso : écrans et routes du back-office et du portail (`src/app/(back-office)/`, `src/app/api/dashboard/`, `src/features/` hors natif), domaines commande et tournée (`src/domains/`), `src/components/auth/`, `src/components/layouts/`, `src/app/globals.css`, `ios/` (seul Mac), `prisma/` (aucun changement de schéma prévu ; sinon annonce dans la tâche).
@@ -46,26 +58,19 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- AUTH-GOOGLE : inscription avec Google essayée en vrai et réussie le 13 novembre (boulangerie « TEST 1 » sur `annona-dev`). Pour l'essayer en local : `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, port 3000.
-- Version de démo d'Annona comme celle de TutelLiv (DEMO-1).
-- Relire dans ta zone (LOT1-D9, 14 novembre) : support plateforme du super-admin réparé (`relatedDelivery`, dans la PR #24) et **PR #26** (https://github.com/orsocrtnt/annona/pull/26) : listes sans préchargement de chaque fiche.
-- **À relire et fusionner : PR #25** (https://github.com/orsocrtnt/annona/pull/25, ta zone) : tournées jusqu'à 110 arrêts et 8 h, un livreur = une tournée (ACCES-1).
-- Plus tard : mentions légales des factures (ACCES-1).
-- Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
-- Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
+- Relire et fusionner les PR #24 à #29 ci-dessus (ta zone : #25, #26, la partie `src/features/driver/` de #28 et le support du super-admin dans #24).
+- Décider de l'application de navigation sur Android (Plans d'Apple ou Google Maps / Waze, RECETTE-V1).
+- AUTH-GOOGLE : brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) ; ensuite Claude fait l'inscription par e-mail et clôt la tâche. Annuler l'invitation Supabase de Théo (Supabase › Team), devenue inutile.
+- Version de démo d'Annona comme celle de TutelLiv (DEMO-1), à préciser avant de coder.
+- Plus tard : mentions légales des factures (ACCES-1) ; iOS sur ton Mac après fusion de #27 (MOBILE-1) ; sort de `main` et `preproduction` après l'hébergement (SEP-1).
 
 **2. Théo**
-- Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
-- AUTH-GOOGLE : fait le 13 novembre (adresse inconnue refusée, compte créé par l'admin connecté avec Google, passé « Actif »). Plus rien pour toi ; reste le SMTP côté Orso.
-- Questions métier (ACCES-1) : répondues le 13 novembre (plages matin 5h30-12h30 et après-midi 15h-19h ; 60-70 arrêts par livreur, 15-20 produits par livraison ; 200 points par jour au plus ; un livreur = une tournée, au moins 110 points).
-- MOBILE-1, Android : essayé sur émulateur puis sur un vrai Galaxy (Samsung Remote Test Lab, tunnel temporaire) le 14 novembre, « ça marche ». Reste à noter ce qui a été testé (critères 1, 7, 8) et les temps pour LOT1-D9 ; iOS et notifications côté Orso.
-- RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
-- LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
-- RECETTE-V1 : `v1-roles.spec.ts` verte (4 rôles) et recette cliquée des quatre espaces 33/33 le 14 novembre (rapport `docs/rapports/2026-11-14-recette-roles-theo.md`). Reste N2 et les critères téléphone après l'APK (MOBILE-1).
+- Héberger Annona sur Vercel, sur ton compte (HEB-1) : projet depuis `orsocrtnt/annona`, branche `base`, **région Paris (`cdg1`), à côté de la base** (LOT1-D9 : c'est le principal gain de vitesse restant) ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
+- LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (emprunt, ou Samsung Remote Test Lab avec l'APK) ; tout le reste est mesuré sur émulateur.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
-- Chaque agent travaille pour son développeur, dans sa zone ci-dessus. Recette finale des dix critères (RECETTE-V1) en dernier, après MOBILE-1, NOTIF-1 et ACCES-1.
+- Après la fusion des PR #27 et #28 : relancer `npm run mobile:recette` sur `base` à jour (position et N2 ensemble), puis la recette finale des dix critères (RECETTE-V1).
 
 **4. Attente extérieure**
 - Applications mobiles (MOBILE-1) : hébergement UE, comptes Apple Developer et Google Play, Firebase, composant iOS de Xcode ou vrais téléphones (liste ordonnée dans la tâche).
@@ -122,7 +127,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Théo — APK sur un vrai téléphone Android (critères 1, 7, 8, N2, LOT1-D9). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
+  **Qui : Orso — fusionner la PR #27 (position réparée) puis hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -131,7 +136,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Essai dans l'application (vue web pilotée par le protocole Chrome DevTools) : première tentative refusée « Origine de la requête refusée » (SEC-6, `src/lib/security/origin-check.ts`) car l'émulateur appelait `http://10.0.2.2:3000` alors que l'origine admise est `http://localhost:3000`. Sans toucher à la sécurité : `adb reverse tcp:3000 tcp:3000`, `cap sync` avec l'adresse par défaut `http://localhost:3000`, APK recompilé. Ensuite : livreur-1 connecté → « Ma tournée » puis « Profil » ; client-1 connecté → « Commander » (prix spécifique affiché) ; **0 erreur JavaScript** ; bouton Google masqué dans l'application (voulu). Captures `outputs/mobile1-android/`. Procédure ajoutée dans `docs/MOBILE.md` (« Essai Android sans Android Studio », et `10.0.2.2` retiré des conseils). En production l'application charge l'adresse officielle : pas de refus.
   - Au passage : `tests/e2e/v1-roles.spec.ts` appelait `POST /api/auth/logout`, route inexistante (404 ignoré) ; appel retiré (chaque test a déjà son navigateur vierge). Relancée 5/5 ; `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec) ; `npm run docs:verify` vert.
   - 14 novembre 2026 (nuit), **vrai téléphone Android** : Galaxy de Samsung Remote Test Lab (service gratuit, compte développeur Samsung de Théo). APK de debug recompilé avec `CAPACITOR_SERVER_URL` = tunnel Cloudflare temporaire (`cloudflared tunnel --url http://localhost:3000`, adresse `trycloudflare.com` aléatoire) et serveur dev relancé avec `NEXT_PUBLIC_APP_URL` = cette adresse (sinon refus SEC-6) ; connexion livreur vérifiée par le tunnel avant envoi. Théo a installé l'APK sur le Galaxy et rapporte : « j'ai tout testé, ça marche sur Android ». Détail non consigné (modèle, parcours, critères 1, 7, 8, temps de LOT1-D9) : à demander à Théo. Tunnel fermé et serveur relancé sans l'adresse du tunnel juste après ; `cap sync` remis sur `http://localhost:3000`, aucun fichier suivi modifié, APK « tunnel » supprimé.
-  - Non vérifié : notifications natives (Firebase absent), iOS (Mac d'Orso).
+  - 14 novembre 2026 (nuit) : la recette Android (PR #29) a révélé que **le suivi de position ne démarrait jamais dans l'application** (`"Geolocation.then()" is not implemented on android` : module Capacitor renvoyé par une fonction `async`). Corrigé dans la **PR #27** (`src/lib/native/plugin-facade.ts`, utilisé par `geolocation.ts` et `push.ts`, même défaut latent pour les notifications natives) ; vérifié dans l'application : position reçue par le serveur 8,9 s après le démarrage de la tournée, 0 erreur JavaScript ; tests `tests/mobile1-plugin-facade.test.ts`.
+  - Non vérifié : notifications natives (Firebase absent), iOS (Mac d'Orso), temps sur vrai téléphone Android.
 
   ENF-01 : emballer les espaces commerçant et livreur avec Capacitor ; notifications natives ; ouverture de Plans et Waze. Publication : comptes Apple Developer et Google Play à ouvrir par le propriétaire.
 
@@ -147,7 +153,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  **Qui : Théo — N2 et critères 1, 7, 8 sur Android (après MOBILE-1) ; Claude — recette finale en dernier.**
+  **Qui : Orso — fusionner les PR #27, #28 et #29 et décider de l'application de navigation sur Android ; Claude — recette finale en dernier.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -157,7 +163,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   - 7 novembre 2026 : les dix critères passent dans le navigateur, sur un build de production local (rapport `docs/rapports/2026-11-07-recette-v1-navigateur.md`, spec `tests/e2e/recette-v1.spec.ts` 12/12). Défauts trouvés et retours du propriétaire des 10 et 11 novembre : corrigés, détail dans `docs/TODO-ARCHIVE.md` (journal du 11 novembre).
   - Reste : critères 1, 7, 8 et notifications natives sur vrais téléphones (après MOBILE-1) ; e-mails réels faits (NOTIF-1 close le 13 novembre) ; mentions légales des factures (ACCES-1).
-  - Défauts encore ouverts : N2 (mineur) retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone.
+  - N2 (mineur) : corrigé dans la PR #28 (voir ci-dessous), à confirmer après fusion.
   - N1, reste « arrêt remis en attente par l'admin pendant l'état « sent » » : constaté le 12 novembre 2026 (session Claude d'Orso) que l'application n'offre aucune action qui remette un arrêt en attente (écritures de `stop` côté admin : ordre et tournée seulement, `round-admin.service.ts`, `admin-order.service.ts` ; statut changé seulement par le livreur, `round-driver.service.ts`). Le cas n'arrive que par une modification directe en base : rien à recetter dans le navigateur ; la règle reste couverte par `settleSentDriverActions` et son test (`tests/tour1-rounds.test.ts`). À rouvrir si une action « annuler la livraison » est ajoutée.
   - Décision N3 (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : l'outre-mer n'est pas en V1 ; « Aujourd'hui » reste calculé à l'heure de Paris côté boulanger et admin. À rouvrir si une boulangerie d'outre-mer arrive.
   - Décision tournées (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : avant de désactiver une tournée qui coupe des clients de la commande, avertir sans bloquer (« Désactiver quand même », `src/features/settings/zone-deactivation.ts`, PR #6).
@@ -165,7 +171,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Vérifié (serveur dev de Théo, port 3000, `annona-dev`) : admin et sans session réussis (2/2), boulanger, client et livreur sautés car `outputs/comptes-demo.json` ne contient que `admin` (connexion de ce compte OK par Supabase Auth). `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec). Chromium de Playwright installé sur le poste de Théo. Note du skill `annona-recette` mise à jour.
   - 13 novembre 2026, suite : les 12 comptes envoyés par Orso le 12 novembre rangés dans `outputs/comptes-demo.json` (format du seed : e-mail, mot de passe, rôle, espace) et `outputs/comptes-demo.md`, ignorés par git ; mot de passe `admin` identique à l'ancien fichier. Connexion Supabase Auth des 12 comptes : 12/12. `v1-roles.spec.ts` relancée (serveur dev de Théo, port 3000) : **5/5 réussis** (admin, boulanger, client-1, livreur-1 : espace, API du rôle 200, API des trois autres 403 ; sans session 401), en 1 min.
   - 14 novembre 2026 (session Claude de Théo, commit `54b9a80`, `annona-dev`, serveur dev port 3000) : recette cliquée des quatre espaces, **33/33 étapes, zéro erreur console**, rapport `docs/rapports/2026-11-14-recette-roles-theo.md`, captures `outputs/recette-agents/theo-roles/`. Admin (menu complet, carte en direct), client (six pages, détail de commande, retour arrière, rechargement), boulanger (production à J+30, refus du back-office), livreur (tournée, profil, refus du portail) ; sombre vérifié sur ordinateur et tablette (sur téléphone le clair est la règle, `src/lib/theme.ts:37`). Rien écrit en base. Aucun défaut.
-  - Reste : N2 et critères 1, 7, 8 sur vrai téléphone Android (après MOBILE-1), puis recette finale.
+  - 14 novembre 2026 (nuit), **recette Android** (émulateur Pixel 7, Android 16, build de production, `npm run mobile:recette`, PR #29, rapport `docs/rapports/2026-11-14-recette-android.md`) : entreprise d'essai `E2E-AND` créée puis supprimée à chaque passe. **Critère 1 OK** (commande de la semaine dernière recopiée et validée en 8,3 à 10,8 s, 7 passes). **Critère 7 OK** (2 appuis ; le journal d'Android montre l'ouverture de `maps.apple.com` dans Chrome : décision d'Orso sur Google Maps / Waze). **Critère 8 OK** (« Livré » hors réseau, rechargement hors réseau, synchronisation au retour, tournée terminée).
+  - Défauts trouvés et corrigés : **position du livreur jamais envoyée** depuis l'application (PR #27 ; après correction, reçue 8,9 s après le démarrage, 0 erreur JavaScript) ; **N2** (PR #28 : après un rechargement hors réseau, le module natif du réseau ne se chargeait plus ; « Livré » synchronisé 3,1 s après le retour du réseau sur l'appareil au lieu de 10 à 15 s, 2 passes ; cause trouvée en relevant chaque envoi de la file dans l'application).
+  - Reste : fusion des PR #27 à #29, nouvelle passe de `npm run mobile:recette` sur `base` à jour, vrai téléphone Android pour les temps (LOT1-D9), puis recette finale.
   - Fait le 14 novembre 2026 : admin › tableau de bord puis « Commandes » aussitôt, console sans erreur (correction `getZoom` vérifiée dans l'admin, rapport du 14 novembre).
 
 - [ ] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
