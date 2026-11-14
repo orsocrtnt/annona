@@ -81,7 +81,7 @@ export default function CompaniesPage() {
             {data.rows.map((row) => (
               <TableRow key={row.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/companies/${row.id}`} className="max-md:inline-flex max-md:min-h-11 max-md:items-center">{row.name}</Link>
+                  <Link href={`/companies/${row.id}`} prefetch={false} className="max-md:inline-flex max-md:min-h-11 max-md:items-center">{row.name}</Link>
                 </TableCell>
                 <TableCell>
                   <Badge variant={row.status === "ACTIVE" ? "success" : row.status === "TRIAL" ? "brand" : "secondary"}>

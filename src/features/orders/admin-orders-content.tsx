@@ -151,7 +151,7 @@ export function AdminOrdersContent() {
                 {data.orders.map((order) => (
                   <TableRow key={order.id} data-testid={`admin-order-${order.reference}`}>
                     <TableCell className="font-medium">
-                      <Link href={`/dashboard/orders/${order.id}`} className="text-brand underline-offset-4 hover:underline">
+                      <Link href={`/dashboard/orders/${order.id}`} prefetch={false} className="text-brand underline-offset-4 hover:underline">
                         {order.reference}
                       </Link>
                     </TableCell>

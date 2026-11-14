@@ -115,7 +115,7 @@ export function GenerateInvoicesDialog({ open, onOpenChange, merchants }: { open
               <ul className="space-y-1">
                 {result.created.map((invoice) => (
                   <li key={invoice.id} className="flex justify-between gap-3">
-                    <Link href={`/dashboard/invoices/${invoice.id}`} className="font-medium text-brand underline-offset-4 hover:underline">
+                    <Link href={`/dashboard/invoices/${invoice.id}`} prefetch={false} className="font-medium text-brand underline-offset-4 hover:underline">
                       {invoice.reference}
                     </Link>
                     <span className="truncate text-muted-foreground">{invoice.merchantName}</span>

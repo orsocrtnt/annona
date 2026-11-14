@@ -36,7 +36,7 @@ export function LegalGapsAlert({ gaps }: { gaps: InvoiceLegalGap[] }) {
           {gaps.map((gap) => (
             <li key={gap.field}>
               {/* Lot 1, demande 9 : cible tactile de 44 px sur téléphone. */}
-              <Link href={gap.href} className="underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">{gap.label}</Link>
+              <Link href={gap.href} prefetch={false} className="underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">{gap.label}</Link>
             </li>
           ))}
         </ul>
@@ -165,7 +165,7 @@ export function AdminInvoicesContent() {
                 {data.invoices.map((invoice) => (
                   <TableRow key={invoice.id} data-testid={`invoice-row-${invoice.reference}`}>
                     <TableCell className="font-medium">
-                      <Link href={`/dashboard/invoices/${invoice.id}`} className="text-brand underline-offset-4 hover:underline">{invoice.reference}</Link>
+                      <Link href={`/dashboard/invoices/${invoice.id}`} prefetch={false} className="text-brand underline-offset-4 hover:underline">{invoice.reference}</Link>
                     </TableCell>
                     <TableCell>{invoice.merchant.name}</TableCell>
                     <TableCell className="max-md:hidden">{invoice.periodLabel}</TableCell>
