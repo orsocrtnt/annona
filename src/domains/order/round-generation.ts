@@ -5,7 +5,7 @@
  * réparties en tournées par le calcul existant (`planRounds`, insertion au moindre coût), au départ
  * du laboratoire. Aucune tournée n'a de livreur : l'attribution et l'édition relèvent de TOUR-1.
  *
- * Nombre de tournées : le moins possible. On commence par ⌈commandes / 30⌉ tournées et on en ajoute
+ * Nombre de tournées : le moins possible. On commence par ⌈commandes / ROUND_MAX_STOPS⌉ tournées et on en ajoute
  * une tant que des arrêts ne tiennent pas dans le créneau (10 essais au plus). Si le créneau reste
  * intenable, les tournées sont calculées sans contrainte d'horaire (tout le monde est livré, l'admin
  * verra les retards en TOUR-1). Un commerce sans coordonnées GPS passe en fin de dernière tournée.
@@ -13,14 +13,20 @@
 import { planRounds, type RoundDelivery, type RoundDriver, type RoundOptions } from "@/lib/dispatch/round-planner";
 import type { GeoPoint } from "@/lib/dispatch/travel-time";
 
-/** Arrêts au plus par tournée. */
-export const ROUND_MAX_STOPS = 30;
+/**
+ * Arrêts au plus par tournée. ACCES-1 (réponses métier de Théo, 13 novembre 2026) : un livreur fait une seule
+ * tournée par créneau, de 60 à 70 arrêts en moyenne ; la limite doit être d'au moins 110.
+ */
+export const ROUND_MAX_STOPS = 110;
 /** Temps passé à chaque arrêt (déchargement, remise). */
 export const ROUND_STOP_SECONDS = 180;
 /** Départ du laboratoire avant le début du créneau. */
 export const ROUND_DEPARTURE_LEAD_MINUTES = 30;
-/** Durée maximale d'une tournée. */
-export const ROUND_MAX_DAY_SECONDS = 5 * 3600;
+/**
+ * Durée maximale d'une tournée. 110 arrêts × 3 min font déjà 5 h 30 : à 5 h, la limite d'arrêts ne servait
+ * à rien. 8 h couvre la plage du matin (5 h 30 – 12 h 30, plus le départ 30 min avant), ACCES-1.
+ */
+export const ROUND_MAX_DAY_SECONDS = 8 * 3600;
 const EXTRA_ROUND_ATTEMPTS = 10;
 
 export interface SlotRoundOrder {
