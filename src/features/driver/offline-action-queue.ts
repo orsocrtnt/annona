@@ -244,6 +244,12 @@ export async function processQueuedDriverActions(options: {
   ownerId: string;
   send: (action: QueuedDriverAction) => Promise<unknown>;
   force?: boolean;
+  /**
+   * RECETTE-V1 N2 : réseau revenu (ou application revenue au premier plan) : les actions en attente partent
+   * tout de suite, sans attendre le délai de nouvelle tentative pris hors réseau. Contrairement à `force`, les
+   * actions refusées par le serveur ne sont pas renvoyées (réservé au bouton « Réessayer maintenant »).
+   */
+  ignoreBackoff?: boolean;
   now?: () => number;
 }): Promise<DriverActionQueueRun> {
   const result: DriverActionQueueRun = { sent: [], waiting: [], failed: [] };
@@ -256,7 +262,7 @@ export async function processQueuedDriverActions(options: {
       result.failed.push(action.id);
       continue;
     }
-    if (!options.force && action.nextAttemptAt > now()) {
+    if (!options.force && !options.ignoreBackoff && action.nextAttemptAt > now()) {
       result.waiting.push(action.id);
       continue;
     }
