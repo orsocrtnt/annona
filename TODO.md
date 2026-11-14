@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**21 tâches terminées sur 30 — 70 %**
+**22 tâches terminées sur 30 — 73 %**
 
-`██████████████░░░░░░` · 9 tâches restantes
+`███████████████░░░░░` · 8 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
-| Fait | **19** : COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **3** : COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **2** : DEMO-1, SEP-1 | **7** : ACCES-1, NOTIF-1, MOBILE-1, RECETTE-V1, HEB-1, AUTH-GOOGLE, LOT1-D9 |
+| Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **4** : NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
+| À faire | **4** : DEMO-1, SEP-1, ACCES-1, AUTH-GOOGLE | **4** : MOBILE-1, RECETTE-V1, HEB-1, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -23,15 +23,14 @@
 
 - DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
+- ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 
 **À faire par Théo**
 
 - HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo)
-- ACCES-1 — Accès et réponses du propriétaire (créneaux du premier client et volumes à deux ans (questions métier). Orso — mentions légales des factures, plus tard)
-- NOTIF-1 — Notifications (mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test)
-- MOBILE-1 — Applications iOS et Android (Capacitor) (Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
-- RECETTE-V1 — Recette des dix critères (réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier)
-- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation)
+- MOBILE-1 — Applications iOS et Android (Capacitor) (APK sur un vrai téléphone Android (critères 1, 7, 8, N2, LOT1-D9). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
+- RECETTE-V1 — Recette des dix critères (N2 et critères 1, 7, 8 sur Android (après MOBILE-1) ; Claude — recette finale en dernier)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
@@ -49,20 +48,20 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **1. Orso**
 - AUTH-GOOGLE : inscription avec Google essayée en vrai et réussie le 13 novembre (boulangerie « TEST 1 » sur `annona-dev`). Pour l'essayer en local : `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, port 3000.
 - Version de démo d'Annona comme celle de TutelLiv (DEMO-1).
+- Relire dans ta zone (LOT1-D9, 14 novembre) : support plateforme du super-admin réparé (`relatedDelivery`, dans la PR #24) et **PR #26** (https://github.com/orsocrtnt/annona/pull/26) : listes sans préchargement de chaque fiche.
+- **À relire et fusionner : PR #25** (https://github.com/orsocrtnt/annona/pull/25, ta zone) : tournées jusqu'à 110 arrêts et 8 h, un livreur = une tournée (ACCES-1).
 - Plus tard : mentions légales des factures (ACCES-1).
 - Plus tard, après la PR Android de Théo : compilation et essai iOS sur ton Mac (MOBILE-1).
 - Après l'hébergement Annona propre : décider du sort de `main` et `preproduction` (SEP-1 ; rien à faire d'ici là).
 
 **2. Théo**
 - Héberger Annona sur Vercel, sur ton compte Vercel (HEB-1, demande d'Orso du 13 novembre) : projet depuis `orsocrtnt/annona`, branche `base`, variables de `.env.example` ; base à décider avec Orso ; puis brancher l'adresse dans Supabase, Google et MOBILE-1.
-- AUTH-GOOGLE : tu es testeur Google du projet `annona-514617`. Mets `NEXT_PUBLIC_GOOGLE_AUTH=on` dans ton `.env.local` (port 3000), fais créer un compte à ton adresse Google par l'admin de « TEST 1 », connecte-toi avec Google, puis vérifie qu'une adresse Google sans compte est refusée.
-- Questions métier (décision d'Orso du 12 novembre : le métier se voit avec Théo) : créneaux du premier client et volumes à deux ans (ACCES-1).
-- Mettre la clé de son compte Resend dans `.env.local`, puis envoi réel d'un e-mail de test (NOTIF-1).
-- MOBILE-1, Android sur sa machine : `npx cap sync android`, APK de test, essai sur émulateur ou téléphone (outils déjà installés).
+- AUTH-GOOGLE : fait le 13 novembre (adresse inconnue refusée, compte créé par l'admin connecté avec Google, passé « Actif »). Plus rien pour toi ; reste le SMTP côté Orso.
+- Questions métier (ACCES-1) : répondues le 13 novembre (plages matin 5h30-12h30 et après-midi 15h-19h ; 60-70 arrêts par livreur, 15-20 produits par livraison ; 200 points par jour au plus ; un livreur = une tournée, au moins 110 points).
+- MOBILE-1, Android : essayé sur émulateur puis sur un vrai Galaxy (Samsung Remote Test Lab, tunnel temporaire) le 14 novembre, « ça marche ». Reste à noter ce qui a été testé (critères 1, 7, 8) et les temps pour LOT1-D9 ; iOS et notifications côté Orso.
 - RECETTE-V1 N2 : retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone Android (`public/sw.js`, `src/lib/native/`).
 - LOT1-D9 (mesure seulement) : une fois l'APK prêt, mesurer les écrans client et livreur sur un vrai Android et noter les temps dans la tâche, sans toucher au code d'Orso.
-- COLLAB-2, petit défaut : hors d'une branche `<prénom>/…`, `collab:check` déduit le prénom de `git config user.name` (« orsocrtnt » chez Orso) ; faire correspondre ce nom à « orso » (détail dans l'archive, COLLAB-2).
-- RECETTE-V1 (comptes de démo envoyés par Orso le 12 novembre, à ranger dans `outputs/comptes-demo.json` et `.md`) : réécrire `tests/e2e/v1-roles.spec.ts` sur les comptes du seed (il appelle `POST /api/demo/persona`, retirée) ou le supprimer, puis recettes connectées client, boulanger et livreur.
+- RECETTE-V1 : `v1-roles.spec.ts` verte (4 rôles) et recette cliquée des quatre espaces 33/33 le 14 novembre (rapport `docs/rapports/2026-11-14-recette-roles-theo.md`). Reste N2 et les critères téléphone après l'APK (MOBILE-1).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
@@ -104,7 +103,12 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
-  **Qui : Théo — créneaux du premier client et volumes à deux ans (questions métier). Orso — mentions légales des factures, plus tard.**
+  **Qui : Orso — mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre).**
+
+  - Réponses de Théo du 13 novembre 2026 (questions métier) : livraison par plage horaire, en deux tournées : **matin de 5h30 à 12h30**, **après-midi de 15h à 19h**. Par livreur : **60 à 70 points de livraison** en moyenne par tournée, **15 à 20 produits** par livraison.
+  - Contrôle du code par Claude (13 novembre) : les deux plages sont acceptées par les tournées du lot 1 (`delivery-zone.service.ts`, le soir commence après le matin) ; 15 à 20 produits restent loin de `MAX_ORDER_LINES` (300). **Écart** : `ROUND_MAX_STOPS = 30` (`src/domains/order/round-generation.ts`) coupe en deux ou trois tournées un livreur à 60-70 arrêts ; à relever vers 70 (ou rendre réglable) par Orso, zone `src/domains/`. Durée : 65 arrêts × 3 min (`ROUND_STOP_SECONDS`) ≈ 3h15 plus les trajets, compatible avec la plage du matin. Les zones de démo du seed (5h30-11h, 16h-19h) diffèrent de ces plages : sans effet sur le code, à aligner si Orso le souhaite.
+  - Complément de Théo (13 novembre) : **jamais plus de 200 points de livraison par jour** en tout (sous le seuil noté par Orso pour la cartographie) ; **un livreur = une tournée**, et une tournée doit pouvoir compter **au moins 110 points**. Donc `ROUND_MAX_STOPS` (30) doit passer à 110 au minimum, et la génération ne doit pas couper la charge d'un livreur en plusieurs tournées.
+  - Fait le 14 novembre 2026 (nuit, session Claude de Théo), **PR #25** `theo/tournee-110-arrets`, à relire par Orso (zone `src/domains/`) : `ROUND_MAX_STOPS` 30 → 110 ; `ROUND_MAX_DAY_SECONDS` 5 h → 8 h (à 5 h la durée coupait avant la limite d'arrêts : 110 × 3 min = 5 h 30). La plage horaire reste respectée (des arrêts trop dispersés pour tenir dans le créneau sont toujours répartis sur plusieurs tournées). Mesures `planSlotRounds` (arrêts au hasard dans Paris, plage de 7 h) : 65 arrêts → 1 tournée en 221 ms (avant 3 tournées) ; 110 dispersés → 2 tournées (70 + 40, horaire) en 1 s ; 200 → 3 tournées en 3,9 s. Test ajouté (`tests/lock1-order-lock.test.ts`) : 110 arrêts proches → une tournée, le 111e découpe ; tests tournées 39/39 ; `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec).
 
   - Réponses d'Orso du 12 novembre 2026 (questionnaire) : cartographie : services gratuits (OSRM et IGN publics) pour l'instant, une solution pour 200 arrêts par jour sera chiffrée plus tard ; rappel avant l'heure limite : 15h, la valeur par défaut actuelle ; créneaux du premier client et volumes à deux ans : questions métier, à voir avec Théo ; mentions légales : plus tard ; Resend : le compte de Théo (NOTIF-1).
 
@@ -116,25 +120,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   Terminé quand : les quatre réponses, les mentions légales et la clé Resend sont fournies (`.env.local` de base déjà fait).
 
-- [ ] **NOTIF-1 — Notifications.**
-
-  **Qui : Théo — mettre la clé de son compte Resend dans `.env.local` (décision d'Orso du 12 novembre), puis envoi réel d'un e-mail de test.**
-
-  **Modèle conseillé : Claude Opus · effort moyen.**
-
-  NOT-01 (rappel avant l'heure limite sans commande pour le lendemain, délai paramétrable), NOT-02 (confirmation à chaque commande validée ou modifiée), NOT-03 (« livreur en approche » quand l'arrêt précédent est livré).
-
-  Terminé quand : tests des déclencheurs ; un envoi réel reçu sur une adresse de test.
-
-  7 novembre 2026, code fait (commit `228a85a`, sans push, sans migration). NOT-01 : route `/api/cron/order-reminders` appelée par `cron-lock-orders.yml` toutes les 10 min ; client actif sans commande ni récurrente active ce jour-là, `reminderLeadMinutes` avant l'heure limite, une seule fois par compte, client et date, jamais après l'heure limite ; commande annulée ou brouillon = pas de commande ; délai 0 = rappel désactivé ; le client peut le couper (Paramètres › Alertes). NOT-02 : après chaque commande validée, modifiée ou annulée par le client et après correction admin ; au plus une confirmation toutes les 5 min par commande (la première tout de suite, les suivantes regroupées, état final relu à l'envoi). NOT-03 : au démarrage de la tournée le premier arrêt est prévenu, puis après « Livré » ou un problème le premier arrêt restant ; une seule fois par arrêt, rejeu hors ligne compris. Canaux : cloche du portail et e-mail par la file ; sans clé Resend, tâche e-mail close « ignorée » (`SKIPPED:EMAIL_DISABLED`) ; `registerNotificationChannel` prêt pour les notifications natives (MOBILE-1).
-  Vérifications : 12 tests (dont changements d'heure du 25 octobre et du 29 mars, rejeu sans doublon, isolation) ; Playwright `tests/e2e/notif1-recette.spec.ts` cliqué 3/3 (confirmation dans la cloche, rappel par la route cron avec `?now=`, « livreur en approche » après un « Livré ») ; captures `outputs/recette-notif1-adm1/` ; `npm run check` 717/717 puis 731/731 ; `npm run build` vert.
-  Reste : envoi réel reçu sur une adresse de test (critère de la tâche) ; confirmation différée et tâches en échec envoyées seulement au passage de `/api/cron/operations` (toutes les 5 min).
-
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Théo — Android sur sa machine (`cap sync`, APK de test, émulateur ou téléphone). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
+  **Qui : Théo — APK sur un vrai téléphone Android (critères 1, 7, 8, N2, LOT1-D9). Orso — hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
+
+  - 13 novembre 2026 (poste Windows de Théo) : `CAPACITOR_SERVER_URL=http://10.0.2.2:3000 npx cap sync android` réussi (8 modules natifs, aucun fichier suivi modifié). Erreur de constat corrigée le 14 novembre : Java était bien installé (JDK Temurin 21 dans `%LOCALAPPDATA%/AnnonaTools/jdk-21`, voir la note du 11 novembre), seul l'émulateur manquait.
+  - 14 novembre 2026 : `JAVA_HOME=%LOCALAPPDATA%/AnnonaTools/jdk-21 ./gradlew assembleDebug --no-daemon` → **BUILD SUCCESSFUL** en 7 min (338 tâches), `android/app/build/outputs/apk/debug/app-debug.apk` (10,6 Mo, dossier ignoré par git), adresse chargée `http://10.0.2.2:3000` (émulateur). Poste : virtualisation activée, hyperviseur présent, 15 Go de RAM. Émulateur et image `system-images;android-36;google_apis;x86_64` installés (`sdkmanager`, un premier téléchargement coupé puis repris), téléphone virtuel `annona-pixel` (Pixel 7, Android 16), accélération WHPX utilisable, démarrage en ~65 s, `adb install` → Success.
+  - Essai dans l'application (vue web pilotée par le protocole Chrome DevTools) : première tentative refusée « Origine de la requête refusée » (SEC-6, `src/lib/security/origin-check.ts`) car l'émulateur appelait `http://10.0.2.2:3000` alors que l'origine admise est `http://localhost:3000`. Sans toucher à la sécurité : `adb reverse tcp:3000 tcp:3000`, `cap sync` avec l'adresse par défaut `http://localhost:3000`, APK recompilé. Ensuite : livreur-1 connecté → « Ma tournée » puis « Profil » ; client-1 connecté → « Commander » (prix spécifique affiché) ; **0 erreur JavaScript** ; bouton Google masqué dans l'application (voulu). Captures `outputs/mobile1-android/`. Procédure ajoutée dans `docs/MOBILE.md` (« Essai Android sans Android Studio », et `10.0.2.2` retiré des conseils). En production l'application charge l'adresse officielle : pas de refus.
+  - Au passage : `tests/e2e/v1-roles.spec.ts` appelait `POST /api/auth/logout`, route inexistante (404 ignoré) ; appel retiré (chaque test a déjà son navigateur vierge). Relancée 5/5 ; `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec) ; `npm run docs:verify` vert.
+  - 14 novembre 2026 (nuit), **vrai téléphone Android** : Galaxy de Samsung Remote Test Lab (service gratuit, compte développeur Samsung de Théo). APK de debug recompilé avec `CAPACITOR_SERVER_URL` = tunnel Cloudflare temporaire (`cloudflared tunnel --url http://localhost:3000`, adresse `trycloudflare.com` aléatoire) et serveur dev relancé avec `NEXT_PUBLIC_APP_URL` = cette adresse (sinon refus SEC-6) ; connexion livreur vérifiée par le tunnel avant envoi. Théo a installé l'APK sur le Galaxy et rapporte : « j'ai tout testé, ça marche sur Android ». Détail non consigné (modèle, parcours, critères 1, 7, 8, temps de LOT1-D9) : à demander à Théo. Tunnel fermé et serveur relancé sans l'adresse du tunnel juste après ; `cap sync` remis sur `http://localhost:3000`, aucun fichier suivi modifié, APK « tunnel » supprimé.
+  - Non vérifié : notifications natives (Firebase absent), iOS (Mac d'Orso).
 
   ENF-01 : emballer les espaces commerçant et livreur avec Capacitor ; notifications natives ; ouverture de Plans et Waze. Publication : comptes Apple Developer et Google Play à ouvrir par le propriétaire.
 
@@ -150,7 +147,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  **Qui : Théo — réécrire `tests/e2e/v1-roles.spec.ts` et N2 (Android) ; Claude — recette finale en dernier.**
+  **Qui : Théo — N2 et critères 1, 7, 8 sur Android (après MOBILE-1) ; Claude — recette finale en dernier.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -159,13 +156,17 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   Terminé quand : les dix critères passent et le rapport est dans `docs/rapports/`.
 
   - 7 novembre 2026 : les dix critères passent dans le navigateur, sur un build de production local (rapport `docs/rapports/2026-11-07-recette-v1-navigateur.md`, spec `tests/e2e/recette-v1.spec.ts` 12/12). Défauts trouvés et retours du propriétaire des 10 et 11 novembre : corrigés, détail dans `docs/TODO-ARCHIVE.md` (journal du 11 novembre).
-  - Reste : critères 1, 7, 8 et notifications natives sur vrais téléphones (après MOBILE-1) ; e-mails réels (clé Resend, NOTIF-1) ; mentions légales des factures (ACCES-1).
+  - Reste : critères 1, 7, 8 et notifications natives sur vrais téléphones (après MOBILE-1) ; e-mails réels faits (NOTIF-1 close le 13 novembre) ; mentions légales des factures (ACCES-1).
   - Défauts encore ouverts : N2 (mineur) retour réseau pris en compte au bout de 15 s après un rechargement hors réseau, à revoir sur téléphone.
   - N1, reste « arrêt remis en attente par l'admin pendant l'état « sent » » : constaté le 12 novembre 2026 (session Claude d'Orso) que l'application n'offre aucune action qui remette un arrêt en attente (écritures de `stop` côté admin : ordre et tournée seulement, `round-admin.service.ts`, `admin-order.service.ts` ; statut changé seulement par le livreur, `round-driver.service.ts`). Le cas n'arrive que par une modification directe en base : rien à recetter dans le navigateur ; la règle reste couverte par `settleSentDriverActions` et son test (`tests/tour1-rounds.test.ts`). À rouvrir si une action « annuler la livraison » est ajoutée.
   - Décision N3 (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : l'outre-mer n'est pas en V1 ; « Aujourd'hui » reste calculé à l'heure de Paris côté boulanger et admin. À rouvrir si une boulangerie d'outre-mer arrive.
   - Décision tournées (proposée par Théo le 11 novembre, **validée par Orso le 12 novembre 2026**) : avant de désactiver une tournée qui coupe des clients de la commande, avertir sans bloquer (« Désactiver quand même », `src/features/settings/zone-deactivation.ts`, PR #6).
-  - À faire : `tests/e2e/v1-roles.spec.ts` appelle encore `POST /api/demo/persona`, retirée : le réécrire sur les comptes du seed ou le supprimer.
-  - À refaire à la prochaine recette : admin › tableau de bord, changer de page aussitôt, console sans erreur (correction `getZoom`, prouvée sur banc d'essai mais non reproduite dans l'admin).
+  - 13 novembre 2026 (session Claude de Théo, branche `theo/collab-nom-git`) : `tests/e2e/v1-roles.spec.ts` réécrite. Un test par rôle (admin, boulanger, client-1, livreur-1) : connexion par l'écran du rôle, espace sans erreur JavaScript, API du rôle en 200, API des trois autres rôles en 403 ; plus un test sans session (401 partout). Rien n'est écrit en base : `/api/orders` et `/api/production` sont lus à J+30 (avant l'heure limite, pas de verrouillage LOCK-1, vérifié dans `ensureDateLocked`). Comptes lus dans `outputs/comptes-demo.json`, rôle sauté si absent.
+  - Vérifié (serveur dev de Théo, port 3000, `annona-dev`) : admin et sans session réussis (2/2), boulanger, client et livreur sautés car `outputs/comptes-demo.json` ne contient que `admin` (connexion de ce compte OK par Supabase Auth). `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec). Chromium de Playwright installé sur le poste de Théo. Note du skill `annona-recette` mise à jour.
+  - 13 novembre 2026, suite : les 12 comptes envoyés par Orso le 12 novembre rangés dans `outputs/comptes-demo.json` (format du seed : e-mail, mot de passe, rôle, espace) et `outputs/comptes-demo.md`, ignorés par git ; mot de passe `admin` identique à l'ancien fichier. Connexion Supabase Auth des 12 comptes : 12/12. `v1-roles.spec.ts` relancée (serveur dev de Théo, port 3000) : **5/5 réussis** (admin, boulanger, client-1, livreur-1 : espace, API du rôle 200, API des trois autres 403 ; sans session 401), en 1 min.
+  - 14 novembre 2026 (session Claude de Théo, commit `54b9a80`, `annona-dev`, serveur dev port 3000) : recette cliquée des quatre espaces, **33/33 étapes, zéro erreur console**, rapport `docs/rapports/2026-11-14-recette-roles-theo.md`, captures `outputs/recette-agents/theo-roles/`. Admin (menu complet, carte en direct), client (six pages, détail de commande, retour arrière, rechargement), boulanger (production à J+30, refus du back-office), livreur (tournée, profil, refus du portail) ; sombre vérifié sur ordinateur et tablette (sur téléphone le clair est la règle, `src/lib/theme.ts:37`). Rien écrit en base. Aucun défaut.
+  - Reste : N2 et critères 1, 7, 8 sur vrai téléphone Android (après MOBILE-1), puis recette finale.
+  - Fait le 14 novembre 2026 : admin › tableau de bord puis « Commandes » aussitôt, console sans erreur (correction `getZoom` vérifiée dans l'admin, rapport du 14 novembre).
 
 - [ ] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
 
@@ -190,7 +191,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Théo — se connecter avec Google sur un compte créé par un admin avec son adresse Google (il est testeur), et vérifier qu'une adresse Google sans compte est refusée. Plus tard : SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation.**
+  **Qui : Orso — brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche.**
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -227,6 +228,12 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   5. Dire à Claude « Google est réglé » : Claude met `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, fait l'essai réel dans ton Chrome (inscription d'une boulangerie de test, connexion d'un compte créé par l'admin, adresse inconnue refusée) et note le résultat ici.
   Plus tard : branchement SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation (`docs/AUTH_EMAIL_SETUP.md`) ; Théo s'ajoute comme testeur (Audience › Utilisateurs de test, ou accès au projet Google Cloud donné par Orso) ; hébergement définitif : ajouter son adresse dans les Redirect URLs Supabase, les origines Google et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur l'hébergeur ; paiement Stripe avant activation (PLA-05).
 
+  13 novembre 2026 (nuit), essai de Théo (son Chrome, `next dev` relancé par Claude sur le port 3000 avec `NEXT_PUBLIC_GOOGLE_AUTH=on` ajouté à son `.env.local`), dans l'ordre :
+  1. Adresse Google de Théo (testeur) sans compte Annona : `/login/driver` › « Continuer avec Google » → refus affiché « Aucun compte Annona pour cette adresse Google… l'administrateur doit d'abord créer votre compte avec cette adresse. » **OK.**
+  2. Admin de démo (`demo-admin`), vrais clics Playwright dans `/users` › « Inviter un utilisateur » : « Test-theo Google », rôle Livreur, adresse Google de Théo → `POST /api/users` 201, statut « Invité » (`PENDING_VERIFICATION`), aucun e-mail (`AUTH_EMAIL_LINKS_ENABLED=false`), 0 erreur JavaScript ; capture `outputs/theo-recette/auth-google-creation.png`.
+  3. Théo se reconnecte avec Google → espace livreur (« Ma tournée » vide, « Profil » à compléter). **OK.** Base relue : un seul compte à cette adresse, `ACTIVE`, `DRIVER`, entreprise `demo_company_boulangerie`, compte de connexion Google rattaché.
+  Compte de test gardé pour les prochains essais Google (adresse de Théo, prénom « Test-theo »). Reste pour clore : inscription par e-mail (bloquée tant que le SMTP de `annona-dev` n'est pas branché, refus propre 502 constaté par Orso), vérification d'isolation PLA-01 sur l'entreprise inscrite, tests du parcours.
+
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
@@ -238,6 +245,17 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 - [ ] **LOT1-D9 — Vérification sur téléphone et lenteur.**
 
   **Qui : Théo — mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible.**
+
+  - 14 novembre 2026 (session Claude de Théo) : mesure des **12 comptes de démo dans l'application Android** (émulateur Pixel 7, Android 16, APK de debug, `adb reverse`), sur un **build de production** local (`npm run build` vert, `next start` port 3000), vue web pilotée par le protocole Chrome DevTools ; « prêt » = bon écran, titre affiché et plus aucun appel serveur en vol. Résultats bruts `outputs/mobile1-android/perf/avant.json`. Les 12 comptes se connectent et arrivent dans leur espace, **0 erreur JavaScript**. Connexion complète 3,1 à 7 s (dont `POST /api/auth/login` 1,3 s) ; changement d'onglet 1,2 à 2,6 s au back-office et au portail, 15 à 400 ms chez le livreur ; plancher d'environ 400 ms par appel API (médianes : `/api/orders` 970 ms, `/api/driver/rounds` 960 ms, `/api/production` 930 ms, `/api/portal/orders` 830 ms, `/api/auth/session` 270 ms à chaque navigation).
+  - Cause principale de ces temps sur le poste de Théo : **NordVPN actif** (interface `NordLynx`, DNS `103.86.96.100`) ; un aller-retour `select 1` vers le pooler Supabase `eu-west-3` coûte 137 ms (médiane, 15 essais), Supabase Auth 270 ms. Un appel API enchaîne 3 à 4 allers-retours : ces mesures surestiment fortement la production, où le serveur est à côté de la base. Conséquence pour HEB-1 : héberger dans la même région que la base (Paris, `cdg1` chez Vercel).
+  - **Défaut trouvé** (zone d'Orso) : super-admin › « Support plateforme » affiche toujours « Tickets indisponibles ». `GET /api/admin/support-tickets` → 500 `PrismaClientValidationError` : `src/domains/admin/support-tickets.service.ts:124` sélectionne `relatedDelivery`, champ de l'ancien produit absent du modèle `SupportTicket` (aussi `:45`, `:136`, la colonne de `src/app/(back-office)/admin/support/page.tsx:131` et `tests/admin01-support*.test.ts`, dont le mock masque l'erreur).
+  - Suite du 14 novembre, VPN coupé par Théo : aller-retour base 86 ms (au lieu de 137). Décomposition d'un changement d'écran (protocole Chrome DevTools, toutes requêtes) : les fichiers `/_next/static` de l'écran mettaient 0,7 à 1,1 s sans aucun octet réseau, retenus par le service worker du livreur (`public/sw.js`, zone de Théo), actif aussi sur le portail et le back-office une fois installé : réseau d'abord, puis rangement et tri de toute la copie (300 entrées) **avant** de rendre le fichier ; et à chaque connexion livreur, la liste envoyée par l'écran faisait retélécharger et retrier chaque fichier, ce qui bloquait la session et la tournée (livreur à 13 s, un échec de connexion).
+  - **Corrigé dans `public/sw.js`** : fichiers `/_next/static` (nom unique par version, contenu immuable) servis depuis la copie d'abord, sinon réponse rendue tout de suite et rangement en arrière-plan (`waitUntil`) ; tri de la copie au plus toutes les 30 s ; fichier déjà copié jamais retéléchargé depuis la liste de connexion. Inchangé : réseau d'abord pour les écrans `/driver`, la tournée et la session (copie hors réseau signalée, N1). Tests : `tests/mobile1-native.test.ts` (nouveau test LOT1-D9 : copie servie sans réseau, réponse avant la fin du rangement, pas de nouveau téléchargement), 36/36 avec `driver-push`.
+  - **Corrigé, zone d'Orso, à relire par lui** : support plateforme du super-admin (`relatedDelivery` retiré de `src/domains/admin/support-tickets.service.ts`, sélection typée `satisfies Prisma.SupportTicketSelect` pour qu'un champ disparu casse la vérification des types ; colonne « Livraison » retirée de `src/app/(back-office)/admin/support/page.tsx` ; tests mis à jour et nouveau test qui confronte la sélection au modèle `SupportTicket` du schéma). Vérifié dans l'application : « Support plateforme » s'ouvre en 1,1 s.
+  - Mesure finale (build de production recompilé, 12 comptes dans l'application, `outputs/mobile1-android/perf/apres.json`) : fichiers JavaScript d'un écran ~100 ms au lieu de 0,7 à 1,1 s. Livreurs : connexion 2,6 à 3,0 s (avant 3,4 à 5 s), tournée 0,6 s en médiane (avant 0,96 s), profil 0,3 à 0,6 s, deux passes de plus sans échec. Clients : Factures 0,86 à 0,95 s (avant 1,65 à 1,85 s), Récurrente 1,05 s (1,4), Commandes 0,93 à 1,3 s (1,1 à 1,4), Paramètres 1,25 s (1,9). Super-admin : support réparé. Admin : 1,1 à 1,8 s par onglet, peu changé. 0 erreur JavaScript. Une partie du gain vient de la coupure du VPN ; le gain propre au service worker se lit sur les fichiers JavaScript. Incidents isolés non reproduits : un profil livreur à 14,9 s (puis 0,31 et 0,33 s), le catalogue admin resté sur son squelette une fois (puis 2,35 s et 0,73 s).
+  - `npm run build` vert (deux fois), `npm run check` sortie 0 (843 tests, 836 réussis, 0 échec), `npm run docs:verify` vert.
+  - Nuit du 14 novembre 2026 (accord de Théo pour la zone d'Orso), **PR #26** `theo/vitesse-admin`, à relire par Orso : `prefetch={false}` sur les liens de lignes de 7 listes (clients, commandes, factures, entreprises, commandes d'une facture, génération des factures, historique du portail) et sur les liens répétés des mentions légales ; chaque ligne préchargeait sa fiche deux fois, chacune relue en base par le middleware. Mesure dans l'application (mêmes conditions, service worker de la PR #24, 2 passes) : liste des clients 3,8 s et 24 préchargements → 2,7 à 2,9 s et 4 ; commandes 1,8 → 1,3 s ; entreprises 1,6 → 1,2 s ; factures et historique client inchangés. Test `tests/lot1-d9-row-prefetch.test.ts` ; `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec) ; `npm run build` vert. Vérifié et écarté : `useAccessRefresh` relit la session **en parallèle** des données (la cascade venait du service worker, corrigé PR #24) ; `favicon.ico` redemandé (2 Ko, effet négligeable ; `icon.png` déjà en cache un an).
+  - **Reste, zone d'Orso (gains suivants, non faits)** : (1) faits ou écartés ci-dessus (PR #26) ; (4) `POST /api/auth/login` ~0,9 s ; (5) `/login` rendu à la demande et 282 Ko de JavaScript ; (6) HEB-1 dans la région de la base (Paris).
 
   - 12 novembre 2026 (session Claude d'Orso, branche `orso/d9-tableau-de-bord`) : tableau de bord admin (ADM-04, ADM-08) ramené de quatre vagues de lectures successives à deux. L'entreprise (fuseau, dépôt) vient du compte déjà lu par le garde (`liveCompanyFrom`, relecture si un champ manque ou si l'entreprise n'est pas la bonne) ; lignes et commerces des commandes du jour sont lus en même temps que les arrêts (`readStopSources`, `loadStopDetails(…, preloadedSources)`), contenu inchangé. Tests `tests/lot1-d9-live-dashboard.test.ts` (5 : deux vagues, même contenu qu'avant, entreprise étrangère ignorée, jour sans tournée, garde de type) ; `tests/tour1-rounds.test.ts` inchangé et vert ; `npm run check` sortie 0, 832 tests, 831 réussis, 1 sauté ; `next build` sortie 0. Mesure réelle (version de production sur `annona-dev`, profil téléphone 4G de la spec, `E2E_PERF_ACCOUNTS=admin`, nouveau filtre de la spec) : tableau de bord 3,0 / 2,5 / 2,5 s, **médiane 2,5 s** (3,3 s le 10 novembre) ; écrans témoins non touchés du même ordre qu'alors (Commandes 2,8 / 2,5 / 2,1 s ; Tournées 2,6 / 2,1 / 2,0 s), donc base pas plus rapide ce jour-là. Les 13 écrans de l'administrateur sont sous 3 s, sans débordement. Résultats bruts `outputs/perf/d9-admin-apres-{1,2,3}.json`. Reste : vrais téléphones.
   - 10 novembre 2026 (soir), recette navigateur sur `annona-dev` migrée (Playwright dans Chrome, version de production, `docs/rapports/2026-11-10-lot1-recette.md`) : Décision d'Orso appliquée (`cb442e1`). Deuxième mesure avec les écrans du lot 1 : médianes 2,1 s à l'ouverture, 1,0 s en navigation, 25/26 écrans sous 3 s (tableau de bord admin 3,3 s), aucun débordement ; gain propre à la décision non isolé (base plus rapide ce soir-là). Reste : vrais iPhone et Android.

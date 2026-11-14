@@ -65,7 +65,6 @@ test("ADMIN-1 support : recherche, filtres, pagination sûre et select minimal",
           priority: "URGENT" as const,
           contactType: "DRIVER" as const,
           relatedOrder: { reference: "CMD-1001" },
-          relatedDelivery: null,
           createdAt: new Date("2026-10-25T08:00:00.000Z"),
           updatedAt: new Date("2026-10-25T09:00:00.000Z"),
           company: { name: "Acme" },
@@ -77,7 +76,7 @@ test("ADMIN-1 support : recherche, filtres, pagination sûre et select minimal",
   assert.deepEqual(calls, ["count", "findMany"]);
   assert.equal(page.rows[0]?.company, "Acme");
   assert.equal(page.rows[0]?.relatedOrderReference, "CMD-1001");
-  assert.equal(page.rows[0]?.relatedDeliveryReference, null);
+  assert.equal("relatedDeliveryReference" in (page.rows[0] ?? {}), false);
   assert.equal(JSON.stringify(page).includes("relatedOrderId"), false);
   assert.equal(JSON.stringify(page).includes("relatedDeliveryId"), false);
   assert.equal(JSON.stringify(page).includes("subject"), false);
@@ -119,4 +118,15 @@ test("ADMIN-1 support : accès refusé avant lecture, validation stricte, aucune
   assert.equal(ok.status, 200);
   assert.equal(ok.headers.get("cache-control"), "no-store");
   assert.deepEqual(reads, ["read"]);
+});
+
+test("LOT1-D9 : chaque champ lu pour la file de support existe dans le modèle SupportTicket du schéma", () => {
+  // Les autres tests passent par une fausse base qui accepte tout : un champ disparu (ancien `relatedDelivery`)
+  // ne cassait que la vraie requête (« Tickets indisponibles » chez le super-admin).
+  const schema = readFileSync("prisma/schema.prisma", "utf8");
+  const model = /model SupportTicket \{([\s\S]*?)\n\}/.exec(schema)?.[1] ?? "";
+  const fields = new Set([...model.matchAll(/^\s+(\w+)\s+\S/gm)].map((match) => match[1]));
+  for (const key of Object.keys(platformSupportTicketSelect())) {
+    assert.equal(fields.has(key), true, `champ absent du modèle SupportTicket : ${key}`);
+  }
 });

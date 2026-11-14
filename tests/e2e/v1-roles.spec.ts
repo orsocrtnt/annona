@@ -1,122 +1,90 @@
-import { expect, test } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+/**
+ * RECETTE-V1 — contrôle rapide des quatre rôles avec les comptes du seed (`npm run db:seed` sur annona-dev).
+ *
+ * Chaque rôle se connecte par son écran, arrive dans son espace sans erreur JavaScript, lit l'API de son rôle
+ * (200) et se voit refuser celles des autres rôles (403). La journée complète des dix critères est dans
+ * `recette-v1.spec.ts` ; ici, rien n'est écrit en base (boulanger : date dans 30 jours, jamais verrouillée).
+ *
+ * Comptes lus dans `outputs/comptes-demo.json` (ignoré par git, jamais affiché) : clés `admin`, `boulanger`,
+ * `client-1`, `livreur-1`. Un rôle dont le compte manque est sauté.
+ *
+ *   npx playwright test tests/e2e/v1-roles.spec.ts
+ */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { expect, test, type Page } from "@playwright/test";
 
-const outputPath = "outputs/test2/browser.json";
+type Account = { email: string; password: string };
 
-type DemoPersona = "admin" | "client" | "driver";
+function demoAccounts(): Record<string, Account> {
+  try {
+    return JSON.parse(readFileSync(resolve("outputs/comptes-demo.json"), "utf8")) as Record<string, Account>;
+  } catch {
+    return {};
+  }
+}
 
-// Libère l'espace du pool de démonstration réservé par la connexion du test.
-test.afterEach(async ({ page }) => {
-  await page.request.post("/api/auth/logout").catch(() => undefined);
-});
+const accounts = demoAccounts();
 
-test("TEST-2 : les trois rôles, le suivi, la facture, les refus et une panne réseau", async ({
-  page,
-}) => {
-  // Trois rôles et une panne simulée : depuis un poste local, la base distante allonge chaque appel,
-  // et la panne s'affiche après les trois relances de React Query (environ 15 s).
-  test.setTimeout(240_000);
-  const pageErrors: string[] = [];
-  page.on("pageerror", (error) => pageErrors.push(error.message));
+// Date lointaine pour les commandes (admin) et la production (boulanger) : avant l'heure limite,
+// la lecture ne verrouille rien (LOCK-1).
+const FUTURE_DAY = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
 
-  const login = await page.request.post("/api/auth/login", {
-    data: {
-      email: "demo@annona.fr",
-      password: "Demo2026!",
-      demoTestSession: true,
-      accountType: "company",
-    },
+const API = {
+  admin: `/api/orders?date=${FUTURE_DAY}`,
+  boulanger: `/api/production?date=${FUTURE_DAY}`,
+  "client-1": "/api/portal/orders?history=false",
+  "livreur-1": "/api/driver/rounds",
+} as const;
+
+type RoleKey = keyof typeof API;
+
+const ROLES: Array<{ key: RoleKey; label: string; loginPath: string; home: string; page: string }> = [
+  { key: "admin", label: "admin (ADM)", loginPath: "/login", home: "/dashboard", page: "/dashboard" },
+  { key: "boulanger", label: "boulanger (BOU)", loginPath: "/login", home: "/bakery", page: `/bakery?date=${FUTURE_DAY}` },
+  { key: "client-1", label: "client (CLI)", loginPath: "/login/client", home: "/portal", page: "/portal/orders" },
+  { key: "livreur-1", label: "livreur (LIV)", loginPath: "/login/driver", home: "/driver", page: "/driver" },
+];
+
+async function login(page: Page, account: Account, loginPath: string, home: string) {
+  await page.goto(loginPath);
+  await page.locator('input[type="email"]').fill(account.email);
+  await page.locator('input[name="password"]').fill(account.password);
+  await page.getByRole("button", { name: "Se connecter" }).click();
+  await page.waitForURL((url) => url.pathname.startsWith(home), { timeout: 60_000 });
+}
+
+test.describe.configure({ timeout: 120_000 });
+
+for (const role of ROLES) {
+  test(`RECETTE-V1 : ${role.label} — son espace, son API, et les API des autres rôles refusées`, async ({ page }) => {
+    const account = accounts[role.key];
+    test.skip(!account, `compte « ${role.key} » absent de outputs/comptes-demo.json`);
+
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+
+    await login(page, account!, role.loginPath, role.home);
+    await page.goto(role.page);
+    await expect(page).toHaveURL((url) => url.pathname.startsWith(role.home));
+    await expect(page.locator("main h1").first()).toBeVisible({ timeout: 30_000 });
+
+    const own = await page.request.get(API[role.key]);
+    expect(own.status(), `${role.key} lit ${API[role.key]}`).toBe(200);
+
+    for (const [other, path] of Object.entries(API) as Array<[RoleKey, string]>) {
+      if (other === role.key) continue;
+      const denied = await page.request.get(path);
+      expect(denied.status(), `${role.key} refusé sur ${path}`).toBe(403);
+    }
+
+    expect(pageErrors).toEqual([]);
   });
-  expect(login.ok()).toBeTruthy();
+}
 
-  const selectPersona = async (persona: DemoPersona) => {
-    const response = await page.request.post("/api/demo/persona", { data: { persona } });
-    expect(response.status()).toBe(200);
-  };
-
-  await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "Tableau de bord", exact: true })).toBeVisible();
-  const adminOrders = await page.request.get("/api/orders");
-  expect(adminOrders.status()).toBe(200);
-  await page.goto("/dispatch");
-  await expect(page.getByRole("heading", { name: "Centre de dispatch", exact: true })).toBeVisible();
-
-  await selectPersona("client");
-  await page.goto("/portal/orders");
-  await expect(page.getByRole("heading", { name: "Mes commandes", exact: true })).toBeVisible();
-  const clientOrders = await page.request.get("/api/portal/orders?history=false");
-  expect(clientOrders.status()).toBe(200);
-  const clientOrdersBody = (await clientOrders.json()) as {
-    data?: { items?: Array<{ id: string }> };
-  };
-  const firstOrder = clientOrdersBody.data?.items?.[0];
-  expect(firstOrder?.id).toBeTruthy();
-  await page.goto(`/portal/orders/${firstOrder!.id}`);
-  await expect(page.locator("main h1")).toBeVisible();
-  await expect(page.locator('[aria-label="Suivi partagé"]')).toBeVisible();
-
-  const invoices = await page.request.get("/api/portal/invoices");
-  expect(invoices.status()).toBe(200);
-  const invoicesBody = (await invoices.json()) as { data?: unknown[] };
-  expect(Array.isArray(invoicesBody.data)).toBeTruthy();
-  expect(invoicesBody.data!.length).toBeGreaterThan(0);
-  await page.goto("/portal/invoices");
-  await expect(page.getByRole("heading", { name: "Factures", exact: true })).toBeVisible();
-  const clientDeniedStaff = await page.request.get("/api/orders");
-  expect(clientDeniedStaff.status()).toBe(403);
-
-  await selectPersona("driver");
-  await page.goto("/driver/missions");
-  await expect(page.getByRole("heading", { name: "Missions", exact: true })).toBeVisible();
-  const missions = await page.request.get("/api/driver/missions");
-  expect(missions.status()).toBe(200);
-  const missionsBody = (await missions.json()) as {
-    data?: { missions?: unknown[]; available?: unknown[] };
-  };
-  const missionCount =
-    (missionsBody.data?.missions?.length ?? 0) + (missionsBody.data?.available?.length ?? 0);
-  expect(missionCount).toBeGreaterThan(0);
-  const driverDeniedPortal = await page.request.get("/api/portal/orders?history=false");
-  expect(driverDeniedPortal.status()).toBe(403);
-
-  const failurePage = await page.context().newPage();
-  const failureErrors: string[] = [];
-  failurePage.on("pageerror", (error) => failureErrors.push(error.message));
-  await failurePage.route("**/api/driver/missions", (route) =>
-    route.fulfill({
-      status: 503,
-      contentType: "application/json",
-      body: JSON.stringify({ error: "TEST2_NETWORK_FAILURE" }),
-    })
-  );
-  await failurePage.goto("/driver/missions");
-  await expect(
-    failurePage.getByRole("heading", { name: "Impossible de charger les missions", exact: true })
-  ).toBeVisible();
-  await failurePage.close();
-
-  expect(pageErrors).toEqual([]);
-  expect(failureErrors).toEqual([]);
-  const proof = {
-    task: "TEST-2",
-    passed: true,
-    roles: {
-      admin: { dashboard: true, dispatch: true, ordersApi: 200 },
-      client: { orders: true, tracking: true, invoices: invoicesBody.data!.length },
-      driver: { missions: missionCount },
-    },
-    accessRefusals: {
-      clientToStaffApi: clientDeniedStaff.status(),
-      driverToClientApi: driverDeniedPortal.status(),
-    },
-    failureScenario: {
-      endpoint: "driver missions",
-      injectedStatus: 503,
-      visibleFallback: "Impossible de charger les missions",
-    },
-    pageErrors,
-    fixtureMutation: false,
-  };
-  mkdirSync("outputs/test2", { recursive: true });
-  writeFileSync(outputPath, `${JSON.stringify(proof, null, 2)}\n`, "utf8");
+test("RECETTE-V1 : sans session, les API de rôle répondent 401", async ({ request }) => {
+  for (const path of Object.values(API)) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(401);
+  }
 });
