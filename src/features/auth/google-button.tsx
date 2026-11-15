@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/services/supabase/client";
 import { isNativeApp } from "@/lib/native/platform";
 import { nativeOAuthRedirect, openNativeOAuth, watchNativeOAuthReturn } from "@/lib/native/oauth";
 
@@ -59,7 +58,14 @@ export function GoogleButton({ intent, onError }: { intent: "login" | "signup"; 
   const start = async () => {
     if (pending) return;
     setPending(true);
-    const { data, error } = await createClient().auth.signInWithOAuth({
+    // LOT1-D9 : le client Supabase (~240 Ko bruts) n'est chargé qu'au clic, plus sur chaque page de connexion.
+    const loaded = await import("@/services/supabase/client").catch(() => null);
+    if (!loaded) {
+      setPending(false);
+      onError?.("La connexion avec Google est momentanément indisponible. Réessayez ou utilisez votre e-mail.");
+      return;
+    }
+    const { data, error } = await loaded.createClient().auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: native ? nativeOAuthRedirect(intent) : googleCallbackUrl(window.location.origin, intent),
