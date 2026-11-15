@@ -13,11 +13,11 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **5** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, AUTH-GOOGLE | **1** : LOT1-D9 |
+| À faire | **6** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, RECETTE-V1, AUTH-GOOGLE | **1** : LOT1-D9 |
 
 **À faire par Claude**
 
-- RECETTE-V1 — Recette des dix critères (relancer `npm run mobile:recette` sur `base` à jour (PR #27, #28 et #29 fusionnées le 15 novembre) ; Orso — décider de l'application de navigation sur Android ; recette finale en dernier)
+- Rien pour l'instant
 
 **À faire par Orso**
 
@@ -25,6 +25,7 @@
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (hébergement Annona propre en ligne (HEB-1, close le 15 novembre) : décider du sort de `main` et `preproduction`, du déploiement automatique et de la base de production)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre))
+- RECETTE-V1 — Recette des dix critères (décider de l'application de navigation sur Android (Plans d'Apple, Google Maps ou Waze) ; ensuite, vrais téléphones avec MOBILE-1 (les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android))
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 
 **À faire par Théo**
@@ -41,7 +42,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **Point du 15 novembre 2026 (Orso : à lire en premier)**
 
 - **Fusionné dans `base` le 15 novembre** (accord d'Orso, commits de fusion, CI verte sur chacune, aucun conflit ; #25 à #29 remises à jour sur `base` avant fusion) : PR #24 (travail de Théo des 13 et 14 novembre, TODO, support du super-admin réparé, service worker plus rapide, nom Git « orsocrtnt » → « orso » de COLLAB-2), #25 (tournées jusqu'à 110 arrêts et 8 h, relue : sans risque relevé), #26 (listes sans préchargement), #27 (position du livreur réparée dans l'application, relue : sans risque relevé), #28 (N2, « Livré » hors réseau synchronisé en 3 s), #29 (recette Android rejouable). `npm run check` sur `base` à jour : 850 tests, 843 réussis, 0 échec, 7 sautés.
-- **Close le 15 novembre : HEB-1** (Théo). Annona tourne sur **https://annona-gray.vercel.app** (compte Vercel de Théo, fonctions à Paris, base `annona-dev`). Le site sert encore la version d'avant ces fusions (`095bb2a`) : à redéployer.
+- **Recette finale du 15 novembre (RECETTE-V1)** : les dix critères passent sur `base` à jour, navigateur 12/12 et application Android sur émulateur ; rapport `docs/rapports/2026-11-15-recette-v1.md`. La tâche reste ouverte pour ta décision sur la navigation Android et pour les vrais téléphones.
+- **Close le 15 novembre : HEB-1** (Théo). Annona tourne sur **https://annona-gray.vercel.app** (compte Vercel de Théo, fonctions à Paris, base `annona-dev`). Redéployé le 15 novembre avec `base` à jour (`535089e`).
 - **Fait par Théo (avec Claude) les 13 et 14 novembre** : NOTIF-1 close (vrai e-mail reçu) ; AUTH-GOOGLE vérifiée côté Théo (adresse inconnue refusée, compte créé par l'admin connecté avec Google) ; réponses métier (ACCES-1) ; 12 comptes de démo rangés ; `v1-roles.spec.ts` réécrite ; recette cliquée des quatre espaces 33/33 ; APK Android compilé et essayé (émulateur et vrai Galaxy) ; recette Android des critères 1, 7, 8 réussie ; deux défauts de l'application trouvés et corrigés (position du livreur, N2) ; application plus rapide ; tournées de 110 arrêts.
 - **Connexion Google dans l'application (PR #32, 15 novembre)** : codée, puis vérifiée par Théo avec son compte Google sur le site Vercel et dans l'application Android (émulateur) ; Redirect URLs Supabase ajoutées. Même PR : pages de connexion allégées (283 → 218 Ko de JavaScript).
 
@@ -66,7 +68,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
-- Relancer `npm run mobile:recette` sur `base` à jour (position et N2 ensemble, PR #27 et #28 fusionnées), puis la recette finale des dix critères (RECETTE-V1).
+- Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
 
 **4. Attente extérieure**
 - Applications mobiles (MOBILE-1) : comptes Apple Developer et Google Play, Firebase, composant iOS de Xcode ou vrais téléphones (liste ordonnée dans la tâche).
@@ -155,7 +157,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  **Qui : Claude — relancer `npm run mobile:recette` sur `base` à jour (PR #27, #28 et #29 fusionnées le 15 novembre) ; Orso — décider de l'application de navigation sur Android ; recette finale en dernier.**
+  **Qui : Orso — décider de l'application de navigation sur Android (Plans d'Apple, Google Maps ou Waze) ; ensuite, vrais téléphones avec MOBILE-1 (les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android).**
+
+  - **15 novembre 2026 (session Claude de Théo), recette finale sur `base` à jour** (`535089e`, build de production local, `annona-dev`), rapport `docs/rapports/2026-11-15-recette-v1.md` : navigateur **12/12** (`tests/e2e/recette-v1.spec.ts`, 6,2 min ; critère 1 en 8,3 s) ; application Android (émulateur, `npm run mobile:recette`) critères 1, 7 et 8 réussis, 0 erreur JavaScript ; position du livreur reçue 2,5 s après le démarrage (PR #27) ; N2 : synchronisation 0,1 s après le retour du réseau sur l'appareil (PR #28). Une passe Android sur trois a échoué au rechargement hors réseau, pendant qu'une fenêtre système de l'émulateur ne répondait plus ; les deux suivantes ont réussi. Spec navigateur corrigée : elle créait des clients sans tournée, que la règle du lot 1 (demande 1) prive de tout créneau. Entreprises d'essai supprimées (0 restante). Reste : décision d'Orso sur la navigation Android ; vrais téléphones (MOBILE-1, LOT1-D9) ; notifications natives ; mentions légales (ACCES-1).
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
