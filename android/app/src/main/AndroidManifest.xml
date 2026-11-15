@@ -18,6 +18,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- MOBILE-1, AUTH-GOOGLE : retour de Google dans l'application (fr.annona.app://auth/callback). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="fr.annona.app" android:host="auth" />
+            </intent-filter>
         </activity>
 
         <provider

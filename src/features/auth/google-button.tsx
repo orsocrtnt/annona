@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/services/supabase/client";
 import { isNativeApp } from "@/lib/native/platform";
+import { nativeOAuthRedirect, openNativeOAuth, watchNativeOAuthReturn } from "@/lib/native/oauth";
 
 /**
  * AUTH-GOOGLE : « Continuer avec Google ». Visible seulement quand le fournisseur Google est réglé
- * (`NEXT_PUBLIC_GOOGLE_AUTH=on`) et hors des applications iOS/Android : Google refuse sa page de connexion
- * dans la vue web de Capacitor (version appli à faire dans MOBILE-1).
+ * (`NEXT_PUBLIC_GOOGLE_AUTH=on`). Dans les applications iOS/Android, Google refuse sa page de connexion dans
+ * la vue web de Capacitor : elle s'ouvre dans le navigateur du système et revient par le lien de l'application
+ * (MOBILE-1, `src/lib/native/oauth.ts`).
  */
 export function isGoogleAuthEnabled(): boolean {
   return process.env.NEXT_PUBLIC_GOOGLE_AUTH === "on";
@@ -31,11 +33,19 @@ function GoogleMark() {
 export function GoogleButton({ intent, onError }: { intent: "login" | "signup"; onError?: (message: string) => void }) {
   // Décidé après le montage : le rendu serveur ne sait pas s'il tourne dans l'application native.
   const [visible, setVisible] = useState(false);
+  const [native, setNative] = useState(false);
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    setVisible(isGoogleAuthEnabled() && !isNativeApp());
+    setVisible(isGoogleAuthEnabled());
+    setNative(isNativeApp());
   }, []);
+
+  useEffect(() => {
+    // Application : retour de Google par le lien de l'application (fr.annona.app://auth/callback).
+    if (!visible || !native) return;
+    return watchNativeOAuthReturn();
+  }, [visible, native]);
 
   useEffect(() => {
     // Retour arrière depuis Google (bfcache) : le bouton redevient utilisable.
@@ -49,14 +59,22 @@ export function GoogleButton({ intent, onError }: { intent: "login" | "signup"; 
   const start = async () => {
     if (pending) return;
     setPending(true);
-    const { error } = await createClient().auth.signInWithOAuth({
+    const { data, error } = await createClient().auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: googleCallbackUrl(window.location.origin, intent),
+        redirectTo: native ? nativeOAuthRedirect(intent) : googleCallbackUrl(window.location.origin, intent),
         queryParams: { prompt: "select_account" },
+        // Application : l'adresse Google s'ouvre dans le navigateur du système, pas dans la vue web.
+        skipBrowserRedirect: native,
       },
     });
-    if (error) {
+    if (!error && native) {
+      const opened = data.url ? await openNativeOAuth(data.url).then(() => true, () => false) : false;
+      // Navigateur refermé sans connexion : le bouton redevient utilisable.
+      setPending(false);
+      if (opened) return;
+    }
+    if (error || native) {
       setPending(false);
       onError?.("La connexion avec Google est momentanément indisponible. Réessayez ou utilisez votre e-mail.");
     }
@@ -80,7 +98,7 @@ export function GoogleButton({ intent, onError }: { intent: "login" | "signup"; 
 export function GoogleDivider({ label = "ou" }: { label?: string }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    setVisible(isGoogleAuthEnabled() && !isNativeApp());
+    setVisible(isGoogleAuthEnabled());
   }, []);
   if (!visible) return null;
   return (

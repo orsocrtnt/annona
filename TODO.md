@@ -57,8 +57,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Plus tard : mentions légales des factures (ACCES-1) ; comptes Apple et Google Play, Firebase, iOS sur ton Mac (MOBILE-1).
 
 **2. Théo**
-- Redéployer https://annona-gray.vercel.app avec `base` à jour (PR #24 à #29), tant que le dépôt n'est pas branché sur Vercel : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`.
-- Ajouter l'adresse hébergée dans Supabase (Authentication › URL Configuration : `https://annona-gray.vercel.app/**`) et l'origine dans le client Google « Annona dev » (AUTH-GOOGLE).
+- Site redéployé le 15 novembre avec `base` à jour (`535089e`, PR #24 à #30) ; à refaire après chaque fusion tant que le dépôt n'est pas branché sur Vercel : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`.
+- Ajouter dans Supabase (Authentication › URL Configuration › Redirect URLs) : `https://annona-gray.vercel.app/**` et, pour Google dans l'application, `fr.annona.app://auth/callback**` ; l'origine `https://annona-gray.vercel.app` dans le client Google « Annona dev » (AUTH-GOOGLE).
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
@@ -126,6 +126,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Orso — comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre).**
 
   - 15 novembre 2026 : PR #27 (position du livreur réparée) fusionnée dans `base`. Adresse HTTPS d'Annona (HEB-1, close) : **https://annona-gray.vercel.app** (compte Vercel de Théo, Paris) ; à brancher avec `CAPACITOR_SERVER_URL=https://annona-gray.vercel.app npm run mobile:sync` une fois le site redéployé avec `base` à jour.
+  - 15 novembre 2026 (session Claude de Théo, branche `theo/google-appli`, PR à relire par Orso : touche `src/features/auth/google-button.tsx`) : **connexion Google dans l'application**. Le bouton s'affiche aussi dans l'application ; la page Google s'ouvre dans le navigateur du système (`@capacitor/browser` 8.0.5, ajouté) et revient par le lien `fr.annona.app://auth/callback` (déclaré dans `AndroidManifest.xml`), puis `/auth/callback` est chargé dans la vue web, où le vérificateur PKCE attend déjà : la route serveur ne change pas. Pont `src/lib/native/oauth.ts` : seul ce lien est accepté (pas de redirection ouverte), seuls `code`, `intent` et les erreurs sont transmis, un lien déjà traité n'est jamais rejoué (`getLaunchUrl` renvoie le même lien toute la vie de l'application). Tests `tests/mobile1-native-oauth.test.ts` (8) et `tests/auth-google-signup.test.ts` mis à jour. Essai sur l'émulateur (build de production, APK recompilé) : bouton visible, appui → page d'autorisation Supabase ouverte dans Chrome, lien de retour → application au premier plan et `/auth/callback` chargé (faux code : message « La connexion avec Google n'a pas abouti »), lien non rejoué à la réouverture, 0 erreur JavaScript ; captures `outputs/mobile1-android/google-appli/`. Non essayé : la connexion Google complète (compte Google et Redirect URL Supabase `fr.annona.app://auth/callback**` à ajouter) ; iOS (schéma `fr.annona.app` à déclarer dans `Info.plist` sur le Mac d'Orso).
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -221,6 +222,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   Compte de test gardé pour les prochains essais Google (adresse de Théo, prénom « Test-theo »). Reste pour clore : inscription par e-mail (bloquée tant que le SMTP de `annona-dev` n'est pas branché, refus propre 502 constaté par Orso), vérification d'isolation PLA-01 sur l'entreprise inscrite, tests du parcours.
 
   15 novembre 2026 (reporté de HEB-1, close) : pour Google sur l'adresse hébergée https://annona-gray.vercel.app, ajouter `https://annona-gray.vercel.app/**` aux Redirect URLs de Supabase `annona-dev` et l'origine `https://annona-gray.vercel.app` au client Google « Annona dev » (Théo, ou Orso pour Google Cloud). `NEXT_PUBLIC_GOOGLE_AUTH=on` est déjà réglé sur Vercel (copié de `.env.local`).
+
+  15 novembre 2026 : Google dans l'application (bouton auparavant masqué) codé et essayé sur l'émulateur, détail dans MOBILE-1 ; pour l'essai complet, ajouter aussi `fr.annona.app://auth/callback**` aux Redirect URLs de Supabase `annona-dev`.
 
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
