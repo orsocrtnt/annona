@@ -41,7 +41,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **Point du 15 novembre 2026 (Orso : à lire en premier)**
 
 - **Fusionné dans `base` le 15 novembre** (accord d'Orso, commits de fusion, CI verte sur chacune, aucun conflit ; #25 à #29 remises à jour sur `base` avant fusion) : PR #24 (travail de Théo des 13 et 14 novembre, TODO, support du super-admin réparé, service worker plus rapide, nom Git « orsocrtnt » → « orso » de COLLAB-2), #25 (tournées jusqu'à 110 arrêts et 8 h, relue : sans risque relevé), #26 (listes sans préchargement), #27 (position du livreur réparée dans l'application, relue : sans risque relevé), #28 (N2, « Livré » hors réseau synchronisé en 3 s), #29 (recette Android rejouable). `npm run check` sur `base` à jour : 850 tests, 843 réussis, 0 échec, 7 sautés.
-- **Close le 15 novembre : HEB-1** (Théo). Annona tourne sur **https://annona-gray.vercel.app** (compte Vercel de Théo, fonctions à Paris, base `annona-dev`). Le site sert encore la version d'avant ces fusions (`095bb2a`) : à redéployer.
+- **Connexion Google dans l'application (PR #32, 15 novembre)** : codée, puis vérifiée par Théo avec son compte Google sur le site Vercel et dans l'application Android (émulateur) ; Redirect URLs Supabase ajoutées. Même PR : pages de connexion allégées (283 → 218 Ko de JavaScript).
+- **Close le 15 novembre : HEB-1** (Théo). Annona tourne sur **https://annona-gray.vercel.app** (compte Vercel de Théo, fonctions à Paris, base `annona-dev`). Redéployé le 15 novembre avec `base` à jour (`535089e`).
 - **Fait par Théo (avec Claude) les 13 et 14 novembre** : NOTIF-1 close (vrai e-mail reçu) ; AUTH-GOOGLE vérifiée côté Théo (adresse inconnue refusée, compte créé par l'admin connecté avec Google) ; réponses métier (ACCES-1) ; 12 comptes de démo rangés ; `v1-roles.spec.ts` réécrite ; recette cliquée des quatre espaces 33/33 ; APK Android compilé et essayé (émulateur et vrai Galaxy) ; recette Android des critères 1, 7, 8 réussie ; deux défauts de l'application trouvés et corrigés (position du livreur, N2) ; application plus rapide ; tournées de 110 arrêts.
 
 **Répartition du 12 novembre 2026 (pour se toucher le moins possible)** : chacun a sa zone de fichiers, et un agent ne modifie pas la zone de l'autre sans le prévenir.
@@ -50,9 +51,11 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
+- Relire et fusionner les PR #31 (recette finale, spec E2E, zone de Théo) et #32 (connexion Google dans l'application et pages de connexion plus légères : touche `src/features/auth/google-button.tsx`, ta zone), CI verte, commit de fusion. Après #32, Théo redéploie le site Vercel.
+- iPhone, connexion Google : déclarer le schéma `fr.annona.app` dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`), sur ton Mac (MOBILE-1).
 - Décider de l'application de navigation sur Android : « Plans » ouvre la carte web d'Apple dans Chrome (critère 7) ; Google Maps ou Waze ? (RECETTE-V1)
 - Hébergement (SEP-1) : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` pour redéployer à chaque fusion ; garder `annona-dev` ou créer une base de production ; offre Pro avant les vrais clients ; puis sort de `main` et `preproduction` et rattachement d'annona.fr.
-- AUTH-GOOGLE : brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) ; ensuite Claude fait l'inscription par e-mail et clôt la tâche. Annuler l'invitation Supabase de Théo (Supabase › Team), devenue inutile.
+- AUTH-GOOGLE : brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) ; ensuite Claude fait l'inscription par e-mail et clôt la tâche. (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - Version de démo d'Annona comme celle de TutelLiv (DEMO-1), à préciser avant de coder.
 - Plus tard : mentions légales des factures (ACCES-1) ; comptes Apple et Google Play, Firebase, iOS sur ton Mac (MOBILE-1).
 
