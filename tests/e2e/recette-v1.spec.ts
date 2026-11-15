@@ -214,6 +214,7 @@ async function cleanup() {
       await prisma.slot.deleteMany({ where: { companyId } });
       await prisma.user.deleteMany({ where: { companyId } });
       await prisma.merchant.deleteMany({ where: { companyId } });
+      await prisma.deliveryZone.deleteMany({ where: { companyId } });
       await prisma.company.delete({ where: { id: companyId } });
     }
     const emails: string[] = Object.values(USERS).map((user) => user.email);
@@ -266,13 +267,15 @@ test.beforeAll(async ({ browser }: { browser: Browser }) => {
       const row = await prisma.product.create({ data: { companyId: company.id, categoryId: category.id, sortOrder: index, vatRateBasisPoints: 550, ...product } });
       ids.products[product.name] = row.id;
     }
-    const slot = await prisma.slot.create({ data: { companyId: company.id, label: "7h – 8h", startTime: "07:00", endTime: "08:00", sortOrder: 0 } });
-    await prisma.slot.create({ data: { companyId: company.id, label: "9h – 10h", startTime: "09:00", endTime: "10:00", sortOrder: 1 } });
+    // Lot 1, demande 1 : un client ne voit que le matin et le soir de sa tournée ; sans tournée, aucun créneau.
+    const zone = await prisma.deliveryZone.create({ data: { companyId: company.id, name: `${TAG} Zone`, morningStart: "07:00", morningEnd: "08:00", eveningStart: "09:00", eveningEnd: "10:00" } });
+    const slot = await prisma.slot.create({ data: { companyId: company.id, zoneId: zone.id, period: "MORNING", label: "7h – 8h", startTime: "07:00", endTime: "08:00", sortOrder: 0 } });
+    await prisma.slot.create({ data: { companyId: company.id, zoneId: zone.id, period: "EVENING", label: "9h – 10h", startTime: "09:00", endTime: "10:00", sortOrder: 1 } });
     ids.slot = slot.id;
     for (const [index, [key, spec]] of Object.entries(MERCHANTS).entries()) {
       const merchant = await prisma.merchant.create({
         data: {
-          companyId: company.id, name: spec.name, address: `${index + 1} rue de la Recette`, postalCode: "75011", city: "Paris",
+          companyId: company.id, zoneId: zone.id, name: spec.name, address: `${index + 1} rue de la Recette`, postalCode: "75011", city: "Paris",
           latitude: spec.latitude, longitude: spec.longitude, billingPeriod: "DAILY", paymentMethod: "VIREMENT", billingEmail: `e2e-v1-factures-${key}@example.com`,
         },
       });
@@ -434,7 +437,7 @@ test("Veille — C commande puis annule avant l'heure limite", async ({ browser 
   watch(page, "client C");
   await login(page, account("c"), "/login/client", "/portal");
   await page.locator("#order-other-date").fill(D);
-  await page.getByRole("radio", { name: "7h – 8h" }).click();
+  await page.getByRole("radio", { name: "Matin" }).click();
   await page.getByLabel("Rechercher un produit").fill(CROISSANT);
   await page.getByLabel(`Quantité de ${CROISSANT}`).fill("12");
   await page.getByLabel("Rechercher un produit").fill("");
