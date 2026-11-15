@@ -203,7 +203,7 @@ function InvoiceView({ invoice }: { invoice: AdminInvoiceDetail }) {
             {invoice.orders.map((order) => (
               <li key={order.id} className="flex flex-wrap items-center justify-between gap-2 py-2" data-testid={`invoice-order-${order.reference}`}>
                 <span className="flex items-center gap-2">
-                  <Link href={`/dashboard/orders/${order.id}`} className="font-medium text-brand underline-offset-4 hover:underline">{order.reference}</Link>
+                  <Link href={`/dashboard/orders/${order.id}`} prefetch={false} className="font-medium text-brand underline-offset-4 hover:underline">{order.reference}</Link>
                   <span className="text-muted-foreground">{shortDeliveryDateLabel(order.deliveryDate)}</span>
                   {order.shortage ? <Badge variant="error">{t.shortage}</Badge> : null}
                 </span>
