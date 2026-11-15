@@ -34,6 +34,7 @@ Chaque pont détecte l'application (`Capacitor.isNativePlatform()`, `platform.ts
 | Position pendant la tournée (ENF-04) | `navigator.geolocation` | `geolocation.ts` : module natif, autorisation « pendant l'utilisation » seulement |
 | Plans et Waze (LIV-04, critère 7) | lien `target="_blank"` | `navigation.ts` : `AppLauncher.openUrl`, l'application Plans ou Waze s'ouvre |
 | Réseau (LIV-06, critère 8) | événements `online` / `offline` | `network.ts` : module `Network` + retour au premier plan (`App`) relancent la file |
+| Connexion avec Google (AUTH-GOOGLE) | page Google dans l'onglet, retour sur `/auth/callback` | `oauth.ts` : page Google dans le navigateur du système (`@capacitor/browser`, Google refuse la vue web), retour par le lien `fr.annona.app://auth/callback`, puis `/auth/callback` chargé dans la vue web (vérificateur PKCE déjà dans ses cookies) |
 | Déconnexion | copie hors réseau effacée | `device-logout.ts` : jeton natif retiré pour ce compte, copie effacée |
 
 Règle ENF-04 : `driverLocationAllowed` (`location-policy.ts`) n'autorise la position que si une tournée est `IN_PROGRESS` (statut confirmé par le serveur) ; le suivi s'arrête dès qu'elle ne l'est plus, aucune autorisation d'arrière-plan n'est déclarée (ni `NSLocationAlways…` sur iOS, ni `ACCESS_BACKGROUND_LOCATION` sur Android). Le serveur refuse aussi toute position hors tournée.
@@ -92,6 +93,9 @@ La vue web d'une application de debug se pilote depuis le poste : `adb forward t
 
 - iOS `Info.plist` : langue `fr`, textes d'usage en français (appareil photo, photothèque, position « seulement pendant votre tournée »), `remote-notification`, `NSAllowsLocalNetworking` (essais sur le réseau local), portrait seulement sur téléphone.
 - iOS `AppDelegate.swift` : transmission du jeton APNs au module de notifications.
+- Android `AndroidManifest.xml` : lien de l'application `fr.annona.app://auth/…` (retour de Google, `intent-filter` `VIEW` + `BROWSABLE` sur `MainActivity`).
+- iOS, **à faire sur le Mac** : déclarer le schéma `fr.annona.app` dans `Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`), sinon le retour de Google ne rouvre pas l'application iPhone.
+- Supabase, **à faire une fois** : ajouter `fr.annona.app://auth/callback**` aux Redirect URLs (Authentication › URL Configuration) ; sans lui, Supabase renvoie vers la Site URL au lieu de l'application.
 - Android `AndroidManifest.xml` : réseau, position fine et approximative (premier plan), appareil photo (facultatif), `POST_NOTIFICATIONS`. Android n'a pas de texte d'usage déclaratif : l'application explique chaque demande à l'écran.
 
 ## État des vérifications (6 novembre 2026)

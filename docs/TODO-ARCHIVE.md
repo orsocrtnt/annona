@@ -29,6 +29,7 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   Terminé quand : Annona tourne sur l'adresse Vercel du compte de Théo, depuis `base`, avec connexion et écrans vérifiés, et l'adresse est notée ici et dans MOBILE-1.
 
   - Close le 15 novembre 2026 : critères vérifiés (Annona tourne sur https://annona-gray.vercel.app, compte Vercel de Théo, depuis `base`, connexion et écrans de quatre rôles vérifiés ; adresse notée ici et dans MOBILE-1). Les PR #24 à #29 ont été fusionnées après ce déploiement : le site sert encore `095bb2a` jusqu'au prochain `vercel deploy --prod`. Suites reportées : redéploiement (Théo, bloc « Ce qu'il reste vraiment à faire ») ; adresses dans Supabase et Google (AUTH-GOOGLE) ; `CAPACITOR_SERVER_URL` (MOBILE-1) ; déploiement automatique, base de production et offre Pro (SEP-1).
+  - 15 novembre 2026 (après la clôture) : site redéployé avec `base` à jour (`535089e`, PR #24 à #30), état « Ready », fonctions à Paris ; quatre rôles reconnectés à chaud : connexion 1,6 à 2,7 s, écrans 0,9 à 1,2 s (liste des clients 1,1 s, contre 1,6 à 2,2 s avant la PR #26).
 
 - [x] **NOTIF-1 — Notifications.**
 

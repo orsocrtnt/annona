@@ -158,10 +158,14 @@ test("AUTH-GOOGLE : messages de la page de connexion au retour de Google ou d'un
   assert.equal(googleCallbackUrl("http://localhost:3000", "signup"), "http://localhost:3000/auth/callback?intent=signup");
 });
 
-test("AUTH-GOOGLE : le bouton Google est masqué dans les applications natives et sans réglage ; le retour ne lit jamais les métadonnées pour créer un profil", () => {
+test("AUTH-GOOGLE : le bouton Google est masqué sans réglage ; dans l'application il passe par le navigateur du système ; le retour ne lit jamais les métadonnées pour créer un profil", () => {
   const button = readFileSync("src/features/auth/google-button.tsx", "utf8");
-  assert.match(button, /isGoogleAuthEnabled\(\) && !isNativeApp\(\)/);
+  assert.match(button, /setVisible\(isGoogleAuthEnabled\(\)\)/);
   assert.match(button, /NEXT_PUBLIC_GOOGLE_AUTH === "on"/);
+  // MOBILE-1 : Google refuse la vue web ; l'application ouvre le navigateur du système et revient par son lien.
+  assert.match(button, /redirectTo: native \? nativeOAuthRedirect\(intent\)/);
+  assert.match(button, /skipBrowserRedirect: native/);
+  assert.match(button, /watchNativeOAuthReturn\(\)/);
   const callback = readFileSync("src/app/auth/callback/route.ts", "utf8");
   assert.doesNotMatch(callback, /user_metadata/);
   assert.doesNotMatch(callback, /insertCompanyWithAdmin|signUpCompanyWith/);
