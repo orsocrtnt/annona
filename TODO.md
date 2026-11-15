@@ -4,54 +4,45 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**22 tâches terminées sur 30 — 73 %**
+**23 tâches terminées sur 30 — 77 %**
 
-`███████████████░░░░░` · 8 tâches restantes
+`███████████████░░░░░` · 7 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
-| Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **4** : NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **6** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, RECETTE-V1, AUTH-GOOGLE | **2** : HEB-1, LOT1-D9 |
+| Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
+| À faire | **5** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, AUTH-GOOGLE | **1** : LOT1-D9 |
 
 **À faire par Claude**
 
-- Rien pour l'instant
+- RECETTE-V1 — Recette des dix critères (relancer `npm run mobile:recette` sur `base` à jour (PR #27, #28 et #29 fusionnées le 15 novembre) ; Orso — décider de l'application de navigation sur Android ; recette finale en dernier)
 
 **À faire par Orso**
 
 - DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv
-- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`)
+- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (hébergement Annona propre en ligne (HEB-1, close le 15 novembre) : décider du sort de `main` et `preproduction`, du déploiement automatique et de la base de production)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
-- MOBILE-1 — Applications iOS et Android (Capacitor) (fusionner la PR #27 (position réparée) puis hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android)
-- RECETTE-V1 — Recette des dix critères (fusionner les PR #27, #28 et #29 et décider de l'application de navigation sur Android ; Claude — recette finale en dernier)
+- MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre))
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 
 **À faire par Théo**
 
-- HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo) (en ligne sur https://annona-gray.vercel.app depuis le 15 novembre ; reste l'étape 4 (adresses dans Supabase et Google) et la décision d'Orso sur le déploiement automatique et la base)
-- LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible)
+- LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 14 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 15 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
-**Point du 14 novembre 2026 (Orso : à lire en premier)**
+**Point du 15 novembre 2026 (Orso : à lire en premier)**
 
-- **Fait par Théo (avec Claude) les 13 et 14 novembre** : NOTIF-1 close (vrai e-mail reçu) ; AUTH-GOOGLE vérifiée côté Théo (adresse inconnue refusée, compte créé par l'admin connecté avec Google) ; réponses métier (ACCES-1) ; 12 comptes de démo rangés ; `v1-roles.spec.ts` réécrite ; recette cliquée des quatre espaces 33/33 ; APK Android compilé et essayé (émulateur et vrai Galaxy) ; recette Android des critères 1, 7, 8 réussie ; deux défauts de l'application trouvés et corrigés (position du livreur jamais envoyée, N2) ; application plus rapide (service worker, listes) ; support du super-admin réparé ; tournées de 110 arrêts.
-- **À relire et fusionner par Orso** (CI verte sur les six, fusion « Create a merge commit », de préférence dans cet ordre) :
-  - PR #24 (https://github.com/orsocrtnt/annona/pull/24) : travail des 13 et 14 novembre et ce `TODO.md` ; contient le **support du super-admin réparé, dans ta zone**.
-  - PR #25 (https://github.com/orsocrtnt/annona/pull/25), **ta zone** : tournées jusqu'à 110 arrêts et 8 h, un livreur = une tournée (ACCES-1).
-  - PR #26 (https://github.com/orsocrtnt/annona/pull/26), **ta zone** : listes sans préchargement de chaque fiche (clients 3,8 → 2,8 s).
-  - PR #27 (https://github.com/orsocrtnt/annona/pull/27), zone de Théo : **position du livreur réparée dans l'application** (jamais envoyée avant).
-  - PR #28 (https://github.com/orsocrtnt/annona/pull/28), **en partie ta zone** (`src/features/driver/`) : N2, « Livré » hors réseau synchronisé 3 s après le retour du réseau (10 à 15 s avant).
-  - PR #29 (https://github.com/orsocrtnt/annona/pull/29), zone de Théo : recette Android rejouable (`npm run mobile:recette`) et rapport `docs/rapports/2026-11-14-recette-android.md`.
-- **Hébergement (HEB-1), 15 novembre** : Annona est en ligne sur https://annona-gray.vercel.app (compte Vercel de Théo, fonctions à Paris, base `annona-dev`). **À décider par Orso** : brancher le dépôt GitHub sur Vercel (application Vercel à autoriser sur `orsocrtnt/annona`) pour un redéploiement automatique à chaque fusion, et garder `annona-dev` ou créer une base de production.
-- **Décision attendue d'Orso** : sur Android, « Plans » ouvre la carte web d'Apple dans Chrome (critère 7) ; ouvrir plutôt Google Maps ou Waze ?
+- **Fusionné dans `base` le 15 novembre** (accord d'Orso, commits de fusion, CI verte sur chacune, aucun conflit ; #25 à #29 remises à jour sur `base` avant fusion) : PR #24 (travail de Théo des 13 et 14 novembre, TODO, support du super-admin réparé, service worker plus rapide, nom Git « orsocrtnt » → « orso » de COLLAB-2), #25 (tournées jusqu'à 110 arrêts et 8 h, relue : sans risque relevé), #26 (listes sans préchargement), #27 (position du livreur réparée dans l'application, relue : sans risque relevé), #28 (N2, « Livré » hors réseau synchronisé en 3 s), #29 (recette Android rejouable). `npm run check` sur `base` à jour : 850 tests, 843 réussis, 0 échec, 7 sautés.
+- **Close le 15 novembre : HEB-1** (Théo). Annona tourne sur **https://annona-gray.vercel.app** (compte Vercel de Théo, fonctions à Paris, base `annona-dev`). Le site sert encore la version d'avant ces fusions (`095bb2a`) : à redéployer.
+- **Fait par Théo (avec Claude) les 13 et 14 novembre** : NOTIF-1 close (vrai e-mail reçu) ; AUTH-GOOGLE vérifiée côté Théo (adresse inconnue refusée, compte créé par l'admin connecté avec Google) ; réponses métier (ACCES-1) ; 12 comptes de démo rangés ; `v1-roles.spec.ts` réécrite ; recette cliquée des quatre espaces 33/33 ; APK Android compilé et essayé (émulateur et vrai Galaxy) ; recette Android des critères 1, 7, 8 réussie ; deux défauts de l'application trouvés et corrigés (position du livreur, N2) ; application plus rapide ; tournées de 110 arrêts.
 
 **Répartition du 12 novembre 2026 (pour se toucher le moins possible)** : chacun a sa zone de fichiers, et un agent ne modifie pas la zone de l'autre sans le prévenir.
 - Zone d'Orso : écrans et routes du back-office et du portail (`src/app/(back-office)/`, `src/app/api/dashboard/`, `src/features/` hors natif), domaines commande et tournée (`src/domains/`), `src/components/auth/`, `src/components/layouts/`, `src/app/globals.css`, `ios/` (seul Mac), `prisma/` (aucun changement de schéma prévu ; sinon annonce dans la tâche).
@@ -59,22 +50,23 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- Relire et fusionner les PR #24 à #29 ci-dessus (ta zone : #25, #26, la partie `src/features/driver/` de #28 et le support du super-admin dans #24).
-- Décider de l'application de navigation sur Android (Plans d'Apple ou Google Maps / Waze, RECETTE-V1).
+- Décider de l'application de navigation sur Android : « Plans » ouvre la carte web d'Apple dans Chrome (critère 7) ; Google Maps ou Waze ? (RECETTE-V1)
+- Hébergement (SEP-1) : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` pour redéployer à chaque fusion ; garder `annona-dev` ou créer une base de production ; offre Pro avant les vrais clients ; puis sort de `main` et `preproduction` et rattachement d'annona.fr.
 - AUTH-GOOGLE : brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) ; ensuite Claude fait l'inscription par e-mail et clôt la tâche. Annuler l'invitation Supabase de Théo (Supabase › Team), devenue inutile.
 - Version de démo d'Annona comme celle de TutelLiv (DEMO-1), à préciser avant de coder.
-- Plus tard : mentions légales des factures (ACCES-1) ; iOS sur ton Mac après fusion de #27 (MOBILE-1) ; sort de `main` et `preproduction` après l'hébergement (SEP-1).
+- Plus tard : mentions légales des factures (ACCES-1) ; comptes Apple et Google Play, Firebase, iOS sur ton Mac (MOBILE-1).
 
 **2. Théo**
-- HEB-1 : Annona est **en ligne sur https://annona-gray.vercel.app** (15 novembre, Paris, base `annona-dev`, état de `base` sans les PR #24 à #29). Reste à ajouter cette adresse dans Supabase (URL Configuration) et Google Cloud, puis la brancher dans MOBILE-1 ; redéployer après chaque fusion tant qu'Orso n'a pas branché le dépôt sur Vercel.
-- LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (emprunt, ou Samsung Remote Test Lab avec l'APK) ; tout le reste est mesuré sur émulateur.
+- Redéployer https://annona-gray.vercel.app avec `base` à jour (PR #24 à #29), tant que le dépôt n'est pas branché sur Vercel : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`.
+- Ajouter l'adresse hébergée dans Supabase (Authentication › URL Configuration : `https://annona-gray.vercel.app/**`) et l'origine dans le client Google « Annona dev » (AUTH-GOOGLE).
+- LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
-- Après la fusion des PR #27 et #28 : relancer `npm run mobile:recette` sur `base` à jour (position et N2 ensemble), puis la recette finale des dix critères (RECETTE-V1).
+- Relancer `npm run mobile:recette` sur `base` à jour (position et N2 ensemble, PR #27 et #28 fusionnées), puis la recette finale des dix critères (RECETTE-V1).
 
 **4. Attente extérieure**
-- Applications mobiles (MOBILE-1) : hébergement UE, comptes Apple Developer et Google Play, Firebase, composant iOS de Xcode ou vrais téléphones (liste ordonnée dans la tâche).
+- Applications mobiles (MOBILE-1) : comptes Apple Developer et Google Play, Firebase, composant iOS de Xcode ou vrais téléphones (liste ordonnée dans la tâche).
 
 ## Cadre
 
@@ -98,7 +90,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
-  **Qui : Orso — après l'hébergement Annona propre (MOBILE-1) : décider du sort de `main` et `preproduction`.**
+  **Qui : Orso — hébergement Annona propre en ligne (HEB-1, close le 15 novembre) : décider du sort de `main` et `preproduction`, du déploiement automatique et de la base de production.**
+
+  - 15 novembre 2026 (reporté de HEB-1) : Annona tourne sur https://annona-gray.vercel.app (compte Vercel de Théo, offre Hobby, base `annona-dev`). Décisions d'Orso : (1) autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` pour redéployer à chaque fusion dans `base` (sinon Théo redéploie à la main) ; (2) garder `annona-dev` ou créer une base de production ; (3) passer à l'offre Pro avant les vrais clients (Hobby réservé à un usage non commercial) ; (4) ensuite rattacher annona.fr.
 
   - Décision d'Orso du 12 novembre 2026 (questionnaire) : ne rien toucher à `main` ni à `preproduction` tant qu'annona.fr n'est pas rattaché à un hébergement Annona propre.
 
@@ -114,6 +108,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Réponses de Théo du 13 novembre 2026 (questions métier) : livraison par plage horaire, en deux tournées : **matin de 5h30 à 12h30**, **après-midi de 15h à 19h**. Par livreur : **60 à 70 points de livraison** en moyenne par tournée, **15 à 20 produits** par livraison.
   - Contrôle du code par Claude (13 novembre) : les deux plages sont acceptées par les tournées du lot 1 (`delivery-zone.service.ts`, le soir commence après le matin) ; 15 à 20 produits restent loin de `MAX_ORDER_LINES` (300). **Écart** : `ROUND_MAX_STOPS = 30` (`src/domains/order/round-generation.ts`) coupe en deux ou trois tournées un livreur à 60-70 arrêts ; à relever vers 70 (ou rendre réglable) par Orso, zone `src/domains/`. Durée : 65 arrêts × 3 min (`ROUND_STOP_SECONDS`) ≈ 3h15 plus les trajets, compatible avec la plage du matin. Les zones de démo du seed (5h30-11h, 16h-19h) diffèrent de ces plages : sans effet sur le code, à aligner si Orso le souhaite.
   - Complément de Théo (13 novembre) : **jamais plus de 200 points de livraison par jour** en tout (sous le seuil noté par Orso pour la cartographie) ; **un livreur = une tournée**, et une tournée doit pouvoir compter **au moins 110 points**. Donc `ROUND_MAX_STOPS` (30) doit passer à 110 au minimum, et la génération ne doit pas couper la charge d'un livreur en plusieurs tournées.
+  - 15 novembre 2026 : PR #25 relue (les deux limites ne servent qu'à `planSlotRounds` ; matrice des trajets calculée une fois, indépendante de la limite) et fusionnée dans `base`. Tournées de 110 arrêts en place ; reste seulement les mentions légales des factures.
   - Fait le 14 novembre 2026 (nuit, session Claude de Théo), **PR #25** `theo/tournee-110-arrets`, à relire par Orso (zone `src/domains/`) : `ROUND_MAX_STOPS` 30 → 110 ; `ROUND_MAX_DAY_SECONDS` 5 h → 8 h (à 5 h la durée coupait avant la limite d'arrêts : 110 × 3 min = 5 h 30). La plage horaire reste respectée (des arrêts trop dispersés pour tenir dans le créneau sont toujours répartis sur plusieurs tournées). Mesures `planSlotRounds` (arrêts au hasard dans Paris, plage de 7 h) : 65 arrêts → 1 tournée en 221 ms (avant 3 tournées) ; 110 dispersés → 2 tournées (70 + 40, horaire) en 1 s ; 200 → 3 tournées en 3,9 s. Test ajouté (`tests/lock1-order-lock.test.ts`) : 110 arrêts proches → une tournée, le 111e découpe ; tests tournées 39/39 ; `npm run check` sortie 0 (841 tests, 834 réussis, 0 échec).
 
   - Réponses d'Orso du 12 novembre 2026 (questionnaire) : cartographie : services gratuits (OSRM et IGN publics) pour l'instant, une solution pour 200 arrêts par jour sera chiffrée plus tard ; rappel avant l'heure limite : 15h, la valeur par défaut actuelle ; créneaux du premier client et volumes à deux ans : questions métier, à voir avec Théo ; mentions légales : plus tard ; Resend : le compte de Théo (NOTIF-1).
@@ -128,7 +123,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Orso — fusionner la PR #27 (position réparée) puis hébergement UE, comptes Apple et Google, Firebase (liste ci-dessous), puis iOS sur son Mac après la PR Android.**
+  **Qui : Orso — comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre).**
+
+  - 15 novembre 2026 : PR #27 (position du livreur réparée) fusionnée dans `base`. Adresse HTTPS d'Annona (HEB-1, close) : **https://annona-gray.vercel.app** (compte Vercel de Théo, Paris) ; à brancher avec `CAPACITOR_SERVER_URL=https://annona-gray.vercel.app npm run mobile:sync` une fois le site redéployé avec `base` à jour.
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -154,7 +151,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  **Qui : Orso — fusionner les PR #27, #28 et #29 et décider de l'application de navigation sur Android ; Claude — recette finale en dernier.**
+  **Qui : Claude — relancer `npm run mobile:recette` sur `base` à jour (PR #27, #28 et #29 fusionnées le 15 novembre) ; Orso — décider de l'application de navigation sur Android ; recette finale en dernier.**
 
   **Modèle conseillé : Claude Opus · effort élevé.**
 
@@ -175,32 +172,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - 14 novembre 2026 (nuit), **recette Android** (émulateur Pixel 7, Android 16, build de production, `npm run mobile:recette`, PR #29, rapport `docs/rapports/2026-11-14-recette-android.md`) : entreprise d'essai `E2E-AND` créée puis supprimée à chaque passe. **Critère 1 OK** (commande de la semaine dernière recopiée et validée en 8,3 à 10,8 s, 7 passes). **Critère 7 OK** (2 appuis ; le journal d'Android montre l'ouverture de `maps.apple.com` dans Chrome : décision d'Orso sur Google Maps / Waze). **Critère 8 OK** (« Livré » hors réseau, rechargement hors réseau, synchronisation au retour, tournée terminée).
   - Défauts trouvés et corrigés : **position du livreur jamais envoyée** depuis l'application (PR #27 ; après correction, reçue 8,9 s après le démarrage, 0 erreur JavaScript) ; **N2** (PR #28 : après un rechargement hors réseau, le module natif du réseau ne se chargeait plus ; « Livré » synchronisé 3,1 s après le retour du réseau sur l'appareil au lieu de 10 à 15 s, 2 passes ; cause trouvée en relevant chaque envoi de la file dans l'application).
   - Reste : fusion des PR #27 à #29, nouvelle passe de `npm run mobile:recette` sur `base` à jour, vrai téléphone Android pour les temps (LOT1-D9), puis recette finale.
+  - 15 novembre 2026 : PR #24 à #29 fusionnées dans `base` (commits de fusion, CI verte sur chacune ; `npm run check` sur `base` à jour : 850 tests, 843 réussis, 0 échec, 7 sautés). N2 corrigé dans `base`, à confirmer par la nouvelle passe de `npm run mobile:recette`.
   - Fait le 14 novembre 2026 : admin › tableau de bord puis « Commandes » aussitôt, console sans erreur (correction `getZoom` vérifiée dans l'admin, rapport du 14 novembre).
-
-- [ ] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
-
-  **Qui : Théo — en ligne sur https://annona-gray.vercel.app depuis le 15 novembre ; reste l'étape 4 (adresses dans Supabase et Google) et la décision d'Orso sur le déploiement automatique et la base.**
-
-  **Modèle conseillé : Claude Opus · effort moyen.**
-
-  Demande d'Orso du 13 novembre 2026 : Théo héberge Annona sur Vercel, sur son propre compte Vercel. C'est l'« hébergement Annona propre » attendu par MOBILE-1 (adresse HTTPS définitive), AUTH-GOOGLE (adresse de retour Google) et SEP-1 (sort de `main` et `preproduction`).
-
-  Déjà dans le dépôt : `vercel.json` (région `cdg1`, Paris : données traitées dans l'UE ; tâches planifiées `lock-orders` et `billing`, une fois par jour) ; variables à renseigner listées dans `.env.example`.
-
-  Étapes :
-  1. Sur le compte Vercel de Théo : nouveau projet importé depuis le dépôt GitHub `orsocrtnt/annona`, branche de production `base` (jamais `main` ni `preproduction`, qui portent l'ancien produit).
-  2. Variables d'environnement du projet : celles de `.env.example` (Supabase, `DATABASE_URL` et `DIRECT_URL`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` = l'adresse Vercel, etc.). Base à utiliser (`annona-dev` ou une base de production séparée) : à décider avec Orso avant le premier déploiement.
-  3. Premier déploiement, puis vérifier la connexion et un écran par rôle sur l'adresse Vercel.
-  4. Brancher l'adresse obtenue : Supabase › URL Configuration (Site URL et Redirect URLs `https://<adresse>/**`) ; Google Cloud `annona-514617` › client « Annona dev » (origine `https://<adresse>`) et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur Vercel (AUTH-GOOGLE) ; `CAPACITOR_SERVER_URL=<adresse> npm run mobile:sync` (MOBILE-1).
-  5. Plus tard : rattacher annona.fr (aujourd'hui servi par l'ancien projet TutelLiv, voir SEP-1), avec l'accord d'Orso.
-
-  **Fait le 15 novembre 2026 (session Claude de Théo), étapes 1 à 3** : projet Vercel `annona` dans l'équipe Hobby de Théo (`track-app2`), adresse **https://annona-gray.vercel.app**, Next.js, Node 22.x, fonctions à Paris (en-tête `X-Vercel-Id: cdg1::cdg1`). Déployé par la ligne de commande (`vercel deploy --prod`) depuis une copie propre de `origin/base` (`095bb2a`, **sans les PR #24 à #29**) : le dépôt appartient à Orso, Vercel ne peut pas s'y brancher sans lui. Base : **`annona-dev`** (celle du développement, faute de base de production ; à confirmer par Orso). Variables : les 17 valeurs non vides de `.env.local` de Théo, copiées par script sans affichage (production et preview), avec `NEXT_PUBLIC_APP_URL` = l'adresse Vercel ; laissées de côté : valeurs vides, `SIGNUP_PAYMENT_ADAPTER` (refusé en production), `SEED_*`, `DEMO_CLEANUP_ENABLED`. Vérifié : `/login` 200, `/api/health` 200, connexion et écrans de quatre comptes de démo (livreur, client, admin, boulanger), tous 200. Temps à chaud (navigateur sans tête depuis le PC de Théo) : connexion 1,5 à 2,2 s ; écrans livreur 1,0 s, client 0,9 à 1,0 s, admin 0,9 à 1,6 s ; au même moment, le serveur local sur la même base : connexion 2,4 à 2,9 s, écrans 0,9 à 1,3 s. Premier passage après déploiement (démarrage à froid) : connexion livreur 4,4 s.
-
-  **Reste** : (a) **Orso** : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (ou ajouter Théo comme propriétaire du dépôt) pour que chaque fusion dans `base` redéploie seule ; sinon Théo redéploie à la main après chaque fusion (`git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`) ; (b) **Théo** : étape 4 (Supabase › Authentication › URL Configuration : ajouter `https://annona-gray.vercel.app/**` ; Google Cloud : origine `https://annona-gray.vercel.app`) ; (c) Orso et Théo : base de production séparée ou `annona-dev` ; la formule Hobby de Vercel est réservée à un usage non commercial, donc passer en Pro avant les vrais clients.
-
-  À vérifier avant de choisir l'offre Vercel : l'offre gratuite (Hobby) est réservée à un usage non commercial selon les conditions de Vercel ; l'offre Pro est payante.
-
-  Terminé quand : Annona tourne sur l'adresse Vercel du compte de Théo, depuis `base`, avec connexion et écrans vérifiés, et l'adresse est notée ici et dans MOBILE-1.
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
@@ -247,6 +220,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   3. Théo se reconnecte avec Google → espace livreur (« Ma tournée » vide, « Profil » à compléter). **OK.** Base relue : un seul compte à cette adresse, `ACTIVE`, `DRIVER`, entreprise `demo_company_boulangerie`, compte de connexion Google rattaché.
   Compte de test gardé pour les prochains essais Google (adresse de Théo, prénom « Test-theo »). Reste pour clore : inscription par e-mail (bloquée tant que le SMTP de `annona-dev` n'est pas branché, refus propre 502 constaté par Orso), vérification d'isolation PLA-01 sur l'entreprise inscrite, tests du parcours.
 
+  15 novembre 2026 (reporté de HEB-1, close) : pour Google sur l'adresse hébergée https://annona-gray.vercel.app, ajouter `https://annona-gray.vercel.app/**` aux Redirect URLs de Supabase `annona-dev` et l'origine `https://annona-gray.vercel.app` au client Google « Annona dev » (Théo, ou Orso pour Google Cloud). `NEXT_PUBLIC_GOOGLE_AUTH=on` est déjà réglé sur Vercel (copié de `.env.local`).
+
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
@@ -257,7 +232,9 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 
 - [ ] **LOT1-D9 — Vérification sur téléphone et lenteur.**
 
-  **Qui : Théo — mesure sur un vrai Android avec l'APK de MOBILE-1. Orso — relire la recette et un vrai iPhone si disponible.**
+  **Qui : Théo — mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible.**
+
+  - 15 novembre 2026 : PR #24 (service worker, support du super-admin) et #26 (listes sans préchargement) fusionnées dans `base`. Mesure sur l'hébergement Vercel à Paris (HEB-1, close ; version `095bb2a` d'avant ces fusions, navigateur sans tête depuis le PC de Théo, à chaud) : connexion 1,5 à 2,2 s, écrans 0,9 à 1,6 s ; démarrage à froid 4,4 s. Reste le vrai téléphone Android : essai Samsung Remote Test Lab préparé le 14 novembre (APK pointé sur un tunnel temporaire) mais aucun geste enregistré.
 
   - 14 novembre 2026 (session Claude de Théo) : mesure des **12 comptes de démo dans l'application Android** (émulateur Pixel 7, Android 16, APK de debug, `adb reverse`), sur un **build de production** local (`npm run build` vert, `next start` port 3000), vue web pilotée par le protocole Chrome DevTools ; « prêt » = bon écran, titre affiché et plus aucun appel serveur en vol. Résultats bruts `outputs/mobile1-android/perf/avant.json`. Les 12 comptes se connectent et arrivent dans leur espace, **0 erreur JavaScript**. Connexion complète 3,1 à 7 s (dont `POST /api/auth/login` 1,3 s) ; changement d'onglet 1,2 à 2,6 s au back-office et au portail, 15 à 400 ms chez le livreur ; plancher d'environ 400 ms par appel API (médianes : `/api/orders` 970 ms, `/api/driver/rounds` 960 ms, `/api/production` 930 ms, `/api/portal/orders` 830 ms, `/api/auth/session` 270 ms à chaque navigation).
   - Cause principale de ces temps sur le poste de Théo : **NordVPN actif** (interface `NordLynx`, DNS `103.86.96.100`) ; un aller-retour `select 1` vers le pooler Supabase `eu-west-3` coûte 137 ms (médiane, 15 essais), Supabase Auth 270 ms. Un appel API enchaîne 3 à 4 allers-retours : ces mesures surestiment fortement la production, où le serveur est à côté de la base. Conséquence pour HEB-1 : héberger dans la même région que la base (Paris, `cdg1` chez Vercel).

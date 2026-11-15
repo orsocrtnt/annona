@@ -4,6 +4,32 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **HEB-1 — Héberger Annona sur Vercel (compte Vercel de Théo).**
+
+  **Fait par : Théo.**
+
+
+  Demande d'Orso du 13 novembre 2026 : Théo héberge Annona sur Vercel, sur son propre compte Vercel. C'est l'« hébergement Annona propre » attendu par MOBILE-1 (adresse HTTPS définitive), AUTH-GOOGLE (adresse de retour Google) et SEP-1 (sort de `main` et `preproduction`).
+
+  Déjà dans le dépôt : `vercel.json` (région `cdg1`, Paris : données traitées dans l'UE ; tâches planifiées `lock-orders` et `billing`, une fois par jour) ; variables à renseigner listées dans `.env.example`.
+
+  Étapes :
+  1. Sur le compte Vercel de Théo : nouveau projet importé depuis le dépôt GitHub `orsocrtnt/annona`, branche de production `base` (jamais `main` ni `preproduction`, qui portent l'ancien produit).
+  2. Variables d'environnement du projet : celles de `.env.example` (Supabase, `DATABASE_URL` et `DIRECT_URL`, `CRON_SECRET`, `NEXT_PUBLIC_APP_URL` = l'adresse Vercel, etc.). Base à utiliser (`annona-dev` ou une base de production séparée) : à décider avec Orso avant le premier déploiement.
+  3. Premier déploiement, puis vérifier la connexion et un écran par rôle sur l'adresse Vercel.
+  4. Brancher l'adresse obtenue : Supabase › URL Configuration (Site URL et Redirect URLs `https://<adresse>/**`) ; Google Cloud `annona-514617` › client « Annona dev » (origine `https://<adresse>`) et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur Vercel (AUTH-GOOGLE) ; `CAPACITOR_SERVER_URL=<adresse> npm run mobile:sync` (MOBILE-1).
+  5. Plus tard : rattacher annona.fr (aujourd'hui servi par l'ancien projet TutelLiv, voir SEP-1), avec l'accord d'Orso.
+
+  **Fait le 15 novembre 2026 (session Claude de Théo), étapes 1 à 3** : projet Vercel `annona` dans l'équipe Hobby de Théo (`track-app2`), adresse **https://annona-gray.vercel.app**, Next.js, Node 22.x, fonctions à Paris (en-tête `X-Vercel-Id: cdg1::cdg1`). Déployé par la ligne de commande (`vercel deploy --prod`) depuis une copie propre de `origin/base` (`095bb2a`, **sans les PR #24 à #29**) : le dépôt appartient à Orso, Vercel ne peut pas s'y brancher sans lui. Base : **`annona-dev`** (celle du développement, faute de base de production ; à confirmer par Orso). Variables : les 17 valeurs non vides de `.env.local` de Théo, copiées par script sans affichage (production et preview), avec `NEXT_PUBLIC_APP_URL` = l'adresse Vercel ; laissées de côté : valeurs vides, `SIGNUP_PAYMENT_ADAPTER` (refusé en production), `SEED_*`, `DEMO_CLEANUP_ENABLED`. Vérifié : `/login` 200, `/api/health` 200, connexion et écrans de quatre comptes de démo (livreur, client, admin, boulanger), tous 200. Temps à chaud (navigateur sans tête depuis le PC de Théo) : connexion 1,5 à 2,2 s ; écrans livreur 1,0 s, client 0,9 à 1,0 s, admin 0,9 à 1,6 s ; au même moment, le serveur local sur la même base : connexion 2,4 à 2,9 s, écrans 0,9 à 1,3 s. Premier passage après déploiement (démarrage à froid) : connexion livreur 4,4 s.
+
+  **Reste** : (a) **Orso** : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (ou ajouter Théo comme propriétaire du dépôt) pour que chaque fusion dans `base` redéploie seule ; sinon Théo redéploie à la main après chaque fusion (`git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`) ; (b) **Théo** : étape 4 (Supabase › Authentication › URL Configuration : ajouter `https://annona-gray.vercel.app/**` ; Google Cloud : origine `https://annona-gray.vercel.app`) ; (c) Orso et Théo : base de production séparée ou `annona-dev` ; la formule Hobby de Vercel est réservée à un usage non commercial, donc passer en Pro avant les vrais clients.
+
+  À vérifier avant de choisir l'offre Vercel : l'offre gratuite (Hobby) est réservée à un usage non commercial selon les conditions de Vercel ; l'offre Pro est payante.
+
+  Terminé quand : Annona tourne sur l'adresse Vercel du compte de Théo, depuis `base`, avec connexion et écrans vérifiés, et l'adresse est notée ici et dans MOBILE-1.
+
+  - Close le 15 novembre 2026 : critères vérifiés (Annona tourne sur https://annona-gray.vercel.app, compte Vercel de Théo, depuis `base`, connexion et écrans de quatre rôles vérifiés ; adresse notée ici et dans MOBILE-1). Les PR #24 à #29 ont été fusionnées après ce déploiement : le site sert encore `095bb2a` jusqu'au prochain `vercel deploy --prod`. Suites reportées : redéploiement (Théo, bloc « Ce qu'il reste vraiment à faire ») ; adresses dans Supabase et Google (AUTH-GOOGLE) ; `CAPACITOR_SERVER_URL` (MOBILE-1) ; déploiement automatique, base de production et offre Pro (SEP-1).
+
 - [x] **NOTIF-1 — Notifications.**
 
   **Fait par : Orso et Théo.**
@@ -142,6 +168,7 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
   - 11 novembre 2026 (nuit, demande de Théo : enregistrer sur le projet chaque tâche faite) : `package-lock.json` restauré (deux `"dev": true` sur `fsevents` retirés par `npm install` sous Windows, sans rapport) ; commit sur `theo/garde-collab`, push de la branche (premier vrai passage du hook) et PR vers `base`. Fusion laissée à Orso.
   - Close le 11 novembre 2026 : critères vérifiés (tests 8/8, refus simulés, premier vrai push passé par le hook, CI verte de la PR #2). Reste hors tâche : `npm run collab:install-hook` une fois chez Orso après la fusion (bloc « Ce qu'il reste vraiment à faire »).
   - 12 novembre 2026 (session Claude d'Orso) : PR #2 à #7 relues (code, tests, greffon `@maplibre/maplibre-gl-leaflet` 0.1.4 comparé à la copie de `_transitionEnd`, figé dans `package.json`) puis fusionnées par la #7 avec un **commit de fusion**. Ne jamais fusionner par « squash » ni « rebase » une branche `<prénom>/…` : le garde-fou reconnaît une branche finie à ce qu'elle est ancêtre de `base`, et les branches ne sont pas supprimées après fusion, donc une branche écrasée bloquerait l'autre indéfiniment. `npm run check` sur `base` fusionnée (macOS, Node local) : sortie 0, 827 tests, 826 réussis, 1 sauté (test Windows seulement). Hook installé par Orso le 12 novembre (`core.hooksPath=.githooks`, vérifié). Défaut mineur relevé, non corrigé : lancé hors d'une branche `<prénom>/…` (par exemple sur `base`), `collab:check` prend le prénom dans `git config user.name` ; chez Orso (« orsocrtnt »), ses propres branches `orso/…` seraient alors comptées comme celles de l'autre.
+  - 15 novembre 2026 : correction du nom Git (« orsocrtnt » → « orso ») fusionnée dans `base` avec la PR #24 ; vérifié sur `base` : `PERSON_ALIASES` et `personFromGitName` dans `scripts/collab/collab-overlap.mjs`, utilisés par `check-collab.mjs`, test COLLAB-2 de `tests/collab-guard.test.ts` vert dans `npm run check`.
   - 13 novembre 2026 (session Claude de Théo, branche `theo/collab-nom-git`) : défaut signalé par Orso corrigé. Hors d'une branche `<prénom>/…`, le prénom vient de `personFromGitName` (`scripts/collab/collab-overlap.mjs`), qui reconnaît les identifiants Git et GitHub connus (`orsocrtnt` → orso, `theoner13` → theo) puis le premier mot du nom (« Theo Nerisson » → theo). Vérifié : `tests/collab-guard.test.ts` 9/9 (cas ajouté) ; simulation hors branche avec `user.name=orsocrtnt` → « toi : orso » ; `npm run check` sortie 0 (841/841, Windows). Non vérifié : sur la machine d'Orso après fusion.
 
 
