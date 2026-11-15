@@ -17,6 +17,18 @@ function retryableStatus(status: number) {
   return status >= 500 || status === 401 || status === 408 || status === 429;
 }
 
+/**
+ * RECETTE-V1 N2 : un envoi parti pendant le retour du réseau pouvait rester suspendu ~30 s et bloquer toute la
+ * file. Passé ce délai, l'envoi est abandonné (« réseau indisponible ») et l'action reste en file ; sans risque
+ * de doublon, « Livré » et « Problème » étant idempotents côté serveur (LIV-06). Photo : délai plus long.
+ */
+export const DRIVER_SEND_TIMEOUT_MS = 10_000;
+export const DRIVER_PHOTO_SEND_TIMEOUT_MS = 30_000;
+
+function withTimeout(init: RequestInit, ms: number): RequestInit {
+  return typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? { ...init, signal: AbortSignal.timeout(ms) } : init;
+}
+
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   return (await request<T>(url, init)).data;
 }
@@ -62,17 +74,17 @@ export const driverRoundApi = {
   send(action: QueuedDriverAction): Promise<unknown> {
     const payload = action.payload;
     if (payload.kind === "START") {
-      return call(`/api/driver/rounds/${encodeURIComponent(payload.roundId)}/start`, jsonInit({ at: payload.at }));
+      return call(`/api/driver/rounds/${encodeURIComponent(payload.roundId)}/start`, withTimeout(jsonInit({ at: payload.at }), DRIVER_SEND_TIMEOUT_MS));
     }
     if (payload.kind === "DELIVERED") {
-      return call(`/api/driver/stops/${encodeURIComponent(payload.stopId)}/delivered`, jsonInit({ at: payload.at }));
+      return call(`/api/driver/stops/${encodeURIComponent(payload.stopId)}/delivered`, withTimeout(jsonInit({ at: payload.at }), DRIVER_SEND_TIMEOUT_MS));
     }
     const form = new FormData();
     form.set("code", payload.code);
     form.set("comment", payload.comment);
     form.set("at", payload.at);
     if (payload.photo) form.set("photo", payload.photo, payload.photo.type === "image/png" ? "photo.png" : "photo.jpg");
-    return call(`/api/driver/stops/${encodeURIComponent(payload.stopId)}/incident`, { method: "POST", body: form });
+    return call(`/api/driver/stops/${encodeURIComponent(payload.stopId)}/incident`, withTimeout({ method: "POST", body: form }, payload.photo ? DRIVER_PHOTO_SEND_TIMEOUT_MS : DRIVER_SEND_TIMEOUT_MS));
   },
 };
 

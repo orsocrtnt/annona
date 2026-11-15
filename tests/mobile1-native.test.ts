@@ -229,6 +229,25 @@ test("réseau natif : retour du réseau et retour au premier plan relancent la s
   assert.equal(events.length, 3, "plus rien après l'arrêt");
 });
 
+test("RECETTE-V1 N2 : dans l'application, module natif non chargeable (rechargement hors réseau) → le retour du réseau est vu par la vue web", async () => {
+  const listeners = new Map<string, () => void>();
+  const target = {
+    addEventListener: (name: string, fn: () => void) => listeners.set(name, fn),
+    removeEventListener: (name: string) => listeners.delete(name),
+  } as unknown as Window;
+  const events: string[] = [];
+  const stop = watchConnectivity(
+    { onOnline: () => events.push("on"), onOffline: () => events.push("off") },
+    { runtime: ANDROID, target, native: async () => { throw new Error("ChunkLoadError : hors réseau"); } }
+  );
+  await flush();
+  listeners.get("offline")!();
+  listeners.get("online")!();
+  assert.deepEqual(events, ["off", "on"], "retour du réseau détecté malgré le module natif absent");
+  stop();
+  assert.equal(listeners.size, 0, "écoute retirée à l'arrêt");
+});
+
 // --- Appareil photo (LIV-05) -------------------------------------------------------------------
 
 test("photo native : image JPEG prête pour la file ; annulation → rien ; navigateur → champ fichier", async () => {
