@@ -23,7 +23,7 @@
  * le boulanger ouvre la production (verrouillage, récurrentes générées sauf celle remplacée par la commande
  * manuelle de A), vérifie les totaux, signale un manquant, coche puis décoche « préparée » ; l'admin attribue
  * et valide la tournée générée. Le lendemain : l'admin déplace un arrêt, le livreur voit le nouvel ordre,
- * démarre, « Livré » puis Plans en deux appuis, « Livré » hors réseau (rechargement compris) vu par l'admin au
+ * démarre, « Livré » puis Google Maps en deux appuis, « Livré » hors réseau (rechargement compris) vu par l'admin au
  * retour du réseau ; l'admin facture A, le manquant réduit la facture ; isolation A / B ; passe sombre et
  * tablette. Captures et rapport JSON : outputs/recette-v1/.
  */
@@ -337,8 +337,8 @@ test.beforeAll(async ({ browser }: { browser: Browser }) => {
   await make("admin", { viewport: DESKTOP });
   await make("baker", { viewport: TABLET, hasTouch: true });
   await make("driver", { viewport: MOBILE, hasTouch: true, isMobile: true, geolocation: { latitude: 48.858, longitude: 2.378 }, permissions: ["geolocation"] });
-  // Les liens Plans / Waze ne quittent pas le poste de recette.
-  await contexts.driver!.route(/https:\/\/(maps\.apple\.com|waze\.com)\/.*/, (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>navigation</title>" }));
+  // Les liens Plans / Google Maps / Waze ne quittent pas le poste de recette.
+  await contexts.driver!.route(/https:\/\/(maps\.apple\.com|waze\.com|www\.google\.com\/maps)\/.*/, (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>navigation</title>" }));
   await pages.baker!.addInitScript(() => {
     window.print = () => {};
   });
@@ -725,7 +725,7 @@ async function stopStates(page: Page) {
 
 const keyOfMerchant = (merchantId: string) => (Object.keys(ids.merchants) as MerchantKey[]).find((key) => ids.merchants[key] === merchantId)!;
 
-test("Jour J — critère 7 : démarrer, « Livré », arrêt suivant dans Plans en deux appuis ; NOT-03 au démarrage", async () => {
+test("Jour J — critère 7 : démarrer, « Livré », arrêt suivant dans Google Maps en deux appuis ; NOT-03 au démarrage", async () => {
   const driver = pages.driver!;
   const stops = await withPrisma((prisma) => prisma.stop.findMany({ where: { companyId: ids.company }, orderBy: { sequence: "asc" }, include: { order: { select: { merchantId: true } } } }));
   const firstKey = keyOfMerchant(stops[0]!.order.merchantId);
@@ -753,14 +753,14 @@ test("Jour J — critère 7 : démarrer, « Livré », arrêt suivant dans Plans
   await expect(dialog.getByTestId("driver-nav-menu")).toBeVisible();
   const waze = await dialog.getByTestId("driver-open-waze").getAttribute("href");
   await shot(driver, "v1-17-livreur-plans-waze-mobile");
-  const [popup] = await Promise.all([driver.waitForEvent("popup"), dialog.getByTestId("driver-open-plans").click()]);
+  const [popup] = await Promise.all([driver.waitForEvent("popup"), dialog.getByTestId("driver-open-google-maps").click()]);
   taps += 1;
-  const plansUrl = popup.url();
+  const mapsUrl = popup.url();
   await popup.close();
   expect(taps).toBe(2);
-  expect(plansUrl).toMatch(/^https:\/\/maps\.apple\.com\/\?daddr=48\.\d+,2\.\d+&dirflg=d$/);
+  expect(mapsUrl).toMatch(/^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=48\.\d+,2\.\d+&travelmode=driving$/);
   expect(waze).toMatch(/^https:\/\/waze\.com\/ul\?ll=48\.\d+,2\.\d+&navigate=yes$/);
-  report.critere7 = { taps, plansUrl, waze, delivered: first };
+  report.critere7 = { taps, mapsUrl, waze, delivered: first };
   // Le client de l'arrêt suivant est prévenu à son tour (tâche traitée avant de rouler jusqu'à lui).
   await expect.poll(async () => (await approach(stops[1]!.id)).jobs.every((job) => job.status === "SUCCEEDED"), { timeout: 60_000 }).toBe(true);
 });

@@ -7,7 +7,7 @@
  * (heure de Paris), verrouillées par le cron (`?date=` force la date) qui calcule la tournée. Parcours :
  * l'admin crée une tournée, déplace un arrêt de l'une à l'autre, attribue les tournées et les valide ; le
  * livreur (390 px) voit l'ordre, la liste de chargement ; l'admin réordonne et le livreur voit le nouvel
- * ordre (critère 6) ; il démarre, marque « Livré », ouvre l'arrêt suivant dans Plans en deux appuis
+ * ordre (critère 6) ; il démarre, marque « Livré », ouvre l'arrêt suivant dans Google Maps en deux appuis
  * (critère 7), signale un problème avec photo ; hors réseau il marque « Livré » (indicateur en attente),
  * puis au retour du réseau l'admin voit l'arrêt livré (critère 8) et l'incident dans le suivi.
  * Tout est supprimé à la fin (vérifié). Captures : outputs/recette-tour1/.
@@ -168,8 +168,8 @@ test.beforeAll(async ({ browser }: { browser: Browser }) => {
     geolocation: { latitude: 48.858, longitude: 2.378 },
     permissions: ["geolocation"],
   });
-  // Les liens Plans / Waze ne quittent pas le poste de recette.
-  await driverContext.route(/https:\/\/(maps\.apple\.com|waze\.com)\/.*/, (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>navigation</title>" }));
+  // Les liens Plans / Google Maps / Waze ne quittent pas le poste de recette.
+  await driverContext.route(/https:\/\/(maps\.apple\.com|waze\.com|www\.google\.com\/maps)\/.*/, (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>navigation</title>" }));
   admin = await adminContext.newPage();
   driver = await driverContext.newPage();
   watch(admin, "admin");
@@ -291,7 +291,7 @@ test("LIV-01, LIV-02, critère 6 : le livreur voit l'ordre, la liste de chargeme
   }
 });
 
-test("LIV-03, LIV-04, LIV-05, critère 7 : démarrer, « Livré », arrêt suivant dans Plans en deux appuis, problème avec photo", async () => {
+test("LIV-03, LIV-04, LIV-05, critère 7 : démarrer, « Livré », arrêt suivant dans Google Maps en deux appuis, problème avec photo", async () => {
   await driver.getByTestId("driver-start").click();
   await expect(driver.getByTestId("driver-round-summary")).toContainText("En cours");
   const current = driver.locator('[data-testid="driver-stop"][aria-current="step"]');
@@ -309,14 +309,14 @@ test("LIV-03, LIV-04, LIV-05, critère 7 : démarrer, « Livré », arrêt suiva
   await expect(dialog.getByTestId("driver-go-alone")).toBeVisible();
   const waze = await dialog.getByTestId("driver-open-waze").getAttribute("href");
   await shot(driver, "tour1-livreur-menu-navigation");
-  const [popup] = await Promise.all([driver.waitForEvent("popup"), dialog.getByTestId("driver-open-plans").click()]);
+  const [popup] = await Promise.all([driver.waitForEvent("popup"), dialog.getByTestId("driver-open-google-maps").click()]);
   taps += 1;
-  const plansUrl = popup.url();
+  const mapsUrl = popup.url();
   await popup.close();
   expect(taps).toBe(2);
-  expect(plansUrl).toMatch(/^https:\/\/maps\.apple\.com\/\?daddr=48\.\d{6},2\.\d{6}&dirflg=d$/);
+  expect(mapsUrl).toMatch(/^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=48\.\d{6},2\.\d{6}&travelmode=driving$/);
   expect(waze).toMatch(/^https:\/\/waze\.com\/ul\?ll=48\.\d{6},2\.\d{6}&navigate=yes$/);
-  report.critere7 = { taps, plansUrl, waze };
+  report.critere7 = { taps, mapsUrl, waze };
 
   const prisma = new PrismaClient();
   try {

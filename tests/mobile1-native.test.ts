@@ -26,7 +26,7 @@ import {
 import { notificationChannels, type NotificationMessage } from "../src/domains/notification/notification-channels";
 import { getDriverPushAvailability } from "../src/features/driver/driver-push";
 import { driverOfflineUrls, OFFLINE_COPY_HEADER } from "../src/features/driver/driver-offline-cache";
-import { appleMapsUrl, wazeUrl } from "../src/lib/maps/navigation-links";
+import { appleMapsUrl, googleMapsUrl, wazeUrl } from "../src/lib/maps/navigation-links";
 import { MOBILE_APP_ID, MOBILE_START_PATH, resolveMobileServer } from "../src/lib/native/app-config";
 import { base64ToBlob, nativeCameraAvailable, takeNativePhoto } from "../src/lib/native/camera";
 import { watchDriverPosition, type DriverPosition, type NativeGeolocation } from "../src/lib/native/geolocation";
@@ -83,9 +83,10 @@ test("configuration : une application hébergée, HTTPS hors réseau local, orig
 
 // --- Plans et Waze (LIV-04, critère 7) ----------------------------------------------------------
 
-test("Plans et Waze : confiés au système dans l'application, lien web inchangé dans un navigateur", () => {
+test("Plans, Google Maps et Waze : confiés au système dans l'application, lien web inchangé dans un navigateur", () => {
   const target = { latitude: 48.8566, longitude: 2.3522, address: "1 rue de Rivoli, 75001 Paris" };
-  for (const url of [appleMapsUrl(target), wazeUrl(target), wazeUrl({ ...target, latitude: null, longitude: null })]) {
+  const noPoint = { ...target, latitude: null, longitude: null };
+  for (const url of [appleMapsUrl(target), wazeUrl(target), wazeUrl(noPoint), googleMapsUrl(target), googleMapsUrl(noPoint)]) {
     assert.equal(isNavigationAppUrl(url), true, url);
     const opened: string[] = [];
     assert.equal(openInNavigationApp(url, { runtime: IOS, openUrl: async (value) => opened.push(value) }), true);
@@ -97,6 +98,10 @@ test("Plans et Waze : confiés au système dans l'application, lien web inchang�
   assert.equal(openInNavigationApp("https://exemple.fr/", { runtime: IOS, openUrl: async () => assert.fail() }), false);
   assert.equal(isNavigationAppUrl("http://maps.apple.com/?daddr=1,2"), false);
   assert.equal(isNavigationAppUrl("javascript:alert(1)"), false);
+  // Google : seules les pages /maps sont des liens de navigation, jamais le reste du domaine.
+  assert.equal(isNavigationAppUrl("https://www.google.com/search?q=annona"), false);
+  assert.equal(isNavigationAppUrl("https://www.google.com/mapsevil"), false);
+  assert.equal(isNavigationAppUrl("https://google.com.evil.example/maps/dir/?api=1"), false);
 });
 
 // --- Position pendant la tournée seulement (ENF-04) -----------------------------------------------
