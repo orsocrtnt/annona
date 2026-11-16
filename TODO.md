@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **1** : ACCES-1 | **5** : SEP-1, MOBILE-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
+| À faire | **2** : ACCES-1, MOBILE-1 | **4** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -22,11 +22,11 @@
 **À faire par Orso**
 
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
+- MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 
 **À faire par Théo**
 
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr)
-- MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (confiés par Orso le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
@@ -59,6 +59,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 **1. Orso**
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
+- MOBILE-1 : ouvrir les comptes **Apple Developer** (99 $ par an) et **Google Play Console** (25 $ une fois), décidé le 16 novembre. Un seul compte de chaque suffit pour plusieurs applications, mais toutes s'affichent sous le même nom de vendeur (compte « organisation » = nom de la société, numéro D-U-N-S gratuit). Google Play : un compte personnel récent doit faire tester l'application par au moins 12 personnes pendant 14 jours (test fermé) avant de pouvoir la publier ; un compte organisation y échappe.
 - Plus tard : mentions légales des factures (ACCES-1) ; projet Firebase pour les notifications sur téléphone (MOBILE-1, reporté le 16 novembre).
 
 **2. Théo**
@@ -68,7 +69,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
 - RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
-- MOBILE-1 : ouvrir les comptes **Apple Developer** (99 $ par an) et **Google Play Console** (25 $ une fois), confiés par Orso le 16 novembre (Théo prévenu par Orso). Un seul compte de chaque suffit pour plusieurs applications, mais toutes s'affichent sous le même nom de vendeur (compte « organisation » = nom de la société, numéro D-U-N-S gratuit). Google Play : un compte personnel récent doit faire tester l'application par au moins 12 personnes pendant 14 jours (test fermé) avant de pouvoir la publier ; un compte organisation y échappe. Choix du type de compte à voir avec Orso.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
@@ -77,7 +77,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
 
 **4. Attente extérieure**
-- Applications mobiles (MOBILE-1) : comptes Apple Developer et Google Play (Théo), Firebase (plus tard), vrais téléphones (liste ordonnée dans la tâche).
+- Applications mobiles (MOBILE-1) : comptes Apple Developer et Google Play (Orso), Firebase (plus tard), vrais téléphones (liste ordonnée dans la tâche).
 
 ## Cadre
 
@@ -141,9 +141,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Théo — comptes Apple Developer et Google Play (confiés par Orso le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard.**
+  **Qui : Orso — comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard.**
 
-  - 16 novembre 2026, décisions d'Orso : comptes **Apple Developer** et **Google Play** ouverts par **Théo** (Orso l'a prévenu) ; projet **Firebase** reporté ; **simulateur iPhone** téléchargé sur le Mac d'Orso (`xcodebuild -downloadPlatform iOS`) pour compiler l'application iOS et essayer la connexion Google et le menu de navigation sans attendre le compte Apple. Un compte de chaque suffit pour plusieurs applications (même nom de vendeur pour toutes) ; Google Play impose aux comptes personnels récents 14 jours de test fermé avec au moins 12 testeurs avant publication, pas aux comptes organisation.
+  - 16 novembre 2026, décisions d'Orso : comptes **Apple Developer** et **Google Play** ouverts par **Orso** ; projet **Firebase** reporté ; **simulateur iPhone** téléchargé sur le Mac d'Orso (`xcodebuild -downloadPlatform iOS`) pour compiler l'application iOS et essayer la connexion Google et le menu de navigation sans attendre le compte Apple. Un compte de chaque suffit pour plusieurs applications (même nom de vendeur pour toutes) ; Google Play impose aux comptes personnels récents 14 jours de test fermé avec au moins 12 testeurs avant publication, pas aux comptes organisation.
 
   - 16 novembre 2026 (Claude d'Orso, PR `orso/petits-correctifs`) : schéma `fr.annona.app` déclaré dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`, même lien que l'`intent-filter` Android) pour le retour de Google dans l'application iPhone. Vérifié : `plutil -lint` OK. Non vérifié : compilation iOS et connexion Google sur iPhone (Mac d'Orso, composant iOS de Xcode).
 
