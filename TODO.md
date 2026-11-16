@@ -17,7 +17,7 @@
 
 **À faire par Claude**
 
-- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (démo dans une entreprise isolée d'`annona-dev` (décidé le 16 novembre) ; journée type à faire relire par Théo)
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (lot 2 (lot d'environnements de démo, connexion sans identifiants) ; journée type à faire relire par Théo)
 
 **À faire par Orso**
 
@@ -75,7 +75,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **3. Claude**
 - MOBILE-1 : simulateur iPhone en cours de téléchargement sur le Mac d'Orso (accord d'Orso du 16 novembre) ; ensuite compiler l'application iOS et essayer la connexion Google et le menu « Comment y aller ? » (Plans) sur le simulateur.
-- DEMO-1 : démo des quatre espaces dans une entreprise isolée d'`annona-dev` (décision d'Orso du 16 novembre) ; journée type tirée des réponses de Théo du 13 novembre, à lui faire relire.
+- DEMO-1 : une démo par visiteur, ouverte à tous, sans aucun envoi, journée réaliste (décisions d'Orso du 16 novembre). Lot 1 (journée de démo) fait ; suite : lot d'environnements et connexion sans identifiants (nouvelle table, migration à annoncer à Théo), garde-fous, écrans.
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
 
 **4. Attente extérieure**
@@ -95,7 +95,13 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
-  **Qui : Claude — démo dans une entreprise isolée d'`annona-dev` (décidé le 16 novembre) ; journée type à faire relire par Théo.**
+  **Qui : Claude — lot 2 (lot d'environnements de démo, connexion sans identifiants) ; journée type à faire relire par Théo.**
+
+  **En cours : Orso.**
+
+  - **Décisions d'Orso du 16 novembre 2026 (second questionnaire, remplacent « une entreprise isolée »)** : **une démo par visiteur** (un environnement de démo prêté à chacun, comme TutelLiv) ; **ouverte à tout le monde** (« Voir la démo » sur la page de connexion, sans identifiants) ; le visiteur **peut tout essayer, sans aucun envoi** (ni e-mail ni notification ; mot de passe, comptes et suppressions bloqués) ; **journée réaliste** (volumes de Théo : 60 à 70 arrêts par tournée du matin, 15 à 20 produits par livraison).
+  - **Conception (Claude d'Orso, 16 novembre)**, reprise de la démo TutelLiv adaptée au nouveau schéma : un lot d'entreprises de démo `demopool_NN` dans `annona-dev`, suivi par une nouvelle table `demo_pool_environments` (prêt, expiration, recyclage ; **changement de schéma et migration, à annoncer à Théo avant de l'appliquer sur `annona-dev`**). Chaque environnement a quatre comptes (admin, boulanger, livreur, client) en `@example.com`, connectés sans mot de passe par un lien magique ouvert côté serveur ; un cookie de prêt (4 h) est exigé pour tout compte de démo, donc un visiteur ne peut pas entrer dans l'environnement d'un autre. À l'expiration, l'environnement est reconstruit à l'heure du moment. Garde « aucun envoi » au plus bas niveau (e-mails, notifications web et natives). Page `/demo` avec les quatre espaces, bandeau « Démo · changer d'espace · quitter ». Lots : (1) journée de démo, (2) lot d'environnements et connexion, (3) garde-fous, (4) écrans et recette navigateur.
+  - **Lot 1 fait le 16 novembre (branche `orso/demo-1-scenario`)** : `src/domains/demo/demo-scenario.ts` construit la journée d'un environnement, fonction pure et déterministe par (environnement, jour) : 100 produits (catalogue sorti du seed dans `src/domains/demo/demo-catalog.ts`, le seed l'importe), 172 clients sur 80 rues de Paris (`demo-scenario-data.ts`), tournées Nord et Sud du matin (5h30-12h30) et de l'après-midi (15h-19h), deux livreurs, une semaine livrée, la journée remise à l'heure (arrêts passés livrés, tournée en cours), le lendemain commandé (verrouillé et tournées calculées après 17h). Le client de démo n'a pas commandé pour la prochaine livraison et a sa commande de la semaine dernière (critère 1) ; après 19h le livreur de démo garde quelques arrêts. Mesure : 66 ms, 1 349 commandes, 23 551 lignes, 34 tournées par environnement. Tests `tests/demo1-scenario.test.ts` **6/6**. **Non lancés** : `npm run check` (types, lint, tous les tests), Orso ayant demandé de garder le processeur libre ; rien n'est écrit en base à ce stade. Limite connue : un dimanche soir, le livreur de démo n'a rien à livrer (pas de tournée du soir le dimanche).
 
   - Décision d'Orso du 16 novembre 2026 (questionnaire) : la démo vit dans **une entreprise de démo isolée dans `annona-dev`** (données marquées `demo-…`, remise à zéro qui ne touche qu'elle ; isolation entre entreprises PLA-01 déjà en place), pas dans un projet Supabase dédié. Journée type : partir des réponses de Théo du 13 novembre (tournées 5h30-12h30 et 15h-19h, 60 à 70 arrêts par tournée, 15 à 20 produits par livraison), puis la lui faire relire.
 
