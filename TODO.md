@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **6** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, RECETTE-V1, AUTH-GOOGLE | **1** : LOT1-D9 |
+| À faire | **5** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, RECETTE-V1 | **2** : AUTH-GOOGLE, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -26,10 +26,10 @@
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre))
 - RECETTE-V1 — Recette des dix critères (décider de l'application de navigation sur Android (Plans d'Apple, Google Maps ou Waze) ; ensuite, vrais téléphones avec MOBILE-1 (les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android))
-- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 
 **À faire par Théo**
 
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
@@ -56,12 +56,13 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - iPhone, connexion Google : déclarer le schéma `fr.annona.app` dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`), sur ton Mac (MOBILE-1).
 - Décider de l'application de navigation sur Android : « Plans » ouvre la carte web d'Apple dans Chrome (critère 7) ; Google Maps ou Waze ? (RECETTE-V1)
 - Hébergement (SEP-1) : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` pour redéployer à chaque fusion ; garder `annona-dev` ou créer une base de production ; offre Pro avant les vrais clients ; puis sort de `main` et `preproduction` et rattachement d'annona.fr.
-- AUTH-GOOGLE : brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) et, en même temps, passer la Site URL de Supabase de `http://localhost:3000` à `https://annona-gray.vercel.app` (sinon les liens de confirmation envoient vers localhost) ; avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google) ; ensuite Claude fait l'inscription par e-mail et clôt la tâche. (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
+- AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - Version de démo d'Annona comme celle de TutelLiv (DEMO-1), à préciser avant de coder.
 - Plus tard : mentions légales des factures (ACCES-1) ; comptes Apple et Google Play, Firebase, iOS sur ton Mac (MOBILE-1).
 
 **2. Théo**
 - Redéployer le site avec `base` à jour (`78561f9`, PR #31 et #32 fusionnées le 15 novembre au soir ; dernier déploiement : `535089e`) ; à refaire après chaque fusion tant que le dépôt n'est pas branché sur Vercel : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`.
+- AUTH-GOOGLE : brancher le SMTP Resend de **ton** compte Resend sur `annona-dev` (décision d'Orso du 15 novembre) : Supabase › Authentication › Emails › SMTP Settings, valeurs dans `docs/AUTH_EMAIL_SETUP.md` (hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = une clé Resend dédiée, restreinte à l'envoi). L'expéditeur doit être sur un domaine vérifié **dans ton compte Resend** (`no-reply@annona.fr` demande les enregistrements DNS d'annona.fr, à voir avec Orso). Ensuite, coller les trois modèles de `docs/operations/email/supabase/` et couper le suivi des clics chez Resend. Puis Claude fait l'inscription par e-mail et clôt la tâche.
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
@@ -184,7 +185,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Orso — brancher le SMTP Resend de `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche.**
+  **Qui : Théo — brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche.**
+
+  15 novembre 2026 (nuit, Claude d'Orso, dans Chrome, accord d'Orso) : Site URL de `annona-dev` passée de `http://localhost:3000` à `https://annona-gray.vercel.app` (Authentication › URL Configuration) ; vérifié en rechargeant la page ; les quatre Redirect URLs inchangées (`localhost:3000/**`, `localhost:3110/**`, `annona-gray.vercel.app/**`, `fr.annona.app://auth/callback**`). Effet : les liens des e-mails Supabase (`{{ .SiteURL }}`) visent le site en ligne ; la connexion Google en local reste autorisée. Non vérifié : un vrai e-mail de confirmation (attend le SMTP Resend de Théo). Même session : relecture des PR #24 à #32 de Théo, rien de bloquant ; `npm run check` sur `base` à jour (`c0d3c18`) : 860 tests, 859 réussis, 1 sauté, 0 échec. Reste relevé : schéma `fr.annona.app` absent de `ios/App/App/Info.plist` (fichier texte, modifiable sans Mac ; le Mac sert seulement à compiler et essayer), commentaire inexact dans `google-button.tsx` (le bouton se réactive à l'ouverture de la page Google, pas à sa fermeture), minuteries de `use-driver-action-queue.ts` (#28) jamais retirées de leur liste.
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 
@@ -219,7 +222,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   3. Google Auth Platform › Clients › « Créer un client » : type « Application Web », nom « Annona dev » ; Origines JavaScript autorisées : `http://localhost:3000` ; URI de redirection autorisés : `https://fqzlfszgyeyfeshllqtj.supabase.co/auth/v1/callback`. Garder l'ID client et le code secret affichés.
   4. Supabase › `annona-dev` › Authentication › Sign In / Providers › Google : activer, coller l'ID client et le code secret, « Save ».
   5. Dire à Claude « Google est réglé » : Claude met `NEXT_PUBLIC_GOOGLE_AUTH=on` dans `.env.local`, fait l'essai réel dans ton Chrome (inscription d'une boulangerie de test, connexion d'un compte créé par l'admin, adresse inconnue refusée) et note le résultat ici.
-  Contrôle du 15 novembre 2026 (soir, Claude d'Orso) : Supabase `annona-dev` renvoie bien vers Google avec le bon client et l'adresse de retour Supabase ; lien `fr.annona.app://auth/callback` déclaré dans `AndroidManifest.xml` ; Redirect URLs prouvées par les essais de Théo (retour automatique dans l'application). Non lisible d'ici : réglages Vercel du compte de Théo (prouvés par sa connexion Google réussie sur le site). Manques relevés : `Info.plist` iOS sans schéma `fr.annona.app` (Mac d'Orso) ; Site URL Supabase encore `http://localhost:3000` ; application Google en mode Test.
+  Contrôle du 15 novembre 2026 (soir, Claude d'Orso) : Supabase `annona-dev` renvoie bien vers Google avec le bon client et l'adresse de retour Supabase ; lien `fr.annona.app://auth/callback` déclaré dans `AndroidManifest.xml` ; Redirect URLs prouvées par les essais de Théo (retour automatique dans l'application). Non lisible d'ici : réglages Vercel du compte de Théo (prouvés par sa connexion Google réussie sur le site). Manques relevés : `Info.plist` iOS sans schéma `fr.annona.app` ; Site URL Supabase encore `http://localhost:3000` (corrigée le 15 novembre dans la nuit) ; application Google en mode Test.
 
   Plus tard : branchement SMTP Resend de `annona-dev` pour le vrai e-mail de confirmation (`docs/AUTH_EMAIL_SETUP.md`) ; Théo s'ajoute comme testeur (Audience › Utilisateurs de test, ou accès au projet Google Cloud donné par Orso) ; hébergement définitif : ajouter son adresse dans les Redirect URLs Supabase, les origines Google et `NEXT_PUBLIC_GOOGLE_AUTH=on` sur l'hébergeur ; paiement Stripe avant activation (PLA-05).
 
