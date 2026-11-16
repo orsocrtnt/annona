@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**23 tâches terminées sur 30 — 77 %**
+**23 tâches terminées sur 31 — 74 %**
 
-`███████████████░░░░░` · 7 tâches restantes
+`███████████████░░░░░` · 8 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **2** : ACCES-1, MOBILE-1 | **4** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
+| À faire | **2** : ACCES-1, MOBILE-1 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -26,6 +26,7 @@
 
 **À faire par Théo**
 
+- RETOURS-1 — Tour complet de l'application et notes de retouches
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr)
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
@@ -69,6 +70,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
 - RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
+- RETOURS-1 (demande d'Orso du 16 novembre) : faire un tour complet de l'application (les quatre espaces, site en ligne et application Android) et noter les retouches à faire et ce qu'il faudrait ajouter, dans `docs/rapports/` (détail dans la tâche).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
@@ -295,3 +297,14 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
   - Non fait : mesure contre un déploiement Vercel ; vrais iPhone et Android (aucun appareil). Écrans du lot 1 mesurés à la recette du soir.
   - Vérifications : `tests/lot1-d9-auth-query.test.ts` (conversion des colonnes et des dates, une seule requête) ; tests existants adaptés (`account-access`, `auth-role-real-guard`) ; `npm run check` sortie 0, 803/803 ; `next build` sortie 0.
 
+
+- [ ] **RETOURS-1 — Tour complet de l'application et notes de retouches.**
+
+  **Qui : Théo.**
+
+  - Demande d'Orso du 16 novembre 2026 : faire un tour complet de l'application et noter les retouches à faire et ce qu'il faudrait ajouter.
+  - Où : le site en ligne https://annona-gray.vercel.app (redéployé avec `base` à jour), sur ordinateur et sur téléphone, et l'application Android. Les quatre espaces : admin (back-office), boulanger (production), client (commande), livreur (tournée), avec les comptes de `outputs/comptes-demo.json`. Données créées pendant le tour : sur `annona-dev`, préfixées `test-theo-…`.
+  - Pour chaque remarque : l'espace et l'écran, ce qui ne va pas ou ce qui manque, son importance (bloquant, gênant, idée), une capture si utile. À noter dans `docs/rapports/AAAA-MM-JJ-tour-theo.md`.
+  - Ensuite : Claude classe les remarques en tâches (avec les identifiants du cahier des charges), Orso tranche les ajouts.
+
+  Terminé quand : le tour des quatre espaces est fait et les remarques sont notées dans `docs/rapports/`.
