@@ -17,7 +17,7 @@
 
 **À faire par Claude**
 
-- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (lot 2 (lot d'environnements de démo, connexion sans identifiants) ; journée type à faire relire par Théo)
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (lot 2 (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo)
 
 **À faire par Orso**
 
@@ -43,6 +43,17 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 - **Décisions d'Orso (questionnaire du 16 novembre)** : SEP-1, déploiement automatique : Orso autorise l'application GitHub de Vercel sur `orsocrtnt/annona` (dépôt public), puis Théo relie son projet Vercel à `base` ; SEP-1, base : `annona-dev` reste la base du site en ligne jusqu'au premier vrai client ; DEMO-1 : la démo montre les quatre espaces (client, boulanger, livreur, admin) ; deux retouches dans le travail de Théo acceptées, Théo prévenu. Vérifié ensuite dans Chrome : l'application GitHub de Vercel avait déjà accès à tous les dépôts d'Orso ; reste à Théo de relier son projet Vercel au dépôt.
 - **PR `orso/petits-correctifs` (Claude d'Orso)** : schéma `fr.annona.app` déclaré pour l'iPhone (`ios/App/App/Info.plist`, MOBILE-1 et AUTH-GOOGLE) ; commentaire de `google-button.tsx` corrigé ; minuteries de reprise réseau de la file livreur (N2, #28) retirées de leur liste et non empilées. `npm run check` sortie 0 (865 tests, 864 réussis, 1 sauté, 0 échec).
+
+**Topo pour Théo (16 novembre 2026 au soir, à lire en arrivant)**
+
+- **Fusionné le 16 novembre dans `base` (PR #37 à #42)** :
+  - schéma `fr.annona.app` déclaré pour l'iPhone (`ios/App/App/Info.plist`) ;
+  - deux retouches dans ton travail, avec l'accord d'Orso : commentaire de `google-button.tsx` corrigé ; minuteries de reprise réseau de la file livreur (N2) déplacées dans `src/features/driver/round/network-back-retries.ts` (test `tests/recette-v1-network-back-retries.test.ts`) ;
+  - `@capacitor/browser` ajouté au projet iOS (`ios/App/CapApp-SPM/Package.swift`) : il manquait depuis la PR #32, faute de `cap sync ios` ; l'application iOS compile maintenant pour le simulateur sur le Mac d'Orso, sans encore avoir été lancée ;
+  - DEMO-1, lot 1 : journée de démo dans `src/domains/demo/` ; le catalogue du seed est passé dans `src/domains/demo/demo-catalog.ts` (le seed l'importe, mêmes données).
+- **À toi** (détail dans ta liste plus bas) : (1) relier ton projet Vercel `annona` au dépôt `orsocrtnt/annona`, branche `base` (Vercel a déjà accès à tous les dépôts d'Orso), et d'ici là redéployer `base` à la main ; (2) SMTP Resend sur `annona-dev` ; (3) RETOURS-1 : tour complet de l'application, avec des notes sur les retouches et les ajouts ; (4) vrais téléphones Android (menu de navigation, LOT1-D9).
+- **Décisions d'Orso du 16 novembre** : comptes Apple Developer et Google Play ouverts par Orso (pas par toi) ; Firebase plus tard ; `annona-dev` reste la base du site en ligne jusqu'au premier vrai client. Démo : une par visiteur, ouverte à tous, sans aucun envoi, journée réaliste. Tes volumes sont repris : 70 clients du matin et 16 de l'après-midi par tournée, 60 à 70 arrêts le matin, 15 à 20 produits par livraison. À relire dans `src/domains/demo/demo-scenario.ts`.
+- **Attention, schéma** : DEMO-1 (chez Orso, en pause) ajoutera une table `demo_pool_environments`, avec une migration Prisma. Ne lance ni `db:push`, ni `db:sync-schema`, ni `db:migrate`, ni le seed sur `annona-dev` sans en parler à Orso ; il te préviendra avant d'appliquer la migration.
 
 **Point du 15 novembre 2026**
 
@@ -74,7 +85,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
-- MOBILE-1 : simulateur iPhone en cours de téléchargement sur le Mac d'Orso (accord d'Orso du 16 novembre) ; ensuite compiler l'application iOS et essayer la connexion Google et le menu « Comment y aller ? » (Plans) sur le simulateur.
+- MOBILE-1 : application iOS compilée pour le simulateur le 16 novembre (iOS 26.5 installé sur le Mac d'Orso). Reste : la lancer sur le simulateur, essayer la connexion Google et le menu « Comment y aller ? » (Plans). En pause : Orso a demandé de garder son processeur libre ; lui demander le feu vert avant de relancer le simulateur ou le serveur local.
 - DEMO-1 : une démo par visiteur, ouverte à tous, sans aucun envoi, journée réaliste (décisions d'Orso du 16 novembre). Lot 1 (journée de démo) fait ; suite : lot d'environnements et connexion sans identifiants (nouvelle table, migration à annoncer à Théo), garde-fous, écrans.
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
 
@@ -95,7 +106,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
-  **Qui : Claude — lot 2 (lot d'environnements de démo, connexion sans identifiants) ; journée type à faire relire par Théo.**
+  **Qui : Claude — lot 2 (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo.**
 
   **En cours : Orso.**
 
@@ -152,6 +163,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Orso — comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard.**
 
   - 16 novembre 2026, décisions d'Orso : comptes **Apple Developer** et **Google Play** ouverts par **Orso** ; projet **Firebase** reporté ; **simulateur iPhone** téléchargé sur le Mac d'Orso (`xcodebuild -downloadPlatform iOS`) pour compiler l'application iOS et essayer la connexion Google et le menu de navigation sans attendre le compte Apple. Un compte de chaque suffit pour plusieurs applications (même nom de vendeur pour toutes) ; Google Play impose aux comptes personnels récents 14 jours de test fermé avec au moins 12 testeurs avant publication, pas aux comptes organisation.
+  - 16 novembre 2026 (Claude d'Orso, sur son Mac) : simulateur iOS 26.5 installé (`xcodebuild -downloadPlatform iOS -architectureVariant arm64`, environ 8 Go). `CAPACITOR_SERVER_URL=http://localhost:3000 npm run mobile:build:ios` → **BUILD SUCCEEDED**, première compilation iOS de bout en bout. L'application compilée déclare bien `fr.annona.app` et charge `http://localhost:3000`. Le `cap sync ios` a ajouté `@capacitor/browser` à `ios/App/CapApp-SPM/Package.swift` : il manquait depuis la PR #32 (Théo sous Windows ne peut pas lancer `cap sync ios`). Le simulateur iPhone 17 a démarré, puis il a été arrêté avant l'installation à la demande d'Orso, qui avait besoin de son processeur. **Non vérifié** : lancement de l'application, connexion Google, menu « Comment y aller ? » avec Plans. `docs/MOBILE.md` mis à jour.
 
   - 16 novembre 2026 (Claude d'Orso, PR `orso/petits-correctifs`) : schéma `fr.annona.app` déclaré dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`, même lien que l'`intent-filter` Android) pour le retour de Google dans l'application iPhone. Vérifié : `plutil -lint` OK. Non vérifié : compilation iOS et connexion Google sur iPhone (Mac d'Orso, composant iOS de Xcode).
 
