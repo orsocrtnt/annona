@@ -21,10 +21,10 @@
 
 **À faire par Orso**
 
-- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv
-- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (hébergement Annona propre en ligne (HEB-1, close le 15 novembre) : décider du sort de `main` et `preproduction`, du déploiement automatique et de la base de production)
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (base de la démo ; journée type à voir avec Théo)
+- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (décidé le 16 novembre) ; puis Théo relie son projet Vercel à `base`. Plus tard : sort de `main` et `preproduction`)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
-- MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre))
+- MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (schéma de connexion Google déclaré le 16 novembre))
 
 **À faire par Théo**
 
@@ -35,11 +35,16 @@
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 15 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 16 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
-**Point du 15 novembre 2026 (Orso : à lire en premier)**
+**Point du 16 novembre 2026 (Orso : à lire en premier)**
+
+- **Décisions d'Orso (questionnaire du 16 novembre)** : SEP-1, déploiement automatique : Orso autorise l'application GitHub de Vercel sur `orsocrtnt/annona` (dépôt public), puis Théo relie son projet Vercel à `base` ; SEP-1, base : `annona-dev` reste la base du site en ligne jusqu'au premier vrai client ; DEMO-1 : la démo montre les quatre espaces (client, boulanger, livreur, admin) ; deux retouches dans le travail de Théo acceptées, Théo prévenu.
+- **PR `orso/petits-correctifs` (Claude d'Orso)** : schéma `fr.annona.app` déclaré pour l'iPhone (`ios/App/App/Info.plist`, MOBILE-1 et AUTH-GOOGLE) ; commentaire de `google-button.tsx` corrigé ; minuteries de reprise réseau de la file livreur (N2, #28) retirées de leur liste et non empilées. `npm run check` sortie 0 (865 tests, 864 réussis, 1 sauté, 0 échec).
+
+**Point du 15 novembre 2026**
 
 - **Fusionné dans `base` le 15 novembre** (accord d'Orso, commits de fusion, CI verte sur chacune, aucun conflit ; #25 à #29 remises à jour sur `base` avant fusion) : PR #24 (travail de Théo des 13 et 14 novembre, TODO, support du super-admin réparé, service worker plus rapide, nom Git « orsocrtnt » → « orso » de COLLAB-2), #25 (tournées jusqu'à 110 arrêts et 8 h, relue : sans risque relevé), #26 (listes sans préchargement), #27 (position du livreur réparée dans l'application, relue : sans risque relevé), #28 (N2, « Livré » hors réseau synchronisé en 3 s), #29 (recette Android rejouable). `npm run check` sur `base` à jour : 850 tests, 843 réussis, 0 échec, 7 sautés. Puis, le soir du 15 novembre, #31 (recette finale, spec E2E) et #32 (connexion Google dans l'application, pages de connexion plus légères ; #32 remise à jour sur `base` après #31 sans conflit) : commits de fusion, CI verte sur chacune.
 - **Recette finale du 15 novembre (RECETTE-V1)** : les dix critères passent sur `base` à jour, navigateur 12/12 et application Android sur émulateur ; rapport `docs/rapports/2026-11-15-recette-v1.md`. La tâche reste ouverte pour ta décision sur la navigation Android et pour les vrais téléphones.
@@ -53,14 +58,15 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- iPhone, connexion Google : déclarer le schéma `fr.annona.app` dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`), sur ton Mac (MOBILE-1).
-- Hébergement (SEP-1) : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` pour redéployer à chaque fusion ; garder `annona-dev` ou créer une base de production ; offre Pro avant les vrais clients ; puis sort de `main` et `preproduction` et rattachement d'annona.fr.
+- iPhone, connexion Google : schéma `fr.annona.app` déclaré dans `ios/App/App/Info.plist` le 16 novembre (Claude) ; reste à compiler et essayer sur ton Mac (MOBILE-1).
+- Hébergement (SEP-1, décidé le 16 novembre) : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (github.com/apps/vercel › Configure, dépôt `annona` seulement), puis prévenir Théo ; base : `annona-dev` jusqu'au premier vrai client. Ensuite : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
+- Démo (DEMO-1) : les quatre espaces retenus le 16 novembre ; reste à choisir la base de la démo et la journée type (avec Théo).
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
-- Version de démo d'Annona comme celle de TutelLiv (DEMO-1), à préciser avant de coder.
 - Plus tard : mentions légales des factures (ACCES-1) ; comptes Apple et Google Play, Firebase, iOS sur ton Mac (MOBILE-1).
 
 **2. Théo**
-- Redéployer le site avec `base` à jour (`78561f9`, PR #31 et #32 fusionnées le 15 novembre au soir ; dernier déploiement : `535089e`) ; à refaire après chaque fusion tant que le dépôt n'est pas branché sur Vercel : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`.
+- Redéployer le site avec `base` à jour (dernier déploiement noté : `535089e` ; depuis : PR #31 et suivantes, dont la connexion Google dans l'application et le menu de navigation) : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`. Dès qu'Orso a autorisé l'application GitHub de Vercel (décision du 16 novembre) : relier le projet `annona` à `orsocrtnt/annona` (Vercel › Settings › Git, branche de production `base`), puis plus de redéploiement à la main.
+- Pour info (16 novembre, Claude d'Orso, accord d'Orso) : deux retouches dans ton travail, PR `orso/petits-correctifs` : commentaire de `google-button.tsx` (le bouton se réactive dès l'ouverture de la page Google) ; minuteries N2 de `use-driver-action-queue.ts` déplacées dans `network-back-retries.ts` (retirées quand elles partent, remplacées à chaque retour du réseau), test `tests/recette-v1-network-back-retries.test.ts`.
 - AUTH-GOOGLE : brancher le SMTP Resend de **ton** compte Resend sur `annona-dev` (décision d'Orso du 15 novembre) : Supabase › Authentication › Emails › SMTP Settings, valeurs dans `docs/AUTH_EMAIL_SETUP.md` (hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = une clé Resend dédiée, restreinte à l'envoi). L'expéditeur doit être sur un domaine vérifié **dans ton compte Resend** (`no-reply@annona.fr` demande les enregistrements DNS d'annona.fr, à voir avec Orso). Ensuite, coller les trois modèles de `docs/operations/email/supabase/` et couper le suivi des clics chez Resend. Puis Claude fait l'inscription par e-mail et clôt la tâche.
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
 - RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
@@ -87,15 +93,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
-  **Qui : Orso.**
+  **Qui : Orso — base de la démo ; journée type à voir avec Théo.**
 
+  - Décision d'Orso du 16 novembre 2026 (questionnaire) : la démo montre les **quatre espaces** : client (commande), boulanger (production), livreur (tournée), admin (back-office). Reste à décider : la base (pas `annona-dev`, partagée avec Théo ; l'offre Supabase gratuite est déjà à deux projets actifs) et la journée type (Théo, métier).
   - Demande d'Orso (13 novembre 2026) : refaire pour Annona la démo qu'avait TutelLiv.
   - Ce qu'avait TutelLiv (ancienne TODO, `git show 0475b8d:TODO.md`) : bouton « Voir la démo » qui ouvre un espace de démo sans identifiants (`/demo`) ; démo remise à l'heure à l'ouverture et racontant une journée lisible (DEMO-REFONTE) ; suivi des démos par le super admin sur `/admin/demos` avec « Remettre à neuf » et « Tout remettre à neuf » (DEMO-LIVE).
   - À préciser avec Orso avant de coder : quels espaces montrer (client, boulanger, livreur), quelle journée type de boulangerie (voir Théo pour le métier), et sur quelle base (pas `annona-dev`, partagée avec Théo).
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
-  **Qui : Orso — hébergement Annona propre en ligne (HEB-1, close le 15 novembre) : décider du sort de `main` et `preproduction`, du déploiement automatique et de la base de production.**
+  **Qui : Orso — autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (décidé le 16 novembre) ; puis Théo relie son projet Vercel à `base`. Plus tard : sort de `main` et `preproduction`.**
+
+  - Décisions d'Orso du 16 novembre 2026 (questionnaire) : (1) déploiement automatique : Orso autorise l'application GitHub de Vercel sur `orsocrtnt/annona` (dépôt public, vérifié par `gh repo view`), Théo relie le projet Vercel `annona` à la branche `base` ; (2) base : `annona-dev` reste la base du site en ligne jusqu'au premier vrai client, base de production créée juste avant. Restent ouverts : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 
   - 15 novembre 2026 (reporté de HEB-1) : Annona tourne sur https://annona-gray.vercel.app (compte Vercel de Théo, offre Hobby, base `annona-dev`). Décisions d'Orso : (1) autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` pour redéployer à chaque fusion dans `base` (sinon Théo redéploie à la main) ; (2) garder `annona-dev` ou créer une base de production ; (3) passer à l'offre Pro avant les vrais clients (Hobby réservé à un usage non commercial) ; (4) ensuite rattacher annona.fr.
 
@@ -128,7 +137,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Orso — comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre).**
+  **Qui : Orso — comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (schéma de connexion Google déclaré le 16 novembre).**
+
+  - 16 novembre 2026 (Claude d'Orso, PR `orso/petits-correctifs`) : schéma `fr.annona.app` déclaré dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`, même lien que l'`intent-filter` Android) pour le retour de Google dans l'application iPhone. Vérifié : `plutil -lint` OK. Non vérifié : compilation iOS et connexion Google sur iPhone (Mac d'Orso, composant iOS de Xcode).
 
   - 15 novembre 2026 : PR #27 (position du livreur réparée) fusionnée dans `base`. Adresse HTTPS d'Annona (HEB-1, close) : **https://annona-gray.vercel.app** (compte Vercel de Théo, Paris) ; à brancher avec `CAPACITOR_SERVER_URL=https://annona-gray.vercel.app npm run mobile:sync` une fois le site redéployé avec `base` à jour.
   - 15 novembre 2026 (session Claude de Théo, branche `theo/google-appli`, PR à relire par Orso : touche `src/features/auth/google-button.tsx`) : **connexion Google dans l'application**. Le bouton s'affiche aussi dans l'application ; la page Google s'ouvre dans le navigateur du système (`@capacitor/browser` 8.0.5, ajouté) et revient par le lien `fr.annona.app://auth/callback` (déclaré dans `AndroidManifest.xml`), puis `/auth/callback` est chargé dans la vue web, où le vérificateur PKCE attend déjà : la route serveur ne change pas. Pont `src/lib/native/oauth.ts` : seul ce lien est accepté (pas de redirection ouverte), seuls `code`, `intent` et les erreurs sont transmis, un lien déjà traité n'est jamais rejoué (`getLaunchUrl` renvoie le même lien toute la vie de l'application). Tests `tests/mobile1-native-oauth.test.ts` (8) et `tests/auth-google-signup.test.ts` mis à jour. Essai sur l'émulateur (build de production, APK recompilé) : bouton visible, appui → page d'autorisation Supabase ouverte dans Chrome, lien de retour → application au premier plan et `/auth/callback` chargé (faux code : message « La connexion avec Google n'a pas abouti »), lien non rejoué à la réouverture, 0 erreur JavaScript ; captures `outputs/mobile1-android/google-appli/`. Connexion Google complète réussie le même jour par Théo dans l'application (émulateur, son compte Google, Redirect URL ajoutée). Non essayé : iOS (schéma `fr.annona.app` à déclarer dans `Info.plist` sur le Mac d'Orso).
@@ -190,6 +201,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   **Qui : Théo — brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche.**
 
   15 novembre 2026 (nuit, Claude d'Orso, dans Chrome, accord d'Orso) : Site URL de `annona-dev` passée de `http://localhost:3000` à `https://annona-gray.vercel.app` (Authentication › URL Configuration) ; vérifié en rechargeant la page ; les quatre Redirect URLs inchangées (`localhost:3000/**`, `localhost:3110/**`, `annona-gray.vercel.app/**`, `fr.annona.app://auth/callback**`). Effet : les liens des e-mails Supabase (`{{ .SiteURL }}`) visent le site en ligne ; la connexion Google en local reste autorisée. Non vérifié : un vrai e-mail de confirmation (attend le SMTP Resend de Théo). Même session : relecture des PR #24 à #32 de Théo, rien de bloquant ; `npm run check` sur `base` à jour (`c0d3c18`) : 860 tests, 859 réussis, 1 sauté, 0 échec. Reste relevé : schéma `fr.annona.app` absent de `ios/App/App/Info.plist` (fichier texte, modifiable sans Mac ; le Mac sert seulement à compiler et essayer), commentaire inexact dans `google-button.tsx` (le bouton se réactive à l'ouverture de la page Google, pas à sa fermeture), minuteries de `use-driver-action-queue.ts` (#28) jamais retirées de leur liste.
+
+  16 novembre 2026 (Claude d'Orso, PR `orso/petits-correctifs`, accord d'Orso pour toucher au travail de Théo, Théo prévenu) : les trois restes corrigés. Schéma iOS déclaré (voir MOBILE-1) ; commentaire de `google-button.tsx` corrigé (la promesse se résout à l'ouverture de la page Google) ; minuteries N2 déplacées dans `src/features/driver/round/network-back-retries.ts` : chacune quitte la liste en partant, un nouveau retour du réseau remplace les envois encore en attente, le démontage les annule. Tests `tests/recette-v1-network-back-retries.test.ts` (3/3) ; `npm run check` sortie 0 (865 tests, 864 réussis, 1 sauté, 0 échec). Non vérifié : coupure et retour du réseau rejoués dans l'application (`npm run mobile:recette`, critère 8), à refaire à la prochaine passe Android.
 
   **Modèle conseillé : Claude Opus · effort moyen.**
 

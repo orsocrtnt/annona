@@ -20,6 +20,18 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<!-- MOBILE-1, AUTH-GOOGLE : retour de Google dans l'application (fr.annona.app://auth/callback). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>fr.annona.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fr.annona.app</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>

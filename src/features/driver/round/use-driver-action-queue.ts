@@ -12,6 +12,7 @@ import {
   type QueuedDriverAction,
   type QueuedDriverActionPayload,
 } from "@/features/driver/offline-action-queue";
+import { createNetworkBackRetries } from "@/features/driver/round/network-back-retries";
 import { watchConnectivity } from "@/lib/native/network";
 
 const RETRY_INTERVAL_MS = 15_000;
@@ -129,14 +130,14 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
       .finally(() => {
         void refresh().then(() => process());
       });
-    const backTimers: number[] = [];
+    const backRetries = createNetworkBackRetries(() => void process(false, true), NETWORK_BACK_RETRIES_MS);
     // MOBILE-1 : réseau natif et retour au premier plan dans l'application ; `online`/`offline` sinon.
     const stopConnectivity = watchConnectivity({
       // RECETTE-V1 N2 : au retour du réseau, envoi en moins de 2 s (avant : 12 à 15 s, au prochain passage).
       onOnline: () => {
         setOnline(true);
         // Le réseau annoncé précède de peu la route réelle : envois rapprochés au lieu d'attendre 15 s.
-        for (const delay of NETWORK_BACK_RETRIES_MS) backTimers.push(window.setTimeout(() => void process(false, true), delay));
+        backRetries.schedule();
       },
       onOffline: () => setOnline(false),
       onResume: () => {
@@ -148,7 +149,7 @@ export function useDriverActionQueue(ownerId: string | null, onSynced: () => Pro
     return () => {
       stopConnectivity();
       window.clearInterval(timer);
-      for (const backTimer of backTimers) window.clearTimeout(backTimer);
+      backRetries.cancel();
     };
   }, [ownerId, process, refresh]);
 
