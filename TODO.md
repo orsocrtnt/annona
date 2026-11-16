@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **5** : DEMO-1, SEP-1, ACCES-1, MOBILE-1, RECETTE-V1 | **2** : AUTH-GOOGLE, LOT1-D9 |
+| À faire | **4** : DEMO-1, SEP-1, ACCES-1, MOBILE-1 | **3** : RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -25,10 +25,10 @@
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (hébergement Annona propre en ligne (HEB-1, close le 15 novembre) : décider du sort de `main` et `preproduction`, du déploiement automatique et de la base de production)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (PR #27 fusionnée et hébergement fait le 15 novembre))
-- RECETTE-V1 — Recette des dix critères (décider de l'application de navigation sur Android (Plans d'Apple, Google Maps ou Waze) ; ensuite, vrais téléphones avec MOBILE-1 (les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android))
 
 **À faire par Théo**
 
+- RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
 
@@ -54,7 +54,6 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Orso**
 - iPhone, connexion Google : déclarer le schéma `fr.annona.app` dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`), sur ton Mac (MOBILE-1).
-- Décider de l'application de navigation sur Android : « Plans » ouvre la carte web d'Apple dans Chrome (critère 7) ; Google Maps ou Waze ? (RECETTE-V1)
 - Hébergement (SEP-1) : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` pour redéployer à chaque fusion ; garder `annona-dev` ou créer une base de production ; offre Pro avant les vrais clients ; puis sort de `main` et `preproduction` et rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - Version de démo d'Annona comme celle de TutelLiv (DEMO-1), à préciser avant de coder.
@@ -64,6 +63,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Redéployer le site avec `base` à jour (`78561f9`, PR #31 et #32 fusionnées le 15 novembre au soir ; dernier déploiement : `535089e`) ; à refaire après chaque fusion tant que le dépôt n'est pas branché sur Vercel : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`.
 - AUTH-GOOGLE : brancher le SMTP Resend de **ton** compte Resend sur `annona-dev` (décision d'Orso du 15 novembre) : Supabase › Authentication › Emails › SMTP Settings, valeurs dans `docs/AUTH_EMAIL_SETUP.md` (hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = une clé Resend dédiée, restreinte à l'envoi). L'expéditeur doit être sur un domaine vérifié **dans ton compte Resend** (`no-reply@annona.fr` demande les enregistrements DNS d'annona.fr, à voir avec Orso). Ensuite, coller les trois modèles de `docs/operations/email/supabase/` et couper le suivi des clics chez Resend. Puis Claude fait l'inscription par e-mail et clôt la tâche.
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
+- RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
@@ -157,7 +157,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **RECETTE-V1 — Recette des dix critères.**
 
-  **Qui : Orso — décider de l'application de navigation sur Android (Plans d'Apple, Google Maps ou Waze) ; ensuite, vrais téléphones avec MOBILE-1 (les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android).**
+  **Qui : Théo — vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android.**
+
+  - **15 novembre 2026 (nuit, Claude d'Orso, branche `orso/choix-navigation`) : menu de navigation (LIV-04, critère 7), décision d'Orso** : un seul menu « Comment y aller ? » avec toutes les applications. Google Maps (nouveau) et Waze partout ; Plans en plus, et en premier, sur iPhone, iPad et Mac (application iOS, ou navigateur Apple) ; « Y aller seul » inchangé ; toujours deux appuis après « Livré ». Sur Android, Plans n'apparaît plus (il ouvrait la carte web d'Apple dans Chrome). Code : `googleMapsUrl`, `navigationUrl`, `navigationAppsFor` (`src/lib/maps/navigation-links.ts`) ; `isNavigationAppUrl` accepte `https://www.google.com/maps/…` et rien d'autre de Google (`src/lib/native/navigation.ts`, zone de Théo, prévenu dans la PR) ; menu `src/features/driver/round/next-stop-dialog.tsx` ; texte « Ouvrir dans Google Maps ». Tests : `tests/tour1-rounds.test.ts` (adresse Google Maps, liste par appareil : application iPhone, Safari iPhone, iPad, Android, Windows), `tests/mobile1-native.test.ts` (Google Maps confié au système, `google.com/search` et faux domaines refusés) ; specs E2E `tour1-recette` et `recette-v1` cliquent Google Maps (présent partout). Vérifié : `npm run check` sortie 0 (862 tests, 861 réussis, 0 échec) ; `tests/e2e/tour1-recette.spec.ts` sur serveur de dev (port 3230, `annona-dev`) **5/5**, critère 7 en 2 appuis vers `https://www.google.com/maps/dir/?api=1&destination=48.849800,2.391200&travelmode=driving`, 0 erreur console, données E2E-TOUR1 supprimées (0 restante) ; capture `outputs/recette-tour1/tour1-livreur-menu-navigation.png` (Chrome sur Mac : Plans, Google Maps, Waze, Y aller seul). Non vérifié : affichage réel sur Android et iPhone (liste couverte par les tests unitaires seulement), ouverture effective de l'application Google Maps depuis l'application native ; `recette-v1.spec.ts` non relancée (même changement que `tour1-recette`).
 
   - **15 novembre 2026 (session Claude de Théo), recette finale sur `base` à jour** (`535089e`, build de production local, `annona-dev`), rapport `docs/rapports/2026-11-15-recette-v1.md` : navigateur **12/12** (`tests/e2e/recette-v1.spec.ts`, 6,2 min ; critère 1 en 8,3 s) ; application Android (émulateur, `npm run mobile:recette`) critères 1, 7 et 8 réussis, 0 erreur JavaScript ; position du livreur reçue 2,5 s après le démarrage (PR #27) ; N2 : synchronisation 0,1 s après le retour du réseau sur l'appareil (PR #28). Une passe Android sur trois a échoué au rechargement hors réseau, pendant qu'une fenêtre système de l'émulateur ne répondait plus ; les deux suivantes ont réussi. Spec navigateur corrigée : elle créait des clients sans tournée, que la règle du lot 1 (demande 1) prive de tout créneau. Entreprises d'essai supprimées (0 restante). Reste : décision d'Orso sur la navigation Android ; vrais téléphones (MOBILE-1, LOT1-D9) ; notifications natives ; mentions légales (ACCES-1).
 

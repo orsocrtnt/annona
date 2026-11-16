@@ -776,6 +776,7 @@ export const fr = {
     lastDone: "C'était le dernier arrêt de la tournée.",
     navTitle: "Comment y aller ?",
     openPlans: "Ouvrir dans Plans",
+    openGoogleMaps: "Ouvrir dans Google Maps",
     openWaze: "Ouvrir dans Waze",
     goAlone: "Y aller seul",
     problemTitle: "Signaler un problème",

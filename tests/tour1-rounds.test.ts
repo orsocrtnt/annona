@@ -45,7 +45,7 @@ import {
 } from "../src/features/driver/offline-action-queue";
 import { DriverApiError } from "../src/features/driver/driver-api-error";
 import { straightLineSeconds } from "../src/lib/dispatch/travel-time";
-import { appleMapsUrl, wazeUrl } from "../src/lib/maps/navigation-links";
+import { appleMapsUrl, googleMapsUrl, navigationAppsFor, navigationUrl, wazeUrl } from "../src/lib/maps/navigation-links";
 import { getPageAccessRule } from "../src/lib/permissions/page-access";
 import { createMemoryDb } from "./helpers/memory-db";
 
@@ -196,6 +196,32 @@ test("LIV-04, critère 7 : liens Plans et Waze vers l'arrêt", () => {
   assert.equal(appleMapsUrl(noPoint), "https://maps.apple.com/?daddr=3%20rue%20d'%C3%89t%C3%A9%2C%2075011%20Paris&dirflg=d");
   assert.equal(wazeUrl(noPoint), "https://waze.com/ul?q=3%20rue%20d'%C3%89t%C3%A9%2C%2075011%20Paris&navigate=yes");
   assert.equal(wazeUrl({ latitude: 200, longitude: 2, address: "x" }), "https://waze.com/ul?q=x&navigate=yes");
+});
+
+test("LIV-04, critère 7 : lien Google Maps vers l'arrêt (itinéraire en voiture)", () => {
+  const target = { latitude: 48.8566, longitude: 2.3522, address: "1 rue de Rivoli, 75001 Paris" };
+  assert.equal(googleMapsUrl(target), "https://www.google.com/maps/dir/?api=1&destination=48.856600,2.352200&travelmode=driving");
+  const noPoint = { latitude: null, longitude: null, address: " 3 rue d'Été, 75011 Paris " };
+  assert.equal(googleMapsUrl(noPoint), "https://www.google.com/maps/dir/?api=1&destination=3%20rue%20d'%C3%89t%C3%A9%2C%2075011%20Paris&travelmode=driving");
+  assert.equal(googleMapsUrl({ latitude: 200, longitude: 2, address: "x" }), "https://www.google.com/maps/dir/?api=1&destination=x&travelmode=driving");
+  assert.equal(navigationUrl("googleMaps", target), googleMapsUrl(target));
+  assert.equal(navigationUrl("plans", target), appleMapsUrl(target));
+  assert.equal(navigationUrl("waze", target), wazeUrl(target));
+});
+
+test("LIV-04 (décision d'Orso du 15 novembre 2026) : Google Maps et Waze partout, Plans en plus et en premier sur les appareils Apple", () => {
+  const iphoneSafari = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+  const ipadOs = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15";
+  const androidChrome = "Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36";
+  const windows = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+  assert.deepEqual(navigationAppsFor({ platform: "ios", userAgent: "" }), ["plans", "googleMaps", "waze"], "application iPhone");
+  assert.deepEqual(navigationAppsFor({ platform: "web", userAgent: iphoneSafari }), ["plans", "googleMaps", "waze"], "Safari sur iPhone");
+  assert.deepEqual(navigationAppsFor({ platform: "web", userAgent: ipadOs }), ["plans", "googleMaps", "waze"], "iPad (se présente comme un Mac)");
+  assert.deepEqual(navigationAppsFor({ platform: "android", userAgent: androidChrome }), ["googleMaps", "waze"], "application Android : pas la carte web d'Apple");
+  assert.deepEqual(navigationAppsFor({ platform: "web", userAgent: androidChrome }), ["googleMaps", "waze"]);
+  assert.deepEqual(navigationAppsFor({ platform: "web", userAgent: windows }), ["googleMaps", "waze"]);
+  // L'application Android se présente comme Android même si le texte du navigateur était trompeur.
+  assert.deepEqual(navigationAppsFor({ platform: "android", userAgent: iphoneSafari }), ["googleMaps", "waze"]);
 });
 
 // ---------------------------------------------------------------------------

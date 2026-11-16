@@ -32,7 +32,7 @@ Chaque pont détecte l'application (`Capacitor.isNativePlatform()`, `platform.ts
 | Notifications NOT-01 à NOT-03 et nouvelle tournée | cloche du portail, e-mail, push web du livreur | `push.ts` : autorisation, jeton envoyé à `/api/native/push-token`, toucher → page `/portal…` ou `/driver…` |
 | Photo d'un problème (LIV-05) | champ fichier `capture` | `camera.ts` : appareil photo du système (image en base64 → `Blob`, puis même file hors réseau) |
 | Position pendant la tournée (ENF-04) | `navigator.geolocation` | `geolocation.ts` : module natif, autorisation « pendant l'utilisation » seulement |
-| Plans et Waze (LIV-04, critère 7) | lien `target="_blank"` | `navigation.ts` : `AppLauncher.openUrl`, l'application Plans ou Waze s'ouvre |
+| Plans, Google Maps et Waze (LIV-04, critère 7) | lien `target="_blank"` | `navigation.ts` : `AppLauncher.openUrl`, l'application s'ouvre. Menu : Google Maps et Waze partout, Plans en plus sur iPhone (`navigationAppsFor`, décision d'Orso du 15 novembre 2026) |
 | Réseau (LIV-06, critère 8) | événements `online` / `offline` | `network.ts` : module `Network` + retour au premier plan (`App`) relancent la file |
 | Connexion avec Google (AUTH-GOOGLE) | page Google dans l'onglet, retour sur `/auth/callback` | `oauth.ts` : page Google dans le navigateur du système (`@capacitor/browser`, Google refuse la vue web), retour par le lien `fr.annona.app://auth/callback`, puis `/auth/callback` chargé dans la vue web (vérificateur PKCE déjà dans ses cookies) |
 | Déconnexion | copie hors réseau effacée | `device-logout.ts` : jeton natif retiré pour ce compte, copie effacée |
