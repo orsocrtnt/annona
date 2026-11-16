@@ -13,21 +13,20 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **3** : DEMO-1, ACCES-1, MOBILE-1 | **4** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
+| À faire | **1** : ACCES-1 | **5** : SEP-1, MOBILE-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
 
 **À faire par Claude**
 
-- Rien pour l'instant
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (démo dans une entreprise isolée d'`annona-dev` (décidé le 16 novembre) ; journée type à faire relire par Théo)
 
 **À faire par Orso**
 
-- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (base de la démo ; journée type à voir avec Théo)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
-- MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (schéma de connexion Google déclaré le 16 novembre))
 
 **À faire par Théo**
 
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr)
+- MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (confiés par Orso le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
@@ -58,11 +57,9 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
-- iPhone, connexion Google : schéma `fr.annona.app` déclaré dans `ios/App/App/Info.plist` le 16 novembre (Claude) ; reste à compiler et essayer sur ton Mac (MOBILE-1).
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
-- Démo (DEMO-1) : les quatre espaces retenus le 16 novembre ; reste à choisir la base de la démo et la journée type (avec Théo).
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
-- Plus tard : mentions légales des factures (ACCES-1) ; comptes Apple et Google Play, Firebase, iOS sur ton Mac (MOBILE-1).
+- Plus tard : mentions légales des factures (ACCES-1) ; projet Firebase pour les notifications sur téléphone (MOBILE-1, reporté le 16 novembre).
 
 **2. Théo**
 - Redéployer le site avec `base` à jour (dernier déploiement noté : `535089e` ; depuis : PR #31 et suivantes, dont la connexion Google dans l'application et le menu de navigation) : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`. **Relier le projet Vercel `annona` à `orsocrtnt/annona`** (Vercel › Settings › Git › Connect Git Repository, branche de production `base`) : l'application GitHub de Vercel a déjà accès au dépôt (vérifié le 16 novembre), et le compte Vercel d'Orso n'est pas dans ton équipe `track-app2`, donc c'est à toi. Ensuite, plus de redéploiement à la main. Si Vercel ne propose pas le dépôt, le dire à Orso.
@@ -71,13 +68,16 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
 - RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
+- MOBILE-1 : ouvrir les comptes **Apple Developer** (99 $ par an) et **Google Play Console** (25 $ une fois), confiés par Orso le 16 novembre (Théo prévenu par Orso). Un seul compte de chaque suffit pour plusieurs applications, mais toutes s'affichent sous le même nom de vendeur (compte « organisation » = nom de la société, numéro D-U-N-S gratuit). Google Play : un compte personnel récent doit faire tester l'application par au moins 12 personnes pendant 14 jours (test fermé) avant de pouvoir la publier ; un compte organisation y échappe. Choix du type de compte à voir avec Orso.
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
+- MOBILE-1 : simulateur iPhone en cours de téléchargement sur le Mac d'Orso (accord d'Orso du 16 novembre) ; ensuite compiler l'application iOS et essayer la connexion Google et le menu « Comment y aller ? » (Plans) sur le simulateur.
+- DEMO-1 : démo des quatre espaces dans une entreprise isolée d'`annona-dev` (décision d'Orso du 16 novembre) ; journée type tirée des réponses de Théo du 13 novembre, à lui faire relire.
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
 
 **4. Attente extérieure**
-- Applications mobiles (MOBILE-1) : comptes Apple Developer et Google Play, Firebase, composant iOS de Xcode ou vrais téléphones (liste ordonnée dans la tâche).
+- Applications mobiles (MOBILE-1) : comptes Apple Developer et Google Play (Théo), Firebase (plus tard), vrais téléphones (liste ordonnée dans la tâche).
 
 ## Cadre
 
@@ -93,12 +93,14 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
-  **Qui : Orso — base de la démo ; journée type à voir avec Théo.**
+  **Qui : Claude — démo dans une entreprise isolée d'`annona-dev` (décidé le 16 novembre) ; journée type à faire relire par Théo.**
 
-  - Décision d'Orso du 16 novembre 2026 (questionnaire) : la démo montre les **quatre espaces** : client (commande), boulanger (production), livreur (tournée), admin (back-office). Reste à décider : la base (pas `annona-dev`, partagée avec Théo ; l'offre Supabase gratuite est déjà à deux projets actifs) et la journée type (Théo, métier).
+  - Décision d'Orso du 16 novembre 2026 (questionnaire) : la démo vit dans **une entreprise de démo isolée dans `annona-dev`** (données marquées `demo-…`, remise à zéro qui ne touche qu'elle ; isolation entre entreprises PLA-01 déjà en place), pas dans un projet Supabase dédié. Journée type : partir des réponses de Théo du 13 novembre (tournées 5h30-12h30 et 15h-19h, 60 à 70 arrêts par tournée, 15 à 20 produits par livraison), puis la lui faire relire.
+
+  - Décision d'Orso du 16 novembre 2026 (questionnaire) : la démo montre les **quatre espaces** : client (commande), boulanger (production), livreur (tournée), admin (back-office). Base et journée type : réglées le même jour (voir ci-dessus).
   - Demande d'Orso (13 novembre 2026) : refaire pour Annona la démo qu'avait TutelLiv.
   - Ce qu'avait TutelLiv (ancienne TODO, `git show 0475b8d:TODO.md`) : bouton « Voir la démo » qui ouvre un espace de démo sans identifiants (`/demo`) ; démo remise à l'heure à l'ouverture et racontant une journée lisible (DEMO-REFONTE) ; suivi des démos par le super admin sur `/admin/demos` avec « Remettre à neuf » et « Tout remettre à neuf » (DEMO-LIVE).
-  - À préciser avec Orso avant de coder : quels espaces montrer (client, boulanger, livreur), quelle journée type de boulangerie (voir Théo pour le métier), et sur quelle base (pas `annona-dev`, partagée avec Théo).
+  - (Réglé le 16 novembre, voir ci-dessus.) À préciser avec Orso avant de coder : quels espaces montrer (client, boulanger, livreur), quelle journée type de boulangerie (voir Théo pour le métier), et sur quelle base (pas `annona-dev`, partagée avec Théo).
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
@@ -139,7 +141,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **MOBILE-1 — Applications iOS et Android (Capacitor).**
 
-  **Qui : Orso — comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (schéma de connexion Google déclaré le 16 novembre).**
+  **Qui : Théo — comptes Apple Developer et Google Play (confiés par Orso le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard.**
+
+  - 16 novembre 2026, décisions d'Orso : comptes **Apple Developer** et **Google Play** ouverts par **Théo** (Orso l'a prévenu) ; projet **Firebase** reporté ; **simulateur iPhone** téléchargé sur le Mac d'Orso (`xcodebuild -downloadPlatform iOS`) pour compiler l'application iOS et essayer la connexion Google et le menu de navigation sans attendre le compte Apple. Un compte de chaque suffit pour plusieurs applications (même nom de vendeur pour toutes) ; Google Play impose aux comptes personnels récents 14 jours de test fermé avec au moins 12 testeurs avant publication, pas aux comptes organisation.
 
   - 16 novembre 2026 (Claude d'Orso, PR `orso/petits-correctifs`) : schéma `fr.annona.app` déclaré dans `ios/App/App/Info.plist` (`CFBundleURLTypes` › `CFBundleURLSchemes`, même lien que l'`intent-filter` Android) pour le retour de Google dans l'application iPhone. Vérifié : `plutil -lint` OK. Non vérifié : compilation iOS et connexion Google sur iPhone (Mac d'Orso, composant iOS de Xcode).
 
