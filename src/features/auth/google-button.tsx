@@ -76,7 +76,8 @@ export function GoogleButton({ intent, onError }: { intent: "login" | "signup"; 
     });
     if (!error && native) {
       const opened = data.url ? await openNativeOAuth(data.url).then(() => true, () => false) : false;
-      // Navigateur refermé sans connexion : le bouton redevient utilisable.
+      // La promesse se résout dès l'ouverture de la page Google (pas à sa fermeture) : le bouton redevient
+      // utilisable tout de suite, pour réessayer si le navigateur est refermé sans connexion.
       setPending(false);
       if (opened) return;
     }
