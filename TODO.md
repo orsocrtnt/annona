@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **4** : DEMO-1, SEP-1, ACCES-1, MOBILE-1 | **3** : RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
+| À faire | **3** : DEMO-1, ACCES-1, MOBILE-1 | **4** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9 |
 
 **À faire par Claude**
 
@@ -22,12 +22,12 @@
 **À faire par Orso**
 
 - DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (base de la démo ; journée type à voir avec Théo)
-- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (décidé le 16 novembre) ; puis Théo relie son projet Vercel à `base`. Plus tard : sort de `main` et `preproduction`)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play, Firebase (liste ci-dessous), puis iOS sur son Mac (schéma de connexion Google déclaré le 16 novembre))
 
 **À faire par Théo**
 
+- SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr)
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
@@ -41,7 +41,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **Point du 16 novembre 2026 (Orso : à lire en premier)**
 
-- **Décisions d'Orso (questionnaire du 16 novembre)** : SEP-1, déploiement automatique : Orso autorise l'application GitHub de Vercel sur `orsocrtnt/annona` (dépôt public), puis Théo relie son projet Vercel à `base` ; SEP-1, base : `annona-dev` reste la base du site en ligne jusqu'au premier vrai client ; DEMO-1 : la démo montre les quatre espaces (client, boulanger, livreur, admin) ; deux retouches dans le travail de Théo acceptées, Théo prévenu.
+- **Décisions d'Orso (questionnaire du 16 novembre)** : SEP-1, déploiement automatique : Orso autorise l'application GitHub de Vercel sur `orsocrtnt/annona` (dépôt public), puis Théo relie son projet Vercel à `base` ; SEP-1, base : `annona-dev` reste la base du site en ligne jusqu'au premier vrai client ; DEMO-1 : la démo montre les quatre espaces (client, boulanger, livreur, admin) ; deux retouches dans le travail de Théo acceptées, Théo prévenu. Vérifié ensuite dans Chrome : l'application GitHub de Vercel avait déjà accès à tous les dépôts d'Orso ; reste à Théo de relier son projet Vercel au dépôt.
 - **PR `orso/petits-correctifs` (Claude d'Orso)** : schéma `fr.annona.app` déclaré pour l'iPhone (`ios/App/App/Info.plist`, MOBILE-1 et AUTH-GOOGLE) ; commentaire de `google-button.tsx` corrigé ; minuteries de reprise réseau de la file livreur (N2, #28) retirées de leur liste et non empilées. `npm run check` sortie 0 (865 tests, 864 réussis, 1 sauté, 0 échec).
 
 **Point du 15 novembre 2026**
@@ -59,13 +59,13 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Orso**
 - iPhone, connexion Google : schéma `fr.annona.app` déclaré dans `ios/App/App/Info.plist` le 16 novembre (Claude) ; reste à compiler et essayer sur ton Mac (MOBILE-1).
-- Hébergement (SEP-1, décidé le 16 novembre) : autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (github.com/apps/vercel › Configure, dépôt `annona` seulement), puis prévenir Théo ; base : `annona-dev` jusqu'au premier vrai client. Ensuite : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
+- Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - Démo (DEMO-1) : les quatre espaces retenus le 16 novembre ; reste à choisir la base de la démo et la journée type (avec Théo).
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - Plus tard : mentions légales des factures (ACCES-1) ; comptes Apple et Google Play, Firebase, iOS sur ton Mac (MOBILE-1).
 
 **2. Théo**
-- Redéployer le site avec `base` à jour (dernier déploiement noté : `535089e` ; depuis : PR #31 et suivantes, dont la connexion Google dans l'application et le menu de navigation) : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`. Dès qu'Orso a autorisé l'application GitHub de Vercel (décision du 16 novembre) : relier le projet `annona` à `orsocrtnt/annona` (Vercel › Settings › Git, branche de production `base`), puis plus de redéploiement à la main.
+- Redéployer le site avec `base` à jour (dernier déploiement noté : `535089e` ; depuis : PR #31 et suivantes, dont la connexion Google dans l'application et le menu de navigation) : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`. **Relier le projet Vercel `annona` à `orsocrtnt/annona`** (Vercel › Settings › Git › Connect Git Repository, branche de production `base`) : l'application GitHub de Vercel a déjà accès au dépôt (vérifié le 16 novembre), et le compte Vercel d'Orso n'est pas dans ton équipe `track-app2`, donc c'est à toi. Ensuite, plus de redéploiement à la main. Si Vercel ne propose pas le dépôt, le dire à Orso.
 - Pour info (16 novembre, Claude d'Orso, accord d'Orso) : deux retouches dans ton travail, PR `orso/petits-correctifs` : commentaire de `google-button.tsx` (le bouton se réactive dès l'ouverture de la page Google) ; minuteries N2 de `use-driver-action-queue.ts` déplacées dans `network-back-retries.ts` (retirées quand elles partent, remplacées à chaque retour du réseau), test `tests/recette-v1-network-back-retries.test.ts`.
 - AUTH-GOOGLE : brancher le SMTP Resend de **ton** compte Resend sur `annona-dev` (décision d'Orso du 15 novembre) : Supabase › Authentication › Emails › SMTP Settings, valeurs dans `docs/AUTH_EMAIL_SETUP.md` (hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = une clé Resend dédiée, restreinte à l'envoi). L'expéditeur doit être sur un domaine vérifié **dans ton compte Resend** (`no-reply@annona.fr` demande les enregistrements DNS d'annona.fr, à voir avec Orso). Ensuite, coller les trois modèles de `docs/operations/email/supabase/` et couper le suivi des clics chez Resend. Puis Claude fait l'inscription par e-mail et clôt la tâche.
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
@@ -102,7 +102,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
-  **Qui : Orso — autoriser l'application GitHub de Vercel sur `orsocrtnt/annona` (décidé le 16 novembre) ; puis Théo relie son projet Vercel à `base`. Plus tard : sort de `main` et `preproduction`.**
+  **Qui : Théo — relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr.**
+
+  - 16 novembre 2026 (Claude d'Orso, dans Chrome, à la demande d'Orso) : l'application GitHub « Vercel » est **déjà installée** sur le compte `orsocrtnt` avec l'accès à **tous les dépôts** (github.com/settings/installations/139829141, après confirmation d'identité faite par Orso) : rien à changer côté GitHub. Le compte Vercel d'Orso n'appartient qu'à l'équipe TutelLiv (outil Vercel `list_teams`), pas à `track-app2` : le branchement du projet `annona` au dépôt revient à Théo. Non vérifié : que Vercel propose bien `orsocrtnt/annona` dans le compte de Théo.
 
   - Décisions d'Orso du 16 novembre 2026 (questionnaire) : (1) déploiement automatique : Orso autorise l'application GitHub de Vercel sur `orsocrtnt/annona` (dépôt public, vérifié par `gh repo view`), Théo relie le projet Vercel `annona` à la branche `base` ; (2) base : `annona-dev` reste la base du site en ligne jusqu'au premier vrai client, base de production créée juste avant. Restent ouverts : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 
