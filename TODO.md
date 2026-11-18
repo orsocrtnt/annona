@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**23 tâches terminées sur 32 — 72 %**
+**23 tâches terminées sur 42 — 55 %**
 
-`██████████████░░░░░░` · 9 tâches restantes
+`███████████░░░░░░░░░` · 19 tâches restantes
 
 **Qui a fait quoi**
 
@@ -32,6 +32,19 @@
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
+
+**À classer**
+
+- LOT2-D1 — Boutiques et comptes vendeuse
+- LOT2-D2 — Compte pâtissier
+- LOT2-D3 — Produits : création, recettes, durée de vente
+- LOT2-D4 — Prix restaurant et prix boutique
+- LOT2-D5 — Envois quotidiens vers les boutiques
+- LOT2-D6 — Réception le matin en boutique
+- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées
+- LOT2-D8 — Stock des boutiques
+- LOT2-D9 — Commandes de gâteaux des particuliers en boutique
+- LOT2-D10 — Pâtisseries pour les restaurants
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -70,6 +83,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
+- **Lot 2 (pâtisserie, boutiques, stock), demandé par Théo le 18 novembre** : 10 tâches LOT2-D1 à D10, détail dans `docs/cahier-des-charges/LOT2-PATISSERIE-BOUTIQUES.md`. Claude (session de Théo) code dans ta zone (`prisma/`, `src/domains/`, back-office), une PR par étape, à relire. **La migration du lot 2 n'est pas appliquée sur `annona-dev`** : à toi de l'appliquer après celle de DEMO-1, puis Claude fait la recette sur le site.
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - MOBILE-1 : ouvrir les comptes **Apple Developer** (99 $ par an) et **Google Play Console** (25 $ une fois), décidé le 16 novembre. Un seul compte de chaque suffit pour plusieurs applications, mais toutes s'affichent sous le même nom de vendeur (compte « organisation » = nom de la société, numéro D-U-N-S gratuit). Google Play : un compte personnel récent doit faire tester l'application par au moins 12 personnes pendant 14 jours (test fermé) avant de pouvoir la publier ; un compte organisation y échappe.
@@ -294,6 +308,70 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   15 novembre 2026 (après-midi) : Redirect URLs de Supabase `annona-dev` complétées par Théo (`https://annona-gray.vercel.app/**`, `fr.annona.app://auth/callback**`). Vérifié : sur https://annona-gray.vercel.app, « Continuer avec Google » ouvre la page de Google (1 s, 0 erreur JavaScript). **Vérifié par Théo le même jour : connexion Google complète sur https://annona-gray.vercel.app avec son compte Google testeur, réussie.** **Puis dans l'application (émulateur, APK de la PR #32) : bouton Google → Chrome → compte Google de Théo → retour automatique dans l'application, connecté à l'espace livreur. Réussi.** Reste : iPhone (schéma `fr.annona.app` à déclarer dans `Info.plist` sur le Mac d'Orso) et vrai téléphone Android. Le client Google « Annona dev » n'a pas besoin de l'origine Vercel : Google renvoie vers Supabase, jamais vers le site.
 
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
+
+### Lot 2 de demandes de modification : pâtisserie, boutiques et stock (Théo Nerisson, 18 novembre 2026)
+
+_Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié avec les choix techniques dans `docs/cahier-des-charges/LOT2-PATISSERIE-BOUTIQUES.md`. Ordre imposé : D1 à D4, puis D5, puis D6 à D8, puis D9 et D10. Décisions de Théo du 18 novembre : code en PR sur des branches `theo/lot2-…` ; **migration écrite mais pas appliquée sur `annona-dev`** (Orso l'applique après celle de DEMO-1) ; pain ou pâtisserie décidé par la catégorie ; alertes dans la cloche ; boutiques livrées le matin. **Le lot touche la zone d'Orso** (`prisma/`, `src/domains/`, back-office) : chaque PR est à relire par lui._
+
+- [ ] **LOT2-D1 — Boutiques et comptes vendeuse.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : l'admin crée la boutique « Centre-ville » et son compte vendeuse ; la vendeuse ne voit que sa boutique ; un jour d'envoi, la boutique apparaît dans la tournée du livreur.
+
+- [ ] **LOT2-D2 — Compte pâtissier.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : l'admin crée un compte pâtissier ; le pâtissier voit le total à produire des pâtisseries et aucun pain ; le boulanger ne voit aucune pâtisserie.
+
+- [ ] **LOT2-D3 — Produits : création, recettes, durée de vente.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : le pâtissier crée « Fraisier » (gros gâteau, 6, 8 et 10 personnes, recette, 2 jours) ; l'admin le voit et le modifie ; la vendeuse ne voit jamais la recette.
+
+- [ ] **LOT2-D4 — Prix restaurant et prix boutique.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : fraisier dans « Produits sans prix » de l'admin et comme nouveau produit sur chaque tablette ; « Produits et prix » fermé sans code ; 40 € pour le 10 personnes dans une seule boutique ; prix non modifiable pendant une commande ; absent du catalogue restaurant sans prix restaurant ; l'admin passe à 42 € et la tablette l'affiche.
+
+- [ ] **LOT2-D5 — Envois quotidiens vers les boutiques.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : le pâtissier envoie 12 éclairs et 8 tartes au citron à « Centre-ville » ; le livreur les voit sur l'arrêt ; le boulanger ajoute 20 baguettes sur le même arrêt.
+
+- [ ] **LOT2-D6 — Réception le matin en boutique.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : 11 éclairs reçus sur 12, dont 1 abîmé : 10 en stock ; alerte (cloche) au pâtissier et à l'admin.
+
+- [ ] **LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : exemple lundi-mardi des éclairs (7 vendus, puis 13 en stock, 2 vendus, 1 à jeter, 10 gardés) ; une tarte abîmée comptée dans les jetés.
+
+- [ ] **LOT2-D8 — Stock des boutiques.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : le pâtissier voit le stock d'éclairs de chaque boutique et, pour la veille, reçus, abîmés, vendus et jetés de « Centre-ville ».
+
+- [ ] **LOT2-D9 — Commandes de gâteaux des particuliers en boutique.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : acompte de 15 € sur 40 € refusé, 20 € accepté ; le fraisier et son inscription chez le pâtissier le jour prévu ; dans l'envoi du matin ; commande « soldée » au retrait.
+
+- [ ] **LOT2-D10 — Pâtisseries pour les restaurants.**
+
+  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+
+  Terminé quand : un restaurant commande 20 éclairs et un castel 10 personnes « Bon anniversaire Julie » ; le pâtissier voit produits et inscription ; le castel est sur la facture au prix restaurant.
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
 
