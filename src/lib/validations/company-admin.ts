@@ -71,7 +71,7 @@ export type UpdateMerchantInput = z.infer<typeof updateMerchantSchema>;
 // Comptes (ADM-01)
 // ---------------------------------------------------------------------------
 
-export const ACCOUNT_ROLE_SLUGS = ["admin", "baker", "driver", "merchant"] as const;
+export const ACCOUNT_ROLE_SLUGS = ["admin", "baker", "pastry-chef", "driver", "merchant", "seller"] as const;
 
 export const updateAccountSchema = z
   .object({

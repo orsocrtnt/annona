@@ -5,6 +5,8 @@ export interface CategoryRow {
   name: string;
   sortOrder: number;
   active: boolean;
+  /** Lot 2, demande 2 : pain (boulanger) ou pâtisserie (pâtissier). */
+  family: "BREAD" | "PASTRY";
   productCount: number;
 }
 

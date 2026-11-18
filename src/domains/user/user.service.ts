@@ -210,7 +210,7 @@ export async function listCompanyDrivers(companyId: string) {
 }
 
 /** Comptes qu'un administrateur ouvre dans son entreprise ; un compte client est rattaché à un client (ADM-1). */
-const CREATABLE_SYSTEM_ROLES = ["ADMIN", "BAKER", "DRIVER", "MERCHANT"] as const;
+const CREATABLE_SYSTEM_ROLES = ["ADMIN", "BAKER", "PASTRY_CHEF", "DRIVER", "MERCHANT", "SELLER"] as const;
 
 async function findCreatableRoleBySlug(slug: string) {
   const rows = await prisma.$queryRaw<
@@ -287,13 +287,15 @@ export async function createUserByAdmin(
   if (role.systemRole === "ADMIN" && !actorIsFullAdmin) throw new Error("ADMIN_ONLY");
   if (role.systemRole !== "ADMIN" && input.miniAdminModules) throw new Error("INVALID_ROLE");
 
-  // ADM-1 : un compte client représente un client de la même entreprise ; aucun autre rôle n'en a.
+  // ADM-1 : un compte client représente un client de la même entreprise ; lot 2, demande 1 : une vendeuse
+  // représente une boutique de l'entreprise. Aucun autre rôle n'en a.
   let merchantId: string | null = null;
-  if (role.systemRole === "MERCHANT") {
+  if (role.systemRole === "MERCHANT" || role.systemRole === "SELLER") {
+    const kind = role.systemRole === "SELLER" ? "SHOP" : "CLIENT";
     const merchant = input.merchantId
-      ? await prisma.merchant.findFirst({ where: { id: input.merchantId, companyId }, select: { id: true } })
+      ? await prisma.merchant.findFirst({ where: { id: input.merchantId, companyId, kind }, select: { id: true } })
       : null;
-    if (!merchant) throw new Error("MERCHANT_REQUIRED");
+    if (!merchant) throw new Error(role.systemRole === "SELLER" ? "SHOP_REQUIRED" : "MERCHANT_REQUIRED");
     merchantId = merchant.id;
   } else if (input.merchantId) {
     throw new Error("MERCHANT_NOT_ALLOWED");
@@ -348,7 +350,7 @@ export async function createUserByAdmin(
   };
 }
 
-const DELETABLE_ROLES = ["ADMIN", "BAKER", "DRIVER", "MERCHANT"] as const;
+const DELETABLE_ROLES = ["ADMIN", "BAKER", "PASTRY_CHEF", "DRIVER", "MERCHANT", "SELLER"] as const;
 
 export async function deleteUserByAdmin(
   targetUserId: string,

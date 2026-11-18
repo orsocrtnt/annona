@@ -143,6 +143,8 @@ const ROLE_SLUG: Record<SystemRole, string> = {
   BAKER: "baker",
   DRIVER: "driver",
   MERCHANT: "merchant",
+  PASTRY_CHEF: "pastry-chef",
+  SELLER: "seller",
 };
 
 // ---------------------------------------------------------------------------
@@ -352,6 +354,8 @@ async function seedAccounts(merchantIds: string[]) {
     BAKER: "/bakery",
     DRIVER: "/driver",
     MERCHANT: "/portal",
+    PASTRY_CHEF: "/pastry",
+    SELLER: "/shop",
   };
 
   for (const account of ACCOUNTS) {

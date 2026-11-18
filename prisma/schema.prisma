@@ -37,6 +37,23 @@ enum SystemRole {
   BAKER
   DRIVER
   MERCHANT
+  /// Lot 2, demande 2 : pâtissier du laboratoire (espace /pastry), ne voit que la pâtisserie.
+  PASTRY_CHEF
+  /// Lot 2, demande 1 : vendeuse d'une boutique de l'entreprise (tablette, espace /shop), rattachée à sa boutique par `User.merchantId`.
+  SELLER
+}
+
+/// Lot 2, demande 1 : un client qui commande (restaurant, commerce) ou une boutique de l'entreprise, qui reçoit des envois
+/// du laboratoire sans commander ni recevoir de facture.
+enum MerchantKind {
+  CLIENT
+  SHOP
+}
+
+/// Lot 2, demande 2 : famille d'une catégorie ; le boulanger voit le pain, le pâtissier la pâtisserie.
+enum ProductFamily {
+  BREAD
+  PASTRY
 }
 
 /// Statut d'un compte : ACTIVE ou INACTIVE (désactivé) en usage courant.
@@ -336,6 +353,8 @@ model Merchant {
   billingPeriod      BillingPeriod  @default(MONTHLY) @map("billing_period")
   paymentMethod      PaymentMethod? @map("payment_method")
   active             Boolean        @default(true)
+  /// Lot 2, demande 1 : client qui commande ou boutique de l'entreprise (exclue du catalogue, des commandes et des factures).
+  kind               MerchantKind   @default(CLIENT)
   /// Tournée (zone) à laquelle l'administrateur rattache le client ; vide : il ne peut pas commander.
   zoneId             String?        @map("zone_id")
   zone               DeliveryZone?  @relation(fields: [zoneId], references: [id], onDelete: SetNull)
@@ -352,18 +371,21 @@ model Merchant {
 
   @@index([companyId, active])
   @@index([companyId, name])
+  @@index([companyId, kind])
   @@index([zoneId])
   @@map("merchants")
 }
 
 model Category {
-  id        String  @id @default(cuid())
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id        String        @id @default(cuid())
+  companyId String        @map("company_id")
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name      String
-  sortOrder Int     @default(0) @map("sort_order")
+  sortOrder Int           @default(0) @map("sort_order")
   /// Catégorie désactivée : masquée du catalogue client avec ses produits (ADM-02).
-  active    Boolean @default(true)
+  active    Boolean       @default(true)
+  /// Lot 2, demande 2 : pain (boulanger) ou pâtisserie (pâtissier).
+  family    ProductFamily @default(BREAD)
 
   products Product[]
 

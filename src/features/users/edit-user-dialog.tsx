@@ -23,6 +23,8 @@ const ROLE_SLUGS: Record<Exclude<SystemRole, "SUPER_ADMIN">, UpdateAccountInput[
   DRIVER: "driver",
   BAKER: "baker",
   ADMIN: "admin",
+  PASTRY_CHEF: "pastry-chef",
+  SELLER: "seller",
 };
 
 export interface EditableAccount {
@@ -101,7 +103,10 @@ export function EditUserDialog({ account, name }: { account: EditableAccount; na
   const [modulesError, setModulesError] = useState<string | null>(null);
   const [merchantId, setMerchantId] = useState(account.merchant?.id ?? "");
   const roleSlug = kind === "mini-admin" ? "admin" : kind;
-  const kinds: AccountKind[] = isFullAdmin ? ["merchant", "driver", "baker", "admin", "mini-admin"] : ["merchant", "driver", "baker"];
+  // Lot 2 : une vendeuse reste la tablette de sa boutique (rôle figé ici) ; le pâtissier s'ajoute aux rôles du laboratoire.
+  const kinds: AccountKind[] = account.role.systemRole === "SELLER"
+    ? ["seller"]
+    : isFullAdmin ? ["merchant", "driver", "baker", "pastry-chef", "admin", "mini-admin"] : ["merchant", "driver", "baker", "pastry-chef"];
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -113,7 +118,7 @@ export function EditUserDialog({ account, name }: { account: EditableAccount; na
         lastName,
         phone: phone.trim() || null,
         roleSlug,
-        merchantId: roleSlug === "merchant" ? merchantId || null : null,
+        merchantId: roleSlug === "merchant" || roleSlug === "seller" ? merchantId || null : null,
         // Lot 1, demande 4 : fonctionnalités envoyées seulement par un administrateur complet.
         ...(isFullAdmin && roleSlug === "admin" ? { miniAdminModules: kind === "mini-admin" ? modules : null } : {}),
       },

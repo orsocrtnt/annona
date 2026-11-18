@@ -12,7 +12,7 @@
  *   visible par l'administrateur ; la facture portera sur cette quantité (RG-06).
  * Le boulanger ne modifie ni les prix ni les commandes autrement (droits vérifiés par les routes).
  */
-import type { OrderStatus, PrismaClient } from "@prisma/client";
+import type { OrderStatus, PrismaClient, ProductFamily } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { slotLabel } from "@/domains/order/merchant-order.service";
 import { writeOrderAudit } from "@/domains/order/order-audit";
@@ -98,25 +98,41 @@ export function computeProductionTotals(
 // Lecture
 // ---------------------------------------------------------------------------
 
-export async function getProductionDay(companyId: string, day: DayLockState, db: ProductionDb = prisma): Promise<ProductionDay> {
+/**
+ * Lot 2, demande 2 : `family` limite la production à une famille de produits (le boulanger voit le pain,
+ * le pâtissier la pâtisserie) ; une commande sans produit de la famille disparaît de ses bons. Sans
+ * `family` : tous les produits (lecture de l'administrateur).
+ */
+export async function getProductionDay(
+  companyId: string,
+  day: DayLockState,
+  db: ProductionDb = prisma,
+  family?: ProductFamily
+): Promise<ProductionDay> {
   const deliveryDate = deliveryDateToDb(day.date);
   const statuses = day.closed ? PRODUCTION_STATUSES : PROVISIONAL_STATUSES;
-  const orders = await db.order.findMany({
+  const allOrders = await db.order.findMany({
     where: { companyId, deliveryDate, status: { in: [...statuses] } },
     select: { id: true, reference: true, merchantId: true, slotId: true, status: true },
   });
-  const orderIds = orders.map((order) => order.id);
-  const lines = await db.orderLine.findMany({
-    where: { companyId, orderId: { in: orderIds } },
+  const allLines = await db.orderLine.findMany({
+    where: { companyId, orderId: { in: allOrders.map((order) => order.id) } },
     select: { id: true, orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true },
   });
-  const [products, categories] = await Promise.all([
+  const [allProducts, categories] = await Promise.all([
     db.product.findMany({
-      where: { companyId, id: { in: [...new Set(lines.map((line) => line.productId))] } },
+      where: { companyId, id: { in: [...new Set(allLines.map((line) => line.productId))] } },
       select: { id: true, name: true, unit: true, categoryId: true, sortOrder: true },
     }),
-    db.category.findMany({ where: { companyId }, select: { id: true, name: true, sortOrder: true } }),
+    db.category.findMany({ where: { companyId }, select: { id: true, name: true, sortOrder: true, family: true } }),
   ]);
+  const familyOf = new Map(categories.map((category) => [category.id, category.family]));
+  const products = family ? allProducts.filter((product) => (familyOf.get(product.categoryId) ?? "BREAD") === family) : allProducts;
+  const kept = new Set(products.map((product) => product.id));
+  const lines = allLines.filter((line) => kept.has(line.productId));
+  const withLines = new Set(lines.map((line) => line.orderId));
+  const orders = family ? allOrders.filter((order) => withLines.has(order.id)) : allOrders;
+  const orderIds = orders.map((order) => order.id);
   const totals = computeProductionTotals(lines, products, categories);
   const base = {
     date: day.date,

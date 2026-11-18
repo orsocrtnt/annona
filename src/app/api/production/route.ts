@@ -12,10 +12,12 @@ import { dayQuerySchema } from "@/lib/validations/order";
  */
 export async function GET(request: Request) {
   return withApiHandler(async () => {
-    const guard = await requireCompanyRole(["BAKER"], "production:read");
+    // Lot 2, demande 2 : le pâtissier lit la même production, limitée à la pâtisserie ; le boulanger au pain.
+    const guard = await requireCompanyRole(["BAKER", "PASTRY_CHEF"], "production:read");
     if ("error" in guard) return guard.error;
     const { date } = dayQuerySchema.parse({ date: new URL(request.url).searchParams.get("date") });
     const day = await ensureDateLocked(guard.actor.companyId, date);
-    return NextResponse.json({ data: await getProductionDay(guard.actor.companyId, day), success: true });
+    const family = guard.actor.user.role.systemRole === "PASTRY_CHEF" ? "PASTRY" : "BREAD";
+    return NextResponse.json({ data: await getProductionDay(guard.actor.companyId, day, undefined, family), success: true });
   });
 }

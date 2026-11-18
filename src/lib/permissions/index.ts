@@ -63,6 +63,8 @@ export function getRoleColor(role: SystemRole): string {
     ADMIN: "border-transparent bg-red-100 text-red-800 dark:bg-error-subtle dark:text-error",
     BAKER: "border-transparent bg-amber-100 text-amber-800 dark:bg-warning-subtle dark:text-warning",
     DRIVER: "border-transparent bg-orange-100 text-orange-800 dark:bg-warning-subtle dark:text-warning",
+    PASTRY_CHEF: "border-transparent bg-pink-100 text-pink-800 dark:bg-warning-subtle dark:text-warning",
+    SELLER: "border-transparent bg-emerald-100 text-emerald-800 dark:bg-[#1f3a2c] dark:text-[#8fdcb0]",
     MERCHANT: "border-transparent bg-blue-100 text-blue-800 dark:bg-[#1f2c40] dark:text-[#8fb5ee]",
   };
   return colors[role];

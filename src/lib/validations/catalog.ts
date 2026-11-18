@@ -14,12 +14,16 @@ const cents = z
   .min(0, "Le prix ne peut pas être négatif.")
   .max(10_000_000, "Prix trop élevé.");
 
-export const createCategorySchema = z.object({ name: name("Nom") }).strict();
+/** Lot 2, demande 2 : pain (boulanger) ou pâtisserie (pâtissier). */
+export const PRODUCT_FAMILIES = ["BREAD", "PASTRY"] as const;
+const family = z.enum(PRODUCT_FAMILIES);
+
+export const createCategorySchema = z.object({ name: name("Nom"), family: family.optional() }).strict();
 
 export const updateCategorySchema = z
-  .object({ name: name("Nom").optional(), active: z.boolean().optional() })
+  .object({ name: name("Nom").optional(), active: z.boolean().optional(), family: family.optional() })
   .strict()
-  .refine((value) => value.name !== undefined || value.active !== undefined, "Rien à modifier.");
+  .refine((value) => value.name !== undefined || value.active !== undefined || value.family !== undefined, "Rien à modifier.");
 
 export const reorderCategoriesSchema = z.object({ ids: z.array(id).min(1).max(500) }).strict();
 

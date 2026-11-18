@@ -46,7 +46,7 @@ export async function listCategories(companyId: string, db: CatalogDb = prisma):
   const rows = await db.category.findMany({
     where: { companyId },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, sortOrder: true, active: true, _count: { select: { products: true } } },
+    select: { id: true, name: true, sortOrder: true, active: true, family: true, _count: { select: { products: true } } },
   });
   return rows.map(({ _count, ...row }) => ({ ...row, productCount: _count.products }));
 }
@@ -55,8 +55,8 @@ export async function createCategory(companyId: string, input: CreateCategoryInp
   const last = await db.category.findFirst({ where: { companyId }, orderBy: { sortOrder: "desc" }, select: { sortOrder: true } });
   try {
     return await db.category.create({
-      data: { companyId, name: input.name, sortOrder: (last?.sortOrder ?? -1) + 1 },
-      select: { id: true, name: true, sortOrder: true, active: true },
+      data: { companyId, name: input.name, sortOrder: (last?.sortOrder ?? -1) + 1, ...(input.family ? { family: input.family } : {}) },
+      select: { id: true, name: true, sortOrder: true, active: true, family: true },
     });
   } catch (error) {
     if (isUniqueViolation(error)) throw new DomainRuleError(409, t.categoryNameTaken, "CATEGORY_NAME_TAKEN");
@@ -70,8 +70,12 @@ export async function updateCategory(companyId: string, categoryId: string, inpu
   try {
     return await db.category.update({
       where: { id: existing.id },
-      data: { ...(input.name !== undefined ? { name: input.name } : {}), ...(input.active !== undefined ? { active: input.active } : {}) },
-      select: { id: true, name: true, sortOrder: true, active: true },
+      data: {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.active !== undefined ? { active: input.active } : {}),
+        ...(input.family !== undefined ? { family: input.family } : {}),
+      },
+      select: { id: true, name: true, sortOrder: true, active: true, family: true },
     });
   } catch (error) {
     if (isUniqueViolation(error)) throw new DomainRuleError(409, t.categoryNameTaken, "CATEGORY_NAME_TAKEN");
@@ -317,7 +321,7 @@ export async function deleteMerchantPrice(companyId: string, priceId: string, db
 /** Clients de l'entreprise, pour choisir à qui donner un prix spécifique. */
 export async function listMerchantChoices(companyId: string, db: CatalogDb = prisma) {
   const rows = await db.merchant.findMany({
-    where: { companyId },
+    where: { companyId, kind: "CLIENT" },
     orderBy: { name: "asc" },
     select: { id: true, name: true, tradeName: true, active: true },
   });

@@ -139,6 +139,19 @@ export function CategoryPanel({ categories, selectedId, onSelect }: CategoryPane
                       <span className="text-xs text-muted-foreground">{category.productCount}</span>
                       {!category.active ? <Badge variant="secondary" className="ml-auto">{t.categoryInactive}</Badge> : null}
                     </button>
+                    {/* Lot 2, demande 2 : famille de la catégorie (le boulanger voit le pain, le pâtissier la pâtisserie). */}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 shrink-0 px-2 text-xs"
+                      data-testid={`category-family-${category.name}`}
+                      aria-label={`Famille de ${category.name} : ${category.family === "PASTRY" ? "pâtisserie" : "pain"}. Changer`}
+                      disabled={update.isPending}
+                      onClick={() => update.mutate({ id: category.id, input: { family: category.family === "PASTRY" ? "BREAD" : "PASTRY" } }, { onError })}
+                    >
+                      {category.family === "PASTRY" ? "Pâtisserie" : "Pain"}
+                    </Button>
                     <Button
                       type="button" size="icon-sm" variant="ghost" aria-label={`${t.renameCategory} ${category.name}`}
                       onClick={() => { setEditingId(category.id); setEditName(category.name); }}

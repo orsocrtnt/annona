@@ -285,14 +285,15 @@ export async function generateInvoicesForPeriod(
   if (isPeriodInFuture(period, now, timezone)) throw new DomainRuleError(400, t.futurePeriod, "PERIOD_IN_FUTURE");
 
   if (input.merchantId) {
-    const merchant = await db.merchant.findFirst({ where: { id: input.merchantId, companyId: context.companyId }, select: { billingPeriod: true } });
+    const merchant = await db.merchant.findFirst({ where: { id: input.merchantId, companyId: context.companyId, kind: "CLIENT" }, select: { billingPeriod: true } });
     if (!merchant) throw new DomainRuleError(404, t.merchantNotFound, "MERCHANT_NOT_FOUND");
     if (merchant.billingPeriod !== input.periodType) {
       throw new DomainRuleError(400, t.periodicityMismatch(fr.invoices.periodicity[merchant.billingPeriod] ?? ""), "PERIODICITY_MISMATCH");
     }
   }
   const merchants = await db.merchant.findMany({
-    where: { companyId: context.companyId, billingPeriod: input.periodType, ...(input.merchantId ? { id: input.merchantId } : {}) },
+    // Lot 2, demande 1 : une boutique de l'entreprise ne reçoit jamais de facture.
+    where: { companyId: context.companyId, kind: "CLIENT", billingPeriod: input.periodType, ...(input.merchantId ? { id: input.merchantId } : {}) },
     select: { id: true, name: true, tradeName: true },
   });
   const result: PeriodGenerationResult = {
@@ -341,7 +342,7 @@ export async function generateDueInvoices(
     });
     if (pending.length === 0) continue;
     const merchants = await db.merchant.findMany({
-      where: { companyId: company.id, id: { in: [...new Set(pending.map((order) => order.merchantId))] } },
+      where: { companyId: company.id, kind: "CLIENT", id: { in: [...new Set(pending.map((order) => order.merchantId))] } },
       select: { id: true, billingPeriod: true },
     });
     const work: Array<{ merchantId: string; period: BillingPeriodRange }> = [];

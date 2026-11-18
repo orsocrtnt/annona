@@ -21,6 +21,7 @@ export const MINI_ADMIN_MODULE_IDS = [
   "catalog",
   "promotions",
   "accounts",
+  "shops",
   "settings",
   "billing",
   "support",
@@ -49,6 +50,8 @@ export const MINI_ADMIN_MODULES: readonly MiniAdminModule[] = [
     paths: ["/dashboard/merchants", "/users"],
     permissions: ["merchants:read", "merchants:manage", "users:read", "users:create", "users:update", "users:delete"],
   },
+  // Lot 2 : boutiques de l'entreprise, accordables à un mini admin.
+  { id: "shops", label: "Boutiques", paths: ["/dashboard/shops"], permissions: ["shops:read", "shops:manage"] },
   { id: "settings", label: "Paramètres", paths: ["/settings"], permissions: ["settings:read", "settings:update", "companies:read", "companies:update"] },
   {
     id: "billing",

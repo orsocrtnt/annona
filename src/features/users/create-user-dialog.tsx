@@ -28,6 +28,7 @@ const ROLE_OPTIONS: { value: AccountKind; label: string; fullAdminOnly?: boolean
   { value: "merchant", label: t.roleOptions.merchant },
   { value: "driver", label: t.roleOptions.driver },
   { value: "baker", label: t.roleOptions.baker },
+  { value: "pastry-chef", label: t.roleOptions["pastry-chef"] },
   { value: "admin", label: t.fullAdmin, fullAdminOnly: true },
   { value: "mini-admin", label: t.miniAdmin, fullAdminOnly: true },
 ];
@@ -35,16 +36,20 @@ const ROLE_OPTIONS: { value: AccountKind; label: string; fullAdminOnly?: boolean
 interface CreateUserDialogProps {
   /** Fiche client : compte client rattaché à ce client, rôle figé. */
   merchant?: { id: string; name: string };
+  /** Lot 2, demande 1 : fiche boutique, compte vendeuse rattaché à cette boutique, rôle figé. */
+  shop?: { id: string; name: string };
   triggerLabel?: string;
 }
 
 /** ADM-01 : créer un compte de l'entreprise ; un compte client est rattaché à un client (ADM-1). */
-export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisateur" }: CreateUserDialogProps = {}) {
+export function CreateUserDialog({ merchant: client, shop, triggerLabel = "Inviter un utilisateur" }: CreateUserDialogProps = {}) {
+  const merchant = client ?? shop;
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const merchants = useMerchantChoices(open && !merchant);
   const { isFullAdmin } = usePermissions();
-  const [kind, setKind] = useState<AccountKind>("merchant");
+  const fixedRole: AccountKind = shop ? "seller" : "merchant";
+  const [kind, setKind] = useState<AccountKind>(fixedRole);
   const [modules, setModules] = useState<MiniAdminModuleId[]>([]);
   const [modulesError, setModulesError] = useState<string | null>(null);
 
@@ -54,7 +59,7 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
       firstName: "",
       lastName: "",
       email: "",
-      roleSlug: "merchant",
+      roleSlug: shop ? "seller" : "merchant",
       merchantId: merchant?.id ?? null,
     },
   });
@@ -67,7 +72,7 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          merchantId: data.roleSlug === "merchant" ? data.merchantId : null,
+          merchantId: data.roleSlug === "merchant" || data.roleSlug === "seller" ? data.merchantId : null,
           miniAdminModules: kind === "mini-admin" ? modules : null,
         }),
       });
@@ -78,6 +83,7 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
     onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["merchants"] });
+      queryClient.invalidateQueries({ queryKey: ["shops"] });
       queryClient.invalidateQueries({ queryKey: ["company", "drivers"] });
       if (result.invitationSent) {
         toast.success("Invitation envoyée", { description: "Le destinataire recevra un lien pour choisir son mot de passe." });
@@ -86,7 +92,7 @@ export function CreateUserDialog({ merchant, triggerLabel = "Inviter un utilisat
       }
       setOpen(false);
       form.reset();
-      setKind("merchant");
+      setKind(fixedRole);
       setModules([]);
     },
     onError: (error: Error) => {

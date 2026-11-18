@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **3** : DA-1, ACCES-1, MOBILE-1 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **5** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -24,6 +24,8 @@
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
+- LOT2-D1 — Boutiques et comptes vendeuse (relire la PR `theo/lot2-d1-d2` et appliquer ses deux migrations sur `annona-dev` (après DEMO-1) ; ensuite Claude fait la recette sur le site)
+- LOT2-D2 — Compte pâtissier (relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site)
 
 **À faire par Théo**
 
@@ -35,8 +37,6 @@
 
 **À classer**
 
-- LOT2-D1 — Boutiques et comptes vendeuse
-- LOT2-D2 — Compte pâtissier
 - LOT2-D3 — Produits : création, recettes, durée de vente
 - LOT2-D4 — Prix restaurant et prix boutique
 - LOT2-D5 — Envois quotidiens vers les boutiques
@@ -315,13 +315,27 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D1 — Boutiques et comptes vendeuse.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR `theo/lot2-d1-d2` et appliquer ses deux migrations sur `annona-dev` (après DEMO-1) ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`, **migrations écrites, pas appliquées**) :
+    - **Modèle** : boutique = `Merchant.kind = SHOP` (migration `20261118100000_lot2_roles_shops`), qui reprend l'adresse, les consignes, la position et la tournée d'un client ; rôles `PASTRY_CHEF` et `SELLER` et permissions `shops:read`, `shops:manage`, `dashboard:pastry` et `dashboard:shop` (migration `20261118100100_lot2_roles_data`, séparée car PostgreSQL refuse d'utiliser une valeur d'énumération dans la transaction qui l'ajoute).
+    - **Admin** : écran « Boutiques » (`/dashboard/shops`) pour créer, modifier et désactiver une boutique (journal « Shop »), avec une tournée obligatoire, livrée le matin ; bouton « Créer un compte vendeuse » (invitation, compte rattaché à la boutique). Fonctionnalité « Boutiques » accordable à un mini admin.
+    - **Pas un client** : boutiques exclues de la liste et de la fiche des clients, des choix de clients (prix spécifiques), des rappels et de la facturation (`kind: "CLIENT"`).
+    - **Tablette** : espace `/shop` de la vendeuse, qui ne voit que sa boutique (`GET /api/shop`, boutique lue dans la session).
+    - Tests : `tests/lot2-d1-d2-shops-pastry.test.ts` (vérifications 1 et 2) ; tests de listes fermées mis à jour (migrations, rôles, fonctionnalités de mini admin, routes de production). `npm run check` : 879 tests, 872 réussis, 0 échec.
+    - **Reste** : vérification 3 (la boutique dans la tournée un jour d'envoi) arrive avec LOT2-D5 ; le super-administrateur ne crée pas encore de boutique depuis son espace (le tableau des droits du document le prévoit) ; recette dans le navigateur après la migration.
 
   Terminé quand : l'admin crée la boutique « Centre-ville » et son compte vendeuse ; la vendeuse ne voit que sa boutique ; un jour d'envoi, la boutique apparaît dans la tournée du livreur.
 
 - [ ] **LOT2-D2 — Compte pâtissier.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`) :
+    - **Comptes** : compte « Pâtissier » créé par l'admin (plusieurs possibles), espace `/pastry`.
+    - **Famille** : `Category.family` (`BREAD` ou `PASTRY`), réglable dans Catalogue › Catégories (bouton « Pain » ou « Pâtisserie »). La migration range côté pâtisserie les catégories existantes dont le nom contient « pâtisser », « gâteau », « entremets » ou « tarte ».
+    - **Production** : `getProductionDay` filtre par famille. Le pâtissier ne voit que la pâtisserie et le boulanger que le pain ; une commande sans produit de sa famille n'a pas de bon chez lui. Le pâtissier lit sa production sans pouvoir la modifier à cette étape (ni « préparé », ni manquant).
+    - **Reste** : les trois parties du total à produire (commandes des restaurants, gâteaux des particuliers, envois aux boutiques) arrivent avec D10, D9 et D5 ; recette après la migration.
 
   Terminé quand : l'admin crée un compte pâtissier ; le pâtissier voit le total à produire des pâtisseries et aucun pain ; le boulanger ne voit aucune pâtisserie.
 

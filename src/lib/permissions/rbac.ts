@@ -17,6 +17,8 @@ export const RESOURCES = [
   // Lot 1, demandes 2 et 4 : promotions et suivi des livreurs, fonctionnalités séparées.
   "promotions",
   "tracking",
+  // Lot 2, demande 1 : boutiques de l'entreprise.
+  "shops",
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];
@@ -32,6 +34,8 @@ export const ACTIONS = [
   "baker",
   "driver",
   "merchant",
+  "pastry",
+  "shop",
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];
@@ -42,7 +46,9 @@ export const ROLE_HIERARCHY: Record<SystemRole, number> = {
   SUPER_ADMIN: 100,
   ADMIN: 80,
   BAKER: 50,
+  PASTRY_CHEF: 50,
   DRIVER: 40,
+  SELLER: 30,
   MERCHANT: 20,
 };
 
@@ -50,7 +56,9 @@ export const ROLE_LABELS: Record<SystemRole, string> = {
   SUPER_ADMIN: "Super-administrateur",
   ADMIN: "Administrateur",
   BAKER: "Boulanger",
+  PASTRY_CHEF: "Pâtissier",
   DRIVER: "Livreur",
+  SELLER: "Vendeuse",
   MERCHANT: "Client",
 };
 
