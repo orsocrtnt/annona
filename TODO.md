@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**23 tâches terminées sur 31 — 74 %**
+**23 tâches terminées sur 32 — 72 %**
 
-`███████████████░░░░░` · 8 tâches restantes
+`██████████████░░░░░░` · 9 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **2** : ACCES-1, MOBILE-1 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **3** : DA-1, ACCES-1, MOBILE-1 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -21,6 +21,7 @@
 
 **À faire par Orso**
 
+- DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 
@@ -72,6 +73,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - MOBILE-1 : ouvrir les comptes **Apple Developer** (99 $ par an) et **Google Play Console** (25 $ une fois), décidé le 16 novembre. Un seul compte de chaque suffit pour plusieurs applications, mais toutes s'affichent sous le même nom de vendeur (compte « organisation » = nom de la société, numéro D-U-N-S gratuit). Google Play : un compte personnel récent doit faire tester l'application par au moins 12 personnes pendant 14 jours (test fermé) avant de pouvoir la publier ; un compte organisation y échappe.
+- DA-1 : relire la plaquette d'identité (canvas, page « Plaquette », 12 planches) et la valider ou dire ce qui cloche. La partager à Théo si tu veux son avis (menu Share).
 - Plus tard : mentions légales des factures (ACCES-1) ; projet Firebase pour les notifications sur téléphone (MOBILE-1, reporté le 16 novembre).
 
 **2. Théo**
@@ -85,6 +87,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
+- DA-1 : une fois la plaquette validée par Orso, appliquer la nouvelle identité (couleurs, police Geist, logo soleil, écrans) en commençant par `globals.css` et `docs/DESIGN_SYSTEM.md`.
 - MOBILE-1 : application iOS compilée pour le simulateur le 16 novembre (iOS 26.5 installé sur le Mac d'Orso). Reste : la lancer sur le simulateur, essayer la connexion Google et le menu « Comment y aller ? » (Plans). En pause : Orso a demandé de garder son processeur libre ; lui demander le feu vert avant de relancer le simulateur ou le serveur local.
 - DEMO-1 : une démo par visiteur, ouverte à tous, sans aucun envoi, journée réaliste (décisions d'Orso du 16 novembre). Lot 1 (journée de démo) fait ; suite : lot d'environnements et connexion sans identifiants (nouvelle table, migration à annoncer à Théo), garde-fous, écrans.
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
@@ -103,6 +106,17 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 ## Tâches ouvertes
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
+
+- [ ] **DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B).**
+
+  **Qui : Orso — relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code.**
+
+  - **Contexte (18 novembre 2026)** : Orso juge « pourrie » la DA verte actuelle (`src/app/globals.css`, `docs/DESIGN_SYSTEM.md`, encore marquée provisoire « DESIGN-1 »). Elle avait été faite pour l'ancien produit (coursiers).
+  - **Exploration faite avec Orso, pas à pas**, sur un canvas Claude privé d'Orso (lien non écrit ici, dépôt public ; page « Pistes ») : 12 pistes « métier » (four, kraft, devanture…), trois synthèses, puis six familles modernes. Diagnostic d'Orso : les pistes métier sont trop rétro et déguisées, pas assez belles, pas assez fortes ; ressenti visé à l'ouverture de l'app : « simple et rapide ». Familles retenues : Net (néo-banque) et Livraison (suivi en direct), puis leur **croisement**, choisi par Orso.
+  - **Direction retenue (croisement Net × Livraison)** : noir, blanc et gris, un seul accent jaune « Aube » `#FFD60A` (marque, action principale, en direct ; jamais en texte sur blanc). Police Geist (Geist Mono pour les numéros). Logo : un soleil qui se lève sur une ligne d'horizon ; le même soleil sert de point du livreur sur la carte. Une seule alerte : rouge `#E5484D` (texte `#B42318`). Thème sombre pour le livreur et le labo la nuit.
+  - **Plaquette complète faite le 18 novembre** (même canvas, page « Plaquette », 12 planches) : couverture, idée, logo (construction, versions, interdits), couleurs (rôles, proportions, thèmes clair et sombre, statuts de commande Brouillon → Livrée), typographie, composants, mobile commerçant, mobile livreur, **ordinateur commerçant** et **ordinateur boulanger**, applications (notifications, e-mail, étiquette de cagette, bon de livraison), ton et mots. Données d'exemple seulement.
+  - **Rien n'a changé dans le code.** Aucune vérification lancée : il n'y a ni code ni écran modifié. Le canvas est privé : Théo ne peut l'ouvrir que si Orso le partage (menu Share).
+  - **Suite, une fois validée** : jetons de couleur et police dans `globals.css` (zone d'Orso), logo en SVG dans `public/brand/` et `src/components/brand/`, mise à jour de `docs/DESIGN_SYSTEM.md` (supprimer la palette bleue historique), puis écrans un par un avec recette navigateur clair et sombre. Les tests de thème (`tests/theme-tokens.test.ts`, `tests/e2e/design2-theme.spec.ts`) devront suivre.
 
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
