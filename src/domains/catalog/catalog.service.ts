@@ -171,6 +171,26 @@ export async function getProductRow(companyId: string, productId: string, db: Ca
 }
 
 /**
+ * Relecture d'Orso (19 novembre) : une taille déjà commandée (restaurant ou particulier) ne se retire pas ; refus
+ * propre (409) avant toute écriture, au lieu d'une erreur de clé étrangère et d'une fiche à moitié enregistrée.
+ * `keptServings` : tailles gardées (vide = le produit n'est plus un gros gâteau).
+ */
+export async function assertSizesRemovable(db: Pick<CatalogDb, "productSize">, companyId: string, productId: string, keptServings: readonly number[]) {
+  const current = await db.productSize.findMany({ where: { companyId, productId }, select: { id: true, servings: true } });
+  const removed = current.filter((size) => !keptServings.includes(size.servings));
+  if (removed.length === 0) return;
+  const refs = db as unknown as Pick<PrismaClient, "orderLine" | "cakeOrder">;
+  const ids = removed.map((size) => size.id);
+  const [lines, cakes] = await Promise.all([
+    refs.orderLine.count({ where: { companyId, sizeId: { in: ids } } }),
+    refs.cakeOrder.count({ where: { companyId, sizeId: { in: ids } } }),
+  ]);
+  if (lines + cakes > 0) {
+    throw new DomainRuleError(409, "Cette taille a déjà été commandée : elle ne peut plus être retirée (désactivez plutôt le produit).", "SIZE_ALREADY_ORDERED");
+  }
+}
+
+/**
  * Lot 2, demande 3 : tailles d'un gros gâteau. Une taille gardée (même nombre de parts) garde son prix restaurant,
  * sauf si `restaurantPriceCents` est donné (administrateur) ; une taille retirée disparaît avec ses prix boutique.
  */
@@ -268,6 +288,11 @@ export async function updateProduct(
 ): Promise<ProductRow> {
   const product = await findProductInCompany(companyId, productId, db);
   if (input.categoryId) await assertCategoryInCompany(companyId, input.categoryId, db);
+  if (input.sizes !== undefined || input.pastryFormat !== undefined) {
+    const format = input.pastryFormat !== undefined ? input.pastryFormat : (await db.product.findFirst({ where: { id: product.id }, select: { pastryFormat: true } }))?.pastryFormat;
+    const kept = format !== "LARGE" ? [] : input.sizes !== undefined ? input.sizes.map((size) => size.servings) : null;
+    if (kept) await assertSizesRemovable(db, companyId, product.id, kept);
+  }
   try {
     const row = await db.product.update({
       where: { id: product.id },

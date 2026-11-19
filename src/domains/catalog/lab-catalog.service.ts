@@ -15,7 +15,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { allergenColumns } from "@/domains/catalog/allergens";
-import { getProductRow, listProducts, syncSizes, type CatalogDb, type ProductRow } from "@/domains/catalog/catalog.service";
+import { assertSizesRemovable, getProductRow, listProducts, syncSizes, type CatalogDb, type ProductRow } from "@/domains/catalog/catalog.service";
 import type { CreatePastryProductInput, UpdatePastryProductInput } from "@/lib/validations/catalog";
 
 /** TVA par défaut d'une pâtisserie créée par le pâtissier (vente à emporter, 5,5 %) ; l'administrateur peut la changer. */
@@ -96,6 +96,8 @@ export async function updatePastryProduct(
 ): Promise<ProductRow> {
   const product = await assertFamilyProduct(db, companyId, productId, "PASTRY");
   if (input.categoryId && input.categoryId !== product.categoryId) await assertFamilyCategory(db, companyId, input.categoryId, "PASTRY");
+  if (input.pastryFormat === "SMALL") await assertSizesRemovable(db, companyId, product.id, []);
+  else if (input.servings !== undefined) await assertSizesRemovable(db, companyId, product.id, input.servings);
   let format: "SMALL" | "LARGE" | null;
   try {
     const row = await db.product.update({

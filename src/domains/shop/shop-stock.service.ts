@@ -153,7 +153,14 @@ export async function receiveShipment(actor: SellerActor, input: ReceiveInput, d
   if (lines.some((line) => !noted.has(line.productId))) throw new DomainRuleError(400, "Notez chaque produit de l'envoi (0 s'il n'est pas arrivé).", "RECEPTION_INCOMPLETE");
   const info = await productInfo(db, actor.companyId, lines.map((line) => line.productId));
   const gaps: Array<{ name: string; sent: number; received: number; family: ProductFamily }> = [];
+  // Relecture d'Orso (19 novembre) : une réception notée après la clôture du jour fausserait les ventes calculées.
+  const closed = await db.shopDayClose.findFirst({ where: { companyId: actor.companyId, shopId: shop.id, date: deliveryDateToDb(input.date) }, select: { id: true } });
+  if (closed) throw new DomainRuleError(409, "La journée est déjà clôturée : la réception ne peut plus être notée.", "DAY_ALREADY_CLOSED");
   await db.$transaction(async (tx) => {
+    // Relecture d'Orso (19 novembre) : l'envoi est « réclamé » d'abord, dans la transaction. Deux envois simultanés
+    // (double appui, renvoi réseau) : le second ne trouve plus d'envoi à recevoir et n'ajoute aucun lot.
+    const claimed = await tx.order.updateMany({ where: { id: order.id, companyId: actor.companyId, receivedAt: null }, data: { receivedAt: now } });
+    if (claimed.count === 0) throw new DomainRuleError(409, "La réception de cet envoi est déjà notée.", "ALREADY_RECEIVED");
     for (const line of lines) {
       const note = noted.get(line.productId)!;
       await tx.orderLine.update({ where: { id: line.id }, data: { quantityReceived: note.received, quantityDamaged: note.damaged } });
@@ -175,7 +182,6 @@ export async function receiveShipment(actor: SellerActor, input: ReceiveInput, d
         gaps.push({ name: info.get(line.productId)?.name ?? "", sent: line.quantityOrdered, received: note.received, family: info.get(line.productId)?.family ?? "BREAD" });
       }
     }
-    await tx.order.update({ where: { id: order.id }, data: { receivedAt: now } });
     await tx.auditLog.create({
       data: {
         companyId: actor.companyId,
@@ -397,11 +403,16 @@ export async function getShopStock(
     shopIds.length ? db.shopStockLot.findMany({ where: { companyId, shopId: { in: shopIds } }, select: { id: true, shopId: true, productId: true, receivedOn: true, lastSaleDay: true, quantity: true } }) : Promise.resolve([]),
     shopIds.length ? db.shopDayClose.findMany({ where: { companyId, shopId: { in: shopIds }, date: deliveryDateToDb(date) } }) : Promise.resolve([]),
     shopIds.length
-      ? db.order.findMany({ where: { companyId, merchantId: { in: shopIds }, deliveryDate: deliveryDateToDb(date), origin: "SHIPMENT" }, select: { id: true, merchantId: true } })
+      ? db.order.findMany({ where: { companyId, merchantId: { in: shopIds }, deliveryDate: deliveryDateToDb(date), origin: "SHIPMENT", status: { not: "CANCELLED" } }, select: { id: true, merchantId: true } })
       : Promise.resolve([]),
   ]);
   const receptionLines = shipments.length
-    ? await db.orderLine.findMany({ where: { companyId, orderId: { in: shipments.map((order) => order.id) } }, select: { orderId: true, productId: true, quantityReceived: true, quantityDamaged: true } })
+    ? (
+        await db.orderLine.findMany({
+          where: { companyId, orderId: { in: shipments.map((order) => order.id) } },
+          select: { orderId: true, productId: true, quantityReceived: true, quantityDamaged: true, cakeOrderId: true },
+        })
+      ).filter((line) => !line.cakeOrderId)
     : [];
   const shopOfOrder = new Map(shipments.map((order) => [order.id, order.merchantId]));
   const keys = new Set<string>();

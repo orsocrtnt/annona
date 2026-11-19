@@ -445,6 +445,23 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
     - Tests : `tests/lot2-d10-restaurant-pastries.test.ts` (vérifications 1 à 3), avec le vrai enregistrement d'une commande. `npm run check` : 0 échec.
     - **Non fait** : prix restaurant **personnalisé par client pour une taille** de gâteau (les prix spécifiques existants valent par produit) ; correction d'une commande de gâteau par l'admin (à vérifier en recette) ; recette dans le navigateur après la migration.
 
+  - 19 novembre 2026 (soir, session Claude de Théo) : **corrections de la relecture d'Orso** (commentaire de la PR #53), sur `theo/lot2-d10`. Tests : `tests/lot2-relecture-orso.test.ts`.
+    - **Les deux défauts bloquants** :
+      - **double réception** : l'envoi est réclamé dans la transaction (`updateMany` où `receivedAt` est vide) ; deux envois simultanés ne créent qu'un lot ;
+      - **correction admin** : les lignes sont retrouvées par leur identifiant, donc deux tailles du même gâteau passent. L'écran n'ajoute que des produits ayant un prix restaurant et jamais un gros gâteau sans taille ; un gâteau ajouté par taille garde le prix de sa taille.
+    - **Aussi corrigé** :
+      - une taille déjà commandée ne se retire plus (409 propre, rien d'écrit) ;
+      - un gros gâteau refuse un prix de base, et le gel des prix ne touche que les lignes simples (`variantKey: ""`) ;
+      - le compteur d'essais du code responsable est incrémenté de façon atomique ;
+      - une réception après la clôture du jour est refusée ;
+      - le stock ignore les gâteaux commandés et les envois annulés.
+    - **Reste de la liste « après »** :
+      - une clôture d'un jour passé non clôturé se calcule sur le stock actuel ;
+      - `scryptSync` bloque le serveur quelques millisecondes ;
+      - la case « préparée » du boulanger porte sur toute une commande mixte (décision produit) ;
+      - le nom et le téléphone des particuliers ne sont ni dans l'export ni dans une règle de conservation ;
+      - la génération des commandes récurrentes ne revérifie ni le prix ni le format.
+
   Terminé quand : un restaurant commande 20 éclairs et un castel 10 personnes « Bon anniversaire Julie » ; le pâtissier voit produits et inscription ; le castel est sur la facture au prix restaurant.
 
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)

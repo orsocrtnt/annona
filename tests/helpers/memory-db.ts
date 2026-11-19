@@ -73,7 +73,18 @@ const COLUMN_DEFAULTS: Record<string, Row> = {
   stop: { status: "PENDING" },
   // Lot 2, demande 9 : une commande de gâteau est « enregistrée » à sa création.
   cakeOrder: { status: "ORDERED" },
+  // Lot 2, demande 10 : ligne simple = variante « ».
+  orderLine: { variantKey: "" },
 };
+
+/** `{ increment: n }` comme Prisma ; toute autre valeur est écrite telle quelle. */
+function applyData(row: Row, data: Row) {
+  for (const [key, value] of Object.entries(data)) {
+    if (isPlainObject(value) && typeof value.increment === "number") row[key] = Number(row[key] ?? 0) + value.increment;
+    else row[key] = value;
+  }
+  row.updatedAt = new Date();
+}
 
 export interface MemoryDbOptions {
   /** Ajoute les relations attendues par le service (ex. `category` d'un produit). */
@@ -121,12 +132,12 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
       update: async ({ where, data }: { where: Where; data: Row }) => {
         const row = rows().find((candidate) => test(candidate, where));
         if (!row) throw Object.assign(new Error("Record to update not found."), { code: "P2025" });
-        Object.assign(row, data, { updatedAt: new Date() });
+        applyData(row, data);
         return view(model, row);
       },
       updateMany: async ({ where, data }: { where: Where; data: Row }) => {
         const found = rows().filter((candidate) => test(candidate, where));
-        found.forEach((row) => Object.assign(row, data, { updatedAt: new Date() }));
+        found.forEach((row) => applyData(row, data));
         return { count: found.length };
       },
       upsert: async ({ where, update, create: createData }: { where: Where; update: Row; create: Row }) => {

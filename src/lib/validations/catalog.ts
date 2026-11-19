@@ -80,8 +80,12 @@ const productFields = {
   shelfLifeDays: shelfLifeDaysSchema.optional(),
 };
 
-export const createProductSchema = z.object(productFields).strict().refine(sizesMatchFormat, SIZES_MESSAGE);
-export const updateProductSchema = z.object(productFields).partial().strict().refine(sizesMatchFormat, SIZES_MESSAGE);
+/** Relecture d'Orso (19 novembre) : un gros gâteau a un prix par taille, jamais de prix de base. */
+const noBasePriceOnLarge = (value: { pastryFormat?: "SMALL" | "LARGE" | null; basePriceCents?: number | null }) =>
+  value.pastryFormat !== "LARGE" || value.basePriceCents === null || value.basePriceCents === undefined;
+const BASE_PRICE_MESSAGE = { message: "Un gros gâteau a un prix restaurant par taille, pas de prix de base.", path: ["basePriceCents"] };
+export const createProductSchema = z.object(productFields).strict().refine(sizesMatchFormat, SIZES_MESSAGE).refine(noBasePriceOnLarge, BASE_PRICE_MESSAGE);
+export const updateProductSchema = z.object(productFields).partial().strict().refine(sizesMatchFormat, SIZES_MESSAGE).refine(noBasePriceOnLarge, BASE_PRICE_MESSAGE);
 
 /**
  * Lot 2, demande 3 : fiche saisie par le pâtissier. Aucun prix (le prix restaurant est fixé par l'administrateur,

@@ -74,7 +74,8 @@ export type UpdateRecurringOrderInput = z.infer<typeof updateRecurringOrderSchem
 /** LOCK-1 — correction d'une commande par l'administrateur (ADM-05) : lignes complètes après correction. */
 export const adminCorrectOrderSchema = z
   .object({
-    lines: z.array(orderLineSchema).min(1, "Ajoutez au moins un produit.").max(MAX_ORDER_LINES),
+    // Relecture d’Orso (19 novembre) : une ligne existante est désignée par son identifiant (deux tailles du même gâteau).
+    lines: z.array(orderLineSchema.extend({ lineId: id.nullable().optional() })).min(1, "Ajoutez au moins un produit.").max(MAX_ORDER_LINES),
     note: z.string().trim().max(300).nullable().optional(),
   })
   .strict();

@@ -268,7 +268,8 @@ async function lockAndFreeze(tx: LockTx, companyId: string, date: string, now: D
   }
   for (const group of groups.values()) {
     await tx.orderLine.updateMany({
-      where: { companyId, productId: group.productId, orderId: { in: [...group.orderIds] } },
+      // Relecture d'Orso (19 novembre) : jamais une ligne de gros gâteau (prix de taille déjà figé à la commande).
+      where: { companyId, productId: group.productId, orderId: { in: [...group.orderIds] }, variantKey: "" },
       data: { unitPriceFrozenCents: group.price },
     });
   }

@@ -101,12 +101,11 @@ export async function verifyManagerCode(db: ShopPricesDb, companyId: string, sho
     throw new DomainRuleError(403, "Aucun code responsable pour cette boutique : demandez-le à l'administrateur.", "MANAGER_CODE_MISSING");
   }
   if (!managerCodeMatches(code, shop.managerCodeHash)) {
-    const failures = shop.managerCodeFailures + 1;
-    const locked = failures >= MANAGER_CODE_MAX_FAILURES;
-    await db.merchant.update({
-      where: { id: shop.id },
-      data: { managerCodeFailures: locked ? 0 : failures, managerCodeLockedUntil: locked ? new Date(now.getTime() + MANAGER_CODE_LOCK_MS) : null },
-    });
+    // Relecture d'Orso (19 novembre) : incrément atomique, des essais simultanés ne se perdent pas.
+    const counted = await db.merchant.update({ where: { id: shop.id }, data: { managerCodeFailures: { increment: 1 } }, select: { managerCodeFailures: true } });
+    if (counted.managerCodeFailures >= MANAGER_CODE_MAX_FAILURES) {
+      await db.merchant.update({ where: { id: shop.id }, data: { managerCodeFailures: 0, managerCodeLockedUntil: new Date(now.getTime() + MANAGER_CODE_LOCK_MS) } });
+    }
     throw new DomainRuleError(403, "Code responsable incorrect.", "MANAGER_CODE_WRONG");
   }
   if (shop.managerCodeFailures > 0 || shop.managerCodeLockedUntil) {
