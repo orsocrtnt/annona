@@ -16,7 +16,7 @@
  * elle, retenue à la validation (`allocatePromotions`) et ne change plus ensuite.
  */
 import { randomBytes } from "node:crypto";
-import { Prisma, type DeliveryPeriod, type OrderStatus, type PrismaClient } from "@prisma/client";
+import { Prisma, type DeliveryPeriod, type OrderOrigin, type OrderStatus, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { computeTotals, lineAmountCents, loadAppliedPrices } from "@/domains/catalog/pricing";
 import { allocatePromotions, linePromoData, type LinePromo } from "@/domains/catalog/promotion.service";
@@ -202,7 +202,7 @@ type OrderRow = {
   deliveryDate: Date;
   slotId: string;
   status: OrderStatus;
-  origin: "MANUAL" | "RECURRING";
+  origin: OrderOrigin;
   notes: string | null;
 };
 

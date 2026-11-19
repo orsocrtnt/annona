@@ -69,6 +69,8 @@ let sequence = 0;
 const COLUMN_DEFAULTS: Record<string, Row> = {
   merchant: { kind: "CLIENT" },
   category: { family: "BREAD" },
+  // Lot 2, demande 5 : un arrêt créé par le calcul des tournées est « en attente », comme en base.
+  stop: { status: "PENDING" },
 };
 
 export interface MemoryDbOptions {
@@ -90,7 +92,8 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
     const test = (candidate: Row, where: Where | undefined) => matches(defaults ? { ...defaults, ...candidate } : candidate, where);
     const create = (data: Row) => {
       const now = new Date();
-      const row: Row = { id: `${model}_${++sequence}`, createdAt: now, updatedAt: now, ...data };
+      // Comme en base : les valeurs par défaut des colonnes s'appliquent à la création.
+      const row: Row = { id: `${model}_${++sequence}`, createdAt: now, updatedAt: now, ...defaults, ...data };
       (tables[model] ??= []).push(row);
       return row;
     };

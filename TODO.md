@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **7** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **8** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -28,6 +28,7 @@
 - LOT2-D2 — Compte pâtissier (relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site)
 - LOT2-D3 — Produits : création, recettes, durée de vente (relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site)
 - LOT2-D4 — Prix restaurant et prix boutique (relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D5 — Envois quotidiens vers les boutiques (relire la PR brouillon `theo/lot2-d5` (empilée sur `theo/lot2-d3-d4`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 
 **À faire par Théo**
 
@@ -39,7 +40,6 @@
 
 **À classer**
 
-- LOT2-D5 — Envois quotidiens vers les boutiques
 - LOT2-D6 — Réception le matin en boutique
 - LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées
 - LOT2-D8 — Stock des boutiques
@@ -324,7 +324,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
     - **Pas un client** : boutiques exclues de la liste et de la fiche des clients, des choix de clients (prix spécifiques), des rappels et de la facturation (`kind: "CLIENT"`).
     - **Tablette** : espace `/shop` de la vendeuse, qui ne voit que sa boutique (`GET /api/shop`, boutique lue dans la session).
     - Tests : `tests/lot2-d1-d2-shops-pastry.test.ts` (vérifications 1 et 2) ; tests de listes fermées mis à jour (migrations, rôles, fonctionnalités de mini admin, routes de production). `npm run check` : 879 tests, 872 réussis, 0 échec.
-    - **Reste** : vérification 3 (la boutique dans la tournée un jour d'envoi) arrive avec LOT2-D5 ; le super-administrateur ne crée pas encore de boutique depuis son espace (le tableau des droits du document le prévoit) ; recette dans le navigateur après la migration.
+    - **Reste** : vérification 3 (la boutique dans la tournée un jour d'envoi) faite avec LOT2-D5 (branche `theo/lot2-d5`) ; le super-administrateur ne crée pas encore de boutique depuis son espace (le tableau des droits du document le prévoit) ; recette dans le navigateur après la migration.
 
   Terminé quand : l'admin crée la boutique « Centre-ville » et son compte vendeuse ; la vendeuse ne voit que sa boutique ; un jour d'envoi, la boutique apparaît dans la tournée du livreur.
 
@@ -372,7 +372,15 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D5 — Envois quotidiens vers les boutiques.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d5` (empilée sur `theo/lot2-d3-d4`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d5`, **migration `20261118100300_lot2_shipments` écrite, pas appliquée** : origine `SHIPMENT` et permission `shipments:manage`) :
+    - **Modèle** : un envoi est une commande d'origine « envoi » vers la boutique, sur le créneau du matin de sa tournée, verrouillée dès sa création (rien à valider ni à facturer).
+    - **Écrans** « Envois aux boutiques » du pâtissier (`/pastry/shipments`, pâtisseries hors gros gâteaux) et du boulanger (`/bakery/shipments`, pain) : choix du jour, quantités par boutique. Les deux remplissent le **même** envoi, chacun ses produits, sans toucher à ceux de l'autre.
+    - **Tournée** : à l'heure limite, l'envoi devient un arrêt de la tournée du matin, avec la liste des produits pour le livreur. Après l'heure limite, il est ajouté aux tournées déjà calculées (même règle que les commandes en retard).
+    - **Modifications** : possibles jusqu'au départ de la tournée (refus 409 ensuite) ; un envoi vidé disparaît avec son arrêt. Il entre dans la production de chaque famille. Journal « Shipment ».
+    - **Vérifications** : `tests/lot2-d5-shipments.test.ts` (vérifications 1 à 3, et **LOT2-D1 vérification 3** : la boutique est un arrêt de la tournée un jour d'envoi), avec le vrai calcul des tournées. `npm run check` : 0 échec.
+    - **Reste** : recette dans le navigateur après la migration ; les trois parties du total à produire du pâtissier sont toutes dans sa production, mais pas encore séparées à l'écran.
 
   Terminé quand : le pâtissier envoie 12 éclairs et 8 tartes au citron à « Centre-ville » ; le livreur les voit sur l'arrêt ; le boulanger ajoute 20 baguettes sur le même arrêt.
 

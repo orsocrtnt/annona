@@ -19,6 +19,8 @@ export const RESOURCES = [
   "tracking",
   // Lot 2, demande 1 : boutiques de l'entreprise.
   "shops",
+  // Lot 2, demande 5 : envois quotidiens du laboratoire vers les boutiques.
+  "shipments",
 ] as const;
 
 export type Resource = (typeof RESOURCES)[number];

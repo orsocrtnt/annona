@@ -91,7 +91,7 @@ test("rôles et permissions des migrations identiques à prisma/reference-data.t
   // Lot 1 : la migration 20261110130000_module_permissions ajoute des permissions au rôle administrateur.
   const moduleSql = readFileSync("prisma/migrations/20261110130000_module_permissions/migration.sql", "utf8");
   // Lot 2 : rôles pâtissier et vendeuse, permissions des boutiques et des deux espaces (liste « rôle, permission »).
-  const lot2Sql = ["20261118100100_lot2_roles_data", "20261118100200_lot2_pastry_prices"]
+  const lot2Sql = ["20261118100100_lot2_roles_data", "20261118100200_lot2_pastry_prices", "20261118100300_lot2_shipments"]
     .map((name) => readFileSync(`prisma/migrations/${name}/migration.sql`, "utf8"))
     .join("\n");
   const all = `${sql}\n${moduleSql}\n${lot2Sql}`;

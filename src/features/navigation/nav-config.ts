@@ -36,6 +36,8 @@ export const bakerNavItems: NavItem[] = [
   { title: "Production", href: "/bakery", icon: ChefHat },
   // Lot 2, demande 3 : durée de vente du pain.
   { title: "Durée de vente", href: "/bakery/products", icon: BookOpen },
+  // Lot 2, demande 5 : envois quotidiens vers les boutiques.
+  { title: "Envois aux boutiques", href: "/bakery/shipments", icon: Truck },
 ];
 
 /** Lot 2, demande 1 : tablette de la boutique (vendeuse). */
@@ -49,6 +51,7 @@ export const pastryNavItems: NavItem[] = [
   { title: "Production", href: "/pastry", icon: ChefHat },
   // Lot 2, demande 3 : fiches, recettes et durées de vente des pâtisseries.
   { title: "Mes pâtisseries", href: "/pastry/products", icon: BookOpen },
+  { title: "Envois aux boutiques", href: "/pastry/shipments", icon: Truck },
 ];
 
 export const driverNavItems: NavItem[] = [

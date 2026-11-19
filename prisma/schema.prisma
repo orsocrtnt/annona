@@ -91,6 +91,8 @@ enum OrderStatus {
 enum OrderOrigin {
   MANUAL
   RECURRING
+  /// Lot 2, demande 5 : envoi du laboratoire vers une boutique de l'entreprise (pas une commande de client).
+  SHIPMENT
 }
 
 /// Moment de livraison d'une tournée : le client choisit seulement « Matin » ou « Soir » (lot 1, demande 1).

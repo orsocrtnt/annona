@@ -27,7 +27,7 @@
  * Une ligne de journal « DeliveryDay / LOCK » marque la date comme traitée : le cron et l'appel
  * paresseux `ensureDateLocked` ne relancent pas une date déjà traitée.
  */
-import type { DeliveryPeriod, OrderStatus, PrismaClient } from "@prisma/client";
+import type { DeliveryPeriod, OrderOrigin, OrderStatus, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { loadAppliedPricesByMerchant } from "@/domains/catalog/pricing";
 import { allocatePromotions, linePromoData } from "@/domains/catalog/promotion.service";
@@ -107,7 +107,7 @@ export interface LockOptions {
 // Règles pures
 // ---------------------------------------------------------------------------
 
-type ExistingOrder = { merchantId: string; slotId: string; origin: "MANUAL" | "RECURRING"; status: OrderStatus };
+type ExistingOrder = { merchantId: string; slotId: string; origin: OrderOrigin; status: OrderStatus };
 
 /**
  * RG-04 (critère de recette 4) : faut-il générer la commande récurrente de ce commerçant pour J ?
