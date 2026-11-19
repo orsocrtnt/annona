@@ -14,8 +14,21 @@ export const orderLineSchema = z
   .object({
     productId: id,
     quantity: z.number().int("Quantité entière.").min(1, "Quantité minimale : 1.").max(MAX_LINE_QUANTITY, "Quantité maximale : 9 999."),
+    /** Lot 2, demande 10 : gros gâteau, taille choisie (prix restaurant de la taille) et inscription facultative. */
+    sizeId: id.nullable().optional(),
+    inscription: z.string().trim().max(120, "Inscription : 120 caractères au plus.").nullable().optional(),
   })
   .strict();
+
+/** Lot 2, demande 10 : article du catalogue des restaurants pour une taille de gros gâteau (« produit::taille »). */
+export function cakeArticleId(productId: string, sizeId: string): string {
+  return `${productId}::${sizeId}`;
+}
+
+export function parseCakeArticleId(articleId: string): { productId: string; sizeId: string | null } {
+  const [productId, sizeId] = articleId.split("::");
+  return { productId: productId!, sizeId: sizeId ?? null };
+}
 
 export const saveOrderSchema = z
   .object({

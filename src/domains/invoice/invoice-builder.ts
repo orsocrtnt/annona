@@ -123,7 +123,8 @@ export function buildInvoice(orders: readonly BillableOrder[]): BuiltInvoice {
       for (const part of parts) {
         if (part.quantity <= 0) continue;
         orderSubtotal += part.quantity * part.unitPriceCents;
-        const key = `${line.productId}|${part.kind}|${part.unitPriceCents}|${line.vatRateBasisPoints}`;
+        // Lot 2, demande 10 : deux tailles d’un même gâteau restent deux lignes (libellé dans la clé).
+        const key = `${line.productId}|${line.name}|${part.kind}|${part.unitPriceCents}|${line.vatRateBasisPoints}`;
         const existing = grouped.get(key);
         if (existing) existing.quantity += part.quantity;
         else grouped.set(key, { productId: line.productId, label: part.label, unit: line.unit, quantity: part.quantity, unitPriceCents: part.unitPriceCents, vatRateBasisPoints: line.vatRateBasisPoints });

@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **12** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **13** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -33,6 +33,7 @@
 - LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 - LOT2-D8 — Stock des boutiques (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 - LOT2-D9 — Commandes de gâteaux des particuliers en boutique (relire la PR brouillon `theo/lot2-d9-d10` (empilée sur `theo/lot2-d6-d8`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D10 — Pâtisseries pour les restaurants (relire la PR brouillon `theo/lot2-d10` (empilée sur `theo/lot2-d9-d10`) ; aucune migration nouvelle (celle de D9 suffit) ; ensuite Claude fait la recette sur le site)
 
 **À faire par Théo**
 
@@ -41,10 +42,6 @@
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
-
-**À classer**
-
-- LOT2-D10 — Pâtisseries pour les restaurants
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -436,11 +433,17 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D10 — Pâtisseries pour les restaurants.**
 
-  **Qui : Claude (session de Théo) — à coder sur une branche empilée sur `theo/lot2-d9-d10`.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d10` (empilée sur `theo/lot2-d9-d10`) ; aucune migration nouvelle (celle de D9 suffit) ; ensuite Claude fait la recette sur le site.**
 
-  - 19 novembre 2026 : **pas encore codée**. Déjà prêt : les petites pièces ayant un prix restaurant sont au catalogue des restaurants (D4), et les lignes de commande acceptent taille, inscription et variante (D9).
-  - **Reste** : gros gâteaux dans le catalogue des restaurants (choix de la taille, inscription), prix restaurant de la taille dans le panier, le verrouillage (prix figé) et la facture, puis les tests des vérifications 1 à 3.
-  - **Prudence** : ce travail touche la prise de commande des restaurants, les promotions et le verrouillage, qui reposent aujourd'hui sur « une ligne par produit ».
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d10`) :
+    - **Catalogue des restaurants** : petites pièces ayant un prix restaurant (D4), et **gros gâteaux, un article par taille** ayant un prix restaurant (« Castel · 10 personnes », identifiant « produit::taille »).
+    - **Panier** : une inscription facultative par gâteau. La commande envoie la taille et l'inscription.
+    - **Serveur** : une ligne de gâteau porte taille, inscription et variante ; deux inscriptions font deux lignes. Le prix restaurant de la taille est **figé dès la commande** (le verrouillage ne le recalcule pas), sans promotion.
+    - **Règles** : pas d'acompte ; heure limite et créneau comme pour le pain. « Recommander » recopie taille et inscription ; les gros gâteaux sont exclus des commandes récurrentes (et les produits sans prix restaurant aussi).
+    - **Production** : le pâtissier voit le castel avec « 10 personnes · « Bon anniversaire Julie » ».
+    - **Facture** : ligne « Castel · 10 personnes » au prix restaurant ; deux tailles restent deux lignes.
+    - Tests : `tests/lot2-d10-restaurant-pastries.test.ts` (vérifications 1 à 3), avec le vrai enregistrement d'une commande. `npm run check` : 0 échec.
+    - **Non fait** : prix restaurant **personnalisé par client pour une taille** de gâteau (les prix spécifiques existants valent par produit) ; correction d'une commande de gâteau par l'admin (à vérifier en recette) ; recette dans le navigateur après la migration.
 
   Terminé quand : un restaurant commande 20 éclairs et un castel 10 personnes « Bon anniversaire Julie » ; le pâtissier voit produits et inscription ; le castel est sur la facture au prix restaurant.
 

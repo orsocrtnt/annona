@@ -28,6 +28,11 @@ export interface PortalProduct {
    * le prix normal barré). `remaining` : unités encore au prix promo, tous clients ; `null` sans limite.
    */
   promo: { unitPriceCents: number; remaining: number | null; endsOn: string } | null;
+  /**
+   * Lot 2, demande 10 : article d'une taille de gros gâteau (`id` = « produit::taille ») ; le restaurant peut y
+   * ajouter une inscription. Absent pour un produit simple.
+   */
+  cake?: { productId: string; sizeId: string; servings: number };
 }
 
 export interface PortalCategory {
@@ -58,6 +63,8 @@ export interface PortalOrderLine {
   photoVersion: string | null;
   quantity: number;
   quantityDelivered: number | null;
+  /** Lot 2, demande 10 : inscription d'un gros gâteau. */
+  inscription?: string | null;
   /** Prix figé au verrouillage s'il existe, sinon prix appliqué actuel. */
   unitPriceCents: number;
   /** Prix appliqué aujourd'hui (recopie, CLI-08). */

@@ -45,7 +45,7 @@ const t = fr.invoices.errors;
 
 type Tx = Pick<
   Prisma.TransactionClient,
-  "merchant" | "order" | "orderLine" | "product" | "invoice" | "invoiceLine" | "auditLog" | "operationJob" | "$queryRaw"
+  "merchant" | "order" | "orderLine" | "product" | "productSize" | "invoice" | "invoiceLine" | "auditLog" | "operationJob" | "$queryRaw"
 >;
 
 export type InvoiceGenerationDb = Pick<Prisma.TransactionClient, "company" | "merchant" | "order"> & {
@@ -123,8 +123,13 @@ async function loadBillableOrders(tx: Tx, companyId: string, merchantId: string,
   if (orders.length === 0) return [];
   const lines = await tx.orderLine.findMany({
     where: { companyId, orderId: { in: orders.map((order) => order.id) } },
-    select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true },
+    select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true, sizeId: true },
   });
+  // Lot 2, demande 10 : un gros gâteau est facturé avec sa taille (« Castel · 10 personnes »), au prix restaurant figé.
+  const sizeIds = [...new Set(lines.map((line) => line.sizeId).filter((id): id is string => Boolean(id)))];
+  const servingsOf = new Map(
+    sizeIds.length ? (await tx.productSize.findMany({ where: { companyId, id: { in: sizeIds } }, select: { id: true, servings: true } })).map((size) => [size.id, size.servings]) : []
+  );
   const products = await tx.product.findMany({
     where: { companyId, id: { in: [...new Set(lines.map((line) => line.productId))] } },
     select: { id: true, name: true, unit: true, vatRateBasisPoints: true },
@@ -140,7 +145,7 @@ async function loadBillableOrders(tx: Tx, companyId: string, merchantId: string,
         const product = productById.get(line.productId);
         return {
           productId: line.productId,
-          name: product?.name ?? "",
+          name: line.sizeId ? `${product?.name ?? ""} · ${servingsOf.get(line.sizeId) ?? "?"} personnes` : product?.name ?? "",
           unit: product?.unit ?? null,
           quantityOrdered: line.quantityOrdered,
           quantityDelivered: line.quantityDelivered,
