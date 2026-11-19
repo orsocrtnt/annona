@@ -35,6 +35,8 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/dashboard/merchants", roles: COMPANY_ADMINS, anyPermission: ["merchants:read"], module: "accounts" },
   // Lot 2, demande 1 : boutiques de l'entreprise et leurs tablettes.
   { path: "/dashboard/shops", roles: COMPANY_ADMINS, anyPermission: ["shops:read"], module: "shops" },
+  // Lot 2, demande 8 : stock des boutiques.
+  { path: "/dashboard/stock", roles: COMPANY_ADMINS, anyPermission: ["shops:read"], module: "shops" },
   { path: "/dashboard/catalog", roles: COMPANY_ADMINS, anyPermission: ["catalog:read"], module: "catalog" },
   { path: "/dashboard/promotions", roles: COMPANY_ADMINS, anyPermission: ["promotions:read"], module: "promotions" },
   { path: "/dashboard/invoices", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"], module: "billing" },

@@ -1,14 +1,14 @@
 "use client";
 
 import { MapPin, Store } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { useMyShop } from "@/features/shops/api";
 
 /**
  * Lot 2, demande 1 — tablette de la boutique : la vendeuse ne voit que sa boutique (vérification 2).
- * La réception du matin (demande 6), la clôture du soir (demande 7), les commandes de gâteaux (demande 9)
- * et « Produits et prix » (demande 4) s'ajouteront ici.
+ * Raccourcis vers la réception du matin (demande 6), la clôture du soir (demande 7), le stock (demande 8) et
+ * « Produits et prix » (demande 4).
  */
 export function SellerHome() {
   const shop = useMyShop();
@@ -28,14 +28,19 @@ export function SellerHome() {
           {[data.address, [data.postalCode, data.city].filter(Boolean).join(" ")].filter(Boolean).join(", ")}
         </p>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Bientôt sur cette tablette</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-base text-muted-foreground">
-          <p>La réception de la livraison du matin, la clôture du soir et les commandes de gâteaux arrivent avec les prochaines étapes.</p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {[
+          { href: "/shop/reception", title: "Réception du matin", text: "Compter l'envoi du laboratoire : reçus et abîmés." },
+          { href: "/shop/closing", title: "Clôture du soir", text: "Noter le reste ; ventes calculées, produits à jeter." },
+          { href: "/shop/stock", title: "Stock", text: "Stock de la boutique et produits à jeter ce soir." },
+          { href: "/shop/settings", title: "Paramètres", text: "Produits et prix (code responsable)." },
+        ].map((tile) => (
+          <Link key={tile.href} href={tile.href} className="rounded-2xl border bg-card p-6 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <p className="text-xl font-semibold">{tile.title}</p>
+            <p className="mt-1 text-base text-muted-foreground">{tile.text}</p>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

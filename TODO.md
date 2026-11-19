@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **8** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **11** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -29,6 +29,9 @@
 - LOT2-D3 — Produits : création, recettes, durée de vente (relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site)
 - LOT2-D4 — Prix restaurant et prix boutique (relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 - LOT2-D5 — Envois quotidiens vers les boutiques (relire la PR brouillon `theo/lot2-d5` (empilée sur `theo/lot2-d3-d4`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D6 — Réception le matin en boutique (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D8 — Stock des boutiques (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 
 **À faire par Théo**
 
@@ -40,9 +43,6 @@
 
 **À classer**
 
-- LOT2-D6 — Réception le matin en boutique
-- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées
-- LOT2-D8 — Stock des boutiques
 - LOT2-D9 — Commandes de gâteaux des particuliers en boutique
 - LOT2-D10 — Pâtisseries pour les restaurants
 
@@ -386,19 +386,37 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D6 — Réception le matin en boutique.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`, **migration `20261118100400_lot2_shop_stock` écrite, pas appliquée**) :
+    - **Tablette** : écran « Réception du matin » (`/shop/reception`). L'envoi du jour s'affiche avec ses quantités prévues ; la vendeuse note, pour chaque produit, le reçu et l'abîmé pendant la livraison (une fois).
+    - **Stock** : le bon état devient un lot de stock daté (`ShopStockLot`, dernier jour de vente = réception + durée de vente − 1) ; les abîmés n'y entrent pas.
+    - **Alerte** : un écart avec l'envoi déclenche une alerte dans la **nouvelle cloche du back-office** (en-tête, `/api/notifications`), pour l'administrateur et le pâtissier (pâtisserie) ou le boulanger (pain).
+    - Tests : `tests/lot2-d6-d8-stock.test.ts` (vérifications 1 et 2).
 
   Terminé quand : 11 éclairs reçus sur 12, dont 1 abîmé : 10 en stock ; alerte (cloche) au pâtissier et à l'admin.
 
 - [ ] **LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
+    - **Tablette** : écran « Clôture du soir » (`/shop/closing`). Pour chaque produit en stock, la vendeuse note le reste et les abîmés en boutique.
+    - **Calcul en direct** : ventes = stock du matin + reçu en bon état − reste ; les plus anciens partent en premier ; les produits à leur dernier jour de vente sont indiqués « à jeter ». La vendeuse confirme les quantités jetées.
+    - **Enregistrement** : lots mis à jour, journée enregistrée (`ShopDayClose`, une clôture par jour). Les règles sont pures, dans `src/domains/shop/stock-rules.ts`, partagées par le serveur et la tablette.
+    - Tests : vérifications 1 à 4 (l'exemple lundi-mardi des éclairs et la tarte abîmée).
 
   Terminé quand : exemple lundi-mardi des éclairs (7 vendus, puis 13 en stock, 2 vendus, 1 à jeter, 10 gardés) ; une tarte abîmée comptée dans les jetés.
 
 - [ ] **LOT2-D8 — Stock des boutiques.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
+    - **Écrans** « Stock boutiques » pour l'admin (`/dashboard/stock`, fonctionnalité « Boutiques » du mini admin), le pâtissier (`/pastry/stock`, pâtisserie) et le boulanger (`/bakery/stock`, pain). La vendeuse a « Stock » (`/shop/stock`), sa boutique seulement.
+    - **Contenu** : stock, à jeter ce soir, et, pour le jour consulté (la veille par défaut, jours passés possibles), reçus, abîmés à la livraison, vendus et jetés. Une boutique ou toutes.
+    - Tests : vérifications 1 et 2. `npm run check` : 0 échec.
+    - **Reste** : le super-administrateur n'a pas d'écran de stock (il n'a pas d'accès aux opérations d'une entreprise) ; recette dans le navigateur après la migration.
 
   Terminé quand : le pâtissier voit le stock d'éclairs de chaque boutique et, pour la veille, reçus, abîmés, vendus et jetés de « Centre-ville ».
 

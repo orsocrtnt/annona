@@ -214,6 +214,8 @@ model Company {
   merchantPrices          MerchantPrice[]
   productSizes            ProductSize[]
   shopPrices              ShopPrice[]
+  shopStockLots           ShopStockLot[]
+  shopDayCloses           ShopDayClose[]
   promotions              Promotion[]
   promotionMerchants      PromotionMerchant[]
   deliveryZones           DeliveryZone[]
@@ -381,6 +383,8 @@ model Merchant {
   prices          MerchantPrice[]
   promotions      PromotionMerchant[]
   shopPrices      ShopPrice[]
+  stockLots       ShopStockLot[]
+  dayCloses       ShopDayClose[]
   orders          Order[]
   recurringOrders RecurringOrder[]
   invoices        Invoice[]
@@ -447,6 +451,8 @@ model Product {
   merchantPrices      MerchantPrice[]
   sizes               ProductSize[]
   shopPrices          ShopPrice[]
+  stockLots           ShopStockLot[]
+  dayCloses           ShopDayClose[]
   promotions          Promotion[]
   orderLines          OrderLine[]
   recurringOrderLines RecurringOrderLine[]
@@ -506,6 +512,59 @@ model ShopPrice {
   @@index([productId])
   @@index([sizeId])
   @@map("shop_prices")
+}
+
+/// Lot 2, demandes 6 et 7 : lot de stock d'une boutique, un par produit et par jour de réception (produits reçus en
+/// bon état). `quantity` = ce qui reste du lot ; les plus anciens sont vendus en premier ; `lastSaleDay` = dernier jour
+/// de vente (jour de réception + durée de vente − 1).
+model ShopStockLot {
+  id              String   @id @default(cuid())
+  companyId       String   @map("company_id")
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId          String   @map("shop_id")
+  shop            Merchant @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  productId       String   @map("product_id")
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  receivedOn      DateTime @map("received_on") @db.Date
+  lastSaleDay     DateTime @map("last_sale_day") @db.Date
+  initialQuantity Int      @map("initial_quantity")
+  quantity        Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@index([shopId, productId, receivedOn])
+  @@index([productId])
+  @@map("shop_stock_lots")
+}
+
+/// Lot 2, demande 7 : clôture du soir d'une boutique, par produit et par jour. Ventes calculées : stock du matin + reçu
+/// en bon état − reste du soir ; jetés : fin de vente (confirmés) et abîmés en boutique.
+model ShopDayClose {
+  id               String   @id @default(cuid())
+  companyId        String   @map("company_id")
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId           String   @map("shop_id")
+  shop             Merchant @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  productId        String   @map("product_id")
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  morningStock     Int      @map("morning_stock")
+  receivedGood     Int      @map("received_good")
+  receivedDamaged  Int      @map("received_damaged")
+  remaining        Int
+  sold             Int
+  discardedExpired Int      @map("discarded_expired")
+  discardedDamaged Int      @map("discarded_damaged")
+  closedById       String?  @map("closed_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([shopId, productId, date])
+  @@index([companyId, date])
+  @@index([productId])
+  @@map("shop_day_closes")
 }
 
 /// Prix spécifique d'un produit pour un commerçant (RG-05).
@@ -657,6 +716,8 @@ model Order {
   preparedAt  DateTime? @map("prepared_at")
   deliveredAt DateTime? @map("delivered_at")
   cancelledAt DateTime? @map("cancelled_at")
+  /// Lot 2, demande 6 : réception de l'envoi notée sur la tablette de la boutique.
+  receivedAt  DateTime? @map("received_at")
 
   recurringOrderId String?         @map("recurring_order_id")
   recurringOrder   RecurringOrder? @relation(fields: [recurringOrderId], references: [id], onDelete: SetNull)
@@ -704,6 +765,9 @@ model OrderLine {
   promoQuantity        Int        @default(0) @map("promo_quantity")
   /// Prix promo HT figé à la validation : une promotion qui se termine ne change pas cette commande.
   promoUnitPriceCents  Int?       @map("promo_unit_price_cents")
+  /// Lot 2, demande 6 : envoi vers une boutique, quantité reçue et quantité abîmée pendant la livraison (vides avant la réception).
+  quantityReceived     Int?       @map("quantity_received")
+  quantityDamaged      Int?       @map("quantity_damaged")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
