@@ -17,7 +17,7 @@
 
 **À faire par Claude**
 
-- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (lot 2 (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo)
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (après la fusion du lot 2 de Théo (LOT2-D1 à D10) : lot 2 de la démo (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo)
 
 **À faire par Orso**
 
@@ -46,9 +46,18 @@
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 16 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 19 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
+
+**Point du 19 novembre 2026 : lot 2 de Théo débloqué**
+
+- **Décisions d'Orso** : OK pour les boutiques en client de type « boutique » (`Merchant.kind = SHOP`) ; le lot 2 de Théo passe avant DEMO-1.
+- **Relecture des PR #48 à #53** (Claude d'Orso, compte rendu en commentaire de la PR #53) : migrations sans reproche ; isolation entre entreprises et rôles sans reproche ; **deux défauts à corriger par Théo avant la fusion** : double réception d'un envoi qui compte le stock deux fois (`shop-stock.service.ts`), correction admin cassée sur une commande avec deux lignes du même produit (`admin-order.service.ts`, `admin-order-detail.tsx`) ; cinq points à corriger après.
+- **Les 6 migrations du lot 2 sont appliquées sur `annona-dev`** (19 novembre, Claude d'Orso, accord d'Orso, depuis `theo/lot2-d10` au commit `4e0b2b8`, `prisma migrate deploy` par le pooler, port 5432). Vérifications : `migrate status` à jour ; `migrate diff` contre le schéma de la branche de Théo : aucun écart ; RLS active et aucun droit `anon`/`authenticated` sur les 5 nouvelles tables ; 715 lignes de commande et 20 clients inchangés ; seules « Pâtisseries individuelles » et « Gâteaux à partager » passent en pâtisserie. Site en ligne (code de `base`) : produits, catégories, clients, commandes et utilisateurs avec leur rôle se lisent sans erreur avec le client Prisma de `base` ; `/api/health` et `/login` répondent 200.
+- **Attention jusqu'au déploiement du lot 2** : ne créer sur `annona-dev` ni compte pâtissier ou vendeuse, ni envoi. Le site en ligne ne connaît pas ces valeurs, et la liste des utilisateurs ou des commandes planterait (constaté : la lecture de tous les rôles échoue déjà avec le client de `base`, mais le site ne la fait jamais).
+- **Non vérifié** : pages du site en ligne ouvertes connecté (extension Chrome indisponible) ; recette du lot 2 (après les deux correctifs de Théo, sur sa branche en local ou sur le site une fois déployé).
+- **Suite** : Théo corrige les deux défauts, passe ses PR en « prêtes », puis fusion dans l'ordre (#47, #48 à #53) et déploiement ; ensuite Claude fait la recette du lot 2 et reprend DEMO-1.
 
 **Point du 16 novembre 2026 (Orso : à lire en premier)**
 
@@ -132,7 +141,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
-  **Qui : Claude — lot 2 (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo.**
+  **Qui : Claude — après la fusion du lot 2 de Théo (LOT2-D1 à D10) : lot 2 de la démo (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo.**
+
+  - 19 novembre 2026, décision d'Orso : le lot 2 de Théo (pâtisserie, boutiques, stock) passe **avant** DEMO-1, dont la migration (`demo_pool_environments`) n'était pas encore écrite. Ses 6 migrations sont déjà sur `annona-dev` ; la migration DEMO-1 s'écrira par-dessus, après la fusion des PR #48 à #53.
 
   **En cours : Orso.**
 
