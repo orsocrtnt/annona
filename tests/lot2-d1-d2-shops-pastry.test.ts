@@ -35,7 +35,10 @@ function shopTables() {
 }
 
 const ACTOR_A = { companyId: "A", userId: "adminA" };
-const CENTRE_VILLE = { name: "Centre-ville", address: "3 place de la Mairie", postalCode: "75001", city: "Paris", latitude: 48.86, longitude: 2.34, accessInstructions: "Porte de service", zoneId: "zoneA" };
+const CENTRE_VILLE = {
+  name: "Centre-ville", address: "3 place de la Mairie", postalCode: "75001", city: "Paris", latitude: 48.86, longitude: 2.34,
+  accessInstructions: "Porte de service", zoneId: "zoneA", managerCode: "4821",
+};
 
 test("LOT2-D1 vérification 1 : l'admin crée la boutique « Centre-ville », rattachée à une tournée, journalisée ; ce n'est pas un client", async () => {
   const { tables, db } = shopTables();

@@ -22,8 +22,11 @@ const shopFields = {
   zoneId: z.string().trim().min(1, "Choisissez la tournée de la boutique.").max(64),
 };
 
+/** Lot 2, demande 4 : code responsable de la tablette, 4 à 8 chiffres. */
+export const managerCodeSchema = z.string().trim().regex(/^\d{4,8}$/, "Code responsable : 4 à 8 chiffres.");
+
 export const createShopSchema = z
-  .object(shopFields)
+  .object({ ...shopFields, managerCode: managerCodeSchema })
   .strict()
   .refine((value) => (value.latitude == null) === (value.longitude == null), "Position incomplète.");
 
@@ -33,6 +36,25 @@ export const updateShopSchema = z
   .strict()
   .refine((value) => Object.keys(value).length > 0, "Rien à modifier.")
   .refine((value) => (value.latitude === undefined) === (value.longitude === undefined), "Position incomplète.");
+
+export const setManagerCodeSchema = z.object({ code: managerCodeSchema }).strict();
+export const unlockShopPricesSchema = z.object({ code: z.string().trim().min(1, "Saisissez le code responsable.").max(8) }).strict();
+export const changeManagerCodeSchema = z
+  .object({ currentCode: z.string().trim().min(1).max(8), newCode: managerCodeSchema })
+  .strict();
+
+/** Lot 2, demande 4 : prix boutique TTC en centimes ; un produit vendu a un prix, un produit non vendu n'en a pas. */
+const shopPriceSchema = z
+  .object({
+    productId: z.string().trim().min(1).max(64),
+    sizeId: z.string().trim().min(1).max(64).nullable(),
+    sold: z.boolean(),
+    priceCents: z.number().int("Prix en centimes entiers.").min(1, "Le prix doit être positif.").max(10_000_000, "Prix trop élevé.").nullable(),
+  })
+  .strict()
+  .refine((value) => !value.sold || value.priceCents !== null, { message: "Saisissez le prix, ou marquez le produit « non vendu ».", path: ["priceCents"] });
+export const shopPricesSchema = z.object({ prices: z.array(shopPriceSchema).min(1).max(1000) }).strict();
+export const sellerShopPricesSchema = z.object({ code: z.string().trim().min(1).max(8), prices: z.array(shopPriceSchema).min(1).max(1000) }).strict();
 
 export type CreateShopInput = z.infer<typeof createShopSchema>;
 export type UpdateShopInput = z.infer<typeof updateShopSchema>;

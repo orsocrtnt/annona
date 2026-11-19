@@ -141,6 +141,7 @@ export const fr = {
       productNotFound: "Produit introuvable.",
       merchantNotFound: "Client introuvable.",
       priceNotLower: "Le prix promo doit être plus bas que le prix de base du produit.",
+      noBasePrice: "Ce produit n'a pas encore de prix restaurant : saisissez-le d'abord dans le catalogue.",
       noMerchant: "Choisissez au moins un client.",
       alreadyRunning: "Ce produit a déjà une promotion en cours. Arrêtez-la avant d'en créer une autre.",
       notFound: "Promotion introuvable.",

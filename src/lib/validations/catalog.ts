@@ -27,12 +27,41 @@ export const updateCategorySchema = z
 
 export const reorderCategoriesSchema = z.object({ ids: z.array(id).min(1).max(500) }).strict();
 
+/** Lot 2, demande 3 : petite pièce ou gros gâteau. */
+export const PASTRY_FORMATS = ["SMALL", "LARGE"] as const;
+/** Lot 2, demande 3 : jours de vente en boutique, jour de réception compris. */
+export const shelfLifeDaysSchema = z
+  .number({ error: "Saisissez une durée de vente en jours." })
+  .int("Durée de vente en jours entiers.")
+  .min(1, "Durée de vente : 1 jour au moins (le jour de réception).")
+  .max(60, "Durée de vente : 60 jours au plus.");
+const recipe = z.string().trim().max(10_000, "Recette : 10 000 caractères au plus.").nullable().transform((value) => (value ? value : null));
+/** Taille d'un gros gâteau : nombre de parts, et prix restaurant HT de la taille (administrateur seulement). */
+const sizeSchema = z
+  .object({
+    servings: z.number({ error: "Nombre de parts." }).int("Nombre de parts entier.").min(1, "1 part au moins.").max(100, "100 parts au plus."),
+    restaurantPriceCents: cents.nullable().optional(),
+  })
+  .strict();
+const sizes = z
+  .array(sizeSchema)
+  .max(12, "12 tailles au plus.")
+  .refine((list) => new Set(list.map((size) => size.servings)).size === list.length, "Deux tailles ont le même nombre de parts.");
+
+/** Lot 2, demande 3 : un gros gâteau a au moins une taille ; une petite pièce ou du pain n'en a pas. */
+function sizesMatchFormat(value: { pastryFormat?: "SMALL" | "LARGE" | null; sizes?: Array<{ servings: number }> }) {
+  if (value.pastryFormat === "LARGE") return value.sizes === undefined || value.sizes.length > 0;
+  return !value.sizes || value.sizes.length === 0;
+}
+const SIZES_MESSAGE = { message: "Un gros gâteau a au moins une taille ; une petite pièce n'en a pas.", path: ["sizes"] };
+
 const productFields = {
   name: name("Nom"),
   description: z.string().trim().max(500, "Description : 500 caractères au plus.").nullable().optional(),
   categoryId: id,
   unit: name("Unité").pipe(z.string().max(40, "Unité : 40 caractères au plus.")),
-  basePriceCents: cents,
+  /** Prix restaurant HT ; lot 2, demande 4 : vide = pas encore saisi (absent du catalogue des restaurants). */
+  basePriceCents: cents.nullable(),
   vatRateBasisPoints: z
     .number({ error: "Saisissez un taux de TVA." })
     .int()
@@ -44,10 +73,42 @@ const productFields = {
    * Absent : inchangé.
    */
   allergens: z.array(z.enum(ALLERGEN_CODES)).max(ALLERGEN_CODES.length).nullable().optional(),
+  /** Lot 2, demande 3 : pâtisserie seulement (vide pour le pain). */
+  pastryFormat: z.enum(PASTRY_FORMATS).nullable().optional(),
+  sizes: sizes.optional(),
+  recipe: recipe.optional(),
+  shelfLifeDays: shelfLifeDaysSchema.optional(),
 };
 
-export const createProductSchema = z.object(productFields).strict();
-export const updateProductSchema = z.object(productFields).partial().strict();
+export const createProductSchema = z.object(productFields).strict().refine(sizesMatchFormat, SIZES_MESSAGE);
+export const updateProductSchema = z.object(productFields).partial().strict().refine(sizesMatchFormat, SIZES_MESSAGE);
+
+/**
+ * Lot 2, demande 3 : fiche saisie par le pâtissier. Aucun prix (le prix restaurant est fixé par l'administrateur,
+ * le prix boutique par la responsable de chaque boutique) ; format obligatoire ; tailles d'un gros gâteau en parts.
+ */
+const pastryFields = {
+  name: name("Nom"),
+  description: z.string().trim().max(500, "Description : 500 caractères au plus.").nullable().optional(),
+  categoryId: id,
+  unit: name("Unité").pipe(z.string().max(40, "Unité : 40 caractères au plus.")),
+  pastryFormat: z.enum(PASTRY_FORMATS),
+  servings: z.array(z.number().int().min(1, "1 part au moins.").max(100, "100 parts au plus.")).max(12).optional(),
+  allergens: z.array(z.enum(ALLERGEN_CODES)).max(ALLERGEN_CODES.length).nullable().optional(),
+  recipe: recipe.optional(),
+  shelfLifeDays: shelfLifeDaysSchema,
+  active: z.boolean().optional(),
+};
+const servingsMatchFormat = (value: { pastryFormat?: "SMALL" | "LARGE"; servings?: number[] }) =>
+  value.pastryFormat === "LARGE"
+    ? value.servings === undefined || (value.servings.length > 0 && new Set(value.servings).size === value.servings.length)
+    : !value.servings || value.servings.length === 0;
+const SERVINGS_MESSAGE = { message: "Un gros gâteau a au moins une taille (sans doublon) ; une petite pièce n'en a pas.", path: ["servings"] };
+export const createPastryProductSchema = z.object(pastryFields).strict().refine(servingsMatchFormat, SERVINGS_MESSAGE);
+export const updatePastryProductSchema = z.object(pastryFields).partial().strict().refine(servingsMatchFormat, SERVINGS_MESSAGE);
+
+/** Lot 2, demande 3 : le boulanger (ou l'administrateur) règle la durée de vente du pain. */
+export const updateShelfLifeSchema = z.object({ shelfLifeDays: shelfLifeDaysSchema }).strict();
 
 export const upsertMerchantPriceSchema = z
   .object({ merchantId: id, productId: id, priceCents: cents })
@@ -108,3 +169,5 @@ export function parsePercentToBasisPoints(value: string): number | null {
   const basisPoints = Math.round(Number(normalized) * 100);
   return basisPoints <= 10_000 ? basisPoints : null;
 }
+export type CreatePastryProductInput = z.infer<typeof createPastryProductSchema>;
+export type UpdatePastryProductInput = z.infer<typeof updatePastryProductSchema>;

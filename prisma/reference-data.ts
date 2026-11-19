@@ -46,6 +46,9 @@ export const PERMISSIONS = [
   { slug: "shops:manage", name: "Gérer les boutiques", resource: "shops", action: "manage" },
   { slug: "dashboard:pastry", name: "Espace pâtissier", resource: "dashboard", action: "pastry" },
   { slug: "dashboard:shop", name: "Tablette de la boutique", resource: "dashboard", action: "shop" },
+  // Lot 2 (migration 20261118100200_lot2_pastry_prices) : fiches du laboratoire.
+  { slug: "catalog:pastry", name: "Créer et modifier les pâtisseries", resource: "catalog", action: "pastry" },
+  { slug: "catalog:bread", name: "Régler la durée de vente du pain", resource: "catalog", action: "bread" },
 ] as const;
 
 export const ROLE_PERMISSIONS: Record<SystemRole, readonly string[]> = {
@@ -72,8 +75,8 @@ export const ROLE_PERMISSIONS: Record<SystemRole, readonly string[]> = {
     "support:read",
     "dashboard:company",
   ],
-  BAKER: ["catalog:read", "orders:read", "production:read", "production:update", "rounds:read", "shops:read", "dashboard:baker"],
-  PASTRY_CHEF: ["catalog:read", "orders:read", "production:read", "rounds:read", "shops:read", "dashboard:pastry"],
+  BAKER: ["catalog:read", "catalog:bread", "orders:read", "production:read", "production:update", "rounds:read", "shops:read", "dashboard:baker"],
+  PASTRY_CHEF: ["catalog:read", "catalog:pastry", "orders:read", "production:read", "rounds:read", "shops:read", "dashboard:pastry"],
   SELLER: ["dashboard:shop"],
   DRIVER: ["rounds:read", "stops:update", "dashboard:driver"],
   MERCHANT: [

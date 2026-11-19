@@ -28,7 +28,8 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
         id: true,
         name: true,
         products: {
-          where: { companyId: actor.companyId, active: true },
+          // Lot 2, demande 4 : sans prix restaurant, absent du catalogue des restaurants ; gros gâteaux par taille (demande 10).
+          where: { companyId: actor.companyId, active: true, basePriceCents: { not: null }, NOT: { pastryFormat: "LARGE" } },
           orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
           select: { id: true, name: true, description: true, unit: true, photoUrl: true, basePriceCents: true, vatRateBasisPoints: true, allergens: true, allergensDeclared: true },
         },

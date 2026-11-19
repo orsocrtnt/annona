@@ -14,7 +14,8 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 export interface PricedProduct {
   id: string;
-  basePriceCents: number;
+  /** Lot 2, demande 4 : vide = pas encore de prix restaurant (produit non commandable par les restaurants). */
+  basePriceCents: number | null;
   vatRateBasisPoints: number;
 }
 
@@ -25,33 +26,36 @@ export interface AppliedPrice {
   isSpecific: boolean;
 }
 
-/** RG-05 : prix spécifique du commerçant s'il existe, sinon prix de base. */
+/**
+ * RG-05 : prix spécifique du commerçant s'il existe, sinon prix de base. Lot 2, demande 4 : `null` quand le
+ * produit n'a pas encore de prix restaurant (créé par le pâtissier) ; il n'est alors proposé à aucun restaurant,
+ * même avec un ancien prix spécifique.
+ */
 export function resolveUnitPrice(
   product: Pick<PricedProduct, "basePriceCents">,
   specificPriceCents?: number | null
-): number {
+): number | null {
+  if (product.basePriceCents === null) return null;
   return typeof specificPriceCents === "number" ? specificPriceCents : product.basePriceCents;
 }
 
-/** Prix appliqués d'une liste de produits pour un commerçant, à partir de ses prix spécifiques. */
+/**
+ * Prix appliqués d'une liste de produits pour un commerçant, à partir de ses prix spécifiques. Un produit sans
+ * prix restaurant (lot 2, demande 4) n'a pas d'entrée : les appelants le traitent comme indisponible.
+ */
 export function applyPrices(
   products: readonly PricedProduct[],
   specificPrices: ReadonlyArray<{ productId: string; priceCents: number }>
 ): Map<string, AppliedPrice> {
   const specific = new Map(specificPrices.map((row) => [row.productId, row.priceCents]));
-  return new Map(
-    products.map((product) => {
-      const specificPrice = specific.get(product.id);
-      return [
-        product.id,
-        {
-          unitPriceCents: resolveUnitPrice(product, specificPrice),
-          vatRateBasisPoints: product.vatRateBasisPoints,
-          isSpecific: specificPrice !== undefined,
-        },
-      ];
-    })
-  );
+  const applied = new Map<string, AppliedPrice>();
+  for (const product of products) {
+    const specificPrice = specific.get(product.id);
+    const unitPriceCents = resolveUnitPrice(product, specificPrice);
+    if (unitPriceCents === null) continue;
+    applied.set(product.id, { unitPriceCents, vatRateBasisPoints: product.vatRateBasisPoints, isSpecific: specificPrice !== undefined });
+  }
+  return applied;
 }
 
 type PricingDb = Pick<PrismaClient | Prisma.TransactionClient, "product" | "merchantPrice">;

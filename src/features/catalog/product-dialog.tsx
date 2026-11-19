@@ -16,6 +16,7 @@ import { AllergensField } from "@/features/catalog/allergens-field";
 import type { CategoryRow, ProductRow } from "@/features/catalog/api";
 import { useProductPhoto, useSaveProduct } from "@/features/catalog/hooks";
 import { MerchantPricesSection } from "@/features/catalog/merchant-prices-section";
+import { PastryFields, initialPastryFields, parsePastryFields, type PastryFieldsState } from "@/features/catalog/pastry-fields";
 import { ProductThumb } from "@/features/catalog/product-thumb";
 import { useCompanySettings } from "@/features/settings/hooks";
 import { fr } from "@/lib/i18n/fr";
@@ -45,6 +46,8 @@ interface FormState {
   active: boolean;
   /** Lot 1, demande 3 : null = non renseignés ; [] = aucun allergène. */
   allergens: AllergenCode[] | null;
+  /** Lot 2, demande 3 : format, tailles et prix par taille, recette, durée de vente. */
+  pastry: PastryFieldsState;
 }
 
 function initialState(product: ProductRow | null, defaultCategoryId: string | null): FormState {
@@ -57,6 +60,7 @@ function initialState(product: ProductRow | null, defaultCategoryId: string | nu
     vatRate: basisPointsToInput(product?.vatRateBasisPoints ?? 550),
     active: product?.active ?? true,
     allergens: product?.allergens ? normalizeAllergens(product.allergens) : null,
+    pastry: initialPastryFields(product),
   };
 }
 
@@ -79,19 +83,25 @@ export function ProductDialog({ open, onOpenChange, product, categories, default
   }, [open, product?.id]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((current) => ({ ...current, [key]: value }));
+  // Lot 2 : la catégorie choisie dit si le produit est une pâtisserie (format, tailles, recette).
+  const isPastry = categories.find((category) => category.id === form.categoryId)?.family === "PASTRY";
+  const isLarge = isPastry && form.pastry.pastryFormat === "LARGE";
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    const basePriceCents = parseEurosToCents(form.basePrice);
+    // Lot 2, demande 4 : prix restaurant facultatif (vide = « Produits sans prix ») ; gros gâteau : prix par taille.
+    const basePriceCents = isLarge || !form.basePrice.trim() ? null : parseEurosToCents(form.basePrice);
+    const pastry = parsePastryFields(form.pastry, true);
     const vatRateBasisPoints = parsePercentToBasisPoints(form.vatRate);
     const nextErrors: typeof errors = {};
     if (!form.name.trim()) nextErrors.name = "Nom : obligatoire.";
     if (!form.categoryId) nextErrors.categoryId = "Choisissez une catégorie.";
     if (!form.unit.trim()) nextErrors.unit = "Unité : obligatoire.";
-    if (basePriceCents === null) nextErrors.basePrice = "Saisissez un prix, par exemple 1,10.";
+    if (!isLarge && form.basePrice.trim() && basePriceCents === null) nextErrors.basePrice = "Saisissez un prix, par exemple 1,10, ou laissez vide.";
+    if (typeof pastry === "string") nextErrors.pastry = pastry;
     if (vatRateBasisPoints === null) nextErrors.vatRate = "Saisissez un taux, par exemple 5,5.";
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0 || typeof pastry === "string") return;
     save.mutate(
       {
         id: product?.id ?? null,
@@ -100,10 +110,14 @@ export function ProductDialog({ open, onOpenChange, product, categories, default
           description: form.description.trim() || null,
           categoryId: form.categoryId,
           unit: form.unit.trim(),
-          basePriceCents: basePriceCents!,
+          basePriceCents,
           vatRateBasisPoints: vatRateBasisPoints!,
           active: form.active,
           allergens: form.allergens,
+          pastryFormat: isPastry ? pastry.pastryFormat : null,
+          ...(isPastry ? { recipe: pastry.recipe } : {}),
+          ...(isLarge ? { sizes: pastry.sizes } : product?.pastryFormat === "LARGE" ? { sizes: [] } : {}),
+          shelfLifeDays: pastry.shelfLifeDays,
         },
       },
       {
@@ -161,9 +175,11 @@ export function ProductDialog({ open, onOpenChange, product, categories, default
             <datalist id="company-units">
               {(companySettings.data?.units ?? []).map((unit) => <option key={unit} value={unit} />)}
             </datalist>
-            <FormField label={t.basePrice} error={errors.basePrice} required>
-              <Input inputMode="decimal" value={form.basePrice} onChange={(event) => set("basePrice", event.target.value)} placeholder="1,10" />
-            </FormField>
+            {isLarge ? null : (
+              <FormField label={t.basePrice} hint="Prix restaurant. Vide : le produit reste dans « Produits sans prix », hors du catalogue des restaurants." error={errors.basePrice}>
+                <Input inputMode="decimal" value={form.basePrice} onChange={(event) => set("basePrice", event.target.value)} placeholder="Prix à saisir" />
+              </FormField>
+            )}
             <FormField label={t.vatRate} error={errors.vatRate} required>
               <Input inputMode="decimal" value={form.vatRate} onChange={(event) => set("vatRate", event.target.value)} placeholder="5,5" />
             </FormField>
@@ -172,6 +188,8 @@ export function ProductDialog({ open, onOpenChange, product, categories, default
             <Input value={form.description} onChange={(event) => set("description", event.target.value)} maxLength={500} />
           </FormField>
           <AllergensField value={form.allergens} onChange={(value) => set("allergens", value)} />
+          <PastryFields value={form.pastry} onChange={(value) => set("pastry", value)} withPrices showFormat={isPastry} />
+          {errors.pastry ? <p role="alert" className="text-sm text-error">{errors.pastry}</p> : null}
           <div className="flex items-center gap-3">
             <Switch id="product-active" checked={form.active} onCheckedChange={(value) => set("active", value)} />
             <Label htmlFor="product-active">{t.productActive}</Label>

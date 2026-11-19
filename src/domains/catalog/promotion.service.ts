@@ -134,7 +134,7 @@ async function offersFor(
   merchantId: string,
   today: string,
   promotions: Awaited<ReturnType<typeof candidatePromotions>>,
-  basePrices: ReadonlyMap<string, number>,
+  basePrices: ReadonlyMap<string, number | null>,
   prices: ReadonlyMap<string, AppliedPrice>,
   excludeOrderId?: string | null
 ): Promise<Map<string, PromotionOffer>> {
@@ -155,7 +155,8 @@ async function offersFor(
     if (promotionState({ endsOn, stoppedAt: promotion.stoppedAt, quantityLimit: promotion.quantityLimit }, today, usedQuantity) !== "ACTIVE") continue;
     const base = basePrices.get(promotion.productId);
     const regular = prices.get(promotion.productId)?.unitPriceCents;
-    if (base === undefined || regular === undefined) continue;
+    // Lot 2, demande 4 : un produit sans prix restaurant n'a pas de promotion.
+    if (base === undefined || base === null || regular === undefined) continue;
     const promoUnitPriceCents = promotionPriceCents(promotion, base);
     // Prix négocié plus bas que le prix promo : le client garde son prix, la promotion ne le concerne pas.
     if (promoUnitPriceCents >= regular) continue;
@@ -179,7 +180,7 @@ export async function loadPromotionOffers(
   companyId: string,
   merchantId: string,
   today: string,
-  products: ReadonlyArray<{ id: string; basePriceCents: number }>,
+  products: ReadonlyArray<{ id: string; basePriceCents: number | null }>,
   prices: ReadonlyMap<string, AppliedPrice>
 ): Promise<Map<string, PromotionOffer>> {
   const promotions = await candidatePromotions(db, companyId, today, products.map((product) => product.id));
@@ -320,6 +321,8 @@ export async function createPromotion(actor: PromotionActor, input: CreatePromot
   if (input.endsOn < today) throw new DomainRuleError(400, t.endInPast, "END_IN_PAST");
   const product = await db.product.findFirst({ where: { id: input.productId, companyId: actor.companyId }, select: { id: true, name: true, basePriceCents: true, active: true } });
   if (!product) throw new DomainRuleError(404, t.productNotFound, "PRODUCT_NOT_FOUND");
+  // Lot 2, demande 4 : pas de promotion sur un produit qui n'a pas encore de prix restaurant.
+  if (product.basePriceCents === null) throw new DomainRuleError(400, t.noBasePrice, "PRODUCT_WITHOUT_PRICE");
   const terms = { promoPriceCents: input.promoPriceCents ?? null, discountPercent: input.discountPercent ?? null };
   if (typeof terms.promoPriceCents === "number" && terms.promoPriceCents >= product.basePriceCents) {
     throw new DomainRuleError(400, t.priceNotLower, "PROMO_PRICE_NOT_LOWER");

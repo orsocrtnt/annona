@@ -15,6 +15,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import type { CreateShopInput, UpdateShopInput } from "@/lib/validations/shop";
+import { hashManagerCode } from "@/domains/shop/shop-prices.service";
 
 export type ShopDb = Pick<PrismaClient, "merchant" | "user" | "auditLog" | "deliveryZone">;
 const defaultDb = () => prisma as unknown as ShopDb;
@@ -135,6 +136,8 @@ export async function createShop(actor: { companyId: string; userId: string }, i
       contactPhone: input.contactPhone ?? null,
       zoneId: input.zoneId,
       active: true,
+      // Lot 2, demande 4 : le code responsable est créé avec la boutique (empreinte seulement).
+      managerCodeHash: hashManagerCode(input.managerCode),
     },
   });
   await db.auditLog.create({

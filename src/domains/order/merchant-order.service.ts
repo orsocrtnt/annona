@@ -169,10 +169,20 @@ async function loadProducts(db: OrderDb, companyId: string, productIds: readonly
   if (productIds.length === 0) return new Map();
   const rows = await db.product.findMany({
     where: { companyId, id: { in: [...productIds] } },
-    select: { id: true, name: true, unit: true, photoUrl: true, active: true, category: { select: { active: true } } },
+    select: { id: true, name: true, unit: true, photoUrl: true, active: true, basePriceCents: true, pastryFormat: true, category: { select: { active: true } } },
   });
+  // Lot 2, demande 4 : sans prix restaurant, un produit n'est pas commandable ; un gros gâteau se commande par taille (demande 10).
   return new Map(
-    rows.map((row) => [row.id, { id: row.id, name: row.name, unit: row.unit, photoUrl: row.photoUrl, available: row.active && row.category.active }])
+    rows.map((row) => [
+      row.id,
+      {
+        id: row.id,
+        name: row.name,
+        unit: row.unit,
+        photoUrl: row.photoUrl,
+        available: row.active && row.category.active && row.basePriceCents !== null && row.pastryFormat !== "LARGE",
+      },
+    ])
   );
 }
 

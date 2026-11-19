@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **5** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **7** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -26,6 +26,8 @@
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 - LOT2-D1 — Boutiques et comptes vendeuse (relire la PR `theo/lot2-d1-d2` et appliquer ses deux migrations sur `annona-dev` (après DEMO-1) ; ensuite Claude fait la recette sur le site)
 - LOT2-D2 — Compte pâtissier (relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site)
+- LOT2-D3 — Produits : création, recettes, durée de vente (relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site)
+- LOT2-D4 — Prix restaurant et prix boutique (relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 
 **À faire par Théo**
 
@@ -37,8 +39,6 @@
 
 **À classer**
 
-- LOT2-D3 — Produits : création, recettes, durée de vente
-- LOT2-D4 — Prix restaurant et prix boutique
 - LOT2-D5 — Envois quotidiens vers les boutiques
 - LOT2-D6 — Réception le matin en boutique
 - LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées
@@ -83,6 +83,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
+- **Question rapide (19 novembre, Théo d'accord pour avancer en attendant)** : pour le lot 2, une boutique est un client de type « boutique » (`Merchant.kind = SHOP`), ce qui lui donne gratuitement sa place dans les tournées. OK pour toi ? Si non, dis-le avant que les étapes suivantes s'empilent dessus. Les PR #48 (D1, D2) et suivantes sont en **brouillon** : elles passeront en « prêtes » une fois ta migration DEMO-1 appliquée.
 - **Lot 2 (pâtisserie, boutiques, stock), demandé par Théo le 18 novembre** : 10 tâches LOT2-D1 à D10, détail dans `docs/cahier-des-charges/LOT2-PATISSERIE-BOUTIQUES.md`. Claude (session de Théo) code dans ta zone (`prisma/`, `src/domains/`, back-office), une PR par étape, à relire. **La migration du lot 2 n'est pas appliquée sur `annona-dev`** : à toi de l'appliquer après celle de DEMO-1, puis Claude fait la recette sur le site.
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
@@ -341,13 +342,31 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D3 — Produits : création, recettes, durée de vente.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`, **migration `20261118100200_lot2_pastry_prices` écrite, pas appliquée**) :
+    - **Modèle** : `Product.pastryFormat` (petite pièce ou gros gâteau), `recipe`, `shelfLifeDays` (jours de vente, jour de réception compris, 1 par défaut) ; tailles d'un gros gâteau dans `ProductSize` (nombre de parts, prix restaurant de la taille).
+    - **Pâtissier** : écran « Mes pâtisseries » (`/pastry/products`) pour créer et modifier, avec format, tailles en parts, allergènes, recette et durée de vente, **sans aucun prix**. Il ne voit que les catégories de pâtisserie ; les prix (restaurant et boutiques) sont affichés pour information. Une taille gardée garde ses prix.
+    - **Boulanger** : écran « Durée de vente » (`/bakery/products`), qui ne règle que la durée de vente du pain (liste sans recette).
+    - **Admin** : la fiche produit du catalogue affiche les champs de pâtisserie quand la catégorie est « Pâtisserie » (format, tailles avec prix restaurant, recette), et la durée de vente pour tout produit.
+    - **Recette** : renvoyée seulement par les routes de l'admin et du pâtissier, jamais par le catalogue des restaurants, la tablette ni la liste du boulanger.
+    - Nouvelles permissions : `catalog:pastry` (pâtissier) et `catalog:bread` (boulanger).
+    - Tests : `tests/lot2-d3-d4-products-prices.test.ts` (vérifications 1 à 3).
 
   Terminé quand : le pâtissier crée « Fraisier » (gros gâteau, 6, 8 et 10 personnes, recette, 2 jours) ; l'admin le voit et le modifie ; la vendeuse ne voit jamais la recette.
 
 - [ ] **LOT2-D4 — Prix restaurant et prix boutique.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`) :
+    - **Prix restaurant** : `Product.basePriceCents` devient facultatif (vide = prix à saisir). Un produit sans prix restaurant n'est ni au catalogue des restaurants ni commandable, même avec un ancien prix spécifique, et n'a pas de promotion. Un gros gâteau a un prix par taille et ne se commande pas encore (D10). Le catalogue de l'admin a un filtre « Produits sans prix ».
+    - **Prix boutique** : `ShopPrice` (boutique × produit × taille, « vendu » ou « non vendu »). Un produit sans ligne s'affiche « Nouveau produit, prix à saisir », en premier.
+    - **Tablette** : Paramètres › « Produits et prix » (`/shop/settings`), ouvert seulement avec le **code responsable**.
+    - **Code responsable** : créé avec la boutique (4 à 8 chiffres), rangé seulement sous forme d'empreinte scrypt, et bloqué 15 minutes après 5 erreurs. L'admin le réinitialise, la responsable le change en donnant l'ancien. Changements de prix et de code journalisés, sans jamais le code.
+    - **Admin** : boutons « Prix boutique » et « Réinitialiser le code » sur chaque boutique, sans code ; la tablette relit les prix à chaque ouverture.
+    - Tests : vérifications 1, 2, 3, 5 et 6. **Vérification 4** (prix affiché mais non modifiable pendant une commande) : arrive avec la prise de commande de LOT2-D9.
+    - `npm run check` : 887 tests, 880 réussis, 0 échec.
 
   Terminé quand : fraisier dans « Produits sans prix » de l'admin et comme nouveau produit sur chaque tablette ; « Produits et prix » fermé sans code ; 40 € pour le 10 personnes dans une seule boutique ; prix non modifiable pendant une commande ; absent du catalogue restaurant sans prix restaurant ; l'admin passe à 42 € et la tablette l'affiche.
 

@@ -24,12 +24,12 @@ import type {
   UpdateProductInput,
   UpsertMerchantPriceInput,
 } from "@/lib/validations/catalog";
-import type { CategoryRow, MerchantPriceRow, ProductRow } from "./catalog.types";
+import type { CategoryRow, MerchantPriceRow, ProductRow, ProductSizeRow } from "./catalog.types";
 import { allergenColumns, productAllergens } from "@/domains/catalog/allergens";
 
-export type { CategoryRow, MerchantPriceRow, ProductRow };
+export type { CategoryRow, MerchantPriceRow, ProductRow, ProductSizeRow };
 
-export type CatalogDb = Pick<PrismaClient, "category" | "product" | "merchantPrice" | "merchant" | "$transaction">;
+export type CatalogDb = Pick<PrismaClient, "category" | "product" | "productSize" | "merchantPrice" | "merchant" | "$transaction">;
 
 const t = fr.catalog.errors;
 
@@ -113,15 +113,23 @@ const productSelect = {
   photoUrl: true,
   allergens: true,
   allergensDeclared: true,
-  category: { select: { name: true, active: true } },
+  pastryFormat: true,
+  recipe: true,
+  shelfLifeDays: true,
+  category: { select: { name: true, active: true, family: true } },
   _count: { select: { merchantPrices: true } },
 } satisfies Prisma.ProductSelect;
 
 type ProductRecord = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
 
 
-function toProductRow(companyId: string, row: ProductRecord): ProductRow {
+function toProductRow(companyId: string, row: ProductRecord, sizeRows: ReadonlyArray<ProductSizeRow & { productId: string }> = []): ProductRow {
   const hasPhoto = isProductPhotoPath(row.photoUrl, companyId);
+  const sizes = sizeRows
+    .filter((size) => size.productId === row.id)
+    .map((size) => ({ id: size.id, servings: size.servings, restaurantPriceCents: size.restaurantPriceCents }))
+    .sort((a, b) => a.servings - b.servings);
+  const large = row.pastryFormat === "LARGE";
   return {
     id: row.id,
     name: row.name,
@@ -137,7 +145,57 @@ function toProductRow(companyId: string, row: ProductRecord): ProductRow {
     photoVersion: hasPhoto ? photoVersion(row.photoUrl!) : null,
     specificPriceCount: row._count.merchantPrices,
     allergens: productAllergens(row),
+    family: row.category.family,
+    pastryFormat: row.pastryFormat,
+    recipe: row.recipe,
+    shelfLifeDays: row.shelfLifeDays,
+    sizes,
+    // Lot 2, demande 4 : liste « Produits sans prix » de l'administrateur.
+    missingRestaurantPrice: large ? sizes.length === 0 || sizes.some((size) => size.restaurantPriceCents === null) : row.basePriceCents === null,
   };
+}
+
+async function loadSizes(db: Pick<CatalogDb, "productSize">, companyId: string, productIds: readonly string[]) {
+  if (productIds.length === 0) return [];
+  return db.productSize.findMany({
+    where: { companyId, productId: { in: [...productIds] } },
+    select: { id: true, productId: true, servings: true, restaurantPriceCents: true },
+  });
+}
+
+/** Fiche à jour d'un produit de l'entreprise, avec ses tailles. */
+export async function getProductRow(companyId: string, productId: string, db: CatalogDb = prisma): Promise<ProductRow> {
+  const row = await db.product.findFirst({ where: { id: productId, companyId }, select: productSelect });
+  if (!row) throw new DomainRuleError(404, t.productNotFound, "PRODUCT_NOT_FOUND");
+  return toProductRow(companyId, row, await loadSizes(db, companyId, [row.id]));
+}
+
+/**
+ * Lot 2, demande 3 : tailles d'un gros gâteau. Une taille gardée (même nombre de parts) garde son prix restaurant,
+ * sauf si `restaurantPriceCents` est donné (administrateur) ; une taille retirée disparaît avec ses prix boutique.
+ */
+export async function syncSizes(
+  db: Pick<CatalogDb, "productSize">,
+  companyId: string,
+  productId: string,
+  wanted: ReadonlyArray<{ servings: number; restaurantPriceCents?: number | null }>
+) {
+  const current = await db.productSize.findMany({ where: { companyId, productId }, select: { id: true, servings: true } });
+  const keep = new Set(wanted.map((size) => size.servings));
+  const removed = current.filter((size) => !keep.has(size.servings)).map((size) => size.id);
+  if (removed.length) await db.productSize.deleteMany({ where: { companyId, id: { in: removed } } });
+  for (const size of wanted) {
+    const existing = current.find((row) => row.servings === size.servings);
+    if (existing) {
+      if (size.restaurantPriceCents !== undefined) {
+        await db.productSize.update({ where: { id: existing.id }, data: { restaurantPriceCents: size.restaurantPriceCents } });
+      }
+    } else {
+      await db.productSize.create({
+        data: { companyId, productId, servings: size.servings, restaurantPriceCents: size.restaurantPriceCents ?? null },
+      });
+    }
+  }
 }
 
 /** Partie aléatoire du nom de fichier : change à chaque nouvelle photo. */
@@ -145,13 +203,16 @@ export function photoVersion(path: string): string {
   return path.slice(-41, -5).replace(/-/g, "").slice(0, 12);
 }
 
-export async function listProducts(companyId: string, db: CatalogDb = prisma): Promise<ProductRow[]> {
+/** Produits de l'entreprise ; `family` (lot 2) : seulement le pain ou seulement la pâtisserie. */
+export async function listProducts(companyId: string, db: CatalogDb = prisma, family?: "BREAD" | "PASTRY"): Promise<ProductRow[]> {
   const rows = await db.product.findMany({
     where: { companyId },
     orderBy: [{ category: { sortOrder: "asc" } }, { sortOrder: "asc" }, { name: "asc" }],
     select: productSelect,
   });
-  return rows.map((row) => toProductRow(companyId, row));
+  const kept = family ? rows.filter((row) => row.category.family === family) : rows;
+  const sizes = await loadSizes(db, companyId, kept.map((row) => row.id));
+  return kept.map((row) => toProductRow(companyId, row, sizes));
 }
 
 async function assertCategoryInCompany(companyId: string, categoryId: string, db: CatalogDb) {
@@ -179,10 +240,14 @@ export async function createProduct(companyId: string, input: CreateProductInput
         active: input.active,
         sortOrder: (last?.sortOrder ?? -1) + 1,
         ...(input.allergens !== undefined ? allergenColumns(input.allergens) : {}),
+        pastryFormat: input.pastryFormat ?? null,
+        recipe: input.recipe ?? null,
+        ...(input.shelfLifeDays !== undefined ? { shelfLifeDays: input.shelfLifeDays } : {}),
       },
       select: productSelect,
     });
-    return toProductRow(companyId, row);
+    if (input.pastryFormat === "LARGE" && input.sizes) await syncSizes(db, companyId, row.id, input.sizes);
+    return getProductRow(companyId, row.id, db);
   } catch (error) {
     if (isUniqueViolation(error)) throw new DomainRuleError(409, t.productNameTaken, "PRODUCT_NAME_TAKEN");
     throw error;
@@ -215,10 +280,18 @@ export async function updateProduct(
         ...(input.vatRateBasisPoints !== undefined ? { vatRateBasisPoints: input.vatRateBasisPoints } : {}),
         ...(input.active !== undefined ? { active: input.active } : {}),
         ...(input.allergens !== undefined ? allergenColumns(input.allergens) : {}),
+        ...(input.pastryFormat !== undefined ? { pastryFormat: input.pastryFormat } : {}),
+        ...(input.recipe !== undefined ? { recipe: input.recipe } : {}),
+        ...(input.shelfLifeDays !== undefined ? { shelfLifeDays: input.shelfLifeDays } : {}),
       },
       select: productSelect,
     });
-    return toProductRow(companyId, row);
+    // Un produit qui n'est plus un gros gâteau perd ses tailles.
+    if (input.sizes !== undefined || input.pastryFormat !== undefined) {
+      if (row.pastryFormat !== "LARGE") await syncSizes(db, companyId, row.id, []);
+      else if (input.sizes !== undefined) await syncSizes(db, companyId, row.id, input.sizes);
+    }
+    return getProductRow(companyId, row.id, db);
   } catch (error) {
     if (isUniqueViolation(error)) throw new DomainRuleError(409, t.productNameTaken, "PRODUCT_NAME_TAKEN");
     throw error;

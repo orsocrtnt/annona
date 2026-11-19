@@ -84,13 +84,14 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
 
   function delegate(model: string) {
     const defaults = COLUMN_DEFAULTS[model];
-    const rows = () => (tables[model] ??= []);
+    // Une lecture ne crée pas de table vide (les instantanés « rien de B modifié » restent identiques).
+    const rows = () => tables[model] ?? [];
     // Les valeurs par défaut servent au filtre seulement : les lignes de test ne sont jamais modifiées par une lecture.
     const test = (candidate: Row, where: Where | undefined) => matches(defaults ? { ...defaults, ...candidate } : candidate, where);
     const create = (data: Row) => {
       const now = new Date();
       const row: Row = { id: `${model}_${++sequence}`, createdAt: now, updatedAt: now, ...data };
-      rows().push(row);
+      (tables[model] ??= []).push(row);
       return row;
     };
     return {
@@ -153,7 +154,7 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
       return Promise.all(arg as Promise<unknown>[]);
     },
   };
-  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "promotion", "promotionMerchant", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone"]) {
+  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "promotion", "promotionMerchant", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone", "productSize", "shopPrice"]) {
     db[model] = delegate(model);
   }
   return db;

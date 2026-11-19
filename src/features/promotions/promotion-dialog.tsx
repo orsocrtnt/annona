@@ -80,7 +80,7 @@ export function PromotionDialog({ open, onOpenChange }: { open: boolean; onOpenC
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((current) => ({ ...current, [key]: value }));
   const product = products.data?.find((row) => row.id === form.productId) ?? null;
   const preview = useMemo(() => {
-    if (!product) return null;
+    if (!product || product.basePriceCents === null) return null;
     const percent = Number(form.percent);
     const price = parseEurosToCents(form.price);
     if (form.kind === "PERCENT" && Number.isInteger(percent) && percent >= 1 && percent <= 99) {
@@ -124,7 +124,7 @@ export function PromotionDialog({ open, onOpenChange }: { open: boolean; onOpenC
     });
   };
 
-  const choosable = (products.data ?? []).filter((row) => row.active && row.categoryActive);
+  const choosable = (products.data ?? []).filter((row) => row.active && row.categoryActive && row.basePriceCents !== null);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

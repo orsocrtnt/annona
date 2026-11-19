@@ -32,13 +32,24 @@ export const companyNavItems: NavItem[] = [
 ];
 
 /** Boulanger : un seul espace, la production. */
-export const bakerNavItems: NavItem[] = [{ title: "Production", href: "/bakery", icon: ChefHat }];
+export const bakerNavItems: NavItem[] = [
+  { title: "Production", href: "/bakery", icon: ChefHat },
+  // Lot 2, demande 3 : durée de vente du pain.
+  { title: "Durée de vente", href: "/bakery/products", icon: BookOpen },
+];
 
 /** Lot 2, demande 1 : tablette de la boutique (vendeuse). */
-export const sellerNavItems: NavItem[] = [{ title: "Ma boutique", href: "/shop", icon: Store }];
+export const sellerNavItems: NavItem[] = [
+  { title: "Ma boutique", href: "/shop", icon: Store },
+  { title: "Paramètres", href: "/shop/settings", icon: Settings },
+];
 
 /** Lot 2, demande 2 : espace pâtissier. */
-export const pastryNavItems: NavItem[] = [{ title: "Pâtisserie", href: "/pastry", icon: ChefHat }];
+export const pastryNavItems: NavItem[] = [
+  { title: "Production", href: "/pastry", icon: ChefHat },
+  // Lot 2, demande 3 : fiches, recettes et durées de vente des pâtisseries.
+  { title: "Mes pâtisseries", href: "/pastry/products", icon: BookOpen },
+];
 
 export const driverNavItems: NavItem[] = [
   { title: "Ma tournée", href: "/driver", icon: Truck },

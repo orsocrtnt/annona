@@ -36,6 +36,7 @@ export const ACTIONS = [
   "merchant",
   "pastry",
   "shop",
+  "bread",
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];

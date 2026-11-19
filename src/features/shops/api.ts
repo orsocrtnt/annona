@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ShopRow } from "@/domains/shop/shop.service";
+import type { ShopPriceBoard, ShopPriceInput } from "@/domains/shop/shop-prices.service";
 import type { CreateShopInput, UpdateShopInput } from "@/lib/validations/shop";
 
 export type { ShopRow };
@@ -30,6 +31,15 @@ export const shopsApi = {
   create: (input: CreateShopInput) => call<ShopRow>("/api/shops", jsonInit("POST", input)),
   update: (id: string, input: UpdateShopInput) => call<ShopRow>(`/api/shops/${encodeURIComponent(id)}`, jsonInit("PATCH", input)),
   mine: () => call<ShopRow>("/api/shop"),
+  // Lot 2, demande 4 : prix boutique (administrateur, sans code) et code responsable.
+  prices: (id: string) => call<ShopPriceBoard>(`/api/shops/${encodeURIComponent(id)}/prices`),
+  savePrices: (id: string, prices: ShopPriceInput[]) =>
+    call<ShopPriceBoard>(`/api/shops/${encodeURIComponent(id)}/prices`, jsonInit("PUT", { prices })),
+  resetCode: (id: string, code: string) => call<void>(`/api/shops/${encodeURIComponent(id)}/manager-code`, jsonInit("PUT", { code })),
+  // Tablette : « Produits et prix » s'ouvre et s'enregistre avec le code responsable.
+  unlockPrices: (code: string) => call<ShopPriceBoard>("/api/shop/prices", jsonInit("POST", { code })),
+  saveMyPrices: (code: string, prices: ShopPriceInput[]) => call<ShopPriceBoard>("/api/shop/prices", jsonInit("PUT", { code, prices })),
+  changeCode: (currentCode: string, newCode: string) => call<void>("/api/shop/manager-code", jsonInit("PUT", { currentCode, newCode })),
 };
 
 export function useShops() {

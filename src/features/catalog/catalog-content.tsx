@@ -26,6 +26,8 @@ export function CatalogContent() {
   const products = useProducts();
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  // Lot 2, demande 4 : liste « Produits sans prix » (prix restaurant à saisir, souvent créés par le pâtissier).
+  const [missingOnly, setMissingOnly] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -39,9 +41,11 @@ export function CatalogContent() {
     return (products.data ?? []).filter(
       (product) =>
         (!categoryId || product.categoryId === categoryId) &&
+        (!missingOnly || product.missingRestaurantPrice) &&
         (!needle || product.name.toLocaleLowerCase("fr").includes(needle))
     );
-  }, [products.data, categoryId, query]);
+  }, [products.data, categoryId, query, missingOnly]);
+  const missingCount = (products.data ?? []).filter((product) => product.missingRestaurantPrice).length;
 
   if (isInitialQueryLoading(categories.isLoading, categories.data) || isInitialQueryLoading(products.isLoading, products.data)) {
     return <PageSkeleton />;
@@ -80,6 +84,16 @@ export function CatalogContent() {
             <CardTitle className="text-base">
               {t.products} <span className="text-sm font-normal text-muted-foreground">({rows.length})</span>
             </CardTitle>
+            <Button
+              type="button"
+              size="sm"
+              variant={missingOnly ? "brand" : "outline"}
+              aria-pressed={missingOnly}
+              onClick={() => setMissingOnly((value) => !value)}
+              data-testid="missing-prices-filter"
+            >
+              Produits sans prix ({missingCount})
+            </Button>
             <div className="relative w-full sm:w-72">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
               <Input
@@ -130,7 +144,11 @@ export function CatalogContent() {
                       </TableCell>
                       <TableCell className="max-md:hidden">{product.categoryName}</TableCell>
                       <TableCell className="max-md:hidden">{product.unit}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{formatCents(product.basePriceCents)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">
+                        {product.pastryFormat === "LARGE"
+                          ? product.sizes.map((size) => `${size.servings} p. ${formatCents(size.restaurantPriceCents)}`).join(" · ") || "Tailles à saisir"
+                          : formatCents(product.basePriceCents)}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap text-right tabular-nums max-lg:hidden">{formatVatRate(product.vatRateBasisPoints)}</TableCell>
                       <TableCell className="whitespace-nowrap max-lg:hidden">{t.specificPriceCount(product.specificPriceCount)}</TableCell>
                       <TableCell>
