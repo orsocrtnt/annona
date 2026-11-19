@@ -1,13 +1,13 @@
 const EUROS = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
 
-/** 110 → « 1,10 € » (montants en centimes). */
-export function formatCents(cents: number): string {
-  return EUROS.format(cents / 100);
+/** 110 → « 1,10 € » (montants en centimes). Lot 2, demande 4 : `null` (prix pas encore saisi) → « Prix à saisir ». */
+export function formatCents(cents: number | null): string {
+  return cents === null ? "Prix à saisir" : EUROS.format(cents / 100);
 }
 
-/** 110 → « 1,10 » : valeur d'un champ de saisie en euros. */
-export function centsToInput(cents: number): string {
-  return (cents / 100).toFixed(2).replace(".", ",");
+/** 110 → « 1,10 » : valeur d'un champ de saisie en euros ; `null` → champ vide. */
+export function centsToInput(cents: number | null): string {
+  return cents === null ? "" : (cents / 100).toFixed(2).replace(".", ",");
 }
 
 /** 550 → « 5,5 % ». */

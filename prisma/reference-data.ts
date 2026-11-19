@@ -41,6 +41,16 @@ export const PERMISSIONS = [
   { slug: "promotions:read", name: "Lire les promotions", resource: "promotions", action: "read" },
   { slug: "promotions:manage", name: "Gérer les promotions", resource: "promotions", action: "manage" },
   { slug: "tracking:read", name: "Suivre les livreurs", resource: "tracking", action: "read" },
+  // Lot 2 (migration 20261118100100_lot2_roles_data) : boutiques, pâtissier et vendeuse.
+  { slug: "shops:read", name: "Lire les boutiques", resource: "shops", action: "read" },
+  { slug: "shops:manage", name: "Gérer les boutiques", resource: "shops", action: "manage" },
+  { slug: "dashboard:pastry", name: "Espace pâtissier", resource: "dashboard", action: "pastry" },
+  { slug: "dashboard:shop", name: "Tablette de la boutique", resource: "dashboard", action: "shop" },
+  // Lot 2 (migration 20261118100200_lot2_pastry_prices) : fiches du laboratoire.
+  { slug: "catalog:pastry", name: "Créer et modifier les pâtisseries", resource: "catalog", action: "pastry" },
+  { slug: "catalog:bread", name: "Régler la durée de vente du pain", resource: "catalog", action: "bread" },
+  // Lot 2 (migration 20261118100300_lot2_shipments) : envois vers les boutiques.
+  { slug: "shipments:manage", name: "Envoyer des produits aux boutiques", resource: "shipments", action: "manage" },
 ] as const;
 
 export const ROLE_PERMISSIONS: Record<SystemRole, readonly string[]> = {
@@ -55,6 +65,7 @@ export const ROLE_PERMISSIONS: Record<SystemRole, readonly string[]> = {
     "users:read", "users:create", "users:update", "users:delete",
     "companies:read", "companies:update",
     "merchants:read", "merchants:manage",
+    "shops:read", "shops:manage",
     "catalog:read", "catalog:manage",
     "promotions:read", "promotions:manage",
     "orders:read", "orders:create", "orders:update",
@@ -66,7 +77,9 @@ export const ROLE_PERMISSIONS: Record<SystemRole, readonly string[]> = {
     "support:read",
     "dashboard:company",
   ],
-  BAKER: ["catalog:read", "orders:read", "production:read", "production:update", "rounds:read", "dashboard:baker"],
+  BAKER: ["catalog:read", "catalog:bread", "orders:read", "production:read", "production:update", "rounds:read", "shops:read", "shipments:manage", "dashboard:baker"],
+  PASTRY_CHEF: ["catalog:read", "catalog:pastry", "orders:read", "production:read", "rounds:read", "shops:read", "shipments:manage", "dashboard:pastry"],
+  SELLER: ["dashboard:shop"],
   DRIVER: ["rounds:read", "stops:update", "dashboard:driver"],
   MERCHANT: [
     "catalog:read",
@@ -84,6 +97,8 @@ export const ROLES = [
   { slug: "baker", name: "Boulanger", systemRole: "BAKER", description: "Production et préparation des commandes" },
   { slug: "driver", name: "Livreur", systemRole: "DRIVER", description: "Exécution des tournées" },
   { slug: "merchant", name: "Client", systemRole: "MERCHANT", description: "Commerçant qui commande" },
+  { slug: "pastry-chef", name: "Pâtissier", systemRole: "PASTRY_CHEF", description: "Production de la pâtisserie et envois aux boutiques" },
+  { slug: "seller", name: "Vendeuse", systemRole: "SELLER", description: "Tablette d'une boutique de l'entreprise" },
 ] as const satisfies ReadonlyArray<{
   slug: string;
   name: string;

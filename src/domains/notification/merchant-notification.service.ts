@@ -126,7 +126,7 @@ export async function queueOrderReminders(options: { now?: Date; db?: Notificati
 export async function merchantsToRemind(db: Pick<NotificationDb, "merchant" | "order" | "recurringOrder">, companyId: string, date: string) {
   const weekday = isoWeekday(date);
   const [merchants, orders, recurrings] = await Promise.all([
-    db.merchant.findMany({ where: { companyId, active: true }, select: { id: true } }),
+    db.merchant.findMany({ where: { companyId, active: true, kind: "CLIENT" }, select: { id: true } }),
     db.order.findMany({
       where: { companyId, deliveryDate: deliveryDateToDb(date), status: { notIn: ["CANCELLED", "DRAFT"] } },
       select: { merchantId: true },

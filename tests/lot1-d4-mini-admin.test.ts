@@ -107,7 +107,7 @@ test("LOT1-D4 : chaque page de l'administrateur appartient à une fonctionnalit�
   for (const item of companyNavItems) assert.ok(getPageAccessRule(item.href)?.module, item.href);
   assert.deepEqual(MINI_ADMIN_MODULES.map((module) => module.label), [
     "Tableau de bord", "Commandes", "Suivi des livreurs", "Tournées", "Catalogue et prix", "Promotions",
-    "Comptes clients, boulangers et livreurs", "Paramètres", "Facturation et paiements", "Support",
+    "Comptes clients, boulangers et livreurs", "Boutiques", "Paramètres", "Facturation et paiements", "Support",
   ]);
 });
 

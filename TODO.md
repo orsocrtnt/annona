@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **3** : DA-1, ACCES-1, MOBILE-1 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **13** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -24,6 +24,16 @@
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
+- LOT2-D1 — Boutiques et comptes vendeuse (relire la PR `theo/lot2-d1-d2` et appliquer ses deux migrations sur `annona-dev` (après DEMO-1) ; ensuite Claude fait la recette sur le site)
+- LOT2-D2 — Compte pâtissier (relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site)
+- LOT2-D3 — Produits : création, recettes, durée de vente (relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site)
+- LOT2-D4 — Prix restaurant et prix boutique (relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D5 — Envois quotidiens vers les boutiques (relire la PR brouillon `theo/lot2-d5` (empilée sur `theo/lot2-d3-d4`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D6 — Réception le matin en boutique (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D8 — Stock des boutiques (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D9 — Commandes de gâteaux des particuliers en boutique (relire la PR brouillon `theo/lot2-d9-d10` (empilée sur `theo/lot2-d6-d8`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D10 — Pâtisseries pour les restaurants (relire la PR brouillon `theo/lot2-d10` (empilée sur `theo/lot2-d9-d10`) ; aucune migration nouvelle (celle de D9 suffit) ; ensuite Claude fait la recette sur le site)
 
 **À faire par Théo**
 
@@ -32,19 +42,6 @@
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
-
-**À classer**
-
-- LOT2-D1 — Boutiques et comptes vendeuse
-- LOT2-D2 — Compte pâtissier
-- LOT2-D3 — Produits : création, recettes, durée de vente
-- LOT2-D4 — Prix restaurant et prix boutique
-- LOT2-D5 — Envois quotidiens vers les boutiques
-- LOT2-D6 — Réception le matin en boutique
-- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées
-- LOT2-D8 — Stock des boutiques
-- LOT2-D9 — Commandes de gâteaux des particuliers en boutique
-- LOT2-D10 — Pâtisseries pour les restaurants
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -92,6 +89,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
+- **Question rapide (19 novembre, Théo d'accord pour avancer en attendant)** : pour le lot 2, une boutique est un client de type « boutique » (`Merchant.kind = SHOP`), ce qui lui donne gratuitement sa place dans les tournées. OK pour toi ? Si non, dis-le avant que les étapes suivantes s'empilent dessus. Les PR #48 (D1, D2) et suivantes sont en **brouillon** : elles passeront en « prêtes » une fois ta migration DEMO-1 appliquée.
 - **Lot 2 (pâtisserie, boutiques, stock), demandé par Théo le 18 novembre** : 10 tâches LOT2-D1 à D10, détail dans `docs/cahier-des-charges/LOT2-PATISSERIE-BOUTIQUES.md`. Claude (session de Théo) code dans ta zone (`prisma/`, `src/domains/`, back-office), une PR par étape, à relire. **La migration du lot 2 n'est pas appliquée sur `annona-dev`** : à toi de l'appliquer après celle de DEMO-1, puis Claude fait la recette sur le site.
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
@@ -326,61 +324,154 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D1 — Boutiques et comptes vendeuse.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR `theo/lot2-d1-d2` et appliquer ses deux migrations sur `annona-dev` (après DEMO-1) ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`, **migrations écrites, pas appliquées**) :
+    - **Modèle** : boutique = `Merchant.kind = SHOP` (migration `20261118100000_lot2_roles_shops`), qui reprend l'adresse, les consignes, la position et la tournée d'un client ; rôles `PASTRY_CHEF` et `SELLER` et permissions `shops:read`, `shops:manage`, `dashboard:pastry` et `dashboard:shop` (migration `20261118100100_lot2_roles_data`, séparée car PostgreSQL refuse d'utiliser une valeur d'énumération dans la transaction qui l'ajoute).
+    - **Admin** : écran « Boutiques » (`/dashboard/shops`) pour créer, modifier et désactiver une boutique (journal « Shop »), avec une tournée obligatoire, livrée le matin ; bouton « Créer un compte vendeuse » (invitation, compte rattaché à la boutique). Fonctionnalité « Boutiques » accordable à un mini admin.
+    - **Pas un client** : boutiques exclues de la liste et de la fiche des clients, des choix de clients (prix spécifiques), des rappels et de la facturation (`kind: "CLIENT"`).
+    - **Tablette** : espace `/shop` de la vendeuse, qui ne voit que sa boutique (`GET /api/shop`, boutique lue dans la session).
+    - Tests : `tests/lot2-d1-d2-shops-pastry.test.ts` (vérifications 1 et 2) ; tests de listes fermées mis à jour (migrations, rôles, fonctionnalités de mini admin, routes de production). `npm run check` : 879 tests, 872 réussis, 0 échec.
+    - **Reste** : vérification 3 (la boutique dans la tournée un jour d'envoi) faite avec LOT2-D5 (branche `theo/lot2-d5`) ; le super-administrateur ne crée pas encore de boutique depuis son espace (le tableau des droits du document le prévoit) ; recette dans le navigateur après la migration.
 
   Terminé quand : l'admin crée la boutique « Centre-ville » et son compte vendeuse ; la vendeuse ne voit que sa boutique ; un jour d'envoi, la boutique apparaît dans la tournée du livreur.
 
 - [ ] **LOT2-D2 — Compte pâtissier.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`) :
+    - **Comptes** : compte « Pâtissier » créé par l'admin (plusieurs possibles), espace `/pastry`.
+    - **Famille** : `Category.family` (`BREAD` ou `PASTRY`), réglable dans Catalogue › Catégories (bouton « Pain » ou « Pâtisserie »). La migration range côté pâtisserie les catégories existantes dont le nom contient « pâtisser », « gâteau », « entremets » ou « tarte ».
+    - **Production** : `getProductionDay` filtre par famille. Le pâtissier ne voit que la pâtisserie et le boulanger que le pain ; une commande sans produit de sa famille n'a pas de bon chez lui. Le pâtissier lit sa production sans pouvoir la modifier à cette étape (ni « préparé », ni manquant).
+    - **Reste** : les trois parties du total à produire (commandes des restaurants, gâteaux des particuliers, envois aux boutiques) arrivent avec D10, D9 et D5 ; recette après la migration.
 
   Terminé quand : l'admin crée un compte pâtissier ; le pâtissier voit le total à produire des pâtisseries et aucun pain ; le boulanger ne voit aucune pâtisserie.
 
 - [ ] **LOT2-D3 — Produits : création, recettes, durée de vente.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`, **migration `20261118100200_lot2_pastry_prices` écrite, pas appliquée**) :
+    - **Modèle** : `Product.pastryFormat` (petite pièce ou gros gâteau), `recipe`, `shelfLifeDays` (jours de vente, jour de réception compris, 1 par défaut) ; tailles d'un gros gâteau dans `ProductSize` (nombre de parts, prix restaurant de la taille).
+    - **Pâtissier** : écran « Mes pâtisseries » (`/pastry/products`) pour créer et modifier, avec format, tailles en parts, allergènes, recette et durée de vente, **sans aucun prix**. Il ne voit que les catégories de pâtisserie ; les prix (restaurant et boutiques) sont affichés pour information. Une taille gardée garde ses prix.
+    - **Boulanger** : écran « Durée de vente » (`/bakery/products`), qui ne règle que la durée de vente du pain (liste sans recette).
+    - **Admin** : la fiche produit du catalogue affiche les champs de pâtisserie quand la catégorie est « Pâtisserie » (format, tailles avec prix restaurant, recette), et la durée de vente pour tout produit.
+    - **Recette** : renvoyée seulement par les routes de l'admin et du pâtissier, jamais par le catalogue des restaurants, la tablette ni la liste du boulanger.
+    - Nouvelles permissions : `catalog:pastry` (pâtissier) et `catalog:bread` (boulanger).
+    - Tests : `tests/lot2-d3-d4-products-prices.test.ts` (vérifications 1 à 3).
 
   Terminé quand : le pâtissier crée « Fraisier » (gros gâteau, 6, 8 et 10 personnes, recette, 2 jours) ; l'admin le voit et le modifie ; la vendeuse ne voit jamais la recette.
 
 - [ ] **LOT2-D4 — Prix restaurant et prix boutique.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`) :
+    - **Prix restaurant** : `Product.basePriceCents` devient facultatif (vide = prix à saisir). Un produit sans prix restaurant n'est ni au catalogue des restaurants ni commandable, même avec un ancien prix spécifique, et n'a pas de promotion. Un gros gâteau a un prix par taille et ne se commande pas encore (D10). Le catalogue de l'admin a un filtre « Produits sans prix ».
+    - **Prix boutique** : `ShopPrice` (boutique × produit × taille, « vendu » ou « non vendu »). Un produit sans ligne s'affiche « Nouveau produit, prix à saisir », en premier.
+    - **Tablette** : Paramètres › « Produits et prix » (`/shop/settings`), ouvert seulement avec le **code responsable**.
+    - **Code responsable** : créé avec la boutique (4 à 8 chiffres), rangé seulement sous forme d'empreinte scrypt, et bloqué 15 minutes après 5 erreurs. L'admin le réinitialise, la responsable le change en donnant l'ancien. Changements de prix et de code journalisés, sans jamais le code.
+    - **Admin** : boutons « Prix boutique » et « Réinitialiser le code » sur chaque boutique, sans code ; la tablette relit les prix à chaque ouverture.
+    - Tests : vérifications 1, 2, 3, 5 et 6. **Vérification 4** (prix affiché mais non modifiable pendant une commande) : arrive avec la prise de commande de LOT2-D9.
+    - `npm run check` : 887 tests, 880 réussis, 0 échec.
 
   Terminé quand : fraisier dans « Produits sans prix » de l'admin et comme nouveau produit sur chaque tablette ; « Produits et prix » fermé sans code ; 40 € pour le 10 personnes dans une seule boutique ; prix non modifiable pendant une commande ; absent du catalogue restaurant sans prix restaurant ; l'admin passe à 42 € et la tablette l'affiche.
 
 - [ ] **LOT2-D5 — Envois quotidiens vers les boutiques.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d5` (empilée sur `theo/lot2-d3-d4`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d5`, **migration `20261118100300_lot2_shipments` écrite, pas appliquée** : origine `SHIPMENT` et permission `shipments:manage`) :
+    - **Modèle** : un envoi est une commande d'origine « envoi » vers la boutique, sur le créneau du matin de sa tournée, verrouillée dès sa création (rien à valider ni à facturer).
+    - **Écrans** « Envois aux boutiques » du pâtissier (`/pastry/shipments`, pâtisseries hors gros gâteaux) et du boulanger (`/bakery/shipments`, pain) : choix du jour, quantités par boutique. Les deux remplissent le **même** envoi, chacun ses produits, sans toucher à ceux de l'autre.
+    - **Tournée** : à l'heure limite, l'envoi devient un arrêt de la tournée du matin, avec la liste des produits pour le livreur. Après l'heure limite, il est ajouté aux tournées déjà calculées (même règle que les commandes en retard).
+    - **Modifications** : possibles jusqu'au départ de la tournée (refus 409 ensuite) ; un envoi vidé disparaît avec son arrêt. Il entre dans la production de chaque famille. Journal « Shipment ».
+    - **Vérifications** : `tests/lot2-d5-shipments.test.ts` (vérifications 1 à 3, et **LOT2-D1 vérification 3** : la boutique est un arrêt de la tournée un jour d'envoi), avec le vrai calcul des tournées. `npm run check` : 0 échec.
+    - **Reste** : recette dans le navigateur après la migration ; les trois parties du total à produire du pâtissier sont toutes dans sa production, mais pas encore séparées à l'écran.
 
   Terminé quand : le pâtissier envoie 12 éclairs et 8 tartes au citron à « Centre-ville » ; le livreur les voit sur l'arrêt ; le boulanger ajoute 20 baguettes sur le même arrêt.
 
 - [ ] **LOT2-D6 — Réception le matin en boutique.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`, **migration `20261118100400_lot2_shop_stock` écrite, pas appliquée**) :
+    - **Tablette** : écran « Réception du matin » (`/shop/reception`). L'envoi du jour s'affiche avec ses quantités prévues ; la vendeuse note, pour chaque produit, le reçu et l'abîmé pendant la livraison (une fois).
+    - **Stock** : le bon état devient un lot de stock daté (`ShopStockLot`, dernier jour de vente = réception + durée de vente − 1) ; les abîmés n'y entrent pas.
+    - **Alerte** : un écart avec l'envoi déclenche une alerte dans la **nouvelle cloche du back-office** (en-tête, `/api/notifications`), pour l'administrateur et le pâtissier (pâtisserie) ou le boulanger (pain).
+    - Tests : `tests/lot2-d6-d8-stock.test.ts` (vérifications 1 et 2).
 
   Terminé quand : 11 éclairs reçus sur 12, dont 1 abîmé : 10 en stock ; alerte (cloche) au pâtissier et à l'admin.
 
 - [ ] **LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
+    - **Tablette** : écran « Clôture du soir » (`/shop/closing`). Pour chaque produit en stock, la vendeuse note le reste et les abîmés en boutique.
+    - **Calcul en direct** : ventes = stock du matin + reçu en bon état − reste ; les plus anciens partent en premier ; les produits à leur dernier jour de vente sont indiqués « à jeter ». La vendeuse confirme les quantités jetées.
+    - **Enregistrement** : lots mis à jour, journée enregistrée (`ShopDayClose`, une clôture par jour). Les règles sont pures, dans `src/domains/shop/stock-rules.ts`, partagées par le serveur et la tablette.
+    - Tests : vérifications 1 à 4 (l'exemple lundi-mardi des éclairs et la tarte abîmée).
 
   Terminé quand : exemple lundi-mardi des éclairs (7 vendus, puis 13 en stock, 2 vendus, 1 à jeter, 10 gardés) ; une tarte abîmée comptée dans les jetés.
 
 - [ ] **LOT2-D8 — Stock des boutiques.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
+    - **Écrans** « Stock boutiques » pour l'admin (`/dashboard/stock`, fonctionnalité « Boutiques » du mini admin), le pâtissier (`/pastry/stock`, pâtisserie) et le boulanger (`/bakery/stock`, pain). La vendeuse a « Stock » (`/shop/stock`), sa boutique seulement.
+    - **Contenu** : stock, à jeter ce soir, et, pour le jour consulté (la veille par défaut, jours passés possibles), reçus, abîmés à la livraison, vendus et jetés. Une boutique ou toutes.
+    - Tests : vérifications 1 et 2. `npm run check` : 0 échec.
+    - **Reste** : le super-administrateur n'a pas d'écran de stock (il n'a pas d'accès aux opérations d'une entreprise) ; recette dans le navigateur après la migration.
 
   Terminé quand : le pâtissier voit le stock d'éclairs de chaque boutique et, pour la veille, reçus, abîmés, vendus et jetés de « Centre-ville ».
 
 - [ ] **LOT2-D9 — Commandes de gâteaux des particuliers en boutique.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d9-d10` (empilée sur `theo/lot2-d6-d8`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d9-d10`, **migration `20261118100500_lot2_cake_orders` écrite, pas appliquée**) :
+    - **Modèle** : nouvelle table `CakeOrder`. Une ligne de commande peut porter une taille et une inscription ; l'unicité passe à commande × produit × variante, pour que deux gâteaux du même produit fassent deux lignes (sert aussi à D10).
+    - **Tablette** : écran « Commandes de gâteaux » (`/shop/cakes`) pour saisir gâteau et taille, inscription, parts, paiement complet ou acompte, client, date et heure de retrait. Liste « À retirer » avec le bouton « Soldée ».
+    - **Prix** : prix boutique de la taille, **lu sur le serveur, affiché sans pouvoir être modifié** (D4, vérification 4). Sans prix boutique, pas de commande.
+    - **Règles** : acompte d'au moins 50 % (15 € sur 40 € refusé, 20 € accepté). Retrait au moins 48 h plus tard, délai réglable par l'admin sur l'écran « Boutiques » (`settings.cakeOrderLeadHours`, écriture réclamée).
+    - **Livraison** : le gâteau entre dans l'**envoi du matin** du jour du retrait (ligne réservée, ajoutée aux tournées si elles sont calculées) et dans la **production du pâtissier**, avec « 10 personnes · « Joyeux anniversaire Maman » » sur le bon. Il ne passe pas par la réception ni par le stock à vendre.
+    - Tests : `tests/lot2-d9-cake-orders.test.ts` (vérifications 1 à 5, et D4 vérification 4). `npm run check` : 0 échec.
 
   Terminé quand : acompte de 15 € sur 40 € refusé, 20 € accepté ; le fraisier et son inscription chez le pâtissier le jour prévu ; dans l'envoi du matin ; commande « soldée » au retrait.
 
 - [ ] **LOT2-D10 — Pâtisseries pour les restaurants.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d10` (empilée sur `theo/lot2-d9-d10`) ; aucune migration nouvelle (celle de D9 suffit) ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d10`) :
+    - **Catalogue des restaurants** : petites pièces ayant un prix restaurant (D4), et **gros gâteaux, un article par taille** ayant un prix restaurant (« Castel · 10 personnes », identifiant « produit::taille »).
+    - **Panier** : une inscription facultative par gâteau. La commande envoie la taille et l'inscription.
+    - **Serveur** : une ligne de gâteau porte taille, inscription et variante ; deux inscriptions font deux lignes. Le prix restaurant de la taille est **figé dès la commande** (le verrouillage ne le recalcule pas), sans promotion.
+    - **Règles** : pas d'acompte ; heure limite et créneau comme pour le pain. « Recommander » recopie taille et inscription ; les gros gâteaux sont exclus des commandes récurrentes (et les produits sans prix restaurant aussi).
+    - **Production** : le pâtissier voit le castel avec « 10 personnes · « Bon anniversaire Julie » ».
+    - **Facture** : ligne « Castel · 10 personnes » au prix restaurant ; deux tailles restent deux lignes.
+    - Tests : `tests/lot2-d10-restaurant-pastries.test.ts` (vérifications 1 à 3), avec le vrai enregistrement d'une commande. `npm run check` : 0 échec.
+    - **Non fait** : prix restaurant **personnalisé par client pour une taille** de gâteau (les prix spécifiques existants valent par produit) ; correction d'une commande de gâteau par l'admin (à vérifier en recette) ; recette dans le navigateur après la migration.
+
+  - 19 novembre 2026 (soir, session Claude de Théo) : **corrections de la relecture d'Orso** (commentaire de la PR #53), sur `theo/lot2-d10`. Tests : `tests/lot2-relecture-orso.test.ts`.
+    - **Les deux défauts bloquants** :
+      - **double réception** : l'envoi est réclamé dans la transaction (`updateMany` où `receivedAt` est vide) ; deux envois simultanés ne créent qu'un lot ;
+      - **correction admin** : les lignes sont retrouvées par leur identifiant, donc deux tailles du même gâteau passent. L'écran n'ajoute que des produits ayant un prix restaurant et jamais un gros gâteau sans taille ; un gâteau ajouté par taille garde le prix de sa taille.
+    - **Aussi corrigé** :
+      - une taille déjà commandée ne se retire plus (409 propre, rien d'écrit) ;
+      - un gros gâteau refuse un prix de base, et le gel des prix ne touche que les lignes simples (`variantKey: ""`) ;
+      - le compteur d'essais du code responsable est incrémenté de façon atomique ;
+      - une réception après la clôture du jour est refusée ;
+      - le stock ignore les gâteaux commandés et les envois annulés.
+    - **Reste de la liste « après »** :
+      - une clôture d'un jour passé non clôturé se calcule sur le stock actuel ;
+      - `scryptSync` bloque le serveur quelques millisecondes ;
+      - la case « préparée » du boulanger porte sur toute une commande mixte (décision produit) ;
+      - le nom et le téléphone des particuliers ne sont ni dans l'export ni dans une règle de conservation ;
+      - la génération des commandes récurrentes ne revérifie ni le prix ni le format.
 
   Terminé quand : un restaurant commande 20 éclairs et un castel 10 personnes « Bon anniversaire Julie » ; le pâtissier voit produits et inscription ; le castel est sur la facture au prix restaurant.
 

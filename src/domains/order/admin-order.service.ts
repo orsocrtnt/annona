@@ -13,7 +13,7 @@
 import type { OrderStatus, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { computeTotals, loadAppliedPricesByMerchant } from "@/domains/catalog/pricing";
-import { assertLines, slotLabel } from "@/domains/order/merchant-order.service";
+import { lineVariantKey, slotLabel } from "@/domains/order/merchant-order.service";
 import type {
   AdminOrderDay,
   AdminOrderDetail,
@@ -254,6 +254,12 @@ export async function getAdminOrder(companyId: string, orderId: string, now = ne
   const round = stop ? await db.round.findFirst({ where: { id: stop.roundId, companyId }, select: { id: true, name: true, status: true, driverId: true } }) : null;
   const driver = round?.driverId ? await db.user.findFirst({ where: { id: round.driverId, companyId }, select: { firstName: true, lastName: true } }) : null;
   const productIds = lineRows.map((line) => line.productId);
+  const sizeIds = [...new Set(lineRows.map((line) => line.sizeId).filter((id): id is string => Boolean(id)))];
+  const servingsOf = new Map(
+    sizeIds.length
+      ? (await (db as unknown as Pick<PrismaClient, "productSize">).productSize.findMany({ where: { companyId, id: { in: sizeIds } }, select: { id: true, servings: true } })).map((size) => [size.id, size.servings])
+      : []
+  );
   const [products, prices, history] = await Promise.all([
     db.product.findMany({ where: { companyId, id: { in: productIds } }, select: { id: true, name: true, unit: true, sortOrder: true } }),
     loadAppliedPricesByMerchant(db, companyId, [order.merchantId], productIds),
@@ -268,7 +274,8 @@ export async function getAdminOrder(companyId: string, orderId: string, now = ne
       return {
         id: line.id,
         productId: line.productId,
-        name: product?.name ?? "",
+        // Lot 2, demandes 9 et 10 : « Castel · 10 personnes « Bon anniversaire Julie » ».
+        name: [product?.name ?? "", line.sizeId ? `· ${servingsOf.get(line.sizeId) ?? "?"} personnes` : null, line.inscription ? `« ${line.inscription} »` : null].filter(Boolean).join(" "),
         unit: product?.unit ?? "",
         quantityOrdered: line.quantityOrdered,
         quantityDelivered: line.quantityDelivered,
@@ -330,14 +337,32 @@ export function correctedDelivered(previous: { quantityOrdered: number; quantity
   return Math.min(previous.quantityDelivered, quantity);
 }
 
+export interface AdminCorrectionLine extends OrderLineInput {
+  /** Ligne existante corrigée ; absente pour un produit ajouté. */
+  lineId?: string | null;
+}
+
+/**
+ * Relecture d'Orso (19 novembre) : une commande peut porter deux lignes du même produit (deux tailles ou deux
+ * inscriptions d'un gros gâteau, lot 2, demande 10). Une ligne existante est donc retrouvée par son identifiant,
+ * jamais par son produit ; une ligne ajoutée doit être commandable par un restaurant (prix restaurant, et pas de
+ * gros gâteau sans taille), sinon elle resterait sans prix figé et la commande sortirait de la facture.
+ */
 export async function correctAdminOrder(
   actor: AdminActor,
   orderId: string,
-  input: { lines: OrderLineInput[]; note?: string | null },
+  input: { lines: AdminCorrectionLine[]; note?: string | null },
   now = new Date(),
   db: AdminOrderDb = prisma
 ) {
-  assertLines(input.lines);
+  if (input.lines.length === 0) throw new DomainRuleError(400, fr.order.errors.emptyOrder, "EMPTY_ORDER");
+  const keys = new Set<string>();
+  for (const line of input.lines) {
+    if (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 9999) throw new DomainRuleError(400, fr.order.errors.quantity, "INVALID_QUANTITY");
+    const key = line.lineId ? `line:${line.lineId}` : `new:${line.productId}|${lineVariantKey(line)}`;
+    if (keys.has(key)) throw new DomainRuleError(400, fr.order.errors.duplicateProduct, "DUPLICATE_PRODUCT");
+    keys.add(key);
+  }
   const company = await db.company.findUnique({ where: { id: actor.companyId }, select: { cutoffTime: true, timezone: true } });
   if (!company) throw new DomainRuleError(404, t.notFound, "ORDER_NOT_FOUND");
 
@@ -346,37 +371,64 @@ export async function correctAdminOrder(
     await assertNotInvoiced(tx, actor.companyId, order);
     if (FINAL_STATUSES.includes(order.status)) throw new DomainRuleError(409, t.notEditable, "ORDER_NOT_EDITABLE");
     const existing = await tx.orderLine.findMany({ where: { companyId: actor.companyId, orderId } });
-    const byProduct = new Map(existing.map((line) => [line.productId, line]));
-    const productIds = [...new Set([...existing.map((line) => line.productId), ...input.lines.map((line) => line.productId)])];
-    const products = await tx.product.findMany({
-      where: { companyId: actor.companyId, id: { in: productIds } },
-      select: { id: true, name: true, active: true, category: { select: { active: true } } },
-    });
-    const productById = new Map(products.map((product) => [product.id, product]));
-    const names = new Map(products.map((product) => [product.id, product.name]));
-    // Un produit ajouté doit être proposé au catalogue de l'entreprise (PLA-01).
+    const byId = new Map(existing.map((line) => [line.id, line]));
+    // Compatibilité : une ligne envoyée sans identifiant qui correspond à une ligne existante (même produit, même
+    // variante) la désigne ; seules les vraies nouveautés sont des ajouts.
+    const claimedIds = new Set(input.lines.map((line) => line.lineId).filter((id): id is string => Boolean(id)));
+    input = {
+      ...input,
+      lines: input.lines.map((line) => {
+        if (line.lineId) return line;
+        const match = existing.find((row) => !claimedIds.has(row.id) && row.productId === line.productId && (row.variantKey ?? "") === lineVariantKey(line));
+        if (!match) return line;
+        claimedIds.add(match.id);
+        return { ...line, lineId: match.id };
+      }),
+    };
     for (const line of input.lines) {
+      if (line.lineId && !byId.has(line.lineId)) throw new DomainRuleError(400, t.productUnavailable, "LINE_NOT_FOUND", { lineId: line.lineId });
+    }
+    const added = input.lines.filter((line) => !line.lineId);
+    const productIds = [...new Set([...existing.map((line) => line.productId), ...input.lines.map((line) => line.productId)])];
+    const [products, sizes] = await Promise.all([
+      tx.product.findMany({
+        where: { companyId: actor.companyId, id: { in: productIds } },
+        select: { id: true, name: true, active: true, basePriceCents: true, pastryFormat: true, category: { select: { active: true } } },
+      }),
+      (tx as unknown as Pick<PrismaClient, "productSize">).productSize.findMany({
+        where: { companyId: actor.companyId, productId: { in: productIds } },
+        select: { id: true, productId: true, servings: true, restaurantPriceCents: true },
+      }),
+    ]);
+    const productById = new Map(products.map((product) => [product.id, product]));
+    const sizeById = new Map(sizes.map((size) => [size.id, size]));
+    const names = new Map(products.map((product) => [product.id, product.name]));
+    // Un produit ajouté doit être au catalogue des restaurants de l'entreprise (PLA-01, lot 2 demandes 4 et 10).
+    const existingKeys = new Set(existing.map((line) => `${line.productId}|${line.variantKey ?? ""}`));
+    for (const line of added) {
       const product = productById.get(line.productId);
-      if (!byProduct.has(line.productId) && !(product?.active && product.category.active)) {
-        throw new DomainRuleError(400, t.productUnavailable, "PRODUCT_UNAVAILABLE", { productId: line.productId });
-      }
+      const size = line.sizeId ? sizeById.get(line.sizeId) : undefined;
+      const orderable = product?.active && product.category.active && (line.sizeId
+        ? product.pastryFormat === "LARGE" && size?.productId === product.id && size.restaurantPriceCents !== null
+        : product.basePriceCents !== null && product.pastryFormat !== "LARGE");
+      if (!orderable) throw new DomainRuleError(400, t.productUnavailable, "PRODUCT_UNAVAILABLE", { productId: line.productId });
+      if (existingKeys.has(`${line.productId}|${lineVariantKey(line)}`)) throw new DomainRuleError(400, fr.order.errors.duplicateProduct, "DUPLICATE_PRODUCT");
     }
 
-    const wanted = new Map(input.lines.map((line) => [line.productId, line.quantity]));
-    const unchanged =
-      existing.length === input.lines.length && existing.every((line) => wanted.get(line.productId) === line.quantityOrdered);
+    const kept = new Map(input.lines.filter((line) => line.lineId).map((line) => [line.lineId!, line.quantity]));
+    const unchanged = added.length === 0 && existing.length === kept.size && existing.every((line) => kept.get(line.id) === line.quantityOrdered);
     if (unchanged && !input.note) throw new DomainRuleError(400, t.noChange, "NO_CHANGE");
 
     const frozen = FROZEN_STATUSES.includes(order.status);
-    const added = input.lines.filter((line) => !byProduct.has(line.productId));
-    const prices = frozen && added.length > 0
-      ? (await loadAppliedPricesByMerchant(tx, actor.companyId, [order.merchantId], added.map((line) => line.productId))).get(order.merchantId)
+    const simpleAdded = added.filter((line) => !line.sizeId);
+    const prices = frozen && simpleAdded.length > 0
+      ? (await loadAppliedPricesByMerchant(tx, actor.companyId, [order.merchantId], simpleAdded.map((line) => line.productId))).get(order.merchantId)
       : undefined;
-    const removedIds = existing.filter((line) => !wanted.has(line.productId)).map((line) => line.id);
+    const removedIds = existing.filter((line) => !kept.has(line.id)).map((line) => line.id);
     if (removedIds.length > 0) await tx.orderLine.deleteMany({ where: { companyId: actor.companyId, id: { in: removedIds } } });
     const afterLines: Array<{ productId: string; quantityOrdered: number; quantityDelivered: number | null }> = [];
     for (const line of input.lines) {
-      const previous = byProduct.get(line.productId);
+      const previous = line.lineId ? byId.get(line.lineId) : undefined;
       if (previous) {
         const quantityDelivered = correctedDelivered(previous, line.quantity);
         if (previous.quantityOrdered !== line.quantity || previous.quantityDelivered !== quantityDelivered) {
@@ -387,9 +439,10 @@ export async function correctAdminOrder(
             data: { quantityOrdered: line.quantity, quantityDelivered, ...(promoQuantity !== previous.promoQuantity ? { promoQuantity } : {}) },
           });
         }
-        afterLines.push({ productId: line.productId, quantityOrdered: line.quantity, quantityDelivered });
+        afterLines.push({ productId: previous.productId, quantityOrdered: line.quantity, quantityDelivered });
       } else {
         const quantityDelivered = order.status === "PREPARED" ? line.quantity : null;
+        const size = line.sizeId ? sizeById.get(line.sizeId) : undefined;
         await tx.orderLine.create({
           data: {
             companyId: actor.companyId,
@@ -397,7 +450,9 @@ export async function correctAdminOrder(
             productId: line.productId,
             quantityOrdered: line.quantity,
             quantityDelivered,
-            unitPriceFrozenCents: frozen ? prices?.get(line.productId)?.unitPriceCents ?? null : null,
+            // Gros gâteau : prix restaurant de la taille, figé tout de suite (comme à la commande du restaurant).
+            unitPriceFrozenCents: size ? size.restaurantPriceCents : frozen ? prices?.get(line.productId)?.unitPriceCents ?? null : null,
+            ...(size ? { sizeId: size.id, inscription: line.inscription?.trim() || null, variantKey: lineVariantKey(line) } : {}),
           },
         });
         afterLines.push({ productId: line.productId, quantityOrdered: line.quantity, quantityDelivered });

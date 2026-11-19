@@ -95,7 +95,8 @@ export async function listMerchantsForAdmin(
 ): Promise<MerchantListRow[]> {
   const status = options.status ?? "all";
   const rows = await db.merchant.findMany({
-    where: { companyId, ...(status === "all" ? {} : { active: status === "active" }) },
+    // Lot 2, demande 1 : les boutiques de l'entreprise ont leur propre écran ; ce ne sont pas des clients.
+    where: { companyId, kind: "CLIENT", ...(status === "all" ? {} : { active: status === "active" }) },
   });
   const [users, zones] = await Promise.all([
     db.user.findMany({ where: { companyId, merchantId: { in: rows.map((row) => row.id) } }, select: { merchantId: true } }),
@@ -126,7 +127,7 @@ export async function listMerchantsForAdmin(
 }
 
 export async function getMerchantForAdmin(companyId: string, merchantId: string, db: MerchantAdminDb = defaultDb()): Promise<MerchantDetail> {
-  const row = await db.merchant.findFirst({ where: { id: merchantId, companyId } });
+  const row = await db.merchant.findFirst({ where: { id: merchantId, companyId, kind: "CLIENT" } });
   if (!row) throw notFound();
   const users = await db.user.findMany({
     where: { companyId, merchantId: row.id },
@@ -206,7 +207,7 @@ export async function updateMerchantForAdmin(
   input: UpdateMerchantInput,
   db: MerchantAdminDb = defaultDb()
 ): Promise<MerchantDetail> {
-  const before = await db.merchant.findFirst({ where: { id: merchantId, companyId: actor.companyId } });
+  const before = await db.merchant.findFirst({ where: { id: merchantId, companyId: actor.companyId, kind: "CLIENT" } });
   if (!before) throw notFound();
   await assertZone(db, actor.companyId, input.zoneId);
   const data: Record<string, unknown> = {};

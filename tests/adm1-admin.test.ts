@@ -103,7 +103,8 @@ test("ADM-01 : un compte client est rattaché à un client de l'entreprise ; cha
   assert.equal(createUserSchema.safeParse({ firstName: "Léa", lastName: "Client", email: "lea@exemple.test", roleSlug: "merchant" }).success, false);
   assert.equal(createUserSchema.safeParse({ firstName: "Léa", lastName: "Client", email: "lea@exemple.test", roleSlug: "merchant", merchantId: "m1" }).success, true);
   const service = readFileSync("src/domains/user/user.service.ts", "utf8");
-  assert.match(service, /prisma\.merchant\.findFirst\(\{ where: \{ id: input\.merchantId, companyId \}/);
+  // Lot 2, demande 1 : un client pour un compte client, une boutique pour une vendeuse, toujours de l'entreprise.
+  assert.match(service, /prisma\.merchant\.findFirst\(\{ where: \{ id: input\.merchantId, companyId, kind \}/);
   assert.match(service, /merchantId,\n\s+phone:/);
   // Saisie partielle : un champ absent n'efface rien (le téléphone reste tel quel).
   assert.equal(updateAccountSchema.parse({ active: false }).phone, undefined);

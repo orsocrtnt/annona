@@ -24,6 +24,8 @@ export interface PreparationLine {
   quantityOrdered: number;
   /** Vide tant que la commande n'est pas préparée ; plus petite que la commande en cas de manquant. */
   quantityDelivered: number | null;
+  /** Lot 2, demandes 9 et 10 : gros gâteau, taille (parts) et inscription à écrire ; vide sinon. */
+  detail?: string | null;
 }
 
 export interface PreparationSheet {

@@ -38,10 +38,15 @@ async function assertRefs(db: RecurringDb, actor: MerchantRef, input: { slotIds?
     assertLines(input.lines);
     const products = await db.product.findMany({
       where: { companyId: actor.companyId, id: { in: input.lines.map((line) => line.productId) } },
-      select: { id: true, active: true, category: { select: { active: true } } },
+      select: { id: true, active: true, basePriceCents: true, pastryFormat: true, category: { select: { active: true } } },
     });
-    const available = new Set(products.filter((product) => product.active && product.category.active).map((product) => product.id));
-    if (input.lines.some((line) => !available.has(line.productId))) {
+    // Lot 2, demandes 4 et 10 : ni produit sans prix restaurant, ni gros gâteau (taille et inscription au jour le jour).
+    const available = new Set(
+      products
+        .filter((product) => product.active && product.category.active && product.basePriceCents !== null && product.pastryFormat !== "LARGE")
+        .map((product) => product.id)
+    );
+    if (input.lines.some((line) => !available.has(line.productId) || line.sizeId)) {
       throw new DomainRuleError(400, fr.order.errors.productUnavailable, "PRODUCT_UNAVAILABLE");
     }
   }

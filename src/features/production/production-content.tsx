@@ -24,7 +24,11 @@ type View = "totals" | "sheets" | "rounds";
 const VIEWS: View[] = ["totals", "sheets", "rounds"];
 
 /** BOU-1 — espace boulanger pensé tablette : gros boutons, une date, trois vues. */
-export function ProductionContent() {
+/**
+ * `readOnly` (lot 2, demande 2) : espace pâtissier, qui lit sa production sans marquer « préparé » ni
+ * signaler de manquant à cette étape ; `title` remplace le titre « Production ».
+ */
+export function ProductionContent({ readOnly = false, title }: { readOnly?: boolean; title?: string } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -57,7 +61,7 @@ export function ProductionContent() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title ?? t.title}</h1>
           <p className="mt-1 text-muted-foreground">{longDeliveryDateLabel(date)}</p>
         </div>
         {data?.closed && data.sheets.length > 0 ? (
@@ -125,7 +129,7 @@ export function ProductionContent() {
 
           {!data.closed || view === "totals" ? <Totals day={data} /> : null}
           {data.closed && view === "sheets" ? (
-            <Sheets day={data} packages={packages} onPackages={(orderId, value) => setPackages((all) => ({ ...all, [orderId]: value }))} onShortage={setShortageLine} />
+            <Sheets day={data} readOnly={readOnly} packages={packages} onPackages={(orderId, value) => setPackages((all) => ({ ...all, [orderId]: value }))} onShortage={setShortageLine} />
           ) : null}
           {data.closed && view === "rounds" ? <Rounds day={data} /> : null}
 
@@ -187,11 +191,13 @@ function where(sheet: PreparationSheet) {
 
 function Sheets({
   day,
+  readOnly,
   packages,
   onPackages,
   onShortage,
 }: {
   day: ProductionDay;
+  readOnly: boolean;
   packages: Record<string, number>;
   onPackages: (orderId: string, value: number) => void;
   onShortage: (line: PreparationLine) => void;
@@ -231,11 +237,12 @@ function Sheets({
                           <div className="min-w-0 flex-1">
                             <p className="text-base font-medium">{line.name}</p>
                             <p className="text-xs text-muted-foreground">{line.categoryName} · {line.unit}</p>
+                            {line.detail ? <p className="text-sm font-medium text-brand" data-testid="sheet-line-detail">{line.detail}</p> : null}
                           </div>
                           <span className={cn("text-xl font-semibold tabular-nums", short && "text-error")}>
                             {short ? t.deliveredOf(line.quantityDelivered!, line.quantityOrdered) : line.quantityOrdered}
                           </span>
-                          <Button
+                          {readOnly ? null : <Button
                             type="button"
                             variant="outline"
                             size="icon-touch"
@@ -244,7 +251,7 @@ function Sheets({
                             onClick={() => onShortage(line)}
                           >
                             <AlertTriangle />
-                          </Button>
+                          </Button>}
                         </li>
                       );
                     })}
@@ -263,7 +270,7 @@ function Sheets({
                         className="h-11 w-20 text-center text-base tabular-nums"
                       />
                     </label>
-                    <Button
+                    {readOnly ? null : <Button
                       type="button"
                       size="lg"
                       variant={sheet.prepared ? "outline" : "brand"}
@@ -282,7 +289,7 @@ function Sheets({
                       }
                     >
                       {sheet.prepared ? <><Check /> {t.prepared}</> : t.markPrepared}
-                    </Button>
+                    </Button>}
                   </div>
                 </CardContent>
               </Card>

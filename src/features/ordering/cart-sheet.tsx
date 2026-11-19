@@ -48,7 +48,16 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
     if (lines.length === 0) return setError(t.errors.emptyOrder);
     setError(null);
     save.mutate(
-      { deliveryDate: cart.deliveryDate, slotId: cart.slotId, lines: lines.map((line) => ({ productId: line.product.id, quantity: line.quantity })) },
+      {
+        deliveryDate: cart.deliveryDate,
+        slotId: cart.slotId,
+        // Lot 2, demande 10 : un gros gâteau part avec sa taille et son inscription.
+        lines: lines.map((line) =>
+          line.product.cake
+            ? { productId: line.product.cake.productId, sizeId: line.product.cake.sizeId, inscription: cart.inscriptions[line.product.id]?.trim() || null, quantity: line.quantity }
+            : { productId: line.product.id, quantity: line.quantity }
+        ),
+      },
       {
         onSuccess: (order) => {
           toast.success(existing ? t.updated : t.validated, { description: `${order.reference} · ${longDeliveryDateLabel(order.deliveryDate)}` });
@@ -105,6 +114,18 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
                     <p className="text-xs text-muted-foreground tabular-nums">
                       {cartLinePriceLabel(line)} = <span className="font-semibold text-foreground">{formatCents(line.lineTotalCents)}</span>
                     </p>
+                    {line.product.cake ? (
+                      <input
+                        className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                        placeholder="Inscription (facultatif)"
+                        maxLength={120}
+                        value={cart.inscriptions[line.product.id] ?? ""}
+                        onChange={(event) => cart.setInscription(line.product.id, event.target.value)}
+                        disabled={locked}
+                        aria-label={`Inscription sur ${line.product.name}`}
+                        data-testid="cart-line-inscription"
+                      />
+                    ) : null}
                     {line.promoQuantity > 0 ? (
                       <p className="text-xs text-warning" data-testid="cart-line-promo">
                         {fr.promotions.badge}

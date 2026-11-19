@@ -69,7 +69,7 @@ export function RecurringContent() {
     orderingApi
       .order(from)
       .then((order) =>
-        setDraft(emptyDraft(Object.fromEntries(order.lines.filter((line) => line.available).map((line) => [line.productId, line.quantity])), order.slot.id))
+        setDraft(emptyDraft(Object.fromEntries(order.lines.filter((line) => line.available && !line.productId.includes("::")).map((line) => [line.productId, line.quantity])), order.slot.id))
       )
       .catch((error: Error) => toast.error(error.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,7 +128,7 @@ export function RecurringContent() {
                     label: row.label ?? "",
                     slotIds: [row.slot.id],
                     weekdays: row.weekdays,
-                    quantities: Object.fromEntries(row.lines.filter((line) => line.available).map((line) => [line.productId, line.quantity])),
+                    quantities: Object.fromEntries(row.lines.filter((line) => line.available && !line.productId.includes("::")).map((line) => [line.productId, line.quantity])),
                     active: row.active,
                   })}
                 >
@@ -187,7 +187,8 @@ function RecurringEditor({ draft, catalog, saving, onClose, onSave }: RecurringE
   const found = useMemo(
     () =>
       catalog.categories
-        .map((category) => ({ ...category, products: category.products.filter((product) => nameMatches(product.name, search)) }))
+        // Lot 2, demande 10 : un gros gâteau (taille, inscription) se commande au jour le jour, pas en commande récurrente.
+        .map((category) => ({ ...category, products: category.products.filter((product) => !product.cake && nameMatches(product.name, search)) }))
         .filter((category) => category.products.length > 0),
     [catalog, search]
   );

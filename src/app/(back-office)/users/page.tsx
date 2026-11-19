@@ -47,6 +47,8 @@ const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
   { value: "MERCHANT", label: "Clients" },
   { value: "DRIVER", label: "Livreurs" },
   { value: "BAKER", label: "Boulangers" },
+  { value: "PASTRY_CHEF", label: "Pâtissiers" },
+  { value: "SELLER", label: "Vendeuses" },
   { value: "ADMIN", label: "Administrateurs" },
 ];
 
@@ -54,8 +56,10 @@ const ROLE_SORT_ORDER: Record<SystemRole, number> = {
   MERCHANT: 0,
   DRIVER: 1,
   BAKER: 2,
-  ADMIN: 3,
-  SUPER_ADMIN: 4,
+  PASTRY_CHEF: 3,
+  SELLER: 4,
+  ADMIN: 5,
+  SUPER_ADMIN: 6,
 };
 
 async function fetchUsers() {
@@ -167,6 +171,8 @@ export default function UsersPage() {
       MERCHANT: all.filter((u) => u.role.systemRole === "MERCHANT").length,
       DRIVER: all.filter((u) => u.role.systemRole === "DRIVER").length,
       BAKER: all.filter((u) => u.role.systemRole === "BAKER").length,
+      PASTRY_CHEF: all.filter((u) => u.role.systemRole === "PASTRY_CHEF").length,
+      SELLER: all.filter((u) => u.role.systemRole === "SELLER").length,
       ADMIN: all.filter((u) => u.role.systemRole === "ADMIN").length,
     };
   }, [users]);
