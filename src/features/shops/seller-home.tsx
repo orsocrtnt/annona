@@ -33,6 +33,7 @@ export function SellerHome() {
           { href: "/shop/reception", title: "Réception du matin", text: "Compter l'envoi du laboratoire : reçus et abîmés." },
           { href: "/shop/closing", title: "Clôture du soir", text: "Noter le reste ; ventes calculées, produits à jeter." },
           { href: "/shop/stock", title: "Stock", text: "Stock de la boutique et produits à jeter ce soir." },
+          { href: "/shop/cakes", title: "Commandes de gâteaux", text: "Prendre la commande d'un client, marquer « soldée » au retrait." },
           { href: "/shop/settings", title: "Paramètres", text: "Produits et prix (code responsable)." },
         ].map((tile) => (
           <Link key={tile.href} href={tile.href} className="rounded-2xl border bg-card p-6 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

@@ -310,6 +310,47 @@ function ShopCard({ shop, canManage }: { shop: ShopRow; canManage: boolean }) {
   );
 }
 
+/** Lot 2, demande 9 : délai minimum entre une commande de gâteau et son retrait (48 h par défaut). */
+function CakeLeadCard() {
+  const qc = useQueryClient();
+  const current = useQuery({
+    queryKey: ["shops", "cake-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/shops/cake-settings");
+      const json = (await res.json()) as { data?: { cakeOrderLeadHours: number }; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+      return json.data!;
+    },
+  });
+  const [hours, setHours] = useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: async (value: number) => {
+      const res = await fetch("/api/shops/cake-settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cakeOrderLeadHours: value }) });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Erreur serveur");
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["shops", "cake-settings"] });
+      toast.success("Délai des commandes de gâteaux enregistré");
+      setHours(null);
+    },
+    onError: (failure: Error) => toast.error(failure.message),
+  });
+  const value = hours ?? String(current.data?.cakeOrderLeadHours ?? "");
+  return (
+    <Card>
+      <CardContent className="flex flex-wrap items-end gap-3 pt-6">
+        <FormField label="Commandes de gâteaux des particuliers : délai minimum avant le retrait (heures)">
+          <Input inputMode="numeric" className="h-10 w-28" value={value} onChange={(event) => setHours(event.target.value.replace(/D/g, ""))} data-testid="cake-lead-hours" />
+        </FormField>
+        <Button type="button" variant="outline" loading={save.isPending} disabled={hours === null || hours === ""} onClick={() => save.mutate(Number(hours))}>
+          Enregistrer
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 /** Lot 2, demande 1 : boutiques de l'entreprise et comptes vendeuse de leurs tablettes. */
 export function ShopsContent() {
   const shops = useShops();
@@ -331,6 +372,7 @@ export function ShopsContent() {
         ) : null}
       </div>
       {shops.error ? <p role="alert" className="text-sm text-error">{shops.error.message}</p> : null}
+      {canManage ? <CakeLeadCard /> : null}
       {shops.data && shops.data.length === 0 ? (
         <EmptyState icon={Store} title="Aucune boutique" description="Créez la première boutique, puis le compte vendeuse de sa tablette." />
       ) : (

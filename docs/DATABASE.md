@@ -17,7 +17,7 @@ Conventions : toute table porte `company_id` indexé sauf `companies`, les donn�
 ### Commerçants, catalogue, créneaux
 
 - `Merchant` : raison sociale, adresse et coordonnées GPS, consignes d'accès, contact, facturation (périodicité DAILY/WEEKLY/MONTHLY/YEARLY, mode de règlement) ; lot 2 : `kind` (`CLIENT` ou `SHOP`, boutique de l'entreprise, exclue des clients et de la facturation) et code responsable d'une boutique (empreinte seulement) ;
-- `Category`, `Product` (unité libre, prix de base, TVA, actif, allergènes et `allergensDeclared`, lot 1 D3), `MerchantPrice` (unique commerçant × produit) ; lot 2 : `Category.family` (`BREAD` ou `PASTRY`), `Product.pastryFormat`, `recipe`, `shelfLifeDays`, prix de base facultatif (vide = prix restaurant à saisir), `ProductSize` (tailles d'un gros gâteau en parts, prix restaurant par taille), `ShopPrice` (prix boutique par boutique × produit × taille), `ShopStockLot` (lots de stock datés d'une boutique, dernier jour de vente) et `ShopDayClose` (clôture du soir : vendus calculés, jetés) ;
+- `Category`, `Product` (unité libre, prix de base, TVA, actif, allergènes et `allergensDeclared`, lot 1 D3), `MerchantPrice` (unique commerçant × produit) ; lot 2 : `Category.family` (`BREAD` ou `PASTRY`), `Product.pastryFormat`, `recipe`, `shelfLifeDays`, prix de base facultatif (vide = prix restaurant à saisir), `ProductSize` (tailles d'un gros gâteau en parts, prix restaurant par taille), `ShopPrice` (prix boutique par boutique × produit × taille), `ShopStockLot` (lots de stock datés d'une boutique, dernier jour de vente) et `ShopDayClose` (clôture du soir : vendus calculés, jetés), `CakeOrder` (commande de gâteau d'un particulier en boutique : taille, inscription, prix boutique figé, acompte, retrait) ; `OrderLine` porte une taille, une inscription et une variante (unicité commande × produit × variante) ;
 - `DeliveryZone` (lot 1 D1) : tournée nommée avec une plage du matin et une plage du soir ; `Merchant.zoneId` ;
 - `Slot` : créneaux de livraison, deux par tournée (MORNING, EVENING), tenus à jour depuis `DeliveryZone` ;
 - `Promotion`, `PromotionMerchant` (lot 1 D2) : prix promo ou réduction en %, dernier jour, quantité limitée facultative, tous les clients ou certains ; arrêt par `stoppedAt`, jamais supprimée.
@@ -40,7 +40,7 @@ Conventions : toute table porte `company_id` indexé sauf `companies`, les donn�
 - `SupportTicket`, `SupportTicketMessage` : réclamations ;
 - `ClientNotification`, `DriverLocation`, `DriverPushSubscription`, `OperationJob`, `AuthLoginFailure`.
 
-Le schéma comprend 36 modèles Prisma. Données de démonstration : `npm run db:seed` (identifiants `demo_`, comptes dans `outputs/comptes-demo.md`, non versionné).
+Le schéma comprend 37 modèles Prisma. Données de démonstration : `npm run db:seed` (identifiants `demo_`, comptes dans `outputs/comptes-demo.md`, non versionné).
 
 ## Relations essentielles
 

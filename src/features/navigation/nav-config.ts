@@ -50,6 +50,8 @@ export const sellerNavItems: NavItem[] = [
   { title: "Réception du matin", href: "/shop/reception", icon: Package },
   { title: "Clôture du soir", href: "/shop/closing", icon: Receipt },
   { title: "Stock", href: "/shop/stock", icon: BookOpen },
+  // Lot 2, demande 9 : commandes de gâteaux des particuliers.
+  { title: "Commandes de gâteaux", href: "/shop/cakes", icon: ChefHat },
   { title: "Paramètres", href: "/shop/settings", icon: Settings },
 ];
 

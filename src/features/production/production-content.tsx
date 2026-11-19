@@ -237,6 +237,7 @@ function Sheets({
                           <div className="min-w-0 flex-1">
                             <p className="text-base font-medium">{line.name}</p>
                             <p className="text-xs text-muted-foreground">{line.categoryName} · {line.unit}</p>
+                            {line.detail ? <p className="text-sm font-medium text-brand" data-testid="sheet-line-detail">{line.detail}</p> : null}
                           </div>
                           <span className={cn("text-xl font-semibold tabular-nums", short && "text-error")}>
                             {short ? t.deliveredOf(line.quantityDelivered!, line.quantityOrdered) : line.quantityOrdered}

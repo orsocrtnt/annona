@@ -18,6 +18,7 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | ShopPrice | directe | companyId | non |
 | ShopStockLot | directe | companyId | non |
 | ShopDayClose | directe | companyId | non |
+| CakeOrder | directe | companyId | non |
 | Promotion | directe | companyId | oui |
 | PromotionMerchant | directe | companyId | oui |
 | DeliveryZone | directe | companyId | oui |

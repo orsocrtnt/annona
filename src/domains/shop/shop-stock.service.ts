@@ -96,10 +96,12 @@ export async function getReception(actor: Pick<SellerActor, "companyId" | "shopI
   const shop = await assertShop(db, actor.companyId, actor.shopId);
   const order = await shipmentOf(db, actor.companyId, shop.id, date);
   if (!order) return { date, shopName: shop.name, orderId: null, receivedAt: null, lines: [] };
-  const lines = await db.orderLine.findMany({
-    where: { companyId: actor.companyId, orderId: order.id },
-    select: { productId: true, quantityOrdered: true, quantityReceived: true, quantityDamaged: true },
-  });
+  const lines = (
+    await db.orderLine.findMany({
+      where: { companyId: actor.companyId, orderId: order.id },
+      select: { productId: true, quantityOrdered: true, quantityReceived: true, quantityDamaged: true, cakeOrderId: true },
+    })
+  ).filter((line) => !line.cakeOrderId);
   const info = await productInfo(db, actor.companyId, lines.map((line) => line.productId));
   return {
     date,
@@ -137,7 +139,10 @@ export async function receiveShipment(actor: SellerActor, input: ReceiveInput, d
   const order = await shipmentOf(db, actor.companyId, shop.id, input.date);
   if (!order) throw new DomainRuleError(404, "Aucun envoi prévu pour ce jour.", "NO_SHIPMENT");
   if (order.receivedAt) throw new DomainRuleError(409, "La réception de cet envoi est déjà notée.", "ALREADY_RECEIVED");
-  const lines = await db.orderLine.findMany({ where: { companyId: actor.companyId, orderId: order.id }, select: { id: true, productId: true, quantityOrdered: true } });
+  // Les gâteaux commandés par des particuliers (demande 9) ne se comptent pas ici : ils ne vont pas en stock.
+  const lines = (
+    await db.orderLine.findMany({ where: { companyId: actor.companyId, orderId: order.id }, select: { id: true, productId: true, quantityOrdered: true, cakeOrderId: true } })
+  ).filter((line) => !line.cakeOrderId);
   const noted = new Map(input.lines.map((line) => [line.productId, line]));
   for (const line of input.lines) {
     if (!lines.some((row) => row.productId === line.productId)) throw new DomainRuleError(400, "Ce produit n'était pas dans l'envoi.", "PRODUCT_NOT_SENT", { productId: line.productId });

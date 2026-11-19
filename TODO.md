@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **11** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **12** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -32,6 +32,7 @@
 - LOT2-D6 — Réception le matin en boutique (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 - LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 - LOT2-D8 — Stock des boutiques (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
+- LOT2-D9 — Commandes de gâteaux des particuliers en boutique (relire la PR brouillon `theo/lot2-d9-d10` (empilée sur `theo/lot2-d6-d8`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
 
 **À faire par Théo**
 
@@ -43,7 +44,6 @@
 
 **À classer**
 
-- LOT2-D9 — Commandes de gâteaux des particuliers en boutique
 - LOT2-D10 — Pâtisseries pour les restaurants
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
@@ -422,13 +422,25 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D9 — Commandes de gâteaux des particuliers en boutique.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Orso — relire la PR brouillon `theo/lot2-d9-d10` (empilée sur `theo/lot2-d6-d8`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d9-d10`, **migration `20261118100500_lot2_cake_orders` écrite, pas appliquée**) :
+    - **Modèle** : nouvelle table `CakeOrder`. Une ligne de commande peut porter une taille et une inscription ; l'unicité passe à commande × produit × variante, pour que deux gâteaux du même produit fassent deux lignes (sert aussi à D10).
+    - **Tablette** : écran « Commandes de gâteaux » (`/shop/cakes`) pour saisir gâteau et taille, inscription, parts, paiement complet ou acompte, client, date et heure de retrait. Liste « À retirer » avec le bouton « Soldée ».
+    - **Prix** : prix boutique de la taille, **lu sur le serveur, affiché sans pouvoir être modifié** (D4, vérification 4). Sans prix boutique, pas de commande.
+    - **Règles** : acompte d'au moins 50 % (15 € sur 40 € refusé, 20 € accepté). Retrait au moins 48 h plus tard, délai réglable par l'admin sur l'écran « Boutiques » (`settings.cakeOrderLeadHours`, écriture réclamée).
+    - **Livraison** : le gâteau entre dans l'**envoi du matin** du jour du retrait (ligne réservée, ajoutée aux tournées si elles sont calculées) et dans la **production du pâtissier**, avec « 10 personnes · « Joyeux anniversaire Maman » » sur le bon. Il ne passe pas par la réception ni par le stock à vendre.
+    - Tests : `tests/lot2-d9-cake-orders.test.ts` (vérifications 1 à 5, et D4 vérification 4). `npm run check` : 0 échec.
 
   Terminé quand : acompte de 15 € sur 40 € refusé, 20 € accepté ; le fraisier et son inscription chez le pâtissier le jour prévu ; dans l'envoi du matin ; commande « soldée » au retrait.
 
 - [ ] **LOT2-D10 — Pâtisseries pour les restaurants.**
 
-  **Qui : Claude (session de Théo) — coder, puis recette sur le site une fois la migration appliquée par Orso.**
+  **Qui : Claude (session de Théo) — à coder sur une branche empilée sur `theo/lot2-d9-d10`.**
+
+  - 19 novembre 2026 : **pas encore codée**. Déjà prêt : les petites pièces ayant un prix restaurant sont au catalogue des restaurants (D4), et les lignes de commande acceptent taille, inscription et variante (D9).
+  - **Reste** : gros gâteaux dans le catalogue des restaurants (choix de la taille, inscription), prix restaurant de la taille dans le panier, le verrouillage (prix figé) et la facture, puis les tests des vérifications 1 à 3.
+  - **Prudence** : ce travail touche la prise de commande des restaurants, les promotions et le verrouillage, qui reposent aujourd'hui sur « une ligne par produit ».
 
   Terminé quand : un restaurant commande 20 éclairs et un castel 10 personnes « Bon anniversaire Julie » ; le pâtissier voit produits et inscription ; le castel est sur la facture au prix restaurant.
 

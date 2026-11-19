@@ -29,7 +29,7 @@ import { fr } from "@/lib/i18n/fr";
 
 export type ProductionDb = Pick<
   PrismaClient,
-  "merchant" | "slot" | "product" | "category" | "order" | "orderLine" | "round" | "stop" | "auditLog" | "$transaction"
+  "merchant" | "slot" | "product" | "productSize" | "category" | "order" | "orderLine" | "round" | "stop" | "auditLog" | "$transaction"
 >;
 
 export interface BakerActor {
@@ -117,7 +117,7 @@ export async function getProductionDay(
   });
   const allLines = await db.orderLine.findMany({
     where: { companyId, orderId: { in: allOrders.map((order) => order.id) } },
-    select: { id: true, orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true },
+    select: { id: true, orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, sizeId: true, inscription: true },
   });
   const [allProducts, categories] = await Promise.all([
     db.product.findMany({
@@ -163,6 +163,15 @@ export async function getProductionDay(
   for (const stop of allRoundStops) roundStopCounts.set(stop.roundId, (roundStopCounts.get(stop.roundId) ?? 0) + 1);
 
   const merchantById = new Map(merchants.map((merchant) => [merchant.id, merchant]));
+  // Lot 2, demandes 9 et 10 : taille et inscription des gros gâteaux sur les bons.
+  const sizeIds = [...new Set(lines.map((line) => line.sizeId).filter((id): id is string => Boolean(id)))];
+  const servingsBySize = new Map(
+    sizeIds.length ? (await db.productSize.findMany({ where: { companyId, id: { in: sizeIds } }, select: { id: true, servings: true } })).map((size) => [size.id, size.servings]) : []
+  );
+  const detailOf = (line: { sizeId?: string | null; inscription?: string | null }) => {
+    const parts = [line.sizeId ? `${servingsBySize.get(line.sizeId) ?? "?"} personnes` : null, line.inscription ? `« ${line.inscription} »` : null].filter(Boolean);
+    return parts.length ? parts.join(" · ") : null;
+  };
   const slotById = new Map(slots.map((slot) => [slot.id, slot]));
   const stopByOrder = new Map(stops.map((stop) => [stop.orderId, stop]));
   const roundById = new Map(rounds.map((round) => [round.id, round]));
@@ -189,6 +198,7 @@ export async function getProductionDay(
           productOrder: product?.sortOrder ?? 0,
           quantityOrdered: line.quantityOrdered,
           quantityDelivered: line.quantityDelivered,
+          detail: detailOf(line),
         };
       })
       .sort((a, b) => a.categoryOrder - b.categoryOrder || a.productOrder - b.productOrder || a.name.localeCompare(b.name, "fr"))
@@ -200,6 +210,7 @@ export async function getProductionDay(
         categoryName: line.categoryName,
         quantityOrdered: line.quantityOrdered,
         quantityDelivered: line.quantityDelivered,
+        detail: line.detail,
       }));
     return {
       orderId: order.id,

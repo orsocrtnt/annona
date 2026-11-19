@@ -70,7 +70,7 @@ export interface ShipmentDay {
   shops: ShipmentShop[];
 }
 
-async function morningSlots(db: ShipmentDb, companyId: string, zoneIds: string[]) {
+export async function morningSlots(db: ShipmentDb, companyId: string, zoneIds: string[]) {
   if (zoneIds.length === 0) return new Map<string, string>();
   const slots = await db.slot.findMany({ where: { companyId, zoneId: { in: zoneIds }, period: "MORNING", active: true }, select: { id: true, zoneId: true } });
   return new Map(slots.filter((slot) => slot.zoneId).map((slot) => [slot.zoneId!, slot.id]));
@@ -96,7 +96,7 @@ async function familyProducts(db: ShipmentDb, companyId: string, family: Product
 }
 
 /** Un envoi est-il encore modifiable ? Non si la tournée a démarré, si l'arrêt est livré ou en incident. */
-async function isEditable(db: ShipmentDb, companyId: string, order: { id: string; status: string }) {
+export async function isEditable(db: ShipmentDb, companyId: string, order: { id: string; status: string }) {
   if (order.status === "DELIVERED" || order.status === "CANCELLED") return false;
   const stop = await db.stop.findFirst({ where: { companyId, orderId: order.id }, select: { roundId: true, status: true } });
   if (!stop) return true;

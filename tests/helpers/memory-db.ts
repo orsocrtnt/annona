@@ -71,6 +71,8 @@ const COLUMN_DEFAULTS: Record<string, Row> = {
   category: { family: "BREAD" },
   // Lot 2, demande 5 : un arrêt créé par le calcul des tournées est « en attente », comme en base.
   stop: { status: "PENDING" },
+  // Lot 2, demande 9 : une commande de gâteau est « enregistrée » à sa création.
+  cakeOrder: { status: "ORDERED" },
 };
 
 export interface MemoryDbOptions {
@@ -157,7 +159,7 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
       return Promise.all(arg as Promise<unknown>[]);
     },
   };
-  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "promotion", "promotionMerchant", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone", "productSize", "shopPrice", "shopStockLot", "shopDayClose", "clientNotification"]) {
+  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "promotion", "promotionMerchant", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone", "productSize", "shopPrice", "shopStockLot", "shopDayClose", "clientNotification", "cakeOrder"]) {
     db[model] = delegate(model);
   }
   return db;
