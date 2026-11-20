@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import type { ShipmentDay, ShipmentShop } from "@/domains/shop/shipment.service";
+import { useMounted } from "@/hooks/use-mounted";
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -107,6 +108,8 @@ function ShopShipment({ shop, day, family }: { shop: ShipmentShop; day: Shipment
 export function ShipmentsContent({ family }: { family: "BREAD" | "PASTRY" }) {
   const [date, setDate] = useState(() => parisDate(1));
   const day = useQuery({ queryKey: ["shipments", date], queryFn: () => call<ShipmentDay>(`/api/shipments?date=${date}`) });
+  // Page précalculée au build : les jours (« Aujourd'hui », « Demain ») s'affichent une fois dans le navigateur.
+  const mounted = useMounted();
   return (
     <div className="space-y-6">
       <div>
@@ -115,6 +118,9 @@ export function ShipmentsContent({ family }: { family: "BREAD" | "PASTRY" }) {
           {family === "PASTRY" ? "Pâtisseries" : "Pain"} envoyés chaque matin aux boutiques, sans commande de leur part. Modifiable jusqu&apos;au départ de la tournée.
         </p>
       </div>
+      {!mounted ? <PageSkeleton /> : null}
+      {mounted ? (
+        <>
       <div className="flex flex-wrap items-center gap-2">
         {[0, 1, 2].map((offset) => {
           const value = parisDate(offset);
@@ -137,6 +143,8 @@ export function ShipmentsContent({ family }: { family: "BREAD" | "PASTRY" }) {
           <ShopShipment key={`${day.data!.date}-${shop.id}-${shop.lines.map((line) => `${line.productId}:${line.quantity}`).join(",")}-${shop.editable}`} shop={shop} day={day.data!} family={family} />
         ))}
       </div>
+        </>
+      ) : null}
     </div>
   );
 }

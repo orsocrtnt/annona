@@ -10,6 +10,7 @@ import { AdminTodoList } from "@/features/admin/home/admin-todo-list";
 import { HOME_CARD_CLASS } from "@/features/admin/home/home-card";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 import { cn } from "@/lib/utils";
+import { useMounted } from "@/hooks/use-mounted";
 
 const todayFormat = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
 
@@ -30,12 +31,14 @@ function HomeSkeleton() {
 /** ADMIN-ESPACE, lot 1 : « À traiter », chiffres clés, courbe 30 jours et voyant de santé. */
 export function AdminHomePanel() {
   const { data, isLoading, error } = useAdminHome();
+  // Page précalculée au build : la date du jour s'affiche une fois dans le navigateur (sinon figée au déploiement).
+  const mounted = useMounted();
 
   return (
     <div className="space-y-5">
       <header>
         <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand first-letter:uppercase">
-          {todayFormat.format(new Date())}
+          {mounted ? todayFormat.format(new Date()) : " "}
         </p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Tableau de bord</h1>
         <p className="mt-1 text-sm text-muted-foreground">Ce qui attend une action, les chiffres clés et l&apos;état de la plateforme.</p>
