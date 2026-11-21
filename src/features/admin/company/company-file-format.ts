@@ -15,7 +15,7 @@ export const ROLE_LABELS_PLURAL: Record<SystemRole, string> = {
   PASTRY_CHEF: "Pâtissiers",
   DRIVER: "Livreurs",
   MERCHANT: "Clients",
-  SELLER: "Vendeuses",
+  SELLER: "Vente",
   SUPER_ADMIN: "Super admins",
 };
 
@@ -25,7 +25,7 @@ export const ROLE_LABELS_SINGULAR: Record<SystemRole, string> = {
   PASTRY_CHEF: "Pâtissier",
   DRIVER: "Livreur",
   MERCHANT: "Client",
-  SELLER: "Vendeuse",
+  SELLER: "Vente",
   SUPER_ADMIN: "Super admin",
 };
 

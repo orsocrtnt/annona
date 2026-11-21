@@ -141,7 +141,7 @@ export function PastryFields({
         </FormField>
       ) : null}
       {showFormat ? (
-        <FormField label="Recette" hint="Visible seulement par les pâtissiers et l'administration, jamais par les vendeuses, livreurs ni clients.">
+        <FormField label="Recette" hint="Visible seulement par les pâtissiers et l'administration, jamais par la vente, les livreurs ni clients.">
           <textarea
             className="min-h-28 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={value.recipe}

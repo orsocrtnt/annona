@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
+import { ShelfHeading } from "@/features/shops/shelf-heading";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, PackageCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -69,8 +70,10 @@ export function SellerReception() {
               </p>
             ) : null}
             <ul className="divide-y">
-              {data.lines.map((line) => (
-                <li key={line.productId} className="flex flex-wrap items-center gap-3 py-3" data-testid={`reception-${line.name}`}>
+              {data.lines.map((line, index) => (
+                <Fragment key={line.productId}>
+                <ShelfHeading lines={data.lines} index={index} />
+                <li className="flex flex-wrap items-center gap-3 py-3" data-testid={`reception-${line.name}`}>
                   <div className="min-w-0 flex-1">
                     <p className="text-lg font-medium">{line.name}</p>
                     <p className="text-sm text-muted-foreground">Envoyé : {line.sent} {line.unit}</p>
@@ -106,6 +109,7 @@ export function SellerReception() {
                     </>
                   )}
                 </li>
+                </Fragment>
               ))}
             </ul>
             {data.receivedAt ? null : (

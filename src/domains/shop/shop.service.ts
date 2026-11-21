@@ -48,7 +48,7 @@ export interface ShopRow {
 
 const notFound = () => new DomainRuleError(404, "Boutique introuvable.", "SHOP_NOT_FOUND");
 const noShop = () =>
-  new DomainRuleError(403, "Ce compte vendeuse n'est rattaché à aucune boutique. Contactez l'administrateur.", "SELLER_WITHOUT_SHOP");
+  new DomainRuleError(403, "Ce compte n'est rattaché à aucune boutique. Contactez l'administrateur.", "SELLER_WITHOUT_SHOP");
 
 const FIELDS = ["name", "address", "postalCode", "city", "latitude", "longitude", "accessInstructions", "contactPhone", "zoneId", "active"] as const;
 

@@ -47,17 +47,54 @@ async function assertShop(db: ShopStockDb, companyId: string, shopId: string) {
   return shop;
 }
 
+interface ProductInfo {
+  name: string;
+  unit: string;
+  shelfLifeDays: number;
+  family: ProductFamily;
+  categoryName: string;
+  categoryOrder: number;
+}
+
+/**
+ * RETOURS-2 (Théo, 21 novembre) : réception du matin et clôture du soir classées comme en boutique : la pâtisserie
+ * d'abord, puis la boulangerie ; dans chaque famille, les catégories dans l'ordre du catalogue (Pains, Spéciaux,
+ * Gâteaux secs…), puis les produits par nom.
+ */
+export function byShelf(
+  a: { family: ProductFamily; categoryOrder: number; categoryName: string; name: string },
+  b: { family: ProductFamily; categoryOrder: number; categoryName: string; name: string }
+) {
+  const rank = (family: ProductFamily) => (family === "PASTRY" ? 0 : 1);
+  return (
+    rank(a.family) - rank(b.family) ||
+    a.categoryOrder - b.categoryOrder ||
+    a.categoryName.localeCompare(b.categoryName, "fr") ||
+    a.name.localeCompare(b.name, "fr")
+  );
+}
+
 async function productInfo(db: ShopStockDb, companyId: string, productIds: readonly string[]) {
-  if (productIds.length === 0) return new Map<string, { name: string; unit: string; shelfLifeDays: number; family: ProductFamily; categoryName: string }>();
+  if (productIds.length === 0) return new Map<string, ProductInfo>();
   const [products, categories] = await Promise.all([
     db.product.findMany({ where: { companyId, id: { in: [...productIds] } }, select: { id: true, name: true, unit: true, shelfLifeDays: true, categoryId: true } }),
-    db.category.findMany({ where: { companyId }, select: { id: true, name: true, family: true } }),
+    db.category.findMany({ where: { companyId }, select: { id: true, name: true, family: true, sortOrder: true } }),
   ]);
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   return new Map(
     products.map((product) => {
       const category = categoryById.get(product.categoryId);
-      return [product.id, { name: product.name, unit: product.unit, shelfLifeDays: product.shelfLifeDays ?? 1, family: category?.family ?? "BREAD", categoryName: category?.name ?? "" }];
+      return [
+        product.id,
+        {
+          name: product.name,
+          unit: product.unit,
+          shelfLifeDays: product.shelfLifeDays ?? 1,
+          family: category?.family ?? "BREAD",
+          categoryName: category?.name ?? "",
+          categoryOrder: category?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+        } satisfies ProductInfo,
+      ];
     })
   );
 }
@@ -70,6 +107,10 @@ export interface ReceptionLine {
   productId: string;
   name: string;
   unit: string;
+  /** RETOURS-2 : rayon (famille et catégorie) pour classer la réception. */
+  family: ProductFamily;
+  categoryName: string;
+  categoryOrder: number;
   sent: number;
   received: number | null;
   damaged: number | null;
@@ -113,11 +154,14 @@ export async function getReception(actor: Pick<SellerActor, "companyId" | "shopI
         productId: line.productId,
         name: info.get(line.productId)?.name ?? "",
         unit: info.get(line.productId)?.unit ?? "",
+        family: info.get(line.productId)?.family ?? ("BREAD" as const),
+        categoryName: info.get(line.productId)?.categoryName ?? "",
+        categoryOrder: info.get(line.productId)?.categoryOrder ?? Number.MAX_SAFE_INTEGER,
         sent: line.quantityOrdered,
         received: line.quantityReceived,
         damaged: line.quantityDamaged,
       }))
-      .sort((a, b) => a.name.localeCompare(b.name, "fr")),
+      .sort(byShelf),
   };
 }
 
@@ -232,6 +276,8 @@ export interface CloseSheetLine {
   name: string;
   unit: string;
   family: ProductFamily;
+  categoryName: string;
+  categoryOrder: number;
   lots: StockLot[];
   /** Déjà clôturé ce jour-là : les chiffres enregistrés. */
   closed: null | { remaining: number; sold: number; discardedExpired: number; discardedDamaged: number };
@@ -266,11 +312,13 @@ export async function getCloseSheet(actor: Pick<SellerActor, "companyId" | "shop
           name: info.get(productId)?.name ?? "",
           unit: info.get(productId)?.unit ?? "",
           family: info.get(productId)?.family ?? ("BREAD" as const),
+          categoryName: info.get(productId)?.categoryName ?? "",
+          categoryOrder: info.get(productId)?.categoryOrder ?? Number.MAX_SAFE_INTEGER,
           lots: (lots.get(productId) ?? []).filter((lot) => lot.quantity > 0),
           closed: close ? { remaining: close.remaining, sold: close.sold, discardedExpired: close.discardedExpired, discardedDamaged: close.discardedDamaged } : null,
         };
       })
-      .sort((a, b) => a.name.localeCompare(b.name, "fr")),
+      .sort(byShelf),
   };
 }
 

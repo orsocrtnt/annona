@@ -19,10 +19,14 @@ interface CategoryPanelProps {
   categories: CategoryRow[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  /** RETOURS-1 : dans un onglet Boulangerie ou Pâtisserie, toutes les catégories (le serveur attend l'ordre complet). */
+  allCategories?: CategoryRow[];
+  /** RETOURS-1 : famille donnée aux catégories créées depuis l'onglet. */
+  family?: "BREAD" | "PASTRY";
 }
 
 /** ADM-02 / ADM-09 : catégories (créer, renommer, ordonner, désactiver). */
-export function CategoryPanel({ categories, selectedId, onSelect }: CategoryPanelProps) {
+export function CategoryPanel({ categories, selectedId, onSelect, allCategories, family }: CategoryPanelProps) {
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -36,7 +40,7 @@ export function CategoryPanel({ categories, selectedId, onSelect }: CategoryPane
     event.preventDefault();
     if (!newName.trim()) return;
     create.mutate(
-      { name: newName.trim() },
+      { name: newName.trim(), ...(family ? { family } : {}) },
       { onSuccess: () => { setNewName(""); toast.success(t.categorySaved); }, onError }
     );
   };
@@ -50,10 +54,13 @@ export function CategoryPanel({ categories, selectedId, onSelect }: CategoryPane
   };
 
   const move = (index: number, delta: -1 | 1) => {
-    const ids = categories.map((category) => category.id);
     const target = index + delta;
-    if (target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+    if (target < 0 || target >= categories.length) return;
+    // Échange des deux catégories visibles à leur place dans la liste complète.
+    const ids = (allCategories ?? categories).map((category) => category.id);
+    const from = ids.indexOf(categories[index]!.id);
+    const to = ids.indexOf(categories[target]!.id);
+    [ids[from], ids[to]] = [ids[to]!, ids[from]!];
     reorder.mutate(ids, { onError });
   };
 

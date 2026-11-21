@@ -61,7 +61,7 @@ export const ROLE_LABELS: Record<SystemRole, string> = {
   BAKER: "Boulanger",
   PASTRY_CHEF: "Pâtissier",
   DRIVER: "Livreur",
-  SELLER: "Vendeuse",
+  SELLER: "Vente",
   MERCHANT: "Client",
 };
 

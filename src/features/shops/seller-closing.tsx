@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { ShelfHeading } from "@/features/shops/shelf-heading";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, MoonStar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -95,21 +96,27 @@ export function SellerClosing() {
         <Card>
           <CardContent className="pt-6">
             <ul className="divide-y">
-              {data.lines.map((line) => {
+              {data.lines.map((line, index) => {
+                const heading = <ShelfHeading lines={data.lines} index={index} />;
                 const plan = plans.get(line.productId);
                 const draft = drafts[line.productId];
                 if (line.closed) {
                   return (
-                    <li key={line.productId} className="flex flex-wrap items-center gap-2 py-3">
+                    <Fragment key={line.productId}>
+                    {heading}
+                    <li className="flex flex-wrap items-center gap-2 py-3">
                       <p className="min-w-0 flex-1 text-lg font-medium">{line.name}</p>
                       <Badge variant="outline">Reste {line.closed.remaining}</Badge>
                       <Badge variant="success">Vendus {line.closed.sold}</Badge>
                       <Badge variant="error">Jetés {line.closed.discardedExpired + line.closed.discardedDamaged}</Badge>
                     </li>
+                    </Fragment>
                   );
                 }
                 return (
-                  <li key={line.productId} className="space-y-2 py-3" data-testid={`closing-${line.name}`}>
+                  <Fragment key={line.productId}>
+                  {heading}
+                  <li className="space-y-2 py-3" data-testid={`closing-${line.name}`}>
                     <div className="flex flex-wrap items-center gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-lg font-medium">{line.name}</p>
@@ -147,6 +154,7 @@ export function SellerClosing() {
                       </div>
                     ) : null}
                   </li>
+                  </Fragment>
                 );
               })}
             </ul>

@@ -31,7 +31,7 @@ export const createUserSchema = z.object({
   path: ["merchantId"],
 }).refine((value) => value.roleSlug !== "seller" || Boolean(value.merchantId), {
   // Lot 2, demande 1 : un compte vendeuse est la tablette d'une boutique.
-  message: "Choisissez la boutique de cette vendeuse.",
+  message: "Choisissez la boutique de cet accès Vente.",
   path: ["merchantId"],
 }).refine((value) => value.roleSlug === "admin" || !value.miniAdminModules, {
   message: "Seul un compte administrateur peut être un mini admin.",
