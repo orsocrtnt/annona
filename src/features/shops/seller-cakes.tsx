@@ -182,26 +182,31 @@ export function SellerCakes() {
           {(data.data?.orders ?? []).length === 0 ? (
             <p className="text-base text-muted-foreground">Aucune commande à venir.</p>
           ) : (
-            <ul className="divide-y">
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {data.data!.orders.map((row) => (
-                <li key={row.id} className="flex flex-wrap items-center gap-3 py-3" data-testid={`cake-order-${row.customerName}`}>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-lg font-medium">{row.productName} · {row.sizeServings} personnes</p>
-                    <p className="text-sm text-muted-foreground">
-                      {row.customerName} · {row.customerPhone} · retrait {when(row.pickupAt)}
-                      {row.inscription ? ` · « ${row.inscription} »` : ""}
-                    </p>
+                <li key={row.id} className="flex flex-col gap-2 rounded-xl border bg-card p-4" data-testid={`cake-order-${row.customerName}`}>
+                  <p className="text-sm font-medium text-muted-foreground">Retrait {when(row.pickupAt)}</p>
+                  <p className="text-lg font-semibold leading-tight">
+                    {row.productName} <span className="font-normal text-muted-foreground">· {row.sizeServings} pers.</span>
+                  </p>
+                  <p className="text-base">
+                    {row.customerName} <span className="whitespace-nowrap tabular-nums text-muted-foreground">· {row.customerPhone}</span>
+                  </p>
+                  {row.inscription ? <p className="text-sm italic text-muted-foreground">« {row.inscription} »</p> : null}
+                  <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+                    {row.status === "SETTLED" ? (
+                      <Badge variant="success"><CheckCircle2 className="mr-1 h-3 w-3" aria-hidden /> Soldée</Badge>
+                    ) : (
+                      <>
+                        <span className="text-sm">
+                          Reste à payer <strong className="whitespace-nowrap text-base tabular-nums">{formatCents(row.dueCents)}</strong>
+                        </span>
+                        <Button type="button" variant="outline" size="lg" loading={settle.isPending && settle.variables === row.id} onClick={() => settle.mutate(row.id)}>
+                          Soldée
+                        </Button>
+                      </>
+                    )}
                   </div>
-                  {row.status === "SETTLED" ? (
-                    <Badge variant="success"><CheckCircle2 className="mr-1 h-3 w-3" aria-hidden /> Soldée</Badge>
-                  ) : (
-                    <>
-                      <span className="text-sm">Reste à payer <strong className="tabular-nums">{formatCents(row.dueCents)}</strong></span>
-                      <Button type="button" variant="outline" size="lg" loading={settle.isPending && settle.variables === row.id} onClick={() => settle.mutate(row.id)}>
-                        Soldée
-                      </Button>
-                    </>
-                  )}
                 </li>
               ))}
             </ul>

@@ -17,6 +17,7 @@ import { ProductThumb } from "@/features/catalog/product-thumb";
 import { formatCents, formatVatRate } from "@/lib/format/money";
 import { fr } from "@/lib/i18n/fr";
 import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
+import { cn } from "@/lib/utils";
 
 const t = fr.catalog;
 
@@ -25,6 +26,8 @@ export function CatalogContent() {
   const categories = useCategories();
   const products = useProducts();
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  // RETOURS-1 (tour de Théo, 21 novembre) : un onglet Boulangerie, un onglet Pâtisserie.
+  const [family, setFamily] = useState<"BREAD" | "PASTRY">("BREAD");
   const [query, setQuery] = useState("");
   // Lot 2, demande 4 : liste « Produits sans prix » (prix restaurant à saisir, souvent créés par le pâtissier).
   const [missingOnly, setMissingOnly] = useState(false);
@@ -40,12 +43,15 @@ export function CatalogContent() {
     const needle = query.trim().toLocaleLowerCase("fr");
     return (products.data ?? []).filter(
       (product) =>
+        product.family === family &&
         (!categoryId || product.categoryId === categoryId) &&
         (!missingOnly || product.missingRestaurantPrice) &&
         (!needle || product.name.toLocaleLowerCase("fr").includes(needle))
     );
-  }, [products.data, categoryId, query, missingOnly]);
-  const missingCount = (products.data ?? []).filter((product) => product.missingRestaurantPrice).length;
+  }, [products.data, family, categoryId, query, missingOnly]);
+  const missingCount = (products.data ?? []).filter((product) => product.family === family && product.missingRestaurantPrice).length;
+  const familyCategories = (categories.data ?? []).filter((category) => category.family === family);
+  const familyCount = (value: "BREAD" | "PASTRY") => (products.data ?? []).filter((product) => product.family === value).length;
 
   if (isInitialQueryLoading(categories.isLoading, categories.data) || isInitialQueryLoading(products.isLoading, products.data)) {
     return <PageSkeleton />;
@@ -76,8 +82,37 @@ export function CatalogContent() {
         </Alert>
       ) : null}
 
+      <div role="tablist" aria-label="Famille de produits" className="inline-flex gap-1 rounded-2xl border bg-card p-1">
+        {(["BREAD", "PASTRY"] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={family === value}
+            data-testid={`catalog-tab-${value}`}
+            onClick={() => {
+              setFamily(value);
+              setCategoryId(null);
+            }}
+            className={cn(
+              "min-h-11 rounded-xl px-5 text-base font-medium transition-colors",
+              family === value ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+            )}
+          >
+            {value === "BREAD" ? "Boulangerie" : "Pâtisserie"}{" "}
+            <span className="text-sm font-normal opacity-80 tabular-nums">({familyCount(value)})</span>
+          </button>
+        ))}
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-[26rem_minmax(0,1fr)]">
-        <CategoryPanel categories={categories.data ?? []} selectedId={categoryId} onSelect={setCategoryId} />
+        <CategoryPanel
+          categories={familyCategories}
+          allCategories={categories.data ?? []}
+          family={family}
+          selectedId={categoryId}
+          onSelect={setCategoryId}
+        />
 
         <Card className="min-w-0">
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
@@ -179,7 +214,7 @@ export function CatalogContent() {
         onOpenChange={setDialogOpen}
         product={editing}
         categories={categories.data ?? []}
-        defaultCategoryId={categoryId ?? categories.data?.[0]?.id ?? null}
+        defaultCategoryId={categoryId ?? familyCategories[0]?.id ?? categories.data?.[0]?.id ?? null}
         onCreated={(product) => setEditingId(product.id)}
       />
     </div>

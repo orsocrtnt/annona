@@ -98,12 +98,12 @@ export async function updateCompanyAccount(
       : null;
     if (!merchant) {
       throw seller
-        ? new DomainRuleError(400, "Choisissez la boutique de cette vendeuse.", "SHOP_REQUIRED")
+        ? new DomainRuleError(400, "Choisissez la boutique de ce compte vente.", "SHOP_REQUIRED")
         : new DomainRuleError(400, "Choisissez le client que ce compte représente.", "MERCHANT_REQUIRED");
     }
     merchantId = merchant.id;
   } else {
-    if (input.merchantId) throw new DomainRuleError(400, "Seul un compte client ou vendeuse se rattache à un client ou à une boutique.", "MERCHANT_NOT_ALLOWED");
+    if (input.merchantId) throw new DomainRuleError(400, "Seul un compte client ou vente se rattache à un client ou à une boutique.", "MERCHANT_NOT_ALLOWED");
     merchantId = null;
   }
 

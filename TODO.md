@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**23 tâches terminées sur 42 — 55 %**
+**23 tâches terminées sur 43 — 53 %**
 
-`███████████░░░░░░░░░` · 19 tâches restantes
+`███████████░░░░░░░░░` · 20 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **13** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **13** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10 | **6** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1, RETOURS-2 |
 
 **À faire par Claude**
 
@@ -42,6 +42,7 @@
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
+- RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre) (recette navigateur des six retouches, puis SMTP Resend sur `annona-dev` (AUTH-GOOGLE) ; ensuite décider les champs « instructions » et « allergies » des commandes de gâteaux (migration))
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -108,6 +109,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
 - RETOURS-1 (demande d'Orso du 16 novembre) : faire un tour complet de l'application (les quatre espaces, site en ligne et application Android) et noter les retouches à faire et ce qu'il faudrait ajouter, dans `docs/rapports/` (détail dans la tâche).
+- RETOURS-2 (21 novembre) : les retouches de tes notes du tour sont faites sur `theo/retours-tour-2` ; à essayer dans le navigateur. L'e-mail du compte vente non reçu vient du SMTP de `annona-dev` (AUTH-GOOGLE ci-dessus). À décider : ajouter « instructions » et « allergies » aux commandes de gâteaux (migration).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
@@ -523,3 +525,20 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
   - Ensuite : Claude classe les remarques en tâches (avec les identifiants du cahier des charges), Orso tranche les ajouts.
 
   Terminé quand : le tour des quatre espaces est fait et les remarques sont notées dans `docs/rapports/`.
+
+- [ ] **RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre).**
+
+  **Qui : Théo — recette navigateur des six retouches, puis SMTP Resend sur `annona-dev` (AUTH-GOOGLE) ; ensuite décider les champs « instructions » et « allergies » des commandes de gâteaux (migration).**
+
+  - 21 novembre 2026, Claude de Théo, branche `theo/retours-tour-2` (aucune migration, rien écrit en base) :
+    - **Compte vente (lot 2, demande 1)** : « Vendeuse » devient « Compte vente » dans tous les textes affichés (rôle, filtre des utilisateurs, fiche boutique « Créer un compte vente », messages d'erreur, export de l'entreprise). Code interne inchangé (`SELLER`).
+    - **Compte vente › Commandes de gâteaux (demande 9)** : « À retirer » en petites cartes (grille 1 à 3 colonnes) : date de retrait en haut, gâteau et taille, nom du client puis son numéro, inscription, reste à payer et bouton « Soldée ». Le texte ne se coupe plus chiffre par chiffre (`seller-cakes.tsx`).
+    - **Pâtissier › Production (demandes 2, 9, 10)** : chaque produit du total s'ouvre (« Fraisier » → fenêtre) : pour qui (restaurant ou boutique ; particulier avec nom, téléphone et retrait), taille, inscription, instructions de la commande (`Order.notes`), allergènes déclarés du produit. Calcul `buildProductDetails` dans `production.service.ts`, renvoyé seulement au pâtissier (`details`), aussi avant l'heure limite ; fenêtre `product-detail-dialog.tsx`.
+    - **Stock boutiques (demande 8)** : une carte par boutique avec ses totaux (en stock, à jeter ce soir en rouge), produits en stock d'abord puis par nom, produits à zéro grisés, recherche par produit (`src/domains/shop/stock-groups.ts`, `stock-table.tsx`). Vaut pour le pâtissier, le boulanger, l'admin et la tablette.
+    - **Admin › Commandes (ADM-04)** : menu « Classer par » : tournée et arrêt (défaut), client A à Z, montant croissant, montant décroissant ; gardé dans l'adresse (`?sort=`) (`admin-order-sort.ts`).
+    - **Admin › Catalogue (ADM-02)** : onglets « Boulangerie » et « Pâtisserie » (produits et catégories de la famille, avec leur nombre) ; une catégorie créée dans un onglet prend sa famille ; le tri des catégories envoie toujours la liste complète au serveur.
+    - **Admin › Tournées (ADM-06)** : en haut, « Toutes les tournées » : le nom de chacune (créneau, arrêts, livreur) ; un clic ouvre la liste de ses clients dans l'ordre (adresse, accès, commande, articles, colis, heure prévue ou livrée, incident).
+  - **E-mail de création du compte vente jamais reçu (Admin › Boutiques)** : pas un défaut du code (même chemin que toutes les invitations : `inviteAuthUser`, `user.service.ts`). Cause probable : l'envoi Supabase de `annona-dev` passe encore par le SMTP par défaut, qui ne livre qu'aux membres de l'équipe Supabase et à quelques e-mails par heure ; à régler avec le SMTP Resend (AUTH-GOOGLE, à Théo). À vérifier aussi : `AUTH_EMAIL_LINKS_ENABLED=true` sur Vercel (sinon le compte est créé « en attente » et le message le dit). Non vérifié ici : journaux Supabase de `annona-dev` (projet d'Orso, hors de portée de l'outil) et variables Vercel (accès à l'équipe `track-app2` refusé à l'outil).
+  - **Non fait, décision nécessaire** : « allergies spécifiques » et « instructions » propres à une commande de gâteau de particulier n'existent pas dans le schéma (`CakeOrder` n'a qu'une inscription). Les ajouter = deux colonnes et une migration sur `annona-dev` (un seul développeur à la fois, à annoncer). En attendant, la fenêtre du pâtissier montre les instructions de la commande (`Order.notes`) et les allergènes du produit.
+  - Vérifications : `tests/retours1-tour-theo.test.ts` 6/6 (classement des commandes, regroupement du stock, « pour qui », allergènes non déclarés, libellé « Compte vente ») ; `npx tsc --noEmit` sans erreur ; `npm run check` sortie 0 (919 tests : 912 réussis, 0 échec, les autres ignorés).
+  - Non vérifié : clic réel dans le navigateur (aucun serveur lancé) sur les six écrans, en clair et en sombre, sur tablette et téléphone.

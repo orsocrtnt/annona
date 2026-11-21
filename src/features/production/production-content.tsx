@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Check, Lock, Printer, Tag } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, Lock, Printer, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { DeliveryDayPicker, parisDateKey } from "@/components/shared/delivery-day-picker";
-import type { PreparationLine, PreparationSheet, ProductionDay } from "@/domains/production/production.types";
+import type { PreparationLine, PreparationSheet, ProductionDay, ProductionTotalProduct } from "@/domains/production/production.types";
 import { useProductionDay, useSetPrepared } from "@/features/production/hooks";
 import { PrintArea, type PrintKind } from "@/features/production/print-area";
+import { ProductDetailDialog } from "@/features/production/product-detail-dialog";
 import { ShortageDialog } from "@/features/production/shortage-dialog";
 import { deadlineLabel, longDeliveryDateLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
@@ -146,6 +147,7 @@ export function ProductionContent({ readOnly = false, title }: { readOnly?: bool
 // ---------------------------------------------------------------------------
 
 function Totals({ day }: { day: ProductionDay }) {
+  const [opened, setOpened] = useState<ProductionTotalProduct | null>(null);
   if (day.totals.length === 0) {
     return <div className="rounded-2xl border border-dashed p-10 text-center text-lg text-muted-foreground">{t.empty}</div>;
   }
@@ -164,19 +166,42 @@ function Totals({ day }: { day: ProductionDay }) {
             </CardHeader>
             <CardContent>
               <ul className="divide-y">
-                {category.products.map((product) => (
-                  <li key={product.productId} className="flex items-center justify-between gap-3 py-2.5" data-testid={`total-${product.name}`}>
-                    <span className="text-base">
-                      {product.name} <span className="text-sm text-muted-foreground">· {product.unit}</span>
-                    </span>
-                    <span className={cn("text-2xl font-semibold tabular-nums", day.provisional && "text-muted-foreground")}>{product.quantity}</span>
-                  </li>
-                ))}
+                {category.products.map((product) => {
+                  const content = (
+                    <>
+                      <span className="text-base">
+                        {product.name} <span className="text-sm text-muted-foreground">· {product.unit}</span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className={cn("text-2xl font-semibold tabular-nums", day.provisional && "text-muted-foreground")}>{product.quantity}</span>
+                        {day.details ? <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden /> : null}
+                      </span>
+                    </>
+                  );
+                  return (
+                    <li key={product.productId} data-testid={`total-${product.name}`}>
+                      {day.details ? (
+                        // RETOURS-1 : le pâtissier ouvre « pour qui » (client, inscription, instructions, allergènes).
+                        <button
+                          type="button"
+                          className="-mx-2 flex min-h-12 w-[calc(100%+1rem)] items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-muted"
+                          onClick={() => setOpened(product)}
+                          aria-label={`${product.name} : voir pour qui`}
+                        >
+                          {content}
+                        </button>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3 py-2.5">{content}</div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </CardContent>
           </Card>
         ))}
       </div>
+      <ProductDetailDialog product={opened} detail={opened ? day.details?.[opened.productId] ?? null : null} onClose={() => setOpened(null)} />
     </section>
   );
 }

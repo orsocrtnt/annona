@@ -52,6 +52,29 @@ export interface LoadingRound {
   orderIds: string[];
 }
 
+/**
+ * RETOURS-1 (tour de Théo, 21 novembre) : pour le pâtissier, chaque produit du total s'ouvre sur « pour qui » :
+ * client ou boutique, particulier d'une commande de gâteau, taille, inscription et instructions de la commande.
+ */
+export interface ProductionRecipient {
+  lineId: string;
+  /** Restaurant (client) ou boutique qui reçoit. */
+  merchantName: string;
+  /** Commande de gâteau d'un particulier passée en boutique : son nom, son téléphone et l'heure de retrait. */
+  customer: { name: string; phone: string; pickupAt: string } | null;
+  quantity: number;
+  servings: number | null;
+  inscription: string | null;
+  /** Instructions laissées sur la commande (champ « notes »). */
+  notes: string | null;
+}
+
+export interface ProductionProductDetail {
+  /** Libellés des allergènes déclarés du produit ; `null` si non déclarés. */
+  allergens: string[] | null;
+  recipients: ProductionRecipient[];
+}
+
 export interface ProductionDay {
   date: string;
   cutoffAt: string;
@@ -64,4 +87,6 @@ export interface ProductionDay {
   totals: ProductionTotalCategory[];
   sheets: PreparationSheet[];
   rounds: LoadingRound[];
+  /** Pâtissier seulement (RETOURS-1) : détail « pour qui » de chaque produit du total, par `productId`. */
+  details?: Record<string, ProductionProductDetail>;
 }

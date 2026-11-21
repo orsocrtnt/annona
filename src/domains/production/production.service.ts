@@ -22,15 +22,70 @@ import type {
   LoadingRound,
   PreparationSheet,
   ProductionDay,
+  ProductionProductDetail,
   ProductionTotalCategory,
 } from "@/domains/production/production.types";
+import { allergenLabel, productAllergens } from "@/domains/catalog/allergens";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { fr } from "@/lib/i18n/fr";
 
 export type ProductionDb = Pick<
   PrismaClient,
   "merchant" | "slot" | "product" | "productSize" | "category" | "order" | "orderLine" | "round" | "stop" | "auditLog" | "$transaction"
->;
+> & { cakeOrder?: Pick<PrismaClient["cakeOrder"], "findMany"> };
+
+interface DetailLine {
+  id: string;
+  orderId: string;
+  productId: string;
+  quantityOrdered: number;
+  sizeId?: string | null;
+  inscription?: string | null;
+  cakeOrderId?: string | null;
+}
+
+/**
+ * RETOURS-1 (tour de Théo, 21 novembre) : « pour qui » est chaque produit de pâtisserie — client ou boutique,
+ * particulier d'une commande de gâteau (nom, téléphone, retrait), taille, inscription, instructions de la commande
+ * et allergènes déclarés du produit. Fonction pure, testée dans `tests/retours1-tour-theo.test.ts`.
+ */
+export function buildProductDetails(input: {
+  lines: readonly DetailLine[];
+  orders: ReadonlyArray<{ id: string; merchantId: string; notes?: string | null }>;
+  merchants: ReadonlyArray<{ id: string; name: string; tradeName?: string | null }>;
+  products: ReadonlyArray<{ id: string; allergens?: readonly string[] | null; allergensDeclared?: boolean | null }>;
+  servingsBySize: ReadonlyMap<string, number>;
+  cakeOrders: ReadonlyArray<{ id: string; customerName: string; customerPhone: string; pickupAt: Date; servings?: number | null }>;
+}): Record<string, ProductionProductDetail> {
+  const orderById = new Map(input.orders.map((order) => [order.id, order]));
+  const merchantById = new Map(input.merchants.map((merchant) => [merchant.id, merchant]));
+  const cakeById = new Map(input.cakeOrders.map((cake) => [cake.id, cake]));
+  const details: Record<string, ProductionProductDetail> = {};
+  for (const product of input.products) {
+    const declared = productAllergens({ allergens: product.allergens ?? [], allergensDeclared: Boolean(product.allergensDeclared) });
+    details[product.id] = { allergens: declared ? declared.map(allergenLabel) : null, recipients: [] };
+  }
+  for (const line of input.lines) {
+    const detail = details[line.productId];
+    if (!detail || line.quantityOrdered <= 0) continue;
+    const order = orderById.get(line.orderId);
+    const merchant = order ? merchantById.get(order.merchantId) : undefined;
+    const cake = line.cakeOrderId ? cakeById.get(line.cakeOrderId) : undefined;
+    detail.recipients.push({
+      lineId: line.id,
+      merchantName: merchant ? merchant.tradeName || merchant.name : "",
+      customer: cake ? { name: cake.customerName, phone: cake.customerPhone, pickupAt: cake.pickupAt.toISOString() } : null,
+      quantity: line.quantityOrdered,
+      servings: line.sizeId ? input.servingsBySize.get(line.sizeId) ?? cake?.servings ?? null : cake?.servings ?? null,
+      inscription: line.inscription?.trim() || null,
+      notes: order?.notes?.trim() || null,
+    });
+  }
+  for (const detail of Object.values(details)) {
+    detail.recipients.sort((a, b) => a.merchantName.localeCompare(b.merchantName, "fr") || (a.customer?.name ?? "").localeCompare(b.customer?.name ?? "", "fr"));
+  }
+  return details;
+}
 
 export interface BakerActor {
   companyId: string;
@@ -98,6 +153,33 @@ export function computeProductionTotals(
 // Lecture
 // ---------------------------------------------------------------------------
 
+async function loadProductDetails(
+  db: ProductionDb,
+  companyId: string,
+  lines: readonly DetailLine[],
+  orders: ReadonlyArray<{ id: string; merchantId: string; notes?: string | null }>,
+  products: Parameters<typeof buildProductDetails>[0]["products"]
+) {
+  const merchantIds = [...new Set(orders.map((order) => order.merchantId))];
+  const sizeIds = [...new Set(lines.map((line) => line.sizeId).filter((id): id is string => Boolean(id)))];
+  const cakeIds = [...new Set(lines.map((line) => line.cakeOrderId).filter((id): id is string => Boolean(id)))];
+  const [merchants, sizes, cakeOrders] = await Promise.all([
+    merchantIds.length ? db.merchant.findMany({ where: { companyId, id: { in: merchantIds } }, select: { id: true, name: true, tradeName: true } }) : [],
+    sizeIds.length ? db.productSize.findMany({ where: { companyId, id: { in: sizeIds } }, select: { id: true, servings: true } }) : [],
+    cakeIds.length && db.cakeOrder
+      ? db.cakeOrder.findMany({ where: { companyId, id: { in: cakeIds } }, select: { id: true, customerName: true, customerPhone: true, pickupAt: true, servings: true } })
+      : [],
+  ]);
+  return buildProductDetails({
+    lines,
+    orders,
+    merchants,
+    products,
+    servingsBySize: new Map(sizes.map((size) => [size.id, size.servings])),
+    cakeOrders,
+  });
+}
+
 /**
  * Lot 2, demande 2 : `family` limite la production à une famille de produits (le boulanger voit le pain,
  * le pâtissier la pâtisserie) ; une commande sans produit de la famille disparaît de ses bons. Sans
@@ -113,16 +195,16 @@ export async function getProductionDay(
   const statuses = day.closed ? PRODUCTION_STATUSES : PROVISIONAL_STATUSES;
   const allOrders = await db.order.findMany({
     where: { companyId, deliveryDate, status: { in: [...statuses] } },
-    select: { id: true, reference: true, merchantId: true, slotId: true, status: true },
+    select: { id: true, reference: true, merchantId: true, slotId: true, status: true, notes: true },
   });
   const allLines = await db.orderLine.findMany({
     where: { companyId, orderId: { in: allOrders.map((order) => order.id) } },
-    select: { id: true, orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, sizeId: true, inscription: true },
+    select: { id: true, orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, sizeId: true, inscription: true, cakeOrderId: true },
   });
   const [allProducts, categories] = await Promise.all([
     db.product.findMany({
       where: { companyId, id: { in: [...new Set(allLines.map((line) => line.productId))] } },
-      select: { id: true, name: true, unit: true, categoryId: true, sortOrder: true },
+      select: { id: true, name: true, unit: true, categoryId: true, sortOrder: true, allergens: true, allergensDeclared: true },
     }),
     db.category.findMany({ where: { companyId }, select: { id: true, name: true, sortOrder: true, family: true } }),
   ]);
@@ -142,6 +224,7 @@ export async function getProductionDay(
     orderCount: orders.length,
     itemCount: lines.reduce((sum, line) => sum + line.quantityOrdered, 0),
     totals,
+    ...(family === "PASTRY" ? { details: await loadProductDetails(db, companyId, lines, orders, products) } : {}),
   };
   // BOU-01 : bons et tournées seulement après l'heure limite.
   if (!day.closed) return { ...base, sheets: [], rounds: [] };

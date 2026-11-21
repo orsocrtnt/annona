@@ -100,7 +100,7 @@ export async function POST(request: Request) {
       INVALID_ROLE: "Rôle non autorisé.",
       COMPANY_REQUIRED: "Aucune entreprise associée. Créez d'abord une entreprise ou reconnectez-vous.",
       MERCHANT_REQUIRED: "Choisissez le client que ce compte représente.",
-      SHOP_REQUIRED: "Choisissez la boutique de cette vendeuse.",
+      SHOP_REQUIRED: "Choisissez la boutique de ce compte vente.",
       MERCHANT_NOT_ALLOWED: "Seul un compte client se rattache à un client.",
       ADMIN_ONLY: "Seul un administrateur peut créer un compte administrateur ou mini admin.",
     };
