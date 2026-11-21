@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Check, Lock, Printer, Tag } from "lucide-react";
+import { AlertTriangle, Check, ChevronRight, Lock, Printer, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { DeliveryDayPicker, parisDateKey } from "@/components/shared/delivery-day-picker";
-import type { PreparationLine, PreparationSheet, ProductionDay } from "@/domains/production/production.types";
+import type { PreparationLine, PreparationSheet, ProductionDay, ProductionTotalProduct } from "@/domains/production/production.types";
 import { useProductionDay, useSetPrepared } from "@/features/production/hooks";
 import { PrintArea, type PrintKind } from "@/features/production/print-area";
+import { ProductDetailDialog } from "@/features/production/product-detail-dialog";
 import { ShortageDialog } from "@/features/production/shortage-dialog";
 import { deadlineLabel, longDeliveryDateLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
@@ -24,7 +25,11 @@ type View = "totals" | "sheets" | "rounds";
 const VIEWS: View[] = ["totals", "sheets", "rounds"];
 
 /** BOU-1 — espace boulanger pensé tablette : gros boutons, une date, trois vues. */
-export function ProductionContent() {
+/**
+ * `readOnly` (lot 2, demande 2) : espace pâtissier, qui lit sa production sans marquer « préparé » ni
+ * signaler de manquant à cette étape ; `title` remplace le titre « Production ».
+ */
+export function ProductionContent({ readOnly = false, title }: { readOnly?: boolean; title?: string } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -57,7 +62,7 @@ export function ProductionContent() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title ?? t.title}</h1>
           <p className="mt-1 text-muted-foreground">{longDeliveryDateLabel(date)}</p>
         </div>
         {data?.closed && data.sheets.length > 0 ? (
@@ -125,7 +130,7 @@ export function ProductionContent() {
 
           {!data.closed || view === "totals" ? <Totals day={data} /> : null}
           {data.closed && view === "sheets" ? (
-            <Sheets day={data} packages={packages} onPackages={(orderId, value) => setPackages((all) => ({ ...all, [orderId]: value }))} onShortage={setShortageLine} />
+            <Sheets day={data} readOnly={readOnly} packages={packages} onPackages={(orderId, value) => setPackages((all) => ({ ...all, [orderId]: value }))} onShortage={setShortageLine} />
           ) : null}
           {data.closed && view === "rounds" ? <Rounds day={data} /> : null}
 
@@ -142,6 +147,7 @@ export function ProductionContent() {
 // ---------------------------------------------------------------------------
 
 function Totals({ day }: { day: ProductionDay }) {
+  const [opened, setOpened] = useState<ProductionTotalProduct | null>(null);
   if (day.totals.length === 0) {
     return <div className="rounded-2xl border border-dashed p-10 text-center text-lg text-muted-foreground">{t.empty}</div>;
   }
@@ -160,19 +166,42 @@ function Totals({ day }: { day: ProductionDay }) {
             </CardHeader>
             <CardContent>
               <ul className="divide-y">
-                {category.products.map((product) => (
-                  <li key={product.productId} className="flex items-center justify-between gap-3 py-2.5" data-testid={`total-${product.name}`}>
-                    <span className="text-base">
-                      {product.name} <span className="text-sm text-muted-foreground">· {product.unit}</span>
-                    </span>
-                    <span className={cn("text-2xl font-semibold tabular-nums", day.provisional && "text-muted-foreground")}>{product.quantity}</span>
-                  </li>
-                ))}
+                {category.products.map((product) => {
+                  const content = (
+                    <>
+                      <span className="text-base">
+                        {product.name} <span className="text-sm text-muted-foreground">· {product.unit}</span>
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className={cn("text-2xl font-semibold tabular-nums", day.provisional && "text-muted-foreground")}>{product.quantity}</span>
+                        {day.details ? <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden /> : null}
+                      </span>
+                    </>
+                  );
+                  return (
+                    <li key={product.productId} data-testid={`total-${product.name}`}>
+                      {day.details ? (
+                        // RETOURS-1 : le pâtissier ouvre « pour qui » (client, inscription, instructions, allergènes).
+                        <button
+                          type="button"
+                          className="-mx-2 flex min-h-12 w-[calc(100%+1rem)] items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-muted"
+                          onClick={() => setOpened(product)}
+                          aria-label={`${product.name} : voir pour qui`}
+                        >
+                          {content}
+                        </button>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3 py-2.5">{content}</div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </CardContent>
           </Card>
         ))}
       </div>
+      <ProductDetailDialog product={opened} detail={opened ? day.details?.[opened.productId] ?? null : null} onClose={() => setOpened(null)} />
     </section>
   );
 }
@@ -187,11 +216,13 @@ function where(sheet: PreparationSheet) {
 
 function Sheets({
   day,
+  readOnly,
   packages,
   onPackages,
   onShortage,
 }: {
   day: ProductionDay;
+  readOnly: boolean;
   packages: Record<string, number>;
   onPackages: (orderId: string, value: number) => void;
   onShortage: (line: PreparationLine) => void;
@@ -221,6 +252,7 @@ function Sheets({
                   <p className="text-sm text-muted-foreground">
                     {sheet.slotLabel} · {where(sheet)} · {sheet.reference}
                   </p>
+                  {sheet.notes ? <p className="rounded-md bg-warning-subtle px-2 py-1 text-sm font-medium text-warning" data-testid="sheet-notes">⚠ {sheet.notes}</p> : null}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="divide-y">
@@ -231,11 +263,12 @@ function Sheets({
                           <div className="min-w-0 flex-1">
                             <p className="text-base font-medium">{line.name}</p>
                             <p className="text-xs text-muted-foreground">{line.categoryName} · {line.unit}</p>
+                            {line.detail ? <p className="text-sm font-medium text-brand" data-testid="sheet-line-detail">{line.detail}</p> : null}
                           </div>
                           <span className={cn("text-xl font-semibold tabular-nums", short && "text-error")}>
                             {short ? t.deliveredOf(line.quantityDelivered!, line.quantityOrdered) : line.quantityOrdered}
                           </span>
-                          <Button
+                          {readOnly ? null : <Button
                             type="button"
                             variant="outline"
                             size="icon-touch"
@@ -244,7 +277,7 @@ function Sheets({
                             onClick={() => onShortage(line)}
                           >
                             <AlertTriangle />
-                          </Button>
+                          </Button>}
                         </li>
                       );
                     })}
@@ -263,7 +296,7 @@ function Sheets({
                         className="h-11 w-20 text-center text-base tabular-nums"
                       />
                     </label>
-                    <Button
+                    {readOnly ? null : <Button
                       type="button"
                       size="lg"
                       variant={sheet.prepared ? "outline" : "brand"}
@@ -282,7 +315,7 @@ function Sheets({
                       }
                     >
                       {sheet.prepared ? <><Check /> {t.prepared}</> : t.markPrepared}
-                    </Button>
+                    </Button>}
                   </div>
                 </CardContent>
               </Card>

@@ -5,6 +5,7 @@
  * l'écran « Commander » affiche en tête du catalogue.
  */
 import type { PrismaClient } from "@prisma/client";
+import { cakeArticleId } from "@/lib/validations/order";
 import { prisma } from "@/services/prisma/client";
 import { productAllergens } from "@/domains/catalog/allergens";
 import { applyPrices } from "@/domains/catalog/pricing";
@@ -28,7 +29,8 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
         id: true,
         name: true,
         products: {
-          where: { companyId: actor.companyId, active: true },
+          // Lot 2, demande 4 : sans prix restaurant, absent du catalogue des restaurants ; gros gâteaux par taille (demande 10).
+          where: { companyId: actor.companyId, active: true, basePriceCents: { not: null }, NOT: { pastryFormat: "LARGE" } },
           orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
           select: { id: true, name: true, description: true, unit: true, photoUrl: true, basePriceCents: true, vatRateBasisPoints: true, allergens: true, allergensDeclared: true },
         },
@@ -49,17 +51,45 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
   ]);
   if (!company) throw new DomainRuleError(404, "Entreprise introuvable.", "COMPANY_NOT_FOUND");
 
+  // Lot 2, demande 10 : gros gâteaux, un article par taille ayant un prix restaurant (au choix de la taille).
+  const cakeRows = await prisma.product.findMany({
+    where: { companyId: actor.companyId, active: true, pastryFormat: "LARGE", category: { active: true } },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: {
+      id: true, name: true, description: true, unit: true, photoUrl: true, vatRateBasisPoints: true, allergens: true, allergensDeclared: true,
+      categoryId: true,
+      sizes: { where: { restaurantPriceCents: { not: null } }, orderBy: { servings: "asc" }, select: { id: true, servings: true, restaurantPriceCents: true } },
+    },
+  });
   const allProducts = categories.flatMap((category) => category.products);
   const prices = applyPrices(allProducts, specificPrices);
   // Lot 1, demande 2 : promotions en cours qui concernent ce client et lui font payer moins cher.
   const offers = await loadPromotionOffers(prisma, actor.companyId, actor.merchantId, companyToday(now, company.timezone), allProducts, prices);
+  const cakeArticles = (categoryId: string) =>
+    cakeRows
+      .filter((cake) => cake.categoryId === categoryId)
+      .flatMap((cake) =>
+        cake.sizes.map((size) => ({
+          id: cakeArticleId(cake.id, size.id),
+          name: `${cake.name} · ${size.servings} personnes`,
+          description: cake.description,
+          unit: cake.unit,
+          photoVersion: isProductPhotoPath(cake.photoUrl, actor.companyId) ? photoVersion(cake.photoUrl!) : null,
+          unitPriceCents: size.restaurantPriceCents!,
+          vatRateBasisPoints: cake.vatRateBasisPoints,
+          isSpecific: false,
+          allergens: productAllergens(cake),
+          promo: null,
+          cake: { productId: cake.id, sizeId: size.id, servings: size.servings },
+        }))
+      );
   return {
     categories: categories
-      .filter((category) => category.products.length > 0)
+      .filter((category) => category.products.length > 0 || cakeArticles(category.id).length > 0)
       .map((category) => ({
         id: category.id,
         name: category.name,
-        products: category.products.map((product) => {
+        products: [...category.products.map((product) => {
           const price = prices.get(product.id)!;
           return {
             id: product.id,
@@ -76,7 +106,7 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
               return offer ? { unitPriceCents: offer.promoUnitPriceCents, remaining: offer.remaining, endsOn: offer.endsOn } : null;
             })(),
           };
-        }),
+        }), ...cakeArticles(category.id)],
       })),
     slots: slots.map((slot) => ({ id: slot.id, label: clientSlotLabel(slot), startTime: slot.startTime, endTime: slot.endTime, period: slot.period })),
     rules: {

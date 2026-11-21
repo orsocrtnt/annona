@@ -4,25 +4,37 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**23 tâches terminées sur 31 — 74 %**
+**23 tâches terminées sur 43 — 53 %**
 
-`███████████████░░░░░` · 8 tâches restantes
+`███████████░░░░░░░░░` · 20 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **2** : ACCES-1, MOBILE-1 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
+| À faire | **14** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
-- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (lot 2 (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo)
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (après la fusion du lot 2 de Théo (LOT2-D1 à D10) : lot 2 de la démo (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo)
 
 **À faire par Orso**
 
+- DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
+- LOT2-D1 — Boutiques et comptes vendeuse (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D2 — Compte pâtissier (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D3 — Produits : création, recettes, durée de vente (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D4 — Prix restaurant et prix boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D5 — Envois quotidiens vers les boutiques (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D6 — Réception le matin en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D8 — Stock des boutiques (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D9 — Commandes de gâteaux des particuliers en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D10 — Pâtisseries pour les restaurants (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre) (4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (e-mail de l'accès Vente) ; Théo — recette navigateur sur https://annona-gray.vercel.app)
 
 **À faire par Théo**
 
@@ -35,9 +47,31 @@
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 16 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 21 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
+
+**Point du 21 novembre 2026 : retouches du tour de Théo en ligne (Orso : à lire en premier)**
+
+- **En ligne sur https://annona-gray.vercel.app** (PR #58, #59 et #60 fusionnées dans `base`, déploiement `dpl_Dfipx13pmatJbucRxCdZhm7jVBgo`, tâche RETOURS-2) :
+  - le rôle « Vendeuse » s'affiche « **Vente** » (code interne `SELLER` inchangé) ;
+  - réception du matin et clôture du soir de la tablette Vente classées par rayon : Pâtisserie, puis Boulangerie, puis catégories dans l'ordre du catalogue ;
+  - commandes de gâteaux à retirer en petites cartes lisibles ; fenêtre « pour qui » du pâtissier (client, particulier, inscription, instructions, allergènes) ; stock des boutiques regroupé par boutique ;
+  - admin : tri des commandes (client, montant), onglets Boulangerie / Pâtisserie du catalogue, liste de toutes les tournées avec leurs clients ;
+  - champ facultatif « **Allergies / instructions** » sur chaque produit du panier client, pour toute la commande et sur la commande de gâteau en boutique ; lu sur les bons de préparation, chez le pâtissier, en admin et chez le client.
+- **Migration appliquée sur `annona-dev`** (21 novembre, Théo) : `20261121120000_retours2_line_notes`, deux colonnes vides `order_lines.note` et `cake_orders.note`, rien d'autre. **Orso : après `git pull` sur `base`, lancer `npm run db:generate`** ; ne pas relancer la migration. **DEMO-1** : écrire la migration `demo_pool_environments` avec un nom daté après `20261121120000` (rien ne se chevauche).
+- **E-mail de création des accès (invitations) toujours bloqué** : `annona-dev` envoie par le SMTP par défaut de Supabase, qui ne livre qu'aux membres de l'organisation. Domaine d'envoi `mail.annona.fr` créé dans le compte Resend de Théo, en attente de 4 enregistrements DNS chez **Dovendi** (bureau d'enregistrement d'annona.fr, accès d'Orso seulement) : valeurs exactes dans la liste d'Orso ci-dessous.
+- **Vérifié** : `npm run check` vert (916 tests réussis, 0 échec), CI verte sur les trois PR, `/api/health` et `/login` 200, routes protégées 401 sans connexion, 15 833 lignes de commande intactes après la migration. **Non vérifié** : écrans ouverts connecté dans le navigateur (recette de Théo).
+- **PR anciennes encore ouvertes, de Théo** : #43 (Vercel, SEP-1), #44 (tour automatique RETOURS-1, 13 remarques), #45 (mots de passe des comptes de démo). À fusionner ou fermer par Théo.
+
+**Point du 19 novembre 2026 : lot 2 de Théo débloqué**
+
+- **Décisions d'Orso** : OK pour les boutiques en client de type « boutique » (`Merchant.kind = SHOP`) ; le lot 2 de Théo passe avant DEMO-1.
+- **Relecture des PR #48 à #53** (Claude d'Orso, compte rendu en commentaire de la PR #53) : migrations sans reproche ; isolation entre entreprises et rôles sans reproche ; **deux défauts à corriger par Théo avant la fusion** : double réception d'un envoi qui compte le stock deux fois (`shop-stock.service.ts`), correction admin cassée sur une commande avec deux lignes du même produit (`admin-order.service.ts`, `admin-order-detail.tsx`) ; cinq points à corriger après.
+- **Les 6 migrations du lot 2 sont appliquées sur `annona-dev`** (19 novembre, Claude d'Orso, accord d'Orso, depuis `theo/lot2-d10` au commit `4e0b2b8`, `prisma migrate deploy` par le pooler, port 5432). Vérifications : `migrate status` à jour ; `migrate diff` contre le schéma de la branche de Théo : aucun écart ; RLS active et aucun droit `anon`/`authenticated` sur les 5 nouvelles tables ; 715 lignes de commande et 20 clients inchangés ; seules « Pâtisseries individuelles » et « Gâteaux à partager » passent en pâtisserie. Site en ligne (code de `base`) : produits, catégories, clients, commandes et utilisateurs avec leur rôle se lisent sans erreur avec le client Prisma de `base` ; `/api/health` et `/login` répondent 200.
+- **Attention jusqu'au déploiement du lot 2** : ne créer sur `annona-dev` ni compte pâtissier ou vendeuse, ni envoi. Le site en ligne ne connaît pas ces valeurs, et la liste des utilisateurs ou des commandes planterait (constaté : la lecture de tous les rôles échoue déjà avec le client de `base`, mais le site ne la fait jamais).
+- **Non vérifié** : pages du site en ligne ouvertes connecté (extension Chrome indisponible) ; recette du lot 2 (après les deux correctifs de Théo, sur sa branche en local ou sur le site une fois déployé).
+- **Suite** : Théo corrige les deux défauts, passe ses PR en « prêtes », puis fusion dans l'ordre (#47, #48 à #53) et déploiement ; ensuite Claude fait la recette du lot 2 et reprend DEMO-1.
 
 **Point du 16 novembre 2026 (Orso : à lire en premier)**
 
@@ -69,22 +103,41 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Fichiers partagés, à toucher en petits commits et PR courtes : `src/lib/i18n/fr.ts` (ajouter ses textes dans la section de sa zone, jamais réordonner), `package.json` et `package-lock.json` (Théo ajoute les paquets Capacitor ; Orso n'en ajoute pas sans prévenir), `TODO.md` et l'archive (garder les deux versions en cas de conflit).
 
 **1. Orso**
+- **Comptes de démo, mots de passe changés le 18 novembre (demande de Théo, repris de la PR #45 fermée le 22 novembre)** : les 12 comptes `demo-…@annona.fr` de `annona-dev` ont maintenant tous le même mot de passe simple, plus facile à taper sur téléphone (super-admin compris, choix de Théo). Il n'est pas écrit ici (dépôt public) : demande-le à Théo. Vérifié : les 12 comptes se connectent sur https://annona-gray.vercel.app. **À faire de ton côté** : mettre ce mot de passe dans ta copie de `outputs/comptes-demo.json` (et `.md`). Sinon, un seed relancé chez toi remettrait les anciens mots de passe, et tes recettes Playwright échoueraient. Avant les vrais clients : redonner un mot de passe solide au super-admin, puisque le site est public.
+- **DNS pour l'e-mail des invitations (21 novembre, RETOURS-2, le plus urgent)** : chez Dovendi, zone `annona.fr`, ajouter exactement ces 4 enregistrements (noms relatifs à `annona.fr` ; aucun enregistrement existant n'est touché) :
+  - TXT `resend._domainkey.mail` → `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDa22M1D8ujUC0DW6CW7UeVczxmJ6kvTpca7TLTpumFMofGW+7VSbq4aQjzZ6MhQWIG61pGmBHO4iLdoo3AiejDSL90cOYR3TFMeONzURQDfnslwta3yXzrjKbznsP2kvpX1rd96n3XYfvrCHUUyrCZatMPkFggCDSjMx5Fr/BIcwIDAQAB`
+  - MX `send.mail` → `feedback-smtp.eu-west-1.amazonses.com` (priorité 10)
+  - TXT `send.mail` → `v=spf1 include:amazonses.com ~all`
+  - CNAME `rsend.mail` → `send.forge.rmta.net`
+  
+  Puis prévenir Théo : son Claude vérifie le domaine et crée la clé Resend ; Théo règle le SMTP dans Supabase.
+- **Après le `git pull` de `base` (21 novembre)** : `npm run db:generate` (nouvelles colonnes `note`) ; migration DEMO-1 datée après `20261121120000_retours2_line_notes`.
+- **Base `annona-dev` remplie pour tester en conditions réelles (20 novembre, demande de Théo)** : 200 clients fictifs de plus (préfixe `sim_`), 5 tournées du matin (Nord, Sud, Est, Ouest, Centre) d'environ 40 arrêts, une par livreur de démo ; 3 boutiques (Centre-ville, Bastille, Passy) avec 10 pains spéciaux et 15 pâtisseries par jour. Du 13 au 19 novembre tout est livré, reçu et clôturé ; le 20, tout est verrouillé et attribué ; du 21 au 27, commandes validées et gâteaux commandés. Compte rendu : `docs/rapports/2026-11-20-donnees-de-test.md`. Au passage, **erreur React n° 418 corrigée** (PR `theo/dates-hydratation`) : « Envois aux boutiques » et l'accueil super-admin figeaient la date du jour au déploiement.
+- **Recette du lot 2 faite le 19 novembre au soir** (session Claude de Théo, sur le site en ligne) : catalogue pâtissier complété (41 pâtisseries dont 7 gros gâteaux par taille), prix restaurant et prix boutique saisis, scénario complet des demandes 1 à 10 sur les six comptes : **63 vérifications sur 63 par l'API, 50 écrans sur 50 dans le navigateur**. Compte rendu : `docs/rapports/2026-11-19-recette-lot2.md`. À toi de valider pour clore LOT2-D1 à D10.
+- **Lot 2 en ligne (19 novembre au soir, accord de Théo)** : PR #47 puis #53 fusionnées (#48 à #52 incluses, marquées fusionnées par GitHub), site Vercel redéployé avec `base` à jour (`79e2f41`). Comptes de test créés sur `annona-dev` : boutique « Centre-ville (démo) » (tournée Nord, code responsable dans `outputs/comptes-demo.md`), `demo-patissier@annona.fr` et `demo-vendeuse@annona.fr` (mot de passe des comptes de démo, demandez-le à Théo). Vérifié sur le site : les 6 profils (admin, pâtissier, boulanger, vendeuse, super-admin, client) se connectent et leurs écrans répondent (liste des comptes de l’admin : 14 comptes, sans erreur). Reste : recette du lot 2 dans le navigateur (LOT2-D1 à D10).
+- **Question rapide (19 novembre, Théo d'accord pour avancer en attendant)** : pour le lot 2, une boutique est un client de type « boutique » (`Merchant.kind = SHOP`), ce qui lui donne gratuitement sa place dans les tournées. OK pour toi ? Si non, dis-le avant que les étapes suivantes s'empilent dessus. Les PR #48 (D1, D2) et suivantes sont en **brouillon** : elles passeront en « prêtes » une fois ta migration DEMO-1 appliquée.
+- **Lot 2 (pâtisserie, boutiques, stock), demandé par Théo le 18 novembre** : 10 tâches LOT2-D1 à D10, détail dans `docs/cahier-des-charges/LOT2-PATISSERIE-BOUTIQUES.md`. Claude (session de Théo) code dans ta zone (`prisma/`, `src/domains/`, back-office), une PR par étape, à relire. **La migration du lot 2 n'est pas appliquée sur `annona-dev`** : à toi de l'appliquer après celle de DEMO-1, puis Claude fait la recette sur le site.
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - MOBILE-1 : ouvrir les comptes **Apple Developer** (99 $ par an) et **Google Play Console** (25 $ une fois), décidé le 16 novembre. Un seul compte de chaque suffit pour plusieurs applications, mais toutes s'affichent sous le même nom de vendeur (compte « organisation » = nom de la société, numéro D-U-N-S gratuit). Google Play : un compte personnel récent doit faire tester l'application par au moins 12 personnes pendant 14 jours (test fermé) avant de pouvoir la publier ; un compte organisation y échappe.
+- DA-1 : relire la plaquette d'identité (canvas, page « Plaquette », 12 planches) et la valider ou dire ce qui cloche. La partager à Théo si tu veux son avis (menu Share).
 - Plus tard : mentions légales des factures (ACCES-1) ; projet Firebase pour les notifications sur téléphone (MOBILE-1, reporté le 16 novembre).
 
 **2. Théo**
-- Redéployer le site avec `base` à jour (dernier déploiement noté : `535089e` ; depuis : PR #31 et suivantes, dont la connexion Google dans l'application et le menu de navigation) : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`. **Relier le projet Vercel `annona` à `orsocrtnt/annona`** (Vercel › Settings › Git › Connect Git Repository, branche de production `base`) : l'application GitHub de Vercel a déjà accès au dépôt (vérifié le 16 novembre), et le compte Vercel d'Orso n'est pas dans ton équipe `track-app2`, donc c'est à toi. Ensuite, plus de redéploiement à la main. Si Vercel ne propose pas le dépôt, le dire à Orso.
+- Site redéployé le 21 novembre avec `base` à jour (`feb8034`, voir « Mise en ligne » ci-dessous). Pour la suite : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`. **Relier le projet Vercel `annona` à `orsocrtnt/annona`** (Vercel › Settings › Git › Connect Git Repository, branche de production `base`) : l'application GitHub de Vercel a déjà accès au dépôt (vérifié le 16 novembre), et le compte Vercel d'Orso n'est pas dans ton équipe `track-app2`, donc c'est à toi. Ensuite, plus de redéploiement à la main. Si Vercel ne propose pas le dépôt, le dire à Orso.
 - Pour info (16 novembre, Claude d'Orso, accord d'Orso) : deux retouches dans ton travail, PR `orso/petits-correctifs` : commentaire de `google-button.tsx` (le bouton se réactive dès l'ouverture de la page Google) ; minuteries N2 de `use-driver-action-queue.ts` déplacées dans `network-back-retries.ts` (retirées quand elles partent, remplacées à chaque retour du réseau), test `tests/recette-v1-network-back-retries.test.ts`.
-- AUTH-GOOGLE : brancher le SMTP Resend de **ton** compte Resend sur `annona-dev` (décision d'Orso du 15 novembre) : Supabase › Authentication › Emails › SMTP Settings, valeurs dans `docs/AUTH_EMAIL_SETUP.md` (hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = une clé Resend dédiée, restreinte à l'envoi). L'expéditeur doit être sur un domaine vérifié **dans ton compte Resend** (`no-reply@annona.fr` demande les enregistrements DNS d'annona.fr, à voir avec Orso). Ensuite, coller les trois modèles de `docs/operations/email/supabase/` et couper le suivi des clics chez Resend. Puis Claude fait l'inscription par e-mail et clôt la tâche.
+- AUTH-GOOGLE : brancher le SMTP Resend de **ton** compte Resend sur `annona-dev` (décision d'Orso du 15 novembre) : Supabase › Authentication › Emails › SMTP Settings, valeurs dans `docs/AUTH_EMAIL_SETUP.md` (hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = une clé Resend dédiée, restreinte à l'envoi). L'expéditeur doit être sur un domaine vérifié **dans ton compte Resend** : `mail.annona.fr` créé le 21 novembre, en attente des DNS d'Orso (étapes dans RETOURS-2 ci-dessous). Ensuite, coller les trois modèles de `docs/operations/email/supabase/` et couper le suivi des clics chez Resend. Puis Claude fait l'inscription par e-mail et clôt la tâche.
 - Fait le 15 novembre (Théo, invité sur l'organisation Supabase d'Orso) : Redirect URLs de `annona-dev` complétées avec `https://annona-gray.vercel.app/**` et `fr.annona.app://auth/callback**`. Connexion Google complète vérifiée par Théo sur le site Vercel et dans l'application Android (émulateur).
 - RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
 - RETOURS-1 (demande d'Orso du 16 novembre) : faire un tour complet de l'application (les quatre espaces, site en ligne et application Android) et noter les retouches à faire et ce qu'il faudrait ajouter, dans `docs/rapports/` (détail dans la tâche).
+- **RETOURS-2 (21 novembre) : tout est fusionné, migré et en ligne.** À faire : (1) recette dans le navigateur, connecté, sur https://annona-gray.vercel.app : Vente (réception, clôture, gâteaux avec « Allergies / instructions »), pâtissier (clic sur un gâteau dans la production, stock), admin (tri des commandes, onglets du catalogue, tournées), client (panier : « + Allergies / instructions » sous un produit et pour la commande) ; (2) quand Orso a posé les DNS : demander à Claude de vérifier `mail.annona.fr` et de créer la clé Resend, puis Supabase `annona-dev` › Authentication › Emails › SMTP Settings : hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = la clé, expéditeur `no-reply@mail.annona.fr`, nom `Annona` ; coller les trois modèles de `docs/operations/email/supabase/` ; Vercel : `AUTH_EMAIL_LINKS_ENABLED=true` puis redéployer ; recréer un accès Vente et vérifier que l'e-mail arrive ; (3) fusionner ou fermer les anciennes PR #43, #44, #45.
+- **Mise en ligne (21 novembre)** : `.claude/settings.local.json` (personnel, hors Git) autorise Claude à lancer `npx prisma migrate deploy`, `gh pr merge` et `vercel deploy`. Déploiement à la main tant que le projet Vercel n'est pas relié au dépôt : dossier `../annona-vercel`, `git fetch && git checkout --detach origin/base`, `vercel deploy --prod --scope track-app2`, puis supprimer `.env.local` créé par `vercel link`. Migration par le pooler, port 5432 (l'hôte direct `db.…supabase.co` ne répond pas en IPv6).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
+- RETOURS-2 / AUTH-GOOGLE : dès qu'Orso a posé les DNS, vérifier le domaine `mail.annona.fr` dans le compte Resend de Théo (connecteur Resend), puis créer une clé « envoi seulement » limitée à ce domaine et la donner à Théo pour le SMTP Supabase.
+- DA-1 : une fois la plaquette validée par Orso, appliquer la nouvelle identité (couleurs, police Geist, logo soleil, écrans) en commençant par `globals.css` et `docs/DESIGN_SYSTEM.md`.
 - MOBILE-1 : application iOS compilée pour le simulateur le 16 novembre (iOS 26.5 installé sur le Mac d'Orso). Reste : la lancer sur le simulateur, essayer la connexion Google et le menu « Comment y aller ? » (Plans). En pause : Orso a demandé de garder son processeur libre ; lui demander le feu vert avant de relancer le simulateur ou le serveur local.
 - DEMO-1 : une démo par visiteur, ouverte à tous, sans aucun envoi, journée réaliste (décisions d'Orso du 16 novembre). Lot 1 (journée de démo) fait ; suite : lot d'environnements et connexion sans identifiants (nouvelle table, migration à annoncer à Théo), garde-fous, écrans.
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
@@ -104,9 +157,22 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
+- [ ] **DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B).**
+
+  **Qui : Orso — relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code.**
+
+  - **Contexte (18 novembre 2026)** : Orso juge « pourrie » la DA verte actuelle (`src/app/globals.css`, `docs/DESIGN_SYSTEM.md`, encore marquée provisoire « DESIGN-1 »). Elle avait été faite pour l'ancien produit (coursiers).
+  - **Exploration faite avec Orso, pas à pas**, sur un canvas Claude privé d'Orso (lien non écrit ici, dépôt public ; page « Pistes ») : 12 pistes « métier » (four, kraft, devanture…), trois synthèses, puis six familles modernes. Diagnostic d'Orso : les pistes métier sont trop rétro et déguisées, pas assez belles, pas assez fortes ; ressenti visé à l'ouverture de l'app : « simple et rapide ». Familles retenues : Net (néo-banque) et Livraison (suivi en direct), puis leur **croisement**, choisi par Orso.
+  - **Direction retenue (croisement Net × Livraison)** : noir, blanc et gris, un seul accent jaune « Aube » `#FFD60A` (marque, action principale, en direct ; jamais en texte sur blanc). Police Geist (Geist Mono pour les numéros). Logo : un soleil qui se lève sur une ligne d'horizon ; le même soleil sert de point du livreur sur la carte. Une seule alerte : rouge `#E5484D` (texte `#B42318`). Thème sombre pour le livreur et le labo la nuit.
+  - **Plaquette complète faite le 18 novembre** (même canvas, page « Plaquette », 12 planches) : couverture, idée, logo (construction, versions, interdits), couleurs (rôles, proportions, thèmes clair et sombre, statuts de commande Brouillon → Livrée), typographie, composants, mobile commerçant, mobile livreur, **ordinateur commerçant** et **ordinateur boulanger**, applications (notifications, e-mail, étiquette de cagette, bon de livraison), ton et mots. Données d'exemple seulement.
+  - **Rien n'a changé dans le code.** Aucune vérification lancée : il n'y a ni code ni écran modifié. Le canvas est privé : Théo ne peut l'ouvrir que si Orso le partage (menu Share).
+  - **Suite, une fois validée** : jetons de couleur et police dans `globals.css` (zone d'Orso), logo en SVG dans `public/brand/` et `src/components/brand/`, mise à jour de `docs/DESIGN_SYSTEM.md` (supprimer la palette bleue historique), puis écrans un par un avec recette navigateur clair et sombre. Les tests de thème (`tests/theme-tokens.test.ts`, `tests/e2e/design2-theme.spec.ts`) devront suivre.
+
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
-  **Qui : Claude — lot 2 (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo.**
+  **Qui : Claude — après la fusion du lot 2 de Théo (LOT2-D1 à D10) : lot 2 de la démo (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo.**
+
+  - 19 novembre 2026, décision d'Orso : le lot 2 de Théo (pâtisserie, boutiques, stock) passe **avant** DEMO-1, dont la migration (`demo_pool_environments`) n'était pas encore écrite. Ses 6 migrations sont déjà sur `annona-dev` ; la migration DEMO-1 s'écrira par-dessus, après la fusion des PR #48 à #53.
 
   **En cours : Orso.**
 
@@ -124,6 +190,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 - [ ] **SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub.**
 
   **Qui : Théo — relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr.**
+
+  - 16 novembre 2026 (session Claude de Théo, repris de la PR #43 fermée le 22 novembre) : `vercel git connect https://github.com/orsocrtnt/annona --scope track-app2` **refusé** par Vercel (« Failed to connect orsocrtnt/annona to project. Make sure… you have access to the repository »). Cause probable, non vérifiée : l'application GitHub de Vercel est installée sur le compte GitHub d'Orso, et seul le compte Vercel relié à ce compte GitHub peut s'en servir ; Théo a les droits d'écriture sur le dépôt, pas d'administration. Pistes : (a) Théo essaie par le tableau de bord (Settings › Git) ; (b) sinon, un « Deploy Hook » Vercel appelé par une action GitHub à chaque fusion dans `base` (le secret du dépôt doit être ajouté par Orso) ; (c) ou Orso devient membre de l'équipe `track-app2` (offre Pro). En attendant, redéploiement à la main (dernier : 21 novembre, `feb8034`).
 
   - 16 novembre 2026 (Claude d'Orso, dans Chrome, à la demande d'Orso) : l'application GitHub « Vercel » est **déjà installée** sur le compte `orsocrtnt` avec l'accès à **tous les dépôts** (github.com/settings/installations/139829141, après confirmation d'identité faite par Orso) : rien à changer côté GitHub. Le compte Vercel d'Orso n'appartient qu'à l'équipe TutelLiv (outil Vercel `list_teams`), pas à `track-app2` : le branchement du projet `annona` au dépôt revient à Théo. Non vérifié : que Vercel propose bien `orsocrtnt/annona` dans le compte de Théo.
 
@@ -281,6 +349,163 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   Terminé quand : une entreprise s'inscrit (e-mail et Google) et arrive dans son espace admin ; un compte créé par l'admin se connecte avec Google ; une adresse Google inconnue est refusée ; isolation entre entreprises vérifiée (PLA-01) ; tests du parcours.
 
+### Lot 2 de demandes de modification : pâtisserie, boutiques et stock (Théo Nerisson, 18 novembre 2026)
+
+_Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié avec les choix techniques dans `docs/cahier-des-charges/LOT2-PATISSERIE-BOUTIQUES.md`. Ordre imposé : D1 à D4, puis D5, puis D6 à D8, puis D9 et D10. Décisions de Théo du 18 novembre : code en PR sur des branches `theo/lot2-…` ; **migration écrite mais pas appliquée sur `annona-dev`** (Orso l'applique après celle de DEMO-1) ; pain ou pâtisserie décidé par la catégorie ; alertes dans la cloche ; boutiques livrées le matin. **Le lot touche la zone d'Orso** (`prisma/`, `src/domains/`, back-office) : chaque PR est à relire par lui._
+
+- [ ] **LOT2-D1 — Boutiques et comptes vendeuse.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`, **migrations écrites, pas appliquées**) :
+    - **Modèle** : boutique = `Merchant.kind = SHOP` (migration `20261118100000_lot2_roles_shops`), qui reprend l'adresse, les consignes, la position et la tournée d'un client ; rôles `PASTRY_CHEF` et `SELLER` et permissions `shops:read`, `shops:manage`, `dashboard:pastry` et `dashboard:shop` (migration `20261118100100_lot2_roles_data`, séparée car PostgreSQL refuse d'utiliser une valeur d'énumération dans la transaction qui l'ajoute).
+    - **Admin** : écran « Boutiques » (`/dashboard/shops`) pour créer, modifier et désactiver une boutique (journal « Shop »), avec une tournée obligatoire, livrée le matin ; bouton « Créer un compte vendeuse » (invitation, compte rattaché à la boutique). Fonctionnalité « Boutiques » accordable à un mini admin.
+    - **Pas un client** : boutiques exclues de la liste et de la fiche des clients, des choix de clients (prix spécifiques), des rappels et de la facturation (`kind: "CLIENT"`).
+    - **Tablette** : espace `/shop` de la vendeuse, qui ne voit que sa boutique (`GET /api/shop`, boutique lue dans la session).
+    - Tests : `tests/lot2-d1-d2-shops-pastry.test.ts` (vérifications 1 et 2) ; tests de listes fermées mis à jour (migrations, rôles, fonctionnalités de mini admin, routes de production). `npm run check` : 879 tests, 872 réussis, 0 échec.
+    - **Reste** : vérification 3 (la boutique dans la tournée un jour d'envoi) faite avec LOT2-D5 (branche `theo/lot2-d5`) ; le super-administrateur ne crée pas encore de boutique depuis son espace (le tableau des droits du document le prévoit) ; recette dans le navigateur après la migration.
+
+  Terminé quand : l'admin crée la boutique « Centre-ville » et son compte vendeuse ; la vendeuse ne voit que sa boutique ; un jour d'envoi, la boutique apparaît dans la tournée du livreur.
+
+- [ ] **LOT2-D2 — Compte pâtissier.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`) :
+    - **Comptes** : compte « Pâtissier » créé par l'admin (plusieurs possibles), espace `/pastry`.
+    - **Famille** : `Category.family` (`BREAD` ou `PASTRY`), réglable dans Catalogue › Catégories (bouton « Pain » ou « Pâtisserie »). La migration range côté pâtisserie les catégories existantes dont le nom contient « pâtisser », « gâteau », « entremets » ou « tarte ».
+    - **Production** : `getProductionDay` filtre par famille. Le pâtissier ne voit que la pâtisserie et le boulanger que le pain ; une commande sans produit de sa famille n'a pas de bon chez lui. Le pâtissier lit sa production sans pouvoir la modifier à cette étape (ni « préparé », ni manquant).
+    - **Reste** : les trois parties du total à produire (commandes des restaurants, gâteaux des particuliers, envois aux boutiques) arrivent avec D10, D9 et D5 ; recette après la migration.
+
+  Terminé quand : l'admin crée un compte pâtissier ; le pâtissier voit le total à produire des pâtisseries et aucun pain ; le boulanger ne voit aucune pâtisserie.
+
+- [ ] **LOT2-D3 — Produits : création, recettes, durée de vente.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`, **migration `20261118100200_lot2_pastry_prices` écrite, pas appliquée**) :
+    - **Modèle** : `Product.pastryFormat` (petite pièce ou gros gâteau), `recipe`, `shelfLifeDays` (jours de vente, jour de réception compris, 1 par défaut) ; tailles d'un gros gâteau dans `ProductSize` (nombre de parts, prix restaurant de la taille).
+    - **Pâtissier** : écran « Mes pâtisseries » (`/pastry/products`) pour créer et modifier, avec format, tailles en parts, allergènes, recette et durée de vente, **sans aucun prix**. Il ne voit que les catégories de pâtisserie ; les prix (restaurant et boutiques) sont affichés pour information. Une taille gardée garde ses prix.
+    - **Boulanger** : écran « Durée de vente » (`/bakery/products`), qui ne règle que la durée de vente du pain (liste sans recette).
+    - **Admin** : la fiche produit du catalogue affiche les champs de pâtisserie quand la catégorie est « Pâtisserie » (format, tailles avec prix restaurant, recette), et la durée de vente pour tout produit.
+    - **Recette** : renvoyée seulement par les routes de l'admin et du pâtissier, jamais par le catalogue des restaurants, la tablette ni la liste du boulanger.
+    - Nouvelles permissions : `catalog:pastry` (pâtissier) et `catalog:bread` (boulanger).
+    - Tests : `tests/lot2-d3-d4-products-prices.test.ts` (vérifications 1 à 3).
+
+  Terminé quand : le pâtissier crée « Fraisier » (gros gâteau, 6, 8 et 10 personnes, recette, 2 jours) ; l'admin le voit et le modifie ; la vendeuse ne voit jamais la recette.
+
+- [ ] **LOT2-D4 — Prix restaurant et prix boutique.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`) :
+    - **Prix restaurant** : `Product.basePriceCents` devient facultatif (vide = prix à saisir). Un produit sans prix restaurant n'est ni au catalogue des restaurants ni commandable, même avec un ancien prix spécifique, et n'a pas de promotion. Un gros gâteau a un prix par taille et ne se commande pas encore (D10). Le catalogue de l'admin a un filtre « Produits sans prix ».
+    - **Prix boutique** : `ShopPrice` (boutique × produit × taille, « vendu » ou « non vendu »). Un produit sans ligne s'affiche « Nouveau produit, prix à saisir », en premier.
+    - **Tablette** : Paramètres › « Produits et prix » (`/shop/settings`), ouvert seulement avec le **code responsable**.
+    - **Code responsable** : créé avec la boutique (4 à 8 chiffres), rangé seulement sous forme d'empreinte scrypt, et bloqué 15 minutes après 5 erreurs. L'admin le réinitialise, la responsable le change en donnant l'ancien. Changements de prix et de code journalisés, sans jamais le code.
+    - **Admin** : boutons « Prix boutique » et « Réinitialiser le code » sur chaque boutique, sans code ; la tablette relit les prix à chaque ouverture.
+    - Tests : vérifications 1, 2, 3, 5 et 6. **Vérification 4** (prix affiché mais non modifiable pendant une commande) : arrive avec la prise de commande de LOT2-D9.
+    - `npm run check` : 887 tests, 880 réussis, 0 échec.
+
+  Terminé quand : fraisier dans « Produits sans prix » de l'admin et comme nouveau produit sur chaque tablette ; « Produits et prix » fermé sans code ; 40 € pour le 10 personnes dans une seule boutique ; prix non modifiable pendant une commande ; absent du catalogue restaurant sans prix restaurant ; l'admin passe à 42 € et la tablette l'affiche.
+
+- [ ] **LOT2-D5 — Envois quotidiens vers les boutiques.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d5`, **migration `20261118100300_lot2_shipments` écrite, pas appliquée** : origine `SHIPMENT` et permission `shipments:manage`) :
+    - **Modèle** : un envoi est une commande d'origine « envoi » vers la boutique, sur le créneau du matin de sa tournée, verrouillée dès sa création (rien à valider ni à facturer).
+    - **Écrans** « Envois aux boutiques » du pâtissier (`/pastry/shipments`, pâtisseries hors gros gâteaux) et du boulanger (`/bakery/shipments`, pain) : choix du jour, quantités par boutique. Les deux remplissent le **même** envoi, chacun ses produits, sans toucher à ceux de l'autre.
+    - **Tournée** : à l'heure limite, l'envoi devient un arrêt de la tournée du matin, avec la liste des produits pour le livreur. Après l'heure limite, il est ajouté aux tournées déjà calculées (même règle que les commandes en retard).
+    - **Modifications** : possibles jusqu'au départ de la tournée (refus 409 ensuite) ; un envoi vidé disparaît avec son arrêt. Il entre dans la production de chaque famille. Journal « Shipment ».
+    - **Vérifications** : `tests/lot2-d5-shipments.test.ts` (vérifications 1 à 3, et **LOT2-D1 vérification 3** : la boutique est un arrêt de la tournée un jour d'envoi), avec le vrai calcul des tournées. `npm run check` : 0 échec.
+    - **Reste** : recette dans le navigateur après la migration ; les trois parties du total à produire du pâtissier sont toutes dans sa production, mais pas encore séparées à l'écran.
+
+  Terminé quand : le pâtissier envoie 12 éclairs et 8 tartes au citron à « Centre-ville » ; le livreur les voit sur l'arrêt ; le boulanger ajoute 20 baguettes sur le même arrêt.
+
+- [ ] **LOT2-D6 — Réception le matin en boutique.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`, **migration `20261118100400_lot2_shop_stock` écrite, pas appliquée**) :
+    - **Tablette** : écran « Réception du matin » (`/shop/reception`). L'envoi du jour s'affiche avec ses quantités prévues ; la vendeuse note, pour chaque produit, le reçu et l'abîmé pendant la livraison (une fois).
+    - **Stock** : le bon état devient un lot de stock daté (`ShopStockLot`, dernier jour de vente = réception + durée de vente − 1) ; les abîmés n'y entrent pas.
+    - **Alerte** : un écart avec l'envoi déclenche une alerte dans la **nouvelle cloche du back-office** (en-tête, `/api/notifications`), pour l'administrateur et le pâtissier (pâtisserie) ou le boulanger (pain).
+    - Tests : `tests/lot2-d6-d8-stock.test.ts` (vérifications 1 et 2).
+
+  Terminé quand : 11 éclairs reçus sur 12, dont 1 abîmé : 10 en stock ; alerte (cloche) au pâtissier et à l'admin.
+
+- [ ] **LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
+    - **Tablette** : écran « Clôture du soir » (`/shop/closing`). Pour chaque produit en stock, la vendeuse note le reste et les abîmés en boutique.
+    - **Calcul en direct** : ventes = stock du matin + reçu en bon état − reste ; les plus anciens partent en premier ; les produits à leur dernier jour de vente sont indiqués « à jeter ». La vendeuse confirme les quantités jetées.
+    - **Enregistrement** : lots mis à jour, journée enregistrée (`ShopDayClose`, une clôture par jour). Les règles sont pures, dans `src/domains/shop/stock-rules.ts`, partagées par le serveur et la tablette.
+    - Tests : vérifications 1 à 4 (l'exemple lundi-mardi des éclairs et la tarte abîmée).
+
+  Terminé quand : exemple lundi-mardi des éclairs (7 vendus, puis 13 en stock, 2 vendus, 1 à jeter, 10 gardés) ; une tarte abîmée comptée dans les jetés.
+
+- [ ] **LOT2-D8 — Stock des boutiques.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
+    - **Écrans** « Stock boutiques » pour l'admin (`/dashboard/stock`, fonctionnalité « Boutiques » du mini admin), le pâtissier (`/pastry/stock`, pâtisserie) et le boulanger (`/bakery/stock`, pain). La vendeuse a « Stock » (`/shop/stock`), sa boutique seulement.
+    - **Contenu** : stock, à jeter ce soir, et, pour le jour consulté (la veille par défaut, jours passés possibles), reçus, abîmés à la livraison, vendus et jetés. Une boutique ou toutes.
+    - Tests : vérifications 1 et 2. `npm run check` : 0 échec.
+    - **Reste** : le super-administrateur n'a pas d'écran de stock (il n'a pas d'accès aux opérations d'une entreprise) ; recette dans le navigateur après la migration.
+
+  Terminé quand : le pâtissier voit le stock d'éclairs de chaque boutique et, pour la veille, reçus, abîmés, vendus et jetés de « Centre-ville ».
+
+- [ ] **LOT2-D9 — Commandes de gâteaux des particuliers en boutique.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d9-d10`, **migration `20261118100500_lot2_cake_orders` écrite, pas appliquée**) :
+    - **Modèle** : nouvelle table `CakeOrder`. Une ligne de commande peut porter une taille et une inscription ; l'unicité passe à commande × produit × variante, pour que deux gâteaux du même produit fassent deux lignes (sert aussi à D10).
+    - **Tablette** : écran « Commandes de gâteaux » (`/shop/cakes`) pour saisir gâteau et taille, inscription, parts, paiement complet ou acompte, client, date et heure de retrait. Liste « À retirer » avec le bouton « Soldée ».
+    - **Prix** : prix boutique de la taille, **lu sur le serveur, affiché sans pouvoir être modifié** (D4, vérification 4). Sans prix boutique, pas de commande.
+    - **Règles** : acompte d'au moins 50 % (15 € sur 40 € refusé, 20 € accepté). Retrait au moins 48 h plus tard, délai réglable par l'admin sur l'écran « Boutiques » (`settings.cakeOrderLeadHours`, écriture réclamée).
+    - **Livraison** : le gâteau entre dans l'**envoi du matin** du jour du retrait (ligne réservée, ajoutée aux tournées si elles sont calculées) et dans la **production du pâtissier**, avec « 10 personnes · « Joyeux anniversaire Maman » » sur le bon. Il ne passe pas par la réception ni par le stock à vendre.
+    - Tests : `tests/lot2-d9-cake-orders.test.ts` (vérifications 1 à 5, et D4 vérification 4). `npm run check` : 0 échec.
+
+  Terminé quand : acompte de 15 € sur 40 € refusé, 20 € accepté ; le fraisier et son inscription chez le pâtissier le jour prévu ; dans l'envoi du matin ; commande « soldée » au retrait.
+
+- [ ] **LOT2-D10 — Pâtisseries pour les restaurants.**
+
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
+
+  - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d10`) :
+    - **Catalogue des restaurants** : petites pièces ayant un prix restaurant (D4), et **gros gâteaux, un article par taille** ayant un prix restaurant (« Castel · 10 personnes », identifiant « produit::taille »).
+    - **Panier** : une inscription facultative par gâteau. La commande envoie la taille et l'inscription.
+    - **Serveur** : une ligne de gâteau porte taille, inscription et variante ; deux inscriptions font deux lignes. Le prix restaurant de la taille est **figé dès la commande** (le verrouillage ne le recalcule pas), sans promotion.
+    - **Règles** : pas d'acompte ; heure limite et créneau comme pour le pain. « Recommander » recopie taille et inscription ; les gros gâteaux sont exclus des commandes récurrentes (et les produits sans prix restaurant aussi).
+    - **Production** : le pâtissier voit le castel avec « 10 personnes · « Bon anniversaire Julie » ».
+    - **Facture** : ligne « Castel · 10 personnes » au prix restaurant ; deux tailles restent deux lignes.
+    - Tests : `tests/lot2-d10-restaurant-pastries.test.ts` (vérifications 1 à 3), avec le vrai enregistrement d'une commande. `npm run check` : 0 échec.
+    - **Non fait** : prix restaurant **personnalisé par client pour une taille** de gâteau (les prix spécifiques existants valent par produit) ; correction d'une commande de gâteau par l'admin (à vérifier en recette) ; recette dans le navigateur après la migration.
+
+  - 19 novembre 2026 (soir, session Claude de Théo) : **corrections de la relecture d'Orso** (commentaire de la PR #53), sur `theo/lot2-d10`. Tests : `tests/lot2-relecture-orso.test.ts`.
+    - **Les deux défauts bloquants** :
+      - **double réception** : l'envoi est réclamé dans la transaction (`updateMany` où `receivedAt` est vide) ; deux envois simultanés ne créent qu'un lot ;
+      - **correction admin** : les lignes sont retrouvées par leur identifiant, donc deux tailles du même gâteau passent. L'écran n'ajoute que des produits ayant un prix restaurant et jamais un gros gâteau sans taille ; un gâteau ajouté par taille garde le prix de sa taille.
+    - **Aussi corrigé** :
+      - une taille déjà commandée ne se retire plus (409 propre, rien d'écrit) ;
+      - un gros gâteau refuse un prix de base, et le gel des prix ne touche que les lignes simples (`variantKey: ""`) ;
+      - le compteur d'essais du code responsable est incrémenté de façon atomique ;
+      - une réception après la clôture du jour est refusée ;
+      - le stock ignore les gâteaux commandés et les envois annulés.
+    - **Reste de la liste « après »** :
+      - une clôture d'un jour passé non clôturé se calcule sur le stock actuel ;
+      - `scryptSync` bloque le serveur quelques millisecondes ;
+      - la case « préparée » du boulanger porte sur toute une commande mixte (décision produit) ;
+      - le nom et le téléphone des particuliers ne sont ni dans l'export ni dans une règle de conservation ;
+      - la génération des commandes récurrentes ne revérifie ni le prix ni le format.
+
+  Terminé quand : un restaurant commande 20 éclairs et un castel 10 personnes « Bon anniversaire Julie » ; le pâtissier voit produits et inscription ; le castel est sur la facture au prix restaurant.
+
 ### Lot 1 de demandes de modification (Théo Nerisson, 10 novembre 2026)
 
 _D1 à D9 codées, migrées sur `annona-dev`, recettées dans Chrome (Playwright) le 10 novembre au soir et fusionnées dans `base` (PR #1). D1 à D8 et la recette validées par Orso le 12 novembre 2026, puis archivées ; reste D9 (vrais téléphones). Notes pour la suite : D4 — TutelLiv rangeait les modules du mini admin dans `User.settings.miniAdmin.modules` et filtrait les permissions à la lecture (`filterMiniAdminPermissions`, `git show 0475b8d:src/lib/permissions/mini-admin.ts`) ; la liste des tournées (`GET /api/company/zones`) exige `settings:read`, à ouvrir aussi à `merchants:read` pour un mini admin « comptes » sans « paramètres ». D5 — `DriverLocation` (dernière position, `updatedAt`) et `/api/maps/route` existent déjà ; TutelLiv avait `deliveries-live-map.tsx` (`git show 0475b8d:src/components/maps/deliveries-live-map.tsx`). D9 — mesurer « avant » avant toute correction de lenteur. Appliquer les migrations : passer par le pooler en mode session (port 5432 de `DATABASE_URL`), la connexion directe `db.…supabase.co` est injoignable d'ici. Rejouer la recette : serveur de production sur le port 3110 (`next build`, puis `next start`), `npx dotenv -e .env.local -- npx tsx scripts/e2e/lot1-d5-round-fixture.ts` (avant minuit heure de Paris), puis `E2E_BASE_URL=http://localhost:3110 E2E_SKIP_WEB_SERVER=1 PLAYWRIGHT_CHANNEL=chrome npx dotenv -e .env.local -- npx playwright test tests/e2e/lot1-recette.spec.ts --workers=1` (`CLEAN_DELETE=1 … -g CLEAN` supprime les comptes `e2e-`), et finir par `npm run db:seed`._
@@ -328,3 +553,27 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
   - Ensuite : Claude classe les remarques en tâches (avec les identifiants du cahier des charges), Orso tranche les ajouts.
 
   Terminé quand : le tour des quatre espaces est fait et les remarques sont notées dans `docs/rapports/`.
+
+- [ ] **RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre).**
+
+  **Qui : Orso — 4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (e-mail de l'accès Vente) ; Théo — recette navigateur sur https://annona-gray.vercel.app.**
+
+  - 21 novembre 2026, Claude de Théo, branche `theo/retours-tour-2` (aucune migration, rien écrit en base) :
+    - **Vente (lot 2, demande 1)** : « Vendeuse » devient « Vente » dans tous les textes affichés (rôle, filtre des utilisateurs, fiche boutique « Créer l'accès Vente », messages d'erreur, export de l'entreprise). Code interne inchangé (`SELLER`). Correction de Théo le même jour : ni « vendeuse » ni « compte vente », juste « Vente ».
+    - **Vente › Commandes de gâteaux (demande 9)** : « À retirer » en petites cartes (grille 1 à 3 colonnes) : date de retrait en haut, gâteau et taille, nom du client puis son numéro, inscription, reste à payer et bouton « Soldée ». Le texte ne se coupe plus chiffre par chiffre (`seller-cakes.tsx`).
+    - **Vente › Réception du matin et Clôture du soir (demandes 6 et 7, RETOURS-2)** : produits classés par rayon : « Pâtisserie » puis « Boulangerie », et dans chaque famille les catégories dans l'ordre du catalogue (Pains, Spéciaux, Gâteaux secs…), titre à chaque rayon, produits par nom (`byShelf` dans `shop-stock.service.ts`, `shelf-heading.tsx`). L'ordre des catégories se règle dans Admin › Catalogue.
+    - **Pâtissier › Production (demandes 2, 9, 10)** : chaque produit du total s'ouvre (« Fraisier » → fenêtre) : pour qui (restaurant ou boutique ; particulier avec nom, téléphone et retrait), taille, inscription, instructions de la commande (`Order.notes`), allergènes déclarés du produit. Calcul `buildProductDetails` dans `production.service.ts`, renvoyé seulement au pâtissier (`details`), aussi avant l'heure limite ; fenêtre `product-detail-dialog.tsx`.
+    - **Stock boutiques (demande 8)** : une carte par boutique avec ses totaux (en stock, à jeter ce soir en rouge), produits en stock d'abord puis par nom, produits à zéro grisés, recherche par produit (`src/domains/shop/stock-groups.ts`, `stock-table.tsx`). Vaut pour le pâtissier, le boulanger, l'admin et la tablette.
+    - **Admin › Commandes (ADM-04)** : menu « Classer par » : tournée et arrêt (défaut), client A à Z, montant croissant, montant décroissant ; gardé dans l'adresse (`?sort=`) (`admin-order-sort.ts`).
+    - **Admin › Catalogue (ADM-02)** : onglets « Boulangerie » et « Pâtisserie » (produits et catégories de la famille, avec leur nombre) ; une catégorie créée dans un onglet prend sa famille ; le tri des catégories envoie toujours la liste complète au serveur.
+    - **Admin › Tournées (ADM-06)** : en haut, « Toutes les tournées » : le nom de chacune (créneau, arrêts, livreur) ; un clic ouvre la liste de ses clients dans l'ordre (adresse, accès, commande, articles, colis, heure prévue ou livrée, incident).
+  - **E-mail de création de l'accès Vente jamais reçu (Admin › Boutiques)** : pas un défaut du code (même chemin que toutes les invitations : `inviteAuthUser`, `user.service.ts`). Cause probable : l'envoi Supabase de `annona-dev` passe encore par le SMTP par défaut, qui ne livre qu'aux membres de l'équipe Supabase et à quelques e-mails par heure ; à régler avec le SMTP Resend (AUTH-GOOGLE, à Théo). À vérifier aussi : `AUTH_EMAIL_LINKS_ENABLED=true` sur Vercel (sinon le compte est créé « en attente » et le message le dit). Non vérifié ici : journaux Supabase de `annona-dev` (projet d'Orso, hors de portée de l'outil) et variables Vercel (accès à l'équipe `track-app2` refusé à l'outil).
+  - **Allergies / instructions (décision de Théo du 21 novembre : « une instruction facultative des allergies, quand on prend une commande ou sur chaque produit »)**, branche `theo/allergies-instructions` :
+    - **Mis en ligne le 21 novembre (Théo, script lancé par Claude après autorisation)** : migration `20261121120000_retours2_line_notes` appliquée sur `annona-dev` par le pooler (`migrate deploy` : « All migrations have been successfully applied », schéma à jour) ; PR #59 fusionnée (`feb8034`) ; `base` déployée en production Vercel (`dpl_Dfipx13pmatJbucRxCdZhm7jVBgo`, alias https://annona-gray.vercel.app). Vérifications : `/api/health` et `/login` 200 ; routes protégées 401 sans connexion, `/dashboard/orders` redirige (307) ; lecture en base : 15 833 lignes de commande intactes, colonne `note` présente (0 rempli), 66 commandes de gâteaux. Non vérifié : écrans connectés dans le navigateur.
+    - Panier du client : sous chaque produit, « + Allergies / instructions » (300 caractères) ; en bas, « Allergies / instructions pour la commande » (`Order.notes`, déjà en base, 500 caractères). Rechargés quand on modifie ou reprend une commande.
+    - Vente › Commandes de gâteaux : champ « Allergies / instructions » facultatif ; affiché sur la carte « À retirer » et recopié sur la ligne de l'envoi.
+    - Lus par : bons de préparation (boulanger et pâtissier, à l'écran et imprimés : « ⚠ … » après la taille et l'inscription, instructions de la commande en bas), fenêtre « pour qui » du pâtissier, détail admin (par produit et pour la commande), détail client.
+    - Tests : `tests/lot2-d9-cake-orders.test.ts` (gâteau avec et sans note, jusqu'au bon et à la fenêtre du pâtissier), `tests/lot2-d10-restaurant-pastries.test.ts` (commande client : note par produit et pour la commande, enregistrées et relues), `tests/retours1-tour-theo.test.ts` (validation, 300 caractères au plus) ; `tests/db1-migration-security.test.ts` complété (nouvelle migration). `npm run check` : types et lint sans erreur, 923 tests, 916 réussis, 0 échec après correction de la liste des migrations, 7 ignorés. Non vérifié : clic réel dans le navigateur ; migration non appliquée sur `annona-dev`.
+  - **E-mail de l'accès Vente (SMTP)** : domaine `mail.annona.fr` créé le 21 novembre dans le compte Resend de Théo (région eu-west-1, suivi des clics et des ouvertures coupé ; un sous-domaine pour ne pas toucher au DKIM d'`annona.fr` déjà chez Resend côté Orso). Reste : (1) Orso ajoute 4 enregistrements DNS sur `annona.fr` (`resend._domainkey.mail` TXT, `send.mail` MX et TXT, `rsend.mail` CNAME ; valeurs exactes dans la liste « 1. Orso » en tête de fichier), (2) vérifier le domaine, (3) créer une clé Resend « envoi seulement » limitée à ce domaine, (4) Supabase `annona-dev` › Authentication › Emails › SMTP : hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = la clé, expéditeur `no-reply@mail.annona.fr`, (5) `AUTH_EMAIL_LINKS_ENABLED=true` sur Vercel. Les étapes 4 et 5 ne sont pas faisables par l'agent (jeton Supabase dans le coffre Windows, équipe Vercel hors de portée de l'outil).
+  - Vérifications : `tests/retours1-tour-theo.test.ts` 7/7 (classement des commandes, regroupement du stock, « pour qui », allergènes non déclarés, libellé « Vente », classement par rayon) ; `tests/lot2-d6-d8-stock.test.ts` adapté (pâtisserie avant boulangerie) ; `npx tsc --noEmit` sans erreur ; `npm run check` sortie 0 (920 tests : 913 réussis, 0 échec, 7 ignorés).
+  - Non vérifié : clic réel dans le navigateur (aucun serveur lancé) sur les six écrans, en clair et en sombre, sur tablette et téléphone.

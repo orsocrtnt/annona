@@ -20,9 +20,9 @@ export function useOrderActions() {
     toCart: async (id: string) => {
       try {
         const order = await fetchDetail(id);
-        const lines = order.lines.filter((line) => line.available).map((line) => ({ productId: line.productId, quantity: line.quantity }));
+        const lines = order.lines.filter((line) => line.available).map((line) => ({ productId: line.productId, quantity: line.quantity, inscription: line.inscription ?? null, note: line.note ?? null }));
         const state = useCartStore.getState();
-        state.load(lines, { orderId: null, slotId: order.slot.id });
+        state.load(lines, { orderId: null, slotId: order.slot.id, orderNote: order.notes });
         // La date reste celle du panier si elle est encore ouverte ; sinon l'écran Commander prend la première date ouverte.
         toast.success(fr.order.toCartDone);
         router.push("/portal");
@@ -34,8 +34,8 @@ export function useOrderActions() {
     edit: async (id: string) => {
       try {
         const order = await fetchDetail(id);
-        const lines = order.lines.filter((line) => line.available).map((line) => ({ productId: line.productId, quantity: line.quantity }));
-        useCartStore.getState().load(lines, { orderId: order.id, deliveryDate: order.deliveryDate, slotId: order.slot.id });
+        const lines = order.lines.filter((line) => line.available).map((line) => ({ productId: line.productId, quantity: line.quantity, inscription: line.inscription ?? null, note: line.note ?? null }));
+        useCartStore.getState().load(lines, { orderId: order.id, deliveryDate: order.deliveryDate, slotId: order.slot.id, orderNote: order.notes });
         router.push(`/portal?date=${order.deliveryDate}&slot=${encodeURIComponent(order.slot.id)}`);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : fr.common.genericError);

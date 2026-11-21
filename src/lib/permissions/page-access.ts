@@ -33,6 +33,10 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/dashboard/tracking", roles: COMPANY_ADMINS, anyPermission: ["tracking:read"], module: "tracking" },
   { path: "/dashboard/rounds", roles: COMPANY_ADMINS, anyPermission: ["rounds:read"], module: "rounds" },
   { path: "/dashboard/merchants", roles: COMPANY_ADMINS, anyPermission: ["merchants:read"], module: "accounts" },
+  // Lot 2, demande 1 : boutiques de l'entreprise et leurs tablettes.
+  { path: "/dashboard/shops", roles: COMPANY_ADMINS, anyPermission: ["shops:read"], module: "shops" },
+  // Lot 2, demande 8 : stock des boutiques.
+  { path: "/dashboard/stock", roles: COMPANY_ADMINS, anyPermission: ["shops:read"], module: "shops" },
   { path: "/dashboard/catalog", roles: COMPANY_ADMINS, anyPermission: ["catalog:read"], module: "catalog" },
   { path: "/dashboard/promotions", roles: COMPANY_ADMINS, anyPermission: ["promotions:read"], module: "promotions" },
   { path: "/dashboard/invoices", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"], module: "billing" },
@@ -42,6 +46,9 @@ export const PAGE_ACCESS_RULES: readonly PageAccessRule[] = [
   { path: "/settings/billing", roles: COMPANY_ADMINS, anyPermission: ["invoices:read"], module: "billing" },
   // Boulanger, portail client et application livreur
   { path: "/bakery", roles: ["BAKER"], anyPermission: ["dashboard:baker"] },
+  // Lot 2 : espace pâtissier (demande 2) et tablette de la boutique (demande 1).
+  { path: "/pastry", roles: ["PASTRY_CHEF"], anyPermission: ["dashboard:pastry"] },
+  { path: "/shop", roles: ["SELLER"], anyPermission: ["dashboard:shop"] },
   { path: "/portal", roles: ["MERCHANT"], anyPermission: ["dashboard:merchant"] },
   { path: "/driver", roles: ["DRIVER"], anyPermission: ["dashboard:driver"] },
 ];
@@ -89,6 +96,10 @@ export function getRoleHomePath(role: SystemRole): string {
       return "/driver";
     case "MERCHANT":
       return "/portal";
+    case "PASTRY_CHEF":
+      return "/pastry";
+    case "SELLER":
+      return "/shop";
   }
 }
 

@@ -16,7 +16,7 @@
  * elle, retenue à la validation (`allocatePromotions`) et ne change plus ensuite.
  */
 import { randomBytes } from "node:crypto";
-import { Prisma, type DeliveryPeriod, type OrderStatus, type PrismaClient } from "@prisma/client";
+import { Prisma, type DeliveryPeriod, type OrderOrigin, type OrderStatus, type PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { computeTotals, lineAmountCents, loadAppliedPrices } from "@/domains/catalog/pricing";
 import { allocatePromotions, linePromoData, type LinePromo } from "@/domains/catalog/promotion.service";
@@ -41,7 +41,7 @@ import { periodLabel } from "@/domains/company/delivery-period";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import { fr } from "@/lib/i18n/fr";
 import { isProductPhotoPath } from "@/lib/storage/product-photo";
-import type { OrderLineInput, SaveOrderInput } from "@/lib/validations/order";
+import { cakeArticleId, type OrderLineInput, type SaveOrderInput } from "@/lib/validations/order";
 
 export type OrderDb = Pick<
   PrismaClient,
@@ -91,12 +91,19 @@ export function assertLines(lines: readonly OrderLineInput[]): void {
   if (lines.length === 0) throw new DomainRuleError(400, t.emptyOrder, "EMPTY_ORDER");
   const seen = new Set<string>();
   for (const line of lines) {
-    if (seen.has(line.productId)) throw new DomainRuleError(400, t.duplicateProduct, "DUPLICATE_PRODUCT");
-    seen.add(line.productId);
+    // Lot 2, demande 10 : un même gros gâteau peut revenir avec une autre taille ou une autre inscription.
+    const key = lineVariantKey(line);
+    if (seen.has(`${line.productId}|${key}`)) throw new DomainRuleError(400, t.duplicateProduct, "DUPLICATE_PRODUCT");
+    seen.add(`${line.productId}|${key}`);
     if (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 9999) {
       throw new DomainRuleError(400, t.quantity, "INVALID_QUANTITY");
     }
   }
+}
+
+/** Lot 2, demande 10 : variante d'une ligne (taille et inscription d'un gros gâteau) ; « » pour une ligne simple. */
+export function lineVariantKey(line: { sizeId?: string | null; inscription?: string | null }): string {
+  return line.sizeId ? `size:${line.sizeId}|${line.inscription?.trim() ?? ""}` : "";
 }
 
 /** Libellé d'un créneau : son nom, sinon « 6h – 7h ». */
@@ -163,27 +170,60 @@ export async function findMerchantSlot(db: Pick<OrderDb, "slot" | "merchant">, a
   return slot;
 }
 
-type ProductInfo = { id: string; name: string; unit: string; photoUrl: string | null; available: boolean };
+type ProductInfo = { id: string; name: string; unit: string; photoUrl: string | null; available: boolean; large: boolean; usable: boolean };
 
 async function loadProducts(db: OrderDb, companyId: string, productIds: readonly string[]): Promise<Map<string, ProductInfo>> {
   if (productIds.length === 0) return new Map();
   const rows = await db.product.findMany({
     where: { companyId, id: { in: [...productIds] } },
-    select: { id: true, name: true, unit: true, photoUrl: true, active: true, category: { select: { active: true } } },
+    select: { id: true, name: true, unit: true, photoUrl: true, active: true, basePriceCents: true, pastryFormat: true, category: { select: { active: true } } },
   });
+  // Lot 2, demande 4 : sans prix restaurant, un produit n'est pas commandable ; un gros gâteau se commande par taille (demande 10).
   return new Map(
-    rows.map((row) => [row.id, { id: row.id, name: row.name, unit: row.unit, photoUrl: row.photoUrl, available: row.active && row.category.active }])
+    rows.map((row) => [
+      row.id,
+      {
+        id: row.id,
+        name: row.name,
+        unit: row.unit,
+        photoUrl: row.photoUrl,
+        available: row.active && row.category.active && row.basePriceCents !== null && row.pastryFormat !== "LARGE",
+        large: row.pastryFormat === "LARGE",
+        usable: row.active && row.category.active,
+      },
+    ])
   );
 }
 
-/** Produits commandables : actifs, catégorie active, même entreprise (PLA-01). */
+/** Lot 2, demande 10 : tailles des gros gâteaux citées, avec leur prix restaurant et leur nombre de parts. */
+async function loadSizes(db: OrderDb, companyId: string, sizeIds: readonly (string | null | undefined)[]) {
+  const ids = [...new Set(sizeIds.filter((id): id is string => Boolean(id)))];
+  if (ids.length === 0) return new Map<string, { productId: string; servings: number; restaurantPriceCents: number | null }>();
+  const rows = await (db as unknown as Pick<PrismaClient, "productSize">).productSize.findMany({
+    where: { companyId, id: { in: ids } },
+    select: { id: true, productId: true, servings: true, restaurantPriceCents: true },
+  });
+  return new Map(rows.map((row) => [row.id, row]));
+}
+
+/**
+ * Produits commandables : actifs, catégorie active, même entreprise (PLA-01). Lot 2, demande 10 : un gros gâteau
+ * se commande seulement par taille, et la taille doit avoir un prix restaurant ; un autre produit n'a pas de taille.
+ */
 async function assertProductsOrderable(db: OrderDb, companyId: string, lines: readonly OrderLineInput[]) {
-  const products = await loadProducts(db, companyId, lines.map((line) => line.productId));
+  const [products, sizes] = await Promise.all([
+    loadProducts(db, companyId, lines.map((line) => line.productId)),
+    loadSizes(db, companyId, lines.map((line) => line.sizeId)),
+  ]);
   for (const line of lines) {
-    if (!products.get(line.productId)?.available) {
-      throw new DomainRuleError(400, t.productUnavailable, "PRODUCT_UNAVAILABLE", { productId: line.productId });
-    }
+    const product = products.get(line.productId);
+    const size = line.sizeId ? sizes.get(line.sizeId) : undefined;
+    const ok = line.sizeId
+      ? Boolean(product?.large && product.usable && size && size.productId === line.productId && size.restaurantPriceCents !== null)
+      : Boolean(product?.available);
+    if (!ok) throw new DomainRuleError(400, t.productUnavailable, "PRODUCT_UNAVAILABLE", { productId: line.productId });
   }
+  return sizes;
 }
 
 type OrderRow = {
@@ -192,7 +232,7 @@ type OrderRow = {
   deliveryDate: Date;
   slotId: string;
   status: OrderStatus;
-  origin: "MANUAL" | "RECURRING";
+  origin: OrderOrigin;
   notes: string | null;
 };
 
@@ -202,13 +242,20 @@ async function buildDetail(db: OrderDb, actor: MerchantRef, order: OrderRow, rul
     db.orderLine.findMany({ where: { orderId: order.id, companyId: actor.companyId }, orderBy: { createdAt: "asc" } }),
   ]);
   const productIds = lineRows.map((line) => line.productId);
-  const [products, prices] = await Promise.all([
+  const [products, prices, sizes, vat] = await Promise.all([
     loadProducts(db, actor.companyId, productIds),
     loadAppliedPrices(db, actor.companyId, actor.merchantId, productIds),
+    loadSizes(db, actor.companyId, lineRows.map((line) => line.sizeId)),
+    db.product.findMany({ where: { companyId: actor.companyId, id: { in: productIds } }, select: { id: true, vatRateBasisPoints: true } }),
   ]);
+  const vatOf = new Map(vat.map((row) => [row.id, row.vatRateBasisPoints]));
   const lines: PortalOrderLine[] = lineRows.map((line) => {
     const product = products.get(line.productId);
-    const price = prices.get(line.productId);
+    const size = line.sizeId ? sizes.get(line.sizeId) : undefined;
+    // Lot 2, demande 10 : un gros gâteau a le prix restaurant de sa taille, pas de prix appliqué par produit.
+    const price = size
+      ? { unitPriceCents: size.restaurantPriceCents ?? 0, vatRateBasisPoints: vatOf.get(line.productId) ?? 0 }
+      : prices.get(line.productId);
     const current = price?.unitPriceCents ?? 0;
     const priced = {
       quantity: line.quantityOrdered,
@@ -218,8 +265,10 @@ async function buildDetail(db: OrderDb, actor: MerchantRef, order: OrderRow, rul
       promoUnitPriceCents: line.promoUnitPriceCents,
     };
     return {
-      productId: line.productId,
-      name: product?.name ?? "Produit retiré",
+      productId: size ? cakeArticleId(line.productId, line.sizeId!) : line.productId,
+      name: product ? (size ? `${product.name} · ${size.servings} personnes` : product.name) : "Produit retiré",
+      inscription: line.inscription ?? null,
+      note: line.note ?? null,
       unit: product?.unit ?? "",
       photoVersion: product && isProductPhotoPath(product.photoUrl, actor.companyId) ? photoVersion(product.photoUrl!) : null,
       quantity: line.quantityOrdered,
@@ -230,7 +279,7 @@ async function buildDetail(db: OrderDb, actor: MerchantRef, order: OrderRow, rul
       promoQuantity: line.promoQuantity,
       promoUnitPriceCents: line.promoUnitPriceCents,
       lineTotalCents: lineAmountCents(priced),
-      available: product?.available ?? false,
+      available: size ? Boolean(product?.usable && size.restaurantPriceCents !== null) : product?.available ?? false,
     };
   });
   const totals = computeTotals(lines.map((line) => ({
@@ -374,7 +423,7 @@ export async function saveMerchantOrder(
   assertDeliveryWritable(input.deliveryDate, now, rules);
   await assertMerchantActive(db, actor);
   await findMerchantSlot(db, actor, input.slotId);
-  await assertProductsOrderable(db, actor.companyId, input.lines);
+  const sizes = await assertProductsOrderable(db, actor.companyId, input.lines);
 
   const deliveryDate = deliveryDateToDb(input.deliveryDate);
   const write = () =>
@@ -430,13 +479,29 @@ export async function saveMerchantOrder(
       });
       if (existing) await tx.orderLine.deleteMany({ where: { orderId: order.id, companyId: actor.companyId } });
       await tx.orderLine.createMany({
-        data: input.lines.map((line) => ({
-          companyId: actor.companyId,
-          orderId: order.id,
-          productId: line.productId,
-          quantityOrdered: line.quantity,
-          ...linePromoData(promos.get(line.productId)),
-        })),
+        data: input.lines.map((line) =>
+          line.sizeId
+            ? {
+                // Lot 2, demande 10 : gros gâteau au prix restaurant de la taille, figé dès la commande ; jamais en promotion.
+                companyId: actor.companyId,
+                orderId: order.id,
+                productId: line.productId,
+                quantityOrdered: line.quantity,
+                sizeId: line.sizeId,
+                inscription: line.inscription?.trim() || null,
+                variantKey: lineVariantKey(line),
+                note: line.note?.trim() || null,
+                unitPriceFrozenCents: sizes.get(line.sizeId)!.restaurantPriceCents,
+              }
+            : {
+                companyId: actor.companyId,
+                orderId: order.id,
+                productId: line.productId,
+                quantityOrdered: line.quantity,
+                note: line.note?.trim() || null,
+                ...linePromoData(promos.get(line.productId)),
+              }
+        ),
       });
       return { order, created: !existing };
     });
@@ -484,10 +549,18 @@ export async function reorderMerchantOrder(
   assertDeliveryWritable(target.deliveryDate, now, rules);
 
   const sourceLines = await db.orderLine.findMany({ where: { orderId: source.id, companyId: actor.companyId } });
-  const products = await loadProducts(db, actor.companyId, sourceLines.map((line) => line.productId));
+  const [products, sizes] = await Promise.all([
+    loadProducts(db, actor.companyId, sourceLines.map((line) => line.productId)),
+    loadSizes(db, actor.companyId, sourceLines.map((line) => line.sizeId)),
+  ]);
+  // Lot 2, demande 10 : un gros gâteau est recopié avec sa taille et son inscription, si la taille a toujours un prix.
   const lines = sourceLines
-    .filter((line) => products.get(line.productId)?.available)
-    .map((line) => ({ productId: line.productId, quantity: line.quantityOrdered }));
+    .filter((line) =>
+      line.sizeId
+        ? Boolean(products.get(line.productId)?.usable && sizes.get(line.sizeId)?.restaurantPriceCents !== null && sizes.has(line.sizeId))
+        : products.get(line.productId)?.available
+    )
+    .map((line) => ({ productId: line.productId, quantity: line.quantityOrdered, sizeId: line.sizeId ?? null, inscription: line.inscription ?? null, note: line.note ?? null }));
   if (lines.length === 0) throw new DomainRuleError(400, t.nothingToReorder, "NOTHING_TO_REORDER");
 
   const existing = await db.order.findUnique({

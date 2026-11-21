@@ -16,6 +16,7 @@ import { roundsApi } from "@/features/rounds/api";
 import { useRoundMutation, useRoundsDay } from "@/features/rounds/hooks";
 import { RoundCard, type DragState } from "@/features/rounds/round-card";
 import { RoundJournal } from "@/features/rounds/round-journal";
+import { RoundsOverview } from "@/features/rounds/rounds-overview";
 import { ROUND_COLORS, RoundsMap } from "@/features/rounds/rounds-map";
 import { deadlineLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
@@ -173,6 +174,8 @@ export function RoundsContent() {
               </AlertDescription>
             </Alert>
           ) : null}
+
+          <RoundsOverview rounds={data.rounds} colorOf={(id) => colorOf.get(id)!} />
 
           {data.rounds.length === 0 && !data.closed ? (
             <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">{t.empty}</div>

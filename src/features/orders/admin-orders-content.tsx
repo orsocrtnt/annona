@@ -18,6 +18,7 @@ import { deadlineLabel } from "@/lib/format/delivery-date";
 import { formatCents } from "@/lib/format/money";
 import { fr } from "@/lib/i18n/fr";
 import { ADMIN_ORDER_VIEWS, type AdminOrderView } from "@/domains/order/admin-order.types";
+import { ADMIN_ORDER_SORT_LABELS, ADMIN_ORDER_SORTS, parseAdminOrderSort, sortAdminOrders } from "@/domains/order/admin-order-sort";
 
 const t = fr.adminOrders;
 const ALL = "all";
@@ -33,6 +34,7 @@ export function AdminOrdersContent() {
   const rawView = params.get("view");
   const view = (ADMIN_ORDER_VIEWS as readonly string[]).includes(rawView ?? "") ? (rawView as AdminOrderView) : null;
   const day = useAdminOrderDay(date, merchantId, roundId, view);
+  const sort = parseAdminOrderSort(params.get("sort"));
 
   const update = useCallback(
     (changes: Record<string, string | null>) => {
@@ -98,6 +100,18 @@ export function AdminOrdersContent() {
               </SelectContent>
             </Select>
           </div>
+          {/* RETOURS-1 : classer par client ou par montant. */}
+          <div className="w-full space-y-1.5 sm:w-56">
+            <p className="text-sm font-medium" id="filter-sort">Classer par</p>
+            <Select value={sort} onValueChange={(value) => update({ sort: value === "default" ? null : value })}>
+              <SelectTrigger aria-labelledby="filter-sort" data-testid="orders-sort"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ADMIN_ORDER_SORTS.map((item) => (
+                  <SelectItem key={item} value={item}>{ADMIN_ORDER_SORT_LABELS[item]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {/* Lot 1, demande 6 : vue ouverte depuis un chiffre du tableau de bord. */}
           <div className="w-full space-y-1.5 sm:w-60">
             <p className="text-sm font-medium" id="filter-view">{t.view}</p>
@@ -148,7 +162,7 @@ export function AdminOrdersContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.orders.map((order) => (
+                {sortAdminOrders(data.orders, sort).map((order) => (
                   <TableRow key={order.id} data-testid={`admin-order-${order.reference}`}>
                     <TableCell className="font-medium">
                       <Link href={`/dashboard/orders/${order.id}`} prefetch={false} className="text-brand underline-offset-4 hover:underline">

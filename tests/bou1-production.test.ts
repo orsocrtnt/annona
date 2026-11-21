@@ -221,7 +221,9 @@ test("BOU-1 droits : routes réservées au boulanger ; il ne modifie ni prix ni 
     const parts = source.split(/export async function (GET|POST|PATCH|PUT|DELETE)/);
     for (let index = 1; index < parts.length; index += 2) {
       const permission = parts[index] === "GET" ? "production:read" : "production:update";
-      assert.match(parts[index + 1]!, new RegExp(`requireCompanyRole\\(\\["BAKER"\\], "${permission}"\\)`), `${file} ${parts[index]}`);
+      // Lot 2, demande 2 : le pâtissier lit aussi la production (limitée à la pâtisserie) ; seul le boulanger l'écrit.
+      const roles = parts[index] === "GET" ? `"BAKER", "PASTRY_CHEF"` : `"BAKER"`;
+      assert.ok(parts[index + 1]!.includes(`requireCompanyRole([${roles}], "${permission}")`), `${file} ${parts[index]}`);
     }
     assert.equal(/getCompanyId|companyId\s*:\s*(body|input)|searchParams\.get\("companyId"\)/.test(source), false, `${file} : entreprise lue hors session`);
   }

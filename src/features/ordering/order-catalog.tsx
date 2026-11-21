@@ -90,7 +90,7 @@ export function OrderCatalog() {
     if (!hydrated || lookup.isFetching) return;
     const state = useCartStore.getState();
     const action = cartSyncAction({ existing, loadedOrderId: state.loadedOrderId, hasQuantities: Object.keys(state.quantities).length > 0 });
-    if (action === "load" && existing) state.load(existing.lines.filter((line) => line.available), { orderId: existing.id });
+    if (action === "load" && existing) state.load(existing.lines.filter((line) => line.available), { orderId: existing.id, orderNote: existing.notes });
     if (action === "clear") state.clear();
     setConflictWith(action === "conflict" && existing ? existing.id : null);
   }, [existing, hydrated, lookup.isFetching]);
@@ -151,7 +151,7 @@ export function OrderCatalog() {
               {conflictWith ? (
                 <Button
                   type="button" variant="link" className="h-auto p-0"
-                  onClick={() => { cart.load(existing.lines.filter((line) => line.available), { orderId: existing.id }); setConflictWith(null); }}
+                  onClick={() => { cart.load(existing.lines.filter((line) => line.available), { orderId: existing.id, orderNote: existing.notes }); setConflictWith(null); }}
                 >
                   Afficher le contenu de cette commande
                 </Button>

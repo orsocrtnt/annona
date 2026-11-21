@@ -14,6 +14,11 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | Category | directe | companyId | oui |
 | Product | directe | companyId | oui |
 | MerchantPrice | directe | companyId | oui |
+| ProductSize | directe | companyId | non |
+| ShopPrice | directe | companyId | non |
+| ShopStockLot | directe | companyId | non |
+| ShopDayClose | directe | companyId | non |
+| CakeOrder | directe | companyId | non |
 | Promotion | directe | companyId | oui |
 | PromotionMerchant | directe | companyId | oui |
 | DeliveryZone | directe | companyId | oui |

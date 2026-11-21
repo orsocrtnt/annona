@@ -26,10 +26,12 @@ import { MAX_LINE_QUANTITY } from "@/lib/validations/order";
 const t = fr.adminOrders;
 const h = fr.orderHistory;
 
-type DraftLine = { productId: string; name: string; unit: string; quantity: number };
+/** `lineId` : ligne existante (une commande peut porter deux tailles du même gâteau) ; absent pour un ajout. */
+type DraftLine = { lineId?: string; productId: string; name: string; unit: string; quantity: number; note?: string | null };
+const draftKey = (line: DraftLine) => line.lineId ?? line.productId;
 
 const toDraft = (order: AdminOrderDetail): DraftLine[] =>
-  order.lines.map((line) => ({ productId: line.productId, name: line.name, unit: line.unit, quantity: line.quantityOrdered }));
+  order.lines.map((line) => ({ lineId: line.id, productId: line.productId, name: line.name, unit: line.unit, quantity: line.quantityOrdered, note: line.note }));
 
 /** LOCK-1 — détail, correction (ADM-05) et historique journalisé (RG-10) d'une commande. */
 export function AdminOrderDetailView({ id }: { id: string }) {
@@ -58,16 +60,20 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
   const [adding, setAdding] = useState<string>("");
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  const byProduct = useMemo(() => new Map(order.lines.map((line) => [line.productId, line])), [order.lines]);
+  // Relecture d’Orso (19 novembre) : une ligne existante se retrouve par son identifiant (deux tailles du même gâteau).
+  const byLine = useMemo(() => new Map(order.lines.map((line) => [line.id, line])), [order.lines]);
   const dirty =
-    draft.length !== order.lines.length || draft.some((line) => byProduct.get(line.productId)?.quantityOrdered !== line.quantity);
+    draft.length !== order.lines.length || draft.some((line) => !line.lineId || byLine.get(line.lineId)?.quantityOrdered !== line.quantity);
   const invalid = draft.length === 0 || draft.some((line) => !Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > MAX_LINE_QUANTITY);
   const addable = (products.data ?? []).filter(
-    (product) => product.active && product.categoryActive && !draft.some((line) => line.productId === product.id)
+    // Seulement des produits au catalogue des restaurants : prix restaurant, et pas de gros gâteau (taille à la commande).
+    (product) =>
+      product.active && product.categoryActive && product.basePriceCents !== null && product.pastryFormat !== "LARGE" &&
+      !draft.some((line) => !line.lineId && line.productId === product.id)
   );
 
-  const setQuantity = (productId: string, value: string) =>
-    setDraft((lines) => lines.map((line) => (line.productId === productId ? { ...line, quantity: Number(value) } : line)));
+  const setQuantity = (key: string, value: string) =>
+    setDraft((lines) => lines.map((line) => ((line.lineId ?? line.productId) === key ? { ...line, quantity: Number(value) } : line)));
   const addLine = () => {
     const product = addable.find((row) => row.id === adding);
     if (!product) return;
@@ -77,7 +83,7 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
 
   const save = () =>
     correct.mutate(
-      { lines: draft.map((line) => ({ productId: line.productId, quantity: line.quantity })), note: note.trim() || null },
+      { lines: draft.map((line) => ({ lineId: line.lineId ?? null, productId: line.productId, quantity: line.quantity })), note: note.trim() || null },
       {
         onSuccess: () => {
           toast.success(t.saved);
@@ -109,6 +115,13 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
         <div><dt className="text-muted-foreground">{t.cutoff}</dt><dd className="font-medium">{deadlineLabel(order.cutoffAt)}</dd></div>
         <div><dt className="text-muted-foreground">{t.lockedAt}</dt><dd className="font-medium">{order.lockedAt ? deadlineLabel(order.lockedAt) : "—"}</dd>{order.preparedAt ? <dd className="text-muted-foreground">{t.preparedAt} {deadlineLabel(order.preparedAt)}</dd> : null}</div>
       </dl>
+
+      {order.notes ? (
+        <p className="rounded-xl border border-warning/40 bg-warning-subtle px-4 py-3 text-sm" data-testid="admin-order-notes">
+          <span className="font-medium">Allergies / instructions : </span>
+          {order.notes}
+        </p>
+      ) : null}
 
       {order.editable && order.afterCutoff ? (
         <Alert><AlertDescription>{t.afterCutoffHint}</AlertDescription></Alert>
@@ -145,13 +158,14 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
             </TableHeader>
             <TableBody>
               {draft.map((line) => {
-                const saved = byProduct.get(line.productId);
+                const saved = line.lineId ? byLine.get(line.lineId) : undefined;
                 const shortage = saved?.quantityDelivered !== null && saved?.quantityDelivered !== undefined && saved.quantityDelivered < saved.quantityOrdered;
                 return (
-                  <TableRow key={line.productId} data-testid={`admin-line-${line.name}`}>
+                  <TableRow key={draftKey(line)} data-testid={`admin-line-${line.name}`}>
                     <TableCell>
                       <p className="font-medium">{line.name}</p>
                       <p className="text-xs text-muted-foreground">{line.unit}</p>
+                      {line.note ? <p className="text-xs font-medium text-warning" data-testid="admin-line-note">⚠ {line.note}</p> : null}
                     </TableCell>
                     <TableCell>
                       {order.editable ? (
@@ -161,7 +175,7 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
                           min={1}
                           max={MAX_LINE_QUANTITY}
                           value={Number.isNaN(line.quantity) ? "" : line.quantity}
-                          onChange={(event) => setQuantity(line.productId, event.target.value)}
+                          onChange={(event) => setQuantity(draftKey(line), event.target.value)}
                           aria-label={t.quantityOf(line.name)}
                           className="h-9 w-24 tabular-nums"
                         />
@@ -199,7 +213,7 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
                           variant="ghost"
                           size="icon-sm"
                           aria-label={t.remove(line.name)}
-                          onClick={() => setDraft((lines) => lines.filter((row) => row.productId !== line.productId))}
+                          onClick={() => setDraft((lines) => lines.filter((row) => draftKey(row) !== draftKey(line)))}
                         >
                           <Trash2 />
                         </Button>

@@ -45,7 +45,7 @@ const t = fr.invoices.errors;
 
 type Tx = Pick<
   Prisma.TransactionClient,
-  "merchant" | "order" | "orderLine" | "product" | "invoice" | "invoiceLine" | "auditLog" | "operationJob" | "$queryRaw"
+  "merchant" | "order" | "orderLine" | "product" | "productSize" | "invoice" | "invoiceLine" | "auditLog" | "operationJob" | "$queryRaw"
 >;
 
 export type InvoiceGenerationDb = Pick<Prisma.TransactionClient, "company" | "merchant" | "order"> & {
@@ -123,8 +123,13 @@ async function loadBillableOrders(tx: Tx, companyId: string, merchantId: string,
   if (orders.length === 0) return [];
   const lines = await tx.orderLine.findMany({
     where: { companyId, orderId: { in: orders.map((order) => order.id) } },
-    select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true },
+    select: { orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, unitPriceFrozenCents: true, promoQuantity: true, promoUnitPriceCents: true, sizeId: true },
   });
+  // Lot 2, demande 10 : un gros gâteau est facturé avec sa taille (« Castel · 10 personnes »), au prix restaurant figé.
+  const sizeIds = [...new Set(lines.map((line) => line.sizeId).filter((id): id is string => Boolean(id)))];
+  const servingsOf = new Map(
+    sizeIds.length ? (await tx.productSize.findMany({ where: { companyId, id: { in: sizeIds } }, select: { id: true, servings: true } })).map((size) => [size.id, size.servings]) : []
+  );
   const products = await tx.product.findMany({
     where: { companyId, id: { in: [...new Set(lines.map((line) => line.productId))] } },
     select: { id: true, name: true, unit: true, vatRateBasisPoints: true },
@@ -140,7 +145,7 @@ async function loadBillableOrders(tx: Tx, companyId: string, merchantId: string,
         const product = productById.get(line.productId);
         return {
           productId: line.productId,
-          name: product?.name ?? "",
+          name: line.sizeId ? `${product?.name ?? ""} · ${servingsOf.get(line.sizeId) ?? "?"} personnes` : product?.name ?? "",
           unit: product?.unit ?? null,
           quantityOrdered: line.quantityOrdered,
           quantityDelivered: line.quantityDelivered,
@@ -285,14 +290,15 @@ export async function generateInvoicesForPeriod(
   if (isPeriodInFuture(period, now, timezone)) throw new DomainRuleError(400, t.futurePeriod, "PERIOD_IN_FUTURE");
 
   if (input.merchantId) {
-    const merchant = await db.merchant.findFirst({ where: { id: input.merchantId, companyId: context.companyId }, select: { billingPeriod: true } });
+    const merchant = await db.merchant.findFirst({ where: { id: input.merchantId, companyId: context.companyId, kind: "CLIENT" }, select: { billingPeriod: true } });
     if (!merchant) throw new DomainRuleError(404, t.merchantNotFound, "MERCHANT_NOT_FOUND");
     if (merchant.billingPeriod !== input.periodType) {
       throw new DomainRuleError(400, t.periodicityMismatch(fr.invoices.periodicity[merchant.billingPeriod] ?? ""), "PERIODICITY_MISMATCH");
     }
   }
   const merchants = await db.merchant.findMany({
-    where: { companyId: context.companyId, billingPeriod: input.periodType, ...(input.merchantId ? { id: input.merchantId } : {}) },
+    // Lot 2, demande 1 : une boutique de l'entreprise ne reçoit jamais de facture.
+    where: { companyId: context.companyId, kind: "CLIENT", billingPeriod: input.periodType, ...(input.merchantId ? { id: input.merchantId } : {}) },
     select: { id: true, name: true, tradeName: true },
   });
   const result: PeriodGenerationResult = {
@@ -341,7 +347,7 @@ export async function generateDueInvoices(
     });
     if (pending.length === 0) continue;
     const merchants = await db.merchant.findMany({
-      where: { companyId: company.id, id: { in: [...new Set(pending.map((order) => order.merchantId))] } },
+      where: { companyId: company.id, kind: "CLIENT", id: { in: [...new Set(pending.map((order) => order.merchantId))] } },
       select: { id: true, billingPeriod: true },
     });
     const work: Array<{ merchantId: string; period: BillingPeriodRange }> = [];

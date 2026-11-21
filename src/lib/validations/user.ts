@@ -15,7 +15,7 @@ export const updateProfileSchema = z.object({
 });
 
 /** Rôles qu'un administrateur peut ouvrir (slugs de `prisma/reference-data.ts`). */
-export const CREATABLE_ROLE_SLUGS = ["admin", "baker", "driver", "merchant"] as const;
+export const CREATABLE_ROLE_SLUGS = ["admin", "baker", "pastry-chef", "driver", "merchant", "seller"] as const;
 
 export const createUserSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -28,6 +28,10 @@ export const createUserSchema = z.object({
   miniAdminModules: miniAdminModulesSchema,
 }).refine((value) => value.roleSlug !== "merchant" || Boolean(value.merchantId), {
   message: "Choisissez le client que ce compte représente.",
+  path: ["merchantId"],
+}).refine((value) => value.roleSlug !== "seller" || Boolean(value.merchantId), {
+  // Lot 2, demande 1 : un compte vendeuse est la tablette d'une boutique.
+  message: "Choisissez la boutique de cet accès Vente.",
   path: ["merchantId"],
 }).refine((value) => value.roleSlug === "admin" || !value.miniAdminModules, {
   message: "Seul un compte administrateur peut être un mini admin.",

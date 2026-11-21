@@ -17,6 +17,7 @@ import { useCanOpenPage } from "@/hooks/use-can-open-page";
 import { getInitials } from "@/lib/utils";
 import { Menu, LogOut, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { StaffNotificationsBell } from "@/features/notifications/staff-notifications-bell";
 import { ThemeRadioGroup } from "@/components/theme/theme-preference-choice";
 import type { BreadcrumbItem } from "@/types";
 import Image from "next/image";
@@ -100,6 +101,8 @@ export function Header({ breadcrumbs, className, premium = false, actions }: Hea
 
       <div className="ml-auto flex items-center gap-2">
         {actions}
+        {/* Lot 2, demande 6 : alertes du laboratoire et de l'administration (écart à la réception d'un envoi). */}
+        {user && ["ADMIN", "PASTRY_CHEF", "BAKER"].includes(user.role.systemRole) ? <StaffNotificationsBell /> : null}
         {premium && <ThemeToggle className="max-sm:hidden rounded-full text-[#5f6a63] hover:bg-black/[0.055] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground" />}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

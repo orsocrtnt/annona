@@ -47,6 +47,8 @@ export interface AdminOrderLine {
   productId: string;
   name: string;
   unit: string;
+  /** RETOURS-2 : allergies ou instructions propres à ce produit. */
+  note: string | null;
   quantityOrdered: number;
   quantityDelivered: number | null;
   unitPriceCents: number;

@@ -25,7 +25,7 @@ export type AccountAdminDb = Pick<PrismaClient, "user" | "role" | "merchant" | "
 const defaultDb = () => prisma as unknown as AccountAdminDb;
 
 const DEACTIVATED_FROM_KEY = "deactivatedFromStatus";
-const MANAGEABLE: readonly SystemRole[] = ["ADMIN", "BAKER", "DRIVER", "MERCHANT"];
+const MANAGEABLE: readonly SystemRole[] = ["ADMIN", "BAKER", "PASTRY_CHEF", "DRIVER", "MERCHANT", "SELLER"];
 
 const notFound = () => new DomainRuleError(404, "Compte introuvable.", "USER_NOT_FOUND");
 
@@ -88,15 +88,22 @@ export async function updateCompanyAccount(
     throw new DomainRuleError(400, "Vous ne pouvez pas changer vos propres fonctionnalités.", "CANNOT_CHANGE_OWN_MODULES");
   }
 
-  // Rattachement au client (compte client seulement).
+  // Rattachement au client (compte client) ou à la boutique (vendeuse, lot 2, demande 1).
   let merchantId: string | null = target.merchantId;
-  if (nextRole.systemRole === "MERCHANT") {
+  if (nextRole.systemRole === "MERCHANT" || nextRole.systemRole === "SELLER") {
+    const seller = nextRole.systemRole === "SELLER";
     const wanted = input.merchantId !== undefined ? input.merchantId : target.merchantId;
-    const merchant = wanted ? await db.merchant.findFirst({ where: { id: wanted, companyId: actor.companyId }, select: { id: true } }) : null;
-    if (!merchant) throw new DomainRuleError(400, "Choisissez le client que ce compte représente.", "MERCHANT_REQUIRED");
+    const merchant = wanted
+      ? await db.merchant.findFirst({ where: { id: wanted, companyId: actor.companyId, kind: seller ? "SHOP" : "CLIENT" }, select: { id: true } })
+      : null;
+    if (!merchant) {
+      throw seller
+        ? new DomainRuleError(400, "Choisissez la boutique de cet accès Vente.", "SHOP_REQUIRED")
+        : new DomainRuleError(400, "Choisissez le client que ce compte représente.", "MERCHANT_REQUIRED");
+    }
     merchantId = merchant.id;
   } else {
-    if (input.merchantId) throw new DomainRuleError(400, "Seul un compte client se rattache à un client.", "MERCHANT_NOT_ALLOWED");
+    if (input.merchantId) throw new DomainRuleError(400, "Seul un compte client ou vente se rattache à un client ou à une boutique.", "MERCHANT_NOT_ALLOWED");
     merchantId = null;
   }
 

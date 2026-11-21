@@ -61,6 +61,31 @@ export function matches(row: Row, where: Where | undefined): boolean {
 
 let sequence = 0;
 
+/**
+ * Valeurs par défaut des colonnes ajoutées depuis l'écriture des tests (comme `@default` en base) : une
+ * ligne de test qui ne les donne pas les reçoit, pour que les filtres sur ces colonnes se comportent comme
+ * en base. Lot 2 : un client est de type « CLIENT » et une catégorie de famille « BREAD » par défaut.
+ */
+const COLUMN_DEFAULTS: Record<string, Row> = {
+  merchant: { kind: "CLIENT" },
+  category: { family: "BREAD" },
+  // Lot 2, demande 5 : un arrêt créé par le calcul des tournées est « en attente », comme en base.
+  stop: { status: "PENDING" },
+  // Lot 2, demande 9 : une commande de gâteau est « enregistrée » à sa création.
+  cakeOrder: { status: "ORDERED" },
+  // Lot 2, demande 10 : ligne simple = variante « ».
+  orderLine: { variantKey: "" },
+};
+
+/** `{ increment: n }` comme Prisma ; toute autre valeur est écrite telle quelle. */
+function applyData(row: Row, data: Row) {
+  for (const [key, value] of Object.entries(data)) {
+    if (isPlainObject(value) && typeof value.increment === "number") row[key] = Number(row[key] ?? 0) + value.increment;
+    else row[key] = value;
+  }
+  row.updatedAt = new Date();
+}
+
 export interface MemoryDbOptions {
   /** Ajoute les relations attendues par le service (ex. `category` d'un produit). */
   decorate?: Record<string, (row: Row, tables: Record<string, Row[]>) => Row>;
@@ -73,45 +98,50 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
   };
 
   function delegate(model: string) {
-    const rows = () => (tables[model] ??= []);
+    const defaults = COLUMN_DEFAULTS[model];
+    // Une lecture ne crée pas de table vide (les instantanés « rien de B modifié » restent identiques).
+    const rows = () => tables[model] ?? [];
+    // Les valeurs par défaut servent au filtre seulement : les lignes de test ne sont jamais modifiées par une lecture.
+    const test = (candidate: Row, where: Where | undefined) => matches(defaults ? { ...defaults, ...candidate } : candidate, where);
     const create = (data: Row) => {
       const now = new Date();
-      const row: Row = { id: `${model}_${++sequence}`, createdAt: now, updatedAt: now, ...data };
-      rows().push(row);
+      // Comme en base : les valeurs par défaut des colonnes s'appliquent à la création.
+      const row: Row = { id: `${model}_${++sequence}`, createdAt: now, updatedAt: now, ...defaults, ...data };
+      (tables[model] ??= []).push(row);
       return row;
     };
     return {
       findFirst: async ({ where }: { where?: Where } = {}) => {
-        const row = rows().find((candidate) => matches(candidate, where));
+        const row = rows().find((candidate) => test(candidate, where));
         return row ? view(model, row) : null;
       },
       findUnique: async ({ where }: { where: Where }) => {
-        const row = rows().find((candidate) => matches(candidate, where));
+        const row = rows().find((candidate) => test(candidate, where));
         return row ? view(model, row) : null;
       },
       findMany: async ({ where, take }: { where?: Where; take?: number } = {}) => {
-        const found = rows().filter((candidate) => matches(candidate, where)).map((row) => view(model, row));
+        const found = rows().filter((candidate) => test(candidate, where)).map((row) => view(model, row));
         return typeof take === "number" ? found.slice(0, take) : found;
       },
-      count: async ({ where }: { where?: Where } = {}) => rows().filter((candidate) => matches(candidate, where)).length,
+      count: async ({ where }: { where?: Where } = {}) => rows().filter((candidate) => test(candidate, where)).length,
       create: async ({ data }: { data: Row }) => view(model, create(data)),
       createMany: async ({ data }: { data: Row[] }) => {
         data.forEach(create);
         return { count: data.length };
       },
       update: async ({ where, data }: { where: Where; data: Row }) => {
-        const row = rows().find((candidate) => matches(candidate, where));
+        const row = rows().find((candidate) => test(candidate, where));
         if (!row) throw Object.assign(new Error("Record to update not found."), { code: "P2025" });
-        Object.assign(row, data, { updatedAt: new Date() });
+        applyData(row, data);
         return view(model, row);
       },
       updateMany: async ({ where, data }: { where: Where; data: Row }) => {
-        const found = rows().filter((candidate) => matches(candidate, where));
-        found.forEach((row) => Object.assign(row, data, { updatedAt: new Date() }));
+        const found = rows().filter((candidate) => test(candidate, where));
+        found.forEach((row) => applyData(row, data));
         return { count: found.length };
       },
       upsert: async ({ where, update, create: createData }: { where: Where; update: Row; create: Row }) => {
-        const row = rows().find((candidate) => matches(candidate, where));
+        const row = rows().find((candidate) => test(candidate, where));
         if (row) {
           Object.assign(row, update, { updatedAt: new Date() });
           return view(model, row);
@@ -119,12 +149,12 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
         return view(model, create(createData));
       },
       delete: async ({ where }: { where: Where }) => {
-        const index = rows().findIndex((candidate) => matches(candidate, where));
+        const index = rows().findIndex((candidate) => test(candidate, where));
         if (index < 0) throw Object.assign(new Error("Record to delete does not exist."), { code: "P2025" });
         return rows().splice(index, 1)[0];
       },
       deleteMany: async ({ where }: { where?: Where } = {}) => {
-        const kept = rows().filter((candidate) => !matches(candidate, where));
+        const kept = rows().filter((candidate) => !test(candidate, where));
         const count = rows().length - kept.length;
         tables[model] = kept;
         return { count };
@@ -140,7 +170,7 @@ export function createMemoryDb(tables: Record<string, Row[]>, options: MemoryDbO
       return Promise.all(arg as Promise<unknown>[]);
     },
   };
-  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "promotion", "promotionMerchant", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone"]) {
+  for (const model of ["company", "merchant", "category", "product", "merchantPrice", "promotion", "promotionMerchant", "slot", "order", "orderLine", "recurringOrder", "recurringOrderLine", "round", "stop", "auditLog", "user", "role", "driverLocation", "invoice", "invoiceLine", "payment", "operationJob", "deliveryZone", "productSize", "shopPrice", "shopStockLot", "shopDayClose", "clientNotification", "cakeOrder"]) {
     db[model] = delegate(model);
   }
   return db;

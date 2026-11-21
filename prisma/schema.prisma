@@ -37,6 +37,42 @@ enum SystemRole {
   BAKER
   DRIVER
   MERCHANT
+  /// Lot 2, demande 2 : pâtissier du laboratoire (espace /pastry), ne voit que la pâtisserie.
+  PASTRY_CHEF
+  /// Lot 2, demande 1 : vendeuse d'une boutique de l'entreprise (tablette, espace /shop), rattachée à sa boutique par `User.merchantId`.
+  SELLER
+}
+
+/// Lot 2, demande 1 : un client qui commande (restaurant, commerce) ou une boutique de l'entreprise, qui reçoit des envois
+/// du laboratoire sans commander ni recevoir de facture.
+enum MerchantKind {
+  CLIENT
+  SHOP
+}
+
+/// Lot 2, demande 2 : famille d'une catégorie ; le boulanger voit le pain, le pâtissier la pâtisserie.
+enum ProductFamily {
+  BREAD
+  PASTRY
+}
+
+/// Lot 2, demande 9 : commande de gâteau d'un particulier, réglée en totalité ou avec un acompte (50 % au moins).
+enum CakePayment {
+  FULL
+  DEPOSIT
+}
+
+/// Lot 2, demande 9 : enregistrée, puis soldée au retrait (reste payé) ; annulée hors parcours normal.
+enum CakeOrderStatus {
+  ORDERED
+  SETTLED
+  CANCELLED
+}
+
+/// Lot 2, demande 3 : petite pièce (pâtisserie individuelle) ou gros gâteau (vendu par taille, en nombre de parts).
+enum PastryFormat {
+  SMALL
+  LARGE
 }
 
 /// Statut d'un compte : ACTIVE ou INACTIVE (désactivé) en usage courant.
@@ -68,6 +104,8 @@ enum OrderStatus {
 enum OrderOrigin {
   MANUAL
   RECURRING
+  /// Lot 2, demande 5 : envoi du laboratoire vers une boutique de l'entreprise (pas une commande de client).
+  SHIPMENT
 }
 
 /// Moment de livraison d'une tournée : le client choisit seulement « Matin » ou « Soir » (lot 1, demande 1).
@@ -187,6 +225,11 @@ model Company {
   categories              Category[]
   products                Product[]
   merchantPrices          MerchantPrice[]
+  productSizes            ProductSize[]
+  shopPrices              ShopPrice[]
+  shopStockLots           ShopStockLot[]
+  shopDayCloses           ShopDayClose[]
+  cakeOrders              CakeOrder[]
   promotions              Promotion[]
   promotionMerchants      PromotionMerchant[]
   deliveryZones           DeliveryZone[]
@@ -310,35 +353,42 @@ model RolePermission {
 
 /// Commerçant livré (le « client » de la boulangerie).
 model Merchant {
-  id                 String         @id @default(cuid())
-  companyId          String         @map("company_id")
-  company            Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id                     String         @id @default(cuid())
+  companyId              String         @map("company_id")
+  company                Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   /// Raison sociale.
-  name               String
+  name                   String
   /// Enseigne affichée, si différente de la raison sociale.
-  tradeName          String?        @map("trade_name")
-  siren              String?
-  vatNumber          String?        @map("vat_number")
-  address            String
-  postalCode         String?        @map("postal_code")
-  city               String?
-  latitude           Float?
-  longitude          Float?
-  accessInstructions String?        @map("access_instructions")
-  contactName        String?        @map("contact_name")
-  contactPhone       String?        @map("contact_phone")
-  contactEmail       String?        @map("contact_email")
-  billingEmail       String?        @map("billing_email")
+  tradeName              String?        @map("trade_name")
+  siren                  String?
+  vatNumber              String?        @map("vat_number")
+  address                String
+  postalCode             String?        @map("postal_code")
+  city                   String?
+  latitude               Float?
+  longitude              Float?
+  accessInstructions     String?        @map("access_instructions")
+  contactName            String?        @map("contact_name")
+  contactPhone           String?        @map("contact_phone")
+  contactEmail           String?        @map("contact_email")
+  billingEmail           String?        @map("billing_email")
   /// Adresse de facturation, si différente de l'adresse de livraison.
-  billingAddress     String?        @map("billing_address")
-  billingPostalCode  String?        @map("billing_postal_code")
-  billingCity        String?        @map("billing_city")
-  billingPeriod      BillingPeriod  @default(MONTHLY) @map("billing_period")
-  paymentMethod      PaymentMethod? @map("payment_method")
-  active             Boolean        @default(true)
+  billingAddress         String?        @map("billing_address")
+  billingPostalCode      String?        @map("billing_postal_code")
+  billingCity            String?        @map("billing_city")
+  billingPeriod          BillingPeriod  @default(MONTHLY) @map("billing_period")
+  paymentMethod          PaymentMethod? @map("payment_method")
+  active                 Boolean        @default(true)
+  /// Lot 2, demande 1 : client qui commande ou boutique de l'entreprise (exclue du catalogue, des commandes et des factures).
+  kind                   MerchantKind   @default(CLIENT)
+  /// Lot 2, demande 4 : code responsable d'une boutique (empreinte scrypt « sel:empreinte », jamais le code).
+  managerCodeHash        String?        @map("manager_code_hash")
+  /// Essais de code manqués d'affilée, et blocage temporaire après trop d'essais.
+  managerCodeFailures    Int            @default(0) @map("manager_code_failures")
+  managerCodeLockedUntil DateTime?      @map("manager_code_locked_until")
   /// Tournée (zone) à laquelle l'administrateur rattache le client ; vide : il ne peut pas commander.
-  zoneId             String?        @map("zone_id")
-  zone               DeliveryZone?  @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  zoneId                 String?        @map("zone_id")
+  zone                   DeliveryZone?  @relation(fields: [zoneId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -346,24 +396,31 @@ model Merchant {
   users           User[]
   prices          MerchantPrice[]
   promotions      PromotionMerchant[]
+  shopPrices      ShopPrice[]
+  stockLots       ShopStockLot[]
+  dayCloses       ShopDayClose[]
+  cakeOrders      CakeOrder[]
   orders          Order[]
   recurringOrders RecurringOrder[]
   invoices        Invoice[]
 
   @@index([companyId, active])
   @@index([companyId, name])
+  @@index([companyId, kind])
   @@index([zoneId])
   @@map("merchants")
 }
 
 model Category {
-  id        String  @id @default(cuid())
-  companyId String  @map("company_id")
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id        String        @id @default(cuid())
+  companyId String        @map("company_id")
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   name      String
-  sortOrder Int     @default(0) @map("sort_order")
+  sortOrder Int           @default(0) @map("sort_order")
   /// Catégorie désactivée : masquée du catalogue client avec ses produits (ADM-02).
-  active    Boolean @default(true)
+  active    Boolean       @default(true)
+  /// Lot 2, demande 2 : pain (boulanger) ou pâtisserie (pâtissier).
+  family    ProductFamily @default(BREAD)
 
   products Product[]
 
@@ -376,29 +433,42 @@ model Category {
 }
 
 model Product {
-  id                 String   @id @default(cuid())
-  companyId          String   @map("company_id")
-  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  categoryId         String   @map("category_id")
-  category           Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  id                 String        @id @default(cuid())
+  companyId          String        @map("company_id")
+  company            Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  categoryId         String        @map("category_id")
+  category           Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   name               String
   description        String?
-  photoUrl           String?  @map("photo_url")
+  photoUrl           String?       @map("photo_url")
   /// Unité de vente en texte libre (« pièce », « kg », « plaque de 12 »…) : PLA-04.
   unit               String
-  basePriceCents     Int      @map("base_price_cents")
-  vatRateBasisPoints Int      @default(550) @map("vat_rate_basis_points")
-  sortOrder          Int      @default(0) @map("sort_order")
-  active             Boolean  @default(true)
+  /// Prix restaurant HT (RG-05) ; lot 2, demande 4 : vide tant que l'administrateur ne l'a pas saisi (produit
+  /// créé par le pâtissier), et alors absent du catalogue des restaurants. Gros gâteau : prix par taille (`ProductSize`).
+  basePriceCents     Int?          @map("base_price_cents")
+  vatRateBasisPoints Int           @default(550) @map("vat_rate_basis_points")
+  sortOrder          Int           @default(0) @map("sort_order")
+  active             Boolean       @default(true)
   /// Lot 1, demande 3 : allergènes réglementaires présents (codes de `src/domains/catalog/allergens.ts`).
-  allergens          String[] @default([])
+  allergens          String[]      @default([])
   /// Faux : « Allergènes non renseignés » ; vrai et liste vide : « Aucun allergène ».
-  allergensDeclared  Boolean  @default(false) @map("allergens_declared")
+  allergensDeclared  Boolean       @default(false) @map("allergens_declared")
+  /// Lot 2, demande 3 : petite pièce ou gros gâteau (pâtisserie seulement ; vide pour le pain).
+  pastryFormat       PastryFormat? @map("pastry_format")
+  /// Lot 2, demande 3 : recette, lue seulement par les pâtissiers, l'administrateur et le super-administrateur.
+  recipe             String?
+  /// Lot 2, demande 3 : jours de vente en boutique, jour de réception compris.
+  shelfLifeDays      Int           @default(1) @map("shelf_life_days")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   merchantPrices      MerchantPrice[]
+  sizes               ProductSize[]
+  shopPrices          ShopPrice[]
+  stockLots           ShopStockLot[]
+  dayCloses           ShopDayClose[]
+  cakeOrders          CakeOrder[]
   promotions          Promotion[]
   orderLines          OrderLine[]
   recurringOrderLines RecurringOrderLine[]
@@ -408,6 +478,153 @@ model Product {
   @@index([categoryId, sortOrder])
   @@index([companyId, active])
   @@map("products")
+}
+
+/// Lot 2, demandes 3 et 4 : taille d'un gros gâteau (nombre de parts) et son prix restaurant HT (vide : à saisir
+/// par l'administrateur ; la taille n'est alors pas proposée aux restaurants).
+model ProductSize {
+  id                   String  @id @default(cuid())
+  companyId            String  @map("company_id")
+  company              Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId            String  @map("product_id")
+  product              Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  servings             Int
+  restaurantPriceCents Int?    @map("restaurant_price_cents")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shopPrices ShopPrice[]
+  orderLines OrderLine[]
+  cakeOrders CakeOrder[]
+
+  @@unique([productId, servings])
+  @@index([companyId])
+  @@map("product_sizes")
+}
+
+/// Lot 2, demande 4 : prix boutique d'un produit (et d'une taille pour un gros gâteau) dans une boutique, réglé par
+/// la responsable avec son code, ou par l'administrateur. `sold` faux : produit non vendu dans cette boutique.
+/// Aucune ligne pour un produit : « Nouveau produit, prix à saisir ». `sizeKey` = identifiant de la taille ou « »
+/// (clé d'unicité sans valeur vide).
+model ShopPrice {
+  id         String       @id @default(cuid())
+  companyId  String       @map("company_id")
+  company    Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId     String       @map("shop_id")
+  shop       Merchant     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  productId  String       @map("product_id")
+  product    Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sizeId     String?      @map("size_id")
+  size       ProductSize? @relation(fields: [sizeId], references: [id], onDelete: Cascade)
+  sizeKey    String       @default("") @map("size_key")
+  sold       Boolean      @default(true)
+  /// Prix TTC payé par le particulier, en centimes ; vide quand le produit n'est pas vendu.
+  priceCents Int?         @map("price_cents")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([shopId, productId, sizeKey])
+  @@index([companyId])
+  @@index([productId])
+  @@index([sizeId])
+  @@map("shop_prices")
+}
+
+/// Lot 2, demandes 6 et 7 : lot de stock d'une boutique, un par produit et par jour de réception (produits reçus en
+/// bon état). `quantity` = ce qui reste du lot ; les plus anciens sont vendus en premier ; `lastSaleDay` = dernier jour
+/// de vente (jour de réception + durée de vente − 1).
+model ShopStockLot {
+  id              String   @id @default(cuid())
+  companyId       String   @map("company_id")
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId          String   @map("shop_id")
+  shop            Merchant @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  productId       String   @map("product_id")
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  receivedOn      DateTime @map("received_on") @db.Date
+  lastSaleDay     DateTime @map("last_sale_day") @db.Date
+  initialQuantity Int      @map("initial_quantity")
+  quantity        Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@index([shopId, productId, receivedOn])
+  @@index([productId])
+  @@map("shop_stock_lots")
+}
+
+/// Lot 2, demande 7 : clôture du soir d'une boutique, par produit et par jour. Ventes calculées : stock du matin + reçu
+/// en bon état − reste du soir ; jetés : fin de vente (confirmés) et abîmés en boutique.
+model ShopDayClose {
+  id               String   @id @default(cuid())
+  companyId        String   @map("company_id")
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId           String   @map("shop_id")
+  shop             Merchant @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  productId        String   @map("product_id")
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  morningStock     Int      @map("morning_stock")
+  receivedGood     Int      @map("received_good")
+  receivedDamaged  Int      @map("received_damaged")
+  remaining        Int
+  sold             Int
+  discardedExpired Int      @map("discarded_expired")
+  discardedDamaged Int      @map("discarded_damaged")
+  closedById       String?  @map("closed_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([shopId, productId, date])
+  @@index([companyId, date])
+  @@index([productId])
+  @@map("shop_day_closes")
+}
+
+/// Lot 2, demande 9 : commande de gâteau d'un particulier, prise en boutique par la vendeuse. Prix = prix boutique de
+/// la taille (figé à la commande, jamais saisi par la vendeuse) ; acompte d'au moins 50 % ou paiement complet ; retrait
+/// au moins 48 h plus tard (réglable par l'administrateur) ; le gâteau part dans l'envoi du matin du jour du retrait.
+model CakeOrder {
+  id            String          @id @default(cuid())
+  companyId     String          @map("company_id")
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId        String          @map("shop_id")
+  shop          Merchant        @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  productId     String          @map("product_id")
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sizeId        String          @map("size_id")
+  size          ProductSize     @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  inscription   String?
+  /// RETOURS-2 : allergies ou instructions du client, facultatives (lues par le pâtissier).
+  note          String?
+  servings      Int
+  /// Prix TTC en centimes, figé à la commande.
+  priceCents    Int             @map("price_cents")
+  payment       CakePayment
+  /// Montant payé à la commande (prix complet, ou acompte).
+  paidCents     Int             @map("paid_cents")
+  customerName  String          @map("customer_name")
+  customerPhone String          @map("customer_phone")
+  pickupAt      DateTime        @map("pickup_at")
+  pickupDate    DateTime        @map("pickup_date") @db.Date
+  status        CakeOrderStatus @default(ORDERED)
+  settledAt     DateTime?       @map("settled_at")
+  createdById   String?         @map("created_by_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  orderLine OrderLine?
+
+  @@index([companyId, pickupDate])
+  @@index([shopId, pickupDate])
+  @@index([productId])
+  @@index([sizeId])
+  @@map("cake_orders")
 }
 
 /// Prix spécifique d'un produit pour un commerçant (RG-05).
@@ -559,6 +776,8 @@ model Order {
   preparedAt  DateTime? @map("prepared_at")
   deliveredAt DateTime? @map("delivered_at")
   cancelledAt DateTime? @map("cancelled_at")
+  /// Lot 2, demande 6 : réception de l'envoi notée sur la tablette de la boutique.
+  receivedAt  DateTime? @map("received_at")
 
   recurringOrderId String?         @map("recurring_order_id")
   recurringOrder   RecurringOrder? @relation(fields: [recurringOrderId], references: [id], onDelete: SetNull)
@@ -587,33 +806,48 @@ model Order {
 }
 
 model OrderLine {
-  id                   String     @id @default(cuid())
-  companyId            String     @map("company_id")
-  company              Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  orderId              String     @map("order_id")
-  order                Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId            String     @map("product_id")
-  product              Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantityOrdered      Int        @map("quantity_ordered")
+  id                   String       @id @default(cuid())
+  companyId            String       @map("company_id")
+  company              Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderId              String       @map("order_id")
+  order                Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId            String       @map("product_id")
+  product              Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantityOrdered      Int          @map("quantity_ordered")
   /// Quantité réellement livrée (après manquant signalé) ; vide tant que non préparée.
-  quantityDelivered    Int?       @map("quantity_delivered")
+  quantityDelivered    Int?         @map("quantity_delivered")
   /// Prix unitaire HT figé au verrouillage (RG-05) ; vide avant.
-  unitPriceFrozenCents Int?       @map("unit_price_frozen_cents")
+  unitPriceFrozenCents Int?         @map("unit_price_frozen_cents")
   /// Lot 1, demande 2 : promotion retenue à la validation de la commande (`promotion.service.ts`).
-  promotionId          String?    @map("promotion_id")
-  promotion            Promotion? @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  promotionId          String?      @map("promotion_id")
+  promotion            Promotion?   @relation(fields: [promotionId], references: [id], onDelete: SetNull)
   /// Unités facturées au prix promo (les suivantes, au-delà de la quantité limitée, au prix normal).
-  promoQuantity        Int        @default(0) @map("promo_quantity")
+  promoQuantity        Int          @default(0) @map("promo_quantity")
   /// Prix promo HT figé à la validation : une promotion qui se termine ne change pas cette commande.
-  promoUnitPriceCents  Int?       @map("promo_unit_price_cents")
+  promoUnitPriceCents  Int?         @map("promo_unit_price_cents")
+  /// Lot 2, demande 6 : envoi vers une boutique, quantité reçue et quantité abîmée pendant la livraison (vides avant la réception).
+  quantityReceived     Int?         @map("quantity_received")
+  quantityDamaged      Int?         @map("quantity_damaged")
+  /// Lot 2, demandes 9 et 10 : taille et inscription d'un gros gâteau ; commande de particulier livrée dans l'envoi.
+  sizeId               String?      @map("size_id")
+  size                 ProductSize? @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  inscription          String?
+  /// RETOURS-2 : allergies ou instructions propres à ce produit, facultatives (lues par le boulanger ou le pâtissier).
+  note                 String?
+  cakeOrderId          String?      @unique @map("cake_order_id")
+  cakeOrder            CakeOrder?   @relation(fields: [cakeOrderId], references: [id], onDelete: Cascade)
+  /// Clé d'unicité dans la commande : « » pour une ligne simple ; deux gâteaux du même produit (tailles, inscriptions
+  /// ou commandes de particuliers différentes) font deux lignes.
+  variantKey           String       @default("") @map("variant_key")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([orderId, productId])
+  @@unique([orderId, productId, variantKey])
   @@index([companyId])
   @@index([productId])
   @@index([promotionId])
+  @@index([sizeId])
   @@map("order_lines")
 }
 
