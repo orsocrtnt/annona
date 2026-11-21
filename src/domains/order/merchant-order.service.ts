@@ -268,6 +268,7 @@ async function buildDetail(db: OrderDb, actor: MerchantRef, order: OrderRow, rul
       productId: size ? cakeArticleId(line.productId, line.sizeId!) : line.productId,
       name: product ? (size ? `${product.name} · ${size.servings} personnes` : product.name) : "Produit retiré",
       inscription: line.inscription ?? null,
+      note: line.note ?? null,
       unit: product?.unit ?? "",
       photoVersion: product && isProductPhotoPath(product.photoUrl, actor.companyId) ? photoVersion(product.photoUrl!) : null,
       quantity: line.quantityOrdered,
@@ -489,6 +490,7 @@ export async function saveMerchantOrder(
                 sizeId: line.sizeId,
                 inscription: line.inscription?.trim() || null,
                 variantKey: lineVariantKey(line),
+                note: line.note?.trim() || null,
                 unitPriceFrozenCents: sizes.get(line.sizeId)!.restaurantPriceCents,
               }
             : {
@@ -496,6 +498,7 @@ export async function saveMerchantOrder(
                 orderId: order.id,
                 productId: line.productId,
                 quantityOrdered: line.quantity,
+                note: line.note?.trim() || null,
                 ...linePromoData(promos.get(line.productId)),
               }
         ),
@@ -557,7 +560,7 @@ export async function reorderMerchantOrder(
         ? Boolean(products.get(line.productId)?.usable && sizes.get(line.sizeId)?.restaurantPriceCents !== null && sizes.has(line.sizeId))
         : products.get(line.productId)?.available
     )
-    .map((line) => ({ productId: line.productId, quantity: line.quantityOrdered, sizeId: line.sizeId ?? null, inscription: line.inscription ?? null }));
+    .map((line) => ({ productId: line.productId, quantity: line.quantityOrdered, sizeId: line.sizeId ?? null, inscription: line.inscription ?? null, note: line.note ?? null }));
   if (lines.length === 0) throw new DomainRuleError(400, t.nothingToReorder, "NOTHING_TO_REORDER");
 
   const existing = await db.order.findUnique({

@@ -27,11 +27,11 @@ const t = fr.adminOrders;
 const h = fr.orderHistory;
 
 /** `lineId` : ligne existante (une commande peut porter deux tailles du même gâteau) ; absent pour un ajout. */
-type DraftLine = { lineId?: string; productId: string; name: string; unit: string; quantity: number };
+type DraftLine = { lineId?: string; productId: string; name: string; unit: string; quantity: number; note?: string | null };
 const draftKey = (line: DraftLine) => line.lineId ?? line.productId;
 
 const toDraft = (order: AdminOrderDetail): DraftLine[] =>
-  order.lines.map((line) => ({ lineId: line.id, productId: line.productId, name: line.name, unit: line.unit, quantity: line.quantityOrdered }));
+  order.lines.map((line) => ({ lineId: line.id, productId: line.productId, name: line.name, unit: line.unit, quantity: line.quantityOrdered, note: line.note }));
 
 /** LOCK-1 — détail, correction (ADM-05) et historique journalisé (RG-10) d'une commande. */
 export function AdminOrderDetailView({ id }: { id: string }) {
@@ -116,6 +116,13 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
         <div><dt className="text-muted-foreground">{t.lockedAt}</dt><dd className="font-medium">{order.lockedAt ? deadlineLabel(order.lockedAt) : "—"}</dd>{order.preparedAt ? <dd className="text-muted-foreground">{t.preparedAt} {deadlineLabel(order.preparedAt)}</dd> : null}</div>
       </dl>
 
+      {order.notes ? (
+        <p className="rounded-xl border border-warning/40 bg-warning-subtle px-4 py-3 text-sm" data-testid="admin-order-notes">
+          <span className="font-medium">Allergies / instructions : </span>
+          {order.notes}
+        </p>
+      ) : null}
+
       {order.editable && order.afterCutoff ? (
         <Alert><AlertDescription>{t.afterCutoffHint}</AlertDescription></Alert>
       ) : null}
@@ -158,6 +165,7 @@ function OrderView({ order }: { order: AdminOrderDetail }) {
                     <TableCell>
                       <p className="font-medium">{line.name}</p>
                       <p className="text-xs text-muted-foreground">{line.unit}</p>
+                      {line.note ? <p className="text-xs font-medium text-warning" data-testid="admin-line-note">⚠ {line.note}</p> : null}
                     </TableCell>
                     <TableCell>
                       {order.editable ? (

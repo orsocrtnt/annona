@@ -61,12 +61,21 @@ export function OrderDetail({ orderId }: { orderId: string }) {
         </p>
       </header>
 
+      {data.notes ? (
+        <p className="rounded-2xl border border-warning/40 bg-warning-subtle px-3 py-2 text-sm" data-testid="order-notes">
+          <span className="font-medium">Allergies / instructions : </span>
+          {data.notes}
+        </p>
+      ) : null}
+
       <ul className="divide-y rounded-2xl border bg-card px-3" aria-label="Lignes de la commande">
         {data.lines.map((line) => (
           <li key={line.productId} className="flex items-center gap-3 py-3" data-testid={`order-line-${line.name}`}>
             <ProductThumb productId={line.productId} photoVersion={line.photoVersion} className="h-12 w-12 rounded-xl" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">{line.name}</p>
+              {line.inscription ? <p className="text-xs text-muted-foreground">« {line.inscription} »</p> : null}
+              {line.note ? <p className="text-xs font-medium text-warning" data-testid="order-line-note">⚠ {line.note}</p> : null}
               <p className="text-xs text-muted-foreground tabular-nums">
                 {formatCents(line.unitPriceCents)} {fr.common.exclVat} · {line.unit}
                 {line.available ? "" : " · plus proposé"}

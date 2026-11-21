@@ -16,14 +16,23 @@ export interface CartState {
   quantities: Record<string, number>;
   /** Lot 2, demande 10 : inscription par article de gros gâteau (« produit::taille »). */
   inscriptions: Record<string, string>;
+  /** RETOURS-2 : allergies ou instructions par article, facultatives. */
+  notes: Record<string, string>;
+  /** RETOURS-2 : allergies ou instructions pour toute la commande, facultatives. */
+  orderNote: string;
   loadedOrderId: string | null;
   setOwner: (ownerId: string) => void;
   setDeliveryDate: (date: string) => void;
   setSlot: (slotId: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   setInscription: (articleId: string, inscription: string) => void;
+  setNote: (articleId: string, note: string) => void;
+  setOrderNote: (note: string) => void;
   /** Remplace le contenu du panier (commande existante ou reprise depuis l'historique). */
-  load: (lines: ReadonlyArray<{ productId: string; quantity: number; inscription?: string | null }>, options?: { orderId?: string | null; deliveryDate?: string; slotId?: string }) => void;
+  load: (
+    lines: ReadonlyArray<{ productId: string; quantity: number; inscription?: string | null; note?: string | null }>,
+    options?: { orderId?: string | null; deliveryDate?: string; slotId?: string; orderNote?: string | null }
+  ) => void;
   clear: () => void;
 }
 
@@ -40,10 +49,14 @@ export const useCartStore = create<CartState>()(
       slotId: null,
       quantities: {},
       inscriptions: {},
+      notes: {},
+      orderNote: "",
       loadedOrderId: null,
       setOwner: (ownerId) => {
-        if (get().ownerId !== ownerId) set({ ownerId, deliveryDate: null, slotId: null, quantities: {}, inscriptions: {}, loadedOrderId: null });
+        if (get().ownerId !== ownerId) set({ ownerId, deliveryDate: null, slotId: null, quantities: {}, inscriptions: {}, notes: {}, orderNote: "", loadedOrderId: null });
       },
+      setNote: (articleId, note) => set((state) => ({ notes: { ...state.notes, [articleId]: note.slice(0, 300) } })),
+      setOrderNote: (orderNote) => set({ orderNote: orderNote.slice(0, 500) }),
       setInscription: (articleId, inscription) =>
         set((state) => ({ inscriptions: { ...state.inscriptions, [articleId]: inscription.slice(0, 120) } })),
       setDeliveryDate: (deliveryDate) => set({ deliveryDate }),
@@ -60,11 +73,13 @@ export const useCartStore = create<CartState>()(
         set((state) => ({
           quantities: Object.fromEntries(lines.filter((line) => line.quantity > 0).map((line) => [line.productId, clampQuantity(line.quantity)])),
           inscriptions: Object.fromEntries(lines.filter((line) => line.inscription).map((line) => [line.productId, line.inscription!])),
+          notes: Object.fromEntries(lines.filter((line) => line.note).map((line) => [line.productId, line.note!])),
+          orderNote: options.orderNote ?? "",
           loadedOrderId: options.orderId ?? null,
           deliveryDate: options.deliveryDate ?? state.deliveryDate,
           slotId: options.slotId ?? state.slotId,
         })),
-      clear: () => set({ quantities: {}, inscriptions: {}, loadedOrderId: null }),
+      clear: () => set({ quantities: {}, inscriptions: {}, notes: {}, orderNote: "", loadedOrderId: null }),
     }),
     { name: "annona-cart", storage: createJSONStorage(() => sessionStorage) }
   )

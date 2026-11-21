@@ -41,6 +41,7 @@ interface DetailLine {
   quantityOrdered: number;
   sizeId?: string | null;
   inscription?: string | null;
+  note?: string | null;
   cakeOrderId?: string | null;
 }
 
@@ -78,6 +79,7 @@ export function buildProductDetails(input: {
       quantity: line.quantityOrdered,
       servings: line.sizeId ? input.servingsBySize.get(line.sizeId) ?? cake?.servings ?? null : cake?.servings ?? null,
       inscription: line.inscription?.trim() || null,
+      note: line.note?.trim() || null,
       notes: order?.notes?.trim() || null,
     });
   }
@@ -199,7 +201,7 @@ export async function getProductionDay(
   });
   const allLines = await db.orderLine.findMany({
     where: { companyId, orderId: { in: allOrders.map((order) => order.id) } },
-    select: { id: true, orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, sizeId: true, inscription: true, cakeOrderId: true },
+    select: { id: true, orderId: true, productId: true, quantityOrdered: true, quantityDelivered: true, sizeId: true, inscription: true, cakeOrderId: true, note: true },
   });
   const [allProducts, categories] = await Promise.all([
     db.product.findMany({
@@ -251,8 +253,13 @@ export async function getProductionDay(
   const servingsBySize = new Map(
     sizeIds.length ? (await db.productSize.findMany({ where: { companyId, id: { in: sizeIds } }, select: { id: true, servings: true } })).map((size) => [size.id, size.servings]) : []
   );
-  const detailOf = (line: { sizeId?: string | null; inscription?: string | null }) => {
-    const parts = [line.sizeId ? `${servingsBySize.get(line.sizeId) ?? "?"} personnes` : null, line.inscription ? `« ${line.inscription} »` : null].filter(Boolean);
+  const detailOf = (line: { sizeId?: string | null; inscription?: string | null; note?: string | null }) => {
+    // RETOURS-2 : allergies ou instructions du produit, à la suite de la taille et de l'inscription.
+    const parts = [
+      line.sizeId ? `${servingsBySize.get(line.sizeId) ?? "?"} personnes` : null,
+      line.inscription ? `« ${line.inscription} »` : null,
+      line.note ? `⚠ ${line.note}` : null,
+    ].filter(Boolean);
     return parts.length ? parts.join(" · ") : null;
   };
   const slotById = new Map(slots.map((slot) => [slot.id, slot]));
@@ -298,6 +305,7 @@ export async function getProductionDay(
     return {
       orderId: order.id,
       reference: order.reference,
+      notes: order.notes?.trim() || null,
       status: order.status,
       prepared: order.status === "PREPARED" || order.status === "DELIVERED",
       merchant: {

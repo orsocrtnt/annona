@@ -31,6 +31,8 @@ export interface PreparationLine {
 export interface PreparationSheet {
   orderId: string;
   reference: string;
+  /** RETOURS-2 : allergies ou instructions laissées pour toute la commande. */
+  notes?: string | null;
   status: OrderStatus;
   prepared: boolean;
   merchant: { name: string; address: string; postalCode: string | null; city: string | null; accessInstructions: string | null };
@@ -65,6 +67,8 @@ export interface ProductionRecipient {
   quantity: number;
   servings: number | null;
   inscription: string | null;
+  /** RETOURS-2 : allergies ou instructions propres à ce produit (ou à la commande de gâteau du particulier). */
+  note: string | null;
   /** Instructions laissées sur la commande (champ « notes »). */
   notes: string | null;
 }

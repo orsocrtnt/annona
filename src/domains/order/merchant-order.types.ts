@@ -65,6 +65,8 @@ export interface PortalOrderLine {
   quantityDelivered: number | null;
   /** Lot 2, demande 10 : inscription d'un gros gâteau. */
   inscription?: string | null;
+  /** RETOURS-2 : allergies ou instructions propres à ce produit. */
+  note?: string | null;
   /** Prix figé au verrouillage s'il existe, sinon prix appliqué actuel. */
   unitPriceCents: number;
   /** Prix appliqué aujourd'hui (recopie, CLI-08). */

@@ -130,3 +130,11 @@ test("RETOURS-2 : réception et clôture classées par rayon — pâtisserie d'a
     ["Pâtisseries individuelles / Éclair", "Gâteaux secs / Sablé", "Pains / Baguette", "Pains / Ficelle", "Spéciaux / Pain au maïs"]
   );
 });
+
+test("RETOURS-2 : allergies / instructions facultatives sur chaque produit d'une commande client (300 caractères au plus)", async () => {
+  const { orderLineSchema, saveOrderSchema } = await import("../src/lib/validations/order");
+  assert.equal(orderLineSchema.parse({ productId: "p", quantity: 2, note: "  sans sésame " }).note, "sans sésame");
+  assert.equal(orderLineSchema.parse({ productId: "p", quantity: 2 }).note, undefined);
+  assert.equal(orderLineSchema.safeParse({ productId: "p", quantity: 2, note: "x".repeat(301) }).success, false);
+  assert.equal(saveOrderSchema.parse({ deliveryDate: "2026-11-23", slotId: "s", lines: [{ productId: "p", quantity: 1 }], notes: "Livrer porte B" }).notes, "Livrer porte B");
+});

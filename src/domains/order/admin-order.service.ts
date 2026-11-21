@@ -277,6 +277,7 @@ export async function getAdminOrder(companyId: string, orderId: string, now = ne
         // Lot 2, demandes 9 et 10 : « Castel · 10 personnes « Bon anniversaire Julie » ».
         name: [product?.name ?? "", line.sizeId ? `· ${servingsOf.get(line.sizeId) ?? "?"} personnes` : null, line.inscription ? `« ${line.inscription} »` : null].filter(Boolean).join(" "),
         unit: product?.unit ?? "",
+        note: line.note ?? null,
         quantityOrdered: line.quantityOrdered,
         quantityDelivered: line.quantityDelivered,
         unitPriceCents: line.unitPriceFrozenCents ?? price?.unitPriceCents ?? 0,

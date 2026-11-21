@@ -64,9 +64,15 @@ export function ProductDetailDialog({
                       <span className="font-medium text-brand">« {row.inscription} »</span>
                     </p>
                   ) : null}
+                  {row.note ? (
+                    <p className="rounded-md bg-warning-subtle px-2 py-1 text-sm text-warning" data-testid="product-detail-note">
+                      <span className="font-medium">Allergies / instructions : </span>
+                      {row.note}
+                    </p>
+                  ) : null}
                   {row.notes ? (
                     <p className="text-sm">
-                      <span className="font-medium">Instructions : </span>
+                      <span className="font-medium">Pour toute la commande : </span>
                       {row.notes}
                     </p>
                   ) : null}

@@ -137,3 +137,25 @@ test("LOT2-D10 : catalogue des restaurants (un article par taille avec prix) ; p
   const cart = readFileSync("src/features/ordering/cart-sheet.tsx", "utf8");
   assert.match(cart, /sizeId: line\.product\.cake\.sizeId, inscription:/);
 });
+
+test("RETOURS-2 : allergies / instructions facultatives par produit et pour la commande, enregistrées et relues par le restaurant", async () => {
+  const { tables, db } = fixture();
+  const input = {
+    ...ORDER,
+    notes: "Livrer par la porte de service",
+    lines: [
+      { productId: "eclair", quantity: 20, note: "Sans noisette" },
+      { productId: "castel", sizeId: "c10", inscription: "Bon anniversaire Julie", note: "Bougie 30 ans", quantity: 1 },
+    ],
+  };
+  assert.equal(saveOrderSchema.safeParse(input).success, true);
+  const { order } = await saveMerchantOrder(RESTAURANT, input, BEFORE, db);
+  const lines = tables.orderLine!.filter((line) => line.orderId === order.id);
+  assert.deepEqual(lines.map((line) => [line.productId, line.note]).sort(), [["castel", "Bougie 30 ans"], ["eclair", "Sans noisette"]]);
+  const detail = await getMerchantOrder(RESTAURANT, order.id, BEFORE, db);
+  assert.equal(detail.notes, "Livrer par la porte de service");
+  assert.deepEqual(detail.lines.map((line) => line.note).sort(), ["Bougie 30 ans", "Sans noisette"]);
+  // Sans note : rien d'enregistré (facultatif).
+  const { order: plain } = await saveMerchantOrder(RESTAURANT, ORDER, BEFORE, db);
+  assert.ok(tables.orderLine!.filter((line) => line.orderId === plain.id).every((line) => (line.note ?? null) === null));
+});

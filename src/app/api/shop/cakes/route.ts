@@ -20,6 +20,8 @@ const createSchema = z
     productId: z.string().trim().min(1).max(64),
     sizeId: z.string().trim().min(1).max(64),
     inscription: z.string().trim().max(120, "Inscription : 120 caractères au plus.").nullable(),
+    // RETOURS-2 : allergies ou instructions, facultatives.
+    note: z.string().trim().max(500, "Allergies / instructions : 500 caractères au plus.").nullable().optional(),
     servings: z.number().int().min(1, "1 part au moins.").max(200),
     payment: z.enum(["FULL", "DEPOSIT"]),
     depositCents: z.number().int().min(0).max(10_000_000).nullable(),
