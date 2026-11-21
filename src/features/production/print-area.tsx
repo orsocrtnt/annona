@@ -60,7 +60,10 @@ function Sheets({ day }: { day: ProductionDay }) {
               {sheet.lines.map((line) => (
                 <tr key={line.lineId}>
                   <td>☐</td>
-                  <td>{line.name}</td>
+                  <td>
+                    {line.name}
+                    {line.detail ? <div style={{ fontWeight: 600 }}>{line.detail}</div> : null}
+                  </td>
                   <td>{line.unit}</td>
                   <td style={{ textAlign: "right", fontWeight: 700 }}>
                     {line.quantityDelivered !== null && line.quantityDelivered < line.quantityOrdered
@@ -72,6 +75,7 @@ function Sheets({ day }: { day: ProductionDay }) {
             </tbody>
           </table>
           <p style={{ marginTop: "2mm", textAlign: "right" }}>{t.itemCount(sheet.itemCount)}</p>
+          {sheet.notes ? <p style={{ marginTop: "1mm", fontWeight: 700 }}>Allergies / instructions : {sheet.notes}</p> : null}
           {sheet.merchant.accessInstructions ? <p style={{ marginTop: "1mm" }}>{t.access} : {sheet.merchant.accessInstructions}</p> : null}
         </section>
       ))}

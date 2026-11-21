@@ -46,6 +46,7 @@ export function SellerCakes() {
   const [productId, setProductId] = useState("");
   const [sizeId, setSizeId] = useState("");
   const [inscription, setInscription] = useState("");
+  const [note, setNote] = useState("");
   const [servings, setServings] = useState("");
   const [payment, setPayment] = useState<"FULL" | "DEPOSIT">("DEPOSIT");
   const [deposit, setDeposit] = useState("");
@@ -68,6 +69,7 @@ export function SellerCakes() {
           productId,
           sizeId,
           inscription: inscription.trim() || null,
+          note: note.trim() || null,
           servings: Number(servings || size?.servings || 0),
           payment,
           depositCents: payment === "DEPOSIT" ? parseEurosToCents(deposit) : null,
@@ -80,6 +82,7 @@ export function SellerCakes() {
       void qc.invalidateQueries({ queryKey: ["shop", "cakes"] });
       toast.success("Commande enregistrée", { description: `${row.productName} pour ${row.customerName}, reste à payer ${formatCents(row.dueCents)}.` });
       setInscription("");
+      setNote("");
       setCustomerName("");
       setCustomerPhone("");
       setDeposit("");
@@ -145,6 +148,9 @@ export function SellerCakes() {
               <FormField label="Inscription sur le gâteau" hint="Par exemple : « Joyeux anniversaire Maman ».">
                 <Input className="h-12 text-base" maxLength={120} value={inscription} onChange={(event) => setInscription(event.target.value)} />
               </FormField>
+              <FormField label="Allergies / instructions" hint="Facultatif. Par exemple : « sans fruits à coque », « bougie 30 ans ».">
+                <Input className="h-12 text-base" maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} data-testid="cake-note" />
+              </FormField>
               <FormField label="Paiement" required>
                 <div className="flex gap-2">
                   <Button type="button" variant={payment === "FULL" ? "brand" : "outline"} className="h-12" onClick={() => setPayment("FULL")}>Réglé en totalité</Button>
@@ -193,6 +199,7 @@ export function SellerCakes() {
                     {row.customerName} <span className="whitespace-nowrap tabular-nums text-muted-foreground">· {row.customerPhone}</span>
                   </p>
                   {row.inscription ? <p className="text-sm italic text-muted-foreground">« {row.inscription} »</p> : null}
+                  {row.note ? <p className="rounded-md bg-warning-subtle px-2 py-1 text-sm text-warning">⚠ {row.note}</p> : null}
                   <div className="mt-auto flex items-center justify-between gap-3 pt-2">
                     {row.status === "SETTLED" ? (
                       <Badge variant="success"><CheckCircle2 className="mr-1 h-3 w-3" aria-hidden /> Soldée</Badge>

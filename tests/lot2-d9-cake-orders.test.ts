@@ -123,3 +123,17 @@ test("LOT2-D9 vérification 5 : au retrait, la vendeuse marque la commande « so
   await assert.rejects(settleCakeOrder({ ...SELLER, shopId: "gare" }, row.id, { db }), { status: 404 }, "une autre boutique ne la voit pas");
   assert.deepEqual(tables.auditLog!.filter((log) => log.entityType === "CakeOrder").map((log) => log.action), ["CREATE", "SETTLE"]);
 });
+
+test("RETOURS-2 : allergies / instructions facultatives d'une commande de gâteau, jusqu'au bon et à la fenêtre du pâtissier", async () => {
+  const { tables, db } = fixture();
+  const row = await createCakeOrder(SELLER, { ...ORDER, note: "  Allergie aux fruits à coque  " }, { db, now: NOW, addToRounds: noRounds });
+  assert.equal(row.note, "Allergie aux fruits à coque");
+  assert.equal(tables.orderLine!.find((orderLine) => orderLine.cakeOrderId === row.id)!.note, "Allergie aux fruits à coque");
+  const without = await createCakeOrder(SELLER, { ...ORDER, customerName: "M. Petit" }, { db, now: NOW, addToRounds: noRounds });
+  assert.equal(without.note, null, "facultatif");
+  const production = await getProductionDay("A", { date: PICKUP_DAY, cutoffAt: NOW, closed: true, lockedAt: NOW }, db as unknown as ProductionDb, "PASTRY");
+  const details = production.sheets.flatMap((sheet) => sheet.lines.map((sheetLine) => sheetLine.detail)).sort();
+  assert.deepEqual(details, ["10 personnes · « Joyeux anniversaire Maman »", "10 personnes · « Joyeux anniversaire Maman » · ⚠ Allergie aux fruits à coque"]);
+  const recipients = production.details!.fraisier!.recipients;
+  assert.deepEqual(recipients.map((recipient) => [recipient.customer?.name, recipient.note]).sort(), [["M. Petit", null], ["Mme Martin", "Allergie aux fruits à coque"]]);
+});

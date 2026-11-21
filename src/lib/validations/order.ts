@@ -17,6 +17,8 @@ export const orderLineSchema = z
     /** Lot 2, demande 10 : gros gâteau, taille choisie (prix restaurant de la taille) et inscription facultative. */
     sizeId: id.nullable().optional(),
     inscription: z.string().trim().max(120, "Inscription : 120 caractères au plus.").nullable().optional(),
+    /** RETOURS-2 : allergies ou instructions propres à ce produit, facultatives. */
+    note: z.string().trim().max(300, "Allergies / instructions : 300 caractères au plus.").nullable().optional(),
   })
   .strict();
 

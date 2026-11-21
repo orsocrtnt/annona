@@ -54,9 +54,11 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
         // Lot 2, demande 10 : un gros gâteau part avec sa taille et son inscription.
         lines: lines.map((line) =>
           line.product.cake
-            ? { productId: line.product.cake.productId, sizeId: line.product.cake.sizeId, inscription: cart.inscriptions[line.product.id]?.trim() || null, quantity: line.quantity }
-            : { productId: line.product.id, quantity: line.quantity }
+            ? { productId: line.product.cake.productId, sizeId: line.product.cake.sizeId, inscription: cart.inscriptions[line.product.id]?.trim() || null, note: cart.notes[line.product.id]?.trim() || null, quantity: line.quantity }
+            : { productId: line.product.id, quantity: line.quantity, note: cart.notes[line.product.id]?.trim() || null }
         ),
+        // RETOURS-2 : allergies ou instructions pour toute la commande.
+        notes: cart.orderNote.trim() || null,
       },
       {
         onSuccess: (order) => {
@@ -126,6 +128,12 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
                         data-testid="cart-line-inscription"
                       />
                     ) : null}
+                    <LineNote
+                      productName={line.product.name}
+                      value={cart.notes[line.product.id] ?? ""}
+                      onChange={(value) => cart.setNote(line.product.id, value)}
+                      disabled={locked}
+                    />
                     {line.promoQuantity > 0 ? (
                       <p className="text-xs text-warning" data-testid="cart-line-promo">
                         {fr.promotions.badge}
@@ -144,6 +152,21 @@ export function CartSheet({ open, onOpenChange, catalog, lines, totals, unavaila
             </ul>
           )}
           {unavailable > 0 ? <p className="pb-3 text-xs text-muted-foreground">{t.unavailableProducts(unavailable)}</p> : null}
+          {lines.length > 0 ? (
+            <label className="block space-y-1 pb-4 text-sm">
+              <span className="font-medium">Allergies / instructions pour la commande</span>
+              <span className="text-xs text-muted-foreground"> (facultatif)</span>
+              <textarea
+                className="min-h-16 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                placeholder="Par exemple : allergie aux fruits à coque, livrer par la porte de service…"
+                maxLength={500}
+                value={cart.orderNote}
+                onChange={(event) => cart.setOrderNote(event.target.value)}
+                disabled={locked}
+                data-testid="cart-order-note"
+              />
+            </label>
+          ) : null}
         </div>
 
         <div className="space-y-3 border-t px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4">
@@ -192,4 +215,29 @@ function cartLinePriceLabel(line: { quantity: number; promoQuantity: number; pro
   if (line.promoQuantity <= 0 || !promo) return `${formatCents(line.product.unitPriceCents)} × ${line.quantity}`;
   if (line.promoQuantity >= line.quantity) return `${formatCents(promo.unitPriceCents)} × ${line.quantity}`;
   return `${line.promoQuantity} × ${formatCents(promo.unitPriceCents)} + ${line.quantity - line.promoQuantity} × ${formatCents(line.product.unitPriceCents)}`;
+}
+
+/** RETOURS-2 : allergies ou instructions propres à un produit, repliées tant qu'elles sont vides. */
+function LineNote({ productName, value, onChange, disabled }: { productName: string; value: string; onChange: (value: string) => void; disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  if (!open && !value) {
+    return disabled ? null : (
+      <button type="button" className="mt-1 text-xs font-medium text-brand underline-offset-4 hover:underline" onClick={() => setOpen(true)} data-testid="cart-line-note-open">
+        + Allergies / instructions
+      </button>
+    );
+  }
+  return (
+    <input
+      className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+      placeholder="Allergies / instructions (facultatif)"
+      maxLength={300}
+      value={value}
+      autoFocus={open && !value}
+      onChange={(event) => onChange(event.target.value)}
+      disabled={disabled}
+      aria-label={`Allergies ou instructions pour ${productName}`}
+      data-testid="cart-line-note"
+    />
+  );
 }

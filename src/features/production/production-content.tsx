@@ -252,6 +252,7 @@ function Sheets({
                   <p className="text-sm text-muted-foreground">
                     {sheet.slotLabel} · {where(sheet)} · {sheet.reference}
                   </p>
+                  {sheet.notes ? <p className="rounded-md bg-warning-subtle px-2 py-1 text-sm font-medium text-warning" data-testid="sheet-notes">⚠ {sheet.notes}</p> : null}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="divide-y">

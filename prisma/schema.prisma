@@ -599,6 +599,8 @@ model CakeOrder {
   sizeId        String          @map("size_id")
   size          ProductSize     @relation(fields: [sizeId], references: [id], onDelete: Restrict)
   inscription   String?
+  /// RETOURS-2 : allergies ou instructions du client, facultatives (lues par le pâtissier).
+  note          String?
   servings      Int
   /// Prix TTC en centimes, figé à la commande.
   priceCents    Int             @map("price_cents")
@@ -830,6 +832,8 @@ model OrderLine {
   sizeId               String?      @map("size_id")
   size                 ProductSize? @relation(fields: [sizeId], references: [id], onDelete: Restrict)
   inscription          String?
+  /// RETOURS-2 : allergies ou instructions propres à ce produit, facultatives (lues par le boulanger ou le pâtissier).
+  note                 String?
   cakeOrderId          String?      @unique @map("cake_order_id")
   cakeOrder            CakeOrder?   @relation(fields: [cakeOrderId], references: [id], onDelete: Cascade)
   /// Clé d'unicité dans la commande : « » pour une ligne simple ; deux gâteaux du même produit (tailles, inscriptions

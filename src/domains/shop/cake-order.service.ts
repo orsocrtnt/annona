@@ -38,6 +38,8 @@ export interface CakeOrderRow {
   servings: number;
   sizeServings: number;
   inscription: string | null;
+  /** RETOURS-2 : allergies ou instructions du client, facultatives. */
+  note: string | null;
   priceCents: number;
   payment: "FULL" | "DEPOSIT";
   paidCents: number;
@@ -54,6 +56,8 @@ export interface CreateCakeOrderInput {
   productId: string;
   sizeId: string;
   inscription: string | null;
+  /** RETOURS-2 : allergies ou instructions, facultatives (500 caractères au plus). */
+  note?: string | null;
   servings: number;
   payment: "FULL" | "DEPOSIT";
   /** Montant de l'acompte (centimes) ; ignoré pour un paiement complet. */
@@ -101,6 +105,7 @@ function toRow(row: {
   id: string;
   servings: number;
   inscription: string | null;
+  note?: string | null;
   priceCents: number;
   payment: "FULL" | "DEPOSIT";
   paidCents: number;
@@ -118,6 +123,7 @@ function toRow(row: {
     servings: row.servings,
     sizeServings: sizes.get(row.sizeId) ?? row.servings,
     inscription: row.inscription,
+    note: row.note ?? null,
     priceCents: row.priceCents,
     payment: row.payment,
     paidCents: row.paidCents,
@@ -218,6 +224,7 @@ export async function createCakeOrder(
         productId: input.productId,
         sizeId: size.id,
         inscription: input.inscription?.trim() || null,
+        note: input.note?.trim().slice(0, 500) || null,
         servings: input.servings,
         priceCents,
         payment: input.payment,
@@ -238,6 +245,7 @@ export async function createCakeOrder(
         quantityOrdered: 1,
         sizeId: size.id,
         inscription: cake.inscription,
+        note: cake.note,
         cakeOrderId: cake.id,
         variantKey: `cake:${cake.id}`,
       },
