@@ -38,11 +38,11 @@
 
 **À faire par Théo**
 
-- RETOURS-1 — Tour complet de l'application et notes de retouches
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr)
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
+- RETOURS-1 — Tour complet de l'application et notes de retouches (tour à la main (parcours qui écrivent, application Android), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -85,7 +85,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
   - deux retouches dans ton travail, avec l'accord d'Orso : commentaire de `google-button.tsx` corrigé ; minuteries de reprise réseau de la file livreur (N2) déplacées dans `src/features/driver/round/network-back-retries.ts` (test `tests/recette-v1-network-back-retries.test.ts`) ;
   - `@capacitor/browser` ajouté au projet iOS (`ios/App/CapApp-SPM/Package.swift`) : il manquait depuis la PR #32, faute de `cap sync ios` ; l'application iOS compile maintenant pour le simulateur sur le Mac d'Orso, sans encore avoir été lancée ;
   - DEMO-1, lot 1 : journée de démo dans `src/domains/demo/` ; le catalogue du seed est passé dans `src/domains/demo/demo-catalog.ts` (le seed l'importe, mêmes données).
-- **À toi** (détail dans ta liste plus bas) : (1) relier ton projet Vercel `annona` au dépôt `orsocrtnt/annona`, branche `base` (Vercel a déjà accès à tous les dépôts d'Orso), et d'ici là redéployer `base` à la main ; (2) SMTP Resend sur `annona-dev` ; (3) RETOURS-1 : tour complet de l'application, avec des notes sur les retouches et les ajouts ; (4) vrais téléphones Android (menu de navigation, LOT1-D9).
+- **À toi** (détail dans ta liste plus bas) : (1) relier ton projet Vercel `annona` au dépôt `orsocrtnt/annona`, branche `base` (Vercel a déjà accès à tous les dépôts d'Orso), et d'ici là redéployer `base` à la main ; (2) SMTP Resend sur `annona-dev` ; (3) RETOURS-1 : tour complet de l'application, avec des notes sur les retouches et les ajouts (partie 1 automatique faite le 16 novembre, 13 remarques dans `docs/rapports/2026-11-16-tour-theo.md` ; reste ton tour à la main) ; (4) vrais téléphones Android (menu de navigation, LOT1-D9).
 - **Décisions d'Orso du 16 novembre** : comptes Apple Developer et Google Play ouverts par Orso (pas par toi) ; Firebase plus tard ; `annona-dev` reste la base du site en ligne jusqu'au premier vrai client. Démo : une par visiteur, ouverte à tous, sans aucun envoi, journée réaliste. Tes volumes sont repris : 70 clients du matin et 16 de l'après-midi par tournée, 60 à 70 arrêts le matin, 15 à 20 produits par livraison. À relire dans `src/domains/demo/demo-scenario.ts`.
 - **Attention, schéma** : DEMO-1 (chez Orso, en pause) ajoutera une table `demo_pool_environments`, avec une migration Prisma. Ne lance ni `db:push`, ni `db:sync-schema`, ni `db:migrate`, ni le seed sur `annona-dev` sans en parler à Orso ; il te préviendra avant d'appliquer la migration.
 
@@ -543,7 +543,9 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 
 - [ ] **RETOURS-1 — Tour complet de l'application et notes de retouches.**
 
-  **Qui : Théo.**
+  **Qui : Théo — tour à la main (parcours qui écrivent, application Android), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`.**
+
+  - 16 novembre 2026 au soir (session Claude de Théo), partie 1 faite : passage automatique en lecture seule sur https://annona-gray.vercel.app (`15d5501`), quatre espaces et super-admin, ordinateur et téléphone (84 pages, 10 connexions) : 0 erreur JavaScript, 0 page en erreur, connexion 1,3 à 1,9 s à chaud. 13 remarques dans `docs/rapports/2026-11-16-tour-theo.md`, dont : pages Tournées, Tableau de bord et Catalogue plus larges que l'écran du téléphone (grille sans `minmax(0,1fr)`, `src/features/rounds/rounds-content.tsx:180`) ; références du cahier des charges visibles à l'écran (« RG-05 », « RG-04 », « RG-01 », « NOT-01 », « ENF-05 », « FACT-1 », `src/lib/i18n/fr.ts`) ; sous-titre « semaines passées » sur l'onglet « À venir » du client ; choix du jour et onglets empilés sur l'écran Production du boulanger. Corrections dans la zone d'Orso : rien modifié.
 
   - Demande d'Orso du 16 novembre 2026 : faire un tour complet de l'application et noter les retouches à faire et ce qu'il faudrait ajouter.
   - Où : le site en ligne https://annona-gray.vercel.app (redéployé avec `base` à jour), sur ordinateur et sur téléphone, et l'application Android. Les quatre espaces : admin (back-office), boulanger (production), client (commande), livreur (tournée), avec les comptes de `outputs/comptes-demo.json`. Données créées pendant le tour : sur `annona-dev`, préfixées `test-theo-…`.
