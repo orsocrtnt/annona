@@ -144,10 +144,17 @@ export function CatalogContent() {
                       </TableCell>
                       <TableCell className="max-md:hidden">{product.categoryName}</TableCell>
                       <TableCell className="max-md:hidden">{product.unit}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">
-                        {product.pastryFormat === "LARGE"
-                          ? product.sizes.map((size) => `${size.servings} p. ${formatCents(size.restaurantPriceCents)}`).join(" · ") || "Tailles à saisir"
-                          : formatCents(product.basePriceCents)}
+                      <TableCell className="text-right tabular-nums">
+                        {/* Gros gâteau : une taille par ligne, pour ne pas élargir le tableau sur téléphone. */}
+                        {product.pastryFormat === "LARGE" ? (
+                          product.sizes.length ? (
+                            product.sizes.map((size) => (
+                              <span key={size.id} className="block whitespace-nowrap">{size.servings} p. {formatCents(size.restaurantPriceCents)}</span>
+                            ))
+                          ) : "Tailles à saisir"
+                        ) : (
+                          <span className="whitespace-nowrap">{formatCents(product.basePriceCents)}</span>
+                        )}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right tabular-nums max-lg:hidden">{formatVatRate(product.vatRateBasisPoints)}</TableCell>
                       <TableCell className="whitespace-nowrap max-lg:hidden">{t.specificPriceCount(product.specificPriceCount)}</TableCell>

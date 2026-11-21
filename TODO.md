@@ -24,16 +24,16 @@
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
-- LOT2-D1 — Boutiques et comptes vendeuse (relire la PR `theo/lot2-d1-d2` et appliquer ses deux migrations sur `annona-dev` (après DEMO-1) ; ensuite Claude fait la recette sur le site)
-- LOT2-D2 — Compte pâtissier (relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site)
-- LOT2-D3 — Produits : création, recettes, durée de vente (relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site)
-- LOT2-D4 — Prix restaurant et prix boutique (relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site)
-- LOT2-D5 — Envois quotidiens vers les boutiques (relire la PR brouillon `theo/lot2-d5` (empilée sur `theo/lot2-d3-d4`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
-- LOT2-D6 — Réception le matin en boutique (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
-- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
-- LOT2-D8 — Stock des boutiques (relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
-- LOT2-D9 — Commandes de gâteaux des particuliers en boutique (relire la PR brouillon `theo/lot2-d9-d10` (empilée sur `theo/lot2-d6-d8`) et appliquer sa migration ; ensuite Claude fait la recette sur le site)
-- LOT2-D10 — Pâtisseries pour les restaurants (relire la PR brouillon `theo/lot2-d10` (empilée sur `theo/lot2-d9-d10`) ; aucune migration nouvelle (celle de D9 suffit) ; ensuite Claude fait la recette sur le site)
+- LOT2-D1 — Boutiques et comptes vendeuse (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D2 — Compte pâtissier (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D3 — Produits : création, recettes, durée de vente (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D4 — Prix restaurant et prix boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D5 — Envois quotidiens vers les boutiques (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D6 — Réception le matin en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D8 — Stock des boutiques (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D9 — Commandes de gâteaux des particuliers en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- LOT2-D10 — Pâtisseries pour les restaurants (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 
 **À faire par Théo**
 
@@ -90,6 +90,8 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **1. Orso**
 - **Base `annona-dev` remplie pour tester en conditions réelles (20 novembre, demande de Théo)** : 200 clients fictifs de plus (préfixe `sim_`), 5 tournées du matin (Nord, Sud, Est, Ouest, Centre) d'environ 40 arrêts, une par livreur de démo ; 3 boutiques (Centre-ville, Bastille, Passy) avec 10 pains spéciaux et 15 pâtisseries par jour. Du 13 au 19 novembre tout est livré, reçu et clôturé ; le 20, tout est verrouillé et attribué ; du 21 au 27, commandes validées et gâteaux commandés. Compte rendu : `docs/rapports/2026-11-20-donnees-de-test.md`. Au passage, **erreur React n° 418 corrigée** (PR `theo/dates-hydratation`) : « Envois aux boutiques » et l'accueil super-admin figeaient la date du jour au déploiement.
+- **Recette du lot 2 faite le 19 novembre au soir** (session Claude de Théo, sur le site en ligne) : catalogue pâtissier complété (41 pâtisseries dont 7 gros gâteaux par taille), prix restaurant et prix boutique saisis, scénario complet des demandes 1 à 10 sur les six comptes : **63 vérifications sur 63 par l'API, 50 écrans sur 50 dans le navigateur**. Compte rendu : `docs/rapports/2026-11-19-recette-lot2.md`. À toi de valider pour clore LOT2-D1 à D10.
+- **Lot 2 en ligne (19 novembre au soir, accord de Théo)** : PR #47 puis #53 fusionnées (#48 à #52 incluses, marquées fusionnées par GitHub), site Vercel redéployé avec `base` à jour (`79e2f41`). Comptes de test créés sur `annona-dev` : boutique « Centre-ville (démo) » (tournée Nord, code responsable dans `outputs/comptes-demo.md`), `demo-patissier@annona.fr` et `demo-vendeuse@annona.fr` (mot de passe des comptes de démo, demandez-le à Théo). Vérifié sur le site : les 6 profils (admin, pâtissier, boulanger, vendeuse, super-admin, client) se connectent et leurs écrans répondent (liste des comptes de l’admin : 14 comptes, sans erreur). Reste : recette du lot 2 dans le navigateur (LOT2-D1 à D10).
 - **Question rapide (19 novembre, Théo d'accord pour avancer en attendant)** : pour le lot 2, une boutique est un client de type « boutique » (`Merchant.kind = SHOP`), ce qui lui donne gratuitement sa place dans les tournées. OK pour toi ? Si non, dis-le avant que les étapes suivantes s'empilent dessus. Les PR #48 (D1, D2) et suivantes sont en **brouillon** : elles passeront en « prêtes » une fois ta migration DEMO-1 appliquée.
 - **Lot 2 (pâtisserie, boutiques, stock), demandé par Théo le 18 novembre** : 10 tâches LOT2-D1 à D10, détail dans `docs/cahier-des-charges/LOT2-PATISSERIE-BOUTIQUES.md`. Claude (session de Théo) code dans ta zone (`prisma/`, `src/domains/`, back-office), une PR par étape, à relire. **La migration du lot 2 n'est pas appliquée sur `annona-dev`** : à toi de l'appliquer après celle de DEMO-1, puis Claude fait la recette sur le site.
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
@@ -325,7 +327,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D1 — Boutiques et comptes vendeuse.**
 
-  **Qui : Orso — relire la PR `theo/lot2-d1-d2` et appliquer ses deux migrations sur `annona-dev` (après DEMO-1) ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`, **migrations écrites, pas appliquées**) :
     - **Modèle** : boutique = `Merchant.kind = SHOP` (migration `20261118100000_lot2_roles_shops`), qui reprend l'adresse, les consignes, la position et la tournée d'un client ; rôles `PASTRY_CHEF` et `SELLER` et permissions `shops:read`, `shops:manage`, `dashboard:pastry` et `dashboard:shop` (migration `20261118100100_lot2_roles_data`, séparée car PostgreSQL refuse d'utiliser une valeur d'énumération dans la transaction qui l'ajoute).
@@ -339,7 +341,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D2 — Compte pâtissier.**
 
-  **Qui : Orso — relire la PR `theo/lot2-d1-d2` et appliquer ses migrations ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d1-d2`) :
     - **Comptes** : compte « Pâtissier » créé par l'admin (plusieurs possibles), espace `/pastry`.
@@ -351,7 +353,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D3 — Produits : création, recettes, durée de vente.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d3-d4` (empilée sur `theo/lot2-d1-d2`) et appliquer sa migration après les deux premières ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`, **migration `20261118100200_lot2_pastry_prices` écrite, pas appliquée**) :
     - **Modèle** : `Product.pastryFormat` (petite pièce ou gros gâteau), `recipe`, `shelfLifeDays` (jours de vente, jour de réception compris, 1 par défaut) ; tailles d'un gros gâteau dans `ProductSize` (nombre de parts, prix restaurant de la taille).
@@ -366,7 +368,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D4 — Prix restaurant et prix boutique.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d3-d4` et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d3-d4`) :
     - **Prix restaurant** : `Product.basePriceCents` devient facultatif (vide = prix à saisir). Un produit sans prix restaurant n'est ni au catalogue des restaurants ni commandable, même avec un ancien prix spécifique, et n'a pas de promotion. Un gros gâteau a un prix par taille et ne se commande pas encore (D10). Le catalogue de l'admin a un filtre « Produits sans prix ».
@@ -381,7 +383,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D5 — Envois quotidiens vers les boutiques.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d5` (empilée sur `theo/lot2-d3-d4`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d5`, **migration `20261118100300_lot2_shipments` écrite, pas appliquée** : origine `SHIPMENT` et permission `shipments:manage`) :
     - **Modèle** : un envoi est une commande d'origine « envoi » vers la boutique, sur le créneau du matin de sa tournée, verrouillée dès sa création (rien à valider ni à facturer).
@@ -395,7 +397,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D6 — Réception le matin en boutique.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`, **migration `20261118100400_lot2_shop_stock` écrite, pas appliquée**) :
     - **Tablette** : écran « Réception du matin » (`/shop/reception`). L'envoi du jour s'affiche avec ses quantités prévues ; la vendeuse note, pour chaque produit, le reçu et l'abîmé pendant la livraison (une fois).
@@ -407,7 +409,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D7 — Clôture du soir, produits à jeter et ventes calculées.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
     - **Tablette** : écran « Clôture du soir » (`/shop/closing`). Pour chaque produit en stock, la vendeuse note le reste et les abîmés en boutique.
@@ -419,7 +421,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D8 — Stock des boutiques.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d6-d8` (empilée sur `theo/lot2-d5`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d6-d8`) :
     - **Écrans** « Stock boutiques » pour l'admin (`/dashboard/stock`, fonctionnalité « Boutiques » du mini admin), le pâtissier (`/pastry/stock`, pâtisserie) et le boulanger (`/bakery/stock`, pain). La vendeuse a « Stock » (`/shop/stock`), sa boutique seulement.
@@ -431,7 +433,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D9 — Commandes de gâteaux des particuliers en boutique.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d9-d10` (empilée sur `theo/lot2-d6-d8`) et appliquer sa migration ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d9-d10`, **migration `20261118100500_lot2_cake_orders` écrite, pas appliquée**) :
     - **Modèle** : nouvelle table `CakeOrder`. Une ligne de commande peut porter une taille et une inscription ; l'unicité passe à commande × produit × variante, pour que deux gâteaux du même produit fassent deux lignes (sert aussi à D10).
@@ -445,7 +447,7 @@ _Source : PDF « Annona - Demandes de modification - lot 2 » de Théo, recopié
 
 - [ ] **LOT2-D10 — Pâtisseries pour les restaurants.**
 
-  **Qui : Orso — relire la PR brouillon `theo/lot2-d10` (empilée sur `theo/lot2-d9-d10`) ; aucune migration nouvelle (celle de D9 suffit) ; ensuite Claude fait la recette sur le site.**
+  **Qui : Orso — valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt.**
 
   - 19 novembre 2026 (session Claude de Théo, branche `theo/lot2-d10`) :
     - **Catalogue des restaurants** : petites pièces ayant un prix restaurant (D4), et **gros gâteaux, un article par taille** ayant un prix restaurant (« Castel · 10 personnes », identifiant « produit::taille »).
