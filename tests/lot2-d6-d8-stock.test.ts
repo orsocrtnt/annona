@@ -81,7 +81,7 @@ test("LOT2-D6 vérifications 1 et 2 : 11 éclairs reçus sur 12, dont 1 abîmé 
   const { tables, db } = fixture();
   shipment("o1", LUNDI, [["eclair", 12], ["baguette", 20]], tables);
   const before = await getReception(SELLER, LUNDI, db);
-  assert.deepEqual(before.lines.map((line) => [line.name, line.sent, line.received]), [["Baguette", 20, null], ["Éclair", 12, null]]);
+  assert.deepEqual(before.lines.map((line) => [line.name, line.sent, line.received]), [["Éclair", 12, null], ["Baguette", 20, null]]); // RETOURS-2 : pâtisserie avant boulangerie.
   const result = await receiveShipment(SELLER, { date: LUNDI, lines: [{ productId: "eclair", received: 11, damaged: 1 }, { productId: "baguette", received: 20, damaged: 0 }] }, { db, now: at(LUNDI, 7) });
   assert.deepEqual(result.gaps, [{ name: "Éclair", sent: 12, received: 11 }]);
   const lot = tables.shopStockLot!.find((row) => row.productId === "eclair")!;

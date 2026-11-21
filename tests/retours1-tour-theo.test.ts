@@ -4,7 +4,8 @@
  * - Lot 2, demande 8 : stock des boutiques regroupé par boutique, lisible.
  * - Lot 2, demandes 2, 9 et 10 : le pâtissier voit pour qui est chaque gâteau (client, particulier, inscription,
  *   instructions, allergènes).
- * - Lot 2, demande 1 : le rôle « vendeuse » s'appelle « compte vente ».
+ * - Lot 2, demande 1 : le rôle « vendeuse » s'appelle « Vente » (RETOURS-2 : ni « vendeuse » ni « compte vente »).
+ * - RETOURS-2 : réception du matin et clôture du soir classées par rayon (pâtisserie, puis boulangerie, puis catégories).
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -13,6 +14,7 @@ import { parseAdminOrderSort, sortAdminOrders } from "../src/domains/order/admin
 import { buildProductDetails } from "../src/domains/production/production.service";
 import type { StockRow } from "../src/domains/shop/shop-stock.service";
 import { groupStockByShop } from "../src/domains/shop/stock-groups";
+import { byShelf } from "../src/domains/shop/shop-stock.service";
 import { ROLE_LABELS } from "../src/lib/permissions/rbac";
 
 const orders = [
@@ -104,11 +106,27 @@ test("RETOURS-1 : allergènes non déclarés → null (jamais « aucun » par d�
   assert.equal(details.p!.allergens, null);
 });
 
-test("RETOURS-1 / lot 2 demande 1 : le rôle SELLER s'affiche « Compte vente », plus « Vendeuse »", () => {
-  assert.equal(ROLE_LABELS.SELLER, "Compte vente");
+test("RETOURS-1 / lot 2 demande 1 : le rôle SELLER s'affiche « Vente », ni « Vendeuse » ni « Compte vente »", () => {
+  assert.equal(ROLE_LABELS.SELLER, "Vente");
   const shops = readFileSync("src/features/shops/shops-content.tsx", "utf8");
-  assert.match(shops, /Créer un compte vente/);
+  assert.match(shops, /Créer l.accès Vente/);
+  assert.doesNotMatch(shops, /[Cc]ompte vente/);
   // Seuls des commentaires peuvent encore dire « vendeuse » ; aucun texte affiché.
   const visible = shops.split("\n").filter((line) => !/^\s*(\/\*\*|\*|\/\/)/.test(line));
   assert.equal(visible.filter((line) => /[Vv]endeuse/.test(line)).length, 0);
+});
+
+test("RETOURS-2 : réception et clôture classées par rayon — pâtisserie d'abord, puis catégories dans l'ordre du catalogue", () => {
+  const line = (name: string, family: "BREAD" | "PASTRY", categoryName: string, categoryOrder: number) => ({ name, family, categoryName, categoryOrder });
+  const sorted = [
+    line("Sablé", "PASTRY", "Gâteaux secs", 4),
+    line("Baguette", "BREAD", "Pains", 1),
+    line("Pain au maïs", "BREAD", "Spéciaux", 2),
+    line("Éclair", "PASTRY", "Pâtisseries individuelles", 3),
+    line("Ficelle", "BREAD", "Pains", 1),
+  ].sort(byShelf);
+  assert.deepEqual(
+    sorted.map((row) => `${row.categoryName} / ${row.name}`),
+    ["Pâtisseries individuelles / Éclair", "Gâteaux secs / Sablé", "Pains / Baguette", "Pains / Ficelle", "Spéciaux / Pain au maïs"]
+  );
 });

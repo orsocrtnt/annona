@@ -86,7 +86,7 @@ function ShopDialog({ shop, open, onOpenChange }: { shop?: ShopRow; open: boolea
     const done = {
       onSuccess: () => {
         toast.success(shop ? "Boutique enregistrée" : "Boutique créée", {
-          description: shop ? undefined : "Créez maintenant le compte vente de sa tablette.",
+          description: shop ? undefined : "Créez maintenant l'accès Vente de sa tablette.",
         });
         onOpenChange(false);
         if (!shop) setValues(initialValues());
@@ -268,7 +268,7 @@ function ShopCard({ shop, canManage }: { shop: ShopRow; canManage: boolean }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <div>
-          <p className="text-sm font-medium">Compte vente (tablette)</p>
+          <p className="text-sm font-medium">Vente (tablette)</p>
           {shop.sellers.length === 0 ? (
             <p className="text-sm text-muted-foreground">Aucun compte : créez-en un pour la tablette du magasin.</p>
           ) : (
@@ -285,7 +285,7 @@ function ShopCard({ shop, canManage }: { shop: ShopRow; canManage: boolean }) {
         </div>
         {canManage ? (
           <div className="flex flex-wrap gap-2">
-            {shop.active ? <CreateUserDialog shop={{ id: shop.id, name: shop.name }} triggerLabel="Créer un compte vente" /> : null}
+            {shop.active ? <CreateUserDialog shop={{ id: shop.id, name: shop.name }} triggerLabel="Créer l'accès Vente" /> : null}
             <Button variant="outline" onClick={() => setPricing(true)} data-testid={`shop-prices-${shop.name}`}>Prix boutique</Button>
             <Button variant="outline" onClick={() => setResetting(true)}>Réinitialiser le code</Button>
             <Button
@@ -374,7 +374,7 @@ export function ShopsContent() {
       {shops.error ? <p role="alert" className="text-sm text-error">{shops.error.message}</p> : null}
       {canManage ? <CakeLeadCard /> : null}
       {shops.data && shops.data.length === 0 ? (
-        <EmptyState icon={Store} title="Aucune boutique" description="Créez la première boutique, puis le compte vente de sa tablette." />
+        <EmptyState icon={Store} title="Aucune boutique" description="Créez la première boutique, puis l'accès Vente de sa tablette." />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {(shops.data ?? []).map((shop) => <ShopCard key={shop.id} shop={shop} canManage={canManage} />)}

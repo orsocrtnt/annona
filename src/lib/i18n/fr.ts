@@ -885,8 +885,8 @@ export const fr = {
   /** ADM-1 (ADM-01) : comptes de l'entreprise. */
   accounts: {
     title: "Utilisateurs",
-    roles: { ADMIN: "Administrateur", BAKER: "Boulanger", PASTRY_CHEF: "Pâtissier", DRIVER: "Livreur", MERCHANT: "Client", SELLER: "Compte vente", SUPER_ADMIN: "Super-administrateur" },
-    roleOptions: { merchant: "Client", driver: "Livreur", baker: "Boulanger", "pastry-chef": "Pâtissier", seller: "Compte vente", admin: "Administrateur" },
+    roles: { ADMIN: "Administrateur", BAKER: "Boulanger", PASTRY_CHEF: "Pâtissier", DRIVER: "Livreur", MERCHANT: "Client", SELLER: "Vente", SUPER_ADMIN: "Super-administrateur" },
+    roleOptions: { merchant: "Client", driver: "Livreur", baker: "Boulanger", "pastry-chef": "Pâtissier", seller: "Vente", admin: "Administrateur" },
     statuses: { ACTIVE: "Actif", INACTIVE: "Désactivé", SUSPENDED: "Suspendu", PENDING_VERIFICATION: "Invitation en attente" },
     merchant: "Client représenté",
     chooseMerchant: "Choisir le client",

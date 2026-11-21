@@ -48,7 +48,7 @@ const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
   { value: "DRIVER", label: "Livreurs" },
   { value: "BAKER", label: "Boulangers" },
   { value: "PASTRY_CHEF", label: "Pâtissiers" },
-  { value: "SELLER", label: "Comptes vente" },
+  { value: "SELLER", label: "Vente" },
   { value: "ADMIN", label: "Administrateurs" },
 ];
 

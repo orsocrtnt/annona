@@ -98,7 +98,7 @@ export async function updateCompanyAccount(
       : null;
     if (!merchant) {
       throw seller
-        ? new DomainRuleError(400, "Choisissez la boutique de ce compte vente.", "SHOP_REQUIRED")
+        ? new DomainRuleError(400, "Choisissez la boutique de cet accès Vente.", "SHOP_REQUIRED")
         : new DomainRuleError(400, "Choisissez le client que ce compte représente.", "MERCHANT_REQUIRED");
     }
     merchantId = merchant.id;

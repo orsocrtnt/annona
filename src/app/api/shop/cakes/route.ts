@@ -10,7 +10,7 @@ async function seller() {
   const guard = await requireCompanyRole(["SELLER"], "dashboard:shop");
   if ("error" in guard) return guard;
   const shopId = guard.actor.user.merchantId;
-  if (!shopId) return { error: NextResponse.json({ error: "Ce compte vente n'est rattaché à aucune boutique.", success: false }, { status: 403 }) };
+  if (!shopId) return { error: NextResponse.json({ error: "Ce compte n'est rattaché à aucune boutique.", success: false }, { status: 403 }) };
   return { actor: { companyId: guard.actor.companyId, userId: guard.actor.user.id, shopId } };
 }
 
