@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **20** : NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **5** : HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **13** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10 | **6** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1, RETOURS-2 |
+| À faire | **14** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **5** : SEP-1, RECETTE-V1, AUTH-GOOGLE, LOT1-D9, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -34,6 +34,7 @@
 - LOT2-D8 — Stock des boutiques (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - LOT2-D9 — Commandes de gâteaux des particuliers en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - LOT2-D10 — Pâtisseries pour les restaurants (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
+- RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre) (4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (e-mail de l'accès Vente) ; Théo — recette navigateur sur https://annona-gray.vercel.app)
 
 **À faire par Théo**
 
@@ -42,7 +43,6 @@
 - RECETTE-V1 — Recette des dix critères (vrais téléphones avec MOBILE-1, dont le menu de navigation sur Android (Google Maps et Waze) et sur iPhone (Plans en plus) ; les dix critères passent sur `base` le 15 novembre, navigateur et émulateur Android)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT1-D9 — Vérification sur téléphone et lenteur (mesure sur un vrai Android (Samsung Remote Test Lab ou emprunt) avec l'APK de MOBILE-1 ; Orso — un vrai iPhone si disponible)
-- RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre) (appliquer la migration `20261121120000_retours2_line_notes` sur `annona-dev`, puis fusionner la PR et déployer ; Orso — 4 enregistrements DNS pour `mail.annona.fr` (SMTP Resend) ; ensuite recette navigateur)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -109,7 +109,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - RECETTE-V1 : sur un vrai téléphone, vérifier le nouveau menu « Comment y aller ? » (Android : Google Maps et Waze ; Google Maps doit s'ouvrir dans son application) ; PR de Claude d'Orso du 15 novembre, touche `src/lib/native/navigation.ts`.
 - LOT1-D9 : chronométrer les écrans client et livreur sur un **vrai téléphone Android** (Samsung Remote Test Lab ou emprunt).
 - RETOURS-1 (demande d'Orso du 16 novembre) : faire un tour complet de l'application (les quatre espaces, site en ligne et application Android) et noter les retouches à faire et ce qu'il faudrait ajouter, dans `docs/rapports/` (détail dans la tâche).
-- RETOURS-2 (21 novembre) : les retouches de tes notes du tour sont faites sur `theo/retours-tour-2` ; à essayer dans le navigateur. L'e-mail de l'accès Vente non reçu vient du SMTP de `annona-dev` (AUTH-GOOGLE ci-dessus). À décider : ajouter « instructions » et « allergies » aux commandes de gâteaux (migration).
+- RETOURS-2 (21 novembre) : retouches du tour, « Vente », rayons, allergies / instructions : fusionnées et en ligne ; à essayer dans le navigateur. L'e-mail de l'accès Vente non reçu vient du SMTP de `annona-dev` (AUTH-GOOGLE ci-dessus). À décider : ajouter « instructions » et « allergies » aux commandes de gâteaux (migration).
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
@@ -528,7 +528,7 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 
 - [ ] **RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre).**
 
-  **Qui : Théo — appliquer la migration `20261121120000_retours2_line_notes` sur `annona-dev`, puis fusionner la PR et déployer ; Orso — 4 enregistrements DNS pour `mail.annona.fr` (SMTP Resend) ; ensuite recette navigateur.**
+  **Qui : Orso — 4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (e-mail de l'accès Vente) ; Théo — recette navigateur sur https://annona-gray.vercel.app.**
 
   - 21 novembre 2026, Claude de Théo, branche `theo/retours-tour-2` (aucune migration, rien écrit en base) :
     - **Vente (lot 2, demande 1)** : « Vendeuse » devient « Vente » dans tous les textes affichés (rôle, filtre des utilisateurs, fiche boutique « Créer l'accès Vente », messages d'erreur, export de l'entreprise). Code interne inchangé (`SELLER`). Correction de Théo le même jour : ni « vendeuse » ni « compte vente », juste « Vente ».
@@ -541,7 +541,7 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
     - **Admin › Tournées (ADM-06)** : en haut, « Toutes les tournées » : le nom de chacune (créneau, arrêts, livreur) ; un clic ouvre la liste de ses clients dans l'ordre (adresse, accès, commande, articles, colis, heure prévue ou livrée, incident).
   - **E-mail de création de l'accès Vente jamais reçu (Admin › Boutiques)** : pas un défaut du code (même chemin que toutes les invitations : `inviteAuthUser`, `user.service.ts`). Cause probable : l'envoi Supabase de `annona-dev` passe encore par le SMTP par défaut, qui ne livre qu'aux membres de l'équipe Supabase et à quelques e-mails par heure ; à régler avec le SMTP Resend (AUTH-GOOGLE, à Théo). À vérifier aussi : `AUTH_EMAIL_LINKS_ENABLED=true` sur Vercel (sinon le compte est créé « en attente » et le message le dit). Non vérifié ici : journaux Supabase de `annona-dev` (projet d'Orso, hors de portée de l'outil) et variables Vercel (accès à l'équipe `track-app2` refusé à l'outil).
   - **Allergies / instructions (décision de Théo du 21 novembre : « une instruction facultative des allergies, quand on prend une commande ou sur chaque produit »)**, branche `theo/allergies-instructions` :
-    - **En cours : Théo — migration `20261121120000_retours2_line_notes` sur `annona-dev` (annoncée ici, un seul développeur à la fois).** Ajouts seulement : `order_lines.note` et `cake_orders.note`, colonnes vides, aucune donnée modifiée. `migrate status` lu par le pooler (port 5432) : seule cette migration en attente. Son application par l'agent a été refusée par le garde-fou de Claude Code ; à lancer par Théo (commande dans la PR). **Ne fusionner la PR qu'après** : sans la colonne, la lecture des commandes planterait.
+    - **Mis en ligne le 21 novembre (Théo, script lancé par Claude après autorisation)** : migration `20261121120000_retours2_line_notes` appliquée sur `annona-dev` par le pooler (`migrate deploy` : « All migrations have been successfully applied », schéma à jour) ; PR #59 fusionnée (`feb8034`) ; `base` déployée en production Vercel (`dpl_Dfipx13pmatJbucRxCdZhm7jVBgo`, alias https://annona-gray.vercel.app). Vérifications : `/api/health` et `/login` 200 ; routes protégées 401 sans connexion, `/dashboard/orders` redirige (307) ; lecture en base : 15 833 lignes de commande intactes, colonne `note` présente (0 rempli), 66 commandes de gâteaux. Non vérifié : écrans connectés dans le navigateur.
     - Panier du client : sous chaque produit, « + Allergies / instructions » (300 caractères) ; en bas, « Allergies / instructions pour la commande » (`Order.notes`, déjà en base, 500 caractères). Rechargés quand on modifie ou reprend une commande.
     - Vente › Commandes de gâteaux : champ « Allergies / instructions » facultatif ; affiché sur la carte « À retirer » et recopié sur la ligne de l'envoi.
     - Lus par : bons de préparation (boulanger et pâtissier, à l'écran et imprimés : « ⚠ … » après la taille et l'inscription, instructions de la commande en bas), fenêtre « pour qui » du pâtissier, détail admin (par produit et pour la commande), détail client.
