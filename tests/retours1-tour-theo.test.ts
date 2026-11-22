@@ -116,6 +116,15 @@ test("RETOURS-1 / lot 2 demande 1 : le rôle SELLER s'affiche « Vente », ni «
   assert.equal(visible.filter((line) => /[Vv]endeuse/.test(line)).length, 0);
 });
 
+test("RETOURS-2 (recette du 22 novembre) : l'en-tête affiche « Vente », pas le nom « Vendeuse » gardé en base", () => {
+  // Le rôle en base s'appelle encore « Vendeuse » (migration 20261118100100) : l'en-tête prend le libellé du code.
+  const header = readFileSync("src/components/layouts/header.tsx", "utf8");
+  assert.match(header, /ROLE_LABELS\[user\.role\.systemRole\]/);
+  assert.doesNotMatch(header, /\{user\?\.role\.name \?\? "—"\}/);
+  // Les futurs seeds créent directement « Vente ».
+  assert.match(readFileSync("prisma/reference-data.ts", "utf8"), /slug: "seller", name: "Vente"/);
+});
+
 test("RETOURS-2 : réception et clôture classées par rayon — pâtisserie d'abord, puis catégories dans l'ordre du catalogue", () => {
   const line = (name: string, family: "BREAD" | "PASTRY", categoryName: string, categoryOrder: number) => ({ name, family, categoryName, categoryOrder });
   const sorted = [

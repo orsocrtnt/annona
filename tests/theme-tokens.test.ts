@@ -134,6 +134,11 @@ test("le Dark ne s'applique qu'aux espaces migrés et le script précède l'hydr
   for (const path of ["/dashboard", "/dashboard/rounds", "/bakery", "/settings/billing", "/support", "/users", "/companies", "/admin", "/admin/users", "/driver", "/driver/profile"]) {
     assert.equal(isThemeScopedPath(path), true, path);
   }
+  // RETOURS-2 (recette du 22 novembre) : espaces du lot 2, pâtissier et tablette Vente.
+  for (const path of ["/pastry", "/pastry/stock", "/shop", "/shop/cakes"]) {
+    assert.equal(isThemeScopedPath(path), true, path);
+  }
+  assert.equal(isThemeScopedPath("/shopx"), false);
   // Site public et connexion (LANDING-2, DESIGN-2) : même choix de thème.
   for (const path of ["/", "/mentions-legales", "/confidentialite", "/login", "/login/client", "/forgot-password", "/reset-password"]) {
     assert.equal(isThemeScopedPath(path), true, path);
