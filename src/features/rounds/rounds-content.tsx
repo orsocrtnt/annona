@@ -180,7 +180,7 @@ export function RoundsContent() {
           {data.rounds.length === 0 && !data.closed ? (
             <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">{t.empty}</div>
           ) : (
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
               <div className="space-y-6">
                 <p className="text-xs text-muted-foreground">{t.dragHint}</p>
                 {data.slots

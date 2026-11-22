@@ -34,13 +34,14 @@ export function DeliveryDayPicker({ value, onChange, label, shortcuts, large = f
             aria-pressed={selected}
             onClick={() => onChange(date)}
             className={cn(
-              "rounded-full border px-4 font-medium transition-colors",
+              // RETOURS-1, remarques 7 et 8 : sur téléphone, boutons plus serrés et sans la date, pour tenir sur une ligne.
+              "rounded-full border px-3 font-medium transition-colors sm:px-4",
               large ? "min-h-12 text-base" : "min-h-10 text-sm",
               selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted"
             )}
           >
             {shortcut.label}
-            <span className={cn("ml-2 font-normal", selected ? "opacity-90" : "text-muted-foreground")}>{shortDeliveryDateLabel(date)}</span>
+            <span className={cn("ml-2 font-normal max-sm:hidden", selected ? "opacity-90" : "text-muted-foreground")}>{shortDeliveryDateLabel(date)}</span>
           </button>
         );
       })}

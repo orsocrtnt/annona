@@ -194,7 +194,7 @@ export function BillingSettingsContent() {
 
       {tab === "payments" ? (
         <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-          Factures par période, règlements et relances : à venir avec la tâche FACT-1.
+          Factures par période, règlements et relances : voir le menu « Factures ».
         </p>
       ) : (
         <InvoiceGeneralSection local={local} setLocal={setLocal} />

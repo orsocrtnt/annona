@@ -194,16 +194,16 @@ export function OrderCatalog() {
               <h2 id={`cat-${category.id}`} className="mb-1 text-lg font-semibold">{category.name}</h2>
               <ul className="divide-y rounded-2xl border bg-card px-3">
                 {category.products.map((product) => (
-                  <li key={product.id} className="flex items-center gap-3 py-3" data-testid={`portal-product-${product.name}`}>
+                  <li key={product.id} className="flex items-center gap-2 py-3 sm:gap-3" data-testid={`portal-product-${product.name}`}>
                     {/* Lot 1, demande 3 : toucher le produit affiche ses allergènes. */}
                     <button
                       type="button"
-                      className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex min-w-0 flex-1 items-center gap-2 rounded-xl text-left sm:gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => setInfo(product)}
                       aria-label={t.productInfo(product.name)}
                       data-testid="portal-product-open"
                     >
-                      <ProductThumb productId={product.id} photoVersion={product.photoVersion} className="h-14 w-14 shrink-0 rounded-xl" />
+                      <ProductThumb productId={product.id} photoVersion={product.photoVersion} className="h-11 w-11 shrink-0 rounded-xl sm:h-14 sm:w-14" />
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-medium leading-snug">{product.name}</p>
                         <p className="mt-0.5 text-sm text-muted-foreground">

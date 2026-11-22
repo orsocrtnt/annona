@@ -79,7 +79,7 @@ export function LiveDashboardContent() {
             </div>
           ) : null}
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <div className="space-y-6">
               <Card>
                 <CardHeader className="pb-2">
@@ -121,7 +121,7 @@ export function LiveDashboardContent() {
                                 {canOrders ? (
                                   <Link
                                     href={`/dashboard/orders?date=${data.date}&roundId=${encodeURIComponent(round.id)}`}
-                                    className="text-sm tabular-nums underline-offset-4 hover:underline"
+                                    className="text-sm tabular-nums underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
                                     data-testid="live-round-progress"
                                   >
                                     {t.progressLabel(round.progress.delivered, round.progress.total)}

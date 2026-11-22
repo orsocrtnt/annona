@@ -62,12 +62,12 @@ function AdminUsersContent() {
       <form className="flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); setQ(draftQuery.trim()); setPage(1); }}>
         <label className="grid gap-1 text-sm">
           Recherche
-          <Input value={draftQuery} maxLength={80} placeholder="Nom ou entreprise" onChange={(event) => setDraftQuery(event.target.value)} />
+          <Input aria-label="Recherche" value={draftQuery} maxLength={80} placeholder="Nom ou entreprise" onChange={(event) => setDraftQuery(event.target.value)} />
         </label>
         <label className="grid gap-1 text-sm">
           Rôle
           <Select value={role || "ALL"} onValueChange={(value) => { setRole(value === "ALL" ? "" : value); setPage(1); }}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-44" aria-label="Rôle"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tous</SelectItem>
               {ROLES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
@@ -77,7 +77,7 @@ function AdminUsersContent() {
         <label className="grid gap-1 text-sm">
           Statut
           <Select value={status || "ALL"} onValueChange={(value) => { setStatus(value === "ALL" ? "" : value); setPage(1); }}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-44" aria-label="Statut"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tous</SelectItem>
               {STATUSES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
@@ -122,7 +122,7 @@ function AdminUsersContent() {
         <label className="flex items-center gap-2 text-sm">
           Lignes
           <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-24" aria-label="Lignes par page"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="25">25</SelectItem>
               <SelectItem value="50">50</SelectItem>

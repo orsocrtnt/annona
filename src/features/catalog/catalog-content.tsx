@@ -105,7 +105,7 @@ export function CatalogContent() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[26rem_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[26rem_minmax(0,1fr)]">
         <CategoryPanel
           categories={familyCategories}
           allCategories={categories.data ?? []}
