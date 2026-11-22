@@ -14,6 +14,10 @@ export const THEME_SCOPED_PATH_PREFIXES = [
   "/portal",
   "/dashboard",
   "/bakery",
+  // RETOURS-2 (recette du 22 novembre 2026) : espaces du lot 2, pâtissier et tablette Vente, oubliés jusque-là
+  // (le bouton de thème s'affichait sans effet).
+  "/pastry",
+  "/shop",
   "/settings",
   "/support",
   "/users",

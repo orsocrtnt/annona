@@ -98,7 +98,7 @@ export const ROLES = [
   { slug: "driver", name: "Livreur", systemRole: "DRIVER", description: "Exécution des tournées" },
   { slug: "merchant", name: "Client", systemRole: "MERCHANT", description: "Commerçant qui commande" },
   { slug: "pastry-chef", name: "Pâtissier", systemRole: "PASTRY_CHEF", description: "Production de la pâtisserie et envois aux boutiques" },
-  { slug: "seller", name: "Vendeuse", systemRole: "SELLER", description: "Tablette d'une boutique de l'entreprise" },
+  { slug: "seller", name: "Vente", systemRole: "SELLER", description: "Tablette d'une boutique de l'entreprise" },
 ] as const satisfies ReadonlyArray<{
   slug: string;
   name: string;
