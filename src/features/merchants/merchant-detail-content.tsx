@@ -23,7 +23,7 @@ const t = fr.merchants;
 
 function BackLink() {
   return (
-    <Link href="/dashboard/merchants" className="inline-flex min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+    <Link href="/dashboard/merchants" className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
       <ArrowLeft className="size-4" aria-hidden /> {t.back}
     </Link>
   );

@@ -165,7 +165,7 @@ export function AdminOrdersContent() {
                 {sortAdminOrders(data.orders, sort).map((order) => (
                   <TableRow key={order.id} data-testid={`admin-order-${order.reference}`}>
                     <TableCell className="font-medium">
-                      <Link href={`/dashboard/orders/${order.id}`} prefetch={false} className="text-brand underline-offset-4 hover:underline">
+                      <Link href={`/dashboard/orders/${order.id}`} prefetch={false} className="text-brand underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
                         {order.reference}
                       </Link>
                     </TableCell>

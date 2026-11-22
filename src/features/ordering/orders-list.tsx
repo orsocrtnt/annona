@@ -37,7 +37,7 @@ export function OrdersList() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{t.myOrders}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t.historyHint}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{tab === "history" ? t.historyHint : t.upcomingHint}</p>
       </div>
       <div className="inline-flex rounded-full border bg-muted p-1" role="tablist" aria-label={t.myOrders}>
         {(["upcoming", "history"] as const).map((value) => (

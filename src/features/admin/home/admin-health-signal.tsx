@@ -23,9 +23,10 @@ export function AdminHealthSignal({ health }: { health: AdminHomeHealth }) {
           <Icon className={cn("h-6 w-6", level.text)} />
         </span>
         <div className="min-w-0">
-          <h2 id="admin-health-title" className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground">
-            <span className={cn("h-2.5 w-2.5 rounded-full", level.dot)} aria-hidden />
-            Santé de la plateforme : {level.label}
+          <h2 id="admin-health-title" className="flex items-start gap-2 text-lg font-bold leading-snug tracking-tight text-foreground">
+            {/* RETOURS-1, remarque 11 : la pastille ne rétrécit plus et reste alignée sur la première ligne du titre. */}
+            <span className={cn("mt-2 h-2.5 w-2.5 shrink-0 rounded-full", level.dot)} aria-hidden />
+            <span>Santé de la plateforme : {level.label}</span>
           </h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
             {health.sentence}

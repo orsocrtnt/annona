@@ -32,7 +32,7 @@ export function QuantityStepper({ productName, value, onChange, disabled, classN
     "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted active:scale-95 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div className={cn("flex items-center gap-1 sm:gap-1.5", className)}>
       <button
         type="button"
         className={button}
@@ -62,7 +62,8 @@ export function QuantityStepper({ productName, value, onChange, disabled, classN
           if (event.key === "Enter") event.currentTarget.blur();
         }}
         className={cn(
-          "h-11 w-14 rounded-xl border border-border bg-background text-center text-base font-semibold tabular-nums",
+          // RETOURS-1, remarque 9 : plus étroit sur téléphone, pour laisser la place au nom du produit.
+          "h-11 w-11 rounded-xl border border-border bg-background text-center text-base font-semibold tabular-nums sm:w-14",
           "placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
           value > 0 && "border-primary/60 bg-primary/5"
         )}

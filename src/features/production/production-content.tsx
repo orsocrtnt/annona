@@ -67,10 +67,10 @@ export function ProductionContent({ readOnly = false, title }: { readOnly?: bool
         </div>
         {data?.closed && data.sheets.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="lg" onClick={() => print("sheets")}>
+            <Button variant="outline" size="lg" className="max-sm:h-9 max-sm:px-3 max-sm:text-sm" onClick={() => print("sheets")}>
               <Printer /> {t.printSheets}
             </Button>
-            <Button variant="outline" size="lg" onClick={() => print("labels")}>
+            <Button variant="outline" size="lg" className="max-sm:h-9 max-sm:px-3 max-sm:text-sm" onClick={() => print("labels")}>
               <Tag /> {t.printLabels}
             </Button>
           </div>
@@ -118,7 +118,7 @@ export function ProductionContent({ readOnly = false, title }: { readOnly?: bool
                   aria-selected={view === key}
                   onClick={() => update({ view: key })}
                   className={cn(
-                    "min-h-12 rounded-xl px-5 text-base font-medium transition-colors",
+                    "min-h-11 rounded-xl px-3 text-sm font-medium transition-colors sm:min-h-12 sm:px-5 sm:text-base",
                     view === key ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                   )}
                 >

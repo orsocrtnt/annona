@@ -30,7 +30,7 @@ const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("fr-
 
 function BackLink() {
   return (
-    <Link href="/dashboard/invoices" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+    <Link href="/dashboard/invoices" className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
       <ArrowLeft className="h-4 w-4" aria-hidden /> {t.back}
     </Link>
   );
@@ -203,7 +203,7 @@ function InvoiceView({ invoice }: { invoice: AdminInvoiceDetail }) {
             {invoice.orders.map((order) => (
               <li key={order.id} className="flex flex-wrap items-center justify-between gap-2 py-2" data-testid={`invoice-order-${order.reference}`}>
                 <span className="flex items-center gap-2">
-                  <Link href={`/dashboard/orders/${order.id}`} prefetch={false} className="font-medium text-brand underline-offset-4 hover:underline">{order.reference}</Link>
+                  <Link href={`/dashboard/orders/${order.id}`} prefetch={false} className="font-medium text-brand underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">{order.reference}</Link>
                   <span className="text-muted-foreground">{shortDeliveryDateLabel(order.deliveryDate)}</span>
                   {order.shortage ? <Badge variant="error">{t.shortage}</Badge> : null}
                 </span>

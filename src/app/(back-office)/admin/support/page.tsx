@@ -79,12 +79,12 @@ function AdminSupportContent() {
       >
         <label className="grid gap-1 text-sm">
           Entreprise
-          <Input value={draftQuery} maxLength={80} placeholder="Nom" onChange={(event) => setDraftQuery(event.target.value)} />
+          <Input aria-label="Entreprise" value={draftQuery} maxLength={80} placeholder="Nom" onChange={(event) => setDraftQuery(event.target.value)} />
         </label>
         <label className="grid gap-1 text-sm">
           Statut
           <Select value={status || "ALL"} onValueChange={(value) => { setStatus(value === "ALL" ? "" : value); setPage(1); }}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-44" aria-label="Statut"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tous</SelectItem>
               {STATUSES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
@@ -94,7 +94,7 @@ function AdminSupportContent() {
         <label className="grid gap-1 text-sm">
           Priorité
           <Select value={priority || "ALL"} onValueChange={(value) => { setPriority(value === "ALL" ? "" : value); setPage(1); }}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-40" aria-label="Priorité"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Toutes</SelectItem>
               {PRIORITIES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
@@ -139,7 +139,7 @@ function AdminSupportContent() {
         <label className="flex items-center gap-2 text-sm">
           Lignes
           <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-24" aria-label="Lignes par page"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="25">25</SelectItem>
               <SelectItem value="50">50</SelectItem>

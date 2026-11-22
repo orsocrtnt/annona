@@ -48,7 +48,7 @@ function OverviewPanel() {
 
   const figures = [
     { label: "Utilisateurs totaux", value: String(data.stats.totalUsers), note: "toutes entreprises" },
-    { label: "Factures de livraison payées", value: formatCurrency(data.stats.paidDeliveryInvoiceRevenue), note: "mois UTC · flux séparé" },
+    { label: "Factures de livraison payées", value: formatCurrency(data.stats.paidDeliveryInvoiceRevenue), note: "ce mois-ci, à part" },
   ];
 
   return (

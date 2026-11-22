@@ -136,7 +136,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Conseillé : installer Node 22.18 comme la CI (Node 24.22.1 installé ; les tests passent avec les deux depuis WIN-1).
 
 **3. Claude**
-- RETOURS-2 / AUTH-GOOGLE : dès qu'Orso a posé les DNS, vérifier le domaine `mail.annona.fr` dans le compte Resend de Théo (connecteur Resend), puis créer une clé « envoi seulement » limitée à ce domaine et la donner à Théo pour le SMTP Supabase.
+- RETOURS-2 / AUTH-GOOGLE : dès qu'Orso a posé les DNS, vérifier le domaine `mail.annona.fr` dans le compte Resend de Théo (connecteur Resend). La clé « envoi seulement » peut être créée par Théo lui-même (Resend › API Keys) ou par Claude. Image des étapes à envoyer à Orso : `outputs/smtp-etapes-orso.png` (hors Git).
 - DA-1 : une fois la plaquette validée par Orso, appliquer la nouvelle identité (couleurs, police Geist, logo soleil, écrans) en commençant par `globals.css` et `docs/DESIGN_SYSTEM.md`.
 - MOBILE-1 : application iOS compilée pour le simulateur le 16 novembre (iOS 26.5 installé sur le Mac d'Orso). Reste : la lancer sur le simulateur, essayer la connexion Google et le menu « Comment y aller ? » (Plans). En pause : Orso a demandé de garder son processeur libre ; lui demander le feu vert avant de relancer le simulateur ou le serveur local.
 - DEMO-1 : une démo par visiteur, ouverte à tous, sans aucun envoi, journée réaliste (décisions d'Orso du 16 novembre). Lot 1 (journée de démo) fait ; suite : lot d'environnements et connexion sans identifiants (nouvelle table, migration à annoncer à Théo), garde-fous, écrans.
@@ -544,6 +544,8 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 - [ ] **RETOURS-1 — Tour complet de l'application et notes de retouches.**
 
   **Qui : Théo — tour à la main (parcours qui écrivent, application Android), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`.**
+
+  - 22 novembre 2026 (session Claude de Théo) : **12 des 13 remarques de la partie 1 corrigées** (débordements sur téléphone, références internes et jargon à l'écran, sous-titre de Mes commandes, choix du jour et Production sur téléphone, catalogue client, pastille santé, champs sans nom, petites cibles) ; détail dans `docs/rapports/2026-11-16-tour-theo.md`, section « Corrections du 22 novembre ». Vérifié à 390 px par un script Playwright sur 13 pages (largeur 390 partout, aucun champ sans nom) ; `npm run check` sortie 0 (916 réussis, 0 échec). Remarque 10 non corrigée : logo de l'entreprise de démo (image stockée sur `annona-dev`), à remplacer par Orso dans Paramètres.
 
   - 16 novembre 2026 au soir (session Claude de Théo), partie 1 faite : passage automatique en lecture seule sur https://annona-gray.vercel.app (`15d5501`), quatre espaces et super-admin, ordinateur et téléphone (84 pages, 10 connexions) : 0 erreur JavaScript, 0 page en erreur, connexion 1,3 à 1,9 s à chaud. 13 remarques dans `docs/rapports/2026-11-16-tour-theo.md`, dont : pages Tournées, Tableau de bord et Catalogue plus larges que l'écran du téléphone (grille sans `minmax(0,1fr)`, `src/features/rounds/rounds-content.tsx:180`) ; références du cahier des charges visibles à l'écran (« RG-05 », « RG-04 », « RG-01 », « NOT-01 », « ENF-05 », « FACT-1 », `src/lib/i18n/fr.ts`) ; sous-titre « semaines passées » sur l'onglet « À venir » du client ; choix du jour et onglets empilés sur l'écran Production du boulanger. Corrections dans la zone d'Orso : rien modifié.
 
