@@ -14,6 +14,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { improveOpenPath } from "../src/lib/dispatch/round-improve";
 import { orderRoundStops, planSlotRounds, ROUND_MAX_STOPS } from "../src/domains/order/round-generation";
+import { buildDemoScenario, DEMO_SCENARIO } from "../src/domains/demo/demo-scenario";
 import { DEMO_STREETS_NORTH, DEMO_STREETS_SOUTH } from "../src/domains/demo/demo-scenario-data";
 import { createTravelTimeState, estimateTravelMatrix, ROUTE_MATRIX_MAX_POINTS, straightLineSeconds, type GeoPoint } from "../src/lib/dispatch/travel-time";
 
@@ -201,4 +202,27 @@ test("DISPATCH-OPTIM : temps asymétriques (sens uniques) et départ inconnu", (
 test("DISPATCH-OPTIM : l'amélioration ne fait jamais manquer un créneau tenu par le calcul", () => {
   const rounds = planSlotRounds({ orders: stopsOf(parisPoints(70, 3)), depot: DEPOT, windowStart: WINDOW_START, windowEnd: WINDOW_START + 2.5 * 3_600_000, travelSeconds: travel });
   for (const round of rounds) for (const arrival of round.arrivals) assert.ok(arrival !== null && arrival <= WINDOW_START + 2.5 * 3_600_000);
+});
+
+test("DEMO-1, DISPATCH-OPTIM : les tournées de la démo sont déjà améliorées (plus rien à gagner) et la journée se construit en moins de 1 s", () => {
+  const startedAt = performance.now();
+  const scenario = buildDemoScenario({ slot: 1, now: new Date("2026-11-24T08:00:00Z") });
+  const elapsed = performance.now() - startedAt;
+  assert.ok(elapsed < 1000, `${elapsed.toFixed(0)} ms`);
+  const merchants = new Map(scenario.merchants.map((merchant) => [merchant.id, merchant]));
+  const orders = new Map(scenario.orders.map((order) => [order.id, order]));
+  const rounds = new Map<string, Array<{ sequence: number; point: GeoPoint }>>();
+  for (const stop of scenario.stops) {
+    const merchant = merchants.get(orders.get(stop.orderId)!.merchantId as string)!;
+    const list = rounds.get(stop.roundId) ?? [];
+    list.push({ sequence: stop.sequence, point: { latitude: merchant.latitude as number, longitude: merchant.longitude as number } });
+    rounds.set(stop.roundId, list);
+  }
+  assert.ok(rounds.size > 0);
+  const depot = { latitude: DEMO_SCENARIO.depot.latitude, longitude: DEMO_SCENARIO.depot.longitude };
+  for (const list of rounds.values()) {
+    const route = list.sort((a, b) => a.sequence - b.sequence).map((item) => item.point);
+    const best = improveOpenPath(depot, route, travel).map((index) => route[index]!);
+    assert.equal(drivingSeconds(best), drivingSeconds(route));
+  }
 });
