@@ -41,6 +41,9 @@ const PUBLIC_ROUTES: Record<string, string> = {
   "auth/signup/google/route.ts": "AUTH-GOOGLE : fin d'inscription avec Google (adresse et identifiant relus dans la session Supabase, nouvelle entreprise seulement)",
   "health/route.ts": "état du service, sans donnée",
   "addresses/search/route.ts": "géocodage d'une adresse saisie (base nationale), sans donnée d'entreprise",
+  "demo/start/route.ts": "DEMO-1 : prêt d'un environnement de démo fictif au visiteur (cookie de prêt aléatoire), sans donnée d'entreprise réelle",
+  "demo/persona/route.ts": "DEMO-1 : ouvre un compte de l'environnement de démo prêté (cookie de prêt exigé), jamais un autre compte",
+  "demo/leave/route.ts": "DEMO-1 : déconnexion et fin du prêt du visiteur (son propre cookie seulement)",
 };
 
 const COMPANY_GUARD = /\brequire(CompanyAdmin|CompanyAdminAny|CompanyRole|CompanyMember|MerchantActor|MerchantRole|DriverRole|SupportStaff)\(/;

@@ -45,10 +45,11 @@ L'export existant est `exportCompanyData` dans `src/domains/data-lifecycle/compa
 | Permission | plateforme | aucune, table globale | non |
 | RolePermission | plateforme | roleId | non |
 | AuthLoginFailure | technique | aucune, empreinte HMAC transitoire (15 min) | non |
+| DemoPoolEnvironment | technique | companyId de démo (`demopool_NN_company`), empreinte du cookie de prêt (4 h) | non |
 
 ## Absents de l'export
 
-Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, Permission, RolePermission, AuthLoginFailure, InvoiceCounter, InvoiceReminder. Ils relèvent du catalogue global, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées.
+Ces modèles ne sont pas dans `exportCompanyData` : DriverPushSubscription, Permission, RolePermission, AuthLoginFailure, DemoPoolEnvironment, InvoiceCounter, InvoiceReminder. Ils relèvent du catalogue global, de mécanismes techniques ou transitoires, ou dupliquent des données déjà exportées.
 
 Role et OperationJob n'y sont que partiels : le rôle est recopié par son nom sur l'utilisateur, le job est recopié sans sa charge ni son erreur.
 

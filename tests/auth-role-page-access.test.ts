@@ -10,6 +10,7 @@ import { getNavItemsForRole } from "../src/features/navigation/get-nav-items";
 import { driverNavItems } from "../src/features/navigation/nav-config";
 import * as pageAccess from "../src/lib/permissions/page-access";
 import * as miniAdminModule from "../src/lib/permissions/mini-admin";
+import * as demoConstantsModule from "../src/lib/demo/demo-constants";
 
 const { PROTECTED_PAGE_SPACES, evaluatePageAccess, getPageAccessRule, getRoleHomePath, isProtectedPagePath } =
   pageAccess;
@@ -39,6 +40,8 @@ const PUBLIC_PAGES = [
   "/login", "/login/client", "/login/driver", "/forgot-password", "/reset-password",
   // AUTH-GOOGLE : inscription des boulangeries (décision d'Orso du 13 novembre 2026).
   "/inscription",
+  // DEMO-1 : démo ouverte à tous, sans identifiants (décision d'Orso du 16 novembre 2026).
+  "/demo",
 ];
 
 // Matrice attendue rôle × espace (SCHEMA-1 : cinq rôles, un espace chacun).
@@ -194,6 +197,8 @@ function loadMiddleware(session: { id: string } | null, auth: Auth | Error, refr
     require: (id: string) => {
       // Lot 1, demande 4 : règles des mini admins, module pur réel.
       if (id === "@/lib/permissions/mini-admin") return miniAdminModule;
+      // DEMO-1 : nom du cookie de prêt de démo, module pur réel.
+      if (id === "@/lib/demo/demo-constants") return demoConstantsModule;
       assert.ok(id in dependencies, `Unexpected dependency ${id}`);
       return dependencies[id];
     },

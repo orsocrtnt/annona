@@ -13,11 +13,19 @@ const models = new Map(
 
 /** Seules exceptions à « toute entité porte companyId » (PLA-01), chacune motivée en tête du schéma. */
 const WITHOUT_COMPANY = new Set(["Company", "Role", "Permission", "RolePermission", "AuthLoginFailure"]);
+// DEMO-1 : table technique du lot de démo ; `companyId` unique sans clé étrangère, car la reconstruction
+// d'un environnement efface puis réécrit son entreprise (une cascade effacerait aussi le prêt en cours).
+const COMPANY_WITHOUT_RELATION = new Set(["DemoPoolEnvironment"]);
 const OPTIONAL_COMPANY = new Set(["User", "OperationJob"]);
 
 test("PLA-01 : toutes les entités sauf l'entreprise portent companyId, indexé en tête", () => {
   assert.ok(models.size >= 29, `modèles lus : ${models.size}`);
   for (const [name, body] of models) {
+    if (COMPANY_WITHOUT_RELATION.has(name)) {
+      assert.match(body, /^\s+companyId\s+String\s+@unique/m, `${name} : companyId unique`);
+      assert.doesNotMatch(body, /@relation\(fields: \[companyId\]/, `${name} : sans clé étrangère vers Company`);
+      continue;
+    }
     if (WITHOUT_COMPANY.has(name)) {
       assert.doesNotMatch(body, /^\s+companyId\s/m, `${name} : exception documentée, sans companyId`);
       continue;

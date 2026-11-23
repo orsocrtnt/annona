@@ -39,8 +39,9 @@ Conventions : toute table porte `company_id` indexé sauf `companies`, les donn�
 - `AuditLog` : journal avant/après des corrections (RG-10) ;
 - `SupportTicket`, `SupportTicketMessage` : réclamations ;
 - `ClientNotification`, `DriverLocation`, `DriverPushSubscription`, `OperationJob`, `AuthLoginFailure`.
+- `DemoPoolEnvironment` (DEMO-1) : environnements de démo prêtés aux visiteurs (`demopool_NN_company`, sans clé étrangère : la reconstruction efface et réécrit l'entreprise ; empreinte SHA-256 du cookie de prêt, 4 h ; table fermée à l'API publique).
 
-Le schéma comprend 37 modèles Prisma. Données de démonstration : `npm run db:seed` (identifiants `demo_`, comptes dans `outputs/comptes-demo.md`, non versionné).
+Le schéma comprend 38 modèles Prisma. Données de démonstration : `npm run db:seed` (identifiants `demo_`, comptes dans `outputs/comptes-demo.md`, non versionné).
 
 ## Relations essentielles
 
